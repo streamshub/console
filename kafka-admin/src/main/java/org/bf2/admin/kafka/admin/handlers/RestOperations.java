@@ -3,8 +3,6 @@ package org.bf2.admin.kafka.admin.handlers;
 import io.micrometer.core.annotation.Counted;
 import io.micrometer.core.annotation.Timed;
 import io.smallrye.common.annotation.Blocking;
-import io.vertx.core.Vertx;
-import io.vertx.kafka.admin.KafkaAdminClient;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.bf2.admin.kafka.admin.AccessControlOperations;
 import org.bf2.admin.kafka.admin.ConsumerGroupOperations;
@@ -45,9 +43,6 @@ public class RestOperations implements OperationsHandler {
     private static final Pattern MATCH_ALL = Pattern.compile(".*");
 
     @Inject
-    Vertx vertx;
-
-    @Inject
     @ConfigProperty(name = "kafka.admin.num.partitions.max")
     int maxPartitions;
 
@@ -78,7 +73,7 @@ public class RestOperations implements OperationsHandler {
                                                                           String.format("numPartitions must be between 1 and %d (inclusive)", maxPartitions)));
         }
 
-        return withAdminClient(client -> topicOperations.createTopic(KafkaAdminClient.create(vertx, client), inputTopic))
+        return withAdminClient(client -> topicOperations.createTopic(client, inputTopic))
                 .thenApply(createdTopic -> Response.status(Status.CREATED).header(HttpHeaders.LOCATION, uriBuilder("describeTopic").build(createdTopic.getName()))
                         .entity(createdTopic).build());
     }
@@ -87,7 +82,7 @@ public class RestOperations implements OperationsHandler {
     @Counted("describe_topic_requests")
     @Timed("describe_topic_request_time")
     public CompletionStage<Response> describeTopic(String topicToDescribe) {
-        return withAdminClient(client -> topicOperations.describeTopic(KafkaAdminClient.create(vertx, client), topicToDescribe))
+        return withAdminClient(client -> topicOperations.describeTopic(client, topicToDescribe))
                 .thenApply(topic -> Response.ok().entity(topic).build());
     }
 
@@ -100,7 +95,7 @@ public class RestOperations implements OperationsHandler {
                                                                           String.format("numPartitions must be between 1 and %d (inclusive)", maxPartitions)));
         }
 
-        return withAdminClient(client -> topicOperations.updateTopic(KafkaAdminClient.create(vertx, client), topicName, updatedTopic))
+        return withAdminClient(client -> topicOperations.updateTopic(client, topicName, updatedTopic))
                 .thenApply(topic -> Response.ok().entity(topic).build());
     }
 
@@ -108,7 +103,7 @@ public class RestOperations implements OperationsHandler {
     @Counted("delete_topic_requests")
     @Timed("delete_topic_request_time")
     public CompletionStage<Response> deleteTopic(String topicToDelete) {
-        return withAdminClient(client -> topicOperations.deleteTopics(KafkaAdminClient.create(vertx, client), Collections.singletonList(topicToDelete)))
+        return withAdminClient(client -> topicOperations.deleteTopics(client, Collections.singletonList(topicToDelete)))
                 .thenApply(topicNames -> Response.ok().entity(topicNames).build());
     }
 
@@ -126,7 +121,7 @@ public class RestOperations implements OperationsHandler {
 
         sortParams.setDefaultsIfNecessary();
 
-        return withAdminClient(client -> topicOperations.getTopicList(KafkaAdminClient.create(vertx, client), pattern, pageParams, sortParams))
+        return withAdminClient(client -> topicOperations.getTopicList(client, pattern, pageParams, sortParams))
                .thenApply(topicList -> Response.ok().entity(topicList).build());
     }
 
@@ -156,7 +151,7 @@ public class RestOperations implements OperationsHandler {
         final Pattern topicPattern = filterPattern(topicFilter);
         final Pattern groupPattern = filterPattern(consumerGroupIdFilter);
 
-        return withAdminClient(client -> ConsumerGroupOperations.getGroupList(KafkaAdminClient.create(vertx, client), topicPattern, groupPattern, pageParams, sortParams))
+        return withAdminClient(client -> ConsumerGroupOperations.getGroupList(client, topicPattern, groupPattern, pageParams, sortParams))
                 .thenApply(groupList -> Response.ok().entity(groupList).build());
     }
 
@@ -167,7 +162,7 @@ public class RestOperations implements OperationsHandler {
         // FIXME: topicFilter exposed in API but not implemented
         sortParams.setDefaultsIfNecessary();
 
-        return withAdminClient(client -> ConsumerGroupOperations.describeGroup(KafkaAdminClient.create(vertx, client), groupToDescribe, sortParams, partitionFilter.orElse(-1)))
+        return withAdminClient(client -> ConsumerGroupOperations.describeGroup(client, groupToDescribe, sortParams, partitionFilter.orElse(-1)))
                 .thenApply(consumerGroup -> Response.ok().entity(consumerGroup).build());
     }
 
@@ -175,7 +170,7 @@ public class RestOperations implements OperationsHandler {
     @Counted("delete_group_requests")
     @Timed("delete_group_request_time")
     public CompletionStage<Response> deleteGroup(String groupToDelete) {
-        return withAdminClient(client ->  ConsumerGroupOperations.deleteGroup(KafkaAdminClient.create(vertx, client), Collections.singletonList(groupToDelete)))
+        return withAdminClient(client ->  ConsumerGroupOperations.deleteGroup(client, Collections.singletonList(groupToDelete)))
                 .thenApply(consumerGroupNames -> Response.noContent().build());
     }
 
@@ -185,7 +180,7 @@ public class RestOperations implements OperationsHandler {
     public CompletionStage<Response> resetGroupOffset(String groupToReset, Types.ConsumerGroupOffsetResetParameters parameters) {
         parameters.setGroupId(groupToReset);
 
-        return withAdminClient(client -> ConsumerGroupOperations.resetGroupOffset(KafkaAdminClient.create(vertx, client), parameters))
+        return withAdminClient(client -> ConsumerGroupOperations.resetGroupOffset(client, parameters))
                 .thenApply(groupList -> Response.ok().entity(groupList).build());
     }
 

@@ -168,6 +168,7 @@
                                 <ignoredDependency>io.quarkus:quarkus-vertx</ignoredDependency>
                                 <ignoredDependency>io.strimzi:kafka-oauth-client</ignoredDependency>
                                 <ignoredDependency>io.vertx:vertx-core</ignoredDependency>
+                                <ignoredDependency>io.vertx:vertx-web</ignoredDependency>
                                 <ignoredDependency>org.apache.logging.log4j:log4j-api</ignoredDependency>
                                 <ignoredDependency>org.eclipse.microprofile.config:microprofile-config-api</ignoredDependency>
                                 <ignoredDependency>org.eclipse.microprofile.jwt:microprofile-jwt-auth-api</ignoredDependency>

@@ -1,282 +1,195 @@
 package org.bf2.admin.kafka.admin;
 
-import io.vertx.core.Future;
-import io.vertx.core.Promise;
-import io.vertx.kafka.admin.Config;
-import io.vertx.kafka.admin.ConfigEntry;
-import io.vertx.kafka.admin.KafkaAdminClient;
-import io.vertx.kafka.admin.NewPartitions;
-import io.vertx.kafka.admin.NewTopic;
-import io.vertx.kafka.admin.TopicDescription;
-import io.vertx.kafka.client.common.ConfigResource;
+import org.apache.kafka.clients.admin.Admin;
+import org.apache.kafka.clients.admin.Config;
+import org.apache.kafka.clients.admin.ConfigEntry;
+import org.apache.kafka.clients.admin.NewPartitions;
+import org.apache.kafka.clients.admin.NewTopic;
+import org.apache.kafka.clients.admin.TopicDescription;
+import org.apache.kafka.common.config.ConfigResource;
 import org.bf2.admin.kafka.admin.model.AdminServerException;
 import org.bf2.admin.kafka.admin.model.ErrorType;
 import org.bf2.admin.kafka.admin.model.TopicComparator;
 import org.bf2.admin.kafka.admin.model.Types;
+import org.bf2.admin.kafka.admin.model.Types.PagedResponse;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.regex.PatternSyntaxException;
 import java.util.stream.Collectors;
 
 @ApplicationScoped
 public class TopicOperations {
 
-    public static final short DEFAULT_PARTITIONS = 1;
+    public static final Integer DEFAULT_PARTITIONS = 1;
 
     @Inject
     @ConfigProperty(name = "kafka.admin.replication.factor", defaultValue = "3")
     short replicationFactor;
 
-    public CompletionStage<Types.Topic> createTopic(KafkaAdminClient ac, Types.NewTopic inputTopic) {
-        NewTopic newKafkaTopic = new NewTopic();
-        Promise<Types.Topic> prom = Promise.promise();
+    public CompletionStage<Types.Topic> createTopic(Admin ac, Types.NewTopic inputTopic) {
+        String topicName = inputTopic.getName();
+        int numPartitions = Objects.requireNonNullElse(inputTopic.getSettings().getNumPartitions(), DEFAULT_PARTITIONS);
+        Map<String, String> config = Optional.ofNullable(inputTopic.getSettings().getConfig())
+            .orElseGet(Collections::emptyList)
+            .stream()
+            .collect(Collectors.toMap(Types.ConfigEntry::getKey, Types.ConfigEntry::getValue));
 
-        Map<String, String> config = new HashMap<>();
-        List<Types.ConfigEntry> configObject = inputTopic.getSettings().getConfig();
-        if (configObject != null) {
-            configObject.forEach(item -> {
-                config.put(item.getKey(), item.getValue());
-            });
-        }
+        NewTopic newKafkaTopic = new NewTopic(topicName, numPartitions, replicationFactor)
+                .configs(config);
 
-        newKafkaTopic.setName(inputTopic.getName());
-        newKafkaTopic.setReplicationFactor(replicationFactor);
-        newKafkaTopic.setNumPartitions(inputTopic.getSettings().getNumPartitions() == null ? DEFAULT_PARTITIONS : inputTopic.getSettings().getNumPartitions());
-        if (config != null) {
-            newKafkaTopic.setConfig(config);
-        }
+        return ac.createTopics(Set.of(newKafkaTopic))
+            .all()
+            .toCompletionStage()
+            .thenCompose(nothing -> getTopicDescAndConf(ac, Set.of(topicName)))
+            .thenApply(result -> result.get(topicName));
+    }
 
-        ac.createTopics(Collections.singletonList(newKafkaTopic), res -> {
-            if (res.failed()) {
-                prom.fail(res.cause());
-                ac.close();
-            } else {
-                getTopicDescAndConf(ac, inputTopic.getName()).future()
-                    .onComplete(desc -> {
-                        if (desc.failed()) {
-                            prom.fail(desc.cause());
-                        } else {
-                            prom.complete(desc.result());
-                        }
-                        ac.close();
-                    });
+    public CompletionStage<Types.Topic> describeTopic(Admin ac, String topicToDescribe) {
+        return getTopicDescAndConf(ac, Set.of(topicToDescribe))
+                .thenApply(result -> result.get(topicToDescribe));
+    }
+
+    private static CompletionStage<Map<String, Types.Topic>> getTopicDescAndConf(Admin ac, Set<String> topicNames) {
+        var describeStage = ac.describeTopics(topicNames)
+                .all()
+                .toCompletionStage()
+                .thenApply(topics -> topics.entrySet()
+                           .stream()
+                           .collect(Collectors.toMap(Map.Entry::getKey, e -> getTopicDesc(e.getValue()))));
+
+        var configsStage = ac.describeConfigs(topicNames.stream().map(name -> new ConfigResource(ConfigResource.Type.TOPIC, name)).collect(Collectors.toList()))
+                .all()
+                .toCompletionStage()
+                .thenApply(configs -> configs.entrySet()
+                           .stream()
+                           .collect(Collectors.toMap(Map.Entry::getKey, e -> getTopicConf(e.getValue()))));
+
+        return describeStage.thenCombine(configsStage, (topics, configs) -> {
+            for (var config : configs.entrySet()) {
+                topics.get(config.getKey().name()).setConfig(config.getValue());
             }
+
+            return topics;
         });
-
-        return prom.future().toCompletionStage();
     }
 
-    public CompletionStage<Types.Topic> describeTopic(KafkaAdminClient ac, String topicToDescribe) {
-        return getTopicDescAndConf(ac, topicToDescribe).future().toCompletionStage();
-    }
-
-    private static Promise<Types.Topic> getTopicDescAndConf(KafkaAdminClient ac, String topicToDescribe) {
-        Promise<Types.Topic> result = Promise.promise();
-        Types.Topic tmp = new Types.Topic();
-        ConfigResource resource = new ConfigResource(org.apache.kafka.common.config.ConfigResource.Type.TOPIC, topicToDescribe);
-
-        ac.describeTopics(Collections.singletonList(topicToDescribe))
-            .compose(topics -> {
-                io.vertx.kafka.admin.TopicDescription topicDesc = topics.get(topicToDescribe);
-                return Future.succeededFuture(getTopicDesc(topicDesc));
-            })
-            .compose(topic -> {
-                tmp.setName(topic.getName());
-                tmp.setIsInternal(topic.getIsInternal());
-                tmp.setPartitions(topic.getPartitions());
-                return Future.succeededFuture();
-            })
-            .compose(kkk -> ac.describeConfigs(Collections.singletonList(resource))
-            .compose(topics -> {
-                Config cfg = topics.get(resource);
-                tmp.setConfig(getTopicConf(cfg));
-                return Future.succeededFuture(tmp);
-            }))
-            .onComplete(f -> {
-                if (f.succeeded()) {
-                    result.complete(f.result());
-                } else {
-                    result.fail(f.cause());
-                }
-            });
-        return result;
-    }
-
-    public CompletionStage<Types.TopicList> getTopicList(KafkaAdminClient ac, Pattern pattern, Types.DeprecatedPageRequest pageRequest, Types.TopicSortParams orderByInput) {
-        Promise<Set<String>> describeTopicsNamesPromise = Promise.promise();
-        Promise<Map<String, io.vertx.kafka.admin.TopicDescription>> describeTopicsPromise = Promise.promise();
-        Promise<Map<ConfigResource, Config>> describeTopicConfigPromise = Promise.promise();
-        Promise<Types.TopicList> prom = Promise.promise();
-
-        List<ConfigResource> configResourceList = new ArrayList<>();
-        List<Types.Topic> fullDescription = new ArrayList<>();
-
-        ac.listTopics(describeTopicsNamesPromise);
-        describeTopicsNamesPromise.future()
-            .compose(topics -> {
-                List<String> filteredList = topics.stream()
-                        .filter(topicName -> byName(pattern, prom).test(topicName))
-                        .collect(Collectors.toList());
-                ac.describeTopics(filteredList, describeTopicsPromise);
-                return describeTopicsPromise.future();
-            }).compose(topics -> {
-                topics.entrySet().forEach(topicWithDescription -> {
-                    Types.Topic desc = getTopicDesc(topicWithDescription.getValue());
-                    fullDescription.add(desc);
-                    ConfigResource resource = new ConfigResource(org.apache.kafka.common.config.ConfigResource.Type.TOPIC, desc.getName());
-                    configResourceList.add(resource);
-                });
-                ac.describeConfigs(configResourceList, describeTopicConfigPromise);
-                return describeTopicConfigPromise.future();
-            }).compose(topicsConfigurations -> {
-                List<Types.Topic> fullTopicDescriptions = new ArrayList<>();
-                fullDescription.forEach(topicWithDescription -> {
-                    ConfigResource resource = new ConfigResource(org.apache.kafka.common.config.ConfigResource.Type.TOPIC, topicWithDescription.getName());
-                    Config cfg = topicsConfigurations.get(resource);
-                    topicWithDescription.setConfig(getTopicConf(cfg));
-                    fullTopicDescriptions.add(topicWithDescription);
-                });
+    public CompletionStage<PagedResponse<Types.Topic>> getTopicList(Admin ac, Pattern pattern, Types.DeprecatedPageRequest pageRequest, Types.TopicSortParams orderByInput) {
+        return ac.listTopics()
+            .names()
+            .toCompletionStage()
+            .thenApply(topicNames -> topicNames.stream()
+                       .filter(name -> byName(pattern).test(name))
+                       .collect(Collectors.toSet()))
+            .thenCompose(topicNames -> getTopicDescAndConf(ac, topicNames))
+            .thenApply(topicsConfigurations -> {
+                Comparator<Types.Topic> comparator;
 
                 if (Types.SortDirectionEnum.DESC.equals(orderByInput.getOrder())) {
-                    fullTopicDescriptions.sort(new TopicComparator(orderByInput.getField()).reversed());
+                    comparator = new TopicComparator(orderByInput.getField()).reversed();
                 } else {
-                    fullTopicDescriptions.sort(new TopicComparator(orderByInput.getField()));
+                    comparator = new TopicComparator(orderByInput.getField());
                 }
 
-
-                Types.TopicList topicList = new Types.TopicList();
-                List<Types.Topic> croppedList;
+                return topicsConfigurations.values().stream().sorted(comparator).collect(Collectors.toList());
+            })
+            .thenApply(topicsConfigurations -> {
                 if (pageRequest.isDeprecatedFormat()) {
+                    Types.TopicList topicList = new Types.TopicList();
+                    List<Types.Topic> croppedList;
+
                     // deprecated
-                    if (pageRequest.getOffset() > fullTopicDescriptions.size()) {
-                        return Future.failedFuture(new AdminServerException(ErrorType.INVALID_REQUEST, "Offset (" + pageRequest.getOffset() + ") cannot be greater than topic list size (" + fullTopicDescriptions.size() + ")"));
+                    if (pageRequest.getOffset() > topicsConfigurations.size()) {
+                        throw new AdminServerException(ErrorType.INVALID_REQUEST, "Offset (" + pageRequest.getOffset() + ") cannot be greater than topic list size (" + topicsConfigurations.size() + ")");
                     }
                     int tmpLimit = pageRequest.getLimit();
                     if (tmpLimit == 0) {
-                        tmpLimit = fullTopicDescriptions.size();
+                        tmpLimit = topicsConfigurations.size();
                     }
-                    croppedList = fullTopicDescriptions.subList(pageRequest.getOffset(), Math.min(pageRequest.getOffset() + tmpLimit, fullTopicDescriptions.size()));
+                    croppedList = topicsConfigurations.subList(pageRequest.getOffset(), Math.min(pageRequest.getOffset() + tmpLimit, topicsConfigurations.size()));
                     topicList.setOffset(pageRequest.getOffset());
                     topicList.setLimit(pageRequest.getLimit());
                     topicList.setCount(croppedList.size());
-                } else {
-                    if (fullTopicDescriptions.size() > 0 && (pageRequest.getPage() - 1) * pageRequest.getSize() >= fullTopicDescriptions.size()) {
-                        return Future.failedFuture(new AdminServerException(ErrorType.INVALID_REQUEST, "Requested pagination incorrect. Beginning of list greater than full list size (" + fullTopicDescriptions.size() + ")"));
-                    }
-                    croppedList = fullTopicDescriptions.subList((pageRequest.getPage() - 1) * pageRequest.getSize(), Math.min(pageRequest.getPage() * pageRequest.getSize(), fullTopicDescriptions.size()));
-                    topicList.setPage(pageRequest.getPage());
-                    topicList.setSize(pageRequest.getSize());
-                    topicList.setTotal(fullTopicDescriptions.size());
+                    topicList.setItems(croppedList);
+
+                    return topicList;
                 }
 
-                topicList.setItems(croppedList);
-
-                return Future.succeededFuture(topicList);
-            }).onComplete(finalRes -> {
-                if (finalRes.failed()) {
-                    prom.fail(finalRes.cause());
-                } else {
-                    prom.complete(finalRes.result());
-                }
-                ac.close();
+                return PagedResponse.forPage(pageRequest, Types.Topic.class, topicsConfigurations);
             });
-
-        return prom.future().toCompletionStage();
     }
 
-    static Predicate<String> byName(Pattern pattern, Promise<?> prom) {
+    static Predicate<String> byName(Pattern pattern) {
         return topic -> {
             if (pattern == null) {
                 return true;
             } else {
-                try {
-                    Matcher matcher = pattern.matcher(topic);
-                    return matcher.find();
-                } catch (PatternSyntaxException ex) {
-                    prom.fail(ex);
-                    return false;
-                }
+                Matcher matcher = pattern.matcher(topic);
+                return matcher.find();
             }
         };
     }
 
-    public CompletionStage<List<String>> deleteTopics(KafkaAdminClient ac, List<String> topicsToDelete) {
-        Promise<List<String>> prom = Promise.promise();
-
-        ac.deleteTopics(topicsToDelete, res -> {
-            if (res.failed()) {
-                prom.fail(res.cause());
-            } else {
-                prom.complete(topicsToDelete);
-            }
-            ac.close();
-        });
-
-        return prom.future().toCompletionStage();
+    public CompletionStage<List<String>> deleteTopics(Admin ac, List<String> topicsToDelete) {
+        return ac.deleteTopics(topicsToDelete)
+            .all()
+            .toCompletionStage()
+            .thenApply(nothing -> topicsToDelete);
     }
 
-    public CompletionStage<Types.Topic> updateTopic(KafkaAdminClient ac, String topicName, Types.TopicSettings topicToUpdate) {
-        Promise<Types.Topic> prom = Promise.promise();
-        List<ConfigEntry> ceList = new ArrayList<>();
-        if (topicToUpdate.getConfig() != null) {
-            topicToUpdate.getConfig().stream().forEach(cfgEntry -> {
-                ConfigEntry ce = new ConfigEntry(cfgEntry.getKey(), cfgEntry.getValue());
-                ceList.add(ce);
-            });
-        }
-        Config cfg = new Config(ceList);
+    public CompletionStage<Types.Topic> updateTopic(Admin ac, String topicName, Types.TopicSettings topicToUpdate) {
+        ConfigResource resource = new ConfigResource(ConfigResource.Type.TOPIC, topicName);
 
-        ConfigResource resource = new ConfigResource(org.apache.kafka.common.config.ConfigResource.Type.TOPIC, topicName);
+        List<ConfigEntry> configEntries = Optional.ofNullable(topicToUpdate.getConfig())
+            .orElseGet(Collections::emptyList)
+            .stream()
+            .map(config -> new ConfigEntry(config.getKey(), config.getValue()))
+            .collect(Collectors.toList());
+        Config cfg = new Config(configEntries);
 
         // we have to describe first, otherwise we cannot determine whether the topic exists or not (alterConfigs returns just server error)
-        getTopicDescAndConf(ac, topicName).future()
-                .compose(topic -> {
-                    Promise<Void> updateTopicPartitions = Promise.promise();
-                    if (topicToUpdate.getNumPartitions() != null && topicToUpdate.getNumPartitions() != topic.getPartitions().size()) {
-                        ac.createPartitions(Collections.singletonMap(topic.getName(), new NewPartitions(topicToUpdate.getNumPartitions(), null)), updateTopicPartitions);
-                    } else {
-                        updateTopicPartitions.complete();
-                    }
-                    return updateTopicPartitions.future();
-                })
-                .compose(i -> {
-                    Promise<Void> updateTopicConfigPromise = Promise.promise();
-                    ac.alterConfigs(Collections.singletonMap(resource, cfg), updateTopicConfigPromise);
-                    return updateTopicConfigPromise.future();
-                })
-                .compose(update -> getTopicDescAndConf(ac, topicName).future())
-                .onComplete(desc -> {
-                    if (desc.failed()) {
-                        prom.fail(desc.cause());
-                    } else {
-                        prom.complete(desc.result());
-                    }
-                    ac.close();
-                });
+        return getTopicDescAndConf(ac, Set.of(topicName))
+            .thenApply(topics -> topics.get(topicName))
+            .thenCompose(topic -> {
+                if (topicToUpdate.getNumPartitions() != null && topicToUpdate.getNumPartitions() != topic.getPartitions().size()) {
+                    return ac.createPartitions(Map.of(topicName, NewPartitions.increaseTo(topicToUpdate.getNumPartitions())))
+                        .all()
+                        .toCompletionStage()
+                        .thenApply(nothing -> topic);
+                }
 
-        return prom.future().toCompletionStage();
+                return CompletableFuture.completedStage(topic);
+            })
+            .thenCompose(topic -> ac.alterConfigs(Map.of(resource, cfg))
+                    .all()
+                    .toCompletionStage()
+                    .thenApply(nothing -> topic))
+            .thenCompose(topic -> getTopicDescAndConf(ac, Set.of(topicName)))
+            .thenApply(topics -> topics.get(topicName));
     }
 
     private static List<Types.ConfigEntry> getTopicConf(Config cfg) {
-        List<ConfigEntry> entries = cfg.getEntries();
+        Collection<ConfigEntry> entries = cfg.entries();
         List<Types.ConfigEntry> topicConfigEntries = new ArrayList<>();
         entries.stream().forEach(entry -> {
             Types.ConfigEntry ce = new Types.ConfigEntry();
-            ce.setKey(entry.getName());
-            ce.setValue(entry.getValue());
+            ce.setKey(entry.name());
+            ce.setValue(entry.value());
             topicConfigEntries.add(ce);
         });
         return topicConfigEntries;
@@ -288,29 +201,29 @@ public class TopicOperations {
      */
     private static Types.Topic getTopicDesc(TopicDescription topicDesc) {
         Types.Topic topic = new Types.Topic();
-        topic.setName(topicDesc.getName());
+        topic.setName(topicDesc.name());
         topic.setIsInternal(topicDesc.isInternal());
         List<Types.Partition> partitions = new ArrayList<>();
-        topicDesc.getPartitions().forEach(part -> {
+        topicDesc.partitions().forEach(part -> {
             Types.Partition partition = new Types.Partition();
             Types.Node leader = new Types.Node();
-            leader.setId(part.getLeader().getId());
+            leader.setId(part.leader().id());
 
             List<Types.Node> replicas = new ArrayList<>();
-            part.getReplicas().forEach(rep -> {
+            part.replicas().forEach(rep -> {
                 Types.Node replica = new Types.Node();
-                replica.setId(rep.getId());
+                replica.setId(rep.id());
                 replicas.add(replica);
             });
 
             List<Types.Node> inSyncReplicas = new ArrayList<>();
-            part.getIsr().forEach(isr -> {
+            part.isr().forEach(isr -> {
                 Types.Node inSyncReplica = new Types.Node();
-                inSyncReplica.setId(isr.getId());
+                inSyncReplica.setId(isr.id());
                 inSyncReplicas.add(inSyncReplica);
             });
 
-            partition.setPartition(part.getPartition());
+            partition.setPartition(part.partition());
             partition.setLeader(leader);
             partition.setReplicas(replicas);
             partition.setIsr(inSyncReplicas);

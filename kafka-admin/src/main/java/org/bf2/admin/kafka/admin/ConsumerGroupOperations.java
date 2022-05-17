@@ -1,17 +1,15 @@
 package org.bf2.admin.kafka.admin;
 
-import io.vertx.core.CompositeFuture;
-import io.vertx.core.Future;
-import io.vertx.core.Promise;
-import io.vertx.kafka.admin.ConsumerGroupDescription;
-import io.vertx.kafka.admin.ConsumerGroupListing;
-import io.vertx.kafka.admin.KafkaAdminClient;
-import io.vertx.kafka.admin.ListOffsetsResultInfo;
-import io.vertx.kafka.admin.MemberDescription;
-import io.vertx.kafka.admin.OffsetSpec;
-import io.vertx.kafka.client.common.TopicPartition;
-import io.vertx.kafka.client.consumer.OffsetAndMetadata;
+import org.apache.kafka.clients.admin.Admin;
+import org.apache.kafka.clients.admin.ConsumerGroupDescription;
+import org.apache.kafka.clients.admin.ConsumerGroupListing;
+import org.apache.kafka.clients.admin.KafkaAdminClient;
+import org.apache.kafka.clients.admin.ListOffsetsResult.ListOffsetsResultInfo;
+import org.apache.kafka.clients.admin.MemberDescription;
+import org.apache.kafka.clients.admin.OffsetSpec;
+import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.ConsumerGroupState;
+import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.errors.GroupIdNotFoundException;
 import org.apache.kafka.common.errors.UnknownTopicOrPartitionException;
 import org.bf2.admin.kafka.admin.model.AdminServerException;
@@ -28,7 +26,6 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -36,6 +33,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
@@ -53,25 +51,23 @@ public class ConsumerGroupOperations {
     private static final Types.ConsumerGroupDescriptionSortParams BLANK_ORDER =
             new Types.ConsumerGroupDescriptionSortParams(Types.ConsumerGroupDescriptionOrderKey.PARTITION, Types.SortDirectionEnum.ASC);
 
-    public static CompletionStage<PagedResponse<Types.ConsumerGroup>> getGroupList(KafkaAdminClient ac, Pattern topicPattern, Pattern groupIdPattern,
+    public static CompletionStage<PagedResponse<Types.ConsumerGroup>> getGroupList(Admin ac, Pattern topicPattern, Pattern groupIdPattern,
                                                                                    Types.DeprecatedPageRequest pageRequest, Types.ConsumerGroupSortParams orderByInput) {
-        Promise<PagedResponse<Types.ConsumerGroup>> prom = Promise.promise();
-
         // Obtain list of all consumer groups
-        ac.listConsumerGroups()
-            .map(groups -> groups.stream()
-                 .map(ConsumerGroupListing::getGroupId)
-                 // Include only those group matching query parameter (or all if not specified)
-                 .filter(groupId -> groupIdPattern.matcher(groupId).find())
-                 .collect(Collectors.toList()))
+        return ac.listConsumerGroups()
+            .all()
+            .toCompletionStage()
+            .thenApply(listings -> listings.stream().map(ConsumerGroupListing::groupId))
+            // Include only those group matching query parameter (or all if not specified)
+            .thenApply(groupIds -> groupIds.filter(groupId -> groupIdPattern.matcher(groupId).find()).collect(Collectors.toList()))
             // Obtain description for all selected consumer groups
-            .compose(groupDescriptions -> fetchDescriptions(ac, groupDescriptions, topicPattern, -1, BLANK_ORDER))
-            .map(groupDescriptions -> groupDescriptions
+            .thenCompose(groupIds -> fetchDescriptions(ac, groupIds, topicPattern, -1, BLANK_ORDER))
+            .thenApply(groupDescriptions -> groupDescriptions
                  .sorted(Types.SortDirectionEnum.DESC.equals(orderByInput.getOrder()) ?
                      new ConsumerGroupComparator(orderByInput.getField()).reversed() :
                          new ConsumerGroupComparator(orderByInput.getField()))
                  .collect(Collectors.<Types.ConsumerGroup>toList()))
-            .map(list -> {
+            .thenApply(list -> {
                 if (pageRequest.isDeprecatedFormat()) {
                     if (pageRequest.getOffset() > list.size()) {
                         throw new AdminServerException(ErrorType.INVALID_REQUEST, "Offset (" + pageRequest.getOffset() + ") cannot be greater than consumer group list size (" + list.size() + ")");
@@ -94,37 +90,18 @@ public class ConsumerGroupOperations {
                 }
 
                 return PagedResponse.forPage(pageRequest, Types.ConsumerGroup.class, list);
-            })
-            .onComplete(finalRes -> {
-                if (finalRes.failed()) {
-                    prom.fail(finalRes.cause());
-                } else {
-                    prom.complete(finalRes.result());
-                }
-                ac.close();
             });
-
-        return prom.future().toCompletionStage();
     }
 
-    public static CompletionStage<List<String>> deleteGroup(KafkaAdminClient ac, List<String> groupsToDelete) {
-        Promise<List<String>> prom = Promise.promise();
-        ac.deleteConsumerGroups(groupsToDelete, res -> {
-            if (res.failed()) {
-                prom.fail(res.cause());
-            } else {
-                prom.complete(groupsToDelete);
-            }
-            ac.close();
-        });
-
-        return prom.future().toCompletionStage();
+    public static CompletionStage<List<String>> deleteGroup(Admin ac, List<String> groupsToDelete) {
+        return ac.deleteConsumerGroups(groupsToDelete)
+                .all()
+                .toCompletionStage()
+                .thenApply(nothing -> groupsToDelete);
     }
 
     @SuppressWarnings({"checkstyle:JavaNCSS", "checkstyle:MethodLength"})
-    public static CompletionStage<PagedResponse<TopicPartitionResetResult>> resetGroupOffset(KafkaAdminClient ac, Types.ConsumerGroupOffsetResetParameters parameters) {
-        Promise<PagedResponse<TopicPartitionResetResult>> prom = Promise.promise();
-
+    public static CompletionStage<PagedResponse<TopicPartitionResetResult>> resetGroupOffset(Admin ac, Types.ConsumerGroupOffsetResetParameters parameters) {
         switch (parameters.getOffset()) {
             case EARLIEST:
             case LATEST:
@@ -136,243 +113,207 @@ public class ConsumerGroupOperations {
         }
 
         Set<TopicPartition> topicPartitionsToReset = new HashSet<>();
-
-        @SuppressWarnings("rawtypes") // CompositeFuture#join requires raw type
-        List<Future> promises = new ArrayList<>();
+        List<CompletableFuture<Void>> promises = new ArrayList<>();
 
         if (parameters.getTopics() == null || parameters.getTopics().isEmpty()) {
             // reset everything
-            Promise<Void> promise = Promise.promise();
-            promises.add(promise.future());
-
-            ac.listConsumerGroupOffsets(parameters.getGroupId())
-                    .onSuccess(consumerGroupOffsets -> {
-                        consumerGroupOffsets.entrySet().forEach(offset -> {
-                            topicPartitionsToReset.add(offset.getKey());
-                        });
-                        promise.complete();
-                    })
-                    .onFailure(promise::fail);
+            promises.add(
+                 ac.listConsumerGroupOffsets(parameters.getGroupId())
+                    .partitionsToOffsetAndMetadata()
+                    .toCompletionStage()
+                    .thenAccept(offsets -> topicPartitionsToReset.addAll(offsets.keySet()))
+                    .toCompletableFuture());
         } else {
-            parameters.getTopics().forEach(paramPartition -> {
-                Promise<Void> promise = Promise.promise();
-                promises.add(promise.future());
-                if (paramPartition.getPartitions() == null || paramPartition.getPartitions().isEmpty()) {
-                    ac.describeTopics(Collections.singletonList(paramPartition.getTopic())).compose(topicsDesc -> {
-                        topicsDesc.entrySet().forEach(topicEntry -> {
-                            topicsDesc.get(topicEntry.getKey()).getPartitions().forEach(partition -> {
-                                topicPartitionsToReset.add(new TopicPartition(topicEntry.getKey(), partition.getPartition()));
-                            });
-                        });
-                        promise.complete();
-                        return Future.succeededFuture(topicPartitionsToReset);
-                    })
-                    .onFailure(promise::fail);
-                } else {
-                    paramPartition.getPartitions().forEach(numPartition -> {
-                        topicPartitionsToReset.add(new TopicPartition(paramPartition.getTopic(), numPartition));
-                    });
-                    promise.complete();
-                }
-            });
+            parameters.getTopics()
+                .stream()
+                .map(topic -> {
+                    if (topic.getPartitions() == null || topic.getPartitions().isEmpty()) {
+                        return ac.describeTopics(Set.of(topic.getTopic()))
+                                .all()
+                                .toCompletionStage()
+                                .thenAccept(topicsDesc -> {
+                                    topicsDesc.entrySet().forEach(topicEntry -> {
+                                        topicsDesc.get(topicEntry.getKey()).partitions().forEach(partition -> {
+                                            topicPartitionsToReset.add(new TopicPartition(topicEntry.getKey(), partition.partition()));
+                                        });
+                                    });
+                                });
+                    }
+
+                    topicPartitionsToReset.addAll(topic.getPartitions().stream()
+                                                  .map(part -> new TopicPartition(topic.getTopic(), part))
+                                                  .collect(Collectors.toList()));
+                    return CompletableFuture.completedFuture((Void) null);
+                })
+                .map(CompletionStage::toCompletableFuture)
+                .forEach(promises::add);
         }
 
         // get the set of partitions we want to reset
-        CompositeFuture.join(promises).compose(i -> {
-            if (i.failed()) {
-                return Future.failedFuture(i.cause());
-            } else {
-                return Future.succeededFuture();
-            }
-        }).compose(nothing -> {
-            return validatePartitionsResettable(ac, parameters.getGroupId(), topicPartitionsToReset);
-        }).compose(nothing -> {
-            Map<TopicPartition, OffsetSpec> partitionsToFetchOffset = new HashMap<>();
-            topicPartitionsToReset.forEach(topicPartition -> {
-                OffsetSpec offsetSpec;
-                // absolute - just for the warning that set offset could be higher than latest
-                switch (parameters.getOffset()) {
-                    case LATEST:
-                        offsetSpec = OffsetSpec.LATEST;
-                        break;
-                    case EARLIEST:
-                        offsetSpec = OffsetSpec.EARLIEST;
-                        break;
-                    case TIMESTAMP:
-                        try {
-                            offsetSpec = OffsetSpec.TIMESTAMP(ZonedDateTime.parse(parameters.getValue(), DATE_TIME_FORMATTER).toInstant().toEpochMilli());
-                        } catch (DateTimeParseException e) {
-                            throw new AdminServerException(ErrorType.INVALID_REQUEST, "Timestamp must be in format 'yyyy-MM-dd'T'HH:mm:ssz'" + e.getMessage());
+        return CompletableFuture.allOf(promises.toArray(CompletableFuture[]::new))
+                .thenCompose(nothing -> validatePartitionsResettable(ac, parameters.getGroupId(), topicPartitionsToReset))
+                .thenApply(nothing -> {
+                    Map<TopicPartition, OffsetSpec> partitionsToFetchOffset = new HashMap<>();
+
+                    topicPartitionsToReset.forEach(topicPartition -> {
+                        OffsetSpec offsetSpec;
+                        // absolute - just for the warning that set offset could be higher than latest
+                        switch (parameters.getOffset()) {
+                            case LATEST:
+                                offsetSpec = OffsetSpec.latest();
+                                break;
+                            case EARLIEST:
+                                offsetSpec = OffsetSpec.earliest();
+                                break;
+                            case TIMESTAMP:
+                                try {
+                                    offsetSpec = OffsetSpec.forTimestamp(ZonedDateTime.parse(parameters.getValue(), DATE_TIME_FORMATTER).toInstant().toEpochMilli());
+                                } catch (DateTimeParseException e) {
+                                    throw new AdminServerException(ErrorType.INVALID_REQUEST, "Timestamp must be in format 'yyyy-MM-dd'T'HH:mm:ssz'" + e.getMessage());
+                                }
+                                break;
+                            case ABSOLUTE:
+                                // we are checking whether offset is not negative (set behind latest)
+                                offsetSpec = OffsetSpec.latest();
+                                break;
+                            default:
+                                throw new AdminServerException(ErrorType.INVALID_REQUEST, "Offset can be 'absolute', 'latest', 'earliest' or 'timestamp' only");
                         }
-                        break;
-                    case ABSOLUTE:
-                        // we are checking whether offset is not negative (set behind latest)
-                        offsetSpec = OffsetSpec.LATEST;
-                        break;
-                    default:
-                        throw new AdminServerException(ErrorType.INVALID_REQUEST, "Offset can be 'absolute', 'latest', 'earliest' or 'timestamp' only");
-                }
 
-                partitionsToFetchOffset.put(topicPartition, offsetSpec);
-            });
-            return Future.succeededFuture(partitionsToFetchOffset);
-        }).compose(partitionsToFetchOffset -> {
-            Promise<Map<TopicPartition, ListOffsetsResultInfo>> promise = Promise.promise();
-            ac.listOffsets(partitionsToFetchOffset, partitionsOffsets -> {
-                if (partitionsOffsets.failed()) {
-                    promise.fail(partitionsOffsets.cause());
-                    return;
-                }
-                if (parameters.getOffset() == OffsetType.ABSOLUTE) {
-                    // numeric offset provided; check whether x > latest
-                    promise.complete(partitionsOffsets.result().entrySet().stream().collect(Collectors.toMap(
-                        entry -> entry.getKey(),
-                        entry -> {
-                            if (entry.getValue().getOffset() < Long.parseLong(parameters.getValue())) {
-                                log.warnf("Selected offset %s is larger than latest %d", parameters.getValue(), entry.getValue().getOffset());
+                        partitionsToFetchOffset.put(topicPartition, offsetSpec);
+                    });
+
+                    return partitionsToFetchOffset;
+                })
+                .thenCompose(partitionsToFetchOffset ->
+                    ac.listOffsets(partitionsToFetchOffset)
+                        .all()
+                        .toCompletionStage()
+                        .thenApply(partitionsOffsets -> {
+                            if (parameters.getOffset() == OffsetType.ABSOLUTE) {
+                                // numeric offset provided; check whether x > latest
+                                return partitionsOffsets.entrySet()
+                                    .stream()
+                                    .collect(Collectors.toMap(Map.Entry::getKey,
+                                                              entry -> {
+                                                                  long requestedOffset = Long.parseLong(parameters.getValue());
+
+                                                                  if (entry.getValue().offset() < requestedOffset) {
+                                                                      log.warnf("Selected offset %d is larger than latest %d", requestedOffset, entry.getValue().offset());
+                                                                  }
+
+                                                                  return new ListOffsetsResultInfo(requestedOffset,
+                                                                                                   entry.getValue().timestamp(),
+                                                                                                   entry.getValue().leaderEpoch());
+                                                              }));
+                            } else {
+                                return partitionsOffsets.entrySet()
+                                    .stream()
+                                    .collect(Collectors.toMap(Map.Entry::getKey,
+                                                              entry -> new ListOffsetsResultInfo(entry.getValue().offset(),
+                                                                                                 entry.getValue().timestamp(),
+                                                                                                 entry.getValue().leaderEpoch())));
                             }
-                            return new ListOffsetsResultInfo(Long.parseLong(parameters.getValue()), entry.getValue().getTimestamp(), entry.getValue().getLeaderEpoch());
-                        })));
-                } else {
-                    Map<TopicPartition, ListOffsetsResultInfo> kokot = partitionsOffsets.result().entrySet().stream().collect(Collectors.toMap(
-                        entry -> entry.getKey(),
-                        entry -> new ListOffsetsResultInfo(partitionsOffsets.result().get(entry.getKey()).getOffset(), entry.getValue().getTimestamp(), entry.getValue().getLeaderEpoch())));
-                    promise.complete(kokot);
-                }
-            });
-            return promise.future();
-        }).compose(newOffsets -> {
-            // assemble new offsets object
-            Promise<Map<TopicPartition, OffsetAndMetadata>> promise = Promise.promise();
-            ac.listConsumerGroupOffsets(parameters.getGroupId(), list -> {
-                if (list.failed()) {
-                    promise.fail(list.cause());
-                    return;
-                }
-                if (list.result().isEmpty()) {
-                    promise.fail(new AdminServerException(ErrorType.INVALID_REQUEST, "Consumer Group " + parameters.getGroupId() + " does not consume any topics/partitions"));
-                    return;
-                }
-                promise.complete(newOffsets.entrySet().stream().collect(Collectors.toMap(
-                    entry -> entry.getKey(),
-                    entry -> new OffsetAndMetadata(newOffsets.get(entry.getKey()).getOffset(), list.result().get(entry.getKey()) == null ? null : list.result().get(entry.getKey()).getMetadata()))));
-            });
-            return promise.future();
-        }).compose(newOffsets -> {
-            Promise<Void> promise = Promise.promise();
-            ac.alterConsumerGroupOffsets(parameters.getGroupId(), newOffsets, res -> {
-                if (res.failed()) {
-                    promise.fail(res.cause());
-                    return;
-                }
-                promise.complete();
-                log.info("resetting offsets");
-            });
-            return promise.future();
-        }).compose(i -> {
-            Promise<Types.PagedResponse<Types.TopicPartitionResetResult>> promise = Promise.promise();
+                        }))
+                .thenCompose(newOffsets ->
+                    // assemble new offsets object
+                    ac.listConsumerGroupOffsets(parameters.getGroupId())
+                        .partitionsToOffsetAndMetadata()
+                        .toCompletionStage()
+                        .thenApply(list -> {
+                            if (list.isEmpty()) {
+                                throw new AdminServerException(ErrorType.INVALID_REQUEST, "Consumer Group " + parameters.getGroupId() + " does not consume any topics/partitions");
+                            }
 
-            ac.listConsumerGroupOffsets(parameters.getGroupId(), res -> {
-                if (res.failed()) {
-                    promise.fail(res.cause());
-                    return;
-                }
+                            return newOffsets.entrySet()
+                                .stream()
+                                .collect(Collectors.toMap(Map.Entry::getKey,
+                                                          entry -> new OffsetAndMetadata(newOffsets.get(entry.getKey()).offset(),
+                                                                                         list.get(entry.getKey()) == null ? null : list.get(entry.getKey()).metadata())));
+                        }))
+                .thenCompose(newOffsets -> {
+                    log.info("resetting offsets");
+                    return ac.alterConsumerGroupOffsets(parameters.getGroupId(), newOffsets)
+                        .all()
+                        .toCompletionStage();
+                })
+                .thenCompose(nothing -> {
+                    return ac.listConsumerGroupOffsets(parameters.getGroupId())
+                        .partitionsToOffsetAndMetadata()
+                        .toCompletionStage()
+                        .thenApply(results -> {
+                            var result = results
+                                    .entrySet()
+                                    .stream()
+                                    .map(entry -> {
+                                        Types.TopicPartitionResetResult reset = new Types.TopicPartitionResetResult();
+                                        reset.setTopic(entry.getKey().topic());
+                                        reset.setPartition(entry.getKey().partition());
+                                        reset.setOffset(entry.getValue().offset());
+                                        return reset;
+                                    })
+                                    .collect(Collectors.toList());
 
-                var result = res.result()
-                        .entrySet()
-                        .stream()
-                        .map(entry -> {
-                            Types.TopicPartitionResetResult reset = new Types.TopicPartitionResetResult();
-                            reset.setTopic(entry.getKey().getTopic());
-                            reset.setPartition(entry.getKey().getPartition());
-                            reset.setOffset(entry.getValue().getOffset());
-                            return reset;
-                        })
-                        .collect(Collectors.toList());
-
-                promise.complete(Types.PagedResponse.forItems(Types.TopicPartitionResetResult.class, result));
-            });
-            return promise.future();
-        }).onComplete(res -> {
-            if (res.succeeded()) {
-                prom.complete(res.result());
-            } else {
-                prom.fail(res.cause());
-            }
-            ac.close();
-        });
-
-        return prom.future().toCompletionStage();
+                            return Types.PagedResponse.forItems(Types.TopicPartitionResetResult.class, result);
+                        });
+                });
     }
 
-    static Future<Void> validatePartitionsResettable(KafkaAdminClient ac, String groupId, Set<TopicPartition> topicPartitionsToReset) {
+    static CompletionStage<Void> validatePartitionsResettable(Admin ac, String groupId, Set<TopicPartition> topicPartitionsToReset) {
         Map<TopicPartition, List<MemberDescription>> topicPartitions = new ConcurrentHashMap<>();
 
         List<String> requestedTopics = topicPartitionsToReset
                 .stream()
-                .map(TopicPartition::getTopic)
+                .map(TopicPartition::topic)
                 .collect(Collectors.toList());
 
-        Promise<Void> topicDescribe = Promise.promise();
+        final CompletableFuture<Void> topicDescribe;
 
         if (requestedTopics.isEmpty()) {
-            topicDescribe.complete();
+            topicDescribe = CompletableFuture.completedFuture(null);
         } else {
-            ac.describeTopics(requestedTopics)
-                .onSuccess(describedTopics -> {
+            topicDescribe = ac.describeTopics(requestedTopics)
+                .all()
+                .toCompletionStage()
+                .thenAccept(describedTopics -> {
                     describedTopics.entrySet()
                         .stream()
                         .flatMap(entry ->
                             entry.getValue()
-                                .getPartitions()
+                                .partitions()
                                 .stream()
-                                .map(part -> new TopicPartition(entry.getKey(), part.getPartition())))
+                                .map(part -> new TopicPartition(entry.getKey(), part.partition())))
                         .forEach(topicPartition ->
                             topicPartitions.compute(topicPartition, (key, value) -> addTopicPartition(value, null)));
-
-                    topicDescribe.complete();
                 })
-                .onFailure(error -> {
+                .exceptionally(error -> {
                     if (ErrorType.isCausedBy(error, UnknownTopicOrPartitionException.class)) {
-                        topicDescribe.fail(new AdminServerException(ErrorType.TOPIC_PARTITION_INVALID));
-                    } else {
-                        topicDescribe.fail(error);
+                        throw new AdminServerException(ErrorType.TOPIC_PARTITION_INVALID);
                     }
-                });
+                    throw new RuntimeException(error);
+                })
+                .toCompletableFuture();
         }
 
-        Promise<Void> groupDescribe = Promise.promise();
+        CompletableFuture<Void> groupDescribe = ac.describeConsumerGroups(List.of(groupId))
+            .all()
+            .toCompletionStage()
+            .thenApply(groups -> groups.get(groupId))
+            .thenAccept(description -> description.members()
+                   .stream()
+                   .filter(member -> member.clientId() != null)
+                   .flatMap(member -> member.assignment()
+                         .topicPartitions()
+                         .stream()
+                         .map(part -> Map.entry(part, member)))
+                   .forEach(entry ->
+                       topicPartitions.compute(entry.getKey(), (key, value) -> addTopicPartition(value, entry.getValue()))))
+            .toCompletableFuture();
 
-        ac.describeConsumerGroups(List.of(groupId))
-            .onSuccess(descriptions -> {
-                /*
-                 * Find all topic partitions in the group that are actively
-                 * being consumed by a client.
-                 */
-                descriptions.values()
-                    .stream()
-                    .flatMap(description -> description.getMembers().stream())
-                    .filter(member -> member.getClientId() != null)
-                    .flatMap(member ->
-                        member.getAssignment()
-                             .getTopicPartitions()
-                             .stream()
-                             .map(part -> Map.entry(part, member)))
-                    .forEach(entry -> {
-                        MemberDescription member = entry.getValue();
-                        topicPartitions.compute(entry.getKey(), (key, value) -> addTopicPartition(value, member));
-                    });
-
-                groupDescribe.complete();
-            })
-            .onFailure(groupDescribe::fail);
-
-        return CompositeFuture.all(topicDescribe.future(), groupDescribe.future())
-                .map(nothing -> {
+        return CompletableFuture.allOf(topicDescribe, groupDescribe)
+                .thenAccept(nothing ->
                     topicPartitionsToReset.forEach(topicPartition ->
-                        validatePartitionResettable(topicPartitions, topicPartition));
-                    return null;
-                });
+                        validatePartitionResettable(topicPartitions, topicPartition)));
     }
 
     static List<MemberDescription> addTopicPartition(List<MemberDescription> members, MemberDescription newMember) {
@@ -390,8 +331,8 @@ public class ConsumerGroupOperations {
     static void validatePartitionResettable(Map<TopicPartition, List<MemberDescription>> topicClients, TopicPartition topicPartition) {
         if (!topicClients.containsKey(topicPartition)) {
             String message = String.format("Topic %s, partition %d is not valid",
-                                           topicPartition.getTopic(),
-                                           topicPartition.getPartition());
+                                           topicPartition.topic(),
+                                           topicPartition.partition());
             throw new AdminServerException(ErrorType.TOPIC_PARTITION_INVALID, message);
         } else if (!topicClients.get(topicPartition).isEmpty()) {
             /*
@@ -400,38 +341,26 @@ public class ConsumerGroupOperations {
              */
             String clients = topicClients.get(topicPartition)
                 .stream()
-                .map(member -> String.format("{ memberId: %s, clientId: %s }", member.getConsumerId(), member.getClientId()))
+                .map(member -> String.format("{ memberId: %s, clientId: %s }", member.consumerId(), member.clientId()))
                 .collect(Collectors.joining(", "));
             String message = String.format("Topic %s, partition %d has connected clients: [%s]",
-                                           topicPartition.getTopic(),
-                                           topicPartition.getPartition(),
+                                           topicPartition.topic(),
+                                           topicPartition.partition(),
                                            clients);
 
             throw new AdminServerException(ErrorType.GROUP_NOT_EMPTY, message);
         }
     }
 
-    public static CompletionStage<Types.ConsumerGroup> describeGroup(KafkaAdminClient ac, String groupToDescribe, Types.ConsumerGroupDescriptionSortParams orderBy, int partitionFilter) {
-        Promise<Types.ConsumerGroup> prom = Promise.promise();
-
-        fetchDescriptions(ac, List.of(groupToDescribe), MATCH_ALL, partitionFilter, orderBy)
-            .map(groupDescriptions -> groupDescriptions.findFirst().orElse(null))
-            .onComplete(res -> {
-                if (res.failed()) {
-                    prom.fail(res.cause());
-                } else {
-                    Types.ConsumerGroup groupDescription = res.result();
-
-                    if (groupDescription == null || ConsumerGroupState.DEAD.equals(groupDescription.getState())) {
-                        prom.fail(new GroupIdNotFoundException("Group " + groupToDescribe + " does not exist"));
-                    } else {
-                        prom.complete(groupDescription);
-                    }
+    public static CompletionStage<Types.ConsumerGroup> describeGroup(Admin ac, String groupToDescribe, Types.ConsumerGroupDescriptionSortParams orderBy, int partitionFilter) {
+        return fetchDescriptions(ac, List.of(groupToDescribe), MATCH_ALL, partitionFilter, orderBy)
+            .thenApply(groupDescriptions -> groupDescriptions.findFirst().orElse(null))
+            .thenApply(groupDescription -> {
+                if (groupDescription == null || ConsumerGroupState.DEAD.equals(groupDescription.getState())) {
+                    throw new GroupIdNotFoundException("Group " + groupToDescribe + " does not exist");
                 }
-                ac.close();
+                return groupDescription;
             });
-
-        return prom.future().toCompletionStage();
     }
 
     private static List<Types.ConsumerGroup> getConsumerGroupsDescription(Pattern pattern,
@@ -444,26 +373,26 @@ public class ConsumerGroupOperations {
         List<TopicPartition> assignedTopicPartitions = groupOffsets.entrySet()
                 .stream()
                 .map(Map.Entry::getKey)
-                .filter(topicPartition -> pattern.matcher(topicPartition.getTopic()).find())
+                .filter(topicPartition -> pattern.matcher(topicPartition.topic()).find())
                 .collect(Collectors.toList());
 
         return groupDescriptions.stream().map(group -> {
             Types.ConsumerGroup grp = new Types.ConsumerGroup();
             Set<Types.Consumer> members = new HashSet<>();
 
-            if (group.getMembers().isEmpty()) {
+            if (group.members().isEmpty()) {
                 assignedTopicPartitions.forEach(pa -> {
                     Types.Consumer member = getConsumer(groupOffsets, topicOffsets, group, pa);
                     members.add(member);
                 });
             } else {
                 assignedTopicPartitions.forEach(pa -> {
-                    group.getMembers().stream().forEach(mem -> {
-                        if (!mem.getAssignment().getTopicPartitions().isEmpty()) {
+                    group.members().stream().forEach(mem -> {
+                        if (!mem.assignment().topicPartitions().isEmpty()) {
                             Types.Consumer member = getConsumer(groupOffsets, topicOffsets, group, pa);
                             if (memberMatchesPartitionFilter(member, partitionFilter)) {
-                                if (mem.getAssignment().getTopicPartitions().contains(pa)) {
-                                    member.setMemberId(mem.getConsumerId());
+                                if (mem.assignment().topicPartitions().contains(pa)) {
+                                    member.setMemberId(mem.consumerId());
                                 } else {
                                     // unassigned partition
                                     member.setMemberId(null);
@@ -483,10 +412,10 @@ public class ConsumerGroupOperations {
                         } else {
                             // more consumers than topic partitions - consumer is in the group but is not consuming
                             Types.Consumer member = new Types.Consumer();
-                            member.setMemberId(mem.getConsumerId());
+                            member.setMemberId(mem.consumerId());
                             member.setTopic(null);
                             member.setPartition(-1);
-                            member.setGroupId(group.getGroupId());
+                            member.setGroupId(group.groupId());
                             member.setLogEndOffset(0);
                             member.setLag(0);
                             member.setOffset(0);
@@ -501,8 +430,8 @@ public class ConsumerGroupOperations {
             if (!pattern.pattern().equals(MATCH_ALL.pattern()) && members.isEmpty()) {
                 return null;
             }
-            grp.setGroupId(group.getGroupId());
-            grp.setState(group.getState());
+            grp.setGroupId(group.groupId());
+            grp.setState(group.state());
             List<Types.Consumer> sortedList;
 
             ToLongFunction<Types.Consumer> fun;
@@ -578,11 +507,11 @@ public class ConsumerGroupOperations {
             TopicPartition pa) {
 
         Types.Consumer member = new Types.Consumer();
-        member.setTopic(pa.getTopic());
-        member.setPartition(pa.getPartition());
-        member.setGroupId(group.getGroupId());
-        long offset = groupOffsets.get(pa) == null ? 0 : groupOffsets.get(pa).getOffset();
-        long logEndOffset = topicOffsets.get(pa) == null ? 0 : topicOffsets.get(pa).getOffset();
+        member.setTopic(pa.topic());
+        member.setPartition(pa.partition());
+        member.setGroupId(group.groupId());
+        long offset = groupOffsets.get(pa) == null ? 0 : groupOffsets.get(pa).offset();
+        long logEndOffset = topicOffsets.get(pa) == null ? 0 : topicOffsets.get(pa).offset();
         long lag = logEndOffset - offset;
         member.setLag(lag);
         member.setLogEndOffset(logEndOffset);
@@ -612,8 +541,7 @@ public class ConsumerGroupOperations {
      * @param memberOrder consumer group member sorting
      * @return future stream of {@link Types.ConsumerGroupDescription}
      */
-    @SuppressWarnings("rawtypes")
-    static Future<Stream<Types.ConsumerGroup>> fetchDescriptions(KafkaAdminClient ac,
+    static CompletionStage<Stream<Types.ConsumerGroup>> fetchDescriptions(Admin ac,
                                                                      List<String> groupIds,
                                                                      Pattern topicPattern,
                                                                      int partitionFilter,
@@ -622,22 +550,24 @@ public class ConsumerGroupOperations {
         List<ConsumerGroupInfo> consumerGroupInfos = new ArrayList<>(groupIds.size());
 
         return ac.describeConsumerGroups(groupIds)
-            .map(Map::entrySet)
-            .map(descriptions -> descriptions.stream()
-                 // Fetch the offsets for consumer groups
-                 .map(entry -> ac.listConsumerGroupOffsets(entry.getKey()).map(offsets -> new ConsumerGroupInfo(entry.getValue(), offsets)))
-                 .collect(Collectors.<Future>toList()))
-            .compose(CompositeFuture::join)
-            .map(CompositeFuture::<ConsumerGroupInfo>list)
-            .compose(groupInfos -> {
-                consumerGroupInfos.addAll(groupInfos);
-                // Fetch the topic offsets for all partitions in the selected consumer groups
-                return ac.listOffsets(toListLatestOffsetMap(groupInfos));
-            })
-            .map(latestOffsets -> consumerGroupInfos.stream()
-                 .map(e -> getConsumerGroupsDescription(topicPattern, memberOrder, partitionFilter, List.of(e.getDescription()), e.getOffsets(), latestOffsets))
-                 .flatMap(List::stream)
-                 .filter(Objects::nonNull));
+            .all()
+            .toCompletionStage()
+            .thenApply(groups -> groups.entrySet()
+                   .stream()
+                   // Fetch the offsets for consumer groups
+                   .map(entry -> ac.listConsumerGroupOffsets(entry.getKey())
+                        .partitionsToOffsetAndMetadata()
+                        .toCompletionStage()
+                        .thenAccept(offsets -> consumerGroupInfos.add(new ConsumerGroupInfo(entry.getValue(), offsets)))
+                        .toCompletableFuture())
+                   .toArray(CompletableFuture[]::new))
+            .thenCompose(CompletableFuture::allOf)
+            .thenApply(nothing -> toListLatestOffsetMap(consumerGroupInfos))
+            .thenCompose(offsetMap -> ac.listOffsets(offsetMap).all().toCompletionStage())
+            .thenApply(latestOffsets -> consumerGroupInfos.stream()
+                   .map(e -> getConsumerGroupsDescription(topicPattern, memberOrder, partitionFilter, List.of(e.getDescription()), e.getOffsets(), latestOffsets))
+                   .flatMap(List::stream)
+                   .filter(Objects::nonNull));
     }
 
     /**
@@ -659,6 +589,6 @@ public class ConsumerGroupOperations {
             .flatMap(offsets -> offsets.keySet().stream())
             .distinct()
             .filter(Objects::nonNull)
-            .collect(Collectors.toMap(Function.identity(), partition -> OffsetSpec.LATEST));
+            .collect(Collectors.toMap(Function.identity(), p -> OffsetSpec.latest()));
     }
 }
