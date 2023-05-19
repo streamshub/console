@@ -9,9 +9,9 @@ import org.apache.kafka.common.security.auth.SecurityProtocol;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
-import javax.annotation.PostConstruct;
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import jakarta.annotation.PostConstruct;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;

@@ -3,12 +3,12 @@ package org.bf2.admin.kafka.admin.handlers;
 import org.bf2.admin.kafka.admin.model.ErrorType;
 import org.bf2.admin.kafka.admin.model.Types;
 
-import javax.validation.ConstraintViolationException;
-import javax.validation.Path;
-import javax.validation.Path.Node;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.ext.ExceptionMapper;
-import javax.ws.rs.ext.Provider;
+import jakarta.validation.ConstraintViolationException;
+import jakarta.validation.Path;
+import jakarta.validation.Path.Node;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.ext.ExceptionMapper;
+import jakarta.ws.rs.ext.Provider;
 
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;

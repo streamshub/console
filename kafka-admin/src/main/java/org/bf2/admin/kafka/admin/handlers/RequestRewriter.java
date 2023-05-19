@@ -5,8 +5,8 @@ import io.vertx.ext.web.RoutingContext;
 import org.bf2.admin.kafka.admin.HttpMetrics;
 import org.jboss.logging.Logger;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 
 @ApplicationScoped
 public class RequestRewriter {

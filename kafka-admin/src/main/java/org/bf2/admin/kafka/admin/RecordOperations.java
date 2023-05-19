@@ -16,8 +16,8 @@ import org.bf2.admin.kafka.admin.handlers.AdminClientFactory;
 import org.bf2.admin.kafka.admin.model.Types;
 import org.jboss.logging.Logger;
 
-import javax.enterprise.context.RequestScoped;
-import javax.inject.Inject;
+import jakarta.enterprise.context.RequestScoped;
+import jakarta.inject.Inject;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;

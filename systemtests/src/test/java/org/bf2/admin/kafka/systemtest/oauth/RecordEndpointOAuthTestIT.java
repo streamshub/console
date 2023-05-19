@@ -21,8 +21,8 @@ import java.net.URL;
 import java.util.List;
 import java.util.UUID;
 
-import javax.inject.Inject;
-import javax.ws.rs.core.Response.Status;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.core.Response.Status;
 
 import static io.restassured.RestAssured.given;
 import static org.bf2.admin.kafka.systemtest.utils.ErrorTypeMatcher.matchesError;

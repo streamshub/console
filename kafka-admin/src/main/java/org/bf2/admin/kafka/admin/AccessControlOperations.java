@@ -16,9 +16,9 @@ import org.bf2.admin.kafka.admin.model.Types.PagedResponse;
 import org.bf2.admin.kafka.admin.model.Types.SortDirectionEnum;
 import org.jboss.logging.Logger;
 
-import javax.annotation.PostConstruct;
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
+import jakarta.annotation.PostConstruct;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 
 import java.util.ArrayList;
 import java.util.Collection;
