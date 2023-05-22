@@ -1,6 +1,7 @@
 package io.strimzi.kafka.instance;
 
 import java.util.Arrays;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Predicate;
@@ -10,20 +11,20 @@ import jakarta.inject.Inject;
 import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
+import jakarta.ws.rs.PATCH;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.QueryParam;
-import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.Response.Status;
 
-import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
-import org.eclipse.microprofile.openapi.annotations.media.Content;
-import org.eclipse.microprofile.openapi.annotations.media.Schema;
+import org.eclipse.microprofile.openapi.annotations.parameters.RequestBodySchema;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponseSchema;
 
+import io.strimzi.kafka.instance.model.ConfigEntry;
+import io.strimzi.kafka.instance.model.NewPartitions;
 import io.strimzi.kafka.instance.model.NewTopic;
 import io.strimzi.kafka.instance.model.Topic;
 import io.strimzi.kafka.instance.service.TopicService;
@@ -86,9 +87,7 @@ public class TopicsResource {
 
     @Path("{topicName}/configs")
     @GET
-    @APIResponse(responseCode = "200", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(
-                type = SchemaType.OBJECT
-            )))
+    @APIResponseSchema(responseCode = "200", value = ConfigEntry.ConfigEntryMap.class)
     public CompletionStage<Response> describeTopicConfigs(@PathParam("topicName") String topicName) {
         return topicService.describeConfigs(topicName)
                 .thenApply(Response::ok)
@@ -96,4 +95,25 @@ public class TopicsResource {
                 .thenApply(Response.ResponseBuilder::build);
     }
 
+    @Path("{topicName}/configs")
+    @PATCH
+    @RequestBodySchema(ConfigEntry.ConfigEntryMap.class)
+    @APIResponseSchema(responseCode = "200", value = ConfigEntry.ConfigEntryMap.class)
+    public CompletionStage<Response> alterTopicConfigs(@PathParam("topicName") String topicName, Map<String, ConfigEntry> configs) {
+        return topicService.alterConfigs(topicName, configs)
+                .thenApply(Response::ok)
+                .exceptionally(error -> Response.serverError().entity(error.getMessage()))
+                .thenApply(Response.ResponseBuilder::build);
+    }
+
+    @Path("{topicName}/partitions")
+    @PATCH
+    @RequestBodySchema(NewPartitions.class)
+    @APIResponse(responseCode = "204", description = "Partitions successfully created")
+    public CompletionStage<Response> createPartitions(@PathParam("topicName") String topicName, NewPartitions partitions) {
+        return topicService.createPartitions(topicName, partitions)
+                .thenApply(nothing -> Response.noContent())
+                .exceptionally(error -> Response.serverError().entity(error.getMessage()))
+                .thenApply(Response.ResponseBuilder::build);
+    }
 }

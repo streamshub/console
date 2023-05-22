@@ -106,12 +106,12 @@ public class ConfigService {
     Collection<AlterConfigOp> fromMap(Map<String, ConfigEntry> configs) {
         return configs.entrySet()
                 .stream()
-                .map(e -> toKafkaModel(e.getValue()))
+                .map(e -> toKafkaModel(e.getKey(), e.getValue()))
                 .map(entry -> new AlterConfigOp(entry, AlterConfigOp.OpType.SET))
                 .toList();
     }
 
-    org.apache.kafka.clients.admin.ConfigEntry toKafkaModel(ConfigEntry entry) {
-        return new org.apache.kafka.clients.admin.ConfigEntry(entry.getName(), entry.getValue());
+    org.apache.kafka.clients.admin.ConfigEntry toKafkaModel(String key, ConfigEntry entry) {
+        return new org.apache.kafka.clients.admin.ConfigEntry(key, entry.getValue());
     }
 }

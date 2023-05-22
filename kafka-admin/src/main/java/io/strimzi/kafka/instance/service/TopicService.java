@@ -1,5 +1,7 @@
 package io.strimzi.kafka.instance.service;
 
+import static org.apache.kafka.clients.admin.NewPartitions.increaseTo;
+
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
@@ -26,6 +28,7 @@ import org.apache.kafka.common.config.ConfigResource;
 
 import io.strimzi.kafka.instance.model.ConfigEntry;
 import io.strimzi.kafka.instance.model.Either;
+import io.strimzi.kafka.instance.model.NewPartitions;
 import io.strimzi.kafka.instance.model.NewTopic;
 import io.strimzi.kafka.instance.model.Topic;
 
@@ -107,6 +110,29 @@ public class TopicService {
 
     public CompletionStage<Map<String, ConfigEntry>> describeConfigs(String topicName) {
         return configService.describeConfigs(ConfigResource.Type.TOPIC, topicName);
+    }
+
+    public CompletionStage<Map<String, ConfigEntry>> alterConfigs(String topicName, Map<String, ConfigEntry> configs) {
+        return configService.alterConfigs(ConfigResource.Type.TOPIC, topicName, configs);
+    }
+
+    public CompletionStage<Void> createPartitions(String topicName, NewPartitions partitions) {
+        Admin adminClient = clientSupplier.get();
+
+        int totalCount = partitions.getTotalCount();
+        var newAssignments = partitions.getNewAssignments();
+
+        org.apache.kafka.clients.admin.NewPartitions newPartitions;
+
+        if (newAssignments != null) {
+            newPartitions = increaseTo(totalCount, newAssignments);
+        } else {
+            newPartitions = increaseTo(totalCount);
+        }
+
+        return adminClient.createPartitions(Map.of(topicName, newPartitions))
+                .all()
+                .toCompletionStage();
     }
 
     public CompletionStage<Void> deleteTopics(String... topicNames) {

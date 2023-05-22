@@ -2,6 +2,8 @@ package io.strimzi.kafka.instance.model;
 
 import java.util.Optional;
 
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
@@ -9,14 +11,30 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 @JsonInclude(Include.NON_NULL)
 public class ConfigEntry {
 
+    public static class ConfigEntryMap extends java.util.HashMap<String, ConfigEntry> {
+        private static final long serialVersionUID = 1L;
+        private ConfigEntryMap() {
+        }
+    }
+
     @JsonIgnore
     private String name;
+
     private String value;
 
+    @Schema(readOnly = true)
     private String source;
+
+    @Schema(readOnly = true)
     private boolean sensitive;
+
+    @Schema(readOnly = true)
     private boolean readOnly;
+
+    @Schema(readOnly = true)
     private String type;
+
+    @Schema(readOnly = true)
     private String documentation;
 
     public static ConfigEntry fromKafkaModel(org.apache.kafka.clients.admin.ConfigEntry kafkaEntry) {
