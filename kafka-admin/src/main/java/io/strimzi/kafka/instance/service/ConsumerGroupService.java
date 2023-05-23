@@ -1,5 +1,6 @@
 package io.strimzi.kafka.instance.service;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -53,21 +54,36 @@ public class ConsumerGroupService {
                 throw new CompletionException(result.getAlternate());
             })
             .thenCompose(group -> {
-                CompletableFuture<ConsumerGroup> promise = new CompletableFuture<>();
-
                 if (includes.contains("offsets")) {
-                    adminClient.listConsumerGroupOffsets(groupId)
+                    return adminClient.listConsumerGroupOffsets(groupId)
                         .partitionsToOffsetAndMetadata()
-                        .whenComplete((offsets, thrown) -> {
-                            addOffsets(group, offsets, thrown);
-                            promise.complete(group);
-                        });
+                        .whenComplete((offsets, thrown) -> addOffsets(group, offsets, thrown))
+                        .thenApply(offsets -> group)
+                        .toCompletionStage();
                 } else {
-                    promise.complete(group);
+                    return CompletableFuture.completedStage(group);
                 }
-
-                return promise;
             });
+    }
+
+    public CompletionStage<Map<String, Error>> deleteConsumerGroups(String... groupIds) {
+        Admin adminClient = clientSupplier.get();
+        Map<String, Error> errors = new HashMap<>();
+
+        var pendingDeletes = adminClient.deleteConsumerGroups(Arrays.asList(groupIds))
+                .deletedGroups()
+                .entrySet()
+                .stream()
+                .map(entry -> entry.getValue().whenComplete((nothing, thrown) -> {
+                    if (thrown != null) {
+                        errors.put(entry.getKey(), new Error("Unable to delete consumer group", thrown.getMessage(), thrown));
+                    }
+                }))
+                .map(KafkaFuture::toCompletionStage)
+                .map(CompletionStage::toCompletableFuture)
+                .toArray(CompletableFuture[]::new);
+
+        return CompletableFuture.allOf(pendingDeletes).thenApply(nothing -> errors);
     }
 
     CompletionStage<List<ConsumerGroup>> augmentList(Admin adminClient, List<ConsumerGroup> list, List<String> includes) {
@@ -77,30 +93,8 @@ public class ConsumerGroupService {
         if (includes.contains("members") || includes.contains("coordinator") || includes.contains("authorizedOperations")) {
             describeConsumerGroups(adminClient, groups.keySet())
                 .thenApply(descriptions -> {
-                    descriptions.forEach((name, either) -> {
-                        if (either.isPrimaryEmpty()) {
-                            Throwable thrown = either.getAlternate();
-                            Error error = new Error("Unable to describe consumer group", thrown.getMessage(), thrown);
-                            groups.get(name).setErrors(List.of(error));
-                        } else {
-                            ConsumerGroup listedGroup = groups.get(name);
-                            ConsumerGroup describedGroup = either.getPrimary();
-
-                            if (includes.contains("members")) {
-                                listedGroup.setMembers(describedGroup.getMembers());
-                            }
-
-                            if (includes.contains("coordinator")) {
-                                listedGroup.setCoordinator(describedGroup.getCoordinator());
-                            }
-
-                            if (includes.contains("authorizedOperations")) {
-                                listedGroup.setAuthorizedOperations(describedGroup.getAuthorizedOperations());
-                            }
-                        }
-                    });
-                    describePromise.complete(null);
-                    return true; // Match `completeExceptionally`
+                    descriptions.forEach((name, either) -> mergeDescriptions(groups.get(name), includes, either));
+                    return describePromise.complete(null);
                 })
                 .exceptionally(describePromise::completeExceptionally);
         } else {
@@ -129,6 +123,28 @@ public class ConsumerGroupService {
         }
 
         return CompletableFuture.allOf(describePromise, offsetsPromise).thenApply(nothing -> list);
+    }
+
+    void mergeDescriptions(ConsumerGroup group, List<String> includes, Either<ConsumerGroup, Throwable> description) {
+        if (description.isPrimaryEmpty()) {
+            Throwable thrown = description.getAlternate();
+            Error error = new Error("Unable to describe consumer group", thrown.getMessage(), thrown);
+            group.setErrors(List.of(error));
+        } else {
+            ConsumerGroup describedGroup = description.getPrimary();
+
+            if (includes.contains("members")) {
+                group.setMembers(describedGroup.getMembers());
+            }
+
+            if (includes.contains("coordinator")) {
+                group.setCoordinator(describedGroup.getCoordinator());
+            }
+
+            if (includes.contains("authorizedOperations")) {
+                group.setAuthorizedOperations(describedGroup.getAuthorizedOperations());
+            }
+        }
     }
 
     void addOffsets(ConsumerGroup group,

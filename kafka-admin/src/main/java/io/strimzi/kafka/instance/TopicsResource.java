@@ -44,7 +44,7 @@ public class TopicsResource {
     @DELETE
     public CompletionStage<Response> deleteTopic(@PathParam("topicName") String topicName) {
         return topicService.deleteTopics(topicName)
-                .thenApply(nothing -> Response.noContent())
+                .thenApply(Response::ok)
                 .exceptionally(error -> Response.serverError().entity(error.getMessage()))
                 .thenApply(Response.ResponseBuilder::build);
     }

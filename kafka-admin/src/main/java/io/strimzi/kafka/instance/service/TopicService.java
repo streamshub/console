@@ -5,6 +5,7 @@ import static org.apache.kafka.clients.admin.NewPartitions.increaseTo;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,6 +28,7 @@ import org.apache.kafka.common.config.ConfigResource;
 
 import io.strimzi.kafka.instance.model.ConfigEntry;
 import io.strimzi.kafka.instance.model.Either;
+import io.strimzi.kafka.instance.model.Error;
 import io.strimzi.kafka.instance.model.NewPartitions;
 import io.strimzi.kafka.instance.model.NewTopic;
 import io.strimzi.kafka.instance.model.Topic;
@@ -103,6 +105,10 @@ public class TopicService {
                     promise.complete(topic);
                 }
 
+                if (includes.contains("offsets")) {
+                    // TODO
+                }
+
                 return promise;
             });
     }
@@ -134,24 +140,31 @@ public class TopicService {
                 .toCompletionStage();
     }
 
-    public CompletionStage<Void> deleteTopics(String... topicNames) {
+    public CompletionStage<Map<String, Error>> deleteTopics(String... topicNames) {
         Admin adminClient = clientSupplier.get();
+        Map<String, Error> errors = new HashMap<>();
 
         var pendingDeletes = adminClient.deleteTopics(Arrays.asList(topicNames))
                 .topicNameValues()
-                .values()
+                .entrySet()
                 .stream()
+                .map(entry -> entry.getValue().whenComplete((nothing, thrown) -> {
+                    if (thrown != null) {
+                        errors.put(entry.getKey(), new Error("Unable to delete topic", thrown.getMessage(), thrown));
+                    }
+                }))
                 .map(KafkaFuture::toCompletionStage)
                 .map(CompletionStage::toCompletableFuture)
                 .toArray(CompletableFuture[]::new);
 
-        return CompletableFuture.allOf(pendingDeletes);
+        return CompletableFuture.allOf(pendingDeletes).thenApply(nothing -> errors);
     }
 
     CompletionStage<List<Topic>> augmentList(Admin adminClient, List<Topic> list, List<String> includes) {
         Map<String, Topic> topics = list.stream().collect(Collectors.toMap(Topic::getName, Function.identity()));
         CompletableFuture<Void> configPromise = maybeDescribeConfigs(adminClient, topics, includes);
         CompletableFuture<Void> describePromise = maybeDescribeTopics(adminClient, topics, includes);
+        // TODO: maybeListOffsets - only if `includes` contains `partitions`
 
         return CompletableFuture.allOf(configPromise, describePromise).thenApply(nothing -> list);
     }
