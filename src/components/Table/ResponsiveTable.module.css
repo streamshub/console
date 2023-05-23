@@ -1,0 +1,3 @@
+tr.deleted > td {
+    color: var(--pf-global--Color--200);
+}

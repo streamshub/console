@@ -1,0 +1,5 @@
+@import '@patternfly/react-core/dist/styles/base.css';
+
+html, body, #__next {
+    height: 100%;
+}
