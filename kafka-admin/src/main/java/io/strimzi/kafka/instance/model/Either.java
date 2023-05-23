@@ -13,9 +13,17 @@ public class Either<P, A> {
     Optional<P> primary;
     A alternate;
 
-    Either(P primary, A alternate) {
-        this.primary = Optional.ofNullable(primary);
+    Either(Optional<P> primary, A alternate) {
+        this.primary = primary;
         this.alternate = alternate;
+    }
+
+    Either(P primary, A alternate) {
+        this(Optional.ofNullable(primary), alternate);
+    }
+
+    public static <P, A> Either<P, A> of(Optional<P> primary, A alternate) {
+        return new Either<>(primary, alternate);
     }
 
     public static <P, A> Either<P, A> of(P primary) {

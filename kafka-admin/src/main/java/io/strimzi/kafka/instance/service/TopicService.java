@@ -9,7 +9,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
@@ -66,18 +65,18 @@ public class TopicService {
                 .toCompletionStage();
     }
 
-    public CompletionStage<List<Topic>> listTopics(boolean listInternal, Set<String> includes) {
+    public CompletionStage<List<Topic>> listTopics(boolean listInternal, List<String> includes) {
         Admin adminClient = clientSupplier.get();
 
         return adminClient.listTopics(new ListTopicsOptions().listInternal(listInternal))
                 .listings()
                 .thenApply(list -> list.stream().map(Topic::fromTopicListing).toList())
                 .toCompletionStage()
-                .thenCompose(list -> augmentTopicList(adminClient, list, includes))
+                .thenCompose(list -> augmentList(adminClient, list, includes))
                 .thenApply(list -> list.stream().sorted(Comparator.comparing(Topic::getName)).toList());
     }
 
-    public CompletionStage<Topic> describeTopic(String topicName, Set<String> includes) {
+    public CompletionStage<Topic> describeTopic(String topicName, List<String> includes) {
         Admin adminClient = clientSupplier.get();
 
         return describeTopics(adminClient, List.of(topicName))
@@ -149,24 +148,36 @@ public class TopicService {
         return CompletableFuture.allOf(pendingDeletes);
     }
 
-    CompletionStage<List<Topic>> augmentTopicList(Admin adminClient, List<Topic> list, Set<String> includes) {
+    CompletionStage<List<Topic>> augmentList(Admin adminClient, List<Topic> list, List<String> includes) {
         Map<String, Topic> topics = list.stream().collect(Collectors.toMap(Topic::getName, Function.identity()));
-        CompletableFuture<Void> configPromise = new CompletableFuture<>();
+        CompletableFuture<Void> configPromise = maybeDescribeConfigs(adminClient, topics, includes);
+        CompletableFuture<Void> describePromise = maybeDescribeTopics(adminClient, topics, includes);
+
+        return CompletableFuture.allOf(configPromise, describePromise).thenApply(nothing -> list);
+    }
+
+    CompletableFuture<Void> maybeDescribeConfigs(Admin adminClient, Map<String, Topic> topics, List<String> includes) {
+        CompletableFuture<Void> promise = new CompletableFuture<>();
 
         if (includes.contains("configs")) {
             List<ConfigResource> keys = topics.keySet().stream().map(name -> new ConfigResource(ConfigResource.Type.TOPIC, name)).toList();
+
             configService.describeConfigs(adminClient, keys)
                 .thenApply(configs -> {
                     configs.forEach((name, either) -> topics.get(name).addConfigs(either));
-                    configPromise.complete(null);
+                    promise.complete(null);
                     return true; // Match `completeExceptionally`
                 })
-                .exceptionally(configPromise::completeExceptionally);
+                .exceptionally(promise::completeExceptionally);
         } else {
-            configPromise.complete(null);
+            promise.complete(null);
         }
 
-        CompletableFuture<Void> describePromise = new CompletableFuture<>();
+        return promise;
+    }
+
+    CompletableFuture<Void> maybeDescribeTopics(Admin adminClient, Map<String, Topic> topics, List<String> includes) {
+        CompletableFuture<Void> promise = new CompletableFuture<>();
 
         if (includes.contains("partitions") || includes.contains("authorizedOperations")) {
             describeTopics(adminClient, topics.keySet())
@@ -179,15 +190,15 @@ public class TopicService {
                             topics.get(name).addAuthorizedOperations(either);
                         }
                     });
-                    describePromise.complete(null);
+                    promise.complete(null);
                     return true; // Match `completeExceptionally`
                 })
-                .exceptionally(describePromise::completeExceptionally);
+                .exceptionally(promise::completeExceptionally);
         } else {
-            describePromise.complete(null);
+            promise.complete(null);
         }
 
-        return CompletableFuture.allOf(configPromise, describePromise).thenApply(nothing -> list);
+        return promise;
     }
 
     CompletionStage<Map<String, Either<Topic, Throwable>>> describeTopics(Admin adminClient, Collection<String> topicNames) {

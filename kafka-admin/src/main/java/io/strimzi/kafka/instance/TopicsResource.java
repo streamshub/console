@@ -1,11 +1,8 @@
 package io.strimzi.kafka.instance;
 
-import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.CompletionStage;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 import jakarta.inject.Inject;
 import jakarta.ws.rs.DELETE;
@@ -55,12 +52,8 @@ public class TopicsResource {
     @GET
     @APIResponseSchema(responseCode = "200", value = Topic[].class)
     public CompletionStage<Response> listTopics(
-                    @QueryParam("include") @DefaultValue("") String include,
+                    @QueryParam("include") @DefaultValue("") List<String> includes,
                     @QueryParam("listInternal") @DefaultValue("false") boolean listInternal) {
-
-        Set<String> includes = Arrays.stream(include.split(","))
-                .filter(Predicate.not(String::isBlank))
-                .collect(Collectors.toSet());
 
         return topicService.listTopics(listInternal, includes)
                 .thenApply(Response::ok)
@@ -73,11 +66,7 @@ public class TopicsResource {
     @APIResponseSchema(responseCode = "200", value = Topic[].class)
     public CompletionStage<Response> describeTopic(
                     @PathParam("topicName") String topicName,
-                    @QueryParam("include") @DefaultValue("") String include) {
-
-        Set<String> includes = Arrays.stream(include.split(","))
-                .filter(Predicate.not(String::isBlank))
-                .collect(Collectors.toSet());
+                    @QueryParam("include") @DefaultValue("") List<String> includes) {
 
         return topicService.describeTopic(topicName, includes)
                 .thenApply(Response::ok)

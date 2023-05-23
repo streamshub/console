@@ -46,7 +46,7 @@ public class Topic {
 
         topic.authorizedOperations = Either.of(Optional.ofNullable(description.authorizedOperations())
                 .map(Collection::stream)
-                .map(ops -> ops.map(Object::toString).toList())
+                .map(ops -> ops.map(Enum::name).toList())
                 .orElse(null));
 
         return topic;
