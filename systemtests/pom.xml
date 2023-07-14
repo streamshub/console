@@ -10,10 +10,10 @@
 
     <properties>
         <hamcrest.version>2.1</hamcrest.version>
-        <strimzi-test-container.version>0.102.0</strimzi-test-container.version>
+        <strimzi-test-container.version>0.104.0</strimzi-test-container.version>
         <!-- System test image dependencies -->
-        <keycloak.image>quay.io/keycloak/keycloak:20.0.3</keycloak.image>
-        <strimzi-kafka.tag>quay.io/strimzi/kafka:0.30.0-kafka-3.2.0</strimzi-kafka.tag>
+        <keycloak.image>quay.io/keycloak/keycloak:21.1</keycloak.image>
+        <strimzi-kafka.tag>quay.io/strimzi/kafka:0.35.1-kafka-3.4.0</strimzi-kafka.tag>
     </properties>
 
     <build>
