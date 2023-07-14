@@ -975,6 +975,155 @@ paths:
           $ref: '#/components/responses/ServerError'
       security:
       - {}
+  /api/v2/brokers/{nodeId}/configs:
+    get:
+      parameters:
+      - name: nodeId
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConfigEntryMap'
+  /api/v2/cluster:
+    get:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cluster'
+  /api/v2/topics:
+    get:
+      parameters:
+      - name: include
+        in: query
+        schema:
+          default: ""
+          type: array
+          items:
+            type: string
+      - name: listInternal
+        in: query
+        schema:
+          default: false
+          type: boolean
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Topic1'
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewTopic'
+      responses:
+        "204":
+          description: No Content
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NewTopic'
+  /api/v2/topics/{topicName}:
+    get:
+      parameters:
+      - name: topicName
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: include
+        in: query
+        schema:
+          default: ""
+          type: array
+          items:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Topic1'
+    delete:
+      parameters:
+      - name: topicName
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+  /api/v2/topics/{topicName}/configs:
+    get:
+      parameters:
+      - name: topicName
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConfigEntryMap'
+    patch:
+      parameters:
+      - name: topicName
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConfigEntryMap'
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConfigEntryMap'
+  /api/v2/topics/{topicName}/partitions:
+    patch:
+      parameters:
+      - name: topicName
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewPartitions'
+      responses:
+        "204":
+          description: Partitions successfully created
 components:
   schemas:
     AclBinding:
@@ -1102,6 +1251,23 @@ components:
       - CLUSTER
       - TRANSACTIONAL_ID
       type: string
+    Cluster:
+      type: object
+      properties:
+        kind:
+          type: string
+        clusterId:
+          type: string
+        nodes:
+          type: array
+          items:
+            $ref: '#/components/schemas/Node1'
+        controller:
+          $ref: '#/components/schemas/Node1'
+        authorizedOperations:
+          type: array
+          items:
+            type: string
     ConfigEntry:
       description: Key value pair indicating possible configuration options for a
         topic.
@@ -1122,6 +1288,8 @@ components:
       example:
         key: min.insync.replicas
         value: "1"
+    ConfigEntryMap:
+      $ref: '#/components/schemas/ConfigEntryMap'
     Consumer:
       description: A Kafka consumer is responsible for reading records from one or
         more topics and one or more partitions of a topic.
@@ -1324,6 +1492,48 @@ components:
       - DEAD
       - EMPTY
       type: string
+    EitherListStringError:
+      type: object
+      properties:
+        primary:
+          type: object
+          nullable: true
+        alternate:
+          $ref: '#/components/schemas/Error1'
+        value:
+          type: object
+        primaryPresent:
+          type: boolean
+        primaryEmpty:
+          type: boolean
+    EitherListTopicPartitionInfoError:
+      type: object
+      properties:
+        primary:
+          type: object
+          nullable: true
+        alternate:
+          $ref: '#/components/schemas/Error1'
+        value:
+          type: object
+        primaryPresent:
+          type: boolean
+        primaryEmpty:
+          type: boolean
+    EitherMapStringConfigEntryError:
+      type: object
+      properties:
+        primary:
+          type: object
+          nullable: true
+        alternate:
+          $ref: '#/components/schemas/Error1'
+        value:
+          type: object
+        primaryPresent:
+          type: boolean
+        primaryEmpty:
+          type: boolean
     Error:
       allOf:
       - $ref: '#/components/schemas/ObjectReference'
@@ -1347,6 +1557,23 @@ components:
           class:
             type: string
             deprecated: true
+    Error1:
+      type: object
+      properties:
+        kind:
+          type: string
+        id:
+          type: string
+        status:
+          type: string
+        code:
+          type: string
+        title:
+          type: string
+        detail:
+          type: string
+        source:
+          $ref: '#/components/schemas/ErrorSource'
     ErrorList:
       allOf:
       - $ref: '#/components/schemas/List'
@@ -1363,6 +1590,15 @@ components:
             format: int32
             description: Total number of errors returned in this request
             type: integer
+    ErrorSource:
+      type: object
+      properties:
+        pointer:
+          type: string
+        parameter:
+          type: string
+        header:
+          type: string
     List:
       required:
       - total
@@ -1402,6 +1638,42 @@ components:
             description: Total number of entries in the full result set
             type: integer
             deprecated: true
+    NewPartitions:
+      type: object
+      properties:
+        totalCount:
+          format: int32
+          type: integer
+        newAssignments:
+          type: array
+          items:
+            type: array
+            items:
+              format: int32
+              type: integer
+    NewTopic:
+      type: object
+      properties:
+        name:
+          type: string
+        topicId:
+          type: string
+        numPartitions:
+          format: int32
+          type: integer
+        replicationFactor:
+          type: integer
+        replicasAssignments:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              format: int32
+              type: integer
+        configs:
+          type: object
+          additionalProperties:
+            type: string
     NewTopicInput:
       description: Input object to create a new topic.
       required:
@@ -1431,6 +1703,19 @@ components:
         id:
           format: int32
           type: integer
+    Node1:
+      type: object
+      properties:
+        id:
+          format: int32
+          type: integer
+        host:
+          type: string
+        port:
+          format: int32
+          type: integer
+        rack:
+          type: string
     ObjectReference:
       type: object
       properties:
@@ -1619,6 +1904,23 @@ components:
           - id: 1
           leader:
             id: 1
+    Topic1:
+      type: object
+      properties:
+        kind:
+          type: string
+        name:
+          type: string
+        internal:
+          type: boolean
+        topicId:
+          type: string
+        partitions:
+          $ref: '#/components/schemas/EitherListTopicPartitionInfoError'
+        authorizedOperations:
+          $ref: '#/components/schemas/EitherListStringError'
+        configs:
+          $ref: '#/components/schemas/EitherMapStringConfigEntryError'
     TopicOrderKey:
       enum:
       - name
