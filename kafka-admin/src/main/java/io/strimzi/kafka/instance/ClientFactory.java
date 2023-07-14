@@ -29,7 +29,10 @@ public class ClientFactory {
             + "required "
             + "username=\"%s\" "
             + "password=\"%s\";";
-    private static final String SASL_OAUTH_CONFIG_TEMPLATE = "org.apache.kafka.common.security.oauthbearer.OAuthBearerLoginModule required oauth.access.token=\"%s\";";
+
+    private static final String SASL_OAUTH_CONFIG_TEMPLATE = "org.apache.kafka.common.security.oauthbearer.OAuthBearerLoginModule "
+            + "required "
+            + "oauth.access.token=\"%s\";";
 
     @Inject
     Logger log;
@@ -48,7 +51,7 @@ public class ClientFactory {
     boolean oauthEnabled;
 
     @Inject
-    @ConfigProperty(name = "io.strimzi.kafka.instance-api.basic", defaultValue = "true")
+    @ConfigProperty(name = "io.strimzi.kafka.instance-api.basic", defaultValue = "false")
     boolean basicEnabled;
 
     @Produces
