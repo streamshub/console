@@ -51,7 +51,7 @@ public class OASModelFilter implements OASFilter {
     public void filterOpenAPI(OpenAPI openAPI) {
         Config config = ConfigProvider.getConfig();
 
-        if (config.getOptionalValue(KafkaAdminConfigRetriever.OAUTH_ENABLED, Boolean.class).orElse(true)) {
+        if (config.getOptionalValue(KafkaAdminConfigRetriever.OAUTH_ENABLED, Boolean.class).orElse(false)) {
             Optional<String> tokenUrl = config.getOptionalValue(KafkaAdminConfigRetriever.OAUTH_TOKEN_ENDPOINT_URI, String.class);
 
             openAPI.getComponents()

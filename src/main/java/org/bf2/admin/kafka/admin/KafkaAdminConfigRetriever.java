@@ -64,7 +64,7 @@ public class KafkaAdminConfigRetriever {
     boolean basicEnabled;
 
     @Inject
-    @ConfigProperty(name = OAUTH_ENABLED, defaultValue = "true")
+    @ConfigProperty(name = OAUTH_ENABLED, defaultValue = "false")
     boolean oauthEnabled;
 
     @Inject
