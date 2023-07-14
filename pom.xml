@@ -1,0 +1,272 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>org.bf2</groupId>
+    <artifactId>kafka-admin-api</artifactId>
+    <packaging>pom</packaging>
+    <version>0.14.1-SNAPSHOT</version>
+
+    <modules>
+        <module>kafka-admin</module>
+        <module>systemtests</module>
+    </modules>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+        <maven.compiler.target>11</maven.compiler.target>
+        <maven.compiler.source>11</maven.compiler.source>
+
+        <!-- Container image properties for systemtests -->
+        <docker.registry>localhost</docker.registry>
+        <docker.group>bf2</docker.group>
+        <docker.tag>latest</docker.tag>
+        <docker.push>false</docker.push>
+
+        <!-- Dependencies -->
+        <quarkus.version>2.13.7.Final</quarkus.version>
+        <jandex-maven-plugin.version>1.2.1</jandex-maven-plugin.version>
+        <strimzi-oauth.version>0.10.0</strimzi-oauth.version>
+        <smallrye.jwt.version>3.5.3</smallrye.jwt.version>
+        <hamcrest.version>2.1</hamcrest.version>
+
+        <!-- Plugin Versions -->
+        <maven.compiler.version>3.9.0</maven.compiler.version>
+        <maven.dependency.version>3.1.2</maven.dependency.version>
+        <maven.checkstyle.version>3.1.2</maven.checkstyle.version>
+        <spotbugs.version>4.0.3</spotbugs.version>
+        <surefire-plugin.version>3.0.0-M5</surefire-plugin.version>
+        <version.jacoco.plugin>0.8.8</version.jacoco.plugin>
+
+        <!-- Sonar settings -->
+        <sonar.host.url>https://sonarcloud.io</sonar.host.url>
+        <sonar.organization>bf2fc6cc711aee1a0c2a</sonar.organization>
+        <sonar.coverage.jacoco.xmlReportPaths>
+            ${project.basedir}/../systemtests/target/site/jacoco-aggregate/jacoco.xml,
+            ${project.basedir}/systemtests/target/site/jacoco-aggregate/jacoco.xml
+        </sonar.coverage.jacoco.xmlReportPaths>
+    </properties>
+
+    <scm>
+        <connection>scm:git:git://github.com/bf2fc6cc711aee1a0c2a/kafka-admin-api.git</connection>
+        <developerConnection>scm:git:git@github.com:bf2fc6cc711aee1a0c2a/kafka-admin-api.git</developerConnection>
+        <tag>HEAD</tag>
+    </scm>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-bom</artifactId>
+                <version>${quarkus.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.kafka</groupId>
+                <artifactId>kafka-clients</artifactId>
+                <version>3.2.1</version>
+            </dependency>
+            <dependency>
+                <groupId>org.bf2</groupId>
+                <artifactId>kafka-admin</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.strimzi</groupId>
+                <artifactId>kafka-oauth-client</artifactId>
+                <version>${strimzi-oauth.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.strimzi</groupId>
+                <artifactId>kafka-oauth-common</artifactId>
+                <version>${strimzi-oauth.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.smallrye</groupId>
+                <artifactId>smallrye-jwt</artifactId>
+                <version>${smallrye.jwt.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <version>${maven.compiler.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.jacoco</groupId>
+                    <artifactId>jacoco-maven-plugin</artifactId>
+                    <version>${version.jacoco.plugin}</version>
+                    <configuration>
+                        <propertyName>jacocoArgLine</propertyName>
+                        <append>true</append>
+                        <excludes>
+                            <exclude>META-INF/**</exclude>
+                        </excludes>
+                    </configuration>
+                    <executions>
+                        <execution>
+                            <id>prepare-agent</id>
+                            <goals>
+                                <goal>prepare-agent</goal>
+                            </goals>
+                            <phase>generate-test-resources</phase>
+                        </execution>
+                    </executions>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+        <plugins>
+            <plugin>
+                <groupId>org.jboss.jandex</groupId>
+                <artifactId>jandex-maven-plugin</artifactId>
+                <version>${jandex-maven-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>make-index</id>
+                        <goals>
+                            <goal>jandex</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-maven-plugin</artifactId>
+                <version>${quarkus.version}</version>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <version>${maven.dependency.version}</version>
+                <executions>
+                    <execution>
+                        <id>analyze</id>
+                        <goals>
+                            <goal>analyze-only</goal>
+                        </goals>
+                        <configuration>
+                            <failOnWarning>true</failOnWarning>
+                            <ignoredDependencies>
+                                <ignoredDependency>io.quarkus:quarkus-container-image-docker</ignoredDependency>
+                                <ignoredDependency>io.quarkus:quarkus-container-image-jib</ignoredDependency>
+                                <ignoredDependency>io.quarkus:quarkus-hibernate-validator</ignoredDependency>
+                                <ignoredDependency>io.quarkus:quarkus-kafka-client</ignoredDependency>
+                                <ignoredDependency>io.quarkus:quarkus-micrometer-registry-prometheus</ignoredDependency>
+                                <ignoredDependency>io.quarkus:quarkus-smallrye-health</ignoredDependency>
+                                <ignoredDependency>io.quarkus:quarkus-smallrye-jwt</ignoredDependency>
+                                <ignoredDependency>io.quarkus:quarkus-smallrye-openapi</ignoredDependency>
+                                <ignoredDependency>io.quarkus:quarkus-resteasy-reactive</ignoredDependency>
+                                <ignoredDependency>io.quarkus:quarkus-resteasy-reactive-jackson</ignoredDependency>
+                                <ignoredDependency>io.quarkus:quarkus-vertx</ignoredDependency>
+                                <ignoredDependency>io.strimzi:kafka-oauth-client</ignoredDependency>
+                                <ignoredDependency>io.vertx:vertx-core</ignoredDependency>
+                                <ignoredDependency>org.apache.logging.log4j:log4j-api</ignoredDependency>
+                                <ignoredDependency>org.eclipse.microprofile.config:microprofile-config-api</ignoredDependency>
+                                <ignoredDependency>org.eclipse.microprofile.jwt:microprofile-jwt-auth-api</ignoredDependency>
+                                <ignoredDependency>org.eclipse.microprofile.openapi:microprofile-openapi-api</ignoredDependency>
+                                <ignoredDependency>org.jboss.logmanager:jboss-logmanager-embedded</ignoredDependency>
+                                <ignoredDependency>org.jboss.logmanager:log4j2-jboss-logmanager</ignoredDependency>
+                                <ignoredDependency>org.jboss.spec.javax.ws.rs:jboss-jaxrs-api_2.1_spec</ignoredDependency>
+                                <ignoredDependency>org.jboss.spec.javax.ws.rs:jboss-jaxrs-api_2.1_spec</ignoredDependency>
+                                <ignoredDependency>org.junit.jupiter</ignoredDependency>
+                                <!-- Dependencies referenced by temporary class: org.bf2.admin.security.TrustedSSOCallerPrincipalFactoryProducer
+                                <ignoredDependency>io.smallrye:smallrye-jwt</ignoredDependency>
+                                <ignoredDependency>org.bitbucket.b_c:jose4j</ignoredDependency>-->
+                                <!-- Oauth kafka test dependencies -->
+                                <ignoredDependency>io.strimzi:kafka-oauth-common</ignoredDependency>
+                                <ignoredDependency>io.strimzi:kafka-oauth-server</ignoredDependency>
+                                <ignoredDependency>io.strimzi:kafka-oauth-server-plain</ignoredDependency>
+                                <ignoredDependency>io.strimzi:kafka-oauth-keycloak-authorizer</ignoredDependency>
+                                <ignoredDependency>org.keycloak:keycloak-core</ignoredDependency>
+                                <ignoredDependency>org.keycloak:keycloak-common</ignoredDependency>
+                                <ignoredDependency>org.bouncycastle:bcprov-jdk15on</ignoredDependency>
+                                <ignoredDependency>com.jayway.jsonpath:json-path</ignoredDependency>
+                            </ignoredDependencies>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-checkstyle-plugin</artifactId>
+                <version>${maven.checkstyle.version}</version>
+                <dependencies>
+                    <dependency>
+                        <groupId>com.puppycrawl.tools</groupId>
+                        <artifactId>checkstyle</artifactId>
+                        <version>9.3</version>
+                    </dependency>
+                </dependencies>
+                <executions>
+                    <execution>
+                        <id>validate</id>
+                        <phase>validate</phase>
+                        <configuration>
+                            <configLocation>.checkstyle/checkstyle.xml</configLocation>
+                            <headerLocation>.checkstyle/java.header</headerLocation>
+                            <suppressionsLocation>.checkstyle/suppressions.xml</suppressionsLocation>
+                            <includeTestSourceDirectory>true</includeTestSourceDirectory>
+                            <encoding>UTF-8</encoding>
+                            <consoleOutput>true</consoleOutput>
+                            <failsOnError>true</failsOnError>
+                        </configuration>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>com.github.spotbugs</groupId>
+                <artifactId>spotbugs-maven-plugin</artifactId>
+                <version>4.0.0</version>
+                <dependencies>
+                    <!-- overwrite dependency on spotbugs if you want to specify the version of˓→spotbugs -->
+                    <dependency>
+                        <groupId>com.github.spotbugs</groupId>
+                        <artifactId>spotbugs</artifactId>
+                        <version>${spotbugs.version}</version>
+                    </dependency>
+                </dependencies>
+                <configuration>
+                    <effort>Max</effort>
+                    <!-- Reports all bugs (other values are medium and max) -->
+                    <threshold>Low</threshold>
+                    <!-- Produces XML report -->
+                    <xmlOutput>true</xmlOutput>
+                    <!-- Configures the directory in which the XML report is created -->
+                    <spotbugsXmlOutputDirectory>${project.build.directory}/spotbugs</spotbugsXmlOutputDirectory>
+                    <!-- Configures the file for excluding warnings -->
+                    <excludeFilterFile>${project.basedir}/../.spotbugs/spotbugs-exclude.xml</excludeFilterFile>
+                </configuration>
+            </plugin>
+            <plugin>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>${surefire-plugin.version}</version>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-release-plugin</artifactId>
+                <version>2.5.3</version>
+                <configuration>
+                    <autoVersionSubmodules>true</autoVersionSubmodules>
+                    <tagNameFormat>@{project.version}</tagNameFormat>
+                    <preparationGoals>verify</preparationGoals>
+                    <pushChanges>false</pushChanges>
+                    <localCheckout>true</localCheckout>
+                    <remoteTagging>false</remoteTagging>
+                    <arguments>-DskipTests -DskipITs -Dmaven.deploy.skip=true ${release.arguments}</arguments>
+                    <allowTimestampedSnapshots>true</allowTimestampedSnapshots>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>

@@ -1,0 +1,3 @@
+extends: '@rhoas/spectral-ruleset'
+rules:
+  no-$ref-siblings: off

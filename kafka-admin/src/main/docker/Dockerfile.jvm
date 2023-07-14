@@ -1,0 +1,36 @@
+####
+# This Dockerfile is used in order to build a container that runs the Quarkus application in JVM mode
+###
+FROM registry.access.redhat.com/ubi8/openjdk-11-runtime
+
+ARG RUN_JAVA_VERSION=1.3.8
+ENV LANG='en_US.UTF-8' LANGUAGE='en_US:en'
+
+# From openjdk-11-runtime
+ENV RUNTIME_UID=185
+
+USER root
+
+# Install the run-java script and set up permissions for runtime user
+RUN chown ${RUNTIME_UID} /deployments \
+    && chmod "g+rwX" /deployments \
+    && chown ${RUNTIME_UID}:root /deployments \
+    && curl https://repo1.maven.org/maven2/io/fabric8/run-java-sh/${RUN_JAVA_VERSION}/run-java-sh-${RUN_JAVA_VERSION}-sh.sh -o /deployments/run-java.sh \
+    && chown ${RUNTIME_UID} /deployments/run-java.sh \
+    && chmod 540 /deployments/run-java.sh \
+    && echo "securerandom.source=file:/dev/urandom" >> /etc/alternatives/jre/lib/security/java.security
+
+# Configure the JAVA_OPTIONS, you can add -XshowSettings:vm to also display the heap size.
+ENV JAVA_OPTIONS="-Dquarkus.http.host=0.0.0.0 -Djava.util.logging.manager=org.jboss.logmanager.LogManager"
+
+# We make four distinct layers so if there are application changes the library layers can be re-used
+COPY --chown=${RUNTIME_UID} target/quarkus-app/lib/ /deployments/lib/
+COPY --chown=${RUNTIME_UID} target/quarkus-app/*.jar /deployments/
+COPY --chown=${RUNTIME_UID} target/quarkus-app/app/ /deployments/app/
+COPY --chown=${RUNTIME_UID} target/quarkus-app/quarkus/ /deployments/quarkus/
+
+EXPOSE 8080
+
+USER 185
+
+ENTRYPOINT [ "/deployments/run-java.sh" ]

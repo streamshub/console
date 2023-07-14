@@ -1,0 +1,28 @@
+name: Pre-Release
+
+on:
+  pull_request:
+    paths:
+      - '.github/project.yml'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    name: pre release
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Retrieve Project Metadata
+        uses: radcortez/project-metadata-action@243817f1e0f2b4df4e012fc17efc45cff166425d
+        id: metadata
+        with:
+          metadata-file-path: '.github/project.yml'
+          local-file: true
+
+      - name: Review Milestone
+        uses: radcortez/milestone-review-action@d75da69716e15f9ea52c5b77eb8bf3cfdd8299ad
+        with:
+          github-token: ${{secrets.GITHUB_TOKEN}}
+          milestone-title: ${{steps.metadata.outputs.current-version}}

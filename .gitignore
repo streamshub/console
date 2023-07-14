@@ -1,0 +1,30 @@
+# Maven build targets
+target/
+
+# Maven release files
+*.releaseBackup
+release.properties
+
+# Eclipse specific
+.project
+.settings/
+.prefs
+.classpath
+
+# IntelliJ IDEA specific
+.idea/
+*.iml
+
+# VS Code
+.factorypath
+.vscode
+
+# Test certificates
+**/docker/certificates/admin-tls*
+**/docker/certificates/c*
+**/docker/certificates/k*
+**/docker/certificates/.srl
+
+CEKit installation
+/.cekit/
+kafka-admin/.openapi/kafka-admin-rest.json
