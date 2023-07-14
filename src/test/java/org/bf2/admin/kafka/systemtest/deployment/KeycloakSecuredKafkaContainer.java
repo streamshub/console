@@ -124,7 +124,7 @@ class KeycloakSecuredKafkaContainer extends KafkaContainer {
 
     @Override
     public String getBootstrapServers() {
-        return String.format("SECURE://%s:%s", getContainerIpAddress(), kafkaExposedPort);
+        return String.format("SECURE://%s:%s", getHost(), kafkaExposedPort);
     }
 
     @Override
@@ -218,7 +218,7 @@ class KeycloakSecuredKafkaContainer extends KafkaContainer {
         // Use the Signed KeyPair and CSR to generate an issued Certificate
         // Here serial number is randomly generated. In general, CAs use
         // a sequence to generate Serial number and avoid collisions
-        X509v3CertificateBuilder issuedCertBuilder = new X509v3CertificateBuilder(new X500Name(signerCert.getSubjectDN().getName()), issuedCertSerialNum,
+        X509v3CertificateBuilder issuedCertBuilder = new X509v3CertificateBuilder(new X500Name(signerCert.getSubjectX500Principal().getName()), issuedCertSerialNum,
                 notBefore, notAfter, csr.getSubject(), csr.getSubjectPublicKeyInfo());
 
         JcaX509ExtensionUtils issuedCertExtUtils = new JcaX509ExtensionUtils();
