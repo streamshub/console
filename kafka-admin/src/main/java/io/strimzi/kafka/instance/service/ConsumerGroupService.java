@@ -66,6 +66,52 @@ public class ConsumerGroupService {
             });
     }
 
+    public CompletionStage<Map<String, Map<Integer, Error>>> alterConsumerGroupOffsets(String groupId, Map<String, Map<Integer, OffsetAndMetadata>> topicOffsets) {
+        var offsets = topicOffsets.entrySet()
+                .stream()
+                .flatMap(partitionOffsets -> {
+                    String topicName = partitionOffsets.getKey();
+
+                    return partitionOffsets.getValue().entrySet().stream()
+                        .map(partitionOffset ->
+                            Map.entry(
+                                    new org.apache.kafka.common.TopicPartition(topicName, partitionOffset.getKey()),
+                                    new org.apache.kafka.clients.consumer.OffsetAndMetadata(
+                                            partitionOffset.getValue().getOffset(),
+                                            Optional.ofNullable(partitionOffset.getValue().getLeaderEpoch()),
+                                            partitionOffset.getValue().getMetadata())));
+                })
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+        Admin adminClient = clientSupplier.get();
+        var results = adminClient.alterConsumerGroupOffsets(groupId, offsets);
+        Map<org.apache.kafka.common.TopicPartition, CompletableFuture<Void>> offsetResults;
+
+        offsetResults = offsets.keySet()
+                .stream()
+                .collect(Collectors.toMap(
+                        Function.identity(),
+                        partition -> results.partitionResult(partition).toCompletionStage().toCompletableFuture()));
+
+        Map<String, Map<Integer, Error>> errors = new LinkedHashMap<>();
+
+        return CompletableFuture.allOf(offsetResults.values().toArray(CompletableFuture[]::new))
+            .thenAccept(nothing -> offsetResults.entrySet()
+                .stream()
+                .filter(e -> e.getValue().isCompletedExceptionally())
+                .forEach(e -> {
+                    org.apache.kafka.common.TopicPartition partition = e.getKey();
+
+                    e.getValue().exceptionally(error -> {
+                        String msg = "Unable to reset offset for topic %s, partition %d".formatted(partition.topic(), partition.partition());
+                        errors.computeIfAbsent(partition.topic(), k -> new LinkedHashMap<>())
+                            .put(partition.partition(), new Error(msg, error.getMessage(), error));
+                        return null;
+                    });
+                }))
+            .thenApply(nothing -> errors);
+    }
+
     public CompletionStage<Map<String, Error>> deleteConsumerGroups(String... groupIds) {
         Admin adminClient = clientSupplier.get();
         Map<String, Error> errors = new HashMap<>();
@@ -115,9 +161,11 @@ public class ConsumerGroupService {
                     offsetListResult.partitionsToOffsetAndMetadata(groupId)
                         .whenComplete((offsets, thrown) ->
                             addOffsets(groups.get(groupId), offsets, thrown)))
-                .toArray(KafkaFuture[]::new);
+                .map(KafkaFuture::toCompletionStage)
+                .map(CompletionStage::toCompletableFuture)
+                .toArray(CompletableFuture[]::new);
 
-            KafkaFuture.allOf(pendingOffsetOps).thenApply(nothing -> offsetsPromise.complete(null));
+            CompletableFuture.allOf(pendingOffsetOps).thenApply(nothing -> offsetsPromise.complete(null));
         } else {
             offsetsPromise.complete(null);
         }
