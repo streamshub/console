@@ -53,7 +53,7 @@ class OASModelFilterTest {
         var response = given()
                 .log().ifValidationFails()
             .when()
-                .get("/rest/openapi?format=JSON")
+                .get("/api/v1/openapi?format=JSON")
             .then()
                 .log().ifValidationFails()
             .assertThat()

@@ -94,6 +94,6 @@ kcat -b localhost:9092 -F ./hack/kcat.properties -P -t test
 
 6. Interact with the API to view results
 `
-curl -s -u admin:admin-secret http://localhost:8080/rest/consumer-groups | jq
+curl -s -u admin:admin-secret http://localhost:8080/api/v1/consumer-groups | jq
 `
 

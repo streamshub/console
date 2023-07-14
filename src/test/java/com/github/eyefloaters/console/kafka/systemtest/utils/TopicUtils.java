@@ -25,8 +25,8 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 public class TopicUtils {
 
-    public static final String TOPIC_COLLECTION_PATH = "/rest/topics";
-    public static final String TOPIC_PATH = "/rest/topics/{topicName}";
+    public static final String TOPIC_COLLECTION_PATH = "/api/v1/topics";
+    public static final String TOPIC_PATH = "/api/v1/topics/{topicName}";
 
     static final Logger log = Logger.getLogger(TopicUtils.class);
     final Config config;

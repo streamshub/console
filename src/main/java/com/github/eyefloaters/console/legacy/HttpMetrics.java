@@ -12,8 +12,6 @@ import jakarta.inject.Inject;
 public class HttpMetrics {
     private static final String FAILED_REQUESTS_COUNTER = "failed_requests";
     private static final String HTTP_STATUS_CODE = "status_code";
-    private static final String DEPRECATED_REQUESTS_COUNTER = "deprecated_requests";
-    private static final String DEPRECATED_REQUESTS_PATH = "path";
 
     @Inject
     PrometheusMeterRegistry meterRegistry;
@@ -31,7 +29,6 @@ public class HttpMetrics {
          * Status code 404 is a placeholder for defining the status_code label.
          */
         meterRegistry.counter(FAILED_REQUESTS_COUNTER, HTTP_STATUS_CODE, "404");
-        meterRegistry.counter(DEPRECATED_REQUESTS_COUNTER, DEPRECATED_REQUESTS_PATH, "/rest/openapi");
 
     }
 
@@ -53,9 +50,5 @@ public class HttpMetrics {
 
     public Counter getSucceededRequestsCounter() {
         return succeededRequestsCounter;
-    }
-
-    public Counter getDeprecatedRequestCounter(String path) {
-        return getRegistry().counter(DEPRECATED_REQUESTS_COUNTER, DEPRECATED_REQUESTS_PATH, path);
     }
 }

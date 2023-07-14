@@ -163,7 +163,7 @@ class MetricsEndpointTestIT {
     void listTopics(int times, Status expectedStatus) {
         IntStream.range(0, times).forEach(i ->
             when()
-                .get("/rest/topics")
+                .get("/api/v1/topics")
             .then()
                 .log().ifValidationFails()
                 .statusCode(expectedStatus.getStatusCode()));
@@ -175,7 +175,7 @@ class MetricsEndpointTestIT {
                 .body(buildTopicRequest(name, numPartitions, Map.of("min.insync.replicas", "1")).toString())
                 .contentType(ContentType.JSON)
                 .log().ifValidationFails()
-                .post("/rest/topics")
+                .post("/api/v1/topics")
             .then()
                 .log().ifValidationFails()
                 .statusCode(expectedStatus.getStatusCode());
@@ -186,7 +186,7 @@ class MetricsEndpointTestIT {
         names.forEach(name -> {
             given()
                 .log().ifValidationFails()
-                .get("/rest/topics/" + name)
+                .get("/api/v1/topics/" + name)
             .then()
                 .log().ifValidationFails()
                 .statusCode(expectedStatus.getStatusCode());
@@ -199,7 +199,7 @@ class MetricsEndpointTestIT {
                 .body(buildTopicRequest(name, 6, Map.of("min.insync.replicas", "2")).toString())
                 .contentType(ContentType.JSON)
                 .log().ifValidationFails()
-                .patch("/rest/topics/" + name)
+                .patch("/api/v1/topics/" + name)
             .then()
                 .log().ifValidationFails()
                 .statusCode(Status.OK.getStatusCode());
@@ -210,7 +210,7 @@ class MetricsEndpointTestIT {
         names.forEach(name -> {
             given()
                 .log().ifValidationFails()
-                .delete("/rest/topics/" + name)
+                .delete("/api/v1/topics/" + name)
             .then()
                 .log().ifValidationFails()
                 .statusCode(expectedStatus.getStatusCode());

@@ -44,8 +44,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @TestProfile(TestPlainProfile.class)
 class ConsumerGroupsEndpointTestIT {
 
-    static final String CONSUMER_GROUP_COLLECTION_PATH = "/rest/consumer-groups";
-    static final String CONSUMER_GROUP_PATH = "/rest/consumer-groups/{groupId}";
+    static final String CONSUMER_GROUP_COLLECTION_PATH = "/api/v1/consumer-groups";
+    static final String CONSUMER_GROUP_PATH = "/api/v1/consumer-groups/{groupId}";
 
     @Inject
     Config config;

@@ -421,7 +421,7 @@ class AccessControlListIT {
             .log().ifValidationFails()
         .when()
             .queryParams(filters)
-            .request(Method.valueOf(method.name()), "/rest/acls")
+            .request(Method.valueOf(method.name()), "/api/v1/acls")
         .then()
             .log().ifValidationFails()
             .statusCode(expectedStatus.getStatusCode());
