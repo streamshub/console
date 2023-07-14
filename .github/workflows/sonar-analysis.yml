@@ -107,12 +107,11 @@ jobs:
         if: github.event.workflow_run.event == 'pull_request'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SONAR_TOKEN: ${{secrets.SONAR_TOKEN}}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
           mvn -B --no-transfer-progress org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
             -Dsonar.projectKey=eyefloaters_console-api  \
             -Dsonar.login=${SONAR_TOKEN} \
-            -Dsonar.coverage.jacoco.xmlReportPaths=$(pwd)/systemtests/target/site/jacoco-aggregate/jacoco.xml \
             -Dsonar.scm.revision=${{ github.event.workflow_run.head_sha }} \
             -Dsonar.pullrequest.key=${{ fromJson(steps.build_context.outputs.content).event.number }} \
             -Dsonar.pullrequest.branch=${{ fromJson(steps.build_context.outputs.content).head_ref }} \
@@ -123,11 +122,10 @@ jobs:
         if: github.event.workflow_run.event == 'push'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SONAR_TOKEN: ${{secrets.SONAR_TOKEN}}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
           mvn -B --no-transfer-progress org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
             -Dsonar.projectKey=eyefloaters_console-api \
             -Dsonar.login=${SONAR_TOKEN} \
-            -Dsonar.coverage.jacoco.xmlReportPaths=$(pwd)/systemtests/target/site/jacoco-aggregate/jacoco.xml \
             -Dsonar.scm.revision=${{ github.event.workflow_run.head_sha }} \
             -Dsonar.branch.name=${{ github.event.workflow_run.head_branch }}
