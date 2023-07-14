@@ -44,10 +44,6 @@
         <!-- Sonar settings -->
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
         <sonar.organization>bf2fc6cc711aee1a0c2a</sonar.organization>
-        <sonar.coverage.jacoco.xmlReportPaths>
-            ${project.basedir}/../systemtests/target/site/jacoco-aggregate/jacoco.xml,
-            ${project.basedir}/systemtests/target/site/jacoco-aggregate/jacoco.xml
-        </sonar.coverage.jacoco.xmlReportPaths>
     </properties>
 
     <scm>
@@ -69,11 +65,6 @@
                 <groupId>org.apache.kafka</groupId>
                 <artifactId>kafka-clients</artifactId>
                 <version>3.4.0</version>
-            </dependency>
-            <dependency>
-                <groupId>org.bf2</groupId>
-                <artifactId>kafka-admin</artifactId>
-                <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.strimzi</groupId>
@@ -309,22 +300,6 @@
                     <groupId>org.jacoco</groupId>
                     <artifactId>jacoco-maven-plugin</artifactId>
                     <version>${version.jacoco.plugin}</version>
-                    <configuration>
-                        <propertyName>jacocoArgLine</propertyName>
-                        <append>true</append>
-                        <excludes>
-                            <exclude>META-INF/**</exclude>
-                        </excludes>
-                    </configuration>
-                    <executions>
-                        <execution>
-                            <id>prepare-agent</id>
-                            <goals>
-                                <goal>prepare-agent</goal>
-                            </goals>
-                            <phase>generate-test-resources</phase>
-                        </execution>
-                    </executions>
                 </plugin>
             </plugins>
         </pluginManagement>
@@ -460,6 +435,36 @@
                     <!-- Configures the file for excluding warnings -->
                     <excludeFilterFile>${project.basedir}/../.spotbugs/spotbugs-exclude.xml</excludeFilterFile>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>default-prepare-agent</id>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>default-prepare-agent-integration</id>
+                        <goals>
+                            <goal>prepare-agent-integration</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>default-report</id>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>default-report-integration</id>
+                        <goals>
+                            <goal>report-integration</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
@@ -602,52 +607,6 @@
             <properties>
                 <quarkus.package.type>native</quarkus.package.type>
             </properties>
-        </profile>
-        <profile>
-            <id>coverage</id>
-            <properties>
-                <argLine>@{jacocoArgLine}</argLine>
-            </properties>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.jacoco</groupId>
-                        <artifactId>jacoco-maven-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>default-report</id>
-                                <phase>verify</phase>
-                                <goals>
-                                    <goal>report</goal>
-                                </goals>
-                            </execution>
-                            <execution>
-                                <id>jacoco-check</id>
-                                <goals>
-                                    <goal>check</goal>
-                                </goals>
-                                <configuration>
-                                    <excludes>
-                                        <exclude>**/kafka/admin/model/Types**</exclude>
-                                    </excludes>
-                                    <rules>
-                                        <rule>
-                                            <element>PACKAGE</element>
-                                            <limits>
-                                                <limit>
-                                                    <counter>LINE</counter>
-                                                    <value>COVEREDRATIO</value>
-                                                    <minimum>0.01</minimum>
-                                                </limit>
-                                            </limits>
-                                        </rule>
-                                    </rules>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
         </profile>
     </profiles>
 </project>
