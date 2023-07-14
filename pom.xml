@@ -3,8 +3,8 @@
 
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>org.bf2</groupId>
-    <artifactId>kafka-admin-api</artifactId>
+    <groupId>com.github.eyefloaters</groupId>
+    <artifactId>console-api</artifactId>
     <packaging>jar</packaging>
     <version>0.14.1-SNAPSHOT</version>
 
@@ -16,7 +16,7 @@
 
         <!-- Container image properties for systemtests -->
         <docker.registry>localhost</docker.registry>
-        <docker.group>bf2</docker.group>
+        <docker.group>eyefloaters</docker.group>
         <docker.tag>latest</docker.tag>
         <docker.push>false</docker.push>
 
@@ -43,12 +43,12 @@
 
         <!-- Sonar settings -->
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
-        <sonar.organization>bf2fc6cc711aee1a0c2a</sonar.organization>
+        <sonar.organization>eyefloaters</sonar.organization>
     </properties>
 
     <scm>
-        <connection>scm:git:git://github.com/bf2fc6cc711aee1a0c2a/kafka-admin-api.git</connection>
-        <developerConnection>scm:git:git@github.com:bf2fc6cc711aee1a0c2a/kafka-admin-api.git</developerConnection>
+        <connection>scm:git:git://github.com/eyefloaters/console-api.git</connection>
+        <developerConnection>scm:git:git@github.com:eyefloaters/console-api.git</developerConnection>
         <tag>HEAD</tag>
     </scm>
 
@@ -365,7 +365,7 @@
                                 <ignoredDependency>org.jboss.spec.javax.ws.rs:jboss-jaxrs-api_2.1_spec</ignoredDependency>
                                 <ignoredDependency>org.jboss.spec.javax.ws.rs:jboss-jaxrs-api_2.1_spec</ignoredDependency>
                                 <ignoredDependency>org.junit.jupiter</ignoredDependency>
-                                <!-- Dependencies referenced by temporary class: org.bf2.admin.security.TrustedSSOCallerPrincipalFactoryProducer
+                                <!-- Dependencies referenced by temporary class: com.github.eyefloaters.console.security.TrustedSSOCallerPrincipalFactoryProducer
                                 <ignoredDependency>io.smallrye:smallrye-jwt</ignoredDependency>
                                 <ignoredDependency>org.bitbucket.b_c:jose4j</ignoredDependency>-->
                                 <!-- Oauth kafka test dependencies -->
@@ -541,7 +541,7 @@
                                         <kafka.admin.num.partitions.max>100</kafka.admin.num.partitions.max>
                                     </systemPropertyVariables>
                                     <schemaFilename>kafka-admin-rest</schemaFilename>
-                                    <filter>org.bf2.admin.kafka.admin.handlers.OASModelFilter</filter>
+                                    <filter>com.github.eyefloaters.console.legacy.handlers.OASModelFilter</filter>
                                     <infoVersion>${project.version}</infoVersion>
                                     <outputDirectory>${project.basedir}/.openapi</outputDirectory>
                                 </configuration>

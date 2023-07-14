@@ -1,6 +1,6 @@
-[![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](http://www.apache.org/licenses/LICENSE-2.0)[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=bf2fc6cc711aee1a0c2a_kafka-admin-api&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=bf2fc6cc711aee1a0c2a_kafka-admin-api)[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=bf2fc6cc711aee1a0c2a_kafka-admin-api&metric=coverage)](https://sonarcloud.io/summary/new_code?id=bf2fc6cc711aee1a0c2a_kafka-admin-api)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](http://www.apache.org/licenses/LICENSE-2.0)[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=eyefloaters_console-api&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=eyefloaters_console-api)[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=eyefloaters_console-api&metric=coverage)](https://sonarcloud.io/summary/new_code?id=eyefloaters_console-api)
 
-# Managed Kafka Instance API
+# Console API
 
 This repository contains the Managed Kafka Instance API and its implementation.
 The API provides a way for managing [Apache Kafka<sup>TM</sup>](https://kafka.apache.org/) topics and consumer groups, as
@@ -22,8 +22,8 @@ There are a few things you need to have installed to run this project:
 To run this project locally, first clone it with Git:
 
 ```shell
-git clone git@github.com:bf2fc6cc711aee1a0c2a/kafka-admin-api.git
-cd kafka-admin-api
+git clone git@github.com:eyefloaters/console-api.git
+cd console-api
 ```
 
 ### Install dependencies

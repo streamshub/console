@@ -16,7 +16,7 @@ jobs:
           GITHUB_CONTEXT: ${{ toJson(github) }}
 
   analyze:
-    if: ${{ github.repository == 'bf2fc6cc711aee1a0c2a/kafka-admin-api' && github.event.workflow_run.conclusion == 'success' }}
+    if: ${{ github.repository == 'eyefloaters/console-api' && github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     name: Analyze
     steps:
@@ -110,7 +110,7 @@ jobs:
           SONAR_TOKEN: ${{secrets.SONAR_TOKEN}}
         run: |
           mvn -B --no-transfer-progress org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
-            -Dsonar.projectKey=bf2fc6cc711aee1a0c2a_kafka-admin-api \
+            -Dsonar.projectKey=eyefloaters_console-api  \
             -Dsonar.login=${SONAR_TOKEN} \
             -Dsonar.coverage.jacoco.xmlReportPaths=$(pwd)/systemtests/target/site/jacoco-aggregate/jacoco.xml \
             -Dsonar.scm.revision=${{ github.event.workflow_run.head_sha }} \
@@ -126,7 +126,7 @@ jobs:
           SONAR_TOKEN: ${{secrets.SONAR_TOKEN}}
         run: |
           mvn -B --no-transfer-progress org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
-            -Dsonar.projectKey=bf2fc6cc711aee1a0c2a_kafka-admin-api \
+            -Dsonar.projectKey=eyefloaters_console-api \
             -Dsonar.login=${SONAR_TOKEN} \
             -Dsonar.coverage.jacoco.xmlReportPaths=$(pwd)/systemtests/target/site/jacoco-aggregate/jacoco.xml \
             -Dsonar.scm.revision=${{ github.event.workflow_run.head_sha }} \
