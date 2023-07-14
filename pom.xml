@@ -491,7 +491,6 @@
                             <systemProperties>
                                 <keycloak.image>${keycloak.image}</keycloak.image>
                                 <strimzi-kafka.tag>${strimzi-kafka.tag}</strimzi-kafka.tag>
-                                <kafka-admin.image>${docker.registry}/${docker.group}/kafka-admin:${docker.tag}</kafka-admin.image>
                                 <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
                                 <maven.home>${maven.home}</maven.home>
                             </systemProperties>

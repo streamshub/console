@@ -1,22 +1,5 @@
 package com.github.eyefloaters.console.legacy.handlers;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.github.eyefloaters.console.legacy.KafkaAdminConfigRetriever;
-import com.github.eyefloaters.console.legacy.model.Types;
-import com.github.eyefloaters.console.legacy.model.Types.ConsumerGroupMetrics;
-import com.github.eyefloaters.console.legacy.model.Types.ConsumerGroupOffsetResetParameters.OffsetType;
-
-import org.apache.kafka.common.ConsumerGroupState;
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.ConfigProvider;
-import org.eclipse.microprofile.openapi.OASFactory;
-import org.eclipse.microprofile.openapi.OASFilter;
-import org.eclipse.microprofile.openapi.models.OpenAPI;
-import org.eclipse.microprofile.openapi.models.examples.Example;
-import org.eclipse.microprofile.openapi.models.media.Schema;
-import org.eclipse.microprofile.openapi.models.security.SecurityScheme.Type;
-
 import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -24,6 +7,26 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
+
+import org.apache.kafka.common.ConsumerGroupState;
+import org.eclipse.microprofile.config.Config;
+import org.eclipse.microprofile.config.ConfigProvider;
+import org.eclipse.microprofile.openapi.OASFactory;
+import org.eclipse.microprofile.openapi.OASFilter;
+import org.eclipse.microprofile.openapi.models.Components;
+import org.eclipse.microprofile.openapi.models.OpenAPI;
+import org.eclipse.microprofile.openapi.models.examples.Example;
+import org.eclipse.microprofile.openapi.models.media.Schema;
+import org.eclipse.microprofile.openapi.models.security.OAuthFlows;
+import org.eclipse.microprofile.openapi.models.security.SecurityScheme;
+import org.eclipse.microprofile.openapi.models.security.SecurityScheme.Type;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.github.eyefloaters.console.legacy.KafkaAdminConfigRetriever;
+import com.github.eyefloaters.console.legacy.model.Types;
+import com.github.eyefloaters.console.legacy.model.Types.ConsumerGroupMetrics;
+import com.github.eyefloaters.console.legacy.model.Types.ConsumerGroupOffsetResetParameters.OffsetType;
 
 public class OASModelFilter implements OASFilter {
 
@@ -55,12 +58,12 @@ public class OASModelFilter implements OASFilter {
         if (config.getOptionalValue(KafkaAdminConfigRetriever.OAUTH_ENABLED, Boolean.class).orElse(false)) {
             Optional<String> tokenUrl = config.getOptionalValue(KafkaAdminConfigRetriever.OAUTH_TOKEN_ENDPOINT_URI, String.class);
 
-            openAPI.getComponents()
-                    .getSecuritySchemes()
-                    .get(SECURITY_SCHEME_NAME_OAUTH)
-                    .getFlows()
-                    .getClientCredentials()
-                    .setTokenUrl(tokenUrl.orElse(null));
+            Optional.ofNullable(openAPI.getComponents())
+                .map(Components::getSecuritySchemes)
+                .map(schemes -> schemes.get(SECURITY_SCHEME_NAME_OAUTH))
+                .map(SecurityScheme::getFlows)
+                .map(OAuthFlows::getClientCredentials)
+                .ifPresent(flow -> flow.setTokenUrl(tokenUrl.orElse(null)));
         } else if (config.getOptionalValue(KafkaAdminConfigRetriever.BASIC_ENABLED, Boolean.class).orElse(false)) {
             openAPI.setSecurity(List.of(OASFactory.createSecurityRequirement()
                                         .addScheme(SECURITY_SCHEME_NAME_BASIC, Collections.emptyList())));
