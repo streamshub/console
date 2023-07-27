@@ -7,8 +7,8 @@ import {
 } from "@patternfly/react-core";
 import { InfoIcon } from "@patternfly/react-icons";
 import { actions } from "@storybook/addon-actions";
-import type { ComponentMeta, ComponentStory } from "@storybook/react";
-import type { VoidFunctionComponent } from "react";
+import type { Meta, StoryFn } from "@storybook/react";
+import type { FunctionComponent } from "react";
 import type { ResponsiveTableProps } from "./ResponsiveTable";
 import { ResponsiveTable } from "./ResponsiveTable";
 import type { SampleDataType } from "./storybookHelpers";
@@ -22,7 +22,7 @@ import { useSortableSearchParams } from "./useSortableSearchParams";
 
 const eventsFromNames = actions("onRowClick");
 
-const ResponsiveTableSampleType: VoidFunctionComponent<
+const ResponsiveTableSampleType: FunctionComponent<
   ResponsiveTableProps<SampleDataType, typeof columns[number]> & {
     hasActions?: boolean;
     hasCustomActionTestId?: boolean;
@@ -56,13 +56,23 @@ export default {
     isSortable: { control: "boolean" },
     sortAllColumns: { control: "boolean" },
   },
-} as ComponentMeta<typeof ResponsiveTableSampleType>;
+} as Meta<typeof ResponsiveTableSampleType>;
 
-const Template: ComponentStory<typeof ResponsiveTableSampleType> = (args) => {
+const Template: StoryFn<typeof ResponsiveTableSampleType> = (args) => {
+
+  const filteredColumns = args.columns.filter((column) => typeof column === 'string') as readonly string[];
+
+
+  const columnsToUse = args.sortAllColumns === true
+    ? filteredColumns
+    : filteredColumns.length >= 4  // Ensure it has at least 4 elements
+      ? [filteredColumns[0], filteredColumns[3]]
+      : [];
+
   const [isColumnSortable] = useSortableSearchParams(
     args.sortAllColumns === true
-      ? args.columns
-      : [args.columns[0], args.columns[3]],
+      ? filteredColumns
+      : [filteredColumns[0], filteredColumns[3]],
     {
       name: "Name",
       cloudProvider: "Cloud Provider",
@@ -87,7 +97,6 @@ const Template: ComponentStory<typeof ResponsiveTableSampleType> = (args) => {
         args.hasActions ? (
           <ActionsColumn
             items={
-              // @ts-ignore
               defaultActions(row)
             }
           />

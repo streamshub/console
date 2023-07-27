@@ -1,6 +1,6 @@
 import { actions } from "@storybook/addon-actions";
-import type { ComponentMeta, ComponentStory } from "@storybook/react";
-import type { VoidFunctionComponent } from "react";
+import type { Meta, StoryFn } from "@storybook/react";
+import type { FunctionComponent } from "react";
 import { useMemo } from "react";
 import type { SampleDataType } from "./storybookHelpers";
 import {
@@ -17,7 +17,7 @@ import { DEFAULT_PERPAGE, TableView } from "./TableView";
 
 const eventsFromNames = actions("onRowClick");
 
-const TableViewSampleType: VoidFunctionComponent<
+const TableViewSampleType: FunctionComponent<
   TableViewProps<SampleDataType, typeof columns[number]> & {
     selectedRow?: number;
   }
@@ -46,9 +46,9 @@ export default {
       },
     },
   },
-} as ComponentMeta<typeof TableViewSampleType>;
+} as Meta<typeof TableViewSampleType>;
 
-const Template: ComponentStory<typeof TableViewSampleType> = (args) => {
+const Template: StoryFn<typeof TableViewSampleType> = (args) => {
   const { itemCount, page, perPage = DEFAULT_PERPAGE, data } = args;
   const slicedData = useMemo(() => {
     if (data) {
@@ -59,12 +59,14 @@ const Template: ComponentStory<typeof TableViewSampleType> = (args) => {
           .fill(0)
           .map((_, index) => {
             return data[index % sampleData.length];
-          });
+          })
+          .filter((item): item is SampleDataType => item !== undefined);
       }
       return [];
     }
     return data;
   }, [data, itemCount, page, perPage]);
+
   return (
     <TableView
       {...args}
@@ -83,6 +85,7 @@ const Template: ComponentStory<typeof TableViewSampleType> = (args) => {
       )}
       isRowSelected={
         args.selectedRow
+          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
           ? ({ rowIndex }) => rowIndex === args.selectedRow! - 1
           : undefined
       }
