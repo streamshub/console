@@ -58,6 +58,5 @@ jobs:
         with:
           name: target
           path: |
-            target/
-            kafka-admin/target/
-            systemtests/target/
+            **/target/
+            !**/target/**/*.jar
