@@ -6,7 +6,9 @@
     "build": "next build",
     "dev": "next dev",
     "lint": "next lint",
-    "start": "next start"
+    "start": "next start",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build"
   },
   "dependencies": {
     "@kubernetes/client-node": "^0.18.1",
@@ -30,6 +32,14 @@
     "zod": "^3.21.4"
   },
   "devDependencies": {
+    "@storybook/addon-essentials": "^7.1.1",
+    "@storybook/addon-interactions": "^7.1.1",
+    "@storybook/addon-links": "^7.1.1",
+    "@storybook/addon-onboarding": "^1.0.8",
+    "@storybook/blocks": "^7.1.1",
+    "@storybook/nextjs": "^7.1.1",
+    "@storybook/react": "^7.1.1",
+    "@storybook/testing-library": "^0.2.0",
     "@types/eslint": "^8.21.3",
     "@types/node": "^18.15.5",
     "@types/react": "^18.0.28",
@@ -39,7 +49,9 @@
     "eslint": "^8.36.0",
     "eslint-config-next": "^13.4.1",
     "eslint-config-prettier": "^8.8.0",
+    "eslint-plugin-storybook": "^0.6.13",
     "prettier": "^2.8.8",
+    "storybook": "^7.1.1",
     "typescript": "^5.0.2"
   },
   "ct3aMetadata": {
