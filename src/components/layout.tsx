@@ -1,13 +1,9 @@
 import {
-  ApplicationLauncher,
-  ApplicationLauncherItem,
   Button,
   ButtonVariant,
   Divider,
-  Dropdown,
   DropdownGroup,
   DropdownItem,
-  KebabToggle,
   Masthead,
   MastheadBrand,
   MastheadContent,
@@ -22,6 +18,7 @@ import {
   ToolbarGroup,
   ToolbarItem,
 } from "@patternfly/react-core";
+import { ThIcon } from "@patternfly/react-icons";
 import BarsIcon from "@patternfly/react-icons/dist/esm/icons/bars-icon";
 import BellIcon from "@patternfly/react-icons/dist/esm/icons/bell-icon";
 import CogIcon from "@patternfly/react-icons/dist/esm/icons/cog-icon";
@@ -109,25 +106,11 @@ export default function Layout({
     </DropdownItem>,
   ];
 
-  const appLauncherItems = [
-    <ApplicationLauncherItem key="application_1a" href="#">
-      Application 1 (anchor link)
-    </ApplicationLauncherItem>,
-    <ApplicationLauncherItem
-      key="application_2a"
-      component="button"
-      onClick={() => alert("Clicked item 2")}
-    >
-      Application 2 (button with onClick)
-    </ApplicationLauncherItem>,
-  ];
-
   const headerToolbar = (
     <Toolbar id="toolbar" isFullHeight isStatic>
       <ToolbarContent>
         <ToolbarGroup
           variant="icon-button-group"
-          alignment={{ default: "alignRight" }}
           spacer={{ default: "spacerNone", md: "spacerMd" }}
         >
           <ToolbarItem>
@@ -144,12 +127,7 @@ export default function Layout({
             <ToolbarItem
               visibility={{ default: "hidden", md: "hidden", lg: "visible" }}
             >
-              <ApplicationLauncher
-                onSelect={onAppLauncherSelect}
-                onToggle={onAppLauncherToggle}
-                isOpen={isAppLauncherOpen}
-                items={appLauncherItems}
-              />
+              <ThIcon />
             </ToolbarItem>
             <ToolbarItem>
               <Button
@@ -168,26 +146,8 @@ export default function Layout({
           </ToolbarGroup>
           <ToolbarItem
             visibility={{ default: "hidden", md: "visible", lg: "hidden" }}
-          >
-            <Dropdown
-              isPlain
-              position="right"
-              onSelect={onKebabDropdownSelect}
-              toggle={<KebabToggle onToggle={onKebabDropdownToggle} />}
-              isOpen={isKebabDropdownOpen}
-              dropdownItems={kebabDropdownItems}
-            />
-          </ToolbarItem>
-          <ToolbarItem visibility={{ md: "hidden" }}>
-            <Dropdown
-              isPlain
-              position="right"
-              onSelect={onFullKebabDropdownSelect}
-              toggle={<KebabToggle onToggle={onFullKebabDropdownToggle} />}
-              isOpen={isFullKebabDropdownOpen}
-              dropdownItems={fullKebabDropdownItems}
-            />
-          </ToolbarItem>
+          ></ToolbarItem>
+          <ToolbarItem visibility={{ md: "hidden" }}></ToolbarItem>
         </ToolbarGroup>
       </ToolbarContent>
     </Toolbar>

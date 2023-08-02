@@ -7,7 +7,7 @@ import type {
 } from "@patternfly/react-table";
 import {
   ActionsColumn,
-  TableComposable,
+  Table,
   Tbody,
   Td,
   Th,
@@ -180,7 +180,7 @@ export const ResponsiveTable = <TRow, TCol>({
   );
 
   return (
-    <TableComposable
+    <Table
       aria-label={ariaLabel}
       gridBreakPoint=""
       ref={ref}
@@ -256,7 +256,7 @@ export const ResponsiveTable = <TRow, TCol>({
           </Tr>
         )}
       </Tbody>
-    </TableComposable>
+    </Table>
   );
 };
 
@@ -330,17 +330,17 @@ export const ResponsiveTd = memo(
 );
 ResponsiveTd.displayName = "ResponsiveTd";
 
-export type DeletableRowProps = {
+export type DeletableRowProps = PropsWithChildren<{
   isSelected: boolean;
   isDeleted: boolean;
   onClick?: () => void;
   rowOuiaId?: string;
-};
+}>;
 export const DeletableRow: FunctionComponent<DeletableRowProps> = memo(
   ({ isDeleted, isSelected, onClick, children, rowOuiaId }) => {
     return (
       <Tr
-        isHoverable={!isDeleted && onClick !== undefined}
+        // isHoverable={!isDeleted && onClick !== undefined}
         onRowClick={(e) => {
           if (e?.target instanceof HTMLElement) {
             if (!["a", "button"].includes(e.target.tagName.toLowerCase())) {
