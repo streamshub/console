@@ -1,6 +1,5 @@
 import { Breadcrumb, BreadcrumbItem } from "@patternfly/react-core";
 import { type NextPage } from "next";
-import Head from "next/head";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import React from "react";
@@ -18,6 +17,7 @@ const ClusterDetails: NextPage = () => {
 
   return (
     <Layout
+      title={`Kafka Cluster ${namespace}:${name}`}
       breadcrumb={
         <Breadcrumb>
           <BreadcrumbItem
@@ -33,11 +33,6 @@ const ClusterDetails: NextPage = () => {
         </Breadcrumb>
       }
     >
-      <Head>
-        <title>AMQ Streams</title>
-        <meta name="description" content="AMQ Streams" />
-        <link rel="icon" href="/favicon.ico" />
-      </Head>
       <pre>{JSON.stringify(cluster.data, null, 2)}</pre>
     </Layout>
   );

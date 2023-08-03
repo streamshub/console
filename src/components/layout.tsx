@@ -10,7 +10,6 @@ import {
   MastheadMain,
   MastheadToggle,
   Page,
-  PageSection,
   PageToggleButton,
   SkipToContent,
   Toolbar,
@@ -24,6 +23,8 @@ import BellIcon from "@patternfly/react-icons/dist/esm/icons/bell-icon";
 import CogIcon from "@patternfly/react-icons/dist/esm/icons/cog-icon";
 import HelpIcon from "@patternfly/react-icons/dist/esm/icons/help-icon";
 import QuestionCircleIcon from "@patternfly/react-icons/dist/esm/icons/question-circle-icon";
+import { useTranslations } from "next-intl";
+import Head from "next/head";
 import React, { type FormEvent, type PropsWithChildren, useState } from "react";
 
 interface NavOnSelectProps {
@@ -35,8 +36,14 @@ interface NavOnSelectProps {
 
 export default function Layout({
   breadcrumb,
+  title,
   children,
-}: PropsWithChildren<{ breadcrumb?: JSX.Element }>): JSX.Element {
+}: PropsWithChildren<{
+  breadcrumb?: JSX.Element;
+  title?: string;
+}>): JSX.Element {
+  const t = useTranslations("common");
+
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isKebabDropdownOpen, setIsKebabDropdownOpen] = useState(false);
   const [isFullKebabDropdownOpen, setIsFullKebabDropdownOpen] = useState(false);
@@ -173,7 +180,7 @@ export default function Layout({
           {/*  />*/}
           {/*  <source srcSet="/assets/images/logo__pf--reverse--base.svg" />*/}
           {/*</Brand>*/}
-          AMQ Streams
+          {t("title")}
         </MastheadBrand>
       </MastheadMain>
       <MastheadContent>{headerToolbar}</MastheadContent>
@@ -187,28 +194,37 @@ export default function Layout({
   );
 
   return (
-    <Page
-      header={masthead}
-      isManagedSidebar
-      skipToContent={pageSkipToContent}
-      breadcrumb={breadcrumb}
-      mainContainerId={mainContainerId}
-      isBreadcrumbWidthLimited
-      isBreadcrumbGrouped
-      additionalGroupedContent={
-        // <PageSection variant={PageSectionVariants.light} isWidthLimited>
-        //   <TextContent>
-        //     <Text component="h1">Main title</Text>
-        //     <Text component="p">This is a full page demo.</Text>
-        //   </TextContent>
-        // </PageSection>
-        undefined
-      }
-      groupProps={{
-        stickyOnBreakpoint: { default: "top" },
-      }}
-    >
-      <PageSection>{children}</PageSection>
-    </Page>
+    <>
+      <Head>
+        <title>
+          {title && `${title} - `}
+          {t("title")}
+        </title>
+        <link rel="icon" href="/favicon.ico" />
+      </Head>
+      <Page
+        header={masthead}
+        isManagedSidebar
+        skipToContent={pageSkipToContent}
+        breadcrumb={breadcrumb}
+        mainContainerId={mainContainerId}
+        isBreadcrumbWidthLimited
+        isBreadcrumbGrouped
+        additionalGroupedContent={
+          // <PageSection variant={PageSectionVariants.light} isWidthLimited>
+          //   <TextContent>
+          //     <Text component="h1">Main title</Text>
+          //     <Text component="p">This is a full page demo.</Text>
+          //   </TextContent>
+          // </PageSection>
+          undefined
+        }
+        groupProps={{
+          stickyOnBreakpoint: { default: "top" },
+        }}
+      >
+        {children}
+      </Page>
+    </>
   );
 }

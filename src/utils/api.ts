@@ -4,7 +4,7 @@
  *
  * We also create a few inference helpers for input and output types.
  */
-import { httpBatchLink, loggerLink } from "@trpc/client";
+import { httpBatchLink } from "@trpc/client";
 import { createTRPCNext } from "@trpc/next";
 import { type inferRouterInputs, type inferRouterOutputs } from "@trpc/server";
 import superjson from "superjson";
@@ -19,28 +19,48 @@ const getBaseUrl = () => {
 
 /** A set of type-safe react-query hooks for your tRPC API. */
 export const api = createTRPCNext<AppRouter>({
-  config() {
+  config(opts) {
+    const { ctx } = opts;
+    if (typeof window !== "undefined") {
+      // during client requests
+      return {
+        transformer: superjson, // optional - adds superjson serialization
+        links: [
+          httpBatchLink({
+            url: "/api/trpc",
+          }),
+        ],
+        // Change options globally
+        queryClientConfig: {
+          defaultOptions: {
+            queries: {
+              refetchOnMount: false,
+              refetchOnWindowFocus: true,
+            },
+          },
+        },
+      };
+    }
     return {
-      /**
-       * Transformer used for data de-serialization from the server.
-       *
-       * @see https://trpc.io/docs/data-transformers
-       */
-      transformer: superjson,
-
-      /**
-       * Links used to determine request flow from client to server.
-       *
-       * @see https://trpc.io/docs/links
-       */
+      transformer: superjson, // optional - adds superjson serialization
       links: [
-        loggerLink({
-          enabled: (opts) =>
-            process.env.NODE_ENV === "development" ||
-            (opts.direction === "down" && opts.result instanceof Error),
-        }),
         httpBatchLink({
+          // The server needs to know your app's full url
           url: `${getBaseUrl()}/api/trpc`,
+          /**
+           * Set custom request headers on every request from tRPC
+           * @link https://trpc.io/docs/v10/header
+           */
+          headers() {
+            if (!ctx?.req?.headers) {
+              return {};
+            }
+            // To use SSR properly, you need to forward client headers to the server
+            // This is so you can pass through things like cookies when we're server-side rendering
+            return {
+              cookie: ctx.req.headers.cookie,
+            };
+          },
         }),
       ],
     };
@@ -50,7 +70,7 @@ export const api = createTRPCNext<AppRouter>({
    *
    * @see https://trpc.io/docs/nextjs#ssr-boolean-default-false
    */
-  ssr: false,
+  ssr: true,
 });
 
 /**

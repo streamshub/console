@@ -1,0 +1,18 @@
+{
+  "common": {
+    "title": "Integration Developer Hub",
+    "description": "lorem dolor ipsum"
+  },
+  "homepage": {
+    "title": "Integration Developer Hub",
+    "description": "lorem dolor ipsum"
+  },
+  "data-source": {
+    "title": "Data Source",
+    "description": "List and manage all the data source available to the tools in the Integration Developer Hub, like your AMQ Streams clusters, AWS resources, etc."
+  },
+  "message-browser": {
+    "title": "Message Browser",
+    "description": "View the data being produced to a topic from a selected Kafka Resource. Browse messages, seek to a specific offset or timestamp by partition."
+  }
+}

@@ -1,97 +1,106 @@
-import { Breadcrumb, BreadcrumbItem } from "@patternfly/react-core";
-import { type NextPage } from "next";
-import Head from "next/head";
-import Link from "next/link";
+import {
+  Card,
+  CardBody,
+  CardHeader,
+  CardTitle,
+  Gallery,
+  Icon,
+  PageSection,
+  PageSectionVariants,
+  SearchInput,
+  Text,
+  TextContent,
+  Toolbar,
+  ToolbarContent,
+  ToolbarFilter,
+  ToolbarItem,
+} from "@patternfly/react-core";
+import { ClusterIcon, DataProcessorIcon } from "@patternfly/react-icons";
+import { type GetStaticProps, type NextPage } from "next";
+import { useTranslations } from "next-intl";
+import { useRouter } from "next/router";
 import React from "react";
 import Layout from "~/components/layout";
-import { TableView } from "~/components/Table";
 
-import { api } from "~/utils/api";
+const tools = [
+  {
+    url: "/data-source",
+    id: "data-source",
+    icon: <ClusterIcon />,
+    title: "data-source.title" as const,
+    description: "data-source.description" as const,
+  },
+  {
+    url: "/message-browser",
+    id: "message-browser",
+    icon: <DataProcessorIcon />,
+    title: "message-browser.title" as const,
+    description: "message-browser.description" as const,
+  },
+];
 
 const Home: NextPage = () => {
-  const clusters = api.k8s.getKafkaClusters.useQuery();
+  const t = useTranslations();
+  const router = useRouter();
+
+  const toolbarItems = (
+    <>
+      <ToolbarItem>
+        <ToolbarFilter categoryName="Products" chips={[]} deleteChip={() => {}}>
+          <SearchInput
+            placeholder="Find by name"
+            value={""}
+            onChange={(_event, value) => {}}
+            onClear={() => {}}
+          />
+        </ToolbarFilter>
+      </ToolbarItem>
+    </>
+  );
 
   return (
-    <Layout
-      breadcrumb={
-        <Breadcrumb>
-          <BreadcrumbItem
-            isActive
-            render={(props) => (
-              <Link {...props} href={"/"}>
-                AMQ Streams
-              </Link>
-            )}
-          />
-        </Breadcrumb>
-      }
-    >
-      <Head>
-        <title>AMQ Streams</title>
-        <meta name="description" content="AMQ Streams" />
-        <link rel="icon" href="/favicon.ico" />
-      </Head>
-      <TableView
-        itemCount={clusters.data?.length}
-        page={1}
-        onPageChange={() => {}}
-        data={clusters.data}
-        emptyStateNoData={<div>No clusters</div>}
-        emptyStateNoResults={<div>No search results</div>}
-        ariaLabel={"List of AMQ Streams clusters"}
-        columns={[
-          "name" as const,
-          "namespace" as const,
-          "status" as const,
-          "creationTimestamp" as const,
-        ]}
-        renderHeader={({ column, Th }) => {
-          switch (column) {
-            case "name":
-              return <Th>Name</Th>;
-            case "namespace":
-              return <Th>Namespace</Th>;
-            case "status":
-              return <Th>Status</Th>;
-            case "creationTimestamp":
-              return <Th>Created at</Th>;
-          }
-        }}
-        renderCell={({ row, column, Td }) => {
-          switch (column) {
-            case "name":
-              return (
-                <Td>
-                  <Link href={`/clusters/${row.namespace}/${row.name}`}>
-                    {row.name}
-                  </Link>
-                </Td>
-              );
-            case "status":
-              return (
-                <Td>
-                  {
-                    row.status?.conditions?.find((c) => c.status === "True")
-                      ?.type
-                  }
-                </Td>
-              );
-            case "creationTimestamp":
-              return (
-                <Td>
-                  {new Intl.DateTimeFormat("en-US", {
-                    dateStyle: "medium",
-                    timeStyle: "medium",
-                  }).format(Date.parse(row.creationTimestamp))}
-                </Td>
-              );
-            default:
-              return <Td>{row[column]}</Td>;
-          }
-        }}
-      />
+    <Layout>
+      <PageSection variant={PageSectionVariants.light}>
+        <TextContent>
+          <Text component="h1">{t("homepage.title")}</Text>
+          <Text component="p">{t("homepage.description")}</Text>
+        </TextContent>
+        <Toolbar id="toolbar-group-types" clearAllFilters={() => {}}>
+          <ToolbarContent>{toolbarItems}</ToolbarContent>
+        </Toolbar>
+      </PageSection>
+      <PageSection isFilled>
+        <Gallery hasGutter aria-label={t("common.title")}>
+          {tools.map(({ id, url, icon, title, description }) => (
+            <Card isClickable={true} key={id}>
+              <CardHeader
+                selectableActions={{
+                  onClickAction: () => void router.push(url),
+                  selectableActionId: id,
+                }}
+              >
+                <Icon size={"xl"}>{icon}</Icon>
+              </CardHeader>
+              <CardTitle>{t(title)}</CardTitle>
+              <CardBody>{t(description)}</CardBody>
+            </Card>
+          ))}
+        </Gallery>
+      </PageSection>
     </Layout>
   );
+};
+
+export const getStaticProps: GetStaticProps = async function (context) {
+  return {
+    props: {
+      // You can get the messages from anywhere you like. The recommended
+      // pattern is to put them in JSON files separated by locale and read
+      // the desired one based on the `locale` received from Next.js.
+      messages: (await import(`../../messages/${context.locale || "en"}.json`))
+        .default as IntlMessages,
+    },
+  };
 };
 
 export default Home;
