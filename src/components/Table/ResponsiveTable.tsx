@@ -18,7 +18,6 @@ import type {
   FunctionComponent,
   PropsWithChildren,
   ReactElement,
-  VoidFunctionComponent,
 } from "react";
 import { forwardRef, memo, useCallback, useMemo, useState } from "react";
 import useResizeObserver from "use-resize-observer";
@@ -363,7 +362,7 @@ export const DeletableRow: FunctionComponent<DeletableRowProps> = memo(
 );
 DeletableRow.displayName = "DeletableRow";
 
-const TableSkeleton: VoidFunctionComponent<{
+const TableSkeleton: FunctionComponent<{
   columns: number;
   rows: number;
   getTd: (index: number) => typeof Td;

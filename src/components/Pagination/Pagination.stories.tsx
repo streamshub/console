@@ -1,4 +1,4 @@
-import type { ComponentStory, ComponentMeta } from "@storybook/react";
+import type { Meta, StoryFn } from "@storybook/react";
 import { Pagination } from "./Pagination";
 
 export default {
@@ -8,9 +8,9 @@ export default {
     page: 1,
     perPage: 10,
   },
-} as ComponentMeta<typeof Pagination>;
+} as Meta<typeof Pagination>;
 
-const Template: ComponentStory<typeof Pagination> = (args) => (
+const Template: StoryFn<typeof Pagination> = (args) => (
   <Pagination {...args} />
 );
 

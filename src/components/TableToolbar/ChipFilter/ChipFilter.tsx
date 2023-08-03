@@ -7,7 +7,7 @@ import {
   ToolbarToggleGroup,
 } from "@patternfly/react-core";
 import { FilterIcon } from "@patternfly/react-icons";
-import type { VoidFunctionComponent } from "react";
+import type { FunctionComponent } from "react";
 import { useState } from "react";
 import { FilterCheckbox, FilterSearch, FilterSelector } from "./components";
 import type { FilterType } from "./types";
@@ -17,7 +17,7 @@ export type ChipFilterProps = {
   breakpoint?: ToolbarToggleGroupProps["breakpoint"];
 };
 
-export const ChipFilter: VoidFunctionComponent<ChipFilterProps> = ({
+export const ChipFilter: FunctionComponent<ChipFilterProps> = ({
   filters,
   breakpoint = "md",
 }) => {

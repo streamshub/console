@@ -1,5 +1,5 @@
 import { Toolbar, ToolbarContent } from "@patternfly/react-core";
-import type { ComponentMeta, ComponentStory } from "@storybook/react";
+import type { Meta, StoryFn } from "@storybook/react";
 
 import { ChipFilter } from "./ChipFilter";
 import {
@@ -18,9 +18,9 @@ export default {
       Options: sampleCheckboxFilter,
     },
   },
-} as ComponentMeta<typeof ChipFilter>;
+} as Meta<typeof ChipFilter>;
 
-const Template: ComponentStory<typeof ChipFilter> = (args) => (
+const Template: StoryFn<typeof ChipFilter> = (args) => (
   <Toolbar
     clearAllFilters={() => {
       /* noop */
