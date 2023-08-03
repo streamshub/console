@@ -25,7 +25,7 @@ jobs:
         env:
           GITHUB_CONTEXT: ${{ toJson(github) }}
 
-      ## Checkout the source of the event that triggered this workflow, 
+      ## Checkout the source of the event that triggered this workflow,
       ## PR commit (pull_request event) or commit (push event).
       - name: Checkout
         uses: actions/checkout@v3
@@ -36,10 +36,10 @@ jobs:
 
       ## Retrieve the `target` directory from the build job
       - name: Fetch Build Result
-        uses: actions/github-script@v6.4.1
+        uses: actions/github-script@v6
         with:
           script: |
-            var artifacts = await github.actions.listWorkflowRunArtifacts({
+            var artifacts = await github.rest.actions.listWorkflowRunArtifacts({
                owner: context.repo.owner,
                repo: context.repo.repo,
                run_id: ${{ github.event.workflow_run.id }},
@@ -47,7 +47,7 @@ jobs:
             var matchArtifact = artifacts.data.artifacts.filter((artifact) => {
               return artifact.name == "target"
             })[0];
-            var download = await github.actions.downloadArtifact({
+            var download = await github.rest.actions.downloadArtifact({
                owner: context.repo.owner,
                repo: context.repo.repo,
                artifact_id: matchArtifact.id,
