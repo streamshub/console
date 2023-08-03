@@ -1,10 +1,10 @@
 import type { SelectProps } from "@patternfly/react-core";
 import { Select, SelectOption } from "@patternfly/react-core";
 import { FilterIcon } from "@patternfly/react-icons";
-import type { VoidFunctionComponent } from "react";
+import type { FunctionComponent } from "react";
 import { useState } from "react";
 
-export const FilterSelector: VoidFunctionComponent<{
+export const FilterSelector: FunctionComponent<{
   options: string[];
   value: string;
   onChange: (value: string) => void;

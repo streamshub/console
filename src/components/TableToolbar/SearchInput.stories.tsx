@@ -1,5 +1,5 @@
 import { InputGroup } from "@patternfly/react-core";
-import type { ComponentStory, ComponentMeta } from "@storybook/react";
+import type { Meta, StoryFn } from "@storybook/react";
 import { within, userEvent } from "@storybook/testing-library";
 
 import { SearchInput } from "./SearchInput";
@@ -9,9 +9,9 @@ export default {
   args: {
     validate: (v) => v !== "error",
   },
-} as ComponentMeta<typeof SearchInput>;
+} as Meta<typeof SearchInput>;
 
-const Template: ComponentStory<typeof SearchInput> = (args) => (
+const Template: StoryFn<typeof SearchInput> = (args) => (
   <InputGroup>
     <SearchInput {...args} />
   </InputGroup>

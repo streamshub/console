@@ -1,9 +1,9 @@
 import { Select, SelectOption, SelectVariant } from "@patternfly/react-core";
-import type { VoidFunctionComponent } from "react";
+import type { FunctionComponent } from "react";
 import { useState } from "react";
 import type { CheckboxType } from "../types";
 
-export const FilterCheckbox: VoidFunctionComponent<
+export const FilterCheckbox: FunctionComponent<
   Pick<CheckboxType<any>, "chips" | "options" | "onToggle"> & {
     label: string;
   }

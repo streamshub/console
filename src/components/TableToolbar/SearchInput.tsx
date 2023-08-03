@@ -7,7 +7,7 @@ import {
   ValidatedOptions,
 } from "@patternfly/react-core";
 import { ArrowRightIcon } from "@patternfly/react-icons";
-import type { KeyboardEvent, VoidFunctionComponent } from "react";
+import type { KeyboardEvent, FunctionComponent } from "react";
 import { useCallback, useRef, useState } from "react";
 
 export type SearchInputProps = {
@@ -17,7 +17,7 @@ export type SearchInputProps = {
   onSearch: (value: string) => void;
 };
 
-export const SearchInput: VoidFunctionComponent<SearchInputProps> = ({
+export const SearchInput: FunctionComponent<SearchInputProps> = ({
   placeholder,
   errorMessage,
   validate,
