@@ -12,7 +12,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Retrieve Project Metadata
         uses: radcortez/project-metadata-action@243817f1e0f2b4df4e012fc17efc45cff166425d
