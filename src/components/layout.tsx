@@ -1,4 +1,5 @@
 import {
+  Brand,
   Button,
   ButtonVariant,
   Divider,
@@ -6,11 +7,8 @@ import {
   DropdownItem,
   Masthead,
   MastheadBrand,
-  MastheadContent,
   MastheadMain,
-  MastheadToggle,
   Page,
-  PageToggleButton,
   SkipToContent,
   Toolbar,
   ToolbarContent,
@@ -18,7 +16,6 @@ import {
   ToolbarItem,
 } from "@patternfly/react-core";
 import { ThIcon } from "@patternfly/react-icons";
-import BarsIcon from "@patternfly/react-icons/dist/esm/icons/bars-icon";
 import BellIcon from "@patternfly/react-icons/dist/esm/icons/bell-icon";
 import CogIcon from "@patternfly/react-icons/dist/esm/icons/cog-icon";
 import HelpIcon from "@patternfly/react-icons/dist/esm/icons/help-icon";
@@ -162,28 +159,18 @@ export default function Layout({
 
   const masthead = (
     <Masthead>
-      <MastheadToggle>
-        <PageToggleButton variant="plain" aria-label="Global navigation">
-          <BarsIcon />
-        </PageToggleButton>
-      </MastheadToggle>
       <MastheadMain>
         <MastheadBrand>
-          {/*<Brand*/}
-          {/*  widths={{ default: "180px", md: "180px", "2xl": "220px" }}*/}
-          {/*  src="/assets/images/logo__pf--reverse--base.png"*/}
-          {/*  alt="Fallback patternFly default logo"*/}
-          {/*>*/}
-          {/*  <source*/}
-          {/*    media="(min-width: 768px)"*/}
-          {/*    srcSet="/assets/images/logo__pf--reverse-on-md.svg"*/}
-          {/*  />*/}
-          {/*  <source srcSet="/assets/images/logo__pf--reverse--base.svg" />*/}
-          {/*</Brand>*/}
-          {t("title")}
+          <Brand
+            src={
+              "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d8/Red_Hat_logo.svg/2560px-Red_Hat_logo.svg.png"
+            }
+            alt={t("title")}
+            heights={{ default: "24px" }}
+          />
+          &nbsp;&nbsp;{t("title")}
         </MastheadBrand>
       </MastheadMain>
-      <MastheadContent>{headerToolbar}</MastheadContent>
     </Masthead>
   );
 
@@ -204,7 +191,6 @@ export default function Layout({
       </Head>
       <Page
         header={masthead}
-        isManagedSidebar
         skipToContent={pageSkipToContent}
         breadcrumb={breadcrumb}
         mainContainerId={mainContainerId}

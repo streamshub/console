@@ -8,14 +8,21 @@ import {
   PageSection,
   PageSectionVariants,
   SearchInput,
-  Text,
   TextContent,
+  Title,
   Toolbar,
   ToolbarContent,
-  ToolbarFilter,
   ToolbarItem,
 } from "@patternfly/react-core";
-import { ClusterIcon, DataProcessorIcon } from "@patternfly/react-icons";
+import {
+  ClusterIcon,
+  DataProcessorIcon,
+  DataSinkIcon,
+  HatWizardIcon,
+  ListIcon,
+  TachometerAltIcon,
+} from "@patternfly/react-icons";
+import CogIcon from "@patternfly/react-icons/dist/esm/icons/cog-icon";
 import { type GetStaticProps, type NextPage } from "next";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/router";
@@ -24,11 +31,39 @@ import Layout from "~/components/layout";
 
 const tools = [
   {
-    url: "/data-source",
-    id: "data-source",
+    url: "/connection",
+    id: "connection",
     icon: <ClusterIcon />,
-    title: "data-source.title" as const,
-    description: "data-source.description" as const,
+    title: "connection.title" as const,
+    description: "connection.description" as const,
+  },
+  {
+    url: "/kafka-configuration",
+    id: "kafka-configuration",
+    icon: <CogIcon />,
+    title: "kafka-configuration.title" as const,
+    description: "kafka-configuration.description" as const,
+  },
+  {
+    url: "/kafka-insights",
+    id: "kafka-insights",
+    icon: <TachometerAltIcon />,
+    title: "kafka-insights.title" as const,
+    description: "kafka-insights.description" as const,
+  },
+  {
+    url: "/topic-manager",
+    id: "topic-manager",
+    icon: <ListIcon />,
+    title: "topic-manager.title" as const,
+    description: "topic-manager.description" as const,
+  },
+  {
+    url: "/topic-creator",
+    id: "topic-creator",
+    icon: <HatWizardIcon />,
+    title: "topic-creator.title" as const,
+    description: "topic-creator.description" as const,
   },
   {
     url: "/message-browser",
@@ -36,6 +71,13 @@ const tools = [
     icon: <DataProcessorIcon />,
     title: "message-browser.title" as const,
     description: "message-browser.description" as const,
+  },
+  {
+    url: "/message-producer",
+    id: "message-producer",
+    icon: <DataSinkIcon />,
+    title: "message-producer.title" as const,
+    description: "message-producer.description" as const,
   },
 ];
 
@@ -45,15 +87,12 @@ const Home: NextPage = () => {
 
   const toolbarItems = (
     <>
-      <ToolbarItem>
-        <ToolbarFilter categoryName="Products" chips={[]} deleteChip={() => {}}>
-          <SearchInput
-            placeholder="Find by name"
-            value={""}
-            onChange={(_event, value) => {}}
-            onClear={() => {}}
-          />
-        </ToolbarFilter>
+      <ToolbarItem variant={"search-filter"}>
+        <SearchInput
+          value={""}
+          onChange={(_event, value) => {}}
+          onClear={() => {}}
+        />
       </ToolbarItem>
     </>
   );
@@ -62,8 +101,9 @@ const Home: NextPage = () => {
     <Layout>
       <PageSection variant={PageSectionVariants.light}>
         <TextContent>
-          <Text component="h1">{t("homepage.title")}</Text>
-          <Text component="p">{t("homepage.description")}</Text>
+          <Title headingLevel={"h1"} size="4xl">
+            {t("homepage.title")}
+          </Title>
         </TextContent>
         <Toolbar id="toolbar-group-types" clearAllFilters={() => {}}>
           <ToolbarContent>{toolbarItems}</ToolbarContent>

@@ -4,15 +4,34 @@
     "description": "lorem dolor ipsum"
   },
   "homepage": {
-    "title": "Integration Developer Hub",
-    "description": "lorem dolor ipsum"
+    "title": "Integration Developer Hub"
   },
-  "data-source": {
-    "title": "Data Source",
-    "description": "List and manage all the data source available to the tools in the Integration Developer Hub, like your AMQ Streams clusters, AWS resources, etc."
+  "connection": {
+    "title": "Kafka cluster connection",
+    "description": "List and manage all the Kafka Cluster connections available to the tools in the Integration Developer Hub."
+  },
+  "kafka-configuration": {
+    "title": "Kafka cluster configuration",
+    "description": "View and change all the configuration for a Kafka cluster."
+  },
+  "kafka-insights": {
+    "title": "Kafka cluster insights",
+    "description": "Get insights about a Kafka cluster workload and set up rules to automatically rebalance the workload."
+  },
+  "topic-manager": {
+    "title": "Kafka topics manager",
+    "description": "List and delete topics for a Kafka cluster."
+  },
+  "topic-creator": {
+    "title": "Create a Kafka topic",
+    "description": "Create a new Kafka topic, set its properties."
   },
   "message-browser": {
-    "title": "Message Browser",
-    "description": "View the data being produced to a topic from a selected Kafka Resource. Browse messages, seek to a specific offset or timestamp by partition."
+    "title": "Message browser",
+    "description": "View the data being produced to a topic. Browse messages, seek to a specific offset or timestamp by partition."
+  },
+  "message-producer": {
+    "title": "Message producer",
+    "description": "Produce messages to a topic."
   }
 }
