@@ -1,0 +1,39 @@
+name: "Cache restoration"
+description: "Setup a NodeJS environment and restore cache if any, given a node version"
+
+inputs:
+  node-version:
+    description: "Node version to use, default to LTS Fermium (14.x)"
+    required: true
+    default: lts/fermium
+outputs:
+  cache-hit:
+    description: "Forward actions/cache cache-hit output"
+    value: ${{ steps.node-cache.outputs.cache-hit }}
+
+runs:
+  using: "composite" # Mandatory parameter
+  steps:
+    # Setup a Node environment given a node version
+    - name: Use Node.js ${{ inputs.node-version }}
+      uses: actions/setup-node@v3
+      with:
+        node-version: ${{ inputs.node-version }}
+
+    - name: Cache Node Modules
+      uses: actions/cache@v3
+      id: cache
+      env:
+        cache-name: cache-node-modules
+      with:
+        path: ~/.npm
+        key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-build-${{ env.cache-name }}-
+          ${{ runner.os }}-build-
+          ${{ runner.os }}-
+
+    - name: Install Dependencies
+      if: steps.node-cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: npm ci
