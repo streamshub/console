@@ -40,7 +40,7 @@ jobs:
           mvn verify -B --no-transfer-progress -Pcoverage
 
       - name: Archive Results
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         if: failure()
         with:
           name: artifacts
@@ -54,7 +54,7 @@ jobs:
 
       ## Attach the target directory for use in Sonar analysis
       - name: Attach Build Output
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: target
           path: |
