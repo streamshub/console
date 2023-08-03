@@ -9,6 +9,8 @@ import {
   MastheadBrand,
   MastheadMain,
   Page,
+  PageBreadcrumb,
+  PageGroup,
   SkipToContent,
   Toolbar,
   ToolbarContent,
@@ -192,7 +194,6 @@ export default function Layout({
       <Page
         header={masthead}
         skipToContent={pageSkipToContent}
-        breadcrumb={breadcrumb}
         mainContainerId={mainContainerId}
         isBreadcrumbWidthLimited
         isBreadcrumbGrouped
@@ -209,6 +210,9 @@ export default function Layout({
           stickyOnBreakpoint: { default: "top" },
         }}
       >
+        <PageGroup>
+          {breadcrumb && <PageBreadcrumb>{breadcrumb}</PageBreadcrumb>}
+        </PageGroup>
         {children}
       </Page>
     </>
