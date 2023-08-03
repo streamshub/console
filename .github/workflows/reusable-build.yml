@@ -56,3 +56,10 @@ jobs:
           projectToken: chpt_3bf820ceff3a2cb
           token: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
           exitOnceUploaded: true
+
+   # Use the secrets in the tests
+        env:
+          NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
+          NEXTAUTH_URL: ${{ secrets.NEXTAUTH_URL }}
+          KEYCLOAK_CLIENT_ID: ${{ secrets.KEYCLOAK_CLIENT_ID }}
+          KEYCLOAK_CLIENT_SECRET: ${{ secrets.KEYCLOAK_CLIENT_SECRET }}
