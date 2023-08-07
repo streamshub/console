@@ -28,6 +28,7 @@ import com.github.eyefloaters.console.api.model.NewPartitions;
 import com.github.eyefloaters.console.api.model.NewTopic;
 import com.github.eyefloaters.console.api.model.Topic;
 import com.github.eyefloaters.console.api.service.TopicService;
+import com.github.eyefloaters.console.api.support.OffsetSpecValidator;
 
 @Path("/api/clusters/{clusterId}/topics")
 public class TopicsResource {
@@ -62,9 +63,10 @@ public class TopicsResource {
     @APIResponseSchema(responseCode = "200", value = Topic[].class)
     public CompletionStage<Response> listTopics(
                     @QueryParam("include") @DefaultValue("") List<String> includes,
-                    @QueryParam("listInternal") @DefaultValue("false") boolean listInternal) {
+                    @QueryParam("listInternal") @DefaultValue("false") boolean listInternal,
+                    @QueryParam("offsetSpec") @DefaultValue("latest") @OffsetSpecValidator.ValidOffsetSpec String offsetSpec) {
 
-        return topicService.listTopics(listInternal, includes)
+        return topicService.listTopics(listInternal, includes, offsetSpec)
                 .thenApply(Response::ok)
                 .exceptionally(error -> Response.serverError().entity(error.getMessage()))
                 .thenApply(Response.ResponseBuilder::build);
@@ -76,9 +78,10 @@ public class TopicsResource {
     @APIResponseSchema(responseCode = "200", value = Topic[].class)
     public CompletionStage<Response> describeTopic(
                     @PathParam("topicName") String topicName,
-                    @QueryParam("include") @DefaultValue("") List<String> includes) {
+                    @QueryParam("include") @DefaultValue("") List<String> includes,
+                    @QueryParam("offsetSpec") @DefaultValue("latest") @OffsetSpecValidator.ValidOffsetSpec String offsetSpec) {
 
-        return topicService.describeTopic(topicName, includes)
+        return topicService.describeTopic(topicName, includes, offsetSpec)
                 .thenApply(Response::ok)
                 .exceptionally(error -> Response.serverError().entity(error.getMessage()))
                 .thenApply(Response.ResponseBuilder::build);

@@ -2,6 +2,7 @@ package com.github.eyefloaters.console.api.model;
 
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Function;
 
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
@@ -24,6 +25,18 @@ public class Either<P, A> {
 
     public static <P, A> Either<P, A> of(Optional<P> primary, A alternate) {
         return new Either<>(primary, alternate);
+    }
+
+    public static <S, P, A> Either<P, A> of(S source, A alternate, Function<S, P> transformer) {
+        Either<P, A> either;
+
+        if (alternate != null) {
+            either = Either.ofAlternate(alternate);
+        } else {
+            either = Either.of(transformer.apply(source));
+        }
+
+        return either;
     }
 
     public static <P, A> Either<P, A> of(P primary) {

@@ -1,7 +1,6 @@
 package com.github.eyefloaters.console.api.service;
 
-import static org.apache.kafka.clients.admin.NewPartitions.increaseTo;
-
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
@@ -22,7 +21,9 @@ import jakarta.inject.Inject;
 
 import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.clients.admin.CreateTopicsResult;
+import org.apache.kafka.clients.admin.ListOffsetsResult.ListOffsetsResultInfo;
 import org.apache.kafka.clients.admin.ListTopicsOptions;
+import org.apache.kafka.clients.admin.OffsetSpec;
 import org.apache.kafka.common.KafkaFuture;
 import org.apache.kafka.common.config.ConfigResource;
 
@@ -31,7 +32,10 @@ import com.github.eyefloaters.console.api.model.Either;
 import com.github.eyefloaters.console.api.model.Error;
 import com.github.eyefloaters.console.api.model.NewPartitions;
 import com.github.eyefloaters.console.api.model.NewTopic;
+import com.github.eyefloaters.console.api.model.OffsetInfo;
 import com.github.eyefloaters.console.api.model.Topic;
+
+import static org.apache.kafka.clients.admin.NewPartitions.increaseTo;
 
 @ApplicationScoped
 public class TopicService {
@@ -67,21 +71,21 @@ public class TopicService {
                 .toCompletionStage();
     }
 
-    public CompletionStage<List<Topic>> listTopics(boolean listInternal, List<String> includes) {
+    public CompletionStage<List<Topic>> listTopics(boolean listInternal, List<String> includes, String offsetSpec) {
         Admin adminClient = clientSupplier.get();
 
         return adminClient.listTopics(new ListTopicsOptions().listInternal(listInternal))
                 .listings()
                 .thenApply(list -> list.stream().map(Topic::fromTopicListing).toList())
                 .toCompletionStage()
-                .thenCompose(list -> augmentList(adminClient, list, includes))
+                .thenCompose(list -> augmentList(adminClient, list, includes, offsetSpec))
                 .thenApply(list -> list.stream().sorted(Comparator.comparing(Topic::getName)).toList());
     }
 
-    public CompletionStage<Topic> describeTopic(String topicName, List<String> includes) {
+    public CompletionStage<Topic> describeTopic(String topicName, List<String> includes, String offsetSpec) {
         Admin adminClient = clientSupplier.get();
 
-        return describeTopics(adminClient, List.of(topicName))
+        return describeTopics(adminClient, List.of(topicName), offsetSpec)
             .thenApply(result -> result.get(topicName))
             .thenApply(result -> {
                 if (result.isPrimaryPresent()) {
@@ -103,10 +107,6 @@ public class TopicService {
                         .exceptionally(promise::completeExceptionally);
                 } else {
                     promise.complete(topic);
-                }
-
-                if (includes.contains("offsets")) {
-                    // TODO
                 }
 
                 return promise;
@@ -160,11 +160,10 @@ public class TopicService {
         return CompletableFuture.allOf(pendingDeletes).thenApply(nothing -> errors);
     }
 
-    CompletionStage<List<Topic>> augmentList(Admin adminClient, List<Topic> list, List<String> includes) {
+    CompletionStage<List<Topic>> augmentList(Admin adminClient, List<Topic> list, List<String> includes, String offsetSpec) {
         Map<String, Topic> topics = list.stream().collect(Collectors.toMap(Topic::getName, Function.identity()));
         CompletableFuture<Void> configPromise = maybeDescribeConfigs(adminClient, topics, includes);
-        CompletableFuture<Void> describePromise = maybeDescribeTopics(adminClient, topics, includes);
-        // TODO: maybeListOffsets - only if `includes` contains `partitions`
+        CompletableFuture<Void> describePromise = maybeDescribeTopics(adminClient, topics, includes, offsetSpec);
 
         return CompletableFuture.allOf(configPromise, describePromise).thenApply(nothing -> list);
     }
@@ -189,11 +188,11 @@ public class TopicService {
         return promise;
     }
 
-    CompletableFuture<Void> maybeDescribeTopics(Admin adminClient, Map<String, Topic> topics, List<String> includes) {
+    CompletableFuture<Void> maybeDescribeTopics(Admin adminClient, Map<String, Topic> topics, List<String> includes, String offsetSpec) {
         CompletableFuture<Void> promise = new CompletableFuture<>();
 
         if (includes.contains("partitions") || includes.contains("authorizedOperations")) {
-            describeTopics(adminClient, topics.keySet())
+            describeTopics(adminClient, topics.keySet(), offsetSpec)
                 .thenApply(descriptions -> {
                     descriptions.forEach((name, either) -> {
                         if (includes.contains("partitions")) {
@@ -203,8 +202,8 @@ public class TopicService {
                             topics.get(name).addAuthorizedOperations(either);
                         }
                     });
-                    promise.complete(null);
-                    return true; // Match `completeExceptionally`
+
+                    return promise.complete(null);
                 })
                 .exceptionally(promise::completeExceptionally);
         } else {
@@ -214,7 +213,7 @@ public class TopicService {
         return promise;
     }
 
-    CompletionStage<Map<String, Either<Topic, Throwable>>> describeTopics(Admin adminClient, Collection<String> topicNames) {
+    CompletionStage<Map<String, Either<Topic, Throwable>>> describeTopics(Admin adminClient, Collection<String> topicNames, String offsetSpec) {
         Map<String, Either<Topic, Throwable>> result = new LinkedHashMap<>(topicNames.size());
 
         var pendingDescribes = adminClient.describeTopics(topicNames)
@@ -223,7 +222,7 @@ public class TopicService {
                 .stream()
                 .map(entry ->
                     entry.getValue().whenComplete((description, error) ->
-                        result.put(entry.getKey(), either(description, error))))
+                        result.put(entry.getKey(), Either.of(description, error, Topic::fromTopicDescription))))
                 .map(KafkaFuture::toCompletionStage)
                 .map(CompletionStage::toCompletableFuture)
                 .toArray(CompletableFuture[]::new);
@@ -231,22 +230,66 @@ public class TopicService {
         var promise = new CompletableFuture<Map<String, Either<Topic, Throwable>>>();
 
         CompletableFuture.allOf(pendingDescribes)
+                .thenCompose(nothing -> listOffsets(adminClient, result, offsetSpec))
                 .thenApply(nothing -> promise.complete(result))
                 .exceptionally(promise::completeExceptionally);
 
         return promise;
     }
 
-    Either<Topic, Throwable> either(org.apache.kafka.clients.admin.TopicDescription description, Throwable error) {
-        Either<Topic, Throwable> either;
+    CompletionStage<Void> listOffsets(Admin adminClient, Map<String, Either<Topic, Throwable>> topics, String offsetSpec) {
+        OffsetSpec reqOffsetSpec = switch (offsetSpec) {
+            case "earliest"     -> OffsetSpec.earliest();
+            case "latest"       -> OffsetSpec.latest();
+            case "maxTimestamp" -> OffsetSpec.maxTimestamp();
+            default             -> OffsetSpec.forTimestamp(Instant.parse(offsetSpec).toEpochMilli());
+        };
 
-        if (error != null) {
-            either = Either.ofAlternate(error);
-        } else {
-            either = Either.of(Topic.fromTopicDescription(description));
-        }
+        Map<org.apache.kafka.common.TopicPartition, OffsetSpec> request = topics.entrySet().stream()
+                .filter(entry -> entry.getValue().isPrimaryPresent())
+                .map(entry -> entry.getValue().getPrimary())
+                .filter(topic -> topic.getPartitions().isPrimaryPresent())
+                .flatMap(topic -> topic.getPartitions().getPrimary()
+                        .stream()
+                        .map(partition -> new org.apache.kafka.common.TopicPartition(topic.getName(), partition.getPartition())))
+                .collect(Collectors.toMap(Function.identity(), ignored -> reqOffsetSpec));
 
-        return either;
+        var result = adminClient.listOffsets(request);
+        var pendingOffsets = request.keySet().stream()
+                .map(topicPartition -> result.partitionResult(topicPartition)
+                        .whenComplete((offsetResult, error) ->
+                        addOffset(topics.get(topicPartition.topic()).getPrimary(),
+                                    topicPartition.partition(),
+                                    offsetResult,
+                                    error)))
+                .map(KafkaFuture::toCompletionStage)
+                .map(CompletionStage::toCompletableFuture)
+                .toArray(CompletableFuture[]::new);
+
+        var promise = new CompletableFuture<Void>();
+
+        CompletableFuture.allOf(pendingOffsets)
+                .thenApply(nothing -> promise.complete(null))
+                .exceptionally(promise::completeExceptionally);
+
+        return promise;
     }
 
+    void addOffset(Topic topic, int partitionNo, ListOffsetsResultInfo result, Throwable error) {
+        topic.getPartitions()
+            .getPrimary()
+            .stream()
+            .filter(partition -> partition.getPartition() == partitionNo)
+            .findFirst()
+            .ifPresent(partition -> partition.addOffset(either(result, error)));
+    }
+
+    Either<OffsetInfo, Throwable> either(ListOffsetsResultInfo result, Throwable error) {
+        Function<ListOffsetsResultInfo, OffsetInfo> transformer = offsetInfo -> {
+            Instant timestamp = offsetInfo.timestamp() != -1 ? Instant.ofEpochMilli(offsetInfo.timestamp()) : null;
+            return new OffsetInfo(offsetInfo.offset(), timestamp, offsetInfo.leaderEpoch().orElse(null));
+        };
+
+        return Either.of(result, error, transformer);
+    }
 }

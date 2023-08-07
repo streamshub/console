@@ -8,6 +8,7 @@ public class TopicPartitionInfo {
     Node leader;
     List<Node> replicas;
     List<Node> isr;
+    Either<OffsetInfo, Error> offset;
 
     public TopicPartitionInfo() {
     }
@@ -25,6 +26,18 @@ public class TopicPartitionInfo {
         List<Node> replicas = info.replicas().stream().map(Node::fromKafkaModel).toList();
         List<Node> isr = info.isr().stream().map(Node::fromKafkaModel).toList();
         return new TopicPartitionInfo(info.partition(), leader, replicas, isr);
+    }
+
+    public void addOffset(Either<OffsetInfo, Throwable> offset) {
+        if (offset.isPrimaryPresent()) {
+            this.offset = Either.of(offset.getPrimary());
+        } else {
+            Error error = new Error(
+                    "Unable to fetch partition offset",
+                    offset.getAlternate().getMessage(),
+                    offset.getAlternate());
+            this.offset = Either.ofAlternate(error);
+        }
     }
 
     public int getPartition() {
@@ -59,4 +72,7 @@ public class TopicPartitionInfo {
         this.isr = isr;
     }
 
+    public Either<OffsetInfo, Error> getOffset() {
+        return offset;
+    }
 }

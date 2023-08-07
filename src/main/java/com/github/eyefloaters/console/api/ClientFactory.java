@@ -80,8 +80,8 @@ public class ClientFactory {
             .map(l -> buildConfiguration(cluster, l))
             .orElseThrow(() -> new NotFoundException("Cluster not found for clusterId: " + clusterId));
 
-        log.info("AdminClient configuration:");
-        config.entrySet().forEach(entry -> log.infof("\t%s = %s", entry.getKey(), entry.getValue()));
+        log.debug("AdminClient configuration:");
+        config.entrySet().forEach(entry -> log.debugf("\t%s = %s", entry.getKey(), entry.getValue()));
 
         Admin client = Admin.create(config); // NOSONAR - client is closed in #adminClientDisposer
         return () -> client;

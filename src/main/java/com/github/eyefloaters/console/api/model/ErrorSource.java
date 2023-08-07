@@ -1,5 +1,9 @@
 package com.github.eyefloaters.console.api.model;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+
+@JsonInclude(value = Include.NON_NULL)
 public class ErrorSource {
 
     /**
@@ -44,4 +48,17 @@ public class ErrorSource {
         this.header = header;
     }
 
+    @Override
+    public String toString() {
+        if (pointer != null) {
+            return "pointer[" + pointer + ']';
+        }
+        if (parameter != null) {
+            return "parameter[" + parameter + ']';
+        }
+        if (header != null) {
+            return "header[" + header + ']';
+        }
+        return super.toString();
+    }
 }
