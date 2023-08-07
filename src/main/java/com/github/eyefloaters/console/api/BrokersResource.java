@@ -17,7 +17,7 @@ import org.eclipse.microprofile.openapi.annotations.responses.APIResponseSchema;
 import com.github.eyefloaters.console.api.model.ConfigEntry;
 import com.github.eyefloaters.console.api.service.BrokerService;
 
-@Path("/api/v2/brokers")
+@Path("/api/clusters/{clusterId}/brokers")
 public class BrokersResource {
 
     @Inject

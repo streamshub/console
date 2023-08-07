@@ -1,11 +1,15 @@
-package com.github.eyefloaters.console.kafka.systemtest.utils;
+package com.github.eyefloaters.console.test;
 
 import io.restassured.http.ContentType;
 import org.apache.kafka.clients.admin.Admin;
+import org.apache.kafka.clients.admin.AdminClientConfig;
 import org.apache.kafka.clients.admin.TopicListing;
 import org.eclipse.microprofile.config.Config;
 import org.jboss.logging.Logger;
 
+import com.github.eyefloaters.console.kafka.systemtest.utils.ClientsConfig;
+
+import java.net.URI;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -23,23 +27,25 @@ import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.fail;
 
-public class TopicUtils2 {
+public class TopicHelper {
 
-    public static final String TOPIC_COLLECTION_PATH = "/api/v2/topics";
-    public static final String TOPIC_PATH = "/api/v2/topics/{topicName}";
+    public static final String TOPIC_COLLECTION_PATH = "/api/clusters/{clusterId}/topics";
+    public static final String TOPIC_PATH = "/api/clusters/{clusterId}/topics/{topicName}";
 
-    static final Logger log = Logger.getLogger(TopicUtils2.class);
+    static final Logger log = Logger.getLogger(TopicHelper.class);
     final Config config;
     final String token;
     final Properties adminConfig;
 
-    public TopicUtils2(Config config, String token) {
+    public TopicHelper(URI bootstrapServers, Config config, String token) {
         this.config = config;
         this.token = token;
 
         adminConfig = token != null ?
             ClientsConfig.getAdminConfigOauth(config, token) :
             ClientsConfig.getAdminConfig(config);
+
+        adminConfig.setProperty(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers.toString());
     }
 
     public void deleteAllTopics() {
@@ -69,7 +75,7 @@ public class TopicUtils2 {
             Collections.emptyMap();
     }
 
-    public void createTopics(List<String> names, int numPartitions, Status expectedStatus) {
+    public void createTopics(String clusterId, List<String> names, int numPartitions, Status expectedStatus) {
         names.forEach(name ->
             given()
                 .log().ifValidationFails()
@@ -77,18 +83,18 @@ public class TopicUtils2 {
                 .headers(getHeaders())
                 .body(buildNewTopicRequest(name, numPartitions, Map.of("min.insync.replicas", "1")).toString())
             .when()
-                .post(TOPIC_COLLECTION_PATH)
+                .post(TOPIC_COLLECTION_PATH, clusterId)
             .then()
                 .log().ifValidationFails()
                 .statusCode(expectedStatus.getStatusCode()));
     }
 
-    public void assertNoTopicsExist() {
+    public void assertNoTopicsExist(String clusterId) {
         given()
             .log().ifValidationFails()
             .headers(getHeaders())
         .when()
-            .get(TOPIC_COLLECTION_PATH)
+            .get(TOPIC_COLLECTION_PATH, clusterId)
         .then()
             .log().ifValidationFails()
             .statusCode(Status.OK.getStatusCode())

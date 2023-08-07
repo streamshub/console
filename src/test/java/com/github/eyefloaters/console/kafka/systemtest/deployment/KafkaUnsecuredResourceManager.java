@@ -1,12 +1,12 @@
 package com.github.eyefloaters.console.kafka.systemtest.deployment;
 
-import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
+import java.util.Map;
 
 import org.testcontainers.containers.GenericContainer;
 
 import com.github.eyefloaters.console.legacy.KafkaAdminConfigRetriever;
 
-import java.util.Map;
+import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
 
 public class KafkaUnsecuredResourceManager implements QuarkusTestResourceLifecycleManager {
 
@@ -37,4 +37,8 @@ public class KafkaUnsecuredResourceManager implements QuarkusTestResourceLifecyc
         deployments.shutdown();
     }
 
+    @Override
+    public void inject(TestInjector testInjector) {
+        testInjector.injectIntoFields(deployments, new TestInjector.AnnotatedAndMatchesType(DeploymentManager.InjectDeploymentManager.class, DeploymentManager.class));
+    }
 }

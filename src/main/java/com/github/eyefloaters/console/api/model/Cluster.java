@@ -5,10 +5,13 @@ import java.util.List;
 public class Cluster {
 
     String kind = "Cluster";
+    String name; // Strimzi Kafka CR only
     String clusterId;
     List<Node> nodes;
     Node controller;
     List<String> authorizedOperations;
+    String bootstrapServers; // Strimzi Kafka CR only
+    String authType; // Strimzi Kafka CR only
 
     public Cluster() {
     }
@@ -23,6 +26,14 @@ public class Cluster {
 
     public String getKind() {
         return kind;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 
     public String getClusterId() {
@@ -57,5 +68,19 @@ public class Cluster {
         this.authorizedOperations = authorizedOperations;
     }
 
+    public String getBootstrapServers() {
+        return bootstrapServers;
+    }
 
+    public void setBootstrapServers(String bootstrapServers) {
+        this.bootstrapServers = bootstrapServers;
+    }
+
+    public String getAuthType() {
+        return authType;
+    }
+
+    public void setAuthType(String authType) {
+        this.authType = authType;
+    }
 }

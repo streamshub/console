@@ -29,7 +29,7 @@ import com.github.eyefloaters.console.api.model.NewTopic;
 import com.github.eyefloaters.console.api.model.Topic;
 import com.github.eyefloaters.console.api.service.TopicService;
 
-@Path("/api/v2/topics")
+@Path("/api/clusters/{clusterId}/topics")
 public class TopicsResource {
 
     @Inject
