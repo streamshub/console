@@ -9,6 +9,7 @@ import static com.github.eyefloaters.console.kafka.systemtest.utils.ErrorTypeMat
 import org.apache.kafka.common.serialization.ByteArraySerializer;
 import org.eclipse.microprofile.config.Config;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -50,6 +51,7 @@ import static org.hamcrest.Matchers.stringContainsInOrder;
 
 @QuarkusTest
 @TestProfile(TestPlainProfile.class)
+@Disabled("Deprecated endpoints")
 class RecordEndpointTestIT {
 
     @Inject

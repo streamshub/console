@@ -41,6 +41,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @QuarkusTest
 @TestProfile(TestOAuthProfile.class)
+@Disabled("Deprecated endpoints")
 class RestOAuthTestIT {
 
     static TokenUtils tokenUtils;

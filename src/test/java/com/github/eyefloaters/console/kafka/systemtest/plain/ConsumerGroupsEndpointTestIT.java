@@ -5,6 +5,7 @@ import io.quarkus.test.junit.TestProfile;
 
 import org.eclipse.microprofile.config.Config;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -42,6 +43,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @QuarkusTest
 @TestProfile(TestPlainProfile.class)
+@Disabled("Deprecated endpoints")
 class ConsumerGroupsEndpointTestIT {
 
     static final String CONSUMER_GROUP_COLLECTION_PATH = "/api/v1/consumer-groups";

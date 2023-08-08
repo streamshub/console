@@ -1,8 +1,22 @@
 package com.github.eyefloaters.console.legacy.handlers;
 
-import io.micrometer.core.annotation.Counted;
-import io.micrometer.core.annotation.Timed;
-import io.smallrye.common.annotation.Blocking;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.function.Function;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+
+import jakarta.inject.Inject;
+import jakarta.ws.rs.BeanParam;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response.ResponseBuilder;
+import jakarta.ws.rs.core.Response.Status;
+import jakarta.ws.rs.core.UriBuilder;
+
 import org.apache.kafka.clients.admin.AdminClient;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.context.ThreadContext;
@@ -18,25 +32,11 @@ import com.github.eyefloaters.console.legacy.model.ErrorType;
 import com.github.eyefloaters.console.legacy.model.Types;
 import com.github.eyefloaters.console.legacy.model.Types.RecordFilterParams;
 
-import jakarta.inject.Inject;
-import jakarta.ws.rs.BeanParam;
-import jakarta.ws.rs.Path;
-import jakarta.ws.rs.core.HttpHeaders;
-import jakarta.ws.rs.core.Response;
-import jakarta.ws.rs.core.Response.ResponseBuilder;
-import jakarta.ws.rs.core.Response.Status;
-import jakarta.ws.rs.core.UriBuilder;
+import io.micrometer.core.annotation.Counted;
+import io.micrometer.core.annotation.Timed;
+import io.smallrye.common.annotation.Blocking;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
-import java.util.function.Function;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-
-@Path("/api/v1")
+//@Path("/api/v1")
 public class RestOperations implements OperationsHandler {
 
     private static final Logger log = Logger.getLogger(RestOperations.class);

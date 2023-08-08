@@ -9,6 +9,7 @@ import static com.github.eyefloaters.console.kafka.systemtest.utils.ErrorTypeMat
 import org.eclipse.microprofile.config.Config;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -36,6 +37,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @QuarkusTest
 @TestProfile(TestOAuthProfile.class)
+@Disabled("Deprecated endpoints")
 class PartitionsOffsetOauthIT {
 
     static final String CONSUMER_GROUP_RESET_PATH = "/api/v1/consumer-groups/{groupId}/reset-offset";

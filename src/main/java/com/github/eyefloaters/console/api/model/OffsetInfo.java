@@ -8,6 +8,7 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 @JsonInclude(value = Include.NON_NULL)
 public class OffsetInfo {
 
+    String kind = "Offset";
     private long offset;
     private Instant timestamp;
     private Integer leaderEpoch;
@@ -20,6 +21,10 @@ public class OffsetInfo {
         this.offset = offset;
         this.timestamp = timestamp;
         this.leaderEpoch = leaderEpoch;
+    }
+
+    public String getKind() {
+        return kind;
     }
 
     public long getOffset() {

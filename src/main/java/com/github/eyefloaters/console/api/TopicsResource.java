@@ -75,7 +75,7 @@ public class TopicsResource {
     @Path("{topicName}")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    @APIResponseSchema(responseCode = "200", value = Topic[].class)
+    @APIResponseSchema(responseCode = "200", value = Topic.class)
     public CompletionStage<Response> describeTopic(
                     @PathParam("topicName") String topicName,
                     @QueryParam("include") @DefaultValue("") List<String> includes,

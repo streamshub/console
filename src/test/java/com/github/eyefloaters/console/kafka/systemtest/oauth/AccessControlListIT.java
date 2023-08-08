@@ -15,6 +15,7 @@ import org.apache.kafka.common.resource.ResourceType;
 import org.eclipse.microprofile.config.Config;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -59,6 +60,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 @QuarkusTest
 @TestProfile(TestOAuthProfile.class)
+@Disabled("Deprecated endpoints")
 class AccessControlListIT {
 
     static final String SORT_ASC = "asc";

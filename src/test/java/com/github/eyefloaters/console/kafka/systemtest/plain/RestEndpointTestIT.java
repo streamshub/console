@@ -8,6 +8,7 @@ import static com.github.eyefloaters.console.kafka.systemtest.utils.ErrorTypeMat
 
 import org.eclipse.microprofile.config.Config;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -37,6 +38,7 @@ import static org.hamcrest.Matchers.equalTo;
 
 @QuarkusTest
 @TestProfile(TestPlainProfile.class)
+@Disabled("Deprecated endpoints")
 class RestEndpointTestIT {
 
     @Inject

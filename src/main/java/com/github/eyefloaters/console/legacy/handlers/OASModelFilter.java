@@ -1,6 +1,5 @@
 package com.github.eyefloaters.console.legacy.handlers;
 
-import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -77,14 +76,6 @@ public class OASModelFilter implements OASFilter {
 
         // Sort global schemas
         openAPI.getComponents().setSchemas(new TreeMap<>(openAPI.getComponents().getSchemas()));
-        var info = openAPI.getInfo();
-
-        info.setTitle("Kafka Instance API");
-        info.setDescription("API for interacting with Kafka Instance. Includes Produce, Consume and Admin APIs");
-
-        config.getOptionalValue("kafka.admin.num.partitions.max", String.class)
-            .map(BigDecimal::new)
-            .ifPresent(openAPI.getComponents().getSchemas().get("TopicSettings").getProperties().get("numPartitions")::setMaximum);
 
         generateExamples().forEach(openAPI.getComponents()::addExample);
     }

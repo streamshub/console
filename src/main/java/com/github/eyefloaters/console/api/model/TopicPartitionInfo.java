@@ -2,12 +2,17 @@ package com.github.eyefloaters.console.api.model;
 
 import java.util.List;
 
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
+
 public class TopicPartitionInfo {
 
+    String kind = "Partition";
     int partition;
     Node leader;
     List<Node> replicas;
     List<Node> isr;
+
+    @Schema(implementation = Object.class, oneOf = { OffsetInfo.class, Error.class })
     Either<OffsetInfo, Error> offset;
 
     public TopicPartitionInfo() {
@@ -38,6 +43,10 @@ public class TopicPartitionInfo {
                     offset.getAlternate());
             this.offset = Either.ofAlternate(error);
         }
+    }
+
+    public String getKind() {
+        return kind;
     }
 
     public int getPartition() {

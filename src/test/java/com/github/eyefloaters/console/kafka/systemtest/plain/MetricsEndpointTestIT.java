@@ -6,6 +6,7 @@ import io.quarkus.test.junit.TestProfile;
 import io.restassured.http.ContentType;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import com.github.eyefloaters.console.kafka.systemtest.TestPlainProfile;
@@ -29,6 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @QuarkusTest
 @TestProfile(TestPlainProfile.class)
+@Disabled("Deprecated endpoints")
 class MetricsEndpointTestIT {
 
     @TestHTTPResource("/metrics")
