@@ -28,12 +28,11 @@ jobs:
           npm run build-storybook -- --quiet --loglevel silent
 
       - name: Deploy to Chromatic 🚀
-        uses: chromaui/action@v1
+        uses: JamesIves/github-pages-deploy-action@v4.4.1
         id: chromatic
         with:
-          projectToken: chpt_3bf820ceff3a2cb
-          token: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
-          exitOnceUploaded: true
+          branch: gh-pages # The branch the action should deploy to.
+          folder: packages/ui/storybook-static # The folder the action should deploy.
 
         env:
           NEXTAUTH_SECRET: FDezLOOo4q+DeG3y0REbc8xOlFvciDD4pRIvCRaBQ1k=
