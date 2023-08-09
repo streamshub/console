@@ -31,7 +31,7 @@ public enum ErrorCategory {
     }
 
     private ErrorCategory(String code, String title, StatusType httpStatus) {
-        this(code, title, httpStatus, null);
+        this(code, title, httpStatus, Source.NONE);
     }
 
     public String getCode() {

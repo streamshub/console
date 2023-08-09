@@ -30,7 +30,7 @@ public class Error {
     @Schema(description = "A human-readable explanation specific to this occurrence of the problem.")
     String detail;
 
-    @Schema
+    @Schema(nullable = true, description = "Reference to the primary source of the error")
     ErrorSource source;
 
     @JsonIgnore

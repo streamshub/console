@@ -1,5 +1,7 @@
 package com.github.eyefloaters.console.api;
 
+import java.io.IOException;
+import java.net.ServerSocket;
 import java.net.URI;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -13,11 +15,13 @@ import jakarta.inject.Inject;
 import jakarta.ws.rs.core.Response.Status;
 
 import org.eclipse.microprofile.config.Config;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.github.eyefloaters.console.kafka.systemtest.TestPlainProfile;
 import com.github.eyefloaters.console.kafka.systemtest.deployment.DeploymentManager;
+import com.github.eyefloaters.console.test.TestHelper;
 import com.github.eyefloaters.console.test.TopicHelper;
 
 import io.fabric8.kubernetes.client.KubernetesClient;
@@ -55,18 +59,24 @@ class TopicsResourceIT {
     @DeploymentManager.InjectDeploymentManager
     DeploymentManager deployments;
 
+    TestHelper utils;
     TopicHelper topicUtils;
     String clusterId1;
     String clusterId2;
+    ServerSocket randomSocket;
 
     @BeforeEach
-    void setup() {
+    void setup() throws IOException {
         URI bootstrapServers = URI.create(deployments.getExternalBootstrapServers());
+        randomSocket = new ServerSocket(0);
+        URI randomBootstrapServers = URI.create("dummy://localhost:" + randomSocket.getLocalPort());
 
         topicUtils = new TopicHelper(bootstrapServers, config, null);
         topicUtils.deleteAllTopics();
 
-        clusterId1 = UUID.randomUUID().toString();
+        utils = new TestHelper(bootstrapServers, config, null);
+
+        clusterId1 = utils.getClusterId();
         clusterId2 = UUID.randomUUID().toString();
 
         client.resources(Kafka.class).delete();
@@ -113,13 +123,20 @@ class TopicsResourceIT {
                     .addNewListener()
                         .withName("listener0")
                         .addNewAddress()
-                            .withHost(bootstrapServers.getHost())
-                            .withPort(bootstrapServers.getPort() + 1)
+                            .withHost(randomBootstrapServers.getHost())
+                            .withPort(randomBootstrapServers.getPort())
                         .endAddress()
                     .endListener()
                 .endStatus()
                 .build())
             .create();
+    }
+
+    @AfterEach
+    void teardown() throws IOException {
+        if (randomSocket != null) {
+            randomSocket.close();
+        }
     }
 
     @Test

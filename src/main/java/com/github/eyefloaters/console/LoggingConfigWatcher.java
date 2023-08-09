@@ -1,16 +1,5 @@
 package com.github.eyefloaters.console;
 
-import io.quarkus.runtime.ShutdownEvent;
-import io.quarkus.runtime.StartupEvent;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.eclipse.microprofile.context.ManagedExecutor;
-import org.jboss.logging.Logger;
-import org.jboss.logmanager.LogContext;
-
-import jakarta.enterprise.event.Observes;
-import jakarta.inject.Inject;
-import jakarta.inject.Singleton;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -32,6 +21,15 @@ import java.util.Properties;
 import java.util.logging.Level;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import jakarta.enterprise.event.Observes;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
+
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.eclipse.microprofile.context.ManagedExecutor;
+import org.jboss.logging.Logger;
+import org.jboss.logmanager.LogContext;
 
 @Singleton
 public class LoggingConfigWatcher {
@@ -71,11 +69,11 @@ public class LoggingConfigWatcher {
 
     Map<String, Level> overriddenLoggers = new HashMap<>();
 
-    public void start(@Observes StartupEvent event) {
+    public void start(@Observes jakarta.enterprise.event.Startup event) {
         loggingConfigOverride.ifPresentOrElse(this::startFileWatch, () -> LOGGER.info("No log config files set to monitor"));
     }
 
-    public void stop(@Observes ShutdownEvent event) {
+    public void stop(@Observes jakarta.enterprise.event.Shutdown event) {
         this.shutdown = true;
 
         if (watchService != null) {

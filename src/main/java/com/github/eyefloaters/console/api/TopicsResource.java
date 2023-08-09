@@ -50,7 +50,7 @@ public class TopicsResource {
     @Produces(MediaType.APPLICATION_JSON)
     @APIResponseSchema(responseCode = "200", value = Topic[].class)
     public CompletionStage<Response> listTopics(
-                    @QueryParam("include") @DefaultValue("") List<String> includes,
+                    @QueryParam("include") List<String> includes,
                     @QueryParam("listInternal") @DefaultValue("false") boolean listInternal,
                     @QueryParam("offsetSpec") @DefaultValue("latest") @OffsetSpecValidator.ValidOffsetSpec String offsetSpec) {
 
@@ -65,7 +65,7 @@ public class TopicsResource {
     @APIResponseSchema(responseCode = "200", value = Topic.class)
     public CompletionStage<Response> describeTopic(
                     @PathParam("topicName") String topicName,
-                    @QueryParam("include") @DefaultValue("") List<String> includes,
+                    @QueryParam("include") List<String> includes,
                     @QueryParam("offsetSpec") @DefaultValue("latest") @OffsetSpecValidator.ValidOffsetSpec String offsetSpec) {
 
         return topicService.describeTopic(topicName, includes, offsetSpec)
