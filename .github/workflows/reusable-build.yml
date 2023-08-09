@@ -40,7 +40,7 @@ jobs:
       - uses: chromaui/action@v1
         id: chromatic
         with:
-          projectToken: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
+          projectToken: chpt_3bf820ceff3a2cb
           token: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
           exitOnceUploaded: true
 
