@@ -27,6 +27,8 @@ import io.strimzi.test.container.StrimziKafkaContainer;
 import static com.github.eyefloaters.console.test.TestHelper.whenRequesting;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.anEmptyMap;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.everyItem;
 import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.Matchers.is;
@@ -99,5 +101,16 @@ class BrokersResourceIT {
                             hasKey("sensitive"),
                             hasKey("readOnly"),
                             hasKey("type"))));
+    }
+
+    @Test
+    void testDescribeConfigsBrokerNotFound() {
+        whenRequesting(req -> req.get("{nodeId}/configs", clusterId, "99"))
+            .assertThat()
+            .statusCode(is(Status.NOT_FOUND.getStatusCode()))
+            .body("errors.size()", equalTo(1))
+            .body("errors.status", contains("404"))
+            .body("errors.code", contains("4041"))
+            .body("errors.detail", contains("No such broker: 99"));
     }
 }

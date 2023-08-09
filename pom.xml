@@ -44,6 +44,7 @@
         <!-- Sonar settings -->
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
         <sonar.organization>eyefloaters</sonar.organization>
+        <sonar.exclusions>src/main/java/com/github/eyefloaters/console/legacy/**/*</sonar.exclusions>
     </properties>
 
     <scm>

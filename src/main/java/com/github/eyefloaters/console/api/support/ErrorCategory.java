@@ -5,7 +5,14 @@ import jakarta.ws.rs.core.Response.StatusType;
 
 public enum ErrorCategory {
 
-    INVALID_QUERY_PARAMETER("1000", "Invalid query parameter", Status.BAD_REQUEST, Source.PARAMETER);
+    INVALID_QUERY_PARAMETER("4001", "Invalid query parameter", Status.BAD_REQUEST, Source.PARAMETER),
+
+    RESOURCE_NOT_FOUND("4041", "Resource not found", Status.NOT_FOUND),
+
+    SERVER_ERROR("5001", "Unexpected error", Status.INTERNAL_SERVER_ERROR),
+
+    BACKEND_TIMEOUT("5041", "Timed out waiting for backend service", Status.GATEWAY_TIMEOUT);
+
 
     public enum Source {
         PARAMETER, PAYLOAD, HEADER, NONE
@@ -21,6 +28,10 @@ public enum ErrorCategory {
         this.title = title;
         this.httpStatus = httpStatus;
         this.source = source;
+    }
+
+    private ErrorCategory(String code, String title, StatusType httpStatus) {
+        this(code, title, httpStatus, null);
     }
 
     public String getCode() {

@@ -11,6 +11,7 @@ import org.apache.kafka.common.config.ConfigResource;
 import org.eclipse.microprofile.context.ThreadContext;
 
 import com.github.eyefloaters.console.api.model.ConfigEntry;
+import com.github.eyefloaters.console.api.model.Node;
 
 @ApplicationScoped
 public class BrokerService {
@@ -27,7 +28,7 @@ public class BrokerService {
     public CompletionStage<Map<String, ConfigEntry>> describeConfigs(String nodeId) {
         return clusterService.describeCluster()
             .thenApply(cluster -> {
-                if (cluster.getNodes().stream().noneMatch(node -> String.valueOf(node.getId()).equals(nodeId))) {
+                if (cluster.getNodes().stream().mapToInt(Node::getId).mapToObj(String::valueOf).noneMatch(nodeId::equals)) {
                     throw new NotFoundException("No such broker: " + nodeId);
                 }
                 return cluster;

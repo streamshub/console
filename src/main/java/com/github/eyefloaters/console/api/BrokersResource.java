@@ -33,7 +33,6 @@ public class BrokersResource {
     public CompletionStage<Response> describeConfigs(@PathParam("nodeId") String nodeId) {
         return brokerService.describeConfigs(nodeId)
             .thenApply(Response::ok)
-            .exceptionally(error -> Response.serverError().entity(error.getMessage()))
             .thenApply(Response.ResponseBuilder::build);
     }
 

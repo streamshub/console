@@ -1,18 +1,11 @@
 package com.github.eyefloaters.console.test;
 
-import io.restassured.http.ContentType;
-import org.apache.kafka.clients.admin.Admin;
-import org.apache.kafka.clients.admin.AdminClientConfig;
-import org.apache.kafka.clients.admin.TopicListing;
-import org.eclipse.microprofile.config.Config;
-import org.jboss.logging.Logger;
-
-import com.github.eyefloaters.console.kafka.systemtest.utils.ClientsConfig;
-
 import java.net.URI;
-import java.util.Collections;
+import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -20,11 +13,22 @@ import java.util.stream.Collectors;
 import jakarta.json.Json;
 import jakarta.json.JsonArrayBuilder;
 import jakarta.json.JsonObject;
-import jakarta.ws.rs.core.HttpHeaders;
-import jakarta.ws.rs.core.Response.Status;
 
-import static io.restassured.RestAssured.given;
-import static org.hamcrest.Matchers.equalTo;
+import org.apache.kafka.clients.admin.Admin;
+import org.apache.kafka.clients.admin.AdminClientConfig;
+import org.apache.kafka.clients.admin.NewTopic;
+import org.apache.kafka.clients.admin.TopicListing;
+import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.Producer;
+import org.apache.kafka.clients.producer.ProducerConfig;
+import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.serialization.StringSerializer;
+import org.eclipse.microprofile.config.Config;
+import org.jboss.logging.Logger;
+
+import com.github.eyefloaters.console.kafka.systemtest.utils.ClientsConfig;
+
 import static org.junit.jupiter.api.Assertions.fail;
 
 public class TopicHelper {
@@ -33,11 +37,13 @@ public class TopicHelper {
     public static final String TOPIC_PATH = "/api/clusters/{clusterId}/topics/{topicName}";
 
     static final Logger log = Logger.getLogger(TopicHelper.class);
+    final URI bootstrapServers;
     final Config config;
     final String token;
     final Properties adminConfig;
 
     public TopicHelper(URI bootstrapServers, Config config, String token) {
+        this.bootstrapServers = bootstrapServers;
         this.config = config;
         this.token = token;
 
@@ -69,40 +75,39 @@ public class TopicHelper {
         }
     }
 
-    private Map<String, ?> getHeaders() {
-        return token != null ?
-            Map.of(HttpHeaders.AUTHORIZATION.toString(), "Bearer " + token) :
-            Collections.emptyMap();
+    public void createTopics(String clusterId, List<String> names, int numPartitions) {
+        try (Admin admin = Admin.create(adminConfig)) {
+            admin.createTopics(names.stream()
+                    .map(name ->  new NewTopic(name, Optional.of(numPartitions), Optional.empty()))
+                    .toList())
+                .all()
+                .toCompletionStage()
+                .thenRun(() -> log.infof("Topics created:", names))
+                .toCompletableFuture()
+                .get(20, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            log.warn("Process interruptted", e);
+            Thread.currentThread().interrupt();
+        } catch (Exception e) {
+            fail(e);
+        }
     }
 
-    public void createTopics(String clusterId, List<String> names, int numPartitions, Status expectedStatus) {
-        names.forEach(name ->
-            given()
-                .log().ifValidationFails()
-                .contentType(ContentType.JSON)
-                .headers(getHeaders())
-                .body(buildNewTopicRequest(name, numPartitions, Map.of("min.insync.replicas", "1")).toString())
-            .when()
-                .post(TOPIC_COLLECTION_PATH, clusterId)
-            .then()
-                .log().ifValidationFails()
-                .statusCode(expectedStatus.getStatusCode()));
-    }
+    public void produceRecord(String topicName, Integer partition, Instant instant, Map<String, Object> headers, String key, String value) {
+        Properties props = new Properties();
+        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers.toString());
+        props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
+        props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
+        props.put(ProducerConfig.ACKS_CONFIG, "all");
+        Long timestamp = Optional.ofNullable(instant).map(Instant::toEpochMilli).orElse(null);
 
-    public void assertNoTopicsExist(String clusterId) {
-        given()
-            .log().ifValidationFails()
-            .headers(getHeaders())
-        .when()
-            .get(TOPIC_COLLECTION_PATH, clusterId)
-        .then()
-            .log().ifValidationFails()
-            .statusCode(Status.OK.getStatusCode())
-        .assertThat()
-            .body("page", equalTo(1))
-            .body("size", equalTo(10))
-            .body("total", equalTo(0))
-            .body("items.size()", equalTo(0));
+        try (Producer<String, String> producer = new KafkaProducer<>(props)) {
+            var record = new ProducerRecord<String, String>(topicName, partition, timestamp, key, value);
+            headers.forEach((k, v) -> record.headers().add(k, v.toString().getBytes(StandardCharsets.UTF_8)));
+            producer.send(record);
+        } catch (Exception e) {
+            fail(e);
+        }
     }
 
     public static JsonObject buildNewTopicRequest(String name, int numPartitions, Map<String, String> config) {

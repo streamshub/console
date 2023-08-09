@@ -25,11 +25,7 @@ public class ClustersResource {
     @Produces(MediaType.APPLICATION_JSON)
     @APIResponseSchema(Cluster[].class)
     public Response listClusters() {
-        try {
-            return Response.ok(clusterService.listClusters()).build();
-        } catch (Exception e) {
-            return Response.serverError().entity(e.getMessage()).build();
-        }
+        return Response.ok(clusterService.listClusters()).build();
     }
 
     @GET
@@ -39,7 +35,6 @@ public class ClustersResource {
     public CompletionStage<Response> describeCluster(@PathParam("clusterId") String clusterId) {
         return clusterService.describeCluster()
             .thenApply(Response::ok)
-            .exceptionally(error -> Response.serverError().entity(error.getMessage()))
             .thenApply(Response.ResponseBuilder::build);
     }
 

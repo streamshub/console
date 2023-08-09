@@ -14,6 +14,7 @@ import jakarta.ws.rs.ext.ExceptionMapper;
 import jakarta.ws.rs.ext.Provider;
 
 import com.github.eyefloaters.console.api.model.Error;
+import com.github.eyefloaters.console.api.model.ErrorResponse;
 import com.github.eyefloaters.console.api.model.ErrorSource;
 
 @Provider
@@ -46,7 +47,7 @@ public class ConstraintViolationHandler implements ExceptionMapper<ConstraintVio
             })
             .toList();
 
-        return Response.status(Status.BAD_REQUEST).entity(errors).build();
+        return Response.status(Status.BAD_REQUEST).entity(new ErrorResponse(errors)).build();
     }
 
     String lastNode(Path propertyPath) {
