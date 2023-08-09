@@ -1,4 +1,4 @@
-name: Build
+name: Build, Test, and Deploy
 
 on:
   workflow_call:
@@ -18,7 +18,7 @@ jobs:
         with:
           node-version: ${{ inputs.node-version }}
 
-  chromatic:
+  build-and-deploy:
     runs-on: ubuntu-latest
     needs: [setup]
     steps:
@@ -31,14 +31,7 @@ jobs:
         with:
           node-version: 16.19.0
 
-      - name: Debug environment variables
-        run: |
-          echo "NEXTAUTH_SECRET: FDezLOOo4q+DeG3y0REbc8xOlFvciDD4pRIvCRaBQ1k="
-          echo "NEXTAUTH_URL: http://localhost:3000"
-          echo "KEYCLOAK_CLIENT_ID: "
-          echo "KEYCLOAK_CLIENT_SECRET: "
-
-      - name: Build and Deploy to Chromatic
+      - name: Build storybook and Deploy to Chromatic 🚀
         uses: chromaui/action@v1
         id: chromatic
         with:
@@ -50,4 +43,4 @@ jobs:
           NEXTAUTH_SECRET: FDezLOOo4q+DeG3y0REbc8xOlFvciDD4pRIvCRaBQ1k=
           NEXTAUTH_URL: http://localhost:3000
           KEYCLOAK_CLIENT_ID: 
-          KEYCLOAK_CLIENT_SECRET: 
+          KEYCLOAK_CLIENT_SECRET:
