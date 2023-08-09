@@ -44,7 +44,15 @@ jobs:
           echo "KEYCLOAK_CLIENT_ID=$(grep KEYCLOAK_CLIENT_ID .env.example | cut -d '=' -f2)" >> $GITHUB_ENV
           echo "KEYCLOAK_CLIENT_SECRET=$(grep KEYCLOAK_CLIENT_SECRET .env.example | cut -d '=' -f2)" >> $GITHUB_ENV
 
-      - uses: chromaui/action@v1
+      - name: Debug environment variables
+        run: |
+          echo "NEXTAUTH_SECRET: $NEXTAUTH_SECRET"
+          echo "NEXTAUTH_URL: $NEXTAUTH_URL"
+          echo "KEYCLOAK_CLIENT_ID: $KEYCLOAK_CLIENT_ID"
+          echo "KEYCLOAK_CLIENT_SECRET: $KEYCLOAK_CLIENT_SECRET"
+
+      - name: Build and Deploy to Chromatic
+        uses: chromaui/action@v1
         id: chromatic
         with:
           projectToken: chpt_3bf820ceff3a2cb
