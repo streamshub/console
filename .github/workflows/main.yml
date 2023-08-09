@@ -21,6 +21,20 @@ jobs:
         with:
           node-version: 16.19.0
 
+      - name: Set up environment variables
+        run: |
+          echo "NEXTAUTH_SECRET=" >> $GITHUB_ENV
+          echo "NEXTAUTH_URL=$(grep NEXTAUTH_URL .env.example | cut -d '=' -f2)" >> $GITHUB_ENV
+          echo "KEYCLOAK_CLIENT_ID=$(grep KEYCLOAK_CLIENT_ID .env.example | cut -d '=' -f2)" >> $GITHUB_ENV
+          echo "KEYCLOAK_CLIENT_SECRET=$(grep KEYCLOAK_CLIENT_SECRET .env.example | cut -d '=' -f2)" >> $GITHUB_ENV
+
+      - name: Show environment variables
+        run: |
+          echo "NEXTAUTH_SECRET: $NEXTAUTH_SECRET"
+          echo "NEXTAUTH_URL: $NEXTAUTH_URL"
+          echo "KEYCLOAK_CLIENT_ID: $KEYCLOAK_CLIENT_ID"
+          echo "KEYCLOAK_CLIENT_SECRET: $KEYCLOAK_CLIENT_SECRET"
+
       - name: Build storybook
         run: |
           npm run build-storybook -- --quiet --loglevel silent
@@ -30,9 +44,3 @@ jobs:
         with:
           branch: gh-pages # The branch the action should deploy to.
           folder: src/storybook-static # The folder the action should deploy.
-     # Use the secrets in the tests
-        env:
-          NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
-          NEXTAUTH_URL: ${{ secrets.NEXTAUTH_URL }}
-          KEYCLOAK_CLIENT_ID: ${{ secrets.KEYCLOAK_CLIENT_ID }}
-          KEYCLOAK_CLIENT_SECRET: ${{ secrets.KEYCLOAK_CLIENT_SECRET }}    
