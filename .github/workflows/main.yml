@@ -1,24 +1,19 @@
 name: Main changed - build, then release and update GH Pages
+
 on:
   push:
     branches:
       - main
+
 jobs:
   build:
     uses: ./.github/workflows/reusable-build.yml
     with:
       node-version: 16.19.0
 
-  generate-secret:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Generate NEXTAUTH_SECRET
-        run: |
-          echo "NEXTAUTH_SECRET=$(openssl rand -base64 32)" >> $GITHUB_ENV
-
   update-storybook-on-ghpages:
     runs-on: ubuntu-latest
-    needs: [build, generate-secret]
+    needs: build
     steps:
       - name: Checkout 🛎️
         uses: actions/checkout@v3.0.2
@@ -48,5 +43,5 @@ jobs:
       - name: Deploy 🚀
         uses: JamesIves/github-pages-deploy-action@v4.4.1
         with:
-          branch: gh-pages # The branch the action should deploy to.
-          folder: src/storybook-static # The folder the action should deploy.
+          branch: gh-pages
+          folder: src/storybook-static

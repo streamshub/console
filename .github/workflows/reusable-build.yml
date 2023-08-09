@@ -25,9 +25,9 @@ jobs:
         run: |
           echo "NEXTAUTH_SECRET=$(openssl rand -base64 32)" >> $GITHUB_ENV
 
-  chromatic:
-    runs-on: ubuntu-latest
+  build:
     needs: [setup, generate-secret]
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
         with:
