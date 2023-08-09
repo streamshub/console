@@ -9,9 +9,16 @@ jobs:
     with:
       node-version: 16.19.0
 
+  generate-secret:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate NEXTAUTH_SECRET
+        run: |
+          echo "NEXTAUTH_SECRET=$(openssl rand -base64 32)" >> $GITHUB_ENV
+
   update-storybook-on-ghpages:
     runs-on: ubuntu-latest
-    needs: build
+    needs: [build, generate-secret]
     steps:
       - name: Checkout 🛎️
         uses: actions/checkout@v3.0.2
@@ -23,8 +30,7 @@ jobs:
 
       - name: Set up environment variables
         run: |
-          echo "NEXTAUTH_SECRET=" >> $GITHUB_ENV
-          echo "NEXTAUTH_URL=$(grep NEXTAUTH_URL .env.example | cut -d '=' -f2)" >> $GITHUB_ENV
+          echo "NEXTAUTH_URL=${{ env.NEXTAUTH_URL }}" >> $GITHUB_ENV
           echo "KEYCLOAK_CLIENT_ID=$(grep KEYCLOAK_CLIENT_ID .env.example | cut -d '=' -f2)" >> $GITHUB_ENV
           echo "KEYCLOAK_CLIENT_SECRET=$(grep KEYCLOAK_CLIENT_SECRET .env.example | cut -d '=' -f2)" >> $GITHUB_ENV
 
