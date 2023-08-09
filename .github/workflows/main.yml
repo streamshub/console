@@ -33,9 +33,8 @@ jobs:
         with:
           branch: gh-pages # The branch the action should deploy to.
           folder: packages/ui/storybook-static # The folder the action should deploy.
-
         env:
           NEXTAUTH_SECRET: FDezLOOo4q+DeG3y0REbc8xOlFvciDD4pRIvCRaBQ1k=
           NEXTAUTH_URL: http://localhost:3000
-          KEYCLOAK_CLIENT_ID: 
+          KEYCLOAK_CLIENT_ID:
           KEYCLOAK_CLIENT_SECRET:

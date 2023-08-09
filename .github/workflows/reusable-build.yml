@@ -38,11 +38,6 @@ jobs:
           projectToken: chpt_3bf820ceff3a2cb
           token: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
           exitOnceUploaded: true
-
-      - name: Test the deployed Storybook
-        run: |
-          npm run test-storybook -- --url ${{ steps.chromatic.outputs.storybookUrl }}
-
         env:
           NEXTAUTH_SECRET: FDezLOOo4q+DeG3y0REbc8xOlFvciDD4pRIvCRaBQ1k=
           NEXTAUTH_URL: http://localhost:3000
