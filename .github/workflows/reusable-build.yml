@@ -18,21 +18,9 @@ jobs:
         with:
           node-version: ${{ inputs.node-version }}
 
-  set-env-vars:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Set up environment variables
-        run: |
-          NEXTAUTH_URL=$(grep NEXTAUTH_URL .env.example | cut -d '=' -f2)
-          KEYCLOAK_CLIENT_ID=$(grep KEYCLOAK_CLIENT_ID .env.example | cut -d '=' -f2)
-          KEYCLOAK_CLIENT_SECRET=$(grep KEYCLOAK_CLIENT_SECRET .env.example | cut -d '=' -f2)
-          echo "NEXTAUTH_URL=$NEXTAUTH_URL" >> $GITHUB_ENV
-          echo "KEYCLOAK_CLIENT_ID=$KEYCLOAK_CLIENT_ID" >> $GITHUB_ENV
-          echo "KEYCLOAK_CLIENT_SECRET=$KEYCLOAK_CLIENT_SECRET" >> $GITHUB_ENV
-
   chromatic:
     runs-on: ubuntu-latest
-    needs: [setup, set-env-vars]
+    needs: [setup]
     steps:
       - uses: actions/checkout@v3
         with:
@@ -45,10 +33,10 @@ jobs:
 
       - name: Debug environment variables
         run: |
-          echo "NEXTAUTH_SECRET: $NEXTAUTH_SECRET"
-          echo "NEXTAUTH_URL: $NEXTAUTH_URL"
-          echo "KEYCLOAK_CLIENT_ID: $KEYCLOAK_CLIENT_ID"
-          echo "KEYCLOAK_CLIENT_SECRET: $KEYCLOAK_CLIENT_SECRET"
+          echo "NEXTAUTH_SECRET: FDezLOOo4q+DeG3y0REbc8xOlFvciDD4pRIvCRaBQ1k="
+          echo "NEXTAUTH_URL: http://localhost:3000"
+          echo "KEYCLOAK_CLIENT_ID: "
+          echo "KEYCLOAK_CLIENT_SECRET: "
 
       - name: Build and Deploy to Chromatic
         uses: chromaui/action@v1
@@ -59,7 +47,7 @@ jobs:
           exitOnceUploaded: true
 
         env:
-          NEXTAUTH_SECRET: ${{ env.NEXTAUTH_SECRET }}
-          NEXTAUTH_URL: ${{ env.NEXTAUTH_URL }}
-          KEYCLOAK_CLIENT_ID: ${{ secrets.KEYCLOAK_CLIENT_ID }}
-          KEYCLOAK_CLIENT_SECRET: ${{ secrets.KEYCLOAK_CLIENT_SECRET }}
+          NEXTAUTH_SECRET: FDezLOOo4q+DeG3y0REbc8xOlFvciDD4pRIvCRaBQ1k=
+          NEXTAUTH_URL: http://localhost:3000
+          KEYCLOAK_CLIENT_ID: 
+          KEYCLOAK_CLIENT_SECRET: 
