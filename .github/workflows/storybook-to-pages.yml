@@ -14,6 +14,11 @@ jobs:
         run: |
           npm ci
           npm run build-storybook
+        env:
+          NEXTAUTH_SECRET: FDezLOOo4q+DeG3y0REbc8xOlFvciDD4pRIvCRaBQ1k=
+          NEXTAUTH_URL: http://localhost:3000
+          KEYCLOAK_CLIENT_ID:
+          KEYCLOAK_CLIENT_SECRET:
 
       - name: Deploy 🚀
         uses: JamesIves/github-pages-deploy-action@v4.4.1
