@@ -69,10 +69,20 @@ public class LoggingConfigWatcher {
 
     Map<String, Level> overriddenLoggers = new HashMap<>();
 
+    /**
+     * Starts the file watch upon startup of the CDI container.
+     *
+     * @param event the Startup CDI event
+     */
     public void start(@Observes jakarta.enterprise.event.Startup event) {
         loggingConfigOverride.ifPresentOrElse(this::startFileWatch, () -> LOGGER.info("No log config files set to monitor"));
     }
 
+    /**
+     * Stops the file watch upon shutdown of the CDI container.
+     *
+     * @param event the Shutdown CDI event
+     */
     public void stop(@Observes jakarta.enterprise.event.Shutdown event) {
         this.shutdown = true;
 
@@ -211,10 +221,6 @@ public class LoggingConfigWatcher {
                 // Save the original so that it can be restored if the override is removed
                 overriddenLoggers.computeIfAbsent(category, k -> originalLevel);
 
-                // TODO -- min-level handling? min-level is compile-time optimization
-                // See https://github.com/quarkusio/quarkus/blob/2.3.0.Final/core/runtime/src/main/java/io/quarkus/runtime/logging/LoggingSetupRecorder.java#L92
-                // TODO -- Handle other category properties (besides .level)
-                // See https://quarkus.io/guides/logging#logging-categories
                 logger.setLevel(level);
             });
     }
@@ -223,13 +229,11 @@ public class LoggingConfigWatcher {
         Object key = property.getKey();
 
         if (key instanceof String && property.getValue() instanceof String) {
-            String propertyName = (String) key;
-
-            if (ROOT_CONFIG.equals(propertyName)) {
+            if (ROOT_CONFIG.equals(key)) {
                 return true;
             }
 
-            return CATEGORY_CONFIG.matcher(propertyName).matches();
+            return CATEGORY_CONFIG.matcher(key.toString()).matches();
         }
 
         return false;

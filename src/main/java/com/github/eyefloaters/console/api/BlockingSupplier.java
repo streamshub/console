@@ -1,7 +1,8 @@
 package com.github.eyefloaters.console.api;
 
-import java.util.concurrent.Future;
 import java.util.function.Supplier;
+
+import org.apache.kafka.common.KafkaFuture;
 
 public class BlockingSupplier {
 
@@ -9,12 +10,11 @@ public class BlockingSupplier {
         // No instances
     }
 
-    public static <T> T get(Supplier<Future<T>> source) {
-        try {
-            return source.get().get();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+    public static <T> T get(Supplier<KafkaFuture<T>> source) {
+        return source.get()
+                .toCompletionStage()
+                .toCompletableFuture()
+                .join();
     }
 
 }
