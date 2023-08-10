@@ -1,0 +1,37 @@
+{
+  "common": {
+    "title": "Integration Developer Hub",
+    "description": "lorem dolor ipsum"
+  },
+  "homepage": {
+    "title": "Integration Developer Hub"
+  },
+  "principals": {
+    "title": "Manage principals",
+    "description": "List and manage all the Principals available to the tools in the Integration Developer Hub."
+  },
+  "kafka-configuration": {
+    "title": "Cluster configuration",
+    "description": "View and change all the configuration for a cluster."
+  },
+  "kafka-insights": {
+    "title": "Cluster insights",
+    "description": "Get insights about a cluster workload and set up rules to automatically rebalance the workload."
+  },
+  "topic-manager": {
+    "title": "Kafka topics manager",
+    "description": "List and delete topics for a cluster."
+  },
+  "topic-creator": {
+    "title": "Create a Kafka topic",
+    "description": "Create a new Kafka topic, set its properties."
+  },
+  "message-browser": {
+    "title": "Message browser",
+    "description": "View the data being produced to a topic. Browse messages, seek to a specific offset or timestamp by partition."
+  },
+  "message-producer": {
+    "title": "Message producer",
+    "description": "Produce messages to a topic."
+  }
+}
