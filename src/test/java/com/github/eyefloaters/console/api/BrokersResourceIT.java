@@ -94,8 +94,8 @@ class BrokersResourceIT {
         whenRequesting(req -> req.get("{nodeId}/configs", clusterId, "0"))
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
-            .body("$", not(anEmptyMap()))
-            .body("findAll { it }.collect { it.value }",
+            .body("data", not(anEmptyMap()))
+            .body("data.findAll { it }.collect { it.value }",
                     everyItem(allOf(
                             hasKey("source"),
                             hasKey("sensitive"),

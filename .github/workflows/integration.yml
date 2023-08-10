@@ -37,7 +37,9 @@ jobs:
           SONAR_PROJECT: ${{secrets.SONAR_PROJECT}}
           SONAR_TOKEN: ${{secrets.SONAR_TOKEN}}
         run: |
-          mvn verify -B --no-transfer-progress -Pcoverage
+          # Set write-transformed-bytecode-to-build-output for IT coverage
+          # See: https://quarkus.io/guides/tests-with-coverage#coverage-for-integration-tests
+          mvn verify -B --no-transfer-progress -Dquarkus.package.write-transformed-bytecode-to-build-output=true
 
       - name: Archive Results
         uses: actions/upload-artifact@v3

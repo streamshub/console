@@ -24,22 +24,24 @@ public class ClustersResource {
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    @APIResponseSchema(Cluster[].class)
+    @APIResponseSchema(Cluster.ListResponse.class)
     @APIResponse(responseCode = "500", ref = "ServerError")
     @APIResponse(responseCode = "504", ref = "ServerTimeout")
     public Response listClusters() {
-        return Response.ok(clusterService.listClusters()).build();
+        var responseEntity = new Cluster.ListResponse(clusterService.listClusters());
+        return Response.ok(responseEntity).build();
     }
 
     @GET
     @Path("{clusterId}")
     @Produces(MediaType.APPLICATION_JSON)
-    @APIResponseSchema(Cluster.class)
+    @APIResponseSchema(Cluster.SingleResponse.class)
     @APIResponse(responseCode = "404", ref = "NotFound")
     @APIResponse(responseCode = "500", ref = "ServerError")
     @APIResponse(responseCode = "504", ref = "ServerTimeout")
     public CompletionStage<Response> describeCluster(@PathParam("clusterId") String clusterId) {
         return clusterService.describeCluster()
+            .thenApply(Cluster.SingleResponse::new)
             .thenApply(Response::ok)
             .thenApply(Response.ResponseBuilder::build);
     }

@@ -13,6 +13,20 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 @JsonInclude(value = Include.NON_NULL)
 public class Topic {
 
+    @Schema(name = "TopicListResponse")
+    public static final class ListResponse extends DataListResponse<Topic> {
+        public ListResponse(List<Topic> data) {
+            super(data);
+        }
+    }
+
+    @Schema(name = "TopicResponse")
+    public static final class SingleResponse extends DataResponse<Topic> {
+        public SingleResponse(Topic data) {
+            super(data);
+        }
+    }
+
     String kind = "Topic";
     String name;
     boolean internal;

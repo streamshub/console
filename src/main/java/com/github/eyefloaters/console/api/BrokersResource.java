@@ -15,6 +15,7 @@ import org.apache.kafka.clients.admin.Admin;
 import org.eclipse.microprofile.openapi.annotations.media.Content;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 
+import com.github.eyefloaters.console.api.model.ConfigEntry;
 import com.github.eyefloaters.console.api.service.BrokerService;
 
 @Path("/api/clusters/{clusterId}/brokers")
@@ -35,6 +36,7 @@ public class BrokersResource {
     @APIResponse(responseCode = "504", ref = "ServerTimeout")
     public CompletionStage<Response> describeConfigs(@PathParam("nodeId") String nodeId) {
         return brokerService.describeConfigs(nodeId)
+            .thenApply(ConfigEntry.ConfigResponse::new)
             .thenApply(Response::ok)
             .thenApply(Response.ResponseBuilder::build);
     }

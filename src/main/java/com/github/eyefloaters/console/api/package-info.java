@@ -2,7 +2,10 @@
         info = @Info(title = "", version = ""),
         components = @Components(
                 responses = {
-                    @APIResponse(name = "Configurations", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ConfigEntry.ConfigEntryMap.class))),
+                    @APIResponse(name = "Configurations",
+                            content = @Content(
+                                    mediaType = MediaType.APPLICATION_JSON,
+                                    schema = @Schema(implementation = ConfigEntry.ConfigResponse.class))),
                     @APIResponse(name = "BadRequest",
                             content = @Content(
                                     mediaType = MediaType.APPLICATION_JSON,

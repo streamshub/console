@@ -150,8 +150,8 @@ class TopicsResourceIT {
         whenRequesting(req -> req.get(TopicHelper.TOPIC_COLLECTION_PATH, clusterId1))
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
-            .body("size()", is(topicNames.size()))
-            .body("name", containsInAnyOrder(topicNames.toArray(String[]::new)));
+            .body("data.size()", is(topicNames.size()))
+            .body("data.name", containsInAnyOrder(topicNames.toArray(String[]::new)));
     }
 
     @Test
@@ -174,10 +174,10 @@ class TopicsResourceIT {
                 .get(TopicHelper.TOPIC_COLLECTION_PATH, clusterId1))
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
-            .body("size()", is(1))
-            .body("name", contains(topicName))
-            .body("configs[0]", not(anEmptyMap()))
-            .body("configs[0].findAll { it }.collect { it.value }",
+            .body("data.size()", is(1))
+            .body("data.name", contains(topicName))
+            .body("data.configs[0]", not(anEmptyMap()))
+            .body("data.configs[0].findAll { it }.collect { it.value }",
                     everyItem(allOf(
                             hasKey("source"),
                             hasKey("sensitive"),
@@ -195,9 +195,9 @@ class TopicsResourceIT {
                 .get(TopicHelper.TOPIC_COLLECTION_PATH, clusterId1))
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
-            .body("size()", is(1))
-            .body("name", contains(topicName))
-            .body("authorizedOperations", contains(nullValue()));
+            .body("data.size()", is(1))
+            .body("data.name", contains(topicName))
+            .body("data.authorizedOperations", contains(nullValue()));
     }
 
     @Test
@@ -212,12 +212,12 @@ class TopicsResourceIT {
                 .get(TopicHelper.TOPIC_COLLECTION_PATH, clusterId1))
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
-            .body("size()", is(1))
-            .body("name", contains(topicName))
-            .body("partitions[0]", hasSize(2))
-            .body("partitions[0][0].offset.kind", is("Offset"))
-            .body("partitions[0][0].offset.offset", is(2))
-            .body("partitions[0][0].offset.timestamp", is(nullValue()));
+            .body("data.size()", is(1))
+            .body("data.name", contains(topicName))
+            .body("data.partitions[0]", hasSize(2))
+            .body("data.partitions[0][0].offset.kind", is("Offset"))
+            .body("data.partitions[0][0].offset.offset", is(2))
+            .body("data.partitions[0][0].offset.timestamp", is(nullValue()));
     }
 
     @Test
@@ -233,12 +233,12 @@ class TopicsResourceIT {
                 .get(TopicHelper.TOPIC_COLLECTION_PATH, clusterId1))
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
-            .body("size()", is(1))
-            .body("name", contains(topicName))
-            .body("partitions[0]", hasSize(2))
-            .body("partitions[0][0].offset.kind", is("Offset"))
-            .body("partitions[0][0].offset.offset", is(0))
-            .body("partitions[0][0].offset.timestamp", is(nullValue()));
+            .body("data.size()", is(1))
+            .body("data.name", contains(topicName))
+            .body("data.partitions[0]", hasSize(2))
+            .body("data.partitions[0][0].offset.kind", is("Offset"))
+            .body("data.partitions[0][0].offset.offset", is(0))
+            .body("data.partitions[0][0].offset.timestamp", is(nullValue()));
     }
 
     @Test
@@ -257,12 +257,12 @@ class TopicsResourceIT {
                 .get(TopicHelper.TOPIC_COLLECTION_PATH, clusterId1))
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
-            .body("size()", is(1))
-            .body("name", contains(topicName))
-            .body("partitions[0]", hasSize(2))
-            .body("partitions[0][0].offset.kind", is("Offset"))
-            .body("partitions[0][0].offset.offset", is(0))
-            .body("partitions[0][0].offset.timestamp", is(first.toString()));
+            .body("data.size()", is(1))
+            .body("data.name", contains(topicName))
+            .body("data.partitions[0]", hasSize(2))
+            .body("data.partitions[0][0].offset.kind", is("Offset"))
+            .body("data.partitions[0][0].offset.offset", is(0))
+            .body("data.partitions[0][0].offset.timestamp", is(first.toString()));
     }
 
     @Test
@@ -281,12 +281,12 @@ class TopicsResourceIT {
                 .get(TopicHelper.TOPIC_COLLECTION_PATH, clusterId1))
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
-            .body("size()", is(1))
-            .body("name", contains(topicName))
-            .body("partitions[0]", hasSize(2))
-            .body("partitions[0][0].offset.kind", is("Offset"))
-            .body("partitions[0][0].offset.offset", is(1))
-            .body("partitions[0][0].offset.timestamp", is(second.toString()));
+            .body("data.size()", is(1))
+            .body("data.name", contains(topicName))
+            .body("data.partitions[0]", hasSize(2))
+            .body("data.partitions[0][0].offset.kind", is("Offset"))
+            .body("data.partitions[0][0].offset.offset", is(1))
+            .body("data.partitions[0][0].offset.timestamp", is(second.toString()));
     }
 
 
@@ -300,9 +300,9 @@ class TopicsResourceIT {
                 .get(TopicHelper.TOPIC_PATH, clusterId1, topicName))
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
-            .body("name", is(topicName))
-            .body("configs", not(anEmptyMap()))
-            .body("configs.findAll { it }.collect { it.value }",
+            .body("data.name", is(topicName))
+            .body("data.configs", not(anEmptyMap()))
+            .body("data.configs.findAll { it }.collect { it.value }",
                     everyItem(allOf(
                             hasKey("source"),
                             hasKey("sensitive"),
@@ -318,10 +318,10 @@ class TopicsResourceIT {
         whenRequesting(req -> req.get(TopicHelper.TOPIC_PATH, clusterId1, topicName))
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
-            .body("name", is(topicName))
-            .body("$", not(hasKey("configs")))
-            .body("$", hasKey("authorizedOperations"))
-            .body("authorizedOperations", is(nullValue()));
+            .body("data.name", is(topicName))
+            .body("data", not(hasKey("configs")))
+            .body("data", hasKey("authorizedOperations"))
+            .body("data.authorizedOperations", is(nullValue()));
     }
 
     @Test
@@ -334,12 +334,12 @@ class TopicsResourceIT {
         whenRequesting(req -> req.get(TopicHelper.TOPIC_PATH, clusterId1, topicName))
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
-            .body("name", is(topicName))
-            .body("$", not(hasKey("configs")))
-            .body("partitions", hasSize(2))
-            .body("partitions[0].offset.kind", is("Offset"))
-            .body("partitions[0].offset.offset", is(2))
-            .body("partitions[0].offset.timestamp", is(nullValue()));
+            .body("data.name", is(topicName))
+            .body("data", not(hasKey("configs")))
+            .body("data.partitions", hasSize(2))
+            .body("data.partitions[0].offset.kind", is("Offset"))
+            .body("data.partitions[0].offset.offset", is(2))
+            .body("data.partitions[0].offset.timestamp", is(nullValue()));
     }
 
     @Test
@@ -354,12 +354,12 @@ class TopicsResourceIT {
                 .get(TopicHelper.TOPIC_PATH, clusterId1, topicName))
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
-            .body("name", is(topicName))
-            .body("$", not(hasKey("configs")))
-            .body("partitions", hasSize(2))
-            .body("partitions[0].offset.kind", is("Offset"))
-            .body("partitions[0].offset.offset", is(0))
-            .body("partitions[0].offset.timestamp", is(nullValue()));
+            .body("data.name", is(topicName))
+            .body("data", not(hasKey("configs")))
+            .body("data.partitions", hasSize(2))
+            .body("data.partitions[0].offset.kind", is("Offset"))
+            .body("data.partitions[0].offset.offset", is(0))
+            .body("data.partitions[0].offset.timestamp", is(nullValue()));
     }
 
     @Test
@@ -377,12 +377,12 @@ class TopicsResourceIT {
                 .get(TopicHelper.TOPIC_PATH, clusterId1, topicName))
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
-            .body("name", is(topicName))
-            .body("$", not(hasKey("configs")))
-            .body("partitions", hasSize(2))
-            .body("partitions[0].offset.kind", is("Offset"))
-            .body("partitions[0].offset.offset", is(0))
-            .body("partitions[0].offset.timestamp", is(first.toString()));
+            .body("data.name", is(topicName))
+            .body("data", not(hasKey("configs")))
+            .body("data.partitions", hasSize(2))
+            .body("data.partitions[0].offset.kind", is("Offset"))
+            .body("data.partitions[0].offset.offset", is(0))
+            .body("data.partitions[0].offset.timestamp", is(first.toString()));
     }
 
     @Test
@@ -400,12 +400,12 @@ class TopicsResourceIT {
                 .get(TopicHelper.TOPIC_PATH, clusterId1, topicName))
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
-            .body("name", is(topicName))
-            .body("$", not(hasKey("configs")))
-            .body("partitions", hasSize(2))
-            .body("partitions[0].offset.kind", is("Offset"))
-            .body("partitions[0].offset.offset", is(1))
-            .body("partitions[0].offset.timestamp", is(second.toString()));
+            .body("data.name", is(topicName))
+            .body("data", not(hasKey("configs")))
+            .body("data.partitions", hasSize(2))
+            .body("data.partitions[0].offset.kind", is("Offset"))
+            .body("data.partitions[0].offset.offset", is(1))
+            .body("data.partitions[0].offset.timestamp", is(second.toString()));
     }
 
     @Test

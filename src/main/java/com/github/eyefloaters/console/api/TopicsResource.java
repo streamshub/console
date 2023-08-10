@@ -13,6 +13,8 @@ import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
+import org.eclipse.microprofile.openapi.annotations.media.Content;
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponseSchema;
 
 import com.github.eyefloaters.console.api.model.ConfigEntry;
@@ -48,13 +50,16 @@ public class TopicsResource {
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    @APIResponseSchema(responseCode = "200", value = Topic[].class)
+    @APIResponseSchema(Topic.ListResponse.class)
+    @APIResponse(responseCode = "500", ref = "ServerError")
+    @APIResponse(responseCode = "504", ref = "ServerTimeout")
     public CompletionStage<Response> listTopics(
                     @QueryParam("include") List<String> includes,
                     @QueryParam("listInternal") @DefaultValue("false") boolean listInternal,
                     @QueryParam("offsetSpec") @DefaultValue("latest") @OffsetSpecValidator.ValidOffsetSpec String offsetSpec) {
 
         return topicService.listTopics(listInternal, includes, offsetSpec)
+                .thenApply(Topic.ListResponse::new)
                 .thenApply(Response::ok)
                 .thenApply(Response.ResponseBuilder::build);
     }
@@ -62,13 +67,17 @@ public class TopicsResource {
     @Path("{topicName}")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    @APIResponseSchema(responseCode = "200", value = Topic.class)
+    @APIResponseSchema(Topic.SingleResponse.class)
+    @APIResponse(responseCode = "404", ref = "NotFound")
+    @APIResponse(responseCode = "500", ref = "ServerError")
+    @APIResponse(responseCode = "504", ref = "ServerTimeout")
     public CompletionStage<Response> describeTopic(
                     @PathParam("topicName") String topicName,
                     @QueryParam("include") List<String> includes,
                     @QueryParam("offsetSpec") @DefaultValue("latest") @OffsetSpecValidator.ValidOffsetSpec String offsetSpec) {
 
         return topicService.describeTopic(topicName, includes, offsetSpec)
+                .thenApply(Topic.SingleResponse::new)
                 .thenApply(Response::ok)
                 .thenApply(Response.ResponseBuilder::build);
     }
@@ -76,9 +85,13 @@ public class TopicsResource {
     @Path("{topicName}/configs")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    @APIResponseSchema(responseCode = "200", value = ConfigEntry.ConfigEntryMap.class)
+    @APIResponse(responseCode = "200", ref = "Configurations", content = @Content())
+    @APIResponse(responseCode = "404", ref = "NotFound")
+    @APIResponse(responseCode = "500", ref = "ServerError")
+    @APIResponse(responseCode = "504", ref = "ServerTimeout")
     public CompletionStage<Response> describeTopicConfigs(@PathParam("topicName") String topicName) {
         return topicService.describeConfigs(topicName)
+                .thenApply(ConfigEntry.ConfigResponse::new)
                 .thenApply(Response::ok)
                 .thenApply(Response.ResponseBuilder::build);
     }

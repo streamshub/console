@@ -15,7 +15,6 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
 import org.apache.kafka.clients.admin.Admin;
-import org.apache.kafka.common.KafkaFuture;
 import org.apache.kafka.common.config.ConfigResource;
 
 import com.github.eyefloaters.console.api.model.ConfigEntry;
@@ -66,9 +65,10 @@ public class ConfigService {
             .entrySet()
             .stream()
             .map(entry ->
-                entry.getValue().whenComplete((description, error) ->
-                    result.put(entry.getKey().name(), Either.of(description, error, conf -> toMap(conf.entries())))))
-            .map(KafkaFuture::toCompletionStage)
+                entry.getValue().toCompletionStage().<Void>handle((description, error) -> {
+                    result.put(entry.getKey().name(), Either.of(description, error, conf -> toMap(conf.entries())));
+                    return null;
+                }))
             .map(CompletionStage::toCompletableFuture)
             .toArray(CompletableFuture[]::new);
 
