@@ -1,8 +1,10 @@
 name: GH Pages
+
 on:
   push:
     branches:
       - main
+
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
@@ -10,10 +12,15 @@ jobs:
       - name: Checkout 🛎️
         uses: actions/checkout@v3.0.2
 
-      - name: Install and Build 🔧 # This example project is built using npm and outputs the result to the 'build' folder. Replace with the commands required to build your project, or remove this step entirely if your site is pre-built.
+      - name: Install and Build 🔧
         run: |
           npm ci
           npm run build-storybook
+        env:
+          NEXTAUTH_SECRET: FDezLOOo4q+DeG3y0REbc8xOlFvciDD4pRIvCRaBQ1k=
+          NEXTAUTH_URL: http://localhost:3000
+          KEYCLOAK_CLIENT_ID:
+          KEYCLOAK_CLIENT_SECRET:
 
       - name: Deploy 🚀
         uses: JamesIves/github-pages-deploy-action@v4.4.1

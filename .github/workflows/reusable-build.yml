@@ -13,10 +13,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/cache-restore
-        id: cache-node-modules
-        with:
-          node-version: ${{ inputs.node-version }}
 
   build-and-deploy:
     runs-on: ubuntu-latest
