@@ -120,7 +120,7 @@ public class ClusterService {
                 .map(KafkaListenerAuthentication::getType);
     }
 
-    List<String> enumNames(Collection<? extends Enum<?>> values) {
+    static List<String> enumNames(Collection<? extends Enum<?>> values) {
         return Optional.ofNullable(values)
                 .map(Collection::stream)
                 .map(ops -> ops.map(Enum::name).toList())

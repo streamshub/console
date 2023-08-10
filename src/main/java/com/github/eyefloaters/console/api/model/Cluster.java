@@ -2,7 +2,23 @@ package com.github.eyefloaters.console.api.model;
 
 import java.util.List;
 
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
+
 public class Cluster {
+
+    @Schema(name = "ClusterListResponse")
+    public static final class ListResponse extends DataListResponse<Cluster> {
+        public ListResponse(List<Cluster> data) {
+            super(data);
+        }
+    }
+
+    @Schema(name = "ClusterResponse")
+    public static final class SingleResponse extends DataResponse<Cluster> {
+        public SingleResponse(Cluster data) {
+            super(data);
+        }
+    }
 
     String kind = "Cluster";
     String name; // Strimzi Kafka CR only

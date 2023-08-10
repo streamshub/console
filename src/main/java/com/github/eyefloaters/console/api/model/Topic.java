@@ -5,21 +5,40 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
+
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 
 @JsonInclude(value = Include.NON_NULL)
 public class Topic {
 
+    @Schema(name = "TopicListResponse")
+    public static final class ListResponse extends DataListResponse<Topic> {
+        public ListResponse(List<Topic> data) {
+            super(data);
+        }
+    }
+
+    @Schema(name = "TopicResponse")
+    public static final class SingleResponse extends DataResponse<Topic> {
+        public SingleResponse(Topic data) {
+            super(data);
+        }
+    }
+
     String kind = "Topic";
     String name;
     boolean internal;
     String topicId;
 
+    @Schema(implementation = Object.class, oneOf = { TopicPartitionInfo[].class, Error.class })
     Either<List<TopicPartitionInfo>, Error> partitions;
 
+    @Schema(implementation = Object.class, oneOf = { String[].class, Error.class })
     Either<List<String>, Error> authorizedOperations;
 
+    @Schema(implementation = Object.class, oneOf = { ConfigEntry.ConfigEntryMap.class, Error.class })
     Either<Map<String, ConfigEntry>, Error> configs;
 
     public Topic() {

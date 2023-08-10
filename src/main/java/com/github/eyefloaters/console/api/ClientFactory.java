@@ -20,6 +20,7 @@ import jakarta.ws.rs.core.UriInfo;
 
 import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.admin.Admin;
+import org.apache.kafka.clients.admin.AdminClientConfig;
 import org.apache.kafka.common.config.SaslConfigs;
 import org.apache.kafka.common.config.SslConfigs;
 import org.apache.kafka.common.security.auth.SecurityProtocol;
@@ -80,8 +81,8 @@ public class ClientFactory {
             .map(l -> buildConfiguration(cluster, l))
             .orElseThrow(() -> new NotFoundException("Cluster not found for clusterId: " + clusterId));
 
-        log.info("AdminClient configuration:");
-        config.entrySet().forEach(entry -> log.infof("\t%s = %s", entry.getKey(), entry.getValue()));
+        log.debug("AdminClient configuration:");
+        config.entrySet().forEach(entry -> log.debugf("\t%s = %s", entry.getKey(), entry.getValue()));
 
         Admin client = Admin.create(config); // NOSONAR - client is closed in #adminClientDisposer
         return () -> client;
@@ -154,6 +155,9 @@ public class ClientFactory {
 
         config.put(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, listenerStatus.getBootstrapServers());
         config.put(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, protocol.toString());
+        config.put(AdminClientConfig.METADATA_MAX_AGE_CONFIG, "30000");
+        config.put(AdminClientConfig.REQUEST_TIMEOUT_MS_CONFIG, "10000");
+        config.put(AdminClientConfig.DEFAULT_API_TIMEOUT_MS_CONFIG, "10000");
 
         return config;
     }

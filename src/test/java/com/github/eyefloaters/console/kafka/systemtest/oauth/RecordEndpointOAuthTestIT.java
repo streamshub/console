@@ -11,6 +11,7 @@ import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import com.github.eyefloaters.console.kafka.systemtest.TestOAuthProfile;
@@ -32,6 +33,7 @@ import static io.restassured.RestAssured.given;
 
 @QuarkusTest
 @TestProfile(TestOAuthProfile.class)
+@Disabled("Deprecated endpoints")
 class RecordEndpointOAuthTestIT {
 
     static TokenUtils tokenUtils;

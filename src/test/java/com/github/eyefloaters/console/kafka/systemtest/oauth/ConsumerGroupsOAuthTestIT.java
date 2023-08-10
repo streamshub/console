@@ -10,6 +10,7 @@ import org.eclipse.microprofile.config.ConfigProvider;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import com.github.eyefloaters.console.kafka.systemtest.TestOAuthProfile;
@@ -38,6 +39,7 @@ import static org.hamcrest.Matchers.startsWith;
 
 @QuarkusTest
 @TestProfile(TestOAuthProfile.class)
+@Disabled("Deprecated endpoints")
 class ConsumerGroupsOAuthTestIT {
 
     static final String CONSUMER_GROUP_COLLECTION_PATH = "/api/v1/consumer-groups";

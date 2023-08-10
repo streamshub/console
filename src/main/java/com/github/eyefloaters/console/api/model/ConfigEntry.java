@@ -1,5 +1,6 @@
 package com.github.eyefloaters.console.api.model;
 
+import java.util.Map;
 import java.util.Optional;
 
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
@@ -10,6 +11,12 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 
 @JsonInclude(Include.NON_NULL)
 public class ConfigEntry {
+
+    public static class ConfigResponse extends DataResponse<Map<String, ConfigEntry>> {
+        public ConfigResponse(Map<String, ConfigEntry> data) {
+            super(data);
+        }
+    }
 
     public static class ConfigEntryMap extends java.util.HashMap<String, ConfigEntry> {
         private static final long serialVersionUID = 1L;
