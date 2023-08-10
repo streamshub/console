@@ -25,6 +25,10 @@ jobs:
 
       - name: Build storybook
         run: |
+          export NEXTAUTH_SECRET=your_secret_value
+          export NEXTAUTH_URL=""
+          export KEYCLOAK_CLIENT_ID=""
+          export KEYCLOAK_CLIENT_SECRET=""
           npm run build-storybook -- --quiet --loglevel silent
 
       - name: Deploy to Chromatic 🚀
@@ -32,7 +36,6 @@ jobs:
         id: chromatic
         with:
           branch: gh-pages # The branch the action should deploy to.
-          folder: packages/ui/storybook-static # The folder the action should deploy.
         env:
           NEXTAUTH_SECRET: FDezLOOo4q+DeG3y0REbc8xOlFvciDD4pRIvCRaBQ1k=
           NEXTAUTH_URL: http://localhost:3000
