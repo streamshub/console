@@ -1,6 +1,6 @@
 package com.github.eyefloaters.console.api.model;
 
-abstract class DataResponse<T> {
+public abstract class DataResponse<T> {
 
     private final T data;
 

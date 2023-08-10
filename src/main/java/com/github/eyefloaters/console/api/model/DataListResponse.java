@@ -2,7 +2,7 @@ package com.github.eyefloaters.console.api.model;
 
 import java.util.List;
 
-abstract class DataListResponse<T> {
+public abstract class DataListResponse<T> {
 
     private final List<T> data;
 

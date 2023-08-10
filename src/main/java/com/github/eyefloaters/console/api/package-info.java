@@ -3,10 +3,12 @@
         components = @Components(
                 responses = {
                     @APIResponse(name = "Configurations",
+                            description = "Configurations successfully retrieved",
                             content = @Content(
                                     mediaType = MediaType.APPLICATION_JSON,
                                     schema = @Schema(implementation = ConfigEntry.ConfigResponse.class))),
                     @APIResponse(name = "BadRequest",
+                            description = "Bad request",
                             content = @Content(
                                     mediaType = MediaType.APPLICATION_JSON,
                                     schema = @Schema(implementation = ErrorResponse.class),
@@ -27,9 +29,16 @@
                                               ]
                                             }
                                             """))),
-                    @APIResponse(name = "NotAuthenticated", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ErrorResponse.class))),
-                    @APIResponse(name = "NotAuthorized", content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ErrorResponse.class))),
+                    @APIResponse(name = "NotAuthenticated",
+                            content = @Content(
+                                    mediaType = MediaType.APPLICATION_JSON,
+                                    schema = @Schema(implementation = ErrorResponse.class))),
+                    @APIResponse(name = "NotAuthorized",
+                            content = @Content(
+                                    mediaType = MediaType.APPLICATION_JSON,
+                                    schema = @Schema(implementation = ErrorResponse.class))),
                     @APIResponse(name = "NotFound",
+                            description = "Requested resource not found",
                             content = @Content(
                                     mediaType = MediaType.APPLICATION_JSON,
                                     schema = @Schema(implementation = ErrorResponse.class),
@@ -52,6 +61,7 @@
                                     mediaType = MediaType.APPLICATION_JSON,
                                     schema = @Schema(implementation = ErrorResponse.class))),
                     @APIResponse(name = "ServerError",
+                            description = "Internal server error",
                             content = @Content(
                                     mediaType = MediaType.APPLICATION_JSON,
                                     schema = @Schema(implementation = ErrorResponse.class),
@@ -70,6 +80,7 @@
                                             }
                                             """))),
                     @APIResponse(name = "ServerTimeout",
+                            description = "Backend service timeout",
                             content = @Content(
                                     mediaType = MediaType.APPLICATION_JSON,
                                     schema = @Schema(implementation = ErrorResponse.class),
@@ -87,6 +98,27 @@
                                               ]
                                             }
                                             """))),
+                },
+                examples = {
+                    @ExampleObject(name = "Earliest Offset",
+                            value = "earliest",
+                            description = "Used to retrieve the earliest offset of a partition"),
+                    @ExampleObject(name = "Latest Offset",
+                            value = "latest",
+                            description = "Used to retrieve the latest offset of a partition"),
+                    @ExampleObject(name = "Max Timestamp",
+                            value = "maxTimestamp",
+                            description = """
+                            Used to retrieve the offset with the largest timestamp of a partition
+                            as message timestamps can be specified client side this may not match
+                            the log end offset returned by LatestSpec
+                            """),
+                    @ExampleObject(name = "Literal Timestamp",
+                            value = "2023-01-01T00:00:00Z",
+                            description = """
+                            Used to retrieve the earliest offset whose timestamp is greater than
+                            or equal to the given timestamp in the corresponding partition
+                            """)
                 }
         ))
 package com.github.eyefloaters.console.api;

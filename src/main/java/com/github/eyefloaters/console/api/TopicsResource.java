@@ -14,6 +14,8 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
 import org.eclipse.microprofile.openapi.annotations.media.Content;
+import org.eclipse.microprofile.openapi.annotations.media.ExampleObject;
+import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponseSchema;
 
@@ -54,9 +56,23 @@ public class TopicsResource {
     @APIResponse(responseCode = "500", ref = "ServerError")
     @APIResponse(responseCode = "504", ref = "ServerTimeout")
     public CompletionStage<Response> listTopics(
-                    @QueryParam("include") List<String> includes,
-                    @QueryParam("listInternal") @DefaultValue("false") boolean listInternal,
-                    @QueryParam("offsetSpec") @DefaultValue("latest") @OffsetSpecValidator.ValidOffsetSpec String offsetSpec) {
+            @QueryParam("include")
+            List<String> includes,
+
+            @QueryParam("listInternal")
+            @DefaultValue("false")
+            boolean listInternal,
+
+            @QueryParam("offsetSpec")
+            @DefaultValue("latest")
+            @OffsetSpecValidator.ValidOffsetSpec
+            @Parameter(examples = {
+                @ExampleObject(ref = "Earliest Offset"),
+                @ExampleObject(ref = "Latest Offset"),
+                @ExampleObject(ref = "Max Timestamp"),
+                @ExampleObject(ref = "Literal Timestamp")
+            })
+            String offsetSpec) {
 
         return topicService.listTopics(listInternal, includes, offsetSpec)
                 .thenApply(Topic.ListResponse::new)
@@ -72,9 +88,23 @@ public class TopicsResource {
     @APIResponse(responseCode = "500", ref = "ServerError")
     @APIResponse(responseCode = "504", ref = "ServerTimeout")
     public CompletionStage<Response> describeTopic(
-                    @PathParam("topicName") String topicName,
-                    @QueryParam("include") List<String> includes,
-                    @QueryParam("offsetSpec") @DefaultValue("latest") @OffsetSpecValidator.ValidOffsetSpec String offsetSpec) {
+            @PathParam("topicName")
+            @Parameter(description = "Topic name")
+            String topicName,
+
+            @QueryParam("include")
+            List<String> includes,
+
+            @QueryParam("offsetSpec")
+            @DefaultValue("latest")
+            @OffsetSpecValidator.ValidOffsetSpec
+            @Parameter(examples = {
+                @ExampleObject(ref = "Earliest Offset"),
+                @ExampleObject(ref = "Latest Offset"),
+                @ExampleObject(ref = "Max Timestamp"),
+                @ExampleObject(ref = "Literal Timestamp")
+            })
+            String offsetSpec) {
 
         return topicService.describeTopic(topicName, includes, offsetSpec)
                 .thenApply(Topic.SingleResponse::new)
@@ -89,7 +119,11 @@ public class TopicsResource {
     @APIResponse(responseCode = "404", ref = "NotFound")
     @APIResponse(responseCode = "500", ref = "ServerError")
     @APIResponse(responseCode = "504", ref = "ServerTimeout")
-    public CompletionStage<Response> describeTopicConfigs(@PathParam("topicName") String topicName) {
+    public CompletionStage<Response> describeTopicConfigs(
+            @PathParam("topicName")
+            @Parameter(description = "Topic name")
+            String topicName) {
+
         return topicService.describeConfigs(topicName)
                 .thenApply(ConfigEntry.ConfigResponse::new)
                 .thenApply(Response::ok)

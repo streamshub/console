@@ -10,6 +10,7 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
+import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponseSchema;
 
@@ -39,7 +40,11 @@ public class ClustersResource {
     @APIResponse(responseCode = "404", ref = "NotFound")
     @APIResponse(responseCode = "500", ref = "ServerError")
     @APIResponse(responseCode = "504", ref = "ServerTimeout")
-    public CompletionStage<Response> describeCluster(@PathParam("clusterId") String clusterId) {
+    public CompletionStage<Response> describeCluster(
+            @Parameter(description = "Cluster identifier")
+            @PathParam("clusterId")
+            String clusterId) {
+
         return clusterService.describeCluster()
             .thenApply(Cluster.SingleResponse::new)
             .thenApply(Response::ok)
