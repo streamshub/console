@@ -26,8 +26,8 @@ jobs:
         uses: JamesIves/github-pages-deploy-action@v4.4.1
         id: chromatic
         with:
-          branch: gh-pages # The branch the action should deploy to.
-          folder: packages/ui/storybook-static # The folder the action should deploy.
+          branch: gh-pages
+          folder: packages/ui/storybook-static
         env:
           NEXTAUTH_SECRET: FDezLOOo4q+DeG3y0REbc8xOlFvciDD4pRIvCRaBQ1k=
           NEXTAUTH_URL: http://localhost:3000

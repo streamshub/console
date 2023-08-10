@@ -22,11 +22,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: ./.github/actions/cache-restore
-        id: cache-node-modules
-        with:
-          node-version: 16.19.0
-
       - name: Build storybook and Deploy to Chromatic 🚀
         uses: chromaui/action@v1
         id: chromatic
