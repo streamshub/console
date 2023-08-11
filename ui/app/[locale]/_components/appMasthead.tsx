@@ -1,22 +1,32 @@
-import { Tool } from "@/app/[locale]/_api/getTools";
-import { Toolbar, ToolbarItem } from "@/libs/patternfly/react-core";
-import { ApplicationLauncher } from "./applicationLauncher";
 import {
-  Masthead as PFMasthead,
+  Masthead,
   MastheadContent,
   MastheadMain,
   Title,
 } from "@/libs/patternfly/react-core";
+import logo from "@/public/strimzi-dark-picto.png";
 import { useTranslations } from "next-intl";
 import Image from "next/image";
 import Link from "next/link";
-import logo from "@/public/strimzi-dark-picto.png";
+import { ReactNode } from "react";
+import { Tool } from "../_api/getTools";
+import { ApplicationLauncher } from "./applicationLauncher";
 
-export function Masthead({ tools }: { tools: Tool[] }) {
+export function AppMasthead({
+  tools,
+  toolbar,
+}: {
+  tools: Tool[];
+  toolbar: ReactNode;
+}) {
   const t = useTranslations();
 
   return (
-    <PFMasthead>
+    <Masthead
+      id="stack-masthead"
+      display={{ default: "stack" }}
+      className={"pf-v5-theme-dark"}
+    >
       <MastheadMain>
         <Link href={"/"} className={"pf-v5-u-mx-xl"}>
           <Image
@@ -31,12 +41,9 @@ export function Masthead({ tools }: { tools: Tool[] }) {
         </Title>
       </MastheadMain>
       <MastheadContent>
-        <Toolbar id={"masthead-toolbar"} ouiaId={"masthead-toolbar"}>
-          <ToolbarItem align={{ default: "alignRight" }}>
-            <ApplicationLauncher tools={tools} />
-          </ToolbarItem>
-        </Toolbar>
+        <ApplicationLauncher tools={tools} />
+        {toolbar}
       </MastheadContent>
-    </PFMasthead>
+    </Masthead>
   );
 }

@@ -1,22 +1,23 @@
 "use client";
 import { Tool } from "@/app/[locale]/_api/getTools";
 import {
-  MenuToggle,
-  MenuSearch,
-  MenuSearchInput,
   Divider,
-  SearchInput,
   Dropdown,
   DropdownGroup,
-  DropdownList,
   DropdownItem,
+  DropdownList,
+  MenuSearch,
+  MenuSearchInput,
+  MenuToggle,
+  SearchInput,
 } from "@/libs/patternfly/react-core";
 import { ThIcon } from "@/libs/patternfly/react-icons";
 import { useTranslations } from "next-intl";
-import { useRouter } from "next/navigation";
+import { useRouter, useSelectedLayoutSegment } from "next/navigation";
 import { useState } from "react";
 
 export const ApplicationLauncher = ({ tools }: { tools: Tool[] }) => {
+  const segment = useSelectedLayoutSegment();
   const t = useTranslations();
   const router = useRouter();
 
@@ -34,13 +35,17 @@ export const ApplicationLauncher = ({ tools }: { tools: Tool[] }) => {
       value={id}
       id={id}
       isFavorited={favorites.includes(id)}
-      onClick={() => void router.push(url)}
+      onClick={() => {
+        void router.push(url);
+        setIsOpen(false);
+      }}
     >
       {t(title)}
     </DropdownItem>
   );
 
   const menuItems = tools
+    .filter((tool) => !favorites.includes(tool.id))
     .filter(
       (tool) =>
         searchText === "" ||
@@ -66,46 +71,50 @@ export const ApplicationLauncher = ({ tools }: { tools: Tool[] }) => {
     }
   };
 
+  // show the launcher only in child pages
+  const isChildPage = segment !== null;
+
   return (
-    <Dropdown
-      isOpen={isOpen}
-      onOpenChange={(isOpen) => setIsOpen(isOpen)}
-      onOpenChangeKeys={["Escape"]}
-      toggle={(toggleRef) => (
-        <MenuToggle
-          aria-label="Toggle"
-          ref={toggleRef}
-          variant="plain"
-          onClick={onToggleClick}
-          isExpanded={isOpen}
-          style={{ width: "auto" }}
-        >
-          <ThIcon />
-        </MenuToggle>
-      )}
-      onActionClick={onFavorite}
-      onSelect={(_ev, value) => console.log("selected", value)}
-      popperProps={{ position: "right" }}
-    >
-      <MenuSearch>
-        <MenuSearchInput>
-          <SearchInput
-            aria-label="Filter menu items"
-            value={searchText}
-            onChange={(_event, value) => setSearchText(value)}
-          />
-        </MenuSearchInput>
-      </MenuSearch>
-      <Divider />
-      {favorites.length > 0 && (
-        <>
-          <DropdownGroup key="favorites-group" label="Favorites">
-            <DropdownList>{favoriteItems}</DropdownList>
-          </DropdownGroup>
-          <Divider key="favorites-divider" />
-        </>
-      )}
-      {menuItems}
-    </Dropdown>
+    isChildPage && (
+      <Dropdown
+        isOpen={isOpen}
+        onOpenChange={(isOpen) => setIsOpen(isOpen)}
+        onOpenChangeKeys={["Escape"]}
+        toggle={(toggleRef) => (
+          <MenuToggle
+            aria-label="Toggle"
+            ref={toggleRef}
+            variant="plain"
+            onClick={onToggleClick}
+            isExpanded={isOpen}
+            style={{ width: "auto" }}
+          >
+            <ThIcon />
+          </MenuToggle>
+        )}
+        onActionClick={onFavorite}
+        onSelect={(_ev, value) => console.log("selected", value)}
+      >
+        <MenuSearch>
+          <MenuSearchInput>
+            <SearchInput
+              aria-label="Filter menu items"
+              value={searchText}
+              onChange={(_event, value) => setSearchText(value)}
+            />
+          </MenuSearchInput>
+        </MenuSearch>
+        <Divider />
+        {favorites.length > 0 && (
+          <>
+            <DropdownGroup key="favorites-group" label="Favorites">
+              <DropdownList>{favoriteItems}</DropdownList>
+            </DropdownGroup>
+            <Divider key="favorites-divider" />
+          </>
+        )}
+        {menuItems}
+      </Dropdown>
+    )
   );
 };
