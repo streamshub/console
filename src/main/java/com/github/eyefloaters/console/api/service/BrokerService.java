@@ -17,7 +17,7 @@ import com.github.eyefloaters.console.api.model.Node;
 public class BrokerService {
 
     @Inject
-    ClusterService clusterService;
+    KafkaClusterService clusterService;
 
     @Inject
     ConfigService configService;

@@ -19,43 +19,37 @@ public class ErrorSource {
             error [e.g. "/data" for a primary data object, or "/data/attributes/title"
             for a specific attribute].
             """)
-    String pointer;
+    final String pointer;
 
     /**
      * A string indicating which URI query parameter caused the error.
      */
     @Schema(description = "A string indicating which URI query parameter caused the error.")
-    String parameter;
+    final String parameter;
 
     /**
      * A string indicating the name of a single request header which caused the
      * error.
      */
     @Schema(description = "A string indicating the name of a single request header which caused the error.")
-    String header;
+    final String header;
+
+    public ErrorSource(String pointer, String parameter, String header) {
+        this.pointer = pointer;
+        this.parameter = parameter;
+        this.header = header;
+    }
 
     public String getPointer() {
         return pointer;
-    }
-
-    public void setPointer(String pointer) {
-        this.pointer = pointer;
     }
 
     public String getParameter() {
         return parameter;
     }
 
-    public void setParameter(String parameter) {
-        this.parameter = parameter;
-    }
-
     public String getHeader() {
         return header;
-    }
-
-    public void setHeader(String header) {
-        this.header = header;
     }
 
     @Override

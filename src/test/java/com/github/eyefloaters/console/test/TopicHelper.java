@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import jakarta.json.Json;
@@ -27,14 +28,12 @@ import org.apache.kafka.common.serialization.StringSerializer;
 import org.eclipse.microprofile.config.Config;
 import org.jboss.logging.Logger;
 
+import com.github.eyefloaters.console.api.BlockingSupplier;
 import com.github.eyefloaters.console.kafka.systemtest.utils.ClientsConfig;
 
 import static org.junit.jupiter.api.Assertions.fail;
 
 public class TopicHelper {
-
-    public static final String TOPIC_COLLECTION_PATH = "/api/clusters/{clusterId}/topics";
-    public static final String TOPIC_PATH = "/api/clusters/{clusterId}/topics/{topicName}";
 
     static final Logger log = Logger.getLogger(TopicHelper.class);
     final URI bootstrapServers;
@@ -75,22 +74,31 @@ public class TopicHelper {
         }
     }
 
-    public void createTopics(String clusterId, List<String> names, int numPartitions) {
+    public Map<String, String> createTopics(String clusterId, List<String> names, int numPartitions) {
+        Map<String, String> topicIds = null;
+
         try (Admin admin = Admin.create(adminConfig)) {
-            admin.createTopics(names.stream()
+            var result = admin.createTopics(names.stream()
                     .map(name ->  new NewTopic(name, Optional.of(numPartitions), Optional.empty()))
-                    .toList())
-                .all()
+                    .toList());
+
+            result.all()
                 .toCompletionStage()
                 .thenRun(() -> log.infof("Topics created:", names))
                 .toCompletableFuture()
                 .get(20, TimeUnit.SECONDS);
+
+            topicIds = names.stream().collect(Collectors.toMap(Function.identity(), name -> {
+                return BlockingSupplier.get(() -> result.topicId(name)).toString();
+            }));
         } catch (InterruptedException e) {
             log.warn("Process interruptted", e);
             Thread.currentThread().interrupt();
         } catch (Exception e) {
             fail(e);
         }
+
+        return topicIds;
     }
 
     public void produceRecord(String topicName, Integer partition, Instant instant, Map<String, Object> headers, String key, String value) {

@@ -4,18 +4,18 @@ import java.util.List;
 
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
-public class Cluster {
+public class KafkaCluster {
 
-    @Schema(name = "ClusterListResponse")
-    public static final class ListResponse extends DataListResponse<Cluster> {
-        public ListResponse(List<Cluster> data) {
+    @Schema(name = "KafkaClusterListResponse")
+    public static final class ListResponse extends DataListResponse<KafkaCluster> {
+        public ListResponse(List<KafkaCluster> data) {
             super(data);
         }
     }
 
-    @Schema(name = "ClusterResponse")
-    public static final class SingleResponse extends DataResponse<Cluster> {
-        public SingleResponse(Cluster data) {
+    @Schema(name = "KafkaClusterResponse")
+    public static final class SingleResponse extends DataResponse<KafkaCluster> {
+        public SingleResponse(KafkaCluster data) {
             super(data);
         }
     }
@@ -29,10 +29,10 @@ public class Cluster {
     String bootstrapServers; // Strimzi Kafka CR only
     String authType; // Strimzi Kafka CR only
 
-    public Cluster() {
+    public KafkaCluster() {
     }
 
-    public Cluster(String clusterId, List<Node> nodes, Node controller, List<String> authorizedOperations) {
+    public KafkaCluster(String clusterId, List<Node> nodes, Node controller, List<String> authorizedOperations) {
         super();
         this.clusterId = clusterId;
         this.nodes = nodes;

@@ -12,7 +12,7 @@ class ClusterServiceTest {
 
     @Test
     void testEnumNames() {
-        List<String> result = ClusterService.enumNames(List.of(
+        List<String> result = KafkaClusterService.enumNames(List.of(
                 org.apache.kafka.common.acl.AclOperation.ALTER,
                 org.apache.kafka.common.acl.AclOperation.CLUSTER_ACTION,
                 org.apache.kafka.common.acl.AclOperation.DESCRIBE,
@@ -23,13 +23,13 @@ class ClusterServiceTest {
 
     @Test
     void testEnumNamesEmpty() {
-        List<String> result = ClusterService.enumNames(Collections.emptyList());
+        List<String> result = KafkaClusterService.enumNames(Collections.emptyList());
         assertEquals(Collections.emptyList(), result);
     }
 
     @Test
     void testEnumNamesNull() {
-        List<String> result = ClusterService.enumNames(null);
+        List<String> result = KafkaClusterService.enumNames(null);
         assertNull(result);
     }
 }

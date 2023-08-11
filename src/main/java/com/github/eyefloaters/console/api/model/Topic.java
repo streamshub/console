@@ -30,7 +30,7 @@ public class Topic {
     String kind = "Topic";
     String name;
     boolean internal;
-    String topicId;
+    String id;
 
     @Schema(implementation = Object.class, oneOf = { TopicPartitionInfo[].class, Error.class })
     Either<List<TopicPartitionInfo>, Error> partitions;
@@ -44,11 +44,11 @@ public class Topic {
     public Topic() {
     }
 
-    public Topic(String name, boolean internal, String topicId) {
+    public Topic(String name, boolean internal, String id) {
         super();
         this.name = name;
         this.internal = internal;
-        this.topicId = topicId;
+        this.id = id;
     }
 
     public static Topic fromTopicListing(org.apache.kafka.clients.admin.TopicListing listing) {
@@ -126,8 +126,8 @@ public class Topic {
         return authorizedOperations;
     }
 
-    public String getTopicId() {
-        return topicId;
+    public String getId() {
+        return id;
     }
 
     public Either<Map<String, ConfigEntry>, Error> getConfigs() {

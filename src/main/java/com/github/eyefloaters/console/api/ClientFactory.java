@@ -29,7 +29,7 @@ import org.apache.kafka.common.security.plain.PlainLoginModule;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.jboss.logging.Logger;
 
-import com.github.eyefloaters.console.api.service.ClusterService;
+import com.github.eyefloaters.console.api.service.KafkaClusterService;
 import com.github.eyefloaters.console.legacy.model.AdminServerException;
 import com.github.eyefloaters.console.legacy.model.ErrorType;
 
@@ -73,10 +73,10 @@ public class ClientFactory {
             return () -> null;
         }
 
-        Kafka cluster = ClusterService.findCluster(kafkaInformer, clusterId)
+        Kafka cluster = KafkaClusterService.findCluster(kafkaInformer, clusterId)
                 .orElseThrow(() -> new NotFoundException("Cluster not found for clusterId: " + clusterId));
 
-        Map<String, Object> config = ClusterService.externalListeners(cluster)
+        Map<String, Object> config = KafkaClusterService.externalListeners(cluster)
             .findFirst()
             .map(l -> buildConfiguration(cluster, l))
             .orElseThrow(() -> new NotFoundException("Cluster not found for clusterId: " + clusterId));
@@ -94,7 +94,7 @@ public class ClientFactory {
 
     Map<String, Object> buildConfiguration(Kafka cluster, ListenerStatus listenerStatus) {
         Map<String, Object> config = new HashMap<>();
-        String authType = ClusterService.getAuthType(cluster, listenerStatus).orElse("");
+        String authType = KafkaClusterService.getAuthType(cluster, listenerStatus).orElse("");
         boolean saslEnabled;
 
         switch (authType) {

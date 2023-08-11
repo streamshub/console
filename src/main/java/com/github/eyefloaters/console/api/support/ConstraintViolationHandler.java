@@ -58,25 +58,6 @@ public class ConstraintViolationHandler implements ExceptionMapper<ConstraintVio
     }
 
     ErrorSource getSource(ErrorCategory category, String property) {
-        ErrorSource source = null;
-
-        switch (category.getSource()) {
-            case HEADER:
-                source = new ErrorSource();
-                source.setHeader(property);
-                break;
-            case PARAMETER:
-                source = new ErrorSource();
-                source.setParameter(property);
-                break;
-            case PAYLOAD:
-                source = new ErrorSource();
-                source.setPointer(property);
-                break;
-            default:
-                break;
-        }
-
-        return source;
+        return category.getSource().errorSource(property);
     }
 }

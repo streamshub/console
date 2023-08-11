@@ -5,6 +5,8 @@ import java.net.ServerSocket;
 import java.net.URI;
 import java.util.UUID;
 
+import jakarta.enterprise.util.AnnotationLiteral;
+import jakarta.enterprise.util.TypeLiteral;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.core.Response.Status;
 
@@ -12,14 +14,17 @@ import org.eclipse.microprofile.config.Config;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 import com.github.eyefloaters.console.kafka.systemtest.TestPlainProfile;
 import com.github.eyefloaters.console.kafka.systemtest.deployment.DeploymentManager;
 import com.github.eyefloaters.console.test.TestHelper;
 
 import io.fabric8.kubernetes.client.KubernetesClient;
+import io.fabric8.kubernetes.client.informers.SharedIndexInformer;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.common.http.TestHTTPEndpoint;
+import io.quarkus.test.junit.QuarkusMock;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.quarkus.test.kubernetes.client.KubernetesServerTestResource;
@@ -37,9 +42,9 @@ import static org.hamcrest.Matchers.nullValue;
 
 @QuarkusTest
 @QuarkusTestResource(KubernetesServerTestResource.class)
-@TestHTTPEndpoint(ClustersResource.class)
+@TestHTTPEndpoint(KafkaClustersResource.class)
 @TestProfile(TestPlainProfile.class)
-class ClustersResourceIT {
+class KafkaClustersResourceIT {
 
     @Inject
     Config config;
@@ -146,6 +151,44 @@ class ClustersResourceIT {
                     bootstrapServers.getHost() + ":" + bootstrapServers.getPort(),
                     randomBootstrapServers.getHost() + ":" + randomBootstrapServers.getPort()))
             .body("data.authType", containsInAnyOrder(equalTo("custom"), nullValue()));
+    }
+
+    @Test
+    void testListClustersWithInformerError() {
+        SharedIndexInformer<Kafka> informer = Mockito.mock();
+
+        var informerType = new TypeLiteral<SharedIndexInformer<Kafka>>() {
+            private static final long serialVersionUID = 1L;
+        };
+
+        @SuppressWarnings("all")
+        class NamedLiteral extends AnnotationLiteral<jakarta.inject.Named> implements jakarta.inject.Named {
+            private static final long serialVersionUID = 1L;
+
+            @Override
+            public String value() {
+                return "KafkaInformer";
+            }
+        }
+
+        // Force an unhandled exception
+        Mockito.when(informer.getStore()).thenThrow(new RuntimeException("EXPECTED TEST EXCEPTION") {
+            private static final long serialVersionUID = 1L;
+
+            @Override
+            public synchronized Throwable fillInStackTrace() {
+                return this;
+            }
+        });
+
+        QuarkusMock.installMockForType(informer, informerType, new NamedLiteral());
+
+        whenRequesting(req -> req.get("{clusterId}", UUID.randomUUID().toString()))
+            .assertThat()
+            .statusCode(is(Status.INTERNAL_SERVER_ERROR.getStatusCode()))
+            .body("errors.size()", is(1))
+            .body("errors.status", contains("500"))
+            .body("errors.code", contains("5001"));
     }
 
     @Test
