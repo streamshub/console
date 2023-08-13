@@ -1,13 +1,8 @@
 "use client";
-import { NoResultsEmptyState } from "@/app/[locale]/message-browser/_components/NoResultsEmptyState";
+import { NoResultsEmptyState } from "@/app/[locale]/(tools)/message-browser/_components/NoResultsEmptyState";
+import { Loading } from "@/components/loading/loading";
 import { RefreshButton } from "@/components/refreshButton/refreshButton";
 import { ResponsiveTable } from "@/components/table";
-import { parseISO } from "date-fns";
-import { NoDataEmptyState } from "./NoDataEmptyState";
-import { Loading } from "@/components/loading/loading";
-import { MessageDetails, MessageDetailsProps } from "./MessageDetails";
-import { useTranslations, useFormatter } from "next-intl";
-import { Message, MessageApiResponse } from "../_api/types";
 import {
   Button,
   Drawer,
@@ -25,14 +20,19 @@ import {
   InnerScrollContainer,
   OuterScrollContainer,
 } from "@/libs/patternfly/react-table";
+import { parseISO } from "date-fns";
+import { useFormatter, useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
-import { beautifyUnknownValue, isSameMessage } from "./utils";
-import { PartitionSelector } from "./PartitionSelector";
+import { Message, MessageApiResponse } from "../_api/types";
 import { FilterGroup } from "./FilterGroup";
 import { LimitSelector } from "./LimitSelector";
-import { OffsetRange } from "./OffsetRange";
+import { MessageDetails, MessageDetailsProps } from "./MessageDetails";
 import { NoDataCell } from "./NoDataCell";
+import { NoDataEmptyState } from "./NoDataEmptyState";
+import { OffsetRange } from "./OffsetRange";
+import { PartitionSelector } from "./PartitionSelector";
 import { UnknownValuePreview } from "./UnknownValuePreview";
+import { beautifyUnknownValue, isSameMessage } from "./utils";
 
 const columns = [
   "partition",

@@ -1,5 +1,5 @@
 "use client";
-import { Tool } from "@/app/[locale]/_api/getTools";
+import { Tool } from "@/api/getTools";
 import {
   Card,
   CardBody,

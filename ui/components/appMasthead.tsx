@@ -8,25 +8,13 @@ import logo from "@/public/strimzi-dark-picto.png";
 import { useTranslations } from "next-intl";
 import Image from "next/image";
 import Link from "next/link";
-import { ReactNode } from "react";
-import { Tool } from "../_api/getTools";
-import { ApplicationLauncher } from "./applicationLauncher";
+import { PropsWithChildren } from "react";
 
-export function AppMasthead({
-  tools,
-  toolbar,
-}: {
-  tools: Tool[];
-  toolbar: ReactNode;
-}) {
+export function AppMasthead({ children }: PropsWithChildren<{}>) {
   const t = useTranslations();
 
   return (
-    <Masthead
-      id="stack-masthead"
-      display={{ default: "stack" }}
-      className={"pf-v5-theme-dark"}
-    >
+    <Masthead id="stack-masthead" display={{ default: "stack" }}>
       <MastheadMain>
         <Link href={"/"} className={"pf-v5-u-mx-xl"}>
           <Image
@@ -40,10 +28,7 @@ export function AppMasthead({
           {t("homepage.title")}
         </Title>
       </MastheadMain>
-      <MastheadContent>
-        <ApplicationLauncher tools={tools} />
-        {toolbar}
-      </MastheadContent>
+      <MastheadContent>{children}</MastheadContent>
     </Masthead>
   );
 }

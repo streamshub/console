@@ -6,13 +6,11 @@ import {
   ToolbarItem,
 } from "@/libs/patternfly/react-core";
 import { ToolbarGroup } from "@patternfly/react-core";
-import { useTranslations } from "next-intl";
 
 export function Search() {
-  const t = useTranslations();
-
   return (
     <Toolbar
+      className={"pf-v5-theme-dark"}
       id="header-toolbar"
       ouiaId={"header-toolbar"}
       clearAllFilters={() => {}}

@@ -28,3 +28,43 @@ type TDateISOTime = `${THours}:${TMinutes}:${TSeconds}.${TMilliseconds}`;
  *   "Expression produces a union type that is too complex to represent. ts(2590)"
  */
 declare type DateIsoString = `${TDateISODate}T${TDateISOTime}Z`;
+
+declare type Principal = {
+  id: string;
+  cluster: string;
+  name: string;
+  description?: string;
+};
+
+declare type Tool = {
+  id: string;
+  url: string;
+  icon: import("react").ReactElement;
+  title: string;
+  description: string;
+};
+
+declare type Message = {
+  partition?: number;
+  offset?: number;
+  timestamp?: DateIsoString;
+  key?: string;
+  value?: string;
+  headers: Record<string, string>;
+};
+
+declare type MessageApiResponse = {
+  lastUpdated: Date;
+  messages: Message[];
+  partitions: number;
+  offsetMin: number;
+  offsetMax: number;
+
+  filter: {
+    partition: number | undefined;
+    offset: number | undefined;
+    timestamp: DateIsoString | undefined;
+    limit: number | undefined;
+    epoch: number | undefined;
+  };
+};

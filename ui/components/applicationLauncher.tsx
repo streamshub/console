@@ -1,5 +1,4 @@
 "use client";
-import { Tool } from "@/app/[locale]/_api/getTools";
 import {
   Divider,
   Dropdown,
@@ -72,7 +71,7 @@ export const ApplicationLauncher = ({ tools }: { tools: Tool[] }) => {
   };
 
   // show the launcher only in child pages
-  const isChildPage = segment !== null;
+  const isChildPage = segment !== "tools";
 
   return (
     isChildPage && (

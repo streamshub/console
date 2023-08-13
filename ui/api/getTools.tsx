@@ -1,5 +1,4 @@
 import {
-  ClusterIcon,
   CogIcon,
   DataProcessorIcon,
   DataSinkIcon,
@@ -7,25 +6,9 @@ import {
   ListIcon,
   TachometerAltIcon,
 } from "@/libs/patternfly/react-icons";
-import { ReactElement } from "react";
-
-export type Tool = {
-  id: string;
-  url: string;
-  icon: ReactElement;
-  title: string;
-  description: string;
-};
 
 export async function getTools(): Promise<Tool[]> {
   return [
-    {
-      url: "/principals",
-      id: "principals",
-      icon: <ClusterIcon />,
-      title: "principals.title" as const,
-      description: "principals.description" as const,
-    },
     {
       url: "/kafka-configuration",
       id: "kafka-configuration",

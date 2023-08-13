@@ -1,4 +1,4 @@
-import { KafkaMessageBrowser } from "@/app/[locale]/message-browser/_components/KafkaMessageBrowser";
+import { KafkaMessageBrowser } from "@/app/[locale]/(tools)/message-browser/_components/KafkaMessageBrowser";
 
 export default async function Principals() {
   return (

@@ -8,6 +8,7 @@ const withNextIntl = require("next-intl/plugin")(
 const nextConfig = {
   experimental: {
     serverActions: true,
+    typedRoutes: true,
   },
 };
 

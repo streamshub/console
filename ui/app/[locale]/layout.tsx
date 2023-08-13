@@ -1,21 +1,16 @@
-import { Page } from "@/libs/patternfly/react-core";
 import { NextIntlClientProvider } from "next-intl";
 import { getTranslator } from "next-intl/server";
 import { notFound } from "next/navigation";
 import { ReactNode } from "react";
 import "../globals.css";
-import { getTools } from "./_api/getTools";
-import { AppMasthead } from "./_components/appMasthead";
 
 type Props = {
   children: ReactNode;
   params: { locale: string };
-  toolbar: ReactNode;
 };
 
 export default async function RootLayout({
   children,
-  toolbar,
   params: { locale },
 }: Props) {
   let messages;
@@ -25,15 +20,11 @@ export default async function RootLayout({
     notFound();
   }
 
-  const tools = await getTools();
-
   return (
     <html lang="en">
       <body>
         <NextIntlClientProvider locale={locale} messages={messages}>
-          <Page header={<AppMasthead tools={tools} toolbar={toolbar} />}>
-            {children}
-          </Page>
+          {children}
         </NextIntlClientProvider>
       </body>
     </html>
@@ -50,6 +41,6 @@ export async function generateMetadata({
   };
 }
 
-export function generateStaticParams() {
-  return [{ locale: "en" }];
-}
+// export function generateStaticParams() {
+//   return [{ locale: "en" }];
+// }
