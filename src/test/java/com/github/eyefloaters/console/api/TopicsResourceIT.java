@@ -7,6 +7,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -14,6 +15,7 @@ import java.util.stream.IntStream;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.core.Response.Status;
 
+import org.apache.kafka.common.Uuid;
 import org.eclipse.microprofile.config.Config;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,6 +28,7 @@ import com.github.eyefloaters.console.test.TopicHelper;
 
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.common.http.TestHTTPEndpoint;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.quarkus.test.kubernetes.client.KubernetesServerTestResource;
@@ -47,6 +50,7 @@ import static org.hamcrest.Matchers.nullValue;
 
 @QuarkusTest
 @QuarkusTestResource(KubernetesServerTestResource.class)
+@TestHTTPEndpoint(TopicsResource.class)
 @TestProfile(TestPlainProfile.class)
 class TopicsResourceIT {
 
@@ -147,16 +151,16 @@ class TopicsResourceIT {
 
         topicUtils.createTopics(clusterId1, topicNames, 1);
 
-        whenRequesting(req -> req.get(TopicHelper.TOPIC_COLLECTION_PATH, clusterId1))
+        whenRequesting(req -> req.get("", clusterId1))
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
             .body("data.size()", is(topicNames.size()))
-            .body("data.name", containsInAnyOrder(topicNames.toArray(String[]::new)));
+            .body("data.attributes.name", containsInAnyOrder(topicNames.toArray(String[]::new)));
     }
 
     @Test
     void testListTopicsWithKafkaUnavailable() {
-        whenRequesting(req -> req.get(TopicHelper.TOPIC_COLLECTION_PATH, clusterId2))
+        whenRequesting(req -> req.get("", clusterId2))
             .assertThat()
             .statusCode(is(Status.GATEWAY_TIMEOUT.getStatusCode()))
             .body("errors.size()", is(1))
@@ -171,13 +175,13 @@ class TopicsResourceIT {
 
         whenRequesting(req -> req
                 .queryParam("include", "configs")
-                .get(TopicHelper.TOPIC_COLLECTION_PATH, clusterId1))
+                .get("", clusterId1))
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
             .body("data.size()", is(1))
-            .body("data.name", contains(topicName))
-            .body("data.configs[0]", not(anEmptyMap()))
-            .body("data.configs[0].findAll { it }.collect { it.value }",
+            .body("data.attributes.name", contains(topicName))
+            .body("data.attributes.configs[0]", not(anEmptyMap()))
+            .body("data.attributes.configs[0].findAll { it }.collect { it.value }",
                     everyItem(allOf(
                             hasKey("source"),
                             hasKey("sensitive"),
@@ -192,12 +196,12 @@ class TopicsResourceIT {
 
         whenRequesting(req -> req
                 .queryParam("include", "authorizedOperations")
-                .get(TopicHelper.TOPIC_COLLECTION_PATH, clusterId1))
+                .get("", clusterId1))
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
             .body("data.size()", is(1))
-            .body("data.name", contains(topicName))
-            .body("data.authorizedOperations", contains(nullValue()));
+            .body("data.attributes.name", contains(topicName))
+            .body("data.attributes.authorizedOperations", contains(nullValue()));
     }
 
     @Test
@@ -209,15 +213,15 @@ class TopicsResourceIT {
 
         whenRequesting(req -> req
                 .queryParam("include", "partitions")
-                .get(TopicHelper.TOPIC_COLLECTION_PATH, clusterId1))
+                .get("", clusterId1))
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
             .body("data.size()", is(1))
-            .body("data.name", contains(topicName))
-            .body("data.partitions[0]", hasSize(2))
-            .body("data.partitions[0][0].offset.kind", is("Offset"))
-            .body("data.partitions[0][0].offset.offset", is(2))
-            .body("data.partitions[0][0].offset.timestamp", is(nullValue()));
+            .body("data.attributes.name", contains(topicName))
+            .body("data.attributes.partitions[0]", hasSize(2))
+            .body("data.attributes.partitions[0][0].offset.type", is(not("error")))
+            .body("data.attributes.partitions[0][0].offset.offset", is(2))
+            .body("data.attributes.partitions[0][0].offset.timestamp", is(nullValue()));
     }
 
     @Test
@@ -230,15 +234,15 @@ class TopicsResourceIT {
         whenRequesting(req -> req
                 .queryParam("include", "partitions")
                 .queryParam("offsetSpec", "earliest")
-                .get(TopicHelper.TOPIC_COLLECTION_PATH, clusterId1))
+                .get("", clusterId1))
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
             .body("data.size()", is(1))
-            .body("data.name", contains(topicName))
-            .body("data.partitions[0]", hasSize(2))
-            .body("data.partitions[0][0].offset.kind", is("Offset"))
-            .body("data.partitions[0][0].offset.offset", is(0))
-            .body("data.partitions[0][0].offset.timestamp", is(nullValue()));
+            .body("data.attributes.name", contains(topicName))
+            .body("data.attributes.partitions[0]", hasSize(2))
+            .body("data.attributes.partitions[0][0].offset.type", is(not("error")))
+            .body("data.attributes.partitions[0][0].offset.offset", is(0))
+            .body("data.attributes.partitions[0][0].offset.timestamp", is(nullValue()));
     }
 
     @Test
@@ -254,15 +258,15 @@ class TopicsResourceIT {
         whenRequesting(req -> req
                 .queryParam("include", "partitions")
                 .queryParam("offsetSpec", first.toString())
-                .get(TopicHelper.TOPIC_COLLECTION_PATH, clusterId1))
+                .get("", clusterId1))
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
             .body("data.size()", is(1))
-            .body("data.name", contains(topicName))
-            .body("data.partitions[0]", hasSize(2))
-            .body("data.partitions[0][0].offset.kind", is("Offset"))
-            .body("data.partitions[0][0].offset.offset", is(0))
-            .body("data.partitions[0][0].offset.timestamp", is(first.toString()));
+            .body("data.attributes.name", contains(topicName))
+            .body("data.attributes.partitions[0]", hasSize(2))
+            .body("data.attributes.partitions[0][0].offset.type", is(not("error")))
+            .body("data.attributes.partitions[0][0].offset.offset", is(0))
+            .body("data.attributes.partitions[0][0].offset.timestamp", is(first.toString()));
     }
 
     @Test
@@ -278,31 +282,31 @@ class TopicsResourceIT {
         whenRequesting(req -> req
                 .queryParam("include", "partitions")
                 .queryParam("offsetSpec", "maxTimestamp")
-                .get(TopicHelper.TOPIC_COLLECTION_PATH, clusterId1))
+                .get("", clusterId1))
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
             .body("data.size()", is(1))
-            .body("data.name", contains(topicName))
-            .body("data.partitions[0]", hasSize(2))
-            .body("data.partitions[0][0].offset.kind", is("Offset"))
-            .body("data.partitions[0][0].offset.offset", is(1))
-            .body("data.partitions[0][0].offset.timestamp", is(second.toString()));
+            .body("data.attributes.name", contains(topicName))
+            .body("data.attributes.partitions[0]", hasSize(2))
+            .body("data.attributes.partitions[0][0].offset.type", is(not("error")))
+            .body("data.attributes.partitions[0][0].offset.offset", is(1))
+            .body("data.attributes.partitions[0][0].offset.timestamp", is(second.toString()));
     }
 
 
     @Test
     void testDescribeTopicWithConfigsIncluded() {
         String topicName = UUID.randomUUID().toString();
-        topicUtils.createTopics(clusterId1, List.of(topicName), 1);
+        Map<String, String> topicIds = topicUtils.createTopics(clusterId1, List.of(topicName), 1);
 
         whenRequesting(req -> req
                 .queryParam("include", "configs")
-                .get(TopicHelper.TOPIC_PATH, clusterId1, topicName))
+                .get("{topicName}", clusterId1, topicIds.get(topicName)))
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
-            .body("data.name", is(topicName))
-            .body("data.configs", not(anEmptyMap()))
-            .body("data.configs.findAll { it }.collect { it.value }",
+            .body("data.attributes.name", is(topicName))
+            .body("data.attributes.configs", not(anEmptyMap()))
+            .body("data.attributes.configs.findAll { it }.collect { it.value }",
                     everyItem(allOf(
                             hasKey("source"),
                             hasKey("sensitive"),
@@ -313,59 +317,59 @@ class TopicsResourceIT {
     @Test
     void testDescribeTopicWithAuthorizedOperationsNull() {
         String topicName = UUID.randomUUID().toString();
-        topicUtils.createTopics(clusterId1, List.of(topicName), 1);
+        Map<String, String> topicIds = topicUtils.createTopics(clusterId1, List.of(topicName), 1);
 
-        whenRequesting(req -> req.get(TopicHelper.TOPIC_PATH, clusterId1, topicName))
+        whenRequesting(req -> req.get("{topicName}", clusterId1, topicIds.get(topicName)))
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
-            .body("data.name", is(topicName))
-            .body("data", not(hasKey("configs")))
-            .body("data", hasKey("authorizedOperations"))
-            .body("data.authorizedOperations", is(nullValue()));
+            .body("data.attributes.name", is(topicName))
+            .body("data.attributes", not(hasKey("configs")))
+            .body("data.attributes", hasKey("authorizedOperations"))
+            .body("data.attributes.authorizedOperations", is(nullValue()));
     }
 
     @Test
     void testDescribeTopicWithLatestOffset() {
         String topicName = UUID.randomUUID().toString();
-        topicUtils.createTopics(clusterId1, List.of(topicName), 2);
+        Map<String, String> topicIds = topicUtils.createTopics(clusterId1, List.of(topicName), 2);
         topicUtils.produceRecord(topicName, 0, null, Collections.emptyMap(), "k1", "v1");
         topicUtils.produceRecord(topicName, 0, null, Collections.emptyMap(), "k2", "v2");
 
-        whenRequesting(req -> req.get(TopicHelper.TOPIC_PATH, clusterId1, topicName))
+        whenRequesting(req -> req.get("{topicName}", clusterId1, topicIds.get(topicName)))
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
-            .body("data.name", is(topicName))
-            .body("data", not(hasKey("configs")))
-            .body("data.partitions", hasSize(2))
-            .body("data.partitions[0].offset.kind", is("Offset"))
-            .body("data.partitions[0].offset.offset", is(2))
-            .body("data.partitions[0].offset.timestamp", is(nullValue()));
+            .body("data.attributes.name", is(topicName))
+            .body("data.attributes", not(hasKey("configs")))
+            .body("data.attributes.partitions", hasSize(2))
+            .body("data.attributes.partitions[0].offset.type", is(not("error")))
+            .body("data.attributes.partitions[0].offset.offset", is(2))
+            .body("data.attributes.partitions[0].offset.timestamp", is(nullValue()));
     }
 
     @Test
     void testDescribeTopicWithEarliestOffset() {
         String topicName = UUID.randomUUID().toString();
-        topicUtils.createTopics(clusterId1, List.of(topicName), 2);
+        Map<String, String> topicIds = topicUtils.createTopics(clusterId1, List.of(topicName), 2);
         topicUtils.produceRecord(topicName, 0, null, Collections.emptyMap(), "k1", "v1");
         topicUtils.produceRecord(topicName, 0, null, Collections.emptyMap(), "k2", "v2");
 
         whenRequesting(req -> req
                 .queryParam("offsetSpec", "earliest")
-                .get(TopicHelper.TOPIC_PATH, clusterId1, topicName))
+                .get("{topicName}", clusterId1, topicIds.get(topicName)))
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
-            .body("data.name", is(topicName))
-            .body("data", not(hasKey("configs")))
-            .body("data.partitions", hasSize(2))
-            .body("data.partitions[0].offset.kind", is("Offset"))
-            .body("data.partitions[0].offset.offset", is(0))
-            .body("data.partitions[0].offset.timestamp", is(nullValue()));
+            .body("data.attributes.name", is(topicName))
+            .body("data.attributes", not(hasKey("configs")))
+            .body("data.attributes.partitions", hasSize(2))
+            .body("data.attributes.partitions[0].offset.type", is(not("error")))
+            .body("data.attributes.partitions[0].offset.offset", is(0))
+            .body("data.attributes.partitions[0].offset.timestamp", is(nullValue()));
     }
 
     @Test
     void testDescribeTopicWithTimestampOffset() {
         String topicName = UUID.randomUUID().toString();
-        topicUtils.createTopics(clusterId1, List.of(topicName), 2);
+        Map<String, String> topicIds = topicUtils.createTopics(clusterId1, List.of(topicName), 2);
 
         Instant first = Instant.now().truncatedTo(ChronoUnit.MILLIS);
         topicUtils.produceRecord(topicName, 0, first, Collections.emptyMap(), "k1", "v1");
@@ -374,21 +378,21 @@ class TopicsResourceIT {
 
         whenRequesting(req -> req
                 .queryParam("offsetSpec", first.toString())
-                .get(TopicHelper.TOPIC_PATH, clusterId1, topicName))
+                .get("{topicName}", clusterId1, topicIds.get(topicName)))
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
-            .body("data.name", is(topicName))
-            .body("data", not(hasKey("configs")))
-            .body("data.partitions", hasSize(2))
-            .body("data.partitions[0].offset.kind", is("Offset"))
-            .body("data.partitions[0].offset.offset", is(0))
-            .body("data.partitions[0].offset.timestamp", is(first.toString()));
+            .body("data.attributes.name", is(topicName))
+            .body("data.attributes", not(hasKey("configs")))
+            .body("data.attributes.partitions", hasSize(2))
+            .body("data.attributes.partitions[0].offset.type", is(not("error")))
+            .body("data.attributes.partitions[0].offset.offset", is(0))
+            .body("data.attributes.partitions[0].offset.timestamp", is(first.toString()));
     }
 
     @Test
     void testDescribeTopicWithMaxTimestampOffset() {
         String topicName = UUID.randomUUID().toString();
-        topicUtils.createTopics(clusterId1, List.of(topicName), 2);
+        Map<String, String> topicIds = topicUtils.createTopics(clusterId1, List.of(topicName), 2);
 
         Instant first = Instant.now().truncatedTo(ChronoUnit.MILLIS);
         topicUtils.produceRecord(topicName, 0, first, Collections.emptyMap(), "k1", "v1");
@@ -397,25 +401,25 @@ class TopicsResourceIT {
 
         whenRequesting(req -> req
                 .queryParam("offsetSpec", "maxTimestamp")
-                .get(TopicHelper.TOPIC_PATH, clusterId1, topicName))
+                .get("{topicName}", clusterId1, topicIds.get(topicName)))
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
-            .body("data.name", is(topicName))
-            .body("data", not(hasKey("configs")))
-            .body("data.partitions", hasSize(2))
-            .body("data.partitions[0].offset.kind", is("Offset"))
-            .body("data.partitions[0].offset.offset", is(1))
-            .body("data.partitions[0].offset.timestamp", is(second.toString()));
+            .body("data.attributes.name", is(topicName))
+            .body("data.attributes", not(hasKey("configs")))
+            .body("data.attributes.partitions", hasSize(2))
+            .body("data.attributes.partitions[0].offset.type", is(not("error")))
+            .body("data.attributes.partitions[0].offset.offset", is(1))
+            .body("data.attributes.partitions[0].offset.timestamp", is(second.toString()));
     }
 
     @Test
     void testDescribeTopicWithBadOffsetTimestamp() {
         String topicName = UUID.randomUUID().toString();
-        topicUtils.createTopics(clusterId1, List.of(topicName), 2);
+        Map<String, String> topicIds = topicUtils.createTopics(clusterId1, List.of(topicName), 2);
 
         whenRequesting(req -> req
                 .queryParam("offsetSpec", "Invalid Timestamp")
-                .get(TopicHelper.TOPIC_PATH, clusterId1, topicName))
+                .get("{topicName}", clusterId1, topicIds.get(topicName)))
             .assertThat()
             .statusCode(is(Status.BAD_REQUEST.getStatusCode()))
             .body("errors.size()", is(1))
@@ -427,17 +431,7 @@ class TopicsResourceIT {
 
     @Test
     void testDescribeTopicWithNoSuchTopic() {
-        whenRequesting(req -> req.get(TopicHelper.TOPIC_PATH, clusterId1, UUID.randomUUID().toString()))
-            .assertThat()
-            .statusCode(is(Status.NOT_FOUND.getStatusCode()))
-            .body("errors.size()", is(1))
-            .body("errors.status", contains("404"))
-            .body("errors.code", contains("4041"));
-    }
-
-    @Test
-    void testDescribeTopicConfigsWithNoSuchTopic() {
-        whenRequesting(req -> req.get(TopicHelper.TOPIC_PATH + "/configs", clusterId1, UUID.randomUUID().toString()))
+        whenRequesting(req -> req.get("{topicName}", clusterId1, Uuid.randomUuid().toString()))
             .assertThat()
             .statusCode(is(Status.NOT_FOUND.getStatusCode()))
             .body("errors.size()", is(1))

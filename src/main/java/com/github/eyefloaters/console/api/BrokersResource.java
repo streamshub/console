@@ -15,11 +15,13 @@ import org.apache.kafka.clients.admin.Admin;
 import org.eclipse.microprofile.openapi.annotations.media.Content;
 import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
+import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 import com.github.eyefloaters.console.api.model.ConfigEntry;
 import com.github.eyefloaters.console.api.service.BrokerService;
 
-@Path("/api/clusters/{clusterId}/brokers")
+@Path("/api/kafkas/{clusterId}/nodes")
+@Tag(name = "Kafka Cluster Resources")
 public class BrokersResource {
 
     @Inject

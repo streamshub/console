@@ -3,6 +3,7 @@ package com.github.eyefloaters.console.api.service;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -18,12 +19,14 @@ import jakarta.inject.Inject;
 
 import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.clients.admin.ListOffsetsResult.ListOffsetsResultInfo;
-import org.apache.kafka.clients.admin.ListTopicsOptions;
 import org.apache.kafka.clients.admin.OffsetSpec;
 import org.apache.kafka.common.KafkaFuture;
+import org.apache.kafka.common.TopicCollection;
+import org.apache.kafka.common.Uuid;
 import org.apache.kafka.common.config.ConfigResource;
+import org.apache.kafka.common.errors.InvalidTopicException;
+import org.apache.kafka.common.errors.UnknownTopicOrPartitionException;
 
-import com.github.eyefloaters.console.api.model.ConfigEntry;
 import com.github.eyefloaters.console.api.model.Either;
 import com.github.eyefloaters.console.api.model.OffsetInfo;
 import com.github.eyefloaters.console.api.model.Topic;
@@ -62,10 +65,10 @@ public class TopicService {
 //                .toCompletionStage();
 //    }
 
-    public CompletionStage<List<Topic>> listTopics(boolean listInternal, List<String> includes, String offsetSpec) {
+    public CompletionStage<List<Topic>> listTopics(List<String> includes, String offsetSpec) {
         Admin adminClient = clientSupplier.get();
 
-        return adminClient.listTopics(new ListTopicsOptions().listInternal(listInternal))
+        return adminClient.listTopics()
                 .listings()
                 .thenApply(list -> list.stream().map(Topic::fromTopicListing).toList())
                 .toCompletionStage()
@@ -73,11 +76,12 @@ public class TopicService {
                 .thenApply(list -> list.stream().sorted(Comparator.comparing(Topic::getName)).toList());
     }
 
-    public CompletionStage<Topic> describeTopic(String topicName, List<String> includes, String offsetSpec) {
+    public CompletionStage<Topic> describeTopic(String topicId, List<String> includes, String offsetSpec) {
         Admin adminClient = clientSupplier.get();
+        Uuid id = Uuid.fromString(topicId);
 
-        return describeTopics(adminClient, List.of(topicName), offsetSpec)
-            .thenApply(result -> result.get(topicName))
+        return describeTopics(adminClient, List.of(id), offsetSpec)
+            .thenApply(result -> result.get(id))
             .thenApply(result -> {
                 if (result.isPrimaryPresent()) {
                     return result.getPrimary();
@@ -88,7 +92,7 @@ public class TopicService {
                 CompletableFuture<Topic> promise = new CompletableFuture<>();
 
                 if (includes.contains("configs")) {
-                    List<ConfigResource> keys = List.of(new ConfigResource(ConfigResource.Type.TOPIC, topicName));
+                    List<ConfigResource> keys = List.of(new ConfigResource(ConfigResource.Type.TOPIC, topic.getName()));
                     configService.describeConfigs(adminClient, keys)
                         .thenApply(configs -> {
                             configs.forEach((name, either) -> topic.addConfigs(either));
@@ -102,10 +106,6 @@ public class TopicService {
 
                 return promise;
             });
-    }
-
-    public CompletionStage<Map<String, ConfigEntry>> describeConfigs(String topicName) {
-        return configService.describeConfigs(ConfigResource.Type.TOPIC, topicName);
     }
 
 //    public CompletionStage<Map<String, ConfigEntry>> alterConfigs(String topicName, Map<String, ConfigEntry> configs) {
@@ -152,22 +152,29 @@ public class TopicService {
 //    }
 
     CompletionStage<List<Topic>> augmentList(Admin adminClient, List<Topic> list, List<String> includes, String offsetSpec) {
-        Map<String, Topic> topics = list.stream().collect(Collectors.toMap(Topic::getName, Function.identity()));
+        Map<Uuid, Topic> topics = list.stream().collect(Collectors.toMap(t -> Uuid.fromString(t.getId()), Function.identity()));
         CompletableFuture<Void> configPromise = maybeDescribeConfigs(adminClient, topics, includes);
         CompletableFuture<Void> describePromise = maybeDescribeTopics(adminClient, topics, includes, offsetSpec);
 
         return CompletableFuture.allOf(configPromise, describePromise).thenApply(nothing -> list);
     }
 
-    CompletableFuture<Void> maybeDescribeConfigs(Admin adminClient, Map<String, Topic> topics, List<String> includes) {
+    CompletableFuture<Void> maybeDescribeConfigs(Admin adminClient, Map<Uuid, Topic> topics, List<String> includes) {
         CompletableFuture<Void> promise = new CompletableFuture<>();
 
         if (includes.contains("configs")) {
-            List<ConfigResource> keys = topics.keySet().stream().map(name -> new ConfigResource(ConfigResource.Type.TOPIC, name)).toList();
+            Map<String, Uuid> topicIds = new HashMap<>();
+            List<ConfigResource> keys = topics.values().stream()
+                    .map(topic -> {
+                        topicIds.put(topic.getName(), Uuid.fromString(topic.getId()));
+                        return topic.getName();
+                    })
+                    .map(name -> new ConfigResource(ConfigResource.Type.TOPIC, name))
+                    .toList();
 
             configService.describeConfigs(adminClient, keys)
                 .thenApply(configs -> {
-                    configs.forEach((name, either) -> topics.get(name).addConfigs(either));
+                    configs.forEach((name, either) -> topics.get(topicIds.get(name)).addConfigs(either));
                     promise.complete(null);
                     return true; // Match `completeExceptionally`
                 })
@@ -179,7 +186,7 @@ public class TopicService {
         return promise;
     }
 
-    CompletableFuture<Void> maybeDescribeTopics(Admin adminClient, Map<String, Topic> topics, List<String> includes, String offsetSpec) {
+    CompletableFuture<Void> maybeDescribeTopics(Admin adminClient, Map<Uuid, Topic> topics, List<String> includes, String offsetSpec) {
         CompletableFuture<Void> promise = new CompletableFuture<>();
 
         if (includes.contains("partitions") || includes.contains("authorizedOperations")) {
@@ -204,22 +211,29 @@ public class TopicService {
         return promise;
     }
 
-    CompletionStage<Map<String, Either<Topic, Throwable>>> describeTopics(Admin adminClient, Collection<String> topicNames, String offsetSpec) {
-        Map<String, Either<Topic, Throwable>> result = new LinkedHashMap<>(topicNames.size());
+    CompletionStage<Map<Uuid, Either<Topic, Throwable>>> describeTopics(Admin adminClient, Collection<Uuid> topicIds, String offsetSpec) {
+        Map<Uuid, Either<Topic, Throwable>> result = new LinkedHashMap<>(topicIds.size());
+        TopicCollection request = TopicCollection.ofTopicIds(topicIds);
 
-        var pendingDescribes = adminClient.describeTopics(topicNames)
-                .topicNameValues()
+        var pendingDescribes = adminClient.describeTopics(request)
+                .topicIdValues()
                 .entrySet()
                 .stream()
                 .map(entry ->
                     entry.getValue().toCompletionStage().<Void>handle((description, error) -> {
-                        result.put(entry.getKey(), Either.of(description, error, Topic::fromTopicDescription));
+                        if (error instanceof InvalidTopicException) {
+                            error = new UnknownTopicOrPartitionException(error);
+                        }
+
+                        result.put(
+                                entry.getKey(),
+                                Either.of(description, error, Topic::fromTopicDescription));
                         return null;
                     }))
                 .map(CompletionStage::toCompletableFuture)
                 .toArray(CompletableFuture[]::new);
 
-        var promise = new CompletableFuture<Map<String, Either<Topic, Throwable>>>();
+        var promise = new CompletableFuture<Map<Uuid, Either<Topic, Throwable>>>();
 
         CompletableFuture.allOf(pendingDescribes)
                 .thenCompose(nothing -> listOffsets(adminClient, result, offsetSpec))
@@ -229,7 +243,7 @@ public class TopicService {
         return promise;
     }
 
-    CompletionStage<Void> listOffsets(Admin adminClient, Map<String, Either<Topic, Throwable>> topics, String offsetSpec) {
+    CompletionStage<Void> listOffsets(Admin adminClient, Map<Uuid, Either<Topic, Throwable>> topics, String offsetSpec) {
         OffsetSpec reqOffsetSpec = switch (offsetSpec) {
             case "earliest"     -> OffsetSpec.earliest();
             case "latest"       -> OffsetSpec.latest();
@@ -237,9 +251,14 @@ public class TopicService {
             default             -> OffsetSpec.forTimestamp(Instant.parse(offsetSpec).toEpochMilli());
         };
 
+        Map<String, Uuid> topicIds = new HashMap<>();
         Map<org.apache.kafka.common.TopicPartition, OffsetSpec> request = topics.entrySet().stream()
                 .filter(entry -> entry.getValue().isPrimaryPresent())
-                .map(entry -> entry.getValue().getPrimary())
+                .map(entry -> {
+                    var topic = entry.getValue().getPrimary();
+                    topicIds.put(topic.getName(), entry.getKey());
+                    return topic;
+                })
                 .filter(topic -> topic.getPartitions().isPrimaryPresent())
                 .flatMap(topic -> topic.getPartitions().getPrimary()
                         .stream()
@@ -250,7 +269,7 @@ public class TopicService {
         var pendingOffsets = request.keySet().stream()
                 .map(topicPartition -> result.partitionResult(topicPartition)
                         .whenComplete((offsetResult, error) ->
-                        addOffset(topics.get(topicPartition.topic()).getPrimary(),
+                        addOffset(topics.get(topicIds.get(topicPartition.topic())).getPrimary(),
                                     topicPartition.partition(),
                                     offsetResult,
                                     error)))

@@ -16,7 +16,7 @@ import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.clients.admin.DescribeClusterResult;
 import org.apache.kafka.common.KafkaFuture;
 
-import com.github.eyefloaters.console.api.model.Cluster;
+import com.github.eyefloaters.console.api.model.KafkaCluster;
 import com.github.eyefloaters.console.api.model.Node;
 
 import io.fabric8.kubernetes.client.informers.SharedIndexInformer;
@@ -29,7 +29,7 @@ import io.strimzi.api.kafka.model.status.ListenerStatus;
 import static com.github.eyefloaters.console.api.BlockingSupplier.get;
 
 @ApplicationScoped
-public class ClusterService {
+public class KafkaClusterService {
 
     @Inject
     SharedIndexInformer<Kafka> kafkaInformer;
@@ -37,15 +37,14 @@ public class ClusterService {
     @Inject
     Supplier<Admin> clientSupplier;
 
-    public List<Cluster> listClusters() {
+    public List<KafkaCluster> listClusters() {
         return kafkaInformer.getStore()
                 .list()
                 .stream()
                 .flatMap(k -> externalListeners(k)
                         .map(l -> {
-                            Cluster c = new Cluster();
+                            KafkaCluster c = new KafkaCluster(k.getStatus().getClusterId(), null, null, null);
                             c.setName(k.getMetadata().getName());
-                            c.setClusterId(k.getStatus().getClusterId());
                             c.setBootstrapServers(l.getBootstrapServers());
                             c.setAuthType(getAuthType(k, l).orElse(null));
                             return c;
@@ -53,7 +52,7 @@ public class ClusterService {
                 .toList();
     }
 
-    public CompletionStage<Cluster> describeCluster() {
+    public CompletionStage<KafkaCluster> describeCluster() {
         Admin adminClient = clientSupplier.get();
         DescribeClusterResult result = adminClient.describeCluster();
 
@@ -62,7 +61,7 @@ public class ClusterService {
                 result.clusterId(),
                 result.controller(),
                 result.nodes())
-            .thenApply(nothing -> new Cluster(
+            .thenApply(nothing -> new KafkaCluster(
                         get(result::clusterId),
                         get(result::nodes).stream().map(Node::fromKafkaModel).toList(),
                         Node.fromKafkaModel(get(result::controller)),
@@ -71,7 +70,7 @@ public class ClusterService {
             .toCompletionStage();
     }
 
-    Cluster addKafkaResourceData(Cluster cluster) {
+    KafkaCluster addKafkaResourceData(KafkaCluster cluster) {
         findCluster(kafkaInformer, cluster.getClusterId())
             .ifPresent(kafka -> externalListeners(kafka)
                     .forEach(l -> {

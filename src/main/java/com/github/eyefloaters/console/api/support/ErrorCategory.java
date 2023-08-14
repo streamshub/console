@@ -3,6 +3,8 @@ package com.github.eyefloaters.console.api.support;
 import jakarta.ws.rs.core.Response.Status;
 import jakarta.ws.rs.core.Response.StatusType;
 
+import com.github.eyefloaters.console.api.model.ErrorSource;
+
 public enum ErrorCategory {
 
     INVALID_QUERY_PARAMETER("4001", "Invalid query parameter", Status.BAD_REQUEST, Source.PARAMETER),
@@ -15,7 +17,32 @@ public enum ErrorCategory {
 
 
     public enum Source {
-        PARAMETER, PAYLOAD, HEADER, NONE
+        PARAMETER {
+            @Override
+            public ErrorSource errorSource(String reference) {
+                return new ErrorSource(null, reference, null);
+            }
+        },
+        POINTER {
+            @Override
+            public ErrorSource errorSource(String reference) {
+                return new ErrorSource(reference, null, null);
+            }
+        },
+        HEADER {
+            @Override
+            public ErrorSource errorSource(String reference) {
+                return new ErrorSource(null, null, reference);
+            }
+        },
+        NONE {
+            @Override
+            public ErrorSource errorSource(String reference) {
+                return null;
+            }
+        };
+
+        public abstract ErrorSource errorSource(String reference);
     }
 
     private String title;

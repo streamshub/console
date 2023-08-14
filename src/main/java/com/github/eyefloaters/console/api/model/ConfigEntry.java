@@ -9,18 +9,23 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 
+@Schema(name = "ConfigAttributes")
 @JsonInclude(Include.NON_NULL)
 public class ConfigEntry {
 
-    public static class ConfigResponse extends DataResponse<Map<String, ConfigEntry>> {
+    public static class ConfigResponse extends DataResponse<ConfigResource> {
         public ConfigResponse(Map<String, ConfigEntry> data) {
-            super(data);
+            super(new ConfigResource(data));
         }
     }
 
-    public static class ConfigEntryMap extends java.util.HashMap<String, ConfigEntry> {
-        private static final long serialVersionUID = 1L;
-        private ConfigEntryMap() {
+    public interface ConfigEntryMap extends Map<String, ConfigEntry> {
+    }
+
+    @Schema(name = "Config")
+    public static final class ConfigResource extends Resource<Map<String, ConfigEntry>> {
+        public ConfigResource(Map<String, ConfigEntry> data) {
+            super(null, "configs", data);
         }
     }
 

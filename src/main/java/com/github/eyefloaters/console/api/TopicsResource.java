@@ -13,18 +13,20 @@ import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
-import org.eclipse.microprofile.openapi.annotations.media.Content;
 import org.eclipse.microprofile.openapi.annotations.media.ExampleObject;
 import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponseSchema;
+import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
-import com.github.eyefloaters.console.api.model.ConfigEntry;
 import com.github.eyefloaters.console.api.model.Topic;
 import com.github.eyefloaters.console.api.service.TopicService;
+import com.github.eyefloaters.console.api.support.ErrorCategory;
 import com.github.eyefloaters.console.api.support.OffsetSpecValidator;
+import com.github.eyefloaters.console.api.support.UuidValidator;
 
-@Path("/api/clusters/{clusterId}/topics")
+@Path("/api/kafkas/{clusterId}/topics")
+@Tag(name = "Kafka Cluster Resources")
 public class TopicsResource {
 
     @Inject
@@ -59,10 +61,6 @@ public class TopicsResource {
             @QueryParam("include")
             List<String> includes,
 
-            @QueryParam("listInternal")
-            @DefaultValue("false")
-            boolean listInternal,
-
             @QueryParam("offsetSpec")
             @DefaultValue("latest")
             @OffsetSpecValidator.ValidOffsetSpec
@@ -74,13 +72,13 @@ public class TopicsResource {
             })
             String offsetSpec) {
 
-        return topicService.listTopics(listInternal, includes, offsetSpec)
+        return topicService.listTopics(includes, offsetSpec)
                 .thenApply(Topic.ListResponse::new)
                 .thenApply(Response::ok)
                 .thenApply(Response.ResponseBuilder::build);
     }
 
-    @Path("{topicName}")
+    @Path("{topicId}")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @APIResponseSchema(Topic.SingleResponse.class)
@@ -88,9 +86,10 @@ public class TopicsResource {
     @APIResponse(responseCode = "500", ref = "ServerError")
     @APIResponse(responseCode = "504", ref = "ServerTimeout")
     public CompletionStage<Response> describeTopic(
-            @PathParam("topicName")
-            @Parameter(description = "Topic name")
-            String topicName,
+            @PathParam("topicId")
+            @UuidValidator.ValidUuid(category = ErrorCategory.RESOURCE_NOT_FOUND, message = "No such topic")
+            @Parameter(description = "Topic identifier")
+            String topicId,
 
             @QueryParam("include")
             List<String> includes,
@@ -106,26 +105,8 @@ public class TopicsResource {
             })
             String offsetSpec) {
 
-        return topicService.describeTopic(topicName, includes, offsetSpec)
+        return topicService.describeTopic(topicId, includes, offsetSpec)
                 .thenApply(Topic.SingleResponse::new)
-                .thenApply(Response::ok)
-                .thenApply(Response.ResponseBuilder::build);
-    }
-
-    @Path("{topicName}/configs")
-    @GET
-    @Produces(MediaType.APPLICATION_JSON)
-    @APIResponse(responseCode = "200", ref = "Configurations", content = @Content())
-    @APIResponse(responseCode = "404", ref = "NotFound")
-    @APIResponse(responseCode = "500", ref = "ServerError")
-    @APIResponse(responseCode = "504", ref = "ServerTimeout")
-    public CompletionStage<Response> describeTopicConfigs(
-            @PathParam("topicName")
-            @Parameter(description = "Topic name")
-            String topicName) {
-
-        return topicService.describeConfigs(topicName)
-                .thenApply(ConfigEntry.ConfigResponse::new)
                 .thenApply(Response::ok)
                 .thenApply(Response.ResponseBuilder::build);
     }

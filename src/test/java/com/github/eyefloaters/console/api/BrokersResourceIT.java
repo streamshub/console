@@ -95,7 +95,7 @@ class BrokersResourceIT {
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
             .body("data", not(anEmptyMap()))
-            .body("data.findAll { it }.collect { it.value }",
+            .body("data.attributes.findAll { it }.collect { it.value }",
                     everyItem(allOf(
                             hasKey("source"),
                             hasKey("sensitive"),
