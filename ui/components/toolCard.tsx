@@ -1,5 +1,4 @@
 "use client";
-import { Tool } from "@/api/getTools";
 import {
   Card,
   CardBody,
@@ -24,8 +23,8 @@ export function ToolCard({ id, url, icon, title, description }: Tool) {
         }}
       >
         <Icon size={"xl"}>{icon}</Icon>
+        <CardTitle>{t(title)}</CardTitle>
       </CardHeader>
-      <CardTitle>{t(title)}</CardTitle>
       <CardBody>{t(description)}</CardBody>
     </Card>
   );

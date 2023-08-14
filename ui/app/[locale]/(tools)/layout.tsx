@@ -32,22 +32,30 @@ export default async function ToolsLayout({
   return (
     <Page
       header={
-        <AppMasthead>
-          <Toolbar>
-            <ToolbarContent>
-              <ToolbarItem>
-                <ApplicationLauncher tools={tools} />
-              </ToolbarItem>
-              <ToolbarItem>{mastheadContent}</ToolbarItem>
-              <ToolbarItem>
-                <PrincipalSelector
-                  principals={principals}
-                  selected={selectedPrincipal}
-                />
-              </ToolbarItem>
-            </ToolbarContent>
-          </Toolbar>
-        </AppMasthead>
+        <AppMasthead
+          main={
+            <Toolbar>
+              <ToolbarContent>
+                <ToolbarItem>
+                  <PrincipalSelector
+                    principals={principals}
+                    selected={selectedPrincipal}
+                  />
+                </ToolbarItem>
+              </ToolbarContent>
+            </Toolbar>
+          }
+          content={
+            <Toolbar>
+              <ToolbarContent>
+                <ToolbarItem>
+                  <ApplicationLauncher tools={tools} />
+                </ToolbarItem>
+                <ToolbarItem>{mastheadContent}</ToolbarItem>
+              </ToolbarContent>
+            </Toolbar>
+          }
+        />
       }
     >
       {children}

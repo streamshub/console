@@ -1,17 +1,18 @@
 "use client";
 import { setContextPrincipal } from "@/api/setContextPrincipal";
 import {
+  Button,
   Divider,
   Dropdown,
   DropdownGroup,
   DropdownItem,
+  Label,
   MenuFooter,
   MenuSearch,
   MenuSearchInput,
   MenuToggle,
   SearchInput,
 } from "@/libs/patternfly/react-core";
-import { Button } from "@patternfly/react-core";
 import groupBy from "lodash.groupby";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
@@ -74,8 +75,18 @@ export const PrincipalSelector = ({
           onClick={onToggleClick}
           isExpanded={isOpen}
           style={{ width: "auto" }}
+          variant={"plainText"}
         >
-          {selected?.name || "Select a Principal"}
+          {selected ? (
+            <>
+              {selected.name}{" "}
+              <Label variant={"outline"} isCompact={true}>
+                {selected.cluster}
+              </Label>
+            </>
+          ) : (
+            "Select a Principal"
+          )}
         </MenuToggle>
       )}
       onSelect={(_ev, value) => {
