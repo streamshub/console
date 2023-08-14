@@ -28,7 +28,7 @@ public class BrokerService {
     public CompletionStage<Map<String, ConfigEntry>> describeConfigs(String nodeId) {
         return clusterService.describeCluster()
             .thenApply(cluster -> {
-                if (cluster.getNodes().stream().mapToInt(Node::getId).mapToObj(String::valueOf).noneMatch(nodeId::equals)) {
+                if (cluster.getNodes().stream().mapToInt(Node::id).mapToObj(String::valueOf).noneMatch(nodeId::equals)) {
                     throw new NotFoundException("No such broker: " + nodeId);
                 }
                 return cluster;

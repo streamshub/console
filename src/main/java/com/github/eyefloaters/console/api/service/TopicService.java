@@ -19,7 +19,6 @@ import jakarta.inject.Inject;
 
 import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.clients.admin.ListOffsetsResult.ListOffsetsResultInfo;
-import org.apache.kafka.clients.admin.ListTopicsOptions;
 import org.apache.kafka.clients.admin.OffsetSpec;
 import org.apache.kafka.common.KafkaFuture;
 import org.apache.kafka.common.TopicCollection;
@@ -66,10 +65,10 @@ public class TopicService {
 //                .toCompletionStage();
 //    }
 
-    public CompletionStage<List<Topic>> listTopics(boolean listInternal, List<String> includes, String offsetSpec) {
+    public CompletionStage<List<Topic>> listTopics(List<String> includes, String offsetSpec) {
         Admin adminClient = clientSupplier.get();
 
-        return adminClient.listTopics(new ListTopicsOptions().listInternal(listInternal))
+        return adminClient.listTopics()
                 .listings()
                 .thenApply(list -> list.stream().map(Topic::fromTopicListing).toList())
                 .toCompletionStage()

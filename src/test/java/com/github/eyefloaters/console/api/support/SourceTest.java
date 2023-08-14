@@ -28,4 +28,10 @@ class SourceTest {
         assertNull(Source.NONE.errorSource("value1"));
     }
 
+    @Test
+    void testErrorSourceEmpty() {
+        ErrorSource source = new ErrorSource(null, null, null);
+        assertEquals("empty", source.toString());
+    }
+
 }

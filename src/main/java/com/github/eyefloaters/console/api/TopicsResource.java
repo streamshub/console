@@ -61,10 +61,6 @@ public class TopicsResource {
             @QueryParam("include")
             List<String> includes,
 
-            @QueryParam("listInternal")
-            @DefaultValue("false")
-            boolean listInternal,
-
             @QueryParam("offsetSpec")
             @DefaultValue("latest")
             @OffsetSpecValidator.ValidOffsetSpec
@@ -76,7 +72,7 @@ public class TopicsResource {
             })
             String offsetSpec) {
 
-        return topicService.listTopics(listInternal, includes, offsetSpec)
+        return topicService.listTopics(includes, offsetSpec)
                 .thenApply(Topic.ListResponse::new)
                 .thenApply(Response::ok)
                 .thenApply(Response.ResponseBuilder::build);
