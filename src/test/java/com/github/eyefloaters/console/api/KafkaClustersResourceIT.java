@@ -145,12 +145,12 @@ class KafkaClustersResourceIT {
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
             .body("data.size()", equalTo(2))
-            .body("data.name", containsInAnyOrder("test-kafka1", "test-kafka2"))
-            .body("data.clusterId", containsInAnyOrder(clusterId1, clusterId2))
-            .body("data.bootstrapServers", containsInAnyOrder(
+            .body("data.id", containsInAnyOrder(clusterId1, clusterId2))
+            .body("data.attributes.name", containsInAnyOrder("test-kafka1", "test-kafka2"))
+            .body("data.attributes.bootstrapServers", containsInAnyOrder(
                     bootstrapServers.getHost() + ":" + bootstrapServers.getPort(),
                     randomBootstrapServers.getHost() + ":" + randomBootstrapServers.getPort()))
-            .body("data.authType", containsInAnyOrder(equalTo("custom"), nullValue()));
+            .body("data.attributes.authType", containsInAnyOrder(equalTo("custom"), nullValue()));
     }
 
     @Test
@@ -196,10 +196,10 @@ class KafkaClustersResourceIT {
         whenRequesting(req -> req.get("{clusterId}", clusterId1))
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
-            .body("data.name", equalTo("test-kafka1"))
-            .body("data.clusterId", equalTo(clusterId1))
-            .body("data.bootstrapServers", equalTo(bootstrapServers.getHost() + ":" + bootstrapServers.getPort()))
-            .body("data.authType", equalTo("custom"));
+            .body("data.id", equalTo(clusterId1))
+            .body("data.attributes.name", equalTo("test-kafka1"))
+            .body("data.attributes.bootstrapServers", equalTo(bootstrapServers.getHost() + ":" + bootstrapServers.getPort()))
+            .body("data.attributes.authType", equalTo("custom"));
     }
 
     @Test

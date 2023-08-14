@@ -43,9 +43,8 @@ public class KafkaClusterService {
                 .stream()
                 .flatMap(k -> externalListeners(k)
                         .map(l -> {
-                            KafkaCluster c = new KafkaCluster();
+                            KafkaCluster c = new KafkaCluster(k.getStatus().getClusterId(), null, null, null);
                             c.setName(k.getMetadata().getName());
-                            c.setClusterId(k.getStatus().getClusterId());
                             c.setBootstrapServers(l.getBootstrapServers());
                             c.setAuthType(getAuthType(k, l).orElse(null));
                             return c;

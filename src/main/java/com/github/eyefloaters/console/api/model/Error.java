@@ -9,8 +9,8 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 @JsonInclude(value = Include.NON_NULL)
 public class Error {
 
-    @Schema(enumeration = "Error", description = "Type of this object")
-    String kind = "Error";
+    @Schema(enumeration = "error", description = "Type of this object")
+    String type = "error";
 
     @Schema(description = "A unique identifier for this particular occurrence of the problem.")
     String id;
@@ -42,12 +42,8 @@ public class Error {
         this.cause = cause;
     }
 
-    public String getKind() {
-        return kind;
-    }
-
-    public void setKind(String kind) {
-        this.kind = kind;
+    public String getType() {
+        return type;
     }
 
     public String getId() {

@@ -4,21 +4,17 @@ import java.util.List;
 
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
-public class TopicPartitionInfo {
+public class PartitionInfo {
 
-    String kind = "Partition";
-    int partition;
-    Node leader;
-    List<Node> replicas;
-    List<Node> isr;
+    final int partition;
+    final Node leader;
+    final List<Node> replicas;
+    final List<Node> isr;
 
     @Schema(implementation = Object.class, oneOf = { OffsetInfo.class, Error.class })
     Either<OffsetInfo, Error> offset;
 
-    public TopicPartitionInfo() {
-    }
-
-    public TopicPartitionInfo(int partition, Node leader, List<Node> replicas, List<Node> isr) {
+    public PartitionInfo(int partition, Node leader, List<Node> replicas, List<Node> isr) {
         super();
         this.partition = partition;
         this.leader = leader;
@@ -26,11 +22,11 @@ public class TopicPartitionInfo {
         this.isr = isr;
     }
 
-    public static TopicPartitionInfo fromKafkaModel(org.apache.kafka.common.TopicPartitionInfo info) {
+    public static PartitionInfo fromKafkaModel(org.apache.kafka.common.TopicPartitionInfo info) {
         Node leader = Node.fromKafkaModel(info.leader());
         List<Node> replicas = info.replicas().stream().map(Node::fromKafkaModel).toList();
         List<Node> isr = info.isr().stream().map(Node::fromKafkaModel).toList();
-        return new TopicPartitionInfo(info.partition(), leader, replicas, isr);
+        return new PartitionInfo(info.partition(), leader, replicas, isr);
     }
 
     public void addOffset(Either<OffsetInfo, Throwable> offset) {
@@ -45,40 +41,20 @@ public class TopicPartitionInfo {
         }
     }
 
-    public String getKind() {
-        return kind;
-    }
-
     public int getPartition() {
         return partition;
-    }
-
-    public void setPartition(int partition) {
-        this.partition = partition;
     }
 
     public Node getLeader() {
         return leader;
     }
 
-    public void setLeader(Node leader) {
-        this.leader = leader;
-    }
-
     public List<Node> getReplicas() {
         return replicas;
     }
 
-    public void setReplicas(List<Node> replicas) {
-        this.replicas = replicas;
-    }
-
     public List<Node> getIsr() {
         return isr;
-    }
-
-    public void setIsr(List<Node> isr) {
-        this.isr = isr;
     }
 
     public Either<OffsetInfo, Error> getOffset() {

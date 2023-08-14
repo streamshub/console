@@ -4,33 +4,43 @@ import java.util.List;
 
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+
+@Schema(name = "KafkaClusterAttributes")
+@JsonInclude(Include.NON_NULL)
 public class KafkaCluster {
 
     @Schema(name = "KafkaClusterListResponse")
-    public static final class ListResponse extends DataListResponse<KafkaCluster> {
+    public static final class ListResponse extends DataListResponse<KafkaClusterResource> {
         public ListResponse(List<KafkaCluster> data) {
-            super(data);
+            super(data.stream().map(KafkaClusterResource::new).toList());
         }
     }
 
     @Schema(name = "KafkaClusterResponse")
-    public static final class SingleResponse extends DataResponse<KafkaCluster> {
+    public static final class SingleResponse extends DataResponse<KafkaClusterResource> {
         public SingleResponse(KafkaCluster data) {
-            super(data);
+            super(new KafkaClusterResource(data));
         }
     }
 
-    String kind = "Cluster";
+    @Schema(name = "KafkaCluster")
+    public static final class KafkaClusterResource extends Resource<KafkaCluster> {
+        public KafkaClusterResource(KafkaCluster data) {
+            super(data.clusterId, "kafkas", data);
+        }
+    }
+
     String name; // Strimzi Kafka CR only
-    String clusterId;
-    List<Node> nodes;
-    Node controller;
-    List<String> authorizedOperations;
+    @JsonIgnore
+    final String clusterId;
+    final List<Node> nodes;
+    final Node controller;
+    final List<String> authorizedOperations;
     String bootstrapServers; // Strimzi Kafka CR only
     String authType; // Strimzi Kafka CR only
-
-    public KafkaCluster() {
-    }
 
     public KafkaCluster(String clusterId, List<Node> nodes, Node controller, List<String> authorizedOperations) {
         super();
@@ -38,10 +48,6 @@ public class KafkaCluster {
         this.nodes = nodes;
         this.controller = controller;
         this.authorizedOperations = authorizedOperations;
-    }
-
-    public String getKind() {
-        return kind;
     }
 
     public String getName() {
@@ -56,32 +62,16 @@ public class KafkaCluster {
         return clusterId;
     }
 
-    public void setClusterId(String clusterId) {
-        this.clusterId = clusterId;
-    }
-
     public List<Node> getNodes() {
         return nodes;
-    }
-
-    public void setNodes(List<Node> nodes) {
-        this.nodes = nodes;
     }
 
     public Node getController() {
         return controller;
     }
 
-    public void setController(Node controller) {
-        this.controller = controller;
-    }
-
     public List<String> getAuthorizedOperations() {
         return authorizedOperations;
-    }
-
-    public void setAuthorizedOperations(List<String> authorizedOperations) {
-        this.authorizedOperations = authorizedOperations;
     }
 
     public String getBootstrapServers() {

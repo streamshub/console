@@ -74,12 +74,12 @@ public class ClientFactory {
         }
 
         Kafka cluster = KafkaClusterService.findCluster(kafkaInformer, clusterId)
-                .orElseThrow(() -> new NotFoundException("Cluster not found for clusterId: " + clusterId));
+                .orElseThrow(() -> new NotFoundException("No such Kafka cluster: " + clusterId));
 
         Map<String, Object> config = KafkaClusterService.externalListeners(cluster)
             .findFirst()
             .map(l -> buildConfiguration(cluster, l))
-            .orElseThrow(() -> new NotFoundException("Cluster not found for clusterId: " + clusterId));
+            .orElseThrow(() -> new NotFoundException("No such Kafka cluster: " + clusterId));
 
         log.debug("AdminClient configuration:");
         config.entrySet().forEach(entry -> log.debugf("\t%s = %s", entry.getKey(), entry.getValue()));

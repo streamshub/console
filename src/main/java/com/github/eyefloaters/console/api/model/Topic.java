@@ -7,33 +7,42 @@ import java.util.Optional;
 
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 
+@Schema(name = "TopicAttributes")
 @JsonInclude(value = Include.NON_NULL)
 public class Topic {
 
     @Schema(name = "TopicListResponse")
-    public static final class ListResponse extends DataListResponse<Topic> {
+    public static final class ListResponse extends DataListResponse<TopicResource> {
         public ListResponse(List<Topic> data) {
-            super(data);
+            super(data.stream().map(TopicResource::new).toList());
         }
     }
 
     @Schema(name = "TopicResponse")
-    public static final class SingleResponse extends DataResponse<Topic> {
+    public static final class SingleResponse extends DataResponse<TopicResource> {
         public SingleResponse(Topic data) {
-            super(data);
+            super(new TopicResource(data));
         }
     }
 
-    String kind = "Topic";
+    @Schema(name = "Topic")
+    public static final class TopicResource extends Resource<Topic> {
+        public TopicResource(Topic data) {
+            super(data.id, "topics", data);
+        }
+    }
+
     String name;
     boolean internal;
+    @JsonIgnore
     String id;
 
-    @Schema(implementation = Object.class, oneOf = { TopicPartitionInfo[].class, Error.class })
-    Either<List<TopicPartitionInfo>, Error> partitions;
+    @Schema(implementation = Object.class, oneOf = { PartitionInfo[].class, Error.class })
+    Either<List<PartitionInfo>, Error> partitions;
 
     @Schema(implementation = Object.class, oneOf = { String[].class, Error.class })
     Either<List<String>, Error> authorizedOperations;
@@ -60,7 +69,7 @@ public class Topic {
 
         topic.partitions = Either.of(description.partitions()
                 .stream()
-                .map(TopicPartitionInfo::fromKafkaModel)
+                .map(PartitionInfo::fromKafkaModel)
                 .toList());
 
         topic.authorizedOperations = Either.of(Optional.ofNullable(description.authorizedOperations())
@@ -106,10 +115,6 @@ public class Topic {
         }
     }
 
-    public String getKind() {
-        return kind;
-    }
-
     public String getName() {
         return name;
     }
@@ -118,7 +123,7 @@ public class Topic {
         return internal;
     }
 
-    public Either<List<TopicPartitionInfo>, Error> getPartitions() {
+    public Either<List<PartitionInfo>, Error> getPartitions() {
         return partitions;
     }
 

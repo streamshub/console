@@ -21,7 +21,9 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 import com.github.eyefloaters.console.api.model.Topic;
 import com.github.eyefloaters.console.api.service.TopicService;
+import com.github.eyefloaters.console.api.support.ErrorCategory;
 import com.github.eyefloaters.console.api.support.OffsetSpecValidator;
+import com.github.eyefloaters.console.api.support.UuidValidator;
 
 @Path("/api/kafkas/{clusterId}/topics")
 @Tag(name = "Kafka Cluster Resources")
@@ -89,6 +91,7 @@ public class TopicsResource {
     @APIResponse(responseCode = "504", ref = "ServerTimeout")
     public CompletionStage<Response> describeTopic(
             @PathParam("topicId")
+            @UuidValidator.ValidUuid(category = ErrorCategory.RESOURCE_NOT_FOUND, message = "No such topic")
             @Parameter(description = "Topic identifier")
             String topicId,
 
