@@ -1,3 +1,4 @@
+import { fakeApi } from "@/api/fakeApi";
 import {
   CogIcon,
   DataProcessorIcon,
@@ -8,7 +9,7 @@ import {
 } from "@/libs/patternfly/react-icons";
 
 export async function getTools(): Promise<Tool[]> {
-  return [
+  return fakeApi([
     {
       url: "/kafka-configuration",
       id: "kafka-configuration",
@@ -51,5 +52,5 @@ export async function getTools(): Promise<Tool[]> {
       title: "message-producer.title" as const,
       description: "message-producer.description" as const,
     },
-  ];
+  ]);
 }

@@ -68,3 +68,12 @@ declare type MessageApiResponse = {
     epoch: number | undefined;
   };
 };
+
+declare type Topic = {
+  name: string;
+  status: string;
+  partitions: number;
+  ingress: number | undefined;
+  egress: number | undefined;
+  lastProduced: Date | undefined;
+};

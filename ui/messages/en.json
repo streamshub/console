@@ -30,7 +30,8 @@
   },
   "topic-manager": {
     "title": "Kafka topics manager",
-    "description": "List and delete topics for a cluster."
+    "description": "List and delete topics for a cluster.",
+    "manage-button": "Manage topics"
   },
   "topic-creator": {
     "title": "Create a Kafka topic",

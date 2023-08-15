@@ -1,6 +1,16 @@
 import { KafkaMessageBrowser } from "@/app/[locale]/(tools)/message-browser/_components/KafkaMessageBrowser";
+import { SelectTopicEmptyState } from "@/app/[locale]/(tools)/message-browser/_components/SelectTopicEmptyState";
+import { getSession } from "@/utils/session";
 
 export default async function Principals() {
+  const session = await getSession();
+
+  const { topic } = session || {};
+
+  return topic ? <Table /> : <SelectTopicEmptyState />;
+}
+
+function Table() {
   return (
     <KafkaMessageBrowser
       isFirstLoad={false}

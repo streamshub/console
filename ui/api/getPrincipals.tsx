@@ -1,5 +1,7 @@
+import { fakeApi } from "@/api/fakeApi";
+
 export async function getPrincipals(): Promise<Principal[]> {
-  return [
+  return fakeApi([
     {
       id: "a1",
       cluster: "Website data",
@@ -48,5 +50,5 @@ export async function getPrincipals(): Promise<Principal[]> {
       name: "Developer",
       description: "Sample description of the principal",
     },
-  ];
+  ]);
 }

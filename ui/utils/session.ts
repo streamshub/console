@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 
 type Session = {
   principalId?: string;
+  topic?: string;
 };
 
 export async function getSession() {
