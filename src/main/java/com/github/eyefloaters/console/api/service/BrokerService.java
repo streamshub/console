@@ -1,5 +1,6 @@
 package com.github.eyefloaters.console.api.service;
 
+import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
 
@@ -26,10 +27,10 @@ public class BrokerService {
     ThreadContext threadContext;
 
     public CompletionStage<Map<String, ConfigEntry>> describeConfigs(String nodeId) {
-        return clusterService.describeCluster()
+        return clusterService.describeCluster(Collections.emptyList())
             .thenApply(cluster -> {
                 if (cluster.getNodes().stream().mapToInt(Node::id).mapToObj(String::valueOf).noneMatch(nodeId::equals)) {
-                    throw new NotFoundException("No such broker: " + nodeId);
+                    throw new NotFoundException("No such node: " + nodeId);
                 }
                 return cluster;
             })

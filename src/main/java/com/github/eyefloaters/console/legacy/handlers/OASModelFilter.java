@@ -1,36 +1,17 @@
 package com.github.eyefloaters.console.legacy.handlers;
 
-import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 import java.util.TreeMap;
 
-import org.apache.kafka.common.ConsumerGroupState;
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.openapi.OASFactory;
 import org.eclipse.microprofile.openapi.OASFilter;
-import org.eclipse.microprofile.openapi.models.Components;
 import org.eclipse.microprofile.openapi.models.OpenAPI;
-import org.eclipse.microprofile.openapi.models.examples.Example;
 import org.eclipse.microprofile.openapi.models.media.Schema;
-import org.eclipse.microprofile.openapi.models.security.OAuthFlows;
-import org.eclipse.microprofile.openapi.models.security.SecurityScheme;
-import org.eclipse.microprofile.openapi.models.security.SecurityScheme.Type;
+import org.eclipse.microprofile.openapi.models.media.Schema.SchemaType;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.github.eyefloaters.console.legacy.KafkaAdminConfigRetriever;
-import com.github.eyefloaters.console.legacy.model.Types;
-import com.github.eyefloaters.console.legacy.model.Types.ConsumerGroupMetrics;
-import com.github.eyefloaters.console.legacy.model.Types.ConsumerGroupOffsetResetParameters.OffsetType;
+import com.github.eyefloaters.console.api.support.StringListParamConverterProvider.StringListParamConverter;
 
 public class OASModelFilter implements OASFilter {
-
-    private static final String SECURITY_SCHEME_NAME_OAUTH = "OAuth2";
-    private static final String SECURITY_SCHEME_NAME_BASIC = "BasicAuth";
 
     @Override
     public Schema filterSchema(Schema schema) {
@@ -47,72 +28,33 @@ public class OASModelFilter implements OASFilter {
                 });
         }
 
+        if (schema.getType() == SchemaType.ARRAY && schema.getDefaultValue() instanceof String dflt) {
+            schema.setDefaultValue(new StringListParamConverter().fromString(dflt));
+        }
+
+        if (schema.getType() == SchemaType.ARRAY && schema.getEnumeration() != null) {
+            schema.getItems().setEnumeration(schema.getEnumeration());
+            schema.setEnumeration(null);
+        }
+
         return OASFilter.super.filterSchema(schema);
     }
 
     @Override
     public void filterOpenAPI(OpenAPI openAPI) {
-        Config config = ConfigProvider.getConfig();
-
-        if (config.getOptionalValue(KafkaAdminConfigRetriever.OAUTH_ENABLED, Boolean.class).orElse(false)) {
-            Optional<String> tokenUrl = config.getOptionalValue(KafkaAdminConfigRetriever.OAUTH_TOKEN_ENDPOINT_URI, String.class);
-
-            Optional.ofNullable(openAPI.getComponents())
-                .map(Components::getSecuritySchemes)
-                .map(schemes -> schemes.get(SECURITY_SCHEME_NAME_OAUTH))
-                .map(SecurityScheme::getFlows)
-                .map(OAuthFlows::getClientCredentials)
-                .ifPresent(flow -> flow.setTokenUrl(tokenUrl.orElse(null)));
-        } else if (config.getOptionalValue(KafkaAdminConfigRetriever.BASIC_ENABLED, Boolean.class).orElse(false)) {
-            openAPI.setSecurity(List.of(OASFactory.createSecurityRequirement()
-                                        .addScheme(SECURITY_SCHEME_NAME_BASIC, Collections.emptyList())));
-            openAPI.getComponents()
-                .setSecuritySchemes(Map.of(SECURITY_SCHEME_NAME_BASIC,
-                                           OASFactory.createSecurityScheme().type(Type.HTTP).scheme("basic")));
-        } else {
-            openAPI.setSecurity(null);
-            openAPI.getComponents().setSecuritySchemes(null);
-        }
+        openAPI.getComponents().addSchema("OffsetSpec", OASFactory.createSchema()
+                .type(SchemaType.STRING)
+                .defaultValue("latest")
+                .addOneOf(OASFactory.createSchema()
+                        .type(SchemaType.STRING)
+                        .addEnumeration("earliest")
+                        .addEnumeration("latest")
+                        .addEnumeration("maxTimestamp"))
+                .addOneOf(OASFactory.createSchema()
+                        .ref("Instant")));
 
         // Sort global schemas
         openAPI.getComponents().setSchemas(new TreeMap<>(openAPI.getComponents().getSchemas()));
-
-        generateExamples().forEach(openAPI.getComponents()::addExample);
     }
 
-    Map<String, Example> generateExamples() {
-        ObjectMapper mapper = new ObjectMapper();
-
-        var newTopicExample = new Types.NewTopic("my-topic",
-                   new Types.TopicSettings(3, List.of(
-                           new Types.ConfigEntry("min.insync.replicas", "1"),
-                           new Types.ConfigEntry("max.message.bytes", "1050000"))));
-
-        var consumerGroupExample = new Types.ConsumerGroup("consumer_group_1",
-                   ConsumerGroupState.STABLE,
-                   List.of(new Types.Consumer("consumer_group_member1", "consumer_group_1", "topic-1", 0, 5, 0, 5),
-                           new Types.Consumer("consumer_group_member2", "consumer_group_1", "topic-1", 1, 3, 0, 3),
-                           new Types.Consumer("consumer_group_member3", "consumer_group_1", "topic-1", 2, 5, 1, 6)),
-                   new ConsumerGroupMetrics(0, 3, 0));
-
-        var consumerGroupResetExample = new Types.ConsumerGroupOffsetResetParameters(OffsetType.ABSOLUTE, "4",
-                   List.of(new Types.TopicsToResetOffset("my-topic", List.of(0))));
-
-        var recordProduceExample = new Types.Record("my-topic", 1, null, Map.of("X-Custom-Header", "header-value-1"), null, "{ \"examplekey\": \"example-value\" }");
-
-        Map<String, Example> examples = new LinkedHashMap<>();
-
-        examples.put("NewTopicExample", createExample(mapper, newTopicExample, "Sample new topic with 3 partitions"));
-        examples.put("ConsumerGroupExample", createExample(mapper, consumerGroupExample, "Sample consumer group with 3 partitions and 3 active consumers"));
-        examples.put("ConsumerGroupOffsetResetExample", createExample(mapper, consumerGroupResetExample, "Sample request to reset partition `0` of topic `my-topic` to offset `4`"));
-        examples.put("RecordProduceExample", createExample(mapper, recordProduceExample, "Sample record to produce a record to partition 1, including a custom header"));
-
-        return examples;
-    }
-
-    Example createExample(ObjectMapper mapper, Object value, String description) {
-        return OASFactory.createExample()
-                .description(description)
-                .value(mapper.convertValue(value, ObjectNode.class));
-    }
 }

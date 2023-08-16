@@ -21,7 +21,7 @@
                                             {
                                               "errors": [
                                                 {
-                                                  "kind": "Error",
+                                                  "type": "error",
                                                   "id": "2fa1c4c0-abb1-43b9-a4d6-627e05d19ddb",
                                                   "status": "400",
                                                   "code": "4001",
@@ -51,7 +51,7 @@
                                             {
                                               "errors": [
                                                 {
-                                                  "kind": "Error",
+                                                  "type": "error",
                                                   "id": "2fa1c4c0-abb1-43b9-a4d6-627e05d19ddb",
                                                   "status": "404",
                                                   "code": "4041",
@@ -74,7 +74,7 @@
                                             {
                                               "errors": [
                                                 {
-                                                  "kind": "Error",
+                                                  "type": "error",
                                                   "id": "2fa1c4c0-abb1-43b9-a4d6-627e05d19ddb",
                                                   "status": "500",
                                                   "code": "5001",
@@ -93,7 +93,7 @@
                                             {
                                               "errors": [
                                                 {
-                                                  "kind": "Error",
+                                                  "type": "error",
                                                   "id": "2fa1c4c0-abb1-43b9-a4d6-627e05d19ddb",
                                                   "status": "504",
                                                   "code": "5041",

@@ -43,6 +43,7 @@ public class StringListParamConverterProvider implements ParamConverterProvider 
 
             return Arrays.stream(value.split(","))
                     .filter(Predicate.not(String::isBlank))
+                    .map(String::trim)
                     .toList();
         }
 

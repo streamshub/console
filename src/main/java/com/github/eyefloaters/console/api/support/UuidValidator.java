@@ -42,5 +42,6 @@ public class UuidValidator implements ConstraintValidator<UuidValidator.ValidUui
 
         ErrorCategory category();
 
+        String source() default "";
     }
 }

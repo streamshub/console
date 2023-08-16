@@ -7,13 +7,27 @@ import java.util.Optional;
 
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
+import com.fasterxml.jackson.annotation.JsonFilter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
 
 @Schema(name = "TopicAttributes")
-@JsonInclude(value = Include.NON_NULL)
+@JsonFilter("fieldFilter")
 public class Topic {
+
+    public static final class Fields {
+        public static final String NAME = "name";
+        public static final String INTERNAL = "internal";
+        public static final String PARTITIONS = "partitions";
+        public static final String AUTHORIZED_OPERATIONS = "authorizedOperations";
+        public static final String CONFIGS = "configs";
+
+        public static final String LIST_DEFAULT = NAME + ", " + INTERNAL;
+        public static final String DESCRIBE_DEFAULT =
+                NAME + ", " + INTERNAL + ", " + PARTITIONS + ", " + AUTHORIZED_OPERATIONS;
+    
+        private Fields() {
+        }
+    }
 
     @Schema(name = "TopicListResponse")
     public static final class ListResponse extends DataListResponse<TopicResource> {

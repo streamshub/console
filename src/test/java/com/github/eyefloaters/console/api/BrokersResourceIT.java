@@ -104,13 +104,13 @@ class BrokersResourceIT {
     }
 
     @Test
-    void testDescribeConfigsBrokerNotFound() {
+    void testDescribeConfigsNodeNotFound() {
         whenRequesting(req -> req.get("{nodeId}/configs", clusterId, "99"))
             .assertThat()
             .statusCode(is(Status.NOT_FOUND.getStatusCode()))
             .body("errors.size()", equalTo(1))
             .body("errors.status", contains("404"))
             .body("errors.code", contains("4041"))
-            .body("errors.detail", contains("No such broker: 99"));
+            .body("errors.detail", contains("No such node: 99"));
     }
 }

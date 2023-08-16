@@ -13,6 +13,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
 import org.apache.kafka.clients.admin.Admin;
+import org.apache.kafka.clients.admin.DescribeClusterOptions;
 import org.apache.kafka.clients.admin.DescribeClusterResult;
 import org.apache.kafka.common.KafkaFuture;
 
@@ -52,9 +53,11 @@ public class KafkaClusterService {
                 .toList();
     }
 
-    public CompletionStage<KafkaCluster> describeCluster() {
+    public CompletionStage<KafkaCluster> describeCluster(List<String> fields) {
         Admin adminClient = clientSupplier.get();
-        DescribeClusterResult result = adminClient.describeCluster();
+        DescribeClusterOptions options = new DescribeClusterOptions()
+                .includeAuthorizedOperations(fields.contains(KafkaCluster.Fields.AUTHORIZED_OPERATIONS));
+        DescribeClusterResult result = adminClient.describeCluster(options);
 
         return KafkaFuture.allOf(
                 result.authorizedOperations(),

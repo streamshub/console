@@ -37,15 +37,19 @@ import io.strimzi.api.kafka.model.KafkaBuilder;
 import io.strimzi.api.kafka.model.listener.arraylistener.KafkaListenerType;
 
 import static com.github.eyefloaters.console.test.TestHelper.whenRequesting;
+import static org.hamcrest.Matchers.aMapWithSize;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.anEmptyMap;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.everyItem;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.iterableWithSize;
 import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 
 @QuarkusTest
@@ -169,16 +173,17 @@ class TopicsResourceIT {
     }
 
     @Test
-    void testListTopicsWithConfigsIncluded() {
+    void testListTopicsWithNameAndConfigsIncluded() {
         String topicName = UUID.randomUUID().toString();
         topicUtils.createTopics(clusterId1, List.of(topicName), 1);
 
         whenRequesting(req -> req
-                .queryParam("include", "configs")
+                .queryParam("fields[topics]", "configs,name")
                 .get("", clusterId1))
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
             .body("data.size()", is(1))
+            .body("data.attributes", contains(aMapWithSize(2)))
             .body("data.attributes.name", contains(topicName))
             .body("data.attributes.configs[0]", not(anEmptyMap()))
             .body("data.attributes.configs[0].findAll { it }.collect { it.value }",
@@ -190,33 +195,35 @@ class TopicsResourceIT {
     }
 
     @Test
-    void testListTopicsWithAuthorizedOperationsIncluded() {
+    void testListTopicsWithNameAndAuthorizedOperationsIncluded() {
         String topicName = UUID.randomUUID().toString();
         topicUtils.createTopics(clusterId1, List.of(topicName), 1);
 
         whenRequesting(req -> req
-                .queryParam("include", "authorizedOperations")
+                .queryParam("fields[topics]", "authorizedOperations,name")
                 .get("", clusterId1))
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
             .body("data.size()", is(1))
+            .body("data.attributes", contains(aMapWithSize(2)))
             .body("data.attributes.name", contains(topicName))
-            .body("data.attributes.authorizedOperations", contains(nullValue()));
+            .body("data.attributes.authorizedOperations", contains(iterableWithSize(greaterThan(0))));
     }
 
     @Test
-    void testListTopicsWithPartitionsIncludedAndLatestOffset() {
+    void testListTopicsWithNameAndPartitionsIncludedAndLatestOffset() {
         String topicName = UUID.randomUUID().toString();
         topicUtils.createTopics(clusterId1, List.of(topicName), 2);
         topicUtils.produceRecord(topicName, 0, null, Collections.emptyMap(), "k1", "v1");
         topicUtils.produceRecord(topicName, 0, null, Collections.emptyMap(), "k2", "v2");
 
         whenRequesting(req -> req
-                .queryParam("include", "partitions")
+                .queryParam("fields[topics]", "name,partitions")
                 .get("", clusterId1))
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
             .body("data.size()", is(1))
+            .body("data.attributes", contains(aMapWithSize(2)))
             .body("data.attributes.name", contains(topicName))
             .body("data.attributes.partitions[0]", hasSize(2))
             .body("data.attributes.partitions[0][0].offset.type", is(not("error")))
@@ -225,19 +232,20 @@ class TopicsResourceIT {
     }
 
     @Test
-    void testListTopicsWithPartitionsIncludedAndEarliestOffset() {
+    void testListTopicsWithNameAndPartitionsIncludedAndEarliestOffset() {
         String topicName = UUID.randomUUID().toString();
         topicUtils.createTopics(clusterId1, List.of(topicName), 2);
         topicUtils.produceRecord(topicName, 0, null, Collections.emptyMap(), "k1", "v1");
         topicUtils.produceRecord(topicName, 0, null, Collections.emptyMap(), "k2", "v2");
 
         whenRequesting(req -> req
-                .queryParam("include", "partitions")
+                .queryParam("fields[topics]", "name,partitions")
                 .queryParam("offsetSpec", "earliest")
                 .get("", clusterId1))
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
             .body("data.size()", is(1))
+            .body("data.attributes", contains(aMapWithSize(2)))
             .body("data.attributes.name", contains(topicName))
             .body("data.attributes.partitions[0]", hasSize(2))
             .body("data.attributes.partitions[0][0].offset.type", is(not("error")))
@@ -256,12 +264,13 @@ class TopicsResourceIT {
         topicUtils.produceRecord(topicName, 0, second, Collections.emptyMap(), "k2", "v2");
 
         whenRequesting(req -> req
-                .queryParam("include", "partitions")
+                .queryParam("fields[topics]", "name,partitions")
                 .queryParam("offsetSpec", first.toString())
                 .get("", clusterId1))
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
             .body("data.size()", is(1))
+            .body("data.attributes", contains(aMapWithSize(2)))
             .body("data.attributes.name", contains(topicName))
             .body("data.attributes.partitions[0]", hasSize(2))
             .body("data.attributes.partitions[0][0].offset.type", is(not("error")))
@@ -270,7 +279,7 @@ class TopicsResourceIT {
     }
 
     @Test
-    void testListTopicsWithPartitionsIncludedAndOffsetWithMaxTimestamp() {
+    void testListTopicsWithNameAndPartitionsIncludedAndOffsetWithMaxTimestamp() {
         String topicName = UUID.randomUUID().toString();
         topicUtils.createTopics(clusterId1, List.of(topicName), 2);
 
@@ -280,12 +289,13 @@ class TopicsResourceIT {
         topicUtils.produceRecord(topicName, 0, second, Collections.emptyMap(), "k2", "v2");
 
         whenRequesting(req -> req
-                .queryParam("include", "partitions")
+                .queryParam("fields[topics]", "name,partitions")
                 .queryParam("offsetSpec", "maxTimestamp")
                 .get("", clusterId1))
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
             .body("data.size()", is(1))
+            .body("data.attributes", contains(aMapWithSize(2)))
             .body("data.attributes.name", contains(topicName))
             .body("data.attributes.partitions[0]", hasSize(2))
             .body("data.attributes.partitions[0][0].offset.type", is(not("error")))
@@ -295,15 +305,16 @@ class TopicsResourceIT {
 
 
     @Test
-    void testDescribeTopicWithConfigsIncluded() {
+    void testDescribeTopicWithNameAndConfigsIncluded() {
         String topicName = UUID.randomUUID().toString();
         Map<String, String> topicIds = topicUtils.createTopics(clusterId1, List.of(topicName), 1);
 
         whenRequesting(req -> req
-                .queryParam("include", "configs")
+                .queryParam("fields[topics]", "name,configs")
                 .get("{topicName}", clusterId1, topicIds.get(topicName)))
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
+            .body("data.attributes", is(aMapWithSize(2)))
             .body("data.attributes.name", is(topicName))
             .body("data.attributes.configs", not(anEmptyMap()))
             .body("data.attributes.configs.findAll { it }.collect { it.value }",
@@ -315,7 +326,7 @@ class TopicsResourceIT {
     }
 
     @Test
-    void testDescribeTopicWithAuthorizedOperationsNull() {
+    void testDescribeTopicWithAuthorizedOperations() {
         String topicName = UUID.randomUUID().toString();
         Map<String, String> topicIds = topicUtils.createTopics(clusterId1, List.of(topicName), 1);
 
@@ -324,8 +335,8 @@ class TopicsResourceIT {
             .statusCode(is(Status.OK.getStatusCode()))
             .body("data.attributes.name", is(topicName))
             .body("data.attributes", not(hasKey("configs")))
-            .body("data.attributes", hasKey("authorizedOperations"))
-            .body("data.attributes.authorizedOperations", is(nullValue()));
+            .body("data.attributes.authorizedOperations", is(notNullValue()))
+            .body("data.attributes.authorizedOperations", hasSize(greaterThan(0)));
     }
 
     @Test

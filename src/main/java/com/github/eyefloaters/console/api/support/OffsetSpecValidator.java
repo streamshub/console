@@ -50,5 +50,6 @@ public class OffsetSpecValidator implements ConstraintValidator<OffsetSpecValida
 
         ErrorCategory category() default ErrorCategory.INVALID_QUERY_PARAMETER;
 
+        String source() default "";
     }
 }

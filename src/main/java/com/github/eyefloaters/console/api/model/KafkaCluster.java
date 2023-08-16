@@ -4,13 +4,38 @@ import java.util.List;
 
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
+import com.fasterxml.jackson.annotation.JsonFilter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
 
 @Schema(name = "KafkaClusterAttributes")
-@JsonInclude(Include.NON_NULL)
+@JsonFilter("fieldFilter")
 public class KafkaCluster {
+
+    public class Fields {
+        public static final String NAME = "name";
+        public static final String NODES = "nodes";
+        public static final String CONTROLLER = "controller";
+        public static final String AUTHORIZED_OPERATIONS = "authorizedOperations";
+        public static final String BOOTSTRAP_SERVERS = "bootstrapServers";
+        public static final String AUTH_TYPE = "authType";
+
+        public static final String LIST_DEFAULT =
+                NAME + ", "
+                + BOOTSTRAP_SERVERS + ", "
+                + AUTH_TYPE;
+
+        public static final String DESCRIBE_DEFAULT =
+                NAME + ", "
+                + NODES + ", "
+                + CONTROLLER + ", "
+                + AUTHORIZED_OPERATIONS + ", "
+                + BOOTSTRAP_SERVERS + ", "
+                + AUTH_TYPE;
+
+        private Fields() {
+        }
+    }
+
 
     @Schema(name = "KafkaClusterListResponse")
     public static final class ListResponse extends DataListResponse<KafkaClusterResource> {

@@ -2,8 +2,10 @@ package com.github.eyefloaters.console.api;
 
 import java.util.List;
 import java.util.concurrent.CompletionStage;
+import java.util.function.Consumer;
 
 import jakarta.inject.Inject;
+import jakarta.inject.Named;
 import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
@@ -13,7 +15,10 @@ import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
+import org.eclipse.microprofile.openapi.annotations.enums.Explode;
+import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.media.ExampleObject;
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponseSchema;
@@ -22,15 +27,27 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import com.github.eyefloaters.console.api.model.Topic;
 import com.github.eyefloaters.console.api.service.TopicService;
 import com.github.eyefloaters.console.api.support.ErrorCategory;
+import com.github.eyefloaters.console.api.support.FieldFilter;
 import com.github.eyefloaters.console.api.support.OffsetSpecValidator;
+import com.github.eyefloaters.console.api.support.StringListValidator;
 import com.github.eyefloaters.console.api.support.UuidValidator;
 
 @Path("/api/kafkas/{clusterId}/topics")
 @Tag(name = "Kafka Cluster Resources")
 public class TopicsResource {
 
+    static final String FIELDS_PARAM = "fields[topics]";
+
     @Inject
     TopicService topicService;
+
+    /**
+     * Allows the value of {@link FieldFilter#requestedFields} to be set for
+     * the request.
+     */
+    @Inject
+    @Named("requestedFields")
+    Consumer<List<String>> requestedFields;
 
 //    @POST
 //    @Consumes(MediaType.APPLICATION_JSON)
@@ -58,21 +75,49 @@ public class TopicsResource {
     @APIResponse(responseCode = "500", ref = "ServerError")
     @APIResponse(responseCode = "504", ref = "ServerTimeout")
     public CompletionStage<Response> listTopics(
-            @QueryParam("include")
-            List<String> includes,
+            @QueryParam(FIELDS_PARAM)
+            @DefaultValue(Topic.Fields.LIST_DEFAULT)
+            @StringListValidator.ValidStringList(
+                    source = FIELDS_PARAM,
+                    allowedValues = {
+                        Topic.Fields.NAME,
+                        Topic.Fields.INTERNAL,
+                        Topic.Fields.PARTITIONS,
+                        Topic.Fields.AUTHORIZED_OPERATIONS,
+                        Topic.Fields.CONFIGS
+                    })
+            @Parameter(
+                    description = FieldFilter.FIELDS_DESCR,
+                    explode = Explode.FALSE,
+                    allowEmptyValue = true,
+                    schema = @Schema(
+                            type = SchemaType.ARRAY,
+                            implementation = String.class,
+                            enumeration = {
+                                Topic.Fields.NAME,
+                                Topic.Fields.INTERNAL,
+                                Topic.Fields.PARTITIONS,
+                                Topic.Fields.AUTHORIZED_OPERATIONS,
+                                Topic.Fields.CONFIGS
+                            }))
+            List<String> fields,
 
             @QueryParam("offsetSpec")
             @DefaultValue("latest")
             @OffsetSpecValidator.ValidOffsetSpec
-            @Parameter(examples = {
-                @ExampleObject(ref = "Earliest Offset"),
-                @ExampleObject(ref = "Latest Offset"),
-                @ExampleObject(ref = "Max Timestamp"),
-                @ExampleObject(ref = "Literal Timestamp")
-            })
+            @Parameter(
+                    schema = @Schema(ref = "OffsetSpec"),
+                    examples = {
+                        @ExampleObject(ref = "Earliest Offset"),
+                        @ExampleObject(ref = "Latest Offset"),
+                        @ExampleObject(ref = "Max Timestamp"),
+                        @ExampleObject(ref = "Literal Timestamp")
+                    })
             String offsetSpec) {
 
-        return topicService.listTopics(includes, offsetSpec)
+        requestedFields.accept(fields);
+
+        return topicService.listTopics(fields, offsetSpec)
                 .thenApply(Topic.ListResponse::new)
                 .thenApply(Response::ok)
                 .thenApply(Response.ResponseBuilder::build);
@@ -91,21 +136,49 @@ public class TopicsResource {
             @Parameter(description = "Topic identifier")
             String topicId,
 
-            @QueryParam("include")
-            List<String> includes,
+            @QueryParam(FIELDS_PARAM)
+            @DefaultValue(Topic.Fields.DESCRIBE_DEFAULT)
+            @StringListValidator.ValidStringList(
+                    source = FIELDS_PARAM,
+                    allowedValues = {
+                        Topic.Fields.NAME,
+                        Topic.Fields.INTERNAL,
+                        Topic.Fields.PARTITIONS,
+                        Topic.Fields.AUTHORIZED_OPERATIONS,
+                        Topic.Fields.CONFIGS
+                    })
+            @Parameter(
+                    description = FieldFilter.FIELDS_DESCR,
+                    explode = Explode.FALSE,
+                    allowEmptyValue = true,
+                    schema = @Schema(
+                            type = SchemaType.ARRAY,
+                            implementation = String.class,
+                            enumeration = {
+                                Topic.Fields.NAME,
+                                Topic.Fields.INTERNAL,
+                                Topic.Fields.PARTITIONS,
+                                Topic.Fields.AUTHORIZED_OPERATIONS,
+                                Topic.Fields.CONFIGS
+                            }))
+            List<String> fields,
 
             @QueryParam("offsetSpec")
             @DefaultValue("latest")
             @OffsetSpecValidator.ValidOffsetSpec
-            @Parameter(examples = {
-                @ExampleObject(ref = "Earliest Offset"),
-                @ExampleObject(ref = "Latest Offset"),
-                @ExampleObject(ref = "Max Timestamp"),
-                @ExampleObject(ref = "Literal Timestamp")
-            })
+            @Parameter(
+                    schema = @Schema(ref = "OffsetSpec"),
+                    examples = {
+                        @ExampleObject(ref = "Earliest Offset"),
+                        @ExampleObject(ref = "Latest Offset"),
+                        @ExampleObject(ref = "Max Timestamp"),
+                        @ExampleObject(ref = "Literal Timestamp")
+                    })
             String offsetSpec) {
 
-        return topicService.describeTopic(topicId, includes, offsetSpec)
+        requestedFields.accept(fields);
+
+        return topicService.describeTopic(topicId, fields, offsetSpec)
                 .thenApply(Topic.SingleResponse::new)
                 .thenApply(Response::ok)
                 .thenApply(Response.ResponseBuilder::build);

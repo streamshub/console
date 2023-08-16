@@ -18,6 +18,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
 import org.apache.kafka.clients.admin.Admin;
+import org.apache.kafka.clients.admin.DescribeTopicsOptions;
 import org.apache.kafka.clients.admin.ListOffsetsResult.ListOffsetsResultInfo;
 import org.apache.kafka.clients.admin.OffsetSpec;
 import org.apache.kafka.common.KafkaFuture;
@@ -65,22 +66,22 @@ public class TopicService {
 //                .toCompletionStage();
 //    }
 
-    public CompletionStage<List<Topic>> listTopics(List<String> includes, String offsetSpec) {
+    public CompletionStage<List<Topic>> listTopics(List<String> fields, String offsetSpec) {
         Admin adminClient = clientSupplier.get();
 
         return adminClient.listTopics()
                 .listings()
                 .thenApply(list -> list.stream().map(Topic::fromTopicListing).toList())
                 .toCompletionStage()
-                .thenCompose(list -> augmentList(adminClient, list, includes, offsetSpec))
+                .thenCompose(list -> augmentList(adminClient, list, fields, offsetSpec))
                 .thenApply(list -> list.stream().sorted(Comparator.comparing(Topic::getName)).toList());
     }
 
-    public CompletionStage<Topic> describeTopic(String topicId, List<String> includes, String offsetSpec) {
+    public CompletionStage<Topic> describeTopic(String topicId, List<String> fields, String offsetSpec) {
         Admin adminClient = clientSupplier.get();
         Uuid id = Uuid.fromString(topicId);
 
-        return describeTopics(adminClient, List.of(id), offsetSpec)
+        return describeTopics(adminClient, List.of(id), fields, offsetSpec)
             .thenApply(result -> result.get(id))
             .thenApply(result -> {
                 if (result.isPrimaryPresent()) {
@@ -91,7 +92,7 @@ public class TopicService {
             .thenCompose(topic -> {
                 CompletableFuture<Topic> promise = new CompletableFuture<>();
 
-                if (includes.contains("configs")) {
+                if (fields.contains(Topic.Fields.CONFIGS)) {
                     List<ConfigResource> keys = List.of(new ConfigResource(ConfigResource.Type.TOPIC, topic.getName()));
                     configService.describeConfigs(adminClient, keys)
                         .thenApply(configs -> {
@@ -151,18 +152,18 @@ public class TopicService {
 //        return CompletableFuture.allOf(pendingDeletes).thenApply(nothing -> errors);
 //    }
 
-    CompletionStage<List<Topic>> augmentList(Admin adminClient, List<Topic> list, List<String> includes, String offsetSpec) {
+    CompletionStage<List<Topic>> augmentList(Admin adminClient, List<Topic> list, List<String> fields, String offsetSpec) {
         Map<Uuid, Topic> topics = list.stream().collect(Collectors.toMap(t -> Uuid.fromString(t.getId()), Function.identity()));
-        CompletableFuture<Void> configPromise = maybeDescribeConfigs(adminClient, topics, includes);
-        CompletableFuture<Void> describePromise = maybeDescribeTopics(adminClient, topics, includes, offsetSpec);
+        CompletableFuture<Void> configPromise = maybeDescribeConfigs(adminClient, topics, fields);
+        CompletableFuture<Void> describePromise = maybeDescribeTopics(adminClient, topics, fields, offsetSpec);
 
         return CompletableFuture.allOf(configPromise, describePromise).thenApply(nothing -> list);
     }
 
-    CompletableFuture<Void> maybeDescribeConfigs(Admin adminClient, Map<Uuid, Topic> topics, List<String> includes) {
+    CompletableFuture<Void> maybeDescribeConfigs(Admin adminClient, Map<Uuid, Topic> topics, List<String> fields) {
         CompletableFuture<Void> promise = new CompletableFuture<>();
 
-        if (includes.contains("configs")) {
+        if (fields.contains(Topic.Fields.CONFIGS)) {
             Map<String, Uuid> topicIds = new HashMap<>();
             List<ConfigResource> keys = topics.values().stream()
                     .map(topic -> {
@@ -186,17 +187,17 @@ public class TopicService {
         return promise;
     }
 
-    CompletableFuture<Void> maybeDescribeTopics(Admin adminClient, Map<Uuid, Topic> topics, List<String> includes, String offsetSpec) {
+    CompletableFuture<Void> maybeDescribeTopics(Admin adminClient, Map<Uuid, Topic> topics, List<String> fields, String offsetSpec) {
         CompletableFuture<Void> promise = new CompletableFuture<>();
 
-        if (includes.contains("partitions") || includes.contains("authorizedOperations")) {
-            describeTopics(adminClient, topics.keySet(), offsetSpec)
+        if (fields.contains(Topic.Fields.PARTITIONS) || fields.contains(Topic.Fields.AUTHORIZED_OPERATIONS)) {
+            describeTopics(adminClient, topics.keySet(), fields, offsetSpec)
                 .thenApply(descriptions -> {
                     descriptions.forEach((name, either) -> {
-                        if (includes.contains("partitions")) {
+                        if (fields.contains(Topic.Fields.PARTITIONS)) {
                             topics.get(name).addPartitions(either);
                         }
-                        if (includes.contains("authorizedOperations")) {
+                        if (fields.contains(Topic.Fields.AUTHORIZED_OPERATIONS)) {
                             topics.get(name).addAuthorizedOperations(either);
                         }
                     });
@@ -211,11 +212,18 @@ public class TopicService {
         return promise;
     }
 
-    CompletionStage<Map<Uuid, Either<Topic, Throwable>>> describeTopics(Admin adminClient, Collection<Uuid> topicIds, String offsetSpec) {
+    CompletionStage<Map<Uuid, Either<Topic, Throwable>>> describeTopics(
+            Admin adminClient,
+            Collection<Uuid> topicIds,
+            List<String> fields,
+            String offsetSpec) {
+
         Map<Uuid, Either<Topic, Throwable>> result = new LinkedHashMap<>(topicIds.size());
         TopicCollection request = TopicCollection.ofTopicIds(topicIds);
+        DescribeTopicsOptions options = new DescribeTopicsOptions()
+                .includeAuthorizedOperations(fields.contains(Topic.Fields.AUTHORIZED_OPERATIONS));
 
-        var pendingDescribes = adminClient.describeTopics(request)
+        var pendingDescribes = adminClient.describeTopics(request, options)
                 .topicIdValues()
                 .entrySet()
                 .stream()
