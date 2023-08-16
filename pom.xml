@@ -6,7 +6,7 @@
     <groupId>com.github.eyefloaters</groupId>
     <artifactId>console-api</artifactId>
     <packaging>jar</packaging>
-    <version>0.14.1-SNAPSHOT</version>
+    <version>0.0.1-SNAPSHOT</version>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
