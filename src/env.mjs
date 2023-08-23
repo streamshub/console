@@ -22,6 +22,7 @@ export const env = createEnv({
     // Add `.min(1) on ID and SECRET if you want to make sure they're not empty
     KEYCLOAK_CLIENT_ID: z.string(),
     KEYCLOAK_CLIENT_SECRET: z.string(),
+    BACKEND_URL: z.string(),
   },
 
   /**
@@ -44,5 +45,6 @@ export const env = createEnv({
     KEYCLOAK_CLIENT_ID: process.env.KEYCLOAK_CLIENT_ID,
     KEYCLOAK_CLIENT_SECRET: process.env.KEYCLOAK_CLIENT_SECRET,
     // NEXT_PUBLIC_CLIENTVAR: process.env.NEXT_PUBLIC_CLIENTVAR,
+    BACKEND_URL: process.env.BACKEND_URL,
   },
 });

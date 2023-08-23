@@ -1,4 +1,5 @@
 import {k8s} from "~/server/api/routers/k8s";
+import {backend} from "~/server/api/routers/backend";
 import {createTRPCRouter} from "~/server/api/trpc";
 
 /**
@@ -8,6 +9,7 @@ import {createTRPCRouter} from "~/server/api/trpc";
  */
 export const appRouter = createTRPCRouter({
   k8s: k8s,
+  backend: backend,
 });
 
 // export type definition of API
