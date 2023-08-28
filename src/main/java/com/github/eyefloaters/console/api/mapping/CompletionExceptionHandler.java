@@ -1,4 +1,4 @@
-package com.github.eyefloaters.console.api.support;
+package com.github.eyefloaters.console.api.mapping;
 
 import java.util.HashMap;
 import java.util.Map;

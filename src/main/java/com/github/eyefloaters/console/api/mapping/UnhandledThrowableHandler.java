@@ -1,4 +1,4 @@
-package com.github.eyefloaters.console.api.support;
+package com.github.eyefloaters.console.api.mapping;
 
 import java.util.List;
 import java.util.UUID;
@@ -11,6 +11,7 @@ import org.jboss.logging.Logger;
 
 import com.github.eyefloaters.console.api.model.Error;
 import com.github.eyefloaters.console.api.model.ErrorResponse;
+import com.github.eyefloaters.console.api.support.ErrorCategory;
 
 @Provider
 public class UnhandledThrowableHandler implements ExceptionMapper<Throwable> {

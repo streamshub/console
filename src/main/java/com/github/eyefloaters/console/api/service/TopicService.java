@@ -21,7 +21,6 @@ import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.clients.admin.DescribeTopicsOptions;
 import org.apache.kafka.clients.admin.ListOffsetsResult.ListOffsetsResultInfo;
 import org.apache.kafka.clients.admin.OffsetSpec;
-import org.apache.kafka.common.KafkaFuture;
 import org.apache.kafka.common.TopicCollection;
 import org.apache.kafka.common.Uuid;
 import org.apache.kafka.common.config.ConfigResource;
@@ -31,6 +30,7 @@ import org.apache.kafka.common.errors.UnknownTopicOrPartitionException;
 import com.github.eyefloaters.console.api.model.Either;
 import com.github.eyefloaters.console.api.model.OffsetInfo;
 import com.github.eyefloaters.console.api.model.Topic;
+import com.github.eyefloaters.console.api.support.KafkaOffsetSpec;
 
 @ApplicationScoped
 public class TopicService {
@@ -253,10 +253,10 @@ public class TopicService {
 
     CompletionStage<Void> listOffsets(Admin adminClient, Map<Uuid, Either<Topic, Throwable>> topics, String offsetSpec) {
         OffsetSpec reqOffsetSpec = switch (offsetSpec) {
-            case "earliest"     -> OffsetSpec.earliest();
-            case "latest"       -> OffsetSpec.latest();
-            case "maxTimestamp" -> OffsetSpec.maxTimestamp();
-            default             -> OffsetSpec.forTimestamp(Instant.parse(offsetSpec).toEpochMilli());
+            case KafkaOffsetSpec.EARLIEST -> OffsetSpec.earliest();
+            case KafkaOffsetSpec.LATEST -> OffsetSpec.latest();
+            case KafkaOffsetSpec.MAX_TIMESTAMP -> OffsetSpec.maxTimestamp();
+            default -> OffsetSpec.forTimestamp(Instant.parse(offsetSpec).toEpochMilli());
         };
 
         Map<String, Uuid> topicIds = new HashMap<>();
@@ -276,12 +276,14 @@ public class TopicService {
         var result = adminClient.listOffsets(request);
         var pendingOffsets = request.keySet().stream()
                 .map(topicPartition -> result.partitionResult(topicPartition)
-                        .whenComplete((offsetResult, error) ->
-                        addOffset(topics.get(topicIds.get(topicPartition.topic())).getPrimary(),
-                                    topicPartition.partition(),
-                                    offsetResult,
-                                    error)))
-                .map(KafkaFuture::toCompletionStage)
+                        .toCompletionStage()
+                        .<Void>handle((offsetResult, error) -> {
+                            addOffset(topics.get(topicIds.get(topicPartition.topic())).getPrimary(),
+                                        topicPartition.partition(),
+                                        offsetResult,
+                                        error);
+                            return null;
+                        }))
                 .map(CompletionStage::toCompletableFuture)
                 .toArray(CompletableFuture[]::new);
 

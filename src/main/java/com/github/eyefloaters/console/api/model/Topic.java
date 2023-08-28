@@ -24,7 +24,7 @@ public class Topic {
         public static final String LIST_DEFAULT = NAME + ", " + INTERNAL;
         public static final String DESCRIBE_DEFAULT =
                 NAME + ", " + INTERNAL + ", " + PARTITIONS + ", " + AUTHORIZED_OPERATIONS;
-    
+
         private Fields() {
         }
     }
@@ -64,9 +64,6 @@ public class Topic {
     @Schema(implementation = Object.class, oneOf = { ConfigEntry.ConfigEntryMap.class, Error.class })
     Either<Map<String, ConfigEntry>, Error> configs;
 
-    public Topic() {
-    }
-
     public Topic(String name, boolean internal, String id) {
         super();
         this.name = name;
@@ -95,38 +92,21 @@ public class Topic {
     }
 
     public void addPartitions(Either<Topic, Throwable> description) {
-        if (description.isPrimaryPresent()) {
-            partitions = description.getPrimary().partitions;
-        } else {
-            Error error = new Error(
-                    "Unable to describe topic",
-                    description.getAlternate().getMessage(),
-                    description.getAlternate());
-            partitions = Either.ofAlternate(error);
-        }
+        partitions = description.ifPrimaryOrElse(
+                Topic::getPartitions,
+                thrown -> Error.forThrowable(thrown, "Unable to describe topic"));
     }
 
     public void addAuthorizedOperations(Either<Topic, Throwable> description) {
-        if (description.isPrimaryPresent()) {
-            authorizedOperations = description.getPrimary().authorizedOperations;
-        } else {
-            Error error = new Error(
-                    "Unable to describe topic",
-                    description.getAlternate().getMessage(),
-                    description.getAlternate());
-            authorizedOperations = Either.ofAlternate(error);
-        }
+        authorizedOperations = description.ifPrimaryOrElse(
+                Topic::getAuthorizedOperations,
+                thrown -> Error.forThrowable(thrown, "Unable to describe topic"));
     }
 
     public void addConfigs(Either<Map<String, ConfigEntry>, Throwable> configs) {
-        if (configs.isPrimaryPresent()) {
-            this.configs = Either.of(configs.getPrimary());
-        } else {
-            this.configs = Either.ofAlternate(new Error(
-                    "Unable to describe topic configs",
-                    configs.getAlternate().getMessage(),
-                    configs.getAlternate()));
-        }
+        this.configs = configs.ifPrimaryOrElse(
+                Either::of,
+                thrown -> Error.forThrowable(thrown, "Unable to describe topic configs"));
     }
 
     public String getName() {

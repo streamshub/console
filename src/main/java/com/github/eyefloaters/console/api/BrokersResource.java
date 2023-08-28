@@ -30,6 +30,10 @@ public class BrokersResource {
     @Inject
     BrokerService brokerService;
 
+    @Parameter(description = "Cluster identifier")
+    @PathParam("clusterId")
+    String clusterId;
+
     @GET
     @Path("{nodeId}/configs")
     @Produces(MediaType.APPLICATION_JSON)

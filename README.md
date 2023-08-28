@@ -1,104 +1,72 @@
-[![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](http://www.apache.org/licenses/LICENSE-2.0)[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=eyefloaters_console-api&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=eyefloaters_console-api)[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=eyefloaters_console-api&metric=coverage)](https://sonarcloud.io/summary/new_code?id=eyefloaters_console-api)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](http://www.apache.org/licenses/LICENSE-2.0) [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=eyefloaters_console-api&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=eyefloaters_console-api) [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=eyefloaters_console-api&metric=coverage)](https://sonarcloud.io/summary/new_code?id=eyefloaters_console-api)
 
 # Console API
 
-This repository contains the Managed Kafka Instance API and its implementation.
-The API provides a way for managing [Apache Kafka<sup>TM</sup>](https://kafka.apache.org/) topics and consumer groups, as
+This repository contains the Console API server to interact with [Strimzi](https://strimzi.io) Kafka instances running
+in a Kubernetes cluster.
+
+The API provides a way to manage [Apache Kafka<sup>TM</sup>](https://kafka.apache.org/) topics and consumer groups, as
 well as endpoints to publish and browse messages.
 
 ## Getting Started
 
-###_Prerequisites_
+### _Prerequisites_
 
 There are a few things you need to have installed to run this project:
 
 - [Maven](https://maven.apache.org/)
-- [JDK 11+](https://openjdk.java.net/projects/jdk/11/)
+- [JDK 17+](https://openjdk.java.net/projects/jdk/17/)
+- Kubernetes environment ([minikube](https://minikube.sigs.k8s.io/) recommended) with [Strimzi Cluster Operator](https://strimzi.io) installed and a Kafka cluster deployed
 - [Docker](https://www.docker.com/) or [Podman](https://podman.io)
-- [Docker Compose](https://docs.docker.com/compose/) (optional but recommended)
 
-### Download
+### Download and Build
 
-To run this project locally, first clone it with Git:
+To run this project locally, first clone it with Git and execute a Maven build
 
 ```shell
 git clone git@github.com:eyefloaters/console-api.git
 cd console-api
-```
-
-### Install dependencies
-Now you can install the required dependencies with Maven:
-
-```shell
 mvn install -DskipTests
 ```
 
-### Run Instance API and Kafka cluster from CLI
+### Enable Minikube with Ingress
 
-The Managed Kafka Instance API needs a Apache Kafka cluster to connect to. There is a [docker-compose.yml](./docker-compose.yml) file with default
-Kafka containers you can use to run the server against.
-
-#### Kafka SASL_PLAINTEXT
-Run the development server with a local Kafka cluster using a PLAINTEXT listener. Note, this command assumes the working directory is the project root.
+Start minikube and enable the ingress controller with passthrough TLS
 
 ```shell
-make dev
+minikube start
+minikube addons enable ingress
+kubectl patch deployment -n ingress-nginx ingress-nginx-controller \
+ --type='json' \
+ -p='[{"op": "add", "path": "/spec/template/spec/containers/0/args/-", "value":"--enable-ssl-passthrough"}]'
 ```
 
-This will start a Kafka cluster at localhost:9092
+### Install Strimzi and Kafka Cluster
 
-#### Kafka SASL_SSL
-
-Run the development server with a local Kafka cluster using an SSL listener. Note, this command assumes the working directory is the project root.
+Create the Strimzi Operator artifacts and two Kafka clusters in the `myproject` namespace.
 
 ```shell
-make dev-tls
+kubectl create namespace myproject
+curl -L https://github.com/strimzi/strimzi-kafka-operator/releases/download/0.36.1/strimzi-cluster-operator-0.36.1.yaml | kubectl apply -f - -n myproject
+kubectl wait deployment strimzi-cluster-operator -n myproject --for condition=Available
+sed -e 's/\${cluster_name}/cluster-a/g' -e 's/\${kube_ip}/'$(minikube ip)'/g' examples/kafka-ephemeral-ingress.yaml | kubectl apply -f - -n myproject
+sed -e 's/\${cluster_name}/cluster-b/g' -e 's/\${kube_ip}/'$(minikube ip)'/g' examples/kafka-ephemeral-ingress.yaml | kubectl apply -f - -n myproject
 ```
 
-This will start a Kafka cluster at localhost:9093
+### Start Console API in Development Mode
+
+```shell
+mvn quarkus:dev
+```
 
 ### Using the Instance API
 
 Once all steps above have been completed, you can interact with the Kafka Instance API. The server will start the following interfaces:
-- REST API (`/api/v1/*`) on either [http://localhost:8080](http://localhost:8080)
+- REST API on [http://localhost:8080](http://localhost:8080)
 - Metrics at [http://localhost:8080/metrics](http://localhost:8080/metrics)
 - Health status at [http://localhost:8080/health](http://localhost:8080/health)
 - OpenAPI at [http://localhost:8080/openapi](http://localhost:8080/openapi?format=json)
 - Swagger UI at [http://localhost:8080/swagger-ui](http://localhost:8080/swagger-ui)
-
-Interacting with the server requires credentials, most simply using HTTP Basic. With Basic enabled and the Kafka cluster started with `docker-compose`, the credentials
-that may be utilized can be found in `kafka_server_jaas.conf`. For example, to obtain the list of available topics to the `admin` user:
-```
-curl -s -u admin:admin-secret http://localhost:8080/api/v1/topics
-```
-
-### Instance API Configuration
-
-These options may be `export`ed prior to starting the server + Kafka broker as described above.
-
-| Environment Variable | Description |
-| -------------------- | ----------- |
-| CORS_ALLOW_LIST_REGEX | Regular expression to match origins for CORS. An origin follows rfc6454#section-7 and is expected to have the format: `<scheme> "://" <hostname> [ ":" <port> ]` |
-| KAFKA_ADMIN_BOOTSTRAP_SERVERS | A comma-separated list of host and port pairs that are the addresses of the Kafka brokers in a "bootstrap" Kafka cluster.   |
-| KAFKA_ADMIN_BASIC_ENABLED | Enables HTTP Basic authentication. Request credentials are forwarded to the Kafka broker as SASL credentials. |
-| KAFKA_ADMIN_OAUTH_ENABLED | Enables a third party application to obtain limited access to the Admin API. |
-| KAFKA_ADMIN_OAUTH_TRUSTED_CERT | Certificate in PEM format used by the JWKS and token endpoints. Optional when the endpoints use self-signed or otherwise untrusted certificates. Only valid if OAuth and JWKS endpoint are enabled. |
-| KAFKA_ADMIN_OAUTH_JWKS_ENDPOINT_URI | Endpoint serving JWKS to be use to verify JWT access tokens. *required when `KAFKA_ADMIN_OAUTH_ENABLED` is used* |
-| KAFKA_ADMIN_OAUTH_VALID_ISSUER_URI | Optional issuer that, when provided, must match the issuer (`iss` claim) present in JWTs. Only valid if OAuth and JWKS endpoint are enabled. |
-| KAFKA_ADMIN_OAUTH_TOKEN_ENDPOINT_URI | Optional token endpoint that will be published in the OpenAPI document describing the REST service. Only valid if OAuth and JWKS endpoint are enabled. |
-| KAFKA_ADMIN_BROKER_TLS_ENABLED | Enables TLS for connections to the Kafka broker(s). |
-| KAFKA_ADMIN_BROKER_TRUSTED_CERT | Certificate in PEM format used for Kafka broker trust. The value may be either a path to a file containing the certificate *or* text of the certificate. |
-| KAFKA_ADMIN_TLS_CERT | TLS encryption certificate in PEM format. The value may be either a path to a file containing the certificate *or* text of the certificate. |
-| KAFKA_ADMIN_TLS_KEY | TLS encryption private key in PEM format. The value may be either a path to a file containing the key *or* text of the key. *required when `KAFKA_ADMIN_TLS_CERT` is used* |
-| KAFKA_ADMIN_TLS_VERSION | A comma-separated list of TLS versions to support for TLS/HTTPS endpoints. E.g. `TLSv1.3,TLSv1.2`. Default value if not specified is `TLSv1.3` |
-| KAFKA_ADMIN_REPLICATION_FACTOR | Replication factor defines the number of copies of a topic in a Kafka cluster. |
-| KAFKA_ADMIN_NUM_PARTITIONS_MAX | Maximum (inclusive) number of partitions that may be used for the creation of a new topic. |
-
-## Updating OpenAPI file
-
-```bash
- mvn -Popenapi-generate process-classes
-```
 
 ## Releasing
 

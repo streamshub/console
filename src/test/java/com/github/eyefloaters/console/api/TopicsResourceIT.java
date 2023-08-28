@@ -5,24 +5,41 @@ import java.net.ServerSocket;
 import java.net.URI;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import jakarta.inject.Inject;
 import jakarta.ws.rs.core.Response.Status;
 
+import org.apache.kafka.clients.admin.DescribeConfigsResult;
+import org.apache.kafka.clients.admin.DescribeTopicsOptions;
+import org.apache.kafka.clients.admin.DescribeTopicsResult;
+import org.apache.kafka.clients.admin.ListOffsetsResult;
+import org.apache.kafka.clients.admin.ListOffsetsResult.ListOffsetsResultInfo;
+import org.apache.kafka.clients.admin.TopicDescription;
+import org.apache.kafka.common.KafkaFuture;
+import org.apache.kafka.common.TopicCollection.TopicIdCollection;
+import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.Uuid;
+import org.apache.kafka.common.config.ConfigResource;
+import org.apache.kafka.common.errors.ApiException;
+import org.apache.kafka.common.internals.KafkaFutureImpl;
 import org.eclipse.microprofile.config.Config;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.stubbing.Answer;
 
 import com.github.eyefloaters.console.kafka.systemtest.TestPlainProfile;
 import com.github.eyefloaters.console.kafka.systemtest.deployment.DeploymentManager;
+import com.github.eyefloaters.console.test.AdminClientSpy;
 import com.github.eyefloaters.console.test.TestHelper;
 import com.github.eyefloaters.console.test.TopicHelper;
 
@@ -51,6 +68,10 @@ import static org.hamcrest.Matchers.iterableWithSize;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyCollection;
+import static org.mockito.ArgumentMatchers.anyMap;
+import static org.mockito.Mockito.doAnswer;
 
 @QuarkusTest
 @QuarkusTestResource(KubernetesServerTestResource.class)
@@ -226,7 +247,6 @@ class TopicsResourceIT {
             .body("data.attributes", contains(aMapWithSize(2)))
             .body("data.attributes.name", contains(topicName))
             .body("data.attributes.partitions[0]", hasSize(2))
-            .body("data.attributes.partitions[0][0].offset.type", is(not("error")))
             .body("data.attributes.partitions[0][0].offset.offset", is(2))
             .body("data.attributes.partitions[0][0].offset.timestamp", is(nullValue()));
     }
@@ -248,7 +268,6 @@ class TopicsResourceIT {
             .body("data.attributes", contains(aMapWithSize(2)))
             .body("data.attributes.name", contains(topicName))
             .body("data.attributes.partitions[0]", hasSize(2))
-            .body("data.attributes.partitions[0][0].offset.type", is(not("error")))
             .body("data.attributes.partitions[0][0].offset.offset", is(0))
             .body("data.attributes.partitions[0][0].offset.timestamp", is(nullValue()));
     }
@@ -273,7 +292,6 @@ class TopicsResourceIT {
             .body("data.attributes", contains(aMapWithSize(2)))
             .body("data.attributes.name", contains(topicName))
             .body("data.attributes.partitions[0]", hasSize(2))
-            .body("data.attributes.partitions[0][0].offset.type", is(not("error")))
             .body("data.attributes.partitions[0][0].offset.offset", is(0))
             .body("data.attributes.partitions[0][0].offset.timestamp", is(first.toString()));
     }
@@ -298,7 +316,6 @@ class TopicsResourceIT {
             .body("data.attributes", contains(aMapWithSize(2)))
             .body("data.attributes.name", contains(topicName))
             .body("data.attributes.partitions[0]", hasSize(2))
-            .body("data.attributes.partitions[0][0].offset.type", is(not("error")))
             .body("data.attributes.partitions[0][0].offset.offset", is(1))
             .body("data.attributes.partitions[0][0].offset.timestamp", is(second.toString()));
     }
@@ -352,7 +369,6 @@ class TopicsResourceIT {
             .body("data.attributes.name", is(topicName))
             .body("data.attributes", not(hasKey("configs")))
             .body("data.attributes.partitions", hasSize(2))
-            .body("data.attributes.partitions[0].offset.type", is(not("error")))
             .body("data.attributes.partitions[0].offset.offset", is(2))
             .body("data.attributes.partitions[0].offset.timestamp", is(nullValue()));
     }
@@ -372,7 +388,6 @@ class TopicsResourceIT {
             .body("data.attributes.name", is(topicName))
             .body("data.attributes", not(hasKey("configs")))
             .body("data.attributes.partitions", hasSize(2))
-            .body("data.attributes.partitions[0].offset.type", is(not("error")))
             .body("data.attributes.partitions[0].offset.offset", is(0))
             .body("data.attributes.partitions[0].offset.timestamp", is(nullValue()));
     }
@@ -395,7 +410,6 @@ class TopicsResourceIT {
             .body("data.attributes.name", is(topicName))
             .body("data.attributes", not(hasKey("configs")))
             .body("data.attributes.partitions", hasSize(2))
-            .body("data.attributes.partitions[0].offset.type", is(not("error")))
             .body("data.attributes.partitions[0].offset.offset", is(0))
             .body("data.attributes.partitions[0].offset.timestamp", is(first.toString()));
     }
@@ -418,7 +432,6 @@ class TopicsResourceIT {
             .body("data.attributes.name", is(topicName))
             .body("data.attributes", not(hasKey("configs")))
             .body("data.attributes.partitions", hasSize(2))
-            .body("data.attributes.partitions[0].offset.type", is(not("error")))
             .body("data.attributes.partitions[0].offset.offset", is(1))
             .body("data.attributes.partitions[0].offset.timestamp", is(second.toString()));
     }
@@ -438,6 +451,125 @@ class TopicsResourceIT {
             .body("errors.code", contains("4001"))
             .body("errors.title", contains("Invalid query parameter"))
             .body("errors.source.parameter", contains("offsetSpec"));
+    }
+
+    @Test
+    void testDescribeTopicWithListOffetsFailure() {
+        String topicName = UUID.randomUUID().toString();
+        Map<String, String> topicIds = topicUtils.createTopics(clusterId1, List.of(topicName), 2);
+
+        Answer<ListOffsetsResult> listOffsetsFailed = args -> {
+            @SuppressWarnings("unchecked")
+            Set<TopicPartition> partitions = args.getArgument(0, Map.class).keySet();
+            KafkaFutureImpl<ListOffsetsResultInfo> failure = new KafkaFutureImpl<>();
+            failure.completeExceptionally(new ApiException("EXPECTED TEST EXCEPTION"));
+
+            return new ListOffsetsResult(partitions
+                    .stream()
+                    .collect(Collectors.toMap(Function.identity(), p -> failure)));
+        };
+
+        AdminClientSpy.install(client -> {
+            // Mock listOffsets
+            doAnswer(listOffsetsFailed).when(client).listOffsets(anyMap());
+        });
+
+        whenRequesting(req -> req
+                .queryParam("offsetSpec", "latest")
+                .get("{topicName}", clusterId1, topicIds.get(topicName)))
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()))
+            .body("data.attributes.name", is(topicName))
+            .body("data.attributes", not(hasKey("configs")))
+            .body("data.attributes.partitions", hasSize(2))
+            .body("data.attributes.partitions[0].offset.meta.type", is("error"))
+            .body("data.attributes.partitions[0].offset.detail", is("EXPECTED TEST EXCEPTION"));
+    }
+
+    @Test
+    void testListTopicsWithDescribeTopicsFailure() {
+        String topicName = UUID.randomUUID().toString();
+        topicUtils.createTopics(clusterId1, List.of(topicName), 2);
+
+        Answer<DescribeTopicsResult> describeTopicsFailed = args -> {
+            TopicIdCollection topicCollection = args.getArgument(0);
+            KafkaFutureImpl<TopicDescription> failure = new KafkaFutureImpl<>();
+            failure.completeExceptionally(new ApiException("EXPECTED TEST EXCEPTION"));
+
+            Map<Uuid, KafkaFuture<TopicDescription>> futures = topicCollection.topicIds()
+                    .stream()
+                    .collect(Collectors.toMap(Function.identity(), id -> failure));
+
+            class Result extends DescribeTopicsResult {
+                Result() {
+                    super(futures, null);
+                }
+            }
+
+            return new Result();
+        };
+
+        AdminClientSpy.install(client -> {
+            // Mock describeTopics
+            doAnswer(describeTopicsFailed)
+                .when(client)
+                .describeTopics(any(TopicIdCollection.class), any(DescribeTopicsOptions.class));
+        });
+
+        whenRequesting(req -> req
+                .queryParam("fields[topics]", "name,authorizedOperations,partitions")
+                .get("", clusterId1))
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()))
+            .body("data.attributes.name", contains(topicName))
+            .body("data.attributes", contains(not(hasKey("configs"))))
+            .body("data.attributes.partitions", hasSize(1))
+            .body("data.attributes.partitions[0].meta.type", is("error"))
+            .body("data.attributes.partitions[0].detail", is("EXPECTED TEST EXCEPTION"))
+            .body("data.attributes.authorizedOperations", hasSize(1))
+            .body("data.attributes.authorizedOperations[0].meta.type", is("error"))
+            .body("data.attributes.authorizedOperations[0].detail", is("EXPECTED TEST EXCEPTION"));
+    }
+
+    @Test
+    void testListTopicsWithDescribeConfigsFailure() {
+        String topicName = UUID.randomUUID().toString();
+        topicUtils.createTopics(clusterId1, List.of(topicName), 2);
+
+        Answer<DescribeConfigsResult> describeConfigsFailed = args -> {
+            Collection<ConfigResource> resources = args.getArgument(0);
+
+            KafkaFutureImpl<org.apache.kafka.clients.admin.Config> failure = new KafkaFutureImpl<>();
+            failure.completeExceptionally(new ApiException("EXPECTED TEST EXCEPTION"));
+
+            final Map<ConfigResource, KafkaFuture<org.apache.kafka.clients.admin.Config>> futures =
+                    resources
+                        .stream()
+                        .collect(Collectors.toMap(Function.identity(), resource -> failure));
+
+            class Result extends DescribeConfigsResult {
+                Result() {
+                    super(futures);
+                }
+            }
+
+            return new Result();
+        };
+
+        AdminClientSpy.install(client -> {
+            // Mock describeTopics
+            doAnswer(describeConfigsFailed).when(client).describeConfigs(anyCollection());
+        });
+
+        whenRequesting(req -> req
+                .queryParam("fields[topics]", "name,configs")
+                .get("", clusterId1))
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()))
+            .body("data.attributes.name", contains(topicName))
+            .body("data.attributes.configs", hasSize(1))
+            .body("data.attributes.configs[0].meta.type", is("error"))
+            .body("data.attributes.configs[0].detail", is("EXPECTED TEST EXCEPTION"));
     }
 
     @Test

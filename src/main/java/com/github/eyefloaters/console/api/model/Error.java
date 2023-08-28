@@ -1,5 +1,7 @@
 package com.github.eyefloaters.console.api.model;
 
+import java.util.Map;
+
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -9,8 +11,8 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 @JsonInclude(value = Include.NON_NULL)
 public class Error {
 
-    @Schema(enumeration = "error", description = "Type of this object")
-    String type = "error";
+    @Schema(description = "A meta object containing non-standard meta-information about the error")
+    Map<String, String> meta;
 
     @Schema(description = "A unique identifier for this particular occurrence of the problem.")
     String id;
@@ -36,14 +38,20 @@ public class Error {
     @JsonIgnore
     Throwable cause;
 
+    public static Error forThrowable(Throwable thrown, String message) {
+        Error error = new Error(message, thrown.getMessage(), thrown);
+        error.meta = Map.of("type", "error");
+        return error;
+    }
+
     public Error(String title, String detail, Throwable cause) {
         this.title = title;
         this.detail = detail;
         this.cause = cause;
     }
 
-    public String getType() {
-        return type;
+    public Map<String, String> getMeta() {
+        return meta;
     }
 
     public String getId() {

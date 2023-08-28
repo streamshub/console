@@ -7,13 +7,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
+import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.enterprise.inject.Disposes;
 import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Inject;
+import jakarta.inject.Named;
 import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.UriInfo;
@@ -37,7 +40,7 @@ import io.fabric8.kubernetes.client.informers.SharedIndexInformer;
 import io.strimzi.api.kafka.model.Kafka;
 import io.strimzi.api.kafka.model.status.ListenerStatus;
 
-@RequestScoped
+@ApplicationScoped
 public class ClientFactory {
 
     private static final String SASL_PLAIN_CONFIG_TEMPLATE = PlainLoginModule.class.getName()
@@ -64,13 +67,24 @@ public class ClientFactory {
     @Inject
     UriInfo requestUri;
 
+    /**
+     * An inject-able function to produce an Admin client for a given
+     * configuration map. This is used in order to allow tests to provide
+     * an overridden function to supply a mocked/spy Admin instance.
+     */
+    @Produces
+    @ApplicationScoped
+    @Named("kafkaAdminBuilder")
+    Function<Map<String, Object>, Admin> kafkaAdminBuilder = Admin::create;
+
     @Produces
     @RequestScoped
-    public Supplier<Admin> adminClientSupplier() {
+    public Supplier<Admin> adminClientSupplier(Function<Map<String, Object>, Admin> adminBuilder) {
         String clusterId = requestUri.getPathParameters().getFirst("clusterId");
 
         if (clusterId == null) {
-            return () -> null;
+            throw new IllegalStateException("Admin client was accessed, "
+                    + "but the requested operation does not provide a Kafka cluster ID");
         }
 
         Supplier<NotFoundException> noSuchKafka =
@@ -84,10 +98,12 @@ public class ClientFactory {
             .map(l -> buildConfiguration(cluster, l))
             .orElseThrow(noSuchKafka);
 
-        log.debug("AdminClient configuration:");
-        config.entrySet().forEach(entry -> log.debugf("\t%s = %s", entry.getKey(), entry.getValue()));
+        if (log.isDebugEnabled()) {
+            log.debug("AdminClient configuration:");
+            config.entrySet().forEach(entry -> log.debugf("\t%s = %s", entry.getKey(), entry.getValue()));
+        }
 
-        Admin client = Admin.create(config); // NOSONAR - client is closed in #adminClientDisposer
+        Admin client = adminBuilder.apply(config);
         return () -> client;
     }
 
@@ -102,7 +118,7 @@ public class ClientFactory {
 
         switch (authType) {
             case "oauth":
-                log.info("OAuth enabled");
+                log.debug("OAuth enabled");
                 saslEnabled = true;
                 config.put(SaslConfigs.SASL_MECHANISM, "OAUTHBEARER");
                 config.put(SaslConfigs.SASL_LOGIN_CALLBACK_HANDLER_CLASS, "io.strimzi.kafka.oauth.client.JaasClientOauthLoginCallbackHandler");
@@ -122,7 +138,7 @@ public class ClientFactory {
 
                 break;
             case "plain":
-                log.info("SASL/PLAIN from HTTP Basic authentication enabled");
+                log.debug("SASL/PLAIN from HTTP Basic authentication enabled");
                 saslEnabled = true;
                 config.put(SaslConfigs.SASL_MECHANISM, "PLAIN");
 
@@ -135,7 +151,7 @@ public class ClientFactory {
 
                 break;
             default:
-                log.info("Broker authentication/SASL disabled");
+                log.debug("Broker authentication/SASL disabled");
                 saslEnabled = false;
                 break;
         }

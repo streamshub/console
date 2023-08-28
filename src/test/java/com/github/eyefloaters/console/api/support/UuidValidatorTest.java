@@ -8,11 +8,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class UuidValidatorTest {
 
-    UuidValidator target;
+    KafkaUuid.Validator target;
 
     @BeforeEach
     void setUp() throws Exception {
-        target = new UuidValidator();
+        target = new KafkaUuid.Validator();
     }
 
     @ParameterizedTest

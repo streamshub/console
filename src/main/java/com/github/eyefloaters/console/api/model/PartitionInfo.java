@@ -30,15 +30,9 @@ public class PartitionInfo {
     }
 
     public void addOffset(Either<OffsetInfo, Throwable> offset) {
-        if (offset.isPrimaryPresent()) {
-            this.offset = Either.of(offset.getPrimary());
-        } else {
-            Error error = new Error(
-                    "Unable to fetch partition offset",
-                    offset.getAlternate().getMessage(),
-                    offset.getAlternate());
-            this.offset = Either.ofAlternate(error);
-        }
+        this.offset = offset.ifPrimaryOrElse(
+                Either::of,
+                thrown -> Error.forThrowable(thrown, "Unable to fetch partition offset"));
     }
 
     public int getPartition() {

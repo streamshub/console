@@ -69,4 +69,15 @@ public class Either<P, A> {
         return primary.isEmpty();
     }
 
+    public <P1, A1> Either<P1, A1> ifPrimaryOrElse(
+            Function<P, Either<P1, A1>> primaryMapper,
+            Function<A, A1> alternateMapper) {
+
+        if (isPrimaryPresent()) {
+            return primaryMapper.apply(getPrimary());
+        }
+
+        return Either.ofAlternate(alternateMapper.apply(getAlternate()));
+    }
+
 }

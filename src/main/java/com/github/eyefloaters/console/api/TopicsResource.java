@@ -28,9 +28,9 @@ import com.github.eyefloaters.console.api.model.Topic;
 import com.github.eyefloaters.console.api.service.TopicService;
 import com.github.eyefloaters.console.api.support.ErrorCategory;
 import com.github.eyefloaters.console.api.support.FieldFilter;
-import com.github.eyefloaters.console.api.support.OffsetSpecValidator;
-import com.github.eyefloaters.console.api.support.StringListValidator;
-import com.github.eyefloaters.console.api.support.UuidValidator;
+import com.github.eyefloaters.console.api.support.KafkaOffsetSpec;
+import com.github.eyefloaters.console.api.support.KafkaUuid;
+import com.github.eyefloaters.console.api.support.StringEnumeration;
 
 @Path("/api/kafkas/{clusterId}/topics")
 @Tag(name = "Kafka Cluster Resources")
@@ -48,6 +48,10 @@ public class TopicsResource {
     @Inject
     @Named("requestedFields")
     Consumer<List<String>> requestedFields;
+
+    @Parameter(description = "Cluster identifier")
+    @PathParam("clusterId")
+    String clusterId;
 
 //    @POST
 //    @Consumes(MediaType.APPLICATION_JSON)
@@ -77,7 +81,7 @@ public class TopicsResource {
     public CompletionStage<Response> listTopics(
             @QueryParam(FIELDS_PARAM)
             @DefaultValue(Topic.Fields.LIST_DEFAULT)
-            @StringListValidator.ValidStringList(
+            @StringEnumeration(
                     source = FIELDS_PARAM,
                     allowedValues = {
                         Topic.Fields.NAME,
@@ -85,7 +89,8 @@ public class TopicsResource {
                         Topic.Fields.PARTITIONS,
                         Topic.Fields.AUTHORIZED_OPERATIONS,
                         Topic.Fields.CONFIGS
-                    })
+                    },
+                    category = ErrorCategory.INVALID_QUERY_PARAMETER)
             @Parameter(
                     description = FieldFilter.FIELDS_DESCR,
                     explode = Explode.FALSE,
@@ -104,7 +109,7 @@ public class TopicsResource {
 
             @QueryParam("offsetSpec")
             @DefaultValue("latest")
-            @OffsetSpecValidator.ValidOffsetSpec
+            @KafkaOffsetSpec(category = ErrorCategory.INVALID_QUERY_PARAMETER)
             @Parameter(
                     schema = @Schema(ref = "OffsetSpec"),
                     examples = {
@@ -132,13 +137,13 @@ public class TopicsResource {
     @APIResponse(responseCode = "504", ref = "ServerTimeout")
     public CompletionStage<Response> describeTopic(
             @PathParam("topicId")
-            @UuidValidator.ValidUuid(category = ErrorCategory.RESOURCE_NOT_FOUND, message = "No such topic")
+            @KafkaUuid(category = ErrorCategory.RESOURCE_NOT_FOUND, message = "No such topic")
             @Parameter(description = "Topic identifier")
             String topicId,
 
             @QueryParam(FIELDS_PARAM)
             @DefaultValue(Topic.Fields.DESCRIBE_DEFAULT)
-            @StringListValidator.ValidStringList(
+            @StringEnumeration(
                     source = FIELDS_PARAM,
                     allowedValues = {
                         Topic.Fields.NAME,
@@ -146,7 +151,8 @@ public class TopicsResource {
                         Topic.Fields.PARTITIONS,
                         Topic.Fields.AUTHORIZED_OPERATIONS,
                         Topic.Fields.CONFIGS
-                    })
+                    },
+                    category = ErrorCategory.INVALID_QUERY_PARAMETER)
             @Parameter(
                     description = FieldFilter.FIELDS_DESCR,
                     explode = Explode.FALSE,
@@ -164,8 +170,8 @@ public class TopicsResource {
             List<String> fields,
 
             @QueryParam("offsetSpec")
-            @DefaultValue("latest")
-            @OffsetSpecValidator.ValidOffsetSpec
+            @DefaultValue(KafkaOffsetSpec.LATEST)
+            @KafkaOffsetSpec(category = ErrorCategory.INVALID_QUERY_PARAMETER)
             @Parameter(
                     schema = @Schema(ref = "OffsetSpec"),
                     examples = {

@@ -25,8 +25,9 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 import com.github.eyefloaters.console.api.model.KafkaCluster;
 import com.github.eyefloaters.console.api.service.KafkaClusterService;
+import com.github.eyefloaters.console.api.support.ErrorCategory;
 import com.github.eyefloaters.console.api.support.FieldFilter;
-import com.github.eyefloaters.console.api.support.StringListValidator;
+import com.github.eyefloaters.console.api.support.StringEnumeration;
 
 @Path("/api/kafkas")
 @Tag(name = "Kafka Cluster Resources")
@@ -53,14 +54,15 @@ public class KafkaClustersResource {
     public Response listClusters(
             @QueryParam(FIELDS_PARAM)
             @DefaultValue(KafkaCluster.Fields.LIST_DEFAULT)
-            @StringListValidator.ValidStringList(
+            @StringEnumeration(
                     source = FIELDS_PARAM,
                     allowedValues = {
                         KafkaCluster.Fields.NAME,
                         KafkaCluster.Fields.BOOTSTRAP_SERVERS,
                         KafkaCluster.Fields.AUTH_TYPE
                     },
-                    message = "list contains a value that is not valid or not available for the operation")
+                    message = "list contains a value that is not valid or not available for the operation",
+                    category = ErrorCategory.INVALID_QUERY_PARAMETER)
             @Parameter(
                     description = FieldFilter.FIELDS_DESCR,
                     explode = Explode.FALSE,
@@ -95,7 +97,7 @@ public class KafkaClustersResource {
 
             @QueryParam(FIELDS_PARAM)
             @DefaultValue(KafkaCluster.Fields.DESCRIBE_DEFAULT)
-            @StringListValidator.ValidStringList(
+            @StringEnumeration(
                     source = FIELDS_PARAM,
                     allowedValues = {
                         KafkaCluster.Fields.NAME,
@@ -104,7 +106,8 @@ public class KafkaClustersResource {
                         KafkaCluster.Fields.AUTHORIZED_OPERATIONS,
                         KafkaCluster.Fields.BOOTSTRAP_SERVERS,
                         KafkaCluster.Fields.AUTH_TYPE
-                    })
+                    },
+                    category = ErrorCategory.INVALID_QUERY_PARAMETER)
             @Parameter(
                     description = FieldFilter.FIELDS_DESCR,
                     explode = Explode.FALSE,

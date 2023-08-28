@@ -94,9 +94,9 @@ public class KafkaClusterService {
     }
 
     public static Stream<ListenerStatus> externalListeners(Kafka kafka) {
-        return kafka.getStatus()
-                .getListeners()
-                .stream()
+        return Optional.ofNullable(kafka.getStatus().getListeners())
+                .map(Collection::stream)
+                .orElseGet(Stream::empty)
                 .filter(l -> isExternalListener(kafka, l));
     }
 
