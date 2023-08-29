@@ -34,9 +34,6 @@ jobs:
           java-version: '17'
           distribution: 'adopt'
 
-      - name: Setup Docker
-        uses: docker-practice/actions-setup-docker@v1
-
       - name: Perform Maven Release
         run: |
           git config --global user.name "bf2robot"
@@ -62,3 +59,9 @@ jobs:
         with:
           github-token: ${{secrets.GITHUB_TOKEN}}
           milestone-title: ${{steps.metadata.outputs.current-version}}
+
+      - name: Image Update
+        uses: renovatebot/github-action@v39.0.3
+        with:
+          configurationFile: .github/gitops-config.json
+          token: ${{ secrets.GITHUB_TOKEN }}     
