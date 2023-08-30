@@ -38,12 +38,13 @@ jobs:
           mvn -B release:prepare -DreleaseVersion=${{steps.metadata.outputs.current-version}} -DdevelopmentVersion=${{steps.metadata.outputs.next-version}}
           git checkout ${{github.base_ref}}
           git rebase release
-          export QUARKUS_CONTAINER_IMAGE_REGISTRY="${{secrets.IMAGE_REPO_HOSTNAME}}"
-          export QUARKUS_CONTAINER_IMAGE_GROUP="${{secrets.IMAGE_REPO_NAMESPACE}}"
-          export QUARKUS_CONTAINER_IMAGE_USERNAME="${{secrets.IMAGE_REPO_USERNAME}}"
-          export QUARKUS_CONTAINER_IMAGE_PASSWORD="${{secrets.IMAGE_REPO_PASSWORD}}"
+          export QUARKUS_CONTAINER_IMAGE_USERNAME="${{ secrets.IMAGE_REPO_USERNAME }}"
+          export QUARKUS_CONTAINER_IMAGE_PASSWORD="${{ secrets.IMAGE_REPO_PASSWORD }}"
           # Build and push the release images using the commit tagged in `release:prepare`
-          mvn -B -P docker release:perform
+          mvn -B -P docker release:perform \
+            -Ddocker.registry="${{ secrets.IMAGE_REPO_HOSTNAME }}" \
+            -Ddocker.group="${{ secrets.IMAGE_REPO_NAMESPACE }}" \
+            -Ddocker.push="true"
 
       - name: Push Release Tag
         run: |

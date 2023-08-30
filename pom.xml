@@ -17,7 +17,7 @@
         <!-- Container image properties for systemtests -->
         <docker.registry>localhost</docker.registry>
         <docker.group>eyefloaters</docker.group>
-        <docker.tag>latest</docker.tag>
+        <docker.tag>${project.version}</docker.tag>
         <docker.push>false</docker.push>
 
         <!-- Dependencies -->
@@ -535,7 +535,7 @@
                 <quarkus.container-image.group>${docker.group}</quarkus.container-image.group>
                 <quarkus.container-image.tag>${docker.tag}</quarkus.container-image.tag>
                 <quarkus.container-image.push>${docker.push}</quarkus.container-image.push>
-                <quarkus.jib.base-jvm-image>registry.access.redhat.com/ubi8/openjdk-11-runtime</quarkus.jib.base-jvm-image>
+                <quarkus.jib.base-jvm-image>registry.access.redhat.com/ubi9/openjdk-17:1.16</quarkus.jib.base-jvm-image>
             </properties>
             <dependencies>
                 <dependency>
