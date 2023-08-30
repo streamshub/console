@@ -11,14 +11,10 @@ jobs:
     runs-on: ubuntu-latest
     name: release
     if: ${{github.event.pull_request.merged == true}}
-    env:
-      GITHUB_TOKEN: ${{secrets.BF2ROBOT_TOKEN}}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-        with:
-          token: ${{secrets.BF2ROBOT_TOKEN}}
 
       - name: Retrieve Project Metadata
         uses: radcortez/project-metadata-action@243817f1e0f2b4df4e012fc17efc45cff166425d
@@ -36,8 +32,8 @@ jobs:
 
       - name: Perform Maven Release
         run: |
-          git config --global user.name "bf2robot"
-          git config --global user.email "bf2-admin+bf2robot@redhat.com"
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git checkout -b release
           mvn -B release:prepare -DreleaseVersion=${{steps.metadata.outputs.current-version}} -DdevelopmentVersion=${{steps.metadata.outputs.next-version}}
           git checkout ${{github.base_ref}}
