@@ -1,4 +1,4 @@
 name: Console API
 release:
-  current-version: 0.0.1
-  next-version: 0.0.2-SNAPSHOT
+  current-version: 0.0.2
+  next-version: 0.0.3-SNAPSHOT
