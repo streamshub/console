@@ -7,9 +7,9 @@ import {
   ValidatedOptions,
 } from "@/libs/patternfly/react-core";
 import { ArrowRightIcon } from "@/libs/patternfly/react-icons";
+import { useTranslations } from "next-intl";
 import type { KeyboardEvent } from "react";
 import { useCallback, useRef, useState } from "react";
-import { useTranslations } from "next-intl";
 
 export type SearchInputProps = {
   placeholder: string;
@@ -24,7 +24,7 @@ export function SearchInput({
   validate,
   onSearch,
 }: SearchInputProps) {
-  const t = useTranslations();
+  const t = useTranslations("common");
   const [value, setValue] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 

@@ -1,10 +1,9 @@
+import withAuth from "next-auth/middleware";
 import createIntlMiddleware from "next-intl/middleware";
 import { NextRequest } from "next/server";
-import { getSession } from "./utils/session";
-import withAuth from "next-auth/middleware";
 
-const locales = ['en'];
-const publicPages = ['/login'];
+const locales = ["en"];
+const publicPages = ["/login"];
 
 const intlMiddleware = createIntlMiddleware({
   // A list of all locales that are supported
@@ -23,27 +22,16 @@ const authMiddleware = withAuth(
   },
   {
     callbacks: {
-      authorized: ({ token }) => token != null
+      authorized: ({ token }) => token != null,
     },
     pages: {
       // signIn: '/login'
-    }
-  }
+    },
+  },
 );
 
 export default async function middleware(req: NextRequest) {
-  const publicPathnameRegex = RegExp(
-    `^(/(${locales.join('|')}))?(${publicPages.join('|')})?/?$`,
-    'i'
-  );
-  const isPublicPage = publicPathnameRegex.test(req.nextUrl.pathname);
-
-  if (isPublicPage) {
-    return intlMiddleware(req);
-  } else {
-    return (authMiddleware as any)(req);
-  }
-
+  return (authMiddleware as any)(req);
 }
 
 export const config = {

@@ -15,23 +15,63 @@
   "homepage": {
     "title": "Integration Developer Hub"
   },
-  "principals": {
-    "title": "Manage principals",
-    "description": "List and manage all the Principals available to the tools in the Integration Developer Hub.",
-    "manage-button": "Manage principals"
+  "overview": {
+    "title": "Overview"
   },
-  "kafka-configuration": {
-    "title": "Cluster configuration",
-    "description": "View and change all the configuration for a cluster."
+  "brokers": {
+    "title": "Brokers"
   },
-  "kafka-insights": {
-    "title": "Cluster insights",
-    "description": "Get insights about a cluster workload and set up rules to automatically rebalance the workload."
-  },
-  "topic-manager": {
-    "title": "Kafka topics manager",
-    "description": "List and delete topics for a cluster.",
-    "manage-button": "Manage topics"
+  "topics": {
+    "title": "Topics",
+    "create_topic": "Create topic",
+    "empty_topics_body": "To get started, create a topic.",
+    "empty_topics_title": "No topics",
+    "fields": {
+      "cleanup_policy": "Cleanup policy",
+      "compression_type": "Compression type",
+      "delete_retention_ms": "Delete retention time",
+      "file_delete_delay_ms": "File delete delay",
+      "flush_messages": "Flush interval messages",
+      "flush_ms": "Flush interval time",
+      "follower_replication_throttled_replicas": "TODO",
+      "index_interval_bytes": "Index interval size",
+      "leader_replication_throttled_replicas": "TODO",
+      "max_compaction_lag_ms": "Maximum compaction lag time",
+      "max_message_bytes": "Maximum message size",
+      "message_downconversion_enable": "TODO",
+      "message_format_version": "Message format version",
+      "message_timestamp_difference_max_ms": "Maximum message timestamp difference",
+      "message_timestamp_type": "Message timestamp type",
+      "min_cleanable_dirty_ratio": "Minimum cleanable dirty ratio",
+      "min_compaction_lag_ms": "Minimum compaction lag time",
+      "min_insync_replicas": "Minimum in-sync replicas",
+      "name": "Name",
+      "partitions": "Partitions",
+      "preallocate": "Preallocate log segment files",
+      "retention_bytes": "Retention size",
+      "retention_ms": "Retention time",
+      "segment_bytes": "Segment size",
+      "segment_index_bytes": "Segment index size",
+      "segment_jitter_ms": "Segment jitter time",
+      "segment_ms": "Segment time",
+      "topic_name": "Topic name",
+      "unclean_leader_election_enable": "Unclean leader election"
+    },
+    "input_field_invalid_message": "Valid characters include letters from a to z, numbers from 0 to 9, and hyphens ( - ).",
+    "partitions": "$t(create-topic:partitions)",
+    "retention_size": "Retention size",
+    "retention_time": "Retention time",
+    "show_all_options": "Show all available options",
+    "table": {
+      "actions": {
+        "delete": "Delete topic",
+        "edit": "Edit topic configuration"
+      }
+    },
+    "topic_list_table": "Topic list table",
+    "topic_name": "Name",
+    "topic_search": "Search topics button",
+    "topic_search_input": "Topic search input"
   },
   "topic-creator": {
     "title": "Create a Kafka topic",

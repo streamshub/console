@@ -8,15 +8,18 @@ import {
   ToolbarGroup,
   ToolbarItem,
 } from "@/libs/patternfly/react-core";
+import { CogIcon, QuestionCircleIcon } from "@/libs/patternfly/react-icons";
 import logo from "@/public/strimzi-dark.png";
 import { useTranslations } from "next-intl";
 import Image from "next/image";
 import Link from "next/link";
 import { ReactNode } from "react";
 import { UserDropdown } from "./userDropdown";
-import { CogIcon, QuestionCircleIcon } from "@/libs/patternfly/react-icons";
 
-export function AppMasthead({ username, content }: {
+export function AppMasthead({
+  username,
+  content,
+}: {
   username: string;
   content: ReactNode;
 }) {
@@ -38,15 +41,26 @@ export function AppMasthead({ username, content }: {
           <ToolbarContent>
             <ToolbarGroup
               variant="icon-button-group"
-              align={{ default: 'alignRight' }}
-              spacer={{ default: 'spacerNone', md: 'spacerMd' }}
+              align={{ default: "alignRight" }}
+              spacer={{ default: "spacerNone", md: "spacerMd" }}
             >
-              <ToolbarGroup variant="icon-button-group" visibility={{ default: 'hidden', lg: 'visible' }}>
+              <ToolbarGroup
+                variant="icon-button-group"
+                visibility={{ default: "hidden", lg: "visible" }}
+              >
                 <ToolbarItem>
-                  <Button aria-label="Settings" variant={'plain'} icon={<CogIcon />} />
+                  <Button
+                    aria-label="Settings"
+                    variant={"plain"}
+                    icon={<CogIcon />}
+                  />
                 </ToolbarItem>
                 <ToolbarItem>
-                  <Button aria-label="Help" variant={'plain'} icon={<QuestionCircleIcon />} />
+                  <Button
+                    aria-label="Help"
+                    variant={"plain"}
+                    icon={<QuestionCircleIcon />}
+                  />
                 </ToolbarItem>
               </ToolbarGroup>
               <UserDropdown username={username} />
@@ -54,9 +68,7 @@ export function AppMasthead({ username, content }: {
           </ToolbarContent>
         </Toolbar>
       </MastheadMain>
-      <MastheadContent>
-        {content}
-      </MastheadContent>
+      <MastheadContent>{content}</MastheadContent>
     </Masthead>
   );
 }
