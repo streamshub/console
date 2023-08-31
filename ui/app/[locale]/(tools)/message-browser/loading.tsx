@@ -1,9 +1,5 @@
-import { Bullseye, Spinner } from "@/libs/patternfly/react-core";
+import { Loading } from "@/components/loading";
 
-export default function Loading() {
-  return (
-    <Bullseye>
-      <Spinner />
-    </Bullseye>
-  );
+export default function Content() {
+  return <Loading />;
 }

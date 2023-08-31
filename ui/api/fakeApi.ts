@@ -1,5 +1,5 @@
-export function fakeApi<T>(data: T) {
+export function fakeApi<T>(data: T, delay = 500) {
   return new Promise<T>((resolve) => {
-    setTimeout(() => resolve(data), 400);
+    setTimeout(() => resolve(data), delay);
   });
 }

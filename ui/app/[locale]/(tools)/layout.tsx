@@ -1,5 +1,6 @@
-import { getPrincipals } from "@/api/getPrincipals";
+import { getAuthProfiles } from "@/api/getAuthProfiles";
 import { getTools } from "@/api/getTools";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { ApplicationLauncher } from "@/components/applicationLauncher";
 import { AppMasthead } from "@/components/appMasthead";
 import { PrincipalSelector } from "@/components/principalSelector";
@@ -9,7 +10,8 @@ import {
   ToolbarContent,
   ToolbarItem,
 } from "@/libs/patternfly/react-core";
-import { getSession } from "@/utils/session";
+import { getSession, getUser } from "@/utils/session";
+import { getServerSession } from "next-auth";
 import { ReactNode } from "react";
 
 type Props = {
@@ -21,33 +23,24 @@ export default async function ToolsLayout({
   children,
   mastheadContent,
 }: Props) {
+  const user = await getUser();
   const session = await getSession();
 
   const { principalId } = session || {};
 
   const tools = await getTools();
-  const principals = await getPrincipals();
-  const selectedPrincipal = principals.find((p) => principalId == p.id);
+  const principals = await getAuthProfiles();
 
   return (
     <Page
       header={
         <AppMasthead
-          main={
-            <Toolbar>
-              <ToolbarContent>
-                <ToolbarItem>
-                  <PrincipalSelector
-                    principals={principals}
-                    selected={selectedPrincipal}
-                  />
-                </ToolbarItem>
-              </ToolbarContent>
-            </Toolbar>
-          }
+          username={user.username}
           content={
             <Toolbar>
               <ToolbarContent>
+                <ToolbarItem>
+                </ToolbarItem>
                 <ToolbarItem>
                   <ApplicationLauncher tools={tools} />
                 </ToolbarItem>

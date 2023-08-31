@@ -1,16 +1,41 @@
-import { KafkaMessageBrowser } from "@/app/[locale]/(tools)/message-browser/_components/KafkaMessageBrowser";
-import { SelectTopicEmptyState } from "@/app/[locale]/(tools)/message-browser/_components/SelectTopicEmptyState";
+import { getMessages } from "@/api/getMessages";
+import {
+  KafkaMessageBrowser,
+  KafkaMessageBrowserProps,
+} from "@/components/messageBrowser/KafkaMessageBrowser";
+import { NoDataEmptyState } from "@/components/messageBrowser/NoDataEmptyState";
+import { SelectTopicEmptyState } from "@/components/messageBrowser/SelectTopicEmptyState";
 import { getSession } from "@/utils/session";
+import { revalidatePath } from "next/cache";
 
 export default async function Principals() {
   const session = await getSession();
 
   const { topic } = session || {};
+  const data = topic
+    ? await getMessages({
+        partition: 0,
+        limit: 10,
+        offset: 0,
+        timestamp: undefined,
+      })
+    : undefined;
 
-  return topic ? <Table /> : <SelectTopicEmptyState />;
+  switch (true) {
+    case topic === undefined:
+      return <SelectTopicEmptyState />;
+    case topic && data === null:
+      return (
+        <NoDataEmptyState
+          onRefresh={() => revalidatePath("/message-browser")}
+        />
+      );
+    default:
+      return <Table response={data} />;
+  }
 }
 
-function Table() {
+function Table({ response }: Pick<KafkaMessageBrowserProps, "response">) {
   return (
     <KafkaMessageBrowser
       isFirstLoad={false}
@@ -19,20 +44,7 @@ function Table() {
       requiresSearch={false}
       selectedMessage={undefined}
       lastUpdated={new Date()}
-      response={{
-        messages: [],
-        filter: {
-          timestamp: undefined,
-          limit: undefined,
-          partition: undefined,
-          epoch: undefined,
-          offset: undefined,
-        },
-        lastUpdated: new Date(),
-        offsetMax: 100,
-        offsetMin: 0,
-        partitions: 3,
-      }}
+      response={response}
       partition={undefined}
       limit={10}
       filterOffset={undefined}

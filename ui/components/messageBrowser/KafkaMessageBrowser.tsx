@@ -1,6 +1,6 @@
 "use client";
-import { NoResultsEmptyState } from "@/app/[locale]/(tools)/message-browser/_components/NoResultsEmptyState";
 import { Loading } from "@/components/loading/loading";
+import { NoResultsEmptyState } from "@/components/messageBrowser/NoResultsEmptyState";
 import { RefreshButton } from "@/components/refreshButton/refreshButton";
 import { ResponsiveTable } from "@/components/table";
 import {
@@ -23,7 +23,6 @@ import {
 import { parseISO } from "date-fns";
 import { useFormatter, useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
-import { Message, MessageApiResponse } from "../_api/types";
 import { FilterGroup } from "./FilterGroup";
 import { LimitSelector } from "./LimitSelector";
 import { MessageDetails, MessageDetailsProps } from "./MessageDetails";
