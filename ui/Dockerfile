@@ -1,4 +1,4 @@
-FROM registry.access.redhat.com/ubi9/nodejs-18 AS base
+FROM node:18-alpine AS base
 
 # Install dependencies only when needed
 FROM base AS deps
