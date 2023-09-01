@@ -22,7 +22,7 @@
 
         <!-- Dependencies -->
         <quarkus.version>3.2.2.Final</quarkus.version>
-        <jandex-maven-plugin.version>3.1.2</jandex-maven-plugin.version>
+        <jandex-maven-plugin.version>3.1.3</jandex-maven-plugin.version>
         <strimzi-oauth.version>0.13.0</strimzi-oauth.version>
         <hamcrest.version>2.2</hamcrest.version>
 
