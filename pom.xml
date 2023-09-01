@@ -24,7 +24,7 @@
         <quarkus.version>3.2.2.Final</quarkus.version>
         <jandex-maven-plugin.version>3.1.2</jandex-maven-plugin.version>
         <strimzi-oauth.version>0.12.0</strimzi-oauth.version>
-        <hamcrest.version>2.1</hamcrest.version>
+        <hamcrest.version>2.2</hamcrest.version>
 
         <!-- Plugin Versions -->
         <maven.compiler.version>3.9.0</maven.compiler.version>
