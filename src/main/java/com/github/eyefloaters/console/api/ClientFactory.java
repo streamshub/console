@@ -24,11 +24,15 @@ import jakarta.ws.rs.core.UriInfo;
 import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.clients.admin.AdminClientConfig;
+import org.apache.kafka.clients.consumer.Consumer;
+import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.config.SaslConfigs;
 import org.apache.kafka.common.config.SslConfigs;
 import org.apache.kafka.common.security.auth.SecurityProtocol;
 import org.apache.kafka.common.security.oauthbearer.OAuthBearerLoginModule;
 import org.apache.kafka.common.security.plain.PlainLoginModule;
+import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.jboss.logging.Logger;
 
@@ -80,6 +84,46 @@ public class ClientFactory {
     @Produces
     @RequestScoped
     public Supplier<Admin> adminClientSupplier(Function<Map<String, Object>, Admin> adminBuilder) {
+        Map<String, Object> config = buildConfiguration();
+
+        config.put(AdminClientConfig.METADATA_MAX_AGE_CONFIG, "30000");
+        config.put(AdminClientConfig.REQUEST_TIMEOUT_MS_CONFIG, "10000");
+        config.put(AdminClientConfig.DEFAULT_API_TIMEOUT_MS_CONFIG, "10000");
+
+        if (log.isDebugEnabled()) {
+            log.debug("AdminClient configuration:");
+            config.entrySet().forEach(entry -> log.debugf("\t%s = %s", entry.getKey(), entry.getValue()));
+        }
+
+        Admin client = adminBuilder.apply(config);
+        return () -> client;
+    }
+
+    public void adminClientDisposer(@Disposes Supplier<Admin> client) {
+        client.get().close();
+    }
+
+    @Produces
+    @RequestScoped
+    public Supplier<Consumer<byte[], byte[]>> consumerSupplier() {
+        Map<String, Object> config = buildConfiguration();
+
+        config.put(ConsumerConfig.ALLOW_AUTO_CREATE_TOPICS_CONFIG, "false");
+        config.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class.getName());
+        config.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class.getName());
+        config.put(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, 50_000);
+        config.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+
+        @SuppressWarnings("resource") // No leak, it will be closed by the disposer
+        Consumer<byte[], byte[]> consumer = new KafkaConsumer<>(config);
+        return () -> consumer;
+    }
+
+    public void consumerDisposer(@Disposes Supplier<Consumer<byte[], byte[]>> consumer) {
+        consumer.get().close();
+    }
+
+    Map<String, Object> buildConfiguration() {
         String clusterId = requestUri.getPathParameters().getFirst("clusterId");
 
         if (clusterId == null) {
@@ -93,22 +137,10 @@ public class ClientFactory {
         Kafka cluster = KafkaClusterService.findCluster(kafkaInformer, clusterId)
             .orElseThrow(noSuchKafka);
 
-        Map<String, Object> config = KafkaClusterService.externalListeners(cluster)
+        return KafkaClusterService.externalListeners(cluster)
             .findFirst()
             .map(l -> buildConfiguration(cluster, l))
             .orElseThrow(noSuchKafka);
-
-        if (log.isDebugEnabled()) {
-            log.debug("AdminClient configuration:");
-            config.entrySet().forEach(entry -> log.debugf("\t%s = %s", entry.getKey(), entry.getValue()));
-        }
-
-        Admin client = adminBuilder.apply(config);
-        return () -> client;
-    }
-
-    public void adminClientDisposer(@Disposes Supplier<Admin> client) {
-        client.get().close();
     }
 
     Map<String, Object> buildConfiguration(Kafka cluster, ListenerStatus listenerStatus) {
@@ -174,9 +206,6 @@ public class ClientFactory {
 
         config.put(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, listenerStatus.getBootstrapServers());
         config.put(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, protocol.toString());
-        config.put(AdminClientConfig.METADATA_MAX_AGE_CONFIG, "30000");
-        config.put(AdminClientConfig.REQUEST_TIMEOUT_MS_CONFIG, "10000");
-        config.put(AdminClientConfig.DEFAULT_API_TIMEOUT_MS_CONFIG, "10000");
 
         return config;
     }

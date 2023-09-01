@@ -19,6 +19,7 @@ public class CompletionExceptionHandler implements ExceptionMapper<CompletionExc
 
     static {
         MAPPERS.put(NotFoundException.class, new NotFoundExceptionHandler());
+        MAPPERS.put(org.apache.kafka.common.errors.UnknownTopicIdException.class, new UnknownTopicIdExceptionHandler());
         MAPPERS.put(org.apache.kafka.common.errors.UnknownTopicOrPartitionException.class, new UnknownTopicOrPartitionExceptionHandler());
         MAPPERS.put(TimeoutException.class, new TimeoutExceptionHandler());
     }
