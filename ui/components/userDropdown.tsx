@@ -37,7 +37,9 @@ export function UserDropdown({ username }: { username: string }) {
         )}
       >
         <DropdownList>
-          <DropdownItem onClick={() => signOut()}>Logout</DropdownItem>
+          <DropdownItem onClick={() => signOut({ callbackUrl: "/" })}>
+            Logout
+          </DropdownItem>
         </DropdownList>
       </Dropdown>
     </ToolbarItem>

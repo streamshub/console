@@ -1,6 +1,7 @@
 namespace NodeJS {
   interface ProcessEnv {
-    SESSION_COOKIE: string;
+    NEXTAUTH_URL: string;
+    NEXTAUTH_SECRET: string;
     SESSION_SECRET: string;
     BACKEND_URL: string;
   }

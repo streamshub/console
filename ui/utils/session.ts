@@ -4,8 +4,9 @@ import { getServerSession } from "next-auth";
 import { cookies } from "next/headers";
 
 export async function getSession() {
+  const user = await getUser();
   const cookieStore = cookies();
-  const encryptedSession = cookieStore.get(process.env.SESSION_COOKIE)?.value;
+  const encryptedSession = cookieStore.get(user.username)?.value;
 
   try {
     const session = encryptedSession
@@ -20,12 +21,13 @@ export async function getSession() {
 }
 
 export async function setSession(data: any) {
+  const user = await getUser();
   const encryptedSession = await sealData(data, {
     password: process.env.SESSION_SECRET,
   });
 
   cookies().set({
-    name: process.env.SESSION_COOKIE,
+    name: user.username,
     value: encryptedSession,
     httpOnly: true,
   });

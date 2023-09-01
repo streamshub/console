@@ -5,7 +5,7 @@ export default function DefaultBreadcrumb() {
   return (
     <Breadcrumb>
       <BreadcrumbLink href={"/"}>Authorization Profiles</BreadcrumbLink>
-      <BreadcrumbItem isActive>Brokers</BreadcrumbItem>
+      <BreadcrumbItem isActive>New Authorization Profile</BreadcrumbItem>
     </Breadcrumb>
   );
 }
