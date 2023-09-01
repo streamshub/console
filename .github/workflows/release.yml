@@ -30,6 +30,8 @@ jobs:
 
       - name: Push Release Tag
         run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git tag -a ${{steps.metadata.outputs.current-version}} -m "v${{steps.metadata.outputs.current-version}}"
           git push
           git push --tags
