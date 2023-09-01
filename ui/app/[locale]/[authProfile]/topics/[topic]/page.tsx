@@ -1,3 +1,4 @@
+import { getAuthProfile } from "@/api/auth";
 import { getTopic, Topic } from "@/api/topics";
 import { PageSection, Text, Title } from "@/libs/patternfly/react-core";
 
@@ -6,7 +7,8 @@ export default async function TopicPage({
 }: {
   params: { authProfile: string; topic: string };
 }) {
-  const topic = await getTopic(params.authProfile, params.topic);
+  const authProfile = await getAuthProfile(params.authProfile);
+  const topic = await getTopic(authProfile.attributes.cluster.id, params.topic);
   return <TopicContent topic={topic} />;
 }
 

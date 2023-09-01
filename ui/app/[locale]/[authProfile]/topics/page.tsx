@@ -1,3 +1,4 @@
+import { getAuthProfile } from "@/api/auth";
 import { getTopics, Topic } from "@/api/topics";
 import { Topics } from "@/components/topics";
 import { PageSection, Title } from "@/libs/patternfly/react-core";
@@ -9,8 +10,8 @@ export default async function TopicsPage({
   params: { authProfile: string };
 }) {
   const auth = await getUser();
-  const topics = await getTopics(params.authProfile);
-  console.log(topics);
+  const authProfile = await getAuthProfile(params.authProfile);
+  const topics = await getTopics(authProfile.attributes.cluster.id);
   return (
     <TopicsContent canCreate={auth.username === "admin"} topics={topics} />
   );

@@ -1,23 +1,22 @@
-
-export async function getTools(isAdmin: boolean): Promise<Tool[]> {
+export async function getTools(isAdmin: boolean) {
   return [
     {
       url: "/overview",
       title: "overview.title" as const,
       requiresAdmin: true,
-      enabled: false
+      enabled: false,
     },
     {
       url: "/brokers",
       title: "brokers.title" as const,
       requiresAdmin: true,
-      enabled: false
+      enabled: false,
     },
     {
       url: "/topics",
       title: "topics.title" as const,
       requiresAdmin: false,
-      enabled: false
+      enabled: false,
     },
-  ].filter(t => isAdmin === false ? t.requiresAdmin === false : true);
+  ].filter((t) => (!isAdmin ? !t.requiresAdmin : true));
 }
