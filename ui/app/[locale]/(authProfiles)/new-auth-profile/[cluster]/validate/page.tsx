@@ -19,6 +19,7 @@ import {
   Title,
 } from "@/libs/patternfly/react-core";
 import { CogsIcon } from "@/libs/patternfly/react-icons";
+import { Route } from "next";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState, useTransition } from "react";
 
@@ -137,7 +138,7 @@ function ValidationProgress({
               onClick={async () => {
                 const profile = await createAuthProfile(cluster, username);
                 startTransition(() => {
-                  router.push(`/${profile.id}`);
+                  router.push(`/${profile.id}` as Route);
                 });
               }}
               isDisabled={percentValidated !== 100 || isPending}

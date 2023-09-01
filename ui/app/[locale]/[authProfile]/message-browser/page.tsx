@@ -1,4 +1,3 @@
-import { getMessages } from "@/api/getMessages";
 import {
   KafkaMessageBrowser,
   KafkaMessageBrowserProps,
@@ -12,14 +11,7 @@ export default async function Principals() {
   const session = await getSession();
 
   const { topic } = session || {};
-  const data = topic
-    ? await getMessages({
-        partition: 0,
-        limit: 10,
-        offset: 0,
-        timestamp: undefined,
-      })
-    : undefined;
+  const data = null; // TODO
 
   switch (true) {
     case topic === undefined:

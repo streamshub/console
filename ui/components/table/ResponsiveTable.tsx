@@ -14,14 +14,13 @@ import {
   Thead,
   Tr,
 } from "@patternfly/react-table";
+import { useTranslations } from "next-intl";
 import type {
-  FunctionComponent,
   PropsWithChildren,
   ReactElement,
   VoidFunctionComponent,
 } from "react";
 import { forwardRef, memo, useCallback, useMemo, useState } from "react";
-import { useTranslations } from "next-intl";
 import useResizeObserver from "use-resize-observer";
 import "./ResponsiveTable.css";
 
@@ -375,7 +374,7 @@ const TableSkeleton: VoidFunctionComponent<{
         <Skeleton
           screenreaderText={
             index === 0
-              ? t("Table:skeleton_loader_screenreader_text")
+              ? t("Table.skeleton_loader_screenreader_text")
               : undefined
           }
         />
