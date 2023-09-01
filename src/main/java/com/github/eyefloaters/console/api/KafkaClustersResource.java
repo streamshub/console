@@ -6,6 +6,8 @@ import java.util.function.Consumer;
 
 import jakarta.inject.Inject;
 import jakarta.inject.Named;
+import jakarta.validation.Valid;
+import jakarta.ws.rs.BeanParam;
 import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
@@ -14,6 +16,7 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriInfo;
 
 import org.eclipse.microprofile.openapi.annotations.enums.Explode;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
@@ -24,9 +27,11 @@ import org.eclipse.microprofile.openapi.annotations.responses.APIResponseSchema;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 import com.github.eyefloaters.console.api.model.KafkaCluster;
+import com.github.eyefloaters.console.api.model.ListFetchParams;
 import com.github.eyefloaters.console.api.service.KafkaClusterService;
 import com.github.eyefloaters.console.api.support.ErrorCategory;
 import com.github.eyefloaters.console.api.support.FieldFilter;
+import com.github.eyefloaters.console.api.support.ListRequestContext;
 import com.github.eyefloaters.console.api.support.StringEnumeration;
 
 @Path("/api/kafkas")
@@ -34,6 +39,9 @@ import com.github.eyefloaters.console.api.support.StringEnumeration;
 public class KafkaClustersResource {
 
     static final String FIELDS_PARAM = "fields[kafkas]";
+
+    @Inject
+    UriInfo uriInfo;
 
     @Inject
     KafkaClusterService clusterService;
@@ -58,6 +66,8 @@ public class KafkaClustersResource {
                     source = FIELDS_PARAM,
                     allowedValues = {
                         KafkaCluster.Fields.NAME,
+                        KafkaCluster.Fields.NAMESPACE,
+                        KafkaCluster.Fields.CREATION_TIMESTAMP,
                         KafkaCluster.Fields.BOOTSTRAP_SERVERS,
                         KafkaCluster.Fields.AUTH_TYPE
                     },
@@ -72,14 +82,23 @@ public class KafkaClustersResource {
                             implementation = String.class,
                             enumeration = {
                                 KafkaCluster.Fields.NAME,
+                                KafkaCluster.Fields.NAMESPACE,
+                                KafkaCluster.Fields.CREATION_TIMESTAMP,
                                 KafkaCluster.Fields.BOOTSTRAP_SERVERS,
                                 KafkaCluster.Fields.AUTH_TYPE
                             }))
-            List<String> fields) {
+            List<String> fields,
+
+            @Valid
+            @BeanParam
+            ListFetchParams listParams) {
 
         requestedFields.accept(fields);
 
-        var responseEntity = new KafkaCluster.ListResponse(clusterService.listClusters());
+        ListRequestContext listSupport = new ListRequestContext(uriInfo.getRequestUri(), listParams);
+        var clusterList = clusterService.listClusters(listSupport);
+        var responseEntity = new KafkaCluster.ListResponse(clusterList);
+
         return Response.ok(responseEntity).build();
     }
 
@@ -101,6 +120,8 @@ public class KafkaClustersResource {
                     source = FIELDS_PARAM,
                     allowedValues = {
                         KafkaCluster.Fields.NAME,
+                        KafkaCluster.Fields.NAMESPACE,
+                        KafkaCluster.Fields.CREATION_TIMESTAMP,
                         KafkaCluster.Fields.NODES,
                         KafkaCluster.Fields.CONTROLLER,
                         KafkaCluster.Fields.AUTHORIZED_OPERATIONS,
@@ -117,6 +138,8 @@ public class KafkaClustersResource {
                             implementation = String.class,
                             enumeration = {
                                 KafkaCluster.Fields.NAME,
+                                KafkaCluster.Fields.NAMESPACE,
+                                KafkaCluster.Fields.CREATION_TIMESTAMP,
                                 KafkaCluster.Fields.NODES,
                                 KafkaCluster.Fields.CONTROLLER,
                                 KafkaCluster.Fields.AUTHORIZED_OPERATIONS,

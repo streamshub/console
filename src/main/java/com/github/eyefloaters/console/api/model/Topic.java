@@ -1,14 +1,21 @@
 package com.github.eyefloaters.console.api.model;
 
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 import com.fasterxml.jackson.annotation.JsonFilter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.github.eyefloaters.console.api.support.ComparatorBuilder;
+
+import static java.util.Comparator.comparing;
+import static java.util.Comparator.nullsLast;
 
 @Schema(name = "TopicAttributes")
 @JsonFilter("fieldFilter")
@@ -20,12 +27,52 @@ public class Topic {
         public static final String PARTITIONS = "partitions";
         public static final String AUTHORIZED_OPERATIONS = "authorizedOperations";
         public static final String CONFIGS = "configs";
+        static final Pattern CONFIG_KEY = Pattern.compile("^configs\\[([^\\]]+)\\]$");
+
+        static final Comparator<Topic> ID_COMPARATOR =
+                comparing(Topic::getId);
+
+        static final Comparator<ConfigEntry> CONFIG_COMPARATOR =
+                nullsLast(comparing(ConfigEntry::getName, nullsLast(Comparable::compareTo)))
+                    .thenComparing(ConfigEntry::getType, nullsLast(Comparable::compareTo))
+                    .thenComparing(nullsLast(ConfigEntry::compareValues));
+
+        static final Map<String, Map<Boolean, Comparator<Topic>>> COMPARATORS = ComparatorBuilder.bidirectional(
+                Map.of("id", ID_COMPARATOR, NAME, comparing(Topic::getName)));
 
         public static final String LIST_DEFAULT = NAME + ", " + INTERNAL;
         public static final String DESCRIBE_DEFAULT =
                 NAME + ", " + INTERNAL + ", " + PARTITIONS + ", " + AUTHORIZED_OPERATIONS;
 
         private Fields() {
+            // Prevent instances
+        }
+
+        public static Comparator<Topic> defaultComparator() {
+            return ID_COMPARATOR;
+        }
+
+        public static Comparator<Topic> comparator(String fieldName, boolean descending) {
+            if (COMPARATORS.containsKey(fieldName)) {
+                return COMPARATORS.get(fieldName).get(descending);
+            }
+
+            Matcher configMatcher = CONFIG_KEY.matcher(fieldName);
+
+            if (configMatcher.matches()) {
+                String configKey = configMatcher.group(1);
+                Comparator<Topic> configComparator = comparing(
+                        t -> t.getConfigEntry(configKey),
+                        CONFIG_COMPARATOR);
+
+                if (descending) {
+                    configComparator = configComparator.reversed();
+                }
+
+                return configComparator;
+            }
+
+            return null;
         }
     }
 
@@ -132,4 +179,13 @@ public class Topic {
     public Either<Map<String, ConfigEntry>, Error> getConfigs() {
         return configs;
     }
+
+    ConfigEntry getConfigEntry(String key) {
+        if (configs != null && configs.isPrimaryPresent()) {
+            return configs.getPrimary().get(key);
+        }
+
+        return null;
+    }
+
 }

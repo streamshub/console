@@ -30,10 +30,6 @@ public class BrokersResource {
     @Inject
     BrokerService brokerService;
 
-    @Parameter(description = "Cluster identifier")
-    @PathParam("clusterId")
-    String clusterId;
-
     @GET
     @Path("{nodeId}/configs")
     @Produces(MediaType.APPLICATION_JSON)
@@ -42,6 +38,10 @@ public class BrokersResource {
     @APIResponse(responseCode = "500", ref = "ServerError")
     @APIResponse(responseCode = "504", ref = "ServerTimeout")
     public CompletionStage<Response> describeConfigs(
+            @Parameter(description = "Cluster identifier")
+            @PathParam("clusterId")
+            String clusterId,
+
             @PathParam("nodeId")
             @Parameter(description = "Node identifier")
             String nodeId) {

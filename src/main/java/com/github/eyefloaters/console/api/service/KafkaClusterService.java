@@ -19,6 +19,8 @@ import org.apache.kafka.common.KafkaFuture;
 
 import com.github.eyefloaters.console.api.model.KafkaCluster;
 import com.github.eyefloaters.console.api.model.Node;
+import com.github.eyefloaters.console.api.support.ComparatorBuilder;
+import com.github.eyefloaters.console.api.support.ListRequestContext;
 
 import io.fabric8.kubernetes.client.informers.SharedIndexInformer;
 import io.strimzi.api.kafka.model.Kafka;
@@ -38,18 +40,16 @@ public class KafkaClusterService {
     @Inject
     Supplier<Admin> clientSupplier;
 
-    public List<KafkaCluster> listClusters() {
+    final ComparatorBuilder<KafkaCluster> comparators =
+            new ComparatorBuilder<>(KafkaCluster.Fields::comparator, KafkaCluster.Fields.defaultComparator());
+
+    public List<KafkaCluster> listClusters(ListRequestContext listSupport) {
         return kafkaInformer.getStore()
                 .list()
                 .stream()
-                .flatMap(k -> externalListeners(k)
-                        .map(l -> {
-                            KafkaCluster c = new KafkaCluster(k.getStatus().getClusterId(), null, null, null);
-                            c.setName(k.getMetadata().getName());
-                            c.setBootstrapServers(l.getBootstrapServers());
-                            c.setAuthType(getAuthType(k, l).orElse(null));
-                            return c;
-                        }))
+                .map(k -> externalListeners(k).findFirst().map(l -> toKafkaCluster(k, l)).orElse(null))
+                .filter(Objects::nonNull)
+                .sorted(comparators.fromSort(listSupport.getSort()))
                 .toList();
     }
 
@@ -73,11 +73,23 @@ public class KafkaClusterService {
             .toCompletionStage();
     }
 
+    KafkaCluster toKafkaCluster(Kafka kafka, ListenerStatus listener) {
+        KafkaCluster cluster = new KafkaCluster(kafka.getStatus().getClusterId(), null, null, null);
+        cluster.setName(kafka.getMetadata().getName());
+        cluster.setNamespace(kafka.getMetadata().getNamespace());
+        cluster.setCreationTimestamp(kafka.getMetadata().getCreationTimestamp());
+        cluster.setBootstrapServers(listener.getBootstrapServers());
+        cluster.setAuthType(getAuthType(kafka, listener).orElse(null));
+        return cluster;
+    }
+
     KafkaCluster addKafkaResourceData(KafkaCluster cluster) {
-        findCluster(kafkaInformer, cluster.getClusterId())
+        findCluster(kafkaInformer, cluster.getId())
             .ifPresent(kafka -> externalListeners(kafka)
                     .forEach(l -> {
                         cluster.setName(kafka.getMetadata().getName());
+                        cluster.setNamespace(kafka.getMetadata().getNamespace());
+                        cluster.setCreationTimestamp(kafka.getMetadata().getCreationTimestamp());
                         cluster.setBootstrapServers(l.getBootstrapServers());
                         cluster.setAuthType(getAuthType(kafka, l).orElse(null));
                     }));

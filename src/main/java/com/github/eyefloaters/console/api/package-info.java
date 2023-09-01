@@ -35,10 +35,12 @@
                                             }
                                             """))),
                     @APIResponse(name = "NotAuthenticated",
+                            description = "Client request has not been completed because it lacks valid authentication credentials for the requested resource",
                             content = @Content(
                                     mediaType = MediaType.APPLICATION_JSON,
                                     schema = @Schema(implementation = ErrorResponse.class))),
                     @APIResponse(name = "NotAuthorized",
+                            description = "The server understands the request but refuses to authorize it.",
                             content = @Content(
                                     mediaType = MediaType.APPLICATION_JSON,
                                     schema = @Schema(implementation = ErrorResponse.class))),
@@ -61,10 +63,6 @@
                                               ]
                                             }
                                             """))),
-                    @APIResponse(name = "Conflict",
-                            content = @Content(
-                                    mediaType = MediaType.APPLICATION_JSON,
-                                    schema = @Schema(implementation = ErrorResponse.class))),
                     @APIResponse(name = "ServerError",
                             description = "Internal server error",
                             content = @Content(
@@ -105,20 +103,20 @@
                                             """))),
                 },
                 examples = {
-                    @ExampleObject(name = "Earliest Offset",
+                    @ExampleObject(name = "EarliestOffset",
                             value = "earliest",
                             description = "Used to retrieve the earliest offset of a partition"),
-                    @ExampleObject(name = "Latest Offset",
+                    @ExampleObject(name = "LatestOffset",
                             value = "latest",
                             description = "Used to retrieve the latest offset of a partition"),
-                    @ExampleObject(name = "Max Timestamp",
+                    @ExampleObject(name = "MaxTimestamp",
                             value = "maxTimestamp",
                             description = """
                             Used to retrieve the offset with the largest timestamp of a partition
                             as message timestamps can be specified client side this may not match
                             the log end offset returned by LatestSpec
                             """),
-                    @ExampleObject(name = "Literal Timestamp",
+                    @ExampleObject(name = "LiteralTimestamp",
                             value = "2023-01-01T00:00:00Z",
                             description = """
                             Used to retrieve the earliest offset whose timestamp is greater than

@@ -14,6 +14,7 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import jakarta.inject.Inject;
 import jakarta.ws.rs.core.Response.Status;
@@ -35,6 +36,8 @@ import org.eclipse.microprofile.config.Config;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.stubbing.Answer;
 
 import com.github.eyefloaters.console.kafka.systemtest.TestPlainProfile;
@@ -50,8 +53,6 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.quarkus.test.kubernetes.client.KubernetesServerTestResource;
 import io.strimzi.api.kafka.model.Kafka;
-import io.strimzi.api.kafka.model.KafkaBuilder;
-import io.strimzi.api.kafka.model.listener.arraylistener.KafkaListenerType;
 
 import static com.github.eyefloaters.console.test.TestHelper.whenRequesting;
 import static org.hamcrest.Matchers.aMapWithSize;
@@ -59,6 +60,7 @@ import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.anEmptyMap;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.everyItem;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.hasKey;
@@ -109,55 +111,12 @@ class TopicsResourceIT {
         clusterId2 = UUID.randomUUID().toString();
 
         client.resources(Kafka.class).delete();
-        client.resources(Kafka.class).resource(new KafkaBuilder()
-                .withNewMetadata()
-                    .withName("test-kafka1")
-                .endMetadata()
-                .withNewSpec()
-                    .withNewKafka()
-                        .addNewListener()
-                            .withName("listener0")
-                            .withType(KafkaListenerType.NODEPORT)
-                        .endListener()
-                    .endKafka()
-                .endSpec()
-                .withNewStatus()
-                    .withClusterId(clusterId1)
-                    .addNewListener()
-                        .withName("listener0")
-                        .addNewAddress()
-                            .withHost(bootstrapServers.getHost())
-                            .withPort(bootstrapServers.getPort())
-                        .endAddress()
-                    .endListener()
-                .endStatus()
-                .build())
+        client.resources(Kafka.class)
+            .resource(utils.buildKafkaResource("test-kafka1", clusterId1, bootstrapServers))
             .create();
-
         // Second cluster is offline/non-existent
-        client.resources(Kafka.class).resource(new KafkaBuilder()
-                .withNewMetadata()
-                    .withName("test-kafka2")
-                .endMetadata()
-                .withNewSpec()
-                    .withNewKafka()
-                        .addNewListener()
-                            .withName("listener0")
-                            .withType(KafkaListenerType.NODEPORT)
-                        .endListener()
-                    .endKafka()
-                .endSpec()
-                .withNewStatus()
-                    .withClusterId(clusterId2)
-                    .addNewListener()
-                        .withName("listener0")
-                        .addNewAddress()
-                            .withHost(randomBootstrapServers.getHost())
-                            .withPort(randomBootstrapServers.getPort())
-                        .endAddress()
-                    .endListener()
-                .endStatus()
-                .build())
+        client.resources(Kafka.class)
+            .resource(utils.buildKafkaResource("test-kafka2", clusterId2, randomBootstrapServers))
             .create();
     }
 
@@ -320,6 +279,82 @@ class TopicsResourceIT {
             .body("data.attributes.partitions[0][0].offset.timestamp", is(second.toString()));
     }
 
+    @ParameterizedTest
+    @CsvSource({
+        "'name', 't1,t2,t3,t4,t5'",
+        "'-name', 't5,t4,t3,t2,t1'"
+    })
+    void testListTopicsSortedByName(String sortParam, String expectedNameList) {
+        String randomSuffix = UUID.randomUUID().toString();
+
+        List<String> topicNames = IntStream.rangeClosed(1, 5)
+                .mapToObj(i -> "t" + i + "-" + randomSuffix)
+                .collect(Collectors.toList());
+
+        topicUtils.createTopics(clusterId1, topicNames, 1);
+
+        String[] expectedNames = Stream.of(expectedNameList.split(","))
+                .map(name -> name + "-" + randomSuffix)
+                .toArray(String[]::new);
+
+        whenRequesting(req -> req.queryParam("sort", sortParam).get("", clusterId1))
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()))
+            .body("data.size()", equalTo(topicNames.size()))
+            .body("data.attributes.name", contains(expectedNames));
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        "'',  'max.message.bytes', '1000000,2000000,3000000'",
+        "'-', 'max.message.bytes', '3000000,2000000,1000000'",
+        "'',  'min.cleanable.dirty.ratio', '0.4,0.5,0.6'",
+        "'-', 'min.cleanable.dirty.ratio', '0.6,0.5,0.4'",
+        "'',  'compression.type', 'gzip,producer,zstd'",
+        "'-', 'compression.type', 'zstd,producer,gzip'",
+    })
+    void testListTopicsSortedByConfigValue(String sortPrefix, String sortParam, String expectedValueList) {
+        String randomSuffix = UUID.randomUUID().toString();
+        String[] expectedValues = expectedValueList.split(",");
+
+        IntStream.rangeClosed(0, 2)
+            .forEach(i -> {
+                String name = "t" + i + "-" + randomSuffix;
+                Map<String, String> configs = Map.of(sortParam, expectedValues[i]);
+                topicUtils.createTopics(clusterId1, List.of(name), 1, configs);
+            });
+
+        whenRequesting(req -> req
+                .queryParam("sort", sortPrefix + "configs[" + sortParam + "]")
+                .queryParam("fields[topics]", "name,configs")
+                .get("", clusterId1))
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()))
+            .body("data.size()", equalTo(expectedValues.length))
+            .body("data.attributes.configs.\"" + sortParam + "\".value", contains(expectedValues));
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        "configs[random.unknown.config]",
+        "unknown"
+    })
+    void testListTopicsSortedByUnknownField(String sortKey) {
+        List<String> topicNames = IntStream.range(0, 5)
+                .mapToObj(i -> UUID.randomUUID().toString())
+                .collect(Collectors.toList());
+
+        var topicIds = topicUtils.createTopics(clusterId1, topicNames, 1);
+        String[] sortedIds = topicIds.values().stream().sorted().toArray(String[]::new);
+
+        whenRequesting(req -> req
+                .queryParam("sort", sortKey)
+                .get("", clusterId1))
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()))
+            .body("data.size()", equalTo(topicNames.size()))
+            .body("data.id", contains(sortedIds));
+    }
 
     @Test
     void testDescribeTopicWithNameAndConfigsIncluded() {

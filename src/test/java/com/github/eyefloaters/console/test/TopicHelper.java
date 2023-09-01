@@ -75,11 +75,16 @@ public class TopicHelper {
     }
 
     public Map<String, String> createTopics(String clusterId, List<String> names, int numPartitions) {
+        return createTopics(clusterId, names, numPartitions, null);
+    }
+
+    public Map<String, String> createTopics(String clusterId, List<String> names, int numPartitions, Map<String, String> configs) {
         Map<String, String> topicIds = null;
 
         try (Admin admin = Admin.create(adminConfig)) {
             var result = admin.createTopics(names.stream()
-                    .map(name ->  new NewTopic(name, Optional.of(numPartitions), Optional.empty()))
+                    .map(name ->  new NewTopic(name, Optional.of(numPartitions), Optional.empty())
+                            .configs(configs))
                     .toList());
 
             result.all()

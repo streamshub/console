@@ -14,6 +14,8 @@ import org.eclipse.microprofile.config.Config;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.Mockito;
 
 import com.github.eyefloaters.console.kafka.systemtest.TestPlainProfile;
@@ -29,8 +31,7 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.quarkus.test.kubernetes.client.KubernetesServerTestResource;
 import io.strimzi.api.kafka.model.Kafka;
-import io.strimzi.api.kafka.model.KafkaBuilder;
-import io.strimzi.api.kafka.model.listener.arraylistener.KafkaListenerType;
+import io.strimzi.api.kafka.model.listener.KafkaListenerAuthenticationCustomBuilder;
 import io.strimzi.test.container.StrimziKafkaContainer;
 
 import static com.github.eyefloaters.console.test.TestHelper.whenRequesting;
@@ -77,58 +78,15 @@ class KafkaClustersResourceIT {
         clusterId2 = UUID.randomUUID().toString();
 
         client.resources(Kafka.class).delete();
-        client.resources(Kafka.class).resource(new KafkaBuilder()
-                .withNewMetadata()
-                    .withName("test-kafka1")
-                .endMetadata()
-                .withNewSpec()
-                    .withNewKafka()
-                        .addNewListener()
-                            .withName("listener0")
-                            .withType(KafkaListenerType.NODEPORT)
-                            .withNewKafkaListenerAuthenticationCustomAuth()
-                                .withSasl()
-                            .endKafkaListenerAuthenticationCustomAuth()
-                        .endListener()
-                    .endKafka()
-                .endSpec()
-                .withNewStatus()
-                    .withClusterId(clusterId1)
-                    .addNewListener()
-                        .withName("listener0")
-                        .addNewAddress()
-                            .withHost(bootstrapServers.getHost())
-                            .withPort(bootstrapServers.getPort())
-                        .endAddress()
-                    .endListener()
-                .endStatus()
-                .build())
+        client.resources(Kafka.class)
+            .resource(utils.buildKafkaResource("test-kafka1", clusterId1, bootstrapServers,
+                new KafkaListenerAuthenticationCustomBuilder()
+                    .withSasl()
+                .build()))
             .create();
-
         // Second cluster is offline/non-existent
-        client.resources(Kafka.class).resource(new KafkaBuilder()
-                .withNewMetadata()
-                    .withName("test-kafka2")
-                .endMetadata()
-                .withNewSpec()
-                    .withNewKafka()
-                        .addNewListener()
-                            .withName("listener0")
-                            .withType(KafkaListenerType.NODEPORT)
-                        .endListener()
-                    .endKafka()
-                .endSpec()
-                .withNewStatus()
-                    .withClusterId(clusterId2)
-                    .addNewListener()
-                        .withName("listener0")
-                        .addNewAddress()
-                            .withHost(randomBootstrapServers.getHost())
-                            .withPort(randomBootstrapServers.getPort())
-                        .endAddress()
-                    .endListener()
-                .endStatus()
-                .build())
+        client.resources(Kafka.class)
+            .resource(utils.buildKafkaResource("test-kafka2", clusterId2, randomBootstrapServers))
             .create();
     }
 
@@ -189,6 +147,19 @@ class KafkaClustersResourceIT {
             .body("errors.size()", is(1))
             .body("errors.status", contains("500"))
             .body("errors.code", contains("5001"));
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        "'name' , 'test-kafka1,test-kafka2'",
+        "'-name', 'test-kafka2,test-kafka1'"
+    })
+    void testListClustersSortedByName(String sortParam, String expectedNameList) {
+        whenRequesting(req -> req.queryParam("sort", sortParam).get())
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()))
+            .body("data.size()", equalTo(2))
+            .body("data.attributes.name", contains(expectedNameList.split(",")));
     }
 
     @Test

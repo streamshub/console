@@ -6,6 +6,7 @@ import java.util.function.Consumer;
 
 import jakarta.inject.Inject;
 import jakarta.inject.Named;
+import jakarta.ws.rs.BeanParam;
 import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
@@ -14,6 +15,7 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriInfo;
 
 import org.eclipse.microprofile.openapi.annotations.enums.Explode;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
@@ -24,12 +26,14 @@ import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponseSchema;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
+import com.github.eyefloaters.console.api.model.ListFetchParams;
 import com.github.eyefloaters.console.api.model.Topic;
 import com.github.eyefloaters.console.api.service.TopicService;
 import com.github.eyefloaters.console.api.support.ErrorCategory;
 import com.github.eyefloaters.console.api.support.FieldFilter;
 import com.github.eyefloaters.console.api.support.KafkaOffsetSpec;
 import com.github.eyefloaters.console.api.support.KafkaUuid;
+import com.github.eyefloaters.console.api.support.ListRequestContext;
 import com.github.eyefloaters.console.api.support.StringEnumeration;
 
 @Path("/api/kafkas/{clusterId}/topics")
@@ -37,6 +41,9 @@ import com.github.eyefloaters.console.api.support.StringEnumeration;
 public class TopicsResource {
 
     static final String FIELDS_PARAM = "fields[topics]";
+
+    @Inject
+    UriInfo uriInfo;
 
     @Inject
     TopicService topicService;
@@ -48,10 +55,6 @@ public class TopicsResource {
     @Inject
     @Named("requestedFields")
     Consumer<List<String>> requestedFields;
-
-    @Parameter(description = "Cluster identifier")
-    @PathParam("clusterId")
-    String clusterId;
 
 //    @POST
 //    @Consumes(MediaType.APPLICATION_JSON)
@@ -79,6 +82,10 @@ public class TopicsResource {
     @APIResponse(responseCode = "500", ref = "ServerError")
     @APIResponse(responseCode = "504", ref = "ServerTimeout")
     public CompletionStage<Response> listTopics(
+            @Parameter(description = "Cluster identifier")
+            @PathParam("clusterId")
+            String clusterId,
+
             @QueryParam(FIELDS_PARAM)
             @DefaultValue(Topic.Fields.LIST_DEFAULT)
             @StringEnumeration(
@@ -113,16 +120,20 @@ public class TopicsResource {
             @Parameter(
                     schema = @Schema(ref = "OffsetSpec"),
                     examples = {
-                        @ExampleObject(ref = "Earliest Offset"),
-                        @ExampleObject(ref = "Latest Offset"),
-                        @ExampleObject(ref = "Max Timestamp"),
-                        @ExampleObject(ref = "Literal Timestamp")
+                        @ExampleObject(ref = "EarliestOffset"),
+                        @ExampleObject(ref = "LatestOffset"),
+                        @ExampleObject(ref = "MaxTimestamp"),
+                        @ExampleObject(ref = "LiteralTimestamp")
                     })
-            String offsetSpec) {
+            String offsetSpec,
+
+            @BeanParam
+            ListFetchParams listParams) {
 
         requestedFields.accept(fields);
+        ListRequestContext listSupport = new ListRequestContext(uriInfo.getRequestUri(), listParams);
 
-        return topicService.listTopics(fields, offsetSpec)
+        return topicService.listTopics(fields, offsetSpec, listSupport)
                 .thenApply(Topic.ListResponse::new)
                 .thenApply(Response::ok)
                 .thenApply(Response.ResponseBuilder::build);
@@ -136,6 +147,10 @@ public class TopicsResource {
     @APIResponse(responseCode = "500", ref = "ServerError")
     @APIResponse(responseCode = "504", ref = "ServerTimeout")
     public CompletionStage<Response> describeTopic(
+            @Parameter(description = "Cluster identifier")
+            @PathParam("clusterId")
+            String clusterId,
+
             @PathParam("topicId")
             @KafkaUuid(category = ErrorCategory.RESOURCE_NOT_FOUND, message = "No such topic")
             @Parameter(description = "Topic identifier")
@@ -175,10 +190,10 @@ public class TopicsResource {
             @Parameter(
                     schema = @Schema(ref = "OffsetSpec"),
                     examples = {
-                        @ExampleObject(ref = "Earliest Offset"),
-                        @ExampleObject(ref = "Latest Offset"),
-                        @ExampleObject(ref = "Max Timestamp"),
-                        @ExampleObject(ref = "Literal Timestamp")
+                        @ExampleObject(ref = "EarliestOffset"),
+                        @ExampleObject(ref = "LatestOffset"),
+                        @ExampleObject(ref = "MaxTimestamp"),
+                        @ExampleObject(ref = "LiteralTimestamp")
                     })
             String offsetSpec) {
 

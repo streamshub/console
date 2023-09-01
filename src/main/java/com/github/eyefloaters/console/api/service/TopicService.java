@@ -1,8 +1,8 @@
 package com.github.eyefloaters.console.api.service;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -30,7 +30,9 @@ import org.apache.kafka.common.errors.UnknownTopicOrPartitionException;
 import com.github.eyefloaters.console.api.model.Either;
 import com.github.eyefloaters.console.api.model.OffsetInfo;
 import com.github.eyefloaters.console.api.model.Topic;
+import com.github.eyefloaters.console.api.support.ComparatorBuilder;
 import com.github.eyefloaters.console.api.support.KafkaOffsetSpec;
+import com.github.eyefloaters.console.api.support.ListRequestContext;
 
 @ApplicationScoped
 public class TopicService {
@@ -40,6 +42,9 @@ public class TopicService {
 
     @Inject
     ConfigService configService;
+
+    final ComparatorBuilder<Topic> comparators =
+            new ComparatorBuilder<>(Topic.Fields::comparator, Topic.Fields.defaultComparator());
 
 //    public CompletionStage<NewTopic> createTopic(NewTopic topic) {
 //        Admin adminClient = clientSupplier.get();
@@ -66,15 +71,22 @@ public class TopicService {
 //                .toCompletionStage();
 //    }
 
-    public CompletionStage<List<Topic>> listTopics(List<String> fields, String offsetSpec) {
+    public CompletionStage<List<Topic>> listTopics(List<String> fields, String offsetSpec, ListRequestContext listSupport) {
+        List<String> fetchList = new ArrayList<>(fields);
+        String sort = listSupport.getSort();
+        if (sort != null && sort.contains("configs[")) {
+            fetchList.add(Topic.Fields.CONFIGS);
+        }
         Admin adminClient = clientSupplier.get();
 
         return adminClient.listTopics()
                 .listings()
                 .thenApply(list -> list.stream().map(Topic::fromTopicListing).toList())
                 .toCompletionStage()
-                .thenCompose(list -> augmentList(adminClient, list, fields, offsetSpec))
-                .thenApply(list -> list.stream().sorted(Comparator.comparing(Topic::getName)).toList());
+                .thenCompose(list -> augmentList(adminClient, list, fetchList, offsetSpec))
+                .thenApply(list -> list.stream()
+                        .sorted(comparators.fromSort(listSupport.getSort()))
+                        .toList());
     }
 
     public CompletionStage<Topic> describeTopic(String topicId, List<String> fields, String offsetSpec) {

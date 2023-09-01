@@ -63,6 +63,26 @@ public class ConfigEntry {
         return entry;
     }
 
+    /**
+     * Compare the {@code value} field of this ConfigEntry with the other ConfigEntry's
+     * {@code value} field.
+     *
+     * <p>Numeric fields will be parsed before comparison, passwords will always compare
+     * as equal (to avoid potential information leakage), and other types will be
+     * compared as strings.
+     *
+     * <p>This method assumes that both ConfigEntry objects have the same type and
+     * that neither has a null value.
+     */
+    int compareValues(ConfigEntry other) {
+        return switch (type) {
+            case "DOUBLE" -> Double.compare(Double.parseDouble(value), Double.parseDouble(other.value));
+            case "INT", "LONG", "SHORT" -> Long.compare(Long.parseLong(value), Long.parseLong(other.value));
+            case "PASSWORD" -> 0;
+            default -> value.compareTo(other.value);
+        };
+    }
+
     public String getName() {
         return name;
     }
