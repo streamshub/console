@@ -2,3 +2,4 @@ name: Web UI
 release:
   current-version: 0.0.4
   next-version: 0.0.5-SNAPSHOT
+

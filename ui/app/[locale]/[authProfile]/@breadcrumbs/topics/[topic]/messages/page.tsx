@@ -12,7 +12,7 @@ export default async function TopicBreadcrumb({
   const topic = await getTopic(authProfile.attributes.cluster.id, params.topic);
   return (
     <Breadcrumb>
-      <BreadcrumbLink href={`${authProfile.id}`}>Topics</BreadcrumbLink>
+      <BreadcrumbLink href={`../`}>Topics</BreadcrumbLink>
       <BreadcrumbItem isActive>{topic.attributes.name}</BreadcrumbItem>
     </Breadcrumb>
   );
