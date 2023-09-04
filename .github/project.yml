@@ -1,0 +1,4 @@
+name: Web UI
+release:
+  current-version: 0.0.3
+  next-version: 0.0.4-SNAPSHOT
