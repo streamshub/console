@@ -93,10 +93,11 @@ export async function getTopicMessages(
     },
   });
   const rawData = await res.json();
-  console.log(rawData);
+  const messages = (rawData?.data || []).map((r: any) => ({ ...r.attributes }));
+  console.log(JSON.stringify(messages, null, 2));
   return {
     lastUpdated: new Date(),
-    messages: rawData?.data || [],
+    messages,
     partitions: 1,
     offsetMin: 0,
     offsetMax: 100,
