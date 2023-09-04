@@ -1,4 +1,5 @@
 "use client";
+import { Message, MessageApiResponse } from "@/api/topics";
 import { Loading } from "@/components/loading/loading";
 import { NoResultsEmptyState } from "@/components/messageBrowser/NoResultsEmptyState";
 import { RefreshButton } from "@/components/refreshButton/refreshButton";

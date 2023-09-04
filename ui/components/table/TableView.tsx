@@ -1,3 +1,4 @@
+"use client";
 import type { ToolbarProps } from "@/libs/patternfly/react-core";
 import {
   Button,

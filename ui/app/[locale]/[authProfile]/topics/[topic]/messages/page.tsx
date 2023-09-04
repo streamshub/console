@@ -1,25 +1,27 @@
+import { getAuthProfile } from "@/api/auth";
+import { getTopicMessages } from "@/api/topics";
 import {
   KafkaMessageBrowser,
   KafkaMessageBrowserProps,
 } from "@/components/messageBrowser/KafkaMessageBrowser";
 import { NoDataEmptyState } from "@/components/messageBrowser/NoDataEmptyState";
-import { SelectTopicEmptyState } from "@/components/messageBrowser/SelectTopicEmptyState";
-import { getSession } from "@/utils/session";
-import { revalidatePath } from "next/cache";
+import { revalidateTag } from "next/cache";
 
-export default async function Principals() {
-  const session = await getSession();
-
-  const { topic } = session || {};
-  const data = null; // TODO
-
+export default async function Principals({
+  params,
+}: {
+  params: { authProfile: string; topic: string };
+}) {
+  const authProfile = await getAuthProfile(params.authProfile);
+  const data = await getTopicMessages(
+    authProfile.attributes.cluster.id,
+    params.topic,
+  );
   switch (true) {
-    case topic === undefined:
-      return <SelectTopicEmptyState />;
-    case topic && data === null:
+    case data === null:
       return (
         <NoDataEmptyState
-          onRefresh={() => revalidatePath("/message-browser")}
+          onRefresh={() => revalidateTag(`messages-${params.topic}`)}
         />
       );
     default:
