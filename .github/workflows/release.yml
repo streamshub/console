@@ -64,7 +64,7 @@ jobs:
           context: ui/
           push: true
           tags: |
-            ${{ secrets.IMAGE_REPO_NAMESPACE }}/eyefloaters/ui:${{steps.metadata.outputs.current-version}}     
+            ${{ secrets.IMAGE_REPO_HOSTNAME }}/${{ secrets.IMAGE_REPO_NAMESPACE }}/ui:${{steps.metadata.outputs.current-version}}
 
       - name: Push Release Tag
         run: |
