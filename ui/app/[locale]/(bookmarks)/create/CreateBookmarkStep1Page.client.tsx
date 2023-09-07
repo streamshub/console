@@ -109,8 +109,8 @@ export function CreateBookmarkStep1Page({ clusters }: { clusters: string[] }) {
                         <HelperTextItem>
                           <p>
                             Demo note: provide any value to the bootstrap url to
-                            see how the "Validate Connection" works when failing
-                            to connect to a cluster.
+                            see how the &quot;Validate Connection&quot; works
+                            when failing to connect to a cluster.
                           </p>
                           <p>Valid boostrap servers value for the demo are:</p>
                           <ul>
