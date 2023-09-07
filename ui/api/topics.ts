@@ -29,7 +29,7 @@ export async function getTopicMessages(
   kafkaId: string,
   topicId: string,
 ): Promise<MessageApiResponse> {
-  const url = `${process.env.BACKEND_URL}/api/kafkas/${kafkaId}/topics/${topicId}/records?fields%5Brecords%5D=partition,offset,timestamp,timestampType,headers,key,value&limit=20`;
+  const url = `${process.env.BACKEND_URL}/api/kafkas/${kafkaId}/topics/${topicId}/records?fields%5Brecords%5D=partition,offset,timestamp,timestampType,headers,key,value&page%5Bsize%5D=20`;
   const res = await fetch(url, {
     headers: {
       Accept: "application/json",
