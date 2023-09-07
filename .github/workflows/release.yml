@@ -49,7 +49,7 @@ jobs:
           export QUARKUS_CONTAINER_IMAGE_PUSH="true"
           export GIT_REVISION=$(git rev-parse --short release)
           # Build and push the release images using the commit tagged in `release:prepare`
-          mvn -B -P docker release:perform
+          mvn -B -P docker release:perform -f api/pom.xml
 
       - name: Login to Quay
         uses: docker/login-action@v2

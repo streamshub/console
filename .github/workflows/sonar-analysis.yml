@@ -16,7 +16,7 @@ jobs:
           GITHUB_CONTEXT: ${{ toJson(github) }}
 
   analyze:
-    if: ${{ github.repository == 'eyefloaters/console-api' && github.event.workflow_run.conclusion == 'success' }}
+    if: ${{ github.repository == 'eyefloaters/console' && github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     name: Analyze
     steps:
@@ -54,12 +54,12 @@ jobs:
                archive_format: 'zip',
             });
             var fs = require('fs');
-            fs.writeFileSync('${{github.workspace}}/target.zip', Buffer.from(download.data));
+            fs.writeFileSync('${{github.workspace}}/api/target.zip', Buffer.from(download.data));
 
       ## Extract the `target` directory from the build job
       - name: Extract Build Result
         run: |
-          unzip target.zip
+          unzip api/target.zip
 
       ## Load the context from the build job - runs for any trigger to allow templates with `steps.build_context.outputs.content` 
       ## to be accepted by GitHub Actions.
@@ -67,7 +67,7 @@ jobs:
         id: build_context
         uses: juliangruber/read-file-action@v1
         with:
-          path: ./target/build-context.json
+          path: ./api/target/build-context.json
 
       ## (PRs Only) Check out the base branch (target of the PR)
       - name: Checkout Base Branch (PR Only)
@@ -110,7 +110,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
-          mvn -B --no-transfer-progress org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
+          mvn -B --no-transfer-progress org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -f api/pom.xml \
             -Dsonar.projectKey=eyefloaters_console-api  \
             -Dsonar.token=${SONAR_TOKEN} \
             -Dsonar.scm.revision=${{ github.event.workflow_run.head_sha }} \
@@ -125,7 +125,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
-          mvn -B --no-transfer-progress org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
+          mvn -B --no-transfer-progress org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -f api/pom.xml \
             -Dsonar.projectKey=eyefloaters_console-api \
             -Dsonar.token=${SONAR_TOKEN} \
             -Dsonar.scm.revision=${{ github.event.workflow_run.head_sha }} \

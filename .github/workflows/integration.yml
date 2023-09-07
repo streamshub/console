@@ -36,18 +36,18 @@ jobs:
         run: |
           # Set write-transformed-bytecode-to-build-output for IT coverage
           # See: https://quarkus.io/guides/tests-with-coverage#coverage-for-integration-tests
-          mvn verify -B --no-transfer-progress -Dquarkus.package.write-transformed-bytecode-to-build-output=true
+          mvn verify -B --no-transfer-progress -Dquarkus.package.write-transformed-bytecode-to-build-output=true -f api/pom.xml
 
       - name: Archive Results
         uses: actions/upload-artifact@v3
         if: failure()
         with:
           name: artifacts
-          path: systemtests/target/failsafe-reports/
+          path: api/target/failsafe-reports/
 
       ## Save the context information for use in Sonar analysis
       - name: Save Build Context
-        run: echo "$GITHUB_CONTEXT" > target/build-context.json
+        run: echo "$GITHUB_CONTEXT" > api/target/build-context.json
         env:
           GITHUB_CONTEXT: ${{ toJson(github) }}
 
