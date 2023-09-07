@@ -1,7 +1,20 @@
+import { BookmarkSchema } from "@/api/types";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { sealData, unsealData } from "iron-session";
 import { getServerSession } from "next-auth";
 import { cookies } from "next/headers";
+import z from "zod";
+
+const SessionShape = z.object({
+  newBookmark: z
+    .object({
+      name: z.string().optional(),
+      boostrapServer: z.string().optional(),
+      principal: z.string().optional(),
+    })
+    .optional(),
+  bookmarks: z.array(BookmarkSchema).optional(),
+});
 
 export async function getSession() {
   const user = await getUser();
@@ -9,12 +22,12 @@ export async function getSession() {
   const encryptedSession = cookieStore.get(user.username)?.value;
 
   try {
-    const session = encryptedSession
+    const rawSession = encryptedSession
       ? await unsealData(encryptedSession, {
           password: process.env.SESSION_SECRET,
         })
       : null;
-    return session;
+    return SessionShape.parse(rawSession);
   } catch {
     return null;
   }

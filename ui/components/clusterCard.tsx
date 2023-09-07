@@ -1,6 +1,6 @@
 "use client";
 "use client";
-import { Cluster } from "@/api/auth";
+import { Cluster } from "@/api/types";
 import {
   Card,
   CardBody,

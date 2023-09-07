@@ -147,8 +147,7 @@ export const TableView = <TRow, TCol>({
                     </SelectOption>
                   ))}
                 </SelectGroup>
-                ,
-                <Divider key="separator" />,
+                <Divider key="separator" />
                 <SelectGroup key="second group" aria-label="Sort direction">
                   <SelectOption
                     onSelect={() =>
