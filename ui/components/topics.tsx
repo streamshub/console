@@ -1,5 +1,5 @@
 "use client";
-import { Topic } from "@/api/topics";
+import { Topic } from "@/api/types";
 import { TableView } from "@/components/table";
 import { useFormatter } from "next-intl";
 import Link from "next/link";

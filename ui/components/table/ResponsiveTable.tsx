@@ -1,5 +1,5 @@
 "use client";
-import { Skeleton } from "@patternfly/react-core";
+import { TableSkeleton } from "@/components/table/TableSkeleton";
 import type {
   ActionsColumnProps,
   TableVariant,
@@ -15,12 +15,7 @@ import {
   Thead,
   Tr,
 } from "@patternfly/react-table";
-import { useTranslations } from "next-intl";
-import type {
-  PropsWithChildren,
-  ReactElement,
-  VoidFunctionComponent,
-} from "react";
+import type { PropsWithChildren, ReactElement } from "react";
 import { forwardRef, memo, useCallback, useMemo, useState } from "react";
 import useResizeObserver from "use-resize-observer";
 import "./ResponsiveTable.css";
@@ -361,29 +356,3 @@ export const DeletableRow = memo<DeletableRowProps>(
   },
 );
 DeletableRow.displayName = "DeletableRow";
-
-const TableSkeleton: VoidFunctionComponent<{
-  columns: number;
-  rows: number;
-  getTd: (index: number) => typeof Td;
-}> = ({ columns, rows, getTd }) => {
-  const t = useTranslations();
-  const skeletonCells = new Array(columns).fill(0).map((_, index) => {
-    const Td = getTd(index);
-    return (
-      <Td key={`cell_${index}`}>
-        <Skeleton
-          screenreaderText={
-            index === 0
-              ? t("Table.skeleton_loader_screenreader_text")
-              : undefined
-          }
-        />
-      </Td>
-    );
-  });
-  const skeletonRows = new Array(rows)
-    .fill(0)
-    .map((_, index) => <Tr key={`row_${index}`}>{skeletonCells}</Tr>);
-  return <>{skeletonRows}</>;
-};
