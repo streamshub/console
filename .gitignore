@@ -1,1 +1,22 @@
 .DS_store
+
+# Maven build targets
+target/
+
+# Maven release files
+*.releaseBackup
+release.properties
+
+# Eclipse specific
+.project
+.settings/
+.prefs
+.classpath
+
+# IntelliJ IDEA specific
+.idea/
+*.iml
+
+# VS Code
+.factorypath
+.vscode
