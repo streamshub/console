@@ -24,6 +24,11 @@ export const BookmarkSchema = z.object({
   }),
 });
 export type Bookmark = z.infer<typeof BookmarkSchema>;
+const OffsetSchema = z.object({
+  offset: z.number().optional(),
+  timestamp: z.string().optional(),
+  leaderEpoch: z.number().optional(),
+});
 const PartitionSchema = z.object({
   partition: z.number(),
   leader: z.object({
@@ -45,10 +50,12 @@ const PartitionSchema = z.object({
       port: z.number(),
     }),
   ),
-  offset: z.object({
-    offset: z.number(),
-    leaderEpoch: z.number(),
-  }),
+  offsets: z.object({
+    earliest: OffsetSchema.optional(),
+    latest: OffsetSchema.optional(),
+    maxTimestamp: OffsetSchema.optional(),
+    timestamp: OffsetSchema.optional()
+  }).optional().nullable(),
 });
 const ConfigSchema = z.object({
   value: z.string(),

@@ -1,9 +1,15 @@
 package com.github.eyefloaters.console.api.model;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+
+@JsonInclude(value = Include.NON_NULL)
 public class PartitionInfo {
 
     final int partition;
@@ -12,7 +18,11 @@ public class PartitionInfo {
     final List<Node> isr;
 
     @Schema(implementation = Object.class, oneOf = { OffsetInfo.class, Error.class })
-    Either<OffsetInfo, Error> offset;
+    private static final class OffsetInfoOrError {
+    }
+
+    @Schema(additionalProperties = OffsetInfoOrError.class)
+    Map<String, Either<OffsetInfo, Error>> offsets;
 
     public PartitionInfo(int partition, Node leader, List<Node> replicas, List<Node> isr) {
         super();
@@ -29,10 +39,18 @@ public class PartitionInfo {
         return new PartitionInfo(info.partition(), leader, replicas, isr);
     }
 
-    public void addOffset(Either<OffsetInfo, Throwable> offset) {
-        this.offset = offset.ifPrimaryOrElse(
+    static Either<OffsetInfo, Error> offsetOrError(Either<OffsetInfo, Throwable> offset) {
+        return offset.ifPrimaryOrElse(
                 Either::of,
                 thrown -> Error.forThrowable(thrown, "Unable to fetch partition offset"));
+    }
+
+    public void addOffset(String key, Either<OffsetInfo, Throwable> offset) {
+        if (this.offsets == null) {
+            this.offsets = new LinkedHashMap<>(4);
+        }
+
+        this.offsets.put(key, offsetOrError(offset));
     }
 
     public int getPartition() {
@@ -51,7 +69,7 @@ public class PartitionInfo {
         return isr;
     }
 
-    public Either<OffsetInfo, Error> getOffset() {
-        return offset;
+    public Map<String, Either<OffsetInfo, Error>> getOffsets() {
+        return offsets;
     }
 }

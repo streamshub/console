@@ -1,7 +1,7 @@
 import { Topic, TopicResponse, TopicsResponse } from "@/api/types";
 
 export async function getTopics(kafkaId: string): Promise<Topic[]> {
-  const url = `${process.env.BACKEND_URL}/api/kafkas/${kafkaId}/topics?fields%5Btopics%5D=name,internal,partitions,authorizedOperations,configs&offsetSpec=latest`;
+  const url = `${process.env.BACKEND_URL}/api/kafkas/${kafkaId}/topics?fields%5Btopics%5D=name,internal,partitions,authorizedOperations,configs`;
   const res = await fetch(url, {
     headers: {
       Accept: "application/json",
@@ -15,7 +15,7 @@ export async function getTopic(
   kafkaId: string,
   topicId: string,
 ): Promise<Topic> {
-  const url = `${process.env.BACKEND_URL}/api/kafkas/${kafkaId}/topics/${topicId}?fields%5Btopics%5D=name,internal,partitions,authorizedOperations,configs&offsetSpec=latest`;
+  const url = `${process.env.BACKEND_URL}/api/kafkas/${kafkaId}/topics/${topicId}?fields%5Btopics%5D=name,internal,partitions,authorizedOperations,configs`;
   const res = await fetch(url, {
     headers: {
       Accept: "application/json",
