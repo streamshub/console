@@ -48,8 +48,8 @@
     </properties>
 
     <scm>
-        <connection>scm:git:git://github.com/eyefloaters/console-api.git</connection>
-        <developerConnection>scm:git:git@github.com:eyefloaters/console-api.git</developerConnection>
+        <connection>scm:git:git://github.com/eyefloaters/console.git</connection>
+        <developerConnection>scm:git:git@github.com:eyefloaters/console.git</developerConnection>
         <tag>HEAD</tag>
     </scm>
 
