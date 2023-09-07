@@ -24,8 +24,6 @@ public @interface KafkaUuid {
 
     Class<? extends Payload>[] payload() default {};
 
-    ErrorCategory category();
-
     String source() default "";
 
     static class Validator implements ConstraintValidator<KafkaUuid, String> {

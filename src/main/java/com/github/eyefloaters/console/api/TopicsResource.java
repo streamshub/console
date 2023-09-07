@@ -97,7 +97,7 @@ public class TopicsResource {
                         Topic.Fields.AUTHORIZED_OPERATIONS,
                         Topic.Fields.CONFIGS
                     },
-                    category = ErrorCategory.INVALID_QUERY_PARAMETER)
+                    payload = ErrorCategory.InvalidQueryParameter.class)
             @Parameter(
                     description = FieldFilter.FIELDS_DESCR,
                     explode = Explode.FALSE,
@@ -116,7 +116,7 @@ public class TopicsResource {
 
             @QueryParam("offsetSpec")
             @DefaultValue("latest")
-            @KafkaOffsetSpec(category = ErrorCategory.INVALID_QUERY_PARAMETER)
+            @KafkaOffsetSpec(payload = ErrorCategory.InvalidQueryParameter.class)
             @Parameter(
                     schema = @Schema(ref = "OffsetSpec"),
                     examples = {
@@ -152,7 +152,7 @@ public class TopicsResource {
             String clusterId,
 
             @PathParam("topicId")
-            @KafkaUuid(category = ErrorCategory.RESOURCE_NOT_FOUND, message = "No such topic")
+            @KafkaUuid(payload = ErrorCategory.ResourceNotFound.class, message = "No such topic")
             @Parameter(description = "Topic identifier")
             String topicId,
 
@@ -167,7 +167,7 @@ public class TopicsResource {
                         Topic.Fields.AUTHORIZED_OPERATIONS,
                         Topic.Fields.CONFIGS
                     },
-                    category = ErrorCategory.INVALID_QUERY_PARAMETER)
+                    payload = ErrorCategory.InvalidQueryParameter.class)
             @Parameter(
                     description = FieldFilter.FIELDS_DESCR,
                     explode = Explode.FALSE,
@@ -186,7 +186,7 @@ public class TopicsResource {
 
             @QueryParam("offsetSpec")
             @DefaultValue(KafkaOffsetSpec.LATEST)
-            @KafkaOffsetSpec(category = ErrorCategory.INVALID_QUERY_PARAMETER)
+            @KafkaOffsetSpec(payload = ErrorCategory.InvalidQueryParameter.class)
             @Parameter(
                     schema = @Schema(ref = "OffsetSpec"),
                     examples = {

@@ -9,6 +9,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -34,7 +35,6 @@ import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.common.PartitionInfo;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.Uuid;
-import org.apache.kafka.common.errors.InvalidPartitionsException;
 import org.apache.kafka.common.errors.UnknownTopicIdException;
 import org.apache.kafka.common.header.Headers;
 import org.eclipse.microprofile.context.ThreadContext;
@@ -62,8 +62,8 @@ public class RecordService {
 
     public List<KafkaRecord> consumeRecords(String topicId,
             Integer partition,
-            Integer offset,
-            String timestamp,
+            Long offset,
+            Instant timestamp,
             Integer limit,
             List<String> include,
             Integer maxValueLength) {
@@ -86,57 +86,22 @@ public class RecordService {
             .toCompletableFuture()
             .join();
 
-        if (partitions.isEmpty()) {
-            throw noSuchTopic(topicId);
-        }
-
         List<TopicPartition> assignments = partitions.stream()
             .filter(p -> partition == null || partition.equals(p.partition()))
             .map(p -> new TopicPartition(p.topic(), p.partition()))
             .toList();
 
         if (assignments.isEmpty()) {
-            throw noSuchTopicPartition(topicId, partition);
+            return Collections.emptyList();
         }
 
         Consumer<byte[], byte[]> consumer = consumerSupplier.get();
         consumer.assign(assignments);
 
         if (timestamp != null) {
-            Long tsMillis = stringToTimestamp(timestamp);
-            Map<TopicPartition, Long> timestampsToSearch =
-                    assignments.stream().collect(Collectors.toMap(Function.identity(), p -> tsMillis));
-            consumer.offsetsForTimes(timestampsToSearch)
-                .forEach((p, tsOffset) -> {
-                    if (tsOffset != null) {
-                        consumer.seek(p, tsOffset.offset());
-                    } else {
-                        /*
-                         * No offset for the time-stamp (future date?), seek to
-                         * end and return nothing for this partition.
-                         */
-                        consumer.seekToEnd(List.of(p));
-                    }
-                });
+            seekToTimestamp(consumer, assignments, timestamp);
         } else {
-            Map<TopicPartition, Long> endOffsets = consumer.endOffsets(assignments);
-
-            assignments.forEach(p -> {
-                long partitionEnd = endOffsets.get(p);
-
-                if (offset == null) {
-                    // Fetch the latest records
-                    consumer.seek(p, Math.max(partitionEnd - limit, 0));
-                } else if (offset <= partitionEnd) {
-                    consumer.seek(p, offset);
-                } else {
-                    /*
-                     * Requested offset is beyond the end of the partition,
-                     * seek to end and return nothing for this partition.
-                     */
-                    consumer.seek(p, endOffsets.get(p));
-                }
-            });
+            seekToOffset(consumer, assignments, offset, limit);
         }
 
         Instant timeout = Instant.now().plusSeconds(2);
@@ -168,15 +133,7 @@ public class RecordService {
             }
         };
 
-        Comparator<ConsumerRecord<byte[], byte[]>> comparator = Comparator.comparingLong(ConsumerRecord::timestamp);
-        if (timestamp == null && offset == null) {
-            comparator = comparator.reversed();
-        }
-        comparator = comparator
-                .thenComparingInt(ConsumerRecord::partition)
-                .thenComparingLong(ConsumerRecord::offset);
-
-        NavigableSet<ConsumerRecord<byte[], byte[]>> limitSet = new TreeSet<>(comparator) {
+        NavigableSet<ConsumerRecord<byte[], byte[]>> limitSet = new TreeSet<>(buildComparator(timestamp, offset)) {
             private static final long serialVersionUID = 1L;
             @Override
             public boolean add(ConsumerRecord<byte[], byte[]> rec) {
@@ -202,7 +159,59 @@ public class RecordService {
         return results;
     }
 
-    public KafkaRecord getItems(ConsumerRecord<byte[], byte[]> rec, String topicId, List<String> include, Integer maxValueLength) {
+    void seekToTimestamp(Consumer<byte[], byte[]> consumer, List<TopicPartition> assignments, Instant timestamp) {
+        Long tsMillis = timestamp.toEpochMilli();
+        Map<TopicPartition, Long> timestampsToSearch = assignments.stream()
+                .collect(Collectors.toMap(Function.identity(), p -> tsMillis));
+
+        consumer.offsetsForTimes(timestampsToSearch)
+            .forEach((p, tsOffset) -> {
+                if (tsOffset != null) {
+                    consumer.seek(p, tsOffset.offset());
+                } else {
+                    /*
+                     * No offset for the time-stamp (future date?), seek to
+                     * end and return nothing for this partition.
+                     */
+                    consumer.seekToEnd(List.of(p));
+                }
+            });
+    }
+
+    void seekToOffset(Consumer<byte[], byte[]> consumer, List<TopicPartition> assignments, Long offset, int limit) {
+        Map<TopicPartition, Long> endOffsets = consumer.endOffsets(assignments);
+
+        assignments.forEach(p -> {
+            long partitionEnd = endOffsets.get(p);
+
+            if (offset == null) {
+                // Fetch the latest records
+                consumer.seek(p, Math.max(partitionEnd - limit, 0));
+            } else if (offset <= partitionEnd) {
+                consumer.seek(p, offset);
+            } else {
+                /*
+                 * Requested offset is beyond the end of the partition,
+                 * seek to end and return nothing for this partition.
+                 */
+                consumer.seek(p, endOffsets.get(p));
+            }
+        });
+    }
+
+    Comparator<ConsumerRecord<byte[], byte[]>> buildComparator(Instant timestamp, Long offset) {
+        Comparator<ConsumerRecord<byte[], byte[]>> comparator = Comparator.comparingLong(ConsumerRecord::timestamp);
+
+        if (timestamp == null && offset == null) {
+            comparator = comparator.reversed();
+        }
+
+        return comparator
+                .thenComparingInt(ConsumerRecord::partition)
+                .thenComparingLong(ConsumerRecord::offset);
+    }
+
+    KafkaRecord getItems(ConsumerRecord<byte[], byte[]> rec, String topicId, List<String> include, Integer maxValueLength) {
         KafkaRecord item = new KafkaRecord(topicId);
 
         setProperty(KafkaRecord.Fields.PARTITION, include, rec::partition, item::setPartition);
@@ -217,7 +226,7 @@ public class RecordService {
     }
 
     <T> void setProperty(String fieldName, List<String> include, Supplier<T> source, java.util.function.Consumer<T> target) {
-        if (include.isEmpty() || include.contains(fieldName)) {
+        if (include.contains(fieldName)) {
             target.accept(source.get());
         }
     }
@@ -261,20 +270,8 @@ public class RecordService {
         return headerMap;
     }
 
-    Long stringToTimestamp(String value) {
-        if (value == null) {
-            return null;
-        }
-
-        return Instant.parse(value).toEpochMilli();
-    }
-
     static UnknownTopicIdException noSuchTopic(String topicId) {
         return new UnknownTopicIdException("No such topic: " + topicId);
-    }
-
-    static InvalidPartitionsException noSuchTopicPartition(String topicId, int partition) {
-        return new InvalidPartitionsException(String.format("No such partition for topic %s: %d", topicId, partition));
     }
 
 }

@@ -34,9 +34,7 @@ public class ConstraintViolationHandler implements ExceptionMapper<ConstraintVio
             .map(violation -> {
                 Error error;
 
-                error = Optional.ofNullable(violation.getConstraintDescriptor().getAttributes().get("category"))
-                    .filter(ErrorCategory.class::isInstance)
-                    .map(ErrorCategory.class::cast)
+                error = getCategory(violation)
                     .map(category -> {
                         Error e = new Error(category.getTitle(), violation.getMessage(), null);
                         e.setCode(category.getCode());
@@ -55,6 +53,15 @@ public class ConstraintViolationHandler implements ExceptionMapper<ConstraintVio
             .toList();
 
         return Response.status(Status.BAD_REQUEST).entity(new ErrorResponse(errors)).build();
+    }
+
+    Optional<ErrorCategory> getCategory(ConstraintViolation<?> violation) {
+        return violation.getConstraintDescriptor().getPayload()
+            .stream()
+            .map(ErrorCategory::get)
+            .filter(ErrorCategory.class::isInstance)
+            .map(ErrorCategory.class::cast)
+            .findFirst();
     }
 
     String getSourceProperty(ConstraintViolation<?> violation) {

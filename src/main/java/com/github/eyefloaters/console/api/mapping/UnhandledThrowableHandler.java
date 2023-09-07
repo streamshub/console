@@ -17,7 +17,7 @@ import com.github.eyefloaters.console.api.support.ErrorCategory;
 public class UnhandledThrowableHandler implements ExceptionMapper<Throwable> {
 
     Logger logger = Logger.getLogger("com.github.eyefloaters.console.api.errors.server");
-    private static final ErrorCategory CATEGORY = ErrorCategory.SERVER_ERROR;
+    private static final ErrorCategory CATEGORY = ErrorCategory.get(ErrorCategory.ServerError.class);
 
     @Override
     public Response toResponse(Throwable exception) {

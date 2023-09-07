@@ -55,9 +55,6 @@ public class RecordsResource {
     @Operation(
         summary = "Consume records from a topic",
         description = "Consume a limited number of records from a topic, optionally specifying a partition and an absolute offset or timestamp as the starting point for message retrieval.")
-    @Parameter(
-        name = "topicName",
-        description = "Topic name")
     @APIResponseSchema(
         value = KafkaRecord.ListResponse.class,
         responseDescription = "List of records matching the request query parameters.")
@@ -70,7 +67,7 @@ public class RecordsResource {
             String clusterId,
 
             @PathParam("topicId")
-            @KafkaUuid(category = ErrorCategory.RESOURCE_NOT_FOUND, message = "No such topic")
+            @KafkaUuid(payload = ErrorCategory.ResourceNotFound.class, message = "No such topic")
             @Parameter(description = "Topic identifier")
             String topicId,
 
@@ -91,7 +88,7 @@ public class RecordsResource {
                         KafkaRecord.Fields.KEY,
                         KafkaRecord.Fields.VALUE
                     },
-                    category = ErrorCategory.INVALID_QUERY_PARAMETER)
+                    payload = ErrorCategory.InvalidQueryParameter.class)
             @Parameter(
                     description = FieldFilter.FIELDS_DESCR,
                     explode = Explode.FALSE,

@@ -1,20 +1,53 @@
 package com.github.eyefloaters.console.api.support;
 
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import jakarta.validation.Payload;
 import jakarta.ws.rs.core.Response.Status;
 import jakarta.ws.rs.core.Response.StatusType;
 
 import com.github.eyefloaters.console.api.model.ErrorSource;
 
-public enum ErrorCategory {
+public abstract class ErrorCategory implements Payload {
 
-    INVALID_QUERY_PARAMETER("4001", "Invalid query parameter", Status.BAD_REQUEST, Source.PARAMETER),
+    private static final Map<Class<? extends ErrorCategory>, ErrorCategory> INSTANCES = Stream.of(
+            new InvalidQueryParameter(),
+            new ResourceNotFound(),
+            new ServerError(),
+            new BackendTimeout())
+        .collect(Collectors.toMap(ErrorCategory::getClass, Function.identity()));
 
-    RESOURCE_NOT_FOUND("4041", "Resource not found", Status.NOT_FOUND),
+    @SuppressWarnings("unchecked")
+    public static <T extends ErrorCategory> T get(Class<? extends Payload> type) {
+        return (T) INSTANCES.get(type);
+    }
 
-    SERVER_ERROR("5001", "Unexpected error", Status.INTERNAL_SERVER_ERROR),
+    public static class InvalidQueryParameter extends ErrorCategory {
+        public InvalidQueryParameter() {
+            super("4001", "Invalid query parameter", Status.BAD_REQUEST, Source.PARAMETER);
+        }
+    }
 
-    BACKEND_TIMEOUT("5041", "Timed out waiting for backend service", Status.GATEWAY_TIMEOUT);
+    public static class ResourceNotFound extends ErrorCategory {
+        public ResourceNotFound() {
+            super("4041", "Resource not found", Status.NOT_FOUND);
+        }
+    }
 
+    public static class ServerError extends ErrorCategory {
+        public ServerError() {
+            super("5001", "Unexpected error", Status.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    public static class BackendTimeout extends ErrorCategory {
+        public BackendTimeout() {
+            super("5041", "Timed out waiting for backend service", Status.GATEWAY_TIMEOUT);
+        }
+    }
 
     public enum Source {
         PARAMETER {

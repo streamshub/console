@@ -72,7 +72,7 @@ public class KafkaClustersResource {
                         KafkaCluster.Fields.AUTH_TYPE
                     },
                     message = "list contains a value that is not valid or not available for the operation",
-                    category = ErrorCategory.INVALID_QUERY_PARAMETER)
+                    payload = ErrorCategory.InvalidQueryParameter.class)
             @Parameter(
                     description = FieldFilter.FIELDS_DESCR,
                     explode = Explode.FALSE,
@@ -128,7 +128,7 @@ public class KafkaClustersResource {
                         KafkaCluster.Fields.BOOTSTRAP_SERVERS,
                         KafkaCluster.Fields.AUTH_TYPE
                     },
-                    category = ErrorCategory.INVALID_QUERY_PARAMETER)
+                    payload = ErrorCategory.InvalidQueryParameter.class)
             @Parameter(
                     description = FieldFilter.FIELDS_DESCR,
                     explode = Explode.FALSE,

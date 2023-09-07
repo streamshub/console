@@ -29,8 +29,6 @@ public @interface StringEnumeration {
 
     Class<? extends Payload>[] payload() default {};
 
-    ErrorCategory category();
-
     String[] allowedValues();
 
     String source() default "";

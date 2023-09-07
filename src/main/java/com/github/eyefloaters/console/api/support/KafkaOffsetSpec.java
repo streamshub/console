@@ -28,8 +28,6 @@ public @interface KafkaOffsetSpec {
 
     Class<? extends Payload>[] payload() default {};
 
-    ErrorCategory category();
-
     String source() default "";
 
     static class Validator implements ConstraintValidator<KafkaOffsetSpec, String> {
