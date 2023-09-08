@@ -62,11 +62,16 @@ export async function createBookmark({
 
 export async function getClusters(): Promise<Cluster[]> {
   const url = `${process.env.BACKEND_URL}/api/kafkas?fields%5Bkafkas%5D=name,bootstrapServers,authType`;
-  const res = await fetch(url, {
-    headers: {
-      Accept: "application/json",
-    },
-  });
-  const rawData = await res.json();
-  return Response.parse(rawData).data;
+  try {
+    const res = await fetch(url, {
+      headers: {
+        Accept: "application/json",
+      },
+    });
+    const rawData = await res.json();
+    return Response.parse(rawData).data;
+  } catch (err) {
+    console.error(err);
+    throw err;
+  }
 }

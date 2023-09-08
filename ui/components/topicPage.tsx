@@ -191,7 +191,7 @@ export function TopicDashboard({ topic }: { topic: Topic }) {
           emptyStateNoData={<div>No partitions</div>}
           emptyStateNoResults={<div>todo</div>}
           ariaLabel={"Partitions"}
-          columns={["id", "leaderId", "replicas", "isr", "offset"] as const}
+          columns={["id", "leaderId", "replicas", "isr", "offsets", "recordCount"] as const}
           renderHeader={({ column, key, Th }) => {
             switch (column) {
               case "id":
@@ -218,10 +218,16 @@ export function TopicDashboard({ topic }: { topic: Topic }) {
                     In-Sync Replicas
                   </Th>
                 );
-              case "offset":
+              case "offsets":
                 return (
-                  <Th key={key} dataLabel={"Offset"}>
-                    Offset
+                  <Th key={key} dataLabel={"Offsets"}>
+                    Offsets (Earliest/Latest)
+                  </Th>
+                );
+              case "recordCount":
+                return (
+                  <Th key={key} dataLabel={"Record Count"}>
+                    Record Count
                   </Th>
                 );
             }
@@ -252,10 +258,18 @@ export function TopicDashboard({ topic }: { topic: Topic }) {
                     {row.isr.length}
                   </Td>
                 );
-              case "offset":
+              case "offsets":
                 return (
                   <Td key={key} dataLabel={"Offset"}>
-                    {row.offset.offset}
+                    {row.offsets?.earliest?.offset ?? '-'}
+                    /
+                    {row.offsets?.latest?.offset ?? '-'}
+                  </Td>
+                );
+              case "recordCount":
+                return (
+                  <Td key={key} dataLabel={"Record Count"}>
+                    {row.recordCount ?? '-'}
                   </Td>
                 );
             }

@@ -13,6 +13,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -36,6 +37,9 @@ import com.github.eyefloaters.console.api.support.ListRequestContext;
 
 @ApplicationScoped
 public class TopicService {
+
+    private static final List<OffsetSpec> DEFAULT_OFFSET_SPECS =
+            List.of(OffsetSpec.earliest(), OffsetSpec.latest(), OffsetSpec.maxTimestamp());
 
     @Inject
     Supplier<Admin> clientSupplier;
@@ -202,11 +206,14 @@ public class TopicService {
     CompletableFuture<Void> maybeDescribeTopics(Admin adminClient, Map<Uuid, Topic> topics, List<String> fields, String offsetSpec) {
         CompletableFuture<Void> promise = new CompletableFuture<>();
 
-        if (fields.contains(Topic.Fields.PARTITIONS) || fields.contains(Topic.Fields.AUTHORIZED_OPERATIONS)) {
+        if (fields.contains(Topic.Fields.PARTITIONS)
+                || fields.contains(Topic.Fields.AUTHORIZED_OPERATIONS)
+                || fields.contains(Topic.Fields.RECORD_COUNT)) {
             describeTopics(adminClient, topics.keySet(), fields, offsetSpec)
                 .thenApply(descriptions -> {
                     descriptions.forEach((name, either) -> {
-                        if (fields.contains(Topic.Fields.PARTITIONS)) {
+                        if (fields.contains(Topic.Fields.PARTITIONS)
+                                || fields.contains(Topic.Fields.RECORD_COUNT)) {
                             topics.get(name).addPartitions(either);
                         }
                         if (fields.contains(Topic.Fields.AUTHORIZED_OPERATIONS)) {
@@ -264,40 +271,16 @@ public class TopicService {
     }
 
     CompletionStage<Void> listOffsets(Admin adminClient, Map<Uuid, Either<Topic, Throwable>> topics, String offsetSpec) {
-        OffsetSpec reqOffsetSpec = switch (offsetSpec) {
-            case KafkaOffsetSpec.EARLIEST -> OffsetSpec.earliest();
-            case KafkaOffsetSpec.LATEST -> OffsetSpec.latest();
-            case KafkaOffsetSpec.MAX_TIMESTAMP -> OffsetSpec.maxTimestamp();
-            default -> OffsetSpec.forTimestamp(Instant.parse(offsetSpec).toEpochMilli());
-        };
+        Map<String, Uuid> topicIds = new HashMap<>(topics.size());
 
-        Map<String, Uuid> topicIds = new HashMap<>();
-        Map<org.apache.kafka.common.TopicPartition, OffsetSpec> request = topics.entrySet().stream()
-                .filter(entry -> entry.getValue().isPrimaryPresent())
-                .map(entry -> {
-                    var topic = entry.getValue().getPrimary();
-                    topicIds.put(topic.getName(), entry.getKey());
-                    return topic;
-                })
-                .filter(topic -> topic.getPartitions().isPrimaryPresent())
-                .flatMap(topic -> topic.getPartitions().getPrimary()
-                        .stream()
-                        .map(partition -> new org.apache.kafka.common.TopicPartition(topic.getName(), partition.getPartition())))
-                .collect(Collectors.toMap(Function.identity(), ignored -> reqOffsetSpec));
-
-        var result = adminClient.listOffsets(request);
-        var pendingOffsets = request.keySet().stream()
-                .map(topicPartition -> result.partitionResult(topicPartition)
-                        .toCompletionStage()
-                        .<Void>handle((offsetResult, error) -> {
-                            addOffset(topics.get(topicIds.get(topicPartition.topic())).getPrimary(),
-                                        topicPartition.partition(),
-                                        offsetResult,
-                                        error);
-                            return null;
-                        }))
-                .map(CompletionStage::toCompletableFuture)
-                .toArray(CompletableFuture[]::new);
+        var pendingOffsets = getRequestOffsetSpecs(offsetSpec)
+                .stream()
+            .map(reqOffsetSpec -> getTopicPartitions(topics, topicIds)
+                .stream()
+                .collect(Collectors.toMap(Function.identity(), ignored -> reqOffsetSpec)))
+            .flatMap(request -> listOffsets(adminClient, topics, topicIds, request))
+            .map(CompletionStage::toCompletableFuture)
+            .toArray(CompletableFuture[]::new);
 
         var promise = new CompletableFuture<Void>();
 
@@ -308,13 +291,80 @@ public class TopicService {
         return promise;
     }
 
-    void addOffset(Topic topic, int partitionNo, ListOffsetsResultInfo result, Throwable error) {
+    List<OffsetSpec> getRequestOffsetSpecs(String offsetSpec) {
+        List<OffsetSpec> specs = new ArrayList<>(DEFAULT_OFFSET_SPECS);
+
+        // Never null, defaults to latest
+        switch (offsetSpec) { // NOSONAR
+            case KafkaOffsetSpec.EARLIEST, KafkaOffsetSpec.LATEST, KafkaOffsetSpec.MAX_TIMESTAMP:
+                break;
+            default:
+                specs.add(OffsetSpec.forTimestamp(Instant.parse(offsetSpec).toEpochMilli()));
+                break;
+        }
+
+        return specs;
+    }
+
+    List<org.apache.kafka.common.TopicPartition> getTopicPartitions(Map<Uuid, Either<Topic, Throwable>> topics, Map<String, Uuid> topicIds) {
+        return topics.entrySet()
+                .stream()
+                .filter(entry -> entry.getValue().isPrimaryPresent())
+                .map(entry -> {
+                    var topic = entry.getValue().getPrimary();
+                    topicIds.put(topic.getName(), entry.getKey());
+                    return topic;
+                })
+                .filter(topic -> topic.getPartitions().isPrimaryPresent())
+                .flatMap(topic -> topic.getPartitions().getPrimary()
+                        .stream()
+                        .map(partition -> new org.apache.kafka.common.TopicPartition(topic.getName(), partition.getPartition())))
+                .toList();
+    }
+
+    String getOffsetKey(OffsetSpec spec) {
+        if (spec instanceof OffsetSpec.EarliestSpec) {
+            return KafkaOffsetSpec.EARLIEST;
+        }
+        if (spec instanceof OffsetSpec.LatestSpec) {
+            return KafkaOffsetSpec.LATEST;
+        }
+        if (spec instanceof OffsetSpec.MaxTimestampSpec) {
+            return KafkaOffsetSpec.MAX_TIMESTAMP;
+        }
+        return "timestamp";
+    }
+
+    Stream<CompletionStage<Void>> listOffsets(
+            Admin adminClient,
+            Map<Uuid, Either<Topic, Throwable>> topics,
+            Map<String, Uuid> topicIds,
+            Map<org.apache.kafka.common.TopicPartition, OffsetSpec> request) {
+
+        var result = adminClient.listOffsets(request);
+
+        return request.entrySet()
+                .stream()
+                .map(entry -> result.partitionResult(entry.getKey())
+                        .toCompletionStage()
+                        .<Void>handle((offsetResult, error) -> {
+                            addOffset(topics.get(topicIds.get(entry.getKey().topic())).getPrimary(),
+                                        entry.getKey().partition(),
+                                        getOffsetKey(entry.getValue()),
+                                        offsetResult,
+                                        error);
+                            return null;
+                        }));
+
+    }
+
+    void addOffset(Topic topic, int partitionNo, String key, ListOffsetsResultInfo result, Throwable error) {
         topic.getPartitions()
             .getPrimary()
             .stream()
             .filter(partition -> partition.getPartition() == partitionNo)
             .findFirst()
-            .ifPresent(partition -> partition.addOffset(either(result, error)));
+            .ifPresent(partition -> partition.addOffset(key, either(result, error)));
     }
 
     Either<OffsetInfo, Throwable> either(ListOffsetsResultInfo result, Throwable error) {

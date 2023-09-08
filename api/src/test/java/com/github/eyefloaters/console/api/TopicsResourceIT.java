@@ -69,7 +69,6 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.iterableWithSize;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.anyMap;
@@ -206,8 +205,8 @@ class TopicsResourceIT {
             .body("data.attributes", contains(aMapWithSize(2)))
             .body("data.attributes.name", contains(topicName))
             .body("data.attributes.partitions[0]", hasSize(2))
-            .body("data.attributes.partitions[0][0].offset.offset", is(2))
-            .body("data.attributes.partitions[0][0].offset.timestamp", is(nullValue()));
+            .body("data.attributes.partitions[0][0].offsets.latest.offset", is(2))
+            .body("data.attributes.partitions[0][0].offsets.latest", not(hasKey("timestamp")));
     }
 
     @Test
@@ -227,8 +226,26 @@ class TopicsResourceIT {
             .body("data.attributes", contains(aMapWithSize(2)))
             .body("data.attributes.name", contains(topicName))
             .body("data.attributes.partitions[0]", hasSize(2))
-            .body("data.attributes.partitions[0][0].offset.offset", is(0))
-            .body("data.attributes.partitions[0][0].offset.timestamp", is(nullValue()));
+            .body("data.attributes.partitions[0][0].offsets.earliest.offset", is(0))
+            .body("data.attributes.partitions[0][0].offsets.earliest", not(hasKey("timestamp")));
+    }
+
+    @Test
+    void testListTopicsWithRecordCountIncluded() {
+        String topicName = UUID.randomUUID().toString();
+        topicUtils.createTopics(clusterId1, List.of(topicName), 2);
+        topicUtils.produceRecord(topicName, 0, null, Collections.emptyMap(), "k1", "v1");
+        topicUtils.produceRecord(topicName, 0, null, Collections.emptyMap(), "k2", "v2");
+
+        whenRequesting(req -> req
+                .queryParam("fields[topics]", "name,recordCount")
+                .get("", clusterId1))
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()))
+            .body("data.size()", is(1))
+            .body("data.attributes", contains(aMapWithSize(2)))
+            .body("data.attributes.name", contains(topicName))
+            .body("data.attributes.recordCount", contains(2));
     }
 
     @Test
@@ -251,8 +268,8 @@ class TopicsResourceIT {
             .body("data.attributes", contains(aMapWithSize(2)))
             .body("data.attributes.name", contains(topicName))
             .body("data.attributes.partitions[0]", hasSize(2))
-            .body("data.attributes.partitions[0][0].offset.offset", is(0))
-            .body("data.attributes.partitions[0][0].offset.timestamp", is(first.toString()));
+            .body("data.attributes.partitions[0][0].offsets.timestamp.offset", is(0))
+            .body("data.attributes.partitions[0][0].offsets.timestamp.timestamp", is(first.toString()));
     }
 
     @Test
@@ -275,8 +292,8 @@ class TopicsResourceIT {
             .body("data.attributes", contains(aMapWithSize(2)))
             .body("data.attributes.name", contains(topicName))
             .body("data.attributes.partitions[0]", hasSize(2))
-            .body("data.attributes.partitions[0][0].offset.offset", is(1))
-            .body("data.attributes.partitions[0][0].offset.timestamp", is(second.toString()));
+            .body("data.attributes.partitions[0][0].offsets.maxTimestamp.offset", is(1))
+            .body("data.attributes.partitions[0][0].offsets.maxTimestamp.timestamp", is(second.toString()));
     }
 
     @ParameterizedTest
@@ -404,8 +421,8 @@ class TopicsResourceIT {
             .body("data.attributes.name", is(topicName))
             .body("data.attributes", not(hasKey("configs")))
             .body("data.attributes.partitions", hasSize(2))
-            .body("data.attributes.partitions[0].offset.offset", is(2))
-            .body("data.attributes.partitions[0].offset.timestamp", is(nullValue()));
+            .body("data.attributes.partitions[0].offsets.latest.offset", is(2))
+            .body("data.attributes.partitions[0].offsets.latest", not(hasKey("timestamp")));
     }
 
     @Test
@@ -423,8 +440,8 @@ class TopicsResourceIT {
             .body("data.attributes.name", is(topicName))
             .body("data.attributes", not(hasKey("configs")))
             .body("data.attributes.partitions", hasSize(2))
-            .body("data.attributes.partitions[0].offset.offset", is(0))
-            .body("data.attributes.partitions[0].offset.timestamp", is(nullValue()));
+            .body("data.attributes.partitions[0].offsets.earliest.offset", is(0))
+            .body("data.attributes.partitions[0].offsets.earliest", not(hasKey("timestamp")));
     }
 
     @Test
@@ -445,8 +462,8 @@ class TopicsResourceIT {
             .body("data.attributes.name", is(topicName))
             .body("data.attributes", not(hasKey("configs")))
             .body("data.attributes.partitions", hasSize(2))
-            .body("data.attributes.partitions[0].offset.offset", is(0))
-            .body("data.attributes.partitions[0].offset.timestamp", is(first.toString()));
+            .body("data.attributes.partitions[0].offsets.timestamp.offset", is(0))
+            .body("data.attributes.partitions[0].offsets.timestamp.timestamp", is(first.toString()));
     }
 
     @Test
@@ -467,8 +484,8 @@ class TopicsResourceIT {
             .body("data.attributes.name", is(topicName))
             .body("data.attributes", not(hasKey("configs")))
             .body("data.attributes.partitions", hasSize(2))
-            .body("data.attributes.partitions[0].offset.offset", is(1))
-            .body("data.attributes.partitions[0].offset.timestamp", is(second.toString()));
+            .body("data.attributes.partitions[0].offsets.maxTimestamp.offset", is(1))
+            .body("data.attributes.partitions[0].offsets.maxTimestamp.timestamp", is(second.toString()));
     }
 
     @Test
@@ -517,8 +534,8 @@ class TopicsResourceIT {
             .body("data.attributes.name", is(topicName))
             .body("data.attributes", not(hasKey("configs")))
             .body("data.attributes.partitions", hasSize(2))
-            .body("data.attributes.partitions[0].offset.meta.type", is("error"))
-            .body("data.attributes.partitions[0].offset.detail", is("EXPECTED TEST EXCEPTION"));
+            .body("data.attributes.partitions[0].offsets.latest.meta.type", is("error"))
+            .body("data.attributes.partitions[0].offsets.latest.detail", is("EXPECTED TEST EXCEPTION"));
     }
 
     @Test

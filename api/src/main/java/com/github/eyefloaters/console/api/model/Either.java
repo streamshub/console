@@ -57,6 +57,10 @@ public class Either<P, A> {
         return primary.get();
     }
 
+    public Optional<P> getOptionalPrimary() {
+        return primary;
+    }
+
     public A getAlternate() {
         return alternate;
     }

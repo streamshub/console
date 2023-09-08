@@ -4,6 +4,7 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -27,6 +28,7 @@ public class Topic {
         public static final String PARTITIONS = "partitions";
         public static final String AUTHORIZED_OPERATIONS = "authorizedOperations";
         public static final String CONFIGS = "configs";
+        public static final String RECORD_COUNT = "recordCount";
         static final Pattern CONFIG_KEY = Pattern.compile("^configs\\[([^\\]]+)\\]$");
 
         static final Comparator<Topic> ID_COMPARATOR =
@@ -42,7 +44,7 @@ public class Topic {
 
         public static final String LIST_DEFAULT = NAME + ", " + INTERNAL;
         public static final String DESCRIBE_DEFAULT =
-                NAME + ", " + INTERNAL + ", " + PARTITIONS + ", " + AUTHORIZED_OPERATIONS;
+                NAME + ", " + INTERNAL + ", " + PARTITIONS + ", " + AUTHORIZED_OPERATIONS + ", " + RECORD_COUNT;
 
         private Fields() {
             // Prevent instances
@@ -178,6 +180,22 @@ public class Topic {
 
     public Either<Map<String, ConfigEntry>, Error> getConfigs() {
         return configs;
+    }
+
+    /**
+     * Calculates the record count for the entire topic as the sum
+     * of the record counts of each individual partition. When the partitions
+     * are not available, the record count is null.
+     *
+     * @return the sum of the record counts for all partitions
+     */
+    public Long getRecordCount() {
+        return partitions.getOptionalPrimary()
+            .map(Collection::stream)
+            .map(p -> p.map(PartitionInfo::getRecordCount)
+                    .filter(Objects::nonNull)
+                    .reduce(0L, Long::sum))
+            .orElse(null);
     }
 
     ConfigEntry getConfigEntry(String key) {
