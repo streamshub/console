@@ -56,6 +56,7 @@ const PartitionSchema = z.object({
     maxTimestamp: OffsetSchema.optional(),
     timestamp: OffsetSchema.optional()
   }).optional().nullable(),
+  recordCount: z.number().optional(),
 });
 const ConfigSchema = z.object({
   value: z.string(),
@@ -73,6 +74,7 @@ const TopicSchema = z.object({
     partitions: z.array(PartitionSchema),
     authorizedOperations: z.array(z.string()),
     configs: z.record(z.string(), ConfigSchema),
+    recordCount: z.number().optional(),
   }),
 });
 export const TopicsResponse = z.object({

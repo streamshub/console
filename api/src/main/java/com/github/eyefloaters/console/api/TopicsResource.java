@@ -95,7 +95,8 @@ public class TopicsResource {
                         Topic.Fields.INTERNAL,
                         Topic.Fields.PARTITIONS,
                         Topic.Fields.AUTHORIZED_OPERATIONS,
-                        Topic.Fields.CONFIGS
+                        Topic.Fields.CONFIGS,
+                        Topic.Fields.RECORD_COUNT
                     },
                     payload = ErrorCategory.InvalidQueryParameter.class)
             @Parameter(
@@ -110,7 +111,8 @@ public class TopicsResource {
                                 Topic.Fields.INTERNAL,
                                 Topic.Fields.PARTITIONS,
                                 Topic.Fields.AUTHORIZED_OPERATIONS,
-                                Topic.Fields.CONFIGS
+                                Topic.Fields.CONFIGS,
+                                Topic.Fields.RECORD_COUNT
                             }))
             List<String> fields,
 
@@ -165,7 +167,8 @@ public class TopicsResource {
                         Topic.Fields.INTERNAL,
                         Topic.Fields.PARTITIONS,
                         Topic.Fields.AUTHORIZED_OPERATIONS,
-                        Topic.Fields.CONFIGS
+                        Topic.Fields.CONFIGS,
+                        Topic.Fields.RECORD_COUNT
                     },
                     payload = ErrorCategory.InvalidQueryParameter.class)
             @Parameter(
@@ -180,7 +183,8 @@ public class TopicsResource {
                                 Topic.Fields.INTERNAL,
                                 Topic.Fields.PARTITIONS,
                                 Topic.Fields.AUTHORIZED_OPERATIONS,
-                                Topic.Fields.CONFIGS
+                                Topic.Fields.CONFIGS,
+                                Topic.Fields.RECORD_COUNT
                             }))
             List<String> fields,
 

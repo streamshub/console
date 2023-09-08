@@ -206,11 +206,14 @@ public class TopicService {
     CompletableFuture<Void> maybeDescribeTopics(Admin adminClient, Map<Uuid, Topic> topics, List<String> fields, String offsetSpec) {
         CompletableFuture<Void> promise = new CompletableFuture<>();
 
-        if (fields.contains(Topic.Fields.PARTITIONS) || fields.contains(Topic.Fields.AUTHORIZED_OPERATIONS)) {
+        if (fields.contains(Topic.Fields.PARTITIONS)
+                || fields.contains(Topic.Fields.AUTHORIZED_OPERATIONS)
+                || fields.contains(Topic.Fields.RECORD_COUNT)) {
             describeTopics(adminClient, topics.keySet(), fields, offsetSpec)
                 .thenApply(descriptions -> {
                     descriptions.forEach((name, either) -> {
-                        if (fields.contains(Topic.Fields.PARTITIONS)) {
+                        if (fields.contains(Topic.Fields.PARTITIONS)
+                                || fields.contains(Topic.Fields.RECORD_COUNT)) {
                             topics.get(name).addPartitions(either);
                         }
                         if (fields.contains(Topic.Fields.AUTHORIZED_OPERATIONS)) {

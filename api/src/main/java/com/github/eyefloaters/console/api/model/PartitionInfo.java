@@ -3,11 +3,13 @@ package com.github.eyefloaters.console.api.model;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.github.eyefloaters.console.api.support.KafkaOffsetSpec;
 
 @JsonInclude(value = Include.NON_NULL)
 public class PartitionInfo {
@@ -71,5 +73,26 @@ public class PartitionInfo {
 
     public Map<String, Either<OffsetInfo, Error>> getOffsets() {
         return offsets;
+    }
+
+    /**
+     * Calculates the record count as the latest offset minus the earliest offset
+     * when both offsets are available only. When either the latest or the earliest
+     * offset if not present, the record count is null.
+     *
+     * @return the record count for this partition
+     */
+    public Long getRecordCount() {
+        return getOffset(KafkaOffsetSpec.LATEST)
+            .map(latestOffset -> getOffset(KafkaOffsetSpec.EARLIEST)
+                    .map(earliestOffset -> latestOffset - earliestOffset)
+                    .orElse(null))
+            .orElse(null);
+    }
+
+    Optional<Long> getOffset(String key) {
+        return Optional.ofNullable(offsets.get(key))
+            .flatMap(Either::getOptionalPrimary)
+            .map(OffsetInfo::offset);
     }
 }

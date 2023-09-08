@@ -261,15 +261,15 @@ export function TopicDashboard({ topic }: { topic: Topic }) {
               case "offsets":
                 return (
                   <Td key={key} dataLabel={"Offset"}>
-                    {row.offsets?.earliest?.offset}
+                    {row.offsets?.earliest?.offset ?? '-'}
                     /
-                    {row.offsets?.latest?.offset}
+                    {row.offsets?.latest?.offset ?? '-'}
                   </Td>
                 );
               case "recordCount":
                 return (
                   <Td key={key} dataLabel={"Record Count"}>
-                    { (row.offsets?.latest?.offset ?? 0) - (row.offsets?.earliest?.offset ?? 0) }
+                    {row.recordCount + '' || '-'}
                   </Td>
                 );
             }
