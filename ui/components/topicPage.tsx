@@ -269,7 +269,7 @@ export function TopicDashboard({ topic }: { topic: Topic }) {
               case "recordCount":
                 return (
                   <Td key={key} dataLabel={"Record Count"}>
-                    {row.recordCount + '' || '-'}
+                    {row.recordCount ?? '-'}
                   </Td>
                 );
             }
