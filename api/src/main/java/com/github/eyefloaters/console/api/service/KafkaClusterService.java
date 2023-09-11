@@ -19,7 +19,6 @@ import org.apache.kafka.common.KafkaFuture;
 
 import com.github.eyefloaters.console.api.model.KafkaCluster;
 import com.github.eyefloaters.console.api.model.Node;
-import com.github.eyefloaters.console.api.support.ComparatorBuilder;
 import com.github.eyefloaters.console.api.support.ListRequestContext;
 
 import io.fabric8.kubernetes.client.informers.SharedIndexInformer;
@@ -40,16 +39,17 @@ public class KafkaClusterService {
     @Inject
     Supplier<Admin> clientSupplier;
 
-    final ComparatorBuilder<KafkaCluster> comparators =
-            new ComparatorBuilder<>(KafkaCluster.Fields::comparator, KafkaCluster.Fields.defaultComparator());
-
-    public List<KafkaCluster> listClusters(ListRequestContext listSupport) {
+    public List<KafkaCluster> listClusters(ListRequestContext<KafkaCluster> listSupport) {
         return kafkaInformer.getStore()
                 .list()
                 .stream()
                 .map(k -> externalListeners(k).findFirst().map(l -> toKafkaCluster(k, l)).orElse(null))
                 .filter(Objects::nonNull)
-                .sorted(comparators.fromSort(listSupport.getSort()))
+                .map(listSupport::tally)
+                .filter(listSupport::betweenCursors)
+                .sorted(listSupport.getSortComparator())
+                .dropWhile(listSupport::beforePageBegin)
+                .takeWhile(listSupport::pageCapacityAvailable)
                 .toList();
     }
 

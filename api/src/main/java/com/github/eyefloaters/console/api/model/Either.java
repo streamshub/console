@@ -77,11 +77,8 @@ public class Either<P, A> {
             Function<P, Either<P1, A1>> primaryMapper,
             Function<A, A1> alternateMapper) {
 
-        if (isPrimaryPresent()) {
-            return primaryMapper.apply(getPrimary());
-        }
-
-        return Either.ofAlternate(alternateMapper.apply(getAlternate()));
+        return primary.map(primaryMapper::apply)
+            .orElseGet(() -> Either.ofAlternate(alternateMapper.apply(getAlternate())));
     }
 
 }

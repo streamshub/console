@@ -95,9 +95,9 @@ public class KafkaClustersResource {
 
         requestedFields.accept(fields);
 
-        ListRequestContext listSupport = new ListRequestContext(uriInfo.getRequestUri(), listParams);
+        ListRequestContext<KafkaCluster> listSupport = new ListRequestContext<>(KafkaCluster.Fields.COMPARATOR_BUILDER, uriInfo.getRequestUri(), listParams, KafkaCluster::fromCursor);
         var clusterList = clusterService.listClusters(listSupport);
-        var responseEntity = new KafkaCluster.ListResponse(clusterList);
+        var responseEntity = new KafkaCluster.ListResponse(clusterList, listParams.getSortNames());
 
         return Response.ok(responseEntity).build();
     }

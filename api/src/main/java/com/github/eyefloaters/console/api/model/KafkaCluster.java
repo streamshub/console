@@ -1,9 +1,16 @@
 package com.github.eyefloaters.console.api.model;
 
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+
+import jakarta.json.Json;
+import jakarta.json.JsonObject;
+import jakarta.json.JsonObjectBuilder;
 
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
@@ -40,6 +47,9 @@ public class KafkaCluster {
                                 BOOTSTRAP_SERVERS, comparing(KafkaCluster::getBootstrapServers, nullsLast(String::compareTo)),
                                 AUTH_TYPE, comparing(KafkaCluster::getAuthType, nullsLast(String::compareTo))));
 
+        public static final ComparatorBuilder<KafkaCluster> COMPARATOR_BUILDER =
+                new ComparatorBuilder<>(KafkaCluster.Fields::comparator, KafkaCluster.Fields.defaultComparator());
+
         public static final String LIST_DEFAULT =
                 NAME + ", "
                 + NAMESPACE + ", "
@@ -72,8 +82,12 @@ public class KafkaCluster {
 
     @Schema(name = "KafkaClusterListResponse")
     public static final class ListResponse extends DataListResponse<KafkaClusterResource> {
-        public ListResponse(List<KafkaCluster> data) {
-            super(data.stream().map(KafkaClusterResource::new).toList());
+        public ListResponse(List<KafkaCluster> data, List<String> sortFields) {
+            super(data.stream().map(entry -> {
+                var rsrc = new KafkaClusterResource(entry);
+                rsrc.addMeta("page", Map.of("cursor", entry.toCursor(sortFields)));
+                return rsrc;
+            }).toList());
         }
     }
 
@@ -108,6 +122,54 @@ public class KafkaCluster {
         this.nodes = nodes;
         this.controller = controller;
         this.authorizedOperations = authorizedOperations;
+    }
+
+    /**
+     * Constructs a "cursor" Topic from the encoded string representation of the subset
+     * of Topic fields used to compare entities for pagination/sorting.
+     */
+    public static KafkaCluster fromCursor(JsonObject cursor) {
+        if (cursor == null) {
+            return null;
+        }
+
+        JsonObject attr = Optional.ofNullable(cursor.getJsonObject("attributes"))
+                .orElseGet(() -> Json.createObjectBuilder().build());
+
+        KafkaCluster cluster = new KafkaCluster(cursor.getString("id"), null, null, null);
+        cluster.setName(attr.getString(Fields.NAME, null));
+        cluster.setNamespace(attr.getString(Fields.NAMESPACE, null));
+        cluster.setCreationTimestamp(attr.getString(Fields.CREATION_TIMESTAMP, null));
+        cluster.setBootstrapServers(attr.getString(Fields.BOOTSTRAP_SERVERS, null));
+        cluster.setAuthType(attr.getString(Fields.AUTH_TYPE, null));
+
+        return cluster;
+    }
+
+    public String toCursor(List<String> sortFields) {
+        JsonObjectBuilder cursor = Json.createObjectBuilder()
+                .add("id", id);
+
+        JsonObjectBuilder attrBuilder = Json.createObjectBuilder();
+        maybeAddAttribute(attrBuilder, sortFields, Fields.NAME, name);
+        maybeAddAttribute(attrBuilder, sortFields, Fields.NAMESPACE, namespace);
+        maybeAddAttribute(attrBuilder, sortFields, Fields.CREATION_TIMESTAMP, creationTimestamp);
+        maybeAddAttribute(attrBuilder, sortFields, Fields.BOOTSTRAP_SERVERS, bootstrapServers);
+        maybeAddAttribute(attrBuilder, sortFields, Fields.AUTH_TYPE, authType);
+
+        JsonObject attr = attrBuilder.build();
+
+        if (!attr.isEmpty()) {
+            cursor.add("attributes", attr);
+        }
+
+        return Base64.getUrlEncoder().encodeToString(cursor.build().toString().getBytes(StandardCharsets.UTF_8));
+    }
+
+    static void maybeAddAttribute(JsonObjectBuilder attrBuilder, List<String> sortFields, String key, String value) {
+        if (sortFields.contains(key)) {
+            attrBuilder.add(key, value);
+        }
     }
 
     public String getName() {

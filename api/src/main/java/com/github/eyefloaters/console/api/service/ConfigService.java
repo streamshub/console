@@ -31,12 +31,8 @@ public class ConfigService {
 
         return describeConfigs(clientSupplier.get(), List.of(nodeKey))
             .thenApply(configs -> configs.get(name))
-            .thenApply(configs -> {
-                if (configs.isPrimaryPresent()) {
-                    return configs.getPrimary();
-                }
-                throw new CompletionException(configs.getAlternate());
-            });
+            .thenApply(configs -> configs.getOptionalPrimary()
+                    .orElseThrow(() -> new CompletionException(configs.getAlternate())));
     }
 
 //    public CompletionStage<Map<String, ConfigEntry>> alterConfigs(ConfigResource.Type type, String name, Map<String, ConfigEntry> alteredConfigs) {

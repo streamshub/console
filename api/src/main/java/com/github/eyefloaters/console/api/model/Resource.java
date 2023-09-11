@@ -11,8 +11,8 @@ public abstract class Resource<T> {
 
     private final String id;
     private final String type;
-    private final T attributes;
     private Map<String, Object> meta;
+    private final T attributes;
 
     protected Resource(String id, String type, T attributes) {
         this.id = id;

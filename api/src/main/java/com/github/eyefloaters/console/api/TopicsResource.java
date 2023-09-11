@@ -6,6 +6,7 @@ import java.util.function.Consumer;
 
 import jakarta.inject.Inject;
 import jakarta.inject.Named;
+import jakarta.validation.Valid;
 import jakarta.ws.rs.BeanParam;
 import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
@@ -102,7 +103,6 @@ public class TopicsResource {
             @Parameter(
                     description = FieldFilter.FIELDS_DESCR,
                     explode = Explode.FALSE,
-                    allowEmptyValue = true,
                     schema = @Schema(
                             type = SchemaType.ARRAY,
                             implementation = String.class,
@@ -130,13 +130,14 @@ public class TopicsResource {
             String offsetSpec,
 
             @BeanParam
+            @Valid
             ListFetchParams listParams) {
 
         requestedFields.accept(fields);
-        ListRequestContext listSupport = new ListRequestContext(uriInfo.getRequestUri(), listParams);
+        ListRequestContext<Topic> listSupport = new ListRequestContext<>(Topic.Fields.COMPARATOR_BUILDER, uriInfo.getRequestUri(), listParams, Topic::fromCursor);
 
         return topicService.listTopics(fields, offsetSpec, listSupport)
-                .thenApply(Topic.ListResponse::new)
+                .thenApply(topics -> new Topic.ListResponse(topics, listParams.getSortNames()))
                 .thenApply(Response::ok)
                 .thenApply(Response.ResponseBuilder::build);
     }
@@ -174,7 +175,6 @@ public class TopicsResource {
             @Parameter(
                     description = FieldFilter.FIELDS_DESCR,
                     explode = Explode.FALSE,
-                    allowEmptyValue = true,
                     schema = @Schema(
                             type = SchemaType.ARRAY,
                             implementation = String.class,

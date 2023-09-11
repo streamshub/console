@@ -3,6 +3,9 @@ package com.github.eyefloaters.console.api.model;
 import java.util.Map;
 import java.util.Optional;
 
+import jakarta.json.Json;
+import jakarta.json.JsonObject;
+
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -61,6 +64,20 @@ public class ConfigEntry {
         entry.setDocumentation(kafkaEntry.documentation());
 
         return entry;
+    }
+
+    static ConfigEntry fromCursor(JsonObject cursor) {
+        ConfigEntry entry = new ConfigEntry();
+        entry.setType(cursor.getString("type", null));
+        entry.setValue(cursor.getString("value", null));
+        return entry;
+    }
+
+    JsonObject toCursorEntry() {
+        return Json.createObjectBuilder()
+                .add("type", getType())
+                .add("value", getValue())
+                .build();
     }
 
     /**
