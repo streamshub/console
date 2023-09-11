@@ -21,7 +21,7 @@ jobs:
           token: ${{secrets.RELEASE_TOKEN}}
 
       - name: Retrieve Project Metadata
-        uses: radcortez/project-metadata-action@243817f1e0f2b4df4e012fc17efc45cff166425d
+        uses: radcortez/project-metadata-action@203f7ffba8db2669b2c9b4d4c2e90b186c588fa5
         id: metadata
         with:
           github-token: ${{secrets.GITHUB_TOKEN}}
