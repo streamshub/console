@@ -342,7 +342,7 @@ class TopicsResourceIT {
             });
 
         whenRequesting(req -> req
-                .queryParam("sort", sortPrefix + "configs[" + sortParam + "]")
+                .queryParam("sort", sortPrefix + "configs.\"" + sortParam + "\"")
                 .queryParam("fields[topics]", "name,configs")
                 .get("", clusterId1))
             .assertThat()

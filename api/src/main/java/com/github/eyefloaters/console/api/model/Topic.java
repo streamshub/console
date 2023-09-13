@@ -21,6 +21,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import com.fasterxml.jackson.annotation.JsonFilter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.github.eyefloaters.console.api.support.ComparatorBuilder;
+import com.github.eyefloaters.console.api.support.ListRequestContext;
 
 import static java.util.Comparator.comparing;
 import static java.util.Comparator.nullsLast;
@@ -36,7 +37,7 @@ public class Topic {
         public static final String AUTHORIZED_OPERATIONS = "authorizedOperations";
         public static final String CONFIGS = "configs";
         public static final String RECORD_COUNT = "recordCount";
-        static final Pattern CONFIG_KEY = Pattern.compile("^configs\\[([^\\]]+)\\]$");
+        static final Pattern CONFIG_KEY = Pattern.compile("^configs\\.\"([^\"]+)\"$");
 
         static final Comparator<Topic> ID_COMPARATOR =
                 comparing(Topic::getId);
@@ -89,14 +90,15 @@ public class Topic {
 
     @Schema(name = "TopicListResponse")
     public static final class ListResponse extends DataListResponse<TopicResource> {
-        public ListResponse(List<Topic> data, List<String> sortFields) {
+        public ListResponse(List<Topic> data, ListRequestContext<Topic> listSupport) {
             super(data.stream()
                     .map(entry -> {
                         var rsrc = new TopicResource(entry);
-                        rsrc.addMeta("page", Map.of("cursor", entry.toCursor(sortFields)));
+                        rsrc.addMeta("page", listSupport.buildPageMeta(entry::toCursor));
                         return rsrc;
                     })
                     .toList());
+            addMeta("page", listSupport.buildPageMeta());
         }
     }
 
@@ -175,7 +177,7 @@ public class Topic {
                 .stream()
                 .collect(Collectors.toMap(
                         Map.Entry::getKey,
-                        e -> ConfigEntry.fromCursor(e.getValue().asJsonObject())));
+                        e -> ConfigEntry.fromCursor(e.getValue())));
             topic.configs = Either.of(configs);
         }
 
@@ -201,7 +203,7 @@ public class Topic {
                 ConfigEntry entry = getConfigEntry(configKey);
 
                 if (entry != null) {
-                    sortedConfigsBuilder.add(configKey, entry.toCursorEntry());
+                    sortedConfigsBuilder.add(configKey, entry.toCursor());
                 } else {
                     sortedConfigsBuilder.addNull(configKey);
                 }

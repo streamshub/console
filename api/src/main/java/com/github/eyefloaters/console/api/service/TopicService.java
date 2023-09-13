@@ -11,7 +11,9 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -39,6 +41,8 @@ public class TopicService {
 
     private static final List<OffsetSpec> DEFAULT_OFFSET_SPECS =
             List.of(OffsetSpec.earliest(), OffsetSpec.latest(), OffsetSpec.maxTimestamp());
+    private static final Predicate<String> CONFIG_SORT =
+            Pattern.compile("^-?configs\\..+$").asMatchPredicate();
 
     @Inject
     Supplier<Admin> clientSupplier;
@@ -73,10 +77,11 @@ public class TopicService {
 
     public CompletionStage<List<Topic>> listTopics(List<String> fields, String offsetSpec, ListRequestContext<Topic> listSupport) {
         List<String> fetchList = new ArrayList<>(fields);
-        String sort = listSupport.getSort();
-        if (sort != null && sort.contains("configs[")) {
+
+        if (listSupport.getSortEntries().stream().anyMatch(CONFIG_SORT)) {
             fetchList.add(Topic.Fields.CONFIGS);
         }
+
         Admin adminClient = clientSupplier.get();
 
         return adminClient.listTopics()

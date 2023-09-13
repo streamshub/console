@@ -11,6 +11,8 @@ import jakarta.ws.rs.ext.Provider;
 
 import org.apache.kafka.common.errors.TimeoutException;
 
+import com.github.eyefloaters.console.api.support.InvalidPageCursorException;
+
 @Provider
 public class CompletionExceptionHandler implements ExceptionMapper<CompletionException> {
 
@@ -21,6 +23,7 @@ public class CompletionExceptionHandler implements ExceptionMapper<CompletionExc
         MAPPERS.put(NotFoundException.class, new NotFoundExceptionHandler());
         MAPPERS.put(org.apache.kafka.common.errors.UnknownTopicIdException.class, new UnknownTopicIdExceptionHandler());
         MAPPERS.put(org.apache.kafka.common.errors.UnknownTopicOrPartitionException.class, new UnknownTopicOrPartitionExceptionHandler());
+        MAPPERS.put(InvalidPageCursorException.class, new InvalidPageCursorExceptionHandler());
         MAPPERS.put(TimeoutException.class, new TimeoutExceptionHandler());
     }
 

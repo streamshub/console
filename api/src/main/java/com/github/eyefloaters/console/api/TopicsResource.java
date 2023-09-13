@@ -137,7 +137,7 @@ public class TopicsResource {
         ListRequestContext<Topic> listSupport = new ListRequestContext<>(Topic.Fields.COMPARATOR_BUILDER, uriInfo.getRequestUri(), listParams, Topic::fromCursor);
 
         return topicService.listTopics(fields, offsetSpec, listSupport)
-                .thenApply(topics -> new Topic.ListResponse(topics, listParams.getSortNames()))
+                .thenApply(topics -> new Topic.ListResponse(topics, listSupport))
                 .thenApply(Response::ok)
                 .thenApply(Response.ResponseBuilder::build);
     }

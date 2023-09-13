@@ -3,8 +3,9 @@ package com.github.eyefloaters.console.api.model;
 import java.util.Map;
 import java.util.Optional;
 
-import jakarta.json.Json;
-import jakarta.json.JsonObject;
+import jakarta.json.JsonString;
+import jakarta.json.JsonValue;
+import jakarta.json.JsonValue.ValueType;
 
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
@@ -66,18 +67,20 @@ public class ConfigEntry {
         return entry;
     }
 
-    static ConfigEntry fromCursor(JsonObject cursor) {
+    static ConfigEntry fromCursor(JsonValue cursorValue) {
+        if (cursorValue.getValueType() != ValueType.STRING) {
+            return null;
+        }
+
+        String cursor = ((JsonString) cursorValue).getString();
         ConfigEntry entry = new ConfigEntry();
-        entry.setType(cursor.getString("type", null));
-        entry.setValue(cursor.getString("value", null));
+        entry.setType(cursor.substring(0, cursor.indexOf(':')));
+        entry.setValue(cursor.substring(cursor.indexOf(':') + 1));
         return entry;
     }
 
-    JsonObject toCursorEntry() {
-        return Json.createObjectBuilder()
-                .add("type", getType())
-                .add("value", getValue())
-                .build();
+    String toCursor() {
+        return "%s:%s".formatted(getType(), getValue());
     }
 
     /**

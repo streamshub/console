@@ -1,7 +1,12 @@
 package com.github.eyefloaters.console.api.support;
 
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
 
 import jakarta.json.JsonObject;
@@ -12,7 +17,7 @@ public class ListRequestContext<T> {
 
     final ComparatorBuilder<T> comparatorBuilder;
     final URI requestUri;
-    final String sort;
+    final ListFetchParams listParams;
     final Comparator<T> sortComparator;
 
     final int pageSize;
@@ -26,6 +31,7 @@ public class ListRequestContext<T> {
     int totalRecords = 0;
     int candidateRecords = 0;
     int recordsIncluded = 0;
+    boolean rangeTruncated = false;
 
     T firstPageEntry;
     T finalPageEntry;
@@ -33,15 +39,30 @@ public class ListRequestContext<T> {
     public ListRequestContext(ComparatorBuilder<T> comparatorBuilder, URI requestUri, ListFetchParams listParams, Function<JsonObject, T> cursorMapper) {
         this.comparatorBuilder = comparatorBuilder;
         this.requestUri = requestUri;
-        sort = listParams.getSort();
-        sortComparator = comparatorBuilder.fromSort(sort);
+        this.listParams = listParams;
+
+        sortComparator = comparatorBuilder.fromSort(listParams.getSortEntries());
         pageSize = listParams.getPageSize();
 
-        pageBeginExclusive = cursorMapper.apply(listParams.getPageAfter());
-        beforePageComparator = Comparator.nullsFirst(sortComparator);
+        List<String> badCursors = new ArrayList<>(2);
+        pageBeginExclusive = mapCursor("page[after]", listParams.getPageAfter(), cursorMapper, badCursors);
+        pageEndExclusive = mapCursor("page[before]", listParams.getPageBefore(), cursorMapper, badCursors);
 
-        pageEndExclusive = cursorMapper.apply(listParams.getPageBefore());
+        if (!badCursors.isEmpty()) {
+            throw new InvalidPageCursorException("One or more page cursors were invalid", badCursors);
+        }
+
+        beforePageComparator = Comparator.nullsFirst(sortComparator);
         afterPageComparator = Comparator.nullsLast(sortComparator);
+    }
+
+    static <C> C mapCursor(String name, JsonObject source, Function<JsonObject, C> mapper, List<String> badCursors) {
+        try {
+            return mapper.apply(source);
+        } catch (Exception e) {
+            badCursors.add(name);
+            return null;
+        }
     }
 
     public T tally(T item) {
@@ -53,8 +74,12 @@ public class ListRequestContext<T> {
         return sortComparator;
     }
 
-    public String getSort() {
-        return sort;
+    public List<String> getSortEntries() {
+        return listParams.getSortEntries();
+    }
+
+    public List<String> getSortNames() {
+        return listParams.getSortNames();
     }
 
     public boolean betweenCursors(T item) {
@@ -74,12 +99,15 @@ public class ListRequestContext<T> {
         return afterPageComparator.compare(item, pageEndExclusive) >= 0;
     }
 
+    /**
+     * Determine whether the provided item occurs prior to the start of the page.
+     *
+     * @param item current item being processed
+     * @return true when the provided item occurs prior to the start of the page,
+     *         else false.
+     */
     public boolean beforePageBegin(T item) {
-        if (pageEndExclusive == null) {
-            return false;
-        }
-
-        if (candidateRecords > pageSize) {
+        if (Objects.isNull(pageBeginExclusive) && candidateRecords > pageSize) {
             candidateRecords--;
             return true;
         }
@@ -97,6 +125,24 @@ public class ListRequestContext<T> {
             return true;
         }
 
+        rangeTruncated = pageBeginExclusive != null && pageEndExclusive != null;
+
         return false;
+    }
+
+    public Map<String, Object> buildPageMeta(Function<List<String>, String> cursorBuilder) {
+        return Map.of("cursor", cursorBuilder.apply(getSortNames()));
+    }
+
+    public Map<String, Object> buildPageMeta() {
+        Map<String, Object> pageMeta = new LinkedHashMap<>();
+
+        pageMeta.put("total", totalRecords);
+
+        if (rangeTruncated) {
+            pageMeta.put("rangeTruncated", true);
+        }
+
+        return pageMeta;
     }
 }

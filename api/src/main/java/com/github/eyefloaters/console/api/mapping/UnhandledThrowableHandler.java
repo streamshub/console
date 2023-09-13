@@ -1,7 +1,6 @@
 package com.github.eyefloaters.console.api.mapping;
 
 import java.util.List;
-import java.util.UUID;
 
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.ExceptionMapper;
@@ -21,13 +20,8 @@ public class UnhandledThrowableHandler implements ExceptionMapper<Throwable> {
 
     @Override
     public Response toResponse(Throwable exception) {
-        String id = UUID.randomUUID().toString();
-        Error error = new Error(CATEGORY.getTitle(), exception.getMessage(), exception);
-        error.setId(id);
-        error.setStatus(String.valueOf(CATEGORY.getHttpStatus().getStatusCode()));
-        error.setCode(CATEGORY.getCode());
-
-        logger.warnf(exception, "id=%s title='%s' detail='%s' source=%s", id, error.getTitle(), error.getDetail(), error.getSource());
+        Error error = CATEGORY.createError(exception.getMessage(), exception, null);
+        logger.warnf(exception, "error=%s", error);
 
         return Response.status(CATEGORY.getHttpStatus())
                 .entity(new ErrorResponse(List.of(error)))

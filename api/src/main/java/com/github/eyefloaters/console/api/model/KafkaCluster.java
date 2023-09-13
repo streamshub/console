@@ -11,12 +11,14 @@ import java.util.Optional;
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
+import jakarta.json.JsonValue;
 
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 import com.fasterxml.jackson.annotation.JsonFilter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.github.eyefloaters.console.api.support.ComparatorBuilder;
+import com.github.eyefloaters.console.api.support.ListRequestContext;
 
 import static java.util.Comparator.comparing;
 import static java.util.Comparator.nullsLast;
@@ -82,12 +84,15 @@ public class KafkaCluster {
 
     @Schema(name = "KafkaClusterListResponse")
     public static final class ListResponse extends DataListResponse<KafkaClusterResource> {
-        public ListResponse(List<KafkaCluster> data, List<String> sortFields) {
-            super(data.stream().map(entry -> {
-                var rsrc = new KafkaClusterResource(entry);
-                rsrc.addMeta("page", Map.of("cursor", entry.toCursor(sortFields)));
-                return rsrc;
-            }).toList());
+        public ListResponse(List<KafkaCluster> data, ListRequestContext<KafkaCluster> listSupport) {
+            super(data.stream()
+                    .map(entry -> {
+                        var rsrc = new KafkaClusterResource(entry);
+                        rsrc.addMeta("page", listSupport.buildPageMeta(entry::toCursor));
+                        return rsrc;
+                    })
+                    .toList());
+            addMeta("page", listSupport.buildPageMeta());
         }
     }
 
@@ -168,7 +173,7 @@ public class KafkaCluster {
 
     static void maybeAddAttribute(JsonObjectBuilder attrBuilder, List<String> sortFields, String key, String value) {
         if (sortFields.contains(key)) {
-            attrBuilder.add(key, value);
+            attrBuilder.add(key, value != null ? Json.createValue(value) : JsonValue.NULL);
         }
     }
 
