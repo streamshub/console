@@ -6,7 +6,6 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
@@ -138,10 +137,8 @@ public class KafkaCluster {
             return null;
         }
 
-        JsonObject attr = Optional.ofNullable(cursor.getJsonObject("attributes"))
-                .orElseGet(() -> Json.createObjectBuilder().build());
-
         KafkaCluster cluster = new KafkaCluster(cursor.getString("id"), null, null, null);
+        JsonObject attr = cursor.getJsonObject("attributes");
         cluster.setName(attr.getString(Fields.NAME, null));
         cluster.setNamespace(attr.getString(Fields.NAMESPACE, null));
         cluster.setCreationTimestamp(attr.getString(Fields.CREATION_TIMESTAMP, null));
@@ -161,12 +158,7 @@ public class KafkaCluster {
         maybeAddAttribute(attrBuilder, sortFields, Fields.CREATION_TIMESTAMP, creationTimestamp);
         maybeAddAttribute(attrBuilder, sortFields, Fields.BOOTSTRAP_SERVERS, bootstrapServers);
         maybeAddAttribute(attrBuilder, sortFields, Fields.AUTH_TYPE, authType);
-
-        JsonObject attr = attrBuilder.build();
-
-        if (!attr.isEmpty()) {
-            cursor.add("attributes", attr);
-        }
+        cursor.add("attributes", attrBuilder.build());
 
         return Base64.getUrlEncoder().encodeToString(cursor.build().toString().getBytes(StandardCharsets.UTF_8));
     }

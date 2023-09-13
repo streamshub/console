@@ -44,6 +44,8 @@ public abstract class ErrorCategory implements Payload {
      *      Page Size Exceeded Error</a>
      */
     public static class MaxPageSizeExceededError extends ErrorCategory {
+        public static final String TYPE_LINK = "https://jsonapi.org/profiles/ethanresnick/cursor-pagination/max-size-exceeded";
+
         public MaxPageSizeExceededError() {
             super("4002", "Requested page size exceeds limit", Status.BAD_REQUEST, Source.PARAMETER);
         }
@@ -52,7 +54,7 @@ public abstract class ErrorCategory implements Payload {
         public Error createError(String message, Throwable cause, String property) {
             Error error = super.createError(message, cause, property);
             error.addMeta("page", Map.of("maxSize", ListFetchParams.PAGE_SIZE_MAX));
-            error.addLink("type", "https://jsonapi.org/profiles/ethanresnick/cursor-pagination/max-size-exceeded");
+            error.addLink("type", TYPE_LINK);
             return error;
         }
     }

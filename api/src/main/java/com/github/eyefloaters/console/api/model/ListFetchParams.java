@@ -1,7 +1,6 @@
 package com.github.eyefloaters.console.api.model;
 
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
@@ -14,7 +13,6 @@ import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import jakarta.json.Json;
-import jakarta.json.JsonArray;
 import jakarta.json.JsonException;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonValue;
@@ -143,10 +141,6 @@ public class ListFetchParams {
     JsonObject pageAfterParsed;
     JsonObject pageBeforeParsed;
 
-    public String getRawSort() {
-        return sort;
-    }
-
     public String getRawPageAfter() {
         return pageAfter;
     }
@@ -264,11 +258,9 @@ public class ListFetchParams {
                 return null;
             }
 
-            try (var stream = new ByteArrayInputStream(decoded);
-                 var parser = Json.createParser(stream)) {
-                parser.next();
-                return parser.getObject();
-            } catch (JsonException | IOException e) {
+            try (var reader = Json.createReader(new ByteArrayInputStream(decoded))) {
+                return reader.readObject();
+            } catch (JsonException e) {
                 if (LOGGER.isDebugEnabled()) {
                     LOGGER.debugf(e, "Failed to parse JSON: '%s'", new String(decoded));
                 }
@@ -296,27 +288,21 @@ public class ListFetchParams {
         return value;
     }
 
-    static void appendPointers(List<String> pointers, String parent, JsonObject object) {
-        object.forEach((key, value) ->
-            appendPointers(pointers, parent + "/" + Json.encodePointer(key), value));
-    }
-
-    static void appendPointers(List<String> pointers, String parent, JsonArray array) {
-        int index = 0;
-
-        for (var value : array) {
-            appendPointers(pointers, parent + "/" + (index++), value);
-        }
-    }
-
     static void appendPointers(List<String> pointers, String pointer, JsonValue value) {
         switch (value.getValueType()) {
             case OBJECT:
-                appendPointers(pointers, pointer, value.asJsonObject());
+                value.asJsonObject().forEach((k, v) ->
+                    appendPointers(pointers, pointer + "/" + Json.encodePointer(k), v));
                 break;
+
             case ARRAY:
-                appendPointers(pointers, pointer, value.asJsonArray());
+                int index = 0;
+
+                for (var entry : value.asJsonArray()) {
+                    appendPointers(pointers, pointer + "/" + (index++), entry);
+                }
                 break;
+
             default:
                 // save the pointer of any terminal node, value does not matter
                 pointers.add(pointer);

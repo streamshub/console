@@ -166,8 +166,7 @@ public class Topic {
             return null;
         }
 
-        JsonObject attr = Optional.ofNullable(cursor.getJsonObject("attributes"))
-                .orElseGet(() -> Json.createObjectBuilder().build());
+        JsonObject attr = cursor.getJsonObject("attributes");
 
         Topic topic = new Topic(attr.getString(Fields.NAME, null), false, cursor.getString("id"));
 
@@ -215,11 +214,7 @@ public class Topic {
             attrBuilder.add(Fields.CONFIGS, sortedConfigs);
         }
 
-        JsonObject attr = attrBuilder.build();
-
-        if (!attr.isEmpty()) {
-            cursor.add("attributes", attr);
-        }
+        cursor.add("attributes", attrBuilder.build());
 
         return Base64.getUrlEncoder().encodeToString(cursor.build().toString().getBytes(StandardCharsets.UTF_8));
     }

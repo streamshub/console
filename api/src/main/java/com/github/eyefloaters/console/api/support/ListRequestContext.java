@@ -33,6 +33,9 @@ public class ListRequestContext<T> {
     int recordsIncluded = 0;
     boolean rangeTruncated = false;
 
+    T firstDatasetEntry;
+    T finalDatasetEntry;
+
     T firstPageEntry;
     T finalPageEntry;
 
@@ -83,6 +86,14 @@ public class ListRequestContext<T> {
     }
 
     public boolean betweenCursors(T item) {
+        if (isLowestEntry(item)) {
+            firstDatasetEntry = item;
+        }
+
+        if (isHighestEntry(item)) {
+            finalDatasetEntry = item;
+        }
+
         if (beforePageCursor(item) || afterPageCursor(item)) {
             return false;
         }
@@ -97,6 +108,14 @@ public class ListRequestContext<T> {
 
     boolean afterPageCursor(T item) {
         return afterPageComparator.compare(item, pageEndExclusive) >= 0;
+    }
+
+    boolean isLowestEntry(T item) {
+        return afterPageComparator.compare(item, firstDatasetEntry) <= 0;
+    }
+
+    boolean isHighestEntry(T item) {
+        return beforePageComparator.compare(item, finalDatasetEntry) >= 0;
     }
 
     /**
