@@ -17,6 +17,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
+import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -66,9 +67,12 @@ class LoggingConfigWatcherTest {
         assertTrue(dirExists);
         assertEquals(3, loopCount.get());
         assertFalse(override.exists());
-        assertTrue(watcher.overriddenLoggers.isEmpty(), () -> "overriddenLoggers not empty: " + watcher.overriddenLoggers);
+        await("overriddenLoggers to become empty")
+            .atMost(1, TimeUnit.SECONDS)
+            .until(watcher.overriddenLoggers::isEmpty);
         assertEquals(originalLevelValue, context.getLogger(logger).getLevel());
     }
+
     @ParameterizedTest
     @CsvSource({
         "'',                       quarkus.log.level",

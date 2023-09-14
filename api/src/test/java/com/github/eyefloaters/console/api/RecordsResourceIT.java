@@ -18,7 +18,11 @@ import jakarta.inject.Inject;
 import jakarta.ws.rs.core.Response.Status;
 
 import org.apache.kafka.common.Uuid;
+import org.awaitility.core.ConditionEvaluationListener;
+import org.awaitility.core.EvaluatedCondition;
+import org.awaitility.core.TimeoutEvent;
 import org.eclipse.microprofile.config.Config;
+import org.jboss.logging.Logger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -201,6 +205,15 @@ class RecordsResourceIT {
         recordUtils.produceRecord(topicName, ts2, null, "the-key2", "the-value2");
 
         await().atMost(10, TimeUnit.SECONDS)
+            .conditionEvaluationListener(new ConditionEvaluationListener<Boolean>() {
+                @Override
+                public void conditionEvaluated(EvaluatedCondition<Boolean> condition) {
+                    // No-op
+                }
+                public void onTimeout(TimeoutEvent timeoutEvent) {
+                    Logger.getLogger(getClass()).warnf("Timed out waiting for number of records to be 2: actual %d", topicUtils.getTopicSize(topicName));
+                }
+            })
             .until(() -> topicUtils.getTopicSize(topicName) >= 2);
 
         whenRequesting(req -> req
