@@ -217,7 +217,7 @@ public class ListFetchParams {
      *
      * @param cursor one of the request cursors.
      * @return true if the cursor was successfully parsed and is valid vis-à-vis the
-     *         `sort` query parameter parameter, else false.
+     *         `sort` query parameter, else false.
      */
     public boolean isValidCursor(JsonObject cursor) {
         if (cursor == null) {
