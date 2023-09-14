@@ -1,9 +1,16 @@
 package com.github.eyefloaters.console.test;
 
 import java.net.URI;
+import java.util.Optional;
 import java.util.Properties;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+
+import jakarta.json.JsonObject;
+import jakarta.json.JsonString;
+import jakarta.json.JsonStructure;
+import jakarta.json.JsonValue;
 
 import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.clients.admin.AdminClientConfig;
@@ -39,6 +46,10 @@ public class TestHelper {
             ClientsConfig.getAdminConfig(config);
 
         adminConfig.setProperty(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers.toString());
+    }
+
+    public Kafka buildKafkaResource(String name, URI bootstrapServers) {
+        return buildKafkaResource(name, UUID.randomUUID().toString(), bootstrapServers);
     }
 
     public Kafka buildKafkaResource(String name, String id, URI bootstrapServers) {
@@ -83,6 +94,17 @@ public class TestHelper {
         }
 
         return null;
+    }
+
+    public Optional<String> getCursor(JsonObject dataList, Integer idx) {
+        return Optional.ofNullable(idx)
+            .map("/data/%d/meta/page/cursor"::formatted)
+            .map(pointer -> getValue(dataList, JsonString.class, pointer))
+            .map(JsonString::getString);
+    }
+
+    public <J extends JsonValue> J getValue(JsonStructure source, Class<J> type, String pointer) {
+        return type.cast(source.getValue(pointer));
     }
 
     public static ValidatableResponse whenRequesting(Function<RequestSpecification, Response> requestFn) {

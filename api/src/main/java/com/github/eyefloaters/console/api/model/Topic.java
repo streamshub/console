@@ -1,5 +1,7 @@
 package com.github.eyefloaters.console.api.model;
 
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
@@ -8,12 +10,18 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+
+import jakarta.json.Json;
+import jakarta.json.JsonObject;
+import jakarta.json.JsonObjectBuilder;
 
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 import com.fasterxml.jackson.annotation.JsonFilter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.github.eyefloaters.console.api.support.ComparatorBuilder;
+import com.github.eyefloaters.console.api.support.ListRequestContext;
 
 import static java.util.Comparator.comparing;
 import static java.util.Comparator.nullsLast;
@@ -29,18 +37,20 @@ public class Topic {
         public static final String AUTHORIZED_OPERATIONS = "authorizedOperations";
         public static final String CONFIGS = "configs";
         public static final String RECORD_COUNT = "recordCount";
-        static final Pattern CONFIG_KEY = Pattern.compile("^configs\\[([^\\]]+)\\]$");
+        static final Pattern CONFIG_KEY = Pattern.compile("^configs\\.\"([^\"]+)\"$");
 
         static final Comparator<Topic> ID_COMPARATOR =
                 comparing(Topic::getId);
 
         static final Comparator<ConfigEntry> CONFIG_COMPARATOR =
-                nullsLast(comparing(ConfigEntry::getName, nullsLast(Comparable::compareTo)))
-                    .thenComparing(ConfigEntry::getType, nullsLast(Comparable::compareTo))
+                nullsLast(comparing(ConfigEntry::getType, nullsLast(Comparable::compareTo)))
                     .thenComparing(nullsLast(ConfigEntry::compareValues));
 
         static final Map<String, Map<Boolean, Comparator<Topic>>> COMPARATORS = ComparatorBuilder.bidirectional(
                 Map.of("id", ID_COMPARATOR, NAME, comparing(Topic::getName)));
+
+        public static final ComparatorBuilder<Topic> COMPARATOR_BUILDER =
+                new ComparatorBuilder<>(Topic.Fields::comparator, Topic.Fields.defaultComparator());
 
         public static final String LIST_DEFAULT = NAME + ", " + INTERNAL;
         public static final String DESCRIBE_DEFAULT =
@@ -80,8 +90,15 @@ public class Topic {
 
     @Schema(name = "TopicListResponse")
     public static final class ListResponse extends DataListResponse<TopicResource> {
-        public ListResponse(List<Topic> data) {
-            super(data.stream().map(TopicResource::new).toList());
+        public ListResponse(List<Topic> data, ListRequestContext<Topic> listSupport) {
+            super(data.stream()
+                    .map(entry -> {
+                        var rsrc = new TopicResource(entry);
+                        rsrc.addMeta("page", listSupport.buildPageMeta(entry::toCursor));
+                        return rsrc;
+                    })
+                    .toList());
+            addMeta("page", listSupport.buildPageMeta());
         }
     }
 
@@ -138,6 +155,68 @@ public class Topic {
                 .orElse(null));
 
         return topic;
+    }
+
+    /**
+     * Constructs a "cursor" Topic from the encoded string representation of the subset
+     * of Topic fields used to compare entities for pagination/sorting.
+     */
+    public static Topic fromCursor(JsonObject cursor) {
+        if (cursor == null) {
+            return null;
+        }
+
+        JsonObject attr = cursor.getJsonObject("attributes");
+
+        Topic topic = new Topic(attr.getString(Fields.NAME, null), false, cursor.getString("id"));
+
+        if (attr.containsKey(Fields.CONFIGS)) {
+            var configs = attr.getJsonObject(Fields.CONFIGS)
+                .entrySet()
+                .stream()
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        e -> ConfigEntry.fromCursor(e.getValue())));
+            topic.configs = Either.of(configs);
+        }
+
+        return topic;
+    }
+
+    public String toCursor(List<String> sortFields) {
+        JsonObjectBuilder cursor = Json.createObjectBuilder()
+                .add("id", id);
+        JsonObjectBuilder attrBuilder = Json.createObjectBuilder();
+
+        if (sortFields.contains(Fields.NAME)) {
+            attrBuilder.add(Fields.NAME, name);
+        }
+
+        JsonObjectBuilder sortedConfigsBuilder = Json.createObjectBuilder();
+
+        sortFields.stream()
+            .map(Fields.CONFIG_KEY::matcher)
+            .filter(Matcher::matches)
+            .forEach(configMatcher -> {
+                String configKey = configMatcher.group(1);
+                ConfigEntry entry = getConfigEntry(configKey);
+
+                if (entry != null) {
+                    sortedConfigsBuilder.add(configKey, entry.toCursor());
+                } else {
+                    sortedConfigsBuilder.addNull(configKey);
+                }
+            });
+
+        JsonObject sortedConfigs = sortedConfigsBuilder.build();
+
+        if (!sortedConfigs.isEmpty()) {
+            attrBuilder.add(Fields.CONFIGS, sortedConfigs);
+        }
+
+        cursor.add("attributes", attrBuilder.build());
+
+        return Base64.getUrlEncoder().encodeToString(cursor.build().toString().getBytes(StandardCharsets.UTF_8));
     }
 
     public void addPartitions(Either<Topic, Throwable> description) {
@@ -199,11 +278,10 @@ public class Topic {
     }
 
     ConfigEntry getConfigEntry(String key) {
-        if (configs != null && configs.isPrimaryPresent()) {
-            return configs.getPrimary().get(key);
-        }
-
-        return null;
+        return Optional.ofNullable(configs)
+            .flatMap(Either::getOptionalPrimary)
+            .map(c -> c.get(key))
+            .orElse(null);
     }
 
 }

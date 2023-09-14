@@ -7,6 +7,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -17,6 +18,9 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import jakarta.inject.Inject;
+import jakarta.json.Json;
+import jakarta.json.JsonObject;
+import jakarta.json.JsonString;
 import jakarta.ws.rs.core.Response.Status;
 
 import org.apache.kafka.clients.admin.DescribeConfigsResult;
@@ -55,6 +59,7 @@ import io.quarkus.test.kubernetes.client.KubernetesServerTestResource;
 import io.strimzi.api.kafka.model.Kafka;
 
 import static com.github.eyefloaters.console.test.TestHelper.whenRequesting;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.aMapWithSize;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.anEmptyMap;
@@ -69,6 +74,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.iterableWithSize;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.startsWith;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.anyMap;
@@ -342,7 +348,7 @@ class TopicsResourceIT {
             });
 
         whenRequesting(req -> req
-                .queryParam("sort", sortPrefix + "configs[" + sortParam + "]")
+                .queryParam("sort", sortPrefix + "configs.\"" + sortParam + "\"")
                 .queryParam("fields[topics]", "name,configs")
                 .get("", clusterId1))
             .assertThat()
@@ -351,9 +357,75 @@ class TopicsResourceIT {
             .body("data.attributes.configs.\"" + sortParam + "\".value", contains(expectedValues));
     }
 
+    @Test
+    void testListTopicsSortedByRetentionMsWithPagination() {
+        final int week = 604800000;
+        String randomSuffix = UUID.randomUUID().toString();
+        Map<String, String> topicIds = new HashMap<>();
+
+        IntStream.range(0, 10).forEach(i -> {
+            var names = List.of("t" + i + "-" + randomSuffix);
+            var configs = Map.of("retention.ms", Integer.toString(week + i));
+            topicIds.putAll(topicUtils.createTopics(clusterId1, names, 1, configs));
+        });
+
+        var fullResponse = whenRequesting(req -> req
+                .queryParam("sort", "configs.\"retention.ms\"")
+                .queryParam("fields[topics]", "name,configs")
+                .get("", clusterId1))
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()))
+            .body("meta.page.total", is(topicIds.size()))
+            .body("data.size()", is(topicIds.size()))
+            .body("data.meta.page", everyItem(hasKey(equalTo("cursor"))))
+            .extract()
+            .asInputStream();
+
+        JsonObject responseJson;
+
+        try (var reader = Json.createReader(fullResponse)) {
+            responseJson = reader.readObject();
+        }
+
+        Map<String, Object> parametersMap = new HashMap<>();
+        parametersMap.put("sort", "configs.\"retention.ms\"");
+        parametersMap.put("fields[topics]", "name,configs");
+
+        // range request excluding first and last from full result set
+        utils.getCursor(responseJson, 0)
+            .ifPresent(cursor -> parametersMap.put("page[after]", cursor));
+        utils.getCursor(responseJson, topicIds.size() - 1)
+            .ifPresent(cursor -> parametersMap.put("page[before]", cursor));
+
+        var rangeResponse = whenRequesting(req -> req
+                .queryParams(parametersMap)
+                .get("", clusterId1))
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()))
+            .body("meta.page.total", is(topicIds.size())) // total is the count for the full/unpaged result set
+            .body("data.size()", is(topicIds.size() - 2))
+            .body("data.meta.page", everyItem(hasKey(equalTo("cursor"))))
+            .extract()
+            .asInputStream();
+
+        JsonObject rangeResponseJson;
+
+        try (var reader = Json.createReader(rangeResponse)) {
+            rangeResponseJson = reader.readObject();
+        }
+
+        IntStream.range(1, 9).forEach(i -> {
+            int responseIdx = i - 1;
+            String actualName = utils.getValue(rangeResponseJson, JsonString.class, "/data/%d/attributes/name".formatted(responseIdx)).getString();
+            assertThat(actualName, startsWith("t" + i + "-"));
+            String retentionMs = utils.getValue(rangeResponseJson, JsonString.class, "/data/%d/attributes/configs/retention.ms/value".formatted(responseIdx)).getString();
+            assertThat(retentionMs, is(Integer.toString(week + i)));
+        });
+    }
+
     @ParameterizedTest
     @CsvSource({
-        "configs[random.unknown.config]",
+        "configs.\"random.unknown.config\"",
         "unknown"
     })
     void testListTopicsSortedByUnknownField(String sortKey) {

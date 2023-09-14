@@ -12,6 +12,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 import jakarta.inject.Inject;
 import jakarta.ws.rs.core.Response.Status;
@@ -41,6 +42,7 @@ import io.quarkus.test.kubernetes.client.KubernetesServerTestResource;
 import io.strimzi.api.kafka.model.Kafka;
 
 import static com.github.eyefloaters.console.test.TestHelper.whenRequesting;
+import static org.awaitility.Awaitility.await;
 import static org.hamcrest.Matchers.aMapWithSize;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.contains;
@@ -175,6 +177,9 @@ class RecordsResourceIT {
         recordUtils.produceRecord(topicName, ts1, null, "the-key1", "the-value1");
         recordUtils.produceRecord(topicName, ts2, null, "the-key2", "the-value2");
 
+        await().atMost(10, TimeUnit.SECONDS)
+            .until(() -> topicUtils.getTopicSize(topicName) >= 2);
+
         whenRequesting(req -> req
                 .queryParam("filter[timestamp]", "gte," + tsSearch.toString())
                 .get("", clusterId1, topicIds.get(topicName)))
@@ -194,6 +199,9 @@ class RecordsResourceIT {
         var topicIds = topicUtils.createTopics(clusterId1, List.of(topicName), 2);
         recordUtils.produceRecord(topicName, ts1, null, "the-key1", "the-value1");
         recordUtils.produceRecord(topicName, ts2, null, "the-key2", "the-value2");
+
+        await().atMost(10, TimeUnit.SECONDS)
+            .until(() -> topicUtils.getTopicSize(topicName) >= 2);
 
         whenRequesting(req -> req
                 .queryParam("filter[timestamp]", tsSearch)
@@ -221,6 +229,9 @@ class RecordsResourceIT {
             recordUtils.produceRecord(topicName, null, null, "the-key-" + i, "the-value-" + i);
         }
 
+        await().atMost(10, TimeUnit.SECONDS)
+            .until(() -> topicUtils.getTopicSize(topicName) >= 3);
+
         whenRequesting(req -> req
                 .queryParam("filter[partition]", 0)
                 .queryParam("filter[offset]", "gte," + startingOffset)
@@ -242,6 +253,9 @@ class RecordsResourceIT {
         for (int i = 0; i < 3; i++) {
             recordUtils.produceRecord(topicName, null, null, "the-key-" + i, "the-value-" + i);
         }
+
+        await().atMost(10, TimeUnit.SECONDS)
+            .until(() -> topicUtils.getTopicSize(topicName) >= 3);
 
         whenRequesting(req -> req
                 .queryParam("filter[partition]", 0)
@@ -274,6 +288,10 @@ class RecordsResourceIT {
             messageValues.add(value);
             recordUtils.produceRecord(topicName, null, null, "the-key-" + i, value);
         }
+
+        await().atMost(10, TimeUnit.SECONDS)
+            .until(() -> topicUtils.getTopicSize(topicName) >= totalRecords);
+
         Collections.reverse(messageValues);
 
         int resultCount = Math.min(limit, totalRecords);
@@ -295,6 +313,9 @@ class RecordsResourceIT {
             recordUtils.produceRecord(topicName, null, Map.of("h1", "h1-value-" + i), "the-key-" + i, "the-value-" + i);
         }
 
+        await().atMost(10, TimeUnit.SECONDS)
+            .until(() -> topicUtils.getTopicSize(topicName) >= 3);
+
         whenRequesting(req -> req
                 .queryParam("fields[records]", "headers")
                 .get("", clusterId1, topicIds.get(topicName)))
@@ -311,6 +332,9 @@ class RecordsResourceIT {
         var topicIds = topicUtils.createTopics(clusterId1, List.of(topicName), 2);
 
         recordUtils.produceRecord(topicName, null, null, null, "");
+
+        await().atMost(10, TimeUnit.SECONDS)
+            .until(() -> topicUtils.getTopicSize(topicName) >= 1);
 
         whenRequesting(req -> req.get("", clusterId1, topicIds.get(topicName)))
             .assertThat()
@@ -354,6 +378,8 @@ class RecordsResourceIT {
         String key = "k".repeat(100);
         String value = "v".repeat(100);
         recordUtils.produceRecord(topicName, null, Map.of("h1", h1Value), key, value);
+        await().atMost(10, TimeUnit.SECONDS)
+            .until(() -> topicUtils.getTopicSize(topicName) >= 1);
         Map<String, Object> queryParams = new HashMap<>(1);
         if (maxValueLength != null) {
             queryParams.put("maxValueLength", maxValueLength);

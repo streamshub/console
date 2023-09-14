@@ -1,11 +1,9 @@
 package com.github.eyefloaters.console.api.support;
 
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
@@ -20,12 +18,8 @@ public class ComparatorBuilder<T> {
         this.defaultComparator = defaultComparator;
     }
 
-    public Comparator<T> fromSort(String sortParam) {
-        return Optional.ofNullable(sortParam)
-                .map(sort -> sort.split(","))
-                .map(Arrays::asList)
-                .orElseGet(Collections::emptyList)
-                .stream()
+    public Comparator<T> fromSort(List<String> sortEntries) {
+        return sortEntries.stream()
                 .map(field -> {
                     boolean desc = field.startsWith("-");
 

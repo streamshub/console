@@ -3,10 +3,12 @@ package com.github.eyefloaters.console.test;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -18,12 +20,15 @@ import jakarta.json.JsonObject;
 import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.clients.admin.AdminClientConfig;
 import org.apache.kafka.clients.admin.NewTopic;
+import org.apache.kafka.clients.admin.OffsetSpec;
 import org.apache.kafka.clients.admin.TopicListing;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.TopicPartition;
+import org.apache.kafka.common.TopicPartitionInfo;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.eclipse.microprofile.config.Config;
 import org.jboss.logging.Logger;
@@ -104,6 +109,60 @@ public class TopicHelper {
         }
 
         return topicIds;
+    }
+
+    public long getTopicSize(String topicName) {
+        return getPartitionSizes(topicName).values().stream().reduce(0L, Long::sum);
+    }
+
+    public Map<TopicPartition, Long> getPartitionSizes(String topicName) {
+        Map<TopicPartition, Long> result = new HashMap<>();
+
+        try (Admin admin = Admin.create(adminConfig)) {
+            admin.describeTopics(List.of(topicName))
+                .allTopicNames()
+                .toCompletionStage()
+                .thenApply(descriptions -> descriptions.get(topicName))
+                .thenApply(description -> description.partitions()
+                        .stream()
+                        .map(TopicPartitionInfo::partition)
+                        .map(p -> new TopicPartition(topicName, p))
+                        .toList())
+                .thenCompose(partitions -> {
+                    Map<TopicPartition, OffsetSpec> earliestReq = partitions.stream()
+                            .collect(Collectors.toMap(Function.identity(), p -> OffsetSpec.earliest()));
+                    Map<TopicPartition, OffsetSpec> latestReq = partitions.stream()
+                            .collect(Collectors.toMap(Function.identity(), p -> OffsetSpec.latest()));
+
+                    var earliestPromise = admin.listOffsets(earliestReq)
+                        .all()
+                        .thenApply(offsets -> offsets.entrySet()
+                                .stream()
+                                .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().offset())))
+                        .toCompletionStage()
+                        .toCompletableFuture();
+
+                    var latestPromise = admin.listOffsets(latestReq)
+                        .all()
+                        .thenApply(offsets -> offsets.entrySet()
+                                .stream()
+                                .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().offset())))
+                        .toCompletionStage()
+                        .toCompletableFuture();
+
+                    return CompletableFuture.allOf(earliestPromise, latestPromise)
+                        .thenAccept(nothing -> {
+                            earliestPromise.join().forEach((partition, earliestOffset) -> {
+                                result.put(partition, latestPromise.join().get(partition) - earliestOffset);
+                            });
+                        });
+                })
+                .toCompletableFuture()
+                .join();
+        }
+
+
+        return result;
     }
 
     public void produceRecord(String topicName, Integer partition, Instant instant, Map<String, Object> headers, String key, String value) {

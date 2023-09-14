@@ -1,5 +1,6 @@
 package com.github.eyefloaters.console.api.model;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
@@ -12,7 +13,14 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 public class Error {
 
     @Schema(description = "A meta object containing non-standard meta-information about the error")
-    Map<String, String> meta;
+    Map<String, Object> meta;
+
+    @Schema(description = """
+            a links object that MAY contain the following members:
+            * `about`: a link that leads to further details about this particular occurrence of the problem.
+            * `type`: a link that identifies the type of error that this particular error is an instance of.
+            """)
+    Map<String, String> links;
 
     @Schema(description = "A unique identifier for this particular occurrence of the problem.")
     String id;
@@ -40,7 +48,7 @@ public class Error {
 
     public static Error forThrowable(Throwable thrown, String message) {
         Error error = new Error(message, thrown.getMessage(), thrown);
-        error.meta = Map.of("type", "error");
+        error.addMeta("type", "error");
         return error;
     }
 
@@ -50,8 +58,28 @@ public class Error {
         this.cause = cause;
     }
 
-    public Map<String, String> getMeta() {
+    public Map<String, Object> getMeta() {
         return meta;
+    }
+
+    public Error addMeta(String key, Object value) {
+        if (meta == null) {
+            meta = new LinkedHashMap<>();
+        }
+        meta.put(key, value);
+        return this;
+    }
+
+    public Map<String, String> getLinks() {
+        return links;
+    }
+
+    public Error addLink(String key, String value) {
+        if (links == null) {
+            links = new LinkedHashMap<>();
+        }
+        links.put(key, value);
+        return this;
     }
 
     public String getId() {
@@ -104,5 +132,10 @@ public class Error {
 
     public Throwable getCause() {
         return cause;
+    }
+
+    @Override
+    public String toString() {
+        return "id=%s title='%s' detail='%s' source=%s".formatted(id, title, detail, source);
     }
 }

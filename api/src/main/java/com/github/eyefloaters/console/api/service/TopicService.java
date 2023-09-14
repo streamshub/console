@@ -11,7 +11,9 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -31,7 +33,6 @@ import org.apache.kafka.common.errors.UnknownTopicOrPartitionException;
 import com.github.eyefloaters.console.api.model.Either;
 import com.github.eyefloaters.console.api.model.OffsetInfo;
 import com.github.eyefloaters.console.api.model.Topic;
-import com.github.eyefloaters.console.api.support.ComparatorBuilder;
 import com.github.eyefloaters.console.api.support.KafkaOffsetSpec;
 import com.github.eyefloaters.console.api.support.ListRequestContext;
 
@@ -40,15 +41,14 @@ public class TopicService {
 
     private static final List<OffsetSpec> DEFAULT_OFFSET_SPECS =
             List.of(OffsetSpec.earliest(), OffsetSpec.latest(), OffsetSpec.maxTimestamp());
+    private static final Predicate<String> CONFIG_SORT =
+            Pattern.compile("^-?configs\\..+$").asMatchPredicate();
 
     @Inject
     Supplier<Admin> clientSupplier;
 
     @Inject
     ConfigService configService;
-
-    final ComparatorBuilder<Topic> comparators =
-            new ComparatorBuilder<>(Topic.Fields::comparator, Topic.Fields.defaultComparator());
 
 //    public CompletionStage<NewTopic> createTopic(NewTopic topic) {
 //        Admin adminClient = clientSupplier.get();
@@ -75,12 +75,13 @@ public class TopicService {
 //                .toCompletionStage();
 //    }
 
-    public CompletionStage<List<Topic>> listTopics(List<String> fields, String offsetSpec, ListRequestContext listSupport) {
+    public CompletionStage<List<Topic>> listTopics(List<String> fields, String offsetSpec, ListRequestContext<Topic> listSupport) {
         List<String> fetchList = new ArrayList<>(fields);
-        String sort = listSupport.getSort();
-        if (sort != null && sort.contains("configs[")) {
+
+        if (listSupport.getSortEntries().stream().anyMatch(CONFIG_SORT)) {
             fetchList.add(Topic.Fields.CONFIGS);
         }
+
         Admin adminClient = clientSupplier.get();
 
         return adminClient.listTopics()
@@ -89,7 +90,11 @@ public class TopicService {
                 .toCompletionStage()
                 .thenCompose(list -> augmentList(adminClient, list, fetchList, offsetSpec))
                 .thenApply(list -> list.stream()
-                        .sorted(comparators.fromSort(listSupport.getSort()))
+                        .map(listSupport::tally)
+                        .filter(listSupport::betweenCursors)
+                        .sorted(listSupport.getSortComparator())
+                        .dropWhile(listSupport::beforePageBegin)
+                        .takeWhile(listSupport::pageCapacityAvailable)
                         .toList());
     }
 
@@ -99,12 +104,8 @@ public class TopicService {
 
         return describeTopics(adminClient, List.of(id), fields, offsetSpec)
             .thenApply(result -> result.get(id))
-            .thenApply(result -> {
-                if (result.isPrimaryPresent()) {
-                    return result.getPrimary();
-                }
-                throw new CompletionException(result.getAlternate());
-            })
+            .thenApply(result -> result.getOptionalPrimary()
+                    .orElseThrow(() -> new CompletionException(result.getAlternate())))
             .thenCompose(topic -> {
                 CompletableFuture<Topic> promise = new CompletableFuture<>();
 

@@ -2,7 +2,6 @@ package com.github.eyefloaters.console.api.mapping;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.function.Predicate;
 import java.util.stream.StreamSupport;
 
@@ -19,7 +18,6 @@ import org.jboss.logging.Logger;
 
 import com.github.eyefloaters.console.api.model.Error;
 import com.github.eyefloaters.console.api.model.ErrorResponse;
-import com.github.eyefloaters.console.api.model.ErrorSource;
 import com.github.eyefloaters.console.api.support.ErrorCategory;
 
 @Provider
@@ -32,21 +30,11 @@ public class ConstraintViolationHandler implements ExceptionMapper<ConstraintVio
         List<Error> errors = exception.getConstraintViolations()
             .stream()
             .map(violation -> {
-                Error error;
-
-                error = getCategory(violation)
-                    .map(category -> {
-                        Error e = new Error(category.getTitle(), violation.getMessage(), null);
-                        e.setCode(category.getCode());
-                        e.setStatus(String.valueOf(category.getHttpStatus().getStatusCode()));
-                        e.setSource(getSource(category, getSourceProperty(violation)));
-                        return e;
-                    })
+                Error error = getCategory(violation)
+                    .map(category -> category.createError(violation.getMessage(), null, getSourceProperty(violation)))
                     .orElseGet(() -> new Error("Invalid value", violation.getMessage(), null));
 
-                String id = UUID.randomUUID().toString();
-                error.setId(id);
-                logger.debugf("id=%s title='%s' detail='%s' source=%s", id, error.getTitle(), error.getDetail(), error.getSource());
+                logger.debugf("error=%s", error);
 
                 return error;
             })
@@ -77,9 +65,5 @@ public class ConstraintViolationHandler implements ExceptionMapper<ConstraintVio
             .reduce((first, second) -> second)
             .map(Node::toString)
             .orElse("");
-    }
-
-    ErrorSource getSource(ErrorCategory category, String property) {
-        return category.getSource().errorSource(property);
     }
 }
