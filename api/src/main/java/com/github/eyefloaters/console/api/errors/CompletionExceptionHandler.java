@@ -1,4 +1,4 @@
-package com.github.eyefloaters.console.api.mapping;
+package com.github.eyefloaters.console.api.errors;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -9,8 +9,12 @@ import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.ExceptionMapper;
 import jakarta.ws.rs.ext.Provider;
 
-import org.apache.kafka.common.errors.TimeoutException;
-
+import com.github.eyefloaters.console.api.errors.client.InvalidPageCursorExceptionHandler;
+import com.github.eyefloaters.console.api.errors.client.NotFoundExceptionHandler;
+import com.github.eyefloaters.console.api.errors.client.UnknownTopicIdExceptionHandler;
+import com.github.eyefloaters.console.api.errors.client.UnknownTopicOrPartitionExceptionHandler;
+import com.github.eyefloaters.console.api.errors.server.TimeoutExceptionHandler;
+import com.github.eyefloaters.console.api.errors.server.UnhandledThrowableHandler;
 import com.github.eyefloaters.console.api.support.InvalidPageCursorException;
 
 @Provider
@@ -24,7 +28,7 @@ public class CompletionExceptionHandler implements ExceptionMapper<CompletionExc
         MAPPERS.put(org.apache.kafka.common.errors.UnknownTopicIdException.class, new UnknownTopicIdExceptionHandler());
         MAPPERS.put(org.apache.kafka.common.errors.UnknownTopicOrPartitionException.class, new UnknownTopicOrPartitionExceptionHandler());
         MAPPERS.put(InvalidPageCursorException.class, new InvalidPageCursorExceptionHandler());
-        MAPPERS.put(TimeoutException.class, new TimeoutExceptionHandler());
+        MAPPERS.put(org.apache.kafka.common.errors.TimeoutException.class, new TimeoutExceptionHandler());
     }
 
     @SuppressWarnings("unchecked")

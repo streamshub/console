@@ -1,4 +1,4 @@
-package com.github.eyefloaters.console.api.mapping;
+package com.github.eyefloaters.console.api.errors.server;
 
 import java.util.List;
 
@@ -16,7 +16,7 @@ import com.github.eyefloaters.console.api.support.ErrorCategory;
 @Provider
 public class TimeoutExceptionHandler implements ExceptionMapper<TimeoutException> {
 
-    Logger logger = Logger.getLogger("com.github.eyefloaters.console.api.errors.server");
+    Logger logger = Logger.getLogger(TimeoutExceptionHandler.class);
     private static final ErrorCategory CATEGORY = ErrorCategory.get(ErrorCategory.BackendTimeout.class);
 
     @Override

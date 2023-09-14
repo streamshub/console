@@ -1,4 +1,4 @@
-package com.github.eyefloaters.console.api.mapping;
+package com.github.eyefloaters.console.api.errors.client;
 
 import java.util.List;
 import java.util.Optional;
@@ -23,7 +23,7 @@ import com.github.eyefloaters.console.api.support.ErrorCategory;
 @Provider
 public class ConstraintViolationHandler implements ExceptionMapper<ConstraintViolationException> {
 
-    Logger logger = Logger.getLogger("com.github.eyefloaters.console.api.errors.client");
+    Logger logger = Logger.getLogger(ConstraintViolationHandler.class);
 
     @Override
     public Response toResponse(ConstraintViolationException exception) {

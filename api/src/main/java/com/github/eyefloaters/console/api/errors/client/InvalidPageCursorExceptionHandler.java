@@ -1,4 +1,4 @@
-package com.github.eyefloaters.console.api.mapping;
+package com.github.eyefloaters.console.api.errors.client;
 
 import java.util.List;
 
@@ -16,7 +16,7 @@ import com.github.eyefloaters.console.api.support.InvalidPageCursorException;
 @Provider
 public class InvalidPageCursorExceptionHandler implements ExceptionMapper<InvalidPageCursorException> {
 
-    Logger logger = Logger.getLogger("com.github.eyefloaters.console.api.errors.client");
+    Logger logger = Logger.getLogger(InvalidPageCursorExceptionHandler.class);
     private static final ErrorCategory CATEGORY = ErrorCategory.get(ErrorCategory.InvalidQueryParameter.class);
 
     @Override
