@@ -7,9 +7,11 @@ import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -50,6 +52,7 @@ import io.strimzi.test.container.StrimziKafkaContainer;
 import static com.github.eyefloaters.console.test.TestHelper.whenRequesting;
 import static java.util.Objects.isNull;
 import static java.util.function.Predicate.not;
+import static org.awaitility.Awaitility.await;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
@@ -72,6 +75,9 @@ class KafkaClustersResourceIT {
 
     @Inject
     KubernetesClient client;
+
+    @Inject
+    SharedIndexInformer<Kafka> kafkaInformer;
 
     @DeploymentManager.InjectDeploymentManager
     DeploymentManager deployments;
@@ -200,11 +206,17 @@ class KafkaClustersResourceIT {
 
     @Test
     void testListClustersWithRangePaginationTruncated() {
-        IntStream.range(3, 10)
-            .mapToObj(i -> "test-kafka" + i)
-            .map(name -> utils.buildKafkaResource(name, randomBootstrapServers))
-            .map(kafka -> client.resources(Kafka.class).resource(kafka).create())
+        List<String> allKafkaNames = Stream.concat(STATIC_KAFKAS.stream(),
+                IntStream.range(3, 10)
+                    .mapToObj(i -> "test-kafka" + i)
+                    .map(name -> utils.buildKafkaResource(name, randomBootstrapServers))
+                    .map(kafka -> client.resources(Kafka.class).resource(kafka).create())
+                    .map(kafka -> kafka.getMetadata().getName()))
             .toList();
+
+        // Wait for the informer cache to be populated with all Kafka CRs
+        await().atMost(10, TimeUnit.SECONDS)
+            .until(() -> Objects.equals(kafkaInformer.getStore().list().size(), allKafkaNames.size()));
 
         var fullResponse = whenRequesting(req -> req.queryParam("sort", "name").get())
             .assertThat()
@@ -255,6 +267,10 @@ class KafkaClustersResourceIT {
                     .map(kafka -> client.resources(Kafka.class).resource(kafka).create())
                     .map(kafka -> kafka.getMetadata().getName()))
             .toList();
+
+        // Wait for the informer cache to be populated with all Kafka CRs
+        await().atMost(10, TimeUnit.SECONDS)
+            .until(() -> Objects.equals(kafkaInformer.getStore().list().size(), allKafkaNames.size()));
 
         var fullResponse = whenRequesting(req -> req.queryParam("sort", "name").get())
             .assertThat()
