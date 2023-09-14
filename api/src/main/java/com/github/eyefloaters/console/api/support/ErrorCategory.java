@@ -16,17 +16,22 @@ import com.github.eyefloaters.console.api.model.ListFetchParams;
 
 public abstract class ErrorCategory implements Payload {
 
-    private static final Map<Class<? extends ErrorCategory>, ErrorCategory> INSTANCES = Stream.of(
-            new InvalidQueryParameter(),
-            new MaxPageSizeExceededError(),
-            new ResourceNotFound(),
-            new ServerError(),
-            new BackendTimeout())
-        .collect(Collectors.toMap(ErrorCategory::getClass, Function.identity()));
+    private static final class Categories {
+        private static final Map<Class<? extends ErrorCategory>, ErrorCategory> INSTANCES =
+                Stream.of(new ErrorCategory.InvalidQueryParameter(),
+                    new ErrorCategory.MaxPageSizeExceededError(),
+                    new ErrorCategory.ResourceNotFound(),
+                    new ErrorCategory.ServerError(),
+                    new ErrorCategory.BackendTimeout())
+            .collect(Collectors.toMap(ErrorCategory::getClass, Function.identity()));
+
+        private Categories() {
+        }
+    }
 
     @SuppressWarnings("unchecked")
     public static <T extends ErrorCategory> T get(Class<? extends Payload> type) {
-        return (T) INSTANCES.get(type);
+        return (T) Categories.INSTANCES.get(type);
     }
 
     public static class InvalidQueryParameter extends ErrorCategory {
