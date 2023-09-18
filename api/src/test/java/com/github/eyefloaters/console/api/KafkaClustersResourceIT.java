@@ -114,6 +114,10 @@ class KafkaClustersResourceIT {
         client.resources(Kafka.class)
             .resource(utils.buildKafkaResource("test-kafka2", clusterId2, randomBootstrapServers))
             .create();
+
+        // Wait for the informer cache to be populated with all Kafka CRs
+        await().atMost(10, TimeUnit.SECONDS)
+            .until(() -> Objects.equals(kafkaInformer.getStore().list().size(), 2));
     }
 
     @AfterEach
