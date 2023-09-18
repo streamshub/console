@@ -177,7 +177,7 @@ class RecordsResourceIT {
     })
     void testConsumeRecordsAsOfTimestamp(Instant ts1, Instant ts2, Instant tsSearch, int expectedResults) {
         final String topicName = UUID.randomUUID().toString();
-        var topicIds = topicUtils.createTopics(clusterId1, List.of(topicName), 2);
+        var topicIds = topicUtils.createTopics(clusterId1, List.of(topicName), 2, Map.of("retention.ms", "-1"));
         recordUtils.produceRecord(topicName, ts1, null, "the-key1", "the-value1");
         recordUtils.produceRecord(topicName, ts2, null, "the-key2", "the-value2");
 
@@ -209,7 +209,7 @@ class RecordsResourceIT {
     })
     void testConsumeRecordsAsOfInvalidTimestamp(Instant ts1, Instant ts2, String tsSearch) {
         final String topicName = UUID.randomUUID().toString();
-        var topicIds = topicUtils.createTopics(clusterId1, List.of(topicName), 2);
+        var topicIds = topicUtils.createTopics(clusterId1, List.of(topicName), 2, Map.of("retention.ms", "-1"));
         recordUtils.produceRecord(topicName, ts1, null, "the-key1", "the-value1");
         recordUtils.produceRecord(topicName, ts2, null, "the-key2", "the-value2");
 
