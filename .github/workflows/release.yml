@@ -52,7 +52,7 @@ jobs:
           mvn -B -P docker release:perform -f api/pom.xml
 
       - name: Login to Quay
-        uses: docker/login-action@v2
+        uses: docker/login-action@v3
         with:
           registry: "${{ secrets.IMAGE_REPO_HOSTNAME }}"
           username: "${{ secrets.IMAGE_REPO_USERNAME }}"
