@@ -16,6 +16,7 @@ import classNames from "classnames";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { PropsWithChildren } from "react";
+import { formatBytes } from '@/utils/format';
 
 export function TopicPage({
   topic,
@@ -127,7 +128,7 @@ export function TopicDashboard({ topic }: { topic: Topic }) {
                   >
                     <FlexItem>
                       <Title headingLevel="h4" size="3xl">
-                        3,45 GB
+                        {formatBytes(topic.attributes.size ?? null, 3)}
                       </Title>
                     </FlexItem>
                     <FlexItem>
@@ -191,7 +192,7 @@ export function TopicDashboard({ topic }: { topic: Topic }) {
           emptyStateNoData={<div>No partitions</div>}
           emptyStateNoResults={<div>todo</div>}
           ariaLabel={"Partitions"}
-          columns={["id", "leaderId", "replicas", "isr", "offsets", "recordCount"] as const}
+          columns={["id", "leaderId", "replicas", "isr", "offsets", "recordCount", "size"] as const}
           renderHeader={({ column, key, Th }) => {
             switch (column) {
               case "id":
@@ -230,6 +231,12 @@ export function TopicDashboard({ topic }: { topic: Topic }) {
                     Record Count
                   </Th>
                 );
+              case "size":
+                return (
+                  <Th key={key} dataLabel={"Storage"}>
+                    Storage
+                  </Th>
+                );
             }
           }}
           renderCell={({ row, column, key, Td }) => {
@@ -243,7 +250,7 @@ export function TopicDashboard({ topic }: { topic: Topic }) {
               case "leaderId":
                 return (
                   <Td key={key} dataLabel={"Leader Id"}>
-                    {row.leader.id}
+                    {row.leader}
                   </Td>
                 );
               case "replicas":
@@ -270,6 +277,12 @@ export function TopicDashboard({ topic }: { topic: Topic }) {
                 return (
                   <Td key={key} dataLabel={"Record Count"}>
                     {row.recordCount ?? '-'}
+                  </Td>
+                );
+              case "size":
+                return (
+                  <Td key={key} dataLabel={"Storage"}>
+                    {formatBytes(row.size ?? null, 3)}
                   </Td>
                 );
             }

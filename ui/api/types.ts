@@ -31,24 +31,21 @@ const OffsetSchema = z.object({
 });
 const PartitionSchema = z.object({
   partition: z.number(),
-  leader: z.object({
-    id: z.number(),
-    host: z.string(),
-    port: z.number(),
-  }),
+  leader: z.number(),
   replicas: z.array(
     z.object({
       id: z.number(),
       host: z.string(),
       port: z.number(),
+      log: z.object({
+          size: z.number(),
+          offsetLag: z.number(),
+          future: z.boolean(),
+      }).optional(),
     }),
   ),
   isr: z.array(
-    z.object({
-      id: z.number(),
-      host: z.string(),
-      port: z.number(),
-    }),
+    z.number(),
   ),
   offsets: z.object({
     earliest: OffsetSchema.optional(),
@@ -57,6 +54,7 @@ const PartitionSchema = z.object({
     timestamp: OffsetSchema.optional()
   }).optional().nullable(),
   recordCount: z.number().optional(),
+  size: z.number().optional(),
 });
 const ConfigSchema = z.object({
   value: z.string(),
@@ -75,6 +73,7 @@ const TopicSchema = z.object({
     authorizedOperations: z.array(z.string()),
     configs: z.record(z.string(), ConfigSchema),
     recordCount: z.number().optional(),
+    size: z.number().optional(),
   }),
 });
 export const TopicsResponse = z.object({

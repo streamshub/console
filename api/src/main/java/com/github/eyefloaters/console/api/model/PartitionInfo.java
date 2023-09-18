@@ -3,6 +3,7 @@ package com.github.eyefloaters.console.api.model;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
@@ -15,9 +16,9 @@ import com.github.eyefloaters.console.api.support.KafkaOffsetSpec;
 public class PartitionInfo {
 
     final int partition;
-    final Node leader;
     final List<Node> replicas;
-    final List<Node> isr;
+    final Integer leader;
+    final List<Integer> isr;
 
     @Schema(implementation = Object.class, oneOf = { OffsetInfo.class, Error.class })
     private static final class OffsetInfoOrError {
@@ -26,7 +27,7 @@ public class PartitionInfo {
     @Schema(additionalProperties = OffsetInfoOrError.class)
     Map<String, Either<OffsetInfo, Error>> offsets;
 
-    public PartitionInfo(int partition, Node leader, List<Node> replicas, List<Node> isr) {
+    public PartitionInfo(int partition, List<Node> replicas, Integer leader, List<Integer> isr) {
         super();
         this.partition = partition;
         this.leader = leader;
@@ -35,16 +36,16 @@ public class PartitionInfo {
     }
 
     public static PartitionInfo fromKafkaModel(org.apache.kafka.common.TopicPartitionInfo info) {
-        Node leader = Node.fromKafkaModel(info.leader());
         List<Node> replicas = info.replicas().stream().map(Node::fromKafkaModel).toList();
-        List<Node> isr = info.isr().stream().map(Node::fromKafkaModel).toList();
-        return new PartitionInfo(info.partition(), leader, replicas, isr);
+        Integer leader = info.leader().id();
+        List<Integer> isr = info.isr().stream().map(org.apache.kafka.common.Node::id).toList();
+        return new PartitionInfo(info.partition(), replicas, leader, isr);
     }
 
-    static Either<OffsetInfo, Error> offsetOrError(Either<OffsetInfo, Throwable> offset) {
+    static <P> Either<P, Error> primaryOrError(Either<P, Throwable> offset, String message) {
         return offset.ifPrimaryOrElse(
                 Either::of,
-                thrown -> Error.forThrowable(thrown, "Unable to fetch partition offset"));
+                thrown -> Error.forThrowable(thrown, message));
     }
 
     public void addOffset(String key, Either<OffsetInfo, Throwable> offset) {
@@ -52,14 +53,21 @@ public class PartitionInfo {
             this.offsets = new LinkedHashMap<>(4);
         }
 
-        this.offsets.put(key, offsetOrError(offset));
+        this.offsets.put(key, primaryOrError(offset, "Unable to fetch partition offset"));
+    }
+
+    public void addReplicaInfo(int nodeId, Either<ReplicaInfo, Throwable> log) {
+        replicas.stream()
+            .filter(node -> node.getId() == nodeId)
+            .findFirst()
+            .ifPresent(node -> node.setLog(primaryOrError(log, "Unable to fetch replica log metadata")));
     }
 
     public int getPartition() {
         return partition;
     }
 
-    public Node getLeader() {
+    public Integer getLeader() {
         return leader;
     }
 
@@ -67,7 +75,7 @@ public class PartitionInfo {
         return replicas;
     }
 
-    public List<Node> getIsr() {
+    public List<Integer> getIsr() {
         return isr;
     }
 
@@ -87,6 +95,18 @@ public class PartitionInfo {
             .map(latestOffset -> getOffset(KafkaOffsetSpec.EARLIEST)
                     .map(earliestOffset -> latestOffset - earliestOffset)
                     .orElse(null))
+            .orElse(null);
+    }
+
+    public Long getSize() {
+        return replicas.stream()
+            .filter(r -> r.getId() == leader)
+            .map(Node::getLog)
+            .filter(Objects::nonNull)
+            .filter(Either::isPrimaryPresent)
+            .map(Either::getPrimary)
+            .map(ReplicaInfo::size)
+            .findFirst()
             .orElse(null);
     }
 

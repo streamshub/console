@@ -1,33 +1,18 @@
 package com.github.eyefloaters.console.api.model;
 
-public class TopicPartition {
+import java.util.Comparator;
 
-    private String topic;
-    private int partition;
+public record TopicPartition(String topic, int partition) implements Comparable<TopicPartition> {
 
-    public TopicPartition() {
+    static final Comparator<TopicPartition> COMPARATOR = Comparator.comparing(TopicPartition::topic)
+            .thenComparingInt(TopicPartition::partition);
+
+    @Override
+    public int compareTo(TopicPartition other) {
+        return COMPARATOR.compare(this, other);
     }
 
-    public TopicPartition(String topic, int partition) {
-        super();
-        this.topic = topic;
-        this.partition = partition;
+    public org.apache.kafka.common.TopicPartition toKafkaModel() {
+        return new org.apache.kafka.common.TopicPartition(topic, partition);
     }
-
-    public String getTopic() {
-        return topic;
-    }
-
-    public void setTopic(String topic) {
-        this.topic = topic;
-    }
-
-    public int getPartition() {
-        return partition;
-    }
-
-    public void setPartition(int partition) {
-        this.partition = partition;
-    }
-
 }
