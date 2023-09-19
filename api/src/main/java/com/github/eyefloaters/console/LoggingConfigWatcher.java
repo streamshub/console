@@ -197,7 +197,7 @@ public class LoggingConfigWatcher {
         try (InputStream stream = Files.newInputStream(file)) {
             properties.load(stream);
         } catch (IOException e) {
-            LOGGER.warn("File {} cannot be read", file, e);
+            LOGGER.warnf(e, "File %s cannot be read", file);
             return;
         }
 

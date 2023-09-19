@@ -11,6 +11,7 @@ import java.util.function.Function;
 
 import jakarta.json.JsonObject;
 
+import com.github.eyefloaters.console.api.errors.client.InvalidPageCursorException;
 import com.github.eyefloaters.console.api.model.ListFetchParams;
 
 public class ListRequestContext<T> {

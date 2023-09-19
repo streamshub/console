@@ -10,8 +10,10 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -51,6 +53,7 @@ import com.github.eyefloaters.console.test.TestHelper;
 import com.github.eyefloaters.console.test.TopicHelper;
 
 import io.fabric8.kubernetes.client.KubernetesClient;
+import io.fabric8.kubernetes.client.informers.SharedIndexInformer;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.common.http.TestHTTPEndpoint;
 import io.quarkus.test.junit.QuarkusTest;
@@ -59,6 +62,7 @@ import io.quarkus.test.kubernetes.client.KubernetesServerTestResource;
 import io.strimzi.api.kafka.model.Kafka;
 
 import static com.github.eyefloaters.console.test.TestHelper.whenRequesting;
+import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.aMapWithSize;
 import static org.hamcrest.Matchers.allOf;
@@ -92,6 +96,9 @@ class TopicsResourceIT {
     @Inject
     KubernetesClient client;
 
+    @Inject
+    SharedIndexInformer<Kafka> kafkaInformer;
+
     @DeploymentManager.InjectDeploymentManager
     DeploymentManager deployments;
 
@@ -123,6 +130,10 @@ class TopicsResourceIT {
         client.resources(Kafka.class)
             .resource(utils.buildKafkaResource("test-kafka2", clusterId2, randomBootstrapServers))
             .create();
+
+        // Wait for the informer cache to be populated with all Kafka CRs
+        await().atMost(10, TimeUnit.SECONDS)
+            .until(() -> Objects.equals(kafkaInformer.getStore().list().size(), 2));
     }
 
     @AfterEach

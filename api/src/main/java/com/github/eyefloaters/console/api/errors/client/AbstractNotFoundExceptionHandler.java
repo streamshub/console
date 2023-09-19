@@ -1,4 +1,4 @@
-package com.github.eyefloaters.console.api.mapping;
+package com.github.eyefloaters.console.api.errors.client;
 
 import java.util.List;
 
@@ -13,7 +13,7 @@ import com.github.eyefloaters.console.api.support.ErrorCategory;
 
 abstract class AbstractNotFoundExceptionHandler<T extends Throwable> implements ExceptionMapper<T> {
 
-    Logger logger = Logger.getLogger("com.github.eyefloaters.console.api.errors.client");
+    Logger logger = Logger.getLogger(getClass());
     private static final ErrorCategory CATEGORY = ErrorCategory.get(ErrorCategory.ResourceNotFound.class);
 
     @Override

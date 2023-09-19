@@ -1,4 +1,4 @@
-package com.github.eyefloaters.console.api.support;
+package com.github.eyefloaters.console.api.errors.client;
 
 import java.util.List;
 

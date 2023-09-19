@@ -13,10 +13,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import jakarta.json.Json;
-import jakarta.json.JsonArrayBuilder;
-import jakarta.json.JsonObject;
-
 import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.clients.admin.AdminClientConfig;
 import org.apache.kafka.clients.admin.NewTopic;
@@ -94,7 +90,7 @@ public class TopicHelper {
 
             result.all()
                 .toCompletionStage()
-                .thenRun(() -> log.infof("Topics created:", names))
+                .thenRun(() -> log.infof("Topics created: %s", names))
                 .toCompletableFuture()
                 .get(20, TimeUnit.SECONDS);
 
@@ -180,32 +176,5 @@ public class TopicHelper {
         } catch (Exception e) {
             fail(e);
         }
-    }
-
-    public static JsonObject buildNewTopicRequest(String name, int numPartitions, Map<String, String> config) {
-        JsonArrayBuilder configBuilder = Json.createArrayBuilder();
-        config.forEach((key, value) -> configBuilder.add(Json.createObjectBuilder().add(key, value)));
-
-        return Json.createObjectBuilder()
-            .add("name", name)
-            .add("settings", Json.createObjectBuilder()
-                 .add("numPartitions", numPartitions)
-                 .add("configs", configBuilder))
-            .build();
-    }
-
-    public static JsonObject buildUpdateTopicRequest(String name, int numPartitions, Map<String, String> config) {
-        JsonArrayBuilder configBuilder = Json.createArrayBuilder();
-
-        config.forEach((key, value) ->
-            configBuilder.add(Json.createObjectBuilder()
-                              .add("key", key)
-                              .add("value", value)));
-
-        return Json.createObjectBuilder()
-            .add("name", name)
-            .add("numPartitions", numPartitions)
-            .add("config", configBuilder)
-            .build();
     }
 }
