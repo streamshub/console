@@ -16,13 +16,13 @@ import com.github.eyefloaters.console.api.support.ErrorCategory;
 @Provider
 public class TimeoutExceptionHandler implements ExceptionMapper<TimeoutException> {
 
-    Logger logger = Logger.getLogger(TimeoutExceptionHandler.class);
+    private static final Logger LOGGER = Logger.getLogger(TimeoutExceptionHandler.class);
     private static final ErrorCategory CATEGORY = ErrorCategory.get(ErrorCategory.BackendTimeout.class);
 
     @Override
     public Response toResponse(TimeoutException exception) {
         Error error = CATEGORY.createError(exception.getMessage(), exception, null);
-        logger.warnf(exception, "error=%s", error);
+        LOGGER.warnf(exception, "error=%s", error);
 
         return Response.status(CATEGORY.getHttpStatus())
                 .entity(new ErrorResponse(List.of(error)))

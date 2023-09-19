@@ -23,7 +23,7 @@ import com.github.eyefloaters.console.api.support.ErrorCategory;
 @Provider
 public class ConstraintViolationHandler implements ExceptionMapper<ConstraintViolationException> {
 
-    Logger logger = Logger.getLogger(ConstraintViolationHandler.class);
+    private static final Logger LOGGER = Logger.getLogger(ConstraintViolationHandler.class);
 
     @Override
     public Response toResponse(ConstraintViolationException exception) {
@@ -34,7 +34,7 @@ public class ConstraintViolationHandler implements ExceptionMapper<ConstraintVio
                     .map(category -> category.createError(violation.getMessage(), null, getSourceProperty(violation)))
                     .orElseGet(() -> new Error("Invalid value", violation.getMessage(), null));
 
-                logger.debugf("error=%s", error);
+                LOGGER.debugf("error=%s", error);
 
                 return error;
             })

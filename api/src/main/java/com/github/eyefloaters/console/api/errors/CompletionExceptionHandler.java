@@ -9,13 +9,13 @@ import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.ExceptionMapper;
 import jakarta.ws.rs.ext.Provider;
 
+import com.github.eyefloaters.console.api.errors.client.InvalidPageCursorException;
 import com.github.eyefloaters.console.api.errors.client.InvalidPageCursorExceptionHandler;
 import com.github.eyefloaters.console.api.errors.client.NotFoundExceptionHandler;
 import com.github.eyefloaters.console.api.errors.client.UnknownTopicIdExceptionHandler;
 import com.github.eyefloaters.console.api.errors.client.UnknownTopicOrPartitionExceptionHandler;
 import com.github.eyefloaters.console.api.errors.server.TimeoutExceptionHandler;
 import com.github.eyefloaters.console.api.errors.server.UnhandledThrowableHandler;
-import com.github.eyefloaters.console.api.support.InvalidPageCursorException;
 
 @Provider
 public class CompletionExceptionHandler implements ExceptionMapper<CompletionException> {
