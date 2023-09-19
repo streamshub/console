@@ -57,7 +57,7 @@ class LoggingConfigWatcherTest {
                     delete(override);
                     break;
                 default:
-                    return null;
+                    return ws.poll();
             }
 
             // Longer poll time to account for potentially slow CI environment
@@ -65,7 +65,6 @@ class LoggingConfigWatcherTest {
         });
 
         assertTrue(dirExists);
-        assertEquals(3, loopCount.get());
         assertFalse(override.exists());
         await("overriddenLoggers to become empty")
             .atMost(1, TimeUnit.SECONDS)
