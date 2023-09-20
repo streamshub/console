@@ -37,22 +37,25 @@ const PartitionSchema = z.object({
       id: z.number(),
       host: z.string(),
       port: z.number(),
-      log: z.object({
+      log: z
+        .object({
           size: z.number(),
           offsetLag: z.number(),
           future: z.boolean(),
-      }).optional(),
+        })
+        .optional(),
     }),
   ),
-  isr: z.array(
-    z.number(),
-  ),
-  offsets: z.object({
-    earliest: OffsetSchema.optional(),
-    latest: OffsetSchema.optional(),
-    maxTimestamp: OffsetSchema.optional(),
-    timestamp: OffsetSchema.optional()
-  }).optional().nullable(),
+  isr: z.array(z.number()),
+  offsets: z
+    .object({
+      earliest: OffsetSchema.optional(),
+      latest: OffsetSchema.optional(),
+      maxTimestamp: OffsetSchema.optional(),
+      timestamp: OffsetSchema.optional(),
+    })
+    .optional()
+    .nullable(),
   recordCount: z.number().optional(),
   size: z.number().optional(),
 });

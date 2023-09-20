@@ -1,8 +1,15 @@
+"use server";
 import { Topic, TopicResponse, TopicsResponse } from "@/api/types";
 
-const listTopicsQuery = encodeURI('fields[topics]=name,internal,partitions,authorizedOperations,configs');
-const describeTopicsQuery = encodeURI('fields[topics]=name,internal,partitions,authorizedOperations,configs,size');
-const consumeRecordsQuery = encodeURI('fields[records]=partition,offset,timestamp,timestampType,headers,key,value&page[size]=20');
+const listTopicsQuery = encodeURI(
+  "fields[topics]=name,internal,partitions,authorizedOperations,configs",
+);
+const describeTopicsQuery = encodeURI(
+  "fields[topics]=,name,internal,partitions,authorizedOperations,configs,recordCount,size",
+);
+const consumeRecordsQuery = encodeURI(
+  "fields[records]=partition,offset,timestamp,timestampType,headers,key,value&page[size]=20",
+);
 
 export async function getTopics(kafkaId: string): Promise<Topic[]> {
   const url = `${process.env.BACKEND_URL}/api/kafkas/${kafkaId}/topics?${listTopicsQuery}`;
@@ -26,6 +33,7 @@ export async function getTopic(
     },
   });
   const rawData = await res.json();
+  console.log("getTopic", url, JSON.stringify(rawData, null, 2));
   return TopicResponse.parse(rawData).data;
 }
 

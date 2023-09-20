@@ -1,4 +1,5 @@
 "use client";
+import { getTopic } from "@/api/topics";
 import { Topic } from "@/api/types";
 import { TableView } from "@/components/table";
 import {
@@ -12,11 +13,12 @@ import {
   Text,
   Title,
 } from "@/libs/patternfly/react-core";
+import { useFormatBytes } from "@/utils/format";
 import classNames from "classnames";
+import { useFormatter } from "next-intl";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { PropsWithChildren } from "react";
-import { formatBytes } from '@/utils/format';
+import { PropsWithChildren, useEffect, useState } from "react";
 
 export function TopicPage({
   topic,
@@ -88,7 +90,23 @@ export function TopicPage({
   );
 }
 
-export function TopicDashboard({ topic }: { topic: Topic }) {
+export function TopicDashboard({
+  topic: initialData,
+  kafkaId,
+}: {
+  kafkaId: string;
+  topic: Topic;
+}) {
+  const format = useFormatter();
+  const formatBytes = useFormatBytes();
+  const [topic, setTopic] = useState(initialData);
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      const topic = await getTopic(kafkaId, initialData.id);
+      setTopic(topic);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [kafkaId, initialData.id]);
   return (
     <>
       <PageSection>
@@ -128,7 +146,23 @@ export function TopicDashboard({ topic }: { topic: Topic }) {
                   >
                     <FlexItem>
                       <Title headingLevel="h4" size="3xl">
-                        {formatBytes(topic.attributes.size ?? null, 3)}
+                        {format.number(topic.attributes.recordCount || 0)}
+                      </Title>
+                    </FlexItem>
+                    <FlexItem>
+                      <span className="pf-v5-u-color-200">Messages</span>
+                    </FlexItem>
+                  </Flex>
+                </FlexItem>
+
+                <FlexItem flex={{ default: "flexNone" }}>
+                  <Flex
+                    direction={{ default: "column" }}
+                    spaceItems={{ default: "spaceItemsNone" }}
+                  >
+                    <FlexItem>
+                      <Title headingLevel="h4" size="3xl">
+                        {formatBytes(topic.attributes.size || 0)}
                       </Title>
                     </FlexItem>
                     <FlexItem>
@@ -192,7 +226,17 @@ export function TopicDashboard({ topic }: { topic: Topic }) {
           emptyStateNoData={<div>No partitions</div>}
           emptyStateNoResults={<div>todo</div>}
           ariaLabel={"Partitions"}
-          columns={["id", "leaderId", "replicas", "isr", "offsets", "recordCount", "size"] as const}
+          columns={
+            [
+              "id",
+              "leaderId",
+              "replicas",
+              "isr",
+              "offsets",
+              "recordCount",
+              "size",
+            ] as const
+          }
           renderHeader={({ column, key, Th }) => {
             switch (column) {
               case "id":
@@ -268,21 +312,20 @@ export function TopicDashboard({ topic }: { topic: Topic }) {
               case "offsets":
                 return (
                   <Td key={key} dataLabel={"Offset"}>
-                    {row.offsets?.earliest?.offset ?? '-'}
-                    /
-                    {row.offsets?.latest?.offset ?? '-'}
+                    {row.offsets?.earliest?.offset ?? "-"}/
+                    {row.offsets?.latest?.offset ?? "-"}
                   </Td>
                 );
               case "recordCount":
                 return (
                   <Td key={key} dataLabel={"Record Count"}>
-                    {row.recordCount ?? '-'}
+                    {format.number(row.recordCount || 0)}
                   </Td>
                 );
               case "size":
                 return (
                   <Td key={key} dataLabel={"Storage"}>
-                    {formatBytes(row.size ?? null, 3)}
+                    {formatBytes(row.size || 0)}
                   </Td>
                 );
             }
