@@ -167,12 +167,20 @@ public class RecordService {
         consumer.offsetsForTimes(timestampsToSearch)
             .forEach((p, tsOffset) -> {
                 if (tsOffset != null) {
+                    if (logger.isDebugEnabled()) {
+                        logger.debugf("Seeking to { offset=%d, timestamp=%d } in topic %s/partition %d for search timestamp %d",
+                                tsOffset.offset(), tsOffset.timestamp(), p.topic(), p.partition(), tsMillis);
+                    }
                     consumer.seek(p, tsOffset.offset());
                 } else {
                     /*
                      * No offset for the time-stamp (future date?), seek to
                      * end and return nothing for this partition.
                      */
+                    if (logger.isDebugEnabled()) {
+                        logger.debugf("No offset found for search timestamp %d, seeking to end of topic %s/partition %d",
+                                (Object) tsMillis, p.topic(), p.partition());
+                    }
                     consumer.seekToEnd(List.of(p));
                 }
             });
