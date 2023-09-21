@@ -62,6 +62,11 @@ public class RecordHelper {
                 if (error != null) {
                     promise.completeExceptionally(error);
                 } else {
+                    log.infof("Record sent: { topic=%s, partition=%d, offset=%d, timestamp=%s }",
+                            metadata.topic(),
+                            metadata.partition(),
+                            metadata.offset(),
+                            metadata.hasTimestamp() ? Instant.ofEpochMilli(metadata.timestamp()) : "null");
                     promise.complete(null);
                 }
             });
