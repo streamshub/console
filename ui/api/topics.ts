@@ -31,6 +31,7 @@ export async function getTopic(
     headers: {
       Accept: "application/json",
     },
+    cache: "no-store"
   });
   const rawData = await res.json();
   console.log("getTopic", url, JSON.stringify(rawData, null, 2));

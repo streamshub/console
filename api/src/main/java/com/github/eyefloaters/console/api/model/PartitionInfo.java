@@ -9,6 +9,7 @@ import java.util.Optional;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.github.eyefloaters.console.api.support.KafkaOffsetSpec;
 
@@ -16,9 +17,8 @@ import com.github.eyefloaters.console.api.support.KafkaOffsetSpec;
 public class PartitionInfo {
 
     final int partition;
-    final List<Node> replicas;
-    final Integer leader;
-    final List<Integer> isr;
+    final List<PartitionReplica> replicas;
+    final Integer leaderId;
 
     @Schema(implementation = Object.class, oneOf = { OffsetInfo.class, Error.class })
     private static final class OffsetInfoOrError {
@@ -27,23 +27,24 @@ public class PartitionInfo {
     @Schema(additionalProperties = OffsetInfoOrError.class)
     Map<String, Either<OffsetInfo, Error>> offsets;
 
-    public PartitionInfo(int partition, List<Node> replicas, Integer leader, List<Integer> isr) {
+    public PartitionInfo(int partition, List<PartitionReplica> replicas, Integer leaderId) {
         super();
         this.partition = partition;
-        this.leader = leader;
+        this.leaderId = leaderId;
         this.replicas = replicas;
-        this.isr = isr;
     }
 
     public static PartitionInfo fromKafkaModel(org.apache.kafka.common.TopicPartitionInfo info) {
-        List<Node> replicas = info.replicas().stream().map(Node::fromKafkaModel).toList();
-        Integer leader = info.leader().id();
         List<Integer> isr = info.isr().stream().map(org.apache.kafka.common.Node::id).toList();
-        return new PartitionInfo(info.partition(), replicas, leader, isr);
+        List<PartitionReplica> replicas = info.replicas()
+                .stream()
+                .map(replica -> PartitionReplica.fromKafkaModel(replica, isr))
+                .toList();
+        return new PartitionInfo(info.partition(), replicas, info.leader().id());
     }
 
-    static <P> Either<P, Error> primaryOrError(Either<P, Throwable> offset, String message) {
-        return offset.ifPrimaryOrElse(
+    static <P> Either<P, Error> primaryOrError(Either<P, Throwable> either, String message) {
+        return either.ifPrimaryOrElse(
                 Either::of,
                 thrown -> Error.forThrowable(thrown, message));
     }
@@ -56,27 +57,21 @@ public class PartitionInfo {
         this.offsets.put(key, primaryOrError(offset, "Unable to fetch partition offset"));
     }
 
-    public void addReplicaInfo(int nodeId, Either<ReplicaInfo, Throwable> log) {
-        replicas.stream()
-            .filter(node -> node.getId() == nodeId)
-            .findFirst()
-            .ifPresent(node -> node.setLog(primaryOrError(log, "Unable to fetch replica log metadata")));
+    public void setReplicaLocalStorage(int nodeId, Either<ReplicaLocalStorage, Throwable> storage) {
+        getReplica(nodeId).ifPresent(replica ->
+            replica.localStorage(primaryOrError(storage, "Unable to fetch replica log metadata")));
     }
 
     public int getPartition() {
         return partition;
     }
 
-    public Integer getLeader() {
-        return leader;
+    public Integer getLeaderId() {
+        return leaderId;
     }
 
-    public List<Node> getReplicas() {
+    public List<PartitionReplica> getReplicas() {
         return replicas;
-    }
-
-    public List<Integer> getIsr() {
-        return isr;
     }
 
     public Map<String, Either<OffsetInfo, Error>> getOffsets() {
@@ -98,15 +93,17 @@ public class PartitionInfo {
             .orElse(null);
     }
 
-    public Long getSize() {
-        return replicas.stream()
-            .filter(r -> r.getId() == leader)
-            .map(Node::getLog)
+    @JsonProperty
+    @Schema(readOnly = true, description = """
+            The total size of the log segments local to the leader replica, in bytes.
+            """)
+    public Long leaderLocalStorage() {
+        return getReplica(leaderId)
+            .map(PartitionReplica::localStorage)
             .filter(Objects::nonNull)
             .filter(Either::isPrimaryPresent)
             .map(Either::getPrimary)
-            .map(ReplicaInfo::size)
-            .findFirst()
+            .map(ReplicaLocalStorage::size)
             .orElse(null);
     }
 
@@ -114,5 +111,11 @@ public class PartitionInfo {
         return Optional.ofNullable(offsets.get(key))
             .flatMap(Either::getOptionalPrimary)
             .map(OffsetInfo::offset);
+    }
+
+    Optional<PartitionReplica> getReplica(int nodeId) {
+        return replicas.stream()
+            .filter(replica -> replica.nodeId() == nodeId)
+            .findFirst();
     }
 }

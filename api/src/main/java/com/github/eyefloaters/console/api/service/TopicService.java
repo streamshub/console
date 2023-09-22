@@ -22,6 +22,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
 import org.apache.kafka.clients.admin.Admin;
+import org.apache.kafka.clients.admin.DescribeLogDirsOptions;
 import org.apache.kafka.clients.admin.DescribeTopicsOptions;
 import org.apache.kafka.clients.admin.ListOffsetsResult.ListOffsetsResultInfo;
 import org.apache.kafka.clients.admin.OffsetSpec;
@@ -32,9 +33,9 @@ import org.apache.kafka.common.errors.InvalidTopicException;
 import org.apache.kafka.common.errors.UnknownTopicOrPartitionException;
 
 import com.github.eyefloaters.console.api.model.Either;
-import com.github.eyefloaters.console.api.model.Node;
 import com.github.eyefloaters.console.api.model.OffsetInfo;
-import com.github.eyefloaters.console.api.model.ReplicaInfo;
+import com.github.eyefloaters.console.api.model.PartitionReplica;
+import com.github.eyefloaters.console.api.model.ReplicaLocalStorage;
 import com.github.eyefloaters.console.api.model.Topic;
 import com.github.eyefloaters.console.api.model.TopicPartition;
 import com.github.eyefloaters.console.api.support.KafkaOffsetSpec;
@@ -281,7 +282,7 @@ public class TopicService {
 
         var pendingOffsets = getRequestOffsetSpecs(offsetSpec)
                 .stream()
-            .map(reqOffsetSpec -> getTopicPartitionNodes(topics, topicIds)
+            .map(reqOffsetSpec -> topicPartitionReplicas(topics, topicIds)
                 .keySet()
                 .stream()
                 .collect(Collectors.toMap(Function.identity(), ignored -> reqOffsetSpec)))
@@ -313,7 +314,7 @@ public class TopicService {
         return specs;
     }
 
-    Map<TopicPartition, List<Integer>> getTopicPartitionNodes(Map<Uuid, Either<Topic, Throwable>> topics, Map<String, Uuid> topicIds) {
+    Map<TopicPartition, List<Integer>> topicPartitionReplicas(Map<Uuid, Either<Topic, Throwable>> topics, Map<String, Uuid> topicIds) {
         return topics.entrySet()
                 .stream()
                 .filter(entry -> entry.getValue().isPrimaryPresent())
@@ -327,7 +328,7 @@ public class TopicService {
                         .stream()
                         .map(partition -> {
                             var key = new TopicPartition(topic.getName(), partition.getPartition());
-                            List<Integer> value = partition.getReplicas().stream().map(Node::getId).toList();
+                            List<Integer> value = partition.getReplicas().stream().map(PartitionReplica::nodeId).toList();
                             return Map.entry(key, value);
                         }))
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
@@ -394,12 +395,14 @@ public class TopicService {
     CompletionStage<Void> describeLogDirs(Admin adminClient, Map<Uuid, Either<Topic, Throwable>> topics) {
         Map<String, Uuid> topicIds = new HashMap<>(topics.size());
 
-        var topicPartitionNodes = getTopicPartitionNodes(topics, topicIds);
-        var nodeIds = topicPartitionNodes.values().stream().flatMap(Collection::stream).distinct().toList();
-        var logDirs = adminClient.describeLogDirs(nodeIds).descriptions();
+        var topicPartitionReplicas = topicPartitionReplicas(topics, topicIds);
+        var nodeIds = topicPartitionReplicas.values().stream().flatMap(Collection::stream).distinct().toList();
+        var logDirs = adminClient.describeLogDirs(nodeIds, new DescribeLogDirsOptions()
+                .timeoutMs(5000))
+                .descriptions();
         var promise = new CompletableFuture<Void>();
 
-        var pendingInfo = topicPartitionNodes.entrySet()
+        var pendingInfo = topicPartitionReplicas.entrySet()
             .stream()
             .flatMap(e -> e.getValue().stream().map(node -> Map.entry(e.getKey(), node)))
             .map(e -> {
@@ -415,7 +418,7 @@ public class TopicService {
 
                 return logDirs.get(nodeId).toCompletionStage().<Void>handle((nodeLogDirs, error) -> {
                     if (error != null) {
-                        partitionInfo.ifPresent(p -> p.addReplicaInfo(nodeId, Either.ofAlternate(error)));
+                        partitionInfo.ifPresent(p -> p.setReplicaLocalStorage(nodeId, Either.ofAlternate(error)));
                     } else {
                         nodeLogDirs.values()
                             .stream()
@@ -423,8 +426,8 @@ public class TopicService {
                             .map(replicas -> replicas.get(topicPartition))
                             .filter(Objects::nonNull)
                             .map(org.apache.kafka.clients.admin.ReplicaInfo.class::cast)
-                            .map(ReplicaInfo::fromKafkaModel)
-                            .forEach(replicaInfo -> partitionInfo.ifPresent(p -> p.addReplicaInfo(nodeId, Either.of(replicaInfo))));
+                            .map(ReplicaLocalStorage::fromKafkaModel)
+                            .forEach(replicaInfo -> partitionInfo.ifPresent(p -> p.setReplicaLocalStorage(nodeId, Either.of(replicaInfo))));
                     }
 
                     return null;

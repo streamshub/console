@@ -24,6 +24,21 @@ export const BookmarkSchema = z.object({
   }),
 });
 export type Bookmark = z.infer<typeof BookmarkSchema>;
+
+const BackendError = z.object({
+  meta: z.object({type: z.string()}), // z.map(z.string(), z.string()),
+  id: z.string().optional(),
+  status: z.string().optional(),
+  code: z.string().optional(),
+  title: z.string(),
+  detail: z.string(),
+  source: z.object({
+    pointer: z.string(),
+    parameter: z.string(),
+    header: z.string(),
+  }).optional(),
+});
+
 const OffsetSchema = z.object({
   offset: z.number().optional(),
   timestamp: z.string().optional(),
@@ -31,22 +46,20 @@ const OffsetSchema = z.object({
 });
 const PartitionSchema = z.object({
   partition: z.number(),
-  leader: z.number(),
+  leaderId: z.number(),
   replicas: z.array(
     z.object({
-      id: z.number(),
-      host: z.string(),
-      port: z.number(),
-      log: z
+      nodeId: z.number(),
+      nodeRack: z.string().optional(),
+      inSync: z.boolean(),
+      localStorage: BackendError.or(z
         .object({
           size: z.number(),
           offsetLag: z.number(),
           future: z.boolean(),
-        })
-        .optional(),
+        })).optional(),
     }),
   ),
-  isr: z.array(z.number()),
   offsets: z
     .object({
       earliest: OffsetSchema.optional(),
@@ -57,7 +70,7 @@ const PartitionSchema = z.object({
     .optional()
     .nullable(),
   recordCount: z.number().optional(),
-  size: z.number().optional(),
+  leaderLocalStorage: z.number().optional(),
 });
 const ConfigSchema = z.object({
   value: z.string(),

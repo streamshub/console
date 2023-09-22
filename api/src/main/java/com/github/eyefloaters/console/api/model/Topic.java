@@ -279,10 +279,17 @@ public class Topic {
             .orElse(null);
     }
 
+    @Schema(readOnly = true, description = """
+            The total size, in bytes, of all log segments local to the leaders
+            for each of this topic's partition replicas.
+
+            When support for tiered storage (KIP-405) is available, this property
+            may also include the size of remote replica storage.
+            """)
     public BigInteger getSize() {
         return partitions.getOptionalPrimary()
             .map(Collection::stream)
-            .map(p -> p.map(PartitionInfo::getSize)
+            .map(p -> p.map(PartitionInfo::leaderLocalStorage)
                     .filter(Objects::nonNull)
                     .map(BigInteger::valueOf)
                     .reduce(BigInteger::add)

@@ -231,10 +231,10 @@ export function TopicDashboard({
               "id",
               "leaderId",
               "replicas",
-              "isr",
+              "outOfSyncReplicas",
               "offsets",
               "recordCount",
-              "size",
+              "leaderLocalStorage",
             ] as const
           }
           renderHeader={({ column, key, Th }) => {
@@ -257,10 +257,10 @@ export function TopicDashboard({
                     Replicas
                   </Th>
                 );
-              case "isr":
+              case "outOfSyncReplicas":
                 return (
-                  <Th key={key} dataLabel={"In-Sync Replicas"}>
-                    In-Sync Replicas
+                  <Th key={key} dataLabel={"Out of Sync Replicas"}>
+                    Out of Sync Replicas
                   </Th>
                 );
               case "offsets":
@@ -275,7 +275,7 @@ export function TopicDashboard({
                     Record Count
                   </Th>
                 );
-              case "size":
+              case "leaderLocalStorage":
                 return (
                   <Th key={key} dataLabel={"Storage"}>
                     Storage
@@ -294,19 +294,19 @@ export function TopicDashboard({
               case "leaderId":
                 return (
                   <Td key={key} dataLabel={"Leader Id"}>
-                    {row.leader}
+                    {row.leaderId}
                   </Td>
                 );
               case "replicas":
                 return (
                   <Td key={key} dataLabel={"Replicas"}>
-                    {row.replicas.length}
+                    {row.replicas.map(r => r.nodeId).join(", ") }
                   </Td>
                 );
-              case "isr":
+              case "outOfSyncReplicas":
                 return (
-                  <Td key={key} dataLabel={"In-Sync Replicas"}>
-                    {row.isr.length}
+                  <Td key={key} dataLabel={"Out of Sync Replicas"}>
+                    {row.replicas.filter(r => !r.inSync).map(r => r.nodeId).join(", ") }
                   </Td>
                 );
               case "offsets":
@@ -322,10 +322,10 @@ export function TopicDashboard({
                     {format.number(row.recordCount || 0)}
                   </Td>
                 );
-              case "size":
+              case "leaderLocalStorage":
                 return (
                   <Td key={key} dataLabel={"Storage"}>
-                    {formatBytes(row.size || 0)}
+                    {formatBytes(row.leaderLocalStorage || 0)}
                   </Td>
                 );
             }
