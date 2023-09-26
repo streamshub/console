@@ -1,6 +1,6 @@
 import { Breadcrumb, BreadcrumbItem } from "@/libs/patternfly/react-core";
 import { ReactElement } from "react";
-import { BreadcrumbLink } from "./breadcrumbLink";
+import { BreadcrumbLink } from "./BreadcrumbLink";
 
 export function AppBreadcrumbs({
   bookmarkName,
