@@ -8,7 +8,7 @@ import {
   ResourceTypeKafka,
   ResourceTypeRegistry,
 } from "@/api/types";
-import { getSession, setSession } from "@/utils/session";
+import { getSession, getUser, setSession } from "@/utils/session";
 
 type ResourceType = typeof ResourceTypeKafka | typeof ResourceTypeRegistry;
 

@@ -1,49 +1,30 @@
-import NextAuth from "next-auth";
-import CredentialsProvider from "next-auth/providers/credentials";
-import GithubProvider from "next-auth/providers/github";
-import GitlabProvider from "next-auth/providers/gitlab";
+import NextAuth, { AuthOptions } from "next-auth";
 import KeycloakProvider from "next-auth/providers/keycloak";
 
 const users = ["developer", "admin"];
 
-export const authOptions = {
+export const authOptions: AuthOptions = {
   providers: [
-    CredentialsProvider({
-      name: "Credentials",
-      credentials: {
-        username: { label: "Username", type: "text" },
-        password: { label: "Password", type: "password" },
-      },
-      async authorize(credentials, req) {
-        return new Promise((resolve, reject) => {
-          if (
-            credentials?.username &&
-            credentials?.password &&
-            users.includes(credentials.username)
-          ) {
-            resolve({
-              id: credentials.username,
-              name: credentials.username,
-            });
-          } else {
-            resolve(null);
-          }
-        });
-      },
-    }),
-    GitlabProvider({
-      clientId: "id",
-      clientSecret: "secret",
-    }),
-    GithubProvider({
-      clientId: "id",
-      clientSecret: "secret",
-    }),
     KeycloakProvider({
-      clientId: "id",
-      clientSecret: "secret",
+      clientId: process.env.KEYCLOAK_CLIENTID,
+      clientSecret: process.env.KEYCLOAK_CLIENTSECRET,
+      issuer: process.env.KEYCLOAK_ISSUER,
     }),
   ],
+  callbacks: {
+    async jwt({ token, account, profile }) {
+      // Persist the OAuth access_token and or the user id to the token right after signin
+      if (account) {
+        token.accessToken = account.access_token;
+      }
+      return token;
+    },
+    async session({ session, token }) {
+      // Send properties to the client, like an access_token from a provider.
+      session.accessToken = token.accessToken;
+      return session;
+    },
+  },
 };
 
 const handler = NextAuth(authOptions);

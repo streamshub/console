@@ -81,8 +81,8 @@ export async function getUser() {
   if (!auth || !auth.user) {
     throw Error("Unauthorized");
   }
-
   return {
     username: auth.user.name || auth.user.email || "User",
+    accessToken: auth.accessToken,
   };
 }
