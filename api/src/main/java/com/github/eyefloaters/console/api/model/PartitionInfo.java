@@ -96,6 +96,7 @@ public class PartitionInfo {
     @JsonProperty
     @Schema(readOnly = true, description = """
             The total size of the log segments local to the leader replica, in bytes.
+            Or null if this is unavailable for any reason.
             """)
     public Long leaderLocalStorage() {
         return getReplica(leaderId)

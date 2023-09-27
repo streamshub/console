@@ -282,6 +282,7 @@ public class Topic {
     @Schema(readOnly = true, description = """
             The total size, in bytes, of all log segments local to the leaders
             for each of this topic's partition replicas.
+            Or null if this information is not available.
 
             When support for tiered storage (KIP-405) is available, this property
             may also include the size of remote replica storage.

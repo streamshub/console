@@ -7,15 +7,15 @@ public record ReplicaLocalStorage(
         long size,
 
         @Schema(readOnly = true, description = """
-                The lag of the log's LEO with respect to the partition's high watermark
-                (if it is the current log for the partition) or the current replica's LEO
+                The lag of the log's log end offset with respect to the partition's high watermark
+                (if it is the current log for the partition), or the current replica's log end offset
                 (if it is the `future` log for the partition).
                 """)
         long offsetLag,
 
         @Schema(readOnly = true, description = """
-                Whether this replica has been created by a AlterReplicaLogDirsRequest
-                but not yet replaced the current replica on the broker
+                false this replica is the active log being used by the broker
+                true if this replica represents a log being moved between log dirs on the broker  
                 """)
         boolean future) {
 
