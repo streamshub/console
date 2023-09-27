@@ -8,6 +8,7 @@ export default async function AsyncTopicPage({
   params: { bookmark: string; topic: string };
 }) {
   const bookmark = await getBookmark(params.bookmark);
-  const topic = await getTopic(bookmark.attributes.cluster.id, params.topic);
-  return <TopicDashboard topic={topic} />;
+  const kafkaId = bookmark.attributes.cluster!.id;
+  const topic = await getTopic(kafkaId, params.topic);
+  return <TopicDashboard kafkaId={kafkaId} topic={topic} />;
 }

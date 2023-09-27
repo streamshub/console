@@ -1,7 +1,18 @@
+"use server";
 import { Topic, TopicResponse, TopicsResponse } from "@/api/types";
 
+const listTopicsQuery = encodeURI(
+  "fields[topics]=name,internal,partitions,authorizedOperations,configs",
+);
+const describeTopicsQuery = encodeURI(
+  "fields[topics]=,name,internal,partitions,authorizedOperations,configs,recordCount,totalLeaderLogBytes",
+);
+const consumeRecordsQuery = encodeURI(
+  "fields[records]=partition,offset,timestamp,timestampType,headers,key,value&page[size]=20",
+);
+
 export async function getTopics(kafkaId: string): Promise<Topic[]> {
-  const url = `${process.env.BACKEND_URL}/api/kafkas/${kafkaId}/topics?fields%5Btopics%5D=name,internal,partitions,authorizedOperations,configs`;
+  const url = `${process.env.BACKEND_URL}/api/kafkas/${kafkaId}/topics?${listTopicsQuery}`;
   const res = await fetch(url, {
     headers: {
       Accept: "application/json",
@@ -15,13 +26,15 @@ export async function getTopic(
   kafkaId: string,
   topicId: string,
 ): Promise<Topic> {
-  const url = `${process.env.BACKEND_URL}/api/kafkas/${kafkaId}/topics/${topicId}?fields%5Btopics%5D=name,internal,partitions,authorizedOperations,configs`;
+  const url = `${process.env.BACKEND_URL}/api/kafkas/${kafkaId}/topics/${topicId}?${describeTopicsQuery}`;
   const res = await fetch(url, {
     headers: {
       Accept: "application/json",
     },
+    cache: "no-store"
   });
   const rawData = await res.json();
+  console.log("getTopic", url, JSON.stringify(rawData, null, 2));
   return TopicResponse.parse(rawData).data;
 }
 
@@ -29,7 +42,7 @@ export async function getTopicMessages(
   kafkaId: string,
   topicId: string,
 ): Promise<MessageApiResponse> {
-  const url = `${process.env.BACKEND_URL}/api/kafkas/${kafkaId}/topics/${topicId}/records?fields%5Brecords%5D=partition,offset,timestamp,timestampType,headers,key,value&page%5Bsize%5D=20`;
+  const url = `${process.env.BACKEND_URL}/api/kafkas/${kafkaId}/topics/${topicId}/records?${consumeRecordsQuery}`;
   const res = await fetch(url, {
     headers: {
       Accept: "application/json",

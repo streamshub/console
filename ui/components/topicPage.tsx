@@ -1,4 +1,5 @@
 "use client";
+import { getTopic } from "@/api/topics";
 import { Topic } from "@/api/types";
 import { TableView } from "@/components/table";
 import {
@@ -12,10 +13,12 @@ import {
   Text,
   Title,
 } from "@/libs/patternfly/react-core";
+import { useFormatBytes } from "@/utils/format";
 import classNames from "classnames";
+import { useFormatter } from "next-intl";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { PropsWithChildren } from "react";
+import { PropsWithChildren, useEffect, useState } from "react";
 
 export function TopicPage({
   topic,
@@ -87,7 +90,23 @@ export function TopicPage({
   );
 }
 
-export function TopicDashboard({ topic }: { topic: Topic }) {
+export function TopicDashboard({
+  topic: initialData,
+  kafkaId,
+}: {
+  kafkaId: string;
+  topic: Topic;
+}) {
+  const format = useFormatter();
+  const formatBytes = useFormatBytes();
+  const [topic, setTopic] = useState(initialData);
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      const topic = await getTopic(kafkaId, initialData.id);
+      setTopic(topic);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [kafkaId, initialData.id]);
   return (
     <>
       <PageSection>
@@ -127,7 +146,23 @@ export function TopicDashboard({ topic }: { topic: Topic }) {
                   >
                     <FlexItem>
                       <Title headingLevel="h4" size="3xl">
-                        3,45 GB
+                        {format.number(topic.attributes.recordCount || 0)}
+                      </Title>
+                    </FlexItem>
+                    <FlexItem>
+                      <span className="pf-v5-u-color-200">Messages</span>
+                    </FlexItem>
+                  </Flex>
+                </FlexItem>
+
+                <FlexItem flex={{ default: "flexNone" }}>
+                  <Flex
+                    direction={{ default: "column" }}
+                    spaceItems={{ default: "spaceItemsNone" }}
+                  >
+                    <FlexItem>
+                      <Title headingLevel="h4" size="3xl">
+                        {formatBytes(topic.attributes.totalLeaderLogBytes || 0)}
                       </Title>
                     </FlexItem>
                     <FlexItem>
@@ -191,7 +226,17 @@ export function TopicDashboard({ topic }: { topic: Topic }) {
           emptyStateNoData={<div>No partitions</div>}
           emptyStateNoResults={<div>todo</div>}
           ariaLabel={"Partitions"}
-          columns={["id", "leaderId", "replicas", "isr", "offsets", "recordCount"] as const}
+          columns={
+            [
+              "id",
+              "leaderId",
+              "replicas",
+              "outOfSyncReplicas",
+              "offsets",
+              "recordCount",
+              "leaderLocalStorage",
+            ] as const
+          }
           renderHeader={({ column, key, Th }) => {
             switch (column) {
               case "id":
@@ -212,10 +257,10 @@ export function TopicDashboard({ topic }: { topic: Topic }) {
                     Replicas
                   </Th>
                 );
-              case "isr":
+              case "outOfSyncReplicas":
                 return (
-                  <Th key={key} dataLabel={"In-Sync Replicas"}>
-                    In-Sync Replicas
+                  <Th key={key} dataLabel={"Out of Sync Replicas"}>
+                    Out of Sync Replicas
                   </Th>
                 );
               case "offsets":
@@ -228,6 +273,12 @@ export function TopicDashboard({ topic }: { topic: Topic }) {
                 return (
                   <Th key={key} dataLabel={"Record Count"}>
                     Record Count
+                  </Th>
+                );
+              case "leaderLocalStorage":
+                return (
+                  <Th key={key} dataLabel={"Storage"}>
+                    Storage
                   </Th>
                 );
             }
@@ -243,33 +294,38 @@ export function TopicDashboard({ topic }: { topic: Topic }) {
               case "leaderId":
                 return (
                   <Td key={key} dataLabel={"Leader Id"}>
-                    {row.leader.id}
+                    {row.leaderId}
                   </Td>
                 );
               case "replicas":
                 return (
                   <Td key={key} dataLabel={"Replicas"}>
-                    {row.replicas.length}
+                    {row.replicas.map(r => r.nodeId).join(", ") }
                   </Td>
                 );
-              case "isr":
+              case "outOfSyncReplicas":
                 return (
-                  <Td key={key} dataLabel={"In-Sync Replicas"}>
-                    {row.isr.length}
+                  <Td key={key} dataLabel={"Out of Sync Replicas"}>
+                    {row.replicas.filter(r => !r.inSync).map(r => r.nodeId).join(", ") }
                   </Td>
                 );
               case "offsets":
                 return (
                   <Td key={key} dataLabel={"Offset"}>
-                    {row.offsets?.earliest?.offset ?? '-'}
-                    /
-                    {row.offsets?.latest?.offset ?? '-'}
+                    {row.offsets?.earliest?.offset ?? "-"}/
+                    {row.offsets?.latest?.offset ?? "-"}
                   </Td>
                 );
               case "recordCount":
                 return (
                   <Td key={key} dataLabel={"Record Count"}>
-                    {row.recordCount ?? '-'}
+                    {format.number(row.recordCount || 0)}
+                  </Td>
+                );
+              case "leaderLocalStorage":
+                return (
+                  <Td key={key} dataLabel={"Storage"}>
+                    {formatBytes(row.leaderLocalStorage || 0)}
                   </Td>
                 );
             }

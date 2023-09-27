@@ -1,5 +1,6 @@
 package com.github.eyefloaters.console.api.model;
 
+import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Collection;
@@ -37,6 +38,7 @@ public class Topic {
         public static final String AUTHORIZED_OPERATIONS = "authorizedOperations";
         public static final String CONFIGS = "configs";
         public static final String RECORD_COUNT = "recordCount";
+        public static final String TOTAL_LEADER_LOG_BYTES = "totalLeaderLogBytes";
         static final Pattern CONFIG_KEY = Pattern.compile("^configs\\.\"([^\"]+)\"$");
 
         static final Comparator<Topic> ID_COMPARATOR =
@@ -54,7 +56,12 @@ public class Topic {
 
         public static final String LIST_DEFAULT = NAME + ", " + INTERNAL;
         public static final String DESCRIBE_DEFAULT =
-                NAME + ", " + INTERNAL + ", " + PARTITIONS + ", " + AUTHORIZED_OPERATIONS + ", " + RECORD_COUNT;
+                NAME + ", "
+                + INTERNAL + ", "
+                + PARTITIONS + ", "
+                + AUTHORIZED_OPERATIONS + ", "
+                + RECORD_COUNT + ", "
+                + TOTAL_LEADER_LOG_BYTES;
 
         private Fields() {
             // Prevent instances
@@ -274,6 +281,25 @@ public class Topic {
             .map(p -> p.map(PartitionInfo::getRecordCount)
                     .filter(Objects::nonNull)
                     .reduce(0L, Long::sum))
+            .orElse(null);
+    }
+
+    @Schema(readOnly = true, description = """
+            The total size, in bytes, of all log segments local to the leaders
+            for each of this topic's partition replicas.
+            Or null if this information is not available.
+
+            When support for tiered storage (KIP-405) is available, this property
+            may also include the size of remote replica storage.
+            """)
+    public BigInteger getTotalLeaderLogBytes() {
+        return partitions.getOptionalPrimary()
+            .map(Collection::stream)
+            .map(p -> p.map(PartitionInfo::leaderLocalStorage)
+                    .filter(Objects::nonNull)
+                    .map(BigInteger::valueOf)
+                    .reduce(BigInteger::add)
+                    .orElse(null))
             .orElse(null);
     }
 

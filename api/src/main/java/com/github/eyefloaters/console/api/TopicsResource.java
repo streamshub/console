@@ -97,7 +97,8 @@ public class TopicsResource {
                         Topic.Fields.PARTITIONS,
                         Topic.Fields.AUTHORIZED_OPERATIONS,
                         Topic.Fields.CONFIGS,
-                        Topic.Fields.RECORD_COUNT
+                        Topic.Fields.RECORD_COUNT,
+                        Topic.Fields.TOTAL_LEADER_LOG_BYTES,
                     },
                     payload = ErrorCategory.InvalidQueryParameter.class)
             @Parameter(
@@ -112,7 +113,8 @@ public class TopicsResource {
                                 Topic.Fields.PARTITIONS,
                                 Topic.Fields.AUTHORIZED_OPERATIONS,
                                 Topic.Fields.CONFIGS,
-                                Topic.Fields.RECORD_COUNT
+                                Topic.Fields.RECORD_COUNT,
+                                Topic.Fields.TOTAL_LEADER_LOG_BYTES,
                             }))
             List<String> fields,
 
@@ -169,7 +171,8 @@ public class TopicsResource {
                         Topic.Fields.PARTITIONS,
                         Topic.Fields.AUTHORIZED_OPERATIONS,
                         Topic.Fields.CONFIGS,
-                        Topic.Fields.RECORD_COUNT
+                        Topic.Fields.RECORD_COUNT,
+                        Topic.Fields.TOTAL_LEADER_LOG_BYTES,
                     },
                     payload = ErrorCategory.InvalidQueryParameter.class)
             @Parameter(
@@ -184,7 +187,8 @@ public class TopicsResource {
                                 Topic.Fields.PARTITIONS,
                                 Topic.Fields.AUTHORIZED_OPERATIONS,
                                 Topic.Fields.CONFIGS,
-                                Topic.Fields.RECORD_COUNT
+                                Topic.Fields.RECORD_COUNT,
+                                Topic.Fields.TOTAL_LEADER_LOG_BYTES,
                             }))
             List<String> fields,
 

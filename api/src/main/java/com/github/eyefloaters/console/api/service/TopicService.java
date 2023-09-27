@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
@@ -21,6 +22,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
 import org.apache.kafka.clients.admin.Admin;
+import org.apache.kafka.clients.admin.DescribeLogDirsOptions;
 import org.apache.kafka.clients.admin.DescribeTopicsOptions;
 import org.apache.kafka.clients.admin.ListOffsetsResult.ListOffsetsResultInfo;
 import org.apache.kafka.clients.admin.OffsetSpec;
@@ -32,7 +34,10 @@ import org.apache.kafka.common.errors.UnknownTopicOrPartitionException;
 
 import com.github.eyefloaters.console.api.model.Either;
 import com.github.eyefloaters.console.api.model.OffsetInfo;
+import com.github.eyefloaters.console.api.model.PartitionReplica;
+import com.github.eyefloaters.console.api.model.ReplicaLocalStorage;
 import com.github.eyefloaters.console.api.model.Topic;
+import com.github.eyefloaters.console.api.model.TopicPartition;
 import com.github.eyefloaters.console.api.support.KafkaOffsetSpec;
 import com.github.eyefloaters.console.api.support.ListRequestContext;
 
@@ -250,6 +255,7 @@ public class TopicService {
                 .map(entry ->
                     entry.getValue().toCompletionStage().<Void>handle((description, error) -> {
                         if (error instanceof InvalidTopicException) {
+                            // See KAFKA-15373
                             error = new UnknownTopicOrPartitionException(error);
                         }
 
@@ -265,6 +271,7 @@ public class TopicService {
 
         CompletableFuture.allOf(pendingDescribes)
                 .thenCompose(nothing -> listOffsets(adminClient, result, offsetSpec))
+                .thenCompose(nothing -> describeLogDirs(adminClient, result))
                 .thenApply(nothing -> promise.complete(result))
                 .exceptionally(promise::completeExceptionally);
 
@@ -276,20 +283,15 @@ public class TopicService {
 
         var pendingOffsets = getRequestOffsetSpecs(offsetSpec)
                 .stream()
-            .map(reqOffsetSpec -> getTopicPartitions(topics, topicIds)
+            .map(reqOffsetSpec -> topicPartitionReplicas(topics, topicIds)
+                .keySet()
                 .stream()
                 .collect(Collectors.toMap(Function.identity(), ignored -> reqOffsetSpec)))
             .flatMap(request -> listOffsets(adminClient, topics, topicIds, request))
             .map(CompletionStage::toCompletableFuture)
             .toArray(CompletableFuture[]::new);
 
-        var promise = new CompletableFuture<Void>();
-
-        CompletableFuture.allOf(pendingOffsets)
-                .thenApply(nothing -> promise.complete(null))
-                .exceptionally(promise::completeExceptionally);
-
-        return promise;
+        return CompletableFuture.allOf(pendingOffsets);
     }
 
     List<OffsetSpec> getRequestOffsetSpecs(String offsetSpec) {
@@ -307,7 +309,21 @@ public class TopicService {
         return specs;
     }
 
-    List<org.apache.kafka.common.TopicPartition> getTopicPartitions(Map<Uuid, Either<Topic, Throwable>> topics, Map<String, Uuid> topicIds) {
+    /**
+     * Build of map of {@linkplain TopicPartition}s to the list of replicas where
+     * the partitions are placed. Concurrently, a map of topic names to topic
+     * identifiers is constructed to support cross referencing the
+     * {@linkplain TopicPartition} keys (via {@linkplain TopicPartition#topic()})
+     * back to the topic's {@linkplain Uuid}. This allows easy access of the topics
+     * located in the topics map provided to this method and is particularly useful
+     * for Kafka operations that still require topic name.
+     *
+     * @param topics   map of topics (keyed by Id)
+     * @param topicIds map of topic names to topic Ids, modified by this method
+     * @return map of {@linkplain TopicPartition}s to the list of replicas where the
+     *         partitions are placed
+     */
+    Map<TopicPartition, List<Integer>> topicPartitionReplicas(Map<Uuid, Either<Topic, Throwable>> topics, Map<String, Uuid> topicIds) {
         return topics.entrySet()
                 .stream()
                 .filter(entry -> entry.getValue().isPrimaryPresent())
@@ -319,8 +335,12 @@ public class TopicService {
                 .filter(topic -> topic.getPartitions().isPrimaryPresent())
                 .flatMap(topic -> topic.getPartitions().getPrimary()
                         .stream()
-                        .map(partition -> new org.apache.kafka.common.TopicPartition(topic.getName(), partition.getPartition())))
-                .toList();
+                        .map(partition -> {
+                            var key = new TopicPartition(topic.getName(), partition.getPartition());
+                            List<Integer> value = partition.getReplicas().stream().map(PartitionReplica::nodeId).toList();
+                            return Map.entry(key, value);
+                        }))
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
     String getOffsetKey(OffsetSpec spec) {
@@ -340,11 +360,15 @@ public class TopicService {
             Admin adminClient,
             Map<Uuid, Either<Topic, Throwable>> topics,
             Map<String, Uuid> topicIds,
-            Map<org.apache.kafka.common.TopicPartition, OffsetSpec> request) {
+            Map<TopicPartition, OffsetSpec> request) {
 
-        var result = adminClient.listOffsets(request);
+        var kafkaRequest = request.entrySet()
+                .stream()
+                .map(e -> Map.entry(e.getKey().toKafkaModel(), e.getValue()))
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        var result = adminClient.listOffsets(kafkaRequest);
 
-        return request.entrySet()
+        return kafkaRequest.entrySet()
                 .stream()
                 .map(entry -> result.partitionResult(entry.getKey())
                         .toCompletionStage()
@@ -376,4 +400,56 @@ public class TopicService {
 
         return Either.of(result, error, transformer);
     }
+
+    CompletionStage<Void> describeLogDirs(Admin adminClient, Map<Uuid, Either<Topic, Throwable>> topics) {
+        Map<String, Uuid> topicIds = new HashMap<>(topics.size());
+
+        var topicPartitionReplicas = topicPartitionReplicas(topics, topicIds);
+        var nodeIds = topicPartitionReplicas.values().stream().flatMap(Collection::stream).distinct().toList();
+        var logDirs = adminClient.describeLogDirs(nodeIds, new DescribeLogDirsOptions()
+                .timeoutMs(5000))
+                .descriptions();
+        var promise = new CompletableFuture<Void>();
+
+        var pendingInfo = topicPartitionReplicas.entrySet()
+            .stream()
+            .flatMap(e -> e.getValue().stream().map(node -> Map.entry(e.getKey(), node)))
+            .map(e -> {
+                var topicPartition = e.getKey().toKafkaModel();
+                int nodeId = e.getValue();
+                var partitionInfo = topics.get(topicIds.get(topicPartition.topic()))
+                        .getPrimary()
+                        .getPartitions()
+                        .getPrimary()
+                        .stream()
+                        .filter(p -> p.getPartition() == topicPartition.partition())
+                        .findFirst();
+
+                return logDirs.get(nodeId).toCompletionStage().<Void>handle((nodeLogDirs, error) -> {
+                    if (error != null) {
+                        partitionInfo.ifPresent(p -> p.setReplicaLocalStorage(nodeId, Either.ofAlternate(error)));
+                    } else {
+                        nodeLogDirs.values()
+                            .stream()
+                            .map(dir -> dir.replicaInfos())
+                            .map(replicas -> replicas.get(topicPartition))
+                            .filter(Objects::nonNull)
+                            .map(org.apache.kafka.clients.admin.ReplicaInfo.class::cast)
+                            .map(ReplicaLocalStorage::fromKafkaModel)
+                            .forEach(replicaInfo -> partitionInfo.ifPresent(p -> p.setReplicaLocalStorage(nodeId, Either.of(replicaInfo))));
+                    }
+
+                    return null;
+                });
+            })
+            .map(CompletionStage::toCompletableFuture)
+            .toArray(CompletableFuture[]::new);
+
+        CompletableFuture.allOf(pendingInfo)
+            .thenApply(nothing -> promise.complete(null))
+            .exceptionally(promise::completeExceptionally);
+
+        return promise;
+    }
+
 }

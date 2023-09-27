@@ -24,6 +24,21 @@ export const BookmarkSchema = z.object({
   }),
 });
 export type Bookmark = z.infer<typeof BookmarkSchema>;
+
+const BackendError = z.object({
+  meta: z.object({type: z.string()}), // z.map(z.string(), z.string()),
+  id: z.string().optional(),
+  status: z.string().optional(),
+  code: z.string().optional(),
+  title: z.string(),
+  detail: z.string(),
+  source: z.object({
+    pointer: z.string(),
+    parameter: z.string(),
+    header: z.string(),
+  }).optional(),
+});
+
 const OffsetSchema = z.object({
   offset: z.number().optional(),
   timestamp: z.string().optional(),
@@ -31,32 +46,31 @@ const OffsetSchema = z.object({
 });
 const PartitionSchema = z.object({
   partition: z.number(),
-  leader: z.object({
-    id: z.number(),
-    host: z.string(),
-    port: z.number(),
-  }),
+  leaderId: z.number(),
   replicas: z.array(
     z.object({
-      id: z.number(),
-      host: z.string(),
-      port: z.number(),
+      nodeId: z.number(),
+      nodeRack: z.string().optional(),
+      inSync: z.boolean(),
+      localStorage: BackendError.or(z
+        .object({
+          size: z.number(),
+          offsetLag: z.number(),
+          future: z.boolean(),
+        })).optional(),
     }),
   ),
-  isr: z.array(
-    z.object({
-      id: z.number(),
-      host: z.string(),
-      port: z.number(),
-    }),
-  ),
-  offsets: z.object({
-    earliest: OffsetSchema.optional(),
-    latest: OffsetSchema.optional(),
-    maxTimestamp: OffsetSchema.optional(),
-    timestamp: OffsetSchema.optional()
-  }).optional().nullable(),
+  offsets: z
+    .object({
+      earliest: OffsetSchema.optional(),
+      latest: OffsetSchema.optional(),
+      maxTimestamp: OffsetSchema.optional(),
+      timestamp: OffsetSchema.optional(),
+    })
+    .optional()
+    .nullable(),
   recordCount: z.number().optional(),
+  leaderLocalStorage: z.number().optional(),
 });
 const ConfigSchema = z.object({
   value: z.string(),
@@ -75,6 +89,7 @@ const TopicSchema = z.object({
     authorizedOperations: z.array(z.string()),
     configs: z.record(z.string(), ConfigSchema),
     recordCount: z.number().optional(),
+    totalLeaderLogBytes: z.number().optional(),
   }),
 });
 export const TopicsResponse = z.object({
