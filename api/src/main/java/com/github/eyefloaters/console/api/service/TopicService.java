@@ -8,6 +8,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
@@ -22,6 +23,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
 import org.apache.kafka.clients.admin.Admin;
+import org.apache.kafka.clients.admin.CreateTopicsResult;
 import org.apache.kafka.clients.admin.DescribeLogDirsOptions;
 import org.apache.kafka.clients.admin.DescribeTopicsOptions;
 import org.apache.kafka.clients.admin.ListOffsetsResult.ListOffsetsResultInfo;
@@ -33,6 +35,7 @@ import org.apache.kafka.common.errors.InvalidTopicException;
 import org.apache.kafka.common.errors.UnknownTopicOrPartitionException;
 
 import com.github.eyefloaters.console.api.model.Either;
+import com.github.eyefloaters.console.api.model.NewTopic;
 import com.github.eyefloaters.console.api.model.OffsetInfo;
 import com.github.eyefloaters.console.api.model.PartitionReplica;
 import com.github.eyefloaters.console.api.model.ReplicaLocalStorage;
@@ -55,30 +58,38 @@ public class TopicService {
     @Inject
     ConfigService configService;
 
-//    public CompletionStage<NewTopic> createTopic(NewTopic topic) {
-//        Admin adminClient = clientSupplier.get();
-//        String topicName = topic.getName();
-//        org.apache.kafka.clients.admin.NewTopic newTopic;
-//
-//        if (topic.getReplicasAssignments() != null) {
-//            newTopic = new org.apache.kafka.clients.admin.NewTopic(
-//                    topicName,
-//                    topic.getReplicasAssignments());
-//        } else {
-//            newTopic = new org.apache.kafka.clients.admin.NewTopic(
-//                    topicName,
-//                    Optional.ofNullable(topic.getNumPartitions()),
-//                    Optional.ofNullable(topic.getReplicationFactor()));
-//        }
-//
-//        newTopic.configs(topic.getConfigs());
-//
-//        CreateTopicsResult result = adminClient.createTopics(List.of(newTopic));
-//
-//        return result.all()
-//                .thenApply(nothing -> NewTopic.fromKafkaModel(topicName, result))
-//                .toCompletionStage();
-//    }
+    public CompletionStage<NewTopic> createTopic(NewTopic topic) {
+        Admin adminClient = clientSupplier.get();
+        String topicName = topic.name();
+        org.apache.kafka.clients.admin.NewTopic newTopic;
+
+        if (topic.replicasAssignments() != null) {
+            newTopic = new org.apache.kafka.clients.admin.NewTopic(
+                    topicName,
+                    topic.replicasAssignments()
+                        .entrySet()
+                        .stream()
+                        .collect(Collectors.toMap(e -> Integer.valueOf(e.getKey()), Map.Entry::getValue)));
+        } else {
+            newTopic = new org.apache.kafka.clients.admin.NewTopic(
+                    topicName,
+                    Optional.ofNullable(topic.numPartitions()),
+                    Optional.ofNullable(topic.replicationFactor()));
+        }
+
+        if (topic.configs() != null) {
+            newTopic.configs(topic.configs()
+                    .entrySet()
+                    .stream()
+                    .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().getValue())));
+        }
+
+        CreateTopicsResult result = adminClient.createTopics(List.of(newTopic));
+
+        return result.all()
+                .thenApply(nothing -> NewTopic.fromKafkaModel(topicName, result))
+                .toCompletionStage();
+    }
 
     public CompletionStage<List<Topic>> listTopics(List<String> fields, String offsetSpec, ListRequestContext<Topic> listSupport) {
         List<String> fetchList = new ArrayList<>(fields);
@@ -154,25 +165,15 @@ public class TopicService {
 //                .toCompletionStage();
 //    }
 
-//    public CompletionStage<Map<String, Error>> deleteTopics(String... topicNames) {
-//        Admin adminClient = clientSupplier.get();
-//        Map<String, Error> errors = new HashMap<>();
-//
-//        var pendingDeletes = adminClient.deleteTopics(Arrays.asList(topicNames))
-//                .topicNameValues()
-//                .entrySet()
-//                .stream()
-//                .map(entry -> entry.getValue().whenComplete((nothing, thrown) -> {
-//                    if (thrown != null) {
-//                        errors.put(entry.getKey(), new Error("Unable to delete topic", thrown.getMessage(), thrown));
-//                    }
-//                }))
-//                .map(KafkaFuture::toCompletionStage)
-//                .map(CompletionStage::toCompletableFuture)
-//                .toArray(CompletableFuture[]::new);
-//
-//        return CompletableFuture.allOf(pendingDeletes).thenApply(nothing -> errors);
-//    }
+    public CompletionStage<Void> deleteTopic(String topicId) {
+        Admin adminClient = clientSupplier.get();
+        Uuid id = Uuid.fromString(topicId);
+
+        return adminClient.deleteTopics(TopicCollection.ofTopicIds(List.of(id)))
+                .topicIdValues()
+                .get(id)
+                .toCompletionStage();
+    }
 
     CompletionStage<List<Topic>> augmentList(Admin adminClient, List<Topic> list, List<String> fields, String offsetSpec) {
         Map<Uuid, Topic> topics = list.stream().collect(Collectors.toMap(t -> Uuid.fromString(t.getId()), Function.identity()));
@@ -267,15 +268,12 @@ public class TopicService {
                 .map(CompletionStage::toCompletableFuture)
                 .toArray(CompletableFuture[]::new);
 
-        var promise = new CompletableFuture<Map<Uuid, Either<Topic, Throwable>>>();
-
-        CompletableFuture.allOf(pendingDescribes)
-                .thenCompose(nothing -> listOffsets(adminClient, result, offsetSpec))
-                .thenCompose(nothing -> describeLogDirs(adminClient, result))
-                .thenApply(nothing -> promise.complete(result))
-                .exceptionally(promise::completeExceptionally);
-
-        return promise;
+        return CompletableFuture.allOf(pendingDescribes)
+                .thenCompose(nothing -> CompletableFuture.allOf(
+                        listOffsets(adminClient, result, offsetSpec).toCompletableFuture(),
+                        describeLogDirs(adminClient, result).toCompletableFuture()
+                ))
+                .thenApply(nothing -> result);
     }
 
     CompletionStage<Void> listOffsets(Admin adminClient, Map<Uuid, Either<Topic, Throwable>> topics, String offsetSpec) {
@@ -409,7 +407,6 @@ public class TopicService {
         var logDirs = adminClient.describeLogDirs(nodeIds, new DescribeLogDirsOptions()
                 .timeoutMs(5000))
                 .descriptions();
-        var promise = new CompletableFuture<Void>();
 
         var pendingInfo = topicPartitionReplicas.entrySet()
             .stream()
@@ -445,11 +442,6 @@ public class TopicService {
             .map(CompletionStage::toCompletableFuture)
             .toArray(CompletableFuture[]::new);
 
-        CompletableFuture.allOf(pendingInfo)
-            .thenApply(nothing -> promise.complete(null))
-            .exceptionally(promise::completeExceptionally);
-
-        return promise;
+        return CompletableFuture.allOf(pendingInfo);
     }
-
 }

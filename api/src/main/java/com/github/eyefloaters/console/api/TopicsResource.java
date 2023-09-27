@@ -8,14 +8,19 @@ import jakarta.inject.Inject;
 import jakarta.inject.Named;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.BeanParam;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response.Status;
+import jakarta.ws.rs.core.UriBuilder;
 import jakarta.ws.rs.core.UriInfo;
 
 import org.eclipse.microprofile.openapi.annotations.enums.Explode;
@@ -28,6 +33,7 @@ import org.eclipse.microprofile.openapi.annotations.responses.APIResponseSchema;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 import com.github.eyefloaters.console.api.model.ListFetchParams;
+import com.github.eyefloaters.console.api.model.NewTopic;
 import com.github.eyefloaters.console.api.model.Topic;
 import com.github.eyefloaters.console.api.service.TopicService;
 import com.github.eyefloaters.console.api.support.ErrorCategory;
@@ -57,25 +63,44 @@ public class TopicsResource {
     @Named("requestedFields")
     Consumer<List<String>> requestedFields;
 
-//    @POST
-//    @Consumes(MediaType.APPLICATION_JSON)
-//    @Produces(MediaType.APPLICATION_JSON)
-//    @APIResponseSchema(responseCode = "204", value = NewTopic.class)
-//    public CompletionStage<Response> createTopic(NewTopic topic) {
-//        return topicService.createTopic(topic)
-//                .thenApply(createdTopic -> Response.status(Status.CREATED).entity(createdTopic))
-//                .thenApply(Response.ResponseBuilder::build);
-//    }
+    @POST
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    @APIResponseSchema(responseCode = "201", value = NewTopic.NewTopicDocument.class)
+    public CompletionStage<Response> createTopic(
+            @Parameter(description = "Cluster identifier")
+            @PathParam("clusterId")
+            String clusterId,
 
-//    @Path("{topicName}")
-//    @DELETE
-//    @Produces(MediaType.APPLICATION_JSON)
-//    @APIResponseSchema(responseCode = "200", value = Map.class)
-//    public CompletionStage<Response> deleteTopic(@PathParam("topicName") String topicName) {
-//        return topicService.deleteTopics(topicName)
-//                .thenApply(Response::ok)
-//                .thenApply(Response.ResponseBuilder::build);
-//    }
+            @Valid
+            NewTopic.NewTopicDocument topic) {
+
+        final UriBuilder location = uriInfo.getRequestUriBuilder();
+
+        return topicService.createTopic(topic.getData().getAttributes())
+                .thenApply(NewTopic.NewTopicDocument::new)
+                .thenApply(entity -> Response.status(Status.CREATED)
+                        .entity(entity)
+                        .location(location.path(entity.getData().getId()).build()))
+                .thenApply(Response.ResponseBuilder::build);
+    }
+
+    @Path("{topicId}")
+    @DELETE
+    @APIResponseSchema(responseCode = "204", value = Void.class)
+    public CompletionStage<Response> deleteTopic(
+            @Parameter(description = "Cluster identifier")
+            @PathParam("clusterId")
+            String clusterId,
+
+            @PathParam("topicId")
+            @KafkaUuid(payload = ErrorCategory.ResourceNotFound.class, message = "No such topic")
+            @Parameter(description = "Topic identifier")
+            String topicId) {
+        return topicService.deleteTopic(topicId)
+                .thenApply(nothing -> Response.noContent())
+                .thenApply(Response.ResponseBuilder::build);
+    }
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)

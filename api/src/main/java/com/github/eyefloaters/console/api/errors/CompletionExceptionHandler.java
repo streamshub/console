@@ -1,48 +1,66 @@
 package com.github.eyefloaters.console.api.errors;
 
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletionException;
 
+import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.ws.rs.NotFoundException;
+import jakarta.enterprise.inject.Instance;
+import jakarta.inject.Inject;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.ExceptionMapper;
 import jakarta.ws.rs.ext.Provider;
 
-import com.github.eyefloaters.console.api.errors.client.InvalidPageCursorException;
-import com.github.eyefloaters.console.api.errors.client.InvalidPageCursorExceptionHandler;
-import com.github.eyefloaters.console.api.errors.client.NotFoundExceptionHandler;
-import com.github.eyefloaters.console.api.errors.client.UnknownTopicIdExceptionHandler;
-import com.github.eyefloaters.console.api.errors.client.UnknownTopicOrPartitionExceptionHandler;
-import com.github.eyefloaters.console.api.errors.server.TimeoutExceptionHandler;
+import org.jboss.logging.Logger;
+
 import com.github.eyefloaters.console.api.errors.server.UnhandledThrowableHandler;
 
 @Provider
 @ApplicationScoped
 public class CompletionExceptionHandler implements ExceptionMapper<CompletionException> {
 
-    static final Map<Class<? extends Throwable>, ExceptionMapper<? extends Throwable>> MAPPERS = new HashMap<>();
-    static final ExceptionMapper<Throwable> FALLBACK_MAPPER = new UnhandledThrowableHandler();
+    private static final Logger LOGGER = Logger.getLogger(CompletionExceptionHandler.class);
 
-    static {
-        MAPPERS.put(NotFoundException.class, new NotFoundExceptionHandler());
-        MAPPERS.put(org.apache.kafka.common.errors.UnknownTopicIdException.class, new UnknownTopicIdExceptionHandler());
-        MAPPERS.put(org.apache.kafka.common.errors.UnknownTopicOrPartitionException.class, new UnknownTopicOrPartitionExceptionHandler());
-        MAPPERS.put(InvalidPageCursorException.class, new InvalidPageCursorExceptionHandler());
-        MAPPERS.put(org.apache.kafka.common.errors.TimeoutException.class, new TimeoutExceptionHandler());
-    }
+    @Inject
+    UnhandledThrowableHandler fallbackMapper;
 
-    @SuppressWarnings("unchecked")
-    static <T extends Throwable> ExceptionMapper<T> getMapper(T cause) {
-        return (ExceptionMapper<T>) MAPPERS.getOrDefault(cause.getClass(), FALLBACK_MAPPER);
+    @Inject
+    Instance<SelectableExceptionMapper<? extends Throwable>> availableMappers;
+
+    private final Map<Type, ExceptionMapper<Throwable>> mappers = new HashMap<>();
+
+    @PostConstruct
+    public void initialize() {
+        availableMappers.forEach(this::storeMapper);
     }
 
     @Override
     public Response toResponse(CompletionException exception) {
         Throwable cause = exception.getCause();
-
-        return getMapper(cause).toResponse(cause);
+        return mappers.getOrDefault(cause.getClass(), fallbackMapper).toResponse(cause);
     }
 
+    @SuppressWarnings("unchecked")
+    private void storeMapper(SelectableExceptionMapper<? extends Throwable> mapper) {
+        Type superType = mapper.getClass().getGenericSuperclass();
+
+        /*
+         * Climb hierarchy until we find a non-class type (hopefully parameterized)
+         * with the exception as the parameter.
+         */
+        while (superType instanceof Class<?> superClass) {
+            superType = superClass.getGenericSuperclass();
+        }
+
+        if (superType instanceof ParameterizedType pType) {
+            Type exceptionType = pType.getActualTypeArguments()[0];
+            LOGGER.debugf("Mapping type %s to error mapper %s", exceptionType.getTypeName(), superType.getTypeName());
+            mappers.put(exceptionType, (ExceptionMapper<Throwable>) mapper);
+        } else {
+            LOGGER.warnf("Mapper %s does not extend a ParameterizedType with Throwable type argument");
+        }
+    }
 }

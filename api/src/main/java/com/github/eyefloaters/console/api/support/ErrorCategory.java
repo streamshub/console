@@ -2,13 +2,11 @@ package com.github.eyefloaters.console.api.support;
 
 import java.util.Map;
 import java.util.UUID;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
+import jakarta.enterprise.inject.spi.CDI;
+import jakarta.inject.Singleton;
 import jakarta.validation.Payload;
 import jakarta.ws.rs.core.Response.Status;
-import jakarta.ws.rs.core.Response.StatusType;
 
 import com.github.eyefloaters.console.api.model.Error;
 import com.github.eyefloaters.console.api.model.ErrorSource;
@@ -16,25 +14,12 @@ import com.github.eyefloaters.console.api.model.ListFetchParams;
 
 public abstract class ErrorCategory implements Payload {
 
-    private static final class Categories {
-        private static final Map<Class<? extends ErrorCategory>, ErrorCategory> INSTANCES =
-                Stream.of(new ErrorCategory.InvalidQueryParameter(),
-                    new ErrorCategory.MaxPageSizeExceededError(),
-                    new ErrorCategory.NotAuthenticated(),
-                    new ErrorCategory.ResourceNotFound(),
-                    new ErrorCategory.ServerError(),
-                    new ErrorCategory.BackendTimeout())
-            .collect(Collectors.toMap(ErrorCategory::getClass, Function.identity()));
-
-        private Categories() {
-        }
-    }
-
     @SuppressWarnings("unchecked")
     public static <T extends ErrorCategory> T get(Class<? extends Payload> type) {
-        return (T) Categories.INSTANCES.get(type);
+        return (T) CDI.current().select(type).get();
     }
 
+    @Singleton
     public static class InvalidQueryParameter extends ErrorCategory {
         public InvalidQueryParameter() {
             super("4001", "Invalid query parameter", Status.BAD_REQUEST, Source.PARAMETER);
@@ -49,6 +34,7 @@ public abstract class ErrorCategory implements Payload {
      *      "https://jsonapi.org/profiles/ethanresnick/cursor-pagination/#errors-max-page-size-exceeded">Max
      *      Page Size Exceeded Error</a>
      */
+    @Singleton
     public static class MaxPageSizeExceededError extends ErrorCategory {
         public static final String TYPE_LINK = "https://jsonapi.org/profiles/ethanresnick/cursor-pagination/max-size-exceeded";
 
@@ -65,24 +51,63 @@ public abstract class ErrorCategory implements Payload {
         }
     }
 
+    @Singleton
+    public static class InvalidResource extends ErrorCategory {
+        public InvalidResource() {
+            super("4003", "Invalid resource", Status.BAD_REQUEST, Source.POINTER);
+        }
+    }
+
+    @Singleton
+    public static class UncategorizedBadRequest extends ErrorCategory {
+        public UncategorizedBadRequest() {
+            super("4004", "Bad Request", Status.BAD_REQUEST);
+        }
+    }
+
+    @Singleton
     public static class NotAuthenticated extends ErrorCategory {
         public NotAuthenticated() {
             super("4011", "Not Authenticated", Status.UNAUTHORIZED);
         }
     }
 
+    @Singleton
     public static class ResourceNotFound extends ErrorCategory {
         public ResourceNotFound() {
             super("4041", "Resource not found", Status.NOT_FOUND);
         }
     }
 
+    @Singleton
+    public static class MethodNotAllowed extends ErrorCategory {
+        public MethodNotAllowed() {
+            super("4051", "Method not allowed", Status.METHOD_NOT_ALLOWED);
+        }
+    }
+
+    @Singleton
+    public static class ResourceConflict extends ErrorCategory {
+        public ResourceConflict() {
+            super("4091", "Resource conflict", Status.CONFLICT, Source.POINTER);
+        }
+    }
+
+    @Singleton
+    public static class UnsupportedMediaType extends ErrorCategory {
+        public UnsupportedMediaType() {
+            super("4151", "Unsupported payload format", Status.UNSUPPORTED_MEDIA_TYPE, Source.HEADER);
+        }
+    }
+
+    @Singleton
     public static class ServerError extends ErrorCategory {
         public ServerError() {
             super("5001", "Unexpected error", Status.INTERNAL_SERVER_ERROR);
         }
     }
 
+    @Singleton
     public static class BackendTimeout extends ErrorCategory {
         public BackendTimeout() {
             super("5041", "Timed out waiting for backend service", Status.GATEWAY_TIMEOUT);
@@ -119,18 +144,18 @@ public abstract class ErrorCategory implements Payload {
     }
 
     private String title;
-    private StatusType httpStatus;
+    private Status httpStatus;
     private String code;
     private Source source;
 
-    private ErrorCategory(String code, String title, StatusType httpStatus, Source source) {
+    private ErrorCategory(String code, String title, Status httpStatus, Source source) {
         this.code = code;
         this.title = title;
         this.httpStatus = httpStatus;
         this.source = source;
     }
 
-    private ErrorCategory(String code, String title, StatusType httpStatus) {
+    private ErrorCategory(String code, String title, Status httpStatus) {
         this(code, title, httpStatus, Source.NONE);
     }
 
@@ -142,7 +167,7 @@ public abstract class ErrorCategory implements Payload {
         return title;
     }
 
-    public StatusType getHttpStatus() {
+    public Status getHttpStatus() {
         return httpStatus;
     }
 

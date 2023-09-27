@@ -5,7 +5,6 @@ import java.util.Optional;
 
 import jakarta.json.JsonString;
 import jakarta.json.JsonValue;
-import jakarta.json.JsonValue.ValueType;
 
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
@@ -68,10 +67,6 @@ public class ConfigEntry {
     }
 
     static ConfigEntry fromCursor(JsonValue cursorValue) {
-        if (cursorValue.getValueType() != ValueType.STRING) {
-            return null;
-        }
-
         String cursor = ((JsonString) cursorValue).getString();
         ConfigEntry entry = new ConfigEntry();
         entry.setType(cursor.substring(0, cursor.indexOf(':')));
