@@ -162,7 +162,7 @@ export function TopicDashboard({
                   >
                     <FlexItem>
                       <Title headingLevel="h4" size="3xl">
-                        {formatBytes(topic.attributes.size || 0)}
+                        {formatBytes(topic.attributes.totalLeaderLogBytes || 0)}
                       </Title>
                     </FlexItem>
                     <FlexItem>

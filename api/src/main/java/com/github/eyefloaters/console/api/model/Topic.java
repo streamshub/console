@@ -38,7 +38,7 @@ public class Topic {
         public static final String AUTHORIZED_OPERATIONS = "authorizedOperations";
         public static final String CONFIGS = "configs";
         public static final String RECORD_COUNT = "recordCount";
-        public static final String SIZE = "size";
+        public static final String TOTAL_LEADER_LOG_BYTES = "totalLeaderLogBytes";
         static final Pattern CONFIG_KEY = Pattern.compile("^configs\\.\"([^\"]+)\"$");
 
         static final Comparator<Topic> ID_COMPARATOR =
@@ -56,7 +56,12 @@ public class Topic {
 
         public static final String LIST_DEFAULT = NAME + ", " + INTERNAL;
         public static final String DESCRIBE_DEFAULT =
-                NAME + ", " + INTERNAL + ", " + PARTITIONS + ", " + AUTHORIZED_OPERATIONS + ", " + RECORD_COUNT + ", " + SIZE;
+                NAME + ", "
+                + INTERNAL + ", "
+                + PARTITIONS + ", "
+                + AUTHORIZED_OPERATIONS + ", "
+                + RECORD_COUNT + ", "
+                + TOTAL_LEADER_LOG_BYTES;
 
         private Fields() {
             // Prevent instances
@@ -287,7 +292,7 @@ public class Topic {
             When support for tiered storage (KIP-405) is available, this property
             may also include the size of remote replica storage.
             """)
-    public BigInteger getSize() {
+    public BigInteger getTotalLeaderLogBytes() {
         return partitions.getOptionalPrimary()
             .map(Collection::stream)
             .map(p -> p.map(PartitionInfo::leaderLocalStorage)

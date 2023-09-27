@@ -5,7 +5,7 @@ const listTopicsQuery = encodeURI(
   "fields[topics]=name,internal,partitions,authorizedOperations,configs",
 );
 const describeTopicsQuery = encodeURI(
-  "fields[topics]=,name,internal,partitions,authorizedOperations,configs,recordCount,size",
+  "fields[topics]=,name,internal,partitions,authorizedOperations,configs,recordCount,totalLeaderLogBytes",
 );
 const consumeRecordsQuery = encodeURI(
   "fields[records]=partition,offset,timestamp,timestampType,headers,key,value&page[size]=20",

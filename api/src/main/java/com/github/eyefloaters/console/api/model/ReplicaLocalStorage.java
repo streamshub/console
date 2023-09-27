@@ -1,5 +1,6 @@
 package com.github.eyefloaters.console.api.model;
 
+import org.apache.kafka.clients.admin.ReplicaInfo;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 public record ReplicaLocalStorage(
@@ -19,7 +20,7 @@ public record ReplicaLocalStorage(
                 """)
         boolean future) {
 
-    public static ReplicaLocalStorage fromKafkaModel(org.apache.kafka.clients.admin.ReplicaInfo info) {
+    public static ReplicaLocalStorage fromKafkaModel(ReplicaInfo info) {
         return new ReplicaLocalStorage(info.size(), info.offsetLag(), info.isFuture());
     }
 }

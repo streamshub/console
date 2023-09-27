@@ -6,6 +6,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
+import org.apache.kafka.common.Node;
+import org.apache.kafka.common.TopicPartitionInfo;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -34,8 +36,8 @@ public class PartitionInfo {
         this.replicas = replicas;
     }
 
-    public static PartitionInfo fromKafkaModel(org.apache.kafka.common.TopicPartitionInfo info) {
-        List<Integer> isr = info.isr().stream().map(org.apache.kafka.common.Node::id).toList();
+    public static PartitionInfo fromKafkaModel(TopicPartitionInfo info) {
+        List<Integer> isr = info.isr().stream().map(Node::id).toList();
         List<PartitionReplica> replicas = info.replicas()
                 .stream()
                 .map(replica -> PartitionReplica.fromKafkaModel(replica, isr))

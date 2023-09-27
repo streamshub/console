@@ -2,6 +2,8 @@ package com.github.eyefloaters.console.api.model;
 
 import java.util.List;
 
+import org.apache.kafka.common.Node;
+
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -20,7 +22,7 @@ public class PartitionReplica {
         this.inSync = inSync;
     }
 
-    public static PartitionReplica fromKafkaModel(org.apache.kafka.common.Node node, List<Integer> isr) {
+    public static PartitionReplica fromKafkaModel(Node node, List<Integer> isr) {
         return new PartitionReplica(node.id(), node.rack(), isr.contains(node.id()));
     }
 

@@ -67,6 +67,7 @@ export async function getClusters(): Promise<Cluster[]> {
       headers: {
         Accept: "application/json",
       },
+      cache: "no-store",
     });
     const rawData = await res.json();
     return Response.parse(rawData).data;

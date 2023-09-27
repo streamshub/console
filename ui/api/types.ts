@@ -89,7 +89,7 @@ const TopicSchema = z.object({
     authorizedOperations: z.array(z.string()),
     configs: z.record(z.string(), ConfigSchema),
     recordCount: z.number().optional(),
-    size: z.number().optional(),
+    totalLeaderLogBytes: z.number().optional(),
   }),
 });
 export const TopicsResponse = z.object({

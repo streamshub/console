@@ -255,6 +255,7 @@ public class TopicService {
                 .map(entry ->
                     entry.getValue().toCompletionStage().<Void>handle((description, error) -> {
                         if (error instanceof InvalidTopicException) {
+                            // See KAFKA-15373
                             error = new UnknownTopicOrPartitionException(error);
                         }
 
@@ -290,13 +291,7 @@ public class TopicService {
             .map(CompletionStage::toCompletableFuture)
             .toArray(CompletableFuture[]::new);
 
-        var promise = new CompletableFuture<Void>();
-
-        CompletableFuture.allOf(pendingOffsets)
-                .thenApply(nothing -> promise.complete(null))
-                .exceptionally(promise::completeExceptionally);
-
-        return promise;
+        return CompletableFuture.allOf(pendingOffsets);
     }
 
     List<OffsetSpec> getRequestOffsetSpecs(String offsetSpec) {
@@ -314,6 +309,20 @@ public class TopicService {
         return specs;
     }
 
+    /**
+     * Build of map of {@linkplain TopicPartition}s to the list of replicas where
+     * the partitions are placed. Concurrently, a map of topic names to topic
+     * identifiers is constructed to support cross referencing the
+     * {@linkplain TopicPartition} keys (via {@linkplain TopicPartition#topic()})
+     * back to the topic's {@linkplain Uuid}. This allows easy access of the topics
+     * located in the topics map provided to this method and is particularly useful
+     * for Kafka operations that still require topic name.
+     *
+     * @param topics   map of topics (keyed by Id)
+     * @param topicIds map of topic names to topic Ids, modified by this method
+     * @return map of {@linkplain TopicPartition}s to the list of replicas where the
+     *         partitions are placed
+     */
     Map<TopicPartition, List<Integer>> topicPartitionReplicas(Map<Uuid, Either<Topic, Throwable>> topics, Map<String, Uuid> topicIds) {
         return topics.entrySet()
                 .stream()
