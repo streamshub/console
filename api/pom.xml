@@ -108,7 +108,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-smallrye-jwt</artifactId>
+            <artifactId>quarkus-oidc</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -344,9 +344,6 @@
                                 <ignoredDependency>org.jboss.spec.javax.ws.rs:jboss-jaxrs-api_2.1_spec</ignoredDependency>
                                 <ignoredDependency>org.jboss.spec.javax.ws.rs:jboss-jaxrs-api_2.1_spec</ignoredDependency>
                                 <ignoredDependency>org.junit.jupiter</ignoredDependency>
-                                <!-- Dependencies referenced by temporary class: com.github.eyefloaters.console.security.TrustedSSOCallerPrincipalFactoryProducer
-                                <ignoredDependency>io.smallrye:smallrye-jwt</ignoredDependency>
-                                <ignoredDependency>org.bitbucket.b_c:jose4j</ignoredDependency>-->
                                 <!-- Oauth kafka test dependencies -->
                                 <ignoredDependency>io.strimzi:kafka-oauth-common</ignoredDependency>
                                 <ignoredDependency>io.strimzi:kafka-oauth-server</ignoredDependency>
@@ -381,7 +378,6 @@
                             <headerLocation>.checkstyle/java.header</headerLocation>
                             <suppressionsLocation>.checkstyle/suppressions.xml</suppressionsLocation>
                             <includeTestSourceDirectory>true</includeTestSourceDirectory>
-                            <encoding>UTF-8</encoding>
                             <consoleOutput>true</consoleOutput>
                             <failsOnError>true</failsOnError>
                         </configuration>

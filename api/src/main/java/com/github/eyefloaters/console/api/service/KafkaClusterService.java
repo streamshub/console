@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
-import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -25,6 +24,8 @@ import io.fabric8.kubernetes.client.informers.SharedIndexInformer;
 import io.strimzi.api.kafka.model.Kafka;
 import io.strimzi.api.kafka.model.listener.KafkaListenerAuthentication;
 import io.strimzi.api.kafka.model.listener.arraylistener.GenericKafkaListener;
+import io.strimzi.api.kafka.model.listener.arraylistener.GenericKafkaListenerConfiguration;
+import io.strimzi.api.kafka.model.listener.arraylistener.GenericKafkaListenerConfigurationBootstrap;
 import io.strimzi.api.kafka.model.listener.arraylistener.KafkaListenerType;
 import io.strimzi.api.kafka.model.status.ListenerStatus;
 
@@ -86,7 +87,8 @@ public class KafkaClusterService {
     KafkaCluster addKafkaResourceData(KafkaCluster cluster) {
         findCluster(kafkaInformer, cluster.getId())
             .ifPresent(kafka -> externalListeners(kafka)
-                    .forEach(l -> {
+                    .findFirst()
+                    .ifPresent(l -> {
                         cluster.setName(kafka.getMetadata().getName());
                         cluster.setNamespace(kafka.getMetadata().getNamespace());
                         cluster.setCreationTimestamp(kafka.getMetadata().getCreationTimestamp());
@@ -109,29 +111,53 @@ public class KafkaClusterService {
         return Optional.ofNullable(kafka.getStatus().getListeners())
                 .map(Collection::stream)
                 .orElseGet(Stream::empty)
-                .filter(l -> isExternalListener(kafka, l));
+                .filter(l -> isExternalListener(kafka, l))
+                .sorted((l1, l2) -> Integer.compare(listenerSortKey(kafka, l1), listenerSortKey(kafka, l2)));
     }
 
     public static boolean isExternalListener(Kafka kafka, ListenerStatus listener) {
-        return kafka.getSpec()
-                .getKafka()
-                .getListeners()
-                .stream()
-                .filter(sl -> sl.getName().equals(listener.getName()))
+        return listenerSpec(kafka, listener)
                 .map(GenericKafkaListener::getType)
-                .filter(Objects::nonNull)
-                .anyMatch(Predicate.not(KafkaListenerType.INTERNAL::equals));
+                .map(type -> !KafkaListenerType.INTERNAL.equals(type))
+                .orElse(false);
+    }
+
+    static int listenerSortKey(Kafka kafka, ListenerStatus listener) {
+        return isConsoleListener(kafka, listener) ? -1 : 1;
+    }
+
+    static boolean isConsoleListener(Kafka kafka, ListenerStatus listener) {
+        return getBootstrapConfig(kafka, listener)
+            .map(config -> config.getAnnotations())
+            .map(annotations -> annotations.get("eyefloaters.github.com/console-listener"))
+            .map(Boolean::valueOf)
+            .orElse(false);
     }
 
     public static Optional<String> getAuthType(Kafka kafka, ListenerStatus listener) {
+        return getAuthentication(kafka, listener)
+                .map(KafkaListenerAuthentication::getType);
+    }
+
+    public static Optional<KafkaListenerAuthentication> getAuthentication(Kafka kafka, ListenerStatus listener) {
+        return listenerSpec(kafka, listener)
+                .map(GenericKafkaListener::getAuth);
+    }
+
+    public static Optional<GenericKafkaListenerConfigurationBootstrap> getBootstrapConfig(
+            Kafka kafka, ListenerStatus listener) {
+        return listenerSpec(kafka, listener)
+                .map(GenericKafkaListener::getConfiguration)
+                .map(GenericKafkaListenerConfiguration::getBootstrap);
+    }
+
+    static Optional<GenericKafkaListener> listenerSpec(Kafka kafka, ListenerStatus listener) {
         return kafka.getSpec()
                 .getKafka()
                 .getListeners()
                 .stream()
                 .filter(sl -> sl.getName().equals(listener.getName()))
-                .findFirst()
-                .map(GenericKafkaListener::getAuth)
-                .map(KafkaListenerAuthentication::getType);
+                .findFirst();
     }
 
     static List<String> enumNames(Collection<? extends Enum<?>> values) {

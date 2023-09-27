@@ -23,6 +23,8 @@ import jakarta.json.JsonObject;
 import jakarta.json.JsonString;
 import jakarta.ws.rs.core.Response.Status;
 
+import org.apache.kafka.clients.CommonClientConfigs;
+import org.apache.kafka.common.security.auth.SecurityProtocol;
 import org.eclipse.microprofile.config.Config;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -35,6 +37,7 @@ import com.github.eyefloaters.console.api.model.ListFetchParams;
 import com.github.eyefloaters.console.api.support.ErrorCategory;
 import com.github.eyefloaters.console.kafka.systemtest.TestPlainProfile;
 import com.github.eyefloaters.console.kafka.systemtest.deployment.DeploymentManager;
+import com.github.eyefloaters.console.test.AdminClientSpy;
 import com.github.eyefloaters.console.test.TestHelper;
 
 import io.fabric8.kubernetes.client.KubernetesClient;
@@ -108,6 +111,7 @@ class KafkaClustersResourceIT {
             .resource(utils.buildKafkaResource("test-kafka1", clusterId1, bootstrapServers,
                 new KafkaListenerAuthenticationCustomBuilder()
                     .withSasl()
+                    .addToListenerConfig("sasl.enabled.mechanisms", "oauthbearer")
                 .build()))
             .create();
         // Second cluster is offline/non-existent
@@ -441,7 +445,17 @@ class KafkaClustersResourceIT {
 
     @Test
     void testDescribeCluster() {
-        whenRequesting(req -> req.get("{clusterId}", clusterId1))
+        AdminClientSpy.install(config -> {
+            Map<String, Object> newConfig = new HashMap<>(config);
+            // Remove SASL - not actually configured for test without security enabled
+            newConfig.put(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, SecurityProtocol.PLAINTEXT.name);
+            return newConfig;
+        }, client -> { /* No-op */ });
+
+        whenRequesting(req -> req
+                .auth()
+                    .oauth2("fake-access-token")
+                .get("{clusterId}", clusterId1))
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
             .body("data.id", equalTo(clusterId1))

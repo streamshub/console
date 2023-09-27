@@ -18,7 +18,6 @@ import jakarta.ws.rs.core.Response.Status;
 import jakarta.ws.rs.core.UriBuilder;
 
 import org.apache.kafka.clients.admin.AdminClient;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.context.ThreadContext;
 import org.jboss.logging.Logger;
 
@@ -43,8 +42,6 @@ public class RestOperations implements OperationsHandler {
 
     private static final Pattern MATCH_ALL = Pattern.compile(".*");
 
-    @Inject
-    @ConfigProperty(name = "kafka.admin.num.partitions.max")
     int maxPartitions;
 
     @Inject

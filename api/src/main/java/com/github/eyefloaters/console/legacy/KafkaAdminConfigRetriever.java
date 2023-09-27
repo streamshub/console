@@ -1,18 +1,5 @@
 package com.github.eyefloaters.console.legacy;
 
-import org.apache.kafka.clients.CommonClientConfigs;
-import org.apache.kafka.clients.admin.AdminClientConfig;
-import org.apache.kafka.clients.consumer.ConsumerConfig;
-import org.apache.kafka.common.config.SaslConfigs;
-import org.apache.kafka.common.config.SslConfigs;
-import org.apache.kafka.common.security.auth.SecurityProtocol;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.jboss.logging.Logger;
-
-import jakarta.annotation.PostConstruct;
-import jakarta.inject.Inject;
-import jakarta.inject.Singleton;
-
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
@@ -21,6 +8,17 @@ import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+
+import jakarta.annotation.PostConstruct;
+import jakarta.inject.Singleton;
+
+import org.apache.kafka.clients.CommonClientConfigs;
+import org.apache.kafka.clients.admin.AdminClientConfig;
+import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.apache.kafka.common.config.SaslConfigs;
+import org.apache.kafka.common.config.SslConfigs;
+import org.apache.kafka.common.security.auth.SecurityProtocol;
+import org.jboss.logging.Logger;
 
 /**
  * KafkaAdminConfigRetriever class gets configuration from envvars
@@ -47,36 +45,13 @@ public class KafkaAdminConfigRetriever {
 
     public static final String ACL_RESOURCE_OPERATIONS = PREFIX + "acl.resource.operations";
 
-    @Inject
-    @ConfigProperty(name = BOOTSTRAP_SERVERS)
     String bootstrapServers;
-
-    @Inject
-    @ConfigProperty(name = API_TIMEOUT_MS_CONFIG, defaultValue = "30000")
     String apiTimeoutMsConfig;
-
-    @Inject
-    @ConfigProperty(name = REQUEST_TIMEOUT_MS_CONFIG, defaultValue = "10000")
     String requestTimeoutMsConfig;
-
-    @Inject
-    @ConfigProperty(name = BASIC_ENABLED, defaultValue = "false")
     boolean basicEnabled;
-
-    @Inject
-    @ConfigProperty(name = OAUTH_ENABLED, defaultValue = "false")
     boolean oauthEnabled;
-
-    @Inject
-    @ConfigProperty(name = BROKER_TLS_ENABLED, defaultValue = "false")
     boolean brokerTlsEnabled;
-
-    @Inject
-    @ConfigProperty(name = BROKER_TRUSTED_CERT)
     Optional<String> brokerTrustedCert;
-
-    @Inject
-    @ConfigProperty(name = ACL_RESOURCE_OPERATIONS, defaultValue = "{}")
     String aclResourceOperations;
 
     Map<String, Object> acConfig;
