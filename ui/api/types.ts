@@ -12,9 +12,12 @@ export const Response = z.object({
   data: z.array(ClusterSchema),
 });
 export type Cluster = z.infer<typeof ClusterSchema>;
-export const BookmarkSchema = z.object({
+
+export const ResourceTypeRegistry = "registry" as const;
+export const ResourceTypeKafka = "kafka" as const;
+export const KafkaResourceSchema = z.object({
   id: z.string(),
-  type: z.string(),
+  type: z.literal(ResourceTypeKafka),
   attributes: z.object({
     name: z.string(),
     bootstrapServer: z.string(),
@@ -23,20 +26,36 @@ export const BookmarkSchema = z.object({
     mechanism: z.string(),
   }),
 });
-export type Bookmark = z.infer<typeof BookmarkSchema>;
+export type KafkaResource = z.infer<typeof KafkaResourceSchema>;
+export const RegistryResourceSchema = z.object({
+  id: z.string(),
+  type: z.literal(ResourceTypeRegistry),
+  attributes: z.object({
+    name: z.string(),
+    url: z.string(),
+  }),
+});
+export type RegistryResource = z.infer<typeof RegistryResourceSchema>;
+export const ResourceSchema = z.discriminatedUnion("type", [
+  KafkaResourceSchema,
+  RegistryResourceSchema,
+]);
+export type Resource = z.infer<typeof ResourceSchema>;
 
 const BackendError = z.object({
-  meta: z.object({type: z.string()}), // z.map(z.string(), z.string()),
+  meta: z.object({ type: z.string() }), // z.map(z.string(), z.string()),
   id: z.string().optional(),
   status: z.string().optional(),
   code: z.string().optional(),
   title: z.string(),
   detail: z.string(),
-  source: z.object({
-    pointer: z.string(),
-    parameter: z.string(),
-    header: z.string(),
-  }).optional(),
+  source: z
+    .object({
+      pointer: z.string(),
+      parameter: z.string(),
+      header: z.string(),
+    })
+    .optional(),
 });
 
 const OffsetSchema = z.object({
@@ -52,12 +71,13 @@ const PartitionSchema = z.object({
       nodeId: z.number(),
       nodeRack: z.string().optional(),
       inSync: z.boolean(),
-      localStorage: BackendError.or(z
-        .object({
+      localStorage: BackendError.or(
+        z.object({
           size: z.number(),
           offsetLag: z.number(),
           future: z.boolean(),
-        })).optional(),
+        }),
+      ).optional(),
     }),
   ),
   offsets: z

@@ -9,10 +9,10 @@ const nextConfig = {
   output: "standalone",
   experimental: {
     serverActions: true,
-    // typedRoutes: true,
+    // typedRoutes: true, // disabled until next-intl is compatible with this
   },
   typescript: {
-    ignoreBuildErrors: true,
+    //ignoreBuildErrors: true,
   },
 };
 

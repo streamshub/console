@@ -1,3 +1,5 @@
+import { AppPage } from "@/app/[locale]/AppPage";
+import { getUser } from "@/utils/session";
 import { NextIntlClientProvider } from "next-intl";
 import { getTranslator } from "next-intl/server";
 import { notFound } from "next/navigation";
@@ -9,22 +11,19 @@ type Props = {
   params: { locale: string };
 };
 
-export default async function RootLayout({
-  children,
-  params: { locale },
-}: Props) {
+export default async function Layout({ children, params: { locale } }: Props) {
   let messages;
   try {
     messages = (await import(`../../messages/${locale}.json`)).default;
   } catch (error) {
     notFound();
   }
-
+  const user = await getUser();
   return (
     <html lang="en">
       <body>
         <NextIntlClientProvider locale={locale} messages={messages}>
-          {children}
+          <AppPage username={user.username}>{children}</AppPage>
         </NextIntlClientProvider>
       </body>
     </html>
