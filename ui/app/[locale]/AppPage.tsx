@@ -35,7 +35,6 @@ export function AppPage({
                 <NavItemLink url={"/resources"}>All resources</NavItemLink>
                 <NavItemLink url={"/flows"}>Flows</NavItemLink>
                 <NavItemLink url={"/kafka"}>Kafka</NavItemLink>
-                <NavItemLink url={"/connectors"}>Connectors</NavItemLink>
                 <NavItemLink url={"/registry"}>Registry</NavItemLink>
                 <NavItemLink url={"/learning-resources"}>
                   Learning resources

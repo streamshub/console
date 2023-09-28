@@ -4,6 +4,7 @@ import { Topic } from "@/api/types";
 import { TopicsTable } from "@/app/[locale]/kafka/[kafkaId]/(root)/topics/TopicsTable";
 import { PageSection } from "@/libs/patternfly/react-core";
 import { getUser } from "@/utils/session";
+import { notFound } from "next/navigation";
 
 export default async function TopicsPage({
   params,
@@ -12,7 +13,10 @@ export default async function TopicsPage({
 }) {
   const auth = await getUser();
   const cluster = await getResource(params.kafkaId, "kafka");
-  const topics = await getTopics(cluster.attributes.cluster!.id);
+  if (!cluster || !cluster.attributes.cluster) {
+    notFound();
+  }
+  const topics = await getTopics(cluster.attributes.cluster.id);
   return (
     <TopicsContent canCreate={auth.username === "admin"} topics={topics} />
   );

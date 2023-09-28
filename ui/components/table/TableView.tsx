@@ -30,7 +30,7 @@ import {
 } from "@/libs/patternfly/react-table";
 import type { ReactElement } from "react";
 import { useState } from "react";
-import { Loading } from "../loading/loading";
+import { Loading } from "../Loading";
 import { Pagination } from "../pagination";
 import type { ChipFilterProps } from "../tableToolbar";
 import { ChipFilter } from "../tableToolbar";

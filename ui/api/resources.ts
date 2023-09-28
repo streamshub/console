@@ -9,7 +9,6 @@ import {
   Response,
 } from "@/api/types";
 import { getSession, setSession } from "@/utils/session";
-import { notFound } from "next/navigation";
 
 type ResourceType = typeof ResourceTypeKafka | typeof ResourceTypeRegistry;
 
@@ -32,11 +31,11 @@ export async function getResources(scope: unknown): Promise<unknown> {
 export async function getResource(
   id: string,
   scope: typeof ResourceTypeRegistry,
-): Promise<RegistryResource>;
+): Promise<RegistryResource | undefined>;
 export async function getResource(
   id: string,
   scope: typeof ResourceTypeKafka,
-): Promise<KafkaResource>;
+): Promise<KafkaResource | undefined>;
 export async function getResource(
   id: string,
   scope: unknown,
@@ -48,9 +47,6 @@ export async function getResource(
   } else if (typeof scope === typeof ResourceTypeRegistry) {
     const resources = await getResources("registry");
     resource = resources.find((p) => p.id === id);
-  }
-  if (!resource) {
-    notFound();
   }
   return resource;
 }

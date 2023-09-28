@@ -1,6 +1,6 @@
 "use client";
 import { Message, MessageApiResponse } from "@/api/topics";
-import { Loading } from "@/components/loading/loading";
+import { Loading } from "@/components/Loading";
 import { NoResultsEmptyState } from "@/components/messageBrowser/NoResultsEmptyState";
 import { RefreshButton } from "@/components/refreshButton/refreshButton";
 import { ResponsiveTable } from "@/components/table";

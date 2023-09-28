@@ -6,6 +6,7 @@ import {
 } from "@/components/messageBrowser/KafkaMessageBrowser";
 import { NoDataEmptyState } from "@/components/messageBrowser/NoDataEmptyState";
 import { revalidateTag } from "next/cache";
+import { notFound } from "next/navigation";
 
 export default async function Principals({
   params,
@@ -13,8 +14,11 @@ export default async function Principals({
   params: { kafkaId: string; topic: string };
 }) {
   const cluster = await getResource(params.kafkaId, "kafka");
+  if (!cluster || !cluster.attributes.cluster) {
+    notFound();
+  }
   const data = await getTopicMessages(
-    cluster.attributes.cluster!.id,
+    cluster.attributes.cluster.id,
     params.topic,
   );
   switch (true) {

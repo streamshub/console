@@ -2,6 +2,7 @@ import { getResource, getResources } from "@/api/resources";
 import { getTopic } from "@/api/topics";
 import { KafkaSelectorBreadcrumbItem } from "@/app/[locale]/kafka/[kafkaId]/(root)/KafkaSelectorBreadcrumbItem";
 import { BreadcrumbLink } from "@/components/BreadcrumbLink";
+import { Loading } from "@/components/Loading";
 import { NavItemLink } from "@/components/NavItemLink";
 import { Number } from "@/components/Number";
 import {
@@ -18,15 +19,19 @@ import {
   TextContent,
   Title,
 } from "@/libs/patternfly/react-core";
-import { PropsWithChildren } from "react";
+import { notFound } from "next/navigation";
+import { PropsWithChildren, Suspense } from "react";
 
 export default async function KafkaLayout({
   children,
   params: { kafkaId, topic: topicId },
 }: PropsWithChildren<{ params: { kafkaId: string; topic: string } }>) {
   const cluster = await getResource(kafkaId, "kafka");
+  if (!cluster || !cluster.attributes.cluster) {
+    notFound();
+  }
   const clusters = await getResources("kafka");
-  const topic = await getTopic(cluster.attributes.cluster!.id, topicId);
+  const topic = await getTopic(cluster.attributes.cluster.id, topicId);
 
   return (
     <>
@@ -40,9 +45,12 @@ export default async function KafkaLayout({
                 clusters={clusters}
               />
             </BreadcrumbItem>
-            <BreadcrumbLink href={`/kafka/${kafkaId}/topics`} isActive={true}>
+            <BreadcrumbLink href={`/kafka/${kafkaId}/topics`}>
               Topics
             </BreadcrumbLink>
+            <BreadcrumbItem isActive={true}>
+              {topic.attributes.name}
+            </BreadcrumbItem>
           </Breadcrumb>
         </PageBreadcrumb>
         <PageSection
@@ -84,7 +92,7 @@ export default async function KafkaLayout({
         </PageNavigation>
       </PageGroup>
       <Divider />
-      {children}
+      <Suspense fallback={<Loading />}>{children}</Suspense>
     </>
   );
 }
