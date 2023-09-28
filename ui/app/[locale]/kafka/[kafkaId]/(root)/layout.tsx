@@ -1,5 +1,6 @@
 import { getResource, getResources } from "@/api/resources";
 import { BreadcrumbLink } from "@/components/BreadcrumbLink";
+import { Loading } from "@/components/Loading";
 import { NavItemLink } from "@/components/NavItemLink";
 import {
   Breadcrumb,
@@ -15,7 +16,8 @@ import {
   TextContent,
   Title,
 } from "@/libs/patternfly/react-core";
-import { PropsWithChildren } from "react";
+import { notFound } from "next/navigation";
+import { PropsWithChildren, Suspense } from "react";
 import { KafkaSelectorBreadcrumbItem } from "./KafkaSelectorBreadcrumbItem";
 
 export default async function KafkaLayout({
@@ -23,6 +25,9 @@ export default async function KafkaLayout({
   params: { kafkaId },
 }: PropsWithChildren<{ params: { kafkaId: string } }>) {
   const cluster = await getResource(kafkaId, "kafka");
+  if (!cluster || !cluster.attributes.cluster) {
+    notFound();
+  }
   const clusters = await getResources("kafka");
 
   return (
@@ -32,11 +37,13 @@ export default async function KafkaLayout({
           <Breadcrumb>
             <BreadcrumbLink href="/kafka">Kafka</BreadcrumbLink>
             <BreadcrumbItem isActive>
-              <KafkaSelectorBreadcrumbItem
-                selected={cluster}
-                clusters={clusters}
-                isActive={true}
-              />
+              <Suspense fallback={"Loading clusters..."}>
+                <KafkaSelectorBreadcrumbItem
+                  selected={cluster}
+                  clusters={clusters}
+                  isActive={true}
+                />
+              </Suspense>
             </BreadcrumbItem>
           </Breadcrumb>
         </PageBreadcrumb>
@@ -73,7 +80,7 @@ export default async function KafkaLayout({
         </PageNavigation>
       </PageGroup>
       <Divider />
-      {children}
+      <Suspense fallback={<Loading />}>{children}</Suspense>
     </>
   );
 }

@@ -17,6 +17,7 @@ export async function getTopics(kafkaId: string): Promise<Topic[]> {
     headers: {
       Accept: "application/json",
     },
+    cache: "no-store",
   });
   const rawData = await res.json();
   return TopicsResponse.parse(rawData).data;
@@ -31,10 +32,9 @@ export async function getTopic(
     headers: {
       Accept: "application/json",
     },
-    cache: "no-store"
+    cache: "no-store",
   });
   const rawData = await res.json();
-  console.log("getTopic", url, JSON.stringify(rawData, null, 2));
   return TopicResponse.parse(rawData).data;
 }
 
@@ -47,10 +47,12 @@ export async function getTopicMessages(
     headers: {
       Accept: "application/json",
     },
+    cache: "no-store",
+
+    next: { tags: [`messages-${topicId}`] },
   });
   const rawData = await res.json();
   const messages = (rawData?.data || []).map((r: any) => ({ ...r.attributes }));
-  console.log(JSON.stringify(messages, null, 2));
   return {
     lastUpdated: new Date(),
     messages,
