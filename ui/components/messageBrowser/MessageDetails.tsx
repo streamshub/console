@@ -1,3 +1,4 @@
+import { Message } from "@/api/topics";
 import {
   ClipboardCopy,
   DescriptionList,
@@ -18,11 +19,10 @@ import {
   TextContent,
   TextVariants,
 } from "@/libs/patternfly/react-core";
-import { useTranslations, useFormatter } from "next-intl";
 import { parseISO } from "date-fns";
-import { beautifyUnknownValue } from "./utils";
+import { useFormatter, useTranslations } from "next-intl";
 import { NoDataCell } from "./NoDataCell";
-import { Message } from "../_api/types";
+import { beautifyUnknownValue } from "./utils";
 
 export type MessageDetailsProps = {
   onClose: () => void;

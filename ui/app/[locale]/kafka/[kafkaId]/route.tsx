@@ -1,15 +1,14 @@
 import { getResource } from "@/api/resources";
 import { setSession } from "@/utils/session";
-import { redirect } from "next/navigation";
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(
-  request: NextRequest,
-  route: { params: { kafkaId: string } },
+  _request: NextRequest,
+  context: { params: { kafkaId: string } },
 ) {
-  const cluster = await getResource(route.params.kafkaId, "kafka");
+  const cluster = await getResource(context.params.kafkaId, "kafka");
   await setSession("kafka", {
     lastUsed: cluster,
   });
-  redirect(`${route.params.kafkaId}/overview`);
+  return NextResponse.redirect(`${context.params.kafkaId}/overview`);
 }
