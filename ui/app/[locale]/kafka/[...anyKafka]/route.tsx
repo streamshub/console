@@ -1,6 +1,6 @@
 import { getResource } from "@/api/resources";
 import { setSession } from "@/utils/session";
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(
   _request: NextRequest,
@@ -12,4 +12,5 @@ export async function GET(
       lastUsed: cluster,
     });
   }
+  return NextResponse.next();
 }
