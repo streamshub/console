@@ -1,6 +1,6 @@
 import { MenuToggle, Select, SelectOption } from "@/libs/patternfly/react-core";
-import { useState } from "react";
 import { useTranslations } from "next-intl";
+import { useState } from "react";
 import type { CheckboxType } from "../types";
 
 export function FilterCheckbox({
@@ -32,7 +32,7 @@ export function FilterCheckbox({
             } as React.CSSProperties
           }
         >
-          {t("common:search_hint", { label })}
+          {t("common.search_hint", { label })}
         </MenuToggle>
       )}
     >

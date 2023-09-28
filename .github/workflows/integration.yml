@@ -7,7 +7,7 @@ on:
     types: [ opened, reopened, synchronize ]
 
 jobs:
-  build:
+  build-api:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -59,3 +59,17 @@ jobs:
           path: |
             **/target/
             !**/target/**/*.jar
+
+  build-ui:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build UI Image
+        uses: docker/build-push-action@v5
+        with:
+          context: ui/
+          push: false
+          tags: |
+            eyefloaters/ui:latest
