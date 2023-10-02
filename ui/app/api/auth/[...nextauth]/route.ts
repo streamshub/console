@@ -1,6 +1,5 @@
-import NextAuth, { AuthOptions } from "next-auth";
+import NextAuth, { AuthOptions, type TokenSet } from "next-auth";
 import KeycloakProvider from "next-auth/providers/keycloak";
-import { type TokenSet } from "@auth/core/types";
 
 const keycloak = KeycloakProvider({
   clientId: process.env.KEYCLOAK_CLIENTID,
@@ -22,26 +21,34 @@ export const authOptions: AuthOptions = {
   providers: [ keycloak ],
   callbacks: {
     async jwt({ token, account }) {
+      let tokenExpiration = new Date((typeof token?.expires_at === 'number' ? token.expires_at : 0) * 1000);
+      console.debug("Token expiration, expires_at:", tokenExpiration);
+
       // Persist the OAuth access_token and or the user id to the token right after signin
       if (account) {
+        console.debug("account present, saving new token");
         // Save the access token and refresh token in the JWT on the initial login
         return {
           access_token: account.access_token,
           expires_at: account.expires_at,
           refresh_token: account.refresh_token,
         }
-      } else if (Date.now() < token.expires_at * 1000) {
+      }
+
+      if (Date.now() < tokenExpiration.getTime()) {
+        console.debug("Token not yet expired");
         // If the access token has not expired yet, return it
         return token;
       } else {
-        const params = new URLSearchParams({
-          client_id: keycloak.options.clientId,
-          client_secret: keycloak.options.clientSecret,
-          grant_type: "refresh_token",
-          refresh_token: token.refresh_token,
-        });
+        console.debug("Token has expired");
+        let refresh_token = typeof token.refresh_token === 'string' ? token.refresh_token : '';
 
-        console.debug("refreshing token , expired at", new Date(token.expires_at * 1000));
+        const params = new URLSearchParams({
+          client_id: keycloak.options?.clientId ?? '',
+          client_secret: keycloak.options?.clientSecret ?? '',
+          grant_type: "refresh_token",
+          refresh_token: refresh_token,
+        });
 
         try {
           const response = await fetch(tokenEndpoint.value, {
@@ -56,12 +63,12 @@ export const authOptions: AuthOptions = {
             throw tokens;
           }
 
-          //console.log("tokenset", tokens);
+          let expires_in = typeof tokens.expires_in === 'number' ? tokens.expires_in : -1;
 
           return {
             ...token, // Keep the previous token properties
             access_token: tokens.access_token,
-            expires_at: Math.floor(Date.now() / 1000 + tokens.expires_in),
+            expires_at: Math.floor(Date.now() / 1000 + expires_in),
             // Fall back to old refresh token, but note that
             // many providers may only allow using a refresh token once.
             refresh_token: tokens.refresh_token ?? token.refresh_token,
@@ -75,8 +82,10 @@ export const authOptions: AuthOptions = {
     },
     async session({ session, token }) {
       // Send properties to the client, like an access_token from a provider.
-      session.accessToken = token.access_token;
-      return session;
+      return {
+        ...session,
+        accessToken: token.access_token
+      };
     },
   },
 };
@@ -84,18 +93,3 @@ export const authOptions: AuthOptions = {
 const handler = NextAuth(authOptions);
 
 export { handler as GET, handler as POST };
-
-declare module "@auth/core/types" {
-  interface Session {
-    error?: "RefreshAccessTokenError"
-  }
-}
-
-declare module "@auth/core/jwt" {
-  interface JWT {
-    access_token: string
-    expires_at: number
-    refresh_token: string
-    error?: "RefreshAccessTokenError"
-  }
-}

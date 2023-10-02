@@ -81,8 +81,11 @@ export async function getUser() {
   if (!auth || !auth.user) {
     throw Error("Unauthorized");
   }
+
+  let accessToken = (auth as any)['accessToken'];
+
   return {
     username: auth.user.name || auth.user.email || "User",
-    accessToken: auth.accessToken,
+    accessToken: accessToken,
   };
 }
