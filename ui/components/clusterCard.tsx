@@ -1,6 +1,6 @@
 "use client";
 "use client";
-import { Cluster } from "@/api/types";
+import { ClusterList } from "@/api/types";
 import {
   Card,
   CardBody,
@@ -17,7 +17,7 @@ import { useRouter } from "next/navigation";
 export function ClusterCard({
   id,
   attributes: { name, bootstrapServers },
-}: Cluster) {
+}: ClusterList) {
   const router = useRouter();
   const cardId = `tool-card-${id}`;
   return (

@@ -6,20 +6,18 @@ import {
   EmptyStateBody,
   EmptyStateFooter,
   EmptyStateIcon,
-  Gallery,
   PageSection,
   Split,
   SplitItem,
-  Text,
   TextContent,
   Title,
 } from "@/libs/patternfly/react-core";
 import { PlusCircleIcon } from "@/libs/patternfly/react-icons";
-import { ClusterCard } from "./ClusterCard";
+import { ClustersTable } from "./ClustersTable";
 
 export default async function Home() {
   const clusters = await getResources("kafka");
-
+  const isEmpty = clusters.length === 0;
   return (
     <>
       <PageSection variant={"light"}>
@@ -29,15 +27,9 @@ export default async function Home() {
               <Title headingLevel="h1" ouiaId={"page-title"}>
                 Kafka
               </Title>
-              <Text ouiaId={"page-description"}>
-                Lorem ipsum dolor sit amet, consectetur adipisicing elit. Cum
-                dolor doloremque eligendi, ex fugiat incidunt, inventore ipsam
-                natus nobis omnis, quibusdam reiciendis rerum soluta sunt
-                suscipit ullam ut vero vitae.
-              </Text>
             </TextContent>
           </SplitItem>
-          {clusters.length > 0 && (
+          {!isEmpty && (
             <SplitItem>
               <ButtonLink
                 href={"/resources/create/kafka"}
@@ -50,12 +42,8 @@ export default async function Home() {
         </Split>
       </PageSection>
       <PageSection isFilled>
-        <Gallery hasGutter aria-label={"Authorization Profiles"}>
-          {clusters.map((ap) => (
-            <ClusterCard key={ap.id} {...ap} href={`/kafka/${ap.id}`} />
-          ))}
-        </Gallery>
-        {clusters.length === 0 && (
+        <ClustersTable clusters={clusters} />
+        {isEmpty && (
           <EmptyState variant={"lg"}>
             <EmptyStateIcon icon={PlusCircleIcon} />
             <Title headingLevel="h2" size="lg">

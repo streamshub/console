@@ -1,4 +1,6 @@
-import { getResource, getResources } from "@/api/resources";
+import { getKafkaCluster } from "@/api/kafka";
+import { getResources } from "@/api/resources";
+import { KafkaParams } from "@/app/[locale]/kafka/[kafkaId]/kafka.params";
 import { BreadcrumbLink } from "@/components/BreadcrumbLink";
 import { Loading } from "@/components/Loading";
 import { NavItemLink } from "@/components/NavItemLink";
@@ -12,20 +14,19 @@ import {
   PageGroup,
   PageNavigation,
   PageSection,
-  Text,
-  TextContent,
   Title,
 } from "@/libs/patternfly/react-core";
 import { notFound } from "next/navigation";
-import { PropsWithChildren, Suspense } from "react";
+import { PropsWithChildren, ReactNode, Suspense } from "react";
 import { KafkaSelectorBreadcrumbItem } from "./KafkaSelectorBreadcrumbItem";
 
 export default async function KafkaLayout({
   children,
+  activeBreadcrumb,
   params: { kafkaId },
-}: PropsWithChildren<{ params: { kafkaId: string } }>) {
-  const cluster = await getResource(kafkaId, "kafka");
-  if (!cluster || !cluster.attributes.cluster) {
+}: PropsWithChildren<{ params: KafkaParams; activeBreadcrumb: ReactNode }>) {
+  const cluster = await getKafkaCluster(kafkaId);
+  if (!cluster) {
     notFound();
   }
   const clusters = await getResources("kafka");
@@ -36,15 +37,18 @@ export default async function KafkaLayout({
         <PageBreadcrumb>
           <Breadcrumb>
             <BreadcrumbLink href="/kafka">Kafka</BreadcrumbLink>
-            <BreadcrumbItem isActive>
+            <BreadcrumbItem isActive={activeBreadcrumb === null}>
               <Suspense fallback={"Loading clusters..."}>
                 <KafkaSelectorBreadcrumbItem
                   selected={cluster}
                   clusters={clusters}
-                  isActive={true}
+                  isActive={activeBreadcrumb === null}
                 />
               </Suspense>
             </BreadcrumbItem>
+            {activeBreadcrumb && (
+              <BreadcrumbItem>{activeBreadcrumb}</BreadcrumbItem>
+            )}
           </Breadcrumb>
         </PageBreadcrumb>
         <PageSection
@@ -53,18 +57,13 @@ export default async function KafkaLayout({
           className={"pf-v5-u-px-lg pf-v5-u-pt-sm"}
         >
           <Title headingLevel={"h1"}>{cluster.attributes.name}</Title>
-          <TextContent>
-            <Text
-              component={"small"}
-            >{`${cluster.attributes.principal}@${cluster.attributes.bootstrapServer}`}</Text>
-          </TextContent>
         </PageSection>
         <PageNavigation>
           <Nav aria-label="Group section navigation" variant="tertiary">
             <NavList>
-              <NavItemLink url={`/kafka/${kafkaId}/overview`}>
-                Overview
-              </NavItemLink>
+              {/*<NavItemLink url={`/kafka/${kafkaId}/overview`}>*/}
+              {/*  Overview*/}
+              {/*</NavItemLink>*/}
               <NavItemLink url={`/kafka/${kafkaId}/brokers`}>
                 Brokers
               </NavItemLink>

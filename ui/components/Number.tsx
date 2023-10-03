@@ -2,7 +2,7 @@
 
 import { useFormatter } from "next-intl";
 
-export function Number({ value }: { value: number }) {
+export function Number({ value }: { value: number | undefined }) {
   const formatter = useFormatter();
-  return formatter.number(value);
+  return value ? formatter.number(value) : "-";
 }

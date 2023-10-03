@@ -1,6 +1,6 @@
 "use client";
 import { createKafkaResource } from "@/api/resources";
-import { Cluster } from "@/api/types";
+import { ClusterList } from "@/api/types";
 import {
   Button,
   Card,
@@ -33,7 +33,7 @@ type Props = {
   name: string;
   bootstrapServer: string;
   principal: string;
-  cluster: Cluster | undefined;
+  cluster: ClusterList | undefined;
 };
 
 export function Step3({ name, bootstrapServer, principal, cluster }: Props) {

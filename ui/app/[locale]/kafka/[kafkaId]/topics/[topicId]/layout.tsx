@@ -1,7 +1,10 @@
-import { getResource, getResources } from "@/api/resources";
+import { getKafkaCluster } from "@/api/kafka";
+import { getResources } from "@/api/resources";
 import { getTopic } from "@/api/topics";
 import { KafkaSelectorBreadcrumbItem } from "@/app/[locale]/kafka/[kafkaId]/(root)/KafkaSelectorBreadcrumbItem";
+import { KafkaTopicParams } from "@/app/[locale]/kafka/[kafkaId]/topics/kafkaTopic.params";
 import { BreadcrumbLink } from "@/components/BreadcrumbLink";
+import { Bytes } from "@/components/Bytes";
 import { Loading } from "@/components/Loading";
 import { NavItemLink } from "@/components/NavItemLink";
 import { Number } from "@/components/Number";
@@ -9,29 +12,34 @@ import {
   Breadcrumb,
   BreadcrumbItem,
   Divider,
+  Label,
+  LabelGroup,
   Nav,
   NavList,
   PageBreadcrumb,
   PageGroup,
   PageNavigation,
   PageSection,
-  Text,
-  TextContent,
   Title,
 } from "@/libs/patternfly/react-core";
+import {
+  CodeBranchIcon,
+  HddIcon,
+  ListIcon,
+} from "@/libs/patternfly/react-icons";
 import { notFound } from "next/navigation";
 import { PropsWithChildren, Suspense } from "react";
 
 export default async function KafkaLayout({
   children,
-  params: { kafkaId, topic: topicId },
-}: PropsWithChildren<{ params: { kafkaId: string; topic: string } }>) {
-  const cluster = await getResource(kafkaId, "kafka");
-  if (!cluster || !cluster.attributes.cluster) {
+  params: { kafkaId, topicId: topicId },
+}: PropsWithChildren<{ params: KafkaTopicParams }>) {
+  const cluster = await getKafkaCluster(kafkaId);
+  if (!cluster) {
     notFound();
   }
   const clusters = await getResources("kafka");
-  const topic = await getTopic(cluster.attributes.cluster.id, topicId);
+  const topic = await getTopic(cluster.id, topicId);
 
   return (
     <>
@@ -58,18 +66,28 @@ export default async function KafkaLayout({
           padding={{ default: "noPadding" }}
           className={"pf-v5-u-px-lg pf-v5-u-pt-sm"}
         >
-          <Title headingLevel={"h1"}>{topic.attributes.name}</Title>
-          <TextContent>
-            <Text component={"small"}>
-              <Number value={topic.attributes.recordCount || 0} /> messages
-            </Text>
-          </TextContent>
+          <Title headingLevel={"h1"} className={"pf-v5-u-pb-sm"}>
+            {topic.attributes.name}
+          </Title>
+          <LabelGroup>
+            <Label color={"blue"} icon={<CodeBranchIcon />}>
+              <Number value={topic.attributes.partitions.length} />
+            </Label>
+            <Label color={"green"} icon={<ListIcon />}>
+              <Number value={topic.attributes.recordCount} />
+            </Label>
+            <Label color={"cyan"} icon={<HddIcon />}>
+              <Bytes value={topic.attributes.totalLeaderLogBytes} />
+            </Label>
+          </LabelGroup>
         </PageSection>
         <PageNavigation>
           <Nav aria-label="Group section navigation" variant="tertiary">
             <NavList>
-              <NavItemLink url={`/kafka/${kafkaId}/topics/${topicId}/overview`}>
-                Overview
+              <NavItemLink
+                url={`/kafka/${kafkaId}/topics/${topicId}/partitions`}
+              >
+                Partitions
               </NavItemLink>
               <NavItemLink url={`/kafka/${kafkaId}/topics/${topicId}/messages`}>
                 Messages
