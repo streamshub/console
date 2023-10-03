@@ -1,31 +1,23 @@
-import { getResource } from "@/api/resources";
 import { getTopicMessages } from "@/api/topics";
+import { KafkaTopicParams } from "@/app/[locale]/kafka/[kafkaId]/topics/kafkaTopic.params";
 import {
   KafkaMessageBrowser,
   KafkaMessageBrowserProps,
 } from "@/components/messageBrowser/KafkaMessageBrowser";
 import { NoDataEmptyState } from "@/components/messageBrowser/NoDataEmptyState";
 import { revalidateTag } from "next/cache";
-import { notFound } from "next/navigation";
 
 export default async function Principals({
-  params,
+  params: { kafkaId, topicId },
 }: {
-  params: { kafkaId: string; topic: string };
+  params: KafkaTopicParams;
 }) {
-  const cluster = await getResource(params.kafkaId, "kafka");
-  if (!cluster || !cluster.attributes.cluster) {
-    notFound();
-  }
-  const data = await getTopicMessages(
-    cluster.attributes.cluster.id,
-    params.topic,
-  );
+  const data = await getTopicMessages(kafkaId, topicId);
   switch (true) {
     case data === null:
       return (
         <NoDataEmptyState
-          onRefresh={() => revalidateTag(`messages-${params.topic}`)}
+          onRefresh={() => revalidateTag(`messages-${topicId}`)}
         />
       );
     default:

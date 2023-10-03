@@ -1,12 +1,16 @@
-import { PageSection, Title } from "@/libs/patternfly/react-core";
+import { getKafkaCluster } from "@/api/kafka";
+import { BrokersTable } from "@/app/[locale]/kafka/[kafkaId]/(root)/brokers/BrokersTable";
+import { KafkaParams } from "@/app/[locale]/kafka/[kafkaId]/kafka.params";
+import { PageSection } from "@/libs/patternfly/react-core";
 
-export default function BrokersPage() {
+export default async function BrokersPage({ params }: { params: KafkaParams }) {
+  const cluster = await getKafkaCluster(params.kafkaId);
   return (
-    <>
-      <PageSection variant={"light"}>
-        <Title headingLevel={"h1"}>Brokers</Title>
-      </PageSection>
-      <PageSection isFilled>lorem</PageSection>
-    </>
+    <PageSection isFilled>
+      <BrokersTable
+        brokers={cluster.attributes.nodes}
+        controller={cluster.attributes.controller}
+      />
+    </PageSection>
   );
 }

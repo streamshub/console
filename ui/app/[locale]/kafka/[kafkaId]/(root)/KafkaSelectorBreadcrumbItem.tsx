@@ -1,5 +1,5 @@
 "use client";
-import { KafkaResource } from "@/api/types";
+import { ClusterDetail, KafkaResource } from "@/api/types";
 import {
   Divider,
   Dropdown,
@@ -18,7 +18,7 @@ export const KafkaSelectorBreadcrumbItem = ({
   clusters,
   isActive = false,
 }: {
-  selected: KafkaResource;
+  selected: ClusterDetail;
   clusters: KafkaResource[];
   isActive?: boolean;
 }) => {
@@ -33,7 +33,7 @@ export const KafkaSelectorBreadcrumbItem = ({
   const resourceToDropdownItem = (b: KafkaResource) => (
     <DropdownItem
       key={b.id}
-      value={b.id}
+      value={b.attributes.cluster?.id}
       id={b.id}
       onClick={() => {
         setIsOpen(false);

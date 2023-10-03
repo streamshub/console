@@ -1,12 +1,12 @@
 "use server";
+import { getKafkaClusters } from "@/api/kafka";
 import {
-  Cluster,
+  ClusterList,
   KafkaResource,
   RegistryResource,
   Resource,
   ResourceTypeKafka,
   ResourceTypeRegistry,
-  Response,
 } from "@/api/types";
 import { getSession, setSession } from "@/utils/session";
 
@@ -22,7 +22,21 @@ export async function getResources(scope: unknown): Promise<unknown> {
   const { resources } = await getSession("resources");
   switch (scope) {
     case "kafka":
-      return resources.filter((b) => b.type === "kafka");
+      return [
+        ...(await getKafkaClusters()).map<KafkaResource>((c) => ({
+          id: c.id,
+          type: "kafka",
+          attributes: {
+            name: c.attributes.name,
+            cluster: c,
+            source: "auto",
+            bootstrapServer: c.attributes.bootstrapServers,
+            principal: "automatic",
+            mechanism: "automatic",
+          },
+        })),
+        ...resources.filter((b) => b.type === "kafka"),
+      ];
     case "registry":
       return resources.filter((b) => b.type === "registry");
   }
@@ -69,7 +83,7 @@ export async function createKafkaResource({
   bootstrapServer: string;
   principal: string;
   name: string;
-  cluster: Cluster | undefined;
+  cluster: ClusterList | undefined;
 }) {
   const session = await getSession("resources");
   const resources = (session?.resources || []) as Resource[];
@@ -82,6 +96,7 @@ export async function createKafkaResource({
       name,
       bootstrapServer,
       principal,
+      source: "user",
     },
   };
   const newAuthProfiles = [...resources, newProfile];
@@ -90,21 +105,4 @@ export async function createKafkaResource({
     newResource: undefined,
   });
   return newProfile;
-}
-
-export async function getClusters(): Promise<Cluster[]> {
-  const url = `${process.env.BACKEND_URL}/api/kafkas?fields%5Bkafkas%5D=name,bootstrapServers,authType`;
-  try {
-    const res = await fetch(url, {
-      headers: {
-        Accept: "application/json",
-      },
-      cache: "no-store",
-    });
-    const rawData = await res.json();
-    return Response.parse(rawData).data;
-  } catch (err) {
-    console.error(err);
-    throw err;
-  }
 }

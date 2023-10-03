@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-const ClusterSchema = z.object({
+const ClusterListSchema = z.object({
   id: z.string(),
   type: z.string(),
   attributes: z.object({
@@ -8,10 +8,36 @@ const ClusterSchema = z.object({
     bootstrapServers: z.string(),
   }),
 });
-export const Response = z.object({
-  data: z.array(ClusterSchema),
+export const ClustersResponse = z.object({
+  data: z.array(ClusterListSchema),
 });
-export type Cluster = z.infer<typeof ClusterSchema>;
+export type ClusterList = z.infer<typeof ClusterListSchema>;
+
+const NodeSchema = z.object({
+  id: z.number(),
+  host: z.string(),
+  port: z.number(),
+  rack: z.string().optional(),
+});
+export type KafkaNode = z.infer<typeof NodeSchema>;
+const ClusterDetailSchema = z.object({
+  id: z.string(),
+  type: z.string(),
+  attributes: z.object({
+    name: z.string(),
+    namespace: z.string(),
+    creationTimestamp: z.string(),
+    nodes: z.array(NodeSchema),
+    controller: NodeSchema,
+    authorizedOperations: z.array(z.string()),
+    bootstrapServers: z.string(),
+    authType: z.string(),
+  }),
+});
+export const ClusterResponse = z.object({
+  data: ClusterDetailSchema,
+});
+export type ClusterDetail = z.infer<typeof ClusterDetailSchema>;
 
 export const ResourceTypeRegistry = "registry" as const;
 export const ResourceTypeKafka = "kafka" as const;
@@ -22,8 +48,9 @@ export const KafkaResourceSchema = z.object({
     name: z.string(),
     bootstrapServer: z.string(),
     principal: z.string(),
-    cluster: ClusterSchema.optional(),
+    cluster: ClusterListSchema.optional(),
     mechanism: z.string(),
+    source: z.union([z.literal("user"), z.literal("auto")]),
   }),
 });
 export type KafkaResource = z.infer<typeof KafkaResourceSchema>;

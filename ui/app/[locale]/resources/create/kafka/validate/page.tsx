@@ -1,4 +1,4 @@
-import { getClusters } from "@/api/resources";
+import { getKafkaClusters } from "@/api/kafka";
 import { getSession } from "@/utils/session";
 import { redirect } from "next/navigation";
 import { Step3 } from "./Step3";
@@ -12,7 +12,7 @@ export default async function AsyncNewAuthProfilePage() {
     redirect("/");
   }
 
-  const clusters = await getClusters();
+  const clusters = await getKafkaClusters();
   const cluster = clusters.find(
     (c) => c.attributes.bootstrapServers === boostrapServer,
   );
