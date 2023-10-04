@@ -8,7 +8,10 @@ import {
   ResourceTypeKafka,
   ResourceTypeRegistry,
 } from "@/api/types";
-import { getSession, getUser, setSession } from "@/utils/session";
+import { logger } from "@/utils/logger";
+import { getSession, setSession } from "@/utils/session";
+
+const log = logger.child({ module: "resources-api" });
 
 type ResourceType = typeof ResourceTypeKafka | typeof ResourceTypeRegistry;
 
@@ -70,7 +73,7 @@ export async function setPartialResource(formData: FormData) {
   const newResource = session?.newResource || {};
   const data = Object.fromEntries(formData);
   const newSession = { ...session, newResource: { ...newResource, ...data } };
-  console.dir({ data, session, newSession });
+  log.debug({ data, session, newSession });
   await setSession("resources", newSession);
 }
 

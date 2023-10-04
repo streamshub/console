@@ -4,7 +4,10 @@ import {
   ClusterResponse,
   ClustersResponse,
 } from "@/api/types";
+import { logger } from "@/utils/logger";
 import { getUser } from "@/utils/session";
+
+const log = logger.child({ module: "kafka-api" });
 
 export async function getKafkaClusters(): Promise<ClusterList[]> {
   const user = await getUser();
@@ -20,7 +23,7 @@ export async function getKafkaClusters(): Promise<ClusterList[]> {
     const rawData = await res.json();
     return ClustersResponse.parse(rawData).data;
   } catch (err) {
-    console.error(err);
+    log.error(err);
     throw err;
   }
 }
@@ -41,7 +44,7 @@ export async function getKafkaCluster(
     const rawData = await res.json();
     return ClusterResponse.parse(rawData).data;
   } catch (err) {
-    console.error(err);
+    log.error(err);
     throw err;
   }
 }

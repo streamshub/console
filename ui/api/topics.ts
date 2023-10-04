@@ -1,6 +1,9 @@
 "use server";
 import { Topic, TopicResponse, TopicsResponse } from "@/api/types";
+import { logger } from "@/utils/logger";
 import { getUser } from "@/utils/session";
+
+const log = logger.child({ module: "topics-api" });
 
 const listTopicsQuery = encodeURI(
   "fields[topics]=name,internal,partitions,authorizedOperations,configs",
@@ -27,7 +30,7 @@ export async function getTopics(kafkaId: string): Promise<Topic[]> {
     cache: "no-store",
   });
   const rawData = await res.json();
-  //console.log("getTopics", url, JSON.stringify(rawData, null, 2));
+  log.debug("getTopics", url, JSON.stringify(rawData, null, 2));
   return TopicsResponse.parse(rawData).data;
 }
 
@@ -41,7 +44,7 @@ export async function getTopic(
     cache: "no-store",
   });
   const rawData = await res.json();
-  //console.log("getTopic", url, JSON.stringify(rawData, null, 2));
+  //log.debug("getTopic", url, JSON.stringify(rawData, null, 2));
   return TopicResponse.parse(rawData).data;
 }
 
