@@ -37,14 +37,13 @@ import com.github.eyefloaters.console.api.service.KafkaClusterService;
 
 import io.fabric8.kubernetes.client.informers.SharedIndexInformer;
 import io.strimzi.api.kafka.model.Kafka;
-import io.strimzi.api.kafka.model.listener.KafkaListenerAuthenticationCustom;
-import io.strimzi.api.kafka.model.listener.KafkaListenerAuthenticationOAuth;
 import io.strimzi.api.kafka.model.status.ListenerStatus;
 
 @ApplicationScoped
 public class ClientFactory {
 
     private static final String BEARER = "Bearer ";
+    private static final String OAUTHBEARER = "OAUTHBEARER";
     private static final String SASL_OAUTH_CONFIG_TEMPLATE = OAuthBearerLoginModule.class.getName()
             + " required"
             + " oauth.access.token=\"%s\";";
@@ -125,44 +124,27 @@ public class ClientFactory {
         }
 
         Supplier<NotFoundException> noSuchKafka =
-            () -> new NotFoundException("No such Kafka cluster: " + clusterId);
+            () -> new NotFoundException("Requested Kafka cluster does not exist or is not configured with a compatible listener");
 
         Kafka cluster = KafkaClusterService.findCluster(kafkaInformer, clusterId)
             .orElseThrow(noSuchKafka);
 
-        return KafkaClusterService.externalListeners(cluster)
-            .findFirst()
+        return KafkaClusterService.consoleListener(cluster)
             .map(l -> buildConfiguration(cluster, l))
             .orElseThrow(noSuchKafka);
     }
 
     Map<String, Object> buildConfiguration(Kafka cluster, ListenerStatus listenerStatus) {
         Map<String, Object> config = new HashMap<>();
-        var listenerAuthentication = KafkaClusterService.getAuthentication(cluster, listenerStatus);
-        String authType = listenerAuthentication.map(auth -> auth.getType()).orElse("");
+        String authType = KafkaClusterService.getAuthType(cluster, listenerStatus).orElse("");
         boolean saslEnabled;
 
         if (authType.isBlank()) {
             log.debug("Broker authentication/SASL disabled");
             saslEnabled = false;
-        } else if (KafkaListenerAuthenticationOAuth.TYPE_OAUTH.equals(authType)) {
+        } else {
             saslEnabled = true;
             configureOAuthBearer(config);
-        } else if (KafkaListenerAuthenticationCustom.TYPE_CUSTOM.equals(authType)) {
-            saslEnabled = listenerAuthentication
-                .map(KafkaListenerAuthenticationCustom.class::cast)
-                .filter(KafkaListenerAuthenticationCustom::isSasl)
-                .map(KafkaListenerAuthenticationCustom::getListenerConfig)
-                .map(listenerConfig -> listenerConfig.get("sasl.enabled.mechanisms"))
-                .filter(mechanisms -> mechanisms.toString().contains("oauthbearer"))
-                .map(unused -> {
-                    configureOAuthBearer(config);
-                    return true;
-                })
-                .orElseThrow(() ->
-                    new IllegalStateException("Kafka cluster with 'custom' authentication without SASL/OAUTHBEARER is not supported"));
-        } else {
-            throw new IllegalStateException("Kafka cluster with '%s' authentication is not supported".formatted(authType));
         }
 
         StringBuilder protocol = new StringBuilder();
@@ -189,7 +171,7 @@ public class ClientFactory {
 
     void configureOAuthBearer(Map<String, Object> config) {
         log.debug("SASL/OAUTHBEARER enabled");
-        config.put(SaslConfigs.SASL_MECHANISM, "OAUTHBEARER");
+        config.put(SaslConfigs.SASL_MECHANISM, OAUTHBEARER);
         config.put(SaslConfigs.SASL_LOGIN_CALLBACK_HANDLER_CLASS, "io.strimzi.kafka.oauth.client.JaasClientOauthLoginCallbackHandler");
         // Do not attempt token refresh ahead of expiration (ExpiringCredentialRefreshingLogin)
         // May still cause warnings to be logged when token will expired in less than SASL_LOGIN_REFRESH_MIN_PERIOD_SECONDS.

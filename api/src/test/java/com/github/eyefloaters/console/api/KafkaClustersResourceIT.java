@@ -54,7 +54,6 @@ import io.strimzi.api.kafka.model.Kafka;
 import io.strimzi.api.kafka.model.KafkaBuilder;
 import io.strimzi.api.kafka.model.listener.KafkaListenerAuthenticationCustomBuilder;
 import io.strimzi.api.kafka.model.listener.KafkaListenerAuthenticationOAuthBuilder;
-import io.strimzi.api.kafka.model.listener.KafkaListenerAuthenticationScramSha512;
 import io.strimzi.api.kafka.model.listener.KafkaListenerAuthenticationScramSha512Builder;
 import io.strimzi.test.container.StrimziKafkaContainer;
 
@@ -539,12 +538,10 @@ class KafkaClustersResourceIT {
 
         whenRequesting(req -> req.get("{clusterId}", clusterId))
             .assertThat()
-            .statusCode(is(Status.INTERNAL_SERVER_ERROR.getStatusCode()))
+            .statusCode(is(Status.NOT_FOUND.getStatusCode()))
             .body("errors.size()", is(1))
-            .body("errors.status", contains("500"))
-            .body("errors.code", contains("5001"))
-            .body("errors.detail", contains("Kafka cluster with '%s' authentication is not supported"
-                    .formatted(KafkaListenerAuthenticationScramSha512.SCRAM_SHA_512)));
+            .body("errors.status", contains("404"))
+            .body("errors.code", contains("4041"));
     }
 
     @Test
@@ -559,11 +556,10 @@ class KafkaClustersResourceIT {
 
         whenRequesting(req -> req.get("{clusterId}", clusterId))
             .assertThat()
-            .statusCode(is(Status.INTERNAL_SERVER_ERROR.getStatusCode()))
+            .statusCode(is(Status.NOT_FOUND.getStatusCode()))
             .body("errors.size()", is(1))
-            .body("errors.status", contains("500"))
-            .body("errors.code", contains("5001"))
-            .body("errors.detail", contains("Kafka cluster with 'custom' authentication without SASL/OAUTHBEARER is not supported"));
+            .body("errors.status", contains("404"))
+            .body("errors.code", contains("4041"));
     }
 
     @Test
