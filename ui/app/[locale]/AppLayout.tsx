@@ -20,16 +20,13 @@ const log = logger.child({ module: "ui", component: "AppLayout" });
 export function AppLayout({
   session,
   children,
-}: PropsWithChildren<{ session: Session | null }>) {
+}: PropsWithChildren<{ session: Session }>) {
   const [sidebarExpanded, setSidebarExpanded] = useState(true);
   return (
     <SessionProvider session={session}>
       <Page
         header={
-          <AppMasthead
-            username={session?.user?.name}
-            onToggleSidebar={() => setSidebarExpanded((e) => !e)}
-          />
+          <AppMasthead onToggleSidebar={() => setSidebarExpanded((e) => !e)} />
         }
         sidebar={
           <PageSidebar isSidebarOpen={sidebarExpanded}>

@@ -16,19 +16,20 @@ import {
   QuestionCircleIcon,
 } from "@/libs/patternfly/react-icons";
 import logo from "@/public/logo.png";
+import { useSession } from "next-auth/react";
 import { useTranslations } from "next-intl";
 import Image from "next/image";
 import Link from "next/link";
 import { UserDropdown } from "./UserDropdown";
 
 export function AppMasthead({
-  username,
   onToggleSidebar,
 }: {
-  username: string | null | undefined;
   onToggleSidebar: () => void;
 }) {
   const t = useTranslations();
+  const { data } = useSession();
+  const { user } = data || {};
 
   return (
     <Masthead>
@@ -87,7 +88,10 @@ export function AppMasthead({
                 </ToolbarItem>
               </ToolbarGroup>
             </ToolbarGroup>
-            {username && <UserDropdown username={username} />}
+            <UserDropdown
+              username={user?.name || user?.email}
+              picture={user?.picture}
+            />
           </ToolbarContent>
         </Toolbar>
       </MastheadContent>

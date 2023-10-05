@@ -16,6 +16,10 @@ export const authOptions: AuthOptions = {
           access_token: account.access_token,
           expires_at: account.expires_at,
           refresh_token: account.refresh_token,
+          email: token.email,
+          name: token.name,
+          picture: token.picture,
+          sub: token.sub,
         };
       }
 
@@ -23,6 +27,7 @@ export const authOptions: AuthOptions = {
     },
     async session({ session, token }) {
       // Send properties to the client, like an access_token from a provider.
+      log.debug(token, "Creating session from token");
       return {
         ...session,
         error: token.error,

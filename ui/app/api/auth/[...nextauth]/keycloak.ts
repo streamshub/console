@@ -1,4 +1,4 @@
-import { TokenSet } from "next-auth";
+import { Session, TokenSet } from "next-auth";
 import { JWT } from "next-auth/jwt";
 import KeycloakProvider from "next-auth/providers/keycloak";
 import { logger } from "@/utils/logger";
@@ -21,7 +21,7 @@ async function getTokenEndpoint() {
   return _tokenEndpoint;
 }
 
-export async function refreshToken(token: JWT) {
+export async function refreshToken(token: JWT): Promise<JWT> {
   try {
     const tokenEndpoint = await getTokenEndpoint();
     if (!tokenEndpoint) {
@@ -72,7 +72,7 @@ export async function refreshToken(token: JWT) {
           ? refreshToken.expires_in
           : -1;
 
-      const newToken = {
+      const newToken: JWT = {
         ...token, // Keep the previous token properties
         access_token: refreshToken.access_token,
         expires_at: Math.floor(Date.now() / 1000 + expires_in),
