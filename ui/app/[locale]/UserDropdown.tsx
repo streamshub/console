@@ -16,7 +16,7 @@ export function UserDropdown({
   username,
   picture,
 }: {
-  username: string | undefined;
+  username: string | null | undefined;
   picture: string | null | undefined;
 }) {
   const [isOpen, setIsOpen] = useState(false);

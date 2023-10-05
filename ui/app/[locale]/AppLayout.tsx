@@ -20,7 +20,7 @@ const log = logger.child({ module: "ui", component: "AppLayout" });
 export function AppLayout({
   session,
   children,
-}: PropsWithChildren<{ session: Session }>) {
+}: PropsWithChildren<{ session: Session | null }>) {
   const [sidebarExpanded, setSidebarExpanded] = useState(true);
   return (
     <SessionProvider session={session}>
