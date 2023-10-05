@@ -5,6 +5,7 @@
                     Operations related to Kafka clusters, configuration, and topics.
                     """)
         },
+        security = @SecurityRequirement(name = "ConsoleSecurity"),
         components = @Components(
                 responses = {
                     @APIResponse(name = "Configurations",
@@ -135,6 +136,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Content;
 import org.eclipse.microprofile.openapi.annotations.media.ExampleObject;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
+import org.eclipse.microprofile.openapi.annotations.security.SecurityRequirement;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 import com.github.eyefloaters.console.api.model.ConfigEntry;

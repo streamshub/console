@@ -24,7 +24,6 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponseSchema;
-import org.eclipse.microprofile.openapi.annotations.security.SecurityRequirement;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 import com.github.eyefloaters.console.api.model.KafkaCluster;
@@ -36,7 +35,6 @@ import com.github.eyefloaters.console.api.support.ListRequestContext;
 import com.github.eyefloaters.console.api.support.StringEnumeration;
 
 @Path("/api/kafkas")
-@SecurityRequirement(name = "ConsoleSecurity")
 @Tag(name = "Kafka Cluster Resources")
 public class KafkaClustersResource {
 
