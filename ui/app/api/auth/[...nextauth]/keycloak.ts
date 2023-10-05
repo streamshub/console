@@ -11,17 +11,19 @@ export const keycloak = KeycloakProvider({
   issuer: process.env.KEYCLOAK_ISSUER,
 });
 
-let tokenEndpoint: string | undefined = undefined;
-if (keycloak.wellKnown) {
-  fetch(keycloak.wellKnown)
-    .then((resp) => resp.json())
-    .then((json) => {
-      tokenEndpoint = json.token_endpoint;
-    });
+let _tokenEndpoint: string | undefined = undefined;
+async function getTokenEndpoint() {
+  if (keycloak.wellKnown) {
+    const kc = await fetch(keycloak.wellKnown);
+    const res = await kc.json();
+    _tokenEndpoint = res.token_endpoint;
+  }
+  return _tokenEndpoint;
 }
 
 export async function refreshToken(token: JWT) {
   try {
+    const tokenEndpoint = await getTokenEndpoint();
     if (!tokenEndpoint) {
       log.error("Invalid Keycloak wellKnow");
       throw token;
