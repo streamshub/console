@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev | pino-pretty",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
@@ -38,6 +38,7 @@
   },
   "devDependencies": {
     "eslint-config-prettier": "^9.0.0",
+    "pino-pretty": "^10.2.3",
     "prettier": "^3.0.1"
   }
 }
