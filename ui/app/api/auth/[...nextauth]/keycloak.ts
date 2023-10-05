@@ -8,7 +8,7 @@ const log = logger.child({ module: "keycloak" });
 export const keycloak = KeycloakProvider({
   clientId: process.env.KEYCLOAK_CLIENTID,
   clientSecret: process.env.KEYCLOAK_CLIENTSECRET,
-  issuer: process.env.KEYCLOAK_ISSUER,
+  issuer: process.env.NEXT_PUBLIC_KEYCLOAK_URL,
 });
 
 let _tokenEndpoint: string | undefined = undefined;

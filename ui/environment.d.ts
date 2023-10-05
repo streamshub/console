@@ -6,7 +6,6 @@ namespace NodeJS {
     BACKEND_URL: string;
     KEYCLOAK_CLIENTID: string;
     KEYCLOAK_CLIENTSECRET: string;
-    KEYCLOAK_ISSUER: string;
     NEXT_PUBLIC_KEYCLOAK_URL: string;
   }
 }
