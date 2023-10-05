@@ -10,7 +10,6 @@ const nextConfig = {
   experimental: {
     serverActions: true,
     // typedRoutes: true, // disabled until next-intl is compatible with this
-    serverComponentsExternalPackages: ["pino-pretty", "tap", "fs"],
   },
   typescript: {
     //ignoreBuildErrors: true,
