@@ -25,7 +25,7 @@ export const authOptions: AuthOptions = {
       // Send properties to the client, like an access_token from a provider.
       return {
         ...session,
-        error: session.error,
+        error: token.error,
         accessToken: token.access_token,
       };
     },
