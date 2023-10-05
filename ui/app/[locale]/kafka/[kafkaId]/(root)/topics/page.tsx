@@ -12,11 +12,7 @@ export default async function TopicsPage({
   params: { kafkaId: string };
 }) {
   const auth = await getUser();
-  const cluster = await getResource(params.kafkaId, "kafka");
-  if (!cluster || !cluster.attributes.cluster) {
-    notFound();
-  }
-  const topics = await getTopics(cluster.attributes.cluster.id);
+  const topics = await getTopics(params.kafkaId);
   return (
     <TopicsContent canCreate={auth.username === "admin"} topics={topics} />
   );
