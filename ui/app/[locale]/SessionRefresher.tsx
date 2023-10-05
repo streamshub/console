@@ -17,6 +17,6 @@ export function SessionRefresher() {
 
   useInterval(() => {
     void doRefresh();
-  }, 5000);
+  }, 1000 * 60);
   return null;
 }
