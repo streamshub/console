@@ -5,7 +5,7 @@ declare module "next-auth" {
    * Returned by `useSession`, `getSession` and received as a prop on the `SessionProvider` React Context
    */
   interface Session {
-    error: string | undefined;
-    accessToken: string | undefined | null;
+    error?: "RefreshAccessTokenError";
+    accessToken?: string;
   }
 }

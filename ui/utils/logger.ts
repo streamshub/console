@@ -22,15 +22,22 @@ export const logger = pino(
         "access_token",
         "refresh_token",
         "id_token",
+        "iat",
+        "*.iat",
+        "exp",
+        "*.exp",
         "expires_at",
         "*.expires_at",
       ],
       censor: (value, path) => {
-        if (path.join("").includes("token") && typeof value === "string") {
+        const p = path.join("");
+        if (p.includes("token") && typeof value === "string") {
           // return the last chars of the token for cross-reference
           return "***" + value.substring(value.length - 4);
         } else if (
-          path.join("").includes("expires_at") &&
+          (p.includes("expires_at") ||
+            p.includes("iat") ||
+            p.includes("exp")) &&
           typeof value === "number"
         ) {
           // return the last chars of the token for cross-reference

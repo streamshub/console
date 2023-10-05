@@ -25,7 +25,7 @@ export function AppMasthead({
   username,
   onToggleSidebar,
 }: {
-  username: string | undefined;
+  username: string | null | undefined;
   onToggleSidebar: () => void;
 }) {
   const t = useTranslations();

@@ -1,6 +1,7 @@
 "use client";
 
 import { AppMasthead } from "@/app/[locale]/AppMasthead";
+import { SessionRefresher } from "@/app/[locale]/SessionRefresher";
 import { NavItemLink } from "@/components/NavItemLink";
 import {
   Nav,
@@ -12,6 +13,9 @@ import {
 import { Session } from "next-auth";
 import { SessionProvider } from "next-auth/react";
 import { PropsWithChildren, useState } from "react";
+import { logger } from "@/utils/loggerClient";
+
+const log = logger.child({ module: "ui", component: "AppLayout" });
 
 export function AppLayout({
   session,
@@ -50,6 +54,7 @@ export function AppLayout({
       >
         {children}
       </Page>
+      <SessionRefresher />
     </SessionProvider>
   );
 }
