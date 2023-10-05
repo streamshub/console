@@ -24,11 +24,6 @@ export const authOptions: AuthOptions = {
   providers: [keycloak],
   callbacks: {
     async jwt({ token, account }) {
-      let tokenExpiration = new Date(
-        (typeof token?.expires_at === "number" ? token.expires_at : 0) * 1000,
-      );
-      log.trace({ tokenExpiration }, "Token expiration");
-
       // Persist the OAuth access_token and or the user id to the token right after signin
       if (account) {
         log.trace("account present, saving new token");
@@ -40,8 +35,16 @@ export const authOptions: AuthOptions = {
         };
       }
 
+      let tokenExpiration = new Date(
+        (typeof token?.expires_at === "number" ? token.expires_at : 0) * 1000,
+      );
+      log.trace({ tokenExpiration }, "Token expiration");
+
       if (Date.now() < tokenExpiration.getTime()) {
-        log.trace("Token not yet expired");
+        log.trace(token, "Token not yet expired");
+        return token;
+      } else {
+        log.trace(token, "Token has expired");
         // If the access token has not expired yet, return it
         let refresh_token =
           typeof token.refresh_token === "string" ? token.refresh_token : "";
@@ -94,15 +97,13 @@ export const authOptions: AuthOptions = {
           // The error property will be used client-side to handle the refresh token error
           return { ...token, error: "RefreshAccessTokenError" as const };
         }
-      } else {
-        log.trace("Token has expired");
-        return null;
       }
     },
     async session({ session, token }) {
       // Send properties to the client, like an access_token from a provider.
       return {
         ...session,
+        error: session.error,
         accessToken: token.access_token,
       };
     },

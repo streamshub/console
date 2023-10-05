@@ -23,14 +23,14 @@ export async function getKafkaClusters(): Promise<ClusterList[]> {
     const rawData = await res.json();
     return ClustersResponse.parse(rawData).data;
   } catch (err) {
-    log.error(err);
-    throw err;
+    log.error(err, "getKafkaClusters");
+    return [];
   }
 }
 
 export async function getKafkaCluster(
   clusterId: string,
-): Promise<ClusterDetail> {
+): Promise<ClusterDetail | null> {
   const user = await getUser();
   const url = `${process.env.BACKEND_URL}/api/kafkas/${clusterId}/?fields%5Bkafkas%5D=name,namespace,creationTimestamp,nodes,controller,authorizedOperations,bootstrapServers,authType`;
   try {
@@ -44,7 +44,7 @@ export async function getKafkaCluster(
     const rawData = await res.json();
     return ClusterResponse.parse(rawData).data;
   } catch (err) {
-    log.error(err);
-    throw err;
+    log.error(err, "getKafkaCluster");
+    return null;
   }
 }

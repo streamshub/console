@@ -78,14 +78,9 @@ export async function setSession(
 
 export async function getUser() {
   const auth = await getServerSession(authOptions);
-  if (!auth || !auth.user) {
-    throw Error("Unauthorized");
-  }
-
-  let accessToken = (auth as any)['accessToken'];
 
   return {
-    username: auth.user.name || auth.user.email || "User",
-    accessToken: accessToken,
+    username: auth?.user?.name || auth?.user?.email,
+    accessToken: auth?.accessToken,
   };
 }

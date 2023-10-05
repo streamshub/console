@@ -25,7 +25,7 @@ export function AppMasthead({
   username,
   onToggleSidebar,
 }: {
-  username: string;
+  username: string | undefined;
   onToggleSidebar: () => void;
 }) {
   const t = useTranslations();
@@ -87,7 +87,7 @@ export function AppMasthead({
                 </ToolbarItem>
               </ToolbarGroup>
             </ToolbarGroup>
-            <UserDropdown username={username} />
+            {username && <UserDropdown username={username} />}
           </ToolbarContent>
         </Toolbar>
       </MastheadContent>
