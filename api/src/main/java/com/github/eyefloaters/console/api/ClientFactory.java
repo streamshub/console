@@ -174,7 +174,7 @@ public class ClientFactory {
         config.put(SaslConfigs.SASL_MECHANISM, OAUTHBEARER);
         config.put(SaslConfigs.SASL_LOGIN_CALLBACK_HANDLER_CLASS, "io.strimzi.kafka.oauth.client.JaasClientOauthLoginCallbackHandler");
         // Do not attempt token refresh ahead of expiration (ExpiringCredentialRefreshingLogin)
-        // May still cause warnings to be logged when token will expired in less than SASL_LOGIN_REFRESH_MIN_PERIOD_SECONDS.
+        // May still cause warnings to be logged when token will expire in less than SASL_LOGIN_REFRESH_MIN_PERIOD_SECONDS.
         config.put(SaslConfigs.SASL_LOGIN_REFRESH_BUFFER_SECONDS, "0");
 
         final String accessToken = Optional.ofNullable(headers.getHeaderString(HttpHeaders.AUTHORIZATION))
