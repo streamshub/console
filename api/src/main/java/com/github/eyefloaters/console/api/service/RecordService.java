@@ -187,23 +187,29 @@ public class RecordService {
     }
 
     void seekToOffset(Consumer<byte[], byte[]> consumer, List<TopicPartition> assignments, Long offset, int limit) {
-        Map<TopicPartition, Long> endOffsets = consumer.endOffsets(assignments);
+        var beginningOffsets = consumer.beginningOffsets(assignments);
+        var endOffsets = consumer.endOffsets(assignments);
 
         assignments.forEach(p -> {
+            long partitionBegin = beginningOffsets.get(p);
             long partitionEnd = endOffsets.get(p);
+            long seekTarget;
 
             if (offset == null) {
-                // Fetch the latest records
-                consumer.seek(p, Math.max(partitionEnd - limit, 0));
+                // Fetch the latest records, no earlier than the beginning of the partition
+                seekTarget = Math.max(partitionBegin, partitionEnd - limit);
             } else if (offset <= partitionEnd) {
-                consumer.seek(p, offset);
+                // Seek to the requested offset, no earlier than the beginning of the partition
+                seekTarget = Math.max(partitionBegin, offset);
             } else {
                 /*
                  * Requested offset is beyond the end of the partition,
                  * seek to end and return nothing for this partition.
                  */
-                consumer.seek(p, endOffsets.get(p));
+                seekTarget = partitionEnd;
             }
+
+            consumer.seek(p, seekTarget);
         });
     }
 
