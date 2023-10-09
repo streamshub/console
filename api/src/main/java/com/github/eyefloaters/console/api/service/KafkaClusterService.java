@@ -18,6 +18,7 @@ import org.apache.kafka.clients.admin.DescribeClusterOptions;
 import org.apache.kafka.clients.admin.DescribeClusterResult;
 import org.apache.kafka.common.KafkaFuture;
 
+import com.github.eyefloaters.console.api.Annotations;
 import com.github.eyefloaters.console.api.model.KafkaCluster;
 import com.github.eyefloaters.console.api.model.Node;
 import com.github.eyefloaters.console.api.support.ListRequestContext;
@@ -120,16 +121,14 @@ public class KafkaClusterService {
     }
 
     static boolean supportedAuthentication(GenericKafkaListener listener) {
-        Optional<KafkaListenerAuthentication> listenerAuth = Optional.ofNullable(listener.getAuth());
-        String authType = listenerAuth.map(auth -> auth.getType()).orElse("");
+        KafkaListenerAuthentication listenerAuth = listener.getAuth();
 
-        if (authType.isBlank()) {
+        if (listenerAuth == null) {
             return true;
-        } else if (KafkaListenerAuthenticationOAuth.TYPE_OAUTH.equals(authType)) {
+        } else if (listenerAuth instanceof KafkaListenerAuthenticationOAuth) {
             return true;
-        } else if (KafkaListenerAuthenticationCustom.TYPE_CUSTOM.equals(authType)) {
-            return listenerAuth
-                .map(KafkaListenerAuthenticationCustom.class::cast)
+        } else if (listenerAuth instanceof KafkaListenerAuthenticationCustom customAuth) {
+            return Optional.of(customAuth)
                 .filter(KafkaListenerAuthenticationCustom::isSasl)
                 .map(KafkaListenerAuthenticationCustom::getListenerConfig)
                 .map(listenerConfig -> listenerConfig.get("sasl.enabled.mechanisms"))
@@ -149,7 +148,7 @@ public class KafkaClusterService {
         return Optional.ofNullable(listener.getConfiguration())
             .map(GenericKafkaListenerConfiguration::getBootstrap)
             .map(config -> config.getAnnotations())
-            .map(annotations -> annotations.get("eyefloaters.github.com/console-listener"))
+            .map(annotations -> annotations.get(Annotations.CONSOLE_LISTENER.value()))
             .map(Boolean::valueOf)
             .orElse(false);
     }

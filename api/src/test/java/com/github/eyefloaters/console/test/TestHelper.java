@@ -17,6 +17,7 @@ import org.apache.kafka.clients.admin.AdminClientConfig;
 import org.eclipse.microprofile.config.Config;
 import org.jboss.logging.Logger;
 
+import com.github.eyefloaters.console.api.Annotations;
 import com.github.eyefloaters.console.kafka.systemtest.utils.ClientsConfig;
 
 import io.restassured.response.Response;
@@ -69,7 +70,7 @@ public class TestHelper {
                         .withAuth(auth)
                         .withNewConfiguration()
                             .withNewBootstrap()
-                                .addToAnnotations("eyefloaters.github.com/console-listener", "true")
+                                .addToAnnotations(Annotations.CONSOLE_LISTENER.value(), "true")
                             .endBootstrap()
                         .endConfiguration()
                     .endListener()
@@ -79,7 +80,7 @@ public class TestHelper {
                         .withAuth(auth)
                         .withNewConfiguration()
                             .withNewBootstrap()
-                                .addToAnnotations("eyefloaters.github.com/console-listener", "false")
+                                .addToAnnotations(Annotations.CONSOLE_LISTENER.value(), "false")
                             .endBootstrap()
                         .endConfiguration()
                     .endListener()

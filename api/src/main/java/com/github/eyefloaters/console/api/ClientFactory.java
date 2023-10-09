@@ -39,6 +39,19 @@ import io.fabric8.kubernetes.client.informers.SharedIndexInformer;
 import io.strimzi.api.kafka.model.Kafka;
 import io.strimzi.api.kafka.model.status.ListenerStatus;
 
+/**
+ * The ClientFactory is responsible for managing the life-cycles of Kafka clients
+ * - the {@linkplain Admin} client and the {@linkplain Consumer}. The factory
+ * will create a per-request client lazily when accessed by
+ * {@linkplain com.github.eyefloaters.console.api.service service code} which
+ * will be usable for the duration of the request and closed by the disposer
+ * methods in this class upon completion of the request.
+ *
+ * <p>Construction of a client is dependent on the presence of a {@code clusterId}
+ * path parameter being present in the request URL as well as the existence of a
+ * matching Strimzi {@linkplain Kafka} CR in the watch cache available to the
+ * application's service account.
+ */
 @ApplicationScoped
 public class ClientFactory {
 
@@ -47,6 +60,12 @@ public class ClientFactory {
     private static final String SASL_OAUTH_CONFIG_TEMPLATE = OAuthBearerLoginModule.class.getName()
             + " required"
             + " oauth.access.token=\"%s\";";
+    private static final String NO_COMPATIBLE_LISTENER = """
+            Request to access Kafka cluster %s could not be fulfilled because no listeners were found with:
+            \t(1) authentication disabled
+            \t(2) authentication type `oauth`, or
+            \t(3) authentication type `custom` and SASL mechanism OAUTHBEARER supported.
+            """;
 
     @Inject
     Logger log;
@@ -131,7 +150,10 @@ public class ClientFactory {
 
         return KafkaClusterService.consoleListener(cluster)
             .map(l -> buildConfiguration(cluster, l))
-            .orElseThrow(noSuchKafka);
+            .orElseThrow(() -> {
+                log.warnf(NO_COMPATIBLE_LISTENER, clusterId);
+                return noSuchKafka.get();
+            });
     }
 
     Map<String, Object> buildConfiguration(Kafka cluster, ListenerStatus listenerStatus) {
