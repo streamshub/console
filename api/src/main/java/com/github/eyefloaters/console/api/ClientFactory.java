@@ -42,7 +42,7 @@ import io.strimzi.api.kafka.model.status.ListenerStatus;
 /**
  * The ClientFactory is responsible for managing the life-cycles of Kafka clients
  * - the {@linkplain Admin} client and the {@linkplain Consumer}. The factory
- * will create a per-request client lazily when accessed by
+ * will lazily create a per-request client when accessed by
  * {@linkplain com.github.eyefloaters.console.api.service service code} which
  * will be usable for the duration of the request and closed by the disposer
  * methods in this class upon completion of the request.
