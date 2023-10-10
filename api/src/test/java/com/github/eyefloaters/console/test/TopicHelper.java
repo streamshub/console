@@ -17,6 +17,7 @@ import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.clients.admin.AdminClientConfig;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.clients.admin.OffsetSpec;
+import org.apache.kafka.clients.admin.RecordsToDelete;
 import org.apache.kafka.clients.admin.TopicListing;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.KafkaProducer;
@@ -98,13 +99,34 @@ public class TopicHelper {
                 return BlockingSupplier.get(() -> result.topicId(name)).toString();
             }));
         } catch (InterruptedException e) {
-            log.warn("Process interruptted", e);
+            log.warn("Process interrupted", e);
             Thread.currentThread().interrupt();
         } catch (Exception e) {
             fail(e);
         }
 
         return topicIds;
+    }
+
+    /**
+     * Delete records in the given topic/partition with an offset before the given
+     * offset.
+     *
+     * @param topicName name of the topic
+     * @param partition partition in topic
+     * @param offset    offset before which all records will be deleted
+     */
+    public void deleteRecords(String topicName, int partition, long offset) {
+        try (Admin admin = Admin.create(adminConfig)) {
+            admin.deleteRecords(Map.of(new TopicPartition(topicName, partition), RecordsToDelete.beforeOffset(offset)))
+                .all()
+                .get(20, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            log.warn("Process interrupted", e);
+            Thread.currentThread().interrupt();
+        } catch (Exception e) {
+            fail(e);
+        }
     }
 
     public long getTopicSize(String topicName) {

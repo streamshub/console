@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 import jakarta.inject.Inject;
 import jakarta.ws.rs.core.Response.Status;
@@ -416,5 +417,31 @@ class RecordsResourceIT {
             .body("data[0].attributes.headers", hasEntry(equalTo("h1"), equalTo(h1Value.subSequence(0, responseValueLength))))
             .body("data[0].attributes.key", equalTo(key.subSequence(0, responseValueLength)))
             .body("data[0].attributes.value", equalTo(value.subSequence(0, responseValueLength)));
+    }
+
+    @Test
+    void testConsumeRecordWithOffsetBeforeBeginning() {
+        final String topicName = UUID.randomUUID().toString();
+        var topicIds = topicUtils.createTopics(clusterId1, List.of(topicName), 1);
+
+        Stream.of("first", "second", "third", "fourth")
+            .forEach(msg -> recordUtils.produceRecord(topicName, null, null, null, msg));
+
+        await().atMost(5, TimeUnit.SECONDS)
+            .until(() -> topicUtils.getTopicSize(topicName) == 4);
+
+        topicUtils.deleteRecords(topicName, 0, 3);
+
+        await().atMost(5, TimeUnit.SECONDS)
+            .until(() -> topicUtils.getTopicSize(topicName) == 1);
+
+        whenRequesting(req -> req
+                .param("filter[offset]", "gte,0")
+                .get("", clusterId1, topicIds.get(topicName)))
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()))
+            .body("data", hasSize(1))
+            .body("data[0].attributes.offset", is(equalTo(3)))
+            .body("data[0].attributes.value", is(equalTo("fourth")));
     }
 }
