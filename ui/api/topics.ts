@@ -1,5 +1,9 @@
 "use server";
 import { Topic, TopicResponse, TopicsResponse } from "@/api/types";
+import { logger } from "@/utils/logger";
+import { getUser } from "@/utils/session";
+
+const log = logger.child({ module: "topics-api" });
 
 const listTopicsQuery = encodeURI(
   "fields[topics]=name,internal,partitions,authorizedOperations,configs",
@@ -11,15 +15,22 @@ const consumeRecordsQuery = encodeURI(
   "fields[records]=partition,offset,timestamp,timestampType,headers,key,value&page[size]=20",
 );
 
+async function getHeaders(): Promise<Record<string, string>> {
+  const user = await getUser();
+  return {
+    Accept: "application/json",
+    Authorization: `Bearer ${user.accessToken}`,
+  };
+}
+
 export async function getTopics(kafkaId: string): Promise<Topic[]> {
   const url = `${process.env.BACKEND_URL}/api/kafkas/${kafkaId}/topics?${listTopicsQuery}`;
   const res = await fetch(url, {
-    headers: {
-      Accept: "application/json",
-    },
+    headers: await getHeaders(),
     cache: "no-store",
   });
   const rawData = await res.json();
+  log.debug("getTopics", url, JSON.stringify(rawData, null, 2));
   return TopicsResponse.parse(rawData).data;
 }
 
@@ -29,12 +40,11 @@ export async function getTopic(
 ): Promise<Topic> {
   const url = `${process.env.BACKEND_URL}/api/kafkas/${kafkaId}/topics/${topicId}?${describeTopicsQuery}`;
   const res = await fetch(url, {
-    headers: {
-      Accept: "application/json",
-    },
+    headers: await getHeaders(),
     cache: "no-store",
   });
   const rawData = await res.json();
+  //log.debug("getTopic", url, JSON.stringify(rawData, null, 2));
   return TopicResponse.parse(rawData).data;
 }
 
@@ -44,11 +54,8 @@ export async function getTopicMessages(
 ): Promise<MessageApiResponse> {
   const url = `${process.env.BACKEND_URL}/api/kafkas/${kafkaId}/topics/${topicId}/records?${consumeRecordsQuery}`;
   const res = await fetch(url, {
-    headers: {
-      Accept: "application/json",
-    },
+    headers: await getHeaders(),
     cache: "no-store",
-
     next: { tags: [`messages-${topicId}`] },
   });
   const rawData = await res.json();

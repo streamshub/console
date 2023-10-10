@@ -3,6 +3,7 @@ package com.github.eyefloaters.console.api.model;
 import java.util.List;
 
 import org.apache.kafka.common.Node;
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
@@ -14,6 +15,8 @@ public class PartitionReplica {
     private final int nodeId;
     private final String nodeRack;
     private final boolean inSync;
+
+    @Schema(implementation = Object.class, oneOf = { ReplicaLocalStorage.class, Error.class })
     private Either<ReplicaLocalStorage, Error> localStorage;
 
     public PartitionReplica(int nodeId, String nodeRack, boolean inSync) {

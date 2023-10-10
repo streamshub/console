@@ -1,5 +1,7 @@
-import { AppPage } from "@/app/[locale]/AppPage";
+import { AppLayout } from "@/app/[locale]/AppLayout";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { getUser } from "@/utils/session";
+import { getServerSession } from "next-auth";
 import { NextIntlClientProvider } from "next-intl";
 import { getTranslator } from "next-intl/server";
 import { notFound } from "next/navigation";
@@ -18,12 +20,12 @@ export default async function Layout({ children, params: { locale } }: Props) {
   } catch (error) {
     notFound();
   }
-  const user = await getUser();
+  const session = await getServerSession(authOptions);
   return (
     <html lang="en">
       <body>
         <NextIntlClientProvider locale={locale} messages={messages}>
-          <AppPage username={user.username}>{children}</AppPage>
+          <AppLayout session={session}>{children}</AppLayout>
         </NextIntlClientProvider>
       </body>
     </html>

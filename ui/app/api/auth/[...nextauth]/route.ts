@@ -1,49 +1,40 @@
-import NextAuth from "next-auth";
-import CredentialsProvider from "next-auth/providers/credentials";
-import GithubProvider from "next-auth/providers/github";
-import GitlabProvider from "next-auth/providers/gitlab";
-import KeycloakProvider from "next-auth/providers/keycloak";
+import { keycloak, refreshToken } from "./keycloak";
+import { logger } from "@/utils/logger";
+import NextAuth, { AuthOptions } from "next-auth";
 
-const users = ["developer", "admin"];
+const log = logger.child({ module: "auth-route" });
 
-export const authOptions = {
-  providers: [
-    CredentialsProvider({
-      name: "Credentials",
-      credentials: {
-        username: { label: "Username", type: "text" },
-        password: { label: "Password", type: "password" },
-      },
-      async authorize(credentials, req) {
-        return new Promise((resolve, reject) => {
-          if (
-            credentials?.username &&
-            credentials?.password &&
-            users.includes(credentials.username)
-          ) {
-            resolve({
-              id: credentials.username,
-              name: credentials.username,
-            });
-          } else {
-            resolve(null);
-          }
-        });
-      },
-    }),
-    GitlabProvider({
-      clientId: "id",
-      clientSecret: "secret",
-    }),
-    GithubProvider({
-      clientId: "id",
-      clientSecret: "secret",
-    }),
-    KeycloakProvider({
-      clientId: "id",
-      clientSecret: "secret",
-    }),
-  ],
+export const authOptions: AuthOptions = {
+  providers: [keycloak],
+  callbacks: {
+    async jwt({ token, account }) {
+      // Persist the OAuth access_token and or the user id to the token right after signin
+      if (account) {
+        log.trace("account present, saving new token");
+        // Save the access token and refresh token in the JWT on the initial login
+        return {
+          access_token: account.access_token,
+          expires_at: account.expires_at,
+          refresh_token: account.refresh_token,
+          email: token.email,
+          name: token.name,
+          picture: token.picture,
+          sub: token.sub,
+        };
+      }
+
+      return refreshToken(token);
+    },
+    async session({ session, token }) {
+      // Send properties to the client, like an access_token from a provider.
+      log.debug(token, "Creating session from token");
+      return {
+        ...session,
+        error: token.error,
+        accessToken: token.access_token,
+      };
+    },
+  },
 };
 
 const handler = NextAuth(authOptions);

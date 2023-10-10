@@ -31,7 +31,7 @@ const ClusterDetailSchema = z.object({
     controller: NodeSchema,
     authorizedOperations: z.array(z.string()),
     bootstrapServers: z.string(),
-    authType: z.string(),
+    authType: z.string().optional().nullable(),
   }),
 });
 export const ClusterResponse = z.object({

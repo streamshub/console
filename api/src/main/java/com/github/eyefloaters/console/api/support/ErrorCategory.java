@@ -20,6 +20,7 @@ public abstract class ErrorCategory implements Payload {
         private static final Map<Class<? extends ErrorCategory>, ErrorCategory> INSTANCES =
                 Stream.of(new ErrorCategory.InvalidQueryParameter(),
                     new ErrorCategory.MaxPageSizeExceededError(),
+                    new ErrorCategory.NotAuthenticated(),
                     new ErrorCategory.ResourceNotFound(),
                     new ErrorCategory.ServerError(),
                     new ErrorCategory.BackendTimeout())
@@ -61,6 +62,12 @@ public abstract class ErrorCategory implements Payload {
             error.addMeta("page", Map.of("maxSize", ListFetchParams.PAGE_SIZE_MAX));
             error.addLink("type", TYPE_LINK);
             return error;
+        }
+    }
+
+    public static class NotAuthenticated extends ErrorCategory {
+        public NotAuthenticated() {
+            super("4011", "Not Authenticated", Status.UNAUTHORIZED);
         }
     }
 

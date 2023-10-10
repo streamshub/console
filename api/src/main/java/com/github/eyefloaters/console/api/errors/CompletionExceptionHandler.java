@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletionException;
 
+import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.ExceptionMapper;
@@ -18,6 +19,7 @@ import com.github.eyefloaters.console.api.errors.server.TimeoutExceptionHandler;
 import com.github.eyefloaters.console.api.errors.server.UnhandledThrowableHandler;
 
 @Provider
+@ApplicationScoped
 public class CompletionExceptionHandler implements ExceptionMapper<CompletionException> {
 
     static final Map<Class<? extends Throwable>, ExceptionMapper<? extends Throwable>> MAPPERS = new HashMap<>();

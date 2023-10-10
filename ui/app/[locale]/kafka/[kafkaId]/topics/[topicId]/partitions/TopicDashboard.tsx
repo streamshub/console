@@ -26,7 +26,7 @@ export function TopicDashboard({
     const interval = setInterval(async () => {
       const topic = await getTopic(kafkaId, initialData.id);
       setTopic(topic);
-    }, 5000);
+    }, 30000);
     return () => clearInterval(interval);
   }, [kafkaId, initialData.id]);
   return (

@@ -8,6 +8,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.UnaryOperator;
 
 import jakarta.enterprise.util.AnnotationLiteral;
 import jakarta.enterprise.util.TypeLiteral;
@@ -162,8 +163,19 @@ public class AdminClientSpy implements Admin {
      * @param adminSetup a consumer that accepts the Admin client for spying
      */
     public static void install(Consumer<Admin> adminSetup) {
+        install(UnaryOperator.identity(), adminSetup);
+    }
+
+    /**
+     * Create and install a spy Admin instance to be used for a request instead of
+     * {@link ClientFactory#kafkaAdminBuilder}.
+     *
+     * @param configSetup a function that may optionally change the client configuration
+     * @param adminSetup a consumer that accepts the Admin client for spying
+     */
+    public static void install(UnaryOperator<Map<String, Object>> configSetup, Consumer<Admin> adminSetup) {
         Function<Map<String, Object>, Admin> builder = config -> {
-            Admin client = Mockito.spy(new AdminClientSpy(config));
+            Admin client = Mockito.spy(new AdminClientSpy(configSetup.apply(config)));
             adminSetup.accept(client);
             return client;
         };

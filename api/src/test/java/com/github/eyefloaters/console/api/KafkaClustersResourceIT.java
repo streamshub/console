@@ -23,6 +23,10 @@ import jakarta.json.JsonObject;
 import jakarta.json.JsonString;
 import jakarta.ws.rs.core.Response.Status;
 
+import org.apache.kafka.clients.CommonClientConfigs;
+import org.apache.kafka.common.config.SaslConfigs;
+import org.apache.kafka.common.config.SslConfigs;
+import org.apache.kafka.common.security.auth.SecurityProtocol;
 import org.eclipse.microprofile.config.Config;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -35,6 +39,7 @@ import com.github.eyefloaters.console.api.model.ListFetchParams;
 import com.github.eyefloaters.console.api.support.ErrorCategory;
 import com.github.eyefloaters.console.kafka.systemtest.TestPlainProfile;
 import com.github.eyefloaters.console.kafka.systemtest.deployment.DeploymentManager;
+import com.github.eyefloaters.console.test.AdminClientSpy;
 import com.github.eyefloaters.console.test.TestHelper;
 
 import io.fabric8.kubernetes.client.KubernetesClient;
@@ -46,7 +51,10 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.quarkus.test.kubernetes.client.KubernetesServerTestResource;
 import io.strimzi.api.kafka.model.Kafka;
+import io.strimzi.api.kafka.model.KafkaBuilder;
 import io.strimzi.api.kafka.model.listener.KafkaListenerAuthenticationCustomBuilder;
+import io.strimzi.api.kafka.model.listener.KafkaListenerAuthenticationOAuthBuilder;
+import io.strimzi.api.kafka.model.listener.KafkaListenerAuthenticationScramSha512Builder;
 import io.strimzi.test.container.StrimziKafkaContainer;
 
 import static com.github.eyefloaters.console.test.TestHelper.whenRequesting;
@@ -108,6 +116,7 @@ class KafkaClustersResourceIT {
             .resource(utils.buildKafkaResource("test-kafka1", clusterId1, bootstrapServers,
                 new KafkaListenerAuthenticationCustomBuilder()
                     .withSasl()
+                    .addToListenerConfig("sasl.enabled.mechanisms", "oauthbearer")
                 .build()))
             .create();
         // Second cluster is offline/non-existent
@@ -440,14 +449,117 @@ class KafkaClustersResourceIT {
     }
 
     @Test
-    void testDescribeCluster() {
-        whenRequesting(req -> req.get("{clusterId}", clusterId1))
+    void testDescribeClusterWithCustomOAuth() {
+        Map<String, Object> clientConfig = new HashMap<>();
+
+        AdminClientSpy.install(config -> {
+            clientConfig.putAll(config);
+
+            Map<String, Object> newConfig = new HashMap<>(config);
+            // Disable SASL since the Kafka cluster is not actually using it
+            newConfig.put(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, SecurityProtocol.PLAINTEXT.name);
+            return newConfig;
+        }, client -> { /* No-op */ });
+
+        whenRequesting(req -> req
+                .auth()
+                    .oauth2("fake-access-token")
+                .get("{clusterId}", clusterId1))
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
             .body("data.id", equalTo(clusterId1))
             .body("data.attributes.name", equalTo("test-kafka1"))
             .body("data.attributes.bootstrapServers", equalTo(bootstrapServers.getHost() + ":" + bootstrapServers.getPort()))
             .body("data.attributes.authType", equalTo("custom"));
+
+        assertEquals("SASL_PLAINTEXT", clientConfig.get(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG));
+    }
+
+    @Test
+    void testDescribeClusterWithCustomOAuthWithoutBearerToken() {
+        whenRequesting(req -> req.get("{clusterId}", clusterId1))
+            .assertThat()
+            .statusCode(is(Status.UNAUTHORIZED.getStatusCode()))
+            .body("errors.size()", is(1))
+            .body("errors.status", contains("401"))
+            .body("errors.code", contains("4011"));
+    }
+
+    @Test
+    void testDescribeClusterWithOAuthAndCertificates() {
+        String clusterId = UUID.randomUUID().toString();
+
+        // Create a Kafka CR with OAuth that proxies to kafka1
+        Kafka kafka = new KafkaBuilder(utils.buildKafkaResource("test-kafka-" + clusterId, clusterId, bootstrapServers,
+                            new KafkaListenerAuthenticationOAuthBuilder().build()))
+                .editStatus()
+                    .editMatchingListener(l -> "listener0".equals(l.getName()))
+                        .addToCertificates("CERTIFICATE PLACEHOLDER")
+                    .endListener()
+                .endStatus()
+                .build();
+
+        client.resources(Kafka.class).resource(kafka).create();
+
+        Map<String, Object> clientConfig = new HashMap<>();
+
+        AdminClientSpy.install(config -> {
+            clientConfig.putAll(config);
+
+            Map<String, Object> newConfig = new HashMap<>(config);
+            // Disable SASL since the Kafka cluster is not actually using it
+            newConfig.put(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, SecurityProtocol.PLAINTEXT.name);
+            return newConfig;
+        }, client -> { /* No-op */ });
+
+        whenRequesting(req -> req
+                .auth()
+                    .oauth2("fake-access-token")
+                .get("{clusterId}", clusterId))
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()));
+            // Ignoring response data since they are from test-kafka-1
+
+        assertEquals("SASL_SSL", clientConfig.get(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG));
+        assertEquals("OAUTHBEARER", clientConfig.get(SaslConfigs.SASL_MECHANISM));
+        assertEquals("PEM", clientConfig.get(SslConfigs.SSL_TRUSTSTORE_TYPE_CONFIG));
+        assertEquals("CERTIFICATE PLACEHOLDER", clientConfig.get(SslConfigs.SSL_TRUSTSTORE_CERTIFICATES_CONFIG));
+    }
+
+    @Test
+    void testDescribeClusterWithScram() {
+        String clusterId = UUID.randomUUID().toString();
+
+        // Create a Kafka CR with SCRAM-SHA that proxies to kafka1
+        client.resources(Kafka.class)
+            .resource(utils.buildKafkaResource("test-kafka-" + clusterId, clusterId, bootstrapServers,
+                new KafkaListenerAuthenticationScramSha512Builder().build()))
+            .create();
+
+        whenRequesting(req -> req.get("{clusterId}", clusterId))
+            .assertThat()
+            .statusCode(is(Status.NOT_FOUND.getStatusCode()))
+            .body("errors.size()", is(1))
+            .body("errors.status", contains("404"))
+            .body("errors.code", contains("4041"));
+    }
+
+    @Test
+    void testDescribeClusterWithCustomNonOAuth() {
+        String clusterId = UUID.randomUUID().toString();
+
+        // Create a Kafka CR with generic custom authentication that proxies to kafka1
+        client.resources(Kafka.class)
+            .resource(utils.buildKafkaResource("test-kafka-" + clusterId, clusterId, bootstrapServers,
+                new KafkaListenerAuthenticationCustomBuilder().build()))
+            .create();
+
+        whenRequesting(req -> req.get("{clusterId}", clusterId))
+            .assertThat()
+            .statusCode(is(Status.NOT_FOUND.getStatusCode()))
+            .body("errors.size()", is(1))
+            .body("errors.status", contains("404"))
+            .body("errors.code", contains("4041"));
     }
 
     @Test

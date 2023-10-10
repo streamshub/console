@@ -7,11 +7,18 @@ import {
   DropdownList,
   MenuToggle,
   ToolbarItem,
+  Divider,
 } from "@/libs/patternfly/react-core";
 import { signOut } from "next-auth/react";
 import { useState } from "react";
 
-export function UserDropdown({ username }: { username: string }) {
+export function UserDropdown({
+  username,
+  picture,
+}: {
+  username: string | null | undefined;
+  picture: string | null | undefined;
+}) {
   const [isOpen, setIsOpen] = useState(false);
   return (
     <ToolbarItem>
@@ -27,16 +34,24 @@ export function UserDropdown({ username }: { username: string }) {
             isExpanded={isOpen}
             icon={
               <Avatar
-                src={"https://www.patternfly.org/images/668560cd.svg"}
-                alt=""
+                src={
+                  picture || "https://www.patternfly.org/images/668560cd.svg"
+                }
+                alt={username || "User"}
               />
             }
           >
-            {username}
+            {username || "User"}
           </MenuToggle>
         )}
       >
         <DropdownList>
+          <DropdownItem>
+            <a href={process.env.NEXT_PUBLIC_KEYCLOAK_URL + "/account/"}>
+              Manage account
+            </a>
+          </DropdownItem>
+          <Divider component="li" key="separator" />
           <DropdownItem onClick={() => signOut({ callbackUrl: "/" })}>
             Logout
           </DropdownItem>
