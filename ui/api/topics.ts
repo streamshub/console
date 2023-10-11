@@ -53,6 +53,7 @@ export async function getTopicMessages(
   topicId: string,
 ): Promise<MessageApiResponse> {
   const url = `${process.env.BACKEND_URL}/api/kafkas/${kafkaId}/topics/${topicId}/records?${consumeRecordsQuery}`;
+  log.debug({ url }, "Fetching topics");
   const res = await fetch(url, {
     headers: await getHeaders(),
     cache: "no-store",
@@ -60,6 +61,7 @@ export async function getTopicMessages(
   });
   const rawData = await res.json();
   const messages = (rawData?.data || []).map((r: any) => ({ ...r.attributes }));
+  log.trace({ messages, rawData }, "Got messages");
   return {
     lastUpdated: new Date(),
     messages,

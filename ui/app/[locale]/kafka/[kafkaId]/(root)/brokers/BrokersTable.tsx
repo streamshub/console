@@ -22,7 +22,7 @@ export function BrokersTable({
       renderHeader={({ column, Th }) => {
         switch (column) {
           case "id":
-            return <Th width={15}>Id</Th>;
+            return <Th width={20}>Id</Th>;
           case "host":
             return <Th>Host</Th>;
           case "rack":
