@@ -18,8 +18,10 @@
   "overview": {
     "title": "Overview"
   },
-  "brokers": {
-    "title": "Brokers"
+  "broker-config-table": {
+    "no_results_title": "No properties found",
+    "no_results_body": "Adjust your selection criteria and try again.",
+    "no_results_reset": "Clear all filters"
   },
   "topics": {
     "title": "Topics",

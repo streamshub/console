@@ -43,6 +43,7 @@ export type ToolbarAction = {
   onClick: () => void;
 };
 
+export const DEFAULT_PAGE = 1;
 export const DEFAULT_PERPAGE = 20;
 
 export type TableViewProps<TRow, TCol> = {
@@ -51,8 +52,8 @@ export type TableViewProps<TRow, TCol> = {
   isFiltered?: boolean;
   actions?: ToolbarAction[];
   tools?: ReactElement[];
-  itemCount: number | undefined;
-  page: number;
+  itemCount?: number;
+  page?: number;
   perPage?: number;
   onPageChange: (page: number, perPage: number) => void;
   onClearAllFilters?: () => void;
@@ -66,7 +67,7 @@ export const TableView = <TRow, TCol>({
   actions,
   tools,
   itemCount,
-  page,
+  page = DEFAULT_PAGE,
   perPage = DEFAULT_PERPAGE,
   columns,
   isColumnSortable,
@@ -84,9 +85,11 @@ export const TableView = <TRow, TCol>({
   const showPagination =
     data?.length !== 0 && itemCount && itemCount > DEFAULT_PERPAGE;
   const breakpoint = toolbarBreakpoint === "all" ? "lg" : toolbarBreakpoint;
+
   function notUndefined<T>(x: T | undefined): x is T {
     return x !== undefined;
   }
+
   const sortableColumns = isColumnSortable
     ? columns.map((c) => isColumnSortable(c)).filter(notUndefined)
     : undefined;

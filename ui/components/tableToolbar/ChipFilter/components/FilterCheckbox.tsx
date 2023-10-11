@@ -18,6 +18,7 @@ export function FilterCheckbox({
       aria-label={label}
       onSelect={(_, value) => {
         onToggle(value);
+        setIsOpen(false);
       }}
       selected={chips}
       isOpen={isOpen}
@@ -37,7 +38,12 @@ export function FilterCheckbox({
       )}
     >
       {Object.entries(options).map(([key, label]) => (
-        <SelectOption key={key} value={key} hasCheckbox={true}>
+        <SelectOption
+          key={key}
+          value={key}
+          hasCheckbox={true}
+          isSelected={chips.includes(key)}
+        >
           {label}
         </SelectOption>
       ))}
