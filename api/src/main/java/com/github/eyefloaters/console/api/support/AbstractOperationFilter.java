@@ -8,7 +8,7 @@ import org.eclipse.microprofile.config.ConfigProvider;
 class AbstractOperationFilter {
 
     private static final Set<String> READ_METHODS = Set.of("GET", "HEAD", "OPTIONS");
-    private final Config config = ConfigProvider.getConfig();
+    protected final Config config = ConfigProvider.getConfig();
 
     protected boolean disabled(String method, String operationdId) {
         boolean enabled;

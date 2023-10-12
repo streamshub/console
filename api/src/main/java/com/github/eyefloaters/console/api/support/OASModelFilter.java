@@ -62,5 +62,11 @@ public class OASModelFilter extends AbstractOperationFilter implements OASFilter
         openAPI.getComponents().setSchemas(new TreeMap<>(openAPI.getComponents().getSchemas()));
         // Prune any schemas no longer referenced
         FilterUtil.applyFilter(new UnusedSchemaFilter(), openAPI);
+
+        /*
+         * Required until https://github.com/quarkusio/quarkus/pull/36460 is available.
+         */
+        config.getOptionalValue("quarkus.oidc.auth-server-url", String.class)
+            .ifPresent(openAPI.getComponents().getSecuritySchemes().get("ConsoleSecurity")::setOpenIdConnectUrl);
     }
 }
