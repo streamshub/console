@@ -17,7 +17,7 @@ public class InvalidPageCursorExceptionHandler extends AbstractClientExceptionHa
     private static final Logger LOGGER = Logger.getLogger(InvalidPageCursorExceptionHandler.class);
 
     public InvalidPageCursorExceptionHandler() {
-        super(ErrorCategory.InvalidQueryParameter.class, null, null);
+        super(ErrorCategory.InvalidQueryParameter.class, null, (String) null);
     }
 
     @Override
@@ -26,7 +26,7 @@ public class InvalidPageCursorExceptionHandler extends AbstractClientExceptionHa
     }
 
     @Override
-    protected List<Error> buildErrors(InvalidPageCursorException exception) {
+    public List<Error> buildErrors(InvalidPageCursorException exception) {
         return exception.getSources()
             .stream()
             .map(source -> {

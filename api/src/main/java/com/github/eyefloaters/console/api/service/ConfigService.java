@@ -5,6 +5,7 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
@@ -15,6 +16,8 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
 import org.apache.kafka.clients.admin.Admin;
+import org.apache.kafka.clients.admin.AlterConfigOp;
+import org.apache.kafka.clients.admin.AlterConfigOp.OpType;
 import org.apache.kafka.common.config.ConfigResource;
 
 import com.github.eyefloaters.console.api.model.ConfigEntry;
@@ -31,27 +34,18 @@ public class ConfigService {
 
         return describeConfigs(clientSupplier.get(), List.of(nodeKey))
             .thenApply(configs -> configs.get(name))
-            .thenApply(configs -> configs.getOptionalPrimary()
-                    .orElseThrow(() -> new CompletionException(configs.getAlternate())));
+            .thenApply(configs -> configs.getOrThrow(CompletionException::new));
     }
 
-//    public CompletionStage<Map<String, ConfigEntry>> alterConfigs(ConfigResource.Type type, String name, Map<String, ConfigEntry> alteredConfigs) {
-//        Admin adminClient = clientSupplier.get();
-//        var resourceKey = new ConfigResource(type, name);
-//
-//        return adminClient.incrementalAlterConfigs(Map.of(resourceKey, fromMap(alteredConfigs)))
-//            .values()
-//            .get(resourceKey)
-//            .toCompletionStage()
-//            .thenCompose(nothing -> describeConfigs(adminClient, List.of(resourceKey)))
-//            .thenApply(configs -> configs.get(name))
-//            .thenApply(configs -> {
-//                if (configs.isPrimaryPresent()) {
-//                    return configs.getPrimary();
-//                }
-//                throw new CompletionException(configs.getAlternate());
-//            });
-//    }
+    public CompletionStage<Void> alterConfigs(ConfigResource.Type type, String name, Map<String, ConfigEntry> alteredConfigs) {
+        Admin adminClient = clientSupplier.get();
+        var resourceKey = new ConfigResource(type, name);
+
+        return adminClient.incrementalAlterConfigs(Map.of(resourceKey, fromMap(alteredConfigs)))
+            .values()
+            .get(resourceKey)
+            .toCompletionStage();
+    }
 
     CompletionStage<Map<String, Either<Map<String, ConfigEntry>, Throwable>>> describeConfigs(Admin adminClient, List<ConfigResource> keys) {
         Map<String, Either<Map<String, ConfigEntry>, Throwable>> result = new LinkedHashMap<>(keys.size());
@@ -68,13 +62,7 @@ public class ConfigService {
             .map(CompletionStage::toCompletableFuture)
             .toArray(CompletableFuture[]::new);
 
-        var promise = new CompletableFuture<Map<String, Either<Map<String, ConfigEntry>, Throwable>>>();
-
-        CompletableFuture.allOf(pendingDescribes)
-                .thenApply(nothing -> promise.complete(result))
-                .exceptionally(promise::completeExceptionally);
-
-        return promise;
+        return CompletableFuture.allOf(pendingDescribes).thenApply(nothing -> result);
     }
 
     Map<String, ConfigEntry> toMap(Collection<org.apache.kafka.clients.admin.ConfigEntry> entries) {
@@ -85,15 +73,17 @@ public class ConfigService {
                         ConfigEntry::fromKafkaModel));
     }
 
-//    Collection<AlterConfigOp> fromMap(Map<String, ConfigEntry> configs) {
-//        return configs.entrySet()
-//                .stream()
-//                .map(e -> toKafkaModel(e.getKey(), e.getValue()))
-//                .map(entry -> new AlterConfigOp(entry, AlterConfigOp.OpType.SET))
-//                .toList();
-//    }
+    Collection<AlterConfigOp> fromMap(Map<String, ConfigEntry> configs) {
+        return configs.entrySet()
+                .stream()
+                .map(e -> toAlterConfigOp(e.getKey(), e.getValue()))
+                .toList();
+    }
 
-//    org.apache.kafka.clients.admin.ConfigEntry toKafkaModel(String key, ConfigEntry entry) {
-//        return new org.apache.kafka.clients.admin.ConfigEntry(key, entry.getValue());
-//    }
+    AlterConfigOp toAlterConfigOp(String key, ConfigEntry entry) {
+        AlterConfigOp.OpType opType = entry != null ? OpType.SET : OpType.DELETE;
+        String value = Optional.ofNullable(entry).map(ConfigEntry::getValue).orElse(null);
+        var configEntry = new org.apache.kafka.clients.admin.ConfigEntry(key, value);
+        return new AlterConfigOp(configEntry, opType);
+    }
 }

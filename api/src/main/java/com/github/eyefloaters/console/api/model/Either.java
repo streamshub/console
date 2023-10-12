@@ -81,4 +81,16 @@ public class Either<P, A> {
             .orElseGet(() -> Either.ofAlternate(alternateMapper.apply(getAlternate())));
     }
 
+    /**
+     * Get the primary data or throw an exception constructed from the alternate
+     * data.
+     *
+     * @param <T>              type of Throwable that will be supplied
+     * @param throwableBuilder function to construct a Throwable from the alternate
+     * @return the primary data
+     * @throws T when the primary data is not present
+     */
+    public <T extends Throwable> P getOrThrow(Function<A, T> throwableBuilder) throws T {
+        return primary.orElseThrow(() -> throwableBuilder.apply(alternate));
+    }
 }
