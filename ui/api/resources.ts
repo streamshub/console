@@ -1,19 +1,52 @@
-"use server";
 import { getKafkaClusters } from "@/api/kafka";
-import {
-  ClusterList,
-  KafkaResource,
-  RegistryResource,
-  Resource,
-  ResourceTypeKafka,
-  ResourceTypeRegistry,
-} from "@/api/types";
 import { logger } from "@/utils/logger";
 import { getSession, setSession } from "@/utils/session";
+import z from "zod";
 
 const log = logger.child({ module: "resources-api" });
 
+export const ResourceTypeRegistry = "registry" as const;
+export const ResourceTypeKafka = "kafka" as const;
+export const KafkaResourceSchema = z.object({
+  id: z.string(),
+  type: z.literal(ResourceTypeKafka),
+  attributes: z.object({
+    name: z.string(),
+    bootstrapServer: z.string(),
+    principal: z.string(),
+    clusterId: z.string().optional(),
+    mechanism: z.string(),
+    source: z.union([z.literal("user"), z.literal("auto")]),
+  }),
+});
+export type KafkaResource = z.infer<typeof KafkaResourceSchema>;
+export const RegistryResourceSchema = z.object({
+  id: z.string(),
+  type: z.literal(ResourceTypeRegistry),
+  attributes: z.object({
+    name: z.string(),
+    url: z.string(),
+  }),
+});
+export type RegistryResource = z.infer<typeof RegistryResourceSchema>;
+export const ResourceSchema = z.discriminatedUnion("type", [
+  KafkaResourceSchema,
+  RegistryResourceSchema,
+]);
+export type Resource = z.infer<typeof ResourceSchema>;
 type ResourceType = typeof ResourceTypeKafka | typeof ResourceTypeRegistry;
+
+export const ResourcesSchema = z.object({
+  newResource: z
+    .object({
+      name: z.string().optional(),
+      boostrapServer: z.string().optional(),
+      principal: z.string().optional(),
+    })
+    .optional(),
+  resources: z.array(ResourceSchema),
+});
+export type Resources = z.infer<typeof ResourcesSchema>;
 
 export async function getResources(
   scope: typeof ResourceTypeRegistry,
@@ -81,12 +114,12 @@ export async function createKafkaResource({
   name,
   bootstrapServer,
   principal,
-  cluster,
+  clusterId,
 }: {
   bootstrapServer: string;
   principal: string;
   name: string;
-  cluster: ClusterList | undefined;
+  clusterId: string | undefined;
 }) {
   const session = await getSession("resources");
   const resources = (session?.resources || []) as Resource[];
@@ -94,7 +127,7 @@ export async function createKafkaResource({
     id: crypto.randomUUID(),
     type: ResourceTypeKafka,
     attributes: {
-      cluster,
+      clusterId,
       mechanism: "PLAIN",
       name,
       bootstrapServer,

@@ -1,28 +1,99 @@
-"use server";
-import { getHeaders } from "@/api/_shared";
-import { Topic, TopicResponse, TopicsResponse } from "@/api/types";
+import { BackendError, getHeaders } from "@/api/api";
 import { logger } from "@/utils/logger";
+import { z } from "zod";
 
 const log = logger.child({ module: "topics-api" });
 
 const listTopicsQuery = encodeURI(
-  "fields[topics]=name,internal,partitions,authorizedOperations,configs",
+  "fields[topics]=name,internal,partitions,recordCount",
 );
 const describeTopicsQuery = encodeURI(
   "fields[topics]=,name,internal,partitions,authorizedOperations,configs,recordCount,totalLeaderLogBytes",
 );
-const consumeRecordsQuery = encodeURI(
-  "fields[records]=partition,offset,timestamp,timestampType,headers,key,value&page[size]=20",
-);
 
-export async function getTopics(kafkaId: string): Promise<Topic[]> {
+const OffsetSchema = z.object({
+  offset: z.number().optional(),
+  timestamp: z.string().optional(),
+  leaderEpoch: z.number().optional(),
+});
+const PartitionSchema = z.object({
+  partition: z.number(),
+  leaderId: z.number(),
+  replicas: z.array(
+    z.object({
+      nodeId: z.number(),
+      nodeRack: z.string().optional(),
+      inSync: z.boolean(),
+      localStorage: BackendError.or(
+        z.object({
+          size: z.number(),
+          offsetLag: z.number(),
+          future: z.boolean(),
+        }),
+      ).optional(),
+    }),
+  ),
+  offsets: z
+    .object({
+      earliest: OffsetSchema.optional(),
+      latest: OffsetSchema.optional(),
+      maxTimestamp: OffsetSchema.optional(),
+      timestamp: OffsetSchema.optional(),
+    })
+    .optional()
+    .nullable(),
+  recordCount: z.number().optional(),
+  leaderLocalStorage: z.number().optional(),
+});
+const ConfigSchema = z.object({
+  value: z.string(),
+  source: z.string(),
+  sensitive: z.boolean(),
+  readOnly: z.boolean(),
+  type: z.string(),
+});
+const TopicSchema = z.object({
+  id: z.string(),
+  type: z.literal("topics"),
+  attributes: z.object({
+    name: z.string(),
+    internal: z.boolean(),
+    partitions: z.array(PartitionSchema),
+    authorizedOperations: z.array(z.string()),
+    configs: z.record(z.string(), ConfigSchema),
+    recordCount: z.number().optional(),
+    totalLeaderLogBytes: z.number().optional(),
+  }),
+});
+export const TopicResponse = z.object({
+  data: TopicSchema,
+});
+export type Topic = z.infer<typeof TopicSchema>;
+export const TopicsResponse = z.object({
+  data: z.array(
+    z.object({
+      id: z.string(),
+      type: z.literal("topics"),
+      attributes: TopicSchema.shape.attributes.pick({
+        name: true,
+        internal: true,
+        partitions: true,
+        recordCount: true,
+      }),
+    }),
+  ),
+});
+
+export async function getTopics(
+  kafkaId: string,
+): Promise<z.infer<typeof TopicsResponse.shape.data>> {
   const url = `${process.env.BACKEND_URL}/api/kafkas/${kafkaId}/topics?${listTopicsQuery}`;
   const res = await fetch(url, {
     headers: await getHeaders(),
     cache: "no-store",
   });
   const rawData = await res.json();
-  log.debug("getTopics", url, JSON.stringify(rawData, null, 2));
+  log.debug({ url, rawData }, "getTopics");
   return TopicsResponse.parse(rawData).data;
 }
 
@@ -39,58 +110,3 @@ export async function getTopic(
   //log.debug("getTopic", url, JSON.stringify(rawData, null, 2));
   return TopicResponse.parse(rawData).data;
 }
-
-export async function getTopicMessages(
-  kafkaId: string,
-  topicId: string,
-): Promise<MessageApiResponse> {
-  const url = `${process.env.BACKEND_URL}/api/kafkas/${kafkaId}/topics/${topicId}/records?${consumeRecordsQuery}`;
-  log.debug({ url }, "Fetching topics");
-  const res = await fetch(url, {
-    headers: await getHeaders(),
-    cache: "no-store",
-    next: { tags: [`messages-${topicId}`] },
-  });
-  const rawData = await res.json();
-  const messages = (rawData?.data || []).map((r: any) => ({ ...r.attributes }));
-  log.trace({ messages, rawData }, "Got messages");
-  return {
-    lastUpdated: new Date(),
-    messages,
-    partitions: 1,
-    offsetMin: 0,
-    offsetMax: 100,
-    filter: {
-      partition: undefined,
-      offset: undefined,
-      timestamp: undefined,
-      limit: undefined,
-      epoch: undefined,
-    },
-  };
-}
-
-export type MessageApiResponse = {
-  lastUpdated: Date;
-  messages: Message[];
-  partitions: number;
-  offsetMin: number;
-  offsetMax: number;
-
-  filter: {
-    partition: number | undefined;
-    offset: number | undefined;
-    timestamp: DateIsoString | undefined;
-    limit: number | undefined;
-    epoch: number | undefined;
-  };
-};
-
-export type Message = {
-  partition?: number;
-  offset?: number;
-  timestamp?: DateIsoString;
-  key?: string;
-  value?: string;
-  headers: Record<string, string>;
-};

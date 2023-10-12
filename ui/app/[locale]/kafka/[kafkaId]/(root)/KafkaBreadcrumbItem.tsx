@@ -1,5 +1,6 @@
 "use client";
-import { ClusterDetail, KafkaResource } from "@/api/types";
+import { ClusterDetail } from "@/api/kafka";
+import { KafkaResource } from "@/api/resources";
 import { KafkaSwitcher } from "@/app/[locale]/kafka/[kafkaId]/KafkaSwitcher";
 import { useSelectedLayoutSegment } from "next/navigation";
 import { Suspense } from "react";

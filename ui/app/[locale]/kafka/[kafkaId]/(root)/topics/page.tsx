@@ -1,10 +1,7 @@
-import { getResource } from "@/api/resources";
-import { getTopics } from "@/api/topics";
-import { Topic } from "@/api/types";
+import { getTopics, Topic } from "@/api/topics";
 import { TopicsTable } from "@/app/[locale]/kafka/[kafkaId]/(root)/topics/TopicsTable";
 import { PageSection } from "@/libs/patternfly/react-core";
 import { getUser } from "@/utils/session";
-import { notFound } from "next/navigation";
 
 export default async function TopicsPage({
   params,

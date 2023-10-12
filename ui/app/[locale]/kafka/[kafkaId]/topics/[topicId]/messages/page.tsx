@@ -1,90 +1,54 @@
-import { getTopicMessages } from "@/api/topics";
-import {
-  KafkaMessageBrowser,
-  KafkaMessageBrowserProps,
-} from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/_components/KafkaMessageBrowser";
+import { getTopicMessages } from "@/api/messages";
+import { getTopic } from "@/api/topics";
 import { NoDataEmptyState } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/_components/NoDataEmptyState";
+import { MessagesTable } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/MessagesTable";
 import { KafkaTopicParams } from "@/app/[locale]/kafka/[kafkaId]/topics/kafkaTopic.params";
+import { stringToInt } from "@/utils/stringToInt";
 import { revalidateTag } from "next/cache";
 
 export default async function Principals({
   params: { kafkaId, topicId },
+  searchParams,
 }: {
   params: KafkaTopicParams;
+  searchParams: {
+    limit: string | undefined;
+    partition: string | undefined;
+  };
 }) {
-  const data = await getTopicMessages(kafkaId, topicId);
+  const topic = await getTopic(kafkaId, topicId);
+  const limit = stringToInt(searchParams.limit) || 50;
+  const partition = stringToInt(searchParams.partition);
+  const partitionInfo = topic.attributes.partitions.find(
+    (p) => p.partition === partition,
+  );
+  const offsetMin = partitionInfo?.offsets?.earliest?.offset;
+  const offsetMax = partitionInfo?.offsets?.latest?.offset;
+
+  const messages = await getTopicMessages(kafkaId, topicId, {
+    pageSize: limit,
+    partition,
+  });
+
   switch (true) {
-    case data === null:
+    case messages === null:
       return (
         <NoDataEmptyState
           onRefresh={() => revalidateTag(`messages-${topicId}`)}
         />
       );
     default:
-      return <Table response={data} />;
+      return (
+        <MessagesTable
+          messages={messages}
+          partitions={topic.attributes.partitions.length}
+          offsetMin={offsetMin}
+          offsetMax={offsetMax}
+          params={{
+            limit,
+            partition,
+          }}
+        />
+      );
   }
-}
-
-function Table({ response }: Pick<KafkaMessageBrowserProps, "response">) {
-  return (
-    <KafkaMessageBrowser
-      isFirstLoad={false}
-      isNoData={false}
-      isRefreshing={false}
-      requiresSearch={false}
-      selectedMessage={undefined}
-      lastUpdated={new Date()}
-      response={response}
-      partition={undefined}
-      limit={10}
-      filterOffset={undefined}
-      filterEpoch={undefined}
-      filterTimestamp={undefined}
-      setPartition={setPartition}
-      setOffset={setOffset}
-      setTimestamp={setTimestamp}
-      setEpoch={setEpoch}
-      setLatest={setLatest}
-      setLimit={setLimit}
-      refresh={refresh}
-      selectMessage={selectMessage}
-      deselectMessage={deselectMessage}
-    />
-  );
-}
-
-async function setPartition() {
-  "use server";
-}
-
-async function setOffset() {
-  "use server";
-}
-
-async function setTimestamp() {
-  "use server";
-}
-
-async function setEpoch() {
-  "use server";
-}
-
-async function setLatest() {
-  "use server";
-}
-
-async function setLimit() {
-  "use server";
-}
-
-async function refresh() {
-  "use server";
-}
-
-async function selectMessage() {
-  "use server";
-}
-
-async function deselectMessage() {
-  "use server";
 }

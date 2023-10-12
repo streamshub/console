@@ -1,6 +1,6 @@
 "use client";
+import { ClusterList } from "@/api/kafka";
 import { createKafkaResource } from "@/api/resources";
-import { ClusterList } from "@/api/types";
 import {
   Button,
   Card,

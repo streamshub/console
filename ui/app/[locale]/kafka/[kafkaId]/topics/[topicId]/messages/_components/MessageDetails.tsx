@@ -1,4 +1,4 @@
-import { Message } from "@/api/topics";
+import { Message } from "@/api/messages";
 import {
   ClipboardCopy,
   DescriptionList,
@@ -29,6 +29,7 @@ export type MessageDetailsProps = {
   defaultTab: MessageDetailsBodyProps["defaultTab"];
   message: Message | undefined;
 };
+
 export function MessageDetails({
   onClose,
   defaultTab,
@@ -50,7 +51,7 @@ export function MessageDetails({
         {message && (
           <MessageDetailsBody
             defaultTab={defaultTab}
-            messageKey={message.key}
+            messageKey={message.attributes.key}
             {...message}
           />
         )}
@@ -61,7 +62,7 @@ export function MessageDetails({
 
 export type MessageDetailsBodyProps = {
   defaultTab: "value" | "headers";
-  messageKey: Message["key"];
+  messageKey: Message.attributes.key;
 } & Omit<Message, "key">;
 
 export function MessageDetailsBody({
@@ -78,20 +79,20 @@ export function MessageDetailsBody({
           <DescriptionListGroup>
             <DescriptionListTerm>{t("field.partition")}</DescriptionListTerm>
             <DescriptionListDescription>
-              {message.partition}
+              {message.attributes.partition}
             </DescriptionListDescription>
           </DescriptionListGroup>
           <DescriptionListGroup>
             <DescriptionListTerm>{t("field.offset")}</DescriptionListTerm>
             <DescriptionListDescription>
-              {message.offset}
+              {message.attributes.offset}
             </DescriptionListDescription>
           </DescriptionListGroup>
           <DescriptionListGroup>
             <DescriptionListTerm>{t("field.timestamp")}</DescriptionListTerm>
             <DescriptionListDescription>
-              {message.timestamp ? (
-                format.dateTime(parseISO(message.timestamp), {
+              {message.attributes.timestamp ? (
+                format.dateTime(parseISO(message.attributes.timestamp), {
                   dateStyle: "long",
                   timeStyle: "long",
                 })
@@ -103,8 +104,8 @@ export function MessageDetailsBody({
           <DescriptionListGroup>
             <DescriptionListTerm>{t("field.epoch")}</DescriptionListTerm>
             <DescriptionListDescription>
-              {message.timestamp ? (
-                format.dateTime(parseISO(message.timestamp), {
+              {message.attributes.timestamp ? (
+                format.dateTime(parseISO(message.attributes.timestamp), {
                   dateStyle: "long",
                   timeStyle: "long",
                 })
@@ -133,7 +134,7 @@ export function MessageDetailsBody({
             title={<TabTitleText>{t("field.value")}</TabTitleText>}
           >
             <ClipboardCopy isCode={true} isExpanded={true} isReadOnly={true}>
-              {beautifyUnknownValue(message.value || "")}
+              {beautifyUnknownValue(message.attributes.value || "")}
             </ClipboardCopy>
           </Tab>
           <Tab
@@ -141,7 +142,9 @@ export function MessageDetailsBody({
             title={<TabTitleText>{t("field.headers")}</TabTitleText>}
           >
             <ClipboardCopy isCode={true} isExpanded={true} isReadOnly={true}>
-              {beautifyUnknownValue(JSON.stringify(message.headers) || "")}
+              {beautifyUnknownValue(
+                JSON.stringify(message.attributes.headers) || "",
+              )}
             </ClipboardCopy>
           </Tab>
         </Tabs>

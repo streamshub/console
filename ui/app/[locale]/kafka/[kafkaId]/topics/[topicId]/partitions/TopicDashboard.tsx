@@ -1,6 +1,5 @@
 "use client";
-import { getTopic } from "@/api/topics";
-import { Topic } from "@/api/types";
+import { getTopic, Topic } from "@/api/topics";
 import { Bytes } from "@/components/Bytes";
 import { Number } from "@/components/Number";
 import { TableView } from "@/components/table";

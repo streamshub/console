@@ -5,14 +5,15 @@ import {
   Select,
   SelectOption,
 } from "@/libs/patternfly/react-core";
-import { useState } from "react";
 import { useTranslations } from "next-intl";
+import { useState } from "react";
 
 export type LimitSelectorProps = {
   value: number;
   isDisabled: boolean;
   onChange: (value: number) => void;
 };
+
 export function LimitSelector({
   value,
   isDisabled,
@@ -55,12 +56,14 @@ export function LimitSelector({
             </MenuToggle>
           )}
         >
-          {[10, 20, 50].map((value, idx) => (
+          {[20, 50, 100, 200, 500, 1000].map((value, idx) => (
             <SelectOption
               key={idx}
-              value={t("limit", { value })}
+              value={value}
               onClick={() => onChange(value)}
-            />
+            >
+              {t("limit", { value })}
+            </SelectOption>
           ))}
         </Select>
       </div>

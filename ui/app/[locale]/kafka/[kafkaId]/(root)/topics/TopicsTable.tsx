@@ -1,6 +1,8 @@
 "use client";
-import { Topic } from "@/api/types";
+import { Topic } from "@/api/topics";
+import { Number } from "@/components/Number";
 import { TableView } from "@/components/table";
+import { TableVariant } from "@patternfly/react-table";
 import { useFormatter } from "next-intl";
 import Link from "next-intl/link";
 
@@ -21,19 +23,19 @@ export function TopicsTable({ canCreate, topics }: TopicsTableProps) {
       emptyStateNoData={<div>no data</div>}
       emptyStateNoResults={<div>no results</div>}
       ariaLabel={"Topics"}
-      columns={
-        ["name", "partitions", "retention.ms", "retention.byte"] as const
-      }
+      columns={["name", "partitions", "messages"] as const}
       renderHeader={({ Th, column, key }) => {
         switch (column) {
           case "name":
-            return <Th key={key}>Name</Th>;
+            return (
+              <Th key={key} width={70}>
+                Name
+              </Th>
+            );
           case "partitions":
             return <Th key={key}>Partitions</Th>;
-          case "retention.byte":
-            return <Th key={key}>Retention byte (bytes)</Th>;
-          case "retention.ms":
-            return <Th key={key}>Retention time (ms)</Th>;
+          case "messages":
+            return <Th key={key}>Messages</Th>;
         }
       }}
       renderCell={({ Td, column, row, key }) => {
@@ -50,18 +52,10 @@ export function TopicsTable({ canCreate, topics }: TopicsTableProps) {
                 {format.number(row.attributes.partitions.length)}
               </Td>
             );
-          case "retention.byte":
+          case "messages":
             return (
               <Td key={key}>
-                {row.attributes.configs["retention.bytes"].value}
-              </Td>
-            );
-          case "retention.ms":
-            return (
-              <Td key={key}>
-                {format.number(
-                  parseInt(row.attributes.configs["retention.ms"].value, 10),
-                )}
+                <Number value={row.attributes.recordCount} />
               </Td>
             );
         }
@@ -88,6 +82,7 @@ export function TopicsTable({ canCreate, topics }: TopicsTableProps) {
             ]
           : undefined
       }
+      variant={TableVariant.compact}
     />
   );
 }

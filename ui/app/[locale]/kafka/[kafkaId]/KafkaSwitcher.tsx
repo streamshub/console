@@ -1,4 +1,5 @@
-import { ClusterDetail, KafkaResource } from "@/api/types";
+import { ClusterDetail } from "@/api/kafka";
+import { KafkaResource } from "@/api/resources";
 import {
   Divider,
   Dropdown,

@@ -1,6 +1,6 @@
 "use client";
 
-import { KafkaNode } from "@/api/types";
+import { KafkaNode } from "@/api/kafka";
 import { ResponsiveTable } from "@/components/table";
 import { ClipboardCopy, Label } from "@patternfly/react-core";
 import { ServerIcon } from "@patternfly/react-icons";

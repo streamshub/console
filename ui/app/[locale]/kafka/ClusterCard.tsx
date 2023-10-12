@@ -1,5 +1,5 @@
 "use client";
-import { KafkaResource } from "@/api/types";
+import { KafkaResource } from "@/api/resources";
 import {
   ChartGroup,
   ChartLine,
