@@ -11,7 +11,7 @@ import { useFormatter } from "next-intl";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
-export function TopicDashboard({
+export function PartitionsTable({
   topic: initialData,
   kafkaId,
 }: {
@@ -102,7 +102,10 @@ export function TopicDashboard({
                       color={"orange"}
                       render={({ className, content }) => (
                         <>
-                          <Link className={className} href={"../../nodes"}>
+                          <Link
+                            className={className}
+                            href={`../../nodes/${leader.nodeId}`}
+                          >
                             {content}
                           </Link>
                         </>

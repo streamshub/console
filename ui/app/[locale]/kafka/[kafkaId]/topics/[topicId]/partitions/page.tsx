@@ -1,7 +1,7 @@
 import { getTopic } from "@/api/topics";
 import { KafkaTopicParams } from "@/app/[locale]/kafka/[kafkaId]/topics/kafkaTopic.params";
 import { notFound } from "next/navigation";
-import { TopicDashboard } from "./TopicDashboard";
+import { PartitionsTable } from "./PartitionsTable";
 
 export default async function AsyncPartitionsPage({
   params: { kafkaId, topicId },
@@ -12,5 +12,5 @@ export default async function AsyncPartitionsPage({
   if (!topic) {
     notFound();
   }
-  return <TopicDashboard kafkaId={kafkaId} topic={topic} />;
+  return <PartitionsTable kafkaId={kafkaId} topic={topic} />;
 }
