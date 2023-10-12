@@ -19,28 +19,13 @@ export function useFilterParams(
     [],
   );
 
-  const updateUrl = useCallback(
-    (name: string, value: string | undefined) => {
-      const newParams = {
-        ...params,
-        [name]: value,
-      };
-      const sp = Object.entries(newParams).map(([name, value]) => ({
-        name,
-        value: value?.toString(),
-      }));
-      router.push(pathname + "?" + createQueryString(sp));
-    },
-    [createQueryString, params, pathname, router],
-  );
-
   return useCallback(
-    function updateUrl(name: string, value: string | undefined) {
-      const newParams = {
+    function updateUrl(newParams: Record<string, string | number | undefined>) {
+      const updatedParams = {
         ...params,
-        [name]: value,
+        ...newParams,
       };
-      const sp = Object.entries(newParams).map(([name, value]) => ({
+      const sp = Object.entries(updatedParams).map(([name, value]) => ({
         name,
         value: value?.toString(),
       }));

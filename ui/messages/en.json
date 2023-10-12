@@ -99,10 +99,10 @@
       "epoch_aria_label": "Specify epoch timestamp",
       "epoch_placeholder": "Specify epoch timestamp",
       "latest": "Latest messages",
-      "offset": "$t(field.offset)",
+      "offset": "Offset",
       "offset_aria_label": "Specify offset",
       "offset_placeholder": "Specify offset",
-      "timestamp": "$t(field.timestamp)",
+      "timestamp": "Timestamp",
       "timestamp_aria_label": "Specify timestamp",
       "timestamp_toggle_calendar_menu": "Toggle calendar menu",
       "timestamp_toggle_time_menu": "Toggle time menu"

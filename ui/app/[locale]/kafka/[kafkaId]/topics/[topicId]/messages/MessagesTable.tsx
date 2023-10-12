@@ -1,8 +1,7 @@
 "use client";
 import { Message } from "@/api/messages";
-import { isSameMessage } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/_components/utils";
 import { useFilterParams } from "@/utils/useFilterParams";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { KafkaMessageBrowser } from "./_components/KafkaMessageBrowser";
 
 export function MessagesTable({
@@ -17,18 +16,24 @@ export function MessagesTable({
   offsetMin: number | undefined;
   offsetMax: number | undefined;
   params: {
+    selectedOffset: number | undefined;
     partition: number | undefined;
+    "filter[offset]": number | undefined;
+    "filter[timestamp]": string | undefined;
+    "filter[epoch]": number | undefined;
     limit: number;
   };
 }) {
-  const [selected, setSelected] = useState<Message | undefined>();
+  const [currentParams, setParams] = useState(params);
   const updateUrl = useFilterParams(params);
 
   function setPartition(partition: number | undefined) {
-    updateUrl("partition", partition?.toString());
+    setParams((params) => ({ ...params, partition }));
   }
 
-  function setOffset() {}
+  function setOffset(offset: number | undefined) {
+    setParams((params) => ({ ...params, "filter[offset]": offset }));
+  }
 
   function setTimestamp() {}
 
@@ -37,18 +42,29 @@ export function MessagesTable({
   function setLatest() {}
 
   function setLimit(limit: number) {
-    updateUrl("limit", limit.toString());
+    setParams((params) => ({ ...params, limit }));
   }
 
-  function refresh() {}
+  function setSelected(message: Message) {
+    updateUrl({
+      ...params,
+      selectedOffset: message.attributes.offset,
+    });
+  }
 
-  useEffect(
-    function checkIfSelectedMessageStillPresent() {
-      if (selected && !messages.find((m) => isSameMessage(m, selected))) {
-        setSelected(undefined);
-      }
-    },
-    [messages, selected],
+  function deselectMessage() {
+    updateUrl({
+      ...params,
+      selectedOffset: undefined,
+    });
+  }
+
+  function refresh() {
+    updateUrl(currentParams);
+  }
+
+  const selectedMessage = messages.find(
+    (m) => m.attributes.offset === params.selectedOffset,
   );
 
   return (
@@ -56,18 +72,18 @@ export function MessagesTable({
       isFirstLoad={false}
       isNoData={false}
       isRefreshing={false}
-      requiresSearch={false}
-      selectedMessage={selected}
+      requiresSearch={JSON.stringify(params) !== JSON.stringify(currentParams)}
+      selectedMessage={selectedMessage}
       lastUpdated={new Date()}
       messages={messages}
       offsetMin={offsetMin}
       offsetMax={offsetMax}
       partitions={partitions}
-      partition={params.partition}
-      limit={params.limit}
-      filterOffset={undefined}
-      filterEpoch={undefined}
-      filterTimestamp={undefined}
+      partition={currentParams.partition}
+      limit={currentParams.limit}
+      filterOffset={currentParams["filter[offset]"]}
+      filterEpoch={currentParams["filter[epoch]"]}
+      filterTimestamp={currentParams["filter[timestamp]"]}
       setPartition={setPartition}
       setOffset={setOffset}
       setTimestamp={setTimestamp}
@@ -76,7 +92,7 @@ export function MessagesTable({
       setLimit={setLimit}
       refresh={refresh}
       selectMessage={setSelected}
-      deselectMessage={() => setSelected(undefined)}
+      deselectMessage={deselectMessage}
     />
   );
 }

@@ -15,12 +15,13 @@ export type FilterGroupProps = {
   isDisabled: boolean;
   offset: number | undefined;
   epoch: number | undefined;
-  timestamp: DateIsoString | undefined;
+  timestamp: string | undefined;
   onOffsetChange: (value: number | undefined) => void;
   onTimestampChange: (value: DateIsoString | undefined) => void;
   onEpochChange: (value: number | undefined) => void;
   onLatest: () => void;
 };
+
 export function FilterGroup({
   isDisabled,
   offset,

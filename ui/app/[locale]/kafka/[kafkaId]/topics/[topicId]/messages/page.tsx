@@ -14,10 +14,18 @@ export default async function Principals({
   searchParams: {
     limit: string | undefined;
     partition: string | undefined;
+    selectedOffset: string | undefined;
+    "filter[offset]": string | undefined;
+    "filter[ts]": string | undefined;
+    "filter[epoch]": string | undefined;
   };
 }) {
   const topic = await getTopic(kafkaId, topicId);
   const limit = stringToInt(searchParams.limit) || 50;
+  const offset = stringToInt(searchParams["filter[offset]"]);
+  const ts = searchParams["filter[ts]"];
+  const epoch = stringToInt(searchParams["filter[epoch]"]);
+  const selectedOffset = stringToInt(searchParams.selectedOffset);
   const partition = stringToInt(searchParams.partition);
   const partitionInfo = topic.attributes.partitions.find(
     (p) => p.partition === partition,
@@ -25,9 +33,20 @@ export default async function Principals({
   const offsetMin = partitionInfo?.offsets?.earliest?.offset;
   const offsetMax = partitionInfo?.offsets?.latest?.offset;
 
+  const timeFilter = ts || epoch;
+  const date = timeFilter ? new Date(timeFilter) : undefined;
+  const timestamp = date?.toISOString();
+
+  const filter = offset
+    ? { type: "offset" as const, value: offset }
+    : timestamp
+    ? { type: "timestamp" as const, value: timestamp }
+    : undefined;
+
   const messages = await getTopicMessages(kafkaId, topicId, {
     pageSize: limit,
     partition,
+    filter,
   });
 
   switch (true) {
@@ -47,6 +66,10 @@ export default async function Principals({
           params={{
             limit,
             partition,
+            selectedOffset,
+            "filter[timestamp]": timestamp,
+            "filter[epoch]": epoch,
+            "filter[offset]": offset,
           }}
         />
       );

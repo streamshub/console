@@ -37,14 +37,14 @@ import { beautifyUnknownValue, isSameMessage } from "./utils";
 
 const columns = [
   // "partition",
-  // "offset",
+  "offset",
   "timestamp",
   "key",
   // "headers",
   "value",
 ] as const;
 
-const columnWidths: BaseCellProps["width"][] = [20, 10, undefined];
+const columnWidths: BaseCellProps["width"][] = [10, 20, 10, undefined];
 
 export type KafkaMessageBrowserProps = {
   isFirstLoad: boolean;
@@ -61,10 +61,10 @@ export type KafkaMessageBrowserProps = {
   limit: number;
   filterOffset: number | undefined;
   filterEpoch: number | undefined;
-  filterTimestamp: DateIsoString | undefined;
+  filterTimestamp: string | undefined;
   setPartition: (value: number | undefined) => void;
   setOffset: (value: number | undefined) => void;
-  setTimestamp: (value: DateIsoString | undefined) => void;
+  setTimestamp: (value: string | undefined) => void;
   setEpoch: (value: number | undefined) => void;
   setLatest: () => void;
   setLimit: (value: number) => void;
@@ -107,7 +107,7 @@ export function KafkaMessageBrowser({
     () =>
       ({
         // partition: t("field.partition"),
-        // offset: t("field.offset"),
+        offset: t("field.offset"),
         timestamp: t("field.timestamp"),
         key: t("field.key"),
         value: t("field.value"),
@@ -227,8 +227,8 @@ export function KafkaMessageBrowser({
                           switch (column) {
                             // case "partition":
                             //   return row.attributes.partition;
-                            // case "offset":
-                            //   return row.attributes.offset;
+                            case "offset":
+                              return row.attributes.offset;
                             case "timestamp":
                               return row.attributes.timestamp
                                 ? format.dateTime(

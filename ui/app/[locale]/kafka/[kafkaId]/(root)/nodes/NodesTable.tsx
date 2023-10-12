@@ -40,7 +40,9 @@ export function NodesTable({
           case "id":
             return (
               <Td>
-                <Link href={`nodes/${row.id}`}>Node {row.id}</Link>
+                <div>
+                  <Link href={`nodes/${row.id}`}>Node {row.id}</Link>
+                </div>
                 {row.id === controller.id && (
                   <Label color={"purple"} isCompact={true}>
                     Controller

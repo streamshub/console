@@ -29,6 +29,16 @@ export async function getTopicMessages(
   params: {
     pageSize: number;
     partition: number | undefined;
+    filter:
+      | {
+          type: "offset";
+          value: number;
+        }
+      | {
+          type: "timestamp";
+          value: string;
+        }
+      | undefined;
   },
 ): Promise<Message[]> {
   const sp = new URLSearchParams(
@@ -36,6 +46,14 @@ export async function getTopicMessages(
       "fields[records]":
         "partition,offset,timestamp,timestampType,headers,key,value",
       "filter[partition]": params.partition,
+      "filter[offset]":
+        params.filter?.type === "offset"
+          ? "gte," + params.filter?.value
+          : undefined,
+      "filter[timestamp]":
+        params.filter?.type === "timestamp"
+          ? "gte," + params.filter?.value
+          : undefined,
       "page[size]": params.pageSize,
     }),
   );

@@ -14,9 +14,10 @@ import { useState } from "react";
 
 export type DateTimePickerProps = {
   isDisabled: boolean;
-  value: DateIsoString | undefined;
+  value: string | undefined;
   onChange: (value: DateIsoString) => void;
 };
+
 export function DateTimePicker({
   isDisabled,
   value,
