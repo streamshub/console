@@ -105,10 +105,9 @@ export function MessageDetailsBody({
             <DescriptionListTerm>{t("field.epoch")}</DescriptionListTerm>
             <DescriptionListDescription>
               {message.attributes.timestamp ? (
-                format.dateTime(parseISO(message.attributes.timestamp), {
-                  dateStyle: "long",
-                  timeStyle: "long",
-                })
+                Math.floor(
+                  new Date(message.attributes.timestamp).getTime() / 1000,
+                )
               ) : (
                 <NoDataCell columnLabel={t("field.epoch")} />
               )}
