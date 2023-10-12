@@ -1,5 +1,5 @@
 "use client";
-import { Topic } from "@/api/topics";
+import { TopicList } from "@/api/topics";
 import { Number } from "@/components/Number";
 import { TableView } from "@/components/table";
 import { TableVariant } from "@patternfly/react-table";
@@ -7,7 +7,7 @@ import { useFormatter } from "next-intl";
 import Link from "next-intl/link";
 
 export type TopicsTableProps = {
-  topics: Topic[];
+  topics: TopicList[];
   canCreate: boolean;
 };
 

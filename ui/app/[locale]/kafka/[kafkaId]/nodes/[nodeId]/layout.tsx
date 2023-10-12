@@ -1,5 +1,4 @@
-import { getKafkaCluster } from "@/api/kafka";
-import { getResources } from "@/api/resources";
+import { getKafkaCluster, getKafkaClusters } from "@/api/kafka";
 import { KafkaNodeParams } from "@/app/[locale]/kafka/[kafkaId]/nodes/kafkaNode.params";
 import { BreadcrumbLink } from "@/components/BreadcrumbLink";
 import { Loading } from "@/components/Loading";
@@ -34,7 +33,7 @@ export default async function NodeDetails({
   if (!cluster) {
     notFound();
   }
-  const clusters = await getResources("kafka");
+  const clusters = await getKafkaClusters();
   const node = cluster.attributes.nodes.find((n) => `${n.id}` === nodeId);
   if (!node) {
     notFound();

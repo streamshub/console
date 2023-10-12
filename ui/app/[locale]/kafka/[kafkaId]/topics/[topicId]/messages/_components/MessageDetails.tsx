@@ -62,7 +62,7 @@ export function MessageDetails({
 
 export type MessageDetailsBodyProps = {
   defaultTab: "value" | "headers";
-  messageKey: Message.attributes.key;
+  messageKey: string | null;
 } & Omit<Message, "key">;
 
 export function MessageDetailsBody({

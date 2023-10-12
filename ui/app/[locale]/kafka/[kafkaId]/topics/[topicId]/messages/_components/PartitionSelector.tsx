@@ -56,7 +56,11 @@ export function PartitionSelector({
   const makeOptions = useCallback(
     (values: string[]) => {
       const options = values.slice(0, MAX_OPTIONS).map((v) => (
-        <SelectOption key={v} value={v} onClick={() => onChange(v)}>
+        <SelectOption
+          key={v}
+          value={v}
+          onClick={() => onChange(parseInt(v, 10))}
+        >
           {v}
         </SelectOption>
       ));
@@ -74,7 +78,7 @@ export function PartitionSelector({
           ]
         : options;
     },
-    [t],
+    [onChange, t],
   );
 
   const options = useMemo(() => {

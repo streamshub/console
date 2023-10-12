@@ -1,10 +1,10 @@
-import { getResource } from "@/api/resources";
+import { getKafkaCluster } from "@/api/kafka";
 import { KafkaParams } from "@/app/[locale]/kafka/[kafkaId]/kafka.params";
 import { notFound, redirect } from "next/navigation";
 
 export default async function KafkaRoot({ params }: { params: KafkaParams }) {
-  const resource = await getResource(params.kafkaId, "kafka");
-  if (!resource || !resource.attributes.cluster) {
+  const cluster = await getKafkaCluster(params.kafkaId);
+  if (!cluster) {
     notFound();
   }
   redirect(`${params.kafkaId}/topics`);

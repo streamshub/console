@@ -5,7 +5,7 @@ import { sealData, unsealData } from "iron-session";
 import { getServerSession } from "next-auth";
 import { cookies } from "next/headers";
 
-export async function getSession(scope: "kafka" | "resources") {
+export async function getSession(scope: "resources") {
   const user = await getUser();
   const cookieStore = cookies();
   const encryptedSession = cookieStore.get(`${user.username}:${scope}`)?.value;
@@ -24,8 +24,6 @@ export async function getSession(scope: "kafka" | "resources") {
     switch (scope) {
       case "resources":
         return { resources: [], newResource: {} };
-      case "kafka":
-        return {};
     }
   }
 }

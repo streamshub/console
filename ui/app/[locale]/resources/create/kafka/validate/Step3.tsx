@@ -167,10 +167,10 @@ function ValidationProgress({
                   name,
                   bootstrapServer,
                   principal,
-                  cluster,
+                  clusterId: cluster?.id,
                 });
                 startTransition(() => {
-                  router.push(`/kafka/${profile.id}`);
+                  router.push(`/kafka/${cluster?.id}`);
                 });
               }}
               isDisabled={
@@ -188,12 +188,10 @@ function ValidationProgress({
                     name,
                     bootstrapServer,
                     principal,
-                    cluster,
+                    clusterId: undefined,
                   });
                   startTransition(() => {
-                    router.push(
-                      `/kafka/${profile.attributes.cluster!.id}/overview`,
-                    );
+                    router.push(`/kafka`);
                   });
                 }}
                 isLoading={isPending}

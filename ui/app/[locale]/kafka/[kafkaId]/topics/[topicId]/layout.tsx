@@ -1,5 +1,4 @@
-import { getKafkaCluster } from "@/api/kafka";
-import { getResources } from "@/api/resources";
+import { getKafkaCluster, getKafkaClusters } from "@/api/kafka";
 import { getTopic } from "@/api/topics";
 import { KafkaTopicParams } from "@/app/[locale]/kafka/[kafkaId]/topics/kafkaTopic.params";
 import { BreadcrumbLink } from "@/components/BreadcrumbLink";
@@ -31,7 +30,7 @@ export default async function KafkaLayout({
   if (!cluster) {
     notFound();
   }
-  const clusters = await getResources("kafka");
+  const clusters = await getKafkaClusters();
   const topic = await getTopic(cluster.id, topicId);
 
   return (

@@ -1,4 +1,4 @@
-import { getTopics, Topic } from "@/api/topics";
+import { getTopics, TopicList } from "@/api/topics";
 import { TopicsTable } from "@/app/[locale]/kafka/[kafkaId]/(root)/topics/TopicsTable";
 import { PageSection } from "@/libs/patternfly/react-core";
 import { getUser } from "@/utils/session";
@@ -19,7 +19,7 @@ function TopicsContent({
   topics,
   canCreate,
 }: {
-  topics: Topic[];
+  topics: TopicList[];
   canCreate: boolean;
 }) {
   return (

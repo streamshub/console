@@ -69,24 +69,23 @@ export const TopicResponse = z.object({
   data: TopicSchema,
 });
 export type Topic = z.infer<typeof TopicSchema>;
+
+const TopicListSchema = z.object({
+  id: z.string(),
+  type: z.literal("topics"),
+  attributes: TopicSchema.shape.attributes.pick({
+    name: true,
+    internal: true,
+    partitions: true,
+    recordCount: true,
+  }),
+});
+export type TopicList = z.infer<typeof TopicListSchema>;
 export const TopicsResponse = z.object({
-  data: z.array(
-    z.object({
-      id: z.string(),
-      type: z.literal("topics"),
-      attributes: TopicSchema.shape.attributes.pick({
-        name: true,
-        internal: true,
-        partitions: true,
-        recordCount: true,
-      }),
-    }),
-  ),
+  data: z.array(TopicListSchema),
 });
 
-export async function getTopics(
-  kafkaId: string,
-): Promise<z.infer<typeof TopicsResponse.shape.data>> {
+export async function getTopics(kafkaId: string): Promise<TopicList[]> {
   const url = `${process.env.BACKEND_URL}/api/kafkas/${kafkaId}/topics?${listTopicsQuery}`;
   const res = await fetch(url, {
     headers: await getHeaders(),
