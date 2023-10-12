@@ -14,7 +14,7 @@ const MessageSchema = z.object({
     timestampType: z.string(),
     headers: z.record(z.any()),
     key: z.string().nullable(),
-    value: z.string(),
+    value: z.string().nullable(),
   }),
 });
 const MessageApiResponse = z.object({
