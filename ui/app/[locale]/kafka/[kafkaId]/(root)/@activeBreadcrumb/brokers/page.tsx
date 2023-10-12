@@ -1,3 +1,3 @@
-export default function BrokersActiveBreadcrumb() {
-  return "Brokers";
+export default function NodesActiveBreadcrumb() {
+  return "Nodes";
 }

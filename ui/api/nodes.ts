@@ -1,8 +1,8 @@
-import { getHeaders } from "@/api/_shared";
-import { logger } from "@/utils/logger";
-import { z } from "zod";
+import {getHeaders} from "@/api/_shared";
+import {logger} from "@/utils/logger";
+import {z} from "zod";
 
-const log = logger.child({ module: "api-topics" });
+const log = logger.child({module: "api-topics"});
 
 const ConfigSchema = z.object({
   id: z.string().optional(),
@@ -19,25 +19,25 @@ const ConfigSchema = z.object({
     }),
   ),
 });
-export type BrokerConfig = z.infer<typeof ConfigSchema>;
+export type NodeConfig = z.infer<typeof ConfigSchema>;
 
 const ConfigResponseSchema = z.object({
   data: ConfigSchema,
 });
 
-export async function getBrokerConfiguration(
+export async function getNodeConfiguration(
   kafkaId: string,
-  brokerId: number | string,
-): Promise<BrokerConfig> {
-  const url = `${process.env.BACKEND_URL}/api/kafkas/${kafkaId}/nodes/${brokerId}/configs`;
-  log.debug({ url }, "Fetching broker configuration");
+  nodeId: number | string,
+): Promise<NodeConfig> {
+  const url = `${process.env.BACKEND_URL}/api/kafkas/${kafkaId}/nodes/${nodeId}/configs`;
+  log.debug({url}, "Fetching node configuration");
   const res = await fetch(url, {
     headers: await getHeaders(),
     cache: "no-store",
-    next: { tags: [`brokers-${brokerId}`] },
+    next: {tags: [`node-${nodeId}`]},
   });
   const rawData = await res.json();
-  log.trace(rawData, "Broker configuration response");
+  log.trace(rawData, "Node configuration response");
   const data = ConfigResponseSchema.parse(rawData);
   return data.data;
 }

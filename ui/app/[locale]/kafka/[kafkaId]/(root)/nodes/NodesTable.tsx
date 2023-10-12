@@ -8,25 +8,25 @@ import Link from "next/link";
 
 const columns = ["id", "host", "rack"] as const;
 
-export function BrokersTable({
-  brokers,
+export function NodesTable({
+  nodes,
   controller,
 }: {
-  brokers: KafkaNode[];
+  nodes: KafkaNode[];
   controller: KafkaNode;
 }) {
   return (
     <ResponsiveTable
       ariaLabel={"Kafka clusters"}
       columns={columns}
-      data={brokers}
+      data={nodes}
       renderHeader={({ column, Th }) => {
         switch (column) {
           case "id":
             return (
               <Th>
                 <ServerIcon />
-                &nbsp; Broker
+                &nbsp; Node
               </Th>
             );
           case "host":
@@ -40,7 +40,7 @@ export function BrokersTable({
           case "id":
             return (
               <Td>
-                <Link href={`brokers/${row.id}`}>Broker {row.id}</Link>
+                <Link href={`nodes/${row.id}`}>Node {row.id}</Link>
                 {row.id === controller.id && (
                   <Label color={"purple"} isCompact={true}>
                     Controller

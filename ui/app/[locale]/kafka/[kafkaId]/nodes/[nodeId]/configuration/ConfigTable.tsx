@@ -1,5 +1,5 @@
 "use client";
-import { BrokerConfig } from "@/api/brokers";
+import { NodeConfig } from "@/api/nodes";
 import { Number } from "@/components/Number";
 import { TableView } from "@/components/table";
 import { Label, LabelGroup, List, ListItem } from "@patternfly/react-core";
@@ -8,7 +8,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback } from "react";
 import { NoResultsEmptyState } from "./NoResultsEmptyState";
 
-export function ConfigTable({ config }: { config: BrokerConfig }) {
+export function ConfigTable({ config }: { config: NodeConfig }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -81,7 +81,7 @@ export function ConfigTable({ config }: { config: BrokerConfig }) {
 
   return (
     <TableView
-      ariaLabel={"Broker configuration"}
+      ariaLabel={"Node configuration"}
       toolbarBreakpoint={"md"}
       columns={["property", "value"] as const}
       data={filteredData}

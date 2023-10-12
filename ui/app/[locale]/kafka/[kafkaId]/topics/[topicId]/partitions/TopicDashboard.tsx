@@ -103,7 +103,7 @@ export function TopicDashboard({
                       color={"orange"}
                       render={({ className, content }) => (
                         <>
-                          <Link className={className} href={"../../brokers"}>
+                          <Link className={className} href={"../../nodes"}>
                             {content}
                           </Link>
                         </>
@@ -122,10 +122,7 @@ export function TopicDashboard({
                           color={!r.inSync ? "red" : "orange"}
                           render={({ className, content }) => (
                             <>
-                              <Link
-                                className={className}
-                                href={"../../brokers"}
-                              >
+                              <Link className={className} href={"../../nodes"}>
                                 {content}
                               </Link>
                             </>

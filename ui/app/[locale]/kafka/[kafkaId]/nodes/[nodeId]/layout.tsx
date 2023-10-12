@@ -1,6 +1,6 @@
 import { getKafkaCluster } from "@/api/kafka";
 import { getResources } from "@/api/resources";
-import { KafkaBrokerParams } from "@/app/[locale]/kafka/[kafkaId]/brokers/kafkaBroker.params";
+import { KafkaNodeParams } from "@/app/[locale]/kafka/[kafkaId]/nodes/kafkaNode.params";
 import { BreadcrumbLink } from "@/components/BreadcrumbLink";
 import { Loading } from "@/components/Loading";
 import { NavItemLink } from "@/components/NavItemLink";
@@ -24,19 +24,19 @@ import { notFound } from "next/navigation";
 import { PropsWithChildren, Suspense } from "react";
 import { KafkaBreadcrumbItem } from "./KafkaBreadcrumbItem";
 
-export default async function BrokerDetails({
+export default async function NodeDetails({
   children,
-  params: { kafkaId, brokerId },
+  params: { kafkaId, nodeId },
 }: PropsWithChildren<{
-  params: KafkaBrokerParams;
+  params: KafkaNodeParams;
 }>) {
   const cluster = await getKafkaCluster(kafkaId);
   if (!cluster) {
     notFound();
   }
   const clusters = await getResources("kafka");
-  const broker = cluster.attributes.nodes.find((n) => `${n.id}` === brokerId);
-  if (!broker) {
+  const node = cluster.attributes.nodes.find((n) => `${n.id}` === nodeId);
+  if (!node) {
     notFound();
   }
   return (
@@ -48,10 +48,10 @@ export default async function BrokerDetails({
             <BreadcrumbItem>
               <KafkaBreadcrumbItem selected={cluster} clusters={clusters} />
             </BreadcrumbItem>
-            <BreadcrumbLink href={`/kafka/${kafkaId}/brokers`}>
-              Brokers
+            <BreadcrumbLink href={`/kafka/${kafkaId}/nodes`}>
+              Nodes
             </BreadcrumbLink>
-            <BreadcrumbItem isActive={true}>Broker {broker.id}</BreadcrumbItem>
+            <BreadcrumbItem isActive={true}>Node {node.id}</BreadcrumbItem>
           </Breadcrumb>
         </PageBreadcrumb>
         <PageSection
@@ -62,10 +62,10 @@ export default async function BrokerDetails({
           <Split hasGutter={true}>
             <SplitItem>
               <Title headingLevel={"h1"} className={"pf-v5-u-pb-sm"}>
-                Broker {broker.id}
+                Node {node.id}
               </Title>
             </SplitItem>
-            {cluster.attributes.controller.id === broker.id && (
+            {cluster.attributes.controller.id === node.id && (
               <SplitItem>
                 <Label color={"purple"}>Controller</Label>
               </SplitItem>
@@ -78,14 +78,14 @@ export default async function BrokerDetails({
             variant="inline-compact"
             isBlock={true}
           >
-            {broker.host}:{broker.port}
+            {node.host}:{node.port}
           </ClipboardCopy>
         </PageSection>
         <PageNavigation>
           <Nav aria-label="Group section navigation" variant="tertiary">
             <NavList>
               <NavItemLink
-                url={`/kafka/${kafkaId}/brokers/${brokerId}/configuration`}
+                url={`/kafka/${kafkaId}/nodes/${nodeId}/configuration`}
               >
                 Configuration
               </NavItemLink>

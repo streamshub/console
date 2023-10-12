@@ -9,7 +9,7 @@ import { SearchIcon } from "@/libs/patternfly/react-icons";
 import { useTranslations } from "next-intl";
 
 export function NoResultsEmptyState({ onReset }: { onReset: () => void }) {
-  const t = useTranslations("broker-config-table");
+  const t = useTranslations("node-config-table");
   return (
     <EmptyState variant={"lg"}>
       <EmptyStateIcon icon={SearchIcon} />
