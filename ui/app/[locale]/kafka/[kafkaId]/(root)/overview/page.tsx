@@ -32,7 +32,7 @@ export default function OverviewPage() {
           }
         >
           <Card style={{ textAlign: "center" }} component={"div"} isLarge>
-            <CardTitle>Brokers</CardTitle>
+            <CardTitle>Nodes</CardTitle>
             <CardBody>
               <Flex display={{ default: "inlineFlex" }}>
                 <Flex spaceItems={{ default: "spaceItemsSm" }}>

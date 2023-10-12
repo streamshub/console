@@ -33,9 +33,10 @@ export function FilterSelector({
           ref={toggleRef}
           onClick={() => setIsOpen((o) => !o)}
           isExpanded={isOpen}
-          variant={"plain"}
+          variant={"default"}
+          icon={<FilterIcon />}
         >
-          <FilterIcon />
+          {value}
         </MenuToggle>
       )}
       aria-label={"table:select_filter"}

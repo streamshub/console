@@ -70,8 +70,8 @@ export default async function KafkaLayout({
                 Consumer groups&nbsp;
                 <Label isCompact={true}>0</Label>
               </NavItemLink>
-              <NavItemLink url={`/kafka/${kafkaId}/brokers`}>
-                Brokers&nbsp;
+              <NavItemLink url={`/kafka/${kafkaId}/nodes`}>
+                Nodes&nbsp;
                 <Label isCompact={true}>
                   {cluster.attributes.nodes.length}
                 </Label>

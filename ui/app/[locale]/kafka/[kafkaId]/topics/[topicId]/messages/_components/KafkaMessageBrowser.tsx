@@ -1,7 +1,7 @@
 "use client";
 import { Message, MessageApiResponse } from "@/api/topics";
+import { NoResultsEmptyState } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/_components/NoResultsEmptyState";
 import { Loading } from "@/components/Loading";
-import { NoResultsEmptyState } from "@/components/messageBrowser/NoResultsEmptyState";
 import { RefreshButton } from "@/components/refreshButton/refreshButton";
 import { ResponsiveTable } from "@/components/table";
 import {
@@ -68,6 +68,7 @@ export type KafkaMessageBrowserProps = {
   selectMessage: (message: Message) => void;
   deselectMessage: () => void;
 };
+
 export function KafkaMessageBrowser({
   isFirstLoad,
   isNoData,

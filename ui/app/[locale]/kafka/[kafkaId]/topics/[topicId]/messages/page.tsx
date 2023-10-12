@@ -1,10 +1,10 @@
 import { getTopicMessages } from "@/api/topics";
-import { KafkaTopicParams } from "@/app/[locale]/kafka/[kafkaId]/topics/kafkaTopic.params";
 import {
   KafkaMessageBrowser,
   KafkaMessageBrowserProps,
-} from "@/components/messageBrowser/KafkaMessageBrowser";
-import { NoDataEmptyState } from "@/components/messageBrowser/NoDataEmptyState";
+} from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/_components/KafkaMessageBrowser";
+import { NoDataEmptyState } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/_components/NoDataEmptyState";
+import { KafkaTopicParams } from "@/app/[locale]/kafka/[kafkaId]/topics/kafkaTopic.params";
 import { revalidateTag } from "next/cache";
 
 export default async function Principals({
@@ -56,27 +56,35 @@ function Table({ response }: Pick<KafkaMessageBrowserProps, "response">) {
 async function setPartition() {
   "use server";
 }
+
 async function setOffset() {
   "use server";
 }
+
 async function setTimestamp() {
   "use server";
 }
+
 async function setEpoch() {
   "use server";
 }
+
 async function setLatest() {
   "use server";
 }
+
 async function setLimit() {
   "use server";
 }
+
 async function refresh() {
   "use server";
 }
+
 async function selectMessage() {
   "use server";
 }
+
 async function deselectMessage() {
   "use server";
 }

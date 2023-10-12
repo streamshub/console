@@ -2,27 +2,33 @@
 
 import { KafkaNode } from "@/api/types";
 import { ResponsiveTable } from "@/components/table";
-import { ClipboardCopy, Label, LabelGroup } from "@patternfly/react-core";
+import { ClipboardCopy, Label } from "@patternfly/react-core";
 import { ServerIcon } from "@patternfly/react-icons";
+import Link from "next/link";
 
 const columns = ["id", "host", "rack"] as const;
 
-export function BrokersTable({
-  brokers,
+export function NodesTable({
+  nodes,
   controller,
 }: {
-  brokers: KafkaNode[];
+  nodes: KafkaNode[];
   controller: KafkaNode;
 }) {
   return (
     <ResponsiveTable
       ariaLabel={"Kafka clusters"}
       columns={columns}
-      data={brokers}
+      data={nodes}
       renderHeader={({ column, Th }) => {
         switch (column) {
           case "id":
-            return <Th width={20}>Id</Th>;
+            return (
+              <Th>
+                <ServerIcon />
+                &nbsp; Node
+              </Th>
+            );
           case "host":
             return <Th>Host</Th>;
           case "rack":
@@ -34,14 +40,12 @@ export function BrokersTable({
           case "id":
             return (
               <Td>
-                <LabelGroup>
-                  <Label icon={<ServerIcon />} color={"orange"}>
-                    {row.id}
+                <Link href={`nodes/${row.id}`}>Node {row.id}</Link>
+                {row.id === controller.id && (
+                  <Label color={"purple"} isCompact={true}>
+                    Controller
                   </Label>
-                  {row.id === controller.id && (
-                    <Label color={"purple"}>Controller</Label>
-                  )}
-                </LabelGroup>
+                )}
               </Td>
             );
           case "host":
@@ -51,6 +55,7 @@ export function BrokersTable({
                   hoverTip="Copy"
                   clickTip="Copied"
                   variant="inline-compact"
+                  isBlock={true}
                 >
                   {row.host}:{row.port}
                 </ClipboardCopy>

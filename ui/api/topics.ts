@@ -1,7 +1,7 @@
 "use server";
+import { getHeaders } from "@/api/_shared";
 import { Topic, TopicResponse, TopicsResponse } from "@/api/types";
 import { logger } from "@/utils/logger";
-import { getUser } from "@/utils/session";
 
 const log = logger.child({ module: "topics-api" });
 
@@ -14,14 +14,6 @@ const describeTopicsQuery = encodeURI(
 const consumeRecordsQuery = encodeURI(
   "fields[records]=partition,offset,timestamp,timestampType,headers,key,value&page[size]=20",
 );
-
-async function getHeaders(): Promise<Record<string, string>> {
-  const user = await getUser();
-  return {
-    Accept: "application/json",
-    Authorization: `Bearer ${user.accessToken}`,
-  };
-}
 
 export async function getTopics(kafkaId: string): Promise<Topic[]> {
   const url = `${process.env.BACKEND_URL}/api/kafkas/${kafkaId}/topics?${listTopicsQuery}`;
