@@ -1,10 +1,8 @@
 import { getKafkaCluster } from "@/api/kafka";
 import { getResources } from "@/api/resources";
 import { getTopic } from "@/api/topics";
-import { KafkaSelectorBreadcrumbItem } from "@/app/[locale]/kafka/[kafkaId]/(root)/KafkaSelectorBreadcrumbItem";
 import { KafkaTopicParams } from "@/app/[locale]/kafka/[kafkaId]/topics/kafkaTopic.params";
 import { BreadcrumbLink } from "@/components/BreadcrumbLink";
-import { Bytes } from "@/components/Bytes";
 import { Loading } from "@/components/Loading";
 import { NavItemLink } from "@/components/NavItemLink";
 import { Number } from "@/components/Number";
@@ -13,7 +11,6 @@ import {
   BreadcrumbItem,
   Divider,
   Label,
-  LabelGroup,
   Nav,
   NavList,
   PageBreadcrumb,
@@ -22,13 +19,9 @@ import {
   PageSection,
   Title,
 } from "@/libs/patternfly/react-core";
-import {
-  CodeBranchIcon,
-  HddIcon,
-  ListIcon,
-} from "@/libs/patternfly/react-icons";
 import { notFound } from "next/navigation";
 import { PropsWithChildren, Suspense } from "react";
+import { KafkaBreadcrumbItem } from "./KafkaBreadcrumbItem";
 
 export default async function KafkaLayout({
   children,
@@ -48,10 +41,7 @@ export default async function KafkaLayout({
           <Breadcrumb>
             <BreadcrumbLink href="/kafka">Kafka</BreadcrumbLink>
             <BreadcrumbItem>
-              <KafkaSelectorBreadcrumbItem
-                selected={cluster}
-                clusters={clusters}
-              />
+              <KafkaBreadcrumbItem selected={cluster} clusters={clusters} />
             </BreadcrumbItem>
             <BreadcrumbLink href={`/kafka/${kafkaId}/topics`}>
               Topics
@@ -69,36 +59,34 @@ export default async function KafkaLayout({
           <Title headingLevel={"h1"} className={"pf-v5-u-pb-sm"}>
             {topic.attributes.name}
           </Title>
-          <LabelGroup>
-            <Label color={"blue"} icon={<CodeBranchIcon />}>
-              <Number value={topic.attributes.partitions.length} />
-            </Label>
-            <Label color={"green"} icon={<ListIcon />}>
-              <Number value={topic.attributes.recordCount} />
-            </Label>
-            <Label color={"cyan"} icon={<HddIcon />}>
-              <Bytes value={topic.attributes.totalLeaderLogBytes} />
-            </Label>
-          </LabelGroup>
         </PageSection>
         <PageNavigation>
           <Nav aria-label="Group section navigation" variant="tertiary">
             <NavList>
-              <NavItemLink
-                url={`/kafka/${kafkaId}/topics/${topicId}/partitions`}
-              >
-                Partitions
-              </NavItemLink>
               <NavItemLink url={`/kafka/${kafkaId}/topics/${topicId}/messages`}>
-                Messages
-              </NavItemLink>
-              <NavItemLink url={`/kafka/${kafkaId}/topics/${topicId}/schema`}>
-                Schema
+                Messages&nbsp;
+                <Label isCompact={true}>
+                  <Number value={topic.attributes.recordCount} />
+                </Label>
               </NavItemLink>
               <NavItemLink
                 url={`/kafka/${kafkaId}/topics/${topicId}/consumer-groups`}
               >
-                Consumer groups
+                Consumer groups&nbsp;
+                <Label isCompact={true}>
+                  <Number value={0} />
+                </Label>
+              </NavItemLink>
+              <NavItemLink
+                url={`/kafka/${kafkaId}/topics/${topicId}/partitions`}
+              >
+                Partitions&nbsp;
+                <Label isCompact={true}>
+                  <Number value={topic.attributes.partitions.length} />
+                </Label>
+              </NavItemLink>
+              <NavItemLink url={`/kafka/${kafkaId}/topics/${topicId}/schema`}>
+                Schema
               </NavItemLink>
               <NavItemLink
                 url={`/kafka/${kafkaId}/topics/${topicId}/configuration`}

@@ -1,4 +1,3 @@
-"use client";
 import { ClusterDetail, KafkaResource } from "@/api/types";
 import {
   Divider,
@@ -9,19 +8,22 @@ import {
   MenuToggle,
   SearchInput,
 } from "@/libs/patternfly/react-core";
+import { Route } from "next";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { CSSProperties, useState } from "react";
 
-export const KafkaSelectorBreadcrumbItem = ({
+export function KafkaSwitcher<T extends string>({
   selected,
   clusters,
+  getSwitchHref,
   isActive = false,
 }: {
   selected: ClusterDetail;
   clusters: KafkaResource[];
+  getSwitchHref: (kafkaId: string) => Route<T> | URL;
   isActive?: boolean;
-}) => {
+}) {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const [searchText, setSearchText] = useState<string>("");
@@ -88,7 +90,7 @@ export const KafkaSelectorBreadcrumbItem = ({
       )}
       onSelect={(_ev, value) => {
         if (typeof value === "string") {
-          router.push(`/kafka/${value}`);
+          router.push(getSwitchHref(value).toString());
         }
       }}
       selected={selected.id}
@@ -107,4 +109,4 @@ export const KafkaSelectorBreadcrumbItem = ({
       {menuItems}
     </Dropdown>
   );
-};
+}

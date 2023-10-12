@@ -1,5 +1,6 @@
 import { getKafkaCluster } from "@/api/kafka";
 import { getResources } from "@/api/resources";
+import { getTopics } from "@/api/topics";
 import { KafkaParams } from "@/app/[locale]/kafka/[kafkaId]/kafka.params";
 import { BreadcrumbLink } from "@/components/BreadcrumbLink";
 import { Loading } from "@/components/Loading";
@@ -8,6 +9,7 @@ import {
   Breadcrumb,
   BreadcrumbItem,
   Divider,
+  Label,
   Nav,
   NavList,
   PageBreadcrumb,
@@ -18,7 +20,7 @@ import {
 } from "@/libs/patternfly/react-core";
 import { notFound } from "next/navigation";
 import { PropsWithChildren, ReactNode, Suspense } from "react";
-import { KafkaSelectorBreadcrumbItem } from "./KafkaSelectorBreadcrumbItem";
+import { KafkaBreadcrumbItem } from "./KafkaBreadcrumbItem";
 
 export default async function KafkaLayout({
   children,
@@ -30,6 +32,7 @@ export default async function KafkaLayout({
     notFound();
   }
   const clusters = await getResources("kafka");
+  const topics = await getTopics(kafkaId);
 
   return (
     <>
@@ -37,14 +40,12 @@ export default async function KafkaLayout({
         <PageBreadcrumb>
           <Breadcrumb>
             <BreadcrumbLink href="/kafka">Kafka</BreadcrumbLink>
-            <BreadcrumbItem isActive={activeBreadcrumb === null}>
-              <Suspense fallback={"Loading clusters..."}>
-                <KafkaSelectorBreadcrumbItem
-                  selected={cluster}
-                  clusters={clusters}
-                  isActive={activeBreadcrumb === null}
-                />
-              </Suspense>
+            <BreadcrumbItem>
+              <KafkaBreadcrumbItem
+                selected={cluster}
+                clusters={clusters}
+                isActive={activeBreadcrumb === null}
+              />
             </BreadcrumbItem>
             {activeBreadcrumb && (
               <BreadcrumbItem>{activeBreadcrumb}</BreadcrumbItem>
@@ -61,18 +62,22 @@ export default async function KafkaLayout({
         <PageNavigation>
           <Nav aria-label="Group section navigation" variant="tertiary">
             <NavList>
-              {/*<NavItemLink url={`/kafka/${kafkaId}/overview`}>*/}
-              {/*  Overview*/}
-              {/*</NavItemLink>*/}
-              <NavItemLink url={`/kafka/${kafkaId}/brokers`}>
-                Brokers
-              </NavItemLink>
-              <NavItemLink url={`/kafka/${kafkaId}/topics`}>Topics</NavItemLink>
-              <NavItemLink url={`/kafka/${kafkaId}/schema-registry`}>
-                Schema registry
+              <NavItemLink url={`/kafka/${kafkaId}/topics`}>
+                Topics&nbsp;
+                <Label isCompact={true}>{topics.length}</Label>
               </NavItemLink>
               <NavItemLink url={`/kafka/${kafkaId}/consumer-groups`}>
-                Consumer groups
+                Consumer groups&nbsp;
+                <Label isCompact={true}>0</Label>
+              </NavItemLink>
+              <NavItemLink url={`/kafka/${kafkaId}/brokers`}>
+                Brokers&nbsp;
+                <Label isCompact={true}>
+                  {cluster.attributes.nodes.length}
+                </Label>
+              </NavItemLink>
+              <NavItemLink url={`/kafka/${kafkaId}/schema-registry`}>
+                Schema registry
               </NavItemLink>
             </NavList>
           </Nav>
