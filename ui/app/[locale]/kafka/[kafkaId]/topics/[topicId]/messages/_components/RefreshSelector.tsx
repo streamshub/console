@@ -44,7 +44,7 @@ export function RefreshSelector({
                 <RefreshButton
                   key={"refresh"}
                   onClick={onClick}
-                  isRefreshing={isRefreshing || refreshInterval}
+                  isRefreshing={isRefreshing || refreshInterval !== undefined}
                   isDisabled={isRefreshing}
                 />
 
