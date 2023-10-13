@@ -1,29 +1,11 @@
 package com.github.eyefloaters.console.api.errors.client;
 
-import java.util.List;
-
-import jakarta.ws.rs.core.Response;
-import jakarta.ws.rs.ext.ExceptionMapper;
-
-import org.jboss.logging.Logger;
-
-import com.github.eyefloaters.console.api.model.Error;
-import com.github.eyefloaters.console.api.model.ErrorResponse;
 import com.github.eyefloaters.console.api.support.ErrorCategory;
 
-abstract class AbstractNotFoundExceptionHandler<T extends Throwable> implements ExceptionMapper<T> {
+abstract class AbstractNotFoundExceptionHandler<T extends Throwable> extends AbstractClientExceptionHandler<T> {
 
-    Logger logger = Logger.getLogger(getClass());
-    private static final ErrorCategory CATEGORY = ErrorCategory.get(ErrorCategory.ResourceNotFound.class);
-
-    @Override
-    public Response toResponse(T exception) {
-        Error error = CATEGORY.createError(exception.getMessage(), exception, null);
-        logger.debugf("error=%s", error);
-
-        return Response.status(CATEGORY.getHttpStatus())
-                .entity(new ErrorResponse(List.of(error)))
-                .build();
+    AbstractNotFoundExceptionHandler() {
+        super(ErrorCategory.ResourceNotFound.class, null, null);
     }
 
 }

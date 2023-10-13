@@ -23,6 +23,8 @@ import jakarta.inject.Inject;
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonString;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response.Status;
 
 import org.apache.kafka.clients.admin.DescribeConfigsResult;
@@ -463,7 +465,7 @@ class TopicsResourceIT {
 
         whenRequesting(req -> req
                 .queryParam("fields[topics]", "name,configs")
-                .get("{topicName}", clusterId1, topicIds.get(topicName)))
+                .get("{topicId}", clusterId1, topicIds.get(topicName)))
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
             .body("data.attributes", is(aMapWithSize(2)))
@@ -482,7 +484,7 @@ class TopicsResourceIT {
         String topicName = UUID.randomUUID().toString();
         Map<String, String> topicIds = topicUtils.createTopics(clusterId1, List.of(topicName), 1);
 
-        whenRequesting(req -> req.get("{topicName}", clusterId1, topicIds.get(topicName)))
+        whenRequesting(req -> req.get("{topicId}", clusterId1, topicIds.get(topicName)))
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
             .body("data.attributes.name", is(topicName))
@@ -498,7 +500,7 @@ class TopicsResourceIT {
         topicUtils.produceRecord(topicName, 0, null, Collections.emptyMap(), "k1", "v1");
         topicUtils.produceRecord(topicName, 0, null, Collections.emptyMap(), "k2", "v2");
 
-        whenRequesting(req -> req.get("{topicName}", clusterId1, topicIds.get(topicName)))
+        whenRequesting(req -> req.get("{topicId}", clusterId1, topicIds.get(topicName)))
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
             .body("data.attributes.name", is(topicName))
@@ -517,7 +519,7 @@ class TopicsResourceIT {
 
         whenRequesting(req -> req
                 .queryParam("offsetSpec", "earliest")
-                .get("{topicName}", clusterId1, topicIds.get(topicName)))
+                .get("{topicId}", clusterId1, topicIds.get(topicName)))
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
             .body("data.attributes.name", is(topicName))
@@ -539,7 +541,7 @@ class TopicsResourceIT {
 
         whenRequesting(req -> req
                 .queryParam("offsetSpec", first.toString())
-                .get("{topicName}", clusterId1, topicIds.get(topicName)))
+                .get("{topicId}", clusterId1, topicIds.get(topicName)))
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
             .body("data.attributes.name", is(topicName))
@@ -561,7 +563,7 @@ class TopicsResourceIT {
 
         whenRequesting(req -> req
                 .queryParam("offsetSpec", "maxTimestamp")
-                .get("{topicName}", clusterId1, topicIds.get(topicName)))
+                .get("{topicId}", clusterId1, topicIds.get(topicName)))
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
             .body("data.attributes.name", is(topicName))
@@ -578,7 +580,7 @@ class TopicsResourceIT {
 
         whenRequesting(req -> req
                 .queryParam("offsetSpec", "Invalid Timestamp")
-                .get("{topicName}", clusterId1, topicIds.get(topicName)))
+                .get("{topicId}", clusterId1, topicIds.get(topicName)))
             .assertThat()
             .statusCode(is(Status.BAD_REQUEST.getStatusCode()))
             .body("errors.size()", is(1))
@@ -611,7 +613,7 @@ class TopicsResourceIT {
 
         whenRequesting(req -> req
                 .queryParam("offsetSpec", "latest")
-                .get("{topicName}", clusterId1, topicIds.get(topicName)))
+                .get("{topicId}", clusterId1, topicIds.get(topicName)))
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
             .body("data.attributes.name", is(topicName))
@@ -709,7 +711,7 @@ class TopicsResourceIT {
 
     @Test
     void testDescribeTopicWithNoSuchTopic() {
-        whenRequesting(req -> req.get("{topicName}", clusterId1, Uuid.randomUuid().toString()))
+        whenRequesting(req -> req.get("{topicId}", clusterId1, Uuid.randomUuid().toString()))
             .assertThat()
             .statusCode(is(Status.NOT_FOUND.getStatusCode()))
             .body("errors.size()", is(1))
@@ -717,4 +719,319 @@ class TopicsResourceIT {
             .body("errors.code", contains("4041"));
     }
 
+    @Test
+    void testCreateTopicSucceeds() {
+        String topicName = UUID.randomUUID().toString();
+
+        whenRequesting(req -> req
+                .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
+                .body(Json.createObjectBuilder()
+                        .add("data", Json.createObjectBuilder()
+                                .add("type", "topics")
+                                .add("attributes", Json.createObjectBuilder()
+                                        .add("name", topicName)
+                                        .add("numPartitions", 3)
+                                        .add("replicationFactor", 1)))
+                        .build()
+                        .toString())
+                .post("", clusterId1))
+            .assertThat()
+            .statusCode(is(Status.CREATED.getStatusCode()))
+            .body("data.attributes.name", is(topicName))
+            .body("data.attributes.numPartitions", is(3))
+            .body("data.attributes.replicationFactor", is(1))
+            .body("data.attributes.configs", is(aMapWithSize(greaterThan(0))));
+    }
+
+    @Test
+    void testCreateTopicWithReplicaAssignmentsSucceeds() {
+        String topicName = UUID.randomUUID().toString();
+
+        whenRequesting(req -> req
+                .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
+                .body(Json.createObjectBuilder()
+                        .add("data", Json.createObjectBuilder()
+                                .add("type", "topics")
+                                .add("attributes", Json.createObjectBuilder()
+                                        .add("name", topicName)
+                                        .add("replicasAssignments", Json.createObjectBuilder()
+                                                .add("0", Json.createArrayBuilder().add(0))
+                                                .add("1", Json.createArrayBuilder().add(0))
+                                                .add("2", Json.createArrayBuilder().add(0)))))
+                        .build()
+                        .toString())
+                .post("", clusterId1))
+            .assertThat()
+            .statusCode(is(Status.CREATED.getStatusCode()))
+            .body("data.attributes.name", is(topicName))
+            .body("data.attributes.numPartitions", is(3))
+            .body("data.attributes.replicationFactor", is(1))
+            .body("data.attributes.configs", is(aMapWithSize(greaterThan(0))));
+    }
+
+    @Test
+    void testCreateTopicWithConfigsSucceeds() {
+        String topicName = UUID.randomUUID().toString();
+
+        whenRequesting(req -> req
+                .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
+                .body(Json.createObjectBuilder()
+                        .add("data", Json.createObjectBuilder()
+                                .add("type", "topics")
+                                .add("attributes", Json.createObjectBuilder()
+                                        .add("name", topicName)
+                                        .add("configs", Json.createObjectBuilder()
+                                                .add("retention.ms", Json.createObjectBuilder()
+                                                        .add("value", "604800001")))))
+                        .build()
+                        .toString())
+                .post("", clusterId1))
+            .assertThat()
+            .statusCode(is(Status.CREATED.getStatusCode()))
+            .body("data.attributes.name", is(topicName))
+            .body("data.attributes.configs.'retention.ms'.value", is("604800001"));
+    }
+
+    @Test
+    void testCreateTopicUnsupportedMediaType() {
+        String topicName = UUID.randomUUID().toString();
+
+        whenRequesting(req -> req
+                .header(HttpHeaders.CONTENT_TYPE, MediaType.TEXT_PLAIN)
+                .body(Json.createObjectBuilder()
+                        .add("data", Json.createObjectBuilder()
+                                .add("type", "topics")
+                                .add("attributes", Json.createObjectBuilder()
+                                        .add("name", topicName)
+                                        .add("numPartitions", 3)
+                                        .add("replicationFactor", 1)))
+                        .build()
+                        .toString())
+                .post("", clusterId1))
+            .assertThat()
+            .statusCode(is(Status.UNSUPPORTED_MEDIA_TYPE.getStatusCode()))
+            .body("errors.size()", is(1))
+            .body("errors.status", contains("415"))
+            .body("errors.code", contains("4151"));
+    }
+
+    @Test
+    void testCreateTopicInvalidNumPartitionsType() {
+        String topicName = UUID.randomUUID().toString();
+
+        whenRequesting(req -> req
+                .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
+                .body(Json.createObjectBuilder()
+                        .add("data", Json.createObjectBuilder()
+                                .add("type", "topics")
+                                .add("attributes", Json.createObjectBuilder()
+                                        .add("name", topicName)
+                                        // Send String instead of required integer
+                                        .add("numPartitions", "three")
+                                        .add("replicationFactor", 1)))
+                        .build()
+                        .toString())
+                .post("", clusterId1))
+            .assertThat()
+            .statusCode(is(Status.BAD_REQUEST.getStatusCode()))
+            .body("errors.size()", is(1))
+            .body("errors[0].status", is("400"))
+            .body("errors[0].code", is("4003"))
+            .body("errors[0].source.pointer", is("/data/attributes/numPartitions"));
+    }
+
+    @Test
+    void testCreateTopicInvalidReplicasAssignments() {
+        String topicName = UUID.randomUUID().toString();
+
+        whenRequesting(req -> req
+                .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
+                .body(Json.createObjectBuilder()
+                        .add("data", Json.createObjectBuilder()
+                                .add("type", "topics")
+                                .add("attributes", Json.createObjectBuilder()
+                                        .add("name", topicName)
+                                        .add("replicasAssignments", Json.createObjectBuilder()
+                                                // API validation prevents negative node IDs
+                                                .add("0", Json.createArrayBuilder().add(-1))
+                                                .add("1", Json.createArrayBuilder().add(0))
+                                                .add("2", Json.createArrayBuilder().add(0)))))
+                        .build()
+                        .toString())
+                .post("", clusterId1))
+            .assertThat()
+            .statusCode(is(Status.BAD_REQUEST.getStatusCode()))
+            .body("errors.size()", is(1))
+            .body("errors[0].status", is("400"))
+            .body("errors[0].code", is("4003"))
+            .body("errors[0].source.pointer", is("/data/attributes/replicasAssignments/0/0"));
+    }
+
+    @Test
+    void testCreateTopicInvalidReplicasAssignmentsDuplicated() {
+        String topicName = UUID.randomUUID().toString();
+
+        whenRequesting(req -> req
+                .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
+                .body(Json.createObjectBuilder()
+                        .add("data", Json.createObjectBuilder()
+                                .add("type", "topics")
+                                .add("attributes", Json.createObjectBuilder()
+                                        .add("name", topicName)
+                                        .add("replicasAssignments", Json.createObjectBuilder()
+                                                // Kafka rejects multiple assignments to the same node
+                                                .add("0", Json.createArrayBuilder().add(0).add(0))
+                                                .add("1", Json.createArrayBuilder().add(0))
+                                                .add("2", Json.createArrayBuilder().add(0)))))
+                        .build()
+                        .toString())
+                .post("", clusterId1))
+            .assertThat()
+            .statusCode(is(Status.BAD_REQUEST.getStatusCode()))
+            .body("errors.size()", is(1))
+            .body("errors[0].status", is("400"))
+            .body("errors[0].code", is("4003"))
+            .body("errors[0].source.pointer", is("/data/attributes/replicasAssignments"));
+    }
+
+    @Test
+    void testCreateTopicWithDuplicateName() {
+        String topicName = UUID.randomUUID().toString();
+
+        whenRequesting(req -> req
+                .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
+                .body(Json.createObjectBuilder()
+                        .add("data", Json.createObjectBuilder()
+                                .add("type", "topics")
+                                .add("attributes", Json.createObjectBuilder()
+                                        .add("name", topicName)
+                                        .add("numPartitions", 3)
+                                        .add("replicationFactor", 1)))
+                        .build()
+                        .toString())
+                .post("", clusterId1))
+            .assertThat()
+            .statusCode(is(Status.CREATED.getStatusCode()));
+
+        whenRequesting(req -> req
+                .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
+                .body(Json.createObjectBuilder()
+                        .add("data", Json.createObjectBuilder()
+                                .add("type", "topics")
+                                .add("attributes", Json.createObjectBuilder()
+                                        .add("name", topicName)
+                                        .add("numPartitions", 3)
+                                        .add("replicationFactor", 1)))
+                        .build()
+                        .toString())
+                .post("", clusterId1))
+            .assertThat()
+            .statusCode(is(Status.CONFLICT.getStatusCode()))
+            .body("errors.size()", is(1))
+            .body("errors[0].status", is("409"))
+            .body("errors[0].code", is("4091"))
+            .body("errors[0].source.pointer", is("/data/attributes/name"));
+    }
+
+    @Test
+    void testCreateTopicWithConflictingType() {
+        String topicName = UUID.randomUUID().toString();
+
+        whenRequesting(req -> req
+                .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
+                .body(Json.createObjectBuilder()
+                        .add("data", Json.createObjectBuilder()
+                                .add("type", "widgets")
+                                .add("attributes", Json.createObjectBuilder()
+                                        .add("name", topicName)
+                                        .add("numPartitions", 3)
+                                        .add("replicationFactor", 1)))
+                        .build()
+                        .toString())
+                .post("", clusterId1))
+            .assertThat()
+            .statusCode(is(Status.CONFLICT.getStatusCode()))
+            .body("errors.size()", is(1))
+            .body("errors[0].status", is("409"))
+            .body("errors[0].code", is("4091"))
+            .body("errors[0].source.pointer", is("/data/type"));
+    }
+
+    @Test
+    void testCreateTopicWithInvalidConfigs() {
+        String topicName = UUID.randomUUID().toString();
+
+        whenRequesting(req -> req
+                .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
+                .body(Json.createObjectBuilder()
+                        .add("data", Json.createObjectBuilder()
+                                .add("type", "topics")
+                                .add("attributes", Json.createObjectBuilder()
+                                        .add("name", topicName)
+                                        .add("configs", Json.createObjectBuilder()
+                                                .add("retention.ms", Json.createObjectBuilder()
+                                                        .add("value", "NaN")))))
+                        .build()
+                        .toString())
+                .post("", clusterId1))
+            .assertThat()
+            .statusCode(is(Status.BAD_REQUEST.getStatusCode()))
+            .body("errors.size()", is(1))
+            .body("errors[0].status", is("400"))
+            .body("errors[0].code", is("4003"));
+    }
+
+    @Test
+    void testCreateTopicWithConflictingPartitionConfigs() {
+        String topicName = UUID.randomUUID().toString();
+
+        whenRequesting(req -> req
+                .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
+                .body(Json.createObjectBuilder()
+                        .add("data", Json.createObjectBuilder()
+                                .add("type", "topics")
+                                .add("attributes", Json.createObjectBuilder()
+                                        .add("name", topicName)
+                                        .add("numPartitions", 3)
+                                        .add("replicationFactor", 1)
+                                        // numPartitions/replicationFactor may not be used with replicasAssignments
+                                        .add("replicasAssignments", Json.createObjectBuilder()
+                                                .add("0", Json.createArrayBuilder().add(0))
+                                                .add("1", Json.createArrayBuilder().add(0))
+                                                .add("2", Json.createArrayBuilder().add(0)))))
+                        .build()
+                        .toString())
+                .post("", clusterId1))
+            .assertThat()
+            .statusCode(is(Status.BAD_REQUEST.getStatusCode()))
+            .body("errors.size()", is(2))
+            .body("errors.status", contains("400", "400"))
+            .body("errors.code", contains("4003", "4003"))
+            .body("errors.source.pointer", containsInAnyOrder(
+                "/data/attributes/numPartitions",
+                "/data/attributes/replicationFactor"
+            ));
+    }
+
+    @Test
+    void testDeleteTopicSucceeds() {
+        String topicName = UUID.randomUUID().toString();
+        Map<String, String> topicIds = topicUtils.createTopics(clusterId1, List.of(topicName), 2);
+
+        whenRequesting(req -> req.delete("{topicId}", clusterId1, topicIds.get(topicName)))
+            .assertThat()
+            .statusCode(is(Status.NO_CONTENT.getStatusCode()));
+    }
+
+    @Test
+    void testDeleteTopicNonexistentTopic() {
+        String topicId = Uuid.randomUuid().toString();
+
+        whenRequesting(req -> req.delete("{topicId}", clusterId1, topicId))
+            .assertThat()
+            .statusCode(is(Status.NOT_FOUND.getStatusCode()))
+            .body("errors.size()", is(1))
+            .body("errors.status", contains("404"))
+            .body("errors.code", contains("4041"));
+    }
 }

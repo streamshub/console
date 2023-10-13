@@ -2,36 +2,39 @@ package com.github.eyefloaters.console.api.errors.client;
 
 import java.util.List;
 
-import jakarta.ws.rs.core.Response;
-import jakarta.ws.rs.ext.ExceptionMapper;
+import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.ws.rs.ext.Provider;
 
 import org.jboss.logging.Logger;
 
 import com.github.eyefloaters.console.api.model.Error;
-import com.github.eyefloaters.console.api.model.ErrorResponse;
 import com.github.eyefloaters.console.api.support.ErrorCategory;
 
 @Provider
-public class InvalidPageCursorExceptionHandler implements ExceptionMapper<InvalidPageCursorException> {
+@ApplicationScoped
+public class InvalidPageCursorExceptionHandler extends AbstractClientExceptionHandler<InvalidPageCursorException> {
 
     private static final Logger LOGGER = Logger.getLogger(InvalidPageCursorExceptionHandler.class);
-    private static final ErrorCategory CATEGORY = ErrorCategory.get(ErrorCategory.InvalidQueryParameter.class);
+
+    public InvalidPageCursorExceptionHandler() {
+        super(ErrorCategory.InvalidQueryParameter.class, null, null);
+    }
 
     @Override
-    public Response toResponse(InvalidPageCursorException exception) {
-        List<Error> errors = exception.getSources()
+    public boolean handlesException(Throwable thrown) {
+        return thrown instanceof InvalidPageCursorException;
+    }
+
+    @Override
+    protected List<Error> buildErrors(InvalidPageCursorException exception) {
+        return exception.getSources()
             .stream()
             .map(source -> {
-                Error error = CATEGORY.createError(exception.getMessage(), exception, source);
+                Error error = category.createError(exception.getMessage(), exception, source);
                 LOGGER.debugf(exception, "error=%s", error);
                 return error;
             })
             .toList();
-
-        return Response.status(CATEGORY.getHttpStatus())
-                .entity(new ErrorResponse(errors))
-                .build();
     }
 
 }
