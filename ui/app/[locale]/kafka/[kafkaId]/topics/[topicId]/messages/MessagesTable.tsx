@@ -1,7 +1,8 @@
 "use client";
 import { Message } from "@/api/messages";
+import { RefreshInterval } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/_components/RefreshSelector";
 import { useFilterParams } from "@/utils/useFilterParams";
-import { useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { KafkaMessageBrowser } from "./_components/KafkaMessageBrowser";
 
 export function MessagesTable({
@@ -24,6 +25,7 @@ export function MessagesTable({
     limit: number;
   };
 }) {
+  const [refreshInterval, setRefreshInterval] = useState<RefreshInterval>();
   const [isPending, startTransition] = useTransition();
   const updateUrl = useFilterParams(params);
 
@@ -127,6 +129,16 @@ export function MessagesTable({
     (m) => m.attributes.offset === params.selectedOffset,
   );
 
+  useEffect(() => {
+    let interval: NodeJS.Timer | undefined;
+    if (refreshInterval) {
+      interval = setInterval(async () => {
+        updateUrl({ ...params, _ts: Date.now() });
+      }, refreshInterval * 1000);
+    }
+    return () => clearInterval(interval);
+  }, [params, updateUrl, refreshInterval]);
+
   return (
     <KafkaMessageBrowser
       isFirstLoad={false}
@@ -143,16 +155,18 @@ export function MessagesTable({
       filterOffset={params["filter[offset]"]}
       filterEpoch={params["filter[epoch]"]}
       filterTimestamp={params["filter[timestamp]"]}
-      setPartition={setPartition}
-      setOffset={setOffset}
-      setTimestamp={setTimestamp}
-      setEpoch={setEpoch}
-      setLatest={setLatest}
-      setLimit={setLimit}
-      refresh={refresh}
-      selectMessage={setSelected}
-      deselectMessage={deselectMessage}
+      refreshInterval={refreshInterval}
+      onPartitionChange={setPartition}
+      onOffsetChange={setOffset}
+      onTimestampChange={setTimestamp}
+      onEpochChange={setEpoch}
+      onLatest={setLatest}
+      onLimitChange={setLimit}
+      onRefresh={refresh}
+      onSelectMessage={setSelected}
+      onDeselectMessage={deselectMessage}
       onReset={onReset}
+      onRefreshInterval={setRefreshInterval}
     />
   );
 }

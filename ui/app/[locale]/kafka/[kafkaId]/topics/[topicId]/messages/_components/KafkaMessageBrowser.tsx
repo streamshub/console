@@ -3,10 +3,13 @@ import { Message } from "@/api/messages";
 import { FilterGroup } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/_components/FilterGroup";
 import { NoResultsEmptyState } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/_components/NoResultsEmptyState";
 import { PartitionSelector } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/_components/PartitionSelector";
+import {
+  RefreshInterval,
+  RefreshSelector,
+} from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/_components/RefreshSelector";
 import { DateTime } from "@/components/DateTime";
 import { Loading } from "@/components/Loading";
 import { Number } from "@/components/Number";
-import { RefreshButton } from "@/components/refreshButton/refreshButton";
 import { ResponsiveTable } from "@/components/table";
 import {
   Drawer,
@@ -49,6 +52,7 @@ export type KafkaMessageBrowserProps = {
   isFirstLoad: boolean;
   isNoData: boolean;
   isRefreshing: boolean;
+  refreshInterval: RefreshInterval;
   selectedMessage: Message | undefined;
   lastUpdated: Date | undefined;
   messages: Message[];
@@ -60,15 +64,16 @@ export type KafkaMessageBrowserProps = {
   filterOffset: number | undefined;
   filterEpoch: number | undefined;
   filterTimestamp: string | undefined;
-  setPartition: (value: number | undefined) => void;
-  setOffset: (value: number | undefined) => void;
-  setTimestamp: (value: string | undefined) => void;
-  setEpoch: (value: number | undefined) => void;
-  setLatest: () => void;
-  setLimit: (value: number) => void;
-  refresh: () => void;
-  selectMessage: (message: Message) => void;
-  deselectMessage: () => void;
+  onPartitionChange: (value: number | undefined) => void;
+  onOffsetChange: (value: number | undefined) => void;
+  onTimestampChange: (value: string | undefined) => void;
+  onEpochChange: (value: number | undefined) => void;
+  onLatest: () => void;
+  onLimitChange: (value: number) => void;
+  onRefresh: () => void;
+  onRefreshInterval: (interval: RefreshInterval) => void;
+  onSelectMessage: (message: Message) => void;
+  onDeselectMessage: () => void;
   onReset: () => void;
 };
 
@@ -86,15 +91,17 @@ export function KafkaMessageBrowser({
   filterOffset,
   filterEpoch,
   filterTimestamp,
-  setPartition,
-  setOffset,
-  setTimestamp,
-  setEpoch,
-  setLatest,
-  setLimit,
-  refresh,
-  selectMessage,
-  deselectMessage,
+  refreshInterval,
+  onPartitionChange,
+  onOffsetChange,
+  onTimestampChange,
+  onEpochChange,
+  onLatest,
+  onLimitChange,
+  onRefresh,
+  onRefreshInterval,
+  onSelectMessage,
+  onDeselectMessage,
   onReset,
 }: KafkaMessageBrowserProps) {
   const t = useTranslations("message-browser");
@@ -136,7 +143,7 @@ export function KafkaMessageBrowser({
                 <MessageDetails
                   message={selectedMessage}
                   defaultTab={defaultTab}
-                  onClose={deselectMessage}
+                  onClose={onDeselectMessage}
                 />
               }
             >
@@ -157,10 +164,10 @@ export function KafkaMessageBrowser({
                         offset={filterOffset}
                         epoch={filterEpoch}
                         timestamp={filterTimestamp}
-                        onOffsetChange={setOffset}
-                        onTimestampChange={setTimestamp}
-                        onEpochChange={setEpoch}
-                        onLatest={setLatest}
+                        onOffsetChange={onOffsetChange}
+                        onTimestampChange={onTimestampChange}
+                        onEpochChange={onEpochChange}
+                        onLatest={onLatest}
                       />
                     </ToolbarItem>
                     <ToolbarItem
@@ -172,7 +179,7 @@ export function KafkaMessageBrowser({
                       <PartitionSelector
                         value={partition}
                         partitions={partitions}
-                        onChange={setPartition}
+                        onChange={onPartitionChange}
                         isDisabled={isRefreshing}
                       />
                     </ToolbarItem>
@@ -191,17 +198,17 @@ export function KafkaMessageBrowser({
                           offset={filterOffset}
                           epoch={filterEpoch}
                           timestamp={filterTimestamp}
-                          onOffsetChange={setOffset}
-                          onTimestampChange={setTimestamp}
-                          onEpochChange={setEpoch}
-                          onLatest={setLatest}
+                          onOffsetChange={onOffsetChange}
+                          onTimestampChange={onTimestampChange}
+                          onEpochChange={onEpochChange}
+                          onLatest={onLatest}
                         />
                       </ToolbarItem>
                       <ToolbarItem>
                         <PartitionSelector
                           value={partition}
                           partitions={partitions}
-                          onChange={setPartition}
+                          onChange={onPartitionChange}
                           isDisabled={isRefreshing}
                         />
                       </ToolbarItem>
@@ -209,10 +216,11 @@ export function KafkaMessageBrowser({
                     {/* icon buttons */}
                     <ToolbarGroup variant="icon-button-group">
                       <ToolbarItem>
-                        <RefreshButton
-                          onClick={refresh}
+                        <RefreshSelector
                           isRefreshing={isRefreshing}
-                          isDisabled={isRefreshing}
+                          refreshInterval={refreshInterval}
+                          onClick={onRefresh}
+                          onChange={onRefreshInterval}
                         />
                       </ToolbarItem>
                     </ToolbarGroup>
@@ -220,7 +228,7 @@ export function KafkaMessageBrowser({
                     <ToolbarGroup align={{ default: "alignRight" }}>
                       <LimitSelector
                         value={limit}
-                        onChange={setLimit}
+                        onChange={onLimitChange}
                         isDisabled={isRefreshing}
                       />
                     </ToolbarGroup>
@@ -356,7 +364,7 @@ export function KafkaMessageBrowser({
                                   )}
                                   onClick={() => {
                                     setDefaultTab("value");
-                                    selectMessage(row);
+                                    onSelectMessage(row);
                                   }}
                                 />
                               ) : (
@@ -372,7 +380,7 @@ export function KafkaMessageBrowser({
                     }
                     onRowClick={({ row }) => {
                       setDefaultTab("value");
-                      selectMessage(row);
+                      onSelectMessage(row);
                     }}
                   >
                     <NoResultsEmptyState onReset={onReset} />
