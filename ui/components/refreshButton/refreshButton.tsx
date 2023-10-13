@@ -9,6 +9,7 @@ export type RefreshButtonProps = {
   ariaLabel?: string;
   onClick: () => void;
 };
+
 export function RefreshButton({
   ariaLabel,
   onClick,
@@ -25,7 +26,6 @@ export function RefreshButton({
     <Tooltip content={tooltip || defaultTooltip}>
       <Button
         className="pf-m-hoverable"
-        style={{ color: "var(--pf-global--Color--200)" }}
         variant="plain"
         aria-label={ariaLabel || t("refresh_button_label")}
         isDisabled={isDisabled}

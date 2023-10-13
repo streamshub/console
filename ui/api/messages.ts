@@ -59,7 +59,10 @@ export async function getTopicMessages(
   );
   const consumeRecordsQuery = sp.toString();
   const url = `${process.env.BACKEND_URL}/api/kafkas/${kafkaId}/topics/${topicId}/records?${consumeRecordsQuery}`;
-  log.debug({ url }, "Fetching topic messages");
+  log.debug(
+    { url, params: Object.fromEntries(sp.entries()) },
+    "Fetching topic messages",
+  );
   const res = await fetch(url, {
     headers: await getHeaders(),
     cache: "no-store",

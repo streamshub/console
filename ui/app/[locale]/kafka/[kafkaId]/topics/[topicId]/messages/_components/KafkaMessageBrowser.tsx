@@ -1,11 +1,14 @@
 "use client";
 import { Message } from "@/api/messages";
+import { FilterGroup } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/_components/FilterGroup";
 import { NoResultsEmptyState } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/_components/NoResultsEmptyState";
+import { PartitionSelector } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/_components/PartitionSelector";
+import { DateTime } from "@/components/DateTime";
 import { Loading } from "@/components/Loading";
+import { Number } from "@/components/Number";
 import { RefreshButton } from "@/components/refreshButton/refreshButton";
 import { ResponsiveTable } from "@/components/table";
 import {
-  Button,
   Drawer,
   DrawerContent,
   PageSection,
@@ -13,25 +16,21 @@ import {
   ToolbarContent,
   ToolbarGroup,
   ToolbarItem,
-  ToolbarToggleGroup,
 } from "@/libs/patternfly/react-core";
-import { FilterIcon, SearchIcon } from "@/libs/patternfly/react-icons";
+import { FilterIcon } from "@/libs/patternfly/react-icons";
 import type { BaseCellProps } from "@/libs/patternfly/react-table";
 import {
   InnerScrollContainer,
   OuterScrollContainer,
 } from "@/libs/patternfly/react-table";
+import { ToolbarToggleGroup } from "@patternfly/react-core";
 import { TableVariant } from "@patternfly/react-table";
-import { parseISO } from "date-fns";
-import { useFormatter, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
-import { FilterGroup } from "./FilterGroup";
 import { LimitSelector } from "./LimitSelector";
 import { MessageDetails, MessageDetailsProps } from "./MessageDetails";
 import { NoDataCell } from "./NoDataCell";
 import { NoDataEmptyState } from "./NoDataEmptyState";
-import { OffsetRange } from "./OffsetRange";
-import { PartitionSelector } from "./PartitionSelector";
 import { UnknownValuePreview } from "./UnknownValuePreview";
 import { beautifyUnknownValue, isSameMessage } from "./utils";
 
@@ -44,13 +43,12 @@ const columns = [
   "value",
 ] as const;
 
-const columnWidths: BaseCellProps["width"][] = [10, 20, 10, undefined];
+const columnWidths: BaseCellProps["width"][] = [10, 15, 10, undefined];
 
 export type KafkaMessageBrowserProps = {
   isFirstLoad: boolean;
   isNoData: boolean;
   isRefreshing: boolean;
-  requiresSearch: boolean;
   selectedMessage: Message | undefined;
   lastUpdated: Date | undefined;
   messages: Message[];
@@ -71,13 +69,13 @@ export type KafkaMessageBrowserProps = {
   refresh: () => void;
   selectMessage: (message: Message) => void;
   deselectMessage: () => void;
+  onReset: () => void;
 };
 
 export function KafkaMessageBrowser({
   isFirstLoad,
   isNoData,
   isRefreshing,
-  requiresSearch,
   selectedMessage,
   messages,
   partitions,
@@ -97,11 +95,15 @@ export function KafkaMessageBrowser({
   refresh,
   selectMessage,
   deselectMessage,
+  onReset,
 }: KafkaMessageBrowserProps) {
   const t = useTranslations("message-browser");
-  const format = useFormatter();
   const [defaultTab, setDefaultTab] =
     useState<MessageDetailsProps["defaultTab"]>("value");
+
+  const toolbarBreakpoint = "md";
+
+  function onClearAllFilters() {}
 
   const columnLabels: { [key in (typeof columns)[number]]: string } = useMemo(
     () =>
@@ -120,7 +122,7 @@ export function KafkaMessageBrowser({
     case isFirstLoad:
       return <Loading />;
     case isNoData:
-      return <NoDataEmptyState onRefresh={refresh} />;
+      return <NoDataEmptyState />;
     default:
       return (
         <PageSection
@@ -139,23 +141,51 @@ export function KafkaMessageBrowser({
               }
             >
               <OuterScrollContainer>
-                <Toolbar data-testid={"message-browser-toolbar"}>
+                <Toolbar
+                  clearAllFilters={onClearAllFilters}
+                  collapseListedFiltersBreakpoint={toolbarBreakpoint}
+                >
                   <ToolbarContent>
+                    <ToolbarItem
+                      visibility={{
+                        default: "hidden",
+                        [toolbarBreakpoint]: "visible",
+                      }}
+                    >
+                      <FilterGroup
+                        isDisabled={isRefreshing}
+                        offset={filterOffset}
+                        epoch={filterEpoch}
+                        timestamp={filterTimestamp}
+                        onOffsetChange={setOffset}
+                        onTimestampChange={setTimestamp}
+                        onEpochChange={setEpoch}
+                        onLatest={setLatest}
+                      />
+                    </ToolbarItem>
+                    <ToolbarItem
+                      visibility={{
+                        default: "hidden",
+                        [toolbarBreakpoint]: "visible",
+                      }}
+                    >
+                      <PartitionSelector
+                        value={partition}
+                        partitions={partitions}
+                        onChange={setPartition}
+                        isDisabled={isRefreshing}
+                      />
+                    </ToolbarItem>
+
                     <ToolbarToggleGroup
                       toggleIcon={<FilterIcon />}
-                      breakpoint="md"
+                      breakpoint={toolbarBreakpoint}
+                      visibility={{
+                        default: "visible",
+                        [toolbarBreakpoint]: "hidden",
+                      }}
                     >
-                      <ToolbarGroup variant="filter-group">
-                        <ToolbarItem>
-                          <PartitionSelector
-                            value={partition}
-                            partitions={partitions}
-                            onChange={setPartition}
-                            isDisabled={isRefreshing}
-                          />
-                        </ToolbarItem>
-                      </ToolbarGroup>
-                      <ToolbarGroup variant="filter-group">
+                      <ToolbarItem>
                         <FilterGroup
                           isDisabled={isRefreshing}
                           offset={filterOffset}
@@ -166,44 +196,101 @@ export function KafkaMessageBrowser({
                           onEpochChange={setEpoch}
                           onLatest={setLatest}
                         />
-                      </ToolbarGroup>
-                      <ToolbarGroup>
-                        <LimitSelector
-                          value={limit}
-                          onChange={setLimit}
+                      </ToolbarItem>
+                      <ToolbarItem>
+                        <PartitionSelector
+                          value={partition}
+                          partitions={partitions}
+                          onChange={setPartition}
                           isDisabled={isRefreshing}
                         />
-                      </ToolbarGroup>
-                    </ToolbarToggleGroup>
-                    <ToolbarGroup>
-                      <ToolbarItem>
-                        <Button
-                          variant={"plain"}
-                          isDisabled={!requiresSearch || isRefreshing}
-                          aria-label={t("search_button_label")}
-                          onClick={refresh}
-                        >
-                          <SearchIcon />
-                        </Button>
                       </ToolbarItem>
+                    </ToolbarToggleGroup>
+                    {/* icon buttons */}
+                    <ToolbarGroup variant="icon-button-group">
                       <ToolbarItem>
                         <RefreshButton
                           onClick={refresh}
                           isRefreshing={isRefreshing}
-                          isDisabled={requiresSearch}
+                          isDisabled={isRefreshing}
                         />
                       </ToolbarItem>
                     </ToolbarGroup>
-                    <ToolbarGroup>
-                      {partition !== undefined &&
-                        messages.length > 0 &&
-                        offsetMin !== undefined &&
-                        offsetMax !== undefined && (
-                          <OffsetRange min={offsetMin} max={offsetMax - 1} />
-                        )}
+
+                    <ToolbarGroup align={{ default: "alignRight" }}>
+                      <LimitSelector
+                        value={limit}
+                        onChange={setLimit}
+                        isDisabled={isRefreshing}
+                      />
                     </ToolbarGroup>
                   </ToolbarContent>
                 </Toolbar>
+                {/*<Toolbar data-testid={"message-browser-toolbar"}>*/}
+                {/*  <ToolbarContent>*/}
+                {/*    <ToolbarToggleGroup*/}
+                {/*      toggleIcon={<FilterIcon />}*/}
+                {/*      breakpoint="md"*/}
+                {/*    >*/}
+                {/*      <ToolbarGroup variant="filter-group">*/}
+                {/*        <ToolbarItem>*/}
+                {/*          <PartitionSelector*/}
+                {/*            value={partition}*/}
+                {/*            partitions={partitions}*/}
+                {/*            onChange={setPartition}*/}
+                {/*            isDisabled={isRefreshing}*/}
+                {/*          />*/}
+                {/*        </ToolbarItem>*/}
+                {/*      </ToolbarGroup>*/}
+                {/*      <ToolbarGroup variant="filter-group">*/}
+                {/*        <FilterGroup*/}
+                {/*          isDisabled={isRefreshing}*/}
+                {/*          offset={filterOffset}*/}
+                {/*          epoch={filterEpoch}*/}
+                {/*          timestamp={filterTimestamp}*/}
+                {/*          onOffsetChange={setOffset}*/}
+                {/*          onTimestampChange={setTimestamp}*/}
+                {/*          onEpochChange={setEpoch}*/}
+                {/*          onLatest={setLatest}*/}
+                {/*        />*/}
+                {/*      </ToolbarGroup>*/}
+                {/*      <ToolbarGroup>*/}
+                {/*        <LimitSelector*/}
+                {/*          value={limit}*/}
+                {/*          onChange={setLimit}*/}
+                {/*          isDisabled={isRefreshing}*/}
+                {/*        />*/}
+                {/*      </ToolbarGroup>*/}
+                {/*    </ToolbarToggleGroup>*/}
+                {/*    <ToolbarGroup>*/}
+                {/*      <ToolbarItem>*/}
+                {/*        <Button*/}
+                {/*          variant={"plain"}*/}
+                {/*          isDisabled={!requiresSearch || isRefreshing}*/}
+                {/*          aria-label={t("search_button_label")}*/}
+                {/*          onClick={refresh}*/}
+                {/*        >*/}
+                {/*          <SearchIcon />*/}
+                {/*        </Button>*/}
+                {/*      </ToolbarItem>*/}
+                {/*      <ToolbarItem>*/}
+                {/*        <RefreshButton*/}
+                {/*          onClick={refresh}*/}
+                {/*          isRefreshing={isRefreshing}*/}
+                {/*          isDisabled={requiresSearch}*/}
+                {/*        />*/}
+                {/*      </ToolbarItem>*/}
+                {/*    </ToolbarGroup>*/}
+                {/*    <ToolbarGroup>*/}
+                {/*      {partition !== undefined &&*/}
+                {/*        messages.length > 0 &&*/}
+                {/*        offsetMin !== undefined &&*/}
+                {/*        offsetMax !== undefined && (*/}
+                {/*          <OffsetRange min={offsetMin} max={offsetMax - 1} />*/}
+                {/*        )}*/}
+                {/*    </ToolbarGroup>*/}
+                {/*  </ToolbarContent>*/}
+                {/*</Toolbar>*/}
                 <InnerScrollContainer>
                   <ResponsiveTable
                     variant={TableVariant.compact}
@@ -228,17 +315,15 @@ export function KafkaMessageBrowser({
                             // case "partition":
                             //   return row.attributes.partition;
                             case "offset":
-                              return row.attributes.offset;
+                              return <Number value={row.attributes.offset} />;
                             case "timestamp":
-                              return row.attributes.timestamp
-                                ? format.dateTime(
-                                    parseISO(row.attributes.timestamp),
-                                    {
-                                      dateStyle: "long",
-                                      timeStyle: "long",
-                                    },
-                                  )
-                                : empty;
+                              return (
+                                <DateTime
+                                  value={row.attributes.timestamp}
+                                  dateStyle={"short"}
+                                  timeStyle={"medium"}
+                                />
+                              );
                             case "key":
                               return row.attributes.key ? (
                                 <UnknownValuePreview
@@ -290,13 +375,7 @@ export function KafkaMessageBrowser({
                       selectMessage(row);
                     }}
                   >
-                    <NoResultsEmptyState
-                      onReset={() => {
-                        setLatest();
-                        setPartition(undefined);
-                        refresh();
-                      }}
-                    />
+                    <NoResultsEmptyState onReset={onReset} />
                   </ResponsiveTable>
                 </InnerScrollContainer>
               </OuterScrollContainer>

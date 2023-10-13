@@ -1,18 +1,5 @@
-import {
-  InputGroup,
-  InputGroupText,
-  MenuToggle,
-  Select,
-  SelectOption,
-  TextInputGroup,
-} from "@/libs/patternfly/react-core";
-import { TimesIcon } from "@/libs/patternfly/react-icons";
-import {
-  Button,
-  SelectList,
-  TextInputGroupMain,
-  TextInputGroupUtilities,
-} from "@patternfly/react-core";
+import { MenuToggle, Select, SelectOption } from "@/libs/patternfly/react-core";
+import { SelectList } from "@patternfly/react-core";
 import { useTranslations } from "next-intl";
 import { useCallback, useMemo, useState } from "react";
 
@@ -26,7 +13,7 @@ export type PartitionSelectorProps = {
 };
 
 export function PartitionSelector({
-  value,
+  value = -1,
   partitions,
   isDisabled,
   onChange,
@@ -50,22 +37,23 @@ export function PartitionSelector({
   );
 
   const allPartitions = useMemo(() => {
-    return new Array(partitions).fill(0).map((_, index) => index.toString());
+    return new Array(partitions).fill(0).map((_, index) => index);
   }, [partitions]);
 
   const makeOptions = useCallback(
-    (values: string[]) => {
+    (values: number[]) => {
       const options = values.slice(0, MAX_OPTIONS).map((v) => (
         <SelectOption
           key={v}
           value={v}
-          onClick={() => onChange(parseInt(v, 10))}
+          onClick={() => onChange(v)}
+          isSelected={value === v}
         >
           {v}
         </SelectOption>
       ));
       const hiddenOptionsCount = values.length - options.length;
-      return hiddenOptionsCount
+      const partialOptions = hiddenOptionsCount
         ? [
             ...options,
             <SelectOption
@@ -77,6 +65,17 @@ export function PartitionSelector({
             />,
           ]
         : options;
+      return [
+        <SelectOption
+          key={"all"}
+          isSelected={value === -1}
+          value={-1}
+          onClick={() => onChange(undefined)}
+        >
+          {t("partition_placeholder")}
+        </SelectOption>,
+        ...partialOptions,
+      ];
     },
     [onChange, t],
   );
@@ -98,72 +97,26 @@ export function PartitionSelector({
   // );
 
   return (
-    <InputGroup>
-      <InputGroupText className="pf-c-content">
-        {t("field.partition")}
-      </InputGroupText>
-      <div>
-        <span id={titleId} hidden>
-          {t("select_partition_aria_label")}
-        </span>
-        <Select
-          onSelect={(_, value) => handleChange(value as string)}
-          // selections={value !== undefined ? [`${value}`] : undefined}
-          isOpen={isOpen}
-          aria-labelledby={titleId}
-          data-testid={"partition-selector"}
-          toggle={(toggleRef) => (
-            <MenuToggle
-              ref={toggleRef}
-              variant="typeahead"
-              onClick={toggleOpen}
-              isExpanded={isOpen}
-              isFullWidth
-              isDisabled={isDisabled}
-            >
-              <TextInputGroup isPlain>
-                <TextInputGroupMain
-                  value={value === undefined ? undefined : `${value}`}
-                  onChange={(_, value) => {
-                    const maybeNumber = parseInt(value, 10);
-                    if (Number.isInteger(maybeNumber)) {
-                      onChange(maybeNumber);
-                    } else {
-                      onChange(undefined);
-                    }
-                  }}
-                  onClick={toggleOpen}
-                  id="typeahead-select-input"
-                  autoComplete="off"
-                  // innerRef={textInputRef}
-                  placeholder={t("partition_placeholder")}
-                  //{...(activeItem && { 'aria-activedescendant': activeItem })}
-                  role="combobox"
-                  isExpanded={isOpen}
-                  aria-controls="select-typeahead-listbox"
-                />
-
-                <TextInputGroupUtilities>
-                  {value !== undefined && (
-                    <Button
-                      variant="plain"
-                      onClick={() => onChange(undefined)}
-                      aria-label="Clear input value"
-                    >
-                      <TimesIcon aria-hidden />
-                    </Button>
-                  )}
-                </TextInputGroupUtilities>
-              </TextInputGroup>
-            </MenuToggle>
-          )}
+    <Select
+      onSelect={(_, value) => handleChange(value as string)}
+      isOpen={isOpen}
+      aria-labelledby={titleId}
+      data-testid={"partition-selector"}
+      toggle={(toggleRef) => (
+        <MenuToggle
+          ref={toggleRef}
+          onClick={toggleOpen}
+          isExpanded={isOpen}
+          isFullWidth
+          isDisabled={isDisabled}
         >
-          <SelectList>{options}</SelectList>
-        </Select>
-      </div>
-      <InputGroupText id={`${titleId}-input`} className="pf-c-content">
-        {t("select_partition_of_count", { partitions })}
-      </InputGroupText>
-    </InputGroup>
+          {value !== -1
+            ? t("partition_option", { value })
+            : t("partition_placeholder")}
+        </MenuToggle>
+      )}
+    >
+      <SelectList>{options}</SelectList>
+    </Select>
   );
 }

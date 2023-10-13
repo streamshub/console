@@ -4,7 +4,6 @@ import { NoDataEmptyState } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId
 import { MessagesTable } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/MessagesTable";
 import { KafkaTopicParams } from "@/app/[locale]/kafka/[kafkaId]/topics/kafkaTopic.params";
 import { stringToInt } from "@/utils/stringToInt";
-import { revalidateTag } from "next/cache";
 
 export default async function Principals({
   params: { kafkaId, topicId },
@@ -16,14 +15,14 @@ export default async function Principals({
     partition: string | undefined;
     selectedOffset: string | undefined;
     "filter[offset]": string | undefined;
-    "filter[ts]": string | undefined;
+    "filter[timestamp]": string | undefined;
     "filter[epoch]": string | undefined;
   };
 }) {
   const topic = await getTopic(kafkaId, topicId);
   const limit = stringToInt(searchParams.limit) || 50;
   const offset = stringToInt(searchParams["filter[offset]"]);
-  const ts = searchParams["filter[ts]"];
+  const ts = stringToInt(searchParams["filter[timestamp]"]);
   const epoch = stringToInt(searchParams["filter[epoch]"]);
   const selectedOffset = stringToInt(searchParams.selectedOffset);
   const partition = stringToInt(searchParams.partition);
@@ -33,7 +32,7 @@ export default async function Principals({
   const offsetMin = partitionInfo?.offsets?.earliest?.offset;
   const offsetMax = partitionInfo?.offsets?.latest?.offset;
 
-  const timeFilter = ts || epoch;
+  const timeFilter = epoch ? epoch * 1000 : ts;
   const date = timeFilter ? new Date(timeFilter) : undefined;
   const timestamp = date?.toISOString();
 
@@ -51,11 +50,7 @@ export default async function Principals({
 
   switch (true) {
     case messages === null:
-      return (
-        <NoDataEmptyState
-          onRefresh={() => revalidateTag(`messages-${topicId}`)}
-        />
-      );
+      return <NoDataEmptyState />;
     default:
       return (
         <MessagesTable

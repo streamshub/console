@@ -1,4 +1,6 @@
 import { Message } from "@/api/messages";
+import { DateTime } from "@/components/DateTime";
+import { Number } from "@/components/Number";
 import {
   ClipboardCopy,
   DescriptionList,
@@ -19,8 +21,7 @@ import {
   TextContent,
   TextVariants,
 } from "@/libs/patternfly/react-core";
-import { parseISO } from "date-fns";
-import { useFormatter, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import { NoDataCell } from "./NoDataCell";
 import { beautifyUnknownValue } from "./utils";
 
@@ -70,7 +71,6 @@ export function MessageDetailsBody({
   ...message
 }: MessageDetailsBodyProps) {
   const t = useTranslations("message-browser");
-  const format = useFormatter();
 
   return (
     <Flex direction={{ default: "column" }} data-testid={"message-details"}>
@@ -79,26 +79,34 @@ export function MessageDetailsBody({
           <DescriptionListGroup>
             <DescriptionListTerm>{t("field.partition")}</DescriptionListTerm>
             <DescriptionListDescription>
-              {message.attributes.partition}
+              <Number value={message.attributes.partition} />
             </DescriptionListDescription>
           </DescriptionListGroup>
           <DescriptionListGroup>
             <DescriptionListTerm>{t("field.offset")}</DescriptionListTerm>
             <DescriptionListDescription>
-              {message.attributes.offset}
+              <Number value={message.attributes.offset} />
             </DescriptionListDescription>
           </DescriptionListGroup>
           <DescriptionListGroup>
             <DescriptionListTerm>{t("field.timestamp")}</DescriptionListTerm>
             <DescriptionListDescription>
-              {message.attributes.timestamp ? (
-                format.dateTime(parseISO(message.attributes.timestamp), {
-                  dateStyle: "long",
-                  timeStyle: "long",
-                })
-              ) : (
-                <NoDataCell columnLabel={t("field.timestamp")} />
-              )}
+              <DateTime
+                value={message.attributes.timestamp}
+                empty={<NoDataCell columnLabel={t("field.timestamp")} />}
+              />
+            </DescriptionListDescription>
+          </DescriptionListGroup>
+          <DescriptionListGroup>
+            <DescriptionListTerm>
+              {t("field.timestamp--utc")}
+            </DescriptionListTerm>
+            <DescriptionListDescription>
+              <DateTime
+                value={message.attributes.timestamp}
+                empty={<NoDataCell columnLabel={t("field.timestamp")} />}
+                tz={"UTC"}
+              />
             </DescriptionListDescription>
           </DescriptionListGroup>
           <DescriptionListGroup>

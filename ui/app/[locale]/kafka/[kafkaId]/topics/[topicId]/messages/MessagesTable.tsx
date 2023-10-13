@@ -1,7 +1,7 @@
 "use client";
 import { Message } from "@/api/messages";
 import { useFilterParams } from "@/utils/useFilterParams";
-import { useState } from "react";
+import { useTransition } from "react";
 import { KafkaMessageBrowser } from "./_components/KafkaMessageBrowser";
 
 export function MessagesTable({
@@ -24,43 +24,103 @@ export function MessagesTable({
     limit: number;
   };
 }) {
-  const [currentParams, setParams] = useState(params);
+  const [isPending, startTransition] = useTransition();
   const updateUrl = useFilterParams(params);
 
   function setPartition(partition: number | undefined) {
-    setParams((params) => ({ ...params, partition }));
+    startTransition(() => {
+      updateUrl({
+        ...params,
+        partition,
+      });
+    });
   }
 
   function setOffset(offset: number | undefined) {
-    setParams((params) => ({ ...params, "filter[offset]": offset }));
+    startTransition(() => {
+      updateUrl({
+        ...params,
+        "filter[epoch]": undefined,
+        "filter[timestamp]": undefined,
+        "filter[offset]": offset,
+      });
+    });
   }
 
-  function setTimestamp() {}
+  function setTimestamp(value: string | undefined) {
+    startTransition(() => {
+      updateUrl({
+        ...params,
+        "filter[offset]": undefined,
+        "filter[epoch]": undefined,
+        "filter[timestamp]": value,
+      });
+    });
+  }
 
-  function setEpoch() {}
+  function setEpoch(value: number | undefined) {
+    startTransition(() => {
+      updateUrl({
+        ...params,
+        "filter[offset]": undefined,
+        "filter[timestamp]": undefined,
+        "filter[epoch]": value,
+      });
+    });
+  }
 
-  function setLatest() {}
+  function setLatest() {
+    startTransition(() => {
+      updateUrl({
+        ...params,
+        "filter[offset]": undefined,
+        "filter[timestamp]": undefined,
+        "filter[epoch]": undefined,
+      });
+    });
+  }
 
   function setLimit(limit: number) {
-    setParams((params) => ({ ...params, limit }));
+    startTransition(() => {
+      updateUrl({
+        ...params,
+        limit,
+      });
+    });
   }
 
   function setSelected(message: Message) {
-    updateUrl({
-      ...params,
-      selectedOffset: message.attributes.offset,
+    startTransition(() => {
+      updateUrl({
+        ...params,
+        selectedOffset: message.attributes.offset,
+      });
     });
   }
 
   function deselectMessage() {
-    updateUrl({
-      ...params,
-      selectedOffset: undefined,
+    startTransition(() => {
+      updateUrl({
+        ...params,
+        selectedOffset: undefined,
+      });
     });
   }
 
   function refresh() {
-    updateUrl(currentParams);
+    startTransition(() => {
+      updateUrl({ ...params, _ts: Date.now() });
+    });
+  }
+
+  function onReset() {
+    startTransition(() => {
+      updateUrl({
+        "filter[offset]": undefined,
+        "filter[timestamp]": undefined,
+        "filter[epoch]": undefined,
+      });
+    });
   }
 
   const selectedMessage = messages.find(
@@ -71,19 +131,18 @@ export function MessagesTable({
     <KafkaMessageBrowser
       isFirstLoad={false}
       isNoData={false}
-      isRefreshing={false}
-      requiresSearch={JSON.stringify(params) !== JSON.stringify(currentParams)}
+      isRefreshing={isPending}
       selectedMessage={selectedMessage}
       lastUpdated={new Date()}
       messages={messages}
       offsetMin={offsetMin}
       offsetMax={offsetMax}
       partitions={partitions}
-      partition={currentParams.partition}
-      limit={currentParams.limit}
-      filterOffset={currentParams["filter[offset]"]}
-      filterEpoch={currentParams["filter[epoch]"]}
-      filterTimestamp={currentParams["filter[timestamp]"]}
+      partition={params.partition}
+      limit={params.limit}
+      filterOffset={params["filter[offset]"]}
+      filterEpoch={params["filter[epoch]"]}
+      filterTimestamp={params["filter[timestamp]"]}
       setPartition={setPartition}
       setOffset={setOffset}
       setTimestamp={setTimestamp}
@@ -93,6 +152,7 @@ export function MessagesTable({
       refresh={refresh}
       selectMessage={setSelected}
       deselectMessage={deselectMessage}
+      onReset={onReset}
     />
   );
 }
