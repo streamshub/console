@@ -12,6 +12,13 @@ import static com.github.eyefloaters.console.test.TestHelper.whenRequesting;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.is;
 
+/**
+ * This test leverages {@linkplain OperationFilterTestProfile} to selectively
+ * disable/enable certain REST operations. Do not assume Kafka operations will
+ * work when adding tests to this class.
+ *
+ * @see OperationFilterTestProfile
+ */
 @QuarkusTest
 @TestProfile(OperationFilterTestProfile.class)
 class EnabledOperationFilterTest {
