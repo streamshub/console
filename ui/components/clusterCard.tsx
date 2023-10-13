@@ -1,6 +1,6 @@
 "use client";
 "use client";
-import { ClusterList } from "@/api/types";
+import { ClusterList } from "@/api/kafka";
 import {
   Card,
   CardBody,

@@ -1,4 +1,4 @@
-import { Message } from "@/api/topics";
+import { Message } from "@/api/messages";
 
 export function isSameMessage(m1: Message, m2: Message) {
   return JSON.stringify(m1) === JSON.stringify(m2);

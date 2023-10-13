@@ -6,10 +6,21 @@ import {
   Title,
 } from "@/libs/patternfly/react-core";
 import { CubesIcon } from "@/libs/patternfly/react-icons";
+import { useFilterParams } from "@/utils/useFilterParams";
 import { useTranslations } from "next-intl";
 
-export function NoDataEmptyState({ onRefresh }: { onRefresh: () => void }) {
+export function NoDataEmptyState() {
   const t = useTranslations("message-browser");
+  const updateUrl = useFilterParams({});
+
+  function onRefresh() {
+    updateUrl({
+      "filter[offset]": undefined,
+      "filter[timestamp]": undefined,
+      "filter[epoch]": undefined,
+    });
+  }
+
   return (
     <EmptyState variant={"lg"}>
       <EmptyStateIcon icon={CubesIcon} />

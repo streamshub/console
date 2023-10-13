@@ -1,6 +1,6 @@
-import { keycloak, refreshToken } from "./keycloak";
 import { logger } from "@/utils/logger";
 import NextAuth, { AuthOptions } from "next-auth";
+import { keycloak, refreshToken } from "./keycloak";
 
 const log = logger.child({ module: "auth-route" });
 
@@ -27,7 +27,7 @@ export const authOptions: AuthOptions = {
     },
     async session({ session, token }) {
       // Send properties to the client, like an access_token from a provider.
-      log.debug(token, "Creating session from token");
+      log.trace(token, "Creating session from token");
       return {
         ...session,
         error: token.error,

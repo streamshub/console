@@ -1,5 +1,5 @@
 "use client";
-import { ClusterDetail, KafkaResource } from "@/api/types";
+import { ClusterDetail, ClusterList } from "@/api/kafka";
 import { KafkaSwitcher } from "@/app/[locale]/kafka/[kafkaId]/KafkaSwitcher";
 import { Suspense } from "react";
 
@@ -8,7 +8,7 @@ export function KafkaBreadcrumbItem({
   clusters,
 }: {
   selected: ClusterDetail;
-  clusters: KafkaResource[];
+  clusters: ClusterList[];
 }) {
   return (
     <Suspense fallback={"Loading clusters..."}>

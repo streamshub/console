@@ -1,8 +1,7 @@
 import { AppLayout } from "@/app/[locale]/AppLayout";
+import NextIntlProvider from "@/app/[locale]/NextIntlProvider";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import { getUser } from "@/utils/session";
 import { getServerSession } from "next-auth";
-import { NextIntlClientProvider } from "next-intl";
 import { getTranslator } from "next-intl/server";
 import { notFound } from "next/navigation";
 import { ReactNode } from "react";
@@ -24,9 +23,9 @@ export default async function Layout({ children, params: { locale } }: Props) {
   return (
     <html lang="en">
       <body>
-        <NextIntlClientProvider locale={locale} messages={messages}>
+        <NextIntlProvider locale={locale} messages={messages}>
           <AppLayout session={session}>{children}</AppLayout>
-        </NextIntlClientProvider>
+        </NextIntlProvider>
       </body>
     </html>
   );

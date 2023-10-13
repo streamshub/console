@@ -1,4 +1,4 @@
-import { ClusterDetail, KafkaResource } from "@/api/types";
+import { ClusterDetail, ClusterList } from "@/api/kafka";
 import {
   Divider,
   Dropdown,
@@ -20,7 +20,7 @@ export function KafkaSwitcher<T extends string>({
   isActive = false,
 }: {
   selected: ClusterDetail;
-  clusters: KafkaResource[];
+  clusters: ClusterList[];
   getSwitchHref: (kafkaId: string) => Route<T> | URL;
   isActive?: boolean;
 }) {
@@ -32,15 +32,15 @@ export function KafkaSwitcher<T extends string>({
     setIsOpen(!isOpen);
   };
 
-  const resourceToDropdownItem = (b: KafkaResource) => (
+  const clusterToDropdownItem = (b: ClusterList) => (
     <DropdownItem
       key={b.id}
-      value={b.attributes.cluster?.id}
+      value={b.id}
       id={b.id}
       onClick={() => {
         setIsOpen(false);
       }}
-      description={b.attributes.bootstrapServer}
+      description={b.attributes.bootstrapServers}
     >
       {b.attributes.name}
     </DropdownItem>
@@ -50,11 +50,11 @@ export function KafkaSwitcher<T extends string>({
     .filter(
       (b) =>
         searchText === "" ||
-        `${b.attributes.name}${b.attributes.bootstrapServer}`
+        `${b.attributes.name}${b.attributes.bootstrapServers}`
           .toLowerCase()
           .includes(searchText.toLowerCase()),
     )
-    .map(resourceToDropdownItem);
+    .map(clusterToDropdownItem);
   return (
     <Dropdown
       isOpen={isOpen}

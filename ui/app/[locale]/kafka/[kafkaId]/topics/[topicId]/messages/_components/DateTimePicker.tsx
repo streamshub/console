@@ -1,36 +1,27 @@
 "use client";
-import type {
-  DatePickerProps,
-  TimePickerProps,
-} from "@/libs/patternfly/react-core";
+import type { TimePickerProps } from "@/libs/patternfly/react-core";
 import {
   DatePicker,
   InputGroup,
   TimePicker,
 } from "@/libs/patternfly/react-core";
-import { formatISO, parseISO, setHours, setMinutes } from "date-fns";
-import { format } from "date-fns-tz";
-import { useState } from "react";
+import { format, parseISO, setHours, setMinutes } from "date-fns";
+import { useEffect, useState } from "react";
 
 export type DateTimePickerProps = {
   isDisabled: boolean;
-  value: DateIsoString | undefined;
-  onChange: (value: DateIsoString) => void;
+  value: string | undefined;
+  onChange: (value: number) => void;
 };
+
 export function DateTimePicker({
   isDisabled,
   value,
   onChange,
 }: DateTimePickerProps) {
-  const date = value ? parseISO(value) : undefined;
+  const [date, setDate] = useState(value ? parseISO(value) : undefined);
 
-  const [time, setTime] = useState<string | null>(null);
-
-  const onSelectCalendar: DatePickerProps["onChange"] = (_, __, newDate) => {
-    if (newDate) {
-      onChange(formatISO(newDate) as DateIsoString);
-    }
-  };
+  const time = date ? format(date, "hh:mm aa") : undefined;
 
   const onSelectTime: TimePickerProps["onChange"] = (
     _,
@@ -54,17 +45,27 @@ export function DateTimePicker({
       if (minute !== undefined) {
         newDate = setMinutes(newDate, minute);
       }
-      setTime(time);
-      onChange(formatISO(newDate) as DateIsoString);
+      setDate(newDate);
     }
   };
+
+  useEffect(() => {
+    if (date) {
+      onChange(date.getTime());
+    }
+  }, [date, onChange]);
 
   return (
     <InputGroup>
       <DatePicker
         isDisabled={isDisabled}
         value={date ? format(date, "yyyy-MM-dd") : undefined}
-        onChange={onSelectCalendar}
+        onChange={(_, __, date) => {
+          if (date) {
+            setDate(date);
+            onChange(date.getTime());
+          }
+        }}
       />
       <TimePicker
         isDisabled={!date || isDisabled}

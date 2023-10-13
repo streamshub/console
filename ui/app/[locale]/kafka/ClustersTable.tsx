@@ -1,6 +1,6 @@
 "use client";
 
-import { KafkaResource } from "@/api/types";
+import { KafkaResource } from "@/api/resources";
 import { ResponsiveTable } from "@/components/table";
 import { ClipboardCopy, Label, LabelGroup } from "@patternfly/react-core";
 import {

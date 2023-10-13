@@ -1,8 +1,8 @@
-import {getHeaders} from "@/api/_shared";
-import {logger} from "@/utils/logger";
-import {z} from "zod";
+import { getHeaders } from "@/api/api";
+import { logger } from "@/utils/logger";
+import { z } from "zod";
 
-const log = logger.child({module: "api-topics"});
+const log = logger.child({ module: "api-topics" });
 
 const ConfigSchema = z.object({
   id: z.string().optional(),
@@ -30,11 +30,11 @@ export async function getNodeConfiguration(
   nodeId: number | string,
 ): Promise<NodeConfig> {
   const url = `${process.env.BACKEND_URL}/api/kafkas/${kafkaId}/nodes/${nodeId}/configs`;
-  log.debug({url}, "Fetching node configuration");
+  log.debug({ url }, "Fetching node configuration");
   const res = await fetch(url, {
     headers: await getHeaders(),
     cache: "no-store",
-    next: {tags: [`node-${nodeId}`]},
+    next: { tags: [`node-${nodeId}`] },
   });
   const rawData = await res.json();
   log.trace(rawData, "Node configuration response");

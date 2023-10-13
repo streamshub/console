@@ -1,4 +1,6 @@
-import { Message } from "@/api/topics";
+import { Message } from "@/api/messages";
+import { DateTime } from "@/components/DateTime";
+import { Number } from "@/components/Number";
 import {
   ClipboardCopy,
   DescriptionList,
@@ -19,8 +21,7 @@ import {
   TextContent,
   TextVariants,
 } from "@/libs/patternfly/react-core";
-import { parseISO } from "date-fns";
-import { useFormatter, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import { NoDataCell } from "./NoDataCell";
 import { beautifyUnknownValue } from "./utils";
 
@@ -29,6 +30,7 @@ export type MessageDetailsProps = {
   defaultTab: MessageDetailsBodyProps["defaultTab"];
   message: Message | undefined;
 };
+
 export function MessageDetails({
   onClose,
   defaultTab,
@@ -50,7 +52,7 @@ export function MessageDetails({
         {message && (
           <MessageDetailsBody
             defaultTab={defaultTab}
-            messageKey={message.key}
+            messageKey={message.attributes.key}
             {...message}
           />
         )}
@@ -61,7 +63,7 @@ export function MessageDetails({
 
 export type MessageDetailsBodyProps = {
   defaultTab: "value" | "headers";
-  messageKey: Message["key"];
+  messageKey: string | null;
 } & Omit<Message, "key">;
 
 export function MessageDetailsBody({
@@ -69,7 +71,6 @@ export function MessageDetailsBody({
   ...message
 }: MessageDetailsBodyProps) {
   const t = useTranslations("message-browser");
-  const format = useFormatter();
 
   return (
     <Flex direction={{ default: "column" }} data-testid={"message-details"}>
@@ -78,36 +79,43 @@ export function MessageDetailsBody({
           <DescriptionListGroup>
             <DescriptionListTerm>{t("field.partition")}</DescriptionListTerm>
             <DescriptionListDescription>
-              {message.partition}
+              <Number value={message.attributes.partition} />
             </DescriptionListDescription>
           </DescriptionListGroup>
           <DescriptionListGroup>
             <DescriptionListTerm>{t("field.offset")}</DescriptionListTerm>
             <DescriptionListDescription>
-              {message.offset}
+              <Number value={message.attributes.offset} />
             </DescriptionListDescription>
           </DescriptionListGroup>
           <DescriptionListGroup>
             <DescriptionListTerm>{t("field.timestamp")}</DescriptionListTerm>
             <DescriptionListDescription>
-              {message.timestamp ? (
-                format.dateTime(parseISO(message.timestamp), {
-                  dateStyle: "long",
-                  timeStyle: "long",
-                })
-              ) : (
-                <NoDataCell columnLabel={t("field.timestamp")} />
-              )}
+              <DateTime
+                value={message.attributes.timestamp}
+                empty={<NoDataCell columnLabel={t("field.timestamp")} />}
+              />
+            </DescriptionListDescription>
+          </DescriptionListGroup>
+          <DescriptionListGroup>
+            <DescriptionListTerm>
+              {t("field.timestamp--utc")}
+            </DescriptionListTerm>
+            <DescriptionListDescription>
+              <DateTime
+                value={message.attributes.timestamp}
+                empty={<NoDataCell columnLabel={t("field.timestamp")} />}
+                tz={"UTC"}
+              />
             </DescriptionListDescription>
           </DescriptionListGroup>
           <DescriptionListGroup>
             <DescriptionListTerm>{t("field.epoch")}</DescriptionListTerm>
             <DescriptionListDescription>
-              {message.timestamp ? (
-                format.dateTime(parseISO(message.timestamp), {
-                  dateStyle: "long",
-                  timeStyle: "long",
-                })
+              {message.attributes.timestamp ? (
+                Math.floor(
+                  new Date(message.attributes.timestamp).getTime() / 1000,
+                )
               ) : (
                 <NoDataCell columnLabel={t("field.epoch")} />
               )}
@@ -133,7 +141,7 @@ export function MessageDetailsBody({
             title={<TabTitleText>{t("field.value")}</TabTitleText>}
           >
             <ClipboardCopy isCode={true} isExpanded={true} isReadOnly={true}>
-              {beautifyUnknownValue(message.value || "")}
+              {beautifyUnknownValue(message.attributes.value || "")}
             </ClipboardCopy>
           </Tab>
           <Tab
@@ -141,7 +149,9 @@ export function MessageDetailsBody({
             title={<TabTitleText>{t("field.headers")}</TabTitleText>}
           >
             <ClipboardCopy isCode={true} isExpanded={true} isReadOnly={true}>
-              {beautifyUnknownValue(JSON.stringify(message.headers) || "")}
+              {beautifyUnknownValue(
+                JSON.stringify(message.attributes.headers) || "",
+              )}
             </ClipboardCopy>
           </Tab>
         </Tabs>

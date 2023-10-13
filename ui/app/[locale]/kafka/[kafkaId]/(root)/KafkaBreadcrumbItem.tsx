@@ -1,5 +1,5 @@
 "use client";
-import { ClusterDetail, KafkaResource } from "@/api/types";
+import { ClusterDetail, ClusterList } from "@/api/kafka";
 import { KafkaSwitcher } from "@/app/[locale]/kafka/[kafkaId]/KafkaSwitcher";
 import { useSelectedLayoutSegment } from "next/navigation";
 import { Suspense } from "react";
@@ -10,7 +10,7 @@ export function KafkaBreadcrumbItem({
   isActive,
 }: {
   selected: ClusterDetail;
-  clusters: KafkaResource[];
+  clusters: ClusterList[];
   isActive: boolean;
 }) {
   const segment = useSelectedLayoutSegment();

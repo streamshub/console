@@ -1,6 +1,6 @@
 "use client";
 
-import { KafkaNode } from "@/api/types";
+import { KafkaNode } from "@/api/kafka";
 import { ResponsiveTable } from "@/components/table";
 import { ClipboardCopy, Label } from "@patternfly/react-core";
 import { ServerIcon } from "@patternfly/react-icons";
@@ -40,7 +40,9 @@ export function NodesTable({
           case "id":
             return (
               <Td>
-                <Link href={`nodes/${row.id}`}>Node {row.id}</Link>
+                <div>
+                  <Link href={`nodes/${row.id}`}>Node {row.id}</Link>
+                </div>
                 {row.id === controller.id && (
                   <Label color={"purple"} isCompact={true}>
                     Controller
