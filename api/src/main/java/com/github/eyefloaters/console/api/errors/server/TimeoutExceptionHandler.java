@@ -16,4 +16,8 @@ public class TimeoutExceptionHandler extends AbstractServerExceptionHandler<Time
         super(ErrorCategory.BackendTimeout.class);
     }
 
+    @Override
+    public boolean handlesException(Throwable thrown) {
+        return thrown instanceof TimeoutException;
+    }
 }

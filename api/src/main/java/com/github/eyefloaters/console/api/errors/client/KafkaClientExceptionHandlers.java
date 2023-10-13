@@ -24,6 +24,11 @@ public class KafkaClientExceptionHandlers {
         public InvalidConfigurationExceptionHandler() {
             super(ErrorCategory.InvalidResource.class, null, null);
         }
+
+        @Override
+        public boolean handlesException(Throwable thrown) {
+            return thrown instanceof InvalidConfigurationException;
+        }
     }
 
     @Provider
@@ -33,6 +38,11 @@ public class KafkaClientExceptionHandlers {
 
         public InvalidReplicaAssignmentExceptionHandler() {
             super(ErrorCategory.InvalidResource.class, null, "/data/attributes/replicasAssignments");
+        }
+
+        @Override
+        public boolean handlesException(Throwable thrown) {
+            return thrown instanceof InvalidReplicaAssignmentException;
         }
     }
 
@@ -44,18 +54,33 @@ public class KafkaClientExceptionHandlers {
         public TopicExistsExceptionHandler() {
             super(ErrorCategory.ResourceConflict.class, null, "/data/attributes/name");
         }
+
+        @Override
+        public boolean handlesException(Throwable thrown) {
+            return thrown instanceof TopicExistsException;
+        }
     }
 
     @Provider
     @ApplicationScoped
     public static class UnknownTopicIdExceptionHandler
         extends AbstractNotFoundExceptionHandler<UnknownTopicIdException> {
+
+        @Override
+        public boolean handlesException(Throwable thrown) {
+            return thrown instanceof UnknownTopicIdException;
+        }
     }
 
     @Provider
     @ApplicationScoped
     public static class UnknownTopicOrPartitionExceptionHandler
         extends AbstractNotFoundExceptionHandler<UnknownTopicOrPartitionException> {
+
+        @Override
+        public boolean handlesException(Throwable thrown) {
+            return thrown instanceof UnknownTopicOrPartitionException;
+        }
     }
 
 }

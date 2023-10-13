@@ -17,6 +17,11 @@ public class NotAuthorizedExceptionHandler extends AbstractClientExceptionHandle
     }
 
     @Override
+    public boolean handlesException(Throwable thrown) {
+        return thrown instanceof NotAuthorizedException;
+    }
+
+    @Override
     public Response toResponse(NotAuthorizedException exception) {
         var responseBuilder = Response.status(category.getHttpStatus())
                 .entity(new ErrorResponse(buildErrors(exception)));

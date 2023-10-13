@@ -24,6 +24,11 @@ public class MismatchedInputExceptionMapper extends AbstractClientExceptionHandl
     }
 
     @Override
+    public boolean handlesException(Throwable thrown) {
+        return thrown instanceof MismatchedInputException;
+    }
+
+    @Override
     protected List<Error> buildErrors(MismatchedInputException exception) {
         String pointer = exception.getPath().stream()
                 .map(ref -> Objects.requireNonNullElseGet(ref.getFieldName(), ref::getIndex).toString())

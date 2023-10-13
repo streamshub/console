@@ -7,4 +7,8 @@ import jakarta.ws.rs.ext.Provider;
 @Provider
 @ApplicationScoped
 public class NotFoundExceptionHandler extends AbstractNotFoundExceptionHandler<NotFoundException> {
+    @Override
+    public boolean handlesException(Throwable thrown) {
+        return thrown instanceof NotFoundException;
+    }
 }

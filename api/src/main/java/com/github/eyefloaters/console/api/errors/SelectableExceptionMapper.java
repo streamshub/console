@@ -10,4 +10,13 @@ import jakarta.ws.rs.ext.ExceptionMapper;
  * @param <E> the type of throwable handled by the mapper
  */
 public interface SelectableExceptionMapper<E extends Throwable> extends ExceptionMapper<E> {
+
+    /**
+     * Determines whether this ExceptionMapper handles the Throwable
+     *
+     * @param thrown a Throwable to potentially handle
+     * @return true if this mapper handles the Throwable, otherwise false
+     */
+    boolean handlesException(Throwable thrown);
+
 }

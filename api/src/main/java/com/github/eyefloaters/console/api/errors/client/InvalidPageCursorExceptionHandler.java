@@ -21,6 +21,11 @@ public class InvalidPageCursorExceptionHandler extends AbstractClientExceptionHa
     }
 
     @Override
+    public boolean handlesException(Throwable thrown) {
+        return thrown instanceof InvalidPageCursorException;
+    }
+
+    @Override
     protected List<Error> buildErrors(InvalidPageCursorException exception) {
         return exception.getSources()
             .stream()

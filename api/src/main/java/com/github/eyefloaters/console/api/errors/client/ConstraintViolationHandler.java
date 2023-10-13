@@ -29,6 +29,11 @@ public class ConstraintViolationHandler extends AbstractClientExceptionHandler<C
     }
 
     @Override
+    public boolean handlesException(Throwable thrown) {
+        return thrown instanceof ConstraintViolationException;
+    }
+
+    @Override
     protected List<Error> buildErrors(ConstraintViolationException exception) {
         return exception.getConstraintViolations()
             .stream()

@@ -10,6 +10,13 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.github.eyefloaters.console.api.support.ErrorCategory;
 
+/**
+ * A "resource object", as described by JSON:API.
+ *
+ * @see <a href="https://jsonapi.org/format/#document-resource-objects">JSON API Specification: Resource Objects</a>
+ *
+ * @param <T> the type of the attribute model
+ */
 @JsonInclude(Include.NON_NULL)
 public abstract class Resource<T> {
 

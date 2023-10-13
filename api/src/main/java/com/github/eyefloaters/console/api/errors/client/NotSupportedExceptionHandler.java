@@ -15,4 +15,8 @@ public class NotSupportedExceptionHandler extends AbstractClientExceptionHandler
         super(ErrorCategory.UnsupportedMediaType.class, "Content-type not supported", HttpHeaders.CONTENT_TYPE);
     }
 
+    @Override
+    public boolean handlesException(Throwable thrown) {
+        return thrown instanceof NotSupportedException;
+    }
 }

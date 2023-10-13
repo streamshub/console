@@ -2,6 +2,7 @@ package com.github.eyefloaters.console.api.support;
 
 import jakarta.ws.rs.core.Response.Status;
 
+import org.apache.kafka.common.Uuid;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.junit.QuarkusTest;
@@ -17,7 +18,9 @@ class EnabledOperationFilterTest {
 
     @Test
     void testDescribeTopicNotAllowed() throws Exception {
-        whenRequesting(req -> req.get("/api/kafkas/{clusterId}/topics/{topicId}", "kafka-1", "topic-1"))
+        whenRequesting(req -> req.get("/api/kafkas/{clusterId}/topics/{topicId}",
+                Uuid.randomUuid().toString(),
+                Uuid.randomUuid().toString()))
             .assertThat()
             .statusCode(is(Status.METHOD_NOT_ALLOWED.getStatusCode()))
             .body("errors.size()", is(1))
