@@ -110,6 +110,7 @@ export function ConfigTable({ config }: { config: NodeConfig }) {
               pathname +
                 "?" +
                 createQueryString([
+                  { name: "filter", value: "" },
                   {
                     name: "data-source",
                     value: selectedDataSources.join(","),
@@ -123,6 +124,7 @@ export function ConfigTable({ config }: { config: NodeConfig }) {
               pathname +
                 "?" +
                 createQueryString([
+                  { name: "filter", value: "" },
                   {
                     name: "data-source",
                     value: selectedDataSources.join(","),
