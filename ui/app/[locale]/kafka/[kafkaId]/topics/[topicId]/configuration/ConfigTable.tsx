@@ -1,5 +1,5 @@
 "use client";
-import { NodeConfig } from "@/api/nodes";
+import { Topic } from "@/api/topics";
 import { Number } from "@/components/Number";
 import { TableView } from "@/components/table";
 import { Label, LabelGroup, List, ListItem } from "@patternfly/react-core";
@@ -8,7 +8,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback } from "react";
 import { NoResultsEmptyState } from "./NoResultsEmptyState";
 
-export function ConfigTable({ config }: { config: NodeConfig }) {
+export function ConfigTable({ topic }: { topic: Topic }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -25,7 +25,7 @@ export function ConfigTable({ config }: { config: NodeConfig }) {
     [searchParams],
   );
 
-  const allData = Object.entries(config.attributes);
+  const allData = Object.entries(topic.attributes.configs);
 
   // derive the available data sources from the config values
   const dataSources = Array.from(
