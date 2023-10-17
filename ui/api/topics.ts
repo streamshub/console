@@ -52,6 +52,8 @@ const ConfigSchema = z.object({
   readOnly: z.boolean(),
   type: z.string(),
 });
+const ConfigSchemaMapSchema = z.record(z.string(), ConfigSchema);
+export type ConfigSchemaMap = z.infer<typeof ConfigSchemaMapSchema>;
 const TopicSchema = z.object({
   id: z.string(),
   type: z.literal("topics"),
@@ -60,7 +62,7 @@ const TopicSchema = z.object({
     internal: z.boolean(),
     partitions: z.array(PartitionSchema),
     authorizedOperations: z.array(z.string()),
-    configs: z.record(z.string(), ConfigSchema),
+    configs: ConfigSchemaMapSchema,
     recordCount: z.number().optional(),
     totalLeaderLogBytes: z.number().optional(),
   }),
