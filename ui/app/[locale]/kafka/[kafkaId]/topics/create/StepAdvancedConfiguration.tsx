@@ -15,7 +15,7 @@ export function StepAdvancedConfiguration({
 }) {
   return (
     <>
-      <TextContent className={"pf-v5-u-pb-md"}>
+      <TextContent>
         <Title headingLevel={"h2"}>Advanced configuration</Title>
         <Text>Configure other topic configuration options</Text>
       </TextContent>

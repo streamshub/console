@@ -10,10 +10,10 @@ import {
   PageSidebar,
   PageSidebarBody,
 } from "@/libs/patternfly/react-core";
+import { logger } from "@/utils/loggerClient";
 import { Session } from "next-auth";
 import { SessionProvider } from "next-auth/react";
 import { PropsWithChildren, useState } from "react";
-import { logger } from "@/utils/loggerClient";
 
 const log = logger.child({ module: "ui", component: "AppLayout" });
 

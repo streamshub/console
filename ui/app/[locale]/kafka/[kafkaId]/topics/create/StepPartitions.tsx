@@ -1,6 +1,7 @@
 import {
   FormGroup,
   FormHelperText,
+  FormSection,
   HelperText,
   HelperTextItem,
   NumberInput,
@@ -19,15 +20,14 @@ export function StepPartitions({
   invalid: boolean;
 }) {
   return (
-    <>
-      <TextContent className={"pf-v5-u-pb-md"}>
-        <Title headingLevel={"h2"}>Partitions</Title>
-        <Text>An ordered list of messages</Text>
+    <FormSection>
+      <TextContent>
+        <Title headingLevel={"h3"}>Partitions</Title>
         <Text component={"small"}>
-          One or more partitions make up a topic. Partitions are distributed
-          across the brokers to increase the scalability of your topic. You can
-          also use them to distribute messages across the members of the
-          consumer group.
+          An ordered list of messages. One or more partitions make up a topic.
+          Partitions are distributed across the brokers to increase the
+          scalability of your topic. You can also use them to distribute
+          messages across the members of the consumer group.
         </Text>
       </TextContent>
       <FormGroup label="Partitions" isRequired fieldId="topic-partitions">
@@ -46,14 +46,14 @@ export function StepPartitions({
           validated={invalid ? "error" : "default"}
         />
         <FormHelperText>
-          <HelperText>
-            <HelperTextItem>
+          <HelperText id={"topic-partitions-helper"}>
+            <HelperTextItem variant={"indeterminate"}>
               One partition is sufficient for getting started, but production
               systems often have more.{" "}
             </HelperTextItem>
           </HelperText>
         </FormHelperText>
       </FormGroup>
-    </>
+    </FormSection>
   );
 }

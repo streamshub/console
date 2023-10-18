@@ -6,7 +6,6 @@ import { Loading } from "@/components/Loading";
 import {
   Breadcrumb,
   BreadcrumbItem,
-  Divider,
   PageBreadcrumb,
   PageGroup,
 } from "@/libs/patternfly/react-core";
@@ -49,7 +48,6 @@ export default async function KafkaLayout({
         </PageBreadcrumb>
         {header}
       </PageGroup>
-      <Divider />
       <Suspense fallback={<Loading />}>{children}</Suspense>
       {modal}
     </>

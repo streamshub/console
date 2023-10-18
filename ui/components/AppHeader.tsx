@@ -1,4 +1,4 @@
-import { PageSection, Title } from "@/libs/patternfly/react-core";
+import { Divider, PageSection, Title } from "@/libs/patternfly/react-core";
 import { ReactNode } from "react";
 
 export function AppHeader({
@@ -18,6 +18,7 @@ export function AppHeader({
         <Title headingLevel={"h1"}>{title}</Title>
       </PageSection>
       {navigation}
+      {navigation && <Divider />}
     </>
   );
 }

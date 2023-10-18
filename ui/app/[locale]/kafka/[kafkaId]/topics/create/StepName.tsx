@@ -1,6 +1,7 @@
 import {
   FormGroup,
   FormHelperText,
+  FormSection,
   HelperText,
   HelperTextItem,
   Text,
@@ -12,20 +13,27 @@ import {
 export function StepName({
   name,
   onChange,
-  invalid,
+  showErrors,
+  nameInvalid,
+  lengthInvalid,
+  formatInvalid,
 }: {
   name: string;
   onChange: (name: string) => void;
-  invalid: boolean;
+  showErrors: boolean;
+  nameInvalid: boolean;
+  lengthInvalid: boolean;
+  formatInvalid: boolean;
 }) {
+  showErrors = showErrors || name !== "";
   return (
-    <>
-      <TextContent className={"pf-v5-u-pb-md"}>
-        <Title headingLevel={"h2"}>Topic name</Title>
-        <Text>Unique name used to recognize your topic</Text>
+    <FormSection>
+      <TextContent>
+        <Title headingLevel={"h3"}>Topic name</Title>
         <Text component={"small"}>
-          The topic name is also used by your producers and consumers as part of
-          the connection information, so make it something easy to recognize.
+          Unique name used to recognize your topic. The topic name is also used
+          by your producers and consumers as part of the connection information,
+          so make it something easy to recognize.
         </Text>
       </TextContent>
       <FormGroup label="Topic name" isRequired fieldId="topic-name">
@@ -37,17 +45,39 @@ export function StepName({
           aria-describedby="topic-name-helper"
           value={name}
           onChange={(_, value) => onChange(value)}
-          validated={invalid ? "error" : "default"}
+          validated={
+            showErrors && (nameInvalid || lengthInvalid || formatInvalid)
+              ? "error"
+              : "default"
+          }
         />
         <FormHelperText>
-          <HelperText>
-            <HelperTextItem>
+          <HelperText component="ul" aria-live="polite" id="topic-name-helper">
+            <HelperTextItem
+              isDynamic
+              variant={showErrors && lengthInvalid ? "error" : "indeterminate"}
+              component="li"
+            >
+              Must be at least 3 characters
+            </HelperTextItem>
+            <HelperTextItem
+              isDynamic
+              variant={showErrors && nameInvalid ? "error" : "indeterminate"}
+              component="li"
+            >
+              Cannot be &quot;.&quot; or &quot;..&quot;
+            </HelperTextItem>
+            <HelperTextItem
+              isDynamic
+              variant={showErrors && formatInvalid ? "error" : "indeterminate"}
+              component={"li"}
+            >
               Must be letters (Aa-Zz), numbers, underscores ( _ ), periods ( .
               ), or hyphens ( - )
             </HelperTextItem>
           </HelperText>
         </FormHelperText>
       </FormGroup>
-    </>
+    </FormSection>
   );
 }

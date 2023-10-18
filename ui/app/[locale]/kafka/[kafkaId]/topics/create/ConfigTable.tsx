@@ -13,7 +13,7 @@ export function ConfigTable({
 }) {
   return (
     <ResponsiveTable
-      ariaLabel={"Node configuration"}
+      ariaLabel={"Topic configuration"}
       columns={["property", "value"] as const}
       data={Object.entries(defaultOptions)}
       renderHeader={({ column, Th, key }) => {

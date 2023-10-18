@@ -1,6 +1,7 @@
 import {
   FormGroup,
   FormHelperText,
+  FormSection,
   HelperText,
   HelperTextItem,
   NumberInput,
@@ -21,14 +22,12 @@ export function StepReplicas({
   showErrors: boolean;
 }) {
   return (
-    <>
-      <TextContent className={"pf-v5-u-pb-md"}>
-        <Title headingLevel={"h2"}>Replicas</Title>
-        <Text>
-          How many copies of a topic will be made for high availability.
-        </Text>
+    <FormSection>
+      <TextContent>
+        <Title headingLevel={"h3"}>Replicas</Title>
         <Text component={"small"}>
-          The partitions of each topic can be replicated across a configurable
+          How many copies of a topic will be made for high availability. The
+          partitions of each topic can be replicated across a configurable
           number of brokers.
         </Text>
       </TextContent>
@@ -51,8 +50,8 @@ export function StepReplicas({
           }
         />
         <FormHelperText>
-          <HelperText>
-            <HelperTextItem>
+          <HelperText id={"topic-replicas-helper"}>
+            <HelperTextItem variant={"indeterminate"}>
               Replicas are copies of partitions in a topic. Partition replicas
               are distributed over multiple brokers in the cluster to ensure
               topic availability if a broker fails. When a follower replica is
@@ -62,6 +61,6 @@ export function StepReplicas({
           </HelperText>
         </FormHelperText>
       </FormGroup>
-    </>
+    </FormSection>
   );
 }
