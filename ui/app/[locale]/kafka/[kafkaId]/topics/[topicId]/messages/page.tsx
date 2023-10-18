@@ -49,7 +49,7 @@ export default async function Principals({
   });
 
   switch (true) {
-    case messages === null:
+    case messages === null || messages.length === 0:
       return <NoDataEmptyState />;
     default:
       return (
