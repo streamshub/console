@@ -1,14 +1,19 @@
 import { getTopics, TopicList } from "@/api/topics";
 import { TopicsTable } from "@/app/[locale]/kafka/[kafkaId]/topics/TopicsTable";
 import { PageSection } from "@/libs/patternfly/react-core";
-import { getUser } from "@/utils/session";
 
 export default async function TopicsPage({
   params,
 }: {
   params: { kafkaId: string };
+  searchParams: {
+    limit: string | undefined;
+    sort: string | undefined;
+    "filter[offset]": string | undefined;
+    "filter[timestamp]": string | undefined;
+    "filter[epoch]": string | undefined;
+  };
 }) {
-  const auth = await getUser();
   const topics = await getTopics(params.kafkaId);
   return (
     <TopicsContent
