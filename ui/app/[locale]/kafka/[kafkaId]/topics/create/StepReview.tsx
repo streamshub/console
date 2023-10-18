@@ -1,6 +1,7 @@
-import { ConfigSchemaMap } from "@/api/topics";
+import { ConfigSchemaMap, TopicCreateError } from "@/api/topics";
 import { Number } from "@/components/Number";
 import {
+  Alert,
   DescriptionList,
   DescriptionListDescription,
   DescriptionListGroup,
@@ -22,6 +23,7 @@ export function StepReview({
   replicas,
   replicasInvalid,
   options,
+  error,
 }: {
   name: string;
   nameInvalid: boolean;
@@ -30,6 +32,7 @@ export function StepReview({
   replicas: number;
   replicasInvalid: boolean;
   options: ConfigSchemaMap;
+  error: TopicCreateError | "unknown" | undefined;
 }) {
   const optionEntries = Object.entries(options);
   return (
@@ -37,6 +40,18 @@ export function StepReview({
       <GridItem>
         <Title headingLevel={"h2"}>Review your topic</Title>
       </GridItem>
+      {error &&
+        (error !== "unknown" ? (
+          error.errors.map((e, idx) => (
+            <Alert key={idx} title={e.title} variant={"danger"}>
+              {e.detail}
+            </Alert>
+          ))
+        ) : (
+          <Alert title={"Unexpected error"} variant={"danger"}>
+            Sorry, something went wrong. Please try again later.
+          </Alert>
+        ))}
       <GridItem>
         <Title headingLevel={"h3"}>Topic details</Title>
       </GridItem>

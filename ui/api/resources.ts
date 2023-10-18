@@ -123,7 +123,6 @@ export async function createKafkaResource({
   name: string;
   clusterId: string | undefined;
 }) {
-  "use server";
   const session = await getSession("resources");
   const resources = (session?.resources || []) as Resource[];
   const newProfile: KafkaResource = {

@@ -22,21 +22,15 @@ export default async function CreateTopicPage({
   ) {
     "use server";
     try {
-      const topic = await createTopic(
-        kafkaId,
-        name,
-        partitions,
-        replicas,
-        options,
-      );
-      return `/kafka/${kafkaId}/topics/${topic.id}`;
-    } catch {
-      return Promise.reject();
+      return await createTopic(kafkaId, name, partitions, replicas, options);
+    } catch (e: unknown) {
+      return Promise.reject("Unknown error");
     }
   }
 
   return (
     <CreateTopic
+      kafkaId={kafkaId}
       maxReplicas={cluster.attributes.nodes.length}
       defaultOptions={tempOptions}
       onSave={onSave}

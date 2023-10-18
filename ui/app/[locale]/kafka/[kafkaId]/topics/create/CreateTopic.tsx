@@ -1,5 +1,9 @@
 "use client";
-import { ConfigSchemaMap } from "@/api/topics";
+import {
+  ConfigSchemaMap,
+  TopicCreateError,
+  TopicCreateResponse,
+} from "@/api/topics";
 import { StepAdvancedConfiguration } from "@/app/[locale]/kafka/[kafkaId]/topics/create/StepAdvancedConfiguration";
 import { StepName } from "@/app/[locale]/kafka/[kafkaId]/topics/create/StepName";
 import { StepPartitions } from "@/app/[locale]/kafka/[kafkaId]/topics/create/StepPartitions";
@@ -21,10 +25,12 @@ import { useState, useTransition } from "react";
 const legalNameChars = new RegExp("^[a-zA-Z0-9._-]+$");
 
 export function CreateTopic({
+  kafkaId,
   maxReplicas,
   defaultOptions,
   onSave,
 }: {
+  kafkaId: string;
   maxReplicas: number;
   defaultOptions: ConfigSchemaMap;
   onSave: (
@@ -32,7 +38,7 @@ export function CreateTopic({
     partitions: number,
     replicas: number,
     options: ConfigSchemaMap,
-  ) => Promise<string>;
+  ) => Promise<TopicCreateResponse>;
 }) {
   const router = useRouter();
   const [showError, setShowError] = useState(false);
@@ -41,13 +47,25 @@ export function CreateTopic({
   const [replicas, setReplicas] = useState(maxReplicas);
   const [options, setOptions] = useState<ConfigSchemaMap>({});
   const [pending, startTransition] = useTransition();
+  const [errors, setErrors] = useState<
+    TopicCreateError | "unknown" | undefined
+  >(undefined);
 
   const handleSave = async () => {
     if (!formInvalid) {
-      const topicUrl = await onSave(name, partitions, replicas, options);
-      startTransition(() => {
-        router.push(topicUrl);
-      });
+      try {
+        setErrors(undefined);
+        const result = await onSave(name, partitions, replicas, options);
+        if ("errors" in result) {
+          setErrors(result);
+        } else {
+          startTransition(() => {
+            router.push(`/kafka/${kafkaId}/topics/${result.data.id}`);
+          });
+        }
+      } catch (e: unknown) {
+        setErrors("unknown");
+      }
     }
   };
 
@@ -100,7 +118,11 @@ export function CreateTopic({
             />
           </Form>
         </WizardStep>
-        <WizardStep name="Advanced options" id="step-options">
+        <WizardStep
+          name="Advanced options"
+          id="step-options"
+          footer={{ isNextDisabled: formInvalid }}
+        >
           <StepAdvancedConfiguration
             options={{}}
             defaultOptions={defaultOptions}
@@ -118,6 +140,7 @@ export function CreateTopic({
               saving={pending}
             />
           }
+          isDisabled={formInvalid}
         >
           <StepReview
             name={name}
@@ -127,6 +150,7 @@ export function CreateTopic({
             replicas={replicas}
             replicasInvalid={replicasInvalid}
             options={options}
+            error={errors}
           />
         </WizardStep>
       </Wizard>
@@ -152,7 +176,7 @@ const SkipReviewFooter = ({ formInvalid }: { formInvalid: boolean }) => {
           variant="tertiary"
           onClick={() => goToStepById("step-review")}
           id={"review-button"}
-          disabled={formInvalid}
+          isDisabled={formInvalid}
         >
           Review and finish
         </Button>
@@ -184,7 +208,7 @@ const ReviewFooter = ({
         onClick={onSave}
         disabled={formInvalid || saving}
       >
-        Finish
+        Create topic
       </Button>
       <Button variant={"link"} onClick={close} disabled={saving}>
         Cancel

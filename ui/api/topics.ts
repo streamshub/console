@@ -87,15 +87,35 @@ export const TopicsResponse = z.object({
   data: z.array(TopicListSchema),
 });
 
-const TopicCreateResponseSchema = z.object({
+const TopicCreateResponseSuccessSchema = z.object({
   data: z.object({
     id: z.string(),
   }),
 });
+const TopicCreateResponseErrorSchema = z.object({
+  errors: z.array(
+    z.object({
+      id: z.string(),
+      status: z.string(),
+      code: z.string(),
+      title: z.string(),
+      detail: z.string(),
+      source: z
+        .object({
+          pointer: z.string().nullable(),
+        })
+        .nullable(),
+    }),
+  ),
+});
+const TopicCreateResponseSchema = z.union([
+  TopicCreateResponseSuccessSchema,
+  TopicCreateResponseErrorSchema,
+]);
+export type TopicCreateError = z.infer<typeof TopicCreateResponseErrorSchema>;
 export type TopicCreateResponse = z.infer<typeof TopicCreateResponseSchema>;
 
 export async function getTopics(kafkaId: string): Promise<TopicList[]> {
-  "use server";
   const url = `${process.env.BACKEND_URL}/api/kafkas/${kafkaId}/topics?${listTopicsQuery}`;
   const res = await fetch(url, {
     headers: await getHeaders(),
@@ -110,7 +130,6 @@ export async function getTopic(
   kafkaId: string,
   topicId: string,
 ): Promise<Topic> {
-  "use server";
   const url = `${process.env.BACKEND_URL}/api/kafkas/${kafkaId}/topics/${topicId}?${describeTopicsQuery}`;
   const res = await fetch(url, {
     headers: await getHeaders(),
@@ -127,8 +146,7 @@ export async function createTopic(
   numPartitions: number,
   replicationFactor: number,
   configs: ConfigSchemaMap,
-) {
-  "use server";
+): Promise<TopicCreateResponse> {
   const url = `${process.env.BACKEND_URL}/api/kafkas/${kafkaId}/topics`;
   const body = JSON.stringify({
     data: {
@@ -151,5 +169,9 @@ export async function createTopic(
   log.trace({ url, body }, "calling createTopic");
   const rawData = await res.json();
   log.debug({ url, rawData }, "createTopic response");
-  return TopicCreateResponseSchema.parse(rawData).data;
+  const response = TopicCreateResponseSchema.parse(rawData);
+  if ("data" in response) {
+    return response;
+  }
+  return response;
 }
