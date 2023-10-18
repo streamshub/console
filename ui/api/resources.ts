@@ -55,6 +55,7 @@ export async function getResources(
   scope: typeof ResourceTypeKafka,
 ): Promise<KafkaResource[]>;
 export async function getResources(scope: unknown): Promise<unknown> {
+  "use server";
   const { resources } = await getSession("resources");
   switch (scope) {
     case "kafka":
@@ -90,6 +91,7 @@ export async function getResource(
   id: string,
   scope: unknown,
 ): Promise<unknown> {
+  "use server";
   let resource;
   if (typeof scope === typeof ResourceTypeKafka) {
     const resources = await getResources("kafka");
@@ -121,6 +123,7 @@ export async function createKafkaResource({
   name: string;
   clusterId: string | undefined;
 }) {
+  "use server";
   const session = await getSession("resources");
   const resources = (session?.resources || []) as Resource[];
   const newProfile: KafkaResource = {

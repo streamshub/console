@@ -87,7 +87,15 @@ export const TopicsResponse = z.object({
   data: z.array(TopicListSchema),
 });
 
+const TopicCreateResponseSchema = z.object({
+  data: z.object({
+    id: z.string(),
+  }),
+});
+export type TopicCreateResponse = z.infer<typeof TopicCreateResponseSchema>;
+
 export async function getTopics(kafkaId: string): Promise<TopicList[]> {
+  "use server";
   const url = `${process.env.BACKEND_URL}/api/kafkas/${kafkaId}/topics?${listTopicsQuery}`;
   const res = await fetch(url, {
     headers: await getHeaders(),
@@ -102,6 +110,7 @@ export async function getTopic(
   kafkaId: string,
   topicId: string,
 ): Promise<Topic> {
+  "use server";
   const url = `${process.env.BACKEND_URL}/api/kafkas/${kafkaId}/topics/${topicId}?${describeTopicsQuery}`;
   const res = await fetch(url, {
     headers: await getHeaders(),
@@ -110,4 +119,37 @@ export async function getTopic(
   const rawData = await res.json();
   //log.debug("getTopic", url, JSON.stringify(rawData, null, 2));
   return TopicResponse.parse(rawData).data;
+}
+
+export async function createTopic(
+  kafkaId: string,
+  name: string,
+  numPartitions: number,
+  replicationFactor: number,
+  configs: ConfigSchemaMap,
+) {
+  "use server";
+  const url = `${process.env.BACKEND_URL}/api/kafkas/${kafkaId}/topics`;
+  const body = JSON.stringify({
+    data: {
+      type: "topics",
+      meta: {},
+      attributes: {
+        name,
+        numPartitions,
+        replicationFactor,
+        configs,
+      },
+    },
+  });
+  const res = await fetch(url, {
+    headers: await getHeaders(),
+    cache: "no-store",
+    method: "POST",
+    body,
+  });
+  log.trace({ url, body }, "calling createTopic");
+  const rawData = await res.json();
+  log.debug({ url, rawData }, "createTopic response");
+  return TopicCreateResponseSchema.parse(rawData).data;
 }

@@ -41,6 +41,7 @@ export async function getTopicMessages(
       | undefined;
   },
 ): Promise<Message[]> {
+  "use server";
   const sp = new URLSearchParams(
     filterUndefinedFromObj({
       "fields[records]":

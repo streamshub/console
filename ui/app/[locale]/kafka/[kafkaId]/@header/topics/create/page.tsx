@@ -1,5 +1,5 @@
 import { AppHeader } from "@/components/AppHeader";
 
 export default function CreateTopicHeader() {
-  return <AppHeader title={"Create a topic"} />;
+  return <AppHeader title={"Create topic"} />;
 }

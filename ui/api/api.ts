@@ -6,6 +6,7 @@ export async function getHeaders(): Promise<Record<string, string>> {
   return {
     Accept: "application/json",
     Authorization: `Bearer ${user.accessToken}`,
+    "Content-Type": "application/json",
   };
 }
 

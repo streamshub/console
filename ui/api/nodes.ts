@@ -29,6 +29,7 @@ export async function getNodeConfiguration(
   kafkaId: string,
   nodeId: number | string,
 ): Promise<NodeConfig> {
+  "use server";
   const url = `${process.env.BACKEND_URL}/api/kafkas/${kafkaId}/nodes/${nodeId}/configs`;
   log.debug({ url }, "Fetching node configuration");
   const res = await fetch(url, {

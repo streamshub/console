@@ -43,6 +43,7 @@ export const ClusterResponse = z.object({
 export type ClusterDetail = z.infer<typeof ClusterDetailSchema>;
 
 export async function getKafkaClusters(): Promise<ClusterList[]> {
+  "use server";
   const url = `${process.env.BACKEND_URL}/api/kafkas?fields%5Bkafkas%5D=name,bootstrapServers,authType`;
   try {
     const res = await fetch(url, {
@@ -60,6 +61,7 @@ export async function getKafkaClusters(): Promise<ClusterList[]> {
 export async function getKafkaCluster(
   clusterId: string,
 ): Promise<ClusterDetail | null> {
+  "use server";
   const url = `${process.env.BACKEND_URL}/api/kafkas/${clusterId}/?fields%5Bkafkas%5D=name,namespace,creationTimestamp,nodes,controller,authorizedOperations,bootstrapServers,authType`;
   try {
     const res = await fetch(url, {
