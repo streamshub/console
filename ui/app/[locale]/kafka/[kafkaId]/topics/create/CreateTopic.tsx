@@ -1,11 +1,12 @@
 "use client";
 import {
-  ConfigSchemaMap,
+  ConfigMap,
+  NewConfigMap,
   TopicCreateError,
   TopicCreateResponse,
 } from "@/api/topics";
-import { StepAdvancedConfiguration } from "@/app/[locale]/kafka/[kafkaId]/topics/create/StepAdvancedConfiguration";
 import { StepName } from "@/app/[locale]/kafka/[kafkaId]/topics/create/StepName";
+import { StepOptions } from "@/app/[locale]/kafka/[kafkaId]/topics/create/StepOptions";
 import { StepPartitions } from "@/app/[locale]/kafka/[kafkaId]/topics/create/StepPartitions";
 import { StepReplicas } from "@/app/[locale]/kafka/[kafkaId]/topics/create/StepReplicas";
 import { StepReview } from "@/app/[locale]/kafka/[kafkaId]/topics/create/StepReview";
@@ -27,17 +28,17 @@ const legalNameChars = new RegExp("^[a-zA-Z0-9._-]+$");
 export function CreateTopic({
   kafkaId,
   maxReplicas,
-  defaultOptions,
+  initialOptions,
   onSave,
 }: {
   kafkaId: string;
   maxReplicas: number;
-  defaultOptions: ConfigSchemaMap;
+  initialOptions: ConfigMap;
   onSave: (
     name: string,
     partitions: number,
     replicas: number,
-    options: ConfigSchemaMap,
+    options: NewConfigMap,
   ) => Promise<TopicCreateResponse>;
 }) {
   const router = useRouter();
@@ -45,7 +46,7 @@ export function CreateTopic({
   const [name, setName] = useState("");
   const [partitions, setPartitions] = useState(1);
   const [replicas, setReplicas] = useState(maxReplicas);
-  const [options, setOptions] = useState<ConfigSchemaMap>({});
+  const [options, setOptions] = useState<NewConfigMap>({});
   const [pending, startTransition] = useTransition();
   const [errors, setErrors] = useState<
     TopicCreateError | "unknown" | undefined
@@ -119,15 +120,14 @@ export function CreateTopic({
           </Form>
         </WizardStep>
         <WizardStep
-          name="Advanced options"
+          name="Options"
           id="step-options"
           footer={{ isNextDisabled: formInvalid }}
         >
-          <StepAdvancedConfiguration
-            options={{}}
-            defaultOptions={defaultOptions}
-            onChange={() => {}}
-            showErrors={showError}
+          <StepOptions
+            options={options}
+            initialOptions={initialOptions}
+            onChange={setOptions}
           />
         </WizardStep>
         <WizardStep
@@ -150,6 +150,7 @@ export function CreateTopic({
             replicas={replicas}
             replicasInvalid={replicasInvalid}
             options={options}
+            initialOptions={initialOptions}
             error={errors}
           />
         </WizardStep>

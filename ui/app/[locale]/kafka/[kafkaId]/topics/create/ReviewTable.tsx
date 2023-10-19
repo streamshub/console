@@ -1,27 +1,28 @@
 "use client";
 import { ConfigMap, NewConfigMap } from "@/api/topics";
 import { ResponsiveTable, ResponsiveTableProps } from "@/components/table";
-import { TextInput } from "@patternfly/react-core";
 import { TableVariant } from "@patternfly/react-table";
 import { useCallback, useMemo } from "react";
 
-type Column = "property" | "value";
-const columns: readonly Column[] = ["property", "value"] as const;
+type Column = "property" | "new-value" | "initial-value";
+const columns: readonly Column[] = [
+  "property",
+  "new-value",
+  "initial-value",
+] as const;
 
-export function ConfigTable({
+export function ReviewTable({
   options,
   initialOptions,
-  onChange,
 }: {
   options: NewConfigMap;
   initialOptions: ConfigMap;
-  onChange: (options: NewConfigMap) => void;
 }) {
-  const data = useMemo(() => Object.entries(initialOptions), [initialOptions]);
+  const data = useMemo(() => Object.entries(options), [initialOptions]);
   const renderCell = useCallback<
     ResponsiveTableProps<(typeof data)[number], Column>["renderCell"]
   >(
-    ({ column, key, row: [name, property], Td }) => {
+    ({ column, key, row: [name, value], Td }) => {
       switch (column) {
         case "property":
           return (
@@ -29,25 +30,13 @@ export function ConfigTable({
               <div>{name}</div>
             </Td>
           );
-        case "value":
-          return (
-            <Td key={name}>
-              <TextInput
-                id={`property-${name}`}
-                placeholder={property.value}
-                value={options[name] || ""}
-                onChange={(_, value) =>
-                  onChange({
-                    ...options,
-                    [name]: value,
-                  })
-                }
-              />
-            </Td>
-          );
+        case "new-value":
+          return <Td key={name}>{value}</Td>;
+        case "initial-value":
+          return <Td key={name}>{initialOptions[name].value}</Td>;
       }
     },
-    [onChange, options],
+    [options, initialOptions],
   );
   return (
     <ResponsiveTable
@@ -62,8 +51,10 @@ export function ConfigTable({
                 Property
               </Th>
             );
-          case "value":
-            return <Th key={key}>Value</Th>;
+          case "new-value":
+            return <Th key={key}>New value</Th>;
+          case "initial-value":
+            return <Th key={key}>Initial value</Th>;
         }
       }}
       renderCell={renderCell}

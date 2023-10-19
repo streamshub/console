@@ -1,4 +1,5 @@
-import { ConfigSchemaMap, TopicCreateError } from "@/api/topics";
+import { ConfigMap, NewConfigMap, TopicCreateError } from "@/api/topics";
+import { ReviewTable } from "@/app/[locale]/kafka/[kafkaId]/topics/create/ReviewTable";
 import { Number } from "@/components/Number";
 import {
   Alert,
@@ -23,6 +24,7 @@ export function StepReview({
   replicas,
   replicasInvalid,
   options,
+  initialOptions,
   error,
 }: {
   name: string;
@@ -31,7 +33,8 @@ export function StepReview({
   partitionsInvalid: boolean;
   replicas: number;
   replicasInvalid: boolean;
-  options: ConfigSchemaMap;
+  options: NewConfigMap;
+  initialOptions: ConfigMap;
   error: TopicCreateError | "unknown" | undefined;
 }) {
   const optionEntries = Object.entries(options);
@@ -44,7 +47,20 @@ export function StepReview({
         (error !== "unknown" ? (
           error.errors.map((e, idx) => (
             <Alert key={idx} title={e.title} variant={"danger"}>
-              {e.detail}
+              <TextContent>
+                <Text>{e.detail}</Text>
+                {e.source?.pointer && (
+                  <Text component={"small"}>
+                    <strong>Pointer</strong>&nbsp;
+                    {e.source.pointer}
+                  </Text>
+                )}
+
+                <Text component={"small"}>
+                  <strong>Error</strong>&nbsp;
+                  {e.id}
+                </Text>
+              </TextContent>
             </Alert>
           ))
         ) : (
@@ -108,20 +124,11 @@ export function StepReview({
         </DescriptionList>
       </GridItem>
       <GridItem>
-        <Title headingLevel={"h3"}>Advanced options</Title>
+        <Title headingLevel={"h3"}>Options</Title>
       </GridItem>
       <GridItem>
         {optionEntries.length > 0 ? (
-          <DescriptionList isHorizontal>
-            {optionEntries.map(([name, property], idx) => (
-              <DescriptionListGroup key={idx}>
-                <DescriptionListTerm>{name}</DescriptionListTerm>
-                <DescriptionListDescription>
-                  {property.value}
-                </DescriptionListDescription>
-              </DescriptionListGroup>
-            ))}
-          </DescriptionList>
+          <ReviewTable options={options} initialOptions={initialOptions} />
         ) : (
           <TextContent>
             <Text component={"small"}>No advanced options specified.</Text>

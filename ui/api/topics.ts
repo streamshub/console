@@ -50,8 +50,15 @@ const ConfigSchema = z.object({
   readOnly: z.boolean(),
   type: z.string(),
 });
-const ConfigSchemaMapSchema = z.record(z.string(), ConfigSchema);
-export type ConfigSchemaMap = z.infer<typeof ConfigSchemaMapSchema>;
+
+const ConfigMapSchema = z.record(z.string(), ConfigSchema);
+export type ConfigMap = z.infer<typeof ConfigMapSchema>;
+const NewConfigMapSchema = z.record(
+  z.string(),
+  z.union([z.string(), z.number(), z.null()]),
+);
+export type NewConfigMap = z.infer<typeof NewConfigMapSchema>;
+
 const TopicSchema = z.object({
   id: z.string(),
   type: z.literal("topics"),
@@ -60,7 +67,7 @@ const TopicSchema = z.object({
     internal: z.boolean(),
     partitions: z.array(PartitionSchema),
     authorizedOperations: z.array(z.string()),
-    configs: ConfigSchemaMapSchema,
+    configs: ConfigMapSchema,
     recordCount: z.number().optional(),
     totalLeaderLogBytes: z.number().optional(),
   }),
@@ -174,7 +181,7 @@ export async function createTopic(
   name: string,
   numPartitions: number,
   replicationFactor: number,
-  configs: ConfigSchemaMap,
+  configs: NewConfigMap,
 ): Promise<TopicCreateResponse> {
   const url = `${process.env.BACKEND_URL}/api/kafkas/${kafkaId}/topics`;
   const body = JSON.stringify({

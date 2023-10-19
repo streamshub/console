@@ -1,5 +1,5 @@
 import { getKafkaCluster } from "@/api/kafka";
-import { ConfigSchemaMap, createTopic } from "@/api/topics";
+import { createTopic, NewConfigMap } from "@/api/topics";
 import { KafkaParams } from "@/app/[locale]/kafka/[kafkaId]/kafka.params";
 import { CreateTopic } from "@/app/[locale]/kafka/[kafkaId]/topics/create/CreateTopic";
 import { notFound, redirect } from "next/navigation";
@@ -22,7 +22,7 @@ export default async function CreateTopicPage({
     name: string,
     partitions: number,
     replicas: number,
-    options: ConfigSchemaMap,
+    options: NewConfigMap,
   ) {
     "use server";
     try {
@@ -36,7 +36,7 @@ export default async function CreateTopicPage({
     <CreateTopic
       kafkaId={kafkaId}
       maxReplicas={cluster.attributes.nodes.length}
-      defaultOptions={tempOptions}
+      initialOptions={tempOptions}
       onSave={onSave}
     />
   );
