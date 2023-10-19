@@ -55,7 +55,9 @@ const ConfigMapSchema = z.record(z.string(), ConfigSchema);
 export type ConfigMap = z.infer<typeof ConfigMapSchema>;
 const NewConfigMapSchema = z.record(
   z.string(),
-  z.union([z.string(), z.number(), z.null()]),
+  z.object({
+    value: z.union([z.string(), z.number(), z.undefined(), z.null()]),
+  }),
 );
 export type NewConfigMap = z.infer<typeof NewConfigMapSchema>;
 
@@ -119,9 +121,9 @@ const TopicCreateResponseErrorSchema = z.object({
       detail: z.string(),
       source: z
         .object({
-          pointer: z.string().nullable(),
+          pointer: z.string().optional(),
         })
-        .nullable(),
+        .optional(),
     }),
   ),
 });
@@ -184,7 +186,7 @@ export async function createTopic(
   configs: NewConfigMap,
 ): Promise<TopicCreateResponse> {
   const url = `${process.env.BACKEND_URL}/api/kafkas/${kafkaId}/topics`;
-  const body = JSON.stringify({
+  const body = {
     data: {
       type: "topics",
       meta: {},
@@ -192,20 +194,20 @@ export async function createTopic(
         name,
         numPartitions,
         replicationFactor,
-        configs,
+        configs: filterUndefinedFromObj(configs),
       },
     },
-  });
+  };
   const res = await fetch(url, {
     headers: await getHeaders(),
-
     method: "POST",
-    body,
+    body: JSON.stringify(body),
   });
   log.trace({ url, body }, "calling createTopic");
   const rawData = await res.json();
   log.debug({ url, rawData }, "createTopic response");
   const response = TopicCreateResponseSchema.parse(rawData);
+  log.trace(response, "createTopic response parsed");
   if ("data" in response) {
     return response;
   }

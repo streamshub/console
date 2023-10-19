@@ -88,6 +88,7 @@ export function CreateTopic({
         title="Topic creation wizard"
         onStepChange={() => {
           setShowError(true);
+          setErrors(undefined);
         }}
         onClose={() => router.back()}
       >

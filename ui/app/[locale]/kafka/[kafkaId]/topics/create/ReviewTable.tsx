@@ -18,7 +18,7 @@ export function ReviewTable({
   options: NewConfigMap;
   initialOptions: ConfigMap;
 }) {
-  const data = useMemo(() => Object.entries(options), [initialOptions]);
+  const data = useMemo(() => Object.entries(options), [options]);
   const renderCell = useCallback<
     ResponsiveTableProps<(typeof data)[number], Column>["renderCell"]
   >(
@@ -31,12 +31,12 @@ export function ReviewTable({
             </Td>
           );
         case "new-value":
-          return <Td key={name}>{value}</Td>;
+          return <Td key={key}>{value.value}</Td>;
         case "initial-value":
-          return <Td key={name}>{initialOptions[name].value}</Td>;
+          return <Td key={key}>{initialOptions[name]?.value}</Td>;
       }
     },
-    [options, initialOptions],
+    [initialOptions],
   );
   return (
     <ResponsiveTable

@@ -1,4 +1,3 @@
-"use client";
 import { ConfigMap, NewConfigMap } from "@/api/topics";
 import { ResponsiveTable, ResponsiveTableProps } from "@/components/table";
 import { TextInput } from "@patternfly/react-core";
@@ -35,13 +34,19 @@ export function ConfigTable({
               <TextInput
                 id={`property-${name}`}
                 placeholder={property.value}
-                value={options[name] || ""}
-                onChange={(_, value) =>
-                  onChange({
-                    ...options,
-                    [name]: value,
-                  })
-                }
+                value={options[name]?.value || ""}
+                onChange={(_, value) => {
+                  if (value.trim() !== "") {
+                    onChange({
+                      ...options,
+                      [name]: { value },
+                    });
+                  } else {
+                    const newOpts = { ...options };
+                    delete newOpts[name];
+                    onChange(newOpts);
+                  }
+                }}
               />
             </Td>
           );
