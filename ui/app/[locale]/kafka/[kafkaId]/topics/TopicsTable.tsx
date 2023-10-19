@@ -1,38 +1,92 @@
 "use client";
 import { TopicList } from "@/api/topics";
+import { Bytes } from "@/components/Bytes";
 import { Number } from "@/components/Number";
 import { TableView } from "@/components/table";
+import { useFilterParams } from "@/utils/useFilterParams";
 import { TableVariant } from "@patternfly/react-table";
 import { useFormatter, useTranslations } from "next-intl";
 import Link from "next-intl/link";
 import { usePathname, useRouter } from "next/navigation";
 
+export const TopicsTableColumns = [
+  "name",
+  "partitions",
+  "messages",
+  "storage",
+] as const;
+export type TopicsTableColumn = (typeof TopicsTableColumns)[number];
+const SortableColumns: TopicsTableColumn[] = ["name"];
+
 export type TopicsTableProps = {
   topics: TopicList[];
+  topicsCount: number;
   canCreate: boolean;
+  perPage: number;
+  sort: TopicsTableColumn;
+  sortDir: "asc" | "desc";
 };
 
-export function TopicsTable({ canCreate, topics }: TopicsTableProps) {
+export function TopicsTable({
+  canCreate,
+  topics,
+  topicsCount,
+  perPage,
+  sort,
+  sortDir,
+}: TopicsTableProps) {
   const format = useFormatter();
   const t = useTranslations("topics");
   const pathname = usePathname();
   const router = useRouter();
+  const updateUrl = useFilterParams({ perPage, sort, sortDir });
 
   return (
     <TableView
-      itemCount={topics.length}
+      itemCount={topicsCount}
       page={1}
-      onPageChange={() => {}}
+      perPage={perPage}
+      onPageChange={(page, perPage) => {
+        updateUrl({ perPage });
+      }}
       data={topics}
       emptyStateNoData={<div>no data</div>}
       emptyStateNoResults={<div>no results</div>}
       ariaLabel={"Topics"}
-      columns={["name", "partitions", "messages"] as const}
+      columns={TopicsTableColumns}
+      isColumnSortable={(col) => {
+        if (!SortableColumns.includes(col)) {
+          return undefined;
+        }
+        const activeIndex = TopicsTableColumns.indexOf(sort);
+        const columnIndex = TopicsTableColumns.indexOf(col);
+        return {
+          label: col as string,
+          columnIndex,
+          onSort: () => {
+            updateUrl({
+              sort: col,
+              sortDir:
+                activeIndex === columnIndex
+                  ? sortDir === "asc"
+                    ? "desc"
+                    : "asc"
+                  : "asc",
+            });
+          },
+          sortBy: {
+            index: activeIndex,
+            direction: sortDir,
+            defaultDirection: "asc",
+          },
+          isFavorites: undefined,
+        };
+      }}
       renderHeader={({ Th, column, key }) => {
         switch (column) {
           case "name":
             return (
-              <Th key={key} width={70}>
+              <Th key={key} width={60}>
                 Name
               </Th>
             );
@@ -40,6 +94,8 @@ export function TopicsTable({ canCreate, topics }: TopicsTableProps) {
             return <Th key={key}>Partitions</Th>;
           case "messages":
             return <Th key={key}>Messages</Th>;
+          case "storage":
+            return <Th key={key}>Storage</Th>;
         }
       }}
       renderCell={({ Td, column, row, key }) => {
@@ -60,6 +116,12 @@ export function TopicsTable({ canCreate, topics }: TopicsTableProps) {
             return (
               <Td key={key}>
                 <Number value={row.attributes.recordCount} />
+              </Td>
+            );
+          case "storage":
+            return (
+              <Td key={key}>
+                <Bytes value={row.attributes.totalLeaderLogBytes} />
               </Td>
             );
         }

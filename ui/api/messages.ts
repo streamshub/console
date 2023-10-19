@@ -65,10 +65,13 @@ export async function getTopicMessages(
   );
   const res = await fetch(url, {
     headers: await getHeaders(),
-    cache: "no-store",
+
     next: { tags: [`messages-${topicId}`] },
   });
   const rawData = await res.json();
   log.trace(rawData, "Received messages");
+  // return new Promise((resolve) =>
+  //   setTimeout(() => resolve(MessageApiResponse.parse(rawData).data), 1000),
+  // );
   return MessageApiResponse.parse(rawData).data;
 }

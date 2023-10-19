@@ -1,12 +1,10 @@
 import { BackendError, getHeaders } from "@/api/api";
+import { filterUndefinedFromObj } from "@/utils/filterUndefinedFromObj";
 import { logger } from "@/utils/logger";
 import { z } from "zod";
 
 const log = logger.child({ module: "topics-api" });
 
-const listTopicsQuery = encodeURI(
-  "fields[topics]=name,internal,partitions,recordCount",
-);
 const describeTopicsQuery = encodeURI(
   "fields[topics]=,name,internal,partitions,authorizedOperations,configs,recordCount,totalLeaderLogBytes",
 );
@@ -75,17 +73,29 @@ export type Topic = z.infer<typeof TopicSchema>;
 const TopicListSchema = z.object({
   id: z.string(),
   type: z.literal("topics"),
+  meta: z.object({
+    page: z.object({
+      cursor: z.string(),
+    }),
+  }),
   attributes: TopicSchema.shape.attributes.pick({
     name: true,
     internal: true,
     partitions: true,
     recordCount: true,
+    totalLeaderLogBytes: true,
   }),
 });
 export type TopicList = z.infer<typeof TopicListSchema>;
 export const TopicsResponse = z.object({
+  meta: z.object({
+    page: z.object({
+      total: z.number(),
+    }),
+  }),
   data: z.array(TopicListSchema),
 });
+export type TopicsResponseList = z.infer<typeof TopicsResponse>;
 
 const TopicCreateResponseSuccessSchema = z.object({
   data: z.object({
@@ -115,15 +125,35 @@ const TopicCreateResponseSchema = z.union([
 export type TopicCreateError = z.infer<typeof TopicCreateResponseErrorSchema>;
 export type TopicCreateResponse = z.infer<typeof TopicCreateResponseSchema>;
 
-export async function getTopics(kafkaId: string): Promise<TopicList[]> {
-  const url = `${process.env.BACKEND_URL}/api/kafkas/${kafkaId}/topics?${listTopicsQuery}`;
+export async function getTopics(
+  kafkaId: string,
+  params: {
+    pageSize?: number;
+    pageCursor?: string;
+    sort?: string;
+    sortDir?: string;
+  },
+): Promise<TopicsResponseList> {
+  const sp = new URLSearchParams(
+    filterUndefinedFromObj({
+      "fields[topics]":
+        "name,internal,partitions,recordCount,totalLeaderLogBytes",
+      "page[size]": params.pageSize,
+      "page[after]": params.pageCursor,
+      sort: params.sort
+        ? (params.sortDir !== "asc" ? "-" : "") + params.sort
+        : undefined,
+    }),
+  );
+  const topicsQuery = sp.toString();
+  const url = `${process.env.BACKEND_URL}/api/kafkas/${kafkaId}/topics?${topicsQuery}&`;
   const res = await fetch(url, {
     headers: await getHeaders(),
-    cache: "no-store",
   });
+  log.debug({ url }, "getTopics");
   const rawData = await res.json();
-  log.debug({ url, rawData }, "getTopics");
-  return TopicsResponse.parse(rawData).data;
+  log.trace({ url, rawData }, "getTopics response");
+  return TopicsResponse.parse(rawData);
 }
 
 export async function getTopic(
@@ -133,7 +163,6 @@ export async function getTopic(
   const url = `${process.env.BACKEND_URL}/api/kafkas/${kafkaId}/topics/${topicId}?${describeTopicsQuery}`;
   const res = await fetch(url, {
     headers: await getHeaders(),
-    cache: "no-store",
   });
   const rawData = await res.json();
   //log.debug("getTopic", url, JSON.stringify(rawData, null, 2));
@@ -162,7 +191,7 @@ export async function createTopic(
   });
   const res = await fetch(url, {
     headers: await getHeaders(),
-    cache: "no-store",
+
     method: "POST",
     body,
   });

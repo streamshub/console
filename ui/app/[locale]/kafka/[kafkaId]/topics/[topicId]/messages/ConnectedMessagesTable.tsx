@@ -3,19 +3,15 @@ import { Message } from "@/api/messages";
 import { RefreshInterval } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/_components/RefreshSelector";
 import { useFilterParams } from "@/utils/useFilterParams";
 import { useEffect, useState, useTransition } from "react";
-import { KafkaMessageBrowser } from "./_components/KafkaMessageBrowser";
+import { MessagesTable } from "./_components/MessagesTable";
 
-export function MessagesTable({
+export function ConnectedMessagesTable({
   messages,
   partitions,
-  offsetMin,
-  offsetMax,
   params,
 }: {
   messages: Message[];
   partitions: number;
-  offsetMin: number | undefined;
-  offsetMax: number | undefined;
   params: {
     selectedOffset: number | undefined;
     partition: number | undefined;
@@ -115,16 +111,6 @@ export function MessagesTable({
     });
   }
 
-  function onReset() {
-    startTransition(() => {
-      updateUrl({
-        "filter[offset]": undefined,
-        "filter[timestamp]": undefined,
-        "filter[epoch]": undefined,
-      });
-    });
-  }
-
   const selectedMessage = messages.find(
     (m) => m.attributes.offset === params.selectedOffset,
   );
@@ -140,15 +126,11 @@ export function MessagesTable({
   }, [params, updateUrl, refreshInterval]);
 
   return (
-    <KafkaMessageBrowser
-      isFirstLoad={false}
-      isNoData={false}
+    <MessagesTable
       isRefreshing={isPending}
       selectedMessage={selectedMessage}
       lastUpdated={new Date()}
       messages={messages}
-      offsetMin={offsetMin}
-      offsetMax={offsetMax}
       partitions={partitions}
       partition={params.partition}
       limit={params.limit}
@@ -165,7 +147,6 @@ export function MessagesTable({
       onRefresh={refresh}
       onSelectMessage={setSelected}
       onDeselectMessage={deselectMessage}
-      onReset={onReset}
       onRefreshInterval={setRefreshInterval}
     />
   );

@@ -21,7 +21,7 @@ export function KafkaBreadcrumbItem({
         selected={selected}
         clusters={clusters}
         isActive={isActive}
-        getSwitchHref={(kafkaId) => `/kafka/${kafkaId}/${segment}`}
+        getSwitchHref={(kafkaId) => `/kafka/${kafkaId}/${segment || ""}`}
       />
     </Suspense>
   );

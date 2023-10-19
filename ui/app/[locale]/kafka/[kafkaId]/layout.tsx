@@ -2,7 +2,6 @@ import { getKafkaCluster, getKafkaClusters } from "@/api/kafka";
 import { KafkaParams } from "@/app/[locale]/kafka/[kafkaId]/kafka.params";
 import { KafkaBreadcrumbItem } from "@/app/[locale]/kafka/[kafkaId]/KafkaBreadcrumbItem";
 import { BreadcrumbLink } from "@/components/BreadcrumbLink";
-import { Loading } from "@/components/Loading";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -10,7 +9,7 @@ import {
   PageGroup,
 } from "@/libs/patternfly/react-core";
 import { notFound } from "next/navigation";
-import { PropsWithChildren, ReactNode, Suspense } from "react";
+import { PropsWithChildren, ReactNode } from "react";
 
 export default async function KafkaLayout({
   children,
@@ -48,7 +47,7 @@ export default async function KafkaLayout({
         </PageBreadcrumb>
         {header}
       </PageGroup>
-      <Suspense fallback={<Loading />}>{children}</Suspense>
+      {children}
       {modal}
     </>
   );

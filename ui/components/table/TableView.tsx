@@ -82,8 +82,7 @@ export const TableView = <TRow, TCol>({
   const [isSortOpen, toggleIsSortOpen] = useState(false);
   const [isActionsOpen, toggleIsActionsOpen] = useState(false);
   const { data } = tableProps;
-  const showPagination =
-    data?.length !== 0 && itemCount && itemCount > DEFAULT_PERPAGE;
+  const showPagination = data?.length !== 0 && itemCount && itemCount > perPage;
   const breakpoint = toolbarBreakpoint === "all" ? "lg" : toolbarBreakpoint;
 
   function notUndefined<T>(x: T | undefined): x is T {
@@ -252,9 +251,7 @@ export const TableView = <TRow, TCol>({
 
           {/* pagination controls */}
           {showPagination && (
-            <ToolbarGroup
-            //alignment={{ default: "alignRight" }}
-            >
+            <ToolbarGroup align={{ default: "alignRight" }}>
               <Pagination
                 itemCount={itemCount}
                 page={page}
@@ -284,6 +281,9 @@ export const TableView = <TRow, TCol>({
           perPage={perPage}
           variant={"bottom"}
           onChange={onPageChange}
+          isCompact={
+            true /* TODO: change when we support jumping to specific pages */
+          }
         />
       )}
     </OuterScrollContainer>

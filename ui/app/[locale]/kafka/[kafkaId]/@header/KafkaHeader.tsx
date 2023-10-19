@@ -22,7 +22,7 @@ export async function KafkaHeader({
   if (!cluster) {
     notFound();
   }
-  const topics = await getTopics(kafkaId);
+  const topics = await getTopics(kafkaId, { pageSize: 1 });
   return (
     <AppHeader
       title={cluster.attributes.name}
@@ -33,7 +33,9 @@ export async function KafkaHeader({
               <NavItemLink url={`/kafka/${kafkaId}/topics`}>
                 Topics&nbsp;
                 <Label isCompact={true}>
-                  <Suspense fallback={<Spinner />}>{topics.length}</Suspense>
+                  <Suspense fallback={<Spinner />}>
+                    {topics.meta.page.total}
+                  </Suspense>
                 </Label>
               </NavItemLink>
               <NavItemLink url={`/kafka/${kafkaId}/consumer-groups`}>
