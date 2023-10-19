@@ -109,6 +109,7 @@ public class Topic {
                     })
                     .toList());
             addMeta("page", listSupport.buildPageMeta());
+            listSupport.buildPageLinks(Topic::toCursor).forEach(this::addLink);
         }
     }
 

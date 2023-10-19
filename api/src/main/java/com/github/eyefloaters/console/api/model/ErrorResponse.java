@@ -2,7 +2,7 @@ package com.github.eyefloaters.console.api.model;
 
 import java.util.List;
 
-public class ErrorResponse {
+public class ErrorResponse extends JsonApiDocument {
 
     private final List<Error> errors;
 
