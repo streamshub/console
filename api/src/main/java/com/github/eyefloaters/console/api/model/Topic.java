@@ -49,7 +49,10 @@ public class Topic {
                     .thenComparing(nullsLast(ConfigEntry::compareValues));
 
         static final Map<String, Map<Boolean, Comparator<Topic>>> COMPARATORS = ComparatorBuilder.bidirectional(
-                Map.of("id", ID_COMPARATOR, NAME, comparing(Topic::getName)));
+                Map.of("id", ID_COMPARATOR,
+                        NAME, comparing(Topic::getName),
+                        RECORD_COUNT, nullsLast(comparing(Topic::getRecordCount)),
+                        TOTAL_LEADER_LOG_BYTES, nullsLast(comparing(Topic::getTotalLeaderLogBytes))));
 
         public static final ComparatorBuilder<Topic> COMPARATOR_BUILDER =
                 new ComparatorBuilder<>(Topic.Fields::comparator, Topic.Fields.defaultComparator());
