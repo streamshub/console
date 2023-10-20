@@ -37,6 +37,19 @@ public class ConfigService {
             .thenApply(configs -> configs.getOrThrow(CompletionException::new));
     }
 
+    /**
+     * Alter the provided map of configurations using
+     * {@linkplain Admin#incrementalAlterConfigs(Map)}. Map entries with a null
+     * value will be {@linkplain OpType#DELETE deleted/reverted to default}, whereas
+     * non-null entries will be {@linkplain OpType#SET set}.
+     *
+     * @param type           resource type
+     * @param name           resource name
+     * @param alteredConfigs map of altered configurations, null values allowed
+     * @return CompletionStage "promise" that completes when all operations
+     *         submitted to {@linkplain Admin#incrementalAlterConfigs(Map)}.
+     *         complete
+     */
     public CompletionStage<Void> alterConfigs(ConfigResource.Type type, String name, Map<String, ConfigEntry> alteredConfigs) {
         Admin adminClient = clientSupplier.get();
         var resourceKey = new ConfigResource(type, name);

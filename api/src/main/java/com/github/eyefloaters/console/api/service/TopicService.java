@@ -67,6 +67,11 @@ public class TopicService {
     @Inject
     Logger logger;
 
+    /**
+     * ThreadContext of the request thread. This is used to execute asynchronous
+     * tasks to allow access to request-scoped beans such as an injected
+     * {@linkplain Admin Admin client}
+     */
     @Inject
     ThreadContext threadContext;
 
@@ -169,6 +174,17 @@ public class TopicService {
             });
     }
 
+    /**
+     * Apply the provided topic patch request to an existing topic, its configurations,
+     * and its replica assignments. The following operations may be performed depending on
+     * the request.
+     *
+     * <ul>
+     * <li>Create new partitions with or without replicas assignments
+     * <li>Alter partition assignments for existing partitions
+     * <li>Alter (modify or delete/revert to default) topic configurations
+     * </ul>
+     */
     public CompletionStage<Void> patchTopic(String topicId, TopicPatch patch) {
         Kafka kafka = kafkaCluster.get();
 
