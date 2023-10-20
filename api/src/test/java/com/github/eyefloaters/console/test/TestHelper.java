@@ -64,6 +64,7 @@ public class TestHelper {
             .endMetadata()
             .withNewSpec()
                 .withNewKafka()
+                    .withReplicas(1)
                     .addNewListener()
                         .withName("listener0")
                         .withType(KafkaListenerType.NODEPORT)

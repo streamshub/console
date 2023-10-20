@@ -13,7 +13,7 @@ import com.github.eyefloaters.console.api.support.ErrorCategory;
 public class NotAuthorizedExceptionHandler extends AbstractClientExceptionHandler<NotAuthorizedException> {
 
     public NotAuthorizedExceptionHandler() {
-        super(ErrorCategory.NotAuthenticated.class, "Authentication credentials missing or invalid", null);
+        super(ErrorCategory.NotAuthenticated.class, "Authentication credentials missing or invalid", (String) null);
     }
 
     @Override

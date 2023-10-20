@@ -3,6 +3,7 @@ package com.github.eyefloaters.console.api.service;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -17,6 +18,7 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -27,12 +29,15 @@ import org.apache.kafka.clients.admin.CreateTopicsResult;
 import org.apache.kafka.clients.admin.DescribeLogDirsOptions;
 import org.apache.kafka.clients.admin.DescribeTopicsOptions;
 import org.apache.kafka.clients.admin.ListOffsetsResult.ListOffsetsResultInfo;
+import org.apache.kafka.clients.admin.NewPartitionReassignment;
 import org.apache.kafka.clients.admin.OffsetSpec;
 import org.apache.kafka.common.TopicCollection;
 import org.apache.kafka.common.Uuid;
 import org.apache.kafka.common.config.ConfigResource;
 import org.apache.kafka.common.errors.InvalidTopicException;
 import org.apache.kafka.common.errors.UnknownTopicOrPartitionException;
+import org.eclipse.microprofile.context.ThreadContext;
+import org.jboss.logging.Logger;
 
 import com.github.eyefloaters.console.api.model.Either;
 import com.github.eyefloaters.console.api.model.NewTopic;
@@ -41,8 +46,15 @@ import com.github.eyefloaters.console.api.model.PartitionReplica;
 import com.github.eyefloaters.console.api.model.ReplicaLocalStorage;
 import com.github.eyefloaters.console.api.model.Topic;
 import com.github.eyefloaters.console.api.model.TopicPartition;
+import com.github.eyefloaters.console.api.model.TopicPatch;
 import com.github.eyefloaters.console.api.support.KafkaOffsetSpec;
 import com.github.eyefloaters.console.api.support.ListRequestContext;
+import com.github.eyefloaters.console.api.support.TopicValidation;
+import com.github.eyefloaters.console.api.support.ValidationProxy;
+
+import io.strimzi.api.kafka.model.Kafka;
+
+import static org.apache.kafka.clients.admin.NewPartitions.increaseTo;
 
 @ApplicationScoped
 public class TopicService {
@@ -53,13 +65,34 @@ public class TopicService {
             Pattern.compile("^-?configs\\..+$").asMatchPredicate();
 
     @Inject
+    Logger logger;
+
+    /**
+     * ThreadContext of the request thread. This is used to execute asynchronous
+     * tasks to allow access to request-scoped beans such as an injected
+     * {@linkplain Admin Admin client}
+     */
+    @Inject
+    ThreadContext threadContext;
+
+    @Inject
+    ValidationProxy validationService;
+
+    @Inject
+    Supplier<Kafka> kafkaCluster;
+
+    @Inject
     Supplier<Admin> clientSupplier;
 
     @Inject
     ConfigService configService;
 
     public CompletionStage<NewTopic> createTopic(NewTopic topic) {
+        Kafka kafka = kafkaCluster.get();
         Admin adminClient = clientSupplier.get();
+
+        validationService.validate(new TopicValidation.NewTopicInputs(kafka, Collections.emptyMap(), topic));
+
         String topicName = topic.name();
         org.apache.kafka.clients.admin.NewTopic newTopic;
 
@@ -120,8 +153,7 @@ public class TopicService {
 
         return describeTopics(adminClient, List.of(id), fields, offsetSpec)
             .thenApply(result -> result.get(id))
-            .thenApply(result -> result.getOptionalPrimary()
-                    .orElseThrow(() -> new CompletionException(result.getAlternate())))
+            .thenApply(result -> result.getOrThrow(CompletionException::new))
             .thenCompose(topic -> {
                 CompletableFuture<Topic> promise = new CompletableFuture<>();
 
@@ -142,28 +174,161 @@ public class TopicService {
             });
     }
 
-//    public CompletionStage<Map<String, ConfigEntry>> alterConfigs(String topicName, Map<String, ConfigEntry> configs) {
-//        return configService.alterConfigs(ConfigResource.Type.TOPIC, topicName, configs);
-//    }
+    /**
+     * Apply the provided topic patch request to an existing topic, its configurations,
+     * and its replica assignments. The following operations may be performed depending on
+     * the request.
+     *
+     * <ul>
+     * <li>Create new partitions with or without replicas assignments
+     * <li>Alter partition assignments for existing partitions
+     * <li>Alter (modify or delete/revert to default) topic configurations
+     * </ul>
+     */
+    public CompletionStage<Void> patchTopic(String topicId, TopicPatch patch) {
+        Kafka kafka = kafkaCluster.get();
 
-//    public CompletionStage<Void> createPartitions(String topicName, NewPartitions partitions) {
-//        Admin adminClient = clientSupplier.get();
-//
-//        int totalCount = partitions.getTotalCount();
-//        var newAssignments = partitions.getNewAssignments();
-//
-//        org.apache.kafka.clients.admin.NewPartitions newPartitions;
-//
-//        if (newAssignments != null) {
-//            newPartitions = increaseTo(totalCount, newAssignments);
-//        } else {
-//            newPartitions = increaseTo(totalCount);
-//        }
-//
-//        return adminClient.createPartitions(Map.of(topicName, newPartitions))
-//                .all()
-//                .toCompletionStage();
-//    }
+        return describeTopic(topicId, List.of(Topic.Fields.CONFIGS), KafkaOffsetSpec.LATEST)
+            .thenApply(topic -> validationService.validate(new TopicValidation.TopicPatchInputs(kafka, topic, patch)))
+            .thenApply(TopicValidation.TopicPatchInputs::topic)
+            .thenComposeAsync(topic -> {
+                List<CompletableFuture<Void>> pending = new ArrayList<>();
+
+                pending.add(maybeCreatePartitions(topic, patch));
+                pending.addAll(maybeAlterPartitionAssignments(topic, patch));
+                pending.add(maybeAlterConfigs(topic, patch));
+
+                return CompletableFuture.allOf(pending.stream().toArray(CompletableFuture[]::new))
+                    .whenComplete((nothing, error) -> {
+                        if (error != null) {
+                            pending.stream()
+                                .filter(CompletableFuture::isCompletedExceptionally)
+                                .forEach(fut -> fut.exceptionally(ex -> {
+                                    if (ex instanceof CompletionException ce) {
+                                        ex = ce.getCause();
+                                    }
+                                    error.addSuppressed(ex);
+                                    return null;
+                                }));
+                        }
+                    });
+            }, threadContext.currentContextExecutor());
+    }
+
+    CompletableFuture<Void> maybeCreatePartitions(Topic topic, TopicPatch topicPatch) {
+        int currentNumPartitions = topic.getPartitions().getPrimary().size();
+        int newNumPartitions = Optional.ofNullable(topicPatch.numPartitions()).orElse(currentNumPartitions);
+
+        if (newNumPartitions > currentNumPartitions) {
+            List<List<Integer>> newAssignments = IntStream.range(currentNumPartitions, newNumPartitions)
+                    .filter(topicPatch::hasReplicaAssignment)
+                    .mapToObj(topicPatch::replicaAssignment)
+                    .toList();
+
+            return createPartitions(topic.getName(), newNumPartitions, newAssignments)
+                    .toCompletableFuture();
+        }
+
+        return CompletableFuture.completedFuture(null);
+    }
+
+    CompletionStage<Void> createPartitions(String topicName, int totalCount, List<List<Integer>> newAssignments) {
+        Admin adminClient = clientSupplier.get();
+
+        org.apache.kafka.clients.admin.NewPartitions newPartitions;
+
+        if (newAssignments.isEmpty()) {
+            logger.infof("Increasing numPartitions for topic %s to %d", topicName, totalCount);
+            newPartitions = increaseTo(totalCount);
+        } else {
+            logger.infof("Increasing numPartitions for topic %s to %d with new assignments %s", topicName, totalCount, newAssignments);
+            newPartitions = increaseTo(totalCount, newAssignments);
+        }
+
+        return adminClient.createPartitions(Map.of(topicName, newPartitions))
+                .all()
+                .toCompletionStage();
+    }
+
+    List<CompletableFuture<Void>> maybeAlterPartitionAssignments(Topic topic, TopicPatch topicPatch) {
+        int currentNumPartitions = topic.getPartitions().getPrimary().size();
+
+        var alteredAssignments = IntStream.range(0, currentNumPartitions)
+                .filter(topicPatch::hasReplicaAssignment)
+                .mapToObj(partitionId -> {
+                    List<Integer> reassignments = topicPatch.replicaAssignment(partitionId);
+                    var key = new org.apache.kafka.common.TopicPartition(topic.getName(), partitionId);
+
+                    if (reassignments.isEmpty()) {
+                        return Map.entry(key, Optional.<NewPartitionReassignment>empty());
+                    }
+
+                    return Map.entry(key, Optional.of(new NewPartitionReassignment(reassignments)));
+                })
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+        if (alteredAssignments.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        Admin adminClient = clientSupplier.get();
+
+        if (logger.isDebugEnabled()) {
+            logPartitionReassignments(topic, alteredAssignments);
+        }
+
+        return adminClient.alterPartitionReassignments(alteredAssignments)
+                .values()
+                .values()
+                .stream()
+                .map(f -> f.toCompletionStage())
+                .map(CompletionStage::toCompletableFuture)
+                .toList();
+    }
+
+    void logPartitionReassignments(Topic topic,
+            Map<org.apache.kafka.common.TopicPartition, Optional<NewPartitionReassignment>> alteredAssignments) {
+
+        StringBuilder changes = new StringBuilder();
+        Map<Integer, List<String>> currentAssignments = topic.getPartitions()
+                .getPrimary()
+                .stream()
+                .map(p -> Map.entry(p.getPartition(), p.getReplicas().stream().map(r -> Integer.toString(r.nodeId())).toList()))
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+        alteredAssignments.entrySet().stream().forEach(alterEntry -> {
+            int partition = alterEntry.getKey().partition();
+
+            changes.append("{ partition=%d: ".formatted(partition));
+            changes.append("from=[ ");
+            changes.append(String.join(", ", currentAssignments.get(partition)));
+            changes.append(" ] to=");
+
+            changes.append(alterEntry.getValue()
+                .map(reassignment -> reassignment.targetReplicas()
+                    .stream()
+                    .map(String::valueOf)
+                    .collect(Collectors.joining(", ", "[ ", " ]")))
+                .orElse("[]"));
+
+            changes.append(" }");
+        });
+
+        logger.debugf("Altering partition reassignments for cluster %s[%s], topic %s[%s], changes=[ %s ]",
+                kafkaCluster.get().getMetadata().getName(),
+                kafkaCluster.get().getStatus().getClusterId(),
+                topic.getName(),
+                topic.getId(),
+                changes);
+    }
+
+    CompletableFuture<Void> maybeAlterConfigs(Topic topic, TopicPatch topicPatch) {
+        return Optional.ofNullable(topicPatch.configs())
+            .filter(Predicate.not(Map::isEmpty))
+            .map(configs -> configService.alterConfigs(ConfigResource.Type.TOPIC, topic.getName(), configs)
+                .toCompletableFuture())
+            .orElseGet(() -> CompletableFuture.completedFuture(null));
+    }
 
     public CompletionStage<Void> deleteTopic(String topicId) {
         Admin adminClient = clientSupplier.get();
@@ -211,13 +376,11 @@ public class TopicService {
     }
 
     CompletableFuture<Void> maybeDescribeTopics(Admin adminClient, Map<Uuid, Topic> topics, List<String> fields, String offsetSpec) {
-        CompletableFuture<Void> promise = new CompletableFuture<>();
-
         if (fields.contains(Topic.Fields.PARTITIONS)
                 || fields.contains(Topic.Fields.AUTHORIZED_OPERATIONS)
                 || fields.contains(Topic.Fields.RECORD_COUNT)) {
-            describeTopics(adminClient, topics.keySet(), fields, offsetSpec)
-                .thenApply(descriptions -> {
+            return describeTopics(adminClient, topics.keySet(), fields, offsetSpec)
+                .<Void>thenApply(descriptions -> {
                     descriptions.forEach((name, either) -> {
                         if (fields.contains(Topic.Fields.PARTITIONS)
                                 || fields.contains(Topic.Fields.RECORD_COUNT)) {
@@ -228,14 +391,12 @@ public class TopicService {
                         }
                     });
 
-                    return promise.complete(null);
+                    return null;
                 })
-                .exceptionally(promise::completeExceptionally);
-        } else {
-            promise.complete(null);
+                .toCompletableFuture();
         }
 
-        return promise;
+        return CompletableFuture.completedFuture(null);
     }
 
     CompletionStage<Map<Uuid, Either<Topic, Throwable>>> describeTopics(

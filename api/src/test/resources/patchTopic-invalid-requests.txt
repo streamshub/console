@@ -1,0 +1,313 @@
+Premature EOF
+    | {
+        "data": {
+          "type": "topics",
+          "id": "%s"
+    | BAD_REQUEST
+    | {
+        "errors": [{
+          "status": "400",
+          "code": "4003"
+        }]
+      }
+    @
+Invalid attributes type (array instead of object)
+    | {
+        "data": {
+          "type": "topics",
+          "id": "%s",
+          "attributes": []
+        }
+      }
+    | BAD_REQUEST
+    | {
+        "errors": [{
+          "status": "400",
+          "code": "4003",
+          "source": {
+            "pointer": "/data/attributes"
+          }
+        }]
+      }
+    @
+Invalid numPartitions reduction
+    | {
+        "data": {
+          "type": "topics",
+          "id": "%s",
+          "attributes": {
+            "numPartitions": 1
+          }
+        }
+      }
+    | BAD_REQUEST
+    | {
+        "errors": [{
+          "status": "400",
+          "code": "4003",
+          "source": {
+            "pointer": "/data/attributes/numPartitions"
+          }
+        }]
+      }
+    @
+Invalid numPartitions data type
+    | {
+        "data": {
+          "type": "topics",
+          "id": "%s",
+          "attributes": {
+            "numPartitions": "three"
+          }
+        }
+      }
+    | BAD_REQUEST
+    | {
+        "errors": [{
+          "status": "400",
+          "code": "4003",
+          "source": {
+            "pointer": "/data/attributes/numPartitions"
+          }
+        }]
+      }
+    @
+Missing required `id` + invalid `type`
+    | {
+        "data": {
+          "type": "invalid-type"
+        }
+      }
+    | BAD_REQUEST
+    | {
+        "errors": [{
+          "status": "400",
+          "code": "4003",
+          "source": {
+            "pointer": "/data/id"
+          }
+        }, {
+          "status": "409",
+          "code": "4091",
+          "source": {
+            "pointer": "/data/type"
+          }
+        }]
+      }
+    @
+Resource `id` differs from URL
+    | {
+        "data": {
+          "type": "topics",
+          "id": "does-not-match-real-id",
+          "attributes": {
+            "numPartitions": "2"
+          }
+        }
+      }
+    | BAD_REQUEST
+    | {
+        "errors": [{
+          "status": "400",
+          "code": "4003",
+          "source": {
+            "pointer": "/data/id"
+          }
+        }]
+      }
+    @
+Replicas assignments contains nonexistent partition ID
+    | {
+        "data": {
+          "type": "topics",
+          "id": "%s",
+          "attributes": {
+            "numPartitions": "2",
+            "replicasAssignments": {
+              "2": [ 0 ]
+            }
+          }
+        }
+      }
+    | BAD_REQUEST
+    | {
+        "errors": [{
+          "status": "400",
+          "code": "4003",
+          "source": {
+            "pointer": "/data/attributes/replicasAssignments/2"
+          }
+        }]
+      }
+    @
+Replicas assignments contains nonexistent node ID
+    | {
+        "data": {
+          "type": "topics",
+          "id": "%s",
+          "attributes": {
+            "numPartitions": "2",
+            "replicasAssignments": {
+              "0": [ 5 ]
+            }
+          }
+        }
+      }
+    | BAD_REQUEST
+    | {
+        "errors": [{
+          "status": "400",
+          "code": "4003",
+          "source": {
+            "pointer": "/data/attributes/replicasAssignments/0/0"
+          }
+        }]
+      }
+    @
+Replicas partially assigned for new partitions (missing partition 3)
+    | {
+        "data": {
+          "type": "topics",
+          "id": "%s",
+          "attributes": {
+            "numPartitions": "4",
+            "replicasAssignments": {
+              "2": [ 0 ]
+            }
+          }
+        }
+      }
+    | BAD_REQUEST
+    | {
+        "errors": [{
+          "status": "400",
+          "code": "4003",
+          "source": {
+            "pointer": "/data/attributes/replicasAssignments/3"
+          }
+        }]
+      }
+    @
+No reassignment in progress error
+    | {
+        "data": {
+          "type": "topics",
+          "id": "%s",
+          "attributes": {
+            "numPartitions": "2",
+            "replicasAssignments": {
+              "0": [ ]
+            }
+          }
+        }
+      }
+    | BAD_REQUEST
+    | {
+        "errors": [{
+          "status": "400",
+          "code": "4003",
+          "source": {
+            "pointer": "/data/attributes/replicasAssignments"
+          }
+        }]
+      }
+    @
+Inconsistent and duplicated replication factor (attempt setting to 2 replicas)
+    | {
+        "data": {
+          "type": "topics",
+          "id": "%s",
+          "attributes": {
+            "numPartitions": "3",
+            "replicasAssignments": {
+              "2": [ 0, 0 ]
+            }
+          }
+        }
+      }
+    | BAD_REQUEST
+    | {
+        "errors": [{
+          "status": "400",
+          "code": "4003",
+          "source": {
+            "pointer": "/data/attributes/replicasAssignments/2"
+          }
+        }, {
+          "status": "400",
+          "code": "4003",
+          "source": {
+            "pointer": "/data/attributes/replicasAssignments/2/1"
+          }
+        }]
+      }
+    @
+Incorrect data type for config value
+    | {
+        "data": {
+          "type": "topics",
+          "id": "%s",
+          "attributes": {
+            "configs": {
+              "retention.ms": { "value": "NaN" }
+            }
+          }
+        }
+      }
+    | BAD_REQUEST
+    | {
+        "errors": [{
+          "status": "400",
+          "code": "4003",
+          "source": {
+            "pointer": "/data/attributes/configs/retention.ms/value"
+          }
+        }]
+      }
+    @
+Config value out of range
+    | {
+        "data": {
+          "type": "topics",
+          "id": "%s",
+          "attributes": {
+            "configs": {
+              "delete.retention.ms": { "value": "-1" }
+            }
+          }
+        }
+      }
+    | BAD_REQUEST
+    | {
+        "errors": [{
+          "status": "400",
+          "code": "4003",
+          "source": {
+            "pointer": "/data/attributes/configs/delete.retention.ms/value"
+          }
+        }]
+      }
+    @
+Unknown configuration property
+    | {
+        "data": {
+          "type": "topics",
+          "id": "%s",
+          "attributes": {
+            "configs": {
+              "my.fake.config": { "value": "Hello World" }
+            }
+          }
+        }
+      }
+    | BAD_REQUEST
+    | {
+        "errors": [{
+          "status": "400",
+          "code": "4003",
+          "source": {
+            "pointer": "/data/attributes/configs/my.fake.config"
+          }
+        }]
+      }
+    @

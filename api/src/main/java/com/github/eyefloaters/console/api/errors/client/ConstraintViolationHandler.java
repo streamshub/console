@@ -25,7 +25,7 @@ public class ConstraintViolationHandler extends AbstractClientExceptionHandler<C
     private static final Logger LOGGER = Logger.getLogger(ConstraintViolationHandler.class);
 
     public ConstraintViolationHandler() {
-        super(ErrorCategory.UncategorizedBadRequest.class, null, null);
+        super(ErrorCategory.UncategorizedBadRequest.class, null, (String) null);
     }
 
     @Override
@@ -34,7 +34,7 @@ public class ConstraintViolationHandler extends AbstractClientExceptionHandler<C
     }
 
     @Override
-    protected List<Error> buildErrors(ConstraintViolationException exception) {
+    public List<Error> buildErrors(ConstraintViolationException exception) {
         return exception.getConstraintViolations()
             .stream()
             .map(violation -> {
