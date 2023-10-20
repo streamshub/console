@@ -26,6 +26,7 @@ import jakarta.ws.rs.core.UriInfo;
 
 import org.eclipse.microprofile.openapi.annotations.enums.Explode;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
+import org.eclipse.microprofile.openapi.annotations.media.Content;
 import org.eclipse.microprofile.openapi.annotations.media.ExampleObject;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
@@ -68,7 +69,12 @@ public class TopicsResource {
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    @APIResponseSchema(responseCode = "201", value = NewTopic.NewTopicDocument.class)
+    @APIResponse(responseCode = "200",
+        description = "New topic successfully validated, nothing was created",
+        content = @Content(schema = @Schema(implementation = NewTopic.NewTopicDocument.class)))
+    @APIResponse(responseCode = "201",
+        description = "New topic successfully created",
+        content = @Content(schema = @Schema(implementation = NewTopic.NewTopicDocument.class)))
     public CompletionStage<Response> createTopic(
             @Parameter(description = "Cluster identifier")
             @PathParam("clusterId")
@@ -78,10 +84,11 @@ public class TopicsResource {
             NewTopic.NewTopicDocument topic) {
 
         final UriBuilder location = uriInfo.getRequestUriBuilder();
+        final boolean validateOnly = Boolean.TRUE.equals(topic.meta("validateOnly"));
 
-        return topicService.createTopic(topic.getData().getAttributes())
+        return topicService.createTopic(topic.getData().getAttributes(), validateOnly)
                 .thenApply(NewTopic.NewTopicDocument::new)
-                .thenApply(entity -> Response.status(Status.CREATED)
+                .thenApply(entity -> Response.status(validateOnly ? Status.OK : Status.CREATED)
                         .entity(entity)
                         .location(location.path(entity.getData().getId()).build()))
                 .thenApply(Response.ResponseBuilder::build);
@@ -257,7 +264,10 @@ public class TopicsResource {
 
             @Valid
             TopicPatch.TopicPatchDocument topic) {
-        return topicService.patchTopic(topicId, topic.getData().getAttributes())
+
+        final boolean validateOnly = Boolean.TRUE.equals(topic.meta("validateOnly"));
+
+        return topicService.patchTopic(topicId, topic.getData().getAttributes(), validateOnly)
                 .thenApply(nothing -> Response.noContent())
                 .thenApply(Response.ResponseBuilder::build);
     }

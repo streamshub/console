@@ -18,6 +18,7 @@ import jakarta.inject.Inject;
 import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.clients.admin.AlterConfigOp;
 import org.apache.kafka.clients.admin.AlterConfigOp.OpType;
+import org.apache.kafka.clients.admin.AlterConfigsOptions;
 import org.apache.kafka.common.config.ConfigResource;
 
 import com.github.eyefloaters.console.api.model.ConfigEntry;
@@ -50,11 +51,12 @@ public class ConfigService {
      *         submitted to {@linkplain Admin#incrementalAlterConfigs(Map)}.
      *         complete
      */
-    public CompletionStage<Void> alterConfigs(ConfigResource.Type type, String name, Map<String, ConfigEntry> alteredConfigs) {
+    public CompletionStage<Void> alterConfigs(ConfigResource.Type type, String name, Map<String, ConfigEntry> alteredConfigs, boolean validateOnly) {
         Admin adminClient = clientSupplier.get();
         var resourceKey = new ConfigResource(type, name);
 
-        return adminClient.incrementalAlterConfigs(Map.of(resourceKey, fromMap(alteredConfigs)))
+        return adminClient.incrementalAlterConfigs(Map.of(resourceKey, fromMap(alteredConfigs)), new AlterConfigsOptions()
+                .validateOnly(validateOnly))
             .values()
             .get(resourceKey)
             .toCompletionStage();
