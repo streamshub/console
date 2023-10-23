@@ -148,6 +148,7 @@ public class TopicsResource {
                         Topic.Fields.CONFIGS,
                         Topic.Fields.RECORD_COUNT,
                         Topic.Fields.TOTAL_LEADER_LOG_BYTES,
+                        Topic.Fields.CONSUMER_GROUPS,
                     },
                     payload = ErrorCategory.InvalidQueryParameter.class)
             @Parameter(
@@ -164,6 +165,7 @@ public class TopicsResource {
                                 Topic.Fields.CONFIGS,
                                 Topic.Fields.RECORD_COUNT,
                                 Topic.Fields.TOTAL_LEADER_LOG_BYTES,
+                                Topic.Fields.CONSUMER_GROUPS,
                             }))
             List<String> fields,
 
@@ -222,6 +224,7 @@ public class TopicsResource {
                         Topic.Fields.CONFIGS,
                         Topic.Fields.RECORD_COUNT,
                         Topic.Fields.TOTAL_LEADER_LOG_BYTES,
+                        Topic.Fields.CONSUMER_GROUPS,
                     },
                     payload = ErrorCategory.InvalidQueryParameter.class)
             @Parameter(
@@ -238,6 +241,7 @@ public class TopicsResource {
                                 Topic.Fields.CONFIGS,
                                 Topic.Fields.RECORD_COUNT,
                                 Topic.Fields.TOTAL_LEADER_LOG_BYTES,
+                                Topic.Fields.CONSUMER_GROUPS,
                             }))
             List<String> fields,
 

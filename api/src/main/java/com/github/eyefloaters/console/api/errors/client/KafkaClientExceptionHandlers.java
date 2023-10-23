@@ -6,6 +6,7 @@ import java.util.regex.Pattern;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.ws.rs.ext.Provider;
 
+import org.apache.kafka.common.errors.GroupIdNotFoundException;
 import org.apache.kafka.common.errors.InvalidConfigurationException;
 import org.apache.kafka.common.errors.InvalidReplicaAssignmentException;
 import org.apache.kafka.common.errors.InvalidReplicationFactorException;
@@ -19,6 +20,17 @@ import com.github.eyefloaters.console.api.support.ErrorCategory;
 public class KafkaClientExceptionHandlers {
 
     private KafkaClientExceptionHandlers() {
+    }
+
+    @Provider
+    @ApplicationScoped
+    public static class GroupIdNotFoundExceptionHandler
+        extends AbstractNotFoundExceptionHandler<GroupIdNotFoundException> {
+
+        @Override
+        public boolean handlesException(Throwable thrown) {
+            return thrown instanceof GroupIdNotFoundException;
+        }
     }
 
     @Provider

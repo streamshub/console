@@ -1,43 +1,15 @@
 package com.github.eyefloaters.console.api.model;
 
-public class OffsetAndMetadata {
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 
-    private long offset;
-    private String metadata;
-    private Integer leaderEpoch;
-
-    public OffsetAndMetadata() {
-    }
-
-    public OffsetAndMetadata(long offset, String metadata, Integer leaderEpoch) {
-        super();
-        this.offset = offset;
-        this.metadata = metadata;
-        this.leaderEpoch = leaderEpoch;
-    }
-
-    public long getOffset() {
-        return offset;
-    }
-
-    public void setOffset(long offset) {
-        this.offset = offset;
-    }
-
-    public String getMetadata() {
-        return metadata;
-    }
-
-    public void setMetadata(String metadata) {
-        this.metadata = metadata;
-    }
-
-    public Integer getLeaderEpoch() {
-        return leaderEpoch;
-    }
-
-    public void setLeaderEpoch(Integer leaderEpoch) {
-        this.leaderEpoch = leaderEpoch;
-    }
-
+@JsonInclude(value = Include.NON_NULL)
+public record OffsetAndMetadata(
+        String topicId,
+        int partition,
+        long offset,
+        long lag,
+        String metadata,
+        Integer leaderEpoch
+) {
 }

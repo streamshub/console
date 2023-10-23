@@ -20,16 +20,15 @@ import jakarta.json.JsonObjectBuilder;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 import com.fasterxml.jackson.annotation.JsonFilter;
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.github.eyefloaters.console.api.support.ComparatorBuilder;
 import com.github.eyefloaters.console.api.support.ListRequestContext;
 
 import static java.util.Comparator.comparing;
 import static java.util.Comparator.nullsLast;
 
-@Schema(name = "TopicAttributes")
-@JsonFilter("fieldFilter")
-public class Topic {
+@Schema(name = "Topic")
+public class Topic extends RelatableResource<Topic.Attributes, Topic.Relationships> {
 
     public static final class Fields {
         public static final String NAME = "name";
@@ -39,6 +38,7 @@ public class Topic {
         public static final String CONFIGS = "configs";
         public static final String RECORD_COUNT = "recordCount";
         public static final String TOTAL_LEADER_LOG_BYTES = "totalLeaderLogBytes";
+        public static final String CONSUMER_GROUPS = "consumerGroups";
         static final Pattern CONFIG_KEY = Pattern.compile("^configs\\.\"([^\"]+)\"$");
 
         static final Comparator<Topic> ID_COMPARATOR =
@@ -50,9 +50,9 @@ public class Topic {
 
         static final Map<String, Map<Boolean, Comparator<Topic>>> COMPARATORS = ComparatorBuilder.bidirectional(
                 Map.of("id", ID_COMPARATOR,
-                        NAME, comparing(Topic::getName),
-                        RECORD_COUNT, nullsLast(comparing(Topic::getRecordCount)),
-                        TOTAL_LEADER_LOG_BYTES, nullsLast(comparing(Topic::getTotalLeaderLogBytes))));
+                        NAME, comparing(topic -> topic.attributes.name),
+                        RECORD_COUNT, nullsLast(comparing(topic -> topic.attributes.getRecordCount())),
+                        TOTAL_LEADER_LOG_BYTES, nullsLast(comparing(topic -> topic.attributes.getTotalLeaderLogBytes()))));
 
         public static final ComparatorBuilder<Topic> COMPARATOR_BUILDER =
                 new ComparatorBuilder<>(Topic.Fields::comparator, Topic.Fields.defaultComparator());
@@ -84,7 +84,7 @@ public class Topic {
             if (configMatcher.matches()) {
                 String configKey = configMatcher.group(1);
                 Comparator<Topic> configComparator = comparing(
-                        t -> t.getConfigEntry(configKey),
+                        t -> t.configEntry(configKey),
                         CONFIG_COMPARATOR);
 
                 if (descending) {
@@ -99,13 +99,12 @@ public class Topic {
     }
 
     @Schema(name = "TopicListResponse")
-    public static final class ListResponse extends DataListResponse<TopicResource> {
+    public static final class ListResponse extends DataList<Topic> {
         public ListResponse(List<Topic> data, ListRequestContext<Topic> listSupport) {
             super(data.stream()
                     .map(entry -> {
-                        var rsrc = new TopicResource(entry);
-                        rsrc.addMeta("page", listSupport.buildPageMeta(entry::toCursor));
-                        return rsrc;
+                        entry.addMeta("page", listSupport.buildPageMeta(entry::toCursor));
+                        return entry;
                     })
                     .toList());
             addMeta("page", listSupport.buildPageMeta());
@@ -114,38 +113,81 @@ public class Topic {
     }
 
     @Schema(name = "TopicResponse")
-    public static final class SingleResponse extends DataResponse<TopicResource> {
+    public static final class SingleResponse extends DataSingleton<Topic> {
         public SingleResponse(Topic data) {
-            super(new TopicResource(data));
+            super(data);
         }
     }
 
-    @Schema(name = "Topic")
-    public static final class TopicResource extends Resource<Topic> {
-        public TopicResource(Topic data) {
-            super(data.id, "topics", data);
+    @JsonFilter("fieldFilter")
+    static class Attributes {
+        @JsonProperty
+        String name;
+
+        @JsonProperty
+        boolean internal;
+
+        @JsonProperty
+        @Schema(implementation = Object.class, oneOf = { PartitionInfo[].class, Error.class })
+        Either<List<PartitionInfo>, Error> partitions;
+
+        @JsonProperty
+        @Schema(implementation = Object.class, oneOf = { String[].class, Error.class })
+        Either<List<String>, Error> authorizedOperations;
+
+        @JsonProperty
+        @Schema(implementation = Object.class, oneOf = { ConfigEntry.ConfigEntryMap.class, Error.class })
+        Either<Map<String, ConfigEntry>, Error> configs;
+
+        Attributes(String name, boolean internal) {
+            this.name = name;
+            this.internal = internal;
+        }
+
+        /**
+         * Calculates the record count for the entire topic as the sum
+         * of the record counts of each individual partition. When the partitions
+         * are not available, the record count is null.
+         *
+         * @return the sum of the record counts for all partitions
+         */
+        public Long getRecordCount() {
+            return partitions.getOptionalPrimary()
+                .map(Collection::stream)
+                .map(p -> p.map(PartitionInfo::getRecordCount)
+                        .filter(Objects::nonNull)
+                        .reduce(0L, Long::sum))
+                .orElse(null);
+        }
+
+        @Schema(readOnly = true, description = """
+                The total size, in bytes, of all log segments local to the leaders
+                for each of this topic's partition replicas.
+                Or null if this information is not available.
+
+                When support for tiered storage (KIP-405) is available, this property
+                may also include the size of remote replica storage.
+                """)
+        public BigInteger getTotalLeaderLogBytes() {
+            return partitions.getOptionalPrimary()
+                .map(Collection::stream)
+                .map(p -> p.map(PartitionInfo::leaderLocalStorage)
+                        .filter(Objects::nonNull)
+                        .map(BigInteger::valueOf)
+                        .reduce(BigInteger::add)
+                        .orElse(null))
+                .orElse(null);
         }
     }
 
-    String name;
-    boolean internal;
-    @JsonIgnore
-    String id;
-
-    @Schema(implementation = Object.class, oneOf = { PartitionInfo[].class, Error.class })
-    Either<List<PartitionInfo>, Error> partitions;
-
-    @Schema(implementation = Object.class, oneOf = { String[].class, Error.class })
-    Either<List<String>, Error> authorizedOperations;
-
-    @Schema(implementation = Object.class, oneOf = { ConfigEntry.ConfigEntryMap.class, Error.class })
-    Either<Map<String, ConfigEntry>, Error> configs;
+    @JsonFilter("fieldFilter")
+    static class Relationships {
+        @JsonProperty
+        final DataList<Identifier> consumerGroups = new DataList<>();
+    }
 
     public Topic(String name, boolean internal, String id) {
-        super();
-        this.name = name;
-        this.internal = internal;
-        this.id = id;
+        super(id, "topics", new Attributes(name, internal), new Relationships());
     }
 
     public static Topic fromTopicListing(org.apache.kafka.clients.admin.TopicListing listing) {
@@ -155,12 +197,12 @@ public class Topic {
     public static Topic fromTopicDescription(org.apache.kafka.clients.admin.TopicDescription description) {
         Topic topic = new Topic(description.name(), description.isInternal(), description.topicId().toString());
 
-        topic.partitions = Either.of(description.partitions()
+        topic.attributes.partitions = Either.of(description.partitions()
                 .stream()
                 .map(PartitionInfo::fromKafkaModel)
                 .toList());
 
-        topic.authorizedOperations = Either.of(Optional.ofNullable(description.authorizedOperations())
+        topic.attributes.authorizedOperations = Either.of(Optional.ofNullable(description.authorizedOperations())
                 .map(Collection::stream)
                 .map(ops -> ops.map(Enum::name).toList())
                 .orElse(null));
@@ -188,7 +230,7 @@ public class Topic {
                 .collect(Collectors.toMap(
                         Map.Entry::getKey,
                         e -> ConfigEntry.fromCursor(e.getValue())));
-            topic.configs = Either.of(configs);
+            topic.attributes.configs = Either.of(configs);
         }
 
         return topic;
@@ -200,7 +242,7 @@ public class Topic {
         JsonObjectBuilder attrBuilder = Json.createObjectBuilder();
 
         if (sortFields.contains(Fields.NAME)) {
-            attrBuilder.add(Fields.NAME, name);
+            attrBuilder.add(Fields.NAME, attributes.name);
         }
 
         JsonObjectBuilder sortedConfigsBuilder = Json.createObjectBuilder();
@@ -210,7 +252,7 @@ public class Topic {
             .filter(Matcher::matches)
             .forEach(configMatcher -> {
                 String configKey = configMatcher.group(1);
-                ConfigEntry entry = getConfigEntry(configKey);
+                ConfigEntry entry = configEntry(configKey);
 
                 if (entry != null) {
                     sortedConfigsBuilder.add(configKey, entry.toCursor());
@@ -231,84 +273,49 @@ public class Topic {
     }
 
     public void addPartitions(Either<Topic, Throwable> description) {
-        partitions = description.ifPrimaryOrElse(
-                Topic::getPartitions,
+        attributes.partitions = description.ifPrimaryOrElse(
+                Topic::partitions,
                 thrown -> Error.forThrowable(thrown, "Unable to describe topic"));
     }
 
     public void addAuthorizedOperations(Either<Topic, Throwable> description) {
-        authorizedOperations = description.ifPrimaryOrElse(
-                Topic::getAuthorizedOperations,
+        attributes.authorizedOperations = description.ifPrimaryOrElse(
+                Topic::authorizedOperations,
                 thrown -> Error.forThrowable(thrown, "Unable to describe topic"));
     }
 
     public void addConfigs(Either<Map<String, ConfigEntry>, Throwable> configs) {
-        this.configs = configs.ifPrimaryOrElse(
+        attributes.configs = configs.ifPrimaryOrElse(
                 Either::of,
                 thrown -> Error.forThrowable(thrown, "Unable to describe topic configs"));
     }
 
-    public String getName() {
-        return name;
+    public String name() {
+        return attributes.name;
     }
 
-    public boolean isInternal() {
-        return internal;
+    public boolean internal() {
+        return attributes.internal;
     }
 
-    public Either<List<PartitionInfo>, Error> getPartitions() {
-        return partitions;
+    public Either<List<PartitionInfo>, Error> partitions() {
+        return attributes.partitions;
     }
 
-    public Either<List<String>, Error> getAuthorizedOperations() {
-        return authorizedOperations;
+    public Either<List<String>, Error> authorizedOperations() {
+        return attributes.authorizedOperations;
     }
 
-    public String getId() {
-        return id;
+    public Either<Map<String, ConfigEntry>, Error> configs() {
+        return attributes.configs;
     }
 
-    public Either<Map<String, ConfigEntry>, Error> getConfigs() {
-        return configs;
+    public DataList<Identifier> consumerGroups() {
+        return relationships.consumerGroups;
     }
 
-    /**
-     * Calculates the record count for the entire topic as the sum
-     * of the record counts of each individual partition. When the partitions
-     * are not available, the record count is null.
-     *
-     * @return the sum of the record counts for all partitions
-     */
-    public Long getRecordCount() {
-        return partitions.getOptionalPrimary()
-            .map(Collection::stream)
-            .map(p -> p.map(PartitionInfo::getRecordCount)
-                    .filter(Objects::nonNull)
-                    .reduce(0L, Long::sum))
-            .orElse(null);
-    }
-
-    @Schema(readOnly = true, description = """
-            The total size, in bytes, of all log segments local to the leaders
-            for each of this topic's partition replicas.
-            Or null if this information is not available.
-
-            When support for tiered storage (KIP-405) is available, this property
-            may also include the size of remote replica storage.
-            """)
-    public BigInteger getTotalLeaderLogBytes() {
-        return partitions.getOptionalPrimary()
-            .map(Collection::stream)
-            .map(p -> p.map(PartitionInfo::leaderLocalStorage)
-                    .filter(Objects::nonNull)
-                    .map(BigInteger::valueOf)
-                    .reduce(BigInteger::add)
-                    .orElse(null))
-            .orElse(null);
-    }
-
-    ConfigEntry getConfigEntry(String key) {
-        return Optional.ofNullable(configs)
+    ConfigEntry configEntry(String key) {
+        return Optional.ofNullable(attributes.configs)
             .flatMap(Either::getOptionalPrimary)
             .map(c -> c.get(key))
             .orElse(null);

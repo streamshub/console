@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.util.Collection;
+import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -33,6 +34,7 @@ import io.smallrye.openapi.api.util.UnusedSchemaFilter;
 public class OASModelFilter extends AbstractOperationFilter implements OASFilter {
 
     private static final Logger LOGGER = Logger.getLogger(OASModelFilter.class);
+    private Map<Schema, Schema> dereferencedSchemas = new IdentityHashMap<>();
 
     @Override
     public RequestBody filterRequestBody(RequestBody requestBody) {
@@ -73,6 +75,9 @@ public class OASModelFilter extends AbstractOperationFilter implements OASFilter
             schema.setEnumeration(null);
         }
 
+        maybeSaveReference(schema, "attributes");
+        maybeSaveReference(schema, "relationships");
+
         return OASFilter.super.filterSchema(schema);
     }
 
@@ -104,6 +109,8 @@ public class OASModelFilter extends AbstractOperationFilter implements OASFilter
                 .addOneOf(OASFactory.createSchema()
                         .ref("Instant")));
 
+        dereferenceSchemas(openAPI);
+
         // Sort global schemas
         openAPI.getComponents().setSchemas(new TreeMap<>(openAPI.getComponents().getSchemas()));
         // Prune any schemas no longer referenced
@@ -114,5 +121,31 @@ public class OASModelFilter extends AbstractOperationFilter implements OASFilter
          */
         config.getOptionalValue("quarkus.oidc.auth-server-url", String.class)
             .ifPresent(openAPI.getComponents().getSecuritySchemes().get("ConsoleSecurity")::setOpenIdConnectUrl);
+    }
+
+    void maybeSaveReference(Schema schema, String propertyName) {
+        Optional.ofNullable(schema.getProperties())
+            .map(properties -> properties.get(propertyName))
+            .ifPresent(propertySchema -> {
+                if (propertySchema.getRef() != null) {
+                    dereferencedSchemas.put(propertySchema, schema);
+                }
+            });
+    }
+
+    void dereferenceSchemas(OpenAPI openAPI) {
+        dereferencedSchemas.forEach((propertySchema, schema) -> {
+            String propertyName = schema.getProperties()
+                    .entrySet()
+                    .stream()
+                    .filter(entry -> entry.getValue() == propertySchema)
+                    .map(Map.Entry::getKey)
+                    .findFirst()
+                    .orElseThrow();
+            String reference = propertySchema.getRef();
+            String schemaName = reference.replace("#/components/schemas/", "");
+            Schema target = openAPI.getComponents().getSchemas().get(schemaName);
+            schema.addProperty(propertyName, target);
+        });
     }
 }

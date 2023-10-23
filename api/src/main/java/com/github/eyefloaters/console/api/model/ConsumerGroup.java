@@ -1,18 +1,111 @@
 package com.github.eyefloaters.console.api.model;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import jakarta.json.Json;
+import jakarta.json.JsonObject;
+import jakarta.json.JsonObjectBuilder;
+
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
+
+import com.fasterxml.jackson.annotation.JsonFilter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.github.eyefloaters.console.api.support.ComparatorBuilder;
+import com.github.eyefloaters.console.api.support.ListRequestContext;
+
+import static java.util.Comparator.comparing;
+import static java.util.Comparator.nullsLast;
+
+@Schema(name = "ConsumerGroupAttributes")
+@JsonFilter("fieldFilter")
 public class ConsumerGroup {
 
-    // Available via list or describe operations
+    public static final class Fields {
+        public static final String STATE = "state";
+        public static final String MEMBERS = "members";
+        public static final String COORDINATOR = "coordinator";
+        public static final String AUTHORIZED_OPERATIONS = "authorizedOperations";
+        public static final String PARTITION_ASSIGNOR = "partitionAssignor";
+        public static final String OFFSETS = "offsets";
+        public static final String SIMPLE_CONSUMER_GROUP = "simpleConsumerGroup";
 
-    private String groupId;
-    private boolean simpleConsumerGroup;
-    private String state;
+        static final Comparator<ConsumerGroup> ID_COMPARATOR =
+                comparing(ConsumerGroup::getGroupId);
+
+        static final Map<String, Map<Boolean, Comparator<ConsumerGroup>>> COMPARATORS = ComparatorBuilder.bidirectional(
+                Map.of("id", ID_COMPARATOR,
+                        STATE, nullsLast(comparing(ConsumerGroup::getState)),
+                        SIMPLE_CONSUMER_GROUP, comparing(ConsumerGroup::isSimpleConsumerGroup)));
+
+        public static final ComparatorBuilder<ConsumerGroup> COMPARATOR_BUILDER =
+                new ComparatorBuilder<>(ConsumerGroup.Fields::comparator, ConsumerGroup.Fields.defaultComparator());
+
+        public static final String LIST_DEFAULT = STATE + ", " + SIMPLE_CONSUMER_GROUP;
+        public static final String DESCRIBE_DEFAULT = STATE + ", " + MEMBERS + ", " + COORDINATOR + ", " + OFFSETS
+                + ", " + SIMPLE_CONSUMER_GROUP;
+
+        private Fields() {
+            // Prevent instances
+        }
+
+        public static Comparator<ConsumerGroup> defaultComparator() {
+            return ID_COMPARATOR;
+        }
+
+        public static Comparator<ConsumerGroup> comparator(String fieldName, boolean descending) {
+            if (COMPARATORS.containsKey(fieldName)) {
+                return COMPARATORS.get(fieldName).get(descending);
+            }
+
+            return null;
+        }
+    }
+
+    @Schema(name = "ConsumerGroupListResponse")
+    public static final class ListResponse extends DataList<ConsumerGroupResource> {
+        public ListResponse(List<ConsumerGroup> data, ListRequestContext<ConsumerGroup> listSupport) {
+            super(data.stream()
+                    .map(entry -> {
+                        var rsrc = new ConsumerGroupResource(entry);
+                        rsrc.addMeta("page", listSupport.buildPageMeta(entry::toCursor));
+                        return rsrc;
+                    })
+                    .toList());
+            addMeta("page", listSupport.buildPageMeta());
+            listSupport.buildPageLinks(ConsumerGroup::toCursor).forEach(this::addLink);
+        }
+    }
+
+    @Schema(name = "ConsumerGroupResponse")
+    public static final class SingleResponse extends DataSingleton<ConsumerGroupResource> {
+        public SingleResponse(ConsumerGroup data) {
+            super(new ConsumerGroupResource(data));
+        }
+    }
+
+    @Schema(name = "ConsumerGroup")
+    public static final class ConsumerGroupResource extends Resource<ConsumerGroup> {
+        public ConsumerGroupResource(ConsumerGroup data) {
+            super(data.groupId, "consumerGroups", data);
+
+            if (data.errors != null) {
+                addMeta("errors", data.errors);
+            }
+        }
+    }
+
+    // Available via list or describe operations
+    @JsonIgnore
+    private final String groupId;
+    private final boolean simpleConsumerGroup;
+    private final String state;
 
     // Available via describe operation only
 
@@ -23,26 +116,22 @@ public class ConsumerGroup {
 
     // Available via list offsets operation only
 
-    private Map<String, Map<Integer, OffsetAndMetadata>> offsets;
+    private List<OffsetAndMetadata> offsets;
 
     // When a describe error occurs
     private List<Error> errors;
 
-    public ConsumerGroup() {
-    }
-
     public ConsumerGroup(String groupId, boolean simpleConsumerGroup, String state) {
-        super();
         this.groupId = groupId;
         this.simpleConsumerGroup = simpleConsumerGroup;
         this.state = state;
     }
 
-    public static ConsumerGroup fromListing(org.apache.kafka.clients.admin.ConsumerGroupListing listing) {
+    public static ConsumerGroup fromKafkaModel(org.apache.kafka.clients.admin.ConsumerGroupListing listing) {
         return new ConsumerGroup(listing.groupId(), listing.isSimpleConsumerGroup(), listing.state().map(Enum::name).orElse(null));
     }
 
-    public static ConsumerGroup fromDescription(org.apache.kafka.clients.admin.ConsumerGroupDescription description) {
+    public static ConsumerGroup fromKafkaModel(org.apache.kafka.clients.admin.ConsumerGroupDescription description) {
         var group = new ConsumerGroup(
                 description.groupId(),
                 description.isSimpleConsumerGroup(),
@@ -71,24 +160,12 @@ public class ConsumerGroup {
         return groupId;
     }
 
-    public void setGroupId(String groupId) {
-        this.groupId = groupId;
-    }
-
     public boolean isSimpleConsumerGroup() {
         return simpleConsumerGroup;
     }
 
-    public void setSimpleConsumerGroup(boolean simpleConsumerGroup) {
-        this.simpleConsumerGroup = simpleConsumerGroup;
-    }
-
     public String getState() {
         return state;
-    }
-
-    public void setState(String state) {
-        this.state = state;
     }
 
     public Collection<MemberDescription> getMembers() {
@@ -123,19 +200,45 @@ public class ConsumerGroup {
         this.authorizedOperations = authorizedOperations;
     }
 
-    public List<Error> getErrors() {
-        return errors;
-    }
-
-    public void setErrors(List<Error> errors) {
-        this.errors = errors;
-    }
-
-    public Map<String, Map<Integer, OffsetAndMetadata>> getOffsets() {
+    public List<OffsetAndMetadata> getOffsets() {
         return offsets;
     }
 
-    public void setOffsets(Map<String, Map<Integer, OffsetAndMetadata>> offsets) {
+    public void setOffsets(List<OffsetAndMetadata> offsets) {
         this.offsets = offsets;
+    }
+
+    /**
+     * Constructs a "cursor" ConsumerGroup from the encoded string representation of the subset
+     * of Topic fields used to compare entities for pagination/sorting.
+     */
+    public static ConsumerGroup fromCursor(JsonObject cursor) {
+        if (cursor == null) {
+            return null;
+        }
+
+        JsonObject attr = cursor.getJsonObject("attributes");
+
+        return new ConsumerGroup(cursor.getString("id"),
+                attr.getBoolean(Fields.SIMPLE_CONSUMER_GROUP, false),
+                attr.getString(Fields.STATE, null));
+    }
+
+    public String toCursor(List<String> sortFields) {
+        JsonObjectBuilder cursor = Json.createObjectBuilder()
+                .add("id", groupId);
+        JsonObjectBuilder attrBuilder = Json.createObjectBuilder();
+
+        if (sortFields.contains(Fields.SIMPLE_CONSUMER_GROUP)) {
+            attrBuilder.add(Fields.SIMPLE_CONSUMER_GROUP, simpleConsumerGroup);
+        }
+
+        if (sortFields.contains(Fields.STATE)) {
+            attrBuilder.add(Fields.STATE, state);
+        }
+
+        cursor.add("attributes", attrBuilder.build());
+
+        return Base64.getUrlEncoder().encodeToString(cursor.build().toString().getBytes(StandardCharsets.UTF_8));
     }
 }
