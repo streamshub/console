@@ -33,7 +33,7 @@ export async function getNodeConfiguration(
   log.debug({ url }, "Fetching node configuration");
   const res = await fetch(url, {
     headers: await getHeaders(),
-    cache: "no-store",
+
     next: { tags: [`node-${nodeId}`] },
   });
   const rawData = await res.json();

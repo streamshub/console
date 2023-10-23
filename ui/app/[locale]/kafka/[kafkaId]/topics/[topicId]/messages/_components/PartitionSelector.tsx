@@ -77,7 +77,7 @@ export function PartitionSelector({
         ...partialOptions,
       ];
     },
-    [onChange, t],
+    [onChange, t, value],
   );
 
   const options = useMemo(() => {

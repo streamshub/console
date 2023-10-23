@@ -3,14 +3,14 @@ import { userEvent, within } from "@storybook/testing-library";
 import type { Message } from "ui-models/src/models/message";
 import type { DateIsoString } from "../../../../ui-models/src/types";
 import { apiError, fakeApi } from "../storiesHelpers";
-import { KafkaMessageBrowser } from "./KafkaMessageBrowser";
+import { MessagesTable } from "./MessagesTable";
 
 export default {
-  component: KafkaMessageBrowser,
-} as ComponentMeta<typeof KafkaMessageBrowser>;
+  component: MessagesTable,
+} as ComponentMeta<typeof MessagesTable>;
 
-const Template: ComponentStory<typeof KafkaMessageBrowser> = (args) => (
-  <KafkaMessageBrowser {...args}>todo</KafkaMessageBrowser>
+const Template: ComponentStory<typeof MessagesTable> = (args) => (
+  <MessagesTable {...args}>todo</MessagesTable>
 );
 
 export const Example = Template.bind({});
@@ -28,7 +28,7 @@ NoData.args = {
   getMessages: () =>
     fakeApi<{ messages: Message[]; partitions: number }>(
       { messages: [], partitions: 0 },
-      500
+      500,
     ),
 };
 
@@ -46,7 +46,7 @@ NoMatch.args = {
       ? sampleData(args)
       : fakeApi<{ messages: Message[]; partitions: number }>(
           { messages: [], partitions: 0 },
-          500
+          500,
         );
   },
 };
@@ -55,14 +55,14 @@ NoMatch.play = async ({ canvasElement }) => {
   await userEvent.click(await container.findByLabelText("Show Filters"));
   await userEvent.type(
     await container.findByLabelText("Specify partition value"),
-    "1337"
+    "1337",
   );
   await userEvent.keyboard("[ArrowDown][Enter]");
   await userEvent.click(await container.findByText("Latest messages"));
   await userEvent.click((await container.findAllByText("Offset"))[0]);
   await userEvent.type(
     await container.findByLabelText("Specify offset"),
-    "1337"
+    "1337",
   );
   await userEvent.click(await container.findByLabelText("Search"));
 };
@@ -139,11 +139,11 @@ function sampleData(args: {
                 : m.offset,
             partition: args.partition || m.partition,
             _: `${i}-${j}`,
-          }))
+          })),
         )
         .slice(0, numberOfMessages),
       partitions: 10000,
     },
-    500
+    500,
   );
 }

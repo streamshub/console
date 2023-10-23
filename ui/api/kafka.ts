@@ -47,7 +47,6 @@ export async function getKafkaClusters(): Promise<ClusterList[]> {
   try {
     const res = await fetch(url, {
       headers: await getHeaders(),
-      cache: "no-store",
     });
     const rawData = await res.json();
     return ClustersResponse.parse(rawData).data;
@@ -64,7 +63,6 @@ export async function getKafkaCluster(
   try {
     const res = await fetch(url, {
       headers: await getHeaders(),
-      cache: "no-store",
     });
     const rawData = await res.json();
     return ClusterResponse.parse(rawData).data;

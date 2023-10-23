@@ -1,16 +1,27 @@
+"use client";
 import {
   Button,
   EmptyState,
   EmptyStateBody,
   EmptyStateIcon,
-  EmptyStateVariant,
   Title,
 } from "@/libs/patternfly/react-core";
 import { SearchIcon } from "@/libs/patternfly/react-icons";
+import { useFilterParams } from "@/utils/useFilterParams";
 import { useTranslations } from "next-intl";
 
-export function NoResultsEmptyState({ onReset }: { onReset: () => void }) {
+export function NoResultsEmptyState() {
   const t = useTranslations("message-browser");
+  const updateUrl = useFilterParams({});
+
+  function onReset() {
+    updateUrl({
+      "filter[offset]": undefined,
+      "filter[timestamp]": undefined,
+      "filter[epoch]": undefined,
+    });
+  }
+
   return (
     <EmptyState variant={"lg"}>
       <EmptyStateIcon icon={SearchIcon} />
