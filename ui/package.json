@@ -40,6 +40,6 @@
   "devDependencies": {
     "eslint-config-prettier": "^9.0.0",
     "pino-pretty": "^10.2.3",
-    "prettier": "^3.0.1"
+    "prettier": "^3.0.3"
   }
 }
