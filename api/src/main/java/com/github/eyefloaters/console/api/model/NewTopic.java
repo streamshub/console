@@ -4,9 +4,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Size;
 
 import org.apache.kafka.clients.admin.CreateTopicsResult;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
@@ -55,11 +58,19 @@ public record NewTopic(
         Short replicationFactor,
 
         @JsonProperty
-        Map<String,
-            List<@Min(value = 0, payload = ErrorCategory.InvalidResource.class) Integer>> replicasAssignments,
+        @Size(min = 1, message = "must contain at least one entry", payload = ErrorCategory.InvalidResource.class)
+        Map<@Pattern(regexp = "\\d+", message = "must be an integer", payload = ErrorCategory.InvalidResource.class)
+            @DecimalMin(value = "0", payload = ErrorCategory.InvalidResource.class)
+            String,
+            @NotNull(payload = ErrorCategory.InvalidResource.class)
+            @Size(min = 1, message = "must contain at least one entry", payload = ErrorCategory.InvalidResource.class)
+            List<@NotNull(payload = ErrorCategory.InvalidResource.class)
+                 @Min(value = 0, payload = ErrorCategory.InvalidResource.class)
+                 Integer>> replicasAssignments,
 
         @JsonProperty
-        Map<String, ConfigEntry> configs) {
+        Map<String, ConfigEntry> configs
+) implements ReplicaAssignment {
 
     @Schema(name = "NewTopicDocument")
     public static final class NewTopicDocument extends DataResponse<NewTopicResource> {

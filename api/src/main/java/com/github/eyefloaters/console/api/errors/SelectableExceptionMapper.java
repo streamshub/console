@@ -1,6 +1,10 @@
 package com.github.eyefloaters.console.api.errors;
 
+import java.util.List;
+
 import jakarta.ws.rs.ext.ExceptionMapper;
+
+import com.github.eyefloaters.console.api.model.Error;
 
 /**
  * Custom interface used to select CDI bean instances of ExceptionMapper.
@@ -18,5 +22,14 @@ public interface SelectableExceptionMapper<E extends Throwable> extends Exceptio
      * @return true if this mapper handles the Throwable, otherwise false
      */
     boolean handlesException(Throwable thrown);
+
+    /**
+     * Construct a list of one or more errors based on the thrown
+     * Exception/Throwable.
+     *
+     * @param exception the exception thrown by the application
+     * @return list of errors derived from the exception/throwable
+     */
+    List<Error> buildErrors(E exception);
 
 }

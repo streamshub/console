@@ -1,10 +1,15 @@
 package com.github.eyefloaters.console.api.errors.client;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.ws.rs.ext.Provider;
 
 import org.apache.kafka.common.errors.InvalidConfigurationException;
 import org.apache.kafka.common.errors.InvalidReplicaAssignmentException;
+import org.apache.kafka.common.errors.InvalidReplicationFactorException;
+import org.apache.kafka.common.errors.NoReassignmentInProgressException;
 import org.apache.kafka.common.errors.TopicExistsException;
 import org.apache.kafka.common.errors.UnknownTopicIdException;
 import org.apache.kafka.common.errors.UnknownTopicOrPartitionException;
@@ -21,8 +26,19 @@ public class KafkaClientExceptionHandlers {
     public static class InvalidConfigurationExceptionHandler
         extends AbstractClientExceptionHandler<InvalidConfigurationException> {
 
+        /**
+         * Pattern for a "best effort" attempt to identify the invalid property
+         * being reported by Kafka. The format searched for here is set by
+         * {@linkplain org.apache.kafka.common.config.ConfigException}.
+         */
+        static final Pattern NAME_SEARCH = Pattern.compile(" for configuration ([^:]+)(?::|$)");
+        static final String VALUE_PATH = "/data/attributes/configs/%s/value"; // NOSONAR - not a URL
+
         public InvalidConfigurationExceptionHandler() {
-            super(ErrorCategory.InvalidResource.class, null, null);
+            super(ErrorCategory.InvalidResource.class, null, exception -> {
+                Matcher m = NAME_SEARCH.matcher(exception.getMessage());
+                return m.find() ? VALUE_PATH.formatted(m.group(1)) : null;
+            });
         }
 
         @Override
@@ -48,6 +64,21 @@ public class KafkaClientExceptionHandlers {
 
     @Provider
     @ApplicationScoped
+    public static class InvalidReplicationFactorExceptionHandler
+        extends AbstractClientExceptionHandler<InvalidReplicationFactorException> {
+
+        public InvalidReplicationFactorExceptionHandler() {
+            super(ErrorCategory.InvalidResource.class, null, "/data/attributes/replicationFactor");
+        }
+
+        @Override
+        public boolean handlesException(Throwable thrown) {
+            return thrown instanceof InvalidReplicationFactorException;
+        }
+    }
+
+    @Provider
+    @ApplicationScoped
     public static class TopicExistsExceptionHandler
         extends AbstractClientExceptionHandler<TopicExistsException> {
 
@@ -58,6 +89,21 @@ public class KafkaClientExceptionHandlers {
         @Override
         public boolean handlesException(Throwable thrown) {
             return thrown instanceof TopicExistsException;
+        }
+    }
+
+    @Provider
+    @ApplicationScoped
+    public static class NoReassignmentInProgressExceptionHandler
+        extends AbstractClientExceptionHandler<NoReassignmentInProgressException> {
+
+        public NoReassignmentInProgressExceptionHandler() {
+            super(ErrorCategory.InvalidResource.class, null, "/data/attributes/replicasAssignments");
+        }
+
+        @Override
+        public boolean handlesException(Throwable thrown) {
+            return thrown instanceof NoReassignmentInProgressException;
         }
     }
 

@@ -67,6 +67,9 @@ public class ClientFactory {
             \t(3) authentication type `custom` and SASL mechanism OAUTHBEARER supported.
             """;
 
+    private final Supplier<NotFoundException> noSuchKafka =
+            () -> new NotFoundException("Requested Kafka cluster does not exist or is not configured with a compatible listener");
+
     @Inject
     Logger log;
 
@@ -89,10 +92,39 @@ public class ClientFactory {
     @Named("kafkaAdminBuilder")
     Function<Map<String, Object>, Admin> kafkaAdminBuilder = Admin::create;
 
+    /**
+     * Provides the Strimzi Kafka custom resource addressed by the current request
+     * URL as an injectable bean. This allows for the Kafka to be obtained by
+     * application logic without an additional lookup.
+     *
+     * @return a supplier that gives the Strimzi Kafka CR specific to the current
+     *         request
+     * @throws IllegalStateException when an attempt is made to access an injected
+     *                               Kafka Supplier but the current request does not
+     *                               include the Kafka clusterId path parameter.
+     * @throws NotFoundException     when the provided Kafka clusterId does not
+     *                               match any known Kafka cluster.
+     */
     @Produces
     @RequestScoped
-    public Supplier<Admin> adminClientSupplier(Function<Map<String, Object>, Admin> adminBuilder) {
-        Map<String, Object> config = buildConfiguration();
+    public Supplier<Kafka> kafkaResourceSupplier() {
+        String clusterId = requestUri.getPathParameters().getFirst("clusterId");
+
+        if (clusterId == null) {
+            throw new IllegalStateException("Admin client was accessed, "
+                    + "but the requested operation does not provide a Kafka cluster ID");
+        }
+
+        Kafka cluster = KafkaClusterService.findCluster(kafkaInformer, clusterId)
+                .orElseThrow(noSuchKafka);
+
+        return () -> cluster;
+    }
+
+    @Produces
+    @RequestScoped
+    public Supplier<Admin> adminClientSupplier(Function<Map<String, Object>, Admin> adminBuilder, Supplier<Kafka> cluster) {
+        Map<String, Object> config = buildConfiguration(cluster.get());
 
         config.put(AdminClientConfig.METADATA_MAX_AGE_CONFIG, "30000");
         config.put(AdminClientConfig.REQUEST_TIMEOUT_MS_CONFIG, "10000");
@@ -116,8 +148,8 @@ public class ClientFactory {
 
     @Produces
     @RequestScoped
-    public Supplier<Consumer<byte[], byte[]>> consumerSupplier() {
-        Map<String, Object> config = buildConfiguration();
+    public Supplier<Consumer<byte[], byte[]>> consumerSupplier(Supplier<Kafka> cluster) {
+        Map<String, Object> config = buildConfiguration(cluster.get());
 
         config.put(ConsumerConfig.ALLOW_AUTO_CREATE_TOPICS_CONFIG, "false");
         config.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class.getName());
@@ -134,24 +166,11 @@ public class ClientFactory {
         consumer.get().close();
     }
 
-    Map<String, Object> buildConfiguration() {
-        String clusterId = requestUri.getPathParameters().getFirst("clusterId");
-
-        if (clusterId == null) {
-            throw new IllegalStateException("Admin client was accessed, "
-                    + "but the requested operation does not provide a Kafka cluster ID");
-        }
-
-        Supplier<NotFoundException> noSuchKafka =
-            () -> new NotFoundException("Requested Kafka cluster does not exist or is not configured with a compatible listener");
-
-        Kafka cluster = KafkaClusterService.findCluster(kafkaInformer, clusterId)
-            .orElseThrow(noSuchKafka);
-
+    Map<String, Object> buildConfiguration(Kafka cluster) {
         return KafkaClusterService.consoleListener(cluster)
             .map(l -> buildConfiguration(cluster, l))
             .orElseThrow(() -> {
-                log.warnf(NO_COMPATIBLE_LISTENER, clusterId);
+                log.warnf(NO_COMPATIBLE_LISTENER, cluster.getStatus().getClusterId());
                 return noSuchKafka.get();
             });
     }

@@ -23,20 +23,20 @@
         <!-- Dependencies -->
         <quarkus.version>3.2.5.Final</quarkus.version>
         <jandex-maven-plugin.version>3.1.3</jandex-maven-plugin.version>
-        <strimzi-oauth.version>0.13.0</strimzi-oauth.version>
+        <strimzi-oauth.version>0.14.0</strimzi-oauth.version>
         <hamcrest.version>2.2</hamcrest.version>
 
         <!-- Plugin Versions -->
         <maven.compiler.version>3.11.0</maven.compiler.version>
         <maven.dependency.version>3.6.0</maven.dependency.version>
         <maven.checkstyle.version>3.3.0</maven.checkstyle.version>
-        <spotbugs.version>4.7.3</spotbugs.version>
+        <spotbugs.version>4.8.0</spotbugs.version>
         <surefire-plugin.version>3.1.2</surefire-plugin.version>
-        <version.jacoco.plugin>0.8.10</version.jacoco.plugin>
+        <version.jacoco.plugin>0.8.11</version.jacoco.plugin>
 
         <!-- Test Dependencies -->
         <hamcrest.version>2.1</hamcrest.version>
-        <strimzi-test-container.version>0.104.0</strimzi-test-container.version>
+        <strimzi-test-container.version>0.105.0</strimzi-test-container.version>
         <!-- System test image dependencies -->
         <keycloak.image>quay.io/keycloak/keycloak:21.1</keycloak.image>
         <strimzi-kafka.tag>quay.io/strimzi/kafka:0.35.1-kafka-3.4.0</strimzi-kafka.tag>
@@ -366,7 +366,7 @@
                     <dependency>
                         <groupId>com.puppycrawl.tools</groupId>
                         <artifactId>checkstyle</artifactId>
-                        <version>10.12.3</version>
+                        <version>10.12.4</version>
                     </dependency>
                 </dependencies>
                 <executions>
@@ -390,7 +390,7 @@
             <plugin>
                 <groupId>com.github.spotbugs</groupId>
                 <artifactId>spotbugs-maven-plugin</artifactId>
-                <version>4.7.3.5</version>
+                <version>4.7.3.6</version>
                 <dependencies>
                     <!-- overwrite dependency on spotbugs if you want to specify the version of˓→spotbugs -->
                     <dependency>
@@ -515,7 +515,7 @@
                     <plugin>
                         <groupId>io.smallrye</groupId>
                         <artifactId>smallrye-open-api-maven-plugin</artifactId>
-                        <version>3.5.1</version>
+                        <version>3.6.2</version>
                         <executions>
                             <execution>
                                 <goals>
@@ -538,7 +538,7 @@
                             <dependency>
                                 <groupId>io.smallrye.config</groupId>
                                 <artifactId>smallrye-config</artifactId>
-                                <version>3.3.4</version>
+                                <version>3.4.1</version>
                             </dependency>
                             <dependency>
                                 <groupId>jakarta.annotation</groupId>

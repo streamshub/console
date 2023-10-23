@@ -179,7 +179,9 @@ public abstract class ErrorCategory implements Payload {
         Error error = new Error(getTitle(), message, cause);
         error.setStatus(String.valueOf(getHttpStatus().getStatusCode()));
         error.setCode(getCode());
-        error.setSource(getSource().errorSource(property));
+        if (property != null) {
+            error.setSource(getSource().errorSource(property));
+        }
         error.setId(UUID.randomUUID().toString());
 
         return error;

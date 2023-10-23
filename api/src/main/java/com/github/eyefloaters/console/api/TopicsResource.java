@@ -12,6 +12,7 @@ import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
+import jakarta.ws.rs.PATCH;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
@@ -35,6 +36,7 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import com.github.eyefloaters.console.api.model.ListFetchParams;
 import com.github.eyefloaters.console.api.model.NewTopic;
 import com.github.eyefloaters.console.api.model.Topic;
+import com.github.eyefloaters.console.api.model.TopicPatch;
 import com.github.eyefloaters.console.api.service.TopicService;
 import com.github.eyefloaters.console.api.support.ErrorCategory;
 import com.github.eyefloaters.console.api.support.FieldFilter;
@@ -238,27 +240,26 @@ public class TopicsResource {
                 .thenApply(Response.ResponseBuilder::build);
     }
 
-//    @Path("{topicName}/configs")
-//    @PATCH
-//    @Consumes(MediaType.APPLICATION_JSON)
-//    @RequestBodySchema(ConfigEntry.ConfigEntryMap.class)
-//    @Produces(MediaType.APPLICATION_JSON)
-//    @APIResponseSchema(responseCode = "200", value = ConfigEntry.ConfigEntryMap.class)
-//    public CompletionStage<Response> alterTopicConfigs(@PathParam("topicName") String topicName, Map<String, ConfigEntry> configs) {
-//        return topicService.alterConfigs(topicName, configs)
-//                .thenApply(Response::ok)
-//                .thenApply(Response.ResponseBuilder::build);
-//    }
+    @Path("{topicId}")
+    @PATCH
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    @APIResponseSchema(responseCode = "204", value = Void.class)
+    public CompletionStage<Response> patchTopic(
+            @Parameter(description = "Cluster identifier")
+            @PathParam("clusterId")
+            String clusterId,
 
-//    @Path("{topicName}/partitions")
-//    @PATCH
-//    @Consumes(MediaType.APPLICATION_JSON)
-//    @RequestBodySchema(NewPartitions.class)
-//    @Produces(MediaType.APPLICATION_JSON)
-//    @APIResponse(responseCode = "204", description = "Partitions successfully created")
-//    public CompletionStage<Response> createPartitions(@PathParam("topicName") String topicName, NewPartitions partitions) {
-//        return topicService.createPartitions(topicName, partitions)
-//                .thenApply(nothing -> Response.noContent())
-//                .thenApply(Response.ResponseBuilder::build);
-//    }
+            @PathParam("topicId")
+            @KafkaUuid(payload = ErrorCategory.ResourceNotFound.class, message = "No such topic")
+            @Parameter(description = "Topic identifier")
+            String topicId,
+
+            @Valid
+            TopicPatch.TopicPatchDocument topic) {
+        return topicService.patchTopic(topicId, topic.getData().getAttributes())
+                .thenApply(nothing -> Response.noContent())
+                .thenApply(Response.ResponseBuilder::build);
+    }
+
 }
