@@ -9,8 +9,8 @@ dependencies:
     specifier: ^5.0.2
     version: 5.0.2
   '@patternfly/react-charts':
-    specifier: ^7.0.0
-    version: 7.0.0(react-dom@18.2.0)(react@18.2.0)
+    specifier: ^7.1.1
+    version: 7.1.1(react-dom@18.2.0)(react@18.2.0)
   '@patternfly/react-core':
     specifier: ^5.0.0
     version: 5.0.0(react-dom@18.2.0)(react@18.2.0)
@@ -357,14 +357,14 @@ packages:
     resolution: {integrity: sha512-PB8+MLdYVgF1hIOxGmnVsZG+YHUX3RePe5W1oMS4gS00EmSgw1cobr1Qbpy/BqqS8/R9DRN4hZ2FKDT0d5tkFQ==}
     dev: false
 
-  /@patternfly/react-charts@7.0.0(react-dom@18.2.0)(react@18.2.0):
-    resolution: {integrity: sha512-lRR5iXJeTWbEqMlIcqnVA9DHurn8MJNDnwtEDcrzCH5g28MCXGosQjhXqsnz3LVGtHcBsQcpxMIv8WO5rfJHOA==}
+  /@patternfly/react-charts@7.1.1(react-dom@18.2.0)(react@18.2.0):
+    resolution: {integrity: sha512-X5T+wlbh+sNKIVScx3ykivu1+EIEcQvEdjv6vfyBlsBU8CzACgMRQff4buBL6um3Zv2kT4LPefd6zxoaerJdkg==}
     peerDependencies:
       react: ^17 || ^18
       react-dom: ^17 || ^18
     dependencies:
-      '@patternfly/react-styles': 5.0.0
-      '@patternfly/react-tokens': 5.0.0
+      '@patternfly/react-styles': 5.1.1
+      '@patternfly/react-tokens': 5.1.1
       hoist-non-react-statics: 3.3.2
       lodash: 4.17.21
       react: 18.2.0
@@ -419,6 +419,10 @@ packages:
     resolution: {integrity: sha512-xbSCgjx+fPrXbIzUznwTFWtJEbzVS0Wn4zrejdKJYQTY+4YcuPlFkeq2tl3syzwGsaYMpHiFwQiTaKyTvlwtuw==}
     dev: false
 
+  /@patternfly/react-styles@5.1.1:
+    resolution: {integrity: sha512-swO9X+WixYYDsMVsEJp1V8QUfhEQY91QfFm4phfYP4jc2TQ2opIFYdUIHkc+yrZwBhrgb/pPUUfemyqAoSbZcA==}
+    dev: false
+
   /@patternfly/react-table@5.0.0(react-dom@18.2.0)(react@18.2.0):
     resolution: {integrity: sha512-Q3MBo9+ZmBvLJzVHxmV9f/4qQAz5Si743zVLHRwjh+tjbn/DrcbxJdT8Uxa3NGKkpvszzgi/LPeXipJOHOELug==}
     peerDependencies:
@@ -437,6 +441,10 @@ packages:
 
   /@patternfly/react-tokens@5.0.0:
     resolution: {integrity: sha512-to2CXIZ6WTuzBcjLZ+nXi5LhnYkSIDu3RBMRZwrplmECOoUWv87CC+2T0EVxtASRtpQfikjD2PDKMsif5i0BxQ==}
+    dev: false
+
+  /@patternfly/react-tokens@5.1.1:
+    resolution: {integrity: sha512-cHuNkzNA9IY9aDwfjSEkitQoVEvRhOJRKhH0yIRlRByEkbdoV9jJZ9xj20hNShE+bxmNuom+MCTQSkpkN1bV8A==}
     dev: false
 
   /@peculiar/asn1-schema@2.3.6:
