@@ -22,7 +22,7 @@
     "convert": "^4.13.2",
     "date-fns": "^2.30.0",
     "date-fns-tz": "^2.0.0",
-    "eslint": "8.46.0",
+    "eslint": "8.52.0",
     "eslint-config-next": "13.5.6",
     "iron-session": "^6.3.1",
     "lodash.groupby": "^4.6.0",
