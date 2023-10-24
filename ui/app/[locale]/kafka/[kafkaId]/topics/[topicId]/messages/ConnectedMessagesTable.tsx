@@ -7,13 +7,15 @@ import { MessagesTable } from "./_components/MessagesTable";
 
 export function ConnectedMessagesTable({
   messages,
+  selectedMessage,
   partitions,
   params,
 }: {
   messages: Message[];
+  selectedMessage: Message | undefined;
   partitions: number;
   params: {
-    selectedOffset: number | undefined;
+    selected: string | undefined;
     partition: number | undefined;
     "filter[offset]": number | undefined;
     "filter[timestamp]": string | undefined;
@@ -91,7 +93,7 @@ export function ConnectedMessagesTable({
     startTransition(() => {
       updateUrl({
         ...params,
-        selectedOffset: message.attributes.offset,
+        selected: `${message.attributes.partition}:${message.attributes.offset}`,
       });
     });
   }
@@ -100,7 +102,7 @@ export function ConnectedMessagesTable({
     startTransition(() => {
       updateUrl({
         ...params,
-        selectedOffset: undefined,
+        selected: undefined,
       });
     });
   }
@@ -110,10 +112,6 @@ export function ConnectedMessagesTable({
       updateUrl({ ...params, _ts: Date.now() });
     });
   }
-
-  const selectedMessage = messages.find(
-    (m) => m.attributes.offset === params.selectedOffset,
-  );
 
   useEffect(() => {
     let interval: ReturnType<typeof setInterval>;
