@@ -32,7 +32,7 @@ import { LimitSelector } from "./LimitSelector";
 import { MessageDetails, MessageDetailsProps } from "./MessageDetails";
 import { NoDataCell } from "./NoDataCell";
 import { UnknownValuePreview } from "./UnknownValuePreview";
-import { beautifyUnknownValue, isSameMessage } from "./utils";
+import { isSameMessage } from "./utils";
 
 const columns = [
   // "partition",
@@ -203,9 +203,8 @@ export function MessagesTable({
                         case "value":
                           return row.attributes.value ? (
                             <UnknownValuePreview
-                              value={beautifyUnknownValue(
-                                row.attributes.value || "",
-                              )}
+                              value={row.attributes.value}
+                              truncateAt={149}
                               onClick={() => {
                                 setDefaultTab("value");
                                 onSelectMessage(row);

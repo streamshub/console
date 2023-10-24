@@ -39,6 +39,7 @@ export async function getTopicMessages(
           value: string;
         }
       | undefined;
+    maxValueLength: number | undefined;
   },
 ): Promise<Message[]> {
   const sp = new URLSearchParams(
@@ -55,6 +56,7 @@ export async function getTopicMessages(
           ? "gte," + params.filter?.value
           : undefined,
       "page[size]": params.pageSize,
+      maxValueLength: Math.min(params.maxValueLength || 150, 50000),
     }),
   );
   const consumeRecordsQuery = sp.toString();
@@ -74,4 +76,28 @@ export async function getTopicMessages(
   //   setTimeout(() => resolve(MessageApiResponse.parse(rawData).data), 1000),
   // );
   return MessageApiResponse.parse(rawData).data;
+}
+
+export async function getTopicMessage(
+  kafkaId: string,
+  topicId: string,
+  params: {
+    partition: number;
+    offset: number;
+  },
+): Promise<Message | undefined> {
+  log.info({ kafkaId, topicId, params }, "getTopicMessage response");
+  const messages = await getTopicMessages(kafkaId, topicId, {
+    pageSize: 1,
+    partition: params.partition,
+    filter: {
+      type: "offset",
+      value: params.offset,
+    },
+    maxValueLength: 50000,
+  });
+
+  log.debug({ messages }, "getTopicMessage response");
+
+  return messages.length === 1 ? messages[0] : undefined;
 }

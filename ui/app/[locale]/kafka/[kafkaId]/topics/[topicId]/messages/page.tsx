@@ -1,4 +1,4 @@
-import { getTopicMessages } from "@/api/messages";
+import { getTopicMessage, getTopicMessages } from "@/api/messages";
 import { getTopic } from "@/api/topics";
 import { NoDataEmptyState } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/_components/NoDataEmptyState";
 import { ConnectedMessagesTable } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/ConnectedMessagesTable";
@@ -18,13 +18,30 @@ export default async function MessagesPage({
   searchParams: MessagesSearchParams;
 }) {
   const topic = await getTopic(kafkaId, topicId);
-  const { limit, partition, filter, selectedOffset, offset, timestamp, epoch } =
-    parseSearchParams(searchParams);
+  const {
+    limit,
+    partition,
+    filter,
+    selectedOffset,
+    selectedPartition,
+    offset,
+    timestamp,
+    epoch,
+  } = parseSearchParams(searchParams);
+
   const messages = await getTopicMessages(kafkaId, topicId, {
     pageSize: limit,
     partition,
     filter,
+    maxValueLength: 150,
   });
+  const selectedMessage =
+    selectedOffset !== undefined && selectedPartition !== undefined
+      ? await getTopicMessage(kafkaId, topicId, {
+          offset: selectedOffset,
+          partition: selectedPartition,
+        })
+      : undefined;
 
   switch (true) {
     case messages === null || messages.length === 0:
@@ -33,11 +50,12 @@ export default async function MessagesPage({
       return (
         <ConnectedMessagesTable
           messages={messages}
+          selectedMessage={selectedMessage}
           partitions={topic.attributes.partitions.length}
           params={{
             limit,
             partition,
-            selectedOffset,
+            selected: searchParams.selected,
             "filter[timestamp]": timestamp,
             "filter[epoch]": epoch,
             "filter[offset]": offset,
