@@ -116,7 +116,7 @@ export function ConnectedMessagesTable({
   );
 
   useEffect(() => {
-    let interval: NodeJS.Timer | undefined;
+    let interval: ReturnType<typeof setInterval>;
     if (refreshInterval) {
       interval = setInterval(async () => {
         updateUrl({ ...params, _ts: Date.now() });
