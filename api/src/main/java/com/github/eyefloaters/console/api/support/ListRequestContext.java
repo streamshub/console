@@ -206,13 +206,18 @@ public class ListRequestContext<T> {
             builder.queryParam(ListFetchParams.PAGE_SIZE_PARAM, listParams.getRawPageSize());
         }
 
+        if (totalRecords > pageSize) {
+            links.put("first", builder.build().toString());
+        } else {
+            // No link for a single page
+            links.put("first", null);
+        }
+
         T firstDatasetEntry = firstPageData.first();
 
         if (Objects.equals(firstPageEntry, firstDatasetEntry)) {
-            links.put("first", null);
             links.put("prev", null);
         } else {
-            links.put("first", builder.build().toString());
             String prevCursor = cursorBuilder.apply(firstPageEntry, getSortNames());
             links.put("prev", builder.clone().queryParam(ListFetchParams.PAGE_BEFORE_PARAM, prevCursor).build().toString());
         }
@@ -230,12 +235,23 @@ public class ListRequestContext<T> {
 
         if (Objects.equals(finalPageEntry, finalDatasetEntry)) {
             links.put("next", null);
-            links.put("last", null);
         } else {
             String nextCursor = cursorBuilder.apply(finalPageEntry, getSortNames());
             links.put("next", builder.clone().queryParam(ListFetchParams.PAGE_AFTER_PARAM, nextCursor).build().toString());
+        }
+
+        if (totalRecords > pageSize) {
+            /*
+             * Because finalyPageData is sorted in descending order from the end of the
+             * dataset and it's size is one greater than the actual page size, the final
+             * entry of the set is the last record on the previous page. This is used to
+             * create the cursor for the page[after] parameter.
+             */
             String lastCursor = cursorBuilder.apply(finalPageData.last(), getSortNames());
             links.put("last", builder.clone().queryParam(ListFetchParams.PAGE_AFTER_PARAM, lastCursor).build().toString());
+        } else {
+            // No link for a single page
+            links.put("last", null);
         }
 
         return links;

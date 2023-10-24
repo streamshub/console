@@ -85,6 +85,7 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.everyItem;
 import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.hasEntry;
 import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
@@ -486,6 +487,7 @@ class TopicsResourceIT {
             }
         };
 
+        // Page 1
         String response1 = whenRequesting(req -> req
                 .queryParam("fields[topics]", "name")
                 .queryParam("sort", "-name")
@@ -493,9 +495,11 @@ class TopicsResourceIT {
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
             .body("links.size()", is(4))
-            .body("links", allOf(hasKey("first"), hasKey("prev"), hasKey("next"), hasKey("last")))
-            .body("links.first", is(nullValue()))
-            .body("links.prev", is(nullValue()))
+            .body("links", allOf(
+                    hasEntry(is("first"), notNullValue()),
+                    hasEntry(is("prev"), nullValue()),
+                    hasEntry(is("next"), notNullValue()),
+                    hasEntry(is("last"), notNullValue())))
             .body("meta.page.total", is(102))
             .body("meta.page.pageNumber", is(1))
             .body("data.size()", is(10))
@@ -505,7 +509,10 @@ class TopicsResourceIT {
             .asString();
 
         JsonObject links1 = linkExtract.apply(response1);
+        String links1First = links1.getString("first");
+        String links1Last = links1.getString("last");
 
+        // Advance to page 2, using `next` link from page 1
         URI request2 = URI.create(links1.getString("next"));
         String response2 = whenRequesting(req -> req
                 .urlEncodingEnabled(false)
@@ -513,9 +520,11 @@ class TopicsResourceIT {
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
             .body("links.size()", is(4))
-            .body("links", allOf(hasKey("first"), hasKey("prev"), hasKey("next"), hasKey("last")))
-            .body("links.first", is(notNullValue()))
-            .body("links.prev", is(notNullValue()))
+            .body("links", allOf(
+                    hasEntry(is("first"), is(links1First)),
+                    hasEntry(is("prev"), notNullValue()),
+                    hasEntry(is("next"), notNullValue()),
+                    hasEntry(is("last"), is(links1Last))))
             .body("meta.page.total", is(102))
             .body("meta.page.pageNumber", is(2))
             .body("data.size()", is(10))
@@ -524,9 +533,8 @@ class TopicsResourceIT {
             .extract()
             .asString();
 
+        // Jump to final page 11 using `last` link from page 2
         JsonObject links2 = linkExtract.apply(response2);
-        assertEquals(links1.getString("last"), links2.getString("last"));
-
         URI request3 = URI.create(links2.getString("last"));
         String response3 = whenRequesting(req -> req
                 .urlEncodingEnabled(false)
@@ -534,9 +542,11 @@ class TopicsResourceIT {
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
             .body("links.size()", is(4))
-            .body("links", allOf(hasKey("first"), hasKey("prev"), hasKey("next"), hasKey("last")))
-            .body("links.last", is(nullValue()))
-            .body("links.next", is(nullValue()))
+            .body("links", allOf(
+                    hasEntry(is("first"), is(links1First)),
+                    hasEntry(is("prev"), notNullValue()),
+                    hasEntry(is("next"), nullValue()),
+                    hasEntry(is("last"), is(links1Last))))
             .body("meta.page.total", is(102))
             .body("meta.page.pageNumber", is(11))
             .body("data.size()", is(2))
@@ -545,19 +555,20 @@ class TopicsResourceIT {
             .extract()
             .asString();
 
+        // Return to page 1 using the `first` link provided by the last page, 11
         JsonObject links3 = linkExtract.apply(response3);
-        assertEquals(links2.getString("first"), links3.getString("first"));
-
-        URI request4 = URI.create(links2.getString("first"));
+        URI request4 = URI.create(links3.getString("first"));
         String response4 = whenRequesting(req -> req
                 .urlEncodingEnabled(false)
                 .get(request4))
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
             .body("links.size()", is(4))
-            .body("links", allOf(hasKey("first"), hasKey("prev"), hasKey("next"), hasKey("last")))
-            .body("links.first", is(nullValue()))
-            .body("links.prev", is(nullValue()))
+            .body("links", allOf(
+                    hasEntry(is("first"), is(links1First)),
+                    hasEntry(is("prev"), nullValue()),
+                    hasEntry(is("next"), notNullValue()),
+                    hasEntry(is("last"), is(links1Last))))
             .body("meta.page.total", is(102))
             .body("meta.page.pageNumber", is(1))
             .body("data.size()", is(10))
@@ -567,6 +578,35 @@ class TopicsResourceIT {
             .asString();
 
         assertEquals(response1, response4);
+    }
+
+    @Test
+    void testListTopicsPaginationLinksNullWithSinglePage() throws MalformedURLException {
+        List<String> topicNames = IntStream.range(0, 102)
+                .mapToObj("%03d-"::formatted)
+                .map(prefix -> prefix + UUID.randomUUID().toString())
+                .collect(Collectors.toList());
+
+        topicUtils.createTopics(clusterId1, topicNames, 1);
+
+        whenRequesting(req -> req
+                .queryParam("fields[topics]", "name")
+                .queryParam("sort", "-name")
+                .queryParam("page[size]", 103)
+                .get("", clusterId1))
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()))
+            .body("links.size()", is(4))
+            .body("links", allOf(
+                    hasEntry(is("first"), nullValue()),
+                    hasEntry(is("prev"), nullValue()),
+                    hasEntry(is("next"), nullValue()),
+                    hasEntry(is("last"), nullValue())))
+            .body("meta.page.total", is(102))
+            .body("meta.page.pageNumber", is(1))
+            .body("data.size()", is(102))
+            .body("data[0].attributes.name", startsWith("101-"))
+            .body("data[101].attributes.name", startsWith("000-"));
     }
 
     @Test
