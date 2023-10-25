@@ -1,0 +1,10 @@
+{
+    "data": {
+        "type": "topics",
+        "id": "TjaapKOXR1-CNlZ1bDmYow",
+        "attributes": {
+            "name": "my-topic",
+            "numPartitions": 6
+        }
+    }
+}

@@ -1,0 +1,13 @@
+{
+    "meta": {
+        "validateOnly": true
+    },
+    "data": {
+        "type": "topics",
+        "attributes": {
+            "name": "my-topic",
+            "numPartitions": 3,
+            "replicationFactor": 3
+        }
+    }
+}

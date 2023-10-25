@@ -30,6 +30,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Content;
 import org.eclipse.microprofile.openapi.annotations.media.ExampleObject;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
+import org.eclipse.microprofile.openapi.annotations.parameters.RequestBody;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponseSchema;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
@@ -81,6 +82,20 @@ public class TopicsResource {
             String clusterId,
 
             @Valid
+            @RequestBody(content = @Content(
+                    schema = @Schema(implementation = NewTopic.NewTopicDocument.class),
+                    examples = {
+                        @ExampleObject(
+                                name = "createTopic-simple",
+                                externalValue = "/openapi/examples/createTopic-simple.json"),
+                        @ExampleObject(
+                                name = "createTopic-configs",
+                                externalValue = "/openapi/examples/createTopic-configs.json"),
+                        @ExampleObject(
+                            name = "createTopic-validateOnly",
+                            externalValue = "/openapi/examples/createTopic-validateOnly.json")
+                    })
+            )
             NewTopic.NewTopicDocument topic) {
 
         final UriBuilder location = uriInfo.getRequestUriBuilder();
@@ -263,6 +278,17 @@ public class TopicsResource {
             String topicId,
 
             @Valid
+            @RequestBody(content = @Content(
+                    schema = @Schema(implementation = TopicPatch.TopicPatchDocument.class),
+                    examples = {
+                        @ExampleObject(
+                                name = "patchTopic-simple",
+                                externalValue = "/openapi/examples/patchTopic-simple.json"),
+                        @ExampleObject(
+                            name = "patchTopic-validateOnly",
+                            externalValue = "/openapi/examples/patchTopic-validateOnly.json")
+                    })
+            )
             TopicPatch.TopicPatchDocument topic) {
 
         final boolean validateOnly = Boolean.TRUE.equals(topic.meta("validateOnly"));

@@ -1,0 +1,15 @@
+{
+    "data": {
+        "type": "topics",
+        "attributes": {
+            "name": "my-topic",
+            "numPartitions": 3,
+            "replicationFactor": 3,
+            "configs": {
+                "retention.ms": {
+                    "value": "86400000"
+                }
+            }
+        }
+    }
+}

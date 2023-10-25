@@ -1,20 +1,66 @@
 package com.github.eyefloaters.console.api.support;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.UncheckedIOException;
+import java.util.Collection;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.TreeMap;
+import java.util.stream.Stream;
+
+import jakarta.enterprise.inject.Instance;
+import jakarta.enterprise.inject.spi.CDI;
 
 import org.eclipse.microprofile.openapi.OASFactory;
 import org.eclipse.microprofile.openapi.OASFilter;
 import org.eclipse.microprofile.openapi.models.OpenAPI;
 import org.eclipse.microprofile.openapi.models.PathItem;
+import org.eclipse.microprofile.openapi.models.media.Content;
+import org.eclipse.microprofile.openapi.models.media.MediaType;
 import org.eclipse.microprofile.openapi.models.media.Schema;
 import org.eclipse.microprofile.openapi.models.media.Schema.SchemaType;
+import org.eclipse.microprofile.openapi.models.parameters.RequestBody;
+import org.jboss.logging.Logger;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.eyefloaters.console.api.support.StringListParamConverterProvider.StringListParamConverter;
 
 import io.smallrye.openapi.api.util.FilterUtil;
 import io.smallrye.openapi.api.util.UnusedSchemaFilter;
 
 public class OASModelFilter extends AbstractOperationFilter implements OASFilter {
+
+    private static final Logger LOGGER = Logger.getLogger(OASModelFilter.class);
+
+    @Override
+    public RequestBody filterRequestBody(RequestBody requestBody) {
+        Instance<ObjectMapper> objectMapper = CDI.current().select(ObjectMapper.class);
+
+        // In-line external example (https://github.com/swagger-api/swagger-ui/issues/5433)
+        Optional.ofNullable(requestBody.getContent())
+            .map(Content::getMediaTypes)
+            .map(Map::values)
+            .map(Collection::stream)
+            .orElseGet(Stream::empty)
+            .map(MediaType::getExamples)
+            .filter(Objects::nonNull)
+            .map(Map::values)
+            .flatMap(Collection::stream)
+            .filter(example -> Objects.nonNull(example.getExternalValue()))
+            .forEach(example -> {
+                try (InputStream stream = getClass().getResourceAsStream(example.getExternalValue())) {
+                    LOGGER.infof("Loading Example externalValue: %s", example.getExternalValue());
+                    example.setValue(objectMapper.get().readTree(stream));
+                    example.setExternalValue(null);
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
+                }
+            });
+
+        return requestBody;
+    }
 
     @Override
     public Schema filterSchema(Schema schema) {
