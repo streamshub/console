@@ -18,7 +18,7 @@ const MessageSchema = z.object({
   }),
 });
 const MessageApiResponse = z.object({
-  meta: z.object({}).nullable(),
+  meta: z.object({}).nullable().optional(),
   data: z.array(MessageSchema),
 });
 export type Message = z.infer<typeof MessageSchema>;
