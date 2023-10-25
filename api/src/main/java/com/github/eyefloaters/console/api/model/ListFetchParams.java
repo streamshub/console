@@ -34,14 +34,19 @@ import io.xlate.validation.constraints.Expression.ExceptionalValue;
     value = "self.isValidCursor(self.pageAfter)",
     message = "Parameter value missing or invalid",
     payload = ErrorCategory.InvalidQueryParameter.class,
-    node = "page[after]")
+    node = ListFetchParams.PAGE_AFTER_PARAM)
 @Expression(
     when = "self.rawPageBefore != null",
     value = "self.isValidCursor(self.pageBefore)",
     message = "Parameter value missing or invalid",
     payload = ErrorCategory.InvalidQueryParameter.class,
-    node = "page[before]")
+    node = ListFetchParams.PAGE_BEFORE_PARAM)
 public class ListFetchParams {
+
+    public static final String PAGE_SIZE_PARAM = "page[size]";
+    public static final String PAGE_SORT_PARAM = "sort";
+    public static final String PAGE_AFTER_PARAM = "page[after]";
+    public static final String PAGE_BEFORE_PARAM = "page[before]";
 
     public static final int PAGE_SIZE_DEFAULT = 10;
     public static final int PAGE_SIZE_MAX = 1000;
@@ -57,8 +62,8 @@ public class ListFetchParams {
      */
     private static final Pattern PATH_PATTERN = Pattern.compile("\\.(?=(?:[^\"]*+\"[^\"]*+\")*+[^\"]*$)");
 
-    @QueryParam("sort")
-    @Parameter(name = "sort",
+    @QueryParam(PAGE_SORT_PARAM)
+    @Parameter(name = PAGE_SORT_PARAM,
         in = ParameterIn.QUERY,
         explode = Explode.FALSE,
         schema = @Schema(implementation = String[].class),
@@ -72,7 +77,7 @@ public class ListFetchParams {
             """)
     String sort;
 
-    @QueryParam("page[size]")
+    @QueryParam(PAGE_SIZE_PARAM)
     @Parameter(
         description = """
             Limit the number of records fetched and returned. When omitted,
@@ -96,18 +101,18 @@ public class ListFetchParams {
         exceptionalValue = ExceptionalValue.FALSE,
         message = "must be a positive integer",
         payload = ErrorCategory.InvalidQueryParameter.class,
-        node = "page[size]")
+        node = PAGE_SIZE_PARAM)
     @Expression(
         when = "self != null",
         value = "Integer.parseInt(self) <= " + PAGE_SIZE_MAX,
         exceptionalValue = ExceptionalValue.FALSE,
         message = "requested page[size] exceeds maximum of " + PAGE_SIZE_MAX,
         payload = ErrorCategory.MaxPageSizeExceededError.class,
-        node = "page[size]")
+        node = PAGE_SIZE_PARAM)
     String pageSize;
 
-    @QueryParam("page[after]")
-    @Parameter(name = "page[after]",
+    @QueryParam(PAGE_AFTER_PARAM)
+    @Parameter(name = PAGE_AFTER_PARAM,
         in = ParameterIn.QUERY,
         description = """
             Cursor used to request a page where the first item returned in the paginated
@@ -121,8 +126,8 @@ public class ListFetchParams {
             """)
     String pageAfter;
 
-    @QueryParam("page[before]")
-    @Parameter(name = "page[before]",
+    @QueryParam(PAGE_BEFORE_PARAM)
+    @Parameter(name = PAGE_BEFORE_PARAM,
         in = ParameterIn.QUERY,
         description = """
             Cursor used to request a page where the last item returned in the paginated
@@ -140,6 +145,14 @@ public class ListFetchParams {
     List<String> sortNames;
     JsonObject pageAfterParsed;
     JsonObject pageBeforeParsed;
+
+    public String getRawSort() {
+        return sort;
+    }
+
+    public String getRawPageSize() {
+        return pageSize;
+    }
 
     public String getRawPageAfter() {
         return pageAfter;

@@ -15,9 +15,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.NavigableSet;
 import java.util.NoSuchElementException;
-import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -41,6 +39,7 @@ import org.eclipse.microprofile.context.ThreadContext;
 import org.jboss.logging.Logger;
 
 import com.github.eyefloaters.console.api.model.KafkaRecord;
+import com.github.eyefloaters.console.api.support.SizeLimitedSortedSet;
 
 @ApplicationScoped
 public class RecordService {
@@ -133,17 +132,7 @@ public class RecordService {
             }
         };
 
-        NavigableSet<ConsumerRecord<byte[], byte[]>> limitSet = new TreeSet<>(buildComparator(timestamp, offset)) {
-            private static final long serialVersionUID = 1L;
-            @Override
-            public boolean add(ConsumerRecord<byte[], byte[]> rec) {
-                boolean added = super.add(rec);
-                if (size() > limit) {
-                    pollLast();
-                }
-                return added;
-            }
-        };
+        var limitSet = new SizeLimitedSortedSet<ConsumerRecord<byte[], byte[]>>(buildComparator(timestamp, offset), limit);
 
         StreamSupport.stream(poll.spliterator(), false)
                 .flatMap(records -> StreamSupport.stream(records.spliterator(), false))

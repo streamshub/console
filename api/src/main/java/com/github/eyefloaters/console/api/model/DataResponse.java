@@ -5,7 +5,7 @@ import jakarta.validation.constraints.NotNull;
 
 import com.github.eyefloaters.console.api.support.ErrorCategory;
 
-public abstract class DataResponse<T> {
+public abstract class DataResponse<T> extends JsonApiDocument {
 
     @Valid
     @NotNull(payload = ErrorCategory.InvalidResource.class)

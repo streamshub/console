@@ -92,6 +92,7 @@ public class KafkaCluster {
                     })
                     .toList());
             addMeta("page", listSupport.buildPageMeta());
+            listSupport.buildPageLinks(KafkaCluster::toCursor).forEach(this::addLink);
         }
     }
 

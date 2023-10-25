@@ -1,6 +1,8 @@
 package com.github.eyefloaters.console.api;
 
 import java.io.IOException;
+import java.io.StringReader;
+import java.net.MalformedURLException;
 import java.net.ServerSocket;
 import java.net.URI;
 import java.time.Duration;
@@ -23,6 +25,7 @@ import java.util.stream.Stream;
 import jakarta.inject.Inject;
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
+import jakarta.json.JsonReader;
 import jakarta.json.JsonString;
 import jakarta.json.JsonValue;
 import jakarta.ws.rs.core.HttpHeaders;
@@ -82,13 +85,16 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.everyItem;
 import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.hasEntry;
 import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.iterableWithSize;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.startsWith;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.anyMap;
@@ -464,6 +470,143 @@ class TopicsResourceIT {
             .statusCode(is(Status.OK.getStatusCode()))
             .body("data.size()", equalTo(topicNames.size()))
             .body("data.id", contains(sortedIds));
+    }
+
+    @Test
+    void testListTopicsPaginationLinksWithDefaultPageSize() throws MalformedURLException {
+        List<String> topicNames = IntStream.range(0, 102)
+                .mapToObj("%03d-"::formatted)
+                .map(prefix -> prefix + UUID.randomUUID().toString())
+                .collect(Collectors.toList());
+
+        topicUtils.createTopics(clusterId1, topicNames, 1);
+
+        Function<String, JsonObject> linkExtract = response -> {
+            try (JsonReader reader = Json.createReader(new StringReader(response))) {
+                return reader.readObject().getJsonObject("links");
+            }
+        };
+
+        // Page 1
+        String response1 = whenRequesting(req -> req
+                .queryParam("fields[topics]", "name")
+                .queryParam("sort", "-name")
+                .get("", clusterId1))
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()))
+            .body("links.size()", is(4))
+            .body("links", allOf(
+                    hasEntry(is("first"), notNullValue()),
+                    hasEntry(is("prev"), nullValue()),
+                    hasEntry(is("next"), notNullValue()),
+                    hasEntry(is("last"), notNullValue())))
+            .body("meta.page.total", is(102))
+            .body("meta.page.pageNumber", is(1))
+            .body("data.size()", is(10))
+            .body("data[0].attributes.name", startsWith("101-"))
+            .body("data[9].attributes.name", startsWith("092-"))
+            .extract()
+            .asString();
+
+        JsonObject links1 = linkExtract.apply(response1);
+        String links1First = links1.getString("first");
+        String links1Last = links1.getString("last");
+
+        // Advance to page 2, using `next` link from page 1
+        URI request2 = URI.create(links1.getString("next"));
+        String response2 = whenRequesting(req -> req
+                .urlEncodingEnabled(false)
+                .get(request2))
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()))
+            .body("links.size()", is(4))
+            .body("links", allOf(
+                    hasEntry(is("first"), is(links1First)),
+                    hasEntry(is("prev"), notNullValue()),
+                    hasEntry(is("next"), notNullValue()),
+                    hasEntry(is("last"), is(links1Last))))
+            .body("meta.page.total", is(102))
+            .body("meta.page.pageNumber", is(2))
+            .body("data.size()", is(10))
+            .body("data[0].attributes.name", startsWith("091-"))
+            .body("data[9].attributes.name", startsWith("082-"))
+            .extract()
+            .asString();
+
+        // Jump to final page 11 using `last` link from page 2
+        JsonObject links2 = linkExtract.apply(response2);
+        URI request3 = URI.create(links2.getString("last"));
+        String response3 = whenRequesting(req -> req
+                .urlEncodingEnabled(false)
+                .get(request3))
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()))
+            .body("links.size()", is(4))
+            .body("links", allOf(
+                    hasEntry(is("first"), is(links1First)),
+                    hasEntry(is("prev"), notNullValue()),
+                    hasEntry(is("next"), nullValue()),
+                    hasEntry(is("last"), is(links1Last))))
+            .body("meta.page.total", is(102))
+            .body("meta.page.pageNumber", is(11))
+            .body("data.size()", is(2))
+            .body("data[0].attributes.name", startsWith("001-"))
+            .body("data[1].attributes.name", startsWith("000-"))
+            .extract()
+            .asString();
+
+        // Return to page 1 using the `first` link provided by the last page, 11
+        JsonObject links3 = linkExtract.apply(response3);
+        URI request4 = URI.create(links3.getString("first"));
+        String response4 = whenRequesting(req -> req
+                .urlEncodingEnabled(false)
+                .get(request4))
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()))
+            .body("links.size()", is(4))
+            .body("links", allOf(
+                    hasEntry(is("first"), is(links1First)),
+                    hasEntry(is("prev"), nullValue()),
+                    hasEntry(is("next"), notNullValue()),
+                    hasEntry(is("last"), is(links1Last))))
+            .body("meta.page.total", is(102))
+            .body("meta.page.pageNumber", is(1))
+            .body("data.size()", is(10))
+            .body("data[0].attributes.name", startsWith("101-"))
+            .body("data[9].attributes.name", startsWith("092-"))
+            .extract()
+            .asString();
+
+        assertEquals(response1, response4);
+    }
+
+    @Test
+    void testListTopicsPaginationLinksNullWithSinglePage() throws MalformedURLException {
+        List<String> topicNames = IntStream.range(0, 102)
+                .mapToObj("%03d-"::formatted)
+                .map(prefix -> prefix + UUID.randomUUID().toString())
+                .collect(Collectors.toList());
+
+        topicUtils.createTopics(clusterId1, topicNames, 1);
+
+        whenRequesting(req -> req
+                .queryParam("fields[topics]", "name")
+                .queryParam("sort", "-name")
+                .queryParam("page[size]", 103)
+                .get("", clusterId1))
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()))
+            .body("links.size()", is(4))
+            .body("links", allOf(
+                    hasEntry(is("first"), nullValue()),
+                    hasEntry(is("prev"), nullValue()),
+                    hasEntry(is("next"), nullValue()),
+                    hasEntry(is("last"), nullValue())))
+            .body("meta.page.total", is(102))
+            .body("meta.page.pageNumber", is(1))
+            .body("data.size()", is(102))
+            .body("data[0].attributes.name", startsWith("101-"))
+            .body("data[101].attributes.name", startsWith("000-"));
     }
 
     @Test
