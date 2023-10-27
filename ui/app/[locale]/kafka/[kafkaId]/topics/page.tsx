@@ -1,12 +1,13 @@
 import { getTopics } from "@/api/topics";
 import {
+  SortableColumns,
+  SortableTopicsTableColumns,
   TopicsTable,
-  TopicsTableColumn,
 } from "@/app/[locale]/kafka/[kafkaId]/topics/TopicsTable";
 import { PageSection } from "@/libs/patternfly/react-core";
 import { stringToInt } from "@/utils/stringToInt";
 
-const sortMap: Record<TopicsTableColumn, string> = {
+const sortMap: Record<(typeof SortableColumns)[number], string> = {
   name: "name",
   messages: "recordCount",
   partitions: "partitions",
@@ -26,7 +27,7 @@ export default async function TopicsPage({
   };
 }) {
   const pageSize = stringToInt(searchParams.perPage) || 10;
-  const sort = (searchParams["sort"] || "name") as TopicsTableColumn;
+  const sort = (searchParams["sort"] || "name") as SortableTopicsTableColumns;
   const sortDir = (searchParams["sortDir"] || "asc") as "asc" | "desc";
   const pageCursor = searchParams["page"];
   const topics = await getTopics(params.kafkaId, {

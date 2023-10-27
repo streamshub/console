@@ -17,8 +17,12 @@ export const TopicsTableColumns = [
   "partitions",
   "storage",
 ] as const;
+export type SortableTopicsTableColumns = Exclude<
+  TopicsTableColumn,
+  "consumerGroups"
+>;
 export type TopicsTableColumn = (typeof TopicsTableColumns)[number];
-const SortableColumns: TopicsTableColumn[] = ["name"];
+export const SortableColumns = ["name", "messages", "partitions", "storage"];
 
 export type TopicsTableProps = {
   topics: TopicList[];
