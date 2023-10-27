@@ -23,10 +23,18 @@ export default async function CreateTopicPage({
     partitions: number,
     replicas: number,
     options: NewConfigMap,
+    validateOnly: boolean,
   ) {
     "use server";
     try {
-      return await createTopic(kafkaId, name, partitions, replicas, options);
+      return await createTopic(
+        kafkaId,
+        name,
+        partitions,
+        replicas,
+        options,
+        validateOnly,
+      );
     } catch (e: unknown) {
       return Promise.reject("Unknown error");
     }

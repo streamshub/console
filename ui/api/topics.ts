@@ -184,12 +184,15 @@ export async function createTopic(
   numPartitions: number,
   replicationFactor: number,
   configs: NewConfigMap,
+  validateOnly = false,
 ): Promise<TopicCreateResponse> {
   const url = `${process.env.BACKEND_URL}/api/kafkas/${kafkaId}/topics`;
   const body = {
+    meta: {
+      validateOnly,
+    },
     data: {
       type: "topics",
-      meta: {},
       attributes: {
         name,
         numPartitions,
@@ -208,8 +211,5 @@ export async function createTopic(
   log.debug({ url, rawData }, "createTopic response");
   const response = TopicCreateResponseSchema.parse(rawData);
   log.trace(response, "createTopic response parsed");
-  if ("data" in response) {
-    return response;
-  }
   return response;
 }

@@ -10,14 +10,16 @@ import {
   Title,
 } from "@patternfly/react-core";
 
-export function StepPartitions({
+export function FieldPartitions({
   partitions,
   onChange,
   invalid,
+  backendError,
 }: {
   partitions: number;
   onChange: (partitions: number) => void;
   invalid: boolean;
+  backendError: string | false;
 }) {
   return (
     <FormSection>
@@ -43,7 +45,7 @@ export function StepPartitions({
           onMinus={() => onChange(partitions > 1 ? partitions - 1 : partitions)}
           onPlus={() => onChange(partitions + 1)}
           min={1}
-          validated={invalid ? "error" : "default"}
+          validated={invalid || backendError ? "error" : "default"}
         />
         <FormHelperText>
           <HelperText id={"topic-partitions-helper"}>
@@ -51,6 +53,11 @@ export function StepPartitions({
               One partition is sufficient for getting started, but production
               systems often have more.{" "}
             </HelperTextItem>
+            {backendError && (
+              <HelperTextItem isDynamic variant={"error"} component={"li"}>
+                {backendError}
+              </HelperTextItem>
+            )}
           </HelperText>
         </FormHelperText>
       </FormGroup>
