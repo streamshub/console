@@ -7,7 +7,8 @@ import { useFilterParams } from "@/utils/useFilterParams";
 import { TableVariant } from "@patternfly/react-table";
 import { useFormatter, useTranslations } from "next-intl";
 import Link from "next-intl/link";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
+import { useTransition } from "react";
 
 export const TopicsTableColumns = [
   "name",
@@ -25,6 +26,7 @@ export type TopicsTableProps = {
   perPage: number;
   sort: TopicsTableColumn;
   sortDir: "asc" | "desc";
+  baseurl: string;
 };
 
 export function TopicsTable({
@@ -34,12 +36,13 @@ export function TopicsTable({
   perPage,
   sort,
   sortDir,
+  baseurl,
 }: TopicsTableProps) {
   const format = useFormatter();
   const t = useTranslations("topics");
-  const pathname = usePathname();
   const router = useRouter();
   const updateUrl = useFilterParams({ perPage, sort, sortDir });
+  const [_, startTransition] = useTransition();
 
   return (
     <TableView
@@ -82,50 +85,92 @@ export function TopicsTable({
           isFavorites: undefined,
         };
       }}
+      // onRowClick={({ row }) => {
+      //   startTransition(() => {
+      //     router.push(`./topics/${row.id}`);
+      //   });
+      // }}
       renderHeader={({ Th, column, key }) => {
         switch (column) {
           case "name":
             return (
-              <Th key={key} width={60}>
+              <Th key={key} width={60} label={"Topic"}>
                 Name
               </Th>
             );
           case "partitions":
-            return <Th key={key}>Partitions</Th>;
+            return (
+              <Th key={key} label={"Partitions"}>
+                Partitions
+              </Th>
+            );
           case "messages":
-            return <Th key={key}>Messages</Th>;
+            return (
+              <Th key={key} label={"Messages"}>
+                Messages
+              </Th>
+            );
           case "storage":
-            return <Th key={key}>Storage</Th>;
+            return (
+              <Th key={key} label={"Storage"}>
+                Storage
+              </Th>
+            );
         }
       }}
       renderCell={({ Td, column, row, key }) => {
         switch (column) {
           case "name":
             return (
-              <Td key={key}>
-                <Link href={`./topics/${row.id}`}>{row.attributes.name}</Link>
+              <Td key={key} label={"Topic"}>
+                <Link href={`${baseurl}/${row.id}`}>{row.attributes.name}</Link>
               </Td>
             );
           case "partitions":
             return (
-              <Td key={key}>
+              <Td key={key} label={"Partitions"}>
                 {format.number(row.attributes.partitions.length)}
               </Td>
             );
           case "messages":
             return (
-              <Td key={key}>
+              <Td key={key} label={"Messages"}>
                 <Number value={row.attributes.recordCount} />
               </Td>
             );
           case "storage":
             return (
-              <Td key={key}>
+              <Td key={key} label={"Storage"}>
                 <Bytes value={row.attributes.totalLeaderLogBytes} />
               </Td>
             );
         }
       }}
+      renderActions={({ row, ActionsColumn }) => (
+        <ActionsColumn
+          items={[
+            {
+              title: "Edit properties",
+              onClick: () => {
+                startTransition(() => {
+                  router.push(`${baseurl}/${row.id}/configuration?edit`);
+                });
+              },
+            },
+            {
+              isSeparator: true,
+            },
+            {
+              title: "Delete topic",
+              onClick: () => {
+                startTransition(() => {
+                  router.push(`${baseurl}/${row.id}/delete`);
+                });
+              },
+            },
+          ]}
+        />
+      )}
       filters={{
         name: {
           type: "search",
@@ -143,7 +188,7 @@ export function TopicsTable({
               {
                 label: t("create_topic"),
                 onClick: () => {
-                  router.push(pathname + "/create");
+                  router.push(baseurl + "/create");
                 },
                 isPrimary: true,
               },

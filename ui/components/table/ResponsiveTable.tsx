@@ -342,6 +342,8 @@ export const DeletableRow = memo<DeletableRowProps>(
             }
           }
         }}
+        isClickable={!!onClick}
+        isSelectable={!!onClick}
         ouiaId={rowOuiaId}
         isRowSelected={isSelected}
         className={isDeleted ? "mas--ResponsiveTable__Tr--deleted" : undefined}

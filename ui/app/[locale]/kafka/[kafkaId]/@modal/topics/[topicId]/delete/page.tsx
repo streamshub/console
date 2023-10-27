@@ -1,3 +1,3 @@
 export default function DeletePage() {
-  return null;
+  return <div>DELETE</div>;
 }

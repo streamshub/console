@@ -35,6 +35,7 @@ export default async function TopicsPage({
     pageSize,
     pageCursor,
   });
+
   return (
     <PageSection isFilled>
       <TopicsTable
@@ -44,6 +45,7 @@ export default async function TopicsPage({
         sort={sort}
         sortDir={sortDir}
         canCreate={process.env.CONSOLE_MODE === "read-write"}
+        baseurl={`/kafka/${params.kafkaId}/topics`}
       />
     </PageSection>
   );
