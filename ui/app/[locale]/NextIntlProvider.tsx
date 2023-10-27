@@ -19,6 +19,8 @@ export default function NextIntlProvider({
       messages={messages}
       defaultTranslationValues={{
         strong: (text) => <strong>{text}</strong>,
+        b: (text) => <b>{text}</b>,
+        i: (text) => <i>{text}</i>,
       }}
       now={new Date()}
     >

@@ -132,5 +132,15 @@
   "message-producer": {
     "title": "Message producer",
     "description": "Produce messages to a topic."
+  },
+  "delete": {
+    "delete": "Delete",
+    "cancel": "Cancel",
+    "type_value_to_confirm_html": "Type <i>{value}</i> to confirm",
+    "type_value_to_confirm_plain": "Type {value} to confirm"
+  },
+  "delete-topic": {
+    "message": "The <b>{topicName}</b> topic will be deleted and removed from this instance. Applications will no longer have access to this topic.",
+    "title": "Delete topic?"
   }
 }
