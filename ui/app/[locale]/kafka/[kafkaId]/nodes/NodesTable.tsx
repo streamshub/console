@@ -35,11 +35,11 @@ export function NodesTable({
             return <Th>Rack</Th>;
         }
       }}
-      renderCell={({ column, row, Td }) => {
+      renderCell={({ column, key, row, Td }) => {
         switch (column) {
           case "id":
             return (
-              <Td>
+              <Td key={key} dataLabel={"Node"}>
                 <div>
                   <Link href={`nodes/${row.id}`}>Node {row.id}</Link>
                 </div>
@@ -52,7 +52,7 @@ export function NodesTable({
             );
           case "host":
             return (
-              <Td>
+              <Td key={key} dataLabel={"Host"}>
                 <ClipboardCopy
                   hoverTip="Copy"
                   clickTip="Copied"
@@ -64,7 +64,11 @@ export function NodesTable({
               </Td>
             );
           case "rack":
-            return <Td>{row.rack || "-"}</Td>;
+            return (
+              <Td key={key} dataLabel={"Rack"}>
+                {row.rack || "-"}
+              </Td>
+            );
         }
       }}
     />

@@ -154,7 +154,7 @@ export function ConfigTable({
       switch (column) {
         case "property":
           return (
-            <Td key={key} label={"Property"}>
+            <Td key={key} dataLabel={"Property"}>
               <div>{name}</div>
               <LabelGroup>
                 <Label isCompact={true} color={"cyan"}>
@@ -172,7 +172,7 @@ export function ConfigTable({
           if (isEditing[name] !== undefined) {
             const validated = fieldError?.field === name ? "error" : "default";
             return (
-              <Td key={name} label={"Value"}>
+              <Td key={name} dataLabel={"Value"}>
                 <FormGroup fieldId={name}>
                   <TextInput
                     id={`property-${name}`}
@@ -207,7 +207,7 @@ export function ConfigTable({
             );
           } else {
             return (
-              <Td key={name} label={"Value"}>
+              <Td key={name} dataLabel={"Value"}>
                 {format(property)}
               </Td>
             );
@@ -308,13 +308,13 @@ export function ConfigTable({
           switch (column) {
             case "property":
               return (
-                <Th key={key} label={"Property"} width={40}>
+                <Th key={key} dataLabel={"Property"} width={40}>
                   Property
                 </Th>
               );
             case "value":
               return (
-                <Th key={key} label={"Value"}>
+                <Th key={key} dataLabel={"Value"}>
                   Value
                 </Th>
               );

@@ -99,31 +99,31 @@ export function TopicsTable({
         switch (column) {
           case "name":
             return (
-              <Th key={key} width={40} label={"Topic"}>
+              <Th key={key} width={40} dataLabel={"Topic"}>
                 Name
               </Th>
             );
           case "consumerGroups":
             return (
-              <Th key={key} label={"Consumer groups"}>
+              <Th key={key} dataLabel={"Consumer groups"}>
                 Consumer groups
               </Th>
             );
           case "partitions":
             return (
-              <Th key={key} label={"Partitions"}>
+              <Th key={key} dataLabel={"Partitions"}>
                 Partitions
               </Th>
             );
           case "messages":
             return (
-              <Th key={key} label={"Messages"}>
+              <Th key={key} dataLabel={"Messages"}>
                 Messages
               </Th>
             );
           case "storage":
             return (
-              <Th key={key} label={"Storage"}>
+              <Th key={key} dataLabel={"Storage"}>
                 Storage
               </Th>
             );
@@ -133,13 +133,13 @@ export function TopicsTable({
         switch (column) {
           case "name":
             return (
-              <Td key={key} label={"Topic"}>
+              <Td key={key} dataLabel={"Topic"}>
                 {row.attributes.name}
               </Td>
             );
           case "consumerGroups":
             return (
-              <Td key={key} label={"Consumer groups"}>
+              <Td key={key} dataLabel={"Consumer groups"}>
                 <Link href={`${baseurl}/${row.id}/consumer-groups`}>
                   {format.number(0 /* TODO */)}
                 </Link>
@@ -147,7 +147,7 @@ export function TopicsTable({
             );
           case "partitions":
             return (
-              <Td key={key} label={"Partitions"}>
+              <Td key={key} dataLabel={"Partitions"}>
                 <Link href={`${baseurl}/${row.id}/partitions`}>
                   {format.number(row.attributes.partitions.length)}
                 </Link>
@@ -155,7 +155,7 @@ export function TopicsTable({
             );
           case "messages":
             return (
-              <Td key={key} label={"Messages"}>
+              <Td key={key} dataLabel={"Messages"}>
                 <Link href={`${baseurl}/${row.id}/messages`}>
                   <Number value={row.attributes.recordCount} />
                 </Link>
@@ -163,7 +163,7 @@ export function TopicsTable({
             );
           case "storage":
             return (
-              <Td key={key} label={"Storage"}>
+              <Td key={key} dataLabel={"Storage"}>
                 <Bytes value={row.attributes.totalLeaderLogBytes} />
               </Td>
             );
