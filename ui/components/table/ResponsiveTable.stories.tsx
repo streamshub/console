@@ -23,7 +23,7 @@ import { useSortableSearchParams } from "./useSortableSearchParams";
 const eventsFromNames = actions("onRowClick");
 
 const ResponsiveTableSampleType: VoidFunctionComponent<
-  ResponsiveTableProps<SampleDataType, typeof columns[number]> & {
+  ResponsiveTableProps<SampleDataType, (typeof columns)[number]> & {
     hasActions?: boolean;
     hasCustomActionTestId?: boolean;
     hasCustomOuiaIds?: boolean;
@@ -70,7 +70,7 @@ const Template: ComponentStory<typeof ResponsiveTableSampleType> = (args) => {
       region: "Region",
       status: "Status",
       timeCreated: "Creation Time",
-    }
+    },
   );
   return (
     <ResponsiveTable

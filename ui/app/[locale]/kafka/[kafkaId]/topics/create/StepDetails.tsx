@@ -1,8 +1,8 @@
-import { TopicCreateError } from "@/api/topics";
-import { createErrorToFieldError } from "@/app/[locale]/kafka/[kafkaId]/topics/create/createErrorToFieldError";
+import { TopicMutateError } from "@/api/topics";
 import { FieldName } from "@/app/[locale]/kafka/[kafkaId]/topics/create/FieldName";
 import { FieldPartitions } from "@/app/[locale]/kafka/[kafkaId]/topics/create/FieldPartitions";
 import { FieldReplicas } from "@/app/[locale]/kafka/[kafkaId]/topics/create/FieldReplicas";
+import { topicMutateErrorToFieldError } from "@/app/[locale]/kafka/[kafkaId]/topics/create/topicMutateErrorToFieldError";
 import { Form } from "@patternfly/react-core";
 
 const legalNameChars = new RegExp("^[a-zA-Z0-9._-]+$");
@@ -26,7 +26,7 @@ export function StepDetails({
   onNameChange: (name: string) => void;
   onPartitionsChange: (name: number) => void;
   onReplicasChange: (name: number) => void;
-  error: TopicCreateError | "unknown" | undefined;
+  error: TopicMutateError | "unknown" | undefined;
 }) {
   const nameInvalid = {
     length: name.trim().length < 3,
@@ -35,7 +35,7 @@ export function StepDetails({
   };
   const partitionsInvalid = partitions <= 0;
   const replicasInvalid = replicas <= 0 || replicas > maxReplicas;
-  const fieldError = createErrorToFieldError(error, false, [
+  const fieldError = topicMutateErrorToFieldError(error, false, [
     "name",
     "numPartitions",
     "replicationFactor",

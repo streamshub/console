@@ -157,14 +157,21 @@ export function ConfigTable({ config }: { config: NodeConfig }) {
       emptyStateNoData={<div></div>}
       emptyStateNoResults={<NoResultsEmptyState onReset={onReset} />}
       onPageChange={() => {}}
-      renderHeader={({ column, Th }) => {
+      renderHeader={({ column, key, Th }) => {
         switch (column) {
           case "property":
-            return <Th>Property</Th>;
+            return (
+              <Th key={key} dataLabel={"Property"}>
+                Property
+              </Th>
+            );
           case "value":
-            return <Th>Value</Th>;
+            return (
+              <Th key={key} dataLabel={"Value"}>
+                Value
+              </Th>
+            );
         }
-        return <Th>{column}</Th>;
       }}
       renderCell={({ column, row: [key, property], Td }) => {
         function format(p: typeof property) {
@@ -198,7 +205,7 @@ export function ConfigTable({ config }: { config: NodeConfig }) {
         switch (column) {
           case "property":
             return (
-              <Td>
+              <Td key={key} dataLabel={"Property"}>
                 <div>{key}</div>
                 <LabelGroup>
                   <Label isCompact={true} color={"cyan"}>
@@ -213,7 +220,11 @@ export function ConfigTable({ config }: { config: NodeConfig }) {
               </Td>
             );
           case "value":
-            return <Td>{format(property)}</Td>;
+            return (
+              <Td key={key} dataLabel={"Value"}>
+                {format(property)}
+              </Td>
+            );
         }
       }}
       variant={TableVariant.compact}

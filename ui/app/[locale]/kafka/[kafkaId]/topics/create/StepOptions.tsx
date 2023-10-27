@@ -1,7 +1,7 @@
-import { ConfigMap, NewConfigMap, TopicCreateError } from "@/api/topics";
+import { ConfigMap, NewConfigMap, TopicMutateError } from "@/api/topics";
 import { ConfigTable } from "@/app/[locale]/kafka/[kafkaId]/topics/create/ConfigTable";
-import { createErrorToFieldError } from "@/app/[locale]/kafka/[kafkaId]/topics/create/createErrorToFieldError";
 import { Error } from "@/app/[locale]/kafka/[kafkaId]/topics/create/Errors";
+import { topicMutateErrorToFieldError } from "@/app/[locale]/kafka/[kafkaId]/topics/create/topicMutateErrorToFieldError";
 import { Text, TextContent, Title } from "@patternfly/react-core";
 
 export function StepOptions({
@@ -13,9 +13,9 @@ export function StepOptions({
   options: NewConfigMap;
   initialOptions: Readonly<ConfigMap>;
   onChange: (options: NewConfigMap) => void;
-  error: TopicCreateError | "unknown" | undefined;
+  error: TopicMutateError | "unknown" | undefined;
 }) {
-  const fieldError = createErrorToFieldError(
+  const fieldError = topicMutateErrorToFieldError(
     error,
     true,
     Object.keys(initialOptions),

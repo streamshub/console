@@ -2,8 +2,8 @@
 import {
   ConfigMap,
   NewConfigMap,
-  TopicCreateError,
   TopicCreateResponse,
+  TopicMutateError,
 } from "@/api/topics";
 import { StepDetails } from "@/app/[locale]/kafka/[kafkaId]/topics/create/StepDetails";
 import { StepOptions } from "@/app/[locale]/kafka/[kafkaId]/topics/create/StepOptions";
@@ -45,7 +45,7 @@ export function CreateTopic({
   const [options, setOptions] = useState<NewConfigMap>({});
   const [pending, startTransition] = useTransition();
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<TopicCreateError | "unknown" | undefined>(
+  const [error, setError] = useState<TopicMutateError | "unknown" | undefined>(
     undefined,
   );
 

@@ -111,7 +111,7 @@ const TopicCreateResponseSuccessSchema = z.object({
     id: z.string(),
   }),
 });
-const TopicCreateResponseErrorSchema = z.object({
+const TopicMutateResponseErrorSchema = z.object({
   errors: z.array(
     z.object({
       id: z.string(),
@@ -129,9 +129,9 @@ const TopicCreateResponseErrorSchema = z.object({
 });
 const TopicCreateResponseSchema = z.union([
   TopicCreateResponseSuccessSchema,
-  TopicCreateResponseErrorSchema,
+  TopicMutateResponseErrorSchema,
 ]);
-export type TopicCreateError = z.infer<typeof TopicCreateResponseErrorSchema>;
+export type TopicMutateError = z.infer<typeof TopicMutateResponseErrorSchema>;
 export type TopicCreateResponse = z.infer<typeof TopicCreateResponseSchema>;
 
 export async function getTopics(
@@ -158,6 +158,9 @@ export async function getTopics(
   const url = `${process.env.BACKEND_URL}/api/kafkas/${kafkaId}/topics?${topicsQuery}&`;
   const res = await fetch(url, {
     headers: await getHeaders(),
+    next: {
+      tags: ["topic"],
+    },
   });
   log.debug({ url }, "getTopics");
   const rawData = await res.json();
@@ -172,6 +175,9 @@ export async function getTopic(
   const url = `${process.env.BACKEND_URL}/api/kafkas/${kafkaId}/topics/${topicId}?${describeTopicsQuery}`;
   const res = await fetch(url, {
     headers: await getHeaders(),
+    next: {
+      tags: [`topic-${topicId}`],
+    },
   });
   const rawData = await res.json();
   //log.debug("getTopic", url, JSON.stringify(rawData, null, 2));
@@ -201,15 +207,72 @@ export async function createTopic(
       },
     },
   };
+  log.debug({ url, body }, "calling createTopic");
   const res = await fetch(url, {
     headers: await getHeaders(),
     method: "POST",
     body: JSON.stringify(body),
   });
-  log.trace({ url, body }, "calling createTopic");
   const rawData = await res.json();
   log.debug({ url, rawData }, "createTopic response");
   const response = TopicCreateResponseSchema.parse(rawData);
   log.trace(response, "createTopic response parsed");
   return response;
+}
+
+export async function updateTopic(
+  kafkaId: string,
+  topicId: string,
+  numPartitions?: number,
+  replicationFactor?: number,
+  configs?: NewConfigMap,
+): Promise<boolean | TopicMutateError> {
+  const url = `${process.env.BACKEND_URL}/api/kafkas/${kafkaId}/topics/${topicId}`;
+  const body = {
+    data: {
+      type: "topics",
+      id: topicId,
+      attributes: {
+        numPartitions,
+        replicationFactor,
+        configs: filterUndefinedFromObj(configs || {}),
+      },
+    },
+  };
+  log.debug({ url, body }, "calling updateTopic");
+  const res = await fetch(url, {
+    headers: await getHeaders(),
+    method: "PATCH",
+    body: JSON.stringify(body),
+  });
+  log.trace({ status: res.status }, "updateTopic response");
+  try {
+    if (res.status === 204) {
+      return true;
+    } else {
+      const rawData = await res.json();
+      return TopicMutateResponseErrorSchema.parse(rawData);
+    }
+  } catch (e) {
+    log.error(e, "deleteTopic unknown error");
+  }
+  return false;
+}
+
+export async function deleteTopic(
+  kafkaId: string,
+  topicId: string,
+): Promise<boolean> {
+  const url = `${process.env.BACKEND_URL}/api/kafkas/${kafkaId}/topics/${topicId}`;
+  log.debug({ url }, "calling deleteTopic");
+  const res = await fetch(url, {
+    headers: await getHeaders(),
+    method: "DELETE",
+  });
+  try {
+    return res.status === 204;
+  } catch (e) {
+    log.error(e, "deleteTopic unknown error");
+  }
+  return false;
 }
