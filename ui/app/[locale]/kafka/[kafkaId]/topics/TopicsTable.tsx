@@ -12,8 +12,9 @@ import { useTransition } from "react";
 
 export const TopicsTableColumns = [
   "name",
-  "partitions",
   "messages",
+  "consumerGroups",
+  "partitions",
   "storage",
 ] as const;
 export type TopicsTableColumn = (typeof TopicsTableColumns)[number];
@@ -94,8 +95,14 @@ export function TopicsTable({
         switch (column) {
           case "name":
             return (
-              <Th key={key} width={60} label={"Topic"}>
+              <Th key={key} width={40} label={"Topic"}>
                 Name
+              </Th>
+            );
+          case "consumerGroups":
+            return (
+              <Th key={key} label={"Consumer groups"}>
+                Consumer groups
               </Th>
             );
           case "partitions":
@@ -123,19 +130,31 @@ export function TopicsTable({
           case "name":
             return (
               <Td key={key} label={"Topic"}>
-                <Link href={`${baseurl}/${row.id}`}>{row.attributes.name}</Link>
+                {row.attributes.name}
+              </Td>
+            );
+          case "consumerGroups":
+            return (
+              <Td key={key} label={"Consumer groups"}>
+                <Link href={`${baseurl}/${row.id}/consumer-groups`}>
+                  {format.number(0 /* TODO */)}
+                </Link>
               </Td>
             );
           case "partitions":
             return (
               <Td key={key} label={"Partitions"}>
-                {format.number(row.attributes.partitions.length)}
+                <Link href={`${baseurl}/${row.id}/partitions`}>
+                  {format.number(row.attributes.partitions.length)}
+                </Link>
               </Td>
             );
           case "messages":
             return (
               <Td key={key} label={"Messages"}>
-                <Number value={row.attributes.recordCount} />
+                <Link href={`${baseurl}/${row.id}/messages`}>
+                  <Number value={row.attributes.recordCount} />
+                </Link>
               </Td>
             );
           case "storage":
