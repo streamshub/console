@@ -1,6 +1,12 @@
 import { ConfigMap, NewConfigMap } from "@/api/topics";
 import { ResponsiveTable, ResponsiveTableProps } from "@/components/table";
-import { TextInput } from "@patternfly/react-core";
+import {
+  FormGroup,
+  FormHelperText,
+  HelperText,
+  HelperTextItem,
+  TextInput,
+} from "@patternfly/react-core";
 import { TableVariant } from "@patternfly/react-table";
 import { useCallback, useMemo } from "react";
 
@@ -11,10 +17,15 @@ export function ConfigTable({
   options,
   initialOptions,
   onChange,
+  fieldError,
 }: {
   options: NewConfigMap;
   initialOptions: ConfigMap;
   onChange: (options: NewConfigMap) => void;
+  fieldError?: {
+    field: string;
+    error: string;
+  };
 }) {
   const data = useMemo(() => Object.entries(initialOptions), [initialOptions]);
   const renderCell = useCallback<
@@ -28,31 +39,45 @@ export function ConfigTable({
               <div>{name}</div>
             </Td>
           );
-        case "value":
+        case "value": {
+          const validated = fieldError?.field === name ? "error" : "default";
           return (
             <Td key={name}>
-              <TextInput
-                id={`property-${name}`}
-                placeholder={property.value}
-                value={options[name]?.value || ""}
-                onChange={(_, value) => {
-                  if (value.trim() !== "") {
-                    onChange({
-                      ...options,
-                      [name]: { value },
-                    });
-                  } else {
-                    const newOpts = { ...options };
-                    delete newOpts[name];
-                    onChange(newOpts);
-                  }
-                }}
-              />
+              <FormGroup fieldId={name}>
+                <TextInput
+                  id={`property-${name}`}
+                  placeholder={property.value}
+                  value={options[name]?.value || ""}
+                  onChange={(_, value) => {
+                    if (value.trim() !== "") {
+                      onChange({
+                        ...options,
+                        [name]: { value },
+                      });
+                    } else {
+                      const newOpts = { ...options };
+                      delete newOpts[name];
+                      onChange(newOpts);
+                    }
+                  }}
+                  validated={validated}
+                />
+                {validated === "error" && (
+                  <FormHelperText>
+                    <HelperText>
+                      <HelperTextItem variant={validated}>
+                        {fieldError?.error}
+                      </HelperTextItem>
+                    </HelperText>
+                  </FormHelperText>
+                )}
+              </FormGroup>
             </Td>
           );
+        }
       }
     },
-    [onChange, options],
+    [fieldError?.error, fieldError?.field, onChange, options],
   );
   return (
     <ResponsiveTable

@@ -10,13 +10,14 @@ import {
   Title,
 } from "@patternfly/react-core";
 
-export function StepName({
+export function FieldName({
   name,
   onChange,
   showErrors,
   nameInvalid,
   lengthInvalid,
   formatInvalid,
+  backendError,
 }: {
   name: string;
   onChange: (name: string) => void;
@@ -24,6 +25,7 @@ export function StepName({
   nameInvalid: boolean;
   lengthInvalid: boolean;
   formatInvalid: boolean;
+  backendError: string | false;
 }) {
   showErrors = showErrors || name !== "";
   return (
@@ -46,7 +48,8 @@ export function StepName({
           value={name}
           onChange={(_, value) => onChange(value)}
           validated={
-            showErrors && (nameInvalid || lengthInvalid || formatInvalid)
+            showErrors &&
+            (nameInvalid || lengthInvalid || formatInvalid || backendError)
               ? "error"
               : "default"
           }
@@ -75,6 +78,11 @@ export function StepName({
               Must be letters (Aa-Zz), numbers, underscores ( _ ), periods ( .
               ), or hyphens ( - )
             </HelperTextItem>
+            {backendError && (
+              <HelperTextItem isDynamic variant={"error"} component={"li"}>
+                {backendError}
+              </HelperTextItem>
+            )}
           </HelperText>
         </FormHelperText>
       </FormGroup>

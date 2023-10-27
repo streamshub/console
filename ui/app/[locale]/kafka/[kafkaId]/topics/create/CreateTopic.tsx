@@ -5,14 +5,11 @@ import {
   TopicCreateError,
   TopicCreateResponse,
 } from "@/api/topics";
-import { StepName } from "@/app/[locale]/kafka/[kafkaId]/topics/create/StepName";
+import { StepDetails } from "@/app/[locale]/kafka/[kafkaId]/topics/create/StepDetails";
 import { StepOptions } from "@/app/[locale]/kafka/[kafkaId]/topics/create/StepOptions";
-import { StepPartitions } from "@/app/[locale]/kafka/[kafkaId]/topics/create/StepPartitions";
-import { StepReplicas } from "@/app/[locale]/kafka/[kafkaId]/topics/create/StepReplicas";
 import { StepReview } from "@/app/[locale]/kafka/[kafkaId]/topics/create/StepReview";
 import {
   Button,
-  Form,
   PageSection,
   Tooltip,
   useWizardContext,
@@ -21,9 +18,7 @@ import {
   WizardStep,
 } from "@patternfly/react-core";
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
-
-const legalNameChars = new RegExp("^[a-zA-Z0-9._-]+$");
+import { useCallback, useState, useTransition } from "react";
 
 export function CreateTopic({
   kafkaId,
@@ -39,6 +34,7 @@ export function CreateTopic({
     partitions: number,
     replicas: number,
     options: NewConfigMap,
+    validateOnly: boolean,
   ) => Promise<TopicCreateResponse>;
 }) {
   const router = useRouter();
@@ -48,39 +44,44 @@ export function CreateTopic({
   const [replicas, setReplicas] = useState(maxReplicas);
   const [options, setOptions] = useState<NewConfigMap>({});
   const [pending, startTransition] = useTransition();
-  const [errors, setErrors] = useState<
-    TopicCreateError | "unknown" | undefined
-  >(undefined);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<TopicCreateError | "unknown" | undefined>(
+    undefined,
+  );
 
-  const handleSave = async () => {
-    if (!formInvalid) {
+  const handleSave = useCallback(
+    async (onSuccess: () => void, validateOnly: boolean) => {
       try {
-        setErrors(undefined);
-        const result = await onSave(name, partitions, replicas, options);
-        if ("errors" in result) {
-          setErrors(result);
-        } else {
-          startTransition(() => {
-            router.push(`/kafka/${kafkaId}/topics/${result.data.id}`);
-          });
-        }
+        setLoading(true);
+        const result = await onSave(
+          name,
+          partitions,
+          replicas,
+          options,
+          validateOnly,
+        );
+        startTransition(() => {
+          setError(undefined);
+          if ("errors" in result) {
+            setError(result);
+          } else {
+            if (validateOnly === false) {
+              router.push(`/kafka/${kafkaId}/topics/${result.data.id}`);
+            } else {
+              onSuccess();
+            }
+          }
+        });
       } catch (e: unknown) {
-        setErrors("unknown");
+        setError("unknown");
+      } finally {
+        setLoading(false);
       }
-    }
-  };
+    },
+    [kafkaId, name, onSave, options, partitions, replicas, router],
+  );
 
-  const nameInvalid = {
-    length: name.trim().length < 3,
-    name: [".", ".."].includes(name),
-    format: !legalNameChars.test(name),
-  };
-  const partitionsInvalid = partitions <= 0;
-  const replicasInvalid = replicas <= 0 || replicas > maxReplicas;
-  const formInvalid =
-    Object.values(nameInvalid).includes(true) ||
-    partitionsInvalid ||
-    replicasInvalid;
+  const formInvalid = error !== undefined;
 
   return (
     <PageSection type={"wizard"}>
@@ -88,71 +89,72 @@ export function CreateTopic({
         title="Topic creation wizard"
         onStepChange={() => {
           setShowError(true);
-          setErrors(undefined);
+          setError(undefined);
         }}
         onClose={() => router.back()}
       >
         <WizardStep
           name="Topic details"
           id="step-details"
-          status={showError && formInvalid ? "error" : "default"}
-          footer={<SkipReviewFooter formInvalid={formInvalid} />}
+          footer={
+            <SkipReviewFooter
+              formInvalid={formInvalid}
+              onClick={(success) => handleSave(success, true)}
+              loading={pending || loading}
+            />
+          }
         >
-          <Form>
-            <StepName
-              name={name}
-              onChange={setName}
-              showErrors={showError}
-              nameInvalid={nameInvalid.name}
-              lengthInvalid={nameInvalid.length}
-              formatInvalid={nameInvalid.format}
-            />
-            <StepPartitions
-              partitions={partitions}
-              onChange={setPartitions}
-              invalid={showError && partitionsInvalid}
-            />
-            <StepReplicas
-              replicas={replicas}
-              maxReplicas={maxReplicas}
-              onChange={setReplicas}
-              showErrors={showError && replicasInvalid}
-            />
-          </Form>
+          <StepDetails
+            name={name}
+            partitions={partitions}
+            replicas={replicas}
+            maxReplicas={maxReplicas}
+            showError={showError}
+            onNameChange={setName}
+            onPartitionsChange={setPartitions}
+            onReplicasChange={setReplicas}
+            error={error}
+          />
         </WizardStep>
         <WizardStep
           name="Options"
           id="step-options"
-          footer={{ isNextDisabled: formInvalid }}
+          footer={
+            <AsyncFooter
+              formInvalid={formInvalid || error !== undefined}
+              onClick={(success) => handleSave(success, true)}
+              loading={pending || loading}
+              primaryLabel={"Next"}
+            />
+          }
         >
           <StepOptions
             options={options}
             initialOptions={initialOptions}
             onChange={setOptions}
+            error={error}
           />
         </WizardStep>
         <WizardStep
           name="Review"
           id="step-review"
           footer={
-            <ReviewFooter
+            <AsyncFooter
               formInvalid={formInvalid}
-              onSave={handleSave}
-              saving={pending}
+              onClick={(success) => handleSave(success, false)}
+              loading={pending || loading}
+              primaryLabel={"Create topic"}
             />
           }
           isDisabled={formInvalid}
         >
           <StepReview
             name={name}
-            nameInvalid={Object.values(nameInvalid).includes(true)}
             partitions={partitions}
-            partitionsInvalid={partitionsInvalid}
             replicas={replicas}
-            replicasInvalid={replicasInvalid}
             options={options}
             initialOptions={initialOptions}
-            error={errors}
+            error={error}
           />
         </WizardStep>
       </Wizard>
@@ -160,12 +162,25 @@ export function CreateTopic({
   );
 }
 
-const SkipReviewFooter = ({ formInvalid }: { formInvalid: boolean }) => {
+const SkipReviewFooter = ({
+  formInvalid,
+  onClick,
+  loading,
+}: {
+  formInvalid: boolean;
+  onClick: (success: () => void) => void;
+  loading: boolean;
+}) => {
   const { goToNextStep, goToStepById, close } = useWizardContext();
   return (
     <WizardFooterWrapper>
       <Button isDisabled={true}>Back</Button>
-      <Button variant="primary" onClick={goToNextStep}>
+      <Button
+        variant="primary"
+        onClick={() => onClick(goToNextStep)}
+        isLoading={loading}
+        isDisabled={loading}
+      >
         Next
       </Button>
       <Tooltip
@@ -176,9 +191,9 @@ const SkipReviewFooter = ({ formInvalid }: { formInvalid: boolean }) => {
       >
         <Button
           variant="tertiary"
-          onClick={() => goToStepById("step-review")}
+          onClick={() => onClick(() => goToStepById("step-review"))}
           id={"review-button"}
-          isDisabled={formInvalid}
+          isDisabled={formInvalid || loading}
         >
           Review and finish
         </Button>
@@ -190,29 +205,32 @@ const SkipReviewFooter = ({ formInvalid }: { formInvalid: boolean }) => {
   );
 };
 
-const ReviewFooter = ({
+const AsyncFooter = ({
   formInvalid,
-  saving,
-  onSave,
+  loading,
+  primaryLabel,
+  onClick,
 }: {
   formInvalid: boolean;
-  saving: boolean;
-  onSave: () => void;
+  loading: boolean;
+  primaryLabel: string;
+  onClick: (success: () => void) => void;
 }) => {
-  const { goToPrevStep, close } = useWizardContext();
+  const { goToPrevStep, goToNextStep, close } = useWizardContext();
   return (
     <WizardFooterWrapper>
-      <Button variant={"secondary"} onClick={goToPrevStep} disabled={saving}>
+      <Button variant={"secondary"} onClick={goToPrevStep} disabled={loading}>
         Back
       </Button>
       <Button
         variant="primary"
-        onClick={onSave}
-        disabled={formInvalid || saving}
+        onClick={() => onClick(goToNextStep)}
+        isLoading={loading}
+        disabled={formInvalid || loading}
       >
-        Create topic
+        {primaryLabel}
       </Button>
-      <Button variant={"link"} onClick={close} disabled={saving}>
+      <Button variant={"link"} onClick={close} disabled={loading}>
         Cancel
       </Button>
     </WizardFooterWrapper>

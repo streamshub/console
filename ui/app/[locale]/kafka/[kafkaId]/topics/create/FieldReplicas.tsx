@@ -10,16 +10,18 @@ import {
   Title,
 } from "@patternfly/react-core";
 
-export function StepReplicas({
+export function FieldReplicas({
   replicas,
   maxReplicas,
   onChange,
   showErrors,
+  backendError,
 }: {
   replicas: number;
   maxReplicas: number;
   onChange: (replicas: number) => void;
   showErrors: boolean;
+  backendError: string | false;
 }) {
   return (
     <FormSection>
@@ -58,6 +60,11 @@ export function StepReplicas({
               in sync with a partition leader, the follower replica can become
               the new partition leader if needed. (replication.factor)
             </HelperTextItem>
+            {backendError && (
+              <HelperTextItem isDynamic variant={"error"} component={"li"}>
+                {backendError}
+              </HelperTextItem>
+            )}
           </HelperText>
         </FormHelperText>
       </FormGroup>
