@@ -1,4 +1,4 @@
-import { ConfigMap, NewConfigMap, TopicCreateError } from "@/api/topics";
+import { ConfigMap, NewConfigMap, TopicMutateError } from "@/api/topics";
 import { Error } from "@/app/[locale]/kafka/[kafkaId]/topics/create/Errors";
 import { ReviewTable } from "@/app/[locale]/kafka/[kafkaId]/topics/create/ReviewTable";
 import { Number } from "@/components/Number";
@@ -27,7 +27,7 @@ export function StepReview({
   replicas: number;
   options: NewConfigMap;
   initialOptions: ConfigMap;
-  error: TopicCreateError | "unknown" | undefined;
+  error: TopicMutateError | "unknown" | undefined;
 }) {
   const optionEntries = Object.entries(options);
   return (

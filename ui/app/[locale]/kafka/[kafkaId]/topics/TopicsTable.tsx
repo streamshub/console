@@ -172,7 +172,7 @@ export function TopicsTable({
               title: "Edit properties",
               onClick: () => {
                 startTransition(() => {
-                  router.push(`${baseurl}/${row.id}/configuration?edit`);
+                  router.push(`${baseurl}/${row.id}/configuration`);
                 });
               },
             },

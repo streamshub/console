@@ -1,7 +1,7 @@
-import { TopicCreateError } from "@/api/topics";
+import { TopicMutateError } from "@/api/topics";
 
-export function createErrorToFieldError(
-  error: TopicCreateError | "unknown" | undefined,
+export function topicMutateErrorToFieldError(
+  error: TopicMutateError | "unknown" | undefined,
   isConfig: boolean,
   fields: string[],
 ) {

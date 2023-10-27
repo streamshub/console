@@ -18,7 +18,7 @@ import { DEFAULT_PERPAGE, TableView } from "./TableView";
 const eventsFromNames = actions("onRowClick");
 
 const TableViewSampleType: VoidFunctionComponent<
-  TableViewProps<SampleDataType, typeof columns[number]> & {
+  TableViewProps<SampleDataType, (typeof columns)[number]> & {
     selectedRow?: number;
   }
 > = (props) => <TableView {...props} />;
@@ -54,7 +54,7 @@ const Template: ComponentStory<typeof TableViewSampleType> = (args) => {
     if (data) {
       if (data.length > 0) {
         return new Array(
-          Math.min(perPage, (itemCount || 0) - (page - 1) * perPage)
+          Math.min(perPage, (itemCount || 0) - (page - 1) * perPage),
         )
           .fill(0)
           .map((_, index) => {
