@@ -944,6 +944,39 @@ class TopicsResourceIT {
     }
 
     @Test
+    void testCreateTopicWithValidateOnly() {
+        String topicName = UUID.randomUUID().toString();
+
+        String response = whenRequesting(req -> req
+                .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
+                .body(Json.createObjectBuilder()
+                        .add("meta", Json.createObjectBuilder()
+                                .add("validateOnly", true))
+                        .add("data", Json.createObjectBuilder()
+                                .add("type", "topics")
+                                .add("attributes", Json.createObjectBuilder()
+                                        .add("name", topicName)))
+                        .build()
+                        .toString())
+                .post("", clusterId1))
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()))
+            .body("data.id", is(notNullValue()))
+            .body("data.attributes.name", is(topicName))
+            .body("data.attributes.configs", is(aMapWithSize(greaterThan(0))))
+            .extract()
+            .asString();
+
+        // Confirm nothing created
+        try (JsonReader reader = Json.createReader(new StringReader(response))) {
+            String topicId = reader.readObject().getJsonObject("data").getString("id");
+            whenRequesting(req -> req.get("{topicId}", clusterId1, topicId))
+                .assertThat()
+                .statusCode(is(Status.NOT_FOUND.getStatusCode()));
+        }
+    }
+
+    @Test
     void testCreateTopicUnsupportedMediaType() {
         String topicName = UUID.randomUUID().toString();
 
@@ -1332,6 +1365,39 @@ class TopicsResourceIT {
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
             .body("data.attributes.configs.'retention.ms'.value", is(String.valueOf(Duration.ofDays(7).toMillis())));
+    }
+
+    @Test
+    void testPatchTopicWithValidateOnly() {
+        String topicName = UUID.randomUUID().toString();
+        Map<String, String> topicIds = topicUtils.createTopics(clusterId1, List.of(topicName), 1, Map.of("retention.ms", "300000"));
+
+        whenRequesting(req -> req
+                .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
+                .body(Json.createObjectBuilder()
+                        .add("meta", Json.createObjectBuilder()
+                                .add("validateOnly", true))
+                        .add("data", Json.createObjectBuilder()
+                                .add("id", topicIds.get(topicName))
+                                .add("type", "topics")
+                                .add("attributes", Json.createObjectBuilder()
+                                        .add("numPartitions", 2) // adding partition
+                                        .add("configs", Json.createObjectBuilder()
+                                                .add("retention.ms", JsonValue.NULL))))
+                        .build()
+                        .toString())
+                .patch("{topicId}", clusterId1, topicIds.get(topicName)))
+            .assertThat()
+            .statusCode(is(Status.NO_CONTENT.getStatusCode()));
+
+        // Confirm nothing changed
+        whenRequesting(req -> req
+                .queryParam("fields[topics]", "name,partitions,configs")
+                .get("{topicId}", clusterId1, topicIds.get(topicName)))
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()))
+            .body("data.attributes.partitions.size()", is(1))
+            .body("data.attributes.configs.'retention.ms'.value", is("300000"));
     }
 
     @ParameterizedTest

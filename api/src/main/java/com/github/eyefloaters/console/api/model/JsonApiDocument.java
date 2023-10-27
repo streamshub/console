@@ -31,6 +31,10 @@ public abstract class JsonApiDocument {
         return meta;
     }
 
+    public Object meta(String key) {
+        return meta != null ? meta.get(key) : null;
+    }
+
     public JsonApiDocument addMeta(String key, Object value) {
         meta = addEntry(meta, key, value);
         return this;

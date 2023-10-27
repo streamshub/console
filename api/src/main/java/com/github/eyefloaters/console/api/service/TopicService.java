@@ -25,6 +25,8 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
 import org.apache.kafka.clients.admin.Admin;
+import org.apache.kafka.clients.admin.CreatePartitionsOptions;
+import org.apache.kafka.clients.admin.CreateTopicsOptions;
 import org.apache.kafka.clients.admin.CreateTopicsResult;
 import org.apache.kafka.clients.admin.DescribeLogDirsOptions;
 import org.apache.kafka.clients.admin.DescribeTopicsOptions;
@@ -87,7 +89,7 @@ public class TopicService {
     @Inject
     ConfigService configService;
 
-    public CompletionStage<NewTopic> createTopic(NewTopic topic) {
+    public CompletionStage<NewTopic> createTopic(NewTopic topic, boolean validateOnly) {
         Kafka kafka = kafkaCluster.get();
         Admin adminClient = clientSupplier.get();
 
@@ -117,7 +119,8 @@ public class TopicService {
                     .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().getValue())));
         }
 
-        CreateTopicsResult result = adminClient.createTopics(List.of(newTopic));
+        CreateTopicsResult result = adminClient
+                .createTopics(List.of(newTopic), new CreateTopicsOptions().validateOnly(validateOnly));
 
         return result.all()
                 .thenApply(nothing -> NewTopic.fromKafkaModel(topicName, result))
@@ -185,7 +188,7 @@ public class TopicService {
      * <li>Alter (modify or delete/revert to default) topic configurations
      * </ul>
      */
-    public CompletionStage<Void> patchTopic(String topicId, TopicPatch patch) {
+    public CompletionStage<Void> patchTopic(String topicId, TopicPatch patch, boolean validateOnly) {
         Kafka kafka = kafkaCluster.get();
 
         return describeTopic(topicId, List.of(Topic.Fields.CONFIGS), KafkaOffsetSpec.LATEST)
@@ -194,9 +197,11 @@ public class TopicService {
             .thenComposeAsync(topic -> {
                 List<CompletableFuture<Void>> pending = new ArrayList<>();
 
-                pending.add(maybeCreatePartitions(topic, patch));
-                pending.addAll(maybeAlterPartitionAssignments(topic, patch));
-                pending.add(maybeAlterConfigs(topic, patch));
+                pending.add(maybeCreatePartitions(topic, patch, validateOnly));
+                if (!validateOnly) {
+                    pending.addAll(maybeAlterPartitionAssignments(topic, patch));
+                }
+                pending.add(maybeAlterConfigs(topic, patch, validateOnly));
 
                 return CompletableFuture.allOf(pending.stream().toArray(CompletableFuture[]::new))
                     .whenComplete((nothing, error) -> {
@@ -215,7 +220,7 @@ public class TopicService {
             }, threadContext.currentContextExecutor());
     }
 
-    CompletableFuture<Void> maybeCreatePartitions(Topic topic, TopicPatch topicPatch) {
+    CompletableFuture<Void> maybeCreatePartitions(Topic topic, TopicPatch topicPatch, boolean validateOnly) {
         int currentNumPartitions = topic.getPartitions().getPrimary().size();
         int newNumPartitions = Optional.ofNullable(topicPatch.numPartitions()).orElse(currentNumPartitions);
 
@@ -225,14 +230,14 @@ public class TopicService {
                     .mapToObj(topicPatch::replicaAssignment)
                     .toList();
 
-            return createPartitions(topic.getName(), newNumPartitions, newAssignments)
+            return createPartitions(topic.getName(), newNumPartitions, newAssignments, validateOnly)
                     .toCompletableFuture();
         }
 
         return CompletableFuture.completedFuture(null);
     }
 
-    CompletionStage<Void> createPartitions(String topicName, int totalCount, List<List<Integer>> newAssignments) {
+    CompletionStage<Void> createPartitions(String topicName, int totalCount, List<List<Integer>> newAssignments, boolean validateOnly) {
         Admin adminClient = clientSupplier.get();
 
         org.apache.kafka.clients.admin.NewPartitions newPartitions;
@@ -245,7 +250,8 @@ public class TopicService {
             newPartitions = increaseTo(totalCount, newAssignments);
         }
 
-        return adminClient.createPartitions(Map.of(topicName, newPartitions))
+        return adminClient.createPartitions(Map.of(topicName, newPartitions), new CreatePartitionsOptions()
+                .validateOnly(validateOnly))
                 .all()
                 .toCompletionStage();
     }
@@ -322,10 +328,10 @@ public class TopicService {
                 changes);
     }
 
-    CompletableFuture<Void> maybeAlterConfigs(Topic topic, TopicPatch topicPatch) {
+    CompletableFuture<Void> maybeAlterConfigs(Topic topic, TopicPatch topicPatch, boolean validateOnly) {
         return Optional.ofNullable(topicPatch.configs())
             .filter(Predicate.not(Map::isEmpty))
-            .map(configs -> configService.alterConfigs(ConfigResource.Type.TOPIC, topic.getName(), configs)
+            .map(configs -> configService.alterConfigs(ConfigResource.Type.TOPIC, topic.getName(), configs, validateOnly)
                 .toCompletableFuture())
             .orElseGet(() -> CompletableFuture.completedFuture(null));
     }
