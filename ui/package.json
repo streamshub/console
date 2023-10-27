@@ -6,7 +6,9 @@
     "dev": "NODE_OPTIONS='-r next-logger' next dev | pino-pretty",
     "build": "next build",
     "start": "NODE_OPTIONS='-r next-logger' next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build"
   },
   "dependencies": {
     "@patternfly/patternfly": "^5.1.0",
@@ -39,8 +41,18 @@
     "zod": "^3.22.4"
   },
   "devDependencies": {
+    "@storybook/addon-essentials": "^7.5.1",
+    "@storybook/addon-interactions": "^7.5.1",
+    "@storybook/addon-links": "^7.5.1",
+    "@storybook/addon-onboarding": "^1.0.8",
+    "@storybook/blocks": "^7.5.1",
+    "@storybook/nextjs": "^7.5.1",
+    "@storybook/react": "^7.5.1",
+    "@storybook/testing-library": "^0.2.2",
     "eslint-config-prettier": "^9.0.0",
+    "eslint-plugin-storybook": "^0.6.15",
     "pino-pretty": "^10.2.3",
-    "prettier": "^3.0.3"
+    "prettier": "^3.0.3",
+    "storybook": "^7.5.1"
   }
 }
