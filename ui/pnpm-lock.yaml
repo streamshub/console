@@ -21,8 +21,8 @@ dependencies:
     specifier: ^5.0.0
     version: 5.0.0(react-dom@18.2.0)(react@18.2.0)
   '@types/lodash.groupby':
-    specifier: ^4.6.7
-    version: 4.6.7
+    specifier: ^4.6.8
+    version: 4.6.8
   '@types/node':
     specifier: 20.8.7
     version: 20.8.7
@@ -626,8 +626,8 @@ packages:
       '@types/node': 20.8.7
     dev: false
 
-  /@types/lodash.groupby@4.6.7:
-    resolution: {integrity: sha512-dFUR1pqdMgjIBbgPJ/8axJX6M1C7zsL+HF4qdYMQeJ7XOp0Qbf37I3zh9gpXr/ks6tgEYPDRqyZRAnFYvewYHQ==}
+  /@types/lodash.groupby@4.6.8:
+    resolution: {integrity: sha512-+VbBhRhzo6g6q5RdVQXlU1vwbYVodEkS9ZCVuqHtZvhlSu1muQLNYYR1yhyYwAcSz7gMDOHlWPnPvAoQqV4rlg==}
     dependencies:
       '@types/lodash': 4.14.197
     dev: false
