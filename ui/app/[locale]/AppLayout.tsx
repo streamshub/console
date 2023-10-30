@@ -1,57 +1,62 @@
-"use client";
-
+import { getKafkaClusters } from "@/api/kafka";
 import { AppMasthead } from "@/app/[locale]/AppMasthead";
-import { SessionRefresher } from "@/app/[locale]/SessionRefresher";
+import { AppSidebar } from "@/app/[locale]/AppSidebar";
+import { NavExpandable } from "@/components/NavExpandable";
 import { NavItemLink } from "@/components/NavItemLink";
-import {
-  Nav,
-  NavList,
-  Page,
-  PageSidebar,
-  PageSidebarBody,
-} from "@/libs/patternfly/react-core";
-import { logger } from "@/utils/loggerClient";
-import { Session } from "next-auth";
-import { SessionProvider } from "next-auth/react";
-import { PropsWithChildren, useState } from "react";
+import { Nav, NavList, Page } from "@/libs/patternfly/react-core";
+import { PropsWithChildren, Suspense } from "react";
 
-const log = logger.child({ module: "ui", component: "AppLayout" });
-
-export function AppLayout({
-  session,
-  children,
-}: PropsWithChildren<{ session: Session | null }>) {
-  const [sidebarExpanded, setSidebarExpanded] = useState(true);
+export async function AppLayout({ children }: PropsWithChildren) {
+  const clusters = await getKafkaClusters();
   return (
-    <SessionProvider session={session}>
-      <Page
-        header={
-          <AppMasthead onToggleSidebar={() => setSidebarExpanded((e) => !e)} />
-        }
-        sidebar={
-          <PageSidebar isSidebarOpen={sidebarExpanded}>
-            <PageSidebarBody>
-              <Nav aria-label="Nav">
-                <NavList>
-                  <NavItemLink url={"/"} exact={true}>
-                    Overview
-                  </NavItemLink>
-                  <NavItemLink url={"/resources"}>All resources</NavItemLink>
-                  <NavItemLink url={"/flows"}>Flows</NavItemLink>
-                  <NavItemLink url={"/kafka"}>Kafka</NavItemLink>
-                  <NavItemLink url={"/registry"}>Registry</NavItemLink>
-                  <NavItemLink url={"/learning-resources"}>
-                    Learning resources
-                  </NavItemLink>
-                </NavList>
-              </Nav>
-            </PageSidebarBody>
-          </PageSidebar>
-        }
-      >
-        {children}
-      </Page>
-      <SessionRefresher />
-    </SessionProvider>
+    <Page
+      header={<AppMasthead />}
+      sidebar={
+        <AppSidebar>
+          <Nav aria-label="Nav">
+            <NavList>
+              <NavItemLink url={"/resources"}>Resources</NavItemLink>
+              <NavExpandable
+                title={"Kafka clusters"}
+                url={"/kafka/"}
+                startExpanded={true}
+              >
+                <Suspense>
+                  {clusters.map((s, idx) => (
+                    <NavExpandable
+                      key={s.id}
+                      title={s.attributes.name}
+                      url={`/kafka/${s.id}`}
+                      startExpanded={idx === 0}
+                    >
+                      <NavItemLink url={`/kafka/${s.id}/overview`}>
+                        Cluster overview
+                      </NavItemLink>
+                      <NavItemLink url={`/kafka/${s.id}/topics`}>
+                        Topics
+                      </NavItemLink>
+                      <NavItemLink url={`/kafka/${s.id}/nodes`}>
+                        Nodes
+                      </NavItemLink>
+                      <NavItemLink url={`/kafka/${s.id}/service-registry`}>
+                        Service registry
+                      </NavItemLink>
+                      <NavItemLink url={`/kafka/${s.id}/consumer-groups`}>
+                        Consumer groups
+                      </NavItemLink>
+                    </NavExpandable>
+                  ))}
+                </Suspense>
+              </NavExpandable>
+              <NavItemLink url={"/learning-resources"}>
+                Learning resources
+              </NavItemLink>
+            </NavList>
+          </Nav>
+        </AppSidebar>
+      }
+    >
+      {children}
+    </Page>
   );
 }
