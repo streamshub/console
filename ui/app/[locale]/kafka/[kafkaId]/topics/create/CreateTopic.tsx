@@ -8,6 +8,7 @@ import {
 import { StepDetails } from "@/app/[locale]/kafka/[kafkaId]/topics/create/StepDetails";
 import { StepOptions } from "@/app/[locale]/kafka/[kafkaId]/topics/create/StepOptions";
 import { StepReview } from "@/app/[locale]/kafka/[kafkaId]/topics/create/StepReview";
+import { useRouter } from "@/navigation";
 import {
   Button,
   PageSection,
@@ -17,7 +18,6 @@ import {
   WizardFooterWrapper,
   WizardStep,
 } from "@patternfly/react-core";
-import { useRouter } from "@/navigation";
 import { useCallback, useState, useTransition } from "react";
 
 export function CreateTopic({
@@ -38,7 +38,6 @@ export function CreateTopic({
   ) => Promise<TopicCreateResponse>;
 }) {
   const router = useRouter();
-  const [showError, setShowError] = useState(false);
   const [name, setName] = useState("");
   const [partitions, setPartitions] = useState(1);
   const [replicas, setReplicas] = useState(maxReplicas);
@@ -49,27 +48,37 @@ export function CreateTopic({
     undefined,
   );
 
-  const handleSave = useCallback(
-    async (onSuccess: () => void, validateOnly: boolean) => {
+  const save = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(undefined);
+      const result = await onSave(name, partitions, replicas, options, false);
+      startTransition(() => {
+        if ("errors" in result) {
+          setError(result);
+        } else {
+          console.log("???", result, result.data.id);
+          router.push(`/kafka/${kafkaId}/topics/${result.data.id}`);
+        }
+      });
+    } catch (e: unknown) {
+      setError("unknown");
+    } finally {
+      setLoading(false);
+    }
+  }, [kafkaId, name, onSave, options, partitions, replicas, router]);
+
+  const validate = useCallback(
+    async (success: () => void) => {
       try {
         setLoading(true);
-        const result = await onSave(
-          name,
-          partitions,
-          replicas,
-          options,
-          validateOnly,
-        );
+        setError(undefined);
+        const result = await onSave(name, partitions, replicas, options, true);
         startTransition(() => {
-          setError(undefined);
           if ("errors" in result) {
             setError(result);
           } else {
-            if (validateOnly === false) {
-              router.push(`/kafka/${kafkaId}/topics/${result.data.id}`);
-            } else {
-              onSuccess();
-            }
+            success();
           }
         });
       } catch (e: unknown) {
@@ -78,28 +87,21 @@ export function CreateTopic({
         setLoading(false);
       }
     },
-    [kafkaId, name, onSave, options, partitions, replicas, router],
+    [name, onSave, options, partitions, replicas],
   );
 
   const formInvalid = error !== undefined;
 
   return (
     <PageSection type={"wizard"}>
-      <Wizard
-        title="Topic creation wizard"
-        onStepChange={() => {
-          setShowError(true);
-          setError(undefined);
-        }}
-        onClose={() => router.back()}
-      >
+      <Wizard title="Topic creation wizard" onClose={() => router.back()}>
         <WizardStep
           name="Topic details"
           id="step-details"
           footer={
             <SkipReviewFooter
               formInvalid={formInvalid}
-              onClick={(success) => handleSave(success, true)}
+              onClick={(success) => validate(success)}
               loading={pending || loading}
             />
           }
@@ -109,7 +111,6 @@ export function CreateTopic({
             partitions={partitions}
             replicas={replicas}
             maxReplicas={maxReplicas}
-            showError={showError}
             onNameChange={setName}
             onPartitionsChange={setPartitions}
             onReplicasChange={setReplicas}
@@ -121,8 +122,9 @@ export function CreateTopic({
           id="step-options"
           footer={
             <AsyncFooter
-              formInvalid={formInvalid || error !== undefined}
-              onClick={(success) => handleSave(success, true)}
+              nextStepId={"step-review"}
+              nextDisabled={formInvalid || error !== undefined}
+              onClick={(success) => validate(success)}
               loading={pending || loading}
               primaryLabel={"Next"}
             />
@@ -140,13 +142,13 @@ export function CreateTopic({
           id="step-review"
           footer={
             <AsyncFooter
-              formInvalid={formInvalid}
-              onClick={(success) => handleSave(success, false)}
+              nextStepId={""}
+              nextDisabled={formInvalid}
+              onClick={save}
               loading={pending || loading}
               primaryLabel={"Create topic"}
             />
           }
-          isDisabled={formInvalid}
         >
           <StepReview
             name={name}
@@ -193,7 +195,7 @@ const SkipReviewFooter = ({
           variant="tertiary"
           onClick={() => onClick(() => goToStepById("step-review"))}
           id={"review-button"}
-          isDisabled={formInvalid || loading}
+          isDisabled={loading}
         >
           Review and finish
         </Button>
@@ -206,17 +208,19 @@ const SkipReviewFooter = ({
 };
 
 const AsyncFooter = ({
-  formInvalid,
+  nextStepId,
+  nextDisabled,
   loading,
   primaryLabel,
   onClick,
 }: {
-  formInvalid: boolean;
+  nextStepId: string;
+  nextDisabled: boolean;
   loading: boolean;
   primaryLabel: string;
   onClick: (success: () => void) => void;
 }) => {
-  const { goToPrevStep, goToNextStep, close } = useWizardContext();
+  const { goToPrevStep, goToStepById, close } = useWizardContext();
   return (
     <WizardFooterWrapper>
       <Button variant={"secondary"} onClick={goToPrevStep} disabled={loading}>
@@ -224,9 +228,13 @@ const AsyncFooter = ({
       </Button>
       <Button
         variant="primary"
-        onClick={() => onClick(goToNextStep)}
+        onClick={() =>
+          onClick(() => {
+            goToStepById(nextStepId);
+          })
+        }
         isLoading={loading}
-        disabled={formInvalid || loading}
+        disabled={nextDisabled || loading}
       >
         {primaryLabel}
       </Button>

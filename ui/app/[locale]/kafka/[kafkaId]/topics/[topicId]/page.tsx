@@ -2,5 +2,5 @@ import { KafkaTopicParams } from "@/app/[locale]/kafka/[kafkaId]/topics/kafkaTop
 import { redirect } from "@/navigation";
 
 export default function TopicPage({ params }: { params: KafkaTopicParams }) {
-  redirect(`${params.topicId}/messages`);
+  redirect(`/kafka/${params.kafkaId}/topics/${params.topicId}/messages`);
 }

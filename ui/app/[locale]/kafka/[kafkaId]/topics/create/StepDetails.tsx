@@ -12,7 +12,6 @@ export function StepDetails({
   partitions,
   replicas,
   maxReplicas,
-  showError,
   onNameChange,
   onPartitionsChange,
   onReplicasChange,
@@ -22,7 +21,6 @@ export function StepDetails({
   partitions: number;
   replicas: number;
   maxReplicas: number;
-  showError: boolean;
   onNameChange: (name: string) => void;
   onPartitionsChange: (name: number) => void;
   onReplicasChange: (name: number) => void;
@@ -46,7 +44,6 @@ export function StepDetails({
       <FieldName
         name={name}
         onChange={onNameChange}
-        showErrors={showError}
         nameInvalid={nameInvalid.name}
         lengthInvalid={nameInvalid.length}
         formatInvalid={nameInvalid.format}
@@ -55,7 +52,7 @@ export function StepDetails({
       <FieldPartitions
         partitions={partitions}
         onChange={onPartitionsChange}
-        invalid={showError && partitionsInvalid}
+        invalid={partitionsInvalid}
         backendError={
           fieldError?.field === "numPartitions" && fieldError?.error
         }
@@ -64,7 +61,7 @@ export function StepDetails({
         replicas={replicas}
         maxReplicas={maxReplicas}
         onChange={onReplicasChange}
-        showErrors={showError && replicasInvalid}
+        showErrors={replicasInvalid}
         backendError={
           fieldError?.field === "replicationFactor" && fieldError?.error
         }

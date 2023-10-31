@@ -1,6 +1,7 @@
 import { BackendError, getHeaders } from "@/api/api";
 import { filterUndefinedFromObj } from "@/utils/filterUndefinedFromObj";
 import { logger } from "@/utils/logger";
+import { revalidateTag } from "next/cache";
 import { z } from "zod";
 
 const log = logger.child({ module: "topics-api" });
@@ -159,7 +160,7 @@ export async function getTopics(
   const res = await fetch(url, {
     headers: await getHeaders(),
     next: {
-      tags: ["topic"],
+      tags: ["topics"],
     },
   });
   log.debug({ url }, "getTopics");
@@ -217,6 +218,9 @@ export async function createTopic(
   log.debug({ url, rawData }, "createTopic response");
   const response = TopicCreateResponseSchema.parse(rawData);
   log.trace(response, "createTopic response parsed");
+  if (validateOnly === false) {
+    revalidateTag("topics");
+  }
   return response;
 }
 
@@ -248,6 +252,7 @@ export async function updateTopic(
   log.trace({ status: res.status }, "updateTopic response");
   try {
     if (res.status === 204) {
+      revalidateTag(`topic-${topicId}`);
       return true;
     } else {
       const rawData = await res.json();
@@ -270,7 +275,11 @@ export async function deleteTopic(
     method: "DELETE",
   });
   try {
-    return res.status === 204;
+    const success = res.status === 204;
+    if (success) {
+      revalidateTag("topics");
+    }
+    return success;
   } catch (e) {
     log.error(e, "deleteTopic unknown error");
   }
