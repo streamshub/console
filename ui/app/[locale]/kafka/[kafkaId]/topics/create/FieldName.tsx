@@ -13,7 +13,6 @@ import {
 export function FieldName({
   name,
   onChange,
-  showErrors,
   nameInvalid,
   lengthInvalid,
   formatInvalid,
@@ -21,13 +20,12 @@ export function FieldName({
 }: {
   name: string;
   onChange: (name: string) => void;
-  showErrors: boolean;
   nameInvalid: boolean;
   lengthInvalid: boolean;
   formatInvalid: boolean;
   backendError: string | false;
 }) {
-  showErrors = showErrors || name !== "";
+  const showErrors = name !== "";
   return (
     <FormSection>
       <TextContent>

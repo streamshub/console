@@ -1,7 +1,6 @@
 import { getTopic, updateTopic } from "@/api/topics";
 import { KafkaTopicParams } from "@/app/[locale]/kafka/[kafkaId]/topics/kafkaTopic.params";
 import { PageSection } from "@/libs/patternfly/react-core";
-import { revalidateTag } from "next/cache";
 import { ConfigTable } from "./ConfigTable";
 
 export default async function TopicConfiguration({
@@ -13,15 +12,11 @@ export default async function TopicConfiguration({
 
   async function onSaveProperty(name: string, value: string) {
     "use server";
-    const res = await updateTopic(kafkaId, topicId, undefined, undefined, {
+    return updateTopic(kafkaId, topicId, undefined, undefined, {
       [name]: {
         value,
       },
     });
-    if (res === true) {
-      revalidateTag(`topic-${topicId}`);
-    }
-    return res;
   }
 
   return (
