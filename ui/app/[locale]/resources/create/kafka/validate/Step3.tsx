@@ -26,7 +26,7 @@ import {
 } from "@/libs/patternfly/react-core";
 import { CogsIcon } from "@/libs/patternfly/react-icons";
 import { WarningTriangleIcon } from "@patternfly/react-icons";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/navigation";
 import { useCallback, useEffect, useState, useTransition } from "react";
 
 type Props = {

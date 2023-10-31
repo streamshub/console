@@ -16,10 +16,9 @@ import {
   TextContent,
   Title,
 } from "@/libs/patternfly/react-core";
+import { Link, useRouter } from "@/navigation";
 import { useFormatBytes } from "@/utils/format";
 import { Route } from "next";
-import Link from "next-intl/link";
-import { useRouter } from "next/navigation";
 
 export function ClusterCard<T extends string>({
   id,

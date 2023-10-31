@@ -21,7 +21,7 @@ import {
   Title,
 } from "@/libs/patternfly/react-core";
 import { Button } from "@patternfly/react-core";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/navigation";
 import { useState, useTransition } from "react";
 
 export function Step2() {

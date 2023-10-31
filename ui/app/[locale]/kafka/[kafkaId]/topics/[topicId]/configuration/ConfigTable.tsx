@@ -4,6 +4,7 @@ import { Error } from "@/app/[locale]/kafka/[kafkaId]/topics/create/Errors";
 import { topicMutateErrorToFieldError } from "@/app/[locale]/kafka/[kafkaId]/topics/create/topicMutateErrorToFieldError";
 import { Number } from "@/components/Number";
 import { ResponsiveTableProps, TableView } from "@/components/table";
+import { usePathname, useRouter } from "@/navigation";
 import {
   Button,
   FormGroup,
@@ -19,7 +20,7 @@ import {
 } from "@patternfly/react-core";
 import { CheckIcon, PencilAltIcon, TimesIcon } from "@patternfly/react-icons";
 import { TableVariant } from "@patternfly/react-table";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useCallback, useState } from "react";
 import { NoResultsEmptyState } from "./NoResultsEmptyState";
 

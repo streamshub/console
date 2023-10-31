@@ -1,8 +1,8 @@
 "use client";
 import { BreadcrumbItem } from "@/libs/patternfly/react-core";
+import { Link } from "@/navigation";
 import { BreadcrumbItemProps } from "@patternfly/react-core";
 import { Route } from "next";
-import Link from "next/link";
 
 export function BreadcrumbLink<T extends string>({
   href,

@@ -3,11 +3,10 @@ import { TopicList } from "@/api/topics";
 import { Bytes } from "@/components/Bytes";
 import { Number } from "@/components/Number";
 import { TableView } from "@/components/table";
+import { Link, useRouter } from "@/navigation";
 import { useFilterParams } from "@/utils/useFilterParams";
 import { TableVariant } from "@patternfly/react-table";
 import { useFormatter, useTranslations } from "next-intl";
-import Link from "next-intl/link";
-import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 
 export const TopicsTableColumns = [

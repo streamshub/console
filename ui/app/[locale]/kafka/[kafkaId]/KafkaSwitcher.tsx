@@ -10,7 +10,7 @@ import {
 } from "@/libs/patternfly/react-core";
 import { Route } from "next";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/navigation";
 import { CSSProperties, useState } from "react";
 
 export function KafkaSwitcher<T extends string>({

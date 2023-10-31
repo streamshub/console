@@ -1,7 +1,7 @@
 "use client";
 import { Button, ButtonProps } from "@/libs/patternfly/react-core";
+import { Link } from "@/navigation";
 import { Route } from "next";
-import Link from "next/link";
 
 export function ButtonLink<T extends string>({
   href,
