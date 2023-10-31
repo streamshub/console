@@ -1,6 +1,6 @@
 "use client";
 import { BreadcrumbLink } from "@/components/BreadcrumbLink";
-import { ButtonLink } from "@/components/buttonLink";
+import { ButtonLink } from "@/components/ButtonLink";
 import {
   Breadcrumb,
   BreadcrumbItem,

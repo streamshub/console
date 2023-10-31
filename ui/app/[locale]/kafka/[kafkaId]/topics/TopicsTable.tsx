@@ -1,9 +1,10 @@
 "use client";
 import { TopicList } from "@/api/topics";
+import { ButtonLink } from "@/components/ButtonLink";
 import { Bytes } from "@/components/Bytes";
 import { Number } from "@/components/Number";
 import { TableView } from "@/components/table";
-import { Link, useRouter } from "@/navigation";
+import { useRouter } from "@/navigation";
 import { useFilterParams } from "@/utils/useFilterParams";
 import { TableVariant } from "@patternfly/react-table";
 import { useFormatter, useTranslations } from "next-intl";
@@ -18,10 +19,10 @@ export const TopicsTableColumns = [
 ] as const;
 export type SortableTopicsTableColumns = Exclude<
   TopicsTableColumn,
-  "consumerGroups"
+  "consumerGroups" | "partitions"
 >;
 export type TopicsTableColumn = (typeof TopicsTableColumns)[number];
-export const SortableColumns = ["name", "messages", "partitions", "storage"];
+export const SortableColumns = ["name", "messages", "storage"];
 
 export type TopicsTableProps = {
   topics: TopicList[];
@@ -139,25 +140,34 @@ export function TopicsTable({
           case "consumerGroups":
             return (
               <Td key={key} dataLabel={"Consumer groups"}>
-                <Link href={`${baseurl}/${row.id}/consumer-groups`}>
+                <ButtonLink
+                  variant={"link"}
+                  href={`${baseurl}/${row.id}/consumer-groups`}
+                >
                   {format.number(0 /* TODO */)}
-                </Link>
+                </ButtonLink>
               </Td>
             );
           case "partitions":
             return (
               <Td key={key} dataLabel={"Partitions"}>
-                <Link href={`${baseurl}/${row.id}/partitions`}>
+                <ButtonLink
+                  variant={"link"}
+                  href={`${baseurl}/${row.id}/partitions`}
+                >
                   {format.number(row.attributes.partitions.length)}
-                </Link>
+                </ButtonLink>
               </Td>
             );
           case "messages":
             return (
               <Td key={key} dataLabel={"Messages"}>
-                <Link href={`${baseurl}/${row.id}/messages`}>
+                <ButtonLink
+                  variant={"link"}
+                  href={`${baseurl}/${row.id}/messages`}
+                >
                   <Number value={row.attributes.recordCount} />
-                </Link>
+                </ButtonLink>
               </Td>
             );
           case "storage":
