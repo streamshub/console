@@ -1,5 +1,5 @@
 import { getResources } from "@/api/resources";
-import { ButtonLink } from "@/components/buttonLink";
+import { ButtonLink } from "@/components/ButtonLink";
 import {
   EmptyState,
   EmptyStateActions,
