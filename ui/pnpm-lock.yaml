@@ -60,8 +60,8 @@ dependencies:
     specifier: 13.5.6
     version: 13.5.6(react-dom@18.2.0)(react@18.2.0)
   next-auth:
-    specifier: 4.24.3
-    version: 4.24.3(next@13.5.6)(react-dom@18.2.0)(react@18.2.0)
+    specifier: 4.24.4
+    version: 4.24.4(next@13.5.6)(react-dom@18.2.0)(react@18.2.0)
   next-intl:
     specifier: 3.0.0-beta.14
     version: 3.0.0-beta.14(next@13.5.6)(react@18.2.0)
@@ -2509,10 +2509,10 @@ packages:
     engines: {node: '>= 0.6'}
     dev: false
 
-  /next-auth@4.24.3(next@13.5.6)(react-dom@18.2.0)(react@18.2.0):
-    resolution: {integrity: sha512-n1EvmY7MwQMSOkCh6jhI6uBneB6VVtkYELVMEwVaCLD1mBD3IAAucwk+90kgxramW09nSp5drvynwfNCi1JjaQ==}
+  /next-auth@4.24.4(next@13.5.6)(react-dom@18.2.0)(react@18.2.0):
+    resolution: {integrity: sha512-5DGffi+OpkbU62vPQIJ1z+hFnmow+ec5Qrn9m6eoglIO51m0DlrmLxBduZEwKAYDEg9k2joi1yelgmq1vqK3aQ==}
     peerDependencies:
-      next: ^12.2.5 || ^13
+      next: ^12.2.5 || ^13 || ^14
       nodemailer: ^6.6.5
       react: ^17.0.2 || ^18
       react-dom: ^17.0.2 || ^18
