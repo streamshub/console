@@ -18,7 +18,9 @@ export default async function TopicsPage({
   params,
   searchParams,
 }: {
-  params: { kafkaId: string };
+  params: {
+    kafkaId: string;
+  };
   searchParams: {
     perPage: string | undefined;
     sort: string | undefined;
