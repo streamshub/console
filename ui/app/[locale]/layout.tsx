@@ -1,5 +1,8 @@
 import { AppLayout } from "@/app/[locale]/AppLayout";
+import { AppLayoutProvider } from "@/app/[locale]/AppLayoutProvider";
+import { AppSessionProvider } from "@/app/[locale]/AppSessionProvider";
 import NextIntlProvider from "@/app/[locale]/NextIntlProvider";
+import { SessionRefresher } from "@/app/[locale]/SessionRefresher";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { getServerSession } from "next-auth";
 import { getTranslator } from "next-intl/server";
@@ -24,7 +27,12 @@ export default async function Layout({ children, params: { locale } }: Props) {
     <html lang="en">
       <body>
         <NextIntlProvider locale={locale} messages={messages}>
-          <AppLayout session={session}>{children}</AppLayout>
+          <AppLayoutProvider>
+            <AppSessionProvider session={session}>
+              <AppLayout>{children}</AppLayout>
+              <SessionRefresher />
+            </AppSessionProvider>
+          </AppLayoutProvider>
         </NextIntlProvider>
       </body>
     </html>

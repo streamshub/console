@@ -14,6 +14,7 @@ export function AppHeader({
         variant={"light"}
         padding={{ default: navigation ? "noPadding" : "padding" }}
         className={navigation ? "pf-v5-u-px-lg pf-v5-u-pt-sm" : undefined}
+        hasShadowBottom={!navigation}
       >
         <Title headingLevel={"h1"}>{title}</Title>
       </PageSection>
