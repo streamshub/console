@@ -1,7 +1,6 @@
 import { getKafkaCluster, getKafkaClusters } from "@/api/kafka";
 import { KafkaParams } from "@/app/[locale]/kafka/[kafkaId]/kafka.params";
 import { KafkaBreadcrumbItem } from "@/app/[locale]/kafka/[kafkaId]/KafkaBreadcrumbItem";
-import { BreadcrumbLink } from "@/components/BreadcrumbLink";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -31,10 +30,10 @@ export default async function KafkaLayout({
 
   return (
     <>
-      <PageGroup>
+      <PageGroup stickyOnBreakpoint={{ default: "top" }}>
         <PageBreadcrumb>
           <Breadcrumb>
-            <BreadcrumbLink href="/kafka">Kafka</BreadcrumbLink>
+            <BreadcrumbItem>Kafka clusters</BreadcrumbItem>
             <BreadcrumbItem>
               <KafkaBreadcrumbItem
                 selected={cluster}

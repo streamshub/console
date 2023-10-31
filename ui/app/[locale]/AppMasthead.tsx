@@ -1,3 +1,5 @@
+"use client";
+import { useAppLayout } from "@/app/[locale]/AppLayoutProvider";
 import {
   Button,
   Masthead,
@@ -22,14 +24,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { UserDropdown } from "./UserDropdown";
 
-export function AppMasthead({
-  onToggleSidebar,
-}: {
-  onToggleSidebar: () => void;
-}) {
+export function AppMasthead() {
   const t = useTranslations();
   const { data } = useSession();
   const { user } = data || {};
+  const { toggleSidebar } = useAppLayout();
 
   return (
     <Masthead>
@@ -37,7 +36,7 @@ export function AppMasthead({
         <PageToggleButton
           variant="plain"
           aria-label="Global navigation"
-          onClick={onToggleSidebar}
+          onClick={toggleSidebar}
         >
           <BarsIcon />
         </PageToggleButton>
