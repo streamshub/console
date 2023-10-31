@@ -1,7 +1,7 @@
 "use client";
 import { DeleteModal } from "@/components/DeleteModal";
 import { useTranslations } from "next-intl";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/navigation";
 import { useState, useTransition } from "react";
 
 export function DeleteTopicModal({

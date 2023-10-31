@@ -12,7 +12,7 @@ import {
   DescriptionListTerm,
   Truncate,
 } from "@/libs/patternfly/react-core";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/navigation";
 
 export function ClusterCard({
   id,

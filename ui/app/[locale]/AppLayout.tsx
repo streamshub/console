@@ -18,7 +18,7 @@ export async function AppLayout({ children }: PropsWithChildren) {
               <NavItemLink url={"/resources"}>Resources</NavItemLink>
               <NavExpandable
                 title={"Kafka clusters"}
-                url={"/kafka/"}
+                url={"/kafka"}
                 startExpanded={true}
               >
                 <Suspense>

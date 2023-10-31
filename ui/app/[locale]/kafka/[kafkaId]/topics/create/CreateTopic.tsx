@@ -17,7 +17,7 @@ import {
   WizardFooterWrapper,
   WizardStep,
 } from "@patternfly/react-core";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/navigation";
 import { useCallback, useState, useTransition } from "react";
 
 export function CreateTopic({

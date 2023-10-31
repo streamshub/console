@@ -13,6 +13,7 @@ export default function NextIntlProvider({
   locale,
   children,
 }: Props) {
+  const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
   return (
     <NextIntlClientProvider
       locale={locale}
@@ -23,6 +24,7 @@ export default function NextIntlProvider({
         i: (text) => <i>{text}</i>,
       }}
       now={new Date()}
+      timeZone={timeZone}
     >
       {children}
     </NextIntlClientProvider>

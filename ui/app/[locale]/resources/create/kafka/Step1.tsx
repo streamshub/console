@@ -24,7 +24,7 @@ import {
   Title,
   Truncate,
 } from "@/libs/patternfly/react-core";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/navigation";
 import { useState, useTransition } from "react";
 
 export function Step1({ clusters }: { clusters: string[] }) {

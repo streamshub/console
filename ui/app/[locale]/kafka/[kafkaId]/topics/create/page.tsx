@@ -2,7 +2,8 @@ import { getKafkaCluster } from "@/api/kafka";
 import { createTopic, NewConfigMap } from "@/api/topics";
 import { KafkaParams } from "@/app/[locale]/kafka/[kafkaId]/kafka.params";
 import { CreateTopic } from "@/app/[locale]/kafka/[kafkaId]/topics/create/CreateTopic";
-import { notFound, redirect } from "next/navigation";
+import { redirect } from "@/navigation";
+import { notFound } from "next/navigation";
 
 export default async function CreateTopicPage({
   params: { kafkaId },

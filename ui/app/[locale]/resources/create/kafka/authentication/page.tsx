@@ -1,5 +1,5 @@
 import { getSession } from "@/utils/session";
-import { redirect } from "next/navigation";
+import { redirect } from "@/navigation";
 import { Step2 } from "./Step2";
 
 export default async function AsyncCreateResourceStep2Page() {

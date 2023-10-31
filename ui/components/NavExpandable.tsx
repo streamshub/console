@@ -1,13 +1,12 @@
 "use client";
+import { usePathname } from "@/navigation";
 import {
   NavExpandable as PFNavExpendable,
   NavExpandableProps,
 } from "@patternfly/react-core";
-import { Route } from "next";
-import { usePathname } from "next/navigation";
 import { PropsWithChildren, useState } from "react";
 
-export function NavExpandable<T extends string>({
+export function NavExpandable({
   title,
   groupId,
   children,
@@ -15,7 +14,7 @@ export function NavExpandable<T extends string>({
   startExpanded,
 }: PropsWithChildren<
   Pick<NavExpandableProps, "title" | "groupId"> & {
-    url: Route<T> | URL;
+    url: string;
     startExpanded: boolean;
   }
 >) {

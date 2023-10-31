@@ -1,8 +1,7 @@
 "use client";
 import { NavItem } from "@/libs/patternfly/react-core";
+import { Link, usePathname } from "@/navigation";
 import { Route } from "next";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { PropsWithChildren } from "react";
 
 export function NavItemLink<T extends string>({

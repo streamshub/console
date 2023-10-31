@@ -12,10 +12,9 @@ import {
   Divider,
   Truncate,
 } from "@/libs/patternfly/react-core";
+import { Link, useRouter } from "@/navigation";
 import { CardFooter } from "@patternfly/react-core";
 import { Route } from "next";
-import Link from "next-intl/link";
-import { useRouter } from "next/navigation";
 
 export function ResourceCard<T extends string>({
   id,
