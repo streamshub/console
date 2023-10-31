@@ -1,4 +1,4 @@
-import { ButtonLink } from "@/components/buttonLink";
+import { ButtonLink } from "@/components/ButtonLink";
 import {
   EmptyState,
   EmptyStateActions,
