@@ -27,6 +27,8 @@ import static java.util.Comparator.nullsLast;
 @JsonFilter("fieldFilter")
 public class ConsumerGroup {
 
+    public static final String FIELDS_PARAM = "fields[consumerGroups]";
+
     public static final class Fields {
         public static final String STATE = "state";
         public static final String MEMBERS = "members";

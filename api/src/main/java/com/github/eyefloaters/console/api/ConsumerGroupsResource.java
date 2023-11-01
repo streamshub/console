@@ -38,8 +38,6 @@ import com.github.eyefloaters.console.api.support.StringEnumeration;
 @Tag(name = "Kafka Cluster Resources")
 public class ConsumerGroupsResource {
 
-    static final String FIELDS_PARAM = "fields[consumerGroups]";
-
     @Inject
     UriInfo uriInfo;
 
@@ -64,10 +62,10 @@ public class ConsumerGroupsResource {
             @PathParam("clusterId")
             String clusterId,
 
-            @QueryParam(FIELDS_PARAM)
+            @QueryParam(ConsumerGroup.FIELDS_PARAM)
             @DefaultValue(ConsumerGroup.Fields.LIST_DEFAULT)
             @StringEnumeration(
-                    source = FIELDS_PARAM,
+                    source = ConsumerGroup.FIELDS_PARAM,
                     allowedValues = {
                         ConsumerGroup.Fields.STATE,
                         ConsumerGroup.Fields.SIMPLE_CONSUMER_GROUP,
@@ -124,10 +122,10 @@ public class ConsumerGroupsResource {
             @Parameter(description = "Consumer group identifier")
             String groupId,
 
-            @QueryParam(FIELDS_PARAM)
+            @QueryParam(ConsumerGroup.FIELDS_PARAM)
             @DefaultValue(ConsumerGroup.Fields.DESCRIBE_DEFAULT)
             @StringEnumeration(
-                    source = FIELDS_PARAM,
+                    source = ConsumerGroup.FIELDS_PARAM,
                     allowedValues = {
                         ConsumerGroup.Fields.STATE,
                         ConsumerGroup.Fields.SIMPLE_CONSUMER_GROUP,

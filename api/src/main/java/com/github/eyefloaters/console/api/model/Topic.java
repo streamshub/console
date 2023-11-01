@@ -30,6 +30,8 @@ import static java.util.Comparator.nullsLast;
 @Schema(name = "Topic")
 public class Topic extends RelatableResource<Topic.Attributes, Topic.Relationships> {
 
+    public static final String FIELDS_PARAM = "fields[topics]";
+
     public static final class Fields {
         public static final String NAME = "name";
         public static final String INTERNAL = "internal";

@@ -2,6 +2,7 @@ package com.github.eyefloaters.console.api.service;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -12,6 +13,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.Executor;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -28,8 +30,13 @@ import org.apache.kafka.clients.admin.ListOffsetsResult.ListOffsetsResultInfo;
 import org.apache.kafka.clients.admin.ListTopicsOptions;
 import org.apache.kafka.clients.admin.OffsetSpec;
 import org.apache.kafka.clients.admin.TopicListing;
+import org.apache.kafka.common.TopicCollection;
 import org.apache.kafka.common.TopicPartition;
+import org.apache.kafka.common.Uuid;
 import org.apache.kafka.common.errors.GroupIdNotFoundException;
+import org.apache.kafka.common.errors.InvalidTopicException;
+import org.apache.kafka.common.errors.UnknownTopicIdException;
+import org.eclipse.microprofile.context.ThreadContext;
 
 import com.github.eyefloaters.console.api.model.ConsumerGroup;
 import com.github.eyefloaters.console.api.model.Either;
@@ -50,16 +57,58 @@ public class ConsumerGroupService {
             ConsumerGroup.Fields.MEMBERS,
             ConsumerGroup.Fields.OFFSETS);
 
+    /**
+     * ThreadContext of the request thread. This is used to execute asynchronous
+     * tasks to allow access to request-scoped beans such as an injected
+     * {@linkplain Admin Admin client}
+     */
+    @Inject
+    ThreadContext threadContext;
+
     @Inject
     Supplier<Admin> clientSupplier;
 
     public CompletionStage<List<ConsumerGroup>> listConsumerGroups(List<String> includes, ListRequestContext<ConsumerGroup> listSupport) {
+        return listConsumerGroups(Collections.emptyList(), includes, listSupport);
+    }
+
+    public CompletionStage<List<ConsumerGroup>> listConsumerGroups(String topicId, List<String> includes,
+            ListRequestContext<ConsumerGroup> listSupport) {
+
+        Admin adminClient = clientSupplier.get();
+        Uuid id = Uuid.fromString(topicId);
+        Executor asyncExec = threadContext.currentContextExecutor();
+
+        return adminClient.describeTopics(TopicCollection.ofTopicIds(List.of(id)))
+            .topicIdValues()
+            .get(id)
+            .toCompletionStage()
+            .exceptionally(error -> {
+                if (error instanceof InvalidTopicException) {
+                    // See KAFKA-15373
+                    throw new UnknownTopicIdException("No such topic: " + topicId);
+                }
+                throw new CompletionException(error);
+            })
+            .thenComposeAsync(unused -> listConsumerGroupMembership(List.of(topicId)), asyncExec)
+            .thenComposeAsync(topicGroups -> {
+                if (topicGroups.containsKey(topicId)) {
+                    return listConsumerGroups(topicGroups.get(topicId), includes, listSupport);
+                }
+                return CompletableFuture.completedStage(Collections.emptyList());
+            }, asyncExec);
+    }
+
+    CompletionStage<List<ConsumerGroup>> listConsumerGroups(List<String> groupIds, List<String> includes, ListRequestContext<ConsumerGroup> listSupport) {
         Admin adminClient = clientSupplier.get();
 
         return adminClient.listConsumerGroups()
             .valid()
             .toCompletionStage()
-            .thenApply(groups -> groups.stream().map(ConsumerGroup::fromKafkaModel).toList())
+            .thenApply(groups -> groups.stream()
+                    .filter(group -> groupIds.isEmpty() || groupIds.contains(group.groupId()))
+                    .map(ConsumerGroup::fromKafkaModel)
+                    .toList())
             .thenCompose(groups -> augmentList(adminClient, groups, includes))
             .thenApply(list -> list.stream()
                     .map(listSupport::tally)
@@ -86,7 +135,7 @@ public class ConsumerGroupService {
             .thenApply(result -> result.getOrThrow(CompletionException::new));
     }
 
-    public CompletionStage<Map<String, List<String>>> listConsumerGroupMembership(List<String> topicIds) {
+    public CompletionStage<Map<String, List<String>>> listConsumerGroupMembership(Collection<String> topicIds) {
         Admin adminClient = clientSupplier.get();
 
         return adminClient.listConsumerGroups()
