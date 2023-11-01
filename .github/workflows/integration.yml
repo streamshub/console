@@ -34,15 +34,13 @@ jobs:
           SONAR_PROJECT: ${{secrets.SONAR_PROJECT}}
           SONAR_TOKEN: ${{secrets.SONAR_TOKEN}}
         run: |
-          # Set write-transformed-bytecode-to-build-output for IT coverage
+          #
+          # Set write-transformed-bytecode-to-build-output for IT coverage. Do NOT use the container image
+          # created by this step.
+          #
           # See: https://quarkus.io/guides/tests-with-coverage#coverage-for-integration-tests
-          mvn verify -B --no-transfer-progress -Dquarkus.package.write-transformed-bytecode-to-build-output=true -f api/pom.xml
-
-      - name: Build Container Image
-        env:
-          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
-        run: |
-          mvn clean package -Pdocker -DskipTests -B --no-transfer-progress -f api/pom.xml
+          #
+          mvn verify -Pdocker -B --no-transfer-progress -Dquarkus.package.write-transformed-bytecode-to-build-output=true -f api/pom.xml
 
       - name: Archive Results
         uses: actions/upload-artifact@v3
