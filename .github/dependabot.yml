@@ -14,7 +14,7 @@ updates:
 - package-ecosystem: "docker"
   directory: "/ui"
   registries:
-    "registry.access.redhat.com":
+    redhat:
       type: docker-registry
       url: https://registry.access.redhat.com
   schedule:
@@ -23,7 +23,7 @@ updates:
 - package-ecosystem: "docker"
   directory: "/api/src/main/docker"
   registries:
-    "registry.access.redhat.com":
+    redhat:
       type: docker-registry
       url: https://registry.access.redhat.com
   schedule:
