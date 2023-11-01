@@ -1,4 +1,10 @@
 version: 2
+
+registries:
+  redhat:
+    type: docker-registry
+    url: https://registry.access.redhat.com
+
 updates:
 - package-ecosystem: "github-actions"
   directory: "/"
@@ -14,18 +20,14 @@ updates:
 - package-ecosystem: "docker"
   directory: "/ui"
   registries:
-    redhat:
-      type: docker-registry
-      url: https://registry.access.redhat.com
+    - redhat
   schedule:
     interval: weekly
 
 - package-ecosystem: "docker"
   directory: "/api/src/main/docker"
   registries:
-    redhat:
-      type: docker-registry
-      url: https://registry.access.redhat.com
+    - redhat
   schedule:
     interval: weekly
 
