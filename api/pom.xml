@@ -21,7 +21,7 @@
         <docker.push>false</docker.push>
 
         <!-- Dependencies -->
-        <quarkus.version>3.2.5.Final</quarkus.version>
+        <quarkus.version>3.2.7.Final</quarkus.version>
         <jandex-maven-plugin.version>3.1.5</jandex-maven-plugin.version>
         <strimzi-oauth.version>0.14.0</strimzi-oauth.version>
         <hamcrest.version>2.2</hamcrest.version>
@@ -312,6 +312,11 @@
                         <goals>
                             <goal>build</goal>
                         </goals>
+                        <configuration>
+                            <systemProperties>
+                                <quarkus.docker.dockerfile-jvm-path>src/main/docker/Dockerfile</quarkus.docker.dockerfile-jvm-path>
+                            </systemProperties>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>
@@ -515,66 +520,6 @@
     </build>
 
     <profiles>
-        <profile>
-            <id>openapi-generate</id>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>io.smallrye</groupId>
-                        <artifactId>smallrye-open-api-maven-plugin</artifactId>
-                        <version>3.7.0</version>
-                        <executions>
-                            <execution>
-                                <goals>
-                                    <goal>generate-schema</goal>
-                                </goals>
-                                <configuration>
-                                    <systemPropertyVariables>
-                                        <kafka.admin.oauth.enabled>true</kafka.admin.oauth.enabled>
-                                        <kafka.admin.oauth.token.endpoint.uri>/token</kafka.admin.oauth.token.endpoint.uri>
-                                        <kafka.admin.num.partitions.max>100</kafka.admin.num.partitions.max>
-                                    </systemPropertyVariables>
-                                    <schemaFilename>kafka-admin-rest</schemaFilename>
-                                    <filter>com.github.eyefloaters.console.legacy.handlers.OASModelFilter</filter>
-                                    <infoVersion>${project.version}</infoVersion>
-                                    <outputDirectory>${project.basedir}/.openapi</outputDirectory>
-                                </configuration>
-                            </execution>
-                        </executions>
-                        <dependencies>
-                            <dependency>
-                                <groupId>io.smallrye.config</groupId>
-                                <artifactId>smallrye-config</artifactId>
-                                <version>3.4.1</version>
-                            </dependency>
-                            <dependency>
-                                <groupId>jakarta.annotation</groupId>
-                                <artifactId>jakarta.annotation-api</artifactId>
-                                <version>2.1.1</version>
-                            </dependency>
-                        </dependencies>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-
-        <profile>
-            <id>jib</id>
-            <properties>
-                <quarkus.container-image.build>true</quarkus.container-image.build>
-                <quarkus.container-image.registry>${docker.registry}</quarkus.container-image.registry>
-                <quarkus.container-image.group>${docker.group}</quarkus.container-image.group>
-                <quarkus.container-image.tag>${docker.tag}</quarkus.container-image.tag>
-                <quarkus.container-image.push>${docker.push}</quarkus.container-image.push>
-                <quarkus.jib.base-jvm-image>registry.access.redhat.com/ubi9/openjdk-17:1.16</quarkus.jib.base-jvm-image>
-            </properties>
-            <dependencies>
-                <dependency>
-                    <groupId>io.quarkus</groupId>
-                    <artifactId>quarkus-container-image-jib</artifactId>
-                </dependency>
-            </dependencies>
-        </profile>
         <profile>
             <id>docker</id>
             <properties>

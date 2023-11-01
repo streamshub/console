@@ -12,7 +12,20 @@ updates:
   open-pull-requests-limit: 10
 
 - package-ecosystem: "docker"
-  directory: "/"
+  directory: "/ui"
+  registries:
+    "registry.access.redhat.com":
+      type: docker-registry
+      url: https://registry.access.redhat.com
+  schedule:
+    interval: weekly
+
+- package-ecosystem: "docker"
+  directory: "/api/src/main/docker"
+  registries:
+    "registry.access.redhat.com":
+      type: docker-registry
+      url: https://registry.access.redhat.com
   schedule:
     interval: weekly
 
