@@ -27,6 +27,7 @@ import org.apache.kafka.clients.admin.ListOffsetsResult;
 import org.apache.kafka.clients.admin.ListOffsetsResult.ListOffsetsResultInfo;
 import org.apache.kafka.clients.admin.OffsetSpec;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
+import org.apache.kafka.common.ConsumerGroupState;
 import org.apache.kafka.common.KafkaFuture;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.errors.ApiException;
@@ -447,5 +448,61 @@ class ConsumerGroupsResourceIT {
                 .body("data.meta.errors.title", everyItem(startsWith("Unable to list offsets for topic/partition")))
                 .body("data.meta.errors.detail", everyItem(is("EXPECTED TEST EXCEPTION")));
         }
+    }
+
+    @Test
+    void testDeleteConsumerGroupWithMembers() {
+        String topic1 = "t1-" + UUID.randomUUID().toString();
+        String group1 = "g1-" + UUID.randomUUID().toString();
+        String client1 = "c1-" + UUID.randomUUID().toString();
+
+        try (var consumer = groupUtils.consume(group1, topic1, client1, 2, false)) {
+            whenRequesting(req -> req.delete("{groupId}", clusterId1, group1))
+                .assertThat()
+                .statusCode(is(Status.CONFLICT.getStatusCode()))
+                .body("errors.size()", is(1))
+                .body("errors.status", contains("409"))
+                .body("errors.code", contains("4091"));
+
+            assertEquals(ConsumerGroupState.STABLE, groupUtils.consumerGroupState(group1));
+        }
+    }
+
+    @Test
+    void testDeleteConsumerGroupWithNoSuchGroup() {
+        String topic1 = "t1-" + UUID.randomUUID().toString();
+        String group1 = "g1-" + UUID.randomUUID().toString();
+        String client1 = "c1-" + UUID.randomUUID().toString();
+
+        try (var consumer = groupUtils.consume(group1, topic1, client1, 2, false)) {
+            whenRequesting(req -> req.delete("{groupId}", clusterId1, UUID.randomUUID().toString()))
+                .assertThat()
+                .statusCode(is(Status.NOT_FOUND.getStatusCode()))
+                .body("errors.size()", is(1))
+                .body("errors.status", contains("404"))
+                .body("errors.code", contains("4041"));
+
+            assertEquals(ConsumerGroupState.STABLE, groupUtils.consumerGroupState(group1));
+        }
+    }
+
+    @Test
+    void testDeleteConsumerGroupSucceeds() {
+        String topic1 = "t1-" + UUID.randomUUID().toString();
+        String group1 = "g1-" + UUID.randomUUID().toString();
+        String client1 = "c1-" + UUID.randomUUID().toString();
+
+        try (var consumer = groupUtils.consume(group1, topic1, client1, 2, false)) {
+            await().atMost(10, TimeUnit.SECONDS)
+                .until(() -> ConsumerGroupState.STABLE == groupUtils.consumerGroupState(group1));
+        }
+
+        whenRequesting(req -> req.delete("{groupId}", clusterId1, group1))
+            .assertThat()
+            .statusCode(is(Status.NO_CONTENT.getStatusCode()));
+
+        whenRequesting(req -> req.get("{groupId}", clusterId1, group1))
+            .assertThat()
+            .statusCode(is(Status.NOT_FOUND.getStatusCode()));
     }
 }

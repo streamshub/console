@@ -7,6 +7,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.ws.rs.ext.Provider;
 
 import org.apache.kafka.common.errors.GroupIdNotFoundException;
+import org.apache.kafka.common.errors.GroupNotEmptyException;
 import org.apache.kafka.common.errors.InvalidConfigurationException;
 import org.apache.kafka.common.errors.InvalidReplicaAssignmentException;
 import org.apache.kafka.common.errors.InvalidReplicationFactorException;
@@ -30,6 +31,21 @@ public class KafkaClientExceptionHandlers {
         @Override
         public boolean handlesException(Throwable thrown) {
             return thrown instanceof GroupIdNotFoundException;
+        }
+    }
+
+    @Provider
+    @ApplicationScoped
+    public static class GroupNotEmptyExceptionHandler
+        extends AbstractClientExceptionHandler<GroupNotEmptyException> {
+
+        public GroupNotEmptyExceptionHandler() {
+            super(ErrorCategory.ResourceConflict.class, "The consumer group is not empty", (String) null);
+        }
+
+        @Override
+        public boolean handlesException(Throwable thrown) {
+            return thrown instanceof GroupNotEmptyException;
         }
     }
 

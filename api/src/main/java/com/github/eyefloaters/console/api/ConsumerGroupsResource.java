@@ -8,6 +8,7 @@ import jakarta.inject.Inject;
 import jakarta.inject.Named;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.BeanParam;
+import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
@@ -158,6 +159,22 @@ public class ConsumerGroupsResource {
         return consumerGroupService.describeConsumerGroup(groupId, fields)
                 .thenApply(ConsumerGroup.SingleResponse::new)
                 .thenApply(Response::ok)
+                .thenApply(Response.ResponseBuilder::build);
+    }
+
+    @Path("{groupId}")
+    @DELETE
+    @APIResponseSchema(responseCode = "204", value = Void.class)
+    public CompletionStage<Response> deleteConsumerGroup(
+            @Parameter(description = "Cluster identifier")
+            @PathParam("clusterId")
+            String clusterId,
+
+            @PathParam("groupId")
+            @Parameter(description = "Consumer group identifier")
+            String groupId) {
+        return consumerGroupService.deleteConsumerGroup(groupId)
+                .thenApply(nothing -> Response.noContent())
                 .thenApply(Response.ResponseBuilder::build);
     }
 }

@@ -219,25 +219,14 @@ public class ConsumerGroupService {
 //            .thenApply(nothing -> errors);
 //    }
 
-//    public CompletionStage<Map<String, Error>> deleteConsumerGroups(String... groupIds) {
-//        Admin adminClient = clientSupplier.get();
-//        Map<String, Error> errors = new HashMap<>();
-//
-//        var pendingDeletes = adminClient.deleteConsumerGroups(Arrays.asList(groupIds))
-//                .deletedGroups()
-//                .entrySet()
-//                .stream()
-//                .map(entry -> entry.getValue().whenComplete((nothing, thrown) -> {
-//                    if (thrown != null) {
-//                        errors.put(entry.getKey(), new Error("Unable to delete consumer group", thrown.getMessage(), thrown));
-//                    }
-//                }))
-//                .map(KafkaFuture::toCompletionStage)
-//                .map(CompletionStage::toCompletableFuture)
-//                .toArray(CompletableFuture[]::new);
-//
-//        return CompletableFuture.allOf(pendingDeletes).thenApply(nothing -> errors);
-//    }
+    public CompletionStage<Void> deleteConsumerGroup(String groupId) {
+        Admin adminClient = clientSupplier.get();
+
+        return adminClient.deleteConsumerGroups(List.of(groupId))
+                .deletedGroups()
+                .get(groupId)
+                .toCompletionStage();
+    }
 
     CompletionStage<List<ConsumerGroup>> augmentList(Admin adminClient, List<ConsumerGroup> list, List<String> includes) {
         Map<String, ConsumerGroup> groups = list.stream().collect(Collectors.toMap(ConsumerGroup::getGroupId, Function.identity()));
