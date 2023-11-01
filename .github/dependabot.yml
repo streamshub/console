@@ -1,4 +1,5 @@
 version: 2
+
 updates:
 - package-ecosystem: "github-actions"
   directory: "/"
@@ -13,19 +14,11 @@ updates:
 
 - package-ecosystem: "docker"
   directory: "/ui"
-  registries:
-    "registry.access.redhat.com":
-      type: docker-registry
-      url: https://registry.access.redhat.com
   schedule:
     interval: weekly
 
 - package-ecosystem: "docker"
   directory: "/api/src/main/docker"
-  registries:
-    "registry.access.redhat.com":
-      type: docker-registry
-      url: https://registry.access.redhat.com
   schedule:
     interval: weekly
 
