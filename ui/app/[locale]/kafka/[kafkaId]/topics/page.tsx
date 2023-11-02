@@ -28,7 +28,7 @@ export default async function TopicsPage({
     page: string | undefined;
   };
 }) {
-  const pageSize = stringToInt(searchParams.perPage) || 10;
+  const pageSize = stringToInt(searchParams.perPage) || 20;
   const sort = (searchParams["sort"] || "name") as SortableTopicsTableColumns;
   const sortDir = (searchParams["sortDir"] || "asc") as "asc" | "desc";
   const pageCursor = searchParams["page"];
@@ -38,6 +38,15 @@ export default async function TopicsPage({
     pageSize,
     pageCursor,
   });
+
+  const nextPageQuery = topics.links.next
+    ? new URLSearchParams(topics.links.next)
+    : undefined;
+  const nextPageCursor = nextPageQuery?.get("page[after]");
+  const prevPageQuery = topics.links.prev
+    ? new URLSearchParams(topics.links.prev)
+    : undefined;
+  const prevPageCursor = prevPageQuery?.get("page[after]");
 
   return (
     <PageSection isFilled>
@@ -49,6 +58,9 @@ export default async function TopicsPage({
         sortDir={sortDir}
         canCreate={process.env.CONSOLE_MODE === "read-write"}
         baseurl={`/kafka/${params.kafkaId}/topics`}
+        page={topics.meta.page.pageNumber}
+        nextPageCursor={nextPageCursor}
+        prevPageCursor={prevPageCursor}
       />
     </PageSection>
   );
