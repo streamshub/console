@@ -46,7 +46,7 @@ import com.github.eyefloaters.console.api.model.Either;
 import com.github.eyefloaters.console.api.model.Identifier;
 import com.github.eyefloaters.console.api.model.NewTopic;
 import com.github.eyefloaters.console.api.model.OffsetInfo;
-import com.github.eyefloaters.console.api.model.PartitionKey;
+import com.github.eyefloaters.console.api.model.PartitionId;
 import com.github.eyefloaters.console.api.model.PartitionReplica;
 import com.github.eyefloaters.console.api.model.ReplicaLocalStorage;
 import com.github.eyefloaters.console.api.model.Topic;
@@ -489,20 +489,20 @@ public class TopicService {
     }
 
     /**
-     * Build of map of {@linkplain PartitionKey}s to the list of replicas where
+     * Build of map of {@linkplain PartitionId}s to the list of replicas where
      * the partitions are placed. Concurrently, a map of topic names to topic
      * identifiers is constructed to support cross referencing the
-     * {@linkplain PartitionKey} keys (via {@linkplain PartitionKey#topic()})
+     * {@linkplain PartitionId} keys (via {@linkplain PartitionId#topicId()})
      * back to the topic's {@linkplain Uuid}. This allows easy access of the topics
      * located in the topics map provided to this method and is particularly useful
      * for Kafka operations that still require topic name.
      *
      * @param topics   map of topics (keyed by Id)
      * @param topicIds map of topic names to topic Ids, modified by this method
-     * @return map of {@linkplain PartitionKey}s to the list of replicas where the
+     * @return map of {@linkplain PartitionId}s to the list of replicas where the
      *         partitions are placed
      */
-    Map<PartitionKey, List<Integer>> topicPartitionReplicas(Map<Uuid, Either<Topic, Throwable>> topics, Map<String, Uuid> topicIds) {
+    Map<PartitionId, List<Integer>> topicPartitionReplicas(Map<Uuid, Either<Topic, Throwable>> topics, Map<String, Uuid> topicIds) {
         return topics.entrySet()
                 .stream()
                 .filter(entry -> entry.getValue().isPrimaryPresent())
@@ -515,7 +515,7 @@ public class TopicService {
                 .flatMap(topic -> topic.partitions().getPrimary()
                         .stream()
                         .map(partition -> {
-                            var key = new PartitionKey(topic.getId(), topic.name(), partition.getPartition());
+                            var key = new PartitionId(topic.getId(), topic.name(), partition.getPartition());
                             List<Integer> value = partition.getReplicas().stream().map(PartitionReplica::nodeId).toList();
                             return Map.entry(key, value);
                         }))
@@ -539,7 +539,7 @@ public class TopicService {
             Admin adminClient,
             Map<Uuid, Either<Topic, Throwable>> topics,
             Map<String, Uuid> topicIds,
-            Map<PartitionKey, OffsetSpec> request) {
+            Map<PartitionId, OffsetSpec> request) {
 
         var kafkaRequest = request.entrySet()
                 .stream()

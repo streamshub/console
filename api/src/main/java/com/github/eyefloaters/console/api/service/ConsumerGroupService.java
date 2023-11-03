@@ -43,7 +43,7 @@ import com.github.eyefloaters.console.api.model.Either;
 import com.github.eyefloaters.console.api.model.Error;
 import com.github.eyefloaters.console.api.model.MemberDescription;
 import com.github.eyefloaters.console.api.model.OffsetAndMetadata;
-import com.github.eyefloaters.console.api.model.PartitionKey;
+import com.github.eyefloaters.console.api.model.PartitionId;
 import com.github.eyefloaters.console.api.support.ListRequestContext;
 
 @ApplicationScoped
@@ -159,7 +159,7 @@ public class ConsumerGroupService {
                                     .map(MemberDescription::getAssignments)
                                     .filter(Objects::nonNull)
                                     .flatMap(Collection::stream)
-                                    .map(PartitionKey::topicId))
+                                    .map(PartitionId::topicId))
                                 .distinct()
                                 .toList()))
                     .filter(groupTopics -> groupTopics.getValue().stream().anyMatch(topicIds::contains))
@@ -279,11 +279,19 @@ public class ConsumerGroupService {
                 .entrySet()
                 .stream()
                 .map(entry ->
-                    entry.getValue().toCompletionStage().<Void>handle((description, error) -> {
-                        var consumerGroup = Optional.ofNullable(description).map(ConsumerGroup::fromKafkaModel);
-                        result.put(entry.getKey(), Either.of(consumerGroup, error));
-                        return null;
-                    }))
+                    entry.getValue()
+                        .toCompletionStage()
+                        .thenCombine(pendingTopicsIds, ConsumerGroup::fromKafkaModel)
+                        .<Void>handle((consumerGroup, error) -> {
+                            result.put(entry.getKey(), Either.of(
+                                    Optional.ofNullable(consumerGroup),
+                                    /*
+                                     * If an error exists and has a non-null cause, unwrap it (CompletionException).
+                                     * Otherwise, just pass the error, possibly null if no exception raised.
+                                     */
+                                    Optional.ofNullable(error).map(Throwable::getCause).orElse(error)));
+                            return null;
+                        }))
                 .map(CompletionStage::toCompletableFuture)
                 .toArray(CompletableFuture[]::new);
 
@@ -297,20 +305,10 @@ public class ConsumerGroupService {
                 .thenCompose(topicIds -> {
                     if (includes.contains(ConsumerGroup.Fields.OFFSETS)) {
                         return fetchOffsets(adminClient, availableGroups.get(), topicIds)
-                                .thenApply(nothing -> topicIds);
+                                .thenApply(nothing -> result);
                     }
 
-                    return CompletableFuture.completedFuture(topicIds);
-                })
-                .thenApply(topicIds -> {
-                    availableGroups.get()
-                        .values()
-                        .stream()
-                        .map(ConsumerGroup::getMembers)
-                        .flatMap(Collection::stream)
-                        .forEach(member -> addAssignmentTopicIds(member, topicIds));
-
-                    return result;
+                    return CompletableFuture.completedFuture(result);
                 });
     }
 
@@ -381,6 +379,7 @@ public class ConsumerGroupService {
                 long offset = offsetsAndMetadata.offset();
                 offsets.add(new OffsetAndMetadata(
                         topicIds.get(topicPartition.topic()),
+                        topicPartition.topic(),
                         topicPartition.partition(),
                         offsetsAndMetadata.offset(),
                         Optional.ofNullable(topicOffsets.get(topicPartition))
@@ -403,14 +402,5 @@ public class ConsumerGroupService {
 
             group.setOffsets(offsets);
         }
-    }
-
-    void addAssignmentTopicIds(MemberDescription member, Map<String, String> topicIds) {
-        List<PartitionKey> assignmentsWithId = member.getAssignments()
-                .stream()
-                .map(e -> new PartitionKey(topicIds.get(e.topicName()), e.topicName(), e.partition()))
-                .toList();
-
-        member.setAssignments(assignmentsWithId);
     }
 }

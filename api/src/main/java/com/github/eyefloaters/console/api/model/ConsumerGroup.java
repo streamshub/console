@@ -133,7 +133,19 @@ public class ConsumerGroup {
         return new ConsumerGroup(listing.groupId(), listing.isSimpleConsumerGroup(), listing.state().map(Enum::name).orElse(null));
     }
 
-    public static ConsumerGroup fromKafkaModel(org.apache.kafka.clients.admin.ConsumerGroupDescription description) {
+    /**
+     * Construct an instance from a Kafka consumer group description and the map of
+     * topic Ids, used to set the topic ID of the assignments field elements for
+     * each member of the consumber group.
+     *
+     * @param description Kafka consumer group description model
+     * @param topicIds    map of topic names to Ids
+     * @return a new {@linkplain ConsumerGroup}
+     */
+    public static ConsumerGroup fromKafkaModel(
+            org.apache.kafka.clients.admin.ConsumerGroupDescription description,
+            Map<String, String> topicIds) {
+
         var group = new ConsumerGroup(
                 description.groupId(),
                 description.isSimpleConsumerGroup(),
@@ -141,7 +153,10 @@ public class ConsumerGroup {
 
         group.setPartitionAssignor(description.partitionAssignor());
         group.setCoordinator(Node.fromKafkaModel(description.coordinator()));
-        group.setMembers(description.members().stream().map(MemberDescription::fromKafkaModel).toList());
+        group.setMembers(description.members()
+                .stream()
+                .map(member -> MemberDescription.fromKafkaModel(member, topicIds))
+                .toList());
 
         group.setAuthorizedOperations(Optional.ofNullable(description.authorizedOperations())
                 .map(Collection::stream)

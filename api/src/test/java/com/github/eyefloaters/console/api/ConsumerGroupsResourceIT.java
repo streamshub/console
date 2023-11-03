@@ -179,6 +179,7 @@ class ConsumerGroupsResourceIT {
                 .body("data[0].attributes.offsets.size()", is(2))
                 .body("data[0].attributes.offsets", everyItem(allOf(
                         hasKey("topicId"),
+                        hasKey("topicName"),
                         hasKey("partition"),
                         hasKey("offset"),
                         hasKey("lag"),

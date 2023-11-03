@@ -1,10 +1,14 @@
 package com.github.eyefloaters.console.api.model;
 
 import java.util.List;
+import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 
+/**
+ * Description of a member of a consumer group
+ */
 @JsonInclude(value = Include.NON_NULL)
 public class MemberDescription {
 
@@ -12,9 +16,20 @@ public class MemberDescription {
     private final String groupInstanceId;
     private final String clientId;
     private final String host;
-    private List<PartitionKey> assignments;
+    private List<PartitionId> assignments;
 
-    public static MemberDescription fromKafkaModel(org.apache.kafka.clients.admin.MemberDescription description) {
+    /**
+     * Construct an instance from a Kafka member description and the map of topic
+     * Ids, used to set the topic ID of the assignments field elements.
+     *
+     * @param description Kafka member description model
+     * @param topicIds    map of topic names to Ids
+     * @return a new {@linkplain MemberDescription}
+     */
+    public static MemberDescription fromKafkaModel(
+            org.apache.kafka.clients.admin.MemberDescription description,
+            Map<String, String> topicIds) {
+
         MemberDescription result = new MemberDescription(
                 description.consumerId(),
                 description.groupInstanceId().orElse(null),
@@ -28,7 +43,10 @@ public class MemberDescription {
         result.assignments = description.assignment()
                 .topicPartitions()
                 .stream()
-                .map(partition -> new PartitionKey(null, partition.topic(), partition.partition()))
+                .map(partition -> new PartitionId(
+                        topicIds.get(partition.topic()),
+                        partition.topic(),
+                        partition.partition()))
                 .toList();
 
         return result;
@@ -58,11 +76,11 @@ public class MemberDescription {
         return host;
     }
 
-    public List<PartitionKey> getAssignments() {
+    public List<PartitionId> getAssignments() {
         return assignments;
     }
 
-    public void setAssignments(List<PartitionKey> assignments) {
+    public void setAssignments(List<PartitionId> assignments) {
         this.assignments = assignments;
     }
 }

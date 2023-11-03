@@ -15,7 +15,8 @@ import com.github.eyefloaters.console.api.support.ErrorCategory;
  *
  * @see <a href="https://jsonapi.org/format/#document-resource-objects">JSON API Specification: Resource Objects</a>
  *
- * @param <T> the type of the attribute model
+ * @param <A> the type of the attribute model
+ * @param <R> the type of the relationships model
  */
 @JsonInclude(Include.NON_NULL)
 public abstract class RelatableResource<A, R> {
