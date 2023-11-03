@@ -1,0 +1,15 @@
+{
+    "data": {
+        "type": "consumerGroups",
+        "id": "my-group",
+        "attributes": {
+            "offsets": [
+                {
+                    "topicId": "PjgNTE1MSYu0IUIhcBijaA",
+                    "offset": "earliest",
+                    "metadata": "Last reset @ 2023-11-02T18:37:28-04:00"
+                }
+            ]
+        }
+    }
+}

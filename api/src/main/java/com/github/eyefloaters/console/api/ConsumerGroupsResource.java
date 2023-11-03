@@ -6,11 +6,14 @@ import java.util.function.Consumer;
 
 import jakarta.inject.Inject;
 import jakarta.inject.Named;
+import jakarta.validation.ConstraintTarget;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.BeanParam;
+import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
+import jakarta.ws.rs.PATCH;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
@@ -21,8 +24,11 @@ import jakarta.ws.rs.core.UriInfo;
 
 import org.eclipse.microprofile.openapi.annotations.enums.Explode;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
+import org.eclipse.microprofile.openapi.annotations.media.Content;
+import org.eclipse.microprofile.openapi.annotations.media.ExampleObject;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
+import org.eclipse.microprofile.openapi.annotations.parameters.RequestBody;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponseSchema;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
@@ -34,6 +40,8 @@ import com.github.eyefloaters.console.api.support.ErrorCategory;
 import com.github.eyefloaters.console.api.support.FieldFilter;
 import com.github.eyefloaters.console.api.support.ListRequestContext;
 import com.github.eyefloaters.console.api.support.StringEnumeration;
+
+import io.xlate.validation.constraints.Expression;
 
 @Path("/api/kafkas/{clusterId}/consumerGroups")
 @Tag(name = "Kafka Cluster Resources")
@@ -110,7 +118,7 @@ public class ConsumerGroupsResource {
     @Path("{groupId}")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    @APIResponseSchema(ConsumerGroup.SingleResponse.class)
+    @APIResponseSchema(ConsumerGroup.ConsumerGroupDocument.class)
     @APIResponse(responseCode = "404", ref = "NotFound")
     @APIResponse(responseCode = "500", ref = "ServerError")
     @APIResponse(responseCode = "504", ref = "ServerTimeout")
@@ -157,8 +165,51 @@ public class ConsumerGroupsResource {
         requestedFields.accept(fields);
 
         return consumerGroupService.describeConsumerGroup(groupId, fields)
-                .thenApply(ConsumerGroup.SingleResponse::new)
+                .thenApply(ConsumerGroup.ConsumerGroupDocument::new)
                 .thenApply(Response::ok)
+                .thenApply(Response.ResponseBuilder::build);
+    }
+
+    @Path("{groupId}")
+    @PATCH
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    @APIResponseSchema(responseCode = "204", value = Void.class)
+    @Expression(
+        targetName = "args",
+        // Only check when the request body Id is present (separately checked for @NotNull)
+        when = "args[2].data.id != null",
+        // Verify the Id in the request body matches the Id in the URL
+        value = "args[1].equals(args[2].data.id)",
+        message = "resource ID conflicts with operation URL",
+        node = { "data", "id" },
+        payload = ErrorCategory.InvalidResource.class,
+        validationAppliesTo = ConstraintTarget.PARAMETERS)
+    public CompletionStage<Response> patchConsumerGroup(
+            @Parameter(description = "Cluster identifier")
+            @PathParam("clusterId")
+            String clusterId,
+
+            @PathParam("groupId")
+            @Parameter(description = "Consumer group identifier")
+            String groupId,
+
+            @Valid
+            @RequestBody(content = @Content(
+                    schema = @Schema(implementation = ConsumerGroup.ConsumerGroupDocument.class),
+                    examples = {
+                        @ExampleObject(
+                            name = "patchConsumerGroup-allPartitions",
+                            externalValue = "/openapi/examples/patchConsumerGroup-allPartitions.json"),
+                        @ExampleObject(
+                            name = "patchConsumerGroup-byPartition",
+                            externalValue = "/openapi/examples/patchConsumerGroup-byPartition.json"),
+                    })
+            )
+            ConsumerGroup.ConsumerGroupDocument patch) {
+
+        return consumerGroupService.patchConsumerGroup(patch.getData().getAttributes())
+                .thenApply(nothing -> Response.noContent())
                 .thenApply(Response.ResponseBuilder::build);
     }
 

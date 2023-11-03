@@ -5,10 +5,10 @@ import java.net.URI;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -22,13 +22,16 @@ import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.ConsumerGroupState;
+import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.eclipse.microprofile.config.Config;
 import org.jboss.logging.Logger;
 
+import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.fail;
 
 public class ConsumerUtils {
@@ -69,6 +72,32 @@ public class ConsumerUtils {
         }
 
         return null;
+    }
+
+    public Map<TopicPartition, OffsetAndMetadata> consumerGroupOffsets(String groupId) {
+        try (Admin admin = Admin.create(adminConfig)) {
+            return admin.listConsumerGroupOffsets(groupId)
+                    .partitionsToOffsetAndMetadata()
+                    .toCompletionStage()
+                    .toCompletableFuture()
+                    .join();
+        } catch (Exception e) {
+            fail(e);
+        }
+
+        return null;
+    }
+
+    public void alterConsumerGroupOffsets(String groupId, Map<TopicPartition, OffsetAndMetadata> offsets) {
+        try (Admin admin = Admin.create(adminConfig)) {
+            admin.alterConsumerGroupOffsets(groupId, offsets)
+                    .all()
+                    .toCompletionStage()
+                    .toCompletableFuture()
+                    .join();
+        } catch (Exception e) {
+            fail(e);
+        }
     }
 
     public void deleteConsumerGroups() {
@@ -212,7 +241,7 @@ public class ConsumerUtils {
             }
 
             initial
-                .thenRun(() -> produceMessages(consumerRequest))
+                .thenCompose(nothing -> produceMessages(consumerRequest))
                 .thenRun(() -> consumeMessages(consumerRequest, response))
                 .toCompletableFuture()
                 .get(15, TimeUnit.SECONDS);
@@ -228,24 +257,52 @@ public class ConsumerUtils {
         return response;
     }
 
-    void produceMessages(ConsumerRequest consumerRequest) {
+    CompletionStage<Void> produceMessages(ConsumerRequest consumerRequest) {
         if (consumerRequest.messagesPerTopic < 1) {
-            return;
+            return CompletableFuture.completedStage(null);
         }
 
         Properties producerConfig = token != null ?
             ClientsConfig.getProducerConfigOauth(config, token) :
             ClientsConfig.getProducerConfig(config, consumerRequest.keySerializer, consumerRequest.valueSerializer);
 
+        List<CompletableFuture<Void>> pending = new ArrayList<>();
+
         try (var producer = new KafkaProducer<String, Object>(producerConfig)) {
-            for (int i = 0; i < consumerRequest.messagesPerTopic; i++) {
-                for (NewTopic topic : consumerRequest.topics) {
-                    producer.send(new ProducerRecord<>(topic.name(), consumerRequest.messageSupplier.apply(i))).get();
+            for (NewTopic topic : consumerRequest.topics) {
+                String topicName = topic.name();
+                int msgCount = consumerRequest.messagesPerTopic;
+
+                // distribute the message over the partitions in the topic
+                while (msgCount > -1) {
+                    for (int p = 0, m = topic.numPartitions(); p < m && --msgCount > -1; p++) {
+                        int partition = p;
+                        Object value = consumerRequest.messageSupplier.apply(msgCount);
+                        CompletableFuture<Void> promise = new CompletableFuture<>();
+                        pending.add(promise);
+
+                        producer.send(new ProducerRecord<>(
+                                topicName,
+                                partition,
+                                System.currentTimeMillis(),
+                                null /* key */,
+                                value),
+                            (metadata, exception) -> {
+                                if (exception != null) {
+                                    promise.completeExceptionally(exception);
+                                } else {
+                                    log.debugf("Message sent to topic/partition %s-%d: %s", topicName, partition, value);
+                                    promise.complete(null);
+                                }
+                            });
+                        // Wait to ensure each record receives a unique time stamp
+                        await().atLeast(1, TimeUnit.MILLISECONDS).until(() -> true);
+                    }
                 }
             }
-        } catch (InterruptedException | ExecutionException e) {
-            throw new RuntimeException(e);
         }
+
+        return CompletableFuture.allOf(pending.toArray(CompletableFuture[]::new));
     }
 
     void consumeMessages(ConsumerRequest consumerRequest, ConsumerResponse response) {
@@ -277,6 +334,7 @@ public class ConsumerUtils {
                 while (response.records.size() < fetchCount && pollCount++ < 10) {
                     var records = response.consumer.poll(Duration.ofSeconds(1));
                     records.forEach(response.records::add);
+                    log.debugf("Assignments polled: %s ; total messages received: %d", response.consumer.assignment(), response.records.size());
                 }
             }
 

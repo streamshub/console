@@ -2,13 +2,16 @@ package com.github.eyefloaters.console.api.errors.client;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
+import jakarta.validation.ElementKind;
 import jakarta.validation.Path;
 import jakarta.ws.rs.ext.Provider;
 
@@ -70,17 +73,22 @@ public class ConstraintViolationHandler extends AbstractClientExceptionHandler<C
         List<String> segments = new ArrayList<>();
 
         StreamSupport.stream(propertyPath.spliterator(), false)
-            .map(node -> {
+            .forEach(node -> {
                 if (node.isInIterable()) {
                     // Prefer the key (map entry) and default to the index (array entry)
-                    return Optional.ofNullable(node.getKey())
-                        .orElseGet(node::getIndex)
-                        .toString();
-                }
+                    Stream.<Object>of(node.getKey(), node.getIndex())
+                        .filter(Objects::nonNull)
+                        .map(Object::toString)
+                        .findFirst()
+                        .ifPresent(segments::add);
 
-                return node.getName();
-            })
-            .forEach(segments::add);
+                    if (node.getKind() != ElementKind.CONTAINER_ELEMENT) {
+                        segments.add(node.getName());
+                    }
+                } else {
+                    segments.add(node.getName());
+                }
+            });
 
         if (category.getSource() == Source.POINTER) {
             String rawPointer = "/" + String.join("/", segments);
