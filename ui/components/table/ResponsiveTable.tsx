@@ -8,6 +8,7 @@ import type {
 } from "@patternfly/react-table";
 import {
   ActionsColumn,
+  ExpandableRowContent,
   Table,
   Tbody,
   Td,
@@ -15,8 +16,15 @@ import {
   Thead,
   Tr,
 } from "@patternfly/react-table";
-import type { PropsWithChildren, ReactElement } from "react";
-import { forwardRef, memo, useCallback, useMemo, useState } from "react";
+import type { PropsWithChildren, ReactElement, ReactNode } from "react";
+import {
+  cloneElement,
+  forwardRef,
+  memo,
+  useCallback,
+  useMemo,
+  useState,
+} from "react";
 import useResizeObserver from "use-resize-observer";
 import "./ResponsiveTable.css";
 
@@ -55,6 +63,12 @@ export type ResponsiveTableProps<TRow, TCol> = {
   ) => (ResponsiveThProps["sort"] & { label: string }) | undefined;
   isRowDeleted?: (props: RowProps<TRow>) => boolean;
   isRowSelected?: (props: RowProps<TRow>) => boolean;
+  isColumnExpandable?: (
+    props: RowProps<TRow> & { column: TCol; colIndex: number },
+  ) => boolean;
+  getExpandedRow?: (
+    props: RowProps<TRow> & { column: TCol; colIndex: number },
+  ) => ReactNode;
   expectedLength?: number;
   onRowClick?: (props: RowProps<TRow>) => void;
   setActionCellOuiaId?: (props: RowProps<TRow>) => string;
@@ -76,6 +90,8 @@ export const ResponsiveTable = <TRow, TCol>({
   isColumnSortable,
   isRowDeleted,
   isRowSelected,
+  isColumnExpandable,
+  getExpandedRow,
   expectedLength = 3,
   onRowClick,
   setActionCellOuiaId,
@@ -84,6 +100,9 @@ export const ResponsiveTable = <TRow, TCol>({
   children,
   variant,
 }: PropsWithChildren<ResponsiveTableProps<TRow, TCol>>) => {
+  const [expanded, setExpanded] = useState<Record<number, number | undefined>>(
+    {},
+  );
   const [width, setWidth] = useState(1000);
   let animationHandle: number;
   /**
@@ -186,54 +205,77 @@ export const ResponsiveTable = <TRow, TCol>({
       <Thead>
         <Tr>{header}</Tr>
       </Thead>
-      <Tbody>
-        {data === undefined && (
-          <TableSkeleton
-            columns={columns.length}
-            rows={expectedLength}
-            getTd={getTd}
-          />
-        )}
-        {data?.map((row, rowIndex) => {
-          const deleted =
-            isRowDeleted !== undefined && isRowDeleted({ row: row, rowIndex });
-          const selected =
-            isRowSelected !== undefined &&
-            isRowSelected({ row: row, rowIndex });
+      {data === undefined && (
+        <TableSkeleton
+          columns={columns.length}
+          rows={expectedLength}
+          getTd={getTd}
+        />
+      )}
+      {data?.map((row, rowIndex) => {
+        const deleted =
+          isRowDeleted !== undefined && isRowDeleted({ row: row, rowIndex });
+        const selected =
+          isRowSelected !== undefined && isRowSelected({ row: row, rowIndex });
 
-          const onClick =
-            !deleted && onRowClick
-              ? () => onRowClick({ row, rowIndex })
-              : undefined;
-          const cells = columns.map((column, colIndex) => {
-            return renderCell({
-              Td: TdList[colIndex],
-              key: `row_${rowIndex}_cell_${column}`,
+        const onClick =
+          !deleted && onRowClick
+            ? () => onRowClick({ row, rowIndex })
+            : undefined;
+        const cells = columns.map((column, colIndex) => {
+          const cell = renderCell({
+            Td: TdList[colIndex],
+            key: `row_${rowIndex}_cell_${column}`,
+            column,
+            colIndex,
+            rowIndex,
+            row,
+          });
+          const expandable =
+            isColumnExpandable &&
+            isColumnExpandable({
               column,
               colIndex,
               rowIndex,
               row,
             });
-          });
-          const action = !deleted && renderActions && (
-            <ResponsiveTd
-              position={columns.length}
-              tableWidth={width}
-              columnWidth={minimumColumnWidth}
-              canHide={false}
-              isActionCell={true}
-              data-testid={
-                setActionCellOuiaId
-                  ? setActionCellOuiaId({ row, rowIndex })
-                  : `actions-for-row-${rowIndex}`
-              }
-            >
-              {renderActions({ rowIndex, row, ActionsColumn })}
-            </ResponsiveTd>
-          );
-          return (
+          const isExpanded = expanded[rowIndex] === colIndex;
+          return expandable
+            ? cloneElement(cell, {
+                compoundExpand: {
+                  isExpanded,
+                  rowIndex: rowIndex,
+                  expandId: `${rowIndex}-${colIndex}`,
+                  columnIndex: colIndex,
+                  onToggle: () =>
+                    setExpanded((e) => ({
+                      ...e,
+                      [rowIndex]: isExpanded ? undefined : colIndex,
+                    })),
+                },
+              })
+            : cell;
+        });
+        const action = !deleted && renderActions && (
+          <ResponsiveTd
+            position={columns.length}
+            tableWidth={width}
+            columnWidth={minimumColumnWidth}
+            canHide={false}
+            isActionCell={true}
+            data-testid={
+              setActionCellOuiaId
+                ? setActionCellOuiaId({ row, rowIndex })
+                : `actions-for-row-${rowIndex}`
+            }
+          >
+            {renderActions({ rowIndex, row, ActionsColumn })}
+          </ResponsiveTd>
+        );
+        const rowExpanded = expanded[rowIndex] !== undefined;
+        return (
+          <Tbody key={`row_${rowIndex}`} isExpanded={rowExpanded}>
             <DeletableRow
-              key={`row_${rowIndex}`}
               isDeleted={deleted}
               isSelected={selected}
               onClick={onClick}
@@ -242,14 +284,30 @@ export const ResponsiveTable = <TRow, TCol>({
               {cells}
               {action}
             </DeletableRow>
-          );
-        })}
-        {data?.length === 0 && (
-          <Tr>
-            <Td colSpan={columns.length}>{children}</Td>
-          </Tr>
-        )}
-      </Tbody>
+            {getExpandedRow &&
+              rowExpanded &&
+              expanded[rowIndex] !== undefined && (
+                <Tr isExpanded={rowExpanded}>
+                  <Td colSpan={columns.length} noPadding={true}>
+                    <ExpandableRowContent>
+                      {getExpandedRow({
+                        rowIndex,
+                        colIndex: expanded[rowIndex]!,
+                        column: columns[expanded[rowIndex]!],
+                        row,
+                      })}
+                    </ExpandableRowContent>
+                  </Td>
+                </Tr>
+              )}
+          </Tbody>
+        );
+      })}
+      {data?.length === 0 && (
+        <Tr>
+          <Td colSpan={columns.length}>{children}</Td>
+        </Tr>
+      )}
     </Table>
   );
 };

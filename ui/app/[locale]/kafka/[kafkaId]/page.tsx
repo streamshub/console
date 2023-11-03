@@ -8,5 +8,5 @@ export default async function KafkaRoot({ params }: { params: KafkaParams }) {
   if (!cluster) {
     notFound();
   }
-  redirect(`${params.kafkaId}/topics`);
+  redirect(`/kafka/${params.kafkaId}/topics`);
 }

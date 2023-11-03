@@ -1,4 +1,4 @@
-import { BackendError, getHeaders } from "@/api/api";
+import { ApiError, getHeaders } from "@/api/api";
 import { filterUndefinedFromObj } from "@/utils/filterUndefinedFromObj";
 import { logger } from "@/utils/logger";
 import { revalidateTag } from "next/cache";
@@ -7,7 +7,7 @@ import { z } from "zod";
 const log = logger.child({ module: "topics-api" });
 
 const describeTopicsQuery = encodeURI(
-  "fields[topics]=,name,internal,partitions,authorizedOperations,configs,recordCount,totalLeaderLogBytes",
+  "fields[topics]=,name,internal,partitions,authorizedOperations,configs,recordCount,totalLeaderLogBytes,consumerGroups",
 );
 
 const OffsetSchema = z.object({
@@ -23,7 +23,7 @@ const PartitionSchema = z.object({
       nodeId: z.number(),
       nodeRack: z.string().optional(),
       inSync: z.boolean(),
-      localStorage: BackendError.or(
+      localStorage: ApiError.or(
         z.object({
           size: z.number(),
           offsetLag: z.number(),
@@ -74,6 +74,11 @@ const TopicSchema = z.object({
     recordCount: z.number().optional(),
     totalLeaderLogBytes: z.number().optional(),
   }),
+  relationships: z.object({
+    consumerGroups: z.object({
+      data: z.array(z.any()),
+    }),
+  }),
 });
 export const TopicResponse = z.object({
   data: TopicSchema,
@@ -95,9 +100,14 @@ const TopicListSchema = z.object({
     recordCount: true,
     totalLeaderLogBytes: true,
   }),
+  relationships: z.object({
+    consumerGroups: z.object({
+      data: z.array(z.any()),
+    }),
+  }),
 });
 export type TopicList = z.infer<typeof TopicListSchema>;
-export const TopicsResponse = z.object({
+export const TopicsResponseSchema = z.object({
   meta: z.object({
     page: z.object({
       total: z.number(),
@@ -112,7 +122,7 @@ export const TopicsResponse = z.object({
   }),
   data: z.array(TopicListSchema),
 });
-export type TopicsResponseList = z.infer<typeof TopicsResponse>;
+export type TopicsResponse = z.infer<typeof TopicsResponseSchema>;
 
 const TopicCreateResponseSuccessSchema = z.object({
   data: z.object({
@@ -150,11 +160,11 @@ export async function getTopics(
     sort?: string;
     sortDir?: string;
   },
-): Promise<TopicsResponseList> {
+): Promise<TopicsResponse> {
   const sp = new URLSearchParams(
     filterUndefinedFromObj({
       "fields[topics]":
-        "name,internal,partitions,recordCount,totalLeaderLogBytes",
+        "name,internal,partitions,recordCount,totalLeaderLogBytes,consumerGroups",
       "page[size]": params.pageSize,
       "page[after]": params.pageCursor,
       sort: params.sort
@@ -173,7 +183,7 @@ export async function getTopics(
   log.debug({ url }, "getTopics");
   const rawData = await res.json();
   log.trace({ url, rawData }, "getTopics response");
-  return TopicsResponse.parse(rawData);
+  return TopicsResponseSchema.parse(rawData);
 }
 
 export async function getTopic(

@@ -161,7 +161,9 @@ export function TopicsTable({
                   variant={"link"}
                   href={`${baseurl}/${row.id}/consumer-groups`}
                 >
-                  {format.number(0 /* TODO */)}
+                  <Number
+                    value={row.relationships.consumerGroups.data.length}
+                  />
                 </ButtonLink>
               </Td>
             );
