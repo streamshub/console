@@ -101,7 +101,14 @@ export const TopicsResponse = z.object({
   meta: z.object({
     page: z.object({
       total: z.number(),
+      pageNumber: z.number(),
     }),
+  }),
+  links: z.object({
+    first: z.string().nullable(),
+    prev: z.string().nullable(),
+    next: z.string().nullable(),
+    last: z.string().nullable(),
   }),
   data: z.array(TopicListSchema),
 });

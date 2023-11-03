@@ -82,7 +82,10 @@ export const TableView = <TRow, TCol>({
   const [isSortOpen, toggleIsSortOpen] = useState(false);
   const [isActionsOpen, toggleIsActionsOpen] = useState(false);
   const { data } = tableProps;
-  const showPagination = data?.length !== 0 && itemCount && itemCount > perPage;
+  const showPagination =
+    data?.length !== 0 &&
+    itemCount &&
+    (itemCount > perPage || perPage !== DEFAULT_PERPAGE);
   const breakpoint = toolbarBreakpoint === "all" ? "lg" : toolbarBreakpoint;
 
   function notUndefined<T>(x: T | undefined): x is T {
