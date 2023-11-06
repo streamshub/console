@@ -34,6 +34,7 @@ import org.apache.kafka.clients.admin.ListOffsetsResult.ListOffsetsResultInfo;
 import org.apache.kafka.clients.admin.NewPartitionReassignment;
 import org.apache.kafka.clients.admin.OffsetSpec;
 import org.apache.kafka.common.TopicCollection;
+import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.Uuid;
 import org.apache.kafka.common.config.ConfigResource;
 import org.apache.kafka.common.errors.InvalidTopicException;
@@ -42,12 +43,13 @@ import org.eclipse.microprofile.context.ThreadContext;
 import org.jboss.logging.Logger;
 
 import com.github.eyefloaters.console.api.model.Either;
+import com.github.eyefloaters.console.api.model.Identifier;
 import com.github.eyefloaters.console.api.model.NewTopic;
 import com.github.eyefloaters.console.api.model.OffsetInfo;
+import com.github.eyefloaters.console.api.model.PartitionId;
 import com.github.eyefloaters.console.api.model.PartitionReplica;
 import com.github.eyefloaters.console.api.model.ReplicaLocalStorage;
 import com.github.eyefloaters.console.api.model.Topic;
-import com.github.eyefloaters.console.api.model.TopicPartition;
 import com.github.eyefloaters.console.api.model.TopicPatch;
 import com.github.eyefloaters.console.api.support.KafkaOffsetSpec;
 import com.github.eyefloaters.console.api.support.ListRequestContext;
@@ -88,6 +90,9 @@ public class TopicService {
 
     @Inject
     ConfigService configService;
+
+    @Inject
+    ConsumerGroupService consumerGroupService;
 
     public CompletionStage<NewTopic> createTopic(NewTopic topic, boolean validateOnly) {
         Kafka kafka = kafkaCluster.get();
@@ -140,7 +145,7 @@ public class TopicService {
                 .listings()
                 .thenApply(list -> list.stream().map(Topic::fromTopicListing).toList())
                 .toCompletionStage()
-                .thenCompose(list -> augmentList(adminClient, list, fetchList, offsetSpec))
+                .thenComposeAsync(list -> augmentList(adminClient, list, fetchList, offsetSpec), threadContext.currentContextExecutor())
                 .thenApply(list -> list.stream()
                         .map(listSupport::tally)
                         .filter(listSupport::betweenCursors)
@@ -154,27 +159,19 @@ public class TopicService {
         Admin adminClient = clientSupplier.get();
         Uuid id = Uuid.fromString(topicId);
 
-        return describeTopics(adminClient, List.of(id), fields, offsetSpec)
+        CompletableFuture<Topic> describePromise = describeTopics(adminClient, List.of(id), fields, offsetSpec)
             .thenApply(result -> result.get(id))
             .thenApply(result -> result.getOrThrow(CompletionException::new))
-            .thenCompose(topic -> {
-                CompletableFuture<Topic> promise = new CompletableFuture<>();
+            .toCompletableFuture();
 
-                if (fields.contains(Topic.Fields.CONFIGS)) {
-                    List<ConfigResource> keys = List.of(new ConfigResource(ConfigResource.Type.TOPIC, topic.getName()));
-                    configService.describeConfigs(adminClient, keys)
-                        .thenApply(configs -> {
-                            configs.forEach((name, either) -> topic.addConfigs(either));
-                            promise.complete(topic);
-                            return true; // Match `completeExceptionally`
-                        })
-                        .exceptionally(promise::completeExceptionally);
-                } else {
-                    promise.complete(topic);
-                }
+        return describePromise.thenComposeAsync(topic -> {
+            var topics = Map.of(id, topic);
 
-                return promise;
-            });
+            return CompletableFuture.allOf(
+                    maybeDescribeConfigs(adminClient, topics, fields),
+                    maybeFetchConsumerGroups(topics, fields))
+                .thenApply(nothing -> topic);
+        }, threadContext.currentContextExecutor());
     }
 
     /**
@@ -221,7 +218,7 @@ public class TopicService {
     }
 
     CompletableFuture<Void> maybeCreatePartitions(Topic topic, TopicPatch topicPatch, boolean validateOnly) {
-        int currentNumPartitions = topic.getPartitions().getPrimary().size();
+        int currentNumPartitions = topic.partitions().getPrimary().size();
         int newNumPartitions = Optional.ofNullable(topicPatch.numPartitions()).orElse(currentNumPartitions);
 
         if (newNumPartitions > currentNumPartitions) {
@@ -230,7 +227,7 @@ public class TopicService {
                     .mapToObj(topicPatch::replicaAssignment)
                     .toList();
 
-            return createPartitions(topic.getName(), newNumPartitions, newAssignments, validateOnly)
+            return createPartitions(topic.name(), newNumPartitions, newAssignments, validateOnly)
                     .toCompletableFuture();
         }
 
@@ -257,13 +254,13 @@ public class TopicService {
     }
 
     List<CompletableFuture<Void>> maybeAlterPartitionAssignments(Topic topic, TopicPatch topicPatch) {
-        int currentNumPartitions = topic.getPartitions().getPrimary().size();
+        int currentNumPartitions = topic.partitions().getPrimary().size();
 
         var alteredAssignments = IntStream.range(0, currentNumPartitions)
                 .filter(topicPatch::hasReplicaAssignment)
                 .mapToObj(partitionId -> {
                     List<Integer> reassignments = topicPatch.replicaAssignment(partitionId);
-                    var key = new org.apache.kafka.common.TopicPartition(topic.getName(), partitionId);
+                    var key = new TopicPartition(topic.name(), partitionId);
 
                     if (reassignments.isEmpty()) {
                         return Map.entry(key, Optional.<NewPartitionReassignment>empty());
@@ -296,7 +293,7 @@ public class TopicService {
             Map<org.apache.kafka.common.TopicPartition, Optional<NewPartitionReassignment>> alteredAssignments) {
 
         StringBuilder changes = new StringBuilder();
-        Map<Integer, List<String>> currentAssignments = topic.getPartitions()
+        Map<Integer, List<String>> currentAssignments = topic.partitions()
                 .getPrimary()
                 .stream()
                 .map(p -> Map.entry(p.getPartition(), p.getReplicas().stream().map(r -> Integer.toString(r.nodeId())).toList()))
@@ -323,7 +320,7 @@ public class TopicService {
         logger.debugf("Altering partition reassignments for cluster %s[%s], topic %s[%s], changes=[ %s ]",
                 kafkaCluster.get().getMetadata().getName(),
                 kafkaCluster.get().getStatus().getClusterId(),
-                topic.getName(),
+                topic.name(),
                 topic.getId(),
                 changes);
     }
@@ -331,7 +328,7 @@ public class TopicService {
     CompletableFuture<Void> maybeAlterConfigs(Topic topic, TopicPatch topicPatch, boolean validateOnly) {
         return Optional.ofNullable(topicPatch.configs())
             .filter(Predicate.not(Map::isEmpty))
-            .map(configs -> configService.alterConfigs(ConfigResource.Type.TOPIC, topic.getName(), configs, validateOnly)
+            .map(configs -> configService.alterConfigs(ConfigResource.Type.TOPIC, topic.name(), configs, validateOnly)
                 .toCompletableFuture())
             .orElseGet(() -> CompletableFuture.completedFuture(null));
     }
@@ -350,35 +347,30 @@ public class TopicService {
         Map<Uuid, Topic> topics = list.stream().collect(Collectors.toMap(t -> Uuid.fromString(t.getId()), Function.identity()));
         CompletableFuture<Void> configPromise = maybeDescribeConfigs(adminClient, topics, fields);
         CompletableFuture<Void> describePromise = maybeDescribeTopics(adminClient, topics, fields, offsetSpec);
+        CompletableFuture<Void> consumerGroupPromise = maybeFetchConsumerGroups(topics, fields);
 
-        return CompletableFuture.allOf(configPromise, describePromise).thenApply(nothing -> list);
+        return CompletableFuture.allOf(configPromise, describePromise, consumerGroupPromise)
+                .thenApply(nothing -> list);
     }
 
     CompletableFuture<Void> maybeDescribeConfigs(Admin adminClient, Map<Uuid, Topic> topics, List<String> fields) {
-        CompletableFuture<Void> promise = new CompletableFuture<>();
-
         if (fields.contains(Topic.Fields.CONFIGS)) {
             Map<String, Uuid> topicIds = new HashMap<>();
             List<ConfigResource> keys = topics.values().stream()
                     .map(topic -> {
-                        topicIds.put(topic.getName(), Uuid.fromString(topic.getId()));
-                        return topic.getName();
+                        topicIds.put(topic.name(), Uuid.fromString(topic.getId()));
+                        return topic.name();
                     })
                     .map(name -> new ConfigResource(ConfigResource.Type.TOPIC, name))
                     .toList();
 
-            configService.describeConfigs(adminClient, keys)
-                .thenApply(configs -> {
-                    configs.forEach((name, either) -> topics.get(topicIds.get(name)).addConfigs(either));
-                    promise.complete(null);
-                    return true; // Match `completeExceptionally`
-                })
-                .exceptionally(promise::completeExceptionally);
-        } else {
-            promise.complete(null);
+            return configService.describeConfigs(adminClient, keys)
+                .thenAccept(configs ->
+                    configs.forEach((name, either) -> topics.get(topicIds.get(name)).addConfigs(either)))
+                .toCompletableFuture();
         }
 
-        return promise;
+        return CompletableFuture.completedFuture(null);
     }
 
     CompletableFuture<Void> maybeDescribeTopics(Admin adminClient, Map<Uuid, Topic> topics, List<String> fields, String offsetSpec) {
@@ -387,13 +379,13 @@ public class TopicService {
                 || fields.contains(Topic.Fields.RECORD_COUNT)) {
             return describeTopics(adminClient, topics.keySet(), fields, offsetSpec)
                 .<Void>thenApply(descriptions -> {
-                    descriptions.forEach((name, either) -> {
+                    descriptions.forEach((id, either) -> {
                         if (fields.contains(Topic.Fields.PARTITIONS)
                                 || fields.contains(Topic.Fields.RECORD_COUNT)) {
-                            topics.get(name).addPartitions(either);
+                            topics.get(id).addPartitions(either);
                         }
                         if (fields.contains(Topic.Fields.AUTHORIZED_OPERATIONS)) {
-                            topics.get(name).addAuthorizedOperations(either);
+                            topics.get(id).addAuthorizedOperations(either);
                         }
                     });
 
@@ -403,6 +395,28 @@ public class TopicService {
         }
 
         return CompletableFuture.completedFuture(null);
+    }
+
+    CompletableFuture<Void> maybeFetchConsumerGroups(Map<Uuid, Topic> topics, List<String> fields) {
+        CompletionStage<Map<String, List<String>>> pendingConsumerGroups;
+
+        if (fields.contains(Topic.Fields.CONSUMER_GROUPS)) {
+            var topicIds = topics.keySet().stream().map(Uuid::toString).toList();
+            pendingConsumerGroups = consumerGroupService.listConsumerGroupMembership(topicIds);
+        } else {
+            pendingConsumerGroups = CompletableFuture.completedStage(Collections.emptyMap());
+        }
+
+        return pendingConsumerGroups.thenAccept(consumerGroups ->
+                    consumerGroups.entrySet()
+                        .stream()
+                        .forEach(e -> {
+                            Topic topic = topics.get(Uuid.fromString(e.getKey()));
+                            var identifiers = e.getValue().stream().map(g -> new Identifier("consumerGroups", g)).toList();
+                            topic.consumerGroups().data().addAll(identifiers);
+                            topic.consumerGroups().addMeta("count", identifiers.size());
+                        }))
+                .toCompletableFuture();
     }
 
     CompletionStage<Map<Uuid, Either<Topic, Throwable>>> describeTopics(
@@ -475,33 +489,33 @@ public class TopicService {
     }
 
     /**
-     * Build of map of {@linkplain TopicPartition}s to the list of replicas where
+     * Build of map of {@linkplain PartitionId}s to the list of replicas where
      * the partitions are placed. Concurrently, a map of topic names to topic
      * identifiers is constructed to support cross referencing the
-     * {@linkplain TopicPartition} keys (via {@linkplain TopicPartition#topic()})
+     * {@linkplain PartitionId} keys (via {@linkplain PartitionId#topicId()})
      * back to the topic's {@linkplain Uuid}. This allows easy access of the topics
      * located in the topics map provided to this method and is particularly useful
      * for Kafka operations that still require topic name.
      *
      * @param topics   map of topics (keyed by Id)
      * @param topicIds map of topic names to topic Ids, modified by this method
-     * @return map of {@linkplain TopicPartition}s to the list of replicas where the
+     * @return map of {@linkplain PartitionId}s to the list of replicas where the
      *         partitions are placed
      */
-    Map<TopicPartition, List<Integer>> topicPartitionReplicas(Map<Uuid, Either<Topic, Throwable>> topics, Map<String, Uuid> topicIds) {
+    Map<PartitionId, List<Integer>> topicPartitionReplicas(Map<Uuid, Either<Topic, Throwable>> topics, Map<String, Uuid> topicIds) {
         return topics.entrySet()
                 .stream()
                 .filter(entry -> entry.getValue().isPrimaryPresent())
                 .map(entry -> {
                     var topic = entry.getValue().getPrimary();
-                    topicIds.put(topic.getName(), entry.getKey());
+                    topicIds.put(topic.name(), entry.getKey());
                     return topic;
                 })
-                .filter(topic -> topic.getPartitions().isPrimaryPresent())
-                .flatMap(topic -> topic.getPartitions().getPrimary()
+                .filter(topic -> topic.partitions().isPrimaryPresent())
+                .flatMap(topic -> topic.partitions().getPrimary()
                         .stream()
                         .map(partition -> {
-                            var key = new TopicPartition(topic.getName(), partition.getPartition());
+                            var key = new PartitionId(topic.getId(), topic.name(), partition.getPartition());
                             List<Integer> value = partition.getReplicas().stream().map(PartitionReplica::nodeId).toList();
                             return Map.entry(key, value);
                         }))
@@ -525,7 +539,7 @@ public class TopicService {
             Admin adminClient,
             Map<Uuid, Either<Topic, Throwable>> topics,
             Map<String, Uuid> topicIds,
-            Map<TopicPartition, OffsetSpec> request) {
+            Map<PartitionId, OffsetSpec> request) {
 
         var kafkaRequest = request.entrySet()
                 .stream()
@@ -549,7 +563,7 @@ public class TopicService {
     }
 
     void addOffset(Topic topic, int partitionNo, String key, ListOffsetsResultInfo result, Throwable error) {
-        topic.getPartitions()
+        topic.partitions()
             .getPrimary()
             .stream()
             .filter(partition -> partition.getPartition() == partitionNo)
@@ -583,7 +597,7 @@ public class TopicService {
                 int nodeId = e.getValue();
                 var partitionInfo = topics.get(topicIds.get(topicPartition.topic()))
                         .getPrimary()
-                        .getPartitions()
+                        .partitions()
                         .getPrimary()
                         .stream()
                         .filter(p -> p.getPartition() == topicPartition.partition())

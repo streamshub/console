@@ -61,6 +61,7 @@ import org.skyscreamer.jsonassert.JSONCompareMode;
 
 import com.github.eyefloaters.console.kafka.systemtest.TestPlainProfile;
 import com.github.eyefloaters.console.kafka.systemtest.deployment.DeploymentManager;
+import com.github.eyefloaters.console.kafka.systemtest.utils.ConsumerUtils;
 import com.github.eyefloaters.console.test.AdminClientSpy;
 import com.github.eyefloaters.console.test.TestHelper;
 import com.github.eyefloaters.console.test.TopicHelper;
@@ -120,6 +121,7 @@ class TopicsResourceIT {
 
     TestHelper utils;
     TopicHelper topicUtils;
+    ConsumerUtils groupUtils;
     String clusterId1;
     String clusterId2;
     ServerSocket randomSocket;
@@ -132,6 +134,8 @@ class TopicsResourceIT {
 
         topicUtils = new TopicHelper(bootstrapServers, config, null);
         topicUtils.deleteAllTopics();
+
+        groupUtils = new ConsumerUtils(config, null);
 
         utils = new TestHelper(bootstrapServers, config, null);
 
@@ -607,6 +611,36 @@ class TopicsResourceIT {
             .body("data.size()", is(102))
             .body("data[0].attributes.name", startsWith("101-"))
             .body("data[101].attributes.name", startsWith("000-"));
+    }
+
+    @Test
+    void testListTopicsWithConsumerGroupsLinkage() throws Exception {
+        String topic1 = "t1-" + UUID.randomUUID().toString();
+        String topic2 = "t2-" + UUID.randomUUID().toString();
+
+        String group1 = "g1-" + UUID.randomUUID().toString();
+        String group2 = "g2-" + UUID.randomUUID().toString();
+
+        String client1 = "c1-" + UUID.randomUUID().toString();
+        String client2 = "c2-" + UUID.randomUUID().toString();
+
+        try (var consumer1 = groupUtils.consume(group1, topic1, client1, 2, false);
+             var consumer2 = groupUtils.consume(group2, topic2, client2, 2, false)) {
+            whenRequesting(req -> req
+                    .queryParam("fields[topics]", "name,consumerGroups")
+                    .get("", clusterId1))
+                .assertThat()
+                .statusCode(is(Status.OK.getStatusCode()))
+                .body("data.size()", is(2))
+                .body("data.find { it.attributes.name == '%s' }.relationships.consumerGroups.data[0]".formatted(topic1),
+                    allOf(
+                        hasEntry(equalTo("type"), equalTo("consumerGroups")),
+                        hasEntry(equalTo("id"), equalTo(group1))))
+                .body("data.find { it.attributes.name == '%s' }.relationships.consumerGroups.data[0]".formatted(topic2),
+                    allOf(
+                        hasEntry(equalTo("type"), equalTo("consumerGroups")),
+                        hasEntry(equalTo("id"), equalTo(group2))));
+        }
     }
 
     @Test
@@ -1434,5 +1468,76 @@ class TopicsResourceIT {
                     description.appendValue(expectedResponse);
                 }
             });
+    }
+
+    @Test
+    void testListTopicConsumerGroupsMatchesRelatedConsumerGroups() throws Exception {
+        String topic1 = "t1-" + UUID.randomUUID().toString();
+        String topic1Id = topicUtils.createTopics(clusterId1, List.of(topic1), 2).get(topic1);
+
+        String group1 = "g1-" + UUID.randomUUID().toString();
+        String group2 = "g2-" + UUID.randomUUID().toString();
+
+        String client1 = "c1-" + UUID.randomUUID().toString();
+        String client2 = "c2-" + UUID.randomUUID().toString();
+
+        try (var consumer1 = groupUtils.request().groupId(group1).topic(topic1).createTopic(false).clientId(client1).messagesPerTopic(1).autoClose(false).consume();
+             var consumer2 = groupUtils.request().groupId(group2).topic(topic1).createTopic(false).clientId(client2).messagesPerTopic(1).autoClose(false).consume()) {
+            whenRequesting(req -> req
+                    .queryParam("fields[topics]", "name,consumerGroups")
+                    .get("", clusterId1))
+                .assertThat()
+                .statusCode(is(Status.OK.getStatusCode()))
+                .body("data.size()", is(1))
+                .body("data[0].relationships.consumerGroups.data.size()", is(2))
+                .body("data[0].relationships.consumerGroups.data.type", contains("consumerGroups", "consumerGroups"))
+                .body("data[0].relationships.consumerGroups.data.id", containsInAnyOrder(group1, group2));
+
+            whenRequesting(req -> req.get("{topicId}/consumerGroups", clusterId1, topic1Id))
+                .assertThat()
+                .statusCode(is(Status.OK.getStatusCode()))
+                .body("data.size()", is(2))
+                .body("data.id", containsInAnyOrder(group1, group2));
+        }
+    }
+
+    @Test
+    void testListTopicConsumerGroupsWithEmptyList() throws Exception {
+        String topic1 = "t1-" + UUID.randomUUID().toString();
+        String group1 = "g1-" + UUID.randomUUID().toString();
+        String client1 = "c1-" + UUID.randomUUID().toString();
+
+        String topic2 = "t2-" + UUID.randomUUID().toString();
+        String topic2Id = topicUtils.createTopics(clusterId1, List.of(topic2), 2).get(topic2);
+
+        try (var consumer1 = groupUtils.consume(group1, topic1, client1, 2, false)) {
+            whenRequesting(req -> req
+                    .queryParam("fields[topics]", "name,consumerGroups")
+                    .get("{topicId}", clusterId1, topic2Id))
+                .assertThat()
+                .statusCode(is(Status.OK.getStatusCode()))
+                .body("data.relationships.consumerGroups.data.size()", is(0));
+
+            whenRequesting(req -> req.get("{topicId}/consumerGroups", clusterId1, topic2Id))
+                .assertThat()
+                .statusCode(is(Status.OK.getStatusCode()))
+                .body("data.size()", is(0));
+        }
+    }
+
+    @Test
+    void testListTopicConsumerGroupsWithNoSuchTopic() throws Exception {
+        String topic1 = "t1-" + UUID.randomUUID().toString();
+        String group1 = "g1-" + UUID.randomUUID().toString();
+        String client1 = "c1-" + UUID.randomUUID().toString();
+
+        try (var consumer1 = groupUtils.consume(group1, topic1, client1, 2, false)) {
+            whenRequesting(req -> req.get("{topicId}/consumerGroups", clusterId1, Uuid.randomUuid().toString()))
+                .assertThat()
+                .statusCode(is(Status.NOT_FOUND.getStatusCode()))
+                .body("errors.size()", is(1))
+                .body("errors.status", contains("404"))
+                .body("errors.code", contains("4041"));
+        }
     }
 }

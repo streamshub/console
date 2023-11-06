@@ -184,7 +184,9 @@ public class ListRequestContext<T> {
             pageMeta.put("rangeTruncated", true);
         }
 
-        pageMeta.put("pageNumber", (recordsBeforePage / pageSize) + 1);
+        if (totalRecords > 0) {
+            pageMeta.put("pageNumber", (recordsBeforePage / pageSize) + 1);
+        }
 
         return pageMeta;
     }
@@ -198,8 +200,10 @@ public class ListRequestContext<T> {
                 .replaceQueryParam(ListFetchParams.PAGE_AFTER_PARAM)
                 .replaceQueryParam(ListFetchParams.PAGE_BEFORE_PARAM);
 
-        if (listParams.getRawSort() != null) {
-            builder.queryParam(ListFetchParams.PAGE_SORT_PARAM, listParams.getRawSort());
+        List<String> sortEntries = comparatorBuilder.knownSortKeys(listParams.getSortEntries());
+
+        if (!sortEntries.isEmpty()) {
+            builder.queryParam(ListFetchParams.PAGE_SORT_PARAM, String.join(",", sortEntries));
         }
 
         if (listParams.getRawPageSize() != null) {
@@ -213,7 +217,7 @@ public class ListRequestContext<T> {
             links.put("first", null);
         }
 
-        T firstDatasetEntry = firstPageData.first();
+        T firstDatasetEntry = firstPageData.isEmpty() ? null : firstPageData.first();
 
         if (Objects.equals(firstPageEntry, firstDatasetEntry)) {
             links.put("prev", null);
@@ -228,10 +232,14 @@ public class ListRequestContext<T> {
          * be completely calculated when this class is used in a stream until the stream
          * is completely consumed and `tally` has been called for each entry.
          */
-        int finalPageSize = (totalRecords % pageSize) + 1;
-        finalPageData.limit(finalPageSize);
+        int finalPageRemainder = totalRecords % pageSize;
+        if (finalPageRemainder > 0) {
+            int finalPageSize = finalPageRemainder + 1;
+            finalPageData.limit(finalPageSize);
+        }
+
         // final page was stored in reverse order
-        T finalDatasetEntry = finalPageData.first();
+        T finalDatasetEntry = finalPageData.isEmpty() ? null : finalPageData.first();
 
         if (Objects.equals(finalPageEntry, finalDatasetEntry)) {
             links.put("next", null);
@@ -242,7 +250,7 @@ public class ListRequestContext<T> {
 
         if (totalRecords > pageSize) {
             /*
-             * Because finalyPageData is sorted in descending order from the end of the
+             * Because finalPageData is sorted in descending order from the end of the
              * dataset and it's size is one greater than the actual page size, the final
              * entry of the set is the last record on the previous page. This is used to
              * create the cursor for the page[after] parameter.

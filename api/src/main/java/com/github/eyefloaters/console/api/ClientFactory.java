@@ -1,6 +1,7 @@
 package com.github.eyefloaters.console.api;
 
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,6 +27,7 @@ import org.apache.kafka.clients.admin.AdminClientConfig;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.common.MetricName;
 import org.apache.kafka.common.config.SaslConfigs;
 import org.apache.kafka.common.config.SslConfigs;
 import org.apache.kafka.common.security.auth.SecurityProtocol;
@@ -143,6 +145,15 @@ public class ClientFactory {
     }
 
     public void adminClientDisposer(@Disposes Supplier<Admin> client) {
+        if (log.isTraceEnabled()) {
+            String msg = client.get().metrics().entrySet()
+                .stream()
+                .sorted(Map.Entry.comparingByKey(Comparator.comparing(MetricName::name)))
+                .map(entry -> "\t%-20s = %s".formatted(entry.getValue().metricValue(), entry.getKey()))
+                .collect(Collectors.joining("\n", "AdminClient metrics:\n", ""));
+            log.trace(msg);
+        }
+
         client.get().close();
     }
 

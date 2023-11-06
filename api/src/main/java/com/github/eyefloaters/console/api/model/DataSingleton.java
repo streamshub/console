@@ -5,13 +5,13 @@ import jakarta.validation.constraints.NotNull;
 
 import com.github.eyefloaters.console.api.support.ErrorCategory;
 
-public abstract class DataResponse<T> extends JsonApiDocument {
+public abstract class DataSingleton<T> extends JsonApiDocument {
 
     @Valid
     @NotNull(payload = ErrorCategory.InvalidResource.class)
     private final T data;
 
-    protected DataResponse(T data) {
+    protected DataSingleton(T data) {
         this.data = data;
     }
 
