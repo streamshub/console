@@ -16,7 +16,7 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 @JsonInclude(Include.NON_NULL)
 public class ConfigEntry {
 
-    public static class ConfigResponse extends DataResponse<ConfigResource> {
+    public static class ConfigResponse extends DataSingleton<ConfigResource> {
         public ConfigResponse(Map<String, ConfigEntry> data) {
             super(new ConfigResource(data));
         }

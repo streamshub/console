@@ -35,10 +35,12 @@ import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponseSchema;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
+import com.github.eyefloaters.console.api.model.ConsumerGroup;
 import com.github.eyefloaters.console.api.model.ListFetchParams;
 import com.github.eyefloaters.console.api.model.NewTopic;
 import com.github.eyefloaters.console.api.model.Topic;
 import com.github.eyefloaters.console.api.model.TopicPatch;
+import com.github.eyefloaters.console.api.service.ConsumerGroupService;
 import com.github.eyefloaters.console.api.service.TopicService;
 import com.github.eyefloaters.console.api.support.ErrorCategory;
 import com.github.eyefloaters.console.api.support.FieldFilter;
@@ -51,13 +53,14 @@ import com.github.eyefloaters.console.api.support.StringEnumeration;
 @Tag(name = "Kafka Cluster Resources")
 public class TopicsResource {
 
-    static final String FIELDS_PARAM = "fields[topics]";
-
     @Inject
     UriInfo uriInfo;
 
     @Inject
     TopicService topicService;
+
+    @Inject
+    ConsumerGroupService consumerGroupService;
 
     /**
      * Allows the value of {@link FieldFilter#requestedFields} to be set for
@@ -136,10 +139,10 @@ public class TopicsResource {
             @PathParam("clusterId")
             String clusterId,
 
-            @QueryParam(FIELDS_PARAM)
+            @QueryParam(Topic.FIELDS_PARAM)
             @DefaultValue(Topic.Fields.LIST_DEFAULT)
             @StringEnumeration(
-                    source = FIELDS_PARAM,
+                    source = Topic.FIELDS_PARAM,
                     allowedValues = {
                         Topic.Fields.NAME,
                         Topic.Fields.INTERNAL,
@@ -148,6 +151,7 @@ public class TopicsResource {
                         Topic.Fields.CONFIGS,
                         Topic.Fields.RECORD_COUNT,
                         Topic.Fields.TOTAL_LEADER_LOG_BYTES,
+                        Topic.Fields.CONSUMER_GROUPS,
                     },
                     payload = ErrorCategory.InvalidQueryParameter.class)
             @Parameter(
@@ -164,6 +168,7 @@ public class TopicsResource {
                                 Topic.Fields.CONFIGS,
                                 Topic.Fields.RECORD_COUNT,
                                 Topic.Fields.TOTAL_LEADER_LOG_BYTES,
+                                Topic.Fields.CONSUMER_GROUPS,
                             }))
             List<String> fields,
 
@@ -210,10 +215,10 @@ public class TopicsResource {
             @Parameter(description = "Topic identifier")
             String topicId,
 
-            @QueryParam(FIELDS_PARAM)
+            @QueryParam(Topic.FIELDS_PARAM)
             @DefaultValue(Topic.Fields.DESCRIBE_DEFAULT)
             @StringEnumeration(
-                    source = FIELDS_PARAM,
+                    source = Topic.FIELDS_PARAM,
                     allowedValues = {
                         Topic.Fields.NAME,
                         Topic.Fields.INTERNAL,
@@ -222,6 +227,7 @@ public class TopicsResource {
                         Topic.Fields.CONFIGS,
                         Topic.Fields.RECORD_COUNT,
                         Topic.Fields.TOTAL_LEADER_LOG_BYTES,
+                        Topic.Fields.CONSUMER_GROUPS,
                     },
                     payload = ErrorCategory.InvalidQueryParameter.class)
             @Parameter(
@@ -238,6 +244,7 @@ public class TopicsResource {
                                 Topic.Fields.CONFIGS,
                                 Topic.Fields.RECORD_COUNT,
                                 Topic.Fields.TOTAL_LEADER_LOG_BYTES,
+                                Topic.Fields.CONSUMER_GROUPS,
                             }))
             List<String> fields,
 
@@ -258,6 +265,66 @@ public class TopicsResource {
 
         return topicService.describeTopic(topicId, fields, offsetSpec)
                 .thenApply(Topic.SingleResponse::new)
+                .thenApply(Response::ok)
+                .thenApply(Response.ResponseBuilder::build);
+    }
+
+    @Path("{topicId}/consumerGroups")
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    @APIResponseSchema(ConsumerGroup.ListResponse.class)
+    @APIResponse(responseCode = "500", ref = "ServerError")
+    @APIResponse(responseCode = "504", ref = "ServerTimeout")
+    public CompletionStage<Response> listTopicConsumerGroups(
+            @Parameter(description = "Cluster identifier")
+            @PathParam("clusterId")
+            String clusterId,
+
+            @PathParam("topicId")
+            @KafkaUuid(payload = ErrorCategory.ResourceNotFound.class, message = "No such topic")
+            @Parameter(description = "Topic identifier")
+            String topicId,
+
+            @QueryParam(ConsumerGroup.FIELDS_PARAM)
+            @DefaultValue(ConsumerGroup.Fields.LIST_DEFAULT)
+            @StringEnumeration(
+                    source = ConsumerGroup.FIELDS_PARAM,
+                    allowedValues = {
+                        ConsumerGroup.Fields.STATE,
+                        ConsumerGroup.Fields.SIMPLE_CONSUMER_GROUP,
+                        ConsumerGroup.Fields.MEMBERS,
+                        ConsumerGroup.Fields.OFFSETS,
+                        ConsumerGroup.Fields.AUTHORIZED_OPERATIONS,
+                        ConsumerGroup.Fields.COORDINATOR,
+                        ConsumerGroup.Fields.PARTITION_ASSIGNOR
+                    },
+                    payload = ErrorCategory.InvalidQueryParameter.class)
+            @Parameter(
+                    description = FieldFilter.FIELDS_DESCR,
+                    explode = Explode.FALSE,
+                    schema = @Schema(
+                            type = SchemaType.ARRAY,
+                            implementation = String.class,
+                            enumeration = {
+                                ConsumerGroup.Fields.STATE,
+                                ConsumerGroup.Fields.SIMPLE_CONSUMER_GROUP,
+                                ConsumerGroup.Fields.MEMBERS,
+                                ConsumerGroup.Fields.OFFSETS,
+                                ConsumerGroup.Fields.AUTHORIZED_OPERATIONS,
+                                ConsumerGroup.Fields.COORDINATOR,
+                                ConsumerGroup.Fields.PARTITION_ASSIGNOR
+                            }))
+            List<String> fields,
+
+            @BeanParam
+            @Valid
+            ListFetchParams listParams) {
+
+        requestedFields.accept(fields);
+        ListRequestContext<ConsumerGroup> listSupport = new ListRequestContext<>(ConsumerGroup.Fields.COMPARATOR_BUILDER, uriInfo.getRequestUri(), listParams, ConsumerGroup::fromCursor);
+
+        return consumerGroupService.listConsumerGroups(topicId, fields, listSupport)
+                .thenApply(groups -> new ConsumerGroup.ListResponse(groups, listSupport))
                 .thenApply(Response::ok)
                 .thenApply(Response.ResponseBuilder::build);
     }

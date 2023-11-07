@@ -93,4 +93,9 @@ public class Either<P, A> {
     public <T extends Throwable> P getOrThrow(Function<A, T> throwableBuilder) throws T {
         return primary.orElseThrow(() -> throwableBuilder.apply(alternate));
     }
+
+    @Override
+    public String toString() {
+        return "Either[primary=" + primary + ", alternate=" + alternate + "]";
+    }
 }

@@ -20,15 +20,7 @@ public class ComparatorBuilder<T> {
 
     public Comparator<T> fromSort(List<String> sortEntries) {
         return sortEntries.stream()
-                .map(field -> {
-                    boolean desc = field.startsWith("-");
-
-                    if (desc) {
-                        field = field.substring(1);
-                    }
-
-                    return comparatorSource.apply(field, desc);
-                })
+                .map(this::fieldToComparator)
                 .filter(Objects::nonNull)
                 // Reduce to a single composite comparator
                 .reduce(Comparator::thenComparing)
@@ -36,6 +28,25 @@ public class ComparatorBuilder<T> {
                 .map(comparator -> comparator.thenComparing(defaultComparator))
                 // When no sort requested, order by default comparator (ID) for stability
                 .orElse(defaultComparator);
+    }
+
+    /**
+     * Filter out any unknown sort keys from the given list
+     */
+    public List<String> knownSortKeys(List<String> sortEntries) {
+        return sortEntries.stream()
+                .filter(field -> fieldToComparator(field) != null)
+                .toList();
+    }
+
+    Comparator<T> fieldToComparator(String field) {
+        boolean desc = field.startsWith("-");
+
+        if (desc) {
+            field = field.substring(1);
+        }
+
+        return comparatorSource.apply(field, desc);
     }
 
     public static <T> Map<String, Map<Boolean, Comparator<T>>> bidirectional(Map<String, Comparator<T>> ascending) {

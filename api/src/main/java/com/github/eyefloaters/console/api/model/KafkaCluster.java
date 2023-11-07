@@ -82,7 +82,7 @@ public class KafkaCluster {
     }
 
     @Schema(name = "KafkaClusterListResponse")
-    public static final class ListResponse extends DataListResponse<KafkaClusterResource> {
+    public static final class ListResponse extends DataList<KafkaClusterResource> {
         public ListResponse(List<KafkaCluster> data, ListRequestContext<KafkaCluster> listSupport) {
             super(data.stream()
                     .map(entry -> {
@@ -97,7 +97,7 @@ public class KafkaCluster {
     }
 
     @Schema(name = "KafkaClusterResponse")
-    public static final class SingleResponse extends DataResponse<KafkaClusterResource> {
+    public static final class SingleResponse extends DataSingleton<KafkaClusterResource> {
         public SingleResponse(KafkaCluster data) {
             super(new KafkaClusterResource(data));
         }

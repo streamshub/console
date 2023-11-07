@@ -73,7 +73,7 @@ public record NewTopic(
 ) implements ReplicaAssignment {
 
     @Schema(name = "NewTopicDocument")
-    public static final class NewTopicDocument extends DataResponse<NewTopicResource> {
+    public static final class NewTopicDocument extends DataSingleton<NewTopicResource> {
         @JsonCreator
         public NewTopicDocument(@JsonProperty("data") NewTopicResource data) {
             super(data);

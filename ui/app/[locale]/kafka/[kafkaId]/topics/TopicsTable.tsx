@@ -28,20 +28,26 @@ export type TopicsTableProps = {
   topics: TopicList[];
   topicsCount: number;
   canCreate: boolean;
+  page: number;
   perPage: number;
   sort: TopicsTableColumn;
   sortDir: "asc" | "desc";
   baseurl: string;
+  nextPageCursor: string | null | undefined;
+  prevPageCursor: string | null | undefined;
 };
 
 export function TopicsTable({
   canCreate,
   topics,
   topicsCount,
+  page,
   perPage,
   sort,
   sortDir,
   baseurl,
+  nextPageCursor,
+  prevPageCursor,
 }: TopicsTableProps) {
   const format = useFormatter();
   const t = useTranslations("topics");
@@ -52,10 +58,21 @@ export function TopicsTable({
   return (
     <TableView
       itemCount={topicsCount}
-      page={1}
+      page={page}
       perPage={perPage}
-      onPageChange={(page, perPage) => {
-        updateUrl({ perPage });
+      onPageChange={(newPage, perPage) => {
+        let pageDiff = newPage - page;
+        switch (pageDiff) {
+          case -1:
+            updateUrl({ perPage, page: prevPageCursor });
+            break;
+          case 1:
+            updateUrl({ perPage, page: nextPageCursor });
+            break;
+          default:
+            updateUrl({ perPage });
+            break;
+        }
       }}
       data={topics}
       emptyStateNoData={<div>no data</div>}

@@ -42,14 +42,14 @@ public class KafkaRecord {
     }
 
     @Schema(name = "KafkaRecordListResponse")
-    public static final class ListResponse extends DataListResponse<RecordResource> {
+    public static final class ListResponse extends DataList<RecordResource> {
         public ListResponse(List<KafkaRecord> data) {
             super(data.stream().map(RecordResource::new).toList());
         }
     }
 
     @Schema(name = "KafkaRecordResponse")
-    public static final class SingleResponse extends DataResponse<RecordResource> {
+    public static final class SingleResponse extends DataSingleton<RecordResource> {
         public SingleResponse(KafkaRecord data) {
             super(new RecordResource(data));
         }

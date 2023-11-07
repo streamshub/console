@@ -47,7 +47,7 @@ public record TopicPatch(
 ) implements ReplicaAssignment {
 
     @Schema(name = "TopicPatchDocument")
-    public static final class TopicPatchDocument extends DataResponse<TopicPatchResource> {
+    public static final class TopicPatchDocument extends DataSingleton<TopicPatchResource> {
         @JsonCreator
         public TopicPatchDocument(@JsonProperty("data") TopicPatchResource data) {
             super(data);

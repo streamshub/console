@@ -1,18 +1,7 @@
 package com.github.eyefloaters.console.kafka.systemtest.utils;
 
-import org.apache.kafka.clients.CommonClientConfigs;
-import org.apache.kafka.clients.admin.Admin;
-import org.apache.kafka.clients.admin.NewTopic;
-import org.apache.kafka.clients.consumer.Consumer;
-import org.apache.kafka.clients.consumer.ConsumerConfig;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.kafka.clients.consumer.KafkaConsumer;
-import org.apache.kafka.clients.producer.KafkaProducer;
-import org.apache.kafka.clients.producer.ProducerRecord;
-import org.apache.kafka.common.serialization.StringSerializer;
-import org.eclipse.microprofile.config.Config;
-
 import java.io.Closeable;
+import java.net.URI;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -24,14 +13,81 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.apache.kafka.clients.CommonClientConfigs;
+import org.apache.kafka.clients.admin.Admin;
+import org.apache.kafka.clients.admin.AdminClientConfig;
+import org.apache.kafka.clients.admin.ConsumerGroupListing;
+import org.apache.kafka.clients.admin.NewTopic;
+import org.apache.kafka.clients.consumer.Consumer;
+import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.ConsumerGroupState;
+import org.apache.kafka.common.serialization.StringSerializer;
+import org.eclipse.microprofile.config.Config;
+import org.jboss.logging.Logger;
+
+import static org.junit.jupiter.api.Assertions.fail;
+
 public class ConsumerUtils {
 
+    static final Logger log = Logger.getLogger(ConsumerUtils.class);
     final Config config;
     final String token;
+    final Properties adminConfig;
 
     public ConsumerUtils(Config config, String token) {
+        this(null, config, token);
+    }
+
+    public ConsumerUtils(URI bootstrapServers, Config config, String token) {
         this.config = config;
         this.token = token;
+
+        adminConfig = token != null ?
+                ClientsConfig.getAdminConfigOauth(config, token) :
+                ClientsConfig.getAdminConfig(config);
+
+        if (bootstrapServers != null) {
+            adminConfig.setProperty(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers.toString());
+        }
+    }
+
+    public ConsumerGroupState consumerGroupState(String groupId) {
+        try (Admin admin = Admin.create(adminConfig)) {
+            return admin.describeConsumerGroups(List.of(groupId))
+                    .describedGroups()
+                    .get(groupId)
+                    .toCompletionStage()
+                    .toCompletableFuture()
+                    .join()
+                    .state();
+        } catch (Exception e) {
+            fail(e);
+        }
+
+        return null;
+    }
+
+    public void deleteConsumerGroups() {
+        try (Admin admin = Admin.create(adminConfig)) {
+            admin.listConsumerGroups()
+                    .all()
+                    .thenApply(listing -> listing.stream().map(ConsumerGroupListing::groupId).toList())
+                    .thenApply(listing -> {
+                        log.infof("Deleting consumer groups: %s", listing);
+                        return listing;
+                    })
+                    .thenApply(admin::deleteConsumerGroups)
+                    .toCompletionStage()
+                    .thenCompose(result -> result.all().toCompletionStage())
+                    .toCompletableFuture()
+                    .join();
+        } catch (Exception e) {
+            fail(e);
+        }
     }
 
     public ConsumerRequest request() {

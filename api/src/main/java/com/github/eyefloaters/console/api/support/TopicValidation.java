@@ -184,23 +184,23 @@ public class TopicValidation {
 
         @Override
         public String name() {
-            return topic.getName();
+            return topic.name();
         }
 
         @Override
         public int minNewPartitionId() {
-            return topic.getPartitions().getPrimary().size();
+            return topic.partitions().getPrimary().size();
         }
 
         @Override
         public int maxPartitionId() {
             return Optional.ofNullable(patch.numPartitions())
-                    .orElseGet(() -> topic.getPartitions().getPrimary().size()) - 1;
+                    .orElseGet(() -> topic.partitions().getPrimary().size()) - 1;
         }
 
         @Override
         public OptionalInt replicationFactor() {
-            List<PartitionInfo> currentPartitions = topic.getPartitions().getPrimary();
+            List<PartitionInfo> currentPartitions = topic.partitions().getPrimary();
             return OptionalInt.of(currentPartitions.get(0).getReplicas().size());
         }
 
@@ -216,7 +216,7 @@ public class TopicValidation {
 
         @Override
         public Map<String, ConfigEntry> targetConfigs() {
-            return topic.getConfigs().getOptionalPrimary().orElse(Collections.emptyMap());
+            return topic.configs().getOptionalPrimary().orElse(Collections.emptyMap());
         }
     }
 
@@ -463,7 +463,7 @@ public class TopicValidation {
             Topic topic = inputs.topic();
             TopicPatch patch = inputs.patch();
 
-            int currentNumPartitions = topic.getPartitions().getPrimary().size();
+            int currentNumPartitions = topic.partitions().getPrimary().size();
             int newNumPartitions = Optional.ofNullable(patch.numPartitions()).orElse(currentNumPartitions);
 
             if (newNumPartitions < currentNumPartitions) {
@@ -489,7 +489,7 @@ public class TopicValidation {
             Topic topic = inputs.topic();
             TopicPatch patch = inputs.patch();
 
-            int currentNumPartitions = topic.getPartitions().getPrimary().size();
+            int currentNumPartitions = topic.partitions().getPrimary().size();
             int newNumPartitions = Optional.ofNullable(patch.numPartitions()).orElse(currentNumPartitions);
 
             Optional.ofNullable(patch.replicasAssignments())
