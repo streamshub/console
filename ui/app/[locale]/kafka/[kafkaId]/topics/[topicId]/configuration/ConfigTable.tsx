@@ -31,11 +31,10 @@ export function ConfigTable({
   topic,
   onSaveProperty,
 }: {
-  topic: Topic;
-  onSaveProperty: (
-    name: string,
-    value: string,
-  ) => Promise<boolean | TopicMutateError>;
+  topic: Topic | undefined;
+  onSaveProperty:
+    | ((name: string, value: string) => Promise<boolean | TopicMutateError>)
+    | undefined;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -53,7 +52,7 @@ export function ConfigTable({
     [searchParams],
   );
 
-  const allData = Object.entries(topic.attributes.configs);
+  const allData = Object.entries(topic?.attributes.configs || {});
 
   // derive the available data sources from the config values
   const dataSources = Array.from(
@@ -117,7 +116,7 @@ export function ConfigTable({
   const fieldError = topicMutateErrorToFieldError(
     error,
     true,
-    Object.keys(topic.attributes.configs),
+    Object.keys(topic?.attributes.configs || {}),
   );
 
   const renderCell = useCallback<
@@ -339,7 +338,7 @@ export function ConfigTable({
                         ...isEditing,
                         [name]: "saving",
                       }));
-                      const res = await onSaveProperty(name, options[name]);
+                      const res = await onSaveProperty!(name, options[name]);
                       if (res === true) {
                         setIsEditing((isEditing) => ({
                           ...isEditing,

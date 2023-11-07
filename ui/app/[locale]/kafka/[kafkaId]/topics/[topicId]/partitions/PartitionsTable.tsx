@@ -5,9 +5,7 @@ import { Number } from "@/components/Number";
 import { TableView } from "@/components/table";
 import { Label, LabelGroup, PageSection } from "@/libs/patternfly/react-core";
 import { WarningTriangleIcon } from "@/libs/patternfly/react-icons";
-import { useFormatBytes } from "@/utils/format";
 import { CodeBranchIcon, ServerIcon } from "@patternfly/react-icons";
-import { useFormatter } from "next-intl";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
@@ -16,25 +14,26 @@ export function PartitionsTable({
   kafkaId,
 }: {
   kafkaId: string;
-  topic: Topic;
+  topic: Topic | undefined;
 }) {
-  const format = useFormatter();
-  const formatBytes = useFormatBytes();
   const [topic, setTopic] = useState(initialData);
   useEffect(() => {
-    const interval = setInterval(async () => {
-      const topic = await getTopic(kafkaId, initialData.id);
-      setTopic(topic);
-    }, 30000);
+    let interval: ReturnType<typeof setInterval>;
+    if (initialData) {
+      interval = setInterval(async () => {
+        const topic = await getTopic(kafkaId, initialData.id);
+        setTopic(topic);
+      }, 30000);
+    }
     return () => clearInterval(interval);
-  }, [kafkaId, initialData.id]);
+  }, [kafkaId, initialData]);
   return (
     <PageSection isFilled>
       <TableView
-        itemCount={topic.attributes.partitions.length}
+        itemCount={topic?.attributes.partitions.length}
         page={1}
         onPageChange={() => {}}
-        data={topic.attributes.partitions}
+        data={topic?.attributes.partitions}
         emptyStateNoData={<div>No partitions</div>}
         emptyStateNoResults={<div>todo</div>}
         ariaLabel={"Partitions"}

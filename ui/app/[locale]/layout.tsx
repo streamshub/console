@@ -5,7 +5,7 @@ import NextIntlProvider from "@/app/[locale]/NextIntlProvider";
 import { SessionRefresher } from "@/app/[locale]/SessionRefresher";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { getServerSession } from "next-auth";
-import { getTranslator } from "next-intl/server";
+import { getTranslations } from "next-intl/server";
 import { notFound } from "next/navigation";
 import { ReactNode } from "react";
 import "../globals.css";
@@ -42,7 +42,7 @@ export default async function Layout({ children, params: { locale } }: Props) {
 export async function generateMetadata({
   params: { locale },
 }: Omit<Props, "children">) {
-  const t = await getTranslator(locale, "common");
+  const t = await getTranslations({ locale, namespace: "common" });
 
   return {
     title: t("title"),

@@ -1,3 +1,4 @@
-import { TopicName } from "../TopicName";
+import { TopicName } from "@/app/[locale]/kafka/[kafkaId]/@title/topics/[topicId]/TopicName";
 
+export { fetchCache } from "@/app/[locale]/kafka/[kafkaId]/@title/topics/[topicId]/TopicName";
 export default TopicName;

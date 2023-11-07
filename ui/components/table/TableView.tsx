@@ -193,7 +193,7 @@ export const TableView = <TRow, TCol>({
           {filters && <ChipFilter breakpoint={breakpoint} filters={filters} />}
 
           {/* responsive action buttons, fallback on a dropdown on small viewports */}
-          {actions && (
+          {actions ? (
             <OverflowMenu breakpoint={breakpoint}>
               <OverflowMenuContent isPersistent>
                 <OverflowMenuGroup isPersistent groupType="button">
@@ -241,7 +241,7 @@ export const TableView = <TRow, TCol>({
                 </Dropdown>
               </OverflowMenuControl>
             </OverflowMenu>
-          )}
+          ) : null}
 
           {/* icon buttons */}
           {tools && (
@@ -253,7 +253,7 @@ export const TableView = <TRow, TCol>({
           )}
 
           {/* pagination controls */}
-          {showPagination && (
+          {showPagination ? (
             <ToolbarGroup align={{ default: "alignRight" }}>
               <Pagination
                 itemCount={itemCount}
@@ -264,7 +264,7 @@ export const TableView = <TRow, TCol>({
                 isCompact
               />
             </ToolbarGroup>
-          )}
+          ) : null}
         </ToolbarContent>
       </Toolbar>
       <InnerScrollContainer className={"pf-u-h-100"}>
@@ -277,7 +277,7 @@ export const TableView = <TRow, TCol>({
           {emptyStateNoResults}
         </ResponsiveTable>
       </InnerScrollContainer>
-      {showPagination && (
+      {showPagination ? (
         <Pagination
           itemCount={itemCount}
           page={page}
@@ -288,7 +288,7 @@ export const TableView = <TRow, TCol>({
             true /* TODO: change when we support jumping to specific pages */
           }
         />
-      )}
+      ) : null}
     </OuterScrollContainer>
   );
 };
