@@ -1,4 +1,10 @@
-export const explorePipelinesQuickStart = {
+import {
+  pipelineIcon,
+  serverlessIcon,
+} from "@patternfly/quickstarts/src/data/mocks/json/tour-icons";
+import { QuickStart } from "@patternfly/quickstarts/src/utils/quick-start-types";
+
+export const explorePipelinesQuickStart: QuickStart = {
   apiVersion: "console.openshift.io/v1",
   kind: "QuickStarts",
   metadata: {
@@ -8,7 +14,7 @@ export const explorePipelinesQuickStart = {
     version: 4.7,
     displayName: `Lorem dolor ipsum`,
     durationMinutes: 10,
-    // icon: pipelineIcon,
+    icon: pipelineIcon,
     description: `Install the OpenShift® Pipelines Operator to build Pipelines using Tekton.`,
     introduction: `OpenShift® Pipelines is a cloud-native, continuous integration and continuous delivery (CI/CD) solution based on Kubernetes resources. It uses Tekton building blocks to automate deployments across multiple Kubernetes distributions by abstracting away the underlying implementation details.
 * OpenShift Pipelines is a serverless CI/CD system that runs pipelines with all the required dependencies in isolated containers.
@@ -58,7 +64,7 @@ In the status column, is the status of the OpenShift Pipelines Operator **Succee
   },
 };
 
-export const exploreServerlessQuickStart = {
+export const exploreServerlessQuickStart: QuickStart = {
   apiVersion: "console.openshift.io/v1",
   kind: "ConsoleQuickStarts",
   metadata: {
@@ -68,6 +74,7 @@ export const exploreServerlessQuickStart = {
     version: 4.7,
     displayName: `Lorem ipsum dolor`,
     durationMinutes: 10,
+    icon: serverlessIcon,
     description: `Install the OpenShift Serverless Operator to deploy stateless, event-trigger-based applications.`,
     introduction: `Red Hat® OpenShift® Serverless lets you run stateless, serverless workloads on a single multi-cloud container platform.
 Serverless reduces the need to manage infrastructure or perform back-end development. Scaling is automated, and applications can run on any cloud, hybrid, or on-premises environment. Choosing Serverless means simplicity, portability, and efficiency.
@@ -139,7 +146,7 @@ Are the Knative Serving and Knative Eventing resources in the list of instances?
   },
 };
 
-export const monitorSampleAppQuickStart = {
+export const monitorSampleAppQuickStart: QuickStart = {
   apiVersion: "console.openshift.io/v1",
   kind: "QuickStarts",
   metadata: {
@@ -149,6 +156,7 @@ export const monitorSampleAppQuickStart = {
     version: 4.7,
     displayName: "Lorem ipsum dolor",
     durationMinutes: 10,
+    icon: serverlessIcon,
     description: `Now that you’ve created a sample application and added health checks, let’s monitor your application.`,
     prerequisites: [
       `You completed the "Getting started with a sample" quick start.`,

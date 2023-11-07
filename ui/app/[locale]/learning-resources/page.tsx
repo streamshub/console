@@ -4,6 +4,7 @@ import {
   QuickStartContainer,
   useLocalStorage,
 } from "@/libs/patternfly/quickstarts";
+import { QuickStart } from "@patternfly/quickstarts/src/utils/quick-start-types";
 import { useEffect, useState } from "react";
 import {
   explorePipelinesQuickStart,
@@ -37,7 +38,7 @@ export default function LearningResources() {
   }, [allQuickStartStates]);
 
   const [loading, setLoading] = useState(true);
-  const [quickStarts, setQuickStarts] = useState([]);
+  const [quickStarts, setQuickStarts] = useState<QuickStart[]>([]);
   useEffect(() => {
     const load = async () => {
       setQuickStarts(exampleQuickStarts);
