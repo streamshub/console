@@ -11,10 +11,73 @@ import {
   PageNavigation,
   Spinner,
 } from "@/libs/patternfly/react-core";
+import { Skeleton } from "@patternfly/react-core";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
-export async function TopicHeader({
+export const fetchCache = "force-cache";
+
+export function TopicHeader({
+  params: { kafkaId, topicId },
+}: {
+  params: KafkaTopicParams;
+}) {
+  return (
+    <Suspense
+      fallback={
+        <AppHeader
+          title={<Skeleton width="35%" />}
+          navigation={
+            <PageNavigation>
+              <Nav aria-label="Group section navigation" variant="tertiary">
+                <NavList>
+                  <NavItemLink
+                    url={`/kafka/${kafkaId}/topics/${topicId}/messages`}
+                  >
+                    Messages&nbsp;
+                    <Label isCompact={true}>
+                      <Spinner />
+                    </Label>
+                  </NavItemLink>
+                  <NavItemLink
+                    url={`/kafka/${kafkaId}/topics/${topicId}/consumer-groups`}
+                  >
+                    Consumer groups&nbsp;
+                    <Label isCompact={true}>
+                      <Spinner />
+                    </Label>
+                  </NavItemLink>
+                  <NavItemLink
+                    url={`/kafka/${kafkaId}/topics/${topicId}/partitions`}
+                  >
+                    Partitions&nbsp;
+                    <Label isCompact={true}>
+                      <Spinner />
+                    </Label>
+                  </NavItemLink>
+                  <NavItemLink
+                    url={`/kafka/${kafkaId}/topics/${topicId}/schema-registry`}
+                  >
+                    Schema
+                  </NavItemLink>
+                  <NavItemLink
+                    url={`/kafka/${kafkaId}/topics/${topicId}/configuration`}
+                  >
+                    Configuration
+                  </NavItemLink>
+                </NavList>
+              </Nav>
+            </PageNavigation>
+          }
+        />
+      }
+    >
+      <ConnectedTopicHeader params={{ kafkaId, topicId }} />
+    </Suspense>
+  );
+}
+
+async function ConnectedTopicHeader({
   params: { kafkaId, topicId },
 }: {
   params: KafkaTopicParams;
@@ -57,7 +120,9 @@ export async function TopicHeader({
                   </Suspense>
                 </Label>
               </NavItemLink>
-              <NavItemLink url={`/kafka/${kafkaId}/topics/${topicId}/schema`}>
+              <NavItemLink
+                url={`/kafka/${kafkaId}/topics/${topicId}/schema-registry`}
+              >
                 Schema
               </NavItemLink>
               <NavItemLink

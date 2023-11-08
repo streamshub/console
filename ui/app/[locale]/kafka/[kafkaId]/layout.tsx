@@ -8,9 +8,9 @@ import {
   PageGroup,
 } from "@/libs/patternfly/react-core";
 import { notFound } from "next/navigation";
-import { PropsWithChildren, ReactNode } from "react";
+import { PropsWithChildren, ReactNode, Suspense } from "react";
 
-export default async function KafkaLayout({
+export default function KafkaLayout({
   children,
   activeBreadcrumb,
   header,
@@ -22,12 +22,6 @@ export default async function KafkaLayout({
   activeBreadcrumb: ReactNode;
   modal: ReactNode;
 }>) {
-  const cluster = await getKafkaCluster(kafkaId);
-  if (!cluster) {
-    notFound();
-  }
-  const clusters = await getKafkaClusters();
-
   return (
     <>
       <PageGroup stickyOnBreakpoint={{ default: "top" }}>
@@ -35,11 +29,12 @@ export default async function KafkaLayout({
           <Breadcrumb>
             <BreadcrumbItem>Kafka clusters</BreadcrumbItem>
             <BreadcrumbItem>
-              <KafkaBreadcrumbItem
-                selected={cluster}
-                clusters={clusters}
-                isActive={activeBreadcrumb === null}
-              />
+              <Suspense>
+                <ConnectedKafkaBreadcrumbItem
+                  kafkaId={kafkaId}
+                  isActive={activeBreadcrumb === null}
+                />
+              </Suspense>
             </BreadcrumbItem>
             {activeBreadcrumb}
           </Breadcrumb>
@@ -49,5 +44,23 @@ export default async function KafkaLayout({
       {children}
       {modal}
     </>
+  );
+}
+
+async function ConnectedKafkaBreadcrumbItem({
+  kafkaId,
+  isActive,
+}: KafkaParams & { isActive: boolean }) {
+  const cluster = await getKafkaCluster(kafkaId);
+  if (!cluster) {
+    notFound();
+  }
+  const clusters = await getKafkaClusters();
+  return (
+    <KafkaBreadcrumbItem
+      selected={cluster}
+      clusters={clusters}
+      isActive={isActive}
+    />
   );
 }

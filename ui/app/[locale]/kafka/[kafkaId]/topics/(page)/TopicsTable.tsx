@@ -25,7 +25,7 @@ export type TopicsTableColumn = (typeof TopicsTableColumns)[number];
 export const SortableColumns = ["name", "messages", "storage"];
 
 export type TopicsTableProps = {
-  topics: TopicList[];
+  topics: TopicList[] | undefined;
   topicsCount: number;
   canCreate: boolean;
   page: number;

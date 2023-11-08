@@ -5,26 +5,19 @@ import {
   parseSearchParams,
 } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/parseSearchParams";
 import { useSearchParams } from "next/navigation";
-import { PropsWithChildren, Suspense } from "react";
 
-export default function MessagesLoading({ children }: PropsWithChildren) {
+export default function MessagesLoading() {
   const searchParams = useSearchParams();
   const { partition, offset, timestamp, epoch, limit } = parseSearchParams(
     Object.fromEntries(searchParams.entries()) as MessagesSearchParams,
   );
   return (
-    <Suspense
-      fallback={
-        <MessagesTableSkeleton
-          limit={limit}
-          partition={partition}
-          filterTimestamp={timestamp}
-          filterEpoch={epoch}
-          filterOffset={offset}
-        />
-      }
-    >
-      {children}
-    </Suspense>
+    <MessagesTableSkeleton
+      limit={limit}
+      partition={partition}
+      filterTimestamp={timestamp}
+      filterEpoch={epoch}
+      filterOffset={offset}
+    />
   );
 }

@@ -16,7 +16,7 @@ export function KafkaBreadcrumbItem({
   const segment = useSelectedLayoutSegment();
 
   return (
-    <Suspense fallback={"Loading clusters..."}>
+    <Suspense fallback={<span>Loading clusters...</span>}>
       <KafkaSwitcher
         selected={selected}
         clusters={clusters}

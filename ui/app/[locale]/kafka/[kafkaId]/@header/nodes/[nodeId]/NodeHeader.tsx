@@ -3,25 +3,24 @@ import { KafkaNodeParams } from "@/app/[locale]/kafka/[kafkaId]/nodes/kafkaNode.
 import { AppHeader } from "@/components/AppHeader";
 import { NavItemLink } from "@/components/NavItemLink";
 import { Nav, NavList, PageNavigation } from "@/libs/patternfly/react-core";
+import { Skeleton } from "@patternfly/react-core";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
+
+export const fetchCache = "force-cache";
 
 export async function NodeHeader({
   params: { kafkaId, nodeId },
 }: {
   params: KafkaNodeParams;
 }) {
-  const cluster = await getKafkaCluster(kafkaId);
-  if (!cluster) {
-    notFound();
-  }
-
-  const node = cluster.attributes.nodes.find((n) => `${n.id}` === nodeId);
-  if (!node) {
-    notFound();
-  }
   return (
     <AppHeader
-      title={`Node ${node.id}`}
+      title={
+        <Suspense fallback={<Skeleton width="35%" />}>
+          <ConnectedNodeHeader params={{ kafkaId, nodeId }} />
+        </Suspense>
+      }
       navigation={
         <PageNavigation>
           <Nav aria-label="Group section navigation" variant="tertiary">
@@ -37,4 +36,21 @@ export async function NodeHeader({
       }
     />
   );
+}
+
+async function ConnectedNodeHeader({
+  params: { kafkaId, nodeId },
+}: {
+  params: KafkaNodeParams;
+}) {
+  const cluster = await getKafkaCluster(kafkaId);
+  if (!cluster) {
+    notFound();
+  }
+
+  const node = cluster.attributes.nodes.find((n) => `${n.id}` === nodeId);
+  if (!node) {
+    notFound();
+  }
+  return node.id;
 }

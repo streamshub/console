@@ -5,7 +5,7 @@ export function AppHeader({
   title,
   navigation,
 }: {
-  title: string;
+  title: ReactNode;
   navigation?: ReactNode;
 }) {
   return (

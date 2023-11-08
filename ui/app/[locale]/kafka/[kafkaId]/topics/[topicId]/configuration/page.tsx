@@ -1,9 +1,26 @@
 import { getTopic, updateTopic } from "@/api/topics";
 import { KafkaTopicParams } from "@/app/[locale]/kafka/[kafkaId]/topics/kafkaTopic.params";
 import { PageSection } from "@/libs/patternfly/react-core";
+import { Suspense } from "react";
 import { ConfigTable } from "./ConfigTable";
 
-export default async function TopicConfiguration({
+export default function TopicConfiguration({
+  params: { kafkaId, topicId },
+}: {
+  params: KafkaTopicParams;
+}) {
+  return (
+    <PageSection isFilled={true}>
+      <Suspense
+        fallback={<ConfigTable topic={undefined} onSaveProperty={undefined} />}
+      >
+        <ConnectedTopicConfiguration params={{ kafkaId, topicId }} />
+      </Suspense>
+    </PageSection>
+  );
+}
+
+async function ConnectedTopicConfiguration({
   params: { kafkaId, topicId },
 }: {
   params: KafkaTopicParams;
@@ -19,9 +36,5 @@ export default async function TopicConfiguration({
     });
   }
 
-  return (
-    <PageSection isFilled={true}>
-      <ConfigTable topic={topic} onSaveProperty={onSaveProperty} />
-    </PageSection>
-  );
+  return <ConfigTable topic={topic} onSaveProperty={onSaveProperty} />;
 }

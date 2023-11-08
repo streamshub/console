@@ -8,7 +8,6 @@ const withNextIntl = require("next-intl/plugin")(
 const nextConfig = {
   output: "standalone",
   experimental: {
-    serverActions: true,
     // typedRoutes: true, // disabled until next-intl is compatible with this
   },
   typescript: {
