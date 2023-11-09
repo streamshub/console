@@ -61,7 +61,7 @@ export async function getTopicMessages(
   );
   const consumeRecordsQuery = sp.toString();
   const url = `${process.env.BACKEND_URL}/api/kafkas/${kafkaId}/topics/${topicId}/records?${consumeRecordsQuery}`;
-  log.debug(
+  log.info(
     { url, params: Object.fromEntries(sp.entries()) },
     "Fetching topic messages",
   );
@@ -71,10 +71,7 @@ export async function getTopicMessages(
     next: { tags: [`messages-${topicId}`] },
   });
   const rawData = await res.json();
-  log.trace(rawData, "Received messages");
-  // return new Promise((resolve) =>
-  //   setTimeout(() => resolve(MessageApiResponse.parse(rawData).data), 1000),
-  // );
+  log.trace({ rawData }, "Received messages");
   return MessageApiResponse.parse(rawData).data;
 }
 
@@ -86,7 +83,7 @@ export async function getTopicMessage(
     offset: number;
   },
 ): Promise<Message | undefined> {
-  log.info({ kafkaId, topicId, params }, "getTopicMessage response");
+  log.info({ kafkaId, topicId, params }, "getTopicMessage");
   const messages = await getTopicMessages(kafkaId, topicId, {
     pageSize: 1,
     partition: params.partition,

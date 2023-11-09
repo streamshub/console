@@ -61,6 +61,7 @@ export type ResponsiveTableProps<TRow, TCol> = {
   setRowOuiaId?: (props: RowProps<TRow>) => string;
   tableOuiaId?: string;
   variant?: TableVariant;
+  disableAutomaticColumns?: boolean;
 };
 
 type RowProps<TRow> = { row: TRow; rowIndex: number };
@@ -83,6 +84,7 @@ export const ResponsiveTable = <TRow, TCol>({
   tableOuiaId,
   children,
   variant,
+  disableAutomaticColumns,
 }: PropsWithChildren<ResponsiveTableProps<TRow, TCol>>) => {
   const [width, setWidth] = useState(1000);
   let animationHandle: number;
@@ -101,7 +103,7 @@ export const ResponsiveTable = <TRow, TCol>({
     }
   };
   const { ref } = useResizeObserver({ onResize });
-  const showColumns = width >= 576;
+  const showColumns = width >= 576 || disableAutomaticColumns === true;
 
   const canColumnBeHidden = useCallback(
     (index: number) =>

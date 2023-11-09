@@ -14,7 +14,7 @@ export function AppLayout({ children }: PropsWithChildren) {
         <AppSidebar>
           <Nav aria-label="Nav">
             <NavList>
-              <NavItemLink url={"/resources"}>Resources</NavItemLink>
+              <NavItemLink url={"/home"}>Home</NavItemLink>
               <NavExpandable
                 title={"Kafka clusters"}
                 url={"/kafka"}
