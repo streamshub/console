@@ -1,4 +1,4 @@
-import { ConsumerGroup } from "@/api/consumerGroups";
+import { ConsumerGroup } from "@/api/consumerGroups/schema";
 import { ResponsiveTable } from "@/components/table";
 import { Link } from "@/navigation";
 import { TableVariant } from "@patternfly/react-table";

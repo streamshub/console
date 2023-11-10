@@ -1,4 +1,4 @@
-import { ConsumerGroup } from "@/api/consumerGroups";
+import { ConsumerGroup } from "@/api/consumerGroups/schema";
 import { AssigmentsTable } from "@/app/[locale]/kafka/[kafkaId]/consumer-groups/AssigmentsTable";
 import { Number } from "@/components/Number";
 import { ResponsiveTable } from "@/components/table";

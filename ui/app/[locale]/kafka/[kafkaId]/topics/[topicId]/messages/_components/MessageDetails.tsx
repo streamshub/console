@@ -1,4 +1,4 @@
-import { Message } from "@/api/messages";
+import { Message } from "@/api/messages/schema";
 import { DateTime } from "@/components/DateTime";
 import { Number } from "@/components/Number";
 import {

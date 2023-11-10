@@ -1,4 +1,4 @@
-import { ClusterDetail, ClusterList } from "@/api/kafka";
+import { ClusterDetail, ClusterList } from "@/api/kafka/schema";
 import {
   Divider,
   Dropdown,

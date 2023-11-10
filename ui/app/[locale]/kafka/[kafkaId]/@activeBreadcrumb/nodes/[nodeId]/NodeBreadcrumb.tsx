@@ -1,4 +1,4 @@
-import { getKafkaCluster } from "@/api/kafka";
+import { getKafkaCluster } from "@/api/kafka/actions";
 import { KafkaNodeParams } from "@/app/[locale]/kafka/[kafkaId]/nodes/kafkaNode.params";
 import { BreadcrumbLink } from "@/components/BreadcrumbLink";
 import { BreadcrumbItem } from "@/libs/patternfly/react-core";

@@ -1,4 +1,4 @@
-import { getTopicConsumerGroups } from "@/api/consumerGroups";
+import { getTopicConsumerGroups } from "@/api/consumerGroups/actions";
 import { ConsumerGroupsTable } from "@/app/[locale]/kafka/[kafkaId]/consumer-groups/ConsumerGroupsTable";
 import { KafkaTopicParams } from "@/app/[locale]/kafka/[kafkaId]/topics/kafkaTopic.params";
 import { notFound } from "next/navigation";

@@ -1,5 +1,6 @@
 "use client";
-import { ConsumerGroup } from "@/api/consumerGroups";
+
+import { ConsumerGroup } from "@/api/consumerGroups/schema";
 import { LagTable } from "@/app/[locale]/kafka/[kafkaId]/consumer-groups/LagTable";
 import { MembersTable } from "@/app/[locale]/kafka/[kafkaId]/consumer-groups/MembersTable";
 import { Number } from "@/components/Number";

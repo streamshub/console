@@ -1,4 +1,4 @@
-import { TopicMutateError } from "@/api/topics";
+import { TopicMutateError } from "@/api/topics/schema";
 import { Alert, Text, TextContent } from "@patternfly/react-core";
 
 export function Error({ error }: { error: TopicMutateError | "unknown" }) {

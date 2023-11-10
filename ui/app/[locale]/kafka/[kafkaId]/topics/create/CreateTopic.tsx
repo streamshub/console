@@ -4,7 +4,7 @@ import {
   NewConfigMap,
   TopicCreateResponse,
   TopicMutateError,
-} from "@/api/topics";
+} from "@/api/topics/schema";
 import { StepDetails } from "@/app/[locale]/kafka/[kafkaId]/topics/create/StepDetails";
 import { StepOptions } from "@/app/[locale]/kafka/[kafkaId]/topics/create/StepOptions";
 import { StepReview } from "@/app/[locale]/kafka/[kafkaId]/topics/create/StepReview";

@@ -1,4 +1,4 @@
-import { ConsumerGroup } from "@/api/consumerGroups";
+import { ConsumerGroup } from "@/api/consumerGroups/schema";
 import { Number } from "@/components/Number";
 import { ResponsiveTable } from "@/components/table";
 import { Link } from "@/navigation";

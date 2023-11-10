@@ -1,4 +1,4 @@
-import { getKafkaCluster } from "@/api/kafka";
+import { getKafkaCluster } from "@/api/kafka/actions";
 import { KafkaParams } from "@/app/[locale]/kafka/[kafkaId]/kafka.params";
 import { NodesTable } from "@/app/[locale]/kafka/[kafkaId]/nodes/NodesTable";
 import { PageSection } from "@/libs/patternfly/react-core";

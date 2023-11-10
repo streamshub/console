@@ -1,27 +1,10 @@
+"use server";
 import { getHeaders } from "@/api/api";
+import { Message, MessageApiResponse } from "@/api/messages/schema";
 import { filterUndefinedFromObj } from "@/utils/filterUndefinedFromObj";
 import { logger } from "@/utils/logger";
-import { z } from "zod";
 
 const log = logger.child({ module: "messages-api" });
-
-const MessageSchema = z.object({
-  type: z.literal("records"),
-  attributes: z.object({
-    partition: z.number(),
-    offset: z.number(),
-    timestamp: z.string(),
-    timestampType: z.string(),
-    headers: z.record(z.any()),
-    key: z.string().nullable(),
-    value: z.string().nullable(),
-  }),
-});
-const MessageApiResponse = z.object({
-  meta: z.object({}).nullable().optional(),
-  data: z.array(MessageSchema),
-});
-export type Message = z.infer<typeof MessageSchema>;
 
 export async function getTopicMessages(
   kafkaId: string,
@@ -61,7 +44,7 @@ export async function getTopicMessages(
   );
   const consumeRecordsQuery = sp.toString();
   const url = `${process.env.BACKEND_URL}/api/kafkas/${kafkaId}/topics/${topicId}/records?${consumeRecordsQuery}`;
-  log.debug(
+  log.info(
     { url, params: Object.fromEntries(sp.entries()) },
     "Fetching topic messages",
   );
@@ -71,10 +54,7 @@ export async function getTopicMessages(
     next: { tags: [`messages-${topicId}`] },
   });
   const rawData = await res.json();
-  log.trace(rawData, "Received messages");
-  // return new Promise((resolve) =>
-  //   setTimeout(() => resolve(MessageApiResponse.parse(rawData).data), 1000),
-  // );
+  log.trace({ rawData }, "Received messages");
   return MessageApiResponse.parse(rawData).data;
 }
 
@@ -86,7 +66,7 @@ export async function getTopicMessage(
     offset: number;
   },
 ): Promise<Message | undefined> {
-  log.info({ kafkaId, topicId, params }, "getTopicMessage response");
+  log.info({ kafkaId, topicId, params }, "getTopicMessage");
   const messages = await getTopicMessages(kafkaId, topicId, {
     pageSize: 1,
     partition: params.partition,
