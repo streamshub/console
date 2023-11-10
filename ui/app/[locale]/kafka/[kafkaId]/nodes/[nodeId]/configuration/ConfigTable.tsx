@@ -1,5 +1,6 @@
 "use client";
-import { NodeConfig } from "@/api/nodes";
+
+import { NodeConfig } from "@/api/nodes/schema";
 import { Number } from "@/components/Number";
 import { TableView } from "@/components/table";
 import { usePathname, useRouter } from "@/navigation";

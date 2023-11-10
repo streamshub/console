@@ -1,6 +1,6 @@
 "use client";
 
-import { ClusterDetail } from "@/api/kafka";
+import { ClusterDetail } from "@/api/kafka/schema";
 import { Number } from "@/components/Number";
 import { ResponsiveTable } from "@/components/table";
 import { Truncate } from "@patternfly/react-core";

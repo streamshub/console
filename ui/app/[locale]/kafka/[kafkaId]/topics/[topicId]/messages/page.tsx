@@ -1,4 +1,4 @@
-import { getTopicMessage, getTopicMessages } from "@/api/messages";
+import { getTopicMessage, getTopicMessages } from "@/api/messages/actions";
 import { getTopic } from "@/api/topics/actions";
 import { NoDataEmptyState } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/_components/NoDataEmptyState";
 import { ConnectedMessagesTable } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/ConnectedMessagesTable";

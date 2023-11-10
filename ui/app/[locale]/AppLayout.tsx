@@ -1,4 +1,4 @@
-import { getKafkaClusters } from "@/api/kafka";
+import { getKafkaClusters } from "@/api/kafka/actions";
 import { AppMasthead } from "@/app/[locale]/AppMasthead";
 import { AppSidebar } from "@/app/[locale]/AppSidebar";
 import { NavExpandable } from "@/components/NavExpandable";

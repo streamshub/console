@@ -1,5 +1,6 @@
 "use client";
-import { Message } from "@/api/messages";
+
+import { Message } from "@/api/messages/schema";
 import { RefreshInterval } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/_components/RefreshSelector";
 import { useFilterParams } from "@/utils/useFilterParams";
 import { useEffect, useState, useTransition } from "react";

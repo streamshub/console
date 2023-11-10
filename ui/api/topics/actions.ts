@@ -1,6 +1,6 @@
 "use server";
 import { getHeaders } from "@/api/api";
-import { getKafkaCluster } from "@/api/kafka";
+import { getKafkaCluster } from "@/api/kafka/actions";
 import {
   describeTopicsQuery,
   NewConfigMap,

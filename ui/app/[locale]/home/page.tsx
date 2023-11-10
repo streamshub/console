@@ -1,4 +1,5 @@
-import { ClusterDetail, getKafkaCluster, getKafkaClusters } from "@/api/kafka";
+import { getKafkaCluster, getKafkaClusters } from "@/api/kafka/actions";
+import { ClusterDetail } from "@/api/kafka/schema";
 import { getViewedTopics } from "@/api/topics/actions";
 import { ClustersTable } from "@/app/[locale]/home/ClustersTable";
 import { ExpandableCard } from "@/app/[locale]/home/ExpandableCard";

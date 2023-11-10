@@ -1,27 +1,10 @@
+"use server";
 import { getHeaders } from "@/api/api";
+import { Message, MessageApiResponse } from "@/api/messages/schema";
 import { filterUndefinedFromObj } from "@/utils/filterUndefinedFromObj";
 import { logger } from "@/utils/logger";
-import { z } from "zod";
 
 const log = logger.child({ module: "messages-api" });
-
-const MessageSchema = z.object({
-  type: z.literal("records"),
-  attributes: z.object({
-    partition: z.number(),
-    offset: z.number(),
-    timestamp: z.string(),
-    timestampType: z.string(),
-    headers: z.record(z.any()),
-    key: z.string().nullable(),
-    value: z.string().nullable(),
-  }),
-});
-const MessageApiResponse = z.object({
-  meta: z.object({}).nullable().optional(),
-  data: z.array(MessageSchema),
-});
-export type Message = z.infer<typeof MessageSchema>;
 
 export async function getTopicMessages(
   kafkaId: string,
