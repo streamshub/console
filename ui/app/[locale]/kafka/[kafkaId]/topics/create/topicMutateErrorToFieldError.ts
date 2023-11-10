@@ -1,4 +1,4 @@
-import { TopicMutateError } from "@/api/topics";
+import { TopicMutateError } from "@/api/topics/schema";
 
 export function topicMutateErrorToFieldError(
   error: TopicMutateError | "unknown" | undefined,

@@ -1,5 +1,5 @@
 import { getKafkaCluster } from "@/api/kafka";
-import { getTopic } from "@/api/topics";
+import { getTopic } from "@/api/topics/actions";
 import { KafkaTopicParams } from "@/app/[locale]/kafka/[kafkaId]/topics/kafkaTopic.params";
 import { AppHeader } from "@/components/AppHeader";
 import { NavItemLink } from "@/components/NavItemLink";

@@ -1,14 +1,15 @@
 "use client";
-import { TopicList } from "@/api/topics";
-import { ButtonLink } from "@/components/ButtonLink";
+import { ViewedTopic } from "@/api/topics/actions";
 import { ResponsiveTable } from "@/components/table";
+import { Link } from "@/navigation";
+import { Truncate } from "@patternfly/react-core";
 import { TableVariant } from "@patternfly/react-table";
 import { useTranslations } from "next-intl";
 
 export const TopicsTableColumns = ["name", "cluster"] as const;
 
 export type TopicsTableProps = {
-  topics: TopicList[] | undefined;
+  topics: ViewedTopic[] | undefined;
 };
 
 export function TopicsTable({ topics }: TopicsTableProps) {
@@ -19,12 +20,11 @@ export function TopicsTable({ topics }: TopicsTableProps) {
       data={topics}
       ariaLabel={"Topics"}
       columns={TopicsTableColumns}
-      disableAutomaticColumns={true}
       renderHeader={({ Th, column, key }) => {
         switch (column) {
           case "name":
             return (
-              <Th key={key} dataLabel={"Topic"}>
+              <Th key={key} width={70} dataLabel={"Topic"}>
                 Name
               </Th>
             );
@@ -41,17 +41,15 @@ export function TopicsTable({ topics }: TopicsTableProps) {
           case "name":
             return (
               <Td key={key} dataLabel={"Topic"}>
-                <ButtonLink variant={"link"} href={`/kafka/TODO/${row.id}`}>
-                  {row.attributes.name}
-                </ButtonLink>
+                <Link href={`/kafka/${row.kafkaId}/topics/${row.topicId}`}>
+                  <Truncate content={row.topicName} />
+                </Link>
               </Td>
             );
           case "cluster":
             return (
               <Td key={key} dataLabel={"Cluster"}>
-                <ButtonLink variant={"link"} href={`/kafka/TODO`}>
-                  TODO
-                </ButtonLink>
+                <Link href={`/kafka/${row.kafkaId}`}>{row.kafkaName}</Link>
               </Td>
             );
         }

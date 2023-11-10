@@ -3,6 +3,7 @@
 import { ClusterDetail } from "@/api/kafka";
 import { Number } from "@/components/Number";
 import { ResponsiveTable } from "@/components/table";
+import { Truncate } from "@patternfly/react-core";
 import { CopyIcon, IntegrationIcon } from "@patternfly/react-icons";
 import { TableVariant } from "@patternfly/react-table";
 import Link from "next/link";
@@ -10,7 +11,7 @@ import Link from "next/link";
 const columns = ["name", "nodes", "consumers", "producers"] as const;
 
 export function ClustersTable({
-  clusters = [],
+  clusters,
 }: {
   clusters: ClusterDetail[] | undefined;
 }) {
@@ -18,13 +19,12 @@ export function ClustersTable({
     <ResponsiveTable
       ariaLabel={"Kafka clusters"}
       variant={TableVariant.compact}
-      disableAutomaticColumns={true}
       columns={columns}
       data={clusters}
       renderHeader={({ column, Th }) => {
         switch (column) {
           case "name":
-            return <Th width={50}>Name</Th>;
+            return <Th width={40}>Name</Th>;
           case "nodes":
             return <Th>Online Brokers</Th>;
           case "producers":
@@ -38,7 +38,9 @@ export function ClustersTable({
           case "name":
             return (
               <Td>
-                <Link href={`/kafka/${row.id}`}>{row.attributes.name}</Link>
+                <Link href={`/kafka/${row.id}`}>
+                  <Truncate content={row.attributes.name} />
+                </Link>
               </Td>
             );
           case "nodes":

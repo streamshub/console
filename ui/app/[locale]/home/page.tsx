@@ -1,4 +1,5 @@
 import { ClusterDetail, getKafkaCluster, getKafkaClusters } from "@/api/kafka";
+import { getViewedTopics } from "@/api/topics/actions";
 import { ClustersTable } from "@/app/[locale]/home/ClustersTable";
 import { ExpandableCard } from "@/app/[locale]/home/ExpandableCard";
 import { TopicsTable } from "@/app/[locale]/home/TopicsTable";
@@ -6,9 +7,10 @@ import {
   Button,
   CardBody,
   CardTitle,
+  EmptyState,
+  EmptyStateBody,
   Flex,
   Grid,
-  GridItem,
   Label,
   LabelGroup,
   Level,
@@ -58,26 +60,13 @@ export default function Home() {
             </ExpandableCard>
           </StackItem>
           <StackItem>
-            <Grid hasGutter={true}>
-              <GridItem md={6}>
-                <ExpandableCard title={"Recently viewed topics"}>
-                  <CardBody>
-                    <Suspense fallback={<TopicsTable topics={undefined} />}>
-                      <RecentTopics />
-                    </Suspense>
-                  </CardBody>
-                </ExpandableCard>
-              </GridItem>
-              <GridItem md={6}>
-                <ExpandableCard title={"Recently changed topics"}>
-                  <CardBody>
-                    <Suspense fallback={<TopicsTable topics={undefined} />}>
-                      <ChangedTopics />
-                    </Suspense>
-                  </CardBody>
-                </ExpandableCard>
-              </GridItem>
-            </Grid>
+            <ExpandableCard title={"Recently viewed topics"}>
+              <CardBody>
+                <Suspense fallback={<TopicsTable topics={undefined} />}>
+                  <RecentTopics />
+                </Suspense>
+              </CardBody>
+            </ExpandableCard>
           </StackItem>
           <StackItem>
             <ExpandableCard
@@ -250,8 +239,17 @@ async function ConnectedClustersTable() {
 }
 
 async function RecentTopics() {
-  const dull = await new Promise(() => {});
-  return <div>eventually</div>;
+  const viewedTopics = await getViewedTopics();
+  return viewedTopics.length > 0 ? (
+    <TopicsTable topics={viewedTopics} />
+  ) : (
+    <EmptyState variant={"xs"}>
+      <EmptyStateBody>
+        You haven&quot;t viewed any topic, yet. Topics you view will be listed
+        here.
+      </EmptyStateBody>
+    </EmptyState>
+  );
 }
 
 async function ChangedTopics() {

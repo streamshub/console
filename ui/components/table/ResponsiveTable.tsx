@@ -45,6 +45,7 @@ export type RenderActionsCb<TRow> = (props: {
 export type ResponsiveTableProps<TRow, TCol> = {
   ariaLabel: string;
   minimumColumnWidth?: number;
+  stackedLayoutBreakpoint?: number;
   columns: readonly TCol[];
   data: TRow[] | undefined;
   renderHeader: RenderHeaderCb<TCol>;
@@ -69,6 +70,7 @@ type RowProps<TRow> = { row: TRow; rowIndex: number };
 export const ResponsiveTable = <TRow, TCol>({
   ariaLabel,
   minimumColumnWidth = 250,
+  stackedLayoutBreakpoint = 400,
   columns,
   data,
   renderHeader,
@@ -84,7 +86,7 @@ export const ResponsiveTable = <TRow, TCol>({
   tableOuiaId,
   children,
   variant,
-  disableAutomaticColumns,
+  disableAutomaticColumns = true,
 }: PropsWithChildren<ResponsiveTableProps<TRow, TCol>>) => {
   const [width, setWidth] = useState(1000);
   let animationHandle: number;
@@ -103,12 +105,18 @@ export const ResponsiveTable = <TRow, TCol>({
     }
   };
   const { ref } = useResizeObserver({ onResize });
-  const showColumns = width >= 576 || disableAutomaticColumns === true;
+  const showColumns = width >= stackedLayoutBreakpoint;
 
   const canColumnBeHidden = useCallback(
-    (index: number) =>
-      showColumns && index !== 0 && index !== columns.length - 1,
-    [columns, showColumns],
+    (index: number): boolean => {
+      if (disableAutomaticColumns === true) {
+        return false;
+      } else if (showColumns) {
+        return index !== 0 && index !== columns.length - 1;
+      }
+      return true;
+    },
+    [columns.length, disableAutomaticColumns, showColumns],
   );
 
   const header = useMemo(() => {
