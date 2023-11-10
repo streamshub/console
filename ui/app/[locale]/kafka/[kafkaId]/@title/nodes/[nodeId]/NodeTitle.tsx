@@ -1,4 +1,4 @@
-import { getKafkaCluster } from "@/api/kafka";
+import { getKafkaCluster } from "@/api/kafka/actions";
 import { KafkaNodeParams } from "@/app/[locale]/kafka/[kafkaId]/nodes/kafkaNode.params";
 import { Title } from "@/libs/patternfly/react-core";
 import { notFound } from "next/navigation";

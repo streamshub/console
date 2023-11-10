@@ -5,5 +5,5 @@ export default async function resourceIndexPage({
 }: {
   params: { kafkaId: string };
 }) {
-  redirect("/resources");
+  redirect("/home");
 }

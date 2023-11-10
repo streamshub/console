@@ -1,4 +1,4 @@
-import { TopicMutateError } from "@/api/topics";
+import { TopicMutateError } from "@/api/topics/schema";
 import { FieldName } from "@/app/[locale]/kafka/[kafkaId]/topics/create/FieldName";
 import { FieldPartitions } from "@/app/[locale]/kafka/[kafkaId]/topics/create/FieldPartitions";
 import { FieldReplicas } from "@/app/[locale]/kafka/[kafkaId]/topics/create/FieldReplicas";

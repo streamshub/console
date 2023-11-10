@@ -1,4 +1,4 @@
-import { ConfigMap, NewConfigMap } from "@/api/topics";
+import { ConfigMap, NewConfigMap } from "@/api/topics/schema";
 import { ResponsiveTable, ResponsiveTableProps } from "@/components/table";
 import {
   FormGroup,

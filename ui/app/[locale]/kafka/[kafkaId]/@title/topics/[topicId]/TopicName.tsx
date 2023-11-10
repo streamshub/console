@@ -1,4 +1,4 @@
-import { getTopic } from "@/api/topics";
+import { getTopic } from "@/api/topics/actions";
 import { KafkaTopicParams } from "@/app/[locale]/kafka/[kafkaId]/topics/kafkaTopic.params";
 import { Title } from "@/libs/patternfly/react-core";
 import { Skeleton } from "@patternfly/react-core";

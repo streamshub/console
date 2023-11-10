@@ -1,38 +1,40 @@
 "use server";
-import { Resources, ResourcesSchema } from "@/api/resources";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { sealData, unsealData } from "iron-session";
 import { getServerSession } from "next-auth";
 import { cookies } from "next/headers";
 
-export async function getSession(scope: "resources") {
+export async function getSession<T extends Record<string, unknown>>(
+  scope: string,
+) {
   const user = await getUser();
+  if (!user.username) {
+    throw new Error("Can't get session for unauthenticated users");
+  }
   const cookieStore = cookies();
   const encryptedSession = cookieStore.get(`${user.username}:${scope}`)?.value;
 
+  if (!encryptedSession) {
+    return {} as T;
+  }
   try {
-    const rawSession = encryptedSession
-      ? await unsealData(encryptedSession, {
-          password: process.env.SESSION_SECRET,
-        })
-      : null;
-    switch (scope) {
-      case "resources":
-        return ResourcesSchema.parse(rawSession);
-    }
+    const rawSession = await unsealData(encryptedSession, {
+      password: process.env.SESSION_SECRET,
+    });
+    return rawSession as T;
   } catch {
-    switch (scope) {
-      case "resources":
-        return { resources: [], newResource: {} };
-    }
+    return {} as T;
   }
 }
 
-export async function setSession(
-  scope: "kafka" | "resources",
-  session: Resources,
-): Promise<Resources> {
+export async function setSession<T extends Record<string, unknown>>(
+  scope: string,
+  session: T,
+) {
   const user = await getUser();
+  if (!user.username) {
+    throw new Error("Can't set session for unauthenticated users");
+  }
   const encryptedSession = await sealData(session, {
     password: process.env.SESSION_SECRET,
   });

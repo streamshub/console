@@ -1,5 +1,5 @@
 "use client";
-import { Topic, TopicMutateError } from "@/api/topics";
+import { Topic, TopicMutateError } from "@/api/topics/schema";
 import { Error } from "@/app/[locale]/kafka/[kafkaId]/topics/create/Errors";
 import { topicMutateErrorToFieldError } from "@/app/[locale]/kafka/[kafkaId]/topics/create/topicMutateErrorToFieldError";
 import { Number } from "@/components/Number";
