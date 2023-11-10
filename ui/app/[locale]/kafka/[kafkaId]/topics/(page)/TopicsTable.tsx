@@ -1,5 +1,5 @@
 "use client";
-import { TopicList } from "@/api/topics";
+import { TopicList } from "@/api/topics/schema";
 import { ButtonLink } from "@/components/ButtonLink";
 import { Bytes } from "@/components/Bytes";
 import { Number } from "@/components/Number";

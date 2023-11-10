@@ -1,4 +1,4 @@
-import { getTopics } from "@/api/topics";
+import { getTopics } from "@/api/topics/actions";
 import { KafkaParams } from "@/app/[locale]/kafka/[kafkaId]/kafka.params";
 import {
   SortableColumns,

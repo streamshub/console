@@ -1,5 +1,5 @@
 "use client";
-import { ConfigMap, NewConfigMap } from "@/api/topics";
+import { ConfigMap, NewConfigMap } from "@/api/topics/schema";
 import { ResponsiveTable, ResponsiveTableProps } from "@/components/table";
 import { TableVariant } from "@patternfly/react-table";
 import { useCallback, useMemo } from "react";

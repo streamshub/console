@@ -1,4 +1,4 @@
-import { ClusterDetail, ClusterList } from "@/api/kafka";
+import { ClusterDetail, ClusterList } from "@/api/kafka/schema";
 import {
   Divider,
   Dropdown,
@@ -8,9 +8,9 @@ import {
   MenuToggle,
   SearchInput,
 } from "@/libs/patternfly/react-core";
+import { useRouter } from "@/navigation";
 import { Route } from "next";
 import Link from "next/link";
-import { useRouter } from "@/navigation";
 import { CSSProperties, useState } from "react";
 
 export function KafkaSwitcher<T extends string>({
