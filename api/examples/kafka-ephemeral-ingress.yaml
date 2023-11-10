@@ -6,6 +6,13 @@ spec:
   kafka:
     version: 3.5.1
     replicas: 3
+    resources:
+      limits:
+        cpu: 500m
+        memory: 1Gi
+      requests:
+        cpu: 75m
+        memory: 1Gi
     authorization:
       type: simple
     listeners:
@@ -53,7 +60,12 @@ spec:
       inter.broker.protocol.version: "3.5"
       allow.everyone.if.no.acl.found: "true"
     storage:
-      type: ephemeral
+      volumes:
+      - type: "persistent-claim"
+        size: "1Gi"
+        deleteClaim: true
+        id: 0
+      type: "jbod"
     metricsConfig:
       type: jmxPrometheusExporter
       valueFrom:
@@ -62,8 +74,17 @@ spec:
           key: kafka-metrics-config.yml
   zookeeper:
     replicas: 3
+    resources:
+      limits:
+        cpu: 200m
+        memory: 512Mi
+      requests:
+        cpu: 75m
+        memory: 512Mi
     storage:
-      type: ephemeral
+      type: persistent-claim
+      size: 1Gi
+      deleteClaim: false
     metricsConfig:
       type: jmxPrometheusExporter
       valueFrom:

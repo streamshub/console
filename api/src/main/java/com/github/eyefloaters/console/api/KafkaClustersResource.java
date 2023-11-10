@@ -126,7 +126,8 @@ public class KafkaClustersResource {
                         KafkaCluster.Fields.CONTROLLER,
                         KafkaCluster.Fields.AUTHORIZED_OPERATIONS,
                         KafkaCluster.Fields.BOOTSTRAP_SERVERS,
-                        KafkaCluster.Fields.AUTH_TYPE
+                        KafkaCluster.Fields.AUTH_TYPE,
+                        KafkaCluster.Fields.METRICS,
                     },
                     payload = ErrorCategory.InvalidQueryParameter.class)
             @Parameter(
@@ -144,7 +145,8 @@ public class KafkaClustersResource {
                                 KafkaCluster.Fields.CONTROLLER,
                                 KafkaCluster.Fields.AUTHORIZED_OPERATIONS,
                                 KafkaCluster.Fields.BOOTSTRAP_SERVERS,
-                                KafkaCluster.Fields.AUTH_TYPE
+                                KafkaCluster.Fields.AUTH_TYPE,
+                                KafkaCluster.Fields.METRICS,
                             }))
             List<String> fields) {
 

@@ -4,6 +4,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -16,6 +17,8 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 import com.fasterxml.jackson.annotation.JsonFilter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.github.eyefloaters.console.api.support.ComparatorBuilder;
 import com.github.eyefloaters.console.api.support.ListRequestContext;
 
@@ -35,6 +38,7 @@ public class KafkaCluster {
         public static final String AUTHORIZED_OPERATIONS = "authorizedOperations";
         public static final String BOOTSTRAP_SERVERS = "bootstrapServers";
         public static final String AUTH_TYPE = "authType";
+        public static final String METRICS = "metrics";
 
         static final Comparator<KafkaCluster> ID_COMPARATOR =
                 comparing(KafkaCluster::getId);
@@ -120,6 +124,8 @@ public class KafkaCluster {
     final List<String> authorizedOperations;
     String bootstrapServers; // Strimzi Kafka CR only
     String authType; // Strimzi Kafka CR only
+    @JsonInclude(Include.NON_EMPTY)
+    Map<String, Map<String, List<Object[]>>> metrics = new LinkedHashMap<>();
 
     public KafkaCluster(String id, List<Node> nodes, Node controller, List<String> authorizedOperations) {
         super();
@@ -224,5 +230,9 @@ public class KafkaCluster {
 
     public void setAuthType(String authType) {
         this.authType = authType;
+    }
+
+    public Map<String, Map<String, List<Object[]>>> getMetrics() {
+        return metrics;
     }
 }
