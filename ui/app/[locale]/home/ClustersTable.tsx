@@ -2,10 +2,11 @@
 
 import { ClusterDetail } from "@/api/kafka/schema";
 import { Number } from "@/components/Number";
+import { useHelp } from "@/components/Quickstarts/HelpContainer";
 import { ResponsiveTable } from "@/components/table";
-import { Truncate } from "@patternfly/react-core";
-import { CopyIcon, IntegrationIcon } from "@patternfly/react-icons";
-import { TableVariant } from "@patternfly/react-table";
+import { Truncate } from "@/libs/patternfly/react-core";
+import { CopyIcon, IntegrationIcon } from "@/libs/patternfly/react-icons";
+import { TableVariant } from "@/libs/patternfly/react-table";
 import Link from "next/link";
 
 const columns = ["name", "nodes", "consumers", "producers"] as const;
@@ -15,6 +16,7 @@ export function ClustersTable({
 }: {
   clusters: ClusterDetail[] | undefined;
 }) {
+  const openHelp = useHelp();
   return (
     <ResponsiveTable
       ariaLabel={"Kafka clusters"}
@@ -74,7 +76,9 @@ export function ClustersTable({
           items={[
             {
               title: "Connect to this cluster",
-              onClick: () => {},
+              onClick: () => {
+                openHelp("connect-to-cluster");
+              },
               icon: <IntegrationIcon />,
             },
             {

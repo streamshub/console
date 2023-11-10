@@ -3,6 +3,7 @@ import { AppMasthead } from "@/app/[locale]/AppMasthead";
 import { AppSidebar } from "@/app/[locale]/AppSidebar";
 import { NavExpandable } from "@/components/NavExpandable";
 import { NavItemLink } from "@/components/NavItemLink";
+import { HelpContainer } from "@/components/Quickstarts/HelpContainer";
 import { Nav, NavList, Page } from "@/libs/patternfly/react-core";
 import { PropsWithChildren, Suspense } from "react";
 
@@ -32,7 +33,7 @@ export function AppLayout({ children }: PropsWithChildren) {
         </AppSidebar>
       }
     >
-      {children}
+      <HelpContainer>{children}</HelpContainer>
     </Page>
   );
 }
