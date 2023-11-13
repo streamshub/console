@@ -10,7 +10,6 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.Set;
@@ -431,28 +430,11 @@ public class TopicValidation {
         public boolean isValid(TopicPatchInputs inputs, ConstraintValidatorContext context) {
             AtomicBoolean valid = new AtomicBoolean(true);
 
-            validTopicId(valid, inputs, context);
-
             if (validNumPartitions(valid, inputs, context)) {
                 validPartitionIds(valid, inputs, context);
             }
 
             return valid.get();
-        }
-
-        /**
-         * Verify that the topic ID in a patchTopic request body matches the ID in the
-         * existing topic (retrieved using the URL).
-         */
-        void validTopicId(AtomicBoolean valid, TopicPatchInputs inputs, ConstraintValidatorContext context) {
-            if (!Objects.equals(inputs.topic().getId(), inputs.patch().topicId())) {
-                valid.set(false);
-                context.buildConstraintViolationWithTemplate("resource ID conflicts with operation URL")
-                    .addPropertyNode(DATA)
-                    .addPropertyNode("id")
-                    .addConstraintViolation()
-                    .disableDefaultConstraintViolation();
-            }
         }
 
         /**

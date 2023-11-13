@@ -73,6 +73,13 @@ public abstract class ErrorCategory implements Payload {
     }
 
     @Singleton
+    public static class NotAuthorized extends ErrorCategory {
+        public NotAuthorized() {
+            super("4031", "Not Authorized", Status.FORBIDDEN);
+        }
+    }
+
+    @Singleton
     public static class ResourceNotFound extends ErrorCategory {
         public ResourceNotFound() {
             super("4041", "Resource not found", Status.NOT_FOUND);

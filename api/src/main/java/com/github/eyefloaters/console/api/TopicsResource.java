@@ -6,6 +6,7 @@ import java.util.function.Consumer;
 
 import jakarta.inject.Inject;
 import jakarta.inject.Named;
+import jakarta.validation.ConstraintTarget;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.BeanParam;
 import jakarta.ws.rs.Consumes;
@@ -48,6 +49,8 @@ import com.github.eyefloaters.console.api.support.KafkaOffsetSpec;
 import com.github.eyefloaters.console.api.support.KafkaUuid;
 import com.github.eyefloaters.console.api.support.ListRequestContext;
 import com.github.eyefloaters.console.api.support.StringEnumeration;
+
+import io.xlate.validation.constraints.Expression;
 
 @Path("/api/kafkas/{clusterId}/topics")
 @Tag(name = "Kafka Cluster Resources")
@@ -334,6 +337,16 @@ public class TopicsResource {
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     @APIResponseSchema(responseCode = "204", value = Void.class)
+    @Expression(
+        targetName = "args",
+        // Only check when the request body Id is present (separately checked for @NotNull)
+        when = "args[2].data.id != null",
+        // Verify the Id in the request body matches the Id in the URL
+        value = "args[1].equals(args[2].data.id)",
+        message = "resource ID conflicts with operation URL",
+        node = { "data", "id" },
+        payload = ErrorCategory.InvalidResource.class,
+        validationAppliesTo = ConstraintTarget.PARAMETERS)
     public CompletionStage<Response> patchTopic(
             @Parameter(description = "Cluster identifier")
             @PathParam("clusterId")
@@ -349,8 +362,8 @@ public class TopicsResource {
                     schema = @Schema(implementation = TopicPatch.TopicPatchDocument.class),
                     examples = {
                         @ExampleObject(
-                                name = "patchTopic-simple",
-                                externalValue = "/openapi/examples/patchTopic-simple.json"),
+                            name = "patchTopic-simple",
+                            externalValue = "/openapi/examples/patchTopic-simple.json"),
                         @ExampleObject(
                             name = "patchTopic-validateOnly",
                             externalValue = "/openapi/examples/patchTopic-validateOnly.json")

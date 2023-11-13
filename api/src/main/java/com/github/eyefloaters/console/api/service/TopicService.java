@@ -30,15 +30,15 @@ import org.apache.kafka.clients.admin.CreateTopicsOptions;
 import org.apache.kafka.clients.admin.CreateTopicsResult;
 import org.apache.kafka.clients.admin.DescribeLogDirsOptions;
 import org.apache.kafka.clients.admin.DescribeTopicsOptions;
+import org.apache.kafka.clients.admin.ListTopicsOptions;
 import org.apache.kafka.clients.admin.ListOffsetsResult.ListOffsetsResultInfo;
 import org.apache.kafka.clients.admin.NewPartitionReassignment;
 import org.apache.kafka.clients.admin.OffsetSpec;
+import org.apache.kafka.clients.admin.TopicListing;
 import org.apache.kafka.common.TopicCollection;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.Uuid;
 import org.apache.kafka.common.config.ConfigResource;
-import org.apache.kafka.common.errors.InvalidTopicException;
-import org.apache.kafka.common.errors.UnknownTopicOrPartitionException;
 import org.eclipse.microprofile.context.ThreadContext;
 import org.jboss.logging.Logger;
 
@@ -54,6 +54,7 @@ import com.github.eyefloaters.console.api.model.TopicPatch;
 import com.github.eyefloaters.console.api.support.KafkaOffsetSpec;
 import com.github.eyefloaters.console.api.support.ListRequestContext;
 import com.github.eyefloaters.console.api.support.TopicValidation;
+import com.github.eyefloaters.console.api.support.UnknownTopicIdPatch;
 import com.github.eyefloaters.console.api.support.ValidationProxy;
 
 import io.strimzi.api.kafka.model.Kafka;
@@ -141,18 +142,25 @@ public class TopicService {
 
         Admin adminClient = clientSupplier.get();
 
-        return adminClient.listTopics()
-                .listings()
-                .thenApply(list -> list.stream().map(Topic::fromTopicListing).toList())
-                .toCompletionStage()
-                .thenComposeAsync(list -> augmentList(adminClient, list, fetchList, offsetSpec), threadContext.currentContextExecutor())
-                .thenApply(list -> list.stream()
-                        .map(listSupport::tally)
-                        .filter(listSupport::betweenCursors)
-                        .sorted(listSupport.getSortComparator())
-                        .dropWhile(listSupport::beforePageBegin)
-                        .takeWhile(listSupport::pageCapacityAvailable)
-                        .toList());
+        return listTopics(adminClient, false)
+            .thenApply(list -> list.stream().map(Topic::fromTopicListing).toList())
+            .thenComposeAsync(list -> augmentList(adminClient, list, fetchList, offsetSpec), threadContext.currentContextExecutor())
+            .thenApply(list -> list.stream()
+                    .map(listSupport::tally)
+                    .filter(listSupport::betweenCursors)
+                    .sorted(listSupport.getSortComparator())
+                    .dropWhile(listSupport::beforePageBegin)
+                    .takeWhile(listSupport::pageCapacityAvailable)
+                    .toList());
+    }
+
+    CompletableFuture<List<TopicListing>> listTopics(Admin adminClient, boolean listInternal) {
+        return adminClient
+            .listTopics(new ListTopicsOptions().listInternal(listInternal))
+            .listings()
+            .thenApply(topics -> topics.stream().toList())
+            .toCompletionStage()
+            .toCompletableFuture();
     }
 
     public CompletionStage<Topic> describeTopic(String topicId, List<String> fields, String offsetSpec) {
@@ -436,10 +444,7 @@ public class TopicService {
                 .stream()
                 .map(entry ->
                     entry.getValue().toCompletionStage().<Void>handle((description, error) -> {
-                        if (error instanceof InvalidTopicException) {
-                            // See KAFKA-15373
-                            error = new UnknownTopicOrPartitionException(error);
-                        }
+                        error = UnknownTopicIdPatch.apply(error, Function.identity());
 
                         result.put(
                                 entry.getKey(),
