@@ -12,13 +12,19 @@ import java.util.Optional;
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
+import jakarta.validation.Valid;
 
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonFilter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.github.eyefloaters.console.api.support.ComparatorBuilder;
+import com.github.eyefloaters.console.api.support.ErrorCategory;
 import com.github.eyefloaters.console.api.support.ListRequestContext;
+
+import io.xlate.validation.constraints.Expression;
 
 import static java.util.Comparator.comparing;
 import static java.util.Comparator.nullsLast;
@@ -70,7 +76,7 @@ public class ConsumerGroup {
         }
     }
 
-    @Schema(name = "ConsumerGroupListResponse")
+    @Schema(name = "ConsumerGroupListDocument")
     public static final class ListResponse extends DataList<ConsumerGroupResource> {
         public ListResponse(List<ConsumerGroup> data, ListRequestContext<ConsumerGroup> listSupport) {
             super(data.stream()
@@ -85,20 +91,53 @@ public class ConsumerGroup {
         }
     }
 
-    @Schema(name = "ConsumerGroupResponse")
-    public static final class SingleResponse extends DataSingleton<ConsumerGroupResource> {
-        public SingleResponse(ConsumerGroup data) {
-            super(new ConsumerGroupResource(data));
+    @Schema(name = "ConsumerGroupDocument")
+    public static final class ConsumerGroupDocument extends DataSingleton<ConsumerGroupResource> {
+        /**
+         * Used by patch
+         */
+        @JsonCreator
+        public ConsumerGroupDocument(@JsonProperty("data") ConsumerGroupResource data) {
+            super(data);
+        }
+
+        /**
+         * Used by list and describe
+         */
+        public ConsumerGroupDocument(ConsumerGroup attributes) {
+            super(new ConsumerGroupResource(attributes));
         }
     }
 
     @Schema(name = "ConsumerGroup")
+    @Expression(
+        value = "self.id != null",
+        message = "resource ID is required",
+        node = "id",
+        payload = ErrorCategory.InvalidResource.class)
+    @Expression(
+        when = "self.type != null",
+        value = "self.type == 'consumerGroups'",
+        message = "resource type conflicts with operation",
+        node = "type",
+        payload = ErrorCategory.ResourceConflict.class)
     public static final class ConsumerGroupResource extends Resource<ConsumerGroup> {
-        public ConsumerGroupResource(ConsumerGroup data) {
-            super(data.groupId, "consumerGroups", data);
+        /**
+         * Used by patch
+         */
+        @JsonCreator
+        public ConsumerGroupResource(String id, String type, ConsumerGroup attributes) {
+            super(id, type, new ConsumerGroup(id, attributes));
+        }
 
-            if (data.errors != null) {
-                addMeta("errors", data.errors);
+        /**
+         * Used by list and describe
+         */
+        public ConsumerGroupResource(ConsumerGroup attributes) {
+            super(attributes.groupId, "consumerGroups", attributes);
+
+            if (attributes.errors != null) {
+                addMeta("errors", attributes.errors);
             }
         }
     }
@@ -118,11 +157,22 @@ public class ConsumerGroup {
 
     // Available via list offsets operation only
 
-    private List<OffsetAndMetadata> offsets;
+    private List<@Valid OffsetAndMetadata> offsets;
 
     // When a describe error occurs
     private List<Error> errors;
 
+    private ConsumerGroup(String id, ConsumerGroup other) {
+        this(id,
+             other != null && other.simpleConsumerGroup,
+             other != null ? other.state : null);
+
+        Optional.ofNullable(other)
+            .map(ConsumerGroup::getOffsets)
+            .ifPresent(this::setOffsets);
+    }
+
+    @JsonCreator
     public ConsumerGroup(String groupId, boolean simpleConsumerGroup, String state) {
         this.groupId = groupId;
         this.simpleConsumerGroup = simpleConsumerGroup;

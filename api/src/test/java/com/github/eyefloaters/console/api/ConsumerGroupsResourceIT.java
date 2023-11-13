@@ -17,6 +17,8 @@ import jakarta.inject.Inject;
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonReader;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response.Status;
 
 import org.apache.kafka.clients.admin.ConsumerGroupDescription;
@@ -33,11 +35,19 @@ import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.errors.ApiException;
 import org.apache.kafka.common.internals.KafkaFutureImpl;
 import org.eclipse.microprofile.config.Config;
+import org.hamcrest.Description;
 import org.hamcrest.Matchers;
+import org.hamcrest.TypeSafeMatcher;
+import org.json.JSONException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvFileSource;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.Mockito;
 import org.mockito.stubbing.Answer;
+import org.skyscreamer.jsonassert.JSONAssert;
+import org.skyscreamer.jsonassert.JSONCompareMode;
 
 import com.github.eyefloaters.console.kafka.systemtest.TestPlainProfile;
 import com.github.eyefloaters.console.kafka.systemtest.deployment.DeploymentManager;
@@ -505,5 +515,152 @@ class ConsumerGroupsResourceIT {
         whenRequesting(req -> req.get("{groupId}", clusterId1, group1))
             .assertThat()
             .statusCode(is(Status.NOT_FOUND.getStatusCode()));
+    }
+
+    @Test
+    void testPatchConsumerGroupWithNoSuchGroup() {
+        String topic1 = "t1-" + UUID.randomUUID().toString();
+        String group1 = "g1-" + UUID.randomUUID().toString();
+        String client1 = "c1-" + UUID.randomUUID().toString();
+        String noSuchGroupId = UUID.randomUUID().toString();
+
+        try (var consumer = groupUtils.consume(group1, topic1, client1, 2, false)) {
+            whenRequesting(req -> req
+                    .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
+                    .body(Json.createObjectBuilder()
+                            .add("data", Json.createObjectBuilder()
+                                    .add("id", noSuchGroupId)
+                                    .add("type", "consumerGroups")
+                                    .add("attributes", Json.createObjectBuilder()))
+                            .build()
+                            .toString())
+                    .patch("{groupId}", clusterId1, noSuchGroupId))
+                .assertThat()
+                .statusCode(is(Status.NOT_FOUND.getStatusCode()))
+                .body("errors.size()", is(1))
+                .body("errors.status", contains("404"))
+                .body("errors.code", contains("4041"));
+        }
+    }
+
+    @ParameterizedTest
+    @CsvFileSource(
+        delimiter = '|',
+        lineSeparator = "@\n",
+        resources = { "/patchConsumerGroup-invalid-requests.txt" })
+    void testPatchConsumerGroupWithInvalidRequest(String label, String requestBody, Status responseStatus, String expectedResponse)
+            throws JSONException {
+
+        String topic1 = "t1-" + UUID.randomUUID().toString();
+        String topic1Id = topicUtils.createTopics(clusterId1, List.of(topic1), 2).get(topic1);
+        String group1 = "g1-" + UUID.randomUUID().toString();
+        String client1 = "c1-" + UUID.randomUUID().toString();
+
+        String preparedRequest = requestBody
+                .replace("$groupId", group1)
+                .replace("$topicId", topic1Id);
+
+        var consumer = groupUtils.request()
+            .groupId(group1)
+            .topic(topic1)
+            .createTopic(false)
+            .clientId(client1)
+            .messagesPerTopic(10)
+            .consumeMessages(10)
+            .autoClose(false)
+            .consume();
+
+        try {
+            whenRequesting(req -> req
+                    .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
+                    .body(preparedRequest)
+                    .patch("{groupId}", clusterId1, group1))
+                .assertThat()
+                .statusCode(is(responseStatus.getStatusCode()))
+                .body(new TypeSafeMatcher<String>() {
+                    @Override
+                    public boolean matchesSafely(String response) {
+                        try {
+                            JSONAssert.assertEquals(expectedResponse, response, JSONCompareMode.LENIENT);
+                        } catch (JSONException e) {
+                            return false;
+                        }
+                        return true;
+                    }
+
+                    @Override
+                    public void describeTo(Description description) {
+                        description.appendValue(expectedResponse);
+                    }
+                });
+        } finally {
+            consumer.close();
+        }
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        "false, 5, 'earliest'                 , 0",
+        "false, 5, '2023-01-01T00:00:00.000Z' , 0",
+        "true , 0, 'latest'                   , 5", // latest resets to after the last offset
+        "true , 0, 'maxTimestamp'             , 4", // maxTimestamp resets to before the offset of latest timestamp
+    })
+    void testPatchConsumerGroupToOffsetSpecWithMultiplePartitions(
+            boolean resetEarliestBefore,
+            long beforeOffset,
+            String offsetSpec,
+            long afterOffset) {
+        final int partitionCount = 2;
+        String topic1 = "t1-" + UUID.randomUUID().toString();
+        String topic1Id = topicUtils.createTopics(clusterId1, List.of(topic1), partitionCount).get(topic1);
+        String group1 = "g1-" + UUID.randomUUID().toString();
+        String client1 = "c1-" + UUID.randomUUID().toString();
+
+        groupUtils.request()
+                .groupId(group1)
+                .topic(topic1, partitionCount)
+                .createTopic(false)
+                .clientId(client1)
+                .messagesPerTopic(10)
+                .consumeMessages(10)
+                .autoClose(true)
+                .consume();
+
+        if (resetEarliestBefore) {
+            groupUtils.alterConsumerGroupOffsets(group1, Map.ofEntries(
+                    Map.entry(new TopicPartition(topic1, 0), new OffsetAndMetadata(0)),
+                    Map.entry(new TopicPartition(topic1, 1), new OffsetAndMetadata(0))));
+        }
+
+        var offsetBefore = groupUtils.consumerGroupOffsets(group1);
+
+        assertEquals(partitionCount, offsetBefore.size());
+        offsetBefore.forEach((partition, offset) -> {
+            assertEquals(beforeOffset, offset.offset());
+        });
+
+        whenRequesting(req -> req
+                .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
+                .body(Json.createObjectBuilder()
+                        .add("data", Json.createObjectBuilder()
+                                .add("id", group1)
+                                .add("type", "consumerGroups")
+                                .add("attributes", Json.createObjectBuilder()
+                                        .add("offsets", Json.createArrayBuilder()
+                                                .add(Json.createObjectBuilder()
+                                                        .add("topicId", topic1Id)
+                                                        .add("offset", offsetSpec)))))
+                        .build()
+                        .toString())
+                .patch("{groupId}", clusterId1, group1))
+            .assertThat()
+            .statusCode(is(Status.NO_CONTENT.getStatusCode()));
+
+        var offsetAfter = groupUtils.consumerGroupOffsets(group1);
+
+        assertEquals(partitionCount, offsetAfter.size());
+        offsetAfter.forEach((partition, offset) -> {
+            assertEquals(afterOffset, offset.offset());
+        });
     }
 }

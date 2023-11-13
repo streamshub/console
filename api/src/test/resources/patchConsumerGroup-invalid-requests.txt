@@ -1,0 +1,144 @@
+Missing required `id` + invalid `type`
+    | {
+        "data": {
+          "type": "invalid-type"
+        }
+      }
+    | BAD_REQUEST
+    | {
+        "errors": [{
+          "status": "400",
+          "code": "4003",
+          "source": {
+            "pointer": "/data/id"
+          }
+        }, {
+          "status": "409",
+          "code": "4091",
+          "source": {
+            "pointer": "/data/type"
+          }
+        }]
+      }
+    @
+Resource `id` differs from URL
+    | {
+        "data": {
+          "type": "consumerGroups",
+          "id": "does-not-match-real-id",
+          "attributes": { }
+        }
+      }
+    | BAD_REQUEST
+    | {
+        "errors": [{
+          "status": "400",
+          "code": "4003",
+          "source": {
+            "pointer": "/data/id"
+          }
+        }]
+      }
+    @
+Invalid group state - connected members
+    | {
+        "data": {
+          "type": "consumerGroups",
+          "id": "$groupId",
+          "attributes": {
+            "offsets": [{
+              "topicId": "$topicId",
+              "partition": 0,
+              "offset": 0
+            }]
+          }
+        }
+      }
+    | CONFLICT
+    | {
+        "errors": [{
+          "status": "409",
+          "code": "4091"
+        }]
+      }
+    @
+No such topic
+    | {
+        "data": {
+          "type": "consumerGroups",
+          "id": "$groupId",
+          "attributes": {
+            "offsets": [{
+              "topicId": "$topicId",
+              "partition": 0,
+              "offset": 0
+            },
+            {
+              "topicId": "PjgNTE1MSYu0IUIhcBijaA",
+              "partition": 0,
+              "offset": 0
+            }]
+          }
+        }
+      }
+    | BAD_REQUEST
+    | {
+        "errors": [{
+          "status": "400",
+          "code": "4003",
+          "source": {
+            "pointer": "/data/attributes/offsets/1/topicId"
+          }
+        }]
+      }
+    @
+No such partition
+    | {
+        "data": {
+          "type": "consumerGroups",
+          "id": "$groupId",
+          "attributes": {
+            "offsets": [{
+              "topicId": "$topicId",
+              "partition": 100,
+              "offset": 0
+            }]
+          }
+        }
+      }
+    | BAD_REQUEST
+    | {
+        "errors": [{
+          "status": "400",
+          "code": "4003",
+          "source": {
+            "pointer": "/data/attributes/offsets/0/partition"
+          }
+        }]
+      }
+    @
+Offset after latest
+    | {
+        "data": {
+          "type": "consumerGroups",
+          "id": "$groupId",
+          "attributes": {
+            "offsets": [{
+              "topicId": "$topicId",
+              "partition": 1,
+              "offset": 10
+            }]
+          }
+        }
+      }
+    | BAD_REQUEST
+    | {
+        "errors": [{
+          "status": "400",
+          "code": "4003",
+          "source": {
+            "pointer": "/data/attributes/offsets/0/offset"
+          }
+        }]
+      }
+    @

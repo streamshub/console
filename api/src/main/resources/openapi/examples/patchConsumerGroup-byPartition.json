@@ -1,0 +1,40 @@
+{
+    "data": {
+        "type": "consumerGroups",
+        "id": "my-group",
+        "attributes": {
+            "offsets": [
+                {
+                    "topicId": "PjgNTE1MSYu0IUIhcBijaA",
+                    "partition": 0,
+                    "offset": "earliest",
+                    "metadata": "Last reset @ 2023-11-02T18:37:28-04:00"
+                },
+                {
+                    "topicId": "PjgNTE1MSYu0IUIhcBijaA",
+                    "partition": 1,
+                    "offset": "latest",
+                    "metadata": "Last reset @ 2023-11-02T18:37:28-04:00"
+                },
+                {
+                    "topicId": "PjgNTE1MSYu0IUIhcBijaA",
+                    "partition": 2,
+                    "offset": "maxTimestamp",
+                    "metadata": "Last reset @ 2023-11-02T18:37:28-04:00"
+                },
+                {
+                    "topicId": "PjgNTE1MSYu0IUIhcBijaA",
+                    "partition": 3,
+                    "offset": "2023-01-01T00:00:00Z",
+                    "metadata": "Last reset @ 2023-11-02T18:37:28-04:00"
+                },
+                {
+                    "topicId": "PjgNTE1MSYu0IUIhcBijaA",
+                    "partition": 4,
+                    "offset": 99,
+                    "metadata": "Last reset @ 2023-11-02T18:37:28-04:00"
+                }
+            ]
+        }
+    }
+}

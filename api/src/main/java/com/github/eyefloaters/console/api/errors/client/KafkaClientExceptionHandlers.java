@@ -6,6 +6,8 @@ import java.util.regex.Pattern;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.ws.rs.ext.Provider;
 
+import org.apache.kafka.common.errors.AuthenticationException;
+import org.apache.kafka.common.errors.AuthorizationException;
 import org.apache.kafka.common.errors.GroupIdNotFoundException;
 import org.apache.kafka.common.errors.GroupNotEmptyException;
 import org.apache.kafka.common.errors.InvalidConfigurationException;
@@ -21,6 +23,36 @@ import com.github.eyefloaters.console.api.support.ErrorCategory;
 public class KafkaClientExceptionHandlers {
 
     private KafkaClientExceptionHandlers() {
+    }
+
+    @Provider
+    @ApplicationScoped
+    public static class AuthenticationExceptionHandler
+        extends AbstractClientExceptionHandler<AuthenticationException> {
+
+        public AuthenticationExceptionHandler() {
+            super(ErrorCategory.NotAuthenticated.class, null, (String) null);
+        }
+
+        @Override
+        public boolean handlesException(Throwable thrown) {
+            return thrown instanceof AuthenticationException;
+        }
+    }
+
+    @Provider
+    @ApplicationScoped
+    public static class AuthorizationExceptionHandler
+        extends AbstractClientExceptionHandler<AuthorizationException> {
+
+        public AuthorizationExceptionHandler() {
+            super(ErrorCategory.NotAuthorized.class, null, (String) null);
+        }
+
+        @Override
+        public boolean handlesException(Throwable thrown) {
+            return thrown instanceof AuthorizationException;
+        }
     }
 
     @Provider
