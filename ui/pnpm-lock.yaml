@@ -66,8 +66,8 @@ dependencies:
     specifier: ^4.24.4
     version: 4.24.4(next@14.0.1)(react-dom@18.2.0)(react@18.2.0)
   next-intl:
-    specifier: ^3.0.0-rc.9
-    version: 3.0.0-rc.9(next@14.0.1)(react@18.2.0)
+    specifier: ^3.0.0-rc.10
+    version: 3.0.0-rc.10(next@14.0.1)(react@18.2.0)
   next-logger:
     specifier: ^3.0.2
     version: 3.0.2(next@14.0.1)(typescript@5.2.2)
@@ -8689,8 +8689,8 @@ packages:
       uuid: 8.3.2
     dev: false
 
-  /next-intl@3.0.0-rc.9(next@14.0.1)(react@18.2.0):
-    resolution: {integrity: sha512-MrHY5nhrVWPeqia7+1Fn2S4/qUgk05+3Ay+Fi1WTwsgT6eSrMv6+RfPmO6ITbKs0/xQ3T3miqjZcy1WWmGEnmg==}
+  /next-intl@3.0.0-rc.10(next@14.0.1)(react@18.2.0):
+    resolution: {integrity: sha512-8Q/CIcjRP3U/L2Xe4YDY1enEKSV8fXjc0sjddblgS6XE3sJa+/aZfRm0FT7lVLnVXI4qgCVm4Pjvyh1GEstpaQ==}
     peerDependencies:
       next: ^10.0.0 || ^11.0.0 || ^12.0.0 || ^13.0.0 || ^14.0.0
       react: ^16.8.0 || ^17.0.0 || ^18.0.0
