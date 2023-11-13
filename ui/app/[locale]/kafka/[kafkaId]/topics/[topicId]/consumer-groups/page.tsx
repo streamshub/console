@@ -1,6 +1,7 @@
 import { getTopicConsumerGroups } from "@/api/consumerGroups/actions";
 import { ConsumerGroupsTable } from "@/app/[locale]/kafka/[kafkaId]/consumer-groups/ConsumerGroupsTable";
 import { KafkaTopicParams } from "@/app/[locale]/kafka/[kafkaId]/topics/kafkaTopic.params";
+import { PageSection } from "@/libs/patternfly/react-core";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
@@ -17,22 +18,24 @@ export default function ConsumerGroupsPage({
   };
 }) {
   return (
-    <Suspense
-      fallback={
-        <ConsumerGroupsTable
-          kafkaId={kafkaId}
-          page={1}
-          total={0}
-          consumerGroups={undefined}
-          refresh={undefined}
+    <PageSection>
+      <Suspense
+        fallback={
+          <ConsumerGroupsTable
+            kafkaId={kafkaId}
+            page={1}
+            total={0}
+            consumerGroups={undefined}
+            refresh={undefined}
+          />
+        }
+      >
+        <ConnectedConsumerGroupsPage
+          params={{ kafkaId, topicId }}
+          searchParams={searchParams}
         />
-      }
-    >
-      <ConnectedConsumerGroupsPage
-        params={{ kafkaId, topicId }}
-        searchParams={searchParams}
-      />
-    </Suspense>
+      </Suspense>
+    </PageSection>
   );
 }
 
