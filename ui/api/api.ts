@@ -10,7 +10,7 @@ export async function getHeaders(): Promise<Record<string, string>> {
   };
 }
 
-export const BackendError = z.object({
+export const ApiError = z.object({
   meta: z.object({ type: z.string() }), // z.map(z.string(), z.string()),
   id: z.string().optional(),
   status: z.string().optional(),

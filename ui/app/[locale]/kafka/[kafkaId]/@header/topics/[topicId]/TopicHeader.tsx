@@ -107,7 +107,9 @@ async function ConnectedTopicHeader({
               >
                 Consumer groups&nbsp;
                 <Label isCompact={true}>
-                  <Number value={0} />
+                  <Number
+                    value={topic.relationships.consumerGroups.data.length}
+                  />
                 </Label>
               </NavItemLink>
               <NavItemLink

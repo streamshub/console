@@ -1,8 +1,8 @@
-import { BackendError } from "@/api/api";
+import { ApiError } from "@/api/api";
 import { z } from "zod";
 
 export const describeTopicsQuery = encodeURI(
-  "fields[topics]=,name,internal,partitions,authorizedOperations,configs,recordCount,totalLeaderLogBytes",
+  "fields[topics]=,name,internal,partitions,authorizedOperations,configs,recordCount,totalLeaderLogBytes,consumerGroups",
 );
 const OffsetSchema = z.object({
   offset: z.number().optional(),
@@ -17,7 +17,7 @@ const PartitionSchema = z.object({
       nodeId: z.number(),
       nodeRack: z.string().optional(),
       inSync: z.boolean(),
-      localStorage: BackendError.or(
+      localStorage: ApiError.or(
         z.object({
           size: z.number(),
           offsetLag: z.number(),
@@ -66,6 +66,11 @@ const TopicSchema = z.object({
     recordCount: z.number().optional(),
     totalLeaderLogBytes: z.number().optional(),
   }),
+  relationships: z.object({
+    consumerGroups: z.object({
+      data: z.array(z.any()),
+    }),
+  }),
 });
 export const TopicResponse = z.object({
   data: TopicSchema,
@@ -86,9 +91,14 @@ const TopicListSchema = z.object({
     recordCount: true,
     totalLeaderLogBytes: true,
   }),
+  relationships: z.object({
+    consumerGroups: z.object({
+      data: z.array(z.any()),
+    }),
+  }),
 });
 export type TopicList = z.infer<typeof TopicListSchema>;
-export const TopicsResponse = z.object({
+export const TopicsResponseSchema = z.object({
   meta: z.object({
     page: z.object({
       total: z.number(),
@@ -103,7 +113,7 @@ export const TopicsResponse = z.object({
   }),
   data: z.array(TopicListSchema),
 });
-export type TopicsResponseList = z.infer<typeof TopicsResponse>;
+export type TopicsResponse = z.infer<typeof TopicsResponseSchema>;
 const TopicCreateResponseSuccessSchema = z.object({
   data: z.object({
     id: z.string(),

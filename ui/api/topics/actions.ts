@@ -11,7 +11,7 @@ import {
   TopicMutateResponseErrorSchema,
   TopicResponse,
   TopicsResponse,
-  TopicsResponseList,
+  TopicsResponseSchema,
 } from "@/api/topics/schema";
 import { filterUndefinedFromObj } from "@/utils/filterUndefinedFromObj";
 import { logger } from "@/utils/logger";
@@ -28,11 +28,11 @@ export async function getTopics(
     sort?: string;
     sortDir?: string;
   },
-): Promise<TopicsResponseList> {
+): Promise<TopicsResponse> {
   const sp = new URLSearchParams(
     filterUndefinedFromObj({
       "fields[topics]":
-        "name,internal,partitions,recordCount,totalLeaderLogBytes",
+        "name,internal,partitions,recordCount,totalLeaderLogBytes,consumerGroups",
       "page[size]": params.pageSize,
       "page[after]": params.pageCursor,
       sort: params.sort
@@ -51,7 +51,7 @@ export async function getTopics(
   log.debug({ url }, "getTopics");
   const rawData = await res.json();
   log.trace({ url, rawData }, "getTopics response");
-  return TopicsResponse.parse(rawData);
+  return TopicsResponseSchema.parse(rawData);
 }
 
 export async function getTopic(

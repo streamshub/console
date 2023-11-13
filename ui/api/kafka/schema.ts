@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-const NodeSchema = z.object({
+export const NodeSchema = z.object({
   id: z.number(),
   host: z.string(),
   port: z.number(),

@@ -8,9 +8,8 @@ import {
   MenuToggle,
   SearchInput,
 } from "@/libs/patternfly/react-core";
-import { useRouter } from "@/navigation";
+import { Link, useRouter } from "@/navigation";
 import { Route } from "next";
-import Link from "next/link";
 import { CSSProperties, useState } from "react";
 
 export function KafkaSwitcher<T extends string>({
