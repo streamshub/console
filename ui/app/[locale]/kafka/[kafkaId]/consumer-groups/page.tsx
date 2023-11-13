@@ -1,9 +1,45 @@
 import { getConsumerGroups } from "@/api/consumerGroups/actions";
 import { KafkaParams } from "@/app/[locale]/kafka/[kafkaId]/kafka.params";
+import { PageSection } from "@/libs/patternfly/react-core";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 import { ConsumerGroupsTable } from "./ConsumerGroupsTable";
 
-export default async function AsyncConsumerGroupsPage({
+export default function ConsumerGroupsPage({
+  params: { kafkaId },
+  searchParams,
+}: {
+  params: KafkaParams;
+  searchParams: {
+    perPage: string | undefined;
+    sort: string | undefined;
+    sortDir: string | undefined;
+    page: string | undefined;
+  };
+}) {
+  return (
+    <PageSection>
+      <Suspense
+        fallback={
+          <ConsumerGroupsTable
+            kafkaId={kafkaId}
+            page={1}
+            consumerGroups={undefined}
+            refresh={undefined}
+            total={0}
+          />
+        }
+      >
+        <ConnectedConsumerGroupsTable
+          params={{ kafkaId }}
+          searchParams={searchParams}
+        />
+      </Suspense>
+    </PageSection>
+  );
+}
+
+async function ConnectedConsumerGroupsTable({
   params: { kafkaId },
   searchParams,
 }: {

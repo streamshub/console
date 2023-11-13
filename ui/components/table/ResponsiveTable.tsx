@@ -64,10 +64,12 @@ export type ResponsiveTableProps<TRow, TCol> = {
   ) => (ResponsiveThProps["sort"] & { label: string }) | undefined;
   isRowDeleted?: (props: RowProps<TRow>) => boolean;
   isRowSelected?: (props: RowProps<TRow>) => boolean;
+  isRowExpandable?: (props: RowProps<TRow>) => boolean;
+  getExpandedRow?: (props: RowProps<TRow>) => ReactNode;
   isColumnExpandable?: (
     props: RowProps<TRow> & { column: TCol; colIndex: number },
   ) => boolean;
-  getExpandedRow?: (
+  getExpandedRowForColumn?: (
     props: RowProps<TRow> & { column: TCol; colIndex: number },
   ) => ReactNode;
   expectedLength?: number;
@@ -93,8 +95,10 @@ export const ResponsiveTable = <TRow, TCol>({
   isColumnSortable,
   isRowDeleted,
   isRowSelected,
-  isColumnExpandable,
+  isRowExpandable,
   getExpandedRow,
+  isColumnExpandable,
+  getExpandedRowForColumn,
   expectedLength = 3,
   onRowClick,
   setActionCellOuiaId,
@@ -213,7 +217,10 @@ export const ResponsiveTable = <TRow, TCol>({
       variant={variant}
     >
       <Thead>
-        <Tr>{header}</Tr>
+        <Tr>
+          {isRowExpandable && <Th />}
+          {header}
+        </Tr>
       </Thead>
       {data === undefined && (
         <TableSkeleton
@@ -241,7 +248,7 @@ export const ResponsiveTable = <TRow, TCol>({
             rowIndex,
             row,
           });
-          const expandable =
+          const columnExpandable =
             isColumnExpandable &&
             isColumnExpandable({
               column,
@@ -249,8 +256,12 @@ export const ResponsiveTable = <TRow, TCol>({
               rowIndex,
               row,
             });
+          const rowExpandable =
+            isRowExpandable &&
+            isRowExpandable({ rowIndex, row }) &&
+            colIndex === 0;
           const isExpanded = expanded[rowIndex] === colIndex;
-          return expandable
+          return columnExpandable
             ? cloneElement(cell, {
                 compoundExpand: {
                   isExpanded,
@@ -283,6 +294,8 @@ export const ResponsiveTable = <TRow, TCol>({
           </ResponsiveTd>
         );
         const rowExpanded = expanded[rowIndex] !== undefined;
+        const rowExpandable =
+          isRowExpandable && isRowExpandable({ rowIndex, row });
         return (
           <Tbody key={`row_${rowIndex}`} isExpanded={rowExpanded}>
             <DeletableRow
@@ -291,16 +304,30 @@ export const ResponsiveTable = <TRow, TCol>({
               onClick={onClick}
               rowOuiaId={setRowOuiaId?.({ row, rowIndex })}
             >
+              {rowExpandable && (
+                <Td
+                  expand={{
+                    rowIndex,
+                    expandId: `${rowIndex}`,
+                    isExpanded: expanded[rowIndex] === 0,
+                    onToggle: () =>
+                      setExpanded((e) => ({
+                        ...e,
+                        [rowIndex]: expanded[rowIndex] === 0 ? undefined : 0,
+                      })),
+                  }}
+                />
+              )}
               {cells}
               {action}
             </DeletableRow>
-            {getExpandedRow &&
+            {getExpandedRowForColumn &&
               rowExpanded &&
               expanded[rowIndex] !== undefined && (
                 <Tr isExpanded={rowExpanded}>
                   <Td colSpan={columns.length} noPadding={true}>
                     <ExpandableRowContent>
-                      {getExpandedRow({
+                      {getExpandedRowForColumn({
                         rowIndex,
                         colIndex: expanded[rowIndex]!,
                         column: columns[expanded[rowIndex]!],
@@ -310,6 +337,18 @@ export const ResponsiveTable = <TRow, TCol>({
                   </Td>
                 </Tr>
               )}
+            {getExpandedRow && rowExpanded && (
+              <Tr isExpanded={rowExpanded}>
+                <Td colSpan={columns.length + 1} noPadding={true}>
+                  <ExpandableRowContent>
+                    {getExpandedRow({
+                      rowIndex,
+                      row,
+                    })}
+                  </ExpandableRowContent>
+                </Td>
+              </Tr>
+            )}
           </Tbody>
         );
       })}

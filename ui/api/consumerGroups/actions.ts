@@ -1,6 +1,8 @@
 "use server";
 import { getHeaders } from "@/api/api";
 import {
+  ConsumerGroup,
+  ConsumerGroupResponseSchema,
   ConsumerGroupsResponse,
   ConsumerGroupsResponseSchema,
 } from "@/api/consumerGroups/schema";
@@ -8,6 +10,30 @@ import { filterUndefinedFromObj } from "@/utils/filterUndefinedFromObj";
 import { logger } from "@/utils/logger";
 
 const log = logger.child({ module: "topics-api" });
+
+export async function getConsumerGroup(
+  kafkaId: string,
+  groupId: string,
+): Promise<ConsumerGroup> {
+  const sp = new URLSearchParams(
+    filterUndefinedFromObj({
+      "fields[consumerGroups]":
+        "state,simpleConsumerGroup,members,offsets,authorizedOperations,coordinator,partitionAssignor",
+    }),
+  );
+  const cgQuery = sp.toString();
+  const url = `${process.env.BACKEND_URL}/api/kafkas/${kafkaId}/consumerGroups/${groupId}`;
+  const res = await fetch(url, {
+    headers: await getHeaders(),
+    next: {
+      tags: [`consumer-group-${kafkaId}-${groupId}`],
+    },
+  });
+  log.debug({ url }, "getConsumerGroup");
+  const rawData = await res.json();
+  log.debug({ url, rawData }, "getConsumerGroup response");
+  return ConsumerGroupResponseSchema.parse(rawData).data;
+}
 
 export async function getConsumerGroups(
   kafkaId: string,
@@ -39,7 +65,7 @@ export async function getConsumerGroups(
   });
   log.debug({ url }, "getConsumerGroups");
   const rawData = await res.json();
-  log.trace({ url, rawData }, "getConsumerGroups response");
+  log.debug({ url, rawData }, "getConsumerGroups response");
   return ConsumerGroupsResponseSchema.parse(rawData);
 }
 
@@ -74,6 +100,6 @@ export async function getTopicConsumerGroups(
   });
   log.debug({ url }, "getTopicConsumerGroups");
   const rawData = await res.json();
-  log.trace({ url, rawData }, "getTopicConsumerGroups response");
+  log.debug({ url, rawData }, "getTopicConsumerGroups response");
   return ConsumerGroupsResponseSchema.parse(rawData);
 }

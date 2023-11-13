@@ -1,3 +1,9 @@
+import { BreadcrumbItem } from "@/libs/patternfly/react-core";
+
 export default function ConsumerGroupsActiveBreadcrumb() {
-  return "Consumer groups";
+  return (
+    <BreadcrumbItem showDivider={true} isActive={true}>
+      Consumer groups
+    </BreadcrumbItem>
+  );
 }

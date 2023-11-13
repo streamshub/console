@@ -4,6 +4,7 @@ import { z } from "zod";
 
 const OffsetAndMetadataSchema = z.object({
   topicId: z.string(),
+  topicName: z.string(),
   partition: z.number(),
   offset: z.number(),
   lag: z.number(),
@@ -29,14 +30,15 @@ export const ConsumerGroupSchema = z.object({
     simpleConsumerGroup: z.boolean(),
     state: z.string(),
     members: z.array(MemberDescriptionSchema),
-    partitionAssignor: z.string().nullable(),
+    partitionAssignor: z.string().nullable().optional(),
     coordinator: NodeSchema,
-    authorizedOperations: z.array(z.string()),
+    authorizedOperations: z.array(z.string()).nullable().optional(),
     offsets: z.array(OffsetAndMetadataSchema),
     errors: z.array(ApiError).optional(),
   }),
 });
 export type ConsumerGroup = z.infer<typeof ConsumerGroupSchema>;
+
 export const ConsumerGroupsResponseSchema = z.object({
   meta: z.object({
     page: z.object({
@@ -53,5 +55,12 @@ export const ConsumerGroupsResponseSchema = z.object({
   data: z.array(ConsumerGroupSchema),
 });
 export type ConsumerGroupsResponse = z.infer<
+  typeof ConsumerGroupsResponseSchema
+>;
+
+export const ConsumerGroupResponseSchema = z.object({
+  data: ConsumerGroupSchema,
+});
+export type ConsumerGroupResponse = z.infer<
   typeof ConsumerGroupsResponseSchema
 >;

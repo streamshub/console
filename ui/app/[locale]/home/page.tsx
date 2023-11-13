@@ -235,7 +235,6 @@ async function ConnectedClustersTable() {
   const clusters = (await Promise.all(
     allClusters.map((c) => getKafkaCluster(c.id)),
   )) as ClusterDetail[];
-
   return <ClustersTable clusters={clusters} />;
 }
 

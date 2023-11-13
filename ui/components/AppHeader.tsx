@@ -1,11 +1,19 @@
-import { Divider, PageSection, Title } from "@/libs/patternfly/react-core";
+import {
+  Divider,
+  PageSection,
+  Split,
+  SplitItem,
+  Title,
+} from "@/libs/patternfly/react-core";
 import { ReactNode } from "react";
 
 export function AppHeader({
   title,
+  actions,
   navigation,
 }: {
   title: ReactNode;
+  actions?: ReactNode[];
   navigation?: ReactNode;
 }) {
   return (
@@ -16,7 +24,13 @@ export function AppHeader({
         className={navigation ? "pf-v5-u-px-lg pf-v5-u-pt-sm" : undefined}
         hasShadowBottom={!navigation}
       >
-        <Title headingLevel={"h1"}>{title}</Title>
+        <Split hasGutter={true}>
+          <SplitItem isFilled={true}>
+            <Title headingLevel={"h1"}>{title}</Title>
+          </SplitItem>
+          {actions &&
+            actions.map((a, idx) => <SplitItem key={idx}>{a}</SplitItem>)}
+        </Split>
       </PageSection>
       {navigation}
       {navigation && <Divider />}
