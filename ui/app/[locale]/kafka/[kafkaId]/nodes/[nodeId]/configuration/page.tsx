@@ -1,4 +1,4 @@
-import { getNodeConfiguration } from "@/api/nodes";
+import { getNodeConfiguration } from "@/api/nodes/actions";
 import { KafkaNodeParams } from "@/app/[locale]/kafka/[kafkaId]/nodes/kafkaNode.params";
 import { PageSection } from "@/libs/patternfly/react-core";
 import { ConfigTable } from "./ConfigTable";

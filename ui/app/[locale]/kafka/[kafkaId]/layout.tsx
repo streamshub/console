@@ -1,4 +1,4 @@
-import { getKafkaCluster, getKafkaClusters } from "@/api/kafka";
+import { getKafkaCluster, getKafkaClusters } from "@/api/kafka/actions";
 import { KafkaParams } from "@/app/[locale]/kafka/[kafkaId]/kafka.params";
 import { KafkaBreadcrumbItem } from "@/app/[locale]/kafka/[kafkaId]/KafkaBreadcrumbItem";
 import {

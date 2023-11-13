@@ -1,5 +1,5 @@
 "use client";
-import { TopicList } from "@/api/topics";
+import { TopicList } from "@/api/topics/schema";
 import { ButtonLink } from "@/components/ButtonLink";
 import { Bytes } from "@/components/Bytes";
 import { Number } from "@/components/Number";
@@ -161,7 +161,9 @@ export function TopicsTable({
                   variant={"link"}
                   href={`${baseurl}/${row.id}/consumer-groups`}
                 >
-                  {format.number(0 /* TODO */)}
+                  <Number
+                    value={row.relationships.consumerGroups.data.length}
+                  />
                 </ButtonLink>
               </Td>
             );

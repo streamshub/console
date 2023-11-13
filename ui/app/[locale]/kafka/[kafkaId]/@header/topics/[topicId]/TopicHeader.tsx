@@ -1,5 +1,5 @@
-import { getKafkaCluster } from "@/api/kafka";
-import { getTopic } from "@/api/topics";
+import { getKafkaCluster } from "@/api/kafka/actions";
+import { getTopic } from "@/api/topics/actions";
 import { KafkaTopicParams } from "@/app/[locale]/kafka/[kafkaId]/topics/kafkaTopic.params";
 import { AppHeader } from "@/components/AppHeader";
 import { NavItemLink } from "@/components/NavItemLink";
@@ -36,7 +36,7 @@ export function TopicHeader({
                   >
                     Messages&nbsp;
                     <Label isCompact={true}>
-                      <Spinner />
+                      <Spinner size="sm" />
                     </Label>
                   </NavItemLink>
                   <NavItemLink
@@ -44,7 +44,7 @@ export function TopicHeader({
                   >
                     Consumer groups&nbsp;
                     <Label isCompact={true}>
-                      <Spinner />
+                      <Spinner size="sm" />
                     </Label>
                   </NavItemLink>
                   <NavItemLink
@@ -52,7 +52,7 @@ export function TopicHeader({
                   >
                     Partitions&nbsp;
                     <Label isCompact={true}>
-                      <Spinner />
+                      <Spinner size="sm" />
                     </Label>
                   </NavItemLink>
                   <NavItemLink
@@ -97,7 +97,7 @@ async function ConnectedTopicHeader({
               <NavItemLink url={`/kafka/${kafkaId}/topics/${topicId}/messages`}>
                 Messages&nbsp;
                 <Label isCompact={true}>
-                  <Suspense fallback={<Spinner />}>
+                  <Suspense fallback={<Spinner size="sm" />}>
                     <Number value={topic.attributes.recordCount} />
                   </Suspense>
                 </Label>
@@ -107,7 +107,9 @@ async function ConnectedTopicHeader({
               >
                 Consumer groups&nbsp;
                 <Label isCompact={true}>
-                  <Number value={0} />
+                  <Number
+                    value={topic.relationships.consumerGroups.data.length}
+                  />
                 </Label>
               </NavItemLink>
               <NavItemLink
@@ -115,7 +117,7 @@ async function ConnectedTopicHeader({
               >
                 Partitions&nbsp;
                 <Label isCompact={true}>
-                  <Suspense fallback={<Spinner />}>
+                  <Suspense fallback={<Spinner size="sm" />}>
                     <Number value={topic.attributes.partitions.length} />
                   </Suspense>
                 </Label>

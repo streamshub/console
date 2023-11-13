@@ -1,4 +1,4 @@
-import { deleteTopic, getTopic } from "@/api/topics";
+import { deleteTopic, getTopic } from "@/api/topics/actions";
 import { DeleteTopicModal } from "@/app/[locale]/kafka/[kafkaId]/@modal/topics/[topicId]/delete/DeleteTopicModal";
 import { KafkaTopicParams } from "@/app/[locale]/kafka/[kafkaId]/topics/kafkaTopic.params";
 
