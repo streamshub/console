@@ -4,7 +4,7 @@ import { ButtonLink } from "@/components/ButtonLink";
 import { Bytes } from "@/components/Bytes";
 import { Number } from "@/components/Number";
 import { TableView } from "@/components/table";
-import { useRouter } from "@/navigation";
+import { Link, useRouter } from "@/navigation";
 import { useFilterParams } from "@/utils/useFilterParams";
 import { TableVariant } from "@patternfly/react-table";
 import { useFormatter, useTranslations } from "next-intl";
@@ -151,7 +151,9 @@ export function TopicsTable({
           case "name":
             return (
               <Td key={key} dataLabel={"Topic"}>
-                {row.attributes.name}
+                <Link href={`${baseurl}/${row.id}/messages`}>
+                  {row.attributes.name}
+                </Link>
               </Td>
             );
           case "consumerGroups":
