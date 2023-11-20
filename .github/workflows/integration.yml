@@ -63,6 +63,8 @@ jobs:
           path: |
             **/target/
             !**/target/**/*.jar
+            !**/target/failsafe-reports/**/*
+            !**/target/surefire-reports/**/*
 
   build-ui:
     runs-on: ubuntu-latest
