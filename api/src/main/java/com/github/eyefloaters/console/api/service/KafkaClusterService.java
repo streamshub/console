@@ -297,7 +297,7 @@ public class KafkaClusterService {
                                 .stream()
                                 .map(JsonArray.class::cast)
                                 .map(e -> new Object[] {
-                                        e.getJsonNumber(0).doubleValue(),
+                                        Instant.ofEpochMilli((long) (e.getJsonNumber(0).doubleValue() * 1000d)),
                                         e.getString(1)
                                 })
                                 .toList();
