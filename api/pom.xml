@@ -457,6 +457,7 @@
                         <configuration>
                             <dataFile>${project.build.directory}/jacoco-quarkus.exec</dataFile>
                             <excludes>com/github/eyefloaters/console/legacy/**/*</excludes>
+                            <formats>XML</formats>
                         </configuration>
                     </execution>
                 </executions>
@@ -470,7 +471,6 @@
                         <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
                         <maven.home>${maven.home}</maven.home>
                         <quarkus.test.arg-line>${argLine}</quarkus.test.arg-line>
-                        <quarkus.jacoco.reuse-data-file>true</quarkus.jacoco.reuse-data-file>
                     </systemProperties>
                 </configuration>
             </plugin>
@@ -492,7 +492,6 @@
                                 <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
                                 <maven.home>${maven.home}</maven.home>
                                 <quarkus.test.arg-line>${argLine}</quarkus.test.arg-line>
-                                <quarkus.jacoco.reuse-data-file>true</quarkus.jacoco.reuse-data-file>
                             </systemProperties>
                             <environmentVariables>
                                 <DOCKER_CONFIG>${env.HOME}/.docker/config.json</DOCKER_CONFIG>
