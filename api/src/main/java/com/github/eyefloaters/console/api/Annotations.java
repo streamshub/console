@@ -15,11 +15,6 @@ public enum Annotations {
         this.value = NAMESPACE + '/' + name;
     }
 
-    @Override
-    public String toString() {
-        return value();
-    }
-
     public String value() {
         return value;
     }

@@ -32,7 +32,7 @@ export async function getTopics(
   const sp = new URLSearchParams(
     filterUndefinedFromObj({
       "fields[topics]":
-        "name,internal,partitions,recordCount,totalLeaderLogBytes,consumerGroups",
+        "name,visibility,partitions,recordCount,totalLeaderLogBytes,consumerGroups",
       "page[size]": params.pageSize,
       "page[after]": params.pageCursor,
       sort: params.sort

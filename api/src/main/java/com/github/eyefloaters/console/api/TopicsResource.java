@@ -40,6 +40,7 @@ import com.github.eyefloaters.console.api.model.ConsumerGroup;
 import com.github.eyefloaters.console.api.model.ListFetchParams;
 import com.github.eyefloaters.console.api.model.NewTopic;
 import com.github.eyefloaters.console.api.model.Topic;
+import com.github.eyefloaters.console.api.model.TopicFilterParams;
 import com.github.eyefloaters.console.api.model.TopicPatch;
 import com.github.eyefloaters.console.api.service.ConsumerGroupService;
 import com.github.eyefloaters.console.api.service.TopicService;
@@ -148,7 +149,7 @@ public class TopicsResource {
                     source = Topic.FIELDS_PARAM,
                     allowedValues = {
                         Topic.Fields.NAME,
-                        Topic.Fields.INTERNAL,
+                        Topic.Fields.VISIBILITY,
                         Topic.Fields.PARTITIONS,
                         Topic.Fields.AUTHORIZED_OPERATIONS,
                         Topic.Fields.CONFIGS,
@@ -165,7 +166,7 @@ public class TopicsResource {
                             implementation = String.class,
                             enumeration = {
                                 Topic.Fields.NAME,
-                                Topic.Fields.INTERNAL,
+                                Topic.Fields.VISIBILITY,
                                 Topic.Fields.PARTITIONS,
                                 Topic.Fields.AUTHORIZED_OPERATIONS,
                                 Topic.Fields.CONFIGS,
@@ -190,10 +191,20 @@ public class TopicsResource {
 
             @BeanParam
             @Valid
-            ListFetchParams listParams) {
+            ListFetchParams listParams,
+
+            @BeanParam
+            @Valid
+            TopicFilterParams filters) {
 
         requestedFields.accept(fields);
-        ListRequestContext<Topic> listSupport = new ListRequestContext<>(Topic.Fields.COMPARATOR_BUILDER, uriInfo.getRequestUri(), listParams, Topic::fromCursor);
+
+        ListRequestContext<Topic> listSupport = new ListRequestContext<>(
+                filters.buildPredicates(),
+                Topic.Fields.COMPARATOR_BUILDER,
+                uriInfo.getRequestUri(),
+                listParams,
+                Topic::fromCursor);
 
         return topicService.listTopics(fields, offsetSpec, listSupport)
                 .thenApply(topics -> new Topic.ListResponse(topics, listSupport))
@@ -224,7 +235,7 @@ public class TopicsResource {
                     source = Topic.FIELDS_PARAM,
                     allowedValues = {
                         Topic.Fields.NAME,
-                        Topic.Fields.INTERNAL,
+                        Topic.Fields.VISIBILITY,
                         Topic.Fields.PARTITIONS,
                         Topic.Fields.AUTHORIZED_OPERATIONS,
                         Topic.Fields.CONFIGS,
@@ -241,7 +252,7 @@ public class TopicsResource {
                             implementation = String.class,
                             enumeration = {
                                 Topic.Fields.NAME,
-                                Topic.Fields.INTERNAL,
+                                Topic.Fields.VISIBILITY,
                                 Topic.Fields.PARTITIONS,
                                 Topic.Fields.AUTHORIZED_OPERATIONS,
                                 Topic.Fields.CONFIGS,
