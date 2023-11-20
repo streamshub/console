@@ -72,8 +72,8 @@ dependencies:
     specifier: ^3.0.2
     version: 3.0.2(next@14.0.1)(typescript@5.2.2)
   pino:
-    specifier: ^8.16.1
-    version: 8.16.1
+    specifier: ^8.16.2
+    version: 8.16.2
   react:
     specifier: 18.2.0
     version: 18.2.0
@@ -8709,7 +8709,7 @@ packages:
     dependencies:
       cosmiconfig: 8.3.6(typescript@5.2.2)
       next: 14.0.1(@babel/core@7.23.2)(react-dom@18.2.0)(react@18.2.0)
-      pino: 8.16.1
+      pino: 8.16.2
     transitivePeerDependencies:
       - typescript
     dev: false
@@ -9271,8 +9271,8 @@ packages:
     resolution: {integrity: sha512-cHjPPsE+vhj/tnhCy/wiMh3M3z3h/j15zHQX+S9GkTBgqJuTuJzYJ4gUyACLhDaJ7kk9ba9iRDmbH2tJU03OiA==}
     dev: false
 
-  /pino@8.16.1:
-    resolution: {integrity: sha512-3bKsVhBmgPjGV9pyn4fO/8RtoVDR8ssW1ev819FsRXlRNgW8gR/9Kx+gCK4UPWd4JjrRDLWpzd/pb1AyWm3MGA==}
+  /pino@8.16.2:
+    resolution: {integrity: sha512-2advCDGVEvkKu9TTVSa/kWW7Z3htI/sBKEZpqiHk6ive0i/7f5b1rsU8jn0aimxqfnSz5bj/nOYkwhBUn5xxvg==}
     hasBin: true
     dependencies:
       atomic-sleep: 1.0.0

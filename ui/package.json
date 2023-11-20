@@ -33,7 +33,7 @@
     "next-auth": "^4.24.5",
     "next-intl": "^3.0.0-rc.10",
     "next-logger": "^3.0.2",
-    "pino": "^8.16.1",
+    "pino": "^8.16.2",
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "typescript": "5.2.2",
