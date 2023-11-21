@@ -3,7 +3,8 @@ import { AppLayoutProvider } from "@/app/[locale]/AppLayoutProvider";
 import { AppSessionProvider } from "@/app/[locale]/AppSessionProvider";
 import NextIntlProvider from "@/app/[locale]/NextIntlProvider";
 import { SessionRefresher } from "@/app/[locale]/SessionRefresher";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+
+import { authOptions } from "@/utils/authOptions";
 import { getServerSession } from "next-auth";
 import { getTranslations } from "next-intl/server";
 import { notFound } from "next/navigation";
