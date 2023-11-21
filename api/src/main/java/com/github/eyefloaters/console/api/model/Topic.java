@@ -20,6 +20,7 @@ import jakarta.json.JsonObjectBuilder;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 import com.fasterxml.jackson.annotation.JsonFilter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.github.eyefloaters.console.api.support.ComparatorBuilder;
 import com.github.eyefloaters.console.api.support.ListRequestContext;
@@ -34,7 +35,7 @@ public class Topic extends RelatableResource<Topic.Attributes, Topic.Relationshi
 
     public static final class Fields {
         public static final String NAME = "name";
-        public static final String INTERNAL = "internal";
+        public static final String VISIBILITY = "visibility";
         public static final String PARTITIONS = "partitions";
         public static final String AUTHORIZED_OPERATIONS = "authorizedOperations";
         public static final String CONFIGS = "configs";
@@ -59,10 +60,10 @@ public class Topic extends RelatableResource<Topic.Attributes, Topic.Relationshi
         public static final ComparatorBuilder<Topic> COMPARATOR_BUILDER =
                 new ComparatorBuilder<>(Topic.Fields::comparator, Topic.Fields.defaultComparator());
 
-        public static final String LIST_DEFAULT = NAME + ", " + INTERNAL;
+        public static final String LIST_DEFAULT = NAME + ", " + VISIBILITY;
         public static final String DESCRIBE_DEFAULT =
                 NAME + ", "
-                + INTERNAL + ", "
+                + VISIBILITY + ", "
                 + PARTITIONS + ", "
                 + AUTHORIZED_OPERATIONS + ", "
                 + RECORD_COUNT + ", "
@@ -126,7 +127,7 @@ public class Topic extends RelatableResource<Topic.Attributes, Topic.Relationshi
         @JsonProperty
         String name;
 
-        @JsonProperty
+        @JsonIgnore
         boolean internal;
 
         @JsonProperty
@@ -144,6 +145,17 @@ public class Topic extends RelatableResource<Topic.Attributes, Topic.Relationshi
         Attributes(String name, boolean internal) {
             this.name = name;
             this.internal = internal;
+        }
+
+        @JsonProperty
+        @Schema(readOnly = true, description = """
+                Derived property indicating whether this is an internal (i.e. system, private) topic or
+                an external (i.e. application, public) topic. Internal topics are those that are identified
+                explicitly by the Kafka Admin API as internal or (by convention) have a name starting with
+                the underscore `_` character. External topics are simply those that are not internal.
+                """)
+        public String visibility() {
+            return internal || name.startsWith("_") ? "internal" : "external";
         }
 
         /**
@@ -296,8 +308,8 @@ public class Topic extends RelatableResource<Topic.Attributes, Topic.Relationshi
         return attributes.name;
     }
 
-    public boolean internal() {
-        return attributes.internal;
+    public String visibility() {
+        return attributes.visibility();
     }
 
     public Either<List<PartitionInfo>, Error> partitions() {

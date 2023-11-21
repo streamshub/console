@@ -2,6 +2,7 @@ package com.github.eyefloaters.console.api.support;
 
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -10,6 +11,7 @@ import java.util.Objects;
 import java.util.SortedSet;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 import jakarta.json.JsonObject;
 import jakarta.ws.rs.core.UriBuilder;
@@ -17,8 +19,9 @@ import jakarta.ws.rs.core.UriBuilder;
 import com.github.eyefloaters.console.api.errors.client.InvalidPageCursorException;
 import com.github.eyefloaters.console.api.model.ListFetchParams;
 
-public class ListRequestContext<T> {
+public class ListRequestContext<T> implements Predicate<T> {
 
+    List<Predicate<T>> filters;
     final ComparatorBuilder<T> comparatorBuilder;
     final URI requestUri;
     final ListFetchParams listParams;
@@ -47,7 +50,8 @@ public class ListRequestContext<T> {
     T firstPageEntry;
     T finalPageEntry;
 
-    public ListRequestContext(ComparatorBuilder<T> comparatorBuilder, URI requestUri, ListFetchParams listParams, Function<JsonObject, T> cursorMapper) {
+    public ListRequestContext(List<Predicate<T>> filters, ComparatorBuilder<T> comparatorBuilder, URI requestUri, ListFetchParams listParams, Function<JsonObject, T> cursorMapper) {
+        this.filters = Objects.requireNonNull(filters);
         this.comparatorBuilder = comparatorBuilder;
         this.requestUri = requestUri;
         this.listParams = listParams;
@@ -78,6 +82,10 @@ public class ListRequestContext<T> {
         finalPageData = new SizeLimitedSortedSet<>(sortComparator.reversed(), pageSize + 1);
     }
 
+    public ListRequestContext(ComparatorBuilder<T> comparatorBuilder, URI requestUri, ListFetchParams listParams, Function<JsonObject, T> cursorMapper) {
+        this(Collections.emptyList(), comparatorBuilder, requestUri, listParams, cursorMapper);
+    }
+
     static <C> C mapCursor(String name, JsonObject source, Function<JsonObject, C> mapper, List<String> badCursors) {
         try {
             return mapper.apply(source);
@@ -85,6 +93,11 @@ public class ListRequestContext<T> {
             badCursors.add(name);
             return null;
         }
+    }
+
+    @Override
+    public boolean test(T t) {
+        return filters.isEmpty() || filters.stream().allMatch(filter -> filter.test(t));
     }
 
     public T tally(T item) {

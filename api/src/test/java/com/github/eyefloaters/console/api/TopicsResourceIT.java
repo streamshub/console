@@ -167,7 +167,7 @@ class TopicsResourceIT {
     void testListTopicsAfterCreation() {
         List<String> topicNames = IntStream.range(0, 2)
                 .mapToObj(i -> UUID.randomUUID().toString())
-                .collect(Collectors.toList());
+                .toList();
 
         topicUtils.createTopics(clusterId1, topicNames, 1);
 
@@ -343,7 +343,7 @@ class TopicsResourceIT {
 
         List<String> topicNames = IntStream.rangeClosed(1, 5)
                 .mapToObj(i -> "t" + i + "-" + randomSuffix)
-                .collect(Collectors.toList());
+                .toList();
 
         topicUtils.createTopics(clusterId1, topicNames, 1);
 
@@ -462,7 +462,7 @@ class TopicsResourceIT {
     void testListTopicsSortedByUnknownField(String sortKey) {
         List<String> topicNames = IntStream.range(0, 5)
                 .mapToObj(i -> UUID.randomUUID().toString())
-                .collect(Collectors.toList());
+                .toList();
 
         var topicIds = topicUtils.createTopics(clusterId1, topicNames, 1);
         String[] sortedIds = topicIds.values().stream().sorted().toArray(String[]::new);
@@ -481,7 +481,7 @@ class TopicsResourceIT {
         List<String> topicNames = IntStream.range(0, 102)
                 .mapToObj("%03d-"::formatted)
                 .map(prefix -> prefix + UUID.randomUUID().toString())
-                .collect(Collectors.toList());
+                .toList();
 
         topicUtils.createTopics(clusterId1, topicNames, 1);
 
@@ -589,7 +589,7 @@ class TopicsResourceIT {
         List<String> topicNames = IntStream.range(0, 102)
                 .mapToObj("%03d-"::formatted)
                 .map(prefix -> prefix + UUID.randomUUID().toString())
-                .collect(Collectors.toList());
+                .toList();
 
         topicUtils.createTopics(clusterId1, topicNames, 1);
 
@@ -641,6 +641,55 @@ class TopicsResourceIT {
                         hasEntry(equalTo("type"), equalTo("consumerGroups")),
                         hasEntry(equalTo("id"), equalTo(group2))));
         }
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        "''           , 'wx.', 'external'",
+        "'eq,external', 'wx.', 'external'",
+        "'in,external', 'wx.', 'external'",
+        "'eq,internal', '_x.', 'internal'",
+        "'in,internal', '_x.', 'internal'"
+    })
+    void testListTopicsWithNameFilterVaryingVisibility(String visibilityFilter, String expectedPrefix, String expectedVisibility) {
+        List<String> topicNames = IntStream.range(0, 6)
+                .mapToObj(i -> (i % 2 == 0 ? "_x." : "wx.") + UUID.randomUUID().toString())
+                .toList();
+
+        topicUtils.createTopics(clusterId1, topicNames, 1);
+
+        Map<String, String> params = new HashMap<>();
+        params.put("filter[name]", "like,?x*"); // any single char, following by `x`, followed by anything
+        if (!visibilityFilter.isBlank()) {
+            params.put("filter[visibility]", visibilityFilter);
+        }
+
+        whenRequesting(req -> req
+                .queryParams(params)
+                .get("", clusterId1))
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()))
+            .body("data.size()", equalTo(3))
+            .body("data.attributes.name", everyItem(startsWith(expectedPrefix)))
+            .body("data.attributes.visibility", everyItem(is(expectedVisibility)));
+    }
+
+    @Test
+    void testListTopicsWithIdFilter() {
+        List<String> topicNames = IntStream.range(0, 6)
+                .mapToObj(i -> UUID.randomUUID().toString())
+                .toList();
+
+        var topicIds = topicUtils.createTopics(clusterId1, topicNames, 1).values().stream().sorted().toList();
+        var selectedIds = topicIds.subList(0, 4);
+
+        whenRequesting(req -> req
+                .queryParam("filter[id]", "in," + String.join(",", selectedIds))
+                .get("", clusterId1))
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()))
+            .body("data.size()", equalTo(selectedIds.size()))
+            .body("data.id", contains(selectedIds.toArray(String[]::new)));
     }
 
     @Test

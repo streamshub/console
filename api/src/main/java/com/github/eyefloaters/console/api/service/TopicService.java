@@ -142,10 +142,11 @@ public class TopicService {
 
         Admin adminClient = clientSupplier.get();
 
-        return listTopics(adminClient, false)
+        return listTopics(adminClient, true)
             .thenApply(list -> list.stream().map(Topic::fromTopicListing).toList())
             .thenComposeAsync(list -> augmentList(adminClient, list, fetchList, offsetSpec), threadContext.currentContextExecutor())
             .thenApply(list -> list.stream()
+                    .filter(listSupport)
                     .map(listSupport::tally)
                     .filter(listSupport::betweenCursors)
                     .sorted(listSupport.getSortComparator())
