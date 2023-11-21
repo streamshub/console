@@ -20,5 +20,9 @@ export function SessionRefresher() {
   useInterval(() => {
     void doRefresh();
   }, 1000 * 60);
+
+  // immediately trigger a check to deal with expired sessions when opening the app after a long time
+  void doRefresh();
+
   return null;
 }
