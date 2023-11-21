@@ -1,18 +1,20 @@
 import {
   Divider,
+  Flex,
+  FlexItem,
   PageSection,
-  Split,
-  SplitItem,
   Title,
 } from "@/libs/patternfly/react-core";
 import { ReactNode } from "react";
 
 export function AppHeader({
   title,
+  subTitle,
   actions,
   navigation,
 }: {
   title: ReactNode;
+  subTitle?: ReactNode;
   actions?: ReactNode[];
   navigation?: ReactNode;
 }) {
@@ -24,13 +26,27 @@ export function AppHeader({
         className={navigation ? "pf-v5-u-px-lg pf-v5-u-pt-sm" : undefined}
         hasShadowBottom={!navigation}
       >
-        <Split hasGutter={true}>
-          <SplitItem isFilled={true}>
-            <Title headingLevel={"h1"}>{title}</Title>
-          </SplitItem>
-          {actions &&
-            actions.map((a, idx) => <SplitItem key={idx}>{a}</SplitItem>)}
-        </Split>
+        <Flex>
+          <Flex direction={{ default: "column" }}>
+            <FlexItem>
+              <Title headingLevel={"h1"}>{title}</Title>
+            </FlexItem>
+            {subTitle && <FlexItem>{subTitle}</FlexItem>}
+          </Flex>
+          {actions && (
+            <Flex
+              direction={{ default: "column" }}
+              align={{ default: "alignRight" }}
+              alignSelf={{ default: "alignSelfFlexEnd" }}
+            >
+              <Flex>
+                {actions.map((a, idx) => (
+                  <FlexItem key={idx}>{a}</FlexItem>
+                ))}
+              </Flex>
+            </Flex>
+          )}
+        </Flex>
       </PageSection>
       {navigation}
       {navigation && <Divider />}
