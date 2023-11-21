@@ -27,7 +27,7 @@
     "date-fns-tz": "^2.0.0",
     "eslint": "8.54.0",
     "eslint-config-next": "14.0.3",
-    "iron-session": "^6.3.1",
+    "iron-session": "^8.0.1",
     "lodash.groupby": "^4.6.0",
     "next": "^14.0.3",
     "next-auth": "^4.24.5",
