@@ -14,6 +14,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -1360,6 +1361,34 @@ class TopicsResourceIT {
             .body("errors[0].status", is("400"))
             .body("errors[0].code", is("4003"))
             .body("errors[0].source.pointer", is("/data/attributes/replicasAssignments/0"));
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        "Null name,  ",
+        "Empty name, ''",
+        "Blank/whitespace name, ' '",
+    })
+    void testCreateTopicWithBlankName(String label, String topicName) {
+        JsonValue nameValue = Optional.ofNullable(topicName)
+                .<JsonValue>map(Json::createValue)
+                .orElse(JsonValue.NULL);
+
+        whenRequesting(req -> req
+                .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
+                .body(Json.createObjectBuilder()
+                        .add("data", Json.createObjectBuilder()
+                                .add("type", "topics")
+                                .add("attributes", Json.createObjectBuilder()
+                                        .add("name", nameValue)))
+                        .build()
+                        .toString())
+                .post("", clusterId1))
+            .assertThat()
+            .statusCode(is(Status.BAD_REQUEST.getStatusCode()))
+            .body("errors.size()", is(1))
+            .body("errors[0].status", is("400"))
+            .body("errors[0].code", is("4003"));
     }
 
     @Test
