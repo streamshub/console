@@ -9,7 +9,10 @@ import {
   SplitItem,
   Tooltip,
 } from "@/libs/patternfly/react-core";
-import { OkIcon, WarningTriangleIcon } from "@/libs/patternfly/react-icons";
+import {
+  CheckCircleIcon,
+  ExclamationTriangleIcon,
+} from "@/libs/patternfly/react-icons";
 import { Suspense } from "react";
 
 export default function TopicsHeader({ params }: { params: KafkaParams }) {
@@ -55,7 +58,13 @@ function Header({
           <SplitItem>
             <Tooltip content={"Number of topics in sync"}>
               <Label
-                icon={ok === undefined ? <Spinner size={"sm"} /> : <OkIcon />}
+                icon={
+                  ok === undefined ? (
+                    <Spinner size={"sm"} />
+                  ) : (
+                    <CheckCircleIcon />
+                  )
+                }
                 color={"cyan"}
               >
                 {ok !== undefined && <Number value={ok} />}
@@ -69,7 +78,7 @@ function Header({
                   warning === undefined ? (
                     <Spinner size={"sm"} />
                   ) : (
-                    <WarningTriangleIcon />
+                    <ExclamationTriangleIcon />
                   )
                 }
                 color={"orange"}

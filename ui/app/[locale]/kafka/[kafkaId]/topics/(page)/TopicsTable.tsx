@@ -11,7 +11,11 @@ import { TableVariant } from "@/libs/patternfly/react-table";
 import { Link, useRouter } from "@/navigation";
 import { useFilterParams } from "@/utils/useFilterParams";
 import { Icon, Tooltip } from "@patternfly/react-core";
-import { HelpIcon, OkIcon, WarningTriangleIcon } from "@patternfly/react-icons";
+import {
+  CheckCircleIcon,
+  ExclamationTriangleIcon,
+  HelpIcon,
+} from "@patternfly/react-icons";
 import { useFormatter, useTranslations } from "next-intl";
 import { useOptimistic, useTransition } from "react";
 
@@ -234,7 +238,7 @@ export function TopicsTable({
                 {inSync && (
                   <>
                     <Icon status={"success"}>
-                      <OkIcon />
+                      <CheckCircleIcon />
                     </Icon>
                     &nbsp;In-sync
                   </>
@@ -242,7 +246,7 @@ export function TopicsTable({
                 {!inSync && (
                   <>
                     <Icon status={"warning"}>
-                      <WarningTriangleIcon />
+                      <ExclamationTriangleIcon />
                     </Icon>
                     &nbsp;Under replicated
                   </>
