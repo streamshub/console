@@ -16,7 +16,7 @@ import {
   ExclamationTriangleIcon,
   HelpIcon,
 } from "@patternfly/react-icons";
-import { useFormatter, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import { useOptimistic, useTransition } from "react";
 
 export const TopicsTableColumns = [
@@ -75,7 +75,6 @@ export function TopicsTable({
   nextPageCursor,
   prevPageCursor,
 }: TopicsTableProps) {
-  const format = useFormatter();
   const t = useTranslations("topics");
   const router = useRouter();
   const _updateUrl = useFilterParams({ perPage, sort, sortDir, includeHidden });
@@ -273,7 +272,7 @@ export function TopicsTable({
                   variant={"link"}
                   href={`${baseurl}/${row.id}/partitions`}
                 >
-                  {format.number(row.attributes.partitions.length)}
+                  <Number value={row.attributes.partitions.length} />
                 </ButtonLink>
               </Td>
             );
@@ -420,7 +419,7 @@ export function TopicsTable({
               addOptimistic({ includeHidden: !checked });
             })
           }
-          className={"pf-v5-u-py-xs pf-v5-u-px-md"}
+          className={"pf-v5-u-py-xs"}
         />,
       ]}
       variant={TableVariant.compact}
