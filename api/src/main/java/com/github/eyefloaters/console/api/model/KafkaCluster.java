@@ -36,6 +36,9 @@ public class KafkaCluster {
         public static final String BOOTSTRAP_SERVERS = "bootstrapServers";
         public static final String AUTH_TYPE = "authType";
         public static final String METRICS = "metrics";
+        public static final String KAFKA_VERSION = "kafkaVersion";
+        public static final String STATUS = "status";
+        public static final String CONDITIONS = "conditions";
 
         static final Comparator<KafkaCluster> ID_COMPARATOR =
                 comparing(KafkaCluster::getId);
@@ -57,7 +60,10 @@ public class KafkaCluster {
                 + NAMESPACE + ", "
                 + CREATION_TIMESTAMP + ", "
                 + BOOTSTRAP_SERVERS + ", "
-                + AUTH_TYPE;
+                + AUTH_TYPE + ", "
+                + KAFKA_VERSION + ", "
+                + STATUS + ", "
+                + CONDITIONS + ", ";
 
         public static final String DESCRIBE_DEFAULT =
                 NAME + ", "
@@ -67,7 +73,10 @@ public class KafkaCluster {
                 + CONTROLLER + ", "
                 + AUTHORIZED_OPERATIONS + ", "
                 + BOOTSTRAP_SERVERS + ", "
-                + AUTH_TYPE;
+                + AUTH_TYPE + ", "
+                + KAFKA_VERSION + ", "
+                + STATUS + ", "
+                + CONDITIONS + ", ";
 
         private Fields() {
             // Prevent instances
@@ -125,6 +134,9 @@ public class KafkaCluster {
             Contains the set of metrics optionally retrieved only in a describe operation.
             """)
     Metrics metrics = new Metrics();
+    String kafkaVersion;
+    String status;
+    List<Condition> conditions;
 
     public KafkaCluster(String id, List<Node> nodes, Node controller, List<String> authorizedOperations) {
         super();
@@ -233,5 +245,29 @@ public class KafkaCluster {
 
     public Metrics getMetrics() {
         return metrics;
+    }
+
+    public String getKafkaVersion() {
+        return kafkaVersion;
+    }
+
+    public void setKafkaVersion(String kafkaVersion) {
+        this.kafkaVersion = kafkaVersion;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public List<Condition> getConditions() {
+        return conditions;
+    }
+
+    public void setConditions(List<Condition> conditions) {
+        this.conditions = conditions;
     }
 }

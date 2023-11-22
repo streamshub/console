@@ -69,7 +69,10 @@ public class KafkaClustersResource {
                         KafkaCluster.Fields.NAMESPACE,
                         KafkaCluster.Fields.CREATION_TIMESTAMP,
                         KafkaCluster.Fields.BOOTSTRAP_SERVERS,
-                        KafkaCluster.Fields.AUTH_TYPE
+                        KafkaCluster.Fields.AUTH_TYPE,
+                        KafkaCluster.Fields.KAFKA_VERSION,
+                        KafkaCluster.Fields.STATUS,
+                        KafkaCluster.Fields.CONDITIONS,
                     },
                     message = "list contains a value that is not valid or not available for the operation",
                     payload = ErrorCategory.InvalidQueryParameter.class)
@@ -85,7 +88,10 @@ public class KafkaClustersResource {
                                 KafkaCluster.Fields.NAMESPACE,
                                 KafkaCluster.Fields.CREATION_TIMESTAMP,
                                 KafkaCluster.Fields.BOOTSTRAP_SERVERS,
-                                KafkaCluster.Fields.AUTH_TYPE
+                                KafkaCluster.Fields.AUTH_TYPE,
+                                KafkaCluster.Fields.KAFKA_VERSION,
+                                KafkaCluster.Fields.STATUS,
+                                KafkaCluster.Fields.CONDITIONS,
                             }))
             List<String> fields,
 
@@ -128,6 +134,9 @@ public class KafkaClustersResource {
                         KafkaCluster.Fields.BOOTSTRAP_SERVERS,
                         KafkaCluster.Fields.AUTH_TYPE,
                         KafkaCluster.Fields.METRICS,
+                        KafkaCluster.Fields.KAFKA_VERSION,
+                        KafkaCluster.Fields.STATUS,
+                        KafkaCluster.Fields.CONDITIONS,
                     },
                     payload = ErrorCategory.InvalidQueryParameter.class)
             @Parameter(
@@ -147,6 +156,9 @@ public class KafkaClustersResource {
                                 KafkaCluster.Fields.BOOTSTRAP_SERVERS,
                                 KafkaCluster.Fields.AUTH_TYPE,
                                 KafkaCluster.Fields.METRICS,
+                                KafkaCluster.Fields.KAFKA_VERSION,
+                                KafkaCluster.Fields.STATUS,
+                                KafkaCluster.Fields.CONDITIONS,
                             }))
             List<String> fields) {
 

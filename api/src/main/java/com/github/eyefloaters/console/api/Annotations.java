@@ -3,6 +3,14 @@ package com.github.eyefloaters.console.api;
 public enum Annotations {
 
     /**
+     * Annotation that may be placed on a Strimzi Kafka resource to be hidden
+     * (ignored) by the console API server. Resources with this annotation will
+     * not appear in the Kafka cluster listing and attempts to fetch information
+     * using the describeCluster operation will result in a 404 client error.
+     */
+    CONSOLE_HIDDEN("console-hidden"),
+
+    /**
      * Annotation to identify a listener in Strimzi Kafka resources to be used for
      * connections directly from the Console API.
      */

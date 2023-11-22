@@ -1,3 +1,21 @@
+sum by (__console_metric_name__, nodeId) (
+  label_replace(
+    label_replace(
+      kafka_server_kafkaserver_brokerstate{namespace="%1$s",pod=~"%2$s-kafka-\\d+"} > 0,
+      "nodeId",
+      "$1",
+      "pod",
+      ".+-kafka-(\\d+)"
+    ),
+    "__console_metric_name__",
+    "broker_state",
+    "",
+    ""
+  )
+)
+
+or
+
 sum by (__console_metric_name__) (
   label_replace(
     kafka_controller_kafkacontroller_globaltopiccount{namespace="%1$s",pod=~"%2$s-kafka-\\d+"} > 0,

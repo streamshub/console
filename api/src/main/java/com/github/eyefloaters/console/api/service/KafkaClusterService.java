@@ -12,6 +12,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -25,6 +26,7 @@ import org.apache.kafka.common.KafkaFuture;
 import org.jboss.logging.Logger;
 
 import com.github.eyefloaters.console.api.Annotations;
+import com.github.eyefloaters.console.api.model.Condition;
 import com.github.eyefloaters.console.api.model.KafkaCluster;
 import com.github.eyefloaters.console.api.model.Node;
 import com.github.eyefloaters.console.api.support.ListRequestContext;
@@ -61,11 +63,11 @@ public class KafkaClusterService {
         return kafkaInformer.getStore()
                 .list()
                 .stream()
+                .filter(Predicate.not(k -> annotatedKafka(k, Annotations.CONSOLE_HIDDEN)))
                 .map(k -> exposedListener(k)
                         .map(l -> listenerStatus(k, l))
                         .map(l -> toKafkaCluster(k, l))
-                        .orElse(null))
-                .filter(Objects::nonNull)
+                        .orElseGet(() -> toKafkaCluster(k)))
                 .map(listSupport::tally)
                 .filter(listSupport::betweenCursors)
                 .sorted(listSupport.getSortComparator())
@@ -97,11 +99,16 @@ public class KafkaClusterService {
 
     KafkaCluster toKafkaCluster(Kafka kafka, ListenerStatus listener) {
         KafkaCluster cluster = new KafkaCluster(kafka.getStatus().getClusterId(), null, null, null);
+        setKafkaClusterProperties(cluster, kafka, listener);
+        return cluster;
+    }
+
+    KafkaCluster toKafkaCluster(Kafka kafka) {
+        KafkaCluster cluster = new KafkaCluster(kafka.getStatus().getClusterId(), null, null, null);
         cluster.setName(kafka.getMetadata().getName());
         cluster.setNamespace(kafka.getMetadata().getNamespace());
         cluster.setCreationTimestamp(kafka.getMetadata().getCreationTimestamp());
-        cluster.setBootstrapServers(listener.getBootstrapServers());
-        cluster.setAuthType(getAuthType(kafka, listener).orElse(null));
+        setKafkaClusterStatus(cluster, kafka);
         return cluster;
     }
 
@@ -109,15 +116,36 @@ public class KafkaClusterService {
         findCluster(kafkaInformer, cluster.getId())
             .ifPresent(kafka -> exposedListener(kafka)
                     .map(l -> listenerStatus(kafka, l))
-                    .ifPresent(l -> {
-                        cluster.setName(kafka.getMetadata().getName());
-                        cluster.setNamespace(kafka.getMetadata().getNamespace());
-                        cluster.setCreationTimestamp(kafka.getMetadata().getCreationTimestamp());
-                        cluster.setBootstrapServers(l.getBootstrapServers());
-                        cluster.setAuthType(getAuthType(kafka, l).orElse(null));
-                    }));
+                    .ifPresent(l -> setKafkaClusterProperties(cluster, kafka, l)));
 
         return cluster;
+    }
+
+    void setKafkaClusterProperties(KafkaCluster cluster, Kafka kafka, ListenerStatus listener) {
+        cluster.setName(kafka.getMetadata().getName());
+        cluster.setNamespace(kafka.getMetadata().getNamespace());
+        cluster.setCreationTimestamp(kafka.getMetadata().getCreationTimestamp());
+        cluster.setBootstrapServers(listener.getBootstrapServers());
+        cluster.setAuthType(getAuthType(kafka, listener).orElse(null));
+        setKafkaClusterStatus(cluster, kafka);
+    }
+
+    void setKafkaClusterStatus(KafkaCluster cluster, Kafka kafka) {
+        Optional.ofNullable(kafka.getStatus())
+            .ifPresent(status -> {
+                cluster.setKafkaVersion(status.getKafkaVersion());
+                Optional.ofNullable(status.getConditions())
+                    .ifPresent(conditions -> {
+                        cluster.setConditions(conditions.stream().map(Condition::new).toList());
+
+                        conditions.stream()
+                            .filter(c -> "NotReady".equals(c.getType()) && "True".equals(c.getStatus()))
+                            .findFirst()
+                            .ifPresentOrElse(
+                                    c -> cluster.setStatus("NotReady"),
+                                    () -> cluster.setStatus("Ready"));
+                    });
+            });
     }
 
     CompletionStage<KafkaCluster> addMetrics(KafkaCluster cluster, List<String> fields) {
@@ -161,6 +189,7 @@ public class KafkaClusterService {
                 .list()
                 .stream()
                 .filter(k -> Objects.equals(clusterId, k.getStatus().getClusterId()))
+                .filter(Predicate.not(k -> annotatedKafka(k, Annotations.CONSOLE_HIDDEN)))
                 .findFirst();
     }
 
@@ -215,6 +244,14 @@ public class KafkaClusterService {
 
     static int listenerSortKey(GenericKafkaListener listener, Annotations listenerAnnotation) {
         return annotatedListener(listener, listenerAnnotation) ? -1 : 1;
+    }
+
+    static boolean annotatedKafka(Kafka kafka, Annotations listenerAnnotation) {
+        return Optional.ofNullable(kafka.getMetadata())
+            .map(meta -> meta.getAnnotations())
+            .map(annotations -> annotations.get(listenerAnnotation.value()))
+            .map(Boolean::valueOf)
+            .orElse(false);
     }
 
     static boolean annotatedListener(GenericKafkaListener listener, Annotations listenerAnnotation) {
