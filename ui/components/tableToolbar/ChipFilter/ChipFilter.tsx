@@ -49,6 +49,7 @@ export function ChipFilter({ filters, breakpoint = "md" }: ChipFilterProps) {
         variant={"search-filter"}
         visibility={{ default: "hidden", [breakpoint]: "visible" }}
         data-testid={"large-viewport-toolbar"}
+        widths={{ default: "400px" }}
       >
         <InputGroup>
           {options.length > 1 && (

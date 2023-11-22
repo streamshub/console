@@ -102,7 +102,7 @@ export const TopicsResponseSchema = z.object({
   meta: z.object({
     page: z.object({
       total: z.number(),
-      pageNumber: z.number(),
+      pageNumber: z.number().optional(),
     }),
   }),
   links: z.object({

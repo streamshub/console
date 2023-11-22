@@ -194,62 +194,66 @@ export const TableView = <TRow, TCol>({
 
           {/* responsive action buttons, fallback on a dropdown on small viewports */}
           {actions ? (
-            <OverflowMenu breakpoint={breakpoint}>
-              <OverflowMenuContent isPersistent>
-                <OverflowMenuGroup isPersistent groupType="button">
-                  <OverflowMenuItem>
+            <ToolbarItem>
+              <OverflowMenu breakpoint={breakpoint}>
+                <OverflowMenuContent isPersistent>
+                  <OverflowMenuGroup isPersistent groupType="button">
                     {actions.map((a, idx) => (
-                      <Button
+                      <OverflowMenuItem key={idx}>
+                        <Button
+                          variant={a.isPrimary ? "primary" : undefined}
+                          onClick={a.onClick}
+                        >
+                          {a.label}
+                        </Button>
+                      </OverflowMenuItem>
+                    ))}
+                  </OverflowMenuGroup>
+                </OverflowMenuContent>
+                <OverflowMenuControl>
+                  <Dropdown
+                    isPlain
+                    toggle={(toggleRef) => (
+                      <MenuToggle
+                        ref={toggleRef}
+                        aria-label="kebab dropdown toggle"
+                        variant="plain"
+                        onClick={() => toggleIsActionsOpen((o) => !o)}
+                        isExpanded={isActionsOpen}
+                      >
+                        <EllipsisVIcon />
+                      </MenuToggle>
+                    )}
+                    shouldFocusToggleOnSelect
+                    isOpen={isActionsOpen}
+                  >
+                    {actions.map((a, idx) => (
+                      <OverflowMenuDropdownItem
                         key={idx}
-                        variant={a.isPrimary ? "primary" : undefined}
-                        onClick={a.onClick}
+                        onClick={() => {
+                          a.onClick();
+                          toggleIsActionsOpen(false);
+                        }}
                       >
                         {a.label}
-                      </Button>
+                      </OverflowMenuDropdownItem>
                     ))}
-                  </OverflowMenuItem>
-                </OverflowMenuGroup>
-              </OverflowMenuContent>
-              <OverflowMenuControl>
-                <Dropdown
-                  isPlain
-                  toggle={(toggleRef) => (
-                    <MenuToggle
-                      ref={toggleRef}
-                      aria-label="kebab dropdown toggle"
-                      variant="plain"
-                      onClick={() => toggleIsActionsOpen((o) => !o)}
-                      isExpanded={isActionsOpen}
-                    >
-                      <EllipsisVIcon />
-                    </MenuToggle>
-                  )}
-                  shouldFocusToggleOnSelect
-                  isOpen={isActionsOpen}
-                >
-                  {actions.map((a, idx) => (
-                    <OverflowMenuDropdownItem
-                      key={idx}
-                      onClick={() => {
-                        a.onClick();
-                        toggleIsActionsOpen(false);
-                      }}
-                    >
-                      {a.label}
-                    </OverflowMenuDropdownItem>
-                  ))}
-                </Dropdown>
-              </OverflowMenuControl>
-            </OverflowMenu>
+                  </Dropdown>
+                </OverflowMenuControl>
+              </OverflowMenu>
+            </ToolbarItem>
           ) : null}
 
           {/* icon buttons */}
           {tools && (
-            <ToolbarGroup variant="icon-button-group">
-              {tools.map((t, idx) => (
-                <ToolbarItem key={idx}>{t}</ToolbarItem>
-              ))}
-            </ToolbarGroup>
+            <>
+              <ToolbarItem variant="separator"></ToolbarItem>
+              <ToolbarGroup variant="icon-button-group">
+                {tools.map((t, idx) => (
+                  <ToolbarItem key={idx}>{t}</ToolbarItem>
+                ))}
+              </ToolbarGroup>
+            </>
           )}
 
           {/* pagination controls */}

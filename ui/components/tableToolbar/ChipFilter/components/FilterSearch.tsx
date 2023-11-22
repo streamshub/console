@@ -10,7 +10,7 @@ export const FilterSearch: VoidFunctionComponent<
 
   return (
     <SearchInput
-      placeholder={t("search_hint", { label })}
+      placeholder={t("search_hint", { label: label.toLocaleLowerCase() })}
       onSearch={onSearch}
       validate={validate}
       errorMessage={errorMessage}

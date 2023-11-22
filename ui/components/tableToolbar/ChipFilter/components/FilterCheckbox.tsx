@@ -33,7 +33,7 @@ export function FilterCheckbox({
             } as React.CSSProperties
           }
         >
-          {t("common.search_hint", { label })}
+          {t("common.search_hint", { label: label.toLocaleLowerCase() })}
         </MenuToggle>
       )}
     >

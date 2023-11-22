@@ -1,20 +1,30 @@
 "use client";
 import { TopicList } from "@/api/topics/schema";
+import { EmptyStateNoTopics } from "@/app/[locale]/kafka/[kafkaId]/topics/(page)/EmptyStateNoTopics";
 import { ButtonLink } from "@/components/ButtonLink";
 import { Bytes } from "@/components/Bytes";
 import { Number } from "@/components/Number";
 import { TableView } from "@/components/table";
+import { EmptyStateNoMatchFound } from "@/components/table/EmptyStateNoMatchFound";
+import { Switch } from "@/libs/patternfly/react-core";
+import { TableVariant } from "@/libs/patternfly/react-table";
 import { Link, useRouter } from "@/navigation";
 import { useFilterParams } from "@/utils/useFilterParams";
-import { TableVariant } from "@patternfly/react-table";
-import { useFormatter, useTranslations } from "next-intl";
-import { useTransition } from "react";
+import { Icon, Tooltip } from "@patternfly/react-core";
+import {
+  CheckCircleIcon,
+  ExclamationTriangleIcon,
+  HelpIcon,
+} from "@patternfly/react-icons";
+import { useTranslations } from "next-intl";
+import { useOptimistic, useTransition } from "react";
 
 export const TopicsTableColumns = [
   "name",
+  "status",
+  "partitions",
   "messages",
   "consumerGroups",
-  "partitions",
   "storage",
 ] as const;
 export type SortableTopicsTableColumns = Exclude<
@@ -30,11 +40,24 @@ export type TopicsTableProps = {
   canCreate: boolean;
   page: number;
   perPage: number;
+  id: string | undefined;
+  name: string | undefined;
   sort: TopicsTableColumn;
   sortDir: "asc" | "desc";
+  includeHidden: boolean;
   baseurl: string;
   nextPageCursor: string | null | undefined;
   prevPageCursor: string | null | undefined;
+};
+
+type State = {
+  id: string | undefined;
+  name: string | undefined;
+  topics: TopicList[] | undefined;
+  perPage: number;
+  sort: TopicsTableColumn;
+  sortDir: "asc" | "desc";
+  includeHidden: boolean;
 };
 
 export function TopicsTable({
@@ -43,65 +66,107 @@ export function TopicsTable({
   topicsCount,
   page,
   perPage,
+  id,
+  name,
   sort,
   sortDir,
+  includeHidden,
   baseurl,
   nextPageCursor,
   prevPageCursor,
 }: TopicsTableProps) {
-  const format = useFormatter();
   const t = useTranslations("topics");
   const router = useRouter();
-  const updateUrl = useFilterParams({ perPage, sort, sortDir });
+  const _updateUrl = useFilterParams({ perPage, sort, sortDir, includeHidden });
   const [_, startTransition] = useTransition();
+  const [state, addOptimistic] = useOptimistic<
+    State,
+    Partial<Omit<State, "topics">>
+  >(
+    {
+      topics,
+      id,
+      name,
+      perPage,
+      sort,
+      sortDir,
+      includeHidden,
+    },
+    (state, options) => ({ ...state, ...options, topics: undefined }),
+  );
+
+  const updateUrl: typeof _updateUrl = (newParams) => {
+    const { topics, ...s } = state;
+    _updateUrl({
+      ...s,
+      ...newParams,
+    });
+  };
+
+  function clearFilters() {
+    startTransition(() => {
+      _updateUrl({});
+      addOptimistic({
+        name: undefined,
+      });
+    });
+  }
 
   return (
     <TableView
       itemCount={topicsCount}
       page={page}
-      perPage={perPage}
+      perPage={state.perPage}
       onPageChange={(newPage, perPage) => {
-        let pageDiff = newPage - page;
-        switch (pageDiff) {
-          case -1:
-            updateUrl({ perPage, page: prevPageCursor });
-            break;
-          case 1:
-            updateUrl({ perPage, page: nextPageCursor });
-            break;
-          default:
-            updateUrl({ perPage });
-            break;
-        }
+        startTransition(() => {
+          const pageDiff = newPage - page;
+          switch (pageDiff) {
+            case -1:
+              updateUrl({ perPage, page: prevPageCursor });
+              break;
+            case 1:
+              updateUrl({ perPage, page: nextPageCursor });
+              break;
+            default:
+              updateUrl({ perPage });
+              break;
+          }
+          addOptimistic({ perPage });
+        });
       }}
-      data={topics}
-      emptyStateNoData={<div>no data</div>}
-      emptyStateNoResults={<div>no results</div>}
+      data={state.topics}
+      emptyStateNoData={<EmptyStateNoTopics createHref={`${baseurl}/create`} />}
+      emptyStateNoResults={<EmptyStateNoMatchFound onClear={clearFilters} />}
+      isFiltered={name !== undefined || id !== undefined}
       ariaLabel={"Topics"}
       columns={TopicsTableColumns}
       isColumnSortable={(col) => {
         if (!SortableColumns.includes(col)) {
           return undefined;
         }
-        const activeIndex = TopicsTableColumns.indexOf(sort);
+        const activeIndex = TopicsTableColumns.indexOf(state.sort);
         const columnIndex = TopicsTableColumns.indexOf(col);
         return {
           label: col as string,
           columnIndex,
           onSort: () => {
-            updateUrl({
-              sort: col,
-              sortDir:
+            startTransition(() => {
+              const newSortDir =
                 activeIndex === columnIndex
-                  ? sortDir === "asc"
+                  ? state.sortDir === "asc"
                     ? "desc"
                     : "asc"
-                  : "asc",
+                  : "asc";
+              updateUrl({
+                sort: col,
+                sortDir: newSortDir,
+              });
+              addOptimistic({ sort: col, sortDir: newSortDir });
             });
           },
           sortBy: {
             index: activeIndex,
-            direction: sortDir,
+            direction: state.sortDir,
             defaultDirection: "asc",
           },
           isFavorites: undefined,
@@ -116,8 +181,14 @@ export function TopicsTable({
         switch (column) {
           case "name":
             return (
-              <Th key={key} width={40} dataLabel={"Topic"}>
+              <Th key={key} width={30} dataLabel={"Topic"}>
                 Name
+              </Th>
+            );
+          case "status":
+            return (
+              <Th key={key} dataLabel={"Status"}>
+                Status
               </Th>
             );
           case "consumerGroups":
@@ -134,8 +205,8 @@ export function TopicsTable({
             );
           case "messages":
             return (
-              <Th key={key} dataLabel={"Messages"}>
-                Messages
+              <Th key={key} dataLabel={"Record count"}>
+                Record count
               </Th>
             );
           case "storage":
@@ -154,6 +225,31 @@ export function TopicsTable({
                 <Link href={`${baseurl}/${row.id}/messages`}>
                   {row.attributes.name}
                 </Link>
+              </Td>
+            );
+          case "status":
+            const inSync =
+              row.attributes.partitions
+                .flatMap((p) => p.replicas.flatMap((r) => r.inSync))
+                .find((is) => is === false) === undefined;
+            return (
+              <Td key={key} dataLabel={"Status"}>
+                {inSync && (
+                  <>
+                    <Icon status={"success"}>
+                      <CheckCircleIcon />
+                    </Icon>
+                    &nbsp;In-sync
+                  </>
+                )}
+                {!inSync && (
+                  <>
+                    <Icon status={"warning"}>
+                      <ExclamationTriangleIcon />
+                    </Icon>
+                    &nbsp;Under replicated
+                  </>
+                )}
               </Td>
             );
           case "consumerGroups":
@@ -176,13 +272,13 @@ export function TopicsTable({
                   variant={"link"}
                   href={`${baseurl}/${row.id}/partitions`}
                 >
-                  {format.number(row.attributes.partitions.length)}
+                  <Number value={row.attributes.partitions.length} />
                 </ButtonLink>
               </Td>
             );
           case "messages":
             return (
-              <Td key={key} dataLabel={"Messages"}>
+              <Td key={key} dataLabel={"Record count"}>
                 <ButtonLink
                   variant={"link"}
                   href={`${baseurl}/${row.id}/messages`}
@@ -203,7 +299,7 @@ export function TopicsTable({
         <ActionsColumn
           items={[
             {
-              title: "Edit properties",
+              title: "Edit configuration",
               onClick: () => {
                 startTransition(() => {
                   router.push(`${baseurl}/${row.id}/configuration`);
@@ -225,30 +321,109 @@ export function TopicsTable({
         />
       )}
       filters={{
-        name: {
+        Name: {
           type: "search",
-          chips: [],
-          onSearch: () => {},
-          onRemoveChip: () => {},
-          onRemoveGroup: () => {},
-          validate: () => true,
-          errorMessage: "",
+          chips: state.name ? [state.name] : [],
+          onSearch: (name) => {
+            startTransition(() => {
+              updateUrl({ name });
+              addOptimistic({ name });
+            });
+          },
+          onRemoveChip: () => {
+            startTransition(() => {
+              updateUrl({ name: undefined });
+              addOptimistic({ name: undefined });
+            });
+          },
+          onRemoveGroup: () => {
+            startTransition(() => {
+              updateUrl({ name: undefined });
+              addOptimistic({ name: undefined });
+            });
+          },
+          validate: (value) => value.length >= 3,
+          errorMessage: "At least 3 characters",
         },
+        "Topic ID": {
+          type: "search",
+          chips: state.id ? [state.id] : [],
+          onSearch: (id) => {
+            startTransition(() => {
+              updateUrl({ id });
+              addOptimistic({ id });
+            });
+          },
+          onRemoveChip: () => {
+            startTransition(() => {
+              updateUrl({ id: undefined });
+              addOptimistic({ id: undefined });
+            });
+          },
+          onRemoveGroup: () => {
+            startTransition(() => {
+              updateUrl({ id: undefined });
+              addOptimistic({ id: undefined });
+            });
+          },
+          validate: (value) => value.length >= 3,
+          errorMessage: "At least 3 characters",
+        },
+        // Status: {
+        //   type: "checkbox",
+        //   chips: [],
+        //   onToggle: () => {},
+        //   onRemoveChip: () => {},
+        //   onRemoveGroup: () => {},
+        //   options: {
+        //     ready: "Ready",
+        //     under: "Under replicated",
+        //   },
+        // },
       }}
+      onClearAllFilters={clearFilters}
       actions={
         canCreate
           ? [
               {
                 label: t("create_topic"),
                 onClick: () => {
-                  router.push(baseurl + "/create");
+                  startTransition(() => {
+                    router.push(baseurl + "/create");
+                  });
                 },
                 isPrimary: true,
               },
             ]
           : undefined
       }
+      tools={[
+        <Switch
+          key={"ht"}
+          label={
+            <>
+              Hide internal topics&nbsp;
+              <Tooltip
+                content={
+                  "Internal topic names start with an underscore (_) and should not be individually modified."
+                }
+              >
+                <HelpIcon />
+              </Tooltip>
+            </>
+          }
+          isChecked={state.includeHidden === false}
+          onChange={(_, checked) =>
+            startTransition(() => {
+              updateUrl({ hidden: checked ? "n" : "y" });
+              addOptimistic({ includeHidden: !checked });
+            })
+          }
+          className={"pf-v5-u-py-xs"}
+        />,
+      ]}
       variant={TableVariant.compact}
+      toolbarBreakpoint={"md"}
     />
   );
 }

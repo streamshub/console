@@ -23,16 +23,24 @@ const log = logger.child({ module: "topics-api" });
 export async function getTopics(
   kafkaId: string,
   params: {
+    name?: string;
+    id?: string;
     pageSize?: number;
     pageCursor?: string;
     sort?: string;
     sortDir?: string;
+    includeHidden?: boolean;
   },
 ): Promise<TopicsResponse> {
   const sp = new URLSearchParams(
     filterUndefinedFromObj({
       "fields[topics]":
         "name,visibility,partitions,recordCount,totalLeaderLogBytes,consumerGroups",
+      "filter[id]": params.id ? `eq,${params.id}` : undefined,
+      "filter[name]": params.name ? `like,*${params.name}*` : undefined,
+      "filter[visibility]": params.includeHidden
+        ? "in,external,internal"
+        : "eq,external",
       "page[size]": params.pageSize,
       "page[after]": params.pageCursor,
       sort: params.sort
@@ -50,7 +58,7 @@ export async function getTopics(
   });
   log.debug({ url }, "getTopics");
   const rawData = await res.json();
-  log.trace({ url, rawData }, "getTopics response");
+  log.debug({ url, rawData }, "getTopics response");
   return TopicsResponseSchema.parse(rawData);
 }
 
@@ -102,7 +110,7 @@ export async function createTopic(
   const rawData = await res.json();
   log.debug({ url, rawData }, "createTopic response");
   const response = TopicCreateResponseSchema.parse(rawData);
-  log.trace(response, "createTopic response parsed");
+  log.debug(response, "createTopic response parsed");
   if (validateOnly === false) {
     revalidateTag("topics");
   }
@@ -134,7 +142,7 @@ export async function updateTopic(
     method: "PATCH",
     body: JSON.stringify(body),
   });
-  log.trace({ status: res.status }, "updateTopic response");
+  log.debug({ status: res.status }, "updateTopic response");
   try {
     if (res.status === 204) {
       revalidateTag(`topic-${topicId}`);
