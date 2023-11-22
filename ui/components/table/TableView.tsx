@@ -197,17 +197,16 @@ export const TableView = <TRow, TCol>({
             <OverflowMenu breakpoint={breakpoint}>
               <OverflowMenuContent isPersistent>
                 <OverflowMenuGroup isPersistent groupType="button">
-                  <OverflowMenuItem>
-                    {actions.map((a, idx) => (
+                  {actions.map((a, idx) => (
+                    <OverflowMenuItem key={idx}>
                       <Button
-                        key={idx}
                         variant={a.isPrimary ? "primary" : undefined}
                         onClick={a.onClick}
                       >
                         {a.label}
                       </Button>
-                    ))}
-                  </OverflowMenuItem>
+                    </OverflowMenuItem>
+                  ))}
                 </OverflowMenuGroup>
               </OverflowMenuContent>
               <OverflowMenuControl>
