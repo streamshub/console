@@ -22,7 +22,8 @@ export default function TopicsPage({
 }: {
   params: KafkaParams;
   searchParams: {
-    search: string | undefined;
+    id: string | undefined;
+    name: string | undefined;
     perPage: string | undefined;
     sort: string | undefined;
     sortDir: string | undefined;
@@ -30,7 +31,8 @@ export default function TopicsPage({
     hidden: string | undefined;
   };
 }) {
-  const search = searchParams["search"];
+  const id = searchParams["id"];
+  const name = searchParams["name"];
   const pageSize = stringToInt(searchParams.perPage) || 20;
   const sort = (searchParams["sort"] || "name") as SortableTopicsTableColumns;
   const sortDir = (searchParams["sortDir"] || "asc") as "asc" | "desc";
@@ -44,7 +46,8 @@ export default function TopicsPage({
           <TopicsTable
             topics={undefined}
             topicsCount={0}
-            search={search}
+            id={id}
+            name={name}
             perPage={pageSize}
             sort={sort}
             sortDir={sortDir}
@@ -58,7 +61,8 @@ export default function TopicsPage({
         }
       >
         <ConnectedTopicsTable
-          search={search}
+          id={id}
+          name={name}
           sort={sort}
           sortDir={sortDir}
           pageSize={pageSize}
@@ -73,7 +77,8 @@ export default function TopicsPage({
 
 async function ConnectedTopicsTable({
   kafkaId,
-  search,
+  id,
+  name,
   sortDir,
   sort,
   pageCursor,
@@ -81,14 +86,16 @@ async function ConnectedTopicsTable({
   includeHidden,
 }: {
   sort: SortableTopicsTableColumns;
-  search: string | undefined;
+  id: string | undefined;
+  name: string | undefined;
   sortDir: "asc" | "desc";
   pageSize: number;
   pageCursor: string | undefined;
   includeHidden: boolean;
 } & KafkaParams) {
   const topics = await getTopics(kafkaId, {
-    search,
+    id,
+    name,
     sort: sortMap[sort],
     sortDir,
     pageSize,
@@ -108,7 +115,8 @@ async function ConnectedTopicsTable({
     <TopicsTable
       topics={topics.data}
       topicsCount={topics.meta.page.total}
-      search={search}
+      id={id}
+      name={name}
       perPage={pageSize}
       sort={sort}
       sortDir={sortDir}

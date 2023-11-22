@@ -23,7 +23,8 @@ const log = logger.child({ module: "topics-api" });
 export async function getTopics(
   kafkaId: string,
   params: {
-    search?: string;
+    name?: string;
+    id?: string;
     pageSize?: number;
     pageCursor?: string;
     sort?: string;
@@ -35,7 +36,8 @@ export async function getTopics(
     filterUndefinedFromObj({
       "fields[topics]":
         "name,visibility,partitions,recordCount,totalLeaderLogBytes,consumerGroups",
-      "filter[name]": params.search ? `like,*${params.search}*` : undefined,
+      "filter[id]": params.id ? `eq,${params.id}` : undefined,
+      "filter[name]": params.name ? `like,*${params.name}*` : undefined,
       "filter[visibility]": params.includeHidden
         ? "in,external,internal"
         : "eq,external",

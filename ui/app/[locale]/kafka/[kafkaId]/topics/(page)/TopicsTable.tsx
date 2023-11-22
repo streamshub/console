@@ -36,7 +36,8 @@ export type TopicsTableProps = {
   canCreate: boolean;
   page: number;
   perPage: number;
-  search: string | undefined;
+  id: string | undefined;
+  name: string | undefined;
   sort: TopicsTableColumn;
   sortDir: "asc" | "desc";
   includeHidden: boolean;
@@ -46,7 +47,8 @@ export type TopicsTableProps = {
 };
 
 type State = {
-  search: string | undefined;
+  id: string | undefined;
+  name: string | undefined;
   topics: TopicList[] | undefined;
   perPage: number;
   sort: TopicsTableColumn;
@@ -60,7 +62,8 @@ export function TopicsTable({
   topicsCount,
   page,
   perPage,
-  search,
+  id,
+  name,
   sort,
   sortDir,
   includeHidden,
@@ -79,7 +82,8 @@ export function TopicsTable({
   >(
     {
       topics,
-      search,
+      id,
+      name,
       perPage,
       sort,
       sortDir,
@@ -100,7 +104,7 @@ export function TopicsTable({
     startTransition(() => {
       _updateUrl({});
       addOptimistic({
-        search: undefined,
+        name: undefined,
       });
     });
   }
@@ -130,7 +134,7 @@ export function TopicsTable({
       data={state.topics}
       emptyStateNoData={<EmptyStateNoTopics createHref={`${baseurl}/create`} />}
       emptyStateNoResults={<EmptyStateNoMatchFound onClear={clearFilters} />}
-      isFiltered={search !== undefined}
+      isFiltered={name !== undefined || id !== undefined}
       ariaLabel={"Topics"}
       columns={TopicsTableColumns}
       isColumnSortable={(col) => {
@@ -174,7 +178,7 @@ export function TopicsTable({
         switch (column) {
           case "name":
             return (
-              <Th key={key} width={40} dataLabel={"Topic"}>
+              <Th key={key} width={30} dataLabel={"Topic"}>
                 Name
               </Th>
             );
@@ -316,23 +320,47 @@ export function TopicsTable({
       filters={{
         Name: {
           type: "search",
-          chips: state.search ? [state.search] : [],
-          onSearch: (search) => {
+          chips: state.name ? [state.name] : [],
+          onSearch: (name) => {
             startTransition(() => {
-              updateUrl({ search });
-              addOptimistic({ search });
+              updateUrl({ name });
+              addOptimistic({ name });
             });
           },
           onRemoveChip: () => {
             startTransition(() => {
-              updateUrl({ search: undefined });
-              addOptimistic({ search: undefined });
+              updateUrl({ name: undefined });
+              addOptimistic({ name: undefined });
             });
           },
           onRemoveGroup: () => {
             startTransition(() => {
-              updateUrl({ search: undefined });
-              addOptimistic({ search: undefined });
+              updateUrl({ name: undefined });
+              addOptimistic({ name: undefined });
+            });
+          },
+          validate: (value) => value.length >= 3,
+          errorMessage: "At least 3 characters",
+        },
+        "Topic ID": {
+          type: "search",
+          chips: state.id ? [state.id] : [],
+          onSearch: (id) => {
+            startTransition(() => {
+              updateUrl({ id });
+              addOptimistic({ id });
+            });
+          },
+          onRemoveChip: () => {
+            startTransition(() => {
+              updateUrl({ id: undefined });
+              addOptimistic({ id: undefined });
+            });
+          },
+          onRemoveGroup: () => {
+            startTransition(() => {
+              updateUrl({ id: undefined });
+              addOptimistic({ id: undefined });
             });
           },
           validate: (value) => value.length >= 3,
