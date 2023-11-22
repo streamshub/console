@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
@@ -30,8 +31,8 @@ import org.apache.kafka.clients.admin.CreateTopicsOptions;
 import org.apache.kafka.clients.admin.CreateTopicsResult;
 import org.apache.kafka.clients.admin.DescribeLogDirsOptions;
 import org.apache.kafka.clients.admin.DescribeTopicsOptions;
-import org.apache.kafka.clients.admin.ListTopicsOptions;
 import org.apache.kafka.clients.admin.ListOffsetsResult.ListOffsetsResultInfo;
+import org.apache.kafka.clients.admin.ListTopicsOptions;
 import org.apache.kafka.clients.admin.NewPartitionReassignment;
 import org.apache.kafka.clients.admin.OffsetSpec;
 import org.apache.kafka.clients.admin.TopicListing;
@@ -68,6 +69,15 @@ public class TopicService {
             List.of(OffsetSpec.earliest(), OffsetSpec.latest(), OffsetSpec.maxTimestamp());
     private static final Predicate<String> CONFIG_SORT =
             Pattern.compile("^-?configs\\..+$").asMatchPredicate();
+    private static final Set<String> REQUIRE_DESCRIBE = Set.of(
+            Topic.Fields.PARTITIONS,
+            Topic.Fields.AUTHORIZED_OPERATIONS,
+            Topic.Fields.RECORD_COUNT,
+            Topic.Fields.TOTAL_LEADER_LOG_BYTES);
+    private static final Set<String> REQUIRE_PARTITIONS = Set.of(
+            Topic.Fields.PARTITIONS,
+            Topic.Fields.RECORD_COUNT,
+            Topic.Fields.TOTAL_LEADER_LOG_BYTES);
 
     @Inject
     Logger logger;
@@ -383,14 +393,11 @@ public class TopicService {
     }
 
     CompletableFuture<Void> maybeDescribeTopics(Admin adminClient, Map<Uuid, Topic> topics, List<String> fields, String offsetSpec) {
-        if (fields.contains(Topic.Fields.PARTITIONS)
-                || fields.contains(Topic.Fields.AUTHORIZED_OPERATIONS)
-                || fields.contains(Topic.Fields.RECORD_COUNT)) {
+        if (REQUIRE_DESCRIBE.stream().anyMatch(fields::contains)) {
             return describeTopics(adminClient, topics.keySet(), fields, offsetSpec)
                 .<Void>thenApply(descriptions -> {
                     descriptions.forEach((id, either) -> {
-                        if (fields.contains(Topic.Fields.PARTITIONS)
-                                || fields.contains(Topic.Fields.RECORD_COUNT)) {
+                        if (REQUIRE_PARTITIONS.stream().anyMatch(fields::contains)) {
                             topics.get(id).addPartitions(either);
                         }
                         if (fields.contains(Topic.Fields.AUTHORIZED_OPERATIONS)) {

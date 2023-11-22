@@ -4,7 +4,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -17,8 +16,6 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 import com.fasterxml.jackson.annotation.JsonFilter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.github.eyefloaters.console.api.support.ComparatorBuilder;
 import com.github.eyefloaters.console.api.support.ListRequestContext;
 
@@ -124,8 +121,10 @@ public class KafkaCluster {
     final List<String> authorizedOperations;
     String bootstrapServers; // Strimzi Kafka CR only
     String authType; // Strimzi Kafka CR only
-    @JsonInclude(Include.NON_EMPTY)
-    Map<String, Map<String, List<Object[]>>> metrics = new LinkedHashMap<>();
+    @Schema(readOnly = true, description = """
+            Contains the set of metrics optionally retrieved only in a describe operation.
+            """)
+    Metrics metrics = new Metrics();
 
     public KafkaCluster(String id, List<Node> nodes, Node controller, List<String> authorizedOperations) {
         super();
@@ -232,7 +231,7 @@ public class KafkaCluster {
         this.authType = authType;
     }
 
-    public Map<String, Map<String, List<Object[]>>> getMetrics() {
+    public Metrics getMetrics() {
         return metrics;
     }
 }

@@ -1,19 +1,11 @@
 package com.github.eyefloaters.console.api.service;
 
-import java.io.StringReader;
-import java.net.HttpURLConnection;
-import java.net.URI;
-import java.net.URLEncoder;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
@@ -25,16 +17,11 @@ import java.util.stream.Stream;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import jakarta.json.Json;
-import jakarta.json.JsonArray;
-import jakarta.json.JsonObject;
-import jakarta.json.JsonReader;
 
 import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.clients.admin.DescribeClusterOptions;
 import org.apache.kafka.clients.admin.DescribeClusterResult;
 import org.apache.kafka.common.KafkaFuture;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
 import com.github.eyefloaters.console.api.Annotations;
@@ -58,104 +45,6 @@ import static com.github.eyefloaters.console.api.BlockingSupplier.get;
 @ApplicationScoped
 public class KafkaClusterService {
 
-    private static final String METRICS_QUERY_TEMPLATE = """
-            sum by (node, __console_metric_name__) (
-            label_replace(
-              label_replace(
-                rate(container_cpu_usage_seconds_total{namespace="%1$s",pod=~"%2$s-kafka-\\\\d+"}[1m]),
-                "node",
-                "$1",
-                "pod",
-                ".+-kafka-(\\\\d+)"
-              ),
-              "__console_metric_name__",
-              "cpu_usage_seconds",
-              "",
-              ""
-            )
-          )
-          or
-          sum by (node, __console_metric_name__) (
-            label_replace(
-              label_replace(
-                container_memory_usage_bytes{namespace="%1$s",pod=~"%2$s-kafka-\\\\d+"},
-                "node",
-                "$1",
-                "pod",
-                ".+-kafka-(\\\\d+)"
-              ),
-              "__console_metric_name__",
-              "memory_usage_bytes",
-              "",
-              ""
-            )
-          )
-          or
-          sum by (node, __console_metric_name__) (
-            label_replace(
-              label_replace(
-                kafka_server_socket_server_metrics_incoming_byte_rate{listener="%3$s",namespace="%1$s",pod=~"%2$s-kafka-\\\\d+"},
-                "node",
-                "$1",
-                "pod",
-                ".+-kafka-(\\\\d+)"
-              ),
-              "__console_metric_name__",
-              "incoming_byte_rate",
-              "",
-              ""
-            )
-          )
-          or
-          sum by (node, __console_metric_name__) (
-            label_replace(
-              label_replace(
-                kafka_server_socket_server_metrics_outgoing_byte_rate{listener="%3$s",namespace="%1$s",pod=~"%2$s-kafka-\\\\d+"},
-                "node",
-                "$1",
-                "pod",
-                ".+-kafka-(\\\\d+)"
-              ),
-              "__console_metric_name__",
-              "outgoing_byte_rate",
-              "",
-              ""
-            )
-          )
-          or
-          sum by (node, __console_metric_name__) (
-            label_replace(
-              label_replace(
-                kubelet_volume_stats_capacity_bytes{namespace="%1$s",persistentvolumeclaim=~"data(?:-\\\\d+)?-%2$s-kafka-\\\\d+"},
-                "node",
-                "$1",
-                "persistentvolumeclaim",
-                ".+-kafka-(\\\\d+)"
-              ),
-              "__console_metric_name__",
-              "volume_stats_capacity_bytes",
-              "",
-              ""
-            )
-          )
-          or
-          sum by (node, __console_metric_name__) (
-            label_replace(
-              label_replace(
-                kubelet_volume_stats_used_bytes{namespace="%1$s",persistentvolumeclaim=~"data(?:-\\\\d+)?-%2$s-kafka-\\\\d+"},
-                "node",
-                "$1",
-                "persistentvolumeclaim",
-                ".+-kafka-(\\\\d+)"
-              ),
-              "__console_metric_name__",
-              "volume_stats_used_bytes",
-              "",
-              ""
-            )
-          )
-          """;
-
     @Inject
     Logger logger;
 
@@ -166,8 +55,7 @@ public class KafkaClusterService {
     Supplier<Admin> clientSupplier;
 
     @Inject
-    @ConfigProperty(name = "console.metrics.prometheus-url")
-    Optional<String> prometheusUrl;
+    MetricsService metricsService;
 
     public List<KafkaCluster> listClusters(ListRequestContext<KafkaCluster> listSupport) {
         return kafkaInformer.getStore()
@@ -237,7 +125,7 @@ public class KafkaClusterService {
             return CompletableFuture.completedStage(cluster);
         }
 
-        if (prometheusUrl.isEmpty()) {
+        if (metricsService.isDisabled()) {
             logger.warnf("Kafka cluster metrics were requested, but Prometheus URL is not configured");
             return CompletableFuture.completedStage(cluster);
         }
@@ -249,66 +137,23 @@ public class KafkaClusterService {
             .map(listener -> "%s-%d".formatted(listener.getName().toUpperCase(Locale.ROOT), listener.getPort()))
             .orElse(""); // listener/throughput metrics will not be available
 
-        HttpClient client = HttpClient.newBuilder()
-                .build();
+        try (var rangesStream = getClass().getResourceAsStream("/metrics/queries/kafkaCluster_ranges.promql");
+             var valuesStream = getClass().getResourceAsStream("/metrics/queries/kafkaCluster_values.promql")) {
+            String rangeQuery = new String(rangesStream.readAllBytes(), StandardCharsets.UTF_8)
+                    .formatted(namespace, name, listenerLabel);
+            String valueQuery = new String(valuesStream.readAllBytes(), StandardCharsets.UTF_8)
+                    .formatted(namespace, name);
 
-        String query = URLEncoder.encode(
-                METRICS_QUERY_TEMPLATE.formatted(namespace, name, listenerLabel),
-                StandardCharsets.UTF_8);
+            var rangeResults = metricsService.queryRanges(rangeQuery).toCompletableFuture();
+            var valueResults = metricsService.queryValues(valueQuery).toCompletableFuture();
 
-        Instant now = Instant.now();
-
-        String start = Double.toString(now.minus(30, ChronoUnit.MINUTES).toEpochMilli() / 1000d);
-        String end = Double.toString(now.toEpochMilli() / 1000d);
-
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(prometheusUrl.get() + "/api/v1/query_range"))
-                .header("Content-type", "application/x-www-form-urlencoded")
-                .POST(HttpRequest.BodyPublishers.ofString(
-                        "query=" + query + "&" +
-                        "start=" + start + "&" +
-                        "end=" + end + "&" +
-                        "step=60"))
-                .build();
-
-        return client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
-            .thenApply(response -> {
-                if (response.statusCode() != HttpURLConnection.HTTP_OK) {
-                    logger.warnf("Failed to retrieve Kafka cluster metrics: %s", response.body());
-                    return cluster;
-                }
-
-                JsonObject metrics;
-
-                try (JsonReader reader = Json.createReader(new StringReader(response.body()))) {
-                    metrics = reader.readObject();
-                }
-
-                metrics.getJsonObject("data")
-                    .getJsonArray("result")
-                    .stream()
-                    .map(JsonObject.class::cast)
-                    .forEach(entry -> {
-                        JsonObject metric = entry.getJsonObject("metric");
-                        String metricName = metric.getString("__console_metric_name__");
-                        String node = metric.getString("node");
-
-                        List<Object[]> values = entry.getJsonArray("values")
-                                .stream()
-                                .map(JsonArray.class::cast)
-                                .map(e -> new Object[] {
-                                        Instant.ofEpochMilli((long) (e.getJsonNumber(0).doubleValue() * 1000d)),
-                                        e.getString(1)
-                                })
-                                .toList();
-
-                        cluster.getMetrics()
-                            .computeIfAbsent(metricName, k -> new LinkedHashMap<>())
-                            .put(node, values);
-                    });
-
-                return cluster;
-            });
+            return CompletableFuture.allOf(
+                    rangeResults.thenAccept(cluster.getMetrics().ranges()::putAll),
+                    valueResults.thenAccept(cluster.getMetrics().values()::putAll))
+                .thenApply(nothing -> cluster);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     public static Optional<Kafka> findCluster(SharedIndexInformer<Kafka> kafkaInformer, String clusterId) {
