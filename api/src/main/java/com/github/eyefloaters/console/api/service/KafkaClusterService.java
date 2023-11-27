@@ -31,6 +31,7 @@ import com.github.eyefloaters.console.api.model.KafkaCluster;
 import com.github.eyefloaters.console.api.model.Node;
 import com.github.eyefloaters.console.api.support.ListRequestContext;
 
+import io.fabric8.kubernetes.api.model.ObjectMeta;
 import io.fabric8.kubernetes.client.informers.SharedIndexInformer;
 import io.strimzi.api.kafka.model.Kafka;
 import io.strimzi.api.kafka.model.listener.KafkaListenerAuthentication;
@@ -153,7 +154,7 @@ public class KafkaClusterService {
             return CompletableFuture.completedStage(cluster);
         }
 
-        if (metricsService.isDisabled()) {
+        if (metricsService.disabled()) {
             logger.warnf("Kafka cluster metrics were requested, but Prometheus URL is not configured");
             return CompletableFuture.completedStage(cluster);
         }
@@ -248,7 +249,7 @@ public class KafkaClusterService {
 
     static boolean annotatedKafka(Kafka kafka, Annotations listenerAnnotation) {
         return Optional.ofNullable(kafka.getMetadata())
-            .map(meta -> meta.getAnnotations())
+            .map(ObjectMeta::getAnnotations)
             .map(annotations -> annotations.get(listenerAnnotation.value()))
             .map(Boolean::valueOf)
             .orElse(false);
