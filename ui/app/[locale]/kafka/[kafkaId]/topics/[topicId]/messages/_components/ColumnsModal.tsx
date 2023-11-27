@@ -13,8 +13,8 @@ import {
 import { useState } from "react";
 
 export const columns = [
-  "partitions",
   "offset",
+  "partition",
   "timestamp",
   "timestampUTC",
   "key",
@@ -26,7 +26,7 @@ export type Column = (typeof columns)[number];
 export const columnLabels: Record<Column, string> = {
   key: "Key",
   headers: "Headers",
-  partitions: "Partitions",
+  partition: "Partition",
   value: "Value",
   offset: "Offset",
   timestamp: "Timestamp (local)",

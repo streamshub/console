@@ -34,7 +34,7 @@ import {
 } from "@/libs/patternfly/react-table";
 import { BaseCellProps } from "@patternfly/react-table";
 import { useTranslations } from "next-intl";
-import { useState } from "react";
+import { PropsWithChildren, useState } from "react";
 import { LimitSelector } from "./LimitSelector";
 import { MessageDetails, MessageDetailsProps } from "./MessageDetails";
 import { NoDataCell } from "./NoDataCell";
@@ -47,7 +47,7 @@ const columnWidths: Record<Column, BaseCellProps["width"]> = {
   timestamp: 15,
   timestampUTC: 15,
   headers: 20,
-  partitions: 10,
+  partition: 10,
   value: undefined,
 };
 
@@ -163,8 +163,14 @@ export function MessagesTable({
                 columns={columns.filter((c) => selectedColumns.includes(c))}
                 data={messages}
                 expectedLength={messages.length}
-                renderHeader={({ column, Th, key }) => (
-                  <Th key={key} width={columnWidths[column]}>
+                renderHeader={({ colIndex, column, Th, key }) => (
+                  <Th
+                    key={key}
+                    width={columnWidths[column]}
+                    isStickyColumn={colIndex === 0}
+                    hasRightBorder={colIndex === 0}
+                    modifier={"nowrap"}
+                  >
                     {columnLabels[column]}
                   </Th>
                 )}
@@ -172,43 +178,58 @@ export function MessagesTable({
                   const empty = (
                     <NoDataCell columnLabel={columnLabels[column]} />
                   );
+
+                  function Cell({ children }: PropsWithChildren) {
+                    return (
+                      <Td
+                        key={key}
+                        dataLabel={columnLabels[column]}
+                        isStickyColumn={colIndex === 0}
+                        hasRightBorder={colIndex === 0}
+                        modifier={"nowrap"}
+                      >
+                        {children}
+                      </Td>
+                    );
+                  }
+
                   switch (column) {
+                    case "partition":
+                      return (
+                        <Cell>
+                          <Number value={row.attributes.partition} />
+                        </Cell>
+                      );
                     case "offset":
                       return (
-                        <Td key={key} dataLabel={columnLabels[column]}>
+                        <Cell>
                           <Number value={row.attributes.offset} />
-                        </Td>
-                      );
-                    case "partitions":
-                      return (
-                        <Td key={key} dataLabel={columnLabels[column]}>
-                          <Number value={row.attributes.partition} />
-                        </Td>
+                        </Cell>
                       );
                     case "timestamp":
                       return (
-                        <Td key={key} dataLabel={columnLabels[column]}>
+                        <Cell>
                           <DateTime
                             value={row.attributes.timestamp}
                             dateStyle={"short"}
                             timeStyle={"medium"}
                           />
-                        </Td>
+                        </Cell>
                       );
                     case "timestampUTC":
                       return (
-                        <Td key={key} dataLabel={columnLabels[column]}>
+                        <Cell>
                           <DateTime
                             value={row.attributes.timestamp}
                             dateStyle={"short"}
                             timeStyle={"medium"}
                             tz={"UTC"}
                           />
-                        </Td>
+                        </Cell>
                       );
                     case "key":
                       return (
-                        <Td key={key} dataLabel={columnLabels[column]}>
+                        <Cell>
                           {row.attributes.key ? (
                             <UnknownValuePreview
                               value={row.attributes.key}
@@ -217,11 +238,11 @@ export function MessagesTable({
                           ) : (
                             empty
                           )}
-                        </Td>
+                        </Cell>
                       );
                     case "headers":
                       return (
-                        <Td key={key} dataLabel={columnLabels[column]}>
+                        <Cell>
                           {Object.keys(row.attributes.headers).length > 0 ? (
                             <UnknownValuePreview
                               value={beautifyUnknownValue(
@@ -235,20 +256,24 @@ export function MessagesTable({
                           ) : (
                             empty
                           )}
-                        </Td>
+                        </Cell>
                       );
                     case "value":
-                      return row.attributes.value ? (
-                        <UnknownValuePreview
-                          value={row.attributes.value}
-                          truncateAt={149}
-                          onClick={() => {
-                            setDefaultTab("value");
-                            onSelectMessage(row);
-                          }}
-                        />
-                      ) : (
-                        empty
+                      return (
+                        <Cell>
+                          {row.attributes.value ? (
+                            <UnknownValuePreview
+                              value={row.attributes.value}
+                              truncateAt={149}
+                              onClick={() => {
+                                setDefaultTab("value");
+                                onSelectMessage(row);
+                              }}
+                            />
+                          ) : (
+                            empty
+                          )}
+                        </Cell>
                       );
                   }
                 }}
