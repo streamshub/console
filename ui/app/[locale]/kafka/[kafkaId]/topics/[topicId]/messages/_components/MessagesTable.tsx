@@ -1,9 +1,9 @@
 import { Message } from "@/api/messages/schema";
 import {
   Column,
-  columnLabels,
   columns,
   ColumnsModal,
+  useColumnLabels,
 } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/_components/ColumnsModal";
 import { FilterGroup } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/_components/FilterGroup";
 import { NoResultsEmptyState } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/_components/NoResultsEmptyState";
@@ -51,7 +51,7 @@ const columnWidths: Record<Column, BaseCellProps["width"]> = {
   value: undefined,
 };
 
-const defaultColumns = ["offset", "timestamp", "key", "value"];
+const defaultColumns = ["offset", "timestampUTC", "key", "value"];
 
 export type MessageBrowserProps = {
   isRefreshing: boolean;
@@ -100,6 +100,7 @@ export function MessagesTable({
   onDeselectMessage,
 }: MessageBrowserProps) {
   const t = useTranslations("message-browser");
+  const columnLabels = useColumnLabels();
   const [showColumnsManagement, setShowColumnsManagement] = useState(false);
   const [defaultTab, setDefaultTab] =
     useState<MessageDetailsProps["defaultTab"]>("value");

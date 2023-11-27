@@ -1,4 +1,3 @@
-import { Modal } from "@/libs/patternfly/react-core";
 import {
   Button,
   DataList,
@@ -7,9 +6,10 @@ import {
   DataListItem,
   DataListItemCells,
   DataListItemRow,
+  Modal,
   Text,
   TextContent,
-} from "@patternfly/react-core";
+} from "@/libs/patternfly/react-core";
 import { useState } from "react";
 
 export const columns = [
@@ -23,15 +23,19 @@ export const columns = [
 ] as const;
 export type Column = (typeof columns)[number];
 
-export const columnLabels: Record<Column, string> = {
-  key: "Key",
-  headers: "Headers",
-  partition: "Partition",
-  value: "Value",
-  offset: "Offset",
-  timestamp: "Timestamp (local)",
-  timestampUTC: "Timestamp (UTC)",
-};
+export function useColumnLabels() {
+  const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const columnLabels: Record<Column, string> = {
+    key: "Key",
+    headers: "Headers",
+    partition: "Partition",
+    value: "Value",
+    offset: "Offset",
+    timestamp: `Timestamp (${timeZone})`,
+    timestampUTC: "Timestamp (UTC)",
+  };
+  return columnLabels;
+}
 
 export function ColumnsModal({
   isOpen,
@@ -44,6 +48,7 @@ export function ColumnsModal({
   onConfirm: (columns: Column[]) => void;
   onCancel: () => void;
 }) {
+  const columnLabels = useColumnLabels();
   const [selectedColumns, setSelectedColumns] = useState(initialValue);
 
   function selectAllColumns() {
