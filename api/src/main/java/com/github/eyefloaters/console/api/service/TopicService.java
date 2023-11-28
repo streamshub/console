@@ -31,6 +31,7 @@ import org.apache.kafka.clients.admin.CreateTopicsOptions;
 import org.apache.kafka.clients.admin.CreateTopicsResult;
 import org.apache.kafka.clients.admin.DescribeLogDirsOptions;
 import org.apache.kafka.clients.admin.DescribeTopicsOptions;
+import org.apache.kafka.clients.admin.ListOffsetsOptions;
 import org.apache.kafka.clients.admin.ListOffsetsResult.ListOffsetsResultInfo;
 import org.apache.kafka.clients.admin.ListTopicsOptions;
 import org.apache.kafka.clients.admin.NewPartitionReassignment;
@@ -48,6 +49,7 @@ import com.github.eyefloaters.console.api.model.Identifier;
 import com.github.eyefloaters.console.api.model.NewTopic;
 import com.github.eyefloaters.console.api.model.OffsetInfo;
 import com.github.eyefloaters.console.api.model.PartitionId;
+import com.github.eyefloaters.console.api.model.PartitionInfo;
 import com.github.eyefloaters.console.api.model.PartitionReplica;
 import com.github.eyefloaters.console.api.model.ReplicaLocalStorage;
 import com.github.eyefloaters.console.api.model.Topic;
@@ -73,11 +75,13 @@ public class TopicService {
             Topic.Fields.PARTITIONS,
             Topic.Fields.AUTHORIZED_OPERATIONS,
             Topic.Fields.RECORD_COUNT,
-            Topic.Fields.TOTAL_LEADER_LOG_BYTES);
+            Topic.Fields.TOTAL_LEADER_LOG_BYTES,
+            Topic.Fields.STATUS);
     private static final Set<String> REQUIRE_PARTITIONS = Set.of(
             Topic.Fields.PARTITIONS,
             Topic.Fields.RECORD_COUNT,
-            Topic.Fields.TOTAL_LEADER_LOG_BYTES);
+            Topic.Fields.TOTAL_LEADER_LOG_BYTES,
+            Topic.Fields.STATUS);
 
     @Inject
     Logger logger;
@@ -472,14 +476,21 @@ public class TopicService {
 
     CompletionStage<Void> listOffsets(Admin adminClient, Map<Uuid, Either<Topic, Throwable>> topics, String offsetSpec) {
         Map<String, Uuid> topicIds = new HashMap<>(topics.size());
+        var onlineTopics = topics.entrySet()
+                .stream()
+                .filter(topic -> topic.getValue()
+                        .getOptionalPrimary()
+                        .map(Topic::partitionsOnline)
+                        .orElse(false))
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
         var pendingOffsets = getRequestOffsetSpecs(offsetSpec)
-                .stream()
-            .map(reqOffsetSpec -> topicPartitionReplicas(topics, topicIds)
+            .stream()
+            .map(reqOffsetSpec -> topicPartitionReplicas(onlineTopics, topicIds)
                 .keySet()
                 .stream()
                 .collect(Collectors.toMap(Function.identity(), ignored -> reqOffsetSpec)))
-            .flatMap(request -> listOffsets(adminClient, topics, topicIds, request))
+            .flatMap(request -> listOffsets(adminClient, onlineTopics, topicIds, request))
             .map(CompletionStage::toCompletableFuture)
             .toArray(CompletableFuture[]::new);
 
@@ -527,6 +538,7 @@ public class TopicService {
                 .filter(topic -> topic.partitions().isPrimaryPresent())
                 .flatMap(topic -> topic.partitions().getPrimary()
                         .stream()
+                        .filter(PartitionInfo::online)
                         .map(partition -> {
                             var key = new PartitionId(topic.getId(), topic.name(), partition.getPartition());
                             List<Integer> value = partition.getReplicas().stream().map(PartitionReplica::nodeId).toList();
@@ -558,7 +570,8 @@ public class TopicService {
                 .stream()
                 .map(e -> Map.entry(e.getKey().toKafkaModel(), e.getValue()))
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-        var result = adminClient.listOffsets(kafkaRequest);
+        var result = adminClient.listOffsets(kafkaRequest, new ListOffsetsOptions()
+                .timeoutMs(5000));
 
         return kafkaRequest.entrySet()
                 .stream()

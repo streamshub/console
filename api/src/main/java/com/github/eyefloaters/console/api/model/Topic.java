@@ -9,9 +9,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
@@ -42,6 +44,7 @@ public class Topic extends RelatableResource<Topic.Attributes, Topic.Relationshi
         public static final String RECORD_COUNT = "recordCount";
         public static final String TOTAL_LEADER_LOG_BYTES = "totalLeaderLogBytes";
         public static final String CONSUMER_GROUPS = "consumerGroups";
+        public static final String STATUS = "status";
         static final Pattern CONFIG_KEY = Pattern.compile("^configs\\.\"([^\"]+)\"$");
 
         static final Comparator<Topic> ID_COMPARATOR =
@@ -63,6 +66,7 @@ public class Topic extends RelatableResource<Topic.Attributes, Topic.Relationshi
         public static final String LIST_DEFAULT = NAME + ", " + VISIBILITY;
         public static final String DESCRIBE_DEFAULT =
                 NAME + ", "
+                + STATUS + ", "
                 + VISIBILITY + ", "
                 + PARTITIONS + ", "
                 + AUTHORIZED_OPERATIONS + ", "
@@ -145,6 +149,30 @@ public class Topic extends RelatableResource<Topic.Attributes, Topic.Relationshi
         Attributes(String name, boolean internal) {
             this.name = name;
             this.internal = internal;
+        }
+
+        @JsonProperty
+        public String status() {
+            return partitions.getOptionalPrimary()
+                .map(p -> {
+                    Supplier<Stream<String>> partitionStatuses = () -> p.stream().map(PartitionInfo::status);
+                    long offlinePartitions = partitionStatuses.get().filter("Offline"::equals).count();
+
+                    if (offlinePartitions > 0) {
+                        if (offlinePartitions < p.size()) {
+                            return "PartiallyOffline";
+                        } else {
+                            return "Offline";
+                        }
+                    }
+
+                    if (partitionStatuses.get().anyMatch("UnderReplicated"::equals)) {
+                        return "UnderReplicated";
+                    }
+
+                    return "InSync";
+                })
+                .orElse("InSync");
         }
 
         @JsonProperty
@@ -326,6 +354,14 @@ public class Topic extends RelatableResource<Topic.Attributes, Topic.Relationshi
 
     public DataList<Identifier> consumerGroups() {
         return relationships.consumerGroups;
+    }
+
+    public boolean partitionsOnline() {
+        return attributes.partitions.getOptionalPrimary()
+            .map(Collection::stream)
+            .orElseGet(Stream::empty)
+            .map(PartitionInfo::online)
+            .allMatch(Boolean.TRUE::equals);
     }
 
     ConfigEntry configEntry(String key) {
