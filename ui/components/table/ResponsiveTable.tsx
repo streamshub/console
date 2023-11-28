@@ -165,7 +165,6 @@ export const ResponsiveTable = <TRow, TCol>({
       return renderHeader({
         Th,
         key: `header_${column}`,
-
         column,
         colIndex: index,
       });
