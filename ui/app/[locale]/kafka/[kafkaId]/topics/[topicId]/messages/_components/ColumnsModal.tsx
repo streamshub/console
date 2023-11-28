@@ -13,8 +13,7 @@ import {
 import { useState } from "react";
 
 export const columns = [
-  "offset",
-  "partition",
+  "offset-partition",
   "timestamp",
   "timestampUTC",
   "key",
@@ -28,9 +27,8 @@ export function useColumnLabels() {
   const columnLabels: Record<Column, string> = {
     key: "Key",
     headers: "Headers",
-    partition: "Partition",
+    "offset-partition": "Offset",
     value: "Value",
-    offset: "Offset",
     timestamp: `Timestamp (${timeZone})`,
     timestampUTC: "Timestamp (UTC)",
   };

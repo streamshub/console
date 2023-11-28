@@ -20,6 +20,8 @@ import {
   Drawer,
   DrawerContent,
   PageSection,
+  Text,
+  TextContent,
   Toolbar,
   ToolbarContent,
   ToolbarGroup,
@@ -28,11 +30,11 @@ import {
 } from "@/libs/patternfly/react-core";
 import { FilterIcon } from "@/libs/patternfly/react-icons";
 import {
+  BaseCellProps,
   InnerScrollContainer,
   OuterScrollContainer,
   TableVariant,
 } from "@/libs/patternfly/react-table";
-import { BaseCellProps } from "@patternfly/react-table";
 import { useTranslations } from "next-intl";
 import { PropsWithChildren, useState } from "react";
 import { LimitSelector } from "./LimitSelector";
@@ -42,12 +44,11 @@ import { UnknownValuePreview } from "./UnknownValuePreview";
 import { beautifyUnknownValue, isSameMessage } from "./utils";
 
 const columnWidths: Record<Column, BaseCellProps["width"]> = {
-  offset: 10,
+  "offset-partition": 10,
   key: 15,
   timestamp: 15,
   timestampUTC: 15,
   headers: 20,
-  partition: 10,
   value: undefined,
 };
 
@@ -195,16 +196,16 @@ export function MessagesTable({
                   }
 
                   switch (column) {
-                    case "partition":
-                      return (
-                        <Cell>
-                          <Number value={row.attributes.partition} />
-                        </Cell>
-                      );
-                    case "offset":
+                    case "offset-partition":
                       return (
                         <Cell>
                           <Number value={row.attributes.offset} />
+                          <TextContent>
+                            <Text component={"small"}>
+                              Partition{" "}
+                              <Number value={row.attributes.partition} />
+                            </Text>
+                          </TextContent>
                         </Cell>
                       );
                     case "timestamp":
