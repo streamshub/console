@@ -23,25 +23,29 @@ public record Metrics(
         this(new LinkedHashMap<>(), new LinkedHashMap<>());
     }
 
+    @Schema(additionalProperties = String.class)
     public static record ValueMetric(
             @JsonProperty
             String value,
 
             @JsonAnyGetter
+            @Schema(hidden = true)
             Map<String, String> attributes) {
     }
 
+    @Schema(additionalProperties = String.class)
     public static record RangeMetric(
             @JsonProperty
+            @Schema(implementation = String[][].class)
             List<RangeEntry> range,
 
             @JsonAnyGetter
+            @Schema(hidden = true)
             Map<String, String> attributes) {
     }
 
     @JsonFormat(shape = JsonFormat.Shape.ARRAY)
     @JsonPropertyOrder({"when", "value"})
-    @Schema(implementation = String[].class)
     public static record RangeEntry(Instant when, String value) {
     }
 }
