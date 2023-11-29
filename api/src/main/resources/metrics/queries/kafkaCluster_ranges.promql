@@ -1,95 +1,83 @@
-sum by (nodeId, __console_metric_name__) (
-  label_replace(
+  sum by (nodeId, __console_metric_name__) (
     label_replace(
-      rate(container_cpu_usage_seconds_total{namespace="%1$s",pod=~"%2$s-kafka-\\d+"}[1m]),
-      "nodeId",
-      "$1",
-      "pod",
-      ".+-kafka-(\\d+)"
-    ),
-    "__console_metric_name__",
-    "cpu_usage_seconds",
-    "",
-    ""
+      label_replace(
+        rate(container_cpu_usage_seconds_total{namespace="%1$s",pod=~"%2$s-kafka-\\d+"}[1m]),
+        "nodeId",
+        "$1",
+        "pod",
+        ".+-kafka-(\\d+)"
+      ),
+      "__console_metric_name__",
+      "cpu_usage_seconds",
+      "",
+      ""
+    )
   )
-)
 or
-sum by (nodeId, __console_metric_name__) (
-  label_replace(
+  sum by (nodeId, __console_metric_name__) (
     label_replace(
-      container_memory_usage_bytes{namespace="%1$s",pod=~"%2$s-kafka-\\d+"},
-      "nodeId",
-      "$1",
-      "pod",
-      ".+-kafka-(\\d+)"
-    ),
-    "__console_metric_name__",
-    "memory_usage_bytes",
-    "",
-    ""
+      label_replace(
+        container_memory_usage_bytes{namespace="%1$s",pod=~"%2$s-kafka-\\d+"},
+        "nodeId",
+        "$1",
+        "pod",
+        ".+-kafka-(\\d+)"
+      ),
+      "__console_metric_name__",
+      "memory_usage_bytes",
+      "",
+      ""
+    )
   )
-)
 or
-sum by (nodeId, __console_metric_name__) (
-  label_replace(
+  sum by (__console_metric_name__) (
     label_replace(
-      kafka_server_socket_server_metrics_incoming_byte_rate{listener="%3$s",namespace="%1$s",pod=~"%2$s-kafka-\\d+"},
-      "nodeId",
-      "$1",
-      "pod",
-      ".+-kafka-(\\d+)"
-    ),
-    "__console_metric_name__",
-    "incoming_byte_rate",
-    "",
-    ""
+      irate(kafka_server_brokertopicmetrics_bytesin_total{topic!="",namespace="%1$s",pod=~"%2$s-kafka-\\d+"}[5m]),
+      "__console_metric_name__",
+      "incoming_byte_rate",
+      "",
+      ""
+    )
   )
-)
 or
-sum by (nodeId, __console_metric_name__) (
-  label_replace(
+  sum by (__console_metric_name__) (
     label_replace(
-      kafka_server_socket_server_metrics_outgoing_byte_rate{listener="%3$s",namespace="%1$s",pod=~"%2$s-kafka-\\d+"},
-      "nodeId",
-      "$1",
-      "pod",
-      ".+-kafka-(\\d+)"
-    ),
-    "__console_metric_name__",
-    "outgoing_byte_rate",
-    "",
-    ""
+      irate(kafka_server_brokertopicmetrics_bytesout_total{topic!="",namespace="%1$s",pod=~"%2$s-kafka-\\d+"}[5m]),
+      "__console_metric_name__",
+      "outgoing_byte_rate",
+      "",
+      ""
+    )
   )
-)
 or
-sum by (nodeId, __console_metric_name__) (
-  label_replace(
+  sum by (nodeId, __console_metric_name__) (
     label_replace(
-      kubelet_volume_stats_capacity_bytes{namespace="%1$s",persistentvolumeclaim=~"data(?:-\\d+)?-%2$s-kafka-\\d+"},
-      "nodeId",
-      "$1",
-      "persistentvolumeclaim",
-      ".+-kafka-(\\d+)"
-    ),
-    "__console_metric_name__",
-    "volume_stats_capacity_bytes",
-    "",
-    ""
+      label_replace(
+        kubelet_volume_stats_capacity_bytes{namespace="%1$s",persistentvolumeclaim=~"data(?:-\\d+)?-%2$s-kafka-\\d+"},
+        "nodeId",
+        "$1",
+        "persistentvolumeclaim",
+        ".+-kafka-(\\d+)"
+      ),
+      "__console_metric_name__",
+      "volume_stats_capacity_bytes",
+      "",
+      ""
+    )
   )
-)
 or
-sum by (nodeId, __console_metric_name__) (
-  label_replace(
+  sum by (nodeId, __console_metric_name__) (
     label_replace(
-      kubelet_volume_stats_used_bytes{namespace="%1$s",persistentvolumeclaim=~"data(?:-\\d+)?-%2$s-kafka-\\d+"},
-      "nodeId",
-      "$1",
-      "persistentvolumeclaim",
-      ".+-kafka-(\\d+)"
-    ),
-    "__console_metric_name__",
-    "volume_stats_used_bytes",
-    "",
-    ""
+      label_replace(
+        kubelet_volume_stats_used_bytes{namespace="%1$s",persistentvolumeclaim=~"data(?:-\\d+)?-%2$s-kafka-\\d+"},
+        "nodeId",
+        "$1",
+        "persistentvolumeclaim",
+        ".+-kafka-(\\d+)"
+      ),
+      "__console_metric_name__",
+      "volume_stats_used_bytes",
+      "",
+      ""
+    )
   )
-)

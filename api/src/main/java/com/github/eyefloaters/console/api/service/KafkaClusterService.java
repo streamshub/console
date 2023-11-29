@@ -161,15 +161,11 @@ public class KafkaClusterService {
 
         String namespace = cluster.getNamespace();
         String name = cluster.getName();
-        String listenerLabel = findCluster(kafkaInformer, cluster.getId())
-            .flatMap(kafka -> exposedListener(kafka))
-            .map(listener -> "%s-%d".formatted(listener.getName().toUpperCase(Locale.ROOT), listener.getPort()))
-            .orElse(""); // listener/throughput metrics will not be available
 
         try (var rangesStream = getClass().getResourceAsStream("/metrics/queries/kafkaCluster_ranges.promql");
              var valuesStream = getClass().getResourceAsStream("/metrics/queries/kafkaCluster_values.promql")) {
             String rangeQuery = new String(rangesStream.readAllBytes(), StandardCharsets.UTF_8)
-                    .formatted(namespace, name, listenerLabel);
+                    .formatted(namespace, name);
             String valueQuery = new String(valuesStream.readAllBytes(), StandardCharsets.UTF_8)
                     .formatted(namespace, name);
 
