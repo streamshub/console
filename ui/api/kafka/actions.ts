@@ -3,6 +3,8 @@ import { getHeaders } from "@/api/api";
 import {
   ClusterDetail,
   ClusterList,
+  ClusterMetrics,
+  ClusterMetricsSchema,
   ClusterResponse,
   ClustersResponseSchema,
 } from "@/api/kafka/schema";
@@ -33,9 +35,27 @@ export async function getKafkaCluster(
       headers: await getHeaders(),
     });
     const rawData = await res.json();
+    log.debug(rawData, "getKafkaCluster response");
     return ClusterResponse.parse(rawData).data;
   } catch (err) {
     log.error(err, "getKafkaCluster");
+    return null;
+  }
+}
+
+export async function getKafkaClusterMetrics(
+  clusterId: string,
+): Promise<ClusterMetrics | null> {
+  const url = `${process.env.BACKEND_URL}/api/kafkas/${clusterId}/?fields%5Bkafkas%5D=metrics`;
+  try {
+    const res = await fetch(url, {
+      headers: await getHeaders(),
+    });
+    const rawData = await res.json();
+    log.debug(rawData, "getKafkaClusterMetrics response");
+    return ClusterMetricsSchema.parse(rawData);
+  } catch (err) {
+    log.error({ err }, "getKafkaClusterMetrics");
     return null;
   }
 }
