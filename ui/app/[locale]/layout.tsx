@@ -28,12 +28,12 @@ export default async function Layout({ children, params: { locale } }: Props) {
     <html lang="en">
       <body>
         <NextIntlProvider locale={locale} messages={messages}>
-          <AppLayoutProvider>
-            <AppSessionProvider session={session}>
+          <AppSessionProvider session={session}>
+            <AppLayoutProvider>
               <AppLayout>{children}</AppLayout>
               <SessionRefresher />
-            </AppSessionProvider>
-          </AppLayoutProvider>
+            </AppLayoutProvider>
+          </AppSessionProvider>
         </NextIntlProvider>
       </body>
     </html>

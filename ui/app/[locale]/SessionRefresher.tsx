@@ -2,6 +2,7 @@
 import { logger } from "@/utils/loggerClient";
 import { useInterval } from "@patternfly/react-core";
 import { signIn, useSession } from "next-auth/react";
+import { useLayoutEffect } from "react";
 
 const log = logger.child({ module: "UI", component: "SessionRefresher" });
 
@@ -22,7 +23,9 @@ export function SessionRefresher() {
   }, 1000 * 60);
 
   // immediately trigger a check to deal with expired sessions when opening the app after a long time
-  void doRefresh();
+  useLayoutEffect(() => {
+    void doRefresh();
+  }, []);
 
   return null;
 }
