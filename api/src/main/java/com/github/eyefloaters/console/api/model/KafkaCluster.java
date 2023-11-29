@@ -2,10 +2,13 @@ package com.github.eyefloaters.console.api.model;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.function.Predicate;
 
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
@@ -20,7 +23,6 @@ import com.github.eyefloaters.console.api.support.ComparatorBuilder;
 import com.github.eyefloaters.console.api.support.ListRequestContext;
 
 import static java.util.Comparator.comparing;
-import static java.util.Comparator.nullsLast;
 
 @Schema(name = "KafkaClusterAttributes")
 @JsonFilter("fieldFilter")
@@ -33,8 +35,17 @@ public class KafkaCluster {
         public static final String NODES = "nodes";
         public static final String CONTROLLER = "controller";
         public static final String AUTHORIZED_OPERATIONS = "authorizedOperations";
+        /**
+         * @deprecated use the listeners array instead
+         **/
+        @Deprecated(forRemoval = true)
         public static final String BOOTSTRAP_SERVERS = "bootstrapServers";
+        /**
+         * @deprecated use the listeners array instead
+         **/
+        @Deprecated(forRemoval = true)
         public static final String AUTH_TYPE = "authType";
+        public static final String LISTENERS = "listeners";
         public static final String METRICS = "metrics";
         public static final String KAFKA_VERSION = "kafkaVersion";
         public static final String STATUS = "status";
@@ -48,9 +59,7 @@ public class KafkaCluster {
                         Map.of("id", ID_COMPARATOR,
                                 NAME, comparing(KafkaCluster::getName),
                                 NAMESPACE, comparing(KafkaCluster::getNamespace),
-                                CREATION_TIMESTAMP, comparing(KafkaCluster::getCreationTimestamp),
-                                BOOTSTRAP_SERVERS, comparing(KafkaCluster::getBootstrapServers, nullsLast(String::compareTo)),
-                                AUTH_TYPE, comparing(KafkaCluster::getAuthType, nullsLast(String::compareTo))));
+                                CREATION_TIMESTAMP, comparing(KafkaCluster::getCreationTimestamp)));
 
         public static final ComparatorBuilder<KafkaCluster> COMPARATOR_BUILDER =
                 new ComparatorBuilder<>(KafkaCluster.Fields::comparator, KafkaCluster.Fields.defaultComparator());
@@ -61,6 +70,7 @@ public class KafkaCluster {
                 + CREATION_TIMESTAMP + ", "
                 + BOOTSTRAP_SERVERS + ", "
                 + AUTH_TYPE + ", "
+                + LISTENERS + ", "
                 + KAFKA_VERSION + ", "
                 + STATUS + ", "
                 + CONDITIONS + ", ";
@@ -74,6 +84,7 @@ public class KafkaCluster {
                 + AUTHORIZED_OPERATIONS + ", "
                 + BOOTSTRAP_SERVERS + ", "
                 + AUTH_TYPE + ", "
+                + LISTENERS + ", "
                 + KAFKA_VERSION + ", "
                 + STATUS + ", "
                 + CONDITIONS + ", ";
@@ -128,8 +139,7 @@ public class KafkaCluster {
     final List<Node> nodes;
     final Node controller;
     final List<String> authorizedOperations;
-    String bootstrapServers; // Strimzi Kafka CR only
-    String authType; // Strimzi Kafka CR only
+    List<KafkaListener> listeners; // Strimzi Kafka CR only
     @Schema(readOnly = true, description = """
             Contains the set of metrics optionally retrieved only in a describe operation.
             """)
@@ -160,8 +170,6 @@ public class KafkaCluster {
         cluster.setName(attr.getString(Fields.NAME, null));
         cluster.setNamespace(attr.getString(Fields.NAMESPACE, null));
         cluster.setCreationTimestamp(attr.getString(Fields.CREATION_TIMESTAMP, null));
-        cluster.setBootstrapServers(attr.getString(Fields.BOOTSTRAP_SERVERS, null));
-        cluster.setAuthType(attr.getString(Fields.AUTH_TYPE, null));
 
         return cluster;
     }
@@ -174,8 +182,6 @@ public class KafkaCluster {
         maybeAddAttribute(attrBuilder, sortFields, Fields.NAME, name);
         maybeAddAttribute(attrBuilder, sortFields, Fields.NAMESPACE, namespace);
         maybeAddAttribute(attrBuilder, sortFields, Fields.CREATION_TIMESTAMP, creationTimestamp);
-        maybeAddAttribute(attrBuilder, sortFields, Fields.BOOTSTRAP_SERVERS, bootstrapServers);
-        maybeAddAttribute(attrBuilder, sortFields, Fields.AUTH_TYPE, authType);
         cursor.add("attributes", attrBuilder.build());
 
         return Base64.getUrlEncoder().encodeToString(cursor.build().toString().getBytes(StandardCharsets.UTF_8));
@@ -227,20 +233,36 @@ public class KafkaCluster {
         return authorizedOperations;
     }
 
+    @Deprecated(forRemoval = true)
+    /**
+     * @deprecated use the listeners array instead
+     **/
     public String getBootstrapServers() {
-        return bootstrapServers;
+        return Optional.ofNullable(listeners)
+            .filter(Predicate.not(Collection::isEmpty))
+            .map(l -> l.get(0))
+            .map(KafkaListener::bootstrapServers)
+            .orElse(null);
     }
 
-    public void setBootstrapServers(String bootstrapServers) {
-        this.bootstrapServers = bootstrapServers;
-    }
-
+    @Deprecated(forRemoval = true)
+    /**
+     * @deprecated use the listeners array instead
+     **/
     public String getAuthType() {
-        return authType;
+        return Optional.ofNullable(listeners)
+            .filter(Predicate.not(Collection::isEmpty))
+            .map(l -> l.get(0))
+            .map(KafkaListener::authType)
+            .orElse(null);
     }
 
-    public void setAuthType(String authType) {
-        this.authType = authType;
+    public List<KafkaListener> getListeners() {
+        return listeners;
+    }
+
+    public void setListeners(List<KafkaListener> listeners) {
+        this.listeners = listeners;
     }
 
     public Metrics getMetrics() {

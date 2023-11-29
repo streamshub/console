@@ -20,7 +20,10 @@ public enum Annotations {
      * Annotation to identify a listener in Strimzi Kafka resources to be used for
      * public connections. This may be used to differentiate a listener to be
      * exposed via the KafkaCluster resource and published in the UI.
+     * 
+     * @deprecated
      */
+    @Deprecated(forRemoval = true)
     EXPOSED_LISTENER("exposed-listener");
 
     private static final String NAMESPACE = "eyefloaters.github.com";

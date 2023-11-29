@@ -60,6 +60,7 @@ public class KafkaClustersResource {
     @APIResponse(responseCode = "500", ref = "ServerError")
     @APIResponse(responseCode = "504", ref = "ServerTimeout")
     public Response listClusters(
+            @SuppressWarnings("removal")
             @QueryParam(FIELDS_PARAM)
             @DefaultValue(KafkaCluster.Fields.LIST_DEFAULT)
             @StringEnumeration(
@@ -70,6 +71,7 @@ public class KafkaClustersResource {
                         KafkaCluster.Fields.CREATION_TIMESTAMP,
                         KafkaCluster.Fields.BOOTSTRAP_SERVERS,
                         KafkaCluster.Fields.AUTH_TYPE,
+                        KafkaCluster.Fields.LISTENERS,
                         KafkaCluster.Fields.KAFKA_VERSION,
                         KafkaCluster.Fields.STATUS,
                         KafkaCluster.Fields.CONDITIONS,
@@ -89,6 +91,7 @@ public class KafkaClustersResource {
                                 KafkaCluster.Fields.CREATION_TIMESTAMP,
                                 KafkaCluster.Fields.BOOTSTRAP_SERVERS,
                                 KafkaCluster.Fields.AUTH_TYPE,
+                                KafkaCluster.Fields.LISTENERS,
                                 KafkaCluster.Fields.KAFKA_VERSION,
                                 KafkaCluster.Fields.STATUS,
                                 KafkaCluster.Fields.CONDITIONS,
@@ -120,6 +123,7 @@ public class KafkaClustersResource {
             @PathParam("clusterId")
             String clusterId,
 
+            @SuppressWarnings("removal")
             @QueryParam(FIELDS_PARAM)
             @DefaultValue(KafkaCluster.Fields.DESCRIBE_DEFAULT)
             @StringEnumeration(
@@ -133,6 +137,7 @@ public class KafkaClustersResource {
                         KafkaCluster.Fields.AUTHORIZED_OPERATIONS,
                         KafkaCluster.Fields.BOOTSTRAP_SERVERS,
                         KafkaCluster.Fields.AUTH_TYPE,
+                        KafkaCluster.Fields.LISTENERS,
                         KafkaCluster.Fields.METRICS,
                         KafkaCluster.Fields.KAFKA_VERSION,
                         KafkaCluster.Fields.STATUS,
@@ -155,6 +160,7 @@ public class KafkaClustersResource {
                                 KafkaCluster.Fields.AUTHORIZED_OPERATIONS,
                                 KafkaCluster.Fields.BOOTSTRAP_SERVERS,
                                 KafkaCluster.Fields.AUTH_TYPE,
+                                KafkaCluster.Fields.LISTENERS,
                                 KafkaCluster.Fields.METRICS,
                                 KafkaCluster.Fields.KAFKA_VERSION,
                                 KafkaCluster.Fields.STATUS,

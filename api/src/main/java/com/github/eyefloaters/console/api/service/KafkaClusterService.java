@@ -28,6 +28,7 @@ import org.jboss.logging.Logger;
 import com.github.eyefloaters.console.api.Annotations;
 import com.github.eyefloaters.console.api.model.Condition;
 import com.github.eyefloaters.console.api.model.KafkaCluster;
+import com.github.eyefloaters.console.api.model.KafkaListener;
 import com.github.eyefloaters.console.api.model.Node;
 import com.github.eyefloaters.console.api.support.ListRequestContext;
 
@@ -65,10 +66,7 @@ public class KafkaClusterService {
                 .list()
                 .stream()
                 .filter(Predicate.not(k -> annotatedKafka(k, Annotations.CONSOLE_HIDDEN)))
-                .map(k -> exposedListener(k)
-                        .map(l -> listenerStatus(k, l))
-                        .map(l -> toKafkaCluster(k, l))
-                        .orElseGet(() -> toKafkaCluster(k)))
+                .map(this::toKafkaCluster)
                 .map(listSupport::tally)
                 .filter(listSupport::betweenCursors)
                 .sorted(listSupport.getSortComparator())
@@ -98,36 +96,51 @@ public class KafkaClusterService {
             .thenCompose(cluster -> addMetrics(cluster, fields));
     }
 
-    KafkaCluster toKafkaCluster(Kafka kafka, ListenerStatus listener) {
-        KafkaCluster cluster = new KafkaCluster(kafka.getStatus().getClusterId(), null, null, null);
-        setKafkaClusterProperties(cluster, kafka, listener);
-        return cluster;
-    }
-
     KafkaCluster toKafkaCluster(Kafka kafka) {
         KafkaCluster cluster = new KafkaCluster(kafka.getStatus().getClusterId(), null, null, null);
-        cluster.setName(kafka.getMetadata().getName());
-        cluster.setNamespace(kafka.getMetadata().getNamespace());
-        cluster.setCreationTimestamp(kafka.getMetadata().getCreationTimestamp());
-        setKafkaClusterStatus(cluster, kafka);
+        setKafkaClusterProperties(cluster, kafka);
         return cluster;
     }
 
     KafkaCluster addKafkaResourceData(KafkaCluster cluster) {
         findCluster(kafkaInformer, cluster.getId())
-            .ifPresent(kafka -> exposedListener(kafka)
-                    .map(l -> listenerStatus(kafka, l))
-                    .ifPresent(l -> setKafkaClusterProperties(cluster, kafka, l)));
+            .ifPresent(kafka -> setKafkaClusterProperties(cluster, kafka));
 
         return cluster;
     }
 
-    void setKafkaClusterProperties(KafkaCluster cluster, Kafka kafka, ListenerStatus listener) {
+    void setKafkaClusterProperties(KafkaCluster cluster, Kafka kafka) {
         cluster.setName(kafka.getMetadata().getName());
         cluster.setNamespace(kafka.getMetadata().getNamespace());
         cluster.setCreationTimestamp(kafka.getMetadata().getCreationTimestamp());
-        cluster.setBootstrapServers(listener.getBootstrapServers());
-        cluster.setAuthType(getAuthType(kafka, listener).orElse(null));
+
+        @SuppressWarnings("removal")
+        var comparator = Comparator
+            .comparingInt((GenericKafkaListener listener) ->
+                listenerSortKey(listener, Annotations.EXPOSED_LISTENER))
+            .thenComparingInt((GenericKafkaListener listener) ->
+                listenerSortKey(listener, Annotations.CONSOLE_LISTENER))
+            .thenComparingInt((GenericKafkaListener listener) -> {
+                if (KafkaListenerType.INTERNAL.equals(listener.getType())) {
+                    // sort internal listeners last
+                    return 1;
+                }
+                return -1;
+            });
+
+        var listeners = kafka.getSpec()
+            .getKafka()
+            .getListeners()
+            .stream()
+            .filter(Predicate.not(l -> annotatedListener(l, Annotations.CONSOLE_HIDDEN)))
+            .sorted(comparator)
+            .map(listener -> new KafkaListener(
+                        listener.getType().toValue(),
+                        listenerStatus(kafka, listener).getBootstrapServers(),
+                        getAuthType(listener).orElse(null)))
+            .toList();
+
+        cluster.setListeners(listeners);
         setKafkaClusterStatus(cluster, kafka);
     }
 
@@ -201,24 +214,6 @@ public class KafkaClusterService {
             .map(listener -> listenerStatus(kafka, listener));
     }
 
-    /**
-     * Find the listener to be exposed via the API for the given Kafka instance.
-     * Listeners annotated as the (1) exposed-listener or the (2) console-listener
-     * will be preferred, in that order.
-     */
-    public static Optional<GenericKafkaListener> exposedListener(Kafka kafka) {
-        var comparator = Comparator
-            .comparingInt((GenericKafkaListener listener) ->
-                listenerSortKey(listener, Annotations.EXPOSED_LISTENER))
-            .thenComparingInt((GenericKafkaListener listener) ->
-                listenerSortKey(listener, Annotations.CONSOLE_LISTENER));
-
-        return kafka.getSpec().getKafka().getListeners().stream()
-            .filter(listener -> !KafkaListenerType.INTERNAL.equals(listener.getType()))
-            .sorted(comparator)
-            .findFirst();
-    }
-
     static boolean supportedAuthentication(GenericKafkaListener listener) {
         KafkaListenerAuthentication listenerAuth = listener.getAuth();
 
@@ -273,18 +268,19 @@ public class KafkaClusterService {
     }
 
     public static Optional<String> getAuthType(Kafka kafka, ListenerStatus listener) {
-        return listenerSpec(kafka, listener)
-                .map(GenericKafkaListener::getAuth)
-                .map(KafkaListenerAuthentication::getType);
+        return kafka.getSpec()
+            .getKafka()
+            .getListeners()
+            .stream()
+            .filter(sl -> sl.getName().equals(listener.getName()))
+            .findFirst()
+            .flatMap(KafkaClusterService::getAuthType);
     }
 
-    static Optional<GenericKafkaListener> listenerSpec(Kafka kafka, ListenerStatus listener) {
-        return kafka.getSpec()
-                .getKafka()
-                .getListeners()
-                .stream()
-                .filter(sl -> sl.getName().equals(listener.getName()))
-                .findFirst();
+    static Optional<String> getAuthType(GenericKafkaListener listener) {
+        return Optional.of(listener)
+            .map(GenericKafkaListener::getAuth)
+            .map(KafkaListenerAuthentication::getType);
     }
 
     static List<String> enumNames(Collection<? extends Enum<?>> values) {
