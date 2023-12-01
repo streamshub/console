@@ -73,6 +73,8 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.everyItem;
+import static org.hamcrest.Matchers.hasEntry;
+import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
@@ -171,18 +173,27 @@ class KafkaClustersResourceIT {
 
     @Test
     void testListClusters() {
+        String k1Bootstrap = bootstrapServers.getHost() + ":" + bootstrapServers.getPort();
+        String k2Bootstrap = randomBootstrapServers.getHost() + ":" + randomBootstrapServers.getPort();
+
         whenRequesting(req -> req.get())
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
             .body("data.size()", equalTo(2))
             .body("data.id", containsInAnyOrder(clusterId1, clusterId2))
             .body("data.attributes.name", containsInAnyOrder("test-kafka1", "test-kafka2"))
-            .body("data.attributes.bootstrapServers", containsInAnyOrder(
-                    bootstrapServers.getHost() + ":" + bootstrapServers.getPort(),
-                    randomBootstrapServers.getHost() + ":" + randomBootstrapServers.getPort()))
+            // deprecated properties - begin
+            .body("data.attributes.bootstrapServers", containsInAnyOrder(k1Bootstrap, k2Bootstrap))
             .body("data.attributes.authType", containsInAnyOrder(equalTo("custom"), nullValue()))
+            // deprecated properties - end
             .body("data.find { it.attributes.name == 'test-kafka1'}.attributes.status", is("Ready"))
-            .body("data.find { it.attributes.name == 'test-kafka2'}.attributes.status", is("NotReady"));
+            .body("data.find { it.attributes.name == 'test-kafka1'}.attributes.listeners", hasItem(allOf(
+                    hasEntry("bootstrapServers", k1Bootstrap),
+                    hasEntry("authType", "custom"))))
+            .body("data.find { it.attributes.name == 'test-kafka2'}.attributes.status", is("NotReady"))
+            .body("data.find { it.attributes.name == 'test-kafka2'}.attributes.listeners", hasItem(allOf(
+                    hasEntry(equalTo("bootstrapServers"), equalTo(k2Bootstrap)),
+                    hasEntry(equalTo("authType"), nullValue(String.class)))));
     }
 
     @Test
@@ -435,12 +446,12 @@ class KafkaClustersResourceIT {
     @Test
     void testListClustersWithQuotedAndNullableSortFields() {
         whenRequesting(req -> req
-                .param("sort", "-someObject.\"dot.separated.key\",authType")
+                .param("sort", "-someObject.\"dot.separated.key\",name")
                 .param("page[before]", Base64.getEncoder()
                         .encodeToString(Json.createObjectBuilder()
                                 .add("id", new UUID(0, 0).toString())
                                 .add("attributes", Json.createObjectBuilder()
-                                        .addNull("authType")
+                                        .add("name", "test-kafka2")
                                         .add("someObject", Json.createObjectBuilder()
                                                 .add("dot.separated.key", 1)))
                                 .build()
@@ -450,8 +461,7 @@ class KafkaClustersResourceIT {
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
             .body("data.size()", is(1))
-            .body("data.attributes.name[0]", is("test-kafka1"))
-            .body("data.attributes.authType[0]", is("custom"));
+            .body("data.attributes.name[0]", is("test-kafka1"));
     }
 
     @Test
@@ -489,8 +499,13 @@ class KafkaClustersResourceIT {
             .statusCode(is(Status.OK.getStatusCode()))
             .body("data.id", equalTo(clusterId1))
             .body("data.attributes.name", equalTo("test-kafka1"))
+            // deprecated properties - begin
             .body("data.attributes.bootstrapServers", equalTo(bootstrapServers.getHost() + ":" + bootstrapServers.getPort()))
-            .body("data.attributes.authType", equalTo("custom"));
+            .body("data.attributes.authType", equalTo("custom"))
+            // deprecated properties - end
+            .body("data.attributes.listeners", hasItem(allOf(
+                    hasEntry("bootstrapServers", bootstrapServers.getHost() + ":" + bootstrapServers.getPort()),
+                    hasEntry("authType", "custom"))));
 
         assertEquals("SASL_PLAINTEXT", clientConfig.get(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG));
     }

@@ -232,7 +232,7 @@ public class ListRequestContext<T> implements Predicate<T> {
 
         T firstDatasetEntry = firstPageData.isEmpty() ? null : firstPageData.first();
 
-        if (Objects.equals(firstPageEntry, firstDatasetEntry)) {
+        if (Objects.isNull(firstPageEntry) || Objects.equals(firstPageEntry, firstDatasetEntry)) {
             links.put("prev", null);
         } else {
             String prevCursor = cursorBuilder.apply(firstPageEntry, getSortNames());
@@ -254,7 +254,7 @@ public class ListRequestContext<T> implements Predicate<T> {
         // final page was stored in reverse order
         T finalDatasetEntry = finalPageData.isEmpty() ? null : finalPageData.first();
 
-        if (Objects.equals(finalPageEntry, finalDatasetEntry)) {
+        if (Objects.isNull(finalPageEntry) || Objects.equals(finalPageEntry, finalDatasetEntry)) {
             links.put("next", null);
         } else {
             String nextCursor = cursorBuilder.apply(finalPageEntry, getSortNames());
