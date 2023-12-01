@@ -1,156 +1,91 @@
-import { getKafkaClusterMetrics } from "@/api/kafka/actions";
+import {
+  getKafkaClusterKpis,
+  getKafkaClusterMetrics,
+  Range,
+} from "@/api/kafka/actions";
+import {
+  ClusterDetail,
+  ClusterKpis,
+  ClusterMetricRange,
+} from "@/api/kafka/schema";
 import { KafkaParams } from "@/app/[locale]/kafka/[kafkaId]/kafka.params";
-import {
-  Card,
-  CardBody,
-  CardHeader,
-  CardTitle,
-  Flex,
-  FlexItem,
-  PageSection,
-  Title,
-} from "@/libs/patternfly/react-core";
-import {
-  CheckCircleIcon,
-  TimesCircleIcon,
-} from "@/libs/patternfly/react-icons";
-import { Suspense } from "react";
+import { ClusterCard } from "@/app/[locale]/kafka/[kafkaId]/overview/ClusterCard";
+import { ClusterChartsCard } from "@/app/[locale]/kafka/[kafkaId]/overview/ClusterChartsCard";
+import { PageLayout } from "@/app/[locale]/kafka/[kafkaId]/overview/PageLayout";
+import { TopicsPartitionsCard } from "@/app/[locale]/kafka/[kafkaId]/overview/TopicsPartitionsCard";
 
 export default function OverviewPage({ params }: { params: KafkaParams }) {
+  const kpi = getKafkaClusterKpis(params.kafkaId);
+  const range = getKafkaClusterMetrics(params.kafkaId, [
+    "volumeUsed",
+    "volumeCapacity",
+  ]);
   return (
-    <>
-      <PageSection isFilled>
-        <Card style={{ textAlign: "center" }} component={"div"} isLarge>
-          <CardTitle>Nodes</CardTitle>
-          <CardBody>
-            <Flex display={{ default: "inlineFlex" }}>
-              <Flex spaceItems={{ default: "spaceItemsSm" }}>
-                <FlexItem>
-                  <CheckCircleIcon color="var(--pf-v5-global--success-color--100)" />
-                </FlexItem>
-                <FlexItem>3</FlexItem>
-              </Flex>
-              <Flex spaceItems={{ default: "spaceItemsSm" }}>
-                <FlexItem>
-                  <TimesCircleIcon color="var(--pf-v5-global--danger-color--100)" />
-                </FlexItem>
-                <FlexItem>1</FlexItem>
-              </Flex>
-            </Flex>
-          </CardBody>
-        </Card>
-        <Card style={{ textAlign: "center" }} component={"div"} isLarge>
-          <CardHeader>
-            <CardTitle>Topics</CardTitle>
-            <Flex
-              alignItems={{ default: "alignItemsCenter" }}
-              justifyContent={{ default: "justifyContentCenter" }}
-            >
-              <FlexItem flex={{ default: "flexNone" }}>
-                <Flex
-                  direction={{ default: "column" }}
-                  spaceItems={{ default: "spaceItemsNone" }}
-                >
-                  <FlexItem>
-                    <Title headingLevel="h4" size="3xl">
-                      123
-                    </Title>
-                  </FlexItem>
-                  <FlexItem>
-                    <span className="pf-v5-u-color-200">Total</span>
-                  </FlexItem>
-                </Flex>
-              </FlexItem>
-
-              <FlexItem flex={{ default: "flexNone" }}>
-                <Flex
-                  direction={{ default: "column" }}
-                  spaceItems={{ default: "spaceItemsNone" }}
-                >
-                  <FlexItem>
-                    <Title headingLevel="h4" size="3xl">
-                      842
-                    </Title>
-                  </FlexItem>
-                  <FlexItem>
-                    <span className="pf-v5-u-color-200">Partitions</span>
-                  </FlexItem>
-                </Flex>
-              </FlexItem>
-
-              <FlexItem flex={{ default: "flexNone" }}>
-                <Flex
-                  direction={{ default: "column" }}
-                  spaceItems={{ default: "spaceItemsNone" }}
-                >
-                  <FlexItem>
-                    <Title headingLevel="h4" size="3xl">
-                      3,45 GB
-                    </Title>
-                  </FlexItem>
-                  <FlexItem>
-                    <span className="pf-v5-u-color-200">Storage</span>
-                  </FlexItem>
-                </Flex>
-              </FlexItem>
-            </Flex>
-          </CardHeader>
-        </Card>
-        <Card style={{ textAlign: "center" }} component={"div"} isLarge>
-          <CardHeader>
-            <CardTitle>Traffic</CardTitle>
-            <Flex
-              alignItems={{ default: "alignItemsCenter" }}
-              justifyContent={{ default: "justifyContentCenter" }}
-            >
-              <FlexItem flex={{ default: "flexNone" }}>
-                <Flex
-                  direction={{ default: "column" }}
-                  spaceItems={{ default: "spaceItemsNone" }}
-                >
-                  <FlexItem>
-                    <Title headingLevel="h4" size="3xl">
-                      894,8 KB/s
-                    </Title>
-                  </FlexItem>
-                  <FlexItem>
-                    <span className="pf-v5-u-color-200">Egress</span>
-                  </FlexItem>
-                </Flex>
-              </FlexItem>
-
-              <FlexItem flex={{ default: "flexNone" }}>
-                <Flex
-                  direction={{ default: "column" }}
-                  spaceItems={{ default: "spaceItemsNone" }}
-                >
-                  <FlexItem>
-                    <Title headingLevel="h4" size="3xl">
-                      456,3 KB/s
-                    </Title>
-                  </FlexItem>
-                  <FlexItem>
-                    <span className="pf-v5-u-color-200">Ingress</span>
-                  </FlexItem>
-                </Flex>
-              </FlexItem>
-            </Flex>
-          </CardHeader>
-        </Card>
-
-        <Suspense fallback={<div>Loading metrics</div>}>
-          <ConnectedMetrics params={params} />
-        </Suspense>
-      </PageSection>
-    </>
+    <PageLayout
+      clusterOverview={<ConnectedClusterCard data={kpi} />}
+      topicsPartitions={<ConnectedTopicsPartitionsCard data={kpi} />}
+      clusterCharts={<ConnectedClusterChartsCard data={range} />}
+    />
   );
 }
 
-async function ConnectedMetrics({ params }: { params: KafkaParams }) {
-  const metrics = await getKafkaClusterMetrics(params.kafkaId);
+async function ConnectedClusterCard({
+  data,
+}: {
+  data: Promise<{ cluster: ClusterDetail; kpis: ClusterKpis } | null>;
+}) {
+  const res = await data;
+  const brokersTotal = Object.keys(res?.kpis.broker_state || {}).length;
+  const brokersOnline =
+    Object.values(res?.kpis.broker_state || {}).filter((s) => s === 3).length ||
+    0;
   return (
-    <Card>
-      <pre>{JSON.stringify(metrics, null, 2)}</pre>
-    </Card>
+    <ClusterCard
+      isLoading={false}
+      status={res?.cluster.attributes.status || "n/a"}
+      messages={[]}
+      name={res?.cluster.attributes.name || "n/a"}
+      consumerGroups={0}
+      brokersOnline={brokersOnline}
+      brokersTotal={brokersTotal}
+      kafkaVersion={res?.cluster.attributes.kafkaVersion || "n/a"}
+    />
+  );
+}
+
+async function ConnectedClusterChartsCard({
+  data,
+}: {
+  data: Promise<{
+    cluster: ClusterDetail;
+    ranges: Record<Range, ClusterMetricRange>;
+  } | null>;
+}) {
+  const res = await data;
+  return (
+    <ClusterChartsCard
+      isLoading={false}
+      usedDiskSpace={res?.ranges["volumeUsed"] || {}}
+      availableDiskSpace={res?.ranges["volumeCapacity"] || {}}
+    />
+  );
+}
+
+async function ConnectedTopicsPartitionsCard({
+  data,
+}: {
+  data: Promise<{ cluster: ClusterDetail; kpis: ClusterKpis } | null>;
+}) {
+  const res = await data;
+  const topicsTotal = res?.kpis.total_topics || 0;
+  const topicsUnderreplicated = res?.kpis.underreplicated_topics || 0;
+  return (
+    <TopicsPartitionsCard
+      isLoading={false}
+      partitions={res?.kpis.total_partitions || 0}
+      topicsReplicated={topicsTotal - topicsUnderreplicated}
+      topicsTotal={topicsTotal}
+      topicsUnderReplicated={topicsUnderreplicated}
+    />
   );
 }

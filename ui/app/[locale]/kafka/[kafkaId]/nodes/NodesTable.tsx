@@ -2,7 +2,7 @@
 
 import { KafkaNode } from "@/api/kafka/schema";
 import { ResponsiveTable } from "@/components/table";
-import { ClipboardCopy, Label } from "@patternfly/react-core";
+import { Label } from "@patternfly/react-core";
 import { ServerIcon } from "@patternfly/react-icons";
 import Link from "next/link";
 
@@ -55,8 +55,11 @@ export function NodesTable({
           case "replicas":
             return (
               <Td key={key} dataLabel={"Host"}>
+                {/*
                 { metrics.values.replica_count
                     .find((e: any) => parseInt(e.nodeId) == row.id)?.value ?? "-" }
+*/}
+                TODO
               </Td>
             );
           case "rack":
