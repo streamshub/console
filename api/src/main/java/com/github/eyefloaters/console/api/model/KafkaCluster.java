@@ -23,6 +23,7 @@ import com.github.eyefloaters.console.api.support.ComparatorBuilder;
 import com.github.eyefloaters.console.api.support.ListRequestContext;
 
 import static java.util.Comparator.comparing;
+import static java.util.Comparator.nullsLast;
 
 @Schema(name = "KafkaClusterAttributes")
 @JsonFilter("fieldFilter")
@@ -52,7 +53,7 @@ public class KafkaCluster {
         public static final String CONDITIONS = "conditions";
 
         static final Comparator<KafkaCluster> ID_COMPARATOR =
-                comparing(KafkaCluster::getId);
+                comparing(KafkaCluster::getId, nullsLast(String::compareTo));
 
         static final Map<String, Map<Boolean, Comparator<KafkaCluster>>> COMPARATORS =
                 ComparatorBuilder.bidirectional(
@@ -176,7 +177,7 @@ public class KafkaCluster {
 
     public String toCursor(List<String> sortFields) {
         JsonObjectBuilder cursor = Json.createObjectBuilder()
-                .add("id", id);
+                .add("id", id == null ? JsonValue.NULL : Json.createValue(id));
 
         JsonObjectBuilder attrBuilder = Json.createObjectBuilder();
         maybeAddAttribute(attrBuilder, sortFields, Fields.NAME, name);
