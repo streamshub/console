@@ -177,7 +177,7 @@ public class KafkaCluster {
 
     public String toCursor(List<String> sortFields) {
         JsonObjectBuilder cursor = Json.createObjectBuilder()
-                .add("id", id == null ? JsonValue.NULL : Json.createValue(id));
+                .add("id", id == null ? Json.createValue("") : Json.createValue(id));
 
         JsonObjectBuilder attrBuilder = Json.createObjectBuilder();
         maybeAddAttribute(attrBuilder, sortFields, Fields.NAME, name);
