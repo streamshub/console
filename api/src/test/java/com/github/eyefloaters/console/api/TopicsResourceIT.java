@@ -36,6 +36,7 @@ import jakarta.ws.rs.core.Response.Status;
 import org.apache.kafka.clients.admin.DescribeConfigsResult;
 import org.apache.kafka.clients.admin.DescribeTopicsOptions;
 import org.apache.kafka.clients.admin.DescribeTopicsResult;
+import org.apache.kafka.clients.admin.ListOffsetsOptions;
 import org.apache.kafka.clients.admin.ListOffsetsResult;
 import org.apache.kafka.clients.admin.ListOffsetsResult.ListOffsetsResultInfo;
 import org.apache.kafka.clients.admin.TopicDescription;
@@ -843,7 +844,7 @@ class TopicsResourceIT {
 
         AdminClientSpy.install(client -> {
             // Mock listOffsets
-            doAnswer(listOffsetsFailed).when(client).listOffsets(anyMap());
+            doAnswer(listOffsetsFailed).when(client).listOffsets(anyMap(), any(ListOffsetsOptions.class));
         });
 
         whenRequesting(req -> req
