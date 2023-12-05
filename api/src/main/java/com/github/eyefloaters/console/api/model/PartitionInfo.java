@@ -96,7 +96,7 @@ public class PartitionInfo {
             .filter(Predicate.not(PartitionReplica::inSync))
             .findFirst()
             .map(ignored -> "UnderReplicated")
-            .orElse("InSync");
+            .orElse("FullyReplicated");
     }
 
     /**

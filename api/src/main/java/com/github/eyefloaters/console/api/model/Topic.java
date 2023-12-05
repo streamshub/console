@@ -170,9 +170,9 @@ public class Topic extends RelatableResource<Topic.Attributes, Topic.Relationshi
                         return "UnderReplicated";
                     }
 
-                    return "InSync";
+                    return "FullyReplicated";
                 })
-                .orElse("InSync");
+                .orElse("FullyReplicated");
         }
 
         @JsonProperty

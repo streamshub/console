@@ -97,24 +97,26 @@ export function PartitionsTable({
               )!;
               return (
                 <Td key={key} dataLabel={"Replicas"}>
-                  <LabelGroup categoryName={"Leader"}>
-                    <Label
-                      color={"orange"}
-                      render={({ className, content }) => (
-                        <>
-                          <Link
-                            className={className}
-                            href={`../../nodes/${leader.nodeId}`}
-                          >
-                            {content}
-                          </Link>
-                        </>
-                      )}
-                      icon={<ServerIcon />}
-                    >
-                      {leader.nodeId}
-                    </Label>
-                  </LabelGroup>
+                  {leader !== undefined && (
+                    <LabelGroup categoryName={"Leader"}>
+                      <Label
+                        color={"orange"}
+                        render={({ className, content }) => (
+                          <>
+                            <Link
+                              className={className}
+                              href={`../../nodes/${leader.nodeId}`}
+                            >
+                              {content}
+                            </Link>
+                          </>
+                        )}
+                        icon={<ServerIcon />}
+                      >
+                        {leader.nodeId}
+                      </Label>
+                    </LabelGroup>
+                  )}
                   <LabelGroup categoryName={"Replicas"}>
                     {row.replicas
                       .filter((r) => r.nodeId !== row.leaderId)

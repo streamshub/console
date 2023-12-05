@@ -167,6 +167,7 @@ public class ClientFactory {
         config.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class.getName());
         config.put(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, 50_000);
         config.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+        config.put(ConsumerConfig.DEFAULT_API_TIMEOUT_MS_CONFIG, 5000);
 
         @SuppressWarnings("resource") // No leak, it will be closed by the disposer
         Consumer<byte[], byte[]> consumer = new KafkaConsumer<>(config);

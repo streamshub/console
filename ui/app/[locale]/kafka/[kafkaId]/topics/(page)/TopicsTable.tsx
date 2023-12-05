@@ -228,28 +228,44 @@ export function TopicsTable({
               </Td>
             );
           case "status":
-            const inSync =
-              row.attributes.partitions
-                .flatMap((p) => p.replicas.flatMap((r) => r.inSync))
-                .find((is) => is === false) === undefined;
             return (
               <Td key={key} dataLabel={"Status"}>
-                {inSync && (
-                  <>
-                    <Icon status={"success"}>
-                      <CheckCircleIcon />
-                    </Icon>
-                    &nbsp;In-sync
-                  </>
-                )}
-                {!inSync && (
-                  <>
-                    <Icon status={"warning"}>
-                      <ExclamationTriangleIcon />
-                    </Icon>
-                    &nbsp;Under replicated
-                  </>
-                )}
+                {
+                  {
+                    "FullyReplicated": (
+                      <>
+                        <Icon status={"success"}>
+                          <CheckCircleIcon />
+                        </Icon>
+                        &nbsp;Fully replicated
+                      </>
+                    ),
+                    "UnderReplicated": (
+                      <>
+                        <Icon status={"warning"}>
+                          <ExclamationTriangleIcon />
+                        </Icon>
+                        &nbsp;Under replicated
+                      </>
+                    ),
+                    "PartiallyOffline": (
+                      <>
+                        <Icon status={"warning"}>
+                          <ExclamationTriangleIcon />
+                        </Icon>
+                        &nbsp;Partially offline
+                      </>
+                    ),
+                    "Offline": (
+                      <>
+                        <Icon status={"warning"}>
+                          <ExclamationTriangleIcon />
+                        </Icon>
+                        &nbsp;Offline
+                      </>
+                    )
+                  }[row.attributes.status]
+                }
               </Td>
             );
           case "consumerGroups":
