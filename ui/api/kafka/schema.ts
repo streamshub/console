@@ -13,7 +13,7 @@ export const ClusterListSchema = z.object({
   attributes: z.object({
     name: z.string(),
     namespace: z.string(),
-    bootstrapServers: z.string(),
+    bootstrapServers: z.string().nullable(),
   }),
 });
 export const ClustersResponseSchema = z.object({
@@ -35,7 +35,7 @@ const ClusterDetailSchema = z.object({
     listeners: z.array(
       z.object({
         type: z.string(),
-        bootstrapServers: z.string(),
+        bootstrapServers: z.string().nullable(),
         authType: z.string().nullable(),
       })
     ).optional() /* remove .optional() when `listeners` is added to the fetched fields */,

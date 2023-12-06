@@ -39,6 +39,7 @@ public class Topic extends RelatableResource<Topic.Attributes, Topic.Relationshi
         public static final String NAME = "name";
         public static final String VISIBILITY = "visibility";
         public static final String PARTITIONS = "partitions";
+        public static final String NUM_PARTITIONS = "numPartitions";
         public static final String AUTHORIZED_OPERATIONS = "authorizedOperations";
         public static final String CONFIGS = "configs";
         public static final String RECORD_COUNT = "recordCount";
@@ -69,6 +70,7 @@ public class Topic extends RelatableResource<Topic.Attributes, Topic.Relationshi
                 + STATUS + ", "
                 + VISIBILITY + ", "
                 + PARTITIONS + ", "
+                + NUM_PARTITIONS + ", "
                 + AUTHORIZED_OPERATIONS + ", "
                 + RECORD_COUNT + ", "
                 + TOTAL_LEADER_LOG_BYTES;
@@ -184,6 +186,12 @@ public class Topic extends RelatableResource<Topic.Attributes, Topic.Relationshi
                 """)
         public String visibility() {
             return internal || name.startsWith("_") ? "internal" : "external";
+        }
+
+        @JsonProperty
+        @Schema(readOnly = true, description = "The number of partitions in this topic")
+        public Integer numPartitions() {
+            return partitions.getOptionalPrimary().map(Collection::size).orElse(0);
         }
 
         /**
@@ -338,6 +346,10 @@ public class Topic extends RelatableResource<Topic.Attributes, Topic.Relationshi
 
     public String visibility() {
         return attributes.visibility();
+    }
+
+    public String status() {
+        return attributes.status();
     }
 
     public Either<List<PartitionInfo>, Error> partitions() {

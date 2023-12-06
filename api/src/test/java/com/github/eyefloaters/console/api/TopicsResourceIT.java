@@ -700,6 +700,27 @@ class TopicsResourceIT {
     }
 
     @Test
+    void testListTopicsWithNumPartitions() {
+        var topicIds = IntStream.rangeClosed(1, 9)
+                .mapToObj(i -> {
+                    String topicName = i + "-" + UUID.randomUUID().toString();
+                    return topicUtils.createTopics(clusterId1, List.of(topicName), i)
+                        .get(topicName);
+                })
+                .toList();
+
+        whenRequesting(req -> req
+                .queryParam("filter[status]", "eq,FullyReplicated")
+                .queryParam("fields[topics]", "numPartitions")
+                .get("", clusterId1))
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()))
+            .body("data.size()", equalTo(topicIds.size()))
+            .body("data.id", containsInAnyOrder(topicIds.toArray(String[]::new)))
+            .body("data.attributes.numPartitions", containsInAnyOrder(1, 2, 3, 4, 5, 6, 7, 8, 9));
+    }
+
+    @Test
     void testDescribeTopicWithNameAndConfigsIncluded() {
         String topicName = UUID.randomUUID().toString();
         Map<String, String> topicIds = topicUtils.createTopics(clusterId1, List.of(topicName), 1);

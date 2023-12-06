@@ -35,7 +35,7 @@ export async function getTopics(
   const sp = new URLSearchParams(
     filterUndefinedFromObj({
       "fields[topics]":
-        "name,status,visibility,partitions,recordCount,totalLeaderLogBytes,consumerGroups",
+        "name,status,visibility,numPartitions,recordCount,totalLeaderLogBytes,consumerGroups",
       "filter[id]": params.id ? `eq,${params.id}` : undefined,
       "filter[name]": params.name ? `like,*${params.name}*` : undefined,
       "filter[visibility]": params.includeHidden

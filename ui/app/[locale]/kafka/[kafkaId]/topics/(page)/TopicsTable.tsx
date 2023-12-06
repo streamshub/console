@@ -288,7 +288,7 @@ export function TopicsTable({
                   variant={"link"}
                   href={`${baseurl}/${row.id}/partitions`}
                 >
-                  <Number value={row.attributes.partitions.length} />
+                  <Number value={row.attributes.numPartitions} />
                 </ButtonLink>
               </Td>
             );

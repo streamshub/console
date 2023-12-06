@@ -118,7 +118,7 @@ async function ConnectedTopicHeader({
                 Partitions&nbsp;
                 <Label isCompact={true}>
                   <Suspense fallback={<Spinner size="sm" />}>
-                    <Number value={topic.attributes.partitions.length} />
+                    <Number value={topic.attributes.numPartitions} />
                   </Suspense>
                 </Label>
               </NavItemLink>

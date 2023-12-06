@@ -72,12 +72,14 @@ public class TopicService {
             Pattern.compile("^-?configs\\..+$").asMatchPredicate();
     private static final Set<String> REQUIRE_DESCRIBE = Set.of(
             Topic.Fields.PARTITIONS,
+            Topic.Fields.NUM_PARTITIONS,
             Topic.Fields.AUTHORIZED_OPERATIONS,
             Topic.Fields.RECORD_COUNT,
             Topic.Fields.TOTAL_LEADER_LOG_BYTES,
             Topic.Fields.STATUS);
     private static final Set<String> REQUIRE_PARTITIONS = Set.of(
             Topic.Fields.PARTITIONS,
+            Topic.Fields.NUM_PARTITIONS,
             Topic.Fields.RECORD_COUNT,
             Topic.Fields.TOTAL_LEADER_LOG_BYTES,
             Topic.Fields.STATUS);

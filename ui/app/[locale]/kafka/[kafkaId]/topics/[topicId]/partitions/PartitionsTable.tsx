@@ -31,7 +31,7 @@ export function PartitionsTable({
   return (
     <PageSection isFilled>
       <TableView
-        itemCount={topic?.attributes.partitions.length}
+        itemCount={topic?.attributes.partitions?.length}
         page={1}
         onPageChange={() => {}}
         data={topic?.attributes.partitions}

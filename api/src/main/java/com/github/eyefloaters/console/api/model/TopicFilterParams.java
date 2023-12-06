@@ -76,6 +76,25 @@ public class TopicFilterParams {
         node = "filter[visibility]")
     FetchFilter visibilityFilter;
 
+    @QueryParam("filter[status]")
+    @Parameter(
+        description = "Retrieve only topics matching the status identified by this parameter",
+        schema = @Schema(implementation = String[].class, minItems = 2),
+        explode = Explode.FALSE)
+    @Expression(
+        when = "self != null",
+        value = "self.operator == 'eq' || self.operator == 'in'",
+        message = "unsupported filter operator, supported values: [ 'eq', 'in' ]",
+        payload = ErrorCategory.InvalidQueryParameter.class,
+        node = "filter[status]")
+    @Expression(
+        when = "self != null",
+        value = "self.operands.size() >= 1",
+        message = "at least 1 operand is required",
+        payload = ErrorCategory.InvalidQueryParameter.class,
+        node = "filter[status]")
+    FetchFilter statusFilter;
+
     public List<Predicate<Topic>> buildPredicates() {
         List<Predicate<Topic>> predicates = new ArrayList<>(3);
 
@@ -87,6 +106,10 @@ public class TopicFilterParams {
 
         if (idFilter != null) {
             predicates.add(new FetchFilterPredicate<>(idFilter, Topic::getId));
+        }
+
+        if (statusFilter != null) {
+            predicates.add(new FetchFilterPredicate<>(statusFilter, Topic::status));
         }
 
         return predicates;
