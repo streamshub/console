@@ -101,8 +101,8 @@ devDependencies:
     specifier: ^7.6.3
     version: 7.6.3(react@18.2.0)
   '@storybook/addon-onboarding':
-    specifier: ^1.0.8
-    version: 1.0.8(react-dom@18.2.0)(react@18.2.0)
+    specifier: ^1.0.9
+    version: 1.0.9(react-dom@18.2.0)(react@18.2.0)
   '@storybook/blocks':
     specifier: ^7.6.3
     version: 7.6.3(@types/react-dom@18.2.17)(@types/react@18.2.41)(react-dom@18.2.0)(react@18.2.0)
@@ -2935,8 +2935,8 @@ packages:
       tiny-invariant: 1.3.1
     dev: true
 
-  /@storybook/addon-onboarding@1.0.8(react-dom@18.2.0)(react@18.2.0):
-    resolution: {integrity: sha512-3WwCocUuTibHWO89uzAbeONEn6x9NkmxA0mOU4rYPhEsMQ4NDNDD1GXcievZmpwt5VviFgw5FRx8+BxPn54YmQ==}
+  /@storybook/addon-onboarding@1.0.9(react-dom@18.2.0)(react@18.2.0):
+    resolution: {integrity: sha512-HlHm05Py18XOf4g7abiWkvb2WteoHcRNk1PY3Wtsmjuu5aAAjBmp4mVEg59xEeA2HAMICZ2fb72NIpFlBvDN+g==}
     peerDependencies:
       react: ^16.8.0 || ^17.0.0 || ^18.0.0
       react-dom: ^16.8.0 || ^17.0.0 || ^18.0.0
