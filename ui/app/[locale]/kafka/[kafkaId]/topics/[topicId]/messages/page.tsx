@@ -51,7 +51,7 @@ export default async function MessagesPage({
         <ConnectedMessagesTable
           messages={messages}
           selectedMessage={selectedMessage}
-          partitions={topic.attributes.partitions.length}
+          partitions={topic.attributes.numPartitions ?? 0}
           params={{
             limit,
             partition,

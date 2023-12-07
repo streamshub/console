@@ -43,7 +43,7 @@ export function ClusterCard({
           <DescriptionListGroup>
             <DescriptionListTerm>Cluster Address</DescriptionListTerm>
             <DescriptionListDescription>
-              <Truncate content={bootstrapServers} position={"middle"} />
+              <Truncate content={bootstrapServers ?? 'Not available'} position={"middle"} />
             </DescriptionListDescription>
           </DescriptionListGroup>
         </DescriptionList>

@@ -151,11 +151,13 @@ public class TopicsResource {
                         Topic.Fields.NAME,
                         Topic.Fields.VISIBILITY,
                         Topic.Fields.PARTITIONS,
+                        Topic.Fields.NUM_PARTITIONS,
                         Topic.Fields.AUTHORIZED_OPERATIONS,
                         Topic.Fields.CONFIGS,
                         Topic.Fields.RECORD_COUNT,
                         Topic.Fields.TOTAL_LEADER_LOG_BYTES,
                         Topic.Fields.CONSUMER_GROUPS,
+                        Topic.Fields.STATUS,
                     },
                     payload = ErrorCategory.InvalidQueryParameter.class)
             @Parameter(
@@ -168,11 +170,13 @@ public class TopicsResource {
                                 Topic.Fields.NAME,
                                 Topic.Fields.VISIBILITY,
                                 Topic.Fields.PARTITIONS,
+                                Topic.Fields.NUM_PARTITIONS,
                                 Topic.Fields.AUTHORIZED_OPERATIONS,
                                 Topic.Fields.CONFIGS,
                                 Topic.Fields.RECORD_COUNT,
                                 Topic.Fields.TOTAL_LEADER_LOG_BYTES,
                                 Topic.Fields.CONSUMER_GROUPS,
+                                Topic.Fields.STATUS,
                             }))
             List<String> fields,
 
@@ -237,11 +241,13 @@ public class TopicsResource {
                         Topic.Fields.NAME,
                         Topic.Fields.VISIBILITY,
                         Topic.Fields.PARTITIONS,
+                        Topic.Fields.NUM_PARTITIONS,
                         Topic.Fields.AUTHORIZED_OPERATIONS,
                         Topic.Fields.CONFIGS,
                         Topic.Fields.RECORD_COUNT,
                         Topic.Fields.TOTAL_LEADER_LOG_BYTES,
                         Topic.Fields.CONSUMER_GROUPS,
+                        Topic.Fields.STATUS,
                     },
                     payload = ErrorCategory.InvalidQueryParameter.class)
             @Parameter(
@@ -254,11 +260,13 @@ public class TopicsResource {
                                 Topic.Fields.NAME,
                                 Topic.Fields.VISIBILITY,
                                 Topic.Fields.PARTITIONS,
+                                Topic.Fields.NUM_PARTITIONS,
                                 Topic.Fields.AUTHORIZED_OPERATIONS,
                                 Topic.Fields.CONFIGS,
                                 Topic.Fields.RECORD_COUNT,
                                 Topic.Fields.TOTAL_LEADER_LOG_BYTES,
                                 Topic.Fields.CONSUMER_GROUPS,
+                                Topic.Fields.STATUS,
                             }))
             List<String> fields,
 

@@ -136,7 +136,7 @@ public class KafkaClusterService {
             .sorted(comparator)
             .map(listener -> new KafkaListener(
                         listener.getType().toValue(),
-                        listenerStatus(kafka, listener).getBootstrapServers(),
+                        listenerStatus(kafka, listener).map(ListenerStatus::getBootstrapServers).orElse(null),
                         getAuthType(listener).orElse(null)))
             .toList();
 
@@ -211,7 +211,7 @@ public class KafkaClusterService {
                     listenerSortKey(l1, Annotations.CONSOLE_LISTENER),
                     listenerSortKey(l2, Annotations.CONSOLE_LISTENER)))
             .findFirst()
-            .map(listener -> listenerStatus(kafka, listener));
+            .flatMap(listener -> listenerStatus(kafka, listener));
     }
 
     static boolean supportedAuthentication(GenericKafkaListener listener) {
@@ -255,7 +255,7 @@ public class KafkaClusterService {
             .orElse(false);
     }
 
-    static ListenerStatus listenerStatus(Kafka kafka, GenericKafkaListener listener) {
+    static Optional<ListenerStatus> listenerStatus(Kafka kafka, GenericKafkaListener listener) {
         String listenerName = listener.getName();
 
         return Optional.ofNullable(kafka.getStatus())
@@ -263,8 +263,7 @@ public class KafkaClusterService {
             .map(Collection::stream)
             .orElseGet(Stream::empty)
             .filter(listenerStatus -> listenerName.equals(listenerStatus.getName()))
-            .findFirst()
-            .orElse(null);
+            .findFirst();
     }
 
     public static Optional<String> getAuthType(Kafka kafka, ListenerStatus listener) {

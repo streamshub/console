@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Predicate;
 
 import org.apache.kafka.common.Node;
 import org.apache.kafka.common.TopicPartitionInfo;
@@ -37,12 +38,13 @@ public class PartitionInfo {
     }
 
     public static PartitionInfo fromKafkaModel(TopicPartitionInfo info) {
+        Integer leaderId = Optional.ofNullable(info.leader()).map(Node::id).orElse(null);
         List<Integer> isr = info.isr().stream().map(Node::id).toList();
         List<PartitionReplica> replicas = info.replicas()
                 .stream()
                 .map(replica -> PartitionReplica.fromKafkaModel(replica, isr))
                 .toList();
-        return new PartitionInfo(info.partition(), replicas, info.leader().id());
+        return new PartitionInfo(info.partition(), replicas, leaderId);
     }
 
     static <P> Either<P, Error> primaryOrError(Either<P, Throwable> either, String message) {
@@ -80,6 +82,23 @@ public class PartitionInfo {
         return offsets;
     }
 
+    public boolean online() {
+        return leaderId != null;
+    }
+
+    @JsonProperty
+    public String status() {
+        if (!online()) {
+            return "Offline";
+        }
+
+        return replicas.stream()
+            .filter(Predicate.not(PartitionReplica::inSync))
+            .findFirst()
+            .map(ignored -> "UnderReplicated")
+            .orElse("FullyReplicated");
+    }
+
     /**
      * Calculates the record count as the latest offset minus the earliest offset
      * when both offsets are available only. When either the latest or the earliest
@@ -111,12 +130,17 @@ public class PartitionInfo {
     }
 
     Optional<Long> getOffset(String key) {
-        return Optional.ofNullable(offsets.get(key))
+        return Optional.ofNullable(offsets)
+            .map(o -> o.get(key))
             .flatMap(Either::getOptionalPrimary)
             .map(OffsetInfo::offset);
     }
 
-    Optional<PartitionReplica> getReplica(int nodeId) {
+    Optional<PartitionReplica> getReplica(Integer nodeId) {
+        if (nodeId == null) {
+            return Optional.empty();
+        }
+
         return replicas.stream()
             .filter(replica -> replica.nodeId() == nodeId)
             .findFirst();

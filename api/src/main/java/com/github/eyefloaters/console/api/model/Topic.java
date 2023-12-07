@@ -9,9 +9,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
@@ -37,11 +39,13 @@ public class Topic extends RelatableResource<Topic.Attributes, Topic.Relationshi
         public static final String NAME = "name";
         public static final String VISIBILITY = "visibility";
         public static final String PARTITIONS = "partitions";
+        public static final String NUM_PARTITIONS = "numPartitions";
         public static final String AUTHORIZED_OPERATIONS = "authorizedOperations";
         public static final String CONFIGS = "configs";
         public static final String RECORD_COUNT = "recordCount";
         public static final String TOTAL_LEADER_LOG_BYTES = "totalLeaderLogBytes";
         public static final String CONSUMER_GROUPS = "consumerGroups";
+        public static final String STATUS = "status";
         static final Pattern CONFIG_KEY = Pattern.compile("^configs\\.\"([^\"]+)\"$");
 
         static final Comparator<Topic> ID_COMPARATOR =
@@ -63,8 +67,10 @@ public class Topic extends RelatableResource<Topic.Attributes, Topic.Relationshi
         public static final String LIST_DEFAULT = NAME + ", " + VISIBILITY;
         public static final String DESCRIBE_DEFAULT =
                 NAME + ", "
+                + STATUS + ", "
                 + VISIBILITY + ", "
                 + PARTITIONS + ", "
+                + NUM_PARTITIONS + ", "
                 + AUTHORIZED_OPERATIONS + ", "
                 + RECORD_COUNT + ", "
                 + TOTAL_LEADER_LOG_BYTES;
@@ -148,6 +154,30 @@ public class Topic extends RelatableResource<Topic.Attributes, Topic.Relationshi
         }
 
         @JsonProperty
+        public String status() {
+            return partitions.getOptionalPrimary()
+                .map(p -> {
+                    Supplier<Stream<String>> partitionStatuses = () -> p.stream().map(PartitionInfo::status);
+                    long offlinePartitions = partitionStatuses.get().filter("Offline"::equals).count();
+
+                    if (offlinePartitions > 0) {
+                        if (offlinePartitions < p.size()) {
+                            return "PartiallyOffline";
+                        } else {
+                            return "Offline";
+                        }
+                    }
+
+                    if (partitionStatuses.get().anyMatch("UnderReplicated"::equals)) {
+                        return "UnderReplicated";
+                    }
+
+                    return "FullyReplicated";
+                })
+                .orElse("FullyReplicated");
+        }
+
+        @JsonProperty
         @Schema(readOnly = true, description = """
                 Derived property indicating whether this is an internal (i.e. system, private) topic or
                 an external (i.e. application, public) topic. Internal topics are those that are identified
@@ -156,6 +186,12 @@ public class Topic extends RelatableResource<Topic.Attributes, Topic.Relationshi
                 """)
         public String visibility() {
             return internal || name.startsWith("_") ? "internal" : "external";
+        }
+
+        @JsonProperty
+        @Schema(readOnly = true, description = "The number of partitions in this topic")
+        public Integer numPartitions() {
+            return partitions.getOptionalPrimary().map(Collection::size).orElse(0);
         }
 
         /**
@@ -312,6 +348,10 @@ public class Topic extends RelatableResource<Topic.Attributes, Topic.Relationshi
         return attributes.visibility();
     }
 
+    public String status() {
+        return attributes.status();
+    }
+
     public Either<List<PartitionInfo>, Error> partitions() {
         return attributes.partitions;
     }
@@ -326,6 +366,14 @@ public class Topic extends RelatableResource<Topic.Attributes, Topic.Relationshi
 
     public DataList<Identifier> consumerGroups() {
         return relationships.consumerGroups;
+    }
+
+    public boolean partitionsOnline() {
+        return attributes.partitions.getOptionalPrimary()
+            .map(Collection::stream)
+            .orElseGet(Stream::empty)
+            .map(PartitionInfo::online)
+            .allMatch(Boolean.TRUE::equals);
     }
 
     ConfigEntry configEntry(String key) {

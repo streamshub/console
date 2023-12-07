@@ -132,12 +132,12 @@ public class ClientFactory {
         config.put(AdminClientConfig.REQUEST_TIMEOUT_MS_CONFIG, "10000");
         config.put(AdminClientConfig.DEFAULT_API_TIMEOUT_MS_CONFIG, "10000");
 
-        if (log.isDebugEnabled()) {
+        if (log.isTraceEnabled()) {
             String msg = config.entrySet()
                 .stream()
                 .map(entry -> "\t%s = %s".formatted(entry.getKey(), entry.getValue()))
                 .collect(Collectors.joining("\n", "AdminClient configuration:\n", ""));
-            log.debug(msg);
+            log.trace(msg);
         }
 
         Admin client = adminBuilder.apply(config);
@@ -167,6 +167,7 @@ public class ClientFactory {
         config.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class.getName());
         config.put(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, 50_000);
         config.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+        config.put(ConsumerConfig.DEFAULT_API_TIMEOUT_MS_CONFIG, 5000);
 
         @SuppressWarnings("resource") // No leak, it will be closed by the disposer
         Consumer<byte[], byte[]> consumer = new KafkaConsumer<>(config);
@@ -192,7 +193,7 @@ public class ClientFactory {
         boolean saslEnabled;
 
         if (authType.isBlank()) {
-            log.debug("Broker authentication/SASL disabled");
+            log.trace("Broker authentication/SASL disabled");
             saslEnabled = false;
         } else {
             saslEnabled = true;
@@ -222,7 +223,7 @@ public class ClientFactory {
     }
 
     void configureOAuthBearer(Map<String, Object> config) {
-        log.debug("SASL/OAUTHBEARER enabled");
+        log.trace("SASL/OAUTHBEARER enabled");
         config.put(SaslConfigs.SASL_MECHANISM, OAUTHBEARER);
         config.put(SaslConfigs.SASL_LOGIN_CALLBACK_HANDLER_CLASS, "io.strimzi.kafka.oauth.client.JaasClientOauthLoginCallbackHandler");
         // Do not attempt token refresh ahead of expiration (ExpiringCredentialRefreshingLogin)

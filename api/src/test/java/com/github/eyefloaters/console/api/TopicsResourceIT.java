@@ -36,13 +36,18 @@ import jakarta.ws.rs.core.Response.Status;
 import org.apache.kafka.clients.admin.DescribeConfigsResult;
 import org.apache.kafka.clients.admin.DescribeTopicsOptions;
 import org.apache.kafka.clients.admin.DescribeTopicsResult;
+import org.apache.kafka.clients.admin.ListOffsetsOptions;
 import org.apache.kafka.clients.admin.ListOffsetsResult;
 import org.apache.kafka.clients.admin.ListOffsetsResult.ListOffsetsResultInfo;
 import org.apache.kafka.clients.admin.TopicDescription;
 import org.apache.kafka.common.KafkaFuture;
+import org.apache.kafka.common.Node;
+import org.apache.kafka.common.TopicCollection;
 import org.apache.kafka.common.TopicCollection.TopicIdCollection;
 import org.apache.kafka.common.TopicPartition;
+import org.apache.kafka.common.TopicPartitionInfo;
 import org.apache.kafka.common.Uuid;
+import org.apache.kafka.common.acl.AclOperation;
 import org.apache.kafka.common.config.ConfigResource;
 import org.apache.kafka.common.errors.ApiException;
 import org.apache.kafka.common.internals.KafkaFutureImpl;
@@ -124,28 +129,29 @@ class TopicsResourceIT {
     TopicHelper topicUtils;
     ConsumerUtils groupUtils;
     String clusterId1;
+    URI bootstrapServers1;
     String clusterId2;
     ServerSocket randomSocket;
 
     @BeforeEach
     void setup() throws IOException {
-        URI bootstrapServers = URI.create(deployments.getExternalBootstrapServers());
+        bootstrapServers1 = URI.create(deployments.getExternalBootstrapServers());
         randomSocket = new ServerSocket(0);
         URI randomBootstrapServers = URI.create("dummy://localhost:" + randomSocket.getLocalPort());
 
-        topicUtils = new TopicHelper(bootstrapServers, config, null);
+        topicUtils = new TopicHelper(bootstrapServers1, config, null);
         topicUtils.deleteAllTopics();
 
         groupUtils = new ConsumerUtils(config, null);
 
-        utils = new TestHelper(bootstrapServers, config, null);
+        utils = new TestHelper(bootstrapServers1, config, null);
 
         clusterId1 = utils.getClusterId();
         clusterId2 = UUID.randomUUID().toString();
 
         client.resources(Kafka.class).delete();
         client.resources(Kafka.class)
-            .resource(utils.buildKafkaResource("test-kafka1", clusterId1, bootstrapServers))
+            .resource(utils.buildKafkaResource("test-kafka1", clusterId1, bootstrapServers1))
             .create();
         // Second cluster is offline/non-existent
         client.resources(Kafka.class)
@@ -694,6 +700,27 @@ class TopicsResourceIT {
     }
 
     @Test
+    void testListTopicsWithNumPartitions() {
+        var topicIds = IntStream.rangeClosed(1, 9)
+                .mapToObj(i -> {
+                    String topicName = i + "-" + UUID.randomUUID().toString();
+                    return topicUtils.createTopics(clusterId1, List.of(topicName), i)
+                        .get(topicName);
+                })
+                .toList();
+
+        whenRequesting(req -> req
+                .queryParam("filter[status]", "eq,FullyReplicated")
+                .queryParam("fields[topics]", "numPartitions")
+                .get("", clusterId1))
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()))
+            .body("data.size()", equalTo(topicIds.size()))
+            .body("data.id", containsInAnyOrder(topicIds.toArray(String[]::new)))
+            .body("data.attributes.numPartitions", containsInAnyOrder(1, 2, 3, 4, 5, 6, 7, 8, 9));
+    }
+
+    @Test
     void testDescribeTopicWithNameAndConfigsIncluded() {
         String topicName = UUID.randomUUID().toString();
         Map<String, String> topicIds = topicUtils.createTopics(clusterId1, List.of(topicName), 1);
@@ -843,7 +870,7 @@ class TopicsResourceIT {
 
         AdminClientSpy.install(client -> {
             // Mock listOffsets
-            doAnswer(listOffsetsFailed).when(client).listOffsets(anyMap());
+            doAnswer(listOffsetsFailed).when(client).listOffsets(anyMap(), any(ListOffsetsOptions.class));
         });
 
         whenRequesting(req -> req
@@ -952,6 +979,60 @@ class TopicsResourceIT {
             .body("errors.size()", is(1))
             .body("errors.status", contains("404"))
             .body("errors.code", contains("4041"));
+    }
+
+    @Test
+    void testDescribeTopicWithOfflinePartition() {
+        String topicName = UUID.randomUUID().toString();
+        Map<String, String> topicIds = topicUtils.createTopics(clusterId1, List.of(topicName), 2);
+
+        //int partition, Node leader, List<Node> replicas, List<Node> isr
+        Node node0 = new Node(0, "node0", bootstrapServers1.getPort());
+        Node node1 = new Node(1, "node1", bootstrapServers1.getPort());
+
+        Answer<DescribeTopicsResult> describeTopicsResult = args -> {
+            List<TopicPartitionInfo> partitions = List.of(
+                    // Online, 2 replicas, 1 ISR
+                    new TopicPartitionInfo(0, node0, List.of(node0, node1), List.of(node0)),
+                    // Offline, 2 replicas, no ISRs
+                    new TopicPartitionInfo(1, null, List.of(node0, node1), List.of()));
+            Set<AclOperation> authorizedOperations = Set.of(AclOperation.ALL);
+            Uuid topicId = Uuid.fromString(topicIds.get(topicName));
+
+            var description = KafkaFuture.completedFuture(
+                    new TopicDescription(topicName, false, partitions, authorizedOperations, topicId));
+
+            class Result extends DescribeTopicsResult {
+                Result() {
+                    super(Map.of(topicId, description), null);
+                }
+            }
+
+            return new Result();
+        };
+
+        AdminClientSpy.install(client -> {
+            // Mock listOffsets
+            doAnswer(describeTopicsResult)
+                .when(client)
+                .describeTopics(any(TopicCollection.class), any(DescribeTopicsOptions.class));
+        });
+
+        whenRequesting(req -> req.get("{topicId}", clusterId1, topicIds.get(topicName)))
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()))
+            .body("data.attributes.name", is(topicName))
+            .body("data.attributes.status", is("PartiallyOffline"))
+            .body("data.attributes.partitions", hasSize(2))
+            .body("data.attributes.partitions[0].status", is("UnderReplicated"))
+            .body("data.attributes.partitions[0].replicas[0].inSync", is(true))
+            .body("data.attributes.partitions[0].replicas[0].localStorage", notNullValue())
+            // storage not fetched for followers
+            .body("data.attributes.partitions[0].replicas[1].inSync", is(false))
+            .body("data.attributes.partitions[0].replicas[1].localStorage", nullValue())
+            // Partition 2, offline with no ISRs
+            .body("data.attributes.partitions[1].status", is("Offline"))
+            .body("data.attributes.partitions[1].replicas.inSync", everyItem(is(false)));
     }
 
     @Test
