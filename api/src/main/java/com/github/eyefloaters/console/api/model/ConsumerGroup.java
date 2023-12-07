@@ -4,6 +4,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -150,14 +151,14 @@ public class ConsumerGroup {
 
     // Available via describe operation only
 
-    private Collection<MemberDescription> members;
+    private Collection<MemberDescription> members = Collections.emptyList();
     private String partitionAssignor;
     private Node coordinator;
     private List<String> authorizedOperations;
 
     // Available via list offsets operation only
 
-    private List<@Valid OffsetAndMetadata> offsets;
+    private List<@Valid OffsetAndMetadata> offsets = Collections.emptyList();
 
     // When a describe error occurs
     private List<Error> errors;

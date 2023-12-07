@@ -31,7 +31,7 @@ export const ConsumerGroupSchema = z.object({
     state: z.string(),
     members: z.array(MemberDescriptionSchema),
     partitionAssignor: z.string().nullable().optional(),
-    coordinator: NodeSchema,
+    coordinator: NodeSchema.nullable().optional(),
     authorizedOperations: z.array(z.string()).nullable().optional(),
     offsets: z.array(OffsetAndMetadataSchema),
     errors: z.array(ApiError).optional(),
