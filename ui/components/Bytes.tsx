@@ -6,5 +6,5 @@ export function Bytes({ value }: { value: string | number | null | undefined }) 
     return "-";
   }
   value = typeof value === "string" ? parseInt(value, 10) : value;
-  return formatter(value);
+  return isNaN(value) ? "-" : formatter(value);
 }
