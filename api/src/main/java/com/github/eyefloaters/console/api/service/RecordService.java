@@ -16,6 +16,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -30,10 +34,14 @@ import org.apache.kafka.clients.admin.TopicListing;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
+import org.apache.kafka.clients.producer.Producer;
+import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.PartitionInfo;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.Uuid;
+import org.apache.kafka.common.errors.InvalidPartitionsException;
 import org.apache.kafka.common.errors.UnknownTopicIdException;
+import org.apache.kafka.common.header.Header;
 import org.apache.kafka.common.header.Headers;
 import org.eclipse.microprofile.context.ThreadContext;
 import org.jboss.logging.Logger;
@@ -57,6 +65,9 @@ public class RecordService {
     Supplier<Consumer<byte[], byte[]>> consumerSupplier;
 
     @Inject
+    Supplier<Producer<String, String>> producerSupplier;
+
+    @Inject
     ThreadContext threadContext;
 
     public List<KafkaRecord> consumeRecords(String topicId,
@@ -67,18 +78,7 @@ public class RecordService {
             List<String> include,
             Integer maxValueLength) {
 
-        Uuid kafkaTopicId = Uuid.fromString(topicId);
-
-        List<PartitionInfo> partitions = clientSupplier.get()
-            .listTopics()
-            .listings()
-            .toCompletionStage()
-            .thenApply(Collection::stream)
-            .thenApply(listings -> listings
-                    .filter(topic -> kafkaTopicId.equals(topic.topicId()))
-                    .findFirst()
-                    .map(TopicListing::name)
-                    .orElseThrow(() -> noSuchTopic(topicId)))
+        List<PartitionInfo> partitions = topicNameForId(topicId)
             .thenApplyAsync(
                     topicName -> consumerSupplier.get().partitionsFor(topicName),
                     threadContext.currentContextExecutor())
@@ -146,6 +146,96 @@ public class RecordService {
         }
 
         return results;
+    }
+
+    public CompletionStage<KafkaRecord> produceRecord(String topicId, KafkaRecord input) {
+        CompletableFuture<KafkaRecord> promise = new CompletableFuture<>();
+        Executor asyncExec = threadContext.currentContextExecutor();
+
+        topicNameForId(topicId)
+            .thenApplyAsync(
+                    topicName -> producerSupplier.get().partitionsFor(topicName),
+                    asyncExec)
+            .thenAcceptAsync(
+                    partitions -> {
+                        Producer<String, String> producer = producerSupplier.get();
+                        String topicName = partitions.iterator().next().topic();
+                        Integer partition = input.getPartition();
+
+                        if (partition != null && partitions.stream().noneMatch(p -> partition.equals(p.partition()))) {
+                            promise.completeExceptionally(invalidPartition(topicId, partition));
+                        } else {
+                            send(topicName, input, producer, promise);
+                        }
+                    },
+                    asyncExec);
+
+        return promise;
+    }
+
+    void send(String topicName, KafkaRecord input, Producer<String, String> producer, CompletableFuture<KafkaRecord> promise) {
+        String key = input.getKey();
+
+        List<Header> headers = Optional.ofNullable(input.getHeaders())
+            .orElseGet(Collections::emptyMap)
+            .entrySet()
+            .stream()
+            .map(h -> new Header() {
+                @Override
+                public String key() {
+                    return h.getKey();
+                }
+
+                @Override
+                public byte[] value() {
+                    return h.getValue() != null ? h.getValue().getBytes() : null;
+                }
+            })
+            .map(Header.class::cast)
+            .toList();
+
+        Long timestamp = Optional.ofNullable(input.getTimestamp()).map(Instant::toEpochMilli).orElse(null);
+
+        ProducerRecord<String, String> request = new ProducerRecord<>(topicName,
+                input.getPartition(),
+                timestamp,
+                key,
+                input.getValue(),
+                headers);
+
+        producer.send(request, (meta, exception) -> {
+            if (exception != null) {
+                promise.completeExceptionally(exception);
+            } else {
+                KafkaRecord result = new KafkaRecord();
+                result.setPartition(meta.partition());
+                if (meta.hasOffset()) {
+                    result.setOffset(meta.offset());
+                }
+                if (meta.hasTimestamp()) {
+                    result.setTimestamp(Instant.ofEpochMilli(meta.timestamp()));
+                }
+                result.setKey(input.getKey());
+                result.setValue(input.getValue());
+                result.setHeaders(input.getHeaders());
+                promise.complete(result);
+            }
+        });
+    }
+
+    CompletionStage<String> topicNameForId(String topicId) {
+        Uuid kafkaTopicId = Uuid.fromString(topicId);
+
+        return clientSupplier.get()
+            .listTopics()
+            .listings()
+            .toCompletionStage()
+            .thenApply(Collection::stream)
+            .thenApply(listings -> listings
+                    .filter(topic -> kafkaTopicId.equals(topic.topicId()))
+                    .findFirst()
+                    .map(TopicListing::name)
+                    .orElseThrow(() -> noSuchTopic(topicId)));
     }
 
     void seekToTimestamp(Consumer<byte[], byte[]> consumer, List<TopicPartition> assignments, Instant timestamp) {
@@ -275,6 +365,10 @@ public class RecordService {
 
     static UnknownTopicIdException noSuchTopic(String topicId) {
         return new UnknownTopicIdException("No such topic: " + topicId);
+    }
+
+    static InvalidPartitionsException invalidPartition(String topicId, int partition) {
+        return new InvalidPartitionsException("Partition " + partition + " is not valid for topic " + topicId);
     }
 
 }

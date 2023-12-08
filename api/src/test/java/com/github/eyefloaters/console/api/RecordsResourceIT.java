@@ -16,6 +16,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
 import jakarta.inject.Inject;
+import jakarta.json.Json;
+import jakarta.json.JsonValue;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response.Status;
 
 import org.apache.kafka.common.Uuid;
@@ -443,5 +447,107 @@ class RecordsResourceIT {
             .body("data", hasSize(1))
             .body("data[0].attributes.offset", is(equalTo(3)))
             .body("data[0].attributes.value", is(equalTo("fourth")));
+    }
+
+    @Test
+    void testProduceRecordSimple() {
+        final String topicName = UUID.randomUUID().toString();
+        var topicIds = topicUtils.createTopics(clusterId1, List.of(topicName), 1);
+
+        whenRequesting(req -> req
+                .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
+                .body(Json.createObjectBuilder()
+                        .add("data", Json.createObjectBuilder()
+                                .add("type", "records")
+                                .add("attributes", Json.createObjectBuilder()
+                                        .add("value", "TEST")))
+                        .build()
+                        .toString())
+                .post("", clusterId1, topicIds.get(topicName)))
+            .assertThat()
+            .statusCode(is(Status.CREATED.getStatusCode()))
+            .body("data.attributes.partition", is(0))
+            .body("data.attributes.offset", is(0))
+            .body("data.attributes.value", is("TEST"));
+    }
+
+    @Test
+    void testProduceRecordSimpleWithPartition() {
+        final String topicName = UUID.randomUUID().toString();
+        var topicIds = topicUtils.createTopics(clusterId1, List.of(topicName), 2);
+
+        whenRequesting(req -> req
+                .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
+                .body(Json.createObjectBuilder()
+                        .add("data", Json.createObjectBuilder()
+                                .add("type", "records")
+                                .add("attributes", Json.createObjectBuilder()
+                                        .add("partition", 1)
+                                        .add("value", "TEST")))
+                        .build()
+                        .toString())
+                .post("", clusterId1, topicIds.get(topicName)))
+            .assertThat()
+            .statusCode(is(Status.CREATED.getStatusCode()))
+            .body("data.attributes.partition", is(1))
+            .body("data.attributes.offset", is(0))
+            .body("data.attributes.value", is("TEST"));
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        "'hdr1', ", // null value
+        "'hdr2', 'hdr2Value'",
+        "'hdr3', ''",
+    })
+    void testProduceRecordWithHeaders(String headerName, String headerValue) {
+        final String topicName = UUID.randomUUID().toString();
+        var topicIds = topicUtils.createTopics(clusterId1, List.of(topicName), 1);
+
+        whenRequesting(req -> req
+                .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
+                .body(Json.createObjectBuilder()
+                        .add("data", Json.createObjectBuilder()
+                                .add("type", "records")
+                                .add("attributes", Json.createObjectBuilder()
+                                        .add("value", "TEST")
+                                        .add("headers", Json.createObjectBuilder()
+                                                .add(headerName,
+                                                     headerValue == null
+                                                         ? JsonValue.NULL
+                                                         : Json.createValue(headerValue)))))
+                        .build()
+                        .toString())
+                .post("", clusterId1, topicIds.get(topicName)))
+            .assertThat()
+            .statusCode(is(Status.CREATED.getStatusCode()))
+            .body("data.attributes.partition", is(0))
+            .body("data.attributes.offset", is(0))
+            .body("data.attributes.value", is("TEST"))
+            .body("data.attributes.headers." + headerName, is(headerValue));
+    }
+
+    @Test
+    void testProduceRecordWithInvalidPartition() {
+        final String topicName = UUID.randomUUID().toString();
+        var topicIds = topicUtils.createTopics(clusterId1, List.of(topicName), 1);
+
+        whenRequesting(req -> req
+                .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
+                .body(Json.createObjectBuilder()
+                        .add("data", Json.createObjectBuilder()
+                                .add("type", "records")
+                                .add("attributes", Json.createObjectBuilder()
+                                        .add("partition", 1) // only partition 0 is valid
+                                        .add("value", "TEST")))
+                        .build()
+                        .toString())
+                .post("", clusterId1, topicIds.get(topicName)))
+            .assertThat()
+            .statusCode(is(Status.BAD_REQUEST.getStatusCode()))
+            .body("errors.size()", is(1))
+            .body("errors[0].status", is("400"))
+            .body("errors[0].code", is("4003"))
+            .body("errors[0].source.pointer", is("/data/attributes/partition"));
     }
 }

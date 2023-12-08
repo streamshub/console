@@ -1,20 +1,26 @@
 package com.github.eyefloaters.console.api;
 
 import java.util.List;
+import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
 
 import jakarta.inject.Inject;
 import jakarta.inject.Named;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.BeanParam;
+import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriBuilder;
+import jakarta.ws.rs.core.UriInfo;
+import jakarta.ws.rs.core.Response.Status;
 
 import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.enums.Explode;
@@ -38,6 +44,9 @@ import com.github.eyefloaters.console.api.support.StringEnumeration;
 public class RecordsResource {
 
     static final String FIELDS_PARAM = "fields[records]";
+
+    @Inject
+    UriInfo uriInfo;
 
     @Inject
     RecordService recordService;
@@ -111,6 +120,47 @@ public class RecordsResource {
         var result = recordService.consumeRecords(topicId, params.getPartition(), params.getOffset(), params.getTimestamp(), params.getLimit(), fields, params.getMaxValueLength());
 
         return Response.ok(new KafkaRecord.ListResponse(result)).build();
+
+    }
+
+    @POST
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    @Operation(
+        summary = "Send a record to a topic",
+        description = "Produce (write) a single record to a topic")
+    @APIResponseSchema(
+        responseCode = "201",
+        value = KafkaRecord.KafkaRecordDocument.class,
+        responseDescription = "Record was successfully sent to the topic")
+    @APIResponse(responseCode = "404", ref = "NotFound")
+    @APIResponse(responseCode = "500", ref = "ServerError")
+    @APIResponse(responseCode = "504", ref = "ServerTimeout")
+    public CompletionStage<Response> produceRecord(
+            @Parameter(description = "Cluster identifier")
+            @PathParam("clusterId")
+            String clusterId,
+
+            @PathParam("topicId")
+            @KafkaUuid(payload = ErrorCategory.ResourceNotFound.class, message = "No such topic")
+            @Parameter(description = "Topic identifier")
+            String topicId,
+
+            @Valid
+            KafkaRecord.KafkaRecordDocument message) {
+
+        final UriBuilder location = uriInfo.getRequestUriBuilder();
+        requestedFields.accept(KafkaRecord.Fields.ALL);
+
+        return recordService.produceRecord(topicId, message.getData().getAttributes())
+            .thenApply(KafkaRecord.KafkaRecordDocument::new)
+            .thenApply(entity -> Response.status(Status.CREATED)
+                    .entity(entity)
+                    .location(location
+                            .queryParam("filter[partition]", entity.getData().getAttributes().getPartition())
+                            .queryParam("filter[offset]", entity.getData().getAttributes().getOffset())
+                            .build()))
+            .thenApply(Response.ResponseBuilder::build);
 
     }
 }

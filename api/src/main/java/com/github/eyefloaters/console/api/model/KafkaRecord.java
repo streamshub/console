@@ -11,8 +11,13 @@ import jakarta.ws.rs.core.UriBuilder;
 
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonFilter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.github.eyefloaters.console.api.support.ErrorCategory;
+
+import io.xlate.validation.constraints.Expression;
 
 @Schema(name = "KafkaRecordAttributes")
 @JsonFilter("fieldFilter")
@@ -36,6 +41,15 @@ public class KafkaRecord {
                     ", " + KEY +
                     ", " + VALUE;
 
+        public static final List<String> ALL = List.of(
+                PARTITION,
+                OFFSET,
+                TIMESTAMP,
+                TIMESTAMP_TYPE,
+                HEADERS,
+                KEY,
+                VALUE);
+
         private Fields() {
             // Prevent instances
         }
@@ -48,17 +62,34 @@ public class KafkaRecord {
         }
     }
 
-    @Schema(name = "KafkaRecordResponse")
-    public static final class SingleResponse extends DataSingleton<RecordResource> {
-        public SingleResponse(KafkaRecord data) {
+    @Schema(name = "KafkaRecordDocument")
+    public static final class KafkaRecordDocument extends DataSingleton<RecordResource> {
+        @JsonCreator
+        public KafkaRecordDocument(@JsonProperty("data") RecordResource data) {
+            super(data);
+        }
+
+        public KafkaRecordDocument(KafkaRecord data) {
             super(new RecordResource(data));
         }
     }
 
     @Schema(name = "KafkaRecord")
+    @Expression(
+        when = "self.type != null",
+        value = "self.type == 'records'",
+        message = "resource type conflicts with operation",
+        node = "type",
+        payload = ErrorCategory.ResourceConflict.class
+    )
     public static final class RecordResource extends Resource<KafkaRecord> {
-        public RecordResource(KafkaRecord data) {
-            super(null, "records", data);
+        @JsonCreator
+        public RecordResource(String type, KafkaRecord attributes) {
+            super(null, type, attributes);
+        }
+
+        public RecordResource(KafkaRecord attributes) {
+            super(null, "records", attributes);
         }
     }
 

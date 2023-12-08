@@ -27,12 +27,16 @@ import org.apache.kafka.clients.admin.AdminClientConfig;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.Producer;
+import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.MetricName;
 import org.apache.kafka.common.config.SaslConfigs;
 import org.apache.kafka.common.config.SslConfigs;
 import org.apache.kafka.common.security.auth.SecurityProtocol;
 import org.apache.kafka.common.security.oauthbearer.OAuthBearerLoginModule;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
+import org.apache.kafka.common.serialization.StringSerializer;
 import org.jboss.logging.Logger;
 
 import com.github.eyefloaters.console.api.service.KafkaClusterService;
@@ -176,6 +180,27 @@ public class ClientFactory {
 
     public void consumerDisposer(@Disposes Supplier<Consumer<byte[], byte[]>> consumer) {
         consumer.get().close();
+    }
+
+    @Produces
+    @RequestScoped
+    public Supplier<Producer<String, String>> producerSupplier(Supplier<Kafka> cluster) {
+        Map<String, Object> config = buildConfiguration(cluster.get());
+
+        config.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
+        config.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
+        config.put(ProducerConfig.ACKS_CONFIG, "all");
+        config.put(ProducerConfig.MAX_BLOCK_MS_CONFIG, 5000);
+        config.put(ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG, false);
+        config.put(ProducerConfig.RETRIES_CONFIG, 0);
+
+        @SuppressWarnings("resource") // No leak, it will be closed by the disposer
+        Producer<String, String> producer = new KafkaProducer<>(config);
+        return () -> producer;
+    }
+
+    public void producerDisposer(@Disposes Supplier<Producer<String, String>> producer) {
+        producer.get().close();
     }
 
     Map<String, Object> buildConfiguration(Kafka cluster) {

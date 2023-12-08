@@ -11,6 +11,7 @@ import org.apache.kafka.common.errors.AuthorizationException;
 import org.apache.kafka.common.errors.GroupIdNotFoundException;
 import org.apache.kafka.common.errors.GroupNotEmptyException;
 import org.apache.kafka.common.errors.InvalidConfigurationException;
+import org.apache.kafka.common.errors.InvalidPartitionsException;
 import org.apache.kafka.common.errors.InvalidReplicaAssignmentException;
 import org.apache.kafka.common.errors.InvalidReplicationFactorException;
 import org.apache.kafka.common.errors.NoReassignmentInProgressException;
@@ -104,6 +105,21 @@ public class KafkaClientExceptionHandlers {
         @Override
         public boolean handlesException(Throwable thrown) {
             return thrown instanceof InvalidConfigurationException;
+        }
+    }
+
+    @Provider
+    @ApplicationScoped
+    public static class InvalidPartitionsExceptionHandler
+        extends AbstractClientExceptionHandler<InvalidPartitionsException> {
+
+        public InvalidPartitionsExceptionHandler() {
+            super(ErrorCategory.InvalidResource.class, null, "/data/attributes/partition");
+        }
+
+        @Override
+        public boolean handlesException(Throwable thrown) {
+            return thrown instanceof InvalidPartitionsException;
         }
     }
 
