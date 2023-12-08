@@ -44,7 +44,6 @@
         <!-- Sonar settings -->
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
         <sonar.organization>eyefloaters</sonar.organization>
-        <sonar.exclusions>src/main/java/com/github/eyefloaters/console/legacy/**/*</sonar.exclusions>
     </properties>
 
     <scm>
@@ -460,7 +459,6 @@
                         </goals>
                         <configuration>
                             <dataFile>${project.build.directory}/jacoco-quarkus.exec</dataFile>
-                            <excludes>com/github/eyefloaters/console/legacy/**/*</excludes>
                             <formats>XML</formats>
                         </configuration>
                     </execution>

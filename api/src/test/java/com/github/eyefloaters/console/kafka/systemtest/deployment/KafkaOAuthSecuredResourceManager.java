@@ -1,11 +1,5 @@
 package com.github.eyefloaters.console.kafka.systemtest.deployment;
 
-import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
-
-import org.testcontainers.containers.GenericContainer;
-
-import com.github.eyefloaters.console.legacy.KafkaAdminConfigRetriever;
-
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Map;
@@ -16,17 +10,16 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-public class KafkaOAuthSecuredResourceManager implements QuarkusTestResourceLifecycleManager {
+import org.apache.kafka.clients.CommonClientConfigs;
+import org.apache.kafka.common.config.SaslConfigs;
+import org.apache.kafka.common.config.SslConfigs;
+import org.testcontainers.containers.GenericContainer;
 
-    Map<String, String> initArgs;
-    DeploymentManager deployments;
+import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
+
+public class KafkaOAuthSecuredResourceManager extends KafkaResourceManager implements QuarkusTestResourceLifecycleManager {
+
     GenericContainer<?> keycloakContainer;
-    KafkaContainer kafkaContainer;
-
-    @Override
-    public void init(Map<String, String> initArgs) {
-        this.initArgs = Map.copyOf(initArgs);
-    }
 
     @Override
     public Map<String, String> start() {
@@ -46,15 +39,10 @@ public class KafkaOAuthSecuredResourceManager implements QuarkusTestResourceLife
         int kcPort = keycloakContainer.getMappedPort(8080);
         String profile = "%" + initArgs.get("profile") + ".";
 
-        return Map.of(profile + KafkaAdminConfigRetriever.BOOTSTRAP_SERVERS, externalBootstrap,
-                      profile + KafkaAdminConfigRetriever.OAUTH_JWKS_ENDPOINT_URI, String.format("http://localhost:%d/realms/kafka-authz/protocol/openid-connect/certs", kcPort),
-                      profile + KafkaAdminConfigRetriever.OAUTH_TOKEN_ENDPOINT_URI, String.format("http://localhost:%d/realms/kafka-authz/protocol/openid-connect/token", kcPort),
-                      profile + KafkaAdminConfigRetriever.BROKER_TLS_ENABLED, "true",
-                      profile + KafkaAdminConfigRetriever.BROKER_TRUSTED_CERT, Base64.getEncoder().encodeToString(kafkaContainer.getCACertificate().getBytes(StandardCharsets.UTF_8)));
+        return Map.of(profile + CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, externalBootstrap,
+                      profile + "quarkus.oidc.auth-server-url", String.format("http://localhost:%d/realms/kafka-authz", kcPort),
+                      profile + SaslConfigs.SASL_OAUTHBEARER_TOKEN_ENDPOINT_URL, String.format("http://localhost:%d/realms/kafka-authz/protocol/openid-connect/token", kcPort),
+                      profile + SslConfigs.SSL_TRUSTSTORE_CERTIFICATES_CONFIG, Base64.getEncoder().encodeToString(kafkaContainer.getCACertificate().getBytes(StandardCharsets.UTF_8)));
     }
 
-    @Override
-    public void stop() {
-        deployments.shutdown();
-    }
 }

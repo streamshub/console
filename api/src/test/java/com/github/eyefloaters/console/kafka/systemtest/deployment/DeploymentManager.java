@@ -22,14 +22,12 @@ import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.lifecycle.Startable;
 
-import com.github.eyefloaters.console.kafka.systemtest.Environment;
-
 @SuppressWarnings("resource")
 public class DeploymentManager {
 
     protected static final Logger LOGGER = Logger.getLogger(DeploymentManager.class);
     static final Map<String, String> TEST_CONTAINER_LABELS =
-            Collections.singletonMap("test-ident", Environment.TEST_CONTAINER_LABEL);
+            Collections.singletonMap("test-ident", "systemtest");
 
     public enum UserType {
         OWNER("alice"),

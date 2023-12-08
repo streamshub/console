@@ -2,25 +2,11 @@ package com.github.eyefloaters.console.kafka.systemtest.deployment;
 
 import java.util.Map;
 
-import org.testcontainers.containers.GenericContainer;
-
-import com.github.eyefloaters.console.legacy.KafkaAdminConfigRetriever;
+import org.apache.kafka.clients.CommonClientConfigs;
 
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
 
-public class KafkaUnsecuredResourceManager implements QuarkusTestResourceLifecycleManager {
-
-    public static final int MAX_PARTITIONS = 100;
-    public static final int EXCESSIVE_PARTITIONS = 101;
-
-    Map<String, String> initArgs;
-    DeploymentManager deployments;
-    GenericContainer<?> kafkaContainer;
-
-    @Override
-    public void init(Map<String, String> initArgs) {
-        this.initArgs = Map.copyOf(initArgs);
-    }
+public class KafkaUnsecuredResourceManager extends KafkaResourceManager implements QuarkusTestResourceLifecycleManager {
 
     @Override
     public Map<String, String> start() {
@@ -29,16 +15,6 @@ public class KafkaUnsecuredResourceManager implements QuarkusTestResourceLifecyc
         String externalBootstrap = deployments.getExternalBootstrapServers();
         String profile = "%" + initArgs.get("profile") + ".";
 
-        return Map.of(profile + KafkaAdminConfigRetriever.BOOTSTRAP_SERVERS, externalBootstrap);
-    }
-
-    @Override
-    public void stop() {
-        deployments.shutdown();
-    }
-
-    @Override
-    public void inject(TestInjector testInjector) {
-        testInjector.injectIntoFields(deployments, new TestInjector.AnnotatedAndMatchesType(DeploymentManager.InjectDeploymentManager.class, DeploymentManager.class));
+        return Map.of(profile + CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, externalBootstrap);
     }
 }

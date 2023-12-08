@@ -1,11 +1,5 @@
 package com.github.eyefloaters.console.kafka.systemtest.utils;
 
-import io.restassured.http.Header;
-
-import org.eclipse.microprofile.config.Config;
-
-import com.github.eyefloaters.console.legacy.KafkaAdminConfigRetriever;
-
 import java.io.IOException;
 import java.io.StringReader;
 import java.net.URI;
@@ -20,12 +14,17 @@ import jakarta.json.JsonObject;
 import jakarta.json.JsonReader;
 import jakarta.ws.rs.core.HttpHeaders;
 
+import org.apache.kafka.common.config.SaslConfigs;
+import org.eclipse.microprofile.config.Config;
+
+import io.restassured.http.Header;
+
 public class TokenUtils {
 
     final String tokenEndpoint;
 
     public TokenUtils(Config config) {
-        this.tokenEndpoint = config.getValue(KafkaAdminConfigRetriever.OAUTH_TOKEN_ENDPOINT_URI, String.class);
+        this.tokenEndpoint = config.getValue(SaslConfigs.SASL_OAUTHBEARER_TOKEN_ENDPOINT_URL, String.class);
     }
 
     public Header authorizationHeader(String username) {
