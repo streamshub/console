@@ -18,8 +18,8 @@ dependencies:
     specifier: ^5.1.1
     version: 5.1.1(react-dom@18.2.0)(react@18.2.0)
   '@patternfly/react-icons':
-    specifier: ^5.1.1
-    version: 5.1.1(react-dom@18.2.0)(react@18.2.0)
+    specifier: ^5.1.2
+    version: 5.1.2(react-dom@18.2.0)(react@18.2.0)
   '@patternfly/react-table':
     specifier: ^5.1.1
     version: 5.1.1(react-dom@18.2.0)(react@18.2.0)
@@ -2131,7 +2131,7 @@ packages:
       react: ^17 || ^18
       react-dom: ^17 || ^18
     dependencies:
-      '@patternfly/react-icons': 5.1.1(react-dom@18.2.0)(react@18.2.0)
+      '@patternfly/react-icons': 5.1.2(react-dom@18.2.0)(react@18.2.0)
       '@patternfly/react-styles': 5.1.1
       '@patternfly/react-tokens': 5.1.1
       focus-trap: 7.5.2
@@ -2141,8 +2141,8 @@ packages:
       tslib: 2.6.1
     dev: false
 
-  /@patternfly/react-icons@5.1.1(react-dom@18.2.0)(react@18.2.0):
-    resolution: {integrity: sha512-9gCxkWz2xcdi0rtXu2F0L68w4tLIlsgGTACo1ggr4aVng9jRX++o1PlCOqscOd9o0NiFnFD7BLlZUGvJWaYEZg==}
+  /@patternfly/react-icons@5.1.2(react-dom@18.2.0)(react@18.2.0):
+    resolution: {integrity: sha512-hgf3OchvNyCcxqDrRJCkxauFdxENtVX2d6uTkMfOQWP3hs8hqYGHR5S0pe2teJ1SwAs2Rgtf7ezzmzKAouAjkw==}
     peerDependencies:
       react: ^17 || ^18
       react-dom: ^17 || ^18
@@ -2162,7 +2162,7 @@ packages:
       react-dom: ^17 || ^18
     dependencies:
       '@patternfly/react-core': 5.1.1(react-dom@18.2.0)(react@18.2.0)
-      '@patternfly/react-icons': 5.1.1(react-dom@18.2.0)(react@18.2.0)
+      '@patternfly/react-icons': 5.1.2(react-dom@18.2.0)(react@18.2.0)
       '@patternfly/react-styles': 5.1.1
       '@patternfly/react-tokens': 5.1.1
       lodash: 4.17.21
