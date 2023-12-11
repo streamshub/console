@@ -39,6 +39,24 @@ const ClusterDetailSchema = z.object({
         authType: z.string().nullable(),
       })
     ).optional() /* remove .optional() when `listeners` is added to the fetched fields */,
+    metrics: z.object({
+      values: z.record(
+        z.array(
+          z.object({
+            value: z.string(),
+            nodeId: z.string().optional(),
+          })
+        )
+      ),
+      ranges: z.record(
+        z.array(
+          z.object({
+            range: z.array(z.array(z.string())),
+            nodeId: z.string().optional(),
+          })
+        )
+      ),
+    }).optional(),
   }),
 });
 export const ClusterResponse = z.object({
