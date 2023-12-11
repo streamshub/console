@@ -40,23 +40,76 @@ kubectl patch deployment -n ingress-nginx ingress-nginx-controller \
  --type='json' \
  -p='[{"op": "add", "path": "/spec/template/spec/containers/0/args/-", "value":"--enable-ssl-passthrough"}]'
 ```
+### Install OLM and Strimzi / Prometheus Operators
 
-### Install Strimzi and Kafka Cluster
+```shell
+curl -sL https://github.com/operator-framework/operator-lifecycle-manager/releases/download/v0.26.0/install.sh | bash -s "v0.26.0"
 
-Create the Strimzi Operator artifacts and two Kafka clusters in the `myproject` namespace.
+echo '---
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: strimzi-kafka-operator
+  namespace: operators
+spec:
+  channel: stable
+  name: strimzi-kafka-operator
+  source: operatorhubio-catalog
+  sourceNamespace: olm
+  config:
+    env:
+    - name: "STRIMZI_FEATURE_GATES"
+      value: "+UseKRaft,+KafkaNodePools,+UnidirectionalTopicOperator"' | kubectl create -f -
+
+echo '---
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: prometheus-operator
+  namespace: operators
+spec:
+  channel: beta
+  name: prometheus
+  source: operatorhubio-catalog
+  sourceNamespace: olm' | kubectl create -f -
+```
+
+### Create Kafka Clusters and Prometheus
+
+Create a Prometheus instance and two Kafka clusters in the `myproject` namespace, `cluster-a` and `cluster-b`. The
+Kafka clusters and API will be configured by default without OAuth authentication enabled (TODO: add OAuth instructions).
 
 ```shell
 kubectl create namespace myproject
-curl -L https://github.com/strimzi/strimzi-kafka-operator/releases/download/0.36.1/strimzi-cluster-operator-0.36.1.yaml | kubectl apply -f - -n myproject
-kubectl wait deployment strimzi-cluster-operator -n myproject --for condition=Available
-sed -e 's/\${cluster_name}/cluster-a/g' -e 's/\${kube_ip}/'$(minikube ip)'/g' examples/kafka-ephemeral-ingress.yaml | kubectl apply -f - -n myproject
-sed -e 's/\${cluster_name}/cluster-b/g' -e 's/\${kube_ip}/'$(minikube ip)'/g' examples/kafka-ephemeral-ingress.yaml | kubectl apply -f - -n myproject
+
+# Prometheus and metrics configurations
+kubectl apply -n myproject -f examples/metrics
+
+# cluster-a (OAUTH listener disabled for example)
+sed -e '/OAUTH LISTENER BEGIN/,/OAUTH LISTENER END/d' \
+    -e 's/\${cluster_name}/cluster-a/g' \
+    -e 's/\${kube_ip}/'$(minikube ip)'/g' examples/kafka-ephemeral-ingress.yaml \
+  | kubectl apply -f - -n myproject
+
+# cluster-a metrics configuration
+sed -e 's/\${cluster_name}/cluster-a/g' examples/configmap-kafka-metrics.yaml \
+  | kubectl apply -f - -n myproject
+
+# cluster-b (OAUTH listener disabled for example)
+sed -e '/OAUTH LISTENER BEGIN/,/OAUTH LISTENER END/d' \
+    -e 's/\${cluster_name}/cluster-b/g' \
+    -e 's/\${kube_ip}/'$(minikube ip)'/g' examples/kafka-ephemeral-ingress.yaml \
+  | kubectl apply -f - -n myproject
+
+# cluster-b metrics configuration
+sed -e 's/\${cluster_name}/cluster-b/g' examples/configmap-kafka-metrics.yaml \
+  | kubectl apply -f - -n myproject
 ```
 
 ### Start Console API in Development Mode
 
 ```shell
-mvn quarkus:dev
+CONSOLE_METRICS_PROMETHEUS_URL=http://console-prometheus.$(minikube ip).nip.io/ mvn quarkus:dev
 ```
 
 ### Using the Instance API
