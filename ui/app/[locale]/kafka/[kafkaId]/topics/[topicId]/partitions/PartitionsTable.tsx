@@ -43,7 +43,6 @@ export function PartitionsTable({
             "id",
             "replications",
             "offsets",
-            "recordCount",
             "leaderLocalStorage",
           ] as const
         }
@@ -65,12 +64,6 @@ export function PartitionsTable({
               return (
                 <Th key={key} dataLabel={"Offsets"}>
                   Offsets (Earliest/Latest)
-                </Th>
-              );
-            case "recordCount":
-              return (
-                <Th key={key} dataLabel={"Record Count"}>
-                  Record Count
                 </Th>
               );
             case "leaderLocalStorage":
@@ -146,12 +139,6 @@ export function PartitionsTable({
                 <Td key={key} dataLabel={"Offset"}>
                   <Number value={row.offsets?.earliest?.offset} />/
                   <Number value={row.offsets?.latest?.offset} />
-                </Td>
-              );
-            case "recordCount":
-              return (
-                <Td key={key} dataLabel={"Record Count"}>
-                  <Number value={row.recordCount} />
                 </Td>
               );
             case "leaderLocalStorage":

@@ -12,9 +12,8 @@ import org.apache.kafka.common.TopicPartitionInfo;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.github.eyefloaters.console.api.support.KafkaOffsetSpec;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 @JsonInclude(value = Include.NON_NULL)
 public class PartitionInfo {
@@ -97,21 +96,6 @@ public class PartitionInfo {
             .findFirst()
             .map(ignored -> "UnderReplicated")
             .orElse("FullyReplicated");
-    }
-
-    /**
-     * Calculates the record count as the latest offset minus the earliest offset
-     * when both offsets are available only. When either the latest or the earliest
-     * offset if not present, the record count is null.
-     *
-     * @return the record count for this partition
-     */
-    public Long getRecordCount() {
-        return getOffset(KafkaOffsetSpec.LATEST)
-            .map(latestOffset -> getOffset(KafkaOffsetSpec.EARLIEST)
-                    .map(earliestOffset -> latestOffset - earliestOffset)
-                    .orElse(null))
-            .orElse(null);
     }
 
     @JsonProperty
