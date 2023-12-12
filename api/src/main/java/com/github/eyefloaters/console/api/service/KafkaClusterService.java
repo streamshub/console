@@ -174,13 +174,14 @@ public class KafkaClusterService {
 
         String namespace = cluster.getNamespace();
         String name = cluster.getName();
+        int controllerId = cluster.getController().id();
 
         try (var rangesStream = getClass().getResourceAsStream("/metrics/queries/kafkaCluster_ranges.promql");
              var valuesStream = getClass().getResourceAsStream("/metrics/queries/kafkaCluster_values.promql")) {
             String rangeQuery = new String(rangesStream.readAllBytes(), StandardCharsets.UTF_8)
                     .formatted(namespace, name);
             String valueQuery = new String(valuesStream.readAllBytes(), StandardCharsets.UTF_8)
-                    .formatted(namespace, name);
+                    .formatted(namespace, name, controllerId);
 
             var rangeResults = metricsService.queryRanges(rangeQuery).toCompletableFuture();
             var valueResults = metricsService.queryValues(valueQuery).toCompletableFuture();

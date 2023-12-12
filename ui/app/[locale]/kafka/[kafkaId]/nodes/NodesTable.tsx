@@ -6,14 +6,16 @@ import { ClipboardCopy, Label } from "@patternfly/react-core";
 import { ServerIcon } from "@patternfly/react-icons";
 import Link from "next/link";
 
-const columns = ["id", "host", "rack"] as const;
+const columns = ["id", "replicas", "rack"] as const;
 
 export function NodesTable({
   nodes,
   controller,
+  metrics,
 }: {
   nodes: KafkaNode[];
   controller: KafkaNode;
+  metrics: Record<string, any>;
 }) {
   return (
     <ResponsiveTable
@@ -29,8 +31,8 @@ export function NodesTable({
                 &nbsp; Node
               </Th>
             );
-          case "host":
-            return <Th>Host</Th>;
+          case "replicas":
+            return <Th>Total Replicas</Th>;
           case "rack":
             return <Th>Rack</Th>;
         }
@@ -50,17 +52,11 @@ export function NodesTable({
                 )}
               </Td>
             );
-          case "host":
+          case "replicas":
             return (
               <Td key={key} dataLabel={"Host"}>
-                <ClipboardCopy
-                  hoverTip="Copy"
-                  clickTip="Copied"
-                  variant="inline-compact"
-                  isBlock={true}
-                >
-                  {row.host}:{row.port}
-                </ClipboardCopy>
+                { metrics.values.replica_count
+                    .find((e: any) => parseInt(e.nodeId) == row.id)?.value ?? "-" }
               </Td>
             );
           case "rack":

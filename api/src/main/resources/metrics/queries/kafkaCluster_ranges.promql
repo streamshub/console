@@ -1,11 +1,11 @@
   sum by (nodeId, __console_metric_name__) (
     label_replace(
       label_replace(
-        rate(container_cpu_usage_seconds_total{namespace="%1$s",pod=~"%2$s-kafka-\\d+"}[1m]),
+        rate(container_cpu_usage_seconds_total{namespace="%1$s",pod=~"%2$s-.+-\\d+"}[1m]),
         "nodeId",
         "$1",
         "pod",
-        ".+-kafka-(\\d+)"
+        ".+-(\\d+)"
       ),
       "__console_metric_name__",
       "cpu_usage_seconds",
@@ -17,11 +17,11 @@ or
   sum by (nodeId, __console_metric_name__) (
     label_replace(
       label_replace(
-        container_memory_usage_bytes{namespace="%1$s",pod=~"%2$s-kafka-\\d+"},
+        container_memory_usage_bytes{namespace="%1$s",pod=~"%2$s-.+-\\d+"},
         "nodeId",
         "$1",
         "pod",
-        ".+-kafka-(\\d+)"
+        ".+-(\\d+)"
       ),
       "__console_metric_name__",
       "memory_usage_bytes",
@@ -32,7 +32,7 @@ or
 or
   sum by (__console_metric_name__) (
     label_replace(
-      irate(kafka_server_brokertopicmetrics_bytesin_total{topic!="",namespace="%1$s",pod=~"%2$s-kafka-\\d+"}[5m]),
+      irate(kafka_server_brokertopicmetrics_bytesin_total{topic!="",namespace="%1$s",pod=~"%2$s-.+-\\d+",strimzi_io_kind="Kafka"}[5m]),
       "__console_metric_name__",
       "incoming_byte_rate",
       "",
@@ -42,7 +42,7 @@ or
 or
   sum by (__console_metric_name__) (
     label_replace(
-      irate(kafka_server_brokertopicmetrics_bytesout_total{topic!="",namespace="%1$s",pod=~"%2$s-kafka-\\d+"}[5m]),
+      irate(kafka_server_brokertopicmetrics_bytesout_total{topic!="",namespace="%1$s",pod=~"%2$s-.+-\\d+",strimzi_io_kind="Kafka"}[5m]),
       "__console_metric_name__",
       "outgoing_byte_rate",
       "",
@@ -53,11 +53,11 @@ or
   sum by (nodeId, __console_metric_name__) (
     label_replace(
       label_replace(
-        kubelet_volume_stats_capacity_bytes{namespace="%1$s",persistentvolumeclaim=~"data(?:-\\d+)?-%2$s-kafka-\\d+"},
+        kubelet_volume_stats_capacity_bytes{namespace="%1$s",persistentvolumeclaim=~"data(?:-\\d+)?-%2$s-.+-\\d+"},
         "nodeId",
         "$1",
         "persistentvolumeclaim",
-        ".+-kafka-(\\d+)"
+        ".+-(\\d+)"
       ),
       "__console_metric_name__",
       "volume_stats_capacity_bytes",
@@ -69,11 +69,11 @@ or
   sum by (nodeId, __console_metric_name__) (
     label_replace(
       label_replace(
-        kubelet_volume_stats_used_bytes{namespace="%1$s",persistentvolumeclaim=~"data(?:-\\d+)?-%2$s-kafka-\\d+"},
+        kubelet_volume_stats_used_bytes{namespace="%1$s",persistentvolumeclaim=~"data(?:-\\d+)?-%2$s-.+-\\d+"},
         "nodeId",
         "$1",
         "persistentvolumeclaim",
-        ".+-kafka-(\\d+)"
+        ".+-(\\d+)"
       ),
       "__console_metric_name__",
       "volume_stats_used_bytes",
