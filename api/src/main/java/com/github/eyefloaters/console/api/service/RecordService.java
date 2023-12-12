@@ -293,15 +293,17 @@ public class RecordService {
     }
 
     Comparator<ConsumerRecord<byte[], byte[]>> buildComparator(Instant timestamp, Long offset) {
-        Comparator<ConsumerRecord<byte[], byte[]>> comparator = Comparator.comparingLong(ConsumerRecord::timestamp);
+        Comparator<ConsumerRecord<byte[], byte[]>> comparator = Comparator
+                .<ConsumerRecord<byte[], byte[]>>comparingLong(ConsumerRecord::timestamp)
+                .thenComparingInt(ConsumerRecord::partition)
+                .thenComparingLong(ConsumerRecord::offset);
 
         if (timestamp == null && offset == null) {
+            // Returning "latest" records, newest to oldest within the result set size limit
             comparator = comparator.reversed();
         }
 
-        return comparator
-                .thenComparingInt(ConsumerRecord::partition)
-                .thenComparingLong(ConsumerRecord::offset);
+        return comparator;
     }
 
     KafkaRecord getItems(ConsumerRecord<byte[], byte[]> rec, String topicId, List<String> include, Integer maxValueLength) {

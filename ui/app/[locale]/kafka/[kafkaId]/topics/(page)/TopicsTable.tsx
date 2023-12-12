@@ -23,7 +23,6 @@ export const TopicsTableColumns = [
   "name",
   "status",
   "partitions",
-  "messages",
   "consumerGroups",
   "storage",
 ] as const;
@@ -32,7 +31,7 @@ export type SortableTopicsTableColumns = Exclude<
   "consumerGroups" | "partitions"
 >;
 export type TopicsTableColumn = (typeof TopicsTableColumns)[number];
-export const SortableColumns = ["name", "messages", "storage"];
+export const SortableColumns = ["name", "storage"];
 
 export type TopicsTableProps = {
   topics: TopicList[] | undefined;
@@ -203,12 +202,6 @@ export function TopicsTable({
                 Partitions
               </Th>
             );
-          case "messages":
-            return (
-              <Th key={key} dataLabel={"Record count"}>
-                Record count
-              </Th>
-            );
           case "storage":
             return (
               <Th key={key} dataLabel={"Storage"}>
@@ -289,17 +282,6 @@ export function TopicsTable({
                   href={`${baseurl}/${row.id}/partitions`}
                 >
                   <Number value={row.attributes.numPartitions} />
-                </ButtonLink>
-              </Td>
-            );
-          case "messages":
-            return (
-              <Td key={key} dataLabel={"Record count"}>
-                <ButtonLink
-                  variant={"link"}
-                  href={`${baseurl}/${row.id}/messages`}
-                >
-                  <Number value={row.attributes.recordCount} />
                 </ButtonLink>
               </Td>
             );

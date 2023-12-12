@@ -275,24 +275,6 @@ class TopicsResourceIT {
     }
 
     @Test
-    void testListTopicsWithRecordCountIncluded() {
-        String topicName = UUID.randomUUID().toString();
-        topicUtils.createTopics(clusterId1, List.of(topicName), 2);
-        topicUtils.produceRecord(topicName, 0, null, Collections.emptyMap(), "k1", "v1");
-        topicUtils.produceRecord(topicName, 0, null, Collections.emptyMap(), "k2", "v2");
-
-        whenRequesting(req -> req
-                .queryParam("fields[topics]", "name,recordCount")
-                .get("", clusterId1))
-            .assertThat()
-            .statusCode(is(Status.OK.getStatusCode()))
-            .body("data.size()", is(1))
-            .body("data.attributes", contains(aMapWithSize(2)))
-            .body("data.attributes.name", contains(topicName))
-            .body("data.attributes.recordCount", contains(2));
-    }
-
-    @Test
     void testListTopicsWithPartitionsIncludedAndOffsetWithTimestamp() {
         String topicName = UUID.randomUUID().toString();
         topicUtils.createTopics(clusterId1, List.of(topicName), 2);

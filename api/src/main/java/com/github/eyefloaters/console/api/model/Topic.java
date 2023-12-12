@@ -42,7 +42,6 @@ public class Topic extends RelatableResource<Topic.Attributes, Topic.Relationshi
         public static final String NUM_PARTITIONS = "numPartitions";
         public static final String AUTHORIZED_OPERATIONS = "authorizedOperations";
         public static final String CONFIGS = "configs";
-        public static final String RECORD_COUNT = "recordCount";
         public static final String TOTAL_LEADER_LOG_BYTES = "totalLeaderLogBytes";
         public static final String CONSUMER_GROUPS = "consumerGroups";
         public static final String STATUS = "status";
@@ -58,7 +57,6 @@ public class Topic extends RelatableResource<Topic.Attributes, Topic.Relationshi
         static final Map<String, Map<Boolean, Comparator<Topic>>> COMPARATORS = ComparatorBuilder.bidirectional(
                 Map.of("id", ID_COMPARATOR,
                         NAME, comparing(topic -> topic.attributes.name),
-                        RECORD_COUNT, nullsLast(comparing(topic -> topic.attributes.getRecordCount())),
                         TOTAL_LEADER_LOG_BYTES, nullsLast(comparing(topic -> topic.attributes.getTotalLeaderLogBytes()))));
 
         public static final ComparatorBuilder<Topic> COMPARATOR_BUILDER =
@@ -72,7 +70,6 @@ public class Topic extends RelatableResource<Topic.Attributes, Topic.Relationshi
                 + PARTITIONS + ", "
                 + NUM_PARTITIONS + ", "
                 + AUTHORIZED_OPERATIONS + ", "
-                + RECORD_COUNT + ", "
                 + TOTAL_LEADER_LOG_BYTES;
 
         private Fields() {
@@ -192,22 +189,6 @@ public class Topic extends RelatableResource<Topic.Attributes, Topic.Relationshi
         @Schema(readOnly = true, description = "The number of partitions in this topic")
         public Integer numPartitions() {
             return partitions.getOptionalPrimary().map(Collection::size).orElse(0);
-        }
-
-        /**
-         * Calculates the record count for the entire topic as the sum
-         * of the record counts of each individual partition. When the partitions
-         * are not available, the record count is null.
-         *
-         * @return the sum of the record counts for all partitions
-         */
-        public Long getRecordCount() {
-            return partitions.getOptionalPrimary()
-                .map(Collection::stream)
-                .map(p -> p.map(PartitionInfo::getRecordCount)
-                        .filter(Objects::nonNull)
-                        .reduce(0L, Long::sum))
-                .orElse(null);
         }
 
         @Schema(readOnly = true, description = """

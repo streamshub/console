@@ -11,7 +11,6 @@ import { Suspense } from "react";
 
 const sortMap: Record<(typeof SortableColumns)[number], string> = {
   name: "name",
-  messages: "recordCount",
   partitions: "partitions",
   storage: "totalLeaderLogBytes",
 };

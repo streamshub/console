@@ -96,11 +96,6 @@ async function ConnectedTopicHeader({
             <NavList>
               <NavItemLink url={`/kafka/${kafkaId}/topics/${topicId}/messages`}>
                 Messages&nbsp;
-                <Label isCompact={true}>
-                  <Suspense fallback={<Spinner size="sm" />}>
-                    <Number value={topic.attributes.recordCount} />
-                  </Suspense>
-                </Label>
               </NavItemLink>
               <NavItemLink
                 url={`/kafka/${kafkaId}/topics/${topicId}/consumer-groups`}
