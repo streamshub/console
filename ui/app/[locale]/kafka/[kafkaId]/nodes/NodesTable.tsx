@@ -11,11 +11,11 @@ const columns = ["id", "replicas", "rack"] as const;
 export function NodesTable({
   nodes,
   controller,
-  metrics,
+  //metrics,
 }: {
   nodes: KafkaNode[];
   controller: KafkaNode;
-  metrics: Record<string, any>;
+  //metrics: Record<string, any>;
 }) {
   return (
     <ResponsiveTable
