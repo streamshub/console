@@ -1,8 +1,9 @@
 "use client";
 import {
-  ChartLinearWithOptionalLimit,
+  ChartDiskUsage,
   TimeSeriesMetrics,
-} from "@/app/[locale]/kafka/[kafkaId]/overview/ChartLinearWithOptionalLimit";
+} from "@/app/[locale]/kafka/[kafkaId]/overview/ChartDiskUsage";
+import { ChartSkeletonLoader } from "@/app/[locale]/kafka/[kafkaId]/overview/ChartSkeletonLoader";
 import {
   Card,
   CardBody,
@@ -32,22 +33,11 @@ export function ClusterChartsCard({
         <CardTitle>Available disk space</CardTitle>
       </CardHeader>
       <CardBody>
-        {isLoading && (
-          <ChartLinearWithOptionalLimit
-            metrics={{}}
-            chartName={"Available disk space"}
-            isLoading={true}
-            emptyState={<div>empty</div>}
-          />
-        )}
+        {isLoading && <ChartSkeletonLoader height={300} padding={50} />}
         {!isLoading && (
-          <ChartLinearWithOptionalLimit
-            metrics={usedDiskSpace}
-            usageLimit={availableDiskSpace}
-            chartName={"Available disk space"}
-            isLoading={false}
-            emptyState={<div>empty</div>}
-            formatValue={(v) => formatter(v)}
+          <ChartDiskUsage
+            usage={usedDiskSpace}
+            available={availableDiskSpace}
           />
         )}
       </CardBody>

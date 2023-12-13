@@ -188,7 +188,7 @@ export async function getKafkaClusterMetrics(
   async function getRange(namespace: string, name: string, metric: Range) {
     const start = new Date().getTime() - 1 * 60 * 60 * 1000;
     const end = new Date();
-    const step = 60 * 2;
+    const step = 60 * 10;
     const seriesRes = await prom.rangeQuery(
       ranges[metric](namespace, name),
       start,
