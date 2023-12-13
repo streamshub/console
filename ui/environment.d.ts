@@ -7,6 +7,7 @@ namespace NodeJS {
     KEYCLOAK_CLIENTID: string;
     KEYCLOAK_CLIENTSECRET: string;
     NEXT_PUBLIC_KEYCLOAK_URL: string;
+    CONSOLE_METRICS_PROMETHEUS_URL: string;
     LOG_LEVEL: "fatal" | "error" | "warn" | "info" | "debug" | "trace";
     CONSOLE_MODE: "read-only" | "read-write";
   }

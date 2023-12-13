@@ -15,7 +15,7 @@ export default async function NodesPage({ params }: { params: KafkaParams }) {
       <NodesTable
         nodes={cluster.attributes.nodes}
         controller={cluster.attributes.controller}
-        metrics={cluster.attributes.metrics ?? {}}
+        //metrics={cluster.attributes.metrics ?? {}}
       />
     </PageSection>
   );
