@@ -19,7 +19,6 @@ jobs:
         id: metadata
         with:
           metadata-file-path: '.github/project.yml'
-          local-file: true
 
       - name: Review Milestone
         uses: radcortez/milestone-review-action@d75da69716e15f9ea52c5b77eb8bf3cfdd8299ad
