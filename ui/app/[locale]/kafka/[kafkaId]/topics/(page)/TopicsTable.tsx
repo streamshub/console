@@ -13,6 +13,7 @@ import { useFilterParams } from "@/utils/useFilterParams";
 import { Icon, Tooltip } from "@patternfly/react-core";
 import {
   CheckCircleIcon,
+  ExclamationCircleIcon,
   ExclamationTriangleIcon,
   HelpIcon,
 } from "@patternfly/react-icons";
@@ -251,8 +252,8 @@ export function TopicsTable({
                     ),
                     "Offline": (
                       <>
-                        <Icon status={"warning"}>
-                          <ExclamationTriangleIcon />
+                        <Icon status={"danger"}>
+                          <ExclamationCircleIcon />
                         </Icon>
                         &nbsp;Offline
                       </>
