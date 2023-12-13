@@ -8,24 +8,19 @@ import {
   ChartArea,
   ChartAxis,
   ChartLegend,
-  ChartStack,
   ChartThemeColor,
-  ChartThreshold,
   ChartVoronoiContainer,
 } from "@/libs/patternfly/react-charts";
-import { chart_color_orange_300 } from "@/libs/patternfly/react-tokens";
-import { useFormatBytes } from "@/utils/format";
+import { ChartStack } from "@patternfly/react-charts";
 import { useFormatter } from "next-intl";
 import { useChartWidth } from "./useChartWidth";
 
-type ChartDiskUsageProps = {
+type ChartCpuUsageProps = {
   usages: TimeSeriesMetrics[];
-  available: TimeSeriesMetrics[];
 };
 
-export function ChartDiskUsage({ usages, available }: ChartDiskUsageProps) {
+export function ChartCpuUsage({ usages }: ChartCpuUsageProps) {
   const format = useFormatter();
-  const formatBytes = useFormatBytes();
   const [containerRef, width] = useChartWidth();
 
   const itemsPerRow = 4;
@@ -34,14 +29,17 @@ export function ChartDiskUsage({ usages, available }: ChartDiskUsageProps) {
   if (!hasMetrics) {
     return <div>TODO</div>;
   }
+  // const showDate = shouldShowDate(duration);
 
   return (
     <div ref={containerRef}>
       <Chart
-        ariaTitle={"Available disk space"}
+        ariaTitle={"Cpu usage"}
         containerComponent={
           <ChartVoronoiContainer
-            labels={({ datum }) => `${datum.name}: ${formatBytes(datum.y)}`}
+            labels={({ datum }) =>
+              `${datum.name}: ${format.number(datum.y * 1000)}m`
+            }
             constrainToVisibleArea
           />
         }
@@ -49,13 +47,7 @@ export function ChartDiskUsage({ usages, available }: ChartDiskUsageProps) {
         legendComponent={
           <ChartLegend
             orientation={"horizontal"}
-            data={[
-              ...usages.map((_, idx) => ({ name: `Node ${idx}` })),
-              {
-                name: "Available storage threshold",
-                symbol: { fill: chart_color_orange_300.var, type: "threshold" },
-              },
-            ]}
+            data={usages.map((_, idx) => ({ name: `Node ${idx}` }))}
             itemsPerRow={itemsPerRow}
           />
         }
@@ -82,7 +74,7 @@ export function ChartDiskUsage({ usages, available }: ChartDiskUsageProps) {
           dependentAxis
           showGrid={true}
           tickFormat={(d) => {
-            return formatBytes(d, { maximumFractionDigits: 0 });
+            return format.number(d * 1000) + "m";
           }}
         />
         <ChartStack>
@@ -90,7 +82,7 @@ export function ChartDiskUsage({ usages, available }: ChartDiskUsageProps) {
             const usageArray = Object.entries(usage);
             return (
               <ChartArea
-                key={`usage-area-${idx}`}
+                key={`cpu-usage-${idx}}`}
                 data={usageArray.map(([x, y]) => ({
                   name: `Node ${idx + 1}`,
                   x,
@@ -100,25 +92,6 @@ export function ChartDiskUsage({ usages, available }: ChartDiskUsageProps) {
             );
           })}
         </ChartStack>
-        {usages.map((usage, idx) => {
-          const usageArray = Object.entries(usage);
-          const data = Object.entries(available[idx]);
-          return (
-            <ChartThreshold
-              key={`chart-softlimit-${idx}}`}
-              data={data.map(([_, y], x) => ({
-                name: `Node ${idx + 1}`,
-                x: usageArray[x][0],
-                y,
-              }))}
-              style={{
-                data: {
-                  stroke: chart_color_orange_300.var,
-                },
-              }}
-            />
-          );
-        })}
       </Chart>
     </div>
   );

@@ -66,5 +66,8 @@ export const ClusterKpisSchema = z.object({
 });
 export type ClusterKpis = z.infer<typeof ClusterKpisSchema>;
 
-export const ClusterMetricRangeSchema = z.record(z.number());
+export const ClusterMetricRangeSchema = z.record(
+  z.string(),
+  z.record(z.number()),
+);
 export type ClusterMetricRange = z.infer<typeof ClusterMetricRangeSchema>;

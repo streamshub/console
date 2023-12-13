@@ -185,7 +185,11 @@ export async function getKafkaClusterMetrics(
   cluster: ClusterDetail;
   ranges: Record<Range, ClusterMetricRange>;
 } | null> {
-  async function getRange(namespace: string, name: string, metric: Range) {
+  async function getRangeByNodeId(
+    namespace: string,
+    name: string,
+    metric: Range,
+  ) {
     const start = new Date().getTime() - 1 * 60 * 60 * 1000;
     const end = new Date();
     const step = 60 * 10;
@@ -195,12 +199,16 @@ export async function getKafkaClusterMetrics(
       end,
       step,
     );
-    const range = Object.fromEntries(
-      seriesRes.result.flatMap((serie) =>
-        serie.values.map((v: any) => [new Date(v.time).getTime(), v.value]),
-      ),
+    const serieByNode = Object.fromEntries(
+      seriesRes.result.map((serie) => [
+        serie.metric.labels.nodeId,
+        Object.fromEntries(
+          serie.values.map((v: any) => [new Date(v.time).getTime(), v.value]),
+        ),
+      ]),
     );
-    return [metric, ClusterMetricRangeSchema.parse(range)];
+    log.debug(serieByNode);
+    return [metric, ClusterMetricRangeSchema.parse(serieByNode)];
   }
 
   try {
@@ -212,7 +220,11 @@ export async function getKafkaClusterMetrics(
     const rangesRes = Object.fromEntries(
       await Promise.all(
         metrics.map((m) =>
-          getRange(cluster.attributes.namespace, cluster.attributes.name, m),
+          getRangeByNodeId(
+            cluster.attributes.namespace,
+            cluster.attributes.name,
+            m,
+          ),
         ),
       ),
     );

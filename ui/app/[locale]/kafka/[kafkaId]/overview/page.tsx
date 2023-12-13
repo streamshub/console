@@ -19,6 +19,8 @@ export default function OverviewPage({ params }: { params: KafkaParams }) {
   const range = getKafkaClusterMetrics(params.kafkaId, [
     "volumeUsed",
     "volumeCapacity",
+    "memory",
+    "cpu",
   ]);
   return (
     <PageLayout
@@ -63,11 +65,15 @@ async function ConnectedClusterChartsCard({
 }) {
   const res = await data;
   return (
-    <ClusterChartsCard
-      isLoading={false}
-      usedDiskSpace={res?.ranges["volumeUsed"] || {}}
-      availableDiskSpace={res?.ranges["volumeCapacity"] || {}}
-    />
+    <>
+      <ClusterChartsCard
+        isLoading={false}
+        usedDiskSpace={Object.values(res?.ranges["volumeUsed"] || {})}
+        availableDiskSpace={Object.values(res?.ranges["volumeCapacity"] || {})}
+        memoryUsage={Object.values(res?.ranges["memory"] || {})}
+        cpuUsage={Object.values(res?.ranges["cpu"] || {})}
+      />
+    </>
   );
 }
 

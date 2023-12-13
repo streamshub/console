@@ -1,5 +1,6 @@
 // Use type safe message keys with `next-intl`
 type Messages = typeof import("./messages/en.json");
+
 declare interface IntlMessages extends Messages {}
 
 type TYear = `${number}${number}${number}${number}`;
@@ -28,3 +29,4 @@ type TDateISOTime = `${THours}:${TMinutes}:${TSeconds}.${TMilliseconds}`;
  *   "Expression produces a union type that is too complex to represent. ts(2590)"
  */
 declare type DateIsoString = `${TDateISODate}T${TDateISOTime}Z`;
+declare type TimeSeriesMetrics = { [timestamp: string]: number };
