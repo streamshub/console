@@ -26,7 +26,6 @@ jobs:
         with:
           github-token: ${{secrets.GITHUB_TOKEN}}
           metadata-file-path: '.github/project.yml'
-          local-file: true
 
       - name: Setup JDK
         uses: actions/setup-java@v4
