@@ -1,17 +1,18 @@
 "use client";
 import {
-  height,
-  padding,
+  getHeight,
+  getPadding,
 } from "@/app/[locale]/kafka/[kafkaId]/overview/chartConsts";
 import {
   Chart,
   ChartArea,
   ChartAxis,
   ChartLegend,
+  ChartLegendTooltip,
+  ChartStack,
   ChartThemeColor,
-  ChartVoronoiContainer,
+  createContainer,
 } from "@/libs/patternfly/react-charts";
-import { ChartStack } from "@patternfly/react-charts";
 import { useFormatter } from "next-intl";
 import { useChartWidth } from "./useChartWidth";
 
@@ -19,26 +20,52 @@ type ChartCpuUsageProps = {
   usages: TimeSeriesMetrics[];
 };
 
+type Datum = {
+  x: number;
+  y: number;
+  name: string;
+};
+
 export function ChartCpuUsage({ usages }: ChartCpuUsageProps) {
   const format = useFormatter();
   const [containerRef, width] = useChartWidth();
 
-  const itemsPerRow = 4;
+  const itemsPerRow = width > 650 ? 6 : width > 300 ? 3 : 1;
 
   const hasMetrics = Object.keys(usages).length > 0;
   if (!hasMetrics) {
     return <div>TODO</div>;
   }
   // const showDate = shouldShowDate(duration);
-
+  const CursorVoronoiContainer = createContainer("voronoi", "cursor");
+  const legendData = usages.map((_, idx) => ({
+    name: `Node ${idx}`,
+    childName: `node ${idx}`,
+  }));
+  const padding = getPadding(legendData.length / itemsPerRow);
   return (
     <div ref={containerRef}>
       <Chart
         ariaTitle={"Cpu usage"}
         containerComponent={
-          <ChartVoronoiContainer
-            labels={({ datum }) =>
-              `${datum.name}: ${format.number(datum.y * 1000)}m`
+          <CursorVoronoiContainer
+            cursorDimension="x"
+            voronoiDimension="x"
+            mouseFollowTooltips
+            labelComponent={
+              <ChartLegendTooltip
+                legendData={legendData}
+                title={(datum: Datum) =>
+                  format.dateTime(datum.x, {
+                    timeZone: "UTC",
+                    timeStyle: "medium",
+                    dateStyle: "short",
+                  })
+                }
+              />
+            }
+            labels={({ datum }: { datum: Datum }) =>
+              datum.y !== null ? `${format.number(datum.y * 1000)}m` : "no data"
             }
             constrainToVisibleArea
           />
@@ -47,11 +74,11 @@ export function ChartCpuUsage({ usages }: ChartCpuUsageProps) {
         legendComponent={
           <ChartLegend
             orientation={"horizontal"}
-            data={usages.map((_, idx) => ({ name: `Node ${idx}` }))}
+            data={legendData}
             itemsPerRow={itemsPerRow}
           />
         }
-        height={height}
+        height={getHeight(legendData.length / itemsPerRow)}
         padding={padding}
         themeColor={ChartThemeColor.multiUnordered}
         width={width}
@@ -60,15 +87,16 @@ export function ChartCpuUsage({ usages }: ChartCpuUsageProps) {
         <ChartAxis
           scale={"time"}
           tickFormat={(d) => {
-            const [_, time] = format
+            const [_, ...time] = format
               .dateTime(d, {
                 dateStyle: "short",
                 timeStyle: "short",
                 timeZone: "UTC",
               })
               .split(" ");
-            return time;
+            return time.join(" ");
           }}
+          tickCount={5}
         />
         <ChartAxis
           dependentAxis
@@ -88,6 +116,7 @@ export function ChartCpuUsage({ usages }: ChartCpuUsageProps) {
                   x,
                   y,
                 }))}
+                name={`node ${idx}`}
               />
             );
           })}

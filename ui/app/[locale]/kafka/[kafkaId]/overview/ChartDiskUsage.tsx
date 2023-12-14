@@ -1,7 +1,7 @@
 "use client";
 import {
-  height,
-  padding,
+  getHeight,
+  getPadding,
 } from "@/app/[locale]/kafka/[kafkaId]/overview/chartConsts";
 import {
   Chart,
@@ -11,10 +11,10 @@ import {
   ChartStack,
   ChartThemeColor,
   ChartThreshold,
-  ChartVoronoiContainer,
+  createContainer,
 } from "@/libs/patternfly/react-charts";
-import { chart_color_orange_300 } from "@/libs/patternfly/react-tokens";
 import { useFormatBytes } from "@/utils/format";
+import { ChartLegendTooltip } from "@patternfly/react-charts";
 import { useFormatter } from "next-intl";
 import { useChartWidth } from "./useChartWidth";
 
@@ -22,26 +22,60 @@ type ChartDiskUsageProps = {
   usages: TimeSeriesMetrics[];
   available: TimeSeriesMetrics[];
 };
+type Datum = {
+  x: number;
+  y: number;
+  name: string;
+};
 
 export function ChartDiskUsage({ usages, available }: ChartDiskUsageProps) {
   const format = useFormatter();
   const formatBytes = useFormatBytes();
   const [containerRef, width] = useChartWidth();
 
-  const itemsPerRow = 4;
+  const itemsPerRow = width > 650 ? 2 : 1;
 
   const hasMetrics = Object.keys(usages).length > 0;
   if (!hasMetrics) {
     return <div>TODO</div>;
   }
-
+  const CursorVoronoiContainer = createContainer("voronoi", "cursor");
+  const legendData = [
+    ...usages.map((_, idx) => ({
+      name: `Node ${idx}`,
+      childName: `node ${idx}`,
+    })),
+    ...usages.map((_, idx) => ({
+      name: `Available storage threshold (node ${idx + 1})`,
+      childName: `threshold ${idx}`,
+      symbol: { type: "threshold" },
+    })),
+  ];
+  const padding = getPadding(legendData.length / itemsPerRow);
   return (
     <div ref={containerRef}>
       <Chart
         ariaTitle={"Available disk space"}
         containerComponent={
-          <ChartVoronoiContainer
-            labels={({ datum }) => `${datum.name}: ${formatBytes(datum.y)}`}
+          <CursorVoronoiContainer
+            cursorDimension="x"
+            voronoiDimension="x"
+            mouseFollowTooltips
+            labelComponent={
+              <ChartLegendTooltip
+                legendData={legendData}
+                title={(datum: Datum) =>
+                  format.dateTime(datum.x, {
+                    timeZone: "UTC",
+                    timeStyle: "medium",
+                    dateStyle: "short",
+                  })
+                }
+              />
+            }
+            labels={({ datum }: { datum: Datum }) =>
+              datum.y !== null ? formatBytes(datum.y) : "no data"
+            }
             constrainToVisibleArea
           />
         }
@@ -49,17 +83,11 @@ export function ChartDiskUsage({ usages, available }: ChartDiskUsageProps) {
         legendComponent={
           <ChartLegend
             orientation={"horizontal"}
-            data={[
-              ...usages.map((_, idx) => ({ name: `Node ${idx}` })),
-              {
-                name: "Available storage threshold",
-                symbol: { fill: chart_color_orange_300.var, type: "threshold" },
-              },
-            ]}
+            data={legendData}
             itemsPerRow={itemsPerRow}
           />
         }
-        height={height}
+        height={getHeight(legendData.length / itemsPerRow)}
         padding={padding}
         themeColor={ChartThemeColor.multiUnordered}
         width={width}
@@ -68,15 +96,16 @@ export function ChartDiskUsage({ usages, available }: ChartDiskUsageProps) {
         <ChartAxis
           scale={"time"}
           tickFormat={(d) => {
-            const [_, time] = format
+            const [_, ...time] = format
               .dateTime(d, {
                 dateStyle: "short",
                 timeStyle: "short",
                 timeZone: "UTC",
               })
               .split(" ");
-            return time;
+            return time.join(" ");
           }}
+          tickCount={5}
         />
         <ChartAxis
           dependentAxis
@@ -96,6 +125,7 @@ export function ChartDiskUsage({ usages, available }: ChartDiskUsageProps) {
                   x,
                   y,
                 }))}
+                name={`node ${idx}`}
               />
             );
           })}
@@ -107,15 +137,11 @@ export function ChartDiskUsage({ usages, available }: ChartDiskUsageProps) {
             <ChartThreshold
               key={`chart-softlimit-${idx}}`}
               data={data.map(([_, y], x) => ({
-                name: `Node ${idx + 1}`,
+                name: `Available storage threshold (node ${idx + 1})`,
                 x: usageArray[x][0],
                 y,
               }))}
-              style={{
-                data: {
-                  stroke: chart_color_orange_300.var,
-                },
-              }}
+              name={`threshold ${idx}`}
             />
           );
         })}
