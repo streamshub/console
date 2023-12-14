@@ -1,32 +1,36 @@
 import {
+  ClusterMetric,
   getKafkaClusterKpis,
   getKafkaClusterMetrics,
-  Range,
+  getKafkaTopicMetrics,
+  TopicMetric,
 } from "@/api/kafka/actions";
-import {
-  ClusterDetail,
-  ClusterKpis,
-  ClusterMetricRange,
-} from "@/api/kafka/schema";
+import { ClusterDetail, ClusterKpis, MetricRange } from "@/api/kafka/schema";
 import { KafkaParams } from "@/app/[locale]/kafka/[kafkaId]/kafka.params";
 import { ClusterCard } from "@/app/[locale]/kafka/[kafkaId]/overview/ClusterCard";
 import { ClusterChartsCard } from "@/app/[locale]/kafka/[kafkaId]/overview/ClusterChartsCard";
 import { PageLayout } from "@/app/[locale]/kafka/[kafkaId]/overview/PageLayout";
+import { TopicChartsCard } from "@/app/[locale]/kafka/[kafkaId]/overview/TopicChartsCard";
 import { TopicsPartitionsCard } from "@/app/[locale]/kafka/[kafkaId]/overview/TopicsPartitionsCard";
 
 export default function OverviewPage({ params }: { params: KafkaParams }) {
   const kpi = getKafkaClusterKpis(params.kafkaId);
-  const range = getKafkaClusterMetrics(params.kafkaId, [
+  const cluster = getKafkaClusterMetrics(params.kafkaId, [
     "volumeUsed",
     "volumeCapacity",
     "memory",
     "cpu",
   ]);
+  const topic = getKafkaTopicMetrics(params.kafkaId, [
+    "outgoingByteRate",
+    "incomingByteRate",
+  ]);
   return (
     <PageLayout
       clusterOverview={<ConnectedClusterCard data={kpi} />}
       topicsPartitions={<ConnectedTopicsPartitionsCard data={kpi} />}
-      clusterCharts={<ConnectedClusterChartsCard data={range} />}
+      clusterCharts={<ConnectedClusterChartsCard data={cluster} />}
+      topicCharts={<ConnectedTopicChartsCard data={topic} />}
     />
   );
 }
@@ -55,28 +59,6 @@ async function ConnectedClusterCard({
   );
 }
 
-async function ConnectedClusterChartsCard({
-  data,
-}: {
-  data: Promise<{
-    cluster: ClusterDetail;
-    ranges: Record<Range, ClusterMetricRange>;
-  } | null>;
-}) {
-  const res = await data;
-  return (
-    <>
-      <ClusterChartsCard
-        isLoading={false}
-        usedDiskSpace={Object.values(res?.ranges["volumeUsed"] || {})}
-        availableDiskSpace={Object.values(res?.ranges["volumeCapacity"] || {})}
-        memoryUsage={Object.values(res?.ranges["memory"] || {})}
-        cpuUsage={Object.values(res?.ranges["cpu"] || {})}
-      />
-    </>
-  );
-}
-
 async function ConnectedTopicsPartitionsCard({
   data,
 }: {
@@ -93,5 +75,47 @@ async function ConnectedTopicsPartitionsCard({
       topicsTotal={topicsTotal}
       topicsUnderReplicated={topicsUnderreplicated}
     />
+  );
+}
+
+async function ConnectedClusterChartsCard({
+  data,
+}: {
+  data: Promise<{
+    cluster: ClusterDetail;
+    ranges: Record<ClusterMetric, MetricRange>;
+  } | null>;
+}) {
+  const res = await data;
+  return (
+    <>
+      <ClusterChartsCard
+        isLoading={false}
+        usedDiskSpace={Object.values(res?.ranges["volumeUsed"] || {})}
+        availableDiskSpace={Object.values(res?.ranges["volumeCapacity"] || {})}
+        memoryUsage={Object.values(res?.ranges["memory"] || {})}
+        cpuUsage={Object.values(res?.ranges["cpu"] || {})}
+      />
+    </>
+  );
+}
+
+async function ConnectedTopicChartsCard({
+  data,
+}: {
+  data: Promise<{
+    cluster: ClusterDetail;
+    ranges: Record<TopicMetric, MetricRange>;
+  } | null>;
+}) {
+  const res = await data;
+  return (
+    <>
+      <TopicChartsCard
+        isLoading={false}
+        incoming={res?.ranges["incomingByteRate"] || {}}
+        outgoing={res?.ranges["outgoingByteRate"] || {}}
+      />
+    </>
   );
 }

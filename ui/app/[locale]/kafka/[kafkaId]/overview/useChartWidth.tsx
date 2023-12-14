@@ -16,5 +16,23 @@ export function useChartWidth(): [RefObject<HTMLDivElement>, number] {
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
+
+  const requestRef = useRef<number>();
+
+  const checkSize = () => {
+    // The 'state' will always be the initial value here
+    requestRef.current = requestAnimationFrame(checkSize);
+    handleResize();
+  };
+
+  useEffect(() => {
+    requestRef.current = requestAnimationFrame(checkSize);
+    return () => {
+      if (requestRef.current) {
+        cancelAnimationFrame(requestRef.current);
+      }
+    };
+  }, []); // Make sure the effect runs only once
+
   return [containerRef, width];
 }

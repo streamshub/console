@@ -5,50 +5,62 @@ import {
 } from "@/app/[locale]/kafka/[kafkaId]/overview/chartConsts";
 import {
   Chart,
-  ChartArea,
   ChartAxis,
+  ChartGroup,
   ChartLegend,
   ChartLegendTooltip,
-  ChartStack,
   ChartThemeColor,
   createContainer,
 } from "@/libs/patternfly/react-charts";
 import { useFormatBytes } from "@/utils/format";
+import { ChartArea } from "@patternfly/react-charts";
 import { useFormatter } from "next-intl";
 import { useChartWidth } from "./useChartWidth";
 
-type ChartDiskUsageProps = {
-  usages: TimeSeriesMetrics[];
+type ChartIncomingOutgoingProps = {
+  incoming: Record<string, TimeSeriesMetrics>;
+  outgoing: Record<string, TimeSeriesMetrics>;
 };
 
 type Datum = {
   x: number;
   y: number;
+  value: number;
   name: string;
 };
 
-export function ChartMemoryUsage({ usages }: ChartDiskUsageProps) {
-  const format = useFormatter();
+export function ChartIncomingOutgoing({
+  incoming,
+  outgoing,
+}: ChartIncomingOutgoingProps) {
   const formatBytes = useFormatBytes();
+  const format = useFormatter();
   const [containerRef, width] = useChartWidth();
 
-  const itemsPerRow = width > 650 ? 6 : width > 300 ? 3 : 1;
+  const itemsPerRow = width > 500 ? 2 : 1;
 
-  const hasMetrics = Object.keys(usages).length > 0;
+  const hasMetrics =
+    Object.keys(incoming).length > 0 && Object.keys(outgoing).length > 0;
   if (!hasMetrics) {
     return <div>TODO</div>;
   }
-
+  // const showDate = shouldShowDate(duration);
   const CursorVoronoiContainer = createContainer("voronoi", "cursor");
-  const legendData = usages.map((_, idx) => ({
-    name: `Node ${idx}`,
-    childName: `node ${idx}`,
-  }));
+  const legendData = [
+    ...Object.keys(incoming).map((name) => ({
+      name: `Incoming bytes (${name})`,
+      childName: `incoming ${name}`,
+    })),
+    ...Object.keys(outgoing).map((name) => ({
+      name: `Outgoing bytes (${name})`,
+      childName: `outgoing ${name}`,
+    })),
+  ];
   const padding = getPadding(legendData.length / itemsPerRow);
   return (
     <div ref={containerRef}>
       <Chart
-        ariaTitle={"Memory usage"}
+        ariaTitle={"Topics bytes incoming and outgoing"}
         containerComponent={
           <CursorVoronoiContainer
             cursorDimension="x"
@@ -66,9 +78,11 @@ export function ChartMemoryUsage({ usages }: ChartDiskUsageProps) {
                 }
               />
             }
-            labels={({ datum }: { datum: Datum }) =>
-              datum.y !== null ? formatBytes(datum.y) : "no data"
-            }
+            labels={({ datum }: { datum: Datum }) => {
+              return datum.value !== null
+                ? formatBytes(datum.value)
+                : "no data";
+            }}
             constrainToVisibleArea
           />
         }
@@ -98,31 +112,51 @@ export function ChartMemoryUsage({ usages }: ChartDiskUsageProps) {
               .split(" ");
             return time.join(" ");
           }}
-          tickCount={5}
+          tickCount={4}
+          orientation={"bottom"}
+          offsetY={padding.bottom}
         />
         <ChartAxis
           dependentAxis
-          showGrid={true}
           tickFormat={(d) => {
-            return formatBytes(d, { maximumFractionDigits: 0 });
+            return formatBytes(Math.abs(d), { maximumFractionDigits: 0 });
           }}
         />
-        <ChartStack>
-          {usages.map((usage, idx) => {
-            const usageArray = Object.entries(usage);
+        <ChartGroup>
+          {Object.entries(incoming).map(([name, entries], idx) => {
+            const entriesArray = Object.entries(entries);
             return (
               <ChartArea
-                key={`memory-usage-${idx}`}
-                data={usageArray.map(([x, y]) => ({
-                  name: `Node ${idx + 1}`,
+                key={`incoming-line-${name}}`}
+                data={entriesArray.map(([x, y]) => ({
+                  name: `Incoming (${name})`,
                   x,
                   y,
+                  value: y,
                 }))}
-                name={`node ${idx}`}
+                name={`incoming ${name}`}
+                interpolation={"stepAfter"}
               />
             );
           })}
-        </ChartStack>
+          {Object.entries(outgoing).map(([name, entries], idx) => {
+            const entriesArray = Object.entries(entries);
+            const incomingArray = Object.keys(incoming[name]);
+            return (
+              <ChartArea
+                key={`outgoing-line-${name}}`}
+                data={entriesArray.map(([x, y], idx) => ({
+                  name: `Outgoing (${name})`,
+                  x: incomingArray[idx],
+                  y: -1 * y,
+                  value: y,
+                }))}
+                name={`outgoing ${name}`}
+                interpolation={"stepAfter"}
+              />
+            );
+          })}
+        </ChartGroup>
       </Chart>
     </div>
   );

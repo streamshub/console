@@ -1,10 +1,12 @@
 import {
-  height,
-  padding,
+  getHeight,
+  getPadding,
 } from "@/app/[locale]/kafka/[kafkaId]/overview/chartConsts";
 import { Flex, FlexItem, Skeleton } from "@/libs/patternfly/react-core";
 
 export function ChartSkeletonLoader() {
+  const height = getHeight(0);
+  const padding = getPadding(0);
   return (
     <Flex direction={{ default: "column" }} data-chromatic="ignore">
       <FlexItem>

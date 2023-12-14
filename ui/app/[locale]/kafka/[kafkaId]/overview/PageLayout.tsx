@@ -1,5 +1,6 @@
 import { ClusterCard } from "@/app/[locale]/kafka/[kafkaId]/overview/ClusterCard";
 import { ClusterChartsCard } from "@/app/[locale]/kafka/[kafkaId]/overview/ClusterChartsCard";
+import { TopicChartsCard } from "@/app/[locale]/kafka/[kafkaId]/overview/TopicChartsCard";
 import { TopicsPartitionsCard } from "@/app/[locale]/kafka/[kafkaId]/overview/TopicsPartitionsCard";
 import {
   Flex,
@@ -14,10 +15,12 @@ export function PageLayout({
   clusterOverview,
   clusterCharts,
   topicsPartitions,
+  topicCharts,
 }: {
   clusterOverview: ReactNode;
-  clusterCharts: ReactNode;
   topicsPartitions: ReactNode;
+  clusterCharts: ReactNode;
+  topicCharts: ReactNode;
 }) {
   return (
     <PageSection isFilled>
@@ -37,9 +40,18 @@ export function PageLayout({
           </Flex>
         </GridItem>
         <GridItem md={5}>
-          <Suspense fallback={<TopicsPartitionsCard isLoading={true} />}>
-            {topicsPartitions}
-          </Suspense>
+          <Flex direction={{ default: "column" }}>
+            <FlexItem>
+              <Suspense fallback={<TopicsPartitionsCard isLoading={true} />}>
+                {topicsPartitions}
+              </Suspense>
+            </FlexItem>
+            <FlexItem>
+              <Suspense fallback={<TopicChartsCard isLoading={true} />}>
+                {topicCharts}
+              </Suspense>
+            </FlexItem>
+          </Flex>
         </GridItem>
       </Grid>
     </PageSection>

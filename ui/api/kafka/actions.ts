@@ -5,18 +5,20 @@ import {
   ClusterKpis,
   ClusterKpisSchema,
   ClusterList,
-  ClusterMetricRange,
-  ClusterMetricRangeSchema,
   ClusterResponse,
   ClustersResponseSchema,
+  MetricRange,
+  MetricRangeSchema,
 } from "@/api/kafka/schema";
 import { logger } from "@/utils/logger";
 import groupBy from "lodash.groupby";
 import { PrometheusDriver } from "prometheus-query";
-import * as ranges from "./ranges.promql";
-import { values } from "./values.promql";
+import * as cluster from "./cluster.promql";
+import { values } from "./kpi.promql";
+import * as topic from "./topic.promql";
 
-export type Range = keyof typeof ranges;
+export type ClusterMetric = keyof typeof cluster;
+export type TopicMetric = keyof typeof topic;
 
 const prom = new PrometheusDriver({
   endpoint: process.env.CONSOLE_METRICS_PROMETHEUS_URL,
@@ -180,21 +182,21 @@ export async function getKafkaClusterKpis(
 
 export async function getKafkaClusterMetrics(
   clusterId: string,
-  metrics: Array<Range>,
+  metrics: Array<ClusterMetric>,
 ): Promise<{
   cluster: ClusterDetail;
-  ranges: Record<Range, ClusterMetricRange>;
+  ranges: Record<ClusterMetric, MetricRange>;
 } | null> {
   async function getRangeByNodeId(
     namespace: string,
     name: string,
-    metric: Range,
+    metric: ClusterMetric,
   ) {
     const start = new Date().getTime() - 1 * 60 * 60 * 1000;
     const end = new Date();
-    const step = 60 * 10;
+    const step = 60 * 1;
     const seriesRes = await prom.rangeQuery(
-      ranges[metric](namespace, name),
+      cluster[metric](namespace, name),
       start,
       end,
       step,
@@ -207,8 +209,7 @@ export async function getKafkaClusterMetrics(
         ),
       ]),
     );
-    log.debug(serieByNode);
-    return [metric, ClusterMetricRangeSchema.parse(serieByNode)];
+    return [metric, MetricRangeSchema.parse(serieByNode)];
   }
 
   try {
@@ -238,6 +239,69 @@ export async function getKafkaClusterMetrics(
     };
   } catch (err) {
     log.error({ err, clusterId, metric: metrics }, "getKafkaClusterMetric");
+    return null;
+  }
+}
+
+export async function getKafkaTopicMetrics(
+  clusterId: string,
+  metrics: Array<TopicMetric>,
+): Promise<{
+  cluster: ClusterDetail;
+  ranges: Record<TopicMetric, MetricRange>;
+} | null> {
+  async function getRangeByNodeId(
+    namespace: string,
+    name: string,
+    metric: TopicMetric,
+  ) {
+    const start = new Date().getTime() - 1 * 60 * 60 * 1000;
+    const end = new Date();
+    const step = 60 * 1;
+    const seriesRes = await prom.rangeQuery(
+      topic[metric](namespace, name),
+      start,
+      end,
+      step,
+    );
+    const serieByNode = Object.fromEntries(
+      seriesRes.result.map((serie) => [
+        "all topics",
+        Object.fromEntries(
+          serie.values.map((v: any) => [new Date(v.time).getTime(), v.value]),
+        ),
+      ]),
+    );
+    return [metric, MetricRangeSchema.parse(serieByNode)];
+  }
+
+  try {
+    const cluster = await getKafkaCluster(clusterId);
+    if (!cluster) {
+      return null;
+    }
+
+    const rangesRes = Object.fromEntries(
+      await Promise.all(
+        metrics.map((m) =>
+          getRangeByNodeId(
+            cluster.attributes.namespace,
+            cluster.attributes.name,
+            m,
+          ),
+        ),
+      ),
+    );
+    log.debug(
+      { ranges: rangesRes, clusterId, metric: metrics },
+      "getKafkaTopicMetrics",
+    );
+    return {
+      cluster,
+      ranges: rangesRes,
+    };
+  } catch (err) {
+    log.error({ err, clusterId, metric: metrics }, "getKafkaTopicMetrics");
     return null;
   }
 }
