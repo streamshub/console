@@ -39,7 +39,7 @@ export function KafkaSwitcher<T extends string>({
       onClick={() => {
         setIsOpen(false);
       }}
-      description={b.attributes.bootstrapServers}
+      description={`Namespace: ${b.attributes.namespace}`}
     >
       {b.attributes.name}
     </DropdownItem>

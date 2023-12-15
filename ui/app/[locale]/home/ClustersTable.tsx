@@ -1,8 +1,9 @@
 "use client";
 
 import { ClusterDetail } from "@/api/kafka/schema";
+
+import { useOpenClusterConnectionPanel } from "@/app/[locale]/ClusterDrawerContext";
 import { Number } from "@/components/Number";
-import { useHelp } from "@/components/Quickstarts/HelpContainer";
 import { ResponsiveTable } from "@/components/table";
 import { Truncate } from "@/libs/patternfly/react-core";
 import { CopyIcon, IntegrationIcon } from "@/libs/patternfly/react-icons";
@@ -16,7 +17,7 @@ export function ClustersTable({
 }: {
   clusters: ClusterDetail[] | undefined;
 }) {
-  const openHelp = useHelp();
+  const open = useOpenClusterConnectionPanel();
   return (
     <ResponsiveTable
       ariaLabel={"Kafka clusters"}
@@ -77,7 +78,7 @@ export function ClustersTable({
             {
               title: "Connect to this cluster",
               onClick: () => {
-                openHelp("connect-to-cluster");
+                open(row.id);
               },
               icon: <IntegrationIcon />,
             },

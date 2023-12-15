@@ -43,7 +43,7 @@ export async function getKafkaClusters(): Promise<ClusterList[]> {
 export async function getKafkaCluster(
   clusterId: string,
 ): Promise<ClusterDetail | null> {
-  const url = `${process.env.BACKEND_URL}/api/kafkas/${clusterId}/?fields%5Bkafkas%5D=name,namespace,creationTimestamp,status,kafkaVersion,nodes,controller,authorizedOperations,bootstrapServers,authType`;
+  const url = `${process.env.BACKEND_URL}/api/kafkas/${clusterId}/?fields%5Bkafkas%5D=name,namespace,creationTimestamp,status,kafkaVersion,nodes,controller,authorizedOperations,bootstrapServers,listeners,authType`;
   try {
     const res = await fetch(url, {
       headers: await getHeaders(),

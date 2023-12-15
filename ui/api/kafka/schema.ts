@@ -34,15 +34,13 @@ const ClusterDetailSchema = z.object({
     authorizedOperations: z.array(z.string()),
     bootstrapServers: z.string(),
     authType: z.string().optional().nullable(),
-    listeners: z
-      .array(
-        z.object({
-          type: z.string(),
-          bootstrapServers: z.string().nullable(),
-          authType: z.string().nullable(),
-        }),
-      )
-      .optional() /* remove .optional() when `listeners` is added to the fetched fields */,
+    listeners: z.array(
+      z.object({
+        type: z.string(),
+        bootstrapServers: z.string().nullable(),
+        authType: z.string().nullable(),
+      }),
+    ),
   }),
 });
 export const ClusterResponse = z.object({

@@ -1,12 +1,17 @@
 import { ConnectButton } from "@/app/[locale]/kafka/[kafkaId]/@header/overview/ConnectButton";
+import { KafkaParams } from "@/app/[locale]/kafka/[kafkaId]/kafka.params";
 import { AppHeader } from "@/components/AppHeader";
 
-export default function OverviewHeader() {
+export default function OverviewHeader({
+  params: { kafkaId },
+}: {
+  params: KafkaParams;
+}) {
   return (
     <AppHeader
       title={"Cluster overview"}
       subTitle={"lorem dolor ipsum"}
-      actions={[<ConnectButton key={"cd"} />]}
+      actions={[<ConnectButton key={"cd"} clusterId={kafkaId} />]}
     />
   );
 }
