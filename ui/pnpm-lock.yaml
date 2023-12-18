@@ -12,8 +12,8 @@ dependencies:
     specifier: ^5.1.0
     version: 5.1.0(@patternfly/react-core@5.1.2)(react-dom@18.2.0)(react@18.2.0)(showdown@2.1.0)
   '@patternfly/react-charts':
-    specifier: ^7.1.1
-    version: 7.1.1(react-dom@18.2.0)(react@18.2.0)
+    specifier: ^7.1.2
+    version: 7.1.2(react-dom@18.2.0)(react@18.2.0)
   '@patternfly/react-core':
     specifier: ^5.1.2
     version: 5.1.2(react-dom@18.2.0)(react@18.2.0)
@@ -2096,13 +2096,13 @@ packages:
       react-dom: 18.2.0(react@18.2.0)
     dev: false
 
-  /@patternfly/react-charts@7.1.1(react-dom@18.2.0)(react@18.2.0):
-    resolution: {integrity: sha512-X5T+wlbh+sNKIVScx3ykivu1+EIEcQvEdjv6vfyBlsBU8CzACgMRQff4buBL6um3Zv2kT4LPefd6zxoaerJdkg==}
+  /@patternfly/react-charts@7.1.2(react-dom@18.2.0)(react@18.2.0):
+    resolution: {integrity: sha512-lNusTmvNoLKyJdq6mOMMb2AwEYz9RXLicbPwvW/98ILKOB9UTbHYobVbHF1hqj2fj05uwhGbjtiTP5XZsmXiJg==}
     peerDependencies:
       react: ^17 || ^18
       react-dom: ^17 || ^18
     dependencies:
-      '@patternfly/react-styles': 5.1.1
+      '@patternfly/react-styles': 5.1.2
       '@patternfly/react-tokens': 5.1.2
       hoist-non-react-statics: 3.3.2
       lodash: 4.17.21
@@ -2152,10 +2152,6 @@ packages:
     dependencies:
       react: 18.2.0
       react-dom: 18.2.0(react@18.2.0)
-    dev: false
-
-  /@patternfly/react-styles@5.1.1:
-    resolution: {integrity: sha512-swO9X+WixYYDsMVsEJp1V8QUfhEQY91QfFm4phfYP4jc2TQ2opIFYdUIHkc+yrZwBhrgb/pPUUfemyqAoSbZcA==}
     dev: false
 
   /@patternfly/react-styles@5.1.2:
