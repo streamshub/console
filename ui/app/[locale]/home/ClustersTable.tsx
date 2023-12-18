@@ -5,10 +5,9 @@ import { ClusterList } from "@/api/kafka/schema";
 import { useOpenClusterConnectionPanel } from "@/app/[locale]/ClusterDrawerContext";
 import { Number } from "@/components/Number";
 import { ResponsiveTable } from "@/components/table";
-import { Truncate } from "@/libs/patternfly/react-core";
-import { CopyIcon, IntegrationIcon } from "@/libs/patternfly/react-icons";
+import { Skeleton, Truncate } from "@/libs/patternfly/react-core";
+import { ExternalLinkAltIcon } from "@/libs/patternfly/react-icons";
 import { TableVariant } from "@/libs/patternfly/react-table";
-import { Skeleton } from "@patternfly/react-core";
 import Link from "next/link";
 import { Suspense } from "react";
 
@@ -91,18 +90,15 @@ export function ClustersTable({
         <ActionsColumn
           items={[
             {
-              title: "Connect to this cluster",
+              title: "Connection details",
               onClick: () => {
                 open(row.id);
               },
-              icon: <IntegrationIcon />,
             },
             {
-              title: "Copy Bootstrap URL",
-              onClick: () => {
-                navigator.clipboard.writeText(row.attributes.bootstrapServers);
-              },
-              icon: <CopyIcon />,
+              title: "View in OpenShift console",
+              icon: <ExternalLinkAltIcon />,
+              isDisabled: true,
             },
           ]}
         />

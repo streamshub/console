@@ -12,7 +12,6 @@ import { ExternalLink } from "@/components/ExternalLink";
 import { Number } from "@/components/Number";
 import {
   CardBody,
-  CardTitle,
   DataList,
   DataListCell,
   DataListItem,
@@ -26,6 +25,7 @@ import {
   Label,
   LabelGroup,
   Level,
+  LevelItem,
   PageSection,
   Skeleton,
   Stack,
@@ -33,8 +33,10 @@ import {
   Text,
   TextContent,
   Title,
+  Tooltip,
 } from "@/libs/patternfly/react-core";
-import { InfoCircleIcon } from "@/libs/patternfly/react-icons";
+import { HelpIcon } from "@/libs/patternfly/react-icons";
+import { Link } from "@/navigation";
 import { Suspense } from "react";
 import styles from "./home.module.css";
 
@@ -72,6 +74,7 @@ export default function Home() {
                   </Text>
                 </TextContent>
               }
+              isCompact={true}
             >
               <CardBody>
                 <Suspense fallback={<ClustersTable clusters={undefined} />}>
@@ -81,7 +84,27 @@ export default function Home() {
             </ExpandableCard>
           </StackItem>
           <StackItem>
-            <ExpandableCard title={"Recently viewed topics"}>
+            <ExpandableCard
+              title={
+                <TextContent>
+                  <b>
+                    Recently viewed topics{" "}
+                    <Tooltip
+                      content={
+                        "When you start looking at specific topics through the AMQ Streams console, they'll start showing here."
+                      }
+                    >
+                      <HelpIcon />
+                    </Tooltip>
+                  </b>
+                  <Text component={"small"}>
+                    The last 5 topic this account has accessed to from the AMQ
+                    streams console.
+                  </Text>
+                </TextContent>
+              }
+              isCompact={true}
+            >
               <CardBody>
                 <Suspense fallback={<TopicsTable topics={undefined} />}>
                   <RecentTopics />
@@ -91,23 +114,48 @@ export default function Home() {
           </StackItem>
           <StackItem>
             <ExpandableCard
-              title={"Getting started"}
-              collapsedTitle={
-                <Level hasGutter>
-                  <CardTitle id="titleId">Getting Started</CardTitle>
-                  <LabelGroup isCompact>
-                    <Label isCompact icon={<InfoCircleIcon />} color="blue">
-                      Documentation
-                    </Label>
-                    <Label isCompact icon={<InfoCircleIcon />} color="green">
-                      Quick starts
-                    </Label>
-                    <Label isCompact icon={<InfoCircleIcon />} color="orange">
-                      Learning resources
-                    </Label>
-                  </LabelGroup>
+              title={
+                <Level>
+                  <LevelItem>
+                    <TextContent>
+                      <b>Recommended learning resources</b>
+                    </TextContent>
+                  </LevelItem>
+                  <LevelItem>
+                    <Link href={"/learning-resources"}>View all</Link>
+                  </LevelItem>
                 </Level>
               }
+              collapsedTitle={
+                <Level>
+                  <LevelItem>
+                    <Stack>
+                      <StackItem>
+                        <TextContent>
+                          <b>Recommended learning resources</b>
+                        </TextContent>
+                      </StackItem>
+                      <StackItem>
+                        <LabelGroup isCompact>
+                          <Label isCompact color="orange">
+                            Documentation
+                          </Label>
+                          {/*<Label isCompact icon={<InfoCircleIcon />} color="green">*/}
+                          {/*  Quick starts*/}
+                          {/*</Label>*/}
+                          {/*<Label isCompact icon={<InfoCircleIcon />} color="orange">*/}
+                          {/*  Learning resources*/}
+                          {/*</Label>*/}
+                        </LabelGroup>
+                      </StackItem>
+                    </Stack>
+                  </LevelItem>
+                  <LevelItem>
+                    <Link href={"/learning-resources"}>View all</Link>
+                  </LevelItem>
+                </Level>
+              }
+              isCompact={true}
             >
               <CardBody>
                 <DataList aria-label="Reccomended learning resources">
@@ -115,13 +163,15 @@ export default function Home() {
                     <DataListItemRow>
                       <DataListItemCells
                         dataListCells={[
-                          <DataListCell key="gs-1-1">
+                          <DataListCell key="gs-1-1" width={2}>
                             <span id="gs-1-1">
                               AMQ Streams on OpenShift Overview
                             </span>
                           </DataListCell>,
                           <DataListCell key="gs-1-2">
-                            <Label color={"orange"}>Documentation</Label>
+                            <Label isCompact={true} color={"orange"}>
+                              Documentation
+                            </Label>
                           </DataListCell>,
                           <DataListCell key="gs-1-3">
                             <ExternalLink
@@ -141,13 +191,15 @@ export default function Home() {
                     <DataListItemRow>
                       <DataListItemCells
                         dataListCells={[
-                          <DataListCell key="gs-2-1">
+                          <DataListCell key="gs-2-1" width={2}>
                             <span id="gs-2-1">
                               Getting Started with AMQ Streams on Openshift
                             </span>
                           </DataListCell>,
                           <DataListCell key="gs-2-2">
-                            <Label color={"orange"}>Documentation</Label>
+                            <Label isCompact={true} color={"orange"}>
+                              Documentation
+                            </Label>
                           </DataListCell>,
                           <DataListCell key="gs-2-3">
                             <ExternalLink
@@ -167,13 +219,15 @@ export default function Home() {
                     <DataListItemRow>
                       <DataListItemCells
                         dataListCells={[
-                          <DataListCell key="gs-3-1">
+                          <DataListCell key="gs-3-1" width={2}>
                             <span id="gs-3-1">
                               Connect to a Kafka cluster from an application
                             </span>
                           </DataListCell>,
                           <DataListCell key="gs-3-2">
-                            <Label color={"orange"}>Documentation</Label>
+                            <Label isCompact={true} color={"orange"}>
+                              Documentation
+                            </Label>
                           </DataListCell>,
                           <DataListCell key="gs-3-3">
                             <ExternalLink
@@ -193,13 +247,15 @@ export default function Home() {
                     <DataListItemRow>
                       <DataListItemCells
                         dataListCells={[
-                          <DataListCell key="gs-4-1">
+                          <DataListCell key="gs-4-1" width={2}>
                             <span id="gs-4-1">
                               Using the Topic Operator to manage Kafka topics
                             </span>
                           </DataListCell>,
                           <DataListCell key="gs-4-2">
-                            <Label color={"orange"}>Documentation</Label>
+                            <Label isCompact={true} color={"orange"}>
+                              Documentation
+                            </Label>
                           </DataListCell>,
                           <DataListCell key="gs-4-3">
                             <ExternalLink
