@@ -1,5 +1,6 @@
 import { getConsumerGroups } from "@/api/consumerGroups/actions";
 import { getKafkaCluster, getKafkaClusters } from "@/api/kafka/actions";
+import { ClusterList } from "@/api/kafka/schema";
 import { getViewedTopics } from "@/api/topics/actions";
 import {
   ClustersTable,
@@ -7,6 +8,7 @@ import {
 } from "@/app/[locale]/home/ClustersTable";
 import { ExpandableCard } from "@/app/[locale]/home/ExpandableCard";
 import { TopicsTable } from "@/app/[locale]/home/TopicsTable";
+import { Number } from "@/components/Number";
 import {
   Button,
   CardBody,
@@ -21,8 +23,11 @@ import {
   List,
   ListItem,
   PageSection,
+  Skeleton,
   Stack,
   StackItem,
+  Text,
+  TextContent,
   Title,
 } from "@/libs/patternfly/react-core";
 import {
@@ -34,31 +39,43 @@ import { Suspense } from "react";
 import styles from "./home.module.css";
 
 export default function Home() {
+  const allClusters = getKafkaClusters();
   return (
     <>
       <PageSection padding={{ default: "noPadding" }} variant={"light"}>
         <div className={styles.hero}>
           <div>
-            <Title headingLevel={"h1"} size={"3xl"}>
-              Welcome to the AMQ Streams Console
-            </Title>
-            <Title
-              headingLevel={"h2"}
-              size={"lg"}
-              className={"pf-v5-u-color-200"}
-            >
-              Manage your Kafka resources in one place.
-            </Title>
+            <TextContent>
+              <Title headingLevel={"h1"} size={"2xl"}>
+                Welcome to the AMQ streams console
+              </Title>
+              <Text className={"pf-v5-u-color-200"}>
+                Red Hat AMQ is a lightweight, high-performance, robust messaging
+                platform.
+              </Text>
+            </TextContent>
           </div>
         </div>
       </PageSection>
       <PageSection>
         <Stack hasGutter={true}>
           <StackItem>
-            <ExpandableCard title={"Platform: TODO Get OS Cluster name"}>
+            <ExpandableCard
+              title={
+                <TextContent>
+                  <strong>Platform: OpenShift Cluster</strong>
+                  <Text component={"small"}>
+                    <Suspense fallback={<Skeleton width={"200px"} />}>
+                      <ClustersCount clusterPromise={allClusters} />
+                      &nbsp;Connected Kafka clusters
+                    </Suspense>
+                  </Text>
+                </TextContent>
+              }
+            >
               <CardBody>
                 <Suspense fallback={<ClustersTable clusters={undefined} />}>
-                  <ConnectedClustersTable />
+                  <ConnectedClustersTable clusterPromise={allClusters} />
                 </Suspense>
               </CardBody>
             </ExpandableCard>
@@ -233,8 +250,21 @@ export default function Home() {
   );
 }
 
-async function ConnectedClustersTable() {
-  const allClusters = await getKafkaClusters();
+async function ClustersCount({
+  clusterPromise,
+}: {
+  clusterPromise: Promise<ClusterList[]>;
+}) {
+  const count = (await clusterPromise).length;
+  return <Number value={count} />;
+}
+
+async function ConnectedClustersTable({
+  clusterPromise,
+}: {
+  clusterPromise: Promise<ClusterList[]>;
+}) {
+  const allClusters = await clusterPromise;
   const clusters = allClusters.map<EnrichedClusterList>((c) => {
     async function getNodesCounts() {
       const cluster = await getKafkaCluster(c.id);
@@ -279,9 +309,4 @@ async function RecentTopics() {
       </EmptyStateBody>
     </EmptyState>
   );
-}
-
-async function ChangedTopics() {
-  const dull = await new Promise(() => {});
-  return <div>eventually</div>;
 }

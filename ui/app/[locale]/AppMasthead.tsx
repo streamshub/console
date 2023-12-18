@@ -46,7 +46,7 @@ export function AppMasthead() {
           <Image
             className={"pf-v5-c-brand"}
             src={logo}
-            alt={`Strimzi ${t("common.title")}`}
+            alt={t("common.title")}
             priority={true}
             style={{ height: 48 }}
           />
