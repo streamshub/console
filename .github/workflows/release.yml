@@ -77,7 +77,7 @@ jobs:
           milestone-title: ${{steps.metadata.outputs.current-version}}
 
       - name: Image Update
-        uses: renovatebot/github-action@v39.2.1
+        uses: renovatebot/github-action@v39.2.3
         with:
           configurationFile: .github/gitops-config.json
           token: ${{ secrets.RELEASE_TOKEN }}     
