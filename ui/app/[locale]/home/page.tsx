@@ -8,20 +8,24 @@ import {
 } from "@/app/[locale]/home/ClustersTable";
 import { ExpandableCard } from "@/app/[locale]/home/ExpandableCard";
 import { TopicsTable } from "@/app/[locale]/home/TopicsTable";
+import { ExternalLink } from "@/components/ExternalLink";
 import { Number } from "@/components/Number";
 import {
-  Button,
   CardBody,
   CardTitle,
+  DataList,
+  DataListCell,
+  DataListItem,
+  DataListItemCells,
+  DataListItemRow,
   EmptyState,
+  EmptyStateActions,
   EmptyStateBody,
-  Flex,
-  Grid,
+  EmptyStateFooter,
+  EmptyStateHeader,
   Label,
   LabelGroup,
   Level,
-  List,
-  ListItem,
   PageSection,
   Skeleton,
   Stack,
@@ -30,11 +34,7 @@ import {
   TextContent,
   Title,
 } from "@/libs/patternfly/react-core";
-import {
-  ArrowRightIcon,
-  ExternalLinkAltIcon,
-  InfoCircleIcon,
-} from "@/libs/patternfly/react-icons";
+import { InfoCircleIcon } from "@/libs/patternfly/react-icons";
 import { Suspense } from "react";
 import styles from "./home.module.css";
 
@@ -110,137 +110,112 @@ export default function Home() {
               }
             >
               <CardBody>
-                <Grid md={6} lg={4} hasGutter>
-                  <Flex
-                    spaceItems={{ default: "spaceItemsLg" }}
-                    alignItems={{ default: "alignItemsFlexStart" }}
-                    direction={{ default: "column" }}
-                  >
-                    <Flex
-                      spaceItems={{ default: "spaceItemsSm" }}
-                      alignItems={{ default: "alignItemsFlexStart" }}
-                      direction={{ default: "column" }}
-                      grow={{ default: "grow" }}
-                    >
-                      <Label icon={<InfoCircleIcon />} color="blue">
-                        Documentation
-                      </Label>
-                      <p>Getting started with AMQ Streams</p>
-                      <List isPlain>
-                        <ListItem>
-                          <a href="#">Add a AMQ Streams Cluster</a>
-                        </ListItem>
-                        <ListItem>
-                          <a href="#">
-                            Make an AMQ Streams Cluster discoverable by the AMQ
-                            Streams Console
-                          </a>
-                        </ListItem>
-                        <ListItem>
-                          <a href="#">Delete an AMQ Streams Cluster</a>
-                        </ListItem>
-                      </List>
-                    </Flex>
-                    <Button
-                      href="#"
-                      component="a"
-                      variant="link"
-                      isInline
-                      icon={<ArrowRightIcon />}
-                      iconPosition="end"
-                    >
-                      View all AMQ Streams documentation
-                    </Button>
-                  </Flex>
-                  <Flex
-                    spaceItems={{ default: "spaceItemsLg" }}
-                    alignItems={{ default: "alignItemsFlexStart" }}
-                    direction={{ default: "column" }}
-                  >
-                    <Flex
-                      spaceItems={{ default: "spaceItemsSm" }}
-                      alignItems={{ default: "alignItemsFlexStart" }}
-                      direction={{ default: "column" }}
-                      grow={{ default: "grow" }}
-                    >
-                      <Label icon={<InfoCircleIcon />} color="green">
-                        Quick starts
-                      </Label>
-                      <p>
-                        Get started with features using our step-by-step
-                        documentation
-                      </p>
-                      <List isPlain>
-                        <ListItem>
-                          <a href="#">
-                            Getting started with AMQ Streams Console
-                          </a>
-                        </ListItem>
-                        <ListItem>
-                          <a href="#">Explore the Message Browser</a>
-                        </ListItem>
-                        <ListItem>
-                          <a href="#">
-                            Connect to the Cluster from an application
-                          </a>
-                        </ListItem>
-                      </List>
-                    </Flex>
-                    <Button
-                      href="#"
-                      component="a"
-                      variant="link"
-                      isInline
-                      icon={<ArrowRightIcon />}
-                      iconPosition="end"
-                    >
-                      View all quick starts
-                    </Button>
-                  </Flex>
-                  <Flex
-                    spaceItems={{ default: "spaceItemsLg" }}
-                    alignItems={{ default: "alignItemsFlexStart" }}
-                    direction={{ default: "column" }}
-                  >
-                    <Flex
-                      spaceItems={{ default: "spaceItemsSm" }}
-                      alignItems={{ default: "alignItemsFlexStart" }}
-                      direction={{ default: "column" }}
-                      grow={{ default: "grow" }}
-                    >
-                      <Label icon={<InfoCircleIcon />} color="orange">
-                        Learning resources
-                      </Label>
-                      <p>
-                        Learn about new features within the Console and get
-                        started with demo apps
-                      </p>
-                      <List isPlain>
-                        <ListItem>
-                          <a href="#">
-                            See what&quot;s possible with the Explore page
-                          </a>
-                        </ListItem>
-                        <ListItem>
-                          <a href="#">
-                            AMQ Streams 1.2.3: Changelog&nbsp;
-                            <ExternalLinkAltIcon />
-                          </a>
-                        </ListItem>
-                      </List>
-                    </Flex>
-                    <Button
-                      href="#"
-                      component="a"
-                      variant="link"
-                      isInline
-                      icon={<ArrowRightIcon />}
-                      iconPosition="end"
-                    >
-                      View all learning resources
-                    </Button>
-                  </Flex>
-                </Grid>{" "}
+                <DataList aria-label="Reccomended learning resources">
+                  <DataListItem aria-labelledby="gs-1-1">
+                    <DataListItemRow>
+                      <DataListItemCells
+                        dataListCells={[
+                          <DataListCell key="gs-1-1">
+                            <span id="gs-1-1">
+                              AMQ Streams on OpenShift Overview
+                            </span>
+                          </DataListCell>,
+                          <DataListCell key="gs-1-2">
+                            <Label color={"orange"}>Documentation</Label>
+                          </DataListCell>,
+                          <DataListCell key="gs-1-3">
+                            <ExternalLink
+                              testId={"gs-1-3"}
+                              href={
+                                "https://access.redhat.com/documentation/en-us/red_hat_amq_streams/2.5/html/amq_streams_on_openshift_overview"
+                              }
+                            >
+                              View documentation
+                            </ExternalLink>
+                          </DataListCell>,
+                        ]}
+                      />
+                    </DataListItemRow>
+                  </DataListItem>
+                  <DataListItem aria-labelledby="gs-2-1">
+                    <DataListItemRow>
+                      <DataListItemCells
+                        dataListCells={[
+                          <DataListCell key="gs-2-1">
+                            <span id="gs-2-1">
+                              Getting Started with AMQ Streams on Openshift
+                            </span>
+                          </DataListCell>,
+                          <DataListCell key="gs-2-2">
+                            <Label color={"orange"}>Documentation</Label>
+                          </DataListCell>,
+                          <DataListCell key="gs-2-3">
+                            <ExternalLink
+                              testId={"gs-2-3"}
+                              href={
+                                "https://access.redhat.com/documentation/en-us/red_hat_amq_streams/2.5/html/getting_started_with_amq_streams_on_openshift"
+                              }
+                            >
+                              View documentation
+                            </ExternalLink>
+                          </DataListCell>,
+                        ]}
+                      />
+                    </DataListItemRow>
+                  </DataListItem>
+                  <DataListItem aria-labelledby="gs-3-1">
+                    <DataListItemRow>
+                      <DataListItemCells
+                        dataListCells={[
+                          <DataListCell key="gs-3-1">
+                            <span id="gs-3-1">
+                              Connect to a Kafka cluster from an application
+                            </span>
+                          </DataListCell>,
+                          <DataListCell key="gs-3-2">
+                            <Label color={"orange"}>Documentation</Label>
+                          </DataListCell>,
+                          <DataListCell key="gs-3-3">
+                            <ExternalLink
+                              testId={"gs-3-3"}
+                              href={
+                                "https://access.redhat.com/documentation/en-us/red_hat_amq_streams/2.5/html/developing_kafka_client_applications"
+                              }
+                            >
+                              View documentation
+                            </ExternalLink>
+                          </DataListCell>,
+                        ]}
+                      />
+                    </DataListItemRow>
+                  </DataListItem>
+                  <DataListItem aria-labelledby="gs-4-1">
+                    <DataListItemRow>
+                      <DataListItemCells
+                        dataListCells={[
+                          <DataListCell key="gs-4-1">
+                            <span id="gs-4-1">
+                              Using the Topic Operator to manage Kafka topics
+                            </span>
+                          </DataListCell>,
+                          <DataListCell key="gs-4-2">
+                            <Label color={"orange"}>Documentation</Label>
+                          </DataListCell>,
+                          <DataListCell key="gs-4-3">
+                            <ExternalLink
+                              testId={"gs-4-3"}
+                              href={
+                                "https://access.redhat.com/documentation/en-us/red_hat_amq_streams/2.5/html/deploying_and_managing_amq_streams_on_openshift/using-the-topic-operator-str#doc-wrapper"
+                              }
+                            >
+                              View documentation
+                            </ExternalLink>
+                          </DataListCell>,
+                        ]}
+                      />
+                    </DataListItemRow>
+                  </DataListItem>
+                </DataList>
               </CardBody>
             </ExpandableCard>
           </StackItem>
@@ -303,10 +278,23 @@ async function RecentTopics() {
     <TopicsTable topics={viewedTopics} />
   ) : (
     <EmptyState variant={"xs"}>
+      <EmptyStateHeader title={"No topics were viewed yet"} />
       <EmptyStateBody>
-        You haven&quot;t viewed any topic, yet. Topics you view will be listed
-        here.
+        When you start looking at specific topics through the AMQ Streams
+        console, they&quot;ll start showing here.
       </EmptyStateBody>
+      <EmptyStateFooter>
+        <EmptyStateActions className={"pf-v5-u-font-size-sm"}>
+          <ExternalLink
+            testId={"recent-topics-empty-state-link"}
+            href={
+              "https://access.redhat.com/documentation/en-us/red_hat_amq_streams/2.5/html-single/deploying_and_managing_amq_streams_on_openshift/index#ref-operator-topic-str"
+            }
+          >
+            Using the Topic Operator to manage Kafka topics
+          </ExternalLink>
+        </EmptyStateActions>
+      </EmptyStateFooter>
     </EmptyState>
   );
 }
