@@ -98,7 +98,8 @@ export function ConsumerGroupsTable({
                 <Number
                   value={row.attributes.offsets
                     .map((o) => o.lag)
-                    .reduce((acc, v) => acc + v, 0)}
+                    // lag values may not be available from API, e.g. when there is an error listing the topic offsets
+                    .reduce((acc, v) => (acc ?? NaN) + (v ?? NaN), 0)}
                 />
               </Td>
             );

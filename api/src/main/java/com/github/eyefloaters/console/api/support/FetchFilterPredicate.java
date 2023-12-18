@@ -9,12 +9,14 @@ import com.github.eyefloaters.console.api.model.FetchFilter;
 
 public class FetchFilterPredicate<B, F> implements Predicate<B> {
 
+    private final String name;
     private final String operator;
     private final List<F> operands;
     private final Function<B, F> fieldSource;
     private final Pattern likePattern;
 
-    public FetchFilterPredicate(FetchFilter filter, Function<String, F> operandParser, Function<B, F> fieldSource) {
+    public FetchFilterPredicate(String name, FetchFilter filter, Function<String, F> operandParser, Function<B, F> fieldSource) {
+        this.name = name;
         this.operator = filter.getOperator();
         this.operands = filter.getOperands().stream().map(operandParser).toList();
         this.fieldSource = fieldSource;
@@ -31,13 +33,34 @@ public class FetchFilterPredicate<B, F> implements Predicate<B> {
         }
     }
 
+    public FetchFilterPredicate(FetchFilter filter, Function<String, F> operandParser, Function<B, F> fieldSource) {
+        this(null, filter, operandParser, fieldSource);
+    }
+
+    @SuppressWarnings("unchecked")
+    public FetchFilterPredicate(String name, FetchFilter filter, Function<B, F> fieldSource) {
+        this(name, filter, op -> (F) op, fieldSource);
+    }
+
     @SuppressWarnings("unchecked")
     public FetchFilterPredicate(FetchFilter filter, Function<B, F> fieldSource) {
-        this(filter, op -> (F) op, fieldSource);
+        this(null, filter, op -> (F) op, fieldSource);
     }
 
     private F firstOperand() {
         return operands.get(0);
+    }
+
+    public String name() {
+        return name;
+    }
+
+    public String operator() {
+        return operator;
+    }
+
+    public List<F> operands() {
+        return operands;
     }
 
     @Override
