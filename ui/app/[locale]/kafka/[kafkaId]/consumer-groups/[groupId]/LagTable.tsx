@@ -32,7 +32,7 @@ export function LagTable({
           case "behind":
             return <Th key={key}>Lag</Th>;
           case "currentOffset":
-            return <Th key={key}>Current offset</Th>;
+            return <Th key={key}>Committed offset</Th>;
           case "endOffset":
             return <Th key={key}>End offset</Th>;
         }
