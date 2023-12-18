@@ -44,7 +44,7 @@ export function ClusterChartsCard({
       <CardBody>
         <Flex direction={{ default: "column" }} gap={{ default: "gapLg" }}>
           <b>
-            Available disk space{" "}
+            Used disk space{" "}
             <Tooltip
               content={
                 "Used and available disk capacity for all brokers over a specified period. Make sure there's enough space for everyday operations."

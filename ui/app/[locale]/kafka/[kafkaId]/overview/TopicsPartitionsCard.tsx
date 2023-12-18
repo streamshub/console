@@ -11,11 +11,13 @@ import {
   Skeleton,
   Text,
   TextContent,
+  Tooltip,
 } from "@/libs/patternfly/react-core";
 import {
   CheckCircleIcon,
   ExclamationCircleIcon,
   ExclamationTriangleIcon,
+  HelpIcon,
 } from "@/libs/patternfly/react-icons";
 import { Link } from "@/navigation";
 
@@ -105,7 +107,14 @@ export function TopicsPartitionsCard({
                   <Icon status={"success"}>
                     <CheckCircleIcon />
                   </Icon>
-                  &nbsp;Fully replicated
+                  &nbsp;Fully replicated&nbsp;
+                  <Tooltip
+                    content={
+                      "All partitions are fully replicated. A partition is fully-replicated when its replicas (followers) are 'in sync' with the designated partition leader. Replicas are 'in sync' if they have fetched records up to the log end offset of the leader partition within an allowable lag time, as determined by replica.lag.time.max.ms."
+                    }
+                  >
+                    <HelpIcon />
+                  </Tooltip>
                 </Text>
               </TextContent>
             </FlexItem>
@@ -126,7 +135,14 @@ export function TopicsPartitionsCard({
                   <Icon status={"warning"}>
                     <ExclamationTriangleIcon />
                   </Icon>
-                  &nbsp;Under replicated
+                  &nbsp;Under replicated&nbsp;
+                  <Tooltip
+                    content={
+                      "Some partitions are not fully replicated. A partition is fully replicated when its replicas (followers) are 'in sync' with the designated partition leader. Replicas are 'in sync' if they have fetched records up to the log end offset of the leader partition within an allowable lag time, as determined by replica.lag.time.max.ms."
+                    }
+                  >
+                    <HelpIcon />
+                  </Tooltip>
                 </Text>
               </TextContent>
             </FlexItem>
@@ -151,7 +167,14 @@ export function TopicsPartitionsCard({
                   <Icon status={"danger"}>
                     <ExclamationCircleIcon />
                   </Icon>
-                  &nbsp;Unavailable
+                  &nbsp;Unavailable&nbsp;
+                  <Tooltip
+                    content={
+                      "Some or all partitions are currently unavailable. This may be due to issues such as broker failures or network problems. Investigate and address the underlying issues to restore normal functionality."
+                    }
+                  >
+                    <HelpIcon />
+                  </Tooltip>
                 </Text>
               </TextContent>
             </FlexItem>

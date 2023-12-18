@@ -14,19 +14,27 @@ export function LagTable({
   return (
     <ResponsiveTable
       ariaLabel={"Consumer group lag"}
-      columns={["topic", "partition", "behind", "offset"] as const}
+      columns={
+        ["topic", "partition", "behind", "currentOffset", "endOffset"] as const
+      }
       data={offsets}
       variant={TableVariant.compact}
       renderHeader={({ column, key, Th }) => {
         switch (column) {
           case "topic":
-            return <Th key={key}>Lagging topic</Th>;
+            return (
+              <Th key={key} width={30}>
+                Topic
+              </Th>
+            );
           case "partition":
             return <Th key={key}>Partition</Th>;
           case "behind":
-            return <Th key={key}>Messages behind</Th>;
-          case "offset":
-            return <Th key={key}>Offset</Th>;
+            return <Th key={key}>Lag</Th>;
+          case "currentOffset":
+            return <Th key={key}>Current offset</Th>;
+          case "endOffset":
+            return <Th key={key}>End offset</Th>;
         }
       }}
       renderCell={({ column, key, row, Td }) => {
@@ -51,9 +59,15 @@ export function LagTable({
                 <Number value={row.lag} />
               </Td>
             );
-          case "offset":
+          case "currentOffset":
             return (
-              <Td key={key} dataLabel={"Offset"}>
+              <Td key={key} dataLabel={"Current offset"}>
+                <Number value={row.offset} />
+              </Td>
+            );
+          case "endOffset":
+            return (
+              <Td key={key} dataLabel={"End offset"}>
                 <Number value={row.offset + row.lag} />
               </Td>
             );
