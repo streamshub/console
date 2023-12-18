@@ -27,12 +27,13 @@ const prom = new PrometheusDriver({
 const log = logger.child({ module: "kafka-api" });
 
 export async function getKafkaClusters(): Promise<ClusterList[]> {
-  const url = `${process.env.BACKEND_URL}/api/kafkas?fields%5Bkafkas%5D=name,namespace,bootstrapServers`;
+  const url = `${process.env.BACKEND_URL}/api/kafkas?fields%5Bkafkas%5D=name,namespace,kafkaVersion,bootstrapServers`;
   try {
     const res = await fetch(url, {
       headers: await getHeaders(),
     });
     const rawData = await res.json();
+    log.debug(rawData, "getKafkaClusters response");
     return ClustersResponseSchema.parse(rawData).data;
   } catch (err) {
     log.error(err, "getKafkaClusters");

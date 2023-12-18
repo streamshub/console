@@ -1,7 +1,10 @@
+import { getConsumerGroups } from "@/api/consumerGroups/actions";
 import { getKafkaCluster, getKafkaClusters } from "@/api/kafka/actions";
-import { ClusterDetail } from "@/api/kafka/schema";
 import { getViewedTopics } from "@/api/topics/actions";
-import { ClustersTable } from "@/app/[locale]/home/ClustersTable";
+import {
+  ClustersTable,
+  EnrichedClusterList,
+} from "@/app/[locale]/home/ClustersTable";
 import { ExpandableCard } from "@/app/[locale]/home/ExpandableCard";
 import { TopicsTable } from "@/app/[locale]/home/TopicsTable";
 import {
@@ -232,9 +235,35 @@ export default function Home() {
 
 async function ConnectedClustersTable() {
   const allClusters = await getKafkaClusters();
-  const clusters = (await Promise.all(
-    allClusters.map((c) => getKafkaCluster(c.id)),
-  )) as ClusterDetail[];
+  const clusters = allClusters.map<EnrichedClusterList>((c) => {
+    async function getNodesCounts() {
+      const cluster = await getKafkaCluster(c.id);
+      if (cluster) {
+        return {
+          count: cluster.attributes.nodes.length,
+          online: cluster.attributes.nodes.length, // TODO,
+        };
+      }
+      return {
+        count: 0,
+        online: 0,
+      };
+    }
+
+    async function getConsumerGroupsCount() {
+      const cg = await getConsumerGroups(c.id, {});
+      return cg.meta.page.total || 0;
+    }
+
+    const ec: EnrichedClusterList = {
+      ...c,
+      extra: {
+        nodes: getNodesCounts(),
+        consumerGroupsCount: getConsumerGroupsCount(),
+      },
+    };
+    return ec;
+  });
   return <ClustersTable clusters={clusters} />;
 }
 
