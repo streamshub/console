@@ -1,6 +1,9 @@
 import { getKafkaClusters } from "@/api/kafka/actions";
 import { AppMasthead } from "@/app/[locale]/AppMasthead";
 import { AppSidebar } from "@/app/[locale]/AppSidebar";
+import { ClusterDrawer } from "@/app/[locale]/ClusterDrawer";
+
+import { ClusterDrawerProvider } from "@/app/[locale]/ClusterDrawerProvider";
 import { NavExpandable } from "@/components/NavExpandable";
 import { NavItemLink } from "@/components/NavItemLink";
 import { HelpContainer } from "@/components/Quickstarts/HelpContainer";
@@ -33,7 +36,11 @@ export function AppLayout({ children }: PropsWithChildren) {
         </AppSidebar>
       }
     >
-      <HelpContainer>{children}</HelpContainer>
+      <HelpContainer>
+        <ClusterDrawerProvider>
+          <ClusterDrawer>{children}</ClusterDrawer>
+        </ClusterDrawerProvider>
+      </HelpContainer>
     </Page>
   );
 }
