@@ -43,7 +43,7 @@ jobs:
           mvn verify -Pdocker -B --no-transfer-progress -Dquarkus.package.write-transformed-bytecode-to-build-output=true -f api/pom.xml
 
       - name: Archive Results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: artifacts
@@ -57,7 +57,7 @@ jobs:
 
       ## Attach the target directory for use in Sonar analysis
       - name: Attach Build Output
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: target
           path: |
