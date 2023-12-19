@@ -1,5 +1,5 @@
 "use client";
-import { TopicList } from "@/api/topics/schema";
+import { TopicList, TopicStatus } from "@/api/topics/schema";
 import { EmptyStateNoTopics } from "@/app/[locale]/kafka/[kafkaId]/topics/(page)/EmptyStateNoTopics";
 import { ButtonLink } from "@/components/ButtonLink";
 import { Bytes } from "@/components/Bytes";
@@ -18,7 +18,7 @@ import {
   HelpIcon,
 } from "@patternfly/react-icons";
 import { useTranslations } from "next-intl";
-import { useOptimistic, useTransition } from "react";
+import { ReactNode, useOptimistic, useTransition } from "react";
 
 export const TopicsTableColumns = [
   "name",
@@ -33,6 +33,40 @@ export type SortableTopicsTableColumns = Exclude<
 >;
 export type TopicsTableColumn = (typeof TopicsTableColumns)[number];
 export const SortableColumns = ["name", "storage"];
+const StatusLabel: Record<TopicStatus, ReactNode> = {
+  FullyReplicated: (
+    <>
+      <Icon status={"success"}>
+        <CheckCircleIcon />
+      </Icon>
+      &nbsp;Fully replicated
+    </>
+  ),
+  UnderReplicated: (
+    <>
+      <Icon status={"warning"}>
+        <ExclamationTriangleIcon />
+      </Icon>
+      &nbsp;Under replicated
+    </>
+  ),
+  PartiallyOffline: (
+    <>
+      <Icon status={"warning"}>
+        <ExclamationTriangleIcon />
+      </Icon>
+      &nbsp;Partially offline
+    </>
+  ),
+  Offline: (
+    <>
+      <Icon status={"danger"}>
+        <ExclamationCircleIcon />
+      </Icon>
+      &nbsp;Offline
+    </>
+  ),
+};
 
 export type TopicsTableProps = {
   topics: TopicList[] | undefined;
@@ -45,6 +79,7 @@ export type TopicsTableProps = {
   sort: TopicsTableColumn;
   sortDir: "asc" | "desc";
   includeHidden: boolean;
+  status: TopicStatus | undefined;
   baseurl: string;
   nextPageCursor: string | null | undefined;
   prevPageCursor: string | null | undefined;
@@ -58,6 +93,7 @@ type State = {
   sort: TopicsTableColumn;
   sortDir: "asc" | "desc";
   includeHidden: boolean;
+  status: TopicStatus | undefined;
 };
 
 export function TopicsTable({
@@ -71,6 +107,7 @@ export function TopicsTable({
   sort,
   sortDir,
   includeHidden,
+  status,
   baseurl,
   nextPageCursor,
   prevPageCursor,
@@ -91,6 +128,7 @@ export function TopicsTable({
       sort,
       sortDir,
       includeHidden,
+      status,
     },
     (state, options) => ({ ...state, ...options, topics: undefined }),
   );
@@ -108,6 +146,8 @@ export function TopicsTable({
       _updateUrl({});
       addOptimistic({
         name: undefined,
+        id: undefined,
+        status: undefined,
       });
     });
   }
@@ -224,42 +264,7 @@ export function TopicsTable({
           case "status":
             return (
               <Td key={key} dataLabel={"Status"}>
-                {
-                  {
-                    "FullyReplicated": (
-                      <>
-                        <Icon status={"success"}>
-                          <CheckCircleIcon />
-                        </Icon>
-                        &nbsp;Fully replicated
-                      </>
-                    ),
-                    "UnderReplicated": (
-                      <>
-                        <Icon status={"warning"}>
-                          <ExclamationTriangleIcon />
-                        </Icon>
-                        &nbsp;Under replicated
-                      </>
-                    ),
-                    "PartiallyOffline": (
-                      <>
-                        <Icon status={"warning"}>
-                          <ExclamationTriangleIcon />
-                        </Icon>
-                        &nbsp;Partially offline
-                      </>
-                    ),
-                    "Offline": (
-                      <>
-                        <Icon status={"danger"}>
-                          <ExclamationCircleIcon />
-                        </Icon>
-                        &nbsp;Offline
-                      </>
-                    )
-                  }[row.attributes.status]
-                }
+                {StatusLabel[row.attributes.status]}
               </Td>
             );
           case "consumerGroups":
@@ -368,17 +373,29 @@ export function TopicsTable({
           validate: (value) => value.length >= 3,
           errorMessage: "At least 3 characters",
         },
-        // Status: {
-        //   type: "checkbox",
-        //   chips: [],
-        //   onToggle: () => {},
-        //   onRemoveChip: () => {},
-        //   onRemoveGroup: () => {},
-        //   options: {
-        //     ready: "Ready",
-        //     under: "Under replicated",
-        //   },
-        // },
+        Status: {
+          type: "select",
+          chips: state.status ? [state.status] : [],
+          onToggle: (status) => {
+            startTransition(() => {
+              updateUrl({ status });
+              addOptimistic({ status });
+            });
+          },
+          onRemoveChip: () => {
+            startTransition(() => {
+              updateUrl({ status: undefined });
+              addOptimistic({ status: undefined });
+            });
+          },
+          onRemoveGroup: () => {
+            startTransition(() => {
+              updateUrl({ status: undefined });
+              addOptimistic({ status: undefined });
+            });
+          },
+          options: StatusLabel,
+        },
       }}
       onClearAllFilters={clearFilters}
       actions={

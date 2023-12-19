@@ -54,12 +54,19 @@ const NewConfigMapSchema = z.record(
   }),
 );
 export type NewConfigMap = z.infer<typeof NewConfigMapSchema>;
+const TopicStatusSchema = z.union([
+  z.literal("FullyReplicated"),
+  z.literal("UnderReplicated"),
+  z.literal("PartiallyOffline"),
+  z.literal("Offline"),
+]);
+export type TopicStatus = z.infer<typeof TopicStatusSchema>;
 const TopicSchema = z.object({
   id: z.string(),
   type: z.literal("topics"),
   attributes: z.object({
     name: z.string(),
-    status: z.string(),
+    status: TopicStatusSchema,
     visibility: z.string(),
     partitions: z.array(PartitionSchema).optional(),
     numPartitions: z.number().optional(),

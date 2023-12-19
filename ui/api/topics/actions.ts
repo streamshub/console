@@ -12,6 +12,7 @@ import {
   TopicResponse,
   TopicsResponse,
   TopicsResponseSchema,
+  TopicStatus,
 } from "@/api/topics/schema";
 import { filterUndefinedFromObj } from "@/utils/filterUndefinedFromObj";
 import { logger } from "@/utils/logger";
@@ -25,6 +26,7 @@ export async function getTopics(
   params: {
     name?: string;
     id?: string;
+    status?: TopicStatus;
     pageSize?: number;
     pageCursor?: string;
     sort?: string;
@@ -38,6 +40,7 @@ export async function getTopics(
         "name,status,visibility,numPartitions,totalLeaderLogBytes,consumerGroups",
       "filter[id]": params.id ? `eq,${params.id}` : undefined,
       "filter[name]": params.name ? `like,*${params.name}*` : undefined,
+      "filter[status]": params.status,
       "filter[visibility]": params.includeHidden
         ? "in,external,internal"
         : "eq,external",
