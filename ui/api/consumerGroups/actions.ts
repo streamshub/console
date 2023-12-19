@@ -47,7 +47,9 @@ export async function getConsumerGroups(
   const sp = new URLSearchParams(
     filterUndefinedFromObj({
       "fields[consumerGroups]":
-        "state,simpleConsumerGroup,members,offsets,authorizedOperations,coordinator,partitionAssignor",
+        "state,simpleConsumerGroup,members,offsets",
+      // TODO: pass filter from UI
+      "filter[state]": "in,STABLE,PREPARING_REBALANCE,COMPLETING_REBALANCE",
       "page[size]": params.pageSize,
       "page[after]": params.pageCursor,
       sort: params.sort

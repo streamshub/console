@@ -66,6 +66,7 @@ import io.quarkus.test.kubernetes.client.KubernetesServerTestResource;
 import io.strimzi.api.kafka.model.Kafka;
 
 import static com.github.eyefloaters.console.test.TestHelper.whenRequesting;
+import static java.util.regex.Pattern.compile;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.contains;
@@ -74,6 +75,7 @@ import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasEntry;
 import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.matchesPattern;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.startsWith;
@@ -164,6 +166,74 @@ class ConsumerGroupsResourceIT {
     }
 
     @Test
+    void testListConsumerGroupsWithIdFilter() {
+        List<String> groupIds = IntStream.range(2, 10)
+                .mapToObj("grp-%02d-"::formatted)
+                .map(prefix -> prefix + UUID.randomUUID().toString())
+                .sorted()
+                .toList();
+
+        groupIds.forEach(groupId -> {
+            String topic = "t-" + UUID.randomUUID().toString();
+            String client = "c-" + UUID.randomUUID().toString();
+            groupUtils.consume(groupId, topic, client, 1, true);
+        });
+
+        String topic01 = "t-" + UUID.randomUUID().toString();
+        String group01 = "grp-01-FLAG-" + UUID.randomUUID().toString();
+        String client01 = "c-" + UUID.randomUUID().toString();
+
+        String topic10 = "t-" + UUID.randomUUID().toString();
+        String group10 = "grp-10-FLAG-" + UUID.randomUUID().toString();
+        String client10 = "c-" + UUID.randomUUID().toString();
+
+        try (var consumer01 = groupUtils.consume(group01, topic01, client01, 2, false);
+             var consumer10 = groupUtils.consume(group10, topic10, client10, 2, false)) {
+            whenRequesting(req -> req
+                    .param("filter[id]", "like,*FLAG*")
+                    .get("", clusterId1))
+                .assertThat()
+                .statusCode(is(Status.OK.getStatusCode()))
+                .body("data.size()", is(2))
+                .body("data.id", everyItem(matchesPattern(compile("^grp-\\d{2}-FLAG-.*$"))));
+        }
+    }
+
+    @Test
+    void testListConsumerGroupsWithStateFilter() {
+        List<String> groupIds = IntStream.range(2, 10)
+                .mapToObj("grp-%02d-"::formatted)
+                .map(prefix -> prefix + UUID.randomUUID().toString())
+                .sorted()
+                .toList();
+
+        groupIds.forEach(groupId -> {
+            String topic = "t-" + UUID.randomUUID().toString();
+            String client = "c-" + UUID.randomUUID().toString();
+            groupUtils.consume(groupId, topic, client, 1, true);
+        });
+
+        String topic01 = "t-" + UUID.randomUUID().toString();
+        String group01 = "grp-01-FLAG-" + UUID.randomUUID().toString();
+        String client01 = "c-" + UUID.randomUUID().toString();
+
+        String topic10 = "t-" + UUID.randomUUID().toString();
+        String group10 = "grp-10-FLAG-" + UUID.randomUUID().toString();
+        String client10 = "c-" + UUID.randomUUID().toString();
+
+        try (var consumer01 = groupUtils.consume(group01, topic01, client01, 2, false);
+             var consumer10 = groupUtils.consume(group10, topic10, client10, 2, false)) {
+            whenRequesting(req -> req
+                    .param("filter[state]", "eq,STABLE")
+                    .get("", clusterId1))
+                .assertThat()
+                .statusCode(is(Status.OK.getStatusCode()))
+                .body("data.size()", is(2))
+                .body("data.attributes.state", everyItem(is("STABLE")));
+        }
+    }
+
+    @Test
     void testListConsumerGroupsWithTwoAssignments() {
         String topic1 = "t1-" + UUID.randomUUID().toString();
         String group1 = "g1-" + UUID.randomUUID().toString();
@@ -224,7 +294,7 @@ class ConsumerGroupsResourceIT {
         String response1 = whenRequesting(req -> req
                 .param("sort", "id,state,someIgnoredField,-simpleConsumerGroup")
                 .param("page[size]", 2)
-                .param("fields[consumerGroups]", "state,simpleConsumerGroup,members")
+                .param("fields[consumerGroups]", "state,simpleConsumerGroup")
                 .get("", clusterId1))
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))

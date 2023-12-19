@@ -68,7 +68,7 @@ export function LagTable({
           case "endOffset":
             return (
               <Td key={key} dataLabel={"End offset"}>
-                <Number value={row.offset + row.lag} />
+                <Number value={row.logEndOffset} />
               </Td>
             );
         }

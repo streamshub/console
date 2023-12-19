@@ -95,6 +95,10 @@ public class ListRequestContext<T> implements Predicate<T> {
         }
     }
 
+    public List<Predicate<T>> filters() {
+        return Collections.unmodifiableList(filters);
+    }
+
     @Override
     public boolean test(T t) {
         return filters.isEmpty() || filters.stream().allMatch(filter -> filter.test(t));

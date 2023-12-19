@@ -29,10 +29,12 @@ import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.clients.admin.ConsumerGroupListing;
 import org.apache.kafka.clients.admin.DescribeConsumerGroupsOptions;
 import org.apache.kafka.clients.admin.ListConsumerGroupOffsetsSpec;
+import org.apache.kafka.clients.admin.ListConsumerGroupsOptions;
 import org.apache.kafka.clients.admin.ListOffsetsResult;
 import org.apache.kafka.clients.admin.ListOffsetsResult.ListOffsetsResultInfo;
 import org.apache.kafka.clients.admin.OffsetSpec;
 import org.apache.kafka.clients.admin.TopicListing;
+import org.apache.kafka.common.ConsumerGroupState;
 import org.apache.kafka.common.TopicCollection;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.Uuid;
@@ -50,6 +52,7 @@ import com.github.eyefloaters.console.api.model.PartitionId;
 import com.github.eyefloaters.console.api.model.PartitionInfo;
 import com.github.eyefloaters.console.api.model.Topic;
 import com.github.eyefloaters.console.api.support.ConsumerGroupValidation;
+import com.github.eyefloaters.console.api.support.FetchFilterPredicate;
 import com.github.eyefloaters.console.api.support.KafkaOffsetSpec;
 import com.github.eyefloaters.console.api.support.ListRequestContext;
 import com.github.eyefloaters.console.api.support.UnknownTopicIdPatch;
@@ -119,21 +122,38 @@ public class ConsumerGroupService {
     CompletionStage<List<ConsumerGroup>> listConsumerGroups(List<String> groupIds, List<String> includes, ListRequestContext<ConsumerGroup> listSupport) {
         Admin adminClient = clientSupplier.get();
 
-        return adminClient.listConsumerGroups()
+        Set<ConsumerGroupState> states = listSupport.filters()
+            .stream()
+            .filter(FetchFilterPredicate.class::isInstance)
+            .map(FetchFilterPredicate.class::cast)
+            .filter(filter -> "filter[state]".equals(filter.name()))
+            .map(filter -> {
+                @SuppressWarnings("unchecked")
+                List<String> operands = filter.operands();
+                return operands.stream()
+                        .map(ConsumerGroupState::valueOf)
+                        .collect(Collectors.toSet());
+            })
+            .findFirst()
+            .orElse(null);
+
+        return adminClient.listConsumerGroups(new ListConsumerGroupsOptions()
+                .inStates(states))
             .valid()
             .toCompletionStage()
             .thenApply(groups -> groups.stream()
                     .filter(group -> groupIds.isEmpty() || groupIds.contains(group.groupId()))
                     .map(ConsumerGroup::fromKafkaModel)
                     .toList())
-            .thenCompose(groups -> augmentList(adminClient, groups, includes))
             .thenApply(list -> list.stream()
+                    .filter(listSupport)
                     .map(listSupport::tally)
                     .filter(listSupport::betweenCursors)
                     .sorted(listSupport.getSortComparator())
                     .dropWhile(listSupport::beforePageBegin)
                     .takeWhile(listSupport::pageCapacityAvailable)
-                    .toList());
+                    .toList())
+            .thenCompose(groups -> augmentList(adminClient, groups, includes));
     }
 
     public CompletionStage<ConsumerGroup> describeConsumerGroup(String groupId, List<String> includes) {
@@ -148,7 +168,11 @@ public class ConsumerGroupService {
     public CompletionStage<Map<String, List<String>>> listConsumerGroupMembership(Collection<String> topicIds) {
         Admin adminClient = clientSupplier.get();
 
-        return adminClient.listConsumerGroups()
+        return adminClient.listConsumerGroups(new ListConsumerGroupsOptions()
+                .inStates(Set.of(
+                        ConsumerGroupState.STABLE,
+                        ConsumerGroupState.PREPARING_REBALANCE,
+                        ConsumerGroupState.COMPLETING_REBALANCE)))
             .valid()
             .toCompletionStage()
             .thenApply(groups -> groups.stream().map(ConsumerGroup::fromKafkaModel).toList())
@@ -520,25 +544,26 @@ public class ConsumerGroupService {
 
             groupOffsets.forEach((topicPartition, offsetsAndMetadata) -> {
                 long offset = offsetsAndMetadata.offset();
+                var endOffset = Optional.ofNullable(topicOffsets.get(topicPartition))
+                        .map(offsetOrError -> {
+                            if (offsetOrError.isPrimaryPresent()) {
+                                return offsetOrError.getPrimary().offset();
+                            }
+
+                            Throwable listOffsetsError = offsetOrError.getAlternate();
+                            String msg = "Unable to list offsets for topic/partition %s-%d"
+                                    .formatted(topicPartition.topic(), topicPartition.partition());
+                            group.addError(new Error(msg, listOffsetsError.getMessage(), listOffsetsError));
+                            return null;
+                        });
+
                 offsets.add(new OffsetAndMetadata(
                         topicIds.get(topicPartition.topic()),
                         topicPartition.topic(),
                         topicPartition.partition(),
                         Either.of(offsetsAndMetadata.offset()),
-                        Optional.ofNullable(topicOffsets.get(topicPartition))
-                            .map(partitionOffsets -> {
-                                // Calculate lag
-                                if (partitionOffsets.isPrimaryPresent()) {
-                                    return partitionOffsets.getPrimary().offset() - offset;
-                                }
-
-                                Throwable listOffsetsError = partitionOffsets.getAlternate();
-                                String msg = "Unable to list offsets for topic/partition %s-%d"
-                                        .formatted(topicPartition.topic(), topicPartition.partition());
-                                group.addError(new Error(msg, listOffsetsError.getMessage(), listOffsetsError));
-                                return -1L;
-                            })
-                            .orElse(-1L), // lag
+                        endOffset.orElse(null), // log end offset
+                        endOffset.map(end -> end - offset).orElse(null), // lag
                         offsetsAndMetadata.metadata(),
                         offsetsAndMetadata.leaderEpoch().orElse(null)));
             });
