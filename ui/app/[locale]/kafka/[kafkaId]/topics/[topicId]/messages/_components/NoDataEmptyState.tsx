@@ -10,18 +10,21 @@ import {
 } from "@patternfly/react-core";
 import { CubesIcon } from "@patternfly/react-icons";
 import { useTranslations } from "next-intl";
+import { startTransition } from "react";
 
 export function NoDataEmptyState() {
   const t = useTranslations("message-browser");
   const updateUrl = useFilterParams({});
 
   function onRefresh() {
-    updateUrl({
-      _ts: Date.now(),
-      "filter[offset]": undefined,
-      "filter[timestamp]": undefined,
-      "filter[epoch]": undefined,
-    });
+    startTransition(() =>
+      updateUrl({
+        _ts: Date.now(),
+        "filter[offset]": undefined,
+        "filter[timestamp]": undefined,
+        "filter[epoch]": undefined,
+      }),
+    );
   }
 
   return (

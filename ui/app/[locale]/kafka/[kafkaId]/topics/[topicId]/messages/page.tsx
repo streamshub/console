@@ -43,8 +43,10 @@ export default async function MessagesPage({
         })
       : undefined;
 
+  const isFiltered = partition || epoch || offset || timestamp;
+
   switch (true) {
-    case messages === null || messages.length === 0:
+    case !isFiltered && (messages === null || messages.length === 0):
       return <NoDataEmptyState />;
     default:
       return (
