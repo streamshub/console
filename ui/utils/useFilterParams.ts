@@ -2,7 +2,10 @@ import { usePathname, useRouter } from "next/navigation";
 import { useCallback } from "react";
 
 export function useFilterParams(
-  params: Record<string, string | number | boolean | null | undefined>,
+  params: Record<
+    string,
+    string | number | boolean | null | undefined | string[] | number[]
+  >,
 ) {
   const router = useRouter();
   const pathname = usePathname();
@@ -21,7 +24,10 @@ export function useFilterParams(
 
   return useCallback(
     function updateUrl(
-      newParams: Record<string, string | number | boolean | null | undefined>,
+      newParams: Record<
+        string,
+        string | number | boolean | null | undefined | string[] | number[]
+      >,
     ) {
       const updatedParams = {
         ...params,
@@ -29,7 +35,7 @@ export function useFilterParams(
       };
       const sp = Object.entries(updatedParams).map(([name, value]) => ({
         name,
-        value: value?.toString(),
+        value: Array.isArray(value) ? value.join(",") : value?.toString(),
       }));
       router.push(pathname + "?" + createQueryString(sp));
     },

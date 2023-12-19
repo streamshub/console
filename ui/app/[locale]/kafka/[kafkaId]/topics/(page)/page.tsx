@@ -39,7 +39,9 @@ export default function TopicsPage({
   const sortDir = (searchParams["sortDir"] || "asc") as "asc" | "desc";
   const pageCursor = searchParams["page"];
   const includeHidden = searchParams["hidden"] === "y";
-  const status = searchParams["status"] as TopicStatus | undefined;
+  const status = (searchParams["status"] || "")
+    .split(",")
+    .filter((v) => !!v) as TopicStatus[] | undefined;
 
   return (
     <PageSection isFilled>
@@ -97,7 +99,7 @@ async function ConnectedTopicsTable({
   pageSize: number;
   pageCursor: string | undefined;
   includeHidden: boolean;
-  status: TopicStatus | undefined;
+  status: TopicStatus[] | undefined;
 } & KafkaParams) {
   const topics = await getTopics(kafkaId, {
     id,

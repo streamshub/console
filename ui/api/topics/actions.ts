@@ -26,7 +26,7 @@ export async function getTopics(
   params: {
     name?: string;
     id?: string;
-    status?: TopicStatus;
+    status?: TopicStatus[];
     pageSize?: number;
     pageCursor?: string;
     sort?: string;
@@ -40,7 +40,10 @@ export async function getTopics(
         "name,status,visibility,numPartitions,totalLeaderLogBytes,consumerGroups",
       "filter[id]": params.id ? `eq,${params.id}` : undefined,
       "filter[name]": params.name ? `like,*${params.name}*` : undefined,
-      "filter[status]": params.status,
+      "filter[status]":
+        params.status && params.status.length > 0
+          ? `in,${params.status.join(",")}`
+          : undefined,
       "filter[visibility]": params.includeHidden
         ? "in,external,internal"
         : "eq,external",

@@ -79,7 +79,7 @@ export type TopicsTableProps = {
   sort: TopicsTableColumn;
   sortDir: "asc" | "desc";
   includeHidden: boolean;
-  status: TopicStatus | undefined;
+  status: TopicStatus[] | undefined;
   baseurl: string;
   nextPageCursor: string | null | undefined;
   prevPageCursor: string | null | undefined;
@@ -93,7 +93,7 @@ type State = {
   sort: TopicsTableColumn;
   sortDir: "asc" | "desc";
   includeHidden: boolean;
-  status: TopicStatus | undefined;
+  status: TopicStatus[] | undefined;
 };
 
 export function TopicsTable({
@@ -374,17 +374,21 @@ export function TopicsTable({
           errorMessage: "At least 3 characters",
         },
         Status: {
-          type: "select",
-          chips: state.status ? [state.status] : [],
+          type: "checkbox",
+          chips: state.status || [],
           onToggle: (status) => {
+            const newStatus = state.status?.includes(status)
+              ? state.status.filter((s) => s !== status)
+              : [...state.status!, status];
             startTransition(() => {
-              updateUrl({ status });
-              addOptimistic({ status });
+              updateUrl({ status: newStatus });
+              addOptimistic({ status: newStatus });
             });
           },
-          onRemoveChip: () => {
+          onRemoveChip: (status) => {
+            const newStatus = (state.status || []).filter((s) => s !== status);
             startTransition(() => {
-              updateUrl({ status: undefined });
+              updateUrl({ status: newStatus });
               addOptimistic({ status: undefined });
             });
           },
