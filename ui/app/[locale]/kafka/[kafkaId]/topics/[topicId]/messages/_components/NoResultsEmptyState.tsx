@@ -9,17 +9,20 @@ import {
 import { SearchIcon } from "@/libs/patternfly/react-icons";
 import { useFilterParams } from "@/utils/useFilterParams";
 import { useTranslations } from "next-intl";
+import { startTransition } from "react";
 
 export function NoResultsEmptyState() {
   const t = useTranslations("message-browser");
   const updateUrl = useFilterParams({});
 
   function onReset() {
-    updateUrl({
-      "filter[offset]": undefined,
-      "filter[timestamp]": undefined,
-      "filter[epoch]": undefined,
-    });
+    startTransition(() =>
+      updateUrl({
+        "filter[offset]": undefined,
+        "filter[timestamp]": undefined,
+        "filter[epoch]": undefined,
+      }),
+    );
   }
 
   return (
