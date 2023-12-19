@@ -114,6 +114,7 @@ public class Topic extends RelatableResource<Topic.Attributes, Topic.Relationshi
                     })
                     .toList());
             addMeta("page", listSupport.buildPageMeta());
+            listSupport.meta().forEach(this::addMeta);
             listSupport.buildPageLinks(Topic::toCursor).forEach(this::addLink);
         }
     }
@@ -152,6 +153,10 @@ public class Topic extends RelatableResource<Topic.Attributes, Topic.Relationshi
 
         @JsonProperty
         public String status() {
+            if (partitions == null) {
+                return "Unknown";
+            }
+
             return partitions.getOptionalPrimary()
                 .map(p -> {
                     Supplier<Stream<String>> partitionStatuses = () -> p.stream().map(PartitionInfo::status);

@@ -46,6 +46,7 @@ public class ListRequestContext<T> implements Predicate<T> {
 
     final SortedSet<T> firstPageData;
     final SizeLimitedSortedSet<T> finalPageData;
+    final Map<String, Object> meta = new LinkedHashMap<>();
 
     T firstPageEntry;
     T finalPageEntry;
@@ -175,6 +176,10 @@ public class ListRequestContext<T> implements Predicate<T> {
         rangeTruncated = rangeRequest;
 
         return false;
+    }
+
+    public Map<String, Object> meta() {
+        return meta;
     }
 
     /**

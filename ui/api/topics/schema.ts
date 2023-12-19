@@ -118,6 +118,14 @@ export const TopicsResponseSchema = z.object({
       total: z.number(),
       pageNumber: z.number().optional(),
     }),
+    summary: z.object({
+      statuses: z.object({
+        FullyReplicated: z.number().optional(),
+        UnderReplicated: z.number().optional(),
+        PartiallyOffline: z.number().optional(),
+        Offline: z.number().optional(),
+      }),
+    }),
   }),
   links: z.object({
     first: z.string().nullable(),

@@ -154,18 +154,26 @@ public class TopicService {
         }
 
         Admin adminClient = clientSupplier.get();
+        final Map<String, Integer> statuses = new HashMap<>();
+        listSupport.meta().put("summary", Map.of("statuses", statuses));
 
         return listTopics(adminClient, true)
             .thenApply(list -> list.stream().map(Topic::fromTopicListing).toList())
             .thenComposeAsync(list -> augmentList(adminClient, list, fetchList, offsetSpec), threadContext.currentContextExecutor())
             .thenApply(list -> list.stream()
                     .filter(listSupport)
+                    .map(topic -> tallyStatus(statuses, topic))
                     .map(listSupport::tally)
                     .filter(listSupport::betweenCursors)
                     .sorted(listSupport.getSortComparator())
                     .dropWhile(listSupport::beforePageBegin)
                     .takeWhile(listSupport::pageCapacityAvailable)
                     .toList());
+    }
+
+    Topic tallyStatus(Map<String, Integer> statuses, Topic topic) {
+        statuses.compute(topic.status(), (k, v) -> v == null ? 1 : v + 1);
+        return topic;
     }
 
     CompletableFuture<List<TopicListing>> listTopics(Admin adminClient, boolean listInternal) {

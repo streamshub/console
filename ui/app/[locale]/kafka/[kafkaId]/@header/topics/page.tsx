@@ -11,6 +11,7 @@ import {
 } from "@/libs/patternfly/react-core";
 import {
   CheckCircleIcon,
+  ExclamationCircleIcon,
   ExclamationTriangleIcon,
 } from "@/libs/patternfly/react-icons";
 import { Suspense } from "react";
@@ -28,8 +29,12 @@ async function ConnectedHeader({ params }: { params: KafkaParams }) {
   return (
     <Header
       total={topics.meta.page.total}
-      ok={topics.meta.page.total}
-      warning={0}
+      ok={topics.meta.summary.statuses.FullyReplicated || 0}
+      warning={topics.meta.summary.statuses.UnderReplicated || 0}
+      error={
+          (topics.meta.summary.statuses.PartiallyOffline || 0) +
+          (topics.meta.summary.statuses.Offline || 0)
+      }
     />
   );
 }
@@ -38,10 +43,12 @@ function Header({
   total,
   ok,
   warning,
+  error
 }: {
   total?: number;
   ok?: number;
   warning?: number;
+  error?: number;
 }) {
   return (
     <AppHeader
@@ -84,6 +91,22 @@ function Header({
                 color={"orange"}
               >
                 {warning !== undefined && <Number value={warning} />}
+              </Label>
+            </Tooltip>
+          </SplitItem>
+          <SplitItem>
+            <Tooltip content={"Number of topics not available"}>
+              <Label
+                icon={
+                  error === undefined ? (
+                    <Spinner size={"sm"} />
+                  ) : (
+                    <ExclamationCircleIcon />
+                  )
+                }
+                color={"red"}
+              >
+                {error !== undefined && <Number value={error} />}
               </Label>
             </Tooltip>
           </SplitItem>
