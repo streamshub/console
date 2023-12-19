@@ -13,7 +13,8 @@ export const ClusterListSchema = z.object({
   attributes: z.object({
     name: z.string(),
     namespace: z.string(),
-    bootstrapServers: z.string().nullable(),
+    kafkaVersion: z.string().optional(),
+    bootstrapServers: z.string(),
   }),
 });
 export const ClustersResponseSchema = z.object({

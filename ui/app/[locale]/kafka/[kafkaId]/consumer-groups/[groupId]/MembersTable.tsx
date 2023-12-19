@@ -3,7 +3,6 @@ import { ConsumerGroup } from "@/api/consumerGroups/schema";
 import { LagTable } from "@/app/[locale]/kafka/[kafkaId]/consumer-groups/[groupId]/LagTable";
 import { Number } from "@/components/Number";
 import { ResponsiveTable } from "@/components/table";
-import { Label } from "@/libs/patternfly/react-core";
 import { TableVariant } from "@/libs/patternfly/react-table";
 import { useEffect, useState } from "react";
 
@@ -48,7 +47,9 @@ export function MembersTable({
   return (
     <ResponsiveTable
       ariaLabel={"Consumer group consumerGroup"}
-      columns={["member", "host", "overallLag", "assignedPartitions"] as const}
+      columns={
+        ["member", "clientId", "overallLag", "assignedPartitions"] as const
+      }
       data={members}
       variant={TableVariant.compact}
       renderHeader={({ column, key, Th }) => {
@@ -56,11 +57,15 @@ export function MembersTable({
           case "member":
             return (
               <Th width={30} key={key}>
-                Member
+                Member ID
               </Th>
             );
-          case "host":
-            return <Th key={key}>Host</Th>;
+          case "clientId":
+            return (
+              <Th width={20} key={key}>
+                Client ID
+              </Th>
+            );
           case "overallLag":
             return <Th key={key}>Overall lag</Th>;
           case "assignedPartitions":
@@ -71,14 +76,14 @@ export function MembersTable({
         switch (column) {
           case "member":
             return (
-              <Td key={key} dataLabel={"Member"}>
+              <Td key={key} dataLabel={"Member ID"}>
                 {row.memberId}
               </Td>
             );
-          case "host":
+          case "clientId":
             return (
-              <Td key={key} dataLabel={"Host"}>
-                <Label>{row.host}</Label>
+              <Td key={key} dataLabel={"Client ID"}>
+                {row.clientId}
               </Td>
             );
           case "overallLag":

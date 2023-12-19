@@ -17,7 +17,7 @@ import {
   CogIcon,
   QuestionCircleIcon,
 } from "@/libs/patternfly/react-icons";
-import logo from "@/public/logo.png";
+import logo from "@/public/Logo-Red_Hat-AMQ-A-Reverse-RGB.svg";
 import { useSession } from "next-auth/react";
 import { useTranslations } from "next-intl";
 import Image from "next/image";
@@ -46,9 +46,9 @@ export function AppMasthead() {
           <Image
             className={"pf-v5-c-brand"}
             src={logo}
-            alt={`Strimzi ${t("common.title")}`}
+            alt={t("common.title")}
             priority={true}
-            unoptimized={true}
+            style={{ height: 48 }}
           />
         </Link>
       </MastheadMain>

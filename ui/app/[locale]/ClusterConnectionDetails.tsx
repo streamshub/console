@@ -54,8 +54,8 @@ export async function ClusterConnectionDetails({
                     {l.bootstrapServers}
                   </ClipboardCopy>
                   <Text component={"small"}>
-                    Listener type: {l.type}
-                    <br />
+                    {/*Listener type: {l.type}*/}
+                    {/*<br />*/}
                     Authentication type: {l.authType || "none"}
                   </Text>
                 </ListItem>

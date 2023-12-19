@@ -1,5 +1,5 @@
 import type { ButtonProps } from "@/libs/patternfly/react-core";
-import { Button, ButtonVariant } from "@/libs/patternfly/react-core";
+import { Button } from "@/libs/patternfly/react-core";
 import { ExternalLinkAltIcon } from "@/libs/patternfly/react-icons";
 import { ReactNode } from "react";
 
@@ -25,7 +25,7 @@ export function ExternalLink({
       data-testid={testId}
       isInline
       ouiaId={ouiaId}
-      variant={ButtonVariant.link}
+      variant={"link"}
       component="a"
       target={target}
       href={href}

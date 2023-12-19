@@ -7,14 +7,14 @@ import {
   Chart,
   ChartArea,
   ChartAxis,
+  ChartGroup,
   ChartLegend,
-  ChartStack,
+  ChartLegendTooltip,
   ChartThemeColor,
   ChartThreshold,
   createContainer,
 } from "@/libs/patternfly/react-charts";
 import { useFormatBytes } from "@/utils/format";
-import { ChartLegendTooltip } from "@patternfly/react-charts";
 import { useFormatter } from "next-intl";
 import { useChartWidth } from "./useChartWidth";
 
@@ -55,7 +55,7 @@ export function ChartDiskUsage({ usages, available }: ChartDiskUsageProps) {
   return (
     <div ref={containerRef}>
       <Chart
-        ariaTitle={"Available disk space"}
+        ariaTitle={"Used disk space"}
         containerComponent={
           <CursorVoronoiContainer
             cursorDimension="x"
@@ -114,7 +114,7 @@ export function ChartDiskUsage({ usages, available }: ChartDiskUsageProps) {
             return formatBytes(d, { maximumFractionDigits: 0 });
           }}
         />
-        <ChartStack>
+        <ChartGroup>
           {usages.map((usage, idx) => {
             const usageArray = Object.entries(usage);
             return (
@@ -129,22 +129,22 @@ export function ChartDiskUsage({ usages, available }: ChartDiskUsageProps) {
               />
             );
           })}
-        </ChartStack>
-        {usages.map((usage, idx) => {
-          const usageArray = Object.entries(usage);
-          const data = Object.entries(available[idx]);
-          return (
-            <ChartThreshold
-              key={`chart-softlimit-${idx}}`}
-              data={data.map(([_, y], x) => ({
-                name: `Available storage threshold (node ${idx + 1})`,
-                x: usageArray[x][0],
-                y,
-              }))}
-              name={`threshold ${idx}`}
-            />
-          );
-        })}
+          {usages.map((usage, idx) => {
+            const usageArray = Object.entries(usage);
+            const data = Object.entries(available[idx]);
+            return (
+              <ChartThreshold
+                key={`chart-softlimit-${idx}}`}
+                data={data.map(([_, y], x) => ({
+                  name: `Available storage threshold (node ${idx + 1})`,
+                  x: usageArray[x][0],
+                  y,
+                }))}
+                name={`threshold ${idx}`}
+              />
+            );
+          })}
+        </ChartGroup>
       </Chart>
     </div>
   );

@@ -1,67 +1,110 @@
+import { getConsumerGroups } from "@/api/consumerGroups/actions";
 import { getKafkaCluster, getKafkaClusters } from "@/api/kafka/actions";
-import { ClusterDetail } from "@/api/kafka/schema";
+import { ClusterList } from "@/api/kafka/schema";
 import { getViewedTopics } from "@/api/topics/actions";
-import { ClustersTable } from "@/app/[locale]/home/ClustersTable";
+import {
+  ClustersTable,
+  EnrichedClusterList,
+} from "@/app/[locale]/home/ClustersTable";
 import { ExpandableCard } from "@/app/[locale]/home/ExpandableCard";
 import { TopicsTable } from "@/app/[locale]/home/TopicsTable";
+import { ExternalLink } from "@/components/ExternalLink";
+import { Number } from "@/components/Number";
 import {
-  Button,
   CardBody,
-  CardTitle,
+  DataList,
+  DataListCell,
+  DataListItem,
+  DataListItemCells,
+  DataListItemRow,
   EmptyState,
+  EmptyStateActions,
   EmptyStateBody,
-  Flex,
-  Grid,
+  EmptyStateFooter,
+  EmptyStateHeader,
   Label,
   LabelGroup,
   Level,
-  List,
-  ListItem,
+  LevelItem,
   PageSection,
+  Skeleton,
   Stack,
   StackItem,
+  Text,
+  TextContent,
   Title,
+  Tooltip,
 } from "@/libs/patternfly/react-core";
-import {
-  ArrowRightIcon,
-  ExternalLinkAltIcon,
-  InfoCircleIcon,
-} from "@/libs/patternfly/react-icons";
+import { HelpIcon } from "@/libs/patternfly/react-icons";
+import { Link } from "@/navigation";
 import { Suspense } from "react";
 import styles from "./home.module.css";
 
 export default function Home() {
+  const allClusters = getKafkaClusters();
   return (
     <>
       <PageSection padding={{ default: "noPadding" }} variant={"light"}>
         <div className={styles.hero}>
           <div>
-            <Title headingLevel={"h1"} size={"3xl"}>
-              Welcome to the AMQ Streams Console
-            </Title>
-            <Title
-              headingLevel={"h2"}
-              size={"lg"}
-              className={"pf-v5-u-color-200"}
-            >
-              Manage your Kafka resources in one place.
-            </Title>
+            <TextContent>
+              <Title headingLevel={"h1"} size={"2xl"}>
+                Welcome to the AMQ streams console
+              </Title>
+              <Text className={"pf-v5-u-color-200"}>
+                Red Hat AMQ is a lightweight, high-performance, robust messaging
+                platform.
+              </Text>
+            </TextContent>
           </div>
         </div>
       </PageSection>
       <PageSection>
         <Stack hasGutter={true}>
           <StackItem>
-            <ExpandableCard title={"Platform: TODO Get OS Cluster name"}>
+            <ExpandableCard
+              title={
+                <TextContent>
+                  <strong>Platform: OpenShift Cluster</strong>
+                  <Text component={"small"}>
+                    <Suspense fallback={<Skeleton width={"200px"} />}>
+                      <ClustersCount clusterPromise={allClusters} />
+                      &nbsp;Connected Kafka clusters
+                    </Suspense>
+                  </Text>
+                </TextContent>
+              }
+              isCompact={true}
+            >
               <CardBody>
                 <Suspense fallback={<ClustersTable clusters={undefined} />}>
-                  <ConnectedClustersTable />
+                  <ConnectedClustersTable clusterPromise={allClusters} />
                 </Suspense>
               </CardBody>
             </ExpandableCard>
           </StackItem>
           <StackItem>
-            <ExpandableCard title={"Recently viewed topics"}>
+            <ExpandableCard
+              title={
+                <TextContent>
+                  <b>
+                    Recently viewed topics{" "}
+                    <Tooltip
+                      content={
+                        "When you start looking at specific topics through the AMQ Streams console, they'll start showing here."
+                      }
+                    >
+                      <HelpIcon />
+                    </Tooltip>
+                  </b>
+                  <Text component={"small"}>
+                    The last 5 topic this account has accessed to from the AMQ
+                    streams console.
+                  </Text>
+                </TextContent>
+              }
+              isCompact={true}
+            >
               <CardBody>
                 <Suspense fallback={<TopicsTable topics={undefined} />}>
                   <RecentTopics />
@@ -71,156 +114,164 @@ export default function Home() {
           </StackItem>
           <StackItem>
             <ExpandableCard
-              title={"Getting started"}
-              collapsedTitle={
-                <Level hasGutter>
-                  <CardTitle id="titleId">Getting Started</CardTitle>
-                  <LabelGroup isCompact>
-                    <Label isCompact icon={<InfoCircleIcon />} color="blue">
-                      Documentation
-                    </Label>
-                    <Label isCompact icon={<InfoCircleIcon />} color="green">
-                      Quick starts
-                    </Label>
-                    <Label isCompact icon={<InfoCircleIcon />} color="orange">
-                      Learning resources
-                    </Label>
-                  </LabelGroup>
+              title={
+                <Level>
+                  <LevelItem>
+                    <TextContent>
+                      <b>Recommended learning resources</b>
+                    </TextContent>
+                  </LevelItem>
+                  <LevelItem>
+                    <Link href={"/learning-resources"}>View all</Link>
+                  </LevelItem>
                 </Level>
               }
+              collapsedTitle={
+                <Level>
+                  <LevelItem>
+                    <Stack>
+                      <StackItem>
+                        <TextContent>
+                          <b>Recommended learning resources</b>
+                        </TextContent>
+                      </StackItem>
+                      <StackItem>
+                        <LabelGroup isCompact>
+                          <Label isCompact color="orange">
+                            Documentation
+                          </Label>
+                          {/*<Label isCompact icon={<InfoCircleIcon />} color="green">*/}
+                          {/*  Quick starts*/}
+                          {/*</Label>*/}
+                          {/*<Label isCompact icon={<InfoCircleIcon />} color="orange">*/}
+                          {/*  Learning resources*/}
+                          {/*</Label>*/}
+                        </LabelGroup>
+                      </StackItem>
+                    </Stack>
+                  </LevelItem>
+                  <LevelItem>
+                    <Link href={"/learning-resources"}>View all</Link>
+                  </LevelItem>
+                </Level>
+              }
+              isCompact={true}
             >
               <CardBody>
-                <Grid md={6} lg={4} hasGutter>
-                  <Flex
-                    spaceItems={{ default: "spaceItemsLg" }}
-                    alignItems={{ default: "alignItemsFlexStart" }}
-                    direction={{ default: "column" }}
-                  >
-                    <Flex
-                      spaceItems={{ default: "spaceItemsSm" }}
-                      alignItems={{ default: "alignItemsFlexStart" }}
-                      direction={{ default: "column" }}
-                      grow={{ default: "grow" }}
-                    >
-                      <Label icon={<InfoCircleIcon />} color="blue">
-                        Documentation
-                      </Label>
-                      <p>Getting started with AMQ Streams</p>
-                      <List isPlain>
-                        <ListItem>
-                          <a href="#">Add a AMQ Streams Cluster</a>
-                        </ListItem>
-                        <ListItem>
-                          <a href="#">
-                            Make an AMQ Streams Cluster discoverable by the AMQ
-                            Streams Console
-                          </a>
-                        </ListItem>
-                        <ListItem>
-                          <a href="#">Delete an AMQ Streams Cluster</a>
-                        </ListItem>
-                      </List>
-                    </Flex>
-                    <Button
-                      href="#"
-                      component="a"
-                      variant="link"
-                      isInline
-                      icon={<ArrowRightIcon />}
-                      iconPosition="end"
-                    >
-                      View all AMQ Streams documentation
-                    </Button>
-                  </Flex>
-                  <Flex
-                    spaceItems={{ default: "spaceItemsLg" }}
-                    alignItems={{ default: "alignItemsFlexStart" }}
-                    direction={{ default: "column" }}
-                  >
-                    <Flex
-                      spaceItems={{ default: "spaceItemsSm" }}
-                      alignItems={{ default: "alignItemsFlexStart" }}
-                      direction={{ default: "column" }}
-                      grow={{ default: "grow" }}
-                    >
-                      <Label icon={<InfoCircleIcon />} color="green">
-                        Quick starts
-                      </Label>
-                      <p>
-                        Get started with features using our step-by-step
-                        documentation
-                      </p>
-                      <List isPlain>
-                        <ListItem>
-                          <a href="#">
-                            Getting started with AMQ Streams Console
-                          </a>
-                        </ListItem>
-                        <ListItem>
-                          <a href="#">Explore the Message Browser</a>
-                        </ListItem>
-                        <ListItem>
-                          <a href="#">
-                            Connect to the Cluster from an application
-                          </a>
-                        </ListItem>
-                      </List>
-                    </Flex>
-                    <Button
-                      href="#"
-                      component="a"
-                      variant="link"
-                      isInline
-                      icon={<ArrowRightIcon />}
-                      iconPosition="end"
-                    >
-                      View all quick starts
-                    </Button>
-                  </Flex>
-                  <Flex
-                    spaceItems={{ default: "spaceItemsLg" }}
-                    alignItems={{ default: "alignItemsFlexStart" }}
-                    direction={{ default: "column" }}
-                  >
-                    <Flex
-                      spaceItems={{ default: "spaceItemsSm" }}
-                      alignItems={{ default: "alignItemsFlexStart" }}
-                      direction={{ default: "column" }}
-                      grow={{ default: "grow" }}
-                    >
-                      <Label icon={<InfoCircleIcon />} color="orange">
-                        Learning resources
-                      </Label>
-                      <p>
-                        Learn about new features within the Console and get
-                        started with demo apps
-                      </p>
-                      <List isPlain>
-                        <ListItem>
-                          <a href="#">
-                            See what&quot;s possible with the Explore page
-                          </a>
-                        </ListItem>
-                        <ListItem>
-                          <a href="#">
-                            AMQ Streams 1.2.3: Changelog&nbsp;
-                            <ExternalLinkAltIcon />
-                          </a>
-                        </ListItem>
-                      </List>
-                    </Flex>
-                    <Button
-                      href="#"
-                      component="a"
-                      variant="link"
-                      isInline
-                      icon={<ArrowRightIcon />}
-                      iconPosition="end"
-                    >
-                      View all learning resources
-                    </Button>
-                  </Flex>
-                </Grid>{" "}
+                <DataList aria-label="Reccomended learning resources">
+                  <DataListItem aria-labelledby="gs-1-1">
+                    <DataListItemRow>
+                      <DataListItemCells
+                        dataListCells={[
+                          <DataListCell key="gs-1-1" width={2}>
+                            <span id="gs-1-1">
+                              AMQ Streams on OpenShift Overview
+                            </span>
+                          </DataListCell>,
+                          <DataListCell key="gs-1-2">
+                            <Label isCompact={true} color={"orange"}>
+                              Documentation
+                            </Label>
+                          </DataListCell>,
+                          <DataListCell key="gs-1-3">
+                            <ExternalLink
+                              testId={"gs-1-3"}
+                              href={
+                                "https://access.redhat.com/documentation/en-us/red_hat_amq_streams/2.5/html/amq_streams_on_openshift_overview"
+                              }
+                            >
+                              View documentation
+                            </ExternalLink>
+                          </DataListCell>,
+                        ]}
+                      />
+                    </DataListItemRow>
+                  </DataListItem>
+                  <DataListItem aria-labelledby="gs-2-1">
+                    <DataListItemRow>
+                      <DataListItemCells
+                        dataListCells={[
+                          <DataListCell key="gs-2-1" width={2}>
+                            <span id="gs-2-1">
+                              Getting Started with AMQ Streams on Openshift
+                            </span>
+                          </DataListCell>,
+                          <DataListCell key="gs-2-2">
+                            <Label isCompact={true} color={"orange"}>
+                              Documentation
+                            </Label>
+                          </DataListCell>,
+                          <DataListCell key="gs-2-3">
+                            <ExternalLink
+                              testId={"gs-2-3"}
+                              href={
+                                "https://access.redhat.com/documentation/en-us/red_hat_amq_streams/2.5/html/getting_started_with_amq_streams_on_openshift"
+                              }
+                            >
+                              View documentation
+                            </ExternalLink>
+                          </DataListCell>,
+                        ]}
+                      />
+                    </DataListItemRow>
+                  </DataListItem>
+                  <DataListItem aria-labelledby="gs-3-1">
+                    <DataListItemRow>
+                      <DataListItemCells
+                        dataListCells={[
+                          <DataListCell key="gs-3-1" width={2}>
+                            <span id="gs-3-1">
+                              Connect to a Kafka cluster from an application
+                            </span>
+                          </DataListCell>,
+                          <DataListCell key="gs-3-2">
+                            <Label isCompact={true} color={"orange"}>
+                              Documentation
+                            </Label>
+                          </DataListCell>,
+                          <DataListCell key="gs-3-3">
+                            <ExternalLink
+                              testId={"gs-3-3"}
+                              href={
+                                "https://access.redhat.com/documentation/en-us/red_hat_amq_streams/2.5/html/developing_kafka_client_applications"
+                              }
+                            >
+                              View documentation
+                            </ExternalLink>
+                          </DataListCell>,
+                        ]}
+                      />
+                    </DataListItemRow>
+                  </DataListItem>
+                  <DataListItem aria-labelledby="gs-4-1">
+                    <DataListItemRow>
+                      <DataListItemCells
+                        dataListCells={[
+                          <DataListCell key="gs-4-1" width={2}>
+                            <span id="gs-4-1">
+                              Using the Topic Operator to manage Kafka topics
+                            </span>
+                          </DataListCell>,
+                          <DataListCell key="gs-4-2">
+                            <Label isCompact={true} color={"orange"}>
+                              Documentation
+                            </Label>
+                          </DataListCell>,
+                          <DataListCell key="gs-4-3">
+                            <ExternalLink
+                              testId={"gs-4-3"}
+                              href={
+                                "https://access.redhat.com/documentation/en-us/red_hat_amq_streams/2.5/html/deploying_and_managing_amq_streams_on_openshift/using-the-topic-operator-str#doc-wrapper"
+                              }
+                            >
+                              View documentation
+                            </ExternalLink>
+                          </DataListCell>,
+                        ]}
+                      />
+                    </DataListItemRow>
+                  </DataListItem>
+                </DataList>
               </CardBody>
             </ExpandableCard>
           </StackItem>
@@ -230,11 +281,50 @@ export default function Home() {
   );
 }
 
-async function ConnectedClustersTable() {
-  const allClusters = await getKafkaClusters();
-  const clusters = (await Promise.all(
-    allClusters.map((c) => getKafkaCluster(c.id)),
-  )) as ClusterDetail[];
+async function ClustersCount({
+  clusterPromise,
+}: {
+  clusterPromise: Promise<ClusterList[]>;
+}) {
+  const count = (await clusterPromise).length;
+  return <Number value={count} />;
+}
+
+async function ConnectedClustersTable({
+  clusterPromise,
+}: {
+  clusterPromise: Promise<ClusterList[]>;
+}) {
+  const allClusters = await clusterPromise;
+  const clusters = allClusters.map<EnrichedClusterList>((c) => {
+    async function getNodesCounts() {
+      const cluster = await getKafkaCluster(c.id);
+      if (cluster) {
+        return {
+          count: cluster.attributes.nodes.length,
+          online: cluster.attributes.nodes.length, // TODO,
+        };
+      }
+      return {
+        count: 0,
+        online: 0,
+      };
+    }
+
+    async function getConsumerGroupsCount() {
+      const cg = await getConsumerGroups(c.id, {});
+      return cg.meta.page.total || 0;
+    }
+
+    const ec: EnrichedClusterList = {
+      ...c,
+      extra: {
+        nodes: getNodesCounts(),
+        consumerGroupsCount: getConsumerGroupsCount(),
+      },
+    };
+    return ec;
+  });
   return <ClustersTable clusters={clusters} />;
 }
 
@@ -244,15 +334,23 @@ async function RecentTopics() {
     <TopicsTable topics={viewedTopics} />
   ) : (
     <EmptyState variant={"xs"}>
+      <EmptyStateHeader title={"No topics were viewed yet"} />
       <EmptyStateBody>
-        You haven&quot;t viewed any topic, yet. Topics you view will be listed
-        here.
+        When you start looking at specific topics through the AMQ Streams
+        console, they&quot;ll start showing here.
       </EmptyStateBody>
+      <EmptyStateFooter>
+        <EmptyStateActions className={"pf-v5-u-font-size-sm"}>
+          <ExternalLink
+            testId={"recent-topics-empty-state-link"}
+            href={
+              "https://access.redhat.com/documentation/en-us/red_hat_amq_streams/2.5/html-single/deploying_and_managing_amq_streams_on_openshift/index#ref-operator-topic-str"
+            }
+          >
+            Using the Topic Operator to manage Kafka topics
+          </ExternalLink>
+        </EmptyStateActions>
+      </EmptyStateFooter>
     </EmptyState>
   );
-}
-
-async function ChangedTopics() {
-  const dull = await new Promise(() => {});
-  return <div>eventually</div>;
 }
