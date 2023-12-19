@@ -7,7 +7,8 @@ const OffsetAndMetadataSchema = z.object({
   topicName: z.string(),
   partition: z.number(),
   offset: z.number(),
-  lag: z.number(),
+  logEndOffset: z.number().optional(),
+  lag: z.number().optional(),
   metadata: z.string(),
   leaderEpoch: z.number().optional(),
 });

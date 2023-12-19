@@ -34,6 +34,7 @@ import org.eclipse.microprofile.openapi.annotations.responses.APIResponseSchema;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 import com.github.eyefloaters.console.api.model.ConsumerGroup;
+import com.github.eyefloaters.console.api.model.ConsumerGroupFilterParams;
 import com.github.eyefloaters.console.api.model.ListFetchParams;
 import com.github.eyefloaters.console.api.service.ConsumerGroupService;
 import com.github.eyefloaters.console.api.support.ErrorCategory;
@@ -104,10 +105,19 @@ public class ConsumerGroupsResource {
 
             @BeanParam
             @Valid
-            ListFetchParams listParams) {
+            ListFetchParams listParams,
+
+            @BeanParam
+            @Valid
+            ConsumerGroupFilterParams filters) {
 
         requestedFields.accept(fields);
-        ListRequestContext<ConsumerGroup> listSupport = new ListRequestContext<>(ConsumerGroup.Fields.COMPARATOR_BUILDER, uriInfo.getRequestUri(), listParams, ConsumerGroup::fromCursor);
+        ListRequestContext<ConsumerGroup> listSupport = new ListRequestContext<>(
+                filters.buildPredicates(),
+                ConsumerGroup.Fields.COMPARATOR_BUILDER,
+                uriInfo.getRequestUri(),
+                listParams,
+                ConsumerGroup::fromCursor);
 
         return consumerGroupService.listConsumerGroups(fields, listSupport)
                 .thenApply(groups -> new ConsumerGroup.ListResponse(groups, listSupport))
