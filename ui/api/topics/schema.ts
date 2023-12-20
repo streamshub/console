@@ -9,9 +9,15 @@ const OffsetSchema = z.object({
   timestamp: z.string().optional(),
   leaderEpoch: z.number().optional(),
 });
+const PartitionStatusSchema = z.union([
+  z.literal("FullyReplicated"),
+  z.literal("UnderReplicated"),
+  z.literal("Offline"),
+]);
+export type PartitionStatus = z.infer<typeof PartitionStatusSchema>;
 const PartitionSchema = z.object({
   partition: z.number(),
-  status: z.string(),
+  status: PartitionStatusSchema,
   leaderId: z.number().optional(),
   replicas: z.array(
     z.object({
