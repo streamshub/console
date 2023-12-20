@@ -35,6 +35,7 @@ jobs:
       - name: Set PR milestone
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh pr edit "$PR_URL" --milestone "${{ steps.milestone.outputs.next-version }}"
 
       - name: Approve PR
