@@ -247,7 +247,7 @@ export const TableView = <TRow, TCol>({
           {/* icon buttons */}
           {tools && (
             <>
-              <ToolbarItem variant="separator"></ToolbarItem>
+              {actions && <ToolbarItem variant="separator"></ToolbarItem>}
               <ToolbarGroup variant="icon-button-group">
                 {tools.map((t, idx) => (
                   <ToolbarItem key={idx}>{t}</ToolbarItem>

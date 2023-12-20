@@ -80,7 +80,7 @@ export async function getTopic(
     },
   });
   const rawData = await res.json();
-  //log.debug("getTopic", url, JSON.stringify(rawData, null, 2));
+  log.debug(rawData, "getTopic");
   return TopicResponse.parse(rawData).data;
 }
 
