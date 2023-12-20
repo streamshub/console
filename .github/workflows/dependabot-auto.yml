@@ -25,6 +25,7 @@ jobs:
         uses: radcortez/project-metadata-action@95ed3b828c4563fb1c1c9f4c319eceb9ce7de1b3
         id: projmeta
         with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           metadata-file-path: '.github/project.yml'
 
       - name: Determine milestone
