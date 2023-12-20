@@ -8,7 +8,12 @@ import {
 } from "@/libs/patternfly/react-core";
 import { FilterIcon } from "@/libs/patternfly/react-icons";
 import { useState } from "react";
-import { FilterCheckbox, FilterSearch, FilterSelector } from "./components";
+import {
+  FilterCheckbox,
+  FilterSearch,
+  FilterSelect,
+  FilterSwitcher,
+} from "./components";
 import type { FilterType } from "./types";
 
 export type ChipFilterProps = {
@@ -40,6 +45,15 @@ export function ChipFilter({ filters, breakpoint = "md" }: ChipFilterProps) {
             label={label}
           />
         );
+      case "select":
+        return (
+          <FilterSelect
+            chips={f.chips}
+            options={f.options}
+            onToggle={f.onToggle}
+            label={label}
+          />
+        );
     }
   };
 
@@ -53,7 +67,7 @@ export function ChipFilter({ filters, breakpoint = "md" }: ChipFilterProps) {
       >
         <InputGroup>
           {options.length > 1 && (
-            <FilterSelector
+            <FilterSwitcher
               options={options}
               value={selectedOption}
               onChange={setSelectedOption}
@@ -70,7 +84,7 @@ export function ChipFilter({ filters, breakpoint = "md" }: ChipFilterProps) {
       >
         <ToolbarGroup variant="filter-group">
           {options.length > 1 && (
-            <FilterSelector
+            <FilterSwitcher
               options={options}
               value={selectedOption}
               onChange={setSelectedOption}
@@ -81,7 +95,7 @@ export function ChipFilter({ filters, breakpoint = "md" }: ChipFilterProps) {
             <ToolbarFilter
               key={index}
               chips={
-                f.type === "checkbox"
+                "options" in f
                   ? f.chips.map((c) => ({ key: c, node: f.options[c] }))
                   : f.chips
               }

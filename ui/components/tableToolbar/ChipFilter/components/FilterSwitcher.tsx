@@ -8,7 +8,7 @@ import {
 import { FilterIcon } from "@patternfly/react-icons";
 import { useState } from "react";
 
-export function FilterSelector({
+export function FilterSwitcher({
   options,
   value,
   onChange,

@@ -1,3 +1,4 @@
 export * from "./FilterSearch";
-export * from "./FilterSelector";
+export * from "./FilterSelect";
+export * from "./FilterSwitcher";
 export * from "./FilterCheckbox";

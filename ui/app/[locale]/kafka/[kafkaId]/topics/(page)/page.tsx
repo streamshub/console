@@ -1,4 +1,5 @@
 import { getTopics } from "@/api/topics/actions";
+import { TopicStatus } from "@/api/topics/schema";
 import { KafkaParams } from "@/app/[locale]/kafka/[kafkaId]/kafka.params";
 import {
   SortableColumns,
@@ -28,6 +29,7 @@ export default function TopicsPage({
     sortDir: string | undefined;
     page: string | undefined;
     hidden: string | undefined;
+    status: string | undefined;
   };
 }) {
   const id = searchParams["id"];
@@ -37,6 +39,9 @@ export default function TopicsPage({
   const sortDir = (searchParams["sortDir"] || "asc") as "asc" | "desc";
   const pageCursor = searchParams["page"];
   const includeHidden = searchParams["hidden"] === "y";
+  const status = (searchParams["status"] || "")
+    .split(",")
+    .filter((v) => !!v) as TopicStatus[] | undefined;
 
   return (
     <PageSection isFilled>
@@ -51,6 +56,7 @@ export default function TopicsPage({
             sort={sort}
             sortDir={sortDir}
             includeHidden={includeHidden}
+            status={status}
             canCreate={process.env.CONSOLE_MODE === "read-write"}
             baseurl={`/kafka/${params.kafkaId}/topics`}
             page={1}
@@ -68,6 +74,7 @@ export default function TopicsPage({
           pageCursor={pageCursor}
           kafkaId={params.kafkaId}
           includeHidden={includeHidden}
+          status={status}
         />
       </Suspense>
     </PageSection>
@@ -83,6 +90,7 @@ async function ConnectedTopicsTable({
   pageCursor,
   pageSize,
   includeHidden,
+  status,
 }: {
   sort: SortableTopicsTableColumns;
   id: string | undefined;
@@ -91,6 +99,7 @@ async function ConnectedTopicsTable({
   pageSize: number;
   pageCursor: string | undefined;
   includeHidden: boolean;
+  status: TopicStatus[] | undefined;
 } & KafkaParams) {
   const topics = await getTopics(kafkaId, {
     id,
@@ -100,6 +109,7 @@ async function ConnectedTopicsTable({
     pageSize,
     pageCursor,
     includeHidden,
+    status,
   });
 
   const nextPageQuery = topics.links.next
@@ -120,6 +130,7 @@ async function ConnectedTopicsTable({
       sort={sort}
       sortDir={sortDir}
       includeHidden={includeHidden}
+      status={status}
       canCreate={process.env.CONSOLE_MODE === "read-write"}
       baseurl={`/kafka/${kafkaId}/topics`}
       page={topics.meta.page.pageNumber || 1}
