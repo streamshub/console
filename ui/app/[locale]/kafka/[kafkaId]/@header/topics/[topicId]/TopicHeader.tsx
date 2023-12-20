@@ -40,14 +40,6 @@ export function TopicHeader({
                     </Label>
                   </NavItemLink>
                   <NavItemLink
-                    url={`/kafka/${kafkaId}/topics/${topicId}/consumer-groups`}
-                  >
-                    Consumer groups&nbsp;
-                    <Label isCompact={true}>
-                      <Spinner size="sm" />
-                    </Label>
-                  </NavItemLink>
-                  <NavItemLink
                     url={`/kafka/${kafkaId}/topics/${topicId}/partitions`}
                   >
                     Partitions&nbsp;
@@ -56,10 +48,20 @@ export function TopicHeader({
                     </Label>
                   </NavItemLink>
                   <NavItemLink
+                    url={`/kafka/${kafkaId}/topics/${topicId}/consumer-groups`}
+                  >
+                    Consumer groups&nbsp;
+                    <Label isCompact={true}>
+                      <Spinner size="sm" />
+                    </Label>
+                  </NavItemLink>
+                  {/*
+                  <NavItemLink
                     url={`/kafka/${kafkaId}/topics/${topicId}/schema-registry`}
                   >
                     Schema
                   </NavItemLink>
+*/}
                   <NavItemLink
                     url={`/kafka/${kafkaId}/topics/${topicId}/configuration`}
                   >
@@ -98,16 +100,6 @@ async function ConnectedTopicHeader({
                 Messages&nbsp;
               </NavItemLink>
               <NavItemLink
-                url={`/kafka/${kafkaId}/topics/${topicId}/consumer-groups`}
-              >
-                Consumer groups&nbsp;
-                <Label isCompact={true}>
-                  <Number
-                    value={topic.relationships.consumerGroups.data.length}
-                  />
-                </Label>
-              </NavItemLink>
-              <NavItemLink
                 url={`/kafka/${kafkaId}/topics/${topicId}/partitions`}
               >
                 Partitions&nbsp;
@@ -118,10 +110,22 @@ async function ConnectedTopicHeader({
                 </Label>
               </NavItemLink>
               <NavItemLink
+                url={`/kafka/${kafkaId}/topics/${topicId}/consumer-groups`}
+              >
+                Consumer groups&nbsp;
+                <Label isCompact={true}>
+                  <Number
+                    value={topic.relationships.consumerGroups.data.length}
+                  />
+                </Label>
+              </NavItemLink>
+              {/*
+              <NavItemLink
                 url={`/kafka/${kafkaId}/topics/${topicId}/schema-registry`}
               >
                 Schema
               </NavItemLink>
+              */}
               <NavItemLink
                 url={`/kafka/${kafkaId}/topics/${topicId}/configuration`}
               >
