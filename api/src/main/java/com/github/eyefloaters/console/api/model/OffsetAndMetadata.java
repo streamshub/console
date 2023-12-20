@@ -68,7 +68,10 @@ public record OffsetAndMetadata(
         > offset,
 
         @Schema(readOnly = true)
-        long lag,
+        Long logEndOffset,
+
+        @Schema(readOnly = true)
+        Long lag,
 
         String metadata,
 
