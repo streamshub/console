@@ -1,5 +1,5 @@
 name: Dependabot Automation
-on: pull_request
+on: pull_request_target
 
 permissions:
   contents: write
@@ -12,6 +12,9 @@ jobs:
     runs-on: ubuntu-latest
     if: github.actor == 'dependabot[bot]'
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Dependabot metadata
         id: metadata
         uses: dependabot/fetch-metadata@v1
@@ -51,5 +54,5 @@ jobs:
         if: steps.metadata.outputs.update-type == 'version-update:semver-patch'
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh pr comment "$PR_URL" --body '@dependabot merge'
+          GITHUB_TOKEN: ${{ secrets.DEPENDENCY_TOKEN }}
+        run: gh pr merge "$PR_URL" --auto --squash
