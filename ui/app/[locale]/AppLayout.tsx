@@ -58,10 +58,12 @@ async function Clusters() {
         Cluster overview
       </NavItemLink>
       <NavItemLink url={`/kafka/${s.id}/topics`}>Topics</NavItemLink>
-      <NavItemLink url={`/kafka/${s.id}/nodes`}>Nodes</NavItemLink>
+      <NavItemLink url={`/kafka/${s.id}/nodes`}>Brokers</NavItemLink>
+      {/*
       <NavItemLink url={`/kafka/${s.id}/service-registry`}>
         Service registry
       </NavItemLink>
+*/}
       <NavItemLink url={`/kafka/${s.id}/consumer-groups`}>
         Consumer groups
       </NavItemLink>

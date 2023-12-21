@@ -1,74 +1,198 @@
 "use client";
 
-import { KafkaNode } from "@/api/kafka/schema";
 import { ResponsiveTable } from "@/components/table";
-import { Label } from "@patternfly/react-core";
-import { ServerIcon } from "@patternfly/react-icons";
+import {
+  ChartDonutThreshold,
+  ChartDonutUtilization,
+} from "@/libs/patternfly/react-charts";
+import {
+  ClipboardCopy,
+  Label,
+  Split,
+  SplitItem,
+  Text,
+  TextContent,
+  Tooltip,
+} from "@/libs/patternfly/react-core";
+import { HelpIcon } from "@/libs/patternfly/react-icons";
+import { useFormatBytes } from "@/utils/format";
+import { Icon } from "@patternfly/react-core";
+import {
+  CheckCircleIcon,
+  ExclamationCircleIcon,
+} from "@patternfly/react-icons";
+import { useFormatter } from "next-intl";
 import Link from "next/link";
 
-const columns = ["id", "replicas", "rack"] as const;
+const columns = ["id", "status", "replicas", "rack"] as const;
 
-export function NodesTable({
-  nodes,
-  controller,
-  //metrics,
-}: {
-  nodes: KafkaNode[];
-  controller: KafkaNode;
-  //metrics: Record<string, any>;
-}) {
+export type Node = {
+  id: number;
+  isLeader: boolean;
+  status: string;
+  followers: number;
+  leaders: number;
+  rack?: string;
+  hostname?: string;
+  diskCapacity: number;
+  diskUsage: number;
+};
+
+export function NodesTable({ nodes }: { nodes: Node[] }) {
+  const format = useFormatter();
+  const formatBytes = useFormatBytes();
   return (
     <ResponsiveTable
       ariaLabel={"Kafka clusters"}
       columns={columns}
       data={nodes}
-      renderHeader={({ column, Th }) => {
+      renderHeader={({ column, key, Th }) => {
         switch (column) {
           case "id":
+            return <Th key={key}>Broker ID</Th>;
+          case "status":
+            return <Th key={key}>Status</Th>;
+          case "replicas":
             return (
-              <Th>
-                <ServerIcon />
-                &nbsp; Node
+              <Th key={key}>
+                Total Replicas{" "}
+                <Tooltip
+                  content={
+                    "The overall count of partition replicas hosted by the broker. Replicas provide fault tolerance and data availability."
+                  }
+                >
+                  <HelpIcon />
+                </Tooltip>
               </Th>
             );
-          case "replicas":
-            return <Th>Total Replicas</Th>;
           case "rack":
-            return <Th>Rack</Th>;
+            return (
+              <Th key={key}>
+                Rack{" "}
+                <Tooltip
+                  content={
+                    "Represents the ID of the rack or datacenter in which the broker resides."
+                  }
+                >
+                  <HelpIcon />
+                </Tooltip>
+              </Th>
+            );
         }
       }}
       renderCell={({ column, key, row, Td }) => {
         switch (column) {
           case "id":
             return (
-              <Td key={key} dataLabel={"Node"}>
-                <div>
-                  <Link href={`nodes/${row.id}`}>Node {row.id}</Link>
-                </div>
-                {row.id === controller.id && (
-                  <Label color={"purple"} isCompact={true}>
-                    Controller
-                  </Label>
+              <Td key={key} dataLabel={"Broker ID"}>
+                <Link href={`nodes/${row.id}`}>{row.id}</Link>
+                {row.isLeader && (
+                  <>
+                    &nbsp;
+                    <Label color={"purple"} isCompact={true}>
+                      Controller
+                    </Label>
+                  </>
                 )}
+              </Td>
+            );
+          case "status":
+            const isStable = row.status == "Stable";
+            return (
+              <Td key={key} dataLabel={"Status"}>
+                <Icon status={isStable ? "success" : "warning"}>
+                  {isStable ? <CheckCircleIcon /> : <ExclamationCircleIcon />}
+                </Icon>
+                &nbsp;
+                {row.status}
               </Td>
             );
           case "replicas":
             return (
-              <Td key={key} dataLabel={"Host"}>
-                {/*
-                { metrics.values.replica_count
-                    .find((e: any) => parseInt(e.nodeId) == row.id)?.value ?? "-" }
-*/}
-                TODO
+              <Td key={key} dataLabel={"Total replicas"}>
+                {row.followers + row.leaders}
               </Td>
             );
           case "rack":
             return (
               <Td key={key} dataLabel={"Rack"}>
-                {row.rack || "-"}
+                {row.rack || "n/a"}
               </Td>
             );
         }
+      }}
+      isRowExpandable={() => true}
+      getExpandedRow={({ row }) => {
+        return (
+          <Split hasGutter={true} className={"pf-v5-u-p-lg"}>
+            <SplitItem style={{ width: "50%" }}>
+              <TextContent>
+                <Text>
+                  <b>Broker host name</b>
+                </Text>
+                <Text>
+                  <ClipboardCopy
+                    isReadOnly={true}
+                    variant={"expansion"}
+                    isExpanded={true}
+                  >
+                    {row.hostname || "n/a"}
+                  </ClipboardCopy>
+                </Text>
+              </TextContent>
+            </SplitItem>
+            <SplitItem>
+              <TextContent>
+                <Text>
+                  <b>Broker disk usage</b>
+                </Text>
+              </TextContent>
+              <ChartDonutThreshold
+                ariaDesc="Storage capacity"
+                ariaTitle={`Broker ${row.id} disk usage`}
+                constrainToVisibleArea={true}
+                data={[
+                  { x: "Warning at 60%", y: 60 },
+                  { x: "Danger at 90%", y: 90 },
+                ]}
+                height={200}
+                labels={({ datum }) => (datum.x ? datum.x : null)}
+                padding={{
+                  bottom: 0,
+                  left: 10,
+                  right: 150,
+                  top: 0,
+                }}
+                width={350}
+              >
+                <ChartDonutUtilization
+                  data={{
+                    x: "Storage capacity",
+                    y: (row.diskUsage / row.diskCapacity) * 100,
+                  }}
+                  labels={({ datum }) =>
+                    datum.x
+                      ? `${datum.x}: ${format.number(datum.y / 100, {
+                          style: "percent",
+                        })}`
+                      : null
+                  }
+                  legendData={[
+                    { name: `Capacity: 80%` },
+                    { name: "Warning at 60%" },
+                    { name: "Danger at 90%" },
+                  ]}
+                  legendOrientation="vertical"
+                  title={`${format.number(row.diskUsage / row.diskCapacity, {
+                    style: "percent",
+                  })}`}
+                  subTitle={`of ${formatBytes(row.diskCapacity)}`}
+                  thresholds={[{ value: 60 }, { value: 90 }]}
+                />
+              </ChartDonutThreshold>
+            </SplitItem>
+          </Split>
+        );
       }}
     />
   );

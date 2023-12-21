@@ -62,6 +62,14 @@ export const ClusterKpisSchema = z.object({
     byNode: z.record(z.number()),
     total: z.number(),
   }),
+  volume_stats_capacity_bytes: z.object({
+    byNode: z.record(z.number()),
+    total: z.number(),
+  }),
+  volume_stats_used_bytes: z.object({
+    byNode: z.record(z.number()),
+    total: z.number(),
+  }),
 });
 export type ClusterKpis = z.infer<typeof ClusterKpisSchema>;
 

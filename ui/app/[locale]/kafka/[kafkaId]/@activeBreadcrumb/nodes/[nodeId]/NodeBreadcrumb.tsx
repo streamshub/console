@@ -19,10 +19,10 @@ export async function NodeBreadcrumb({
       href={`/kafka/${kafkaId}/nodes`}
       showDivider={true}
     >
-      Nodes
+      Brokers
     </BreadcrumbLink>,
     <BreadcrumbItem key={"current-node"} showDivider={true}>
-      Node&nbsp;
+      Broker&nbsp;
       <Suspense fallback={<Skeleton width="35%" />}>
         <ConnectedNodeBreadcrumb params={{ kafkaId, nodeId }} />
       </Suspense>

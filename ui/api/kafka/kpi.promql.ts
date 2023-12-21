@@ -95,4 +95,40 @@ sum by (__console_metric_name__, nodeId) (
     ""
   )
 )
+
+or
+
+sum by (__console_metric_name__, nodeId) (
+  label_replace(
+    label_replace(
+      kubelet_volume_stats_capacity_bytes{namespace="${namespace}",persistentvolumeclaim=~"data(?:-\\\\d+)?-${cluster}-kafka-\\\\d+"},
+      "nodeId",
+      "$1",
+      "persistentvolumeclaim",
+      ".+-(\\\\d+)"
+    ),
+    "__console_metric_name__",
+    "volume_stats_capacity_bytes",
+    "",
+    ""
+  )
+)
+
+or
+
+sum by (__console_metric_name__, nodeId) (
+  label_replace(
+    label_replace(
+      kubelet_volume_stats_used_bytes{namespace="${namespace}",persistentvolumeclaim=~"data(?:-\\\\d+)?-${cluster}-kafka-\\\\d+"},
+      "nodeId",
+      "$1",
+      "persistentvolumeclaim",
+      ".+-(\\\\d+)"
+    ),
+    "__console_metric_name__",
+    "volume_stats_used_bytes",
+    "",
+    ""
+  )
+)
 `;
