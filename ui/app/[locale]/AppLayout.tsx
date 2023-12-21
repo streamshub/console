@@ -6,7 +6,6 @@ import { ClusterDrawer } from "@/app/[locale]/ClusterDrawer";
 import { ClusterDrawerProvider } from "@/app/[locale]/ClusterDrawerProvider";
 import { NavExpandable } from "@/components/NavExpandable";
 import { NavItemLink } from "@/components/NavItemLink";
-import { HelpContainer } from "@/components/Quickstarts/HelpContainer";
 import { Nav, NavList, Page } from "@/libs/patternfly/react-core";
 import { PropsWithChildren, Suspense } from "react";
 
@@ -36,11 +35,11 @@ export function AppLayout({ children }: PropsWithChildren) {
         </AppSidebar>
       }
     >
-      <HelpContainer>
-        <ClusterDrawerProvider>
-          <ClusterDrawer>{children}</ClusterDrawer>
-        </ClusterDrawerProvider>
-      </HelpContainer>
+      {/*<HelpContainer>*/}
+      <ClusterDrawerProvider>
+        <ClusterDrawer>{children}</ClusterDrawer>
+      </ClusterDrawerProvider>
+      {/*</HelpContainer>*/}
     </Page>
   );
 }

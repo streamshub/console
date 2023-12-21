@@ -51,12 +51,12 @@ export function ClusterDrawer({ children }: PropsWithChildren) {
       >
         <DrawerContentBody
           className={"pf-v5-u-display-flex pf-v5-u-flex-direction-column"}
-          style={{
-            height: "100%",
-            width: "100%",
-            overflowY: "auto",
-            position: "absolute",
-          }}
+          // style={{
+          //   height: "100%",
+          //   width: "100%",
+          //   overflowY: "auto",
+          //   position: "absolute",
+          // }}
         >
           {children}
         </DrawerContentBody>
