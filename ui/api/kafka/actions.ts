@@ -76,6 +76,8 @@ export async function getKafkaClusterKpis(
       ),
     );
 
+    console.log(valuesRes);
+
     /*
     Prometheus returns the data unaggregated. Eg.
 
@@ -156,7 +158,7 @@ export async function getKafkaClusterKpis(
               nodeId ? [nodeId, value] : ["value", value],
             ),
           );
-          return metric.includes("_count")
+          return metric.includes("_count") || metric.includes("bytes")
             ? [
                 metric,
                 {

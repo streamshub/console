@@ -16,7 +16,7 @@ export default function NodesHeader({ params }: { params: KafkaParams }) {
 
 async function ConnectedHeader({ params }: { params: KafkaParams }) {
   const cluster = await getKafkaCluster(params.kafkaId);
-  return <Header total={cluster?.attributes.nodes.length} />;
+  return <Header total={cluster?.attributes.nodes.length || 0} />;
 }
 
 function Header({ total }: { total?: number }) {
