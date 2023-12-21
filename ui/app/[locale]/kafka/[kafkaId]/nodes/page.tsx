@@ -1,5 +1,6 @@
 import { getKafkaClusterKpis } from "@/api/kafka/actions";
 import { KafkaParams } from "@/app/[locale]/kafka/[kafkaId]/kafka.params";
+import { DistributionChart } from "@/app/[locale]/kafka/[kafkaId]/nodes/DistributionChart";
 import {
   Node,
   NodesTable,
@@ -37,9 +38,18 @@ export default async function NodesPage({ params }: { params: KafkaParams }) {
     };
   });
 
+  const data = Object.fromEntries(
+    nodes.map((n) => {
+      return [n.id, { followers: n.followers, leaders: n.leaders }];
+    }),
+  );
+
   return (
-    <PageSection isFilled>
-      <NodesTable nodes={nodes} />
-    </PageSection>
+    <>
+      <PageSection isFilled>
+        <DistributionChart data={data} />
+        <NodesTable nodes={nodes} />
+      </PageSection>
+    </>
   );
 }
