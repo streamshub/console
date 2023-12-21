@@ -45,11 +45,11 @@ dependencies:
     specifier: ^4.14.0
     version: 4.14.0
   date-fns:
-    specifier: ^2.30.0
-    version: 2.30.0
+    specifier: ^3.0.4
+    version: 3.0.4
   date-fns-tz:
     specifier: ^2.0.0
-    version: 2.0.0(date-fns@2.30.0)
+    version: 2.0.0(date-fns@3.0.4)
   eslint:
     specifier: 8.56.0
     version: 8.56.0
@@ -5597,19 +5597,16 @@ packages:
     resolution: {integrity: sha512-sdQSFB7+llfUcQHUQO3+B8ERRj0Oa4w9POWMI/puGtuf7gFywGmkaLCElnudfTiKZV+NvHqL0ifzdrI8Ro7ESA==}
     dev: false
 
-  /date-fns-tz@2.0.0(date-fns@2.30.0):
+  /date-fns-tz@2.0.0(date-fns@3.0.4):
     resolution: {integrity: sha512-OAtcLdB9vxSXTWHdT8b398ARImVwQMyjfYGkKD2zaGpHseG2UPHbHjXELReErZFxWdSLph3c2zOaaTyHfOhERQ==}
     peerDependencies:
       date-fns: '>=2.0.0'
     dependencies:
-      date-fns: 2.30.0
+      date-fns: 3.0.4
     dev: false
 
-  /date-fns@2.30.0:
-    resolution: {integrity: sha512-fnULvOpxnC5/Vg3NCiWelDsLiUc9bRwAPs/+LfTLNvetFCtCTN+yQz15C/fs4AwX1R9K5GLtLfn8QW+dWisaAw==}
-    engines: {node: '>=0.11'}
-    dependencies:
-      '@babel/runtime': 7.23.5
+  /date-fns@3.0.4:
+    resolution: {integrity: sha512-+daptVi95nJ/D4TPS7/gbUqneVMA0Izr4qYAsL2ZZwtcDtEP8Zge765mbXhTqWYdTSG79/VtbBigQTluiE9DBQ==}
     dev: false
 
   /dateformat@4.6.3:
