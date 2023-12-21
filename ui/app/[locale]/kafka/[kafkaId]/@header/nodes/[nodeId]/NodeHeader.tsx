@@ -52,5 +52,5 @@ async function ConnectedNodeHeader({
   if (!node) {
     notFound();
   }
-  return node.id;
+  return <>Broker {node.id}</>;
 }
