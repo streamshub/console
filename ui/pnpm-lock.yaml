@@ -39,8 +39,8 @@ dependencies:
     specifier: 18.2.18
     version: 18.2.18
   classnames:
-    specifier: ^2.3.2
-    version: 2.3.2
+    specifier: ^2.3.3
+    version: 2.3.3
   convert:
     specifier: ^4.14.0
     version: 4.14.0
@@ -5181,8 +5181,8 @@ packages:
       safe-buffer: 5.2.1
     dev: true
 
-  /classnames@2.3.2:
-    resolution: {integrity: sha512-CSbhY4cFEJRe6/GQzIk5qXZ4Jeg5pcsP7b5peFSDpffpe1cqjASH/n9UTjBwOp6XpMSTwQ8Za2K5V02ueA7Tmw==}
+  /classnames@2.3.3:
+    resolution: {integrity: sha512-1inzZmicIFcmUya7PGtUQeXtcF7zZpPnxtQoYOrz0uiOBGlLFa4ik4361seYL2JCcRDIyfdFHiwQolESFlw+Og==}
     dev: false
 
   /clean-css@5.3.2:
