@@ -125,8 +125,8 @@ devDependencies:
     specifier: ^0.6.15
     version: 0.6.15(eslint@8.56.0)(typescript@5.3.3)
   pino-pretty:
-    specifier: ^10.3.0
-    version: 10.3.0
+    specifier: ^10.3.1
+    version: 10.3.1
   prettier:
     specifier: ^3.1.1
     version: 3.1.1
@@ -8905,8 +8905,8 @@ packages:
       readable-stream: 4.4.2
       split2: 4.2.0
 
-  /pino-pretty@10.3.0:
-    resolution: {integrity: sha512-JthvQW289q3454mhM3/38wFYGWPiBMR28T3CpDNABzoTQOje9UKS7XCJQSnjWF9LQGQkGd8D7h0oq+qwiM3jFA==}
+  /pino-pretty@10.3.1:
+    resolution: {integrity: sha512-az8JbIYeN/1iLj2t0jR9DV48/LQ3RC6hZPpapKPkb84Q+yTidMCpgWxIT3N0flnBDilyBQ1luWNpOeJptjdp/g==}
     hasBin: true
     dependencies:
       colorette: 2.0.20
