@@ -16,7 +16,7 @@ export default function ConsumerGroupsActiveBreadcrumb({
       Consumer groups
     </BreadcrumbLink>,
     <BreadcrumbItem key={"cgm"} showDivider={true} isActive={true}>
-      {groupId}
+      {decodeURIComponent(groupId) === "+" ? <i>Empty Name</i> : groupId}
     </BreadcrumbItem>,
   ];
 }

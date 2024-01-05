@@ -11,7 +11,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.admin.Admin;
@@ -320,7 +319,23 @@ public class ConsumerUtils {
         response.consumer = new KafkaConsumer<>(consumerConfig);
 
         try {
-            response.consumer.subscribe(consumerRequest.topics.stream().map(NewTopic::name).collect(Collectors.toList()));
+            List<String> topics = consumerRequest.topics
+                    .stream()
+                    .map(NewTopic::name)
+                    .toList();
+
+            if (consumerRequest.groupId.isEmpty()) {
+                List<TopicPartition> assignments = topics.stream()
+                        .map(response.consumer::partitionsFor)
+                        .flatMap(partitions -> partitions.stream().map(p -> new TopicPartition(p.topic(), p.partition())))
+                        .distinct()
+                        .toList();
+
+                // Must use assign instead of subscribe to support empty group.id
+                response.consumer.assign(assignments);
+            } else {
+                response.consumer.subscribe(topics);
+            }
 
             if (consumerRequest.consumeMessages < 1 && consumerRequest.messagesPerTopic < 1) {
                 var records = response.consumer.poll(Duration.ofSeconds(5));
