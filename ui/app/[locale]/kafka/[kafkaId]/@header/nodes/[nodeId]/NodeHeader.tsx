@@ -1,8 +1,6 @@
 import { getKafkaCluster } from "@/api/kafka/actions";
 import { KafkaNodeParams } from "@/app/[locale]/kafka/[kafkaId]/nodes/kafkaNode.params";
 import { AppHeader } from "@/components/AppHeader";
-import { NavItemLink } from "@/components/NavItemLink";
-import { Nav, NavList, PageNavigation } from "@/libs/patternfly/react-core";
 import { Skeleton } from "@patternfly/react-core";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
@@ -22,17 +20,18 @@ export async function NodeHeader({
         </Suspense>
       }
       navigation={
-        <PageNavigation>
-          <Nav aria-label="Group section navigation" variant="tertiary">
-            <NavList>
-              <NavItemLink
-                url={`/kafka/${kafkaId}/nodes/${nodeId}/configuration`}
-              >
-                Configuration
-              </NavItemLink>
-            </NavList>
-          </Nav>
-        </PageNavigation>
+        // <PageNavigation>
+        //   <Nav aria-label="Group section navigation" variant="tertiary">
+        //     <NavList>
+        //       <NavItemLink
+        //         url={`/kafka/${kafkaId}/nodes/${nodeId}/configuration`}
+        //       >
+        //         Configuration
+        //       </NavItemLink>
+        //     </NavList>
+        //   </Nav>
+        // </PageNavigation>
+        undefined
       }
     />
   );
