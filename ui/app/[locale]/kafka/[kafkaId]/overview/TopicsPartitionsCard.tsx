@@ -43,7 +43,7 @@ export function TopicsPartitionsCard({
     <Card component={"div"}>
       <CardHeader
         actions={{
-          actions: <Link href={""}>View all</Link>,
+          actions: <Link href={"./topics"}>View all</Link>,
         }}
       >
         <CardTitle>Topics</CardTitle>
