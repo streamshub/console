@@ -177,7 +177,9 @@ export function TopicsTable({
       data={state.topics}
       emptyStateNoData={<EmptyStateNoTopics createHref={`${baseurl}/create`} />}
       emptyStateNoResults={<EmptyStateNoMatchFound onClear={clearFilters} />}
-      isFiltered={name !== undefined || id !== undefined}
+      isFiltered={
+        name !== undefined || id !== undefined || status !== undefined
+      }
       ariaLabel={"Topics"}
       columns={TopicsTableColumns}
       isColumnSortable={(col) => {

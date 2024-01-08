@@ -10,7 +10,9 @@ export default function OverviewHeader({
   return (
     <AppHeader
       title={"Cluster overview"}
-      subTitle={"lorem dolor ipsum"}
+      subTitle={
+        "Key performance indicators and important information regarding the Kafka cluster."
+      }
       actions={[<ConnectButton key={"cd"} clusterId={kafkaId} />]}
     />
   );
