@@ -177,7 +177,9 @@ export function TopicsTable({
       data={state.topics}
       emptyStateNoData={<EmptyStateNoTopics createHref={`${baseurl}/create`} />}
       emptyStateNoResults={<EmptyStateNoMatchFound onClear={clearFilters} />}
-      isFiltered={name !== undefined || id !== undefined}
+      isFiltered={
+        name !== undefined || id !== undefined || status !== undefined
+      }
       ariaLabel={"Topics"}
       columns={TopicsTableColumns}
       isColumnSortable={(col) => {
@@ -346,7 +348,7 @@ export function TopicsTable({
               addOptimistic({ name: undefined });
             });
           },
-          validate: (value) => value.length >= 3,
+          validate: (value) => true,
           errorMessage: "At least 3 characters",
         },
         "Topic ID": {
@@ -370,7 +372,7 @@ export function TopicsTable({
               addOptimistic({ id: undefined });
             });
           },
-          validate: (value) => value.length >= 3,
+          validate: (value) => true,
           errorMessage: "At least 3 characters",
         },
         Status: {

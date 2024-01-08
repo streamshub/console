@@ -43,7 +43,7 @@ export function TopicsPartitionsCard({
     <Card component={"div"}>
       <CardHeader
         actions={{
-          actions: <Link href={""}>View all</Link>,
+          actions: <Link href={"./topics"}>View all</Link>,
         }}
       >
         <CardTitle>Topics</CardTitle>
@@ -63,9 +63,9 @@ export function TopicsPartitionsCard({
                   <FlexItem>
                     <TextContent>
                       <Text component={"small"}>
-                        <span className="pf-v5-u-primary-color-100">
+                        <Link href={"./topics"}>
                           <Number value={topicsTotal} /> total topics
-                        </span>
+                        </Link>
                       </Text>
                     </TextContent>
                   </FlexItem>
@@ -91,7 +91,7 @@ export function TopicsPartitionsCard({
             flexWrap={{ default: "nowrap" }}
           >
             <FlexItem>
-              <div className="pf-v5-u-primary-color-100">
+              <Link href={"./topics?status=FullyReplicated"}>
                 {isLoading ? (
                   <Skeleton
                     shape={"circle"}
@@ -101,7 +101,7 @@ export function TopicsPartitionsCard({
                 ) : (
                   <Number value={topicsReplicated} />
                 )}
-              </div>
+              </Link>
               <TextContent className={"pf-v5-u-text-nowrap"}>
                 <Text component={"small"}>
                   <Icon status={"success"}>
@@ -119,7 +119,7 @@ export function TopicsPartitionsCard({
               </TextContent>
             </FlexItem>
             <FlexItem>
-              <div className="pf-v5-u-primary-color-100">
+              <Link href={"./topics?status=UnderReplicated"}>
                 {isLoading ? (
                   <Skeleton
                     shape={"circle"}
@@ -129,7 +129,7 @@ export function TopicsPartitionsCard({
                 ) : (
                   <Number value={topicsUnderReplicated} />
                 )}
-              </div>
+              </Link>
               <TextContent className={"pf-v5-u-text-nowrap"}>
                 <Text component={"small"}>
                   <Icon status={"warning"}>
@@ -147,7 +147,7 @@ export function TopicsPartitionsCard({
               </TextContent>
             </FlexItem>
             <FlexItem>
-              <div className="pf-v5-u-primary-color-100">
+              <Link href={"./topics?status=Offline"}>
                 {isLoading ? (
                   <Skeleton
                     shape={"circle"}
@@ -161,7 +161,7 @@ export function TopicsPartitionsCard({
                     }
                   />
                 )}
-              </div>
+              </Link>
               <TextContent className={"pf-v5-u-text-nowrap"}>
                 <Text component={"small"}>
                   <Icon status={"danger"}>
