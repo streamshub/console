@@ -289,7 +289,11 @@ export const ResponsiveTable = <TRow, TCol>({
                 : `actions-for-row-${rowIndex}`
             }
           >
-            {renderActions({ rowIndex, row, ActionsColumn })}
+            {renderActions({
+              rowIndex,
+              row,
+              ActionsColumn: BoundActionsColumn,
+            })}
           </ResponsiveTd>
         );
         const rowExpanded = expanded[rowIndex] !== undefined;
@@ -464,3 +468,23 @@ export const DeletableRow = memo<DeletableRowProps>(
   },
 );
 DeletableRow.displayName = "DeletableRow";
+
+const BoundActionsColumn = forwardRef<HTMLElement, ActionsColumnProps>(
+  (props, ref) => {
+    return (
+      <ActionsColumn
+        {...props}
+        popperProps={{
+          enableFlip: true,
+          flipBehavior: ["bottom-end", "top-end"],
+          appendTo: () =>
+            document.getElementsByClassName(
+              "pf-v5-c-scroll-outer-wrapper",
+            )[0] || document.getElementsByTagName("main")[0],
+        }}
+        ref={ref}
+      />
+    );
+  },
+);
+BoundActionsColumn.displayName = "ActionsColumn";
