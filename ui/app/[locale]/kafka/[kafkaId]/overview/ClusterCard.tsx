@@ -117,7 +117,7 @@ export function ClusterCard({
             >
               <Grid>
                 <GridItem span={12} xl={4}>
-                  <div className="pf-v5-u-font-size-xl pf-v5-u-primary-color-100">
+                  <Link className="pf-v5-u-font-size-xl" href={"./nodes"}>
                     {isLoading ? (
                       <Skeleton
                         shape={"circle"}
@@ -131,13 +131,16 @@ export function ClusterCard({
                         <Number value={brokersTotal} />
                       </>
                     )}
-                  </div>
+                  </Link>
                   <TextContent>
                     <Text component={"small"}>Online brokers</Text>
                   </TextContent>
                 </GridItem>
                 <GridItem span={12} xl={4}>
-                  <div className="pf-v5-u-font-size-xl pf-v5-u-primary-color-100">
+                  <Link
+                    className="pf-v5-u-font-size-xl"
+                    href={"./consumer-groups"}
+                  >
                     {isLoading ? (
                       <Skeleton
                         shape={"circle"}
@@ -147,7 +150,7 @@ export function ClusterCard({
                     ) : (
                       <Number value={consumerGroups} />
                     )}
-                  </div>
+                  </Link>
                   <TextContent>
                     <Text component={"small"}>Consumer groups</Text>
                   </TextContent>
