@@ -346,7 +346,7 @@ export function TopicsTable({
               addOptimistic({ name: undefined });
             });
           },
-          validate: (value) => value.length >= 3,
+          validate: (value) => true,
           errorMessage: "At least 3 characters",
         },
         "Topic ID": {
@@ -370,7 +370,7 @@ export function TopicsTable({
               addOptimistic({ id: undefined });
             });
           },
-          validate: (value) => value.length >= 3,
+          validate: (value) => true,
           errorMessage: "At least 3 characters",
         },
         Status: {
