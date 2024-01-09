@@ -42,8 +42,8 @@ dependencies:
     specifier: ^2.3.3
     version: 2.3.3
   convert:
-    specifier: ^4.14.0
-    version: 4.14.0
+    specifier: ^4.14.1
+    version: 4.14.1
   date-fns:
     specifier: ^2.30.0
     version: 2.30.0
@@ -5366,8 +5366,8 @@ packages:
   /convert-source-map@2.0.0:
     resolution: {integrity: sha512-Kvp459HrV2FEJ1CAsi1Ku+MY3kasH19TFykTz2xWmMeq6bk2NU3XXvfJ+Q61m0xktWwt+1HSYf3JZsTms3aRJg==}
 
-  /convert@4.14.0:
-    resolution: {integrity: sha512-Lb+zARTdyUZMesbmppDzIixaMuDj1B48O5/1n7gHV9WdWrySbBfUM6MEqTLXZfiVFH7fXsnmiwaHyUZwWwDNsg==}
+  /convert@4.14.1:
+    resolution: {integrity: sha512-haeYUERJCdvILEfZC2OHZd8JIIvU6Kl93zfDrDCG3dvws4icuWC2D5O7jyaKh8vjECdfkWkVB6qDycQpGhWWSA==}
     dev: false
 
   /cookie-signature@1.0.6:
