@@ -1,4 +1,4 @@
-import { Button, Tooltip } from "@patternfly/react-core";
+import { Button, Spinner, Tooltip } from "@patternfly/react-core";
 import { SyncAltIcon } from "@patternfly/react-icons";
 import { useTranslations } from "next-intl";
 
@@ -26,12 +26,13 @@ export function RefreshButton({
     <Tooltip content={tooltip || defaultTooltip}>
       <Button
         className="pf-m-hoverable"
-        variant="plain"
+        variant="secondary"
         aria-label={ariaLabel || t("refresh_button_label")}
         isDisabled={isDisabled}
         onClick={isDisabled === true ? undefined : onClick}
-        isLoading={isRefreshing}
-        icon={<SyncAltIcon />}
+        icon={
+          isRefreshing === false ? <SyncAltIcon /> : <Spinner size={"md"} />
+        }
       />
     </Tooltip>
   );

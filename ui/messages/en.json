@@ -8,7 +8,7 @@
     "refresh_button_label": "Refresh",
     "refresh_description": "Reload contents",
     "refreshing_tooltip": "Data is currently refreshing",
-    "refresh_interval": "{value}s"
+    "refresh_interval": "{value} seconds"
   },
   "Table": {
     "skeleton_loader_screenreader_text": "Loading data"
