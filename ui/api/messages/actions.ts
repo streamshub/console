@@ -24,7 +24,7 @@ export async function getTopicMessages(
       | undefined;
     maxValueLength: number | undefined;
   },
-): Promise<Message[]> {
+): Promise<{ messages: Message[]; ts: Date }> {
   const sp = new URLSearchParams(
     filterUndefinedFromObj({
       "fields[records]":
@@ -55,7 +55,7 @@ export async function getTopicMessages(
   });
   const rawData = await res.json();
   log.trace({ rawData }, "Received messages");
-  return MessageApiResponse.parse(rawData).data;
+  return { messages: MessageApiResponse.parse(rawData).data, ts: new Date() };
 }
 
 export async function getTopicMessage(
@@ -67,7 +67,7 @@ export async function getTopicMessage(
   },
 ): Promise<Message | undefined> {
   log.info({ kafkaId, topicId, params }, "getTopicMessage");
-  const messages = await getTopicMessages(kafkaId, topicId, {
+  const { messages } = await getTopicMessages(kafkaId, topicId, {
     pageSize: 1,
     partition: params.partition,
     filter: {

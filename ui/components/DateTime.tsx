@@ -9,7 +9,7 @@ export function DateTime({
   tz = "local",
   empty = "-",
 }: {
-  value: string | undefined;
+  value: string | Date | undefined;
   dateStyle?: "full" | "long" | "medium" | "short";
   timeStyle?: "full" | "long" | "medium" | "short";
   tz?: "UTC" | "local";
@@ -19,7 +19,7 @@ export function DateTime({
   if (!value) {
     return empty;
   }
-  const maybeDate = parseISO(value);
+  const maybeDate = typeof value === "string" ? parseISO(value) : value;
   if (!isDate(maybeDate)) {
     return empty;
   }

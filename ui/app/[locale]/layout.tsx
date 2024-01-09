@@ -31,8 +31,8 @@ export default async function Layout({ children, params: { locale } }: Props) {
           <AppSessionProvider session={session}>
             <AppLayoutProvider>
               <AppLayout>{children}</AppLayout>
-              <SessionRefresher />
             </AppLayoutProvider>
+            <SessionRefresher />
           </AppSessionProvider>
         </NextIntlProvider>
       </body>
