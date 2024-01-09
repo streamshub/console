@@ -28,7 +28,7 @@ async function ConnectedTopicBreadcrumb({
       Topics
     </BreadcrumbLink>,
     <BreadcrumbItem key={"current-topic"} showDivider={true}>
-      {topic.attributes.name}
+      {topic?.attributes.name}
     </BreadcrumbItem>,
   ];
 }

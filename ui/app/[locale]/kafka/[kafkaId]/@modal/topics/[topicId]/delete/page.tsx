@@ -11,13 +11,13 @@ export default async function DeletePage({
 
   async function onDelete() {
     "use server";
-    const res = await deleteTopic(kafkaId, topicId);
-    if (res) {
-    }
-    return res;
+    await deleteTopic(kafkaId, topicId);
   }
 
   return (
-    <DeleteTopicModal topicName={topic.attributes.name} onDelete={onDelete} />
+    <DeleteTopicModal
+      topicName={topic?.attributes.name || ""}
+      onDelete={onDelete}
+    />
   );
 }

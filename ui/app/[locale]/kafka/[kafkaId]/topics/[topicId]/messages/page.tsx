@@ -7,6 +7,7 @@ import {
   parseSearchParams,
 } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/parseSearchParams";
 import { KafkaTopicParams } from "@/app/[locale]/kafka/[kafkaId]/topics/kafkaTopic.params";
+import { redirect } from "@/navigation";
 
 export const revalidate = 0;
 
@@ -18,6 +19,10 @@ export default async function MessagesPage({
   searchParams: MessagesSearchParams;
 }) {
   const topic = await getTopic(kafkaId, topicId);
+  if (!topic) {
+    redirect(`/kafka/${kafkaId}`);
+    return null;
+  }
   const {
     limit,
     partition,

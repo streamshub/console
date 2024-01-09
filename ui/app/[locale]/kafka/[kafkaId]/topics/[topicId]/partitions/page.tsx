@@ -1,6 +1,6 @@
 import { getTopic } from "@/api/topics/actions";
 import { KafkaTopicParams } from "@/app/[locale]/kafka/[kafkaId]/topics/kafkaTopic.params";
-import { notFound } from "next/navigation";
+import { redirect } from "@/navigation";
 import { Suspense } from "react";
 import { PartitionsTable } from "./PartitionsTable";
 
@@ -21,7 +21,8 @@ export default function PartitionsPage({
 async function ConnectedPartitions({ kafkaId, topicId }: KafkaTopicParams) {
   const topic = await getTopic(kafkaId, topicId);
   if (!topic) {
-    notFound();
+    redirect(`/kafka/${kafkaId}`);
+    return null;
   }
   return <PartitionsTable kafkaId={kafkaId} topic={topic} />;
 }
