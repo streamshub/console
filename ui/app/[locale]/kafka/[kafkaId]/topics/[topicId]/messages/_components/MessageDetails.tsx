@@ -121,16 +121,6 @@ export function MessageDetailsBody({
               )}
             </DescriptionListDescription>
           </DescriptionListGroup>
-          <DescriptionListGroup>
-            <DescriptionListTerm>{t("field.key")}</DescriptionListTerm>
-            <DescriptionListDescription>
-              {message.messageKey ? (
-                message.messageKey
-              ) : (
-                <NoDataCell columnLabel={t("field.key")} />
-              )}
-            </DescriptionListDescription>
-          </DescriptionListGroup>
         </DescriptionList>
       </FlexItem>
       <FlexItem>

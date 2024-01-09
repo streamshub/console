@@ -86,7 +86,7 @@
     "search_button_label": "Search",
     "no_data": "No data",
     "field": {
-      "epoch": "Epoch timestamp",
+      "epoch": "Unix timestamp",
       "headers": "Headers",
       "key": "Key",
       "offset": "Offset",
@@ -97,9 +97,9 @@
       "value": "Value"
     },
     "filter": {
-      "epoch": "From epoch",
-      "epoch_aria_label": "Specify epoch",
-      "epoch_placeholder": "Specify epoch",
+      "epoch": "From Unix timestamp",
+      "epoch_aria_label": "Specify Unix timestamp",
+      "epoch_placeholder": "Specify Unix timestamp",
       "latest": "Latest messages",
       "offset": "From offset",
       "offset_aria_label": "Specify offset",
