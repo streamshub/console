@@ -1,6 +1,7 @@
 import { getTopic, updateTopic } from "@/api/topics/actions";
 import { KafkaTopicParams } from "@/app/[locale]/kafka/[kafkaId]/topics/kafkaTopic.params";
 import { PageSection } from "@/libs/patternfly/react-core";
+import { redirect } from "@/navigation";
 import { Suspense } from "react";
 import { ConfigTable } from "./ConfigTable";
 
@@ -26,6 +27,11 @@ async function ConnectedTopicConfiguration({
   params: KafkaTopicParams;
 }) {
   const topic = await getTopic(kafkaId, topicId);
+
+  if (!topic) {
+    redirect(`/kafka/${kafkaId}`);
+    return null;
+  }
 
   async function onSaveProperty(name: string, value: string) {
     "use server";

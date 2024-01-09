@@ -71,7 +71,7 @@ export async function getTopics(
 export async function getTopic(
   kafkaId: string,
   topicId: string,
-): Promise<Topic> {
+): Promise<Topic | null> {
   const url = `${process.env.BACKEND_URL}/api/kafkas/${kafkaId}/topics/${topicId}?${describeTopicsQuery}`;
   const res = await fetch(url, {
     headers: await getHeaders(),
@@ -81,7 +81,11 @@ export async function getTopic(
   });
   const rawData = await res.json();
   log.debug(rawData, "getTopic");
-  return TopicResponse.parse(rawData).data;
+  try {
+    return TopicResponse.parse(rawData).data;
+  } catch {
+    return null;
+  }
 }
 
 export async function createTopic(
@@ -176,11 +180,12 @@ export async function deleteTopic(
   try {
     const success = res.status === 204;
     if (success) {
+      log.debug({ url }, "deleteTopic success");
       revalidateTag("topics");
     }
     return success;
   } catch (e) {
-    log.error(e, "deleteTopic unknown error");
+    log.error({ err: e, url }, "deleteTopic unknown error");
   }
   return false;
 }

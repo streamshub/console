@@ -10,6 +10,8 @@ import { PageSection } from "@/libs/patternfly/react-core";
 import { stringToInt } from "@/utils/stringToInt";
 import { Suspense } from "react";
 
+export const dynamic = "force-dynamic";
+
 const sortMap: Record<(typeof SortableColumns)[number], string> = {
   name: "name",
   partitions: "partitions",

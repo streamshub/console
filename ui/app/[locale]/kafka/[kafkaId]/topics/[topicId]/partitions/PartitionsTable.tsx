@@ -84,7 +84,9 @@ export function PartitionsTable({
     if (initialData) {
       interval = setInterval(async () => {
         const topic = await getTopic(kafkaId, initialData.id);
-        setTopic(topic);
+        if (topic) {
+          setTopic(topic);
+        }
       }, 30000);
     }
     return () => clearInterval(interval);

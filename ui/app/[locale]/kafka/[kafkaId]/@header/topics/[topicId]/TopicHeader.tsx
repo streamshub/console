@@ -95,7 +95,7 @@ async function ConnectedTopicHeader({
   const topic = await getTopic(cluster.id, topicId);
   return (
     <AppHeader
-      title={topic.attributes.name}
+      title={topic?.attributes.name}
       navigation={
         <PageNavigation>
           <Nav aria-label="Group section navigation" variant="tertiary">
@@ -109,7 +109,7 @@ async function ConnectedTopicHeader({
                 Partitions&nbsp;
                 <Label isCompact={true}>
                   <Suspense fallback={<Spinner size="sm" />}>
-                    <Number value={topic.attributes.numPartitions} />
+                    <Number value={topic?.attributes.numPartitions} />
                   </Suspense>
                 </Label>
               </NavItemLink>
@@ -119,7 +119,7 @@ async function ConnectedTopicHeader({
                 Consumer groups&nbsp;
                 <Label isCompact={true}>
                   <Number
-                    value={topic.relationships.consumerGroups.data.length}
+                    value={topic?.relationships.consumerGroups.data.length}
                   />
                 </Label>
               </NavItemLink>

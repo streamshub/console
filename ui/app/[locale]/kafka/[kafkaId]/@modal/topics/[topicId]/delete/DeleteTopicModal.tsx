@@ -1,7 +1,9 @@
 "use client";
+import { KafkaParams } from "@/app/[locale]/kafka/[kafkaId]/kafka.params";
 import { DeleteModal } from "@/components/DeleteModal";
-import { useTranslations } from "next-intl";
 import { useRouter } from "@/navigation";
+import { useTranslations } from "next-intl";
+import { useParams } from "next/navigation";
 import { useState, useTransition } from "react";
 
 export function DeleteTopicModal({
@@ -9,10 +11,11 @@ export function DeleteTopicModal({
   onDelete,
 }: {
   topicName: string;
-  onDelete: () => Promise<boolean>;
+  onDelete: () => Promise<void>;
 }) {
   const t = useTranslations("delete-topic");
   const router = useRouter();
+  const params = useParams<KafkaParams>();
   const [pending, startTransition] = useTransition();
   const [deleting, setDeleting] = useState(false);
   const isDeleting = deleting || pending;
@@ -20,12 +23,10 @@ export function DeleteTopicModal({
   async function handleDelete() {
     try {
       setDeleting(true);
-      const res = await onDelete();
-      if (res) {
-        startTransition(() => {
-          router.back();
-        });
-      }
+      await onDelete();
+      startTransition(() => {
+        router.push(`/kafka/${params.kafkaId}/topics/post-delete`);
+      });
     } finally {
       setDeleting(false);
     }
