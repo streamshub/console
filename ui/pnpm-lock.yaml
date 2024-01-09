@@ -69,8 +69,8 @@ dependencies:
     specifier: ^4.24.5
     version: 4.24.5(next@14.0.4)(react-dom@18.2.0)(react@18.2.0)
   next-intl:
-    specifier: ^3.3.3
-    version: 3.3.3(next@14.0.4)(react@18.2.0)
+    specifier: ^3.4.1
+    version: 3.4.1(next@14.0.4)(react@18.2.0)
   next-logger:
     specifier: ^3.0.2
     version: 3.0.2(next@14.0.4)(typescript@5.3.3)
@@ -8335,8 +8335,8 @@ packages:
       uuid: 8.3.2
     dev: false
 
-  /next-intl@3.3.3(next@14.0.4)(react@18.2.0):
-    resolution: {integrity: sha512-FEiJngR37rpCHxsKJw0glEVwXq9QEXzwGDz2HrrO6CaOgYvxwEPRt6Of+tNhHhmBmV9nwFI8IVl0ZcbK+IrPvg==}
+  /next-intl@3.4.1(next@14.0.4)(react@18.2.0):
+    resolution: {integrity: sha512-z8gY7uCe1cDHpH3rAD4uxZ5qEvt0WZX4bdKu7km2COPUIEXAXF1puwNAbtTC8b5clWGd87QwBy1+VS7ZElyU8g==}
     peerDependencies:
       next: ^10.0.0 || ^11.0.0 || ^12.0.0 || ^13.0.0 || ^14.0.0
       react: ^16.8.0 || ^17.0.0 || ^18.0.0
@@ -8345,7 +8345,7 @@ packages:
       negotiator: 0.6.3
       next: 14.0.4(@babel/core@7.23.2)(react-dom@18.2.0)(react@18.2.0)
       react: 18.2.0
-      use-intl: 3.3.3(react@18.2.0)
+      use-intl: 3.4.1(react@18.2.0)
     dev: false
 
   /next-logger@3.0.2(next@14.0.4)(typescript@5.3.3):
@@ -10803,8 +10803,8 @@ packages:
       tslib: 2.6.1
     dev: true
 
-  /use-intl@3.3.3(react@18.2.0):
-    resolution: {integrity: sha512-gnTkFGqjfdaVRJyzmnV3gSYBVVu2DS6ZcRgY2/2oT5g0yPT5GjvzPSb+p27//vS/17jcDomV0uozgsGug64Nmw==}
+  /use-intl@3.4.1(react@18.2.0):
+    resolution: {integrity: sha512-Z2SWvtFXXytpKCTMeyNX6Un8HC8mmu1RxYIHOwI01rMSy6mGBFaO9T1a/0xDL1CLNLP4NzHdzRNsuhDcrw2/VQ==}
     peerDependencies:
       react: ^16.8.0 || ^17.0.0 || ^18.0.0
     dependencies:
