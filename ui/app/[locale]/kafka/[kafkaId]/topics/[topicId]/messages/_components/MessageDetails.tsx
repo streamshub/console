@@ -62,7 +62,7 @@ export function MessageDetails({
 }
 
 export type MessageDetailsBodyProps = {
-  defaultTab: "value" | "headers";
+  defaultTab: "value" | "key" | "headers";
   messageKey: string | null;
 } & Omit<Message, "key">;
 
@@ -141,7 +141,19 @@ export function MessageDetailsBody({
             title={<TabTitleText>{t("field.value")}</TabTitleText>}
           >
             <ClipboardCopy isCode={true} isExpanded={true} isReadOnly={true}>
-              {beautifyUnknownValue(message.attributes.value || "")}
+              {beautifyUnknownValue(
+                message.attributes.value || "Message has no value",
+              )}
+            </ClipboardCopy>
+          </Tab>
+          <Tab
+            eventKey={"key"}
+            title={<TabTitleText>{t("field.key")}</TabTitleText>}
+          >
+            <ClipboardCopy isCode={true} isExpanded={true} isReadOnly={true}>
+              {beautifyUnknownValue(
+                message.attributes.key || "Message has no key",
+              )}
             </ClipboardCopy>
           </Tab>
           <Tab
@@ -150,7 +162,8 @@ export function MessageDetailsBody({
           >
             <ClipboardCopy isCode={true} isExpanded={true} isReadOnly={true}>
               {beautifyUnknownValue(
-                JSON.stringify(message.attributes.headers) || "",
+                JSON.stringify(message.attributes.headers) ||
+                  "Message has no header",
               )}
             </ClipboardCopy>
           </Tab>
