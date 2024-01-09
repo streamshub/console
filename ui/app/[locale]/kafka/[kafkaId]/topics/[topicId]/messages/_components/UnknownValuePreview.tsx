@@ -1,6 +1,6 @@
-import { truncate } from "./utils";
 import { Flex, FlexItem } from "@/libs/patternfly/react-core";
 import { useTranslations } from "next-intl";
+import { truncate } from "./utils";
 
 const PREVIEW_LENGTH = 170;
 
@@ -9,6 +9,7 @@ export type UnknownValuePreviewProps = {
   truncateAt?: number;
   onClick?: () => void;
 };
+
 export function UnknownValuePreview({
   value,
   truncateAt = PREVIEW_LENGTH,
@@ -20,22 +21,19 @@ export function UnknownValuePreview({
     <Flex
       direction={{ default: "column" }}
       spaceItems={{ default: "spaceItemsXs" }}
+      onClick={
+        onClick
+          ? (e) => {
+              e.stopPropagation();
+              onClick();
+            }
+          : undefined
+      }
     >
       <FlexItem>{preview}</FlexItem>
       {truncated && (
         <FlexItem>
-          <a
-            onClick={
-              onClick
-                ? (e) => {
-                    e.stopPropagation();
-                    onClick();
-                  }
-                : undefined
-            }
-          >
-            {t("show_more")}
-          </a>
+          <a>{t("show_more")}</a>
         </FlexItem>
       )}
     </Flex>

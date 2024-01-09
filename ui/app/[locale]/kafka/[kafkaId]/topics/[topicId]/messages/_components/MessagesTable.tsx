@@ -223,6 +223,10 @@ export function MessagesTable({
                             <UnknownValuePreview
                               value={row.attributes.key}
                               truncateAt={40}
+                              onClick={() => {
+                                setDefaultTab("key");
+                                onSelectMessage(row);
+                              }}
                             />
                           ) : (
                             empty
