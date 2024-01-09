@@ -13,7 +13,7 @@ import {
 } from "@/libs/patternfly/react-core";
 import { Skeleton } from "@patternfly/react-core";
 import { notFound } from "next/navigation";
-import { Suspense } from "react";
+import { ReactNode, Suspense } from "react";
 
 export const fetchCache = "force-cache";
 
@@ -22,6 +22,7 @@ export function TopicHeader({
 }: {
   params: KafkaTopicParams;
 }) {
+  const portal = <div key={"topic-header-portal"} id={"topic-header-portal"} />;
   return (
     <Suspense
       fallback={
@@ -71,18 +72,21 @@ export function TopicHeader({
               </Nav>
             </PageNavigation>
           }
+          actions={[portal]}
         />
       }
     >
-      <ConnectedTopicHeader params={{ kafkaId, topicId }} />
+      <ConnectedTopicHeader params={{ kafkaId, topicId }} portal={portal} />
     </Suspense>
   );
 }
 
 async function ConnectedTopicHeader({
   params: { kafkaId, topicId },
+  portal,
 }: {
   params: KafkaTopicParams;
+  portal: ReactNode;
 }) {
   const cluster = await getKafkaCluster(kafkaId);
   if (!cluster) {
@@ -135,6 +139,7 @@ async function ConnectedTopicHeader({
           </Nav>
         </PageNavigation>
       }
+      actions={[portal]}
     />
   );
 }

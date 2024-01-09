@@ -29,7 +29,7 @@ export default async function MessagesPage({
     epoch,
   } = parseSearchParams(searchParams);
 
-  const messages = await getTopicMessages(kafkaId, topicId, {
+  const { messages, ts } = await getTopicMessages(kafkaId, topicId, {
     pageSize: limit,
     partition,
     filter,
@@ -52,6 +52,7 @@ export default async function MessagesPage({
       return (
         <ConnectedMessagesTable
           messages={messages}
+          lastRefresh={ts}
           selectedMessage={selectedMessage}
           partitions={topic.attributes.numPartitions ?? 0}
           params={{

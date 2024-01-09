@@ -8,10 +8,6 @@ import {
 import { FilterGroup } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/_components/FilterGroup";
 import { NoResultsEmptyState } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/_components/NoResultsEmptyState";
 import { PartitionSelector } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/_components/PartitionSelector";
-import {
-  RefreshInterval,
-  RefreshSelector,
-} from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/_components/RefreshSelector";
 import { DateTime } from "@/components/DateTime";
 import { Number } from "@/components/Number";
 import { ResponsiveTable } from "@/components/table";
@@ -56,7 +52,6 @@ const defaultColumns = ["offset", "timestampUTC", "key", "value"];
 
 export type MessageBrowserProps = {
   isRefreshing: boolean;
-  refreshInterval: RefreshInterval;
   selectedMessage: Message | undefined;
   lastUpdated: Date | undefined;
   messages: Message[];
@@ -72,8 +67,6 @@ export type MessageBrowserProps = {
   onEpochChange: (value: number | undefined) => void;
   onLatest: () => void;
   onLimitChange: (value: number) => void;
-  onRefresh: () => void;
-  onRefreshInterval: (interval: RefreshInterval) => void;
   onSelectMessage: (message: Message) => void;
   onDeselectMessage: () => void;
 };
@@ -88,15 +81,12 @@ export function MessagesTable({
   filterOffset,
   filterEpoch,
   filterTimestamp,
-  refreshInterval,
   onPartitionChange,
   onOffsetChange,
   onTimestampChange,
   onEpochChange,
   onLatest,
   onLimitChange,
-  onRefresh,
-  onRefreshInterval,
   onSelectMessage,
   onDeselectMessage,
 }: MessageBrowserProps) {
@@ -141,7 +131,6 @@ export function MessagesTable({
           <OuterScrollContainer>
             <MessagesTableToolbar
               isRefreshing={isRefreshing}
-              refreshInterval={refreshInterval}
               partitions={partitions}
               partition={partition}
               limit={limit}
@@ -154,8 +143,6 @@ export function MessagesTable({
               onEpochChange={onEpochChange}
               onLatest={onLatest}
               onLimitChange={onLimitChange}
-              onRefresh={onRefresh}
-              onRefreshInterval={onRefreshInterval}
               onColumnManagement={() => setShowColumnsManagement(true)}
             />
             <InnerScrollContainer>
@@ -323,15 +310,12 @@ export function MessagesTableToolbar({
   partition,
   partitions,
   limit,
-  refreshInterval,
   onEpochChange,
   onTimestampChange,
   onOffsetChange,
   onPartitionChange,
   onLimitChange,
   onLatest,
-  onRefresh,
-  onRefreshInterval,
   onColumnManagement,
 }: Pick<
   MessageBrowserProps,
@@ -342,15 +326,12 @@ export function MessagesTableToolbar({
   | "partition"
   | "partitions"
   | "limit"
-  | "refreshInterval"
   | "onEpochChange"
   | "onTimestampChange"
   | "onOffsetChange"
   | "onPartitionChange"
   | "onLimitChange"
   | "onLatest"
-  | "onRefresh"
-  | "onRefreshInterval"
 > & {
   onColumnManagement: () => void;
 }) {
@@ -424,17 +405,6 @@ export function MessagesTableToolbar({
             />
           </ToolbarItem>
         </ToolbarToggleGroup>
-        {/* icon buttons */}
-        <ToolbarGroup variant="icon-button-group">
-          <ToolbarItem>
-            <RefreshSelector
-              isRefreshing={isRefreshing}
-              refreshInterval={refreshInterval}
-              onClick={onRefresh}
-              onChange={onRefreshInterval}
-            />
-          </ToolbarItem>
-        </ToolbarGroup>
 
         <ToolbarItem>
           <Button onClick={onColumnManagement} variant={"link"}>
@@ -448,6 +418,9 @@ export function MessagesTableToolbar({
             onChange={onLimitChange}
             isDisabled={isRefreshing}
           />
+        </ToolbarGroup>
+        <ToolbarGroup variant="icon-button-group">
+          <ToolbarItem></ToolbarItem>
         </ToolbarGroup>
       </ToolbarContent>
     </Toolbar>
@@ -473,7 +446,6 @@ export function MessagesTableSkeleton({
     >
       <MessagesTableToolbar
         isRefreshing={true}
-        refreshInterval={undefined}
         partitions={1}
         partition={partition}
         limit={limit}
@@ -486,8 +458,6 @@ export function MessagesTableSkeleton({
         onEpochChange={() => {}}
         onLatest={() => {}}
         onLimitChange={() => {}}
-        onRefresh={() => {}}
-        onRefreshInterval={() => {}}
         onColumnManagement={() => {}}
       />
       <ResponsiveTable
