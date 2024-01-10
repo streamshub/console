@@ -108,7 +108,7 @@ export function AppMasthead() {
       <FeedbackModal
         onShareFeedback="https://github.com/eyefloaters/console/issues/new?assignees=&labels=&projects=&template=share-feeedback.md&title="
         onJoinMailingList="https://github.com/eyefloaters/console/issues/new?assignees=&labels=&projects=&template=inform-the-direction-of-products.md&title="
-        onOpenSupportCase="https://github.com/eyefloaters/console/issues/new?assignees=&labels=&projects=&template=open-support-case.md&title="
+        onOpenSupportCase="https://access.redhat.com/support/cases/#/case/new/get-support?caseCreate=true"
         onReportABug="https://github.com/eyefloaters/console/issues/new?assignees=&labels=&projects=&template=bug_report.md&title="
         feedbackImg={"/pf_feedback.svg"}
         isOpen={isFeedbackModalOpen}
