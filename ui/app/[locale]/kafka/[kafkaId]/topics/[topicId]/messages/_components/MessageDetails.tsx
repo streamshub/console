@@ -23,7 +23,7 @@ import {
   TextVariants,
   Tooltip,
 } from "@/libs/patternfly/react-core";
-import { HelpIcon } from "@patternfly/react-icons";
+import { HelpIcon } from "@/libs/patternfly/react-icons";
 import { useTranslations } from "next-intl";
 import { NoDataCell } from "./NoDataCell";
 import { beautifyUnknownValue } from "./utils";
