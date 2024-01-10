@@ -36,7 +36,6 @@ import {
   Tooltip,
 } from "@/libs/patternfly/react-core";
 import { HelpIcon } from "@/libs/patternfly/react-icons";
-import { Link } from "@/navigation";
 import { Suspense } from "react";
 import styles from "./home.module.css";
 
@@ -121,9 +120,9 @@ export default function Home() {
                       <b>Recommended learning resources</b>
                     </TextContent>
                   </LevelItem>
-                  <LevelItem>
-                    <Link href={"/learning-resources"}>View all</Link>
-                  </LevelItem>
+                  {/*<LevelItem>*/}
+                  {/*  <Link href={"/learning-resources"}>View all</Link>*/}
+                  {/*</LevelItem>*/}
                 </Level>
               }
               collapsedTitle={
@@ -150,9 +149,9 @@ export default function Home() {
                       </StackItem>
                     </Stack>
                   </LevelItem>
-                  <LevelItem>
-                    <Link href={"/learning-resources"}>View all</Link>
-                  </LevelItem>
+                  {/*<LevelItem>*/}
+                  {/*  <Link href={"/learning-resources"}>View all</Link>*/}
+                  {/*</LevelItem>*/}
                 </Level>
               }
               isCompact={true}

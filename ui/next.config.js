@@ -13,6 +13,15 @@ const nextConfig = {
   typescript: {
     //ignoreBuildErrors: true,
   },
+  transpilePackages: [
+    "@patternfly/quickstarts",
+    "@patternfly/react-core",
+    "@patternfly/react-styles",
+    "@patternfly/react-charts",
+    "@patternfly/react-table",
+    "@patternfly/react-tokens",
+    "@patternfly/react-icons",
+  ],
 };
 
 module.exports = withNextIntl(nextConfig);

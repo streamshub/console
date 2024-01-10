@@ -27,9 +27,9 @@ export function AppLayout({ children }: PropsWithChildren) {
                   <Clusters />
                 </Suspense>
               </NavExpandable>
-              <NavItemLink url={"/learning-resources"}>
-                Learning resources
-              </NavItemLink>
+              {/*<NavItemLink url={"/learning-resources"}>*/}
+              {/*  Learning resources*/}
+              {/*</NavItemLink>*/}
             </NavList>
           </Nav>
         </AppSidebar>
