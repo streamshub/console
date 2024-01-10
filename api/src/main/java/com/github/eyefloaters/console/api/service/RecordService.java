@@ -8,6 +8,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -30,6 +31,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
 import org.apache.kafka.clients.admin.Admin;
+import org.apache.kafka.clients.admin.ListTopicsOptions;
 import org.apache.kafka.clients.admin.TopicListing;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -121,7 +123,7 @@ public class RecordService {
                 if (!hasNext()) {
                     throw new NoSuchElementException();
                 }
-                var records = consumer.poll(Duration.ofMillis(100));
+                var records = consumer.poll(Duration.between(Instant.now(), timeout));
                 int pollSize = records.count();
                 emptyPoll = pollSize == 0;
                 recordsConsumed.addAndGet(pollSize);
@@ -227,7 +229,7 @@ public class RecordService {
         Uuid kafkaTopicId = Uuid.fromString(topicId);
 
         return clientSupplier.get()
-            .listTopics()
+            .listTopics(new ListTopicsOptions().listInternal(true))
             .listings()
             .toCompletionStage()
             .thenApply(Collection::stream)
@@ -316,6 +318,7 @@ public class RecordService {
         setProperty(KafkaRecord.Fields.KEY, include, rec::key, k -> item.setKey(bytesToString(k, maxValueLength)));
         setProperty(KafkaRecord.Fields.VALUE, include, rec::value, v -> item.setValue(bytesToString(v, maxValueLength)));
         setProperty(KafkaRecord.Fields.HEADERS, include, () -> headersToMap(rec.headers(), maxValueLength), item::setHeaders);
+        setProperty(KafkaRecord.Fields.SIZE, include, () -> sizeOf(rec), item::setSize);
 
         return item;
     }
@@ -363,6 +366,14 @@ public class RecordService {
         Map<String, String> headerMap = new LinkedHashMap<>();
         headers.iterator().forEachRemaining(h -> headerMap.put(h.key(), bytesToString(h.value(), maxValueLength)));
         return headerMap;
+    }
+
+    long sizeOf(ConsumerRecord<?, ?> rec) {
+        return rec.serializedKeySize() +
+            rec.serializedValueSize() +
+            Arrays.stream(rec.headers().toArray())
+                .mapToLong(h -> h.key().length() + h.value().length)
+                .sum();
     }
 
     static UnknownTopicIdException noSuchTopic(String topicId) {
