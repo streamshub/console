@@ -7,9 +7,9 @@ import {
 } from "@/libs/patternfly/react-charts";
 import {
   ClipboardCopy,
+  Flex,
+  FlexItem,
   Label,
-  Split,
-  SplitItem,
   Text,
   TextContent,
   Tooltip,
@@ -124,8 +124,8 @@ export function NodesTable({ nodes }: { nodes: Node[] }) {
       isRowExpandable={() => true}
       getExpandedRow={({ row }) => {
         return (
-          <Split hasGutter={true} className={"pf-v5-u-p-lg"}>
-            <SplitItem style={{ width: "50%" }}>
+          <Flex gap={{ default: "gap4xl" }} className={"pf-v5-u-p-xl"}>
+            <FlexItem flex={{ default: "flex_1" }} style={{ maxWidth: "50%" }}>
               <TextContent>
                 <Text>
                   <b>Broker host name</b>
@@ -140,58 +140,60 @@ export function NodesTable({ nodes }: { nodes: Node[] }) {
                   </ClipboardCopy>
                 </Text>
               </TextContent>
-            </SplitItem>
-            <SplitItem>
+            </FlexItem>
+            <FlexItem>
               <TextContent>
                 <Text>
                   <b>Broker disk usage</b>
                 </Text>
               </TextContent>
-              <ChartDonutThreshold
-                ariaDesc="Storage capacity"
-                ariaTitle={`Broker ${row.id} disk usage`}
-                constrainToVisibleArea={true}
-                data={[
-                  { x: "Warning at 60%", y: 60 },
-                  { x: "Danger at 90%", y: 90 },
-                ]}
-                height={200}
-                labels={({ datum }) => (datum.x ? datum.x : null)}
-                padding={{
-                  bottom: 0,
-                  left: 10,
-                  right: 150,
-                  top: 0,
-                }}
-                width={350}
-              >
-                <ChartDonutUtilization
-                  data={{
-                    x: "Storage capacity",
-                    y: (row.diskUsage / row.diskCapacity) * 100,
-                  }}
-                  labels={({ datum }) =>
-                    datum.x
-                      ? `${datum.x}: ${format.number(datum.y / 100, {
-                          style: "percent",
-                        })}`
-                      : null
-                  }
-                  legendData={[
-                    { name: `Capacity: 80%` },
-                    { name: "Warning at 60%" },
-                    { name: "Danger at 90%" },
+              <div style={{ width: 350, height: 200 }}>
+                <ChartDonutThreshold
+                  ariaDesc="Storage capacity"
+                  ariaTitle={`Broker ${row.id} disk usage`}
+                  constrainToVisibleArea={true}
+                  data={[
+                    { x: "Warning at 60%", y: 60 },
+                    { x: "Danger at 90%", y: 90 },
                   ]}
-                  legendOrientation="vertical"
-                  title={`${format.number(row.diskUsage / row.diskCapacity, {
-                    style: "percent",
-                  })}`}
-                  subTitle={`of ${formatBytes(row.diskCapacity)}`}
-                  thresholds={[{ value: 60 }, { value: 90 }]}
-                />
-              </ChartDonutThreshold>
-            </SplitItem>
-          </Split>
+                  height={200}
+                  labels={({ datum }) => (datum.x ? datum.x : null)}
+                  padding={{
+                    bottom: 0,
+                    left: 10,
+                    right: 150,
+                    top: 0,
+                  }}
+                  width={350}
+                >
+                  <ChartDonutUtilization
+                    data={{
+                      x: "Storage capacity",
+                      y: (row.diskUsage / row.diskCapacity) * 100,
+                    }}
+                    labels={({ datum }) =>
+                      datum.x
+                        ? `${datum.x}: ${format.number(datum.y / 100, {
+                            style: "percent",
+                          })}`
+                        : null
+                    }
+                    legendData={[
+                      { name: `Capacity: 80%` },
+                      { name: "Warning at 60%" },
+                      { name: "Danger at 90%" },
+                    ]}
+                    legendOrientation="vertical"
+                    title={`${format.number(row.diskUsage / row.diskCapacity, {
+                      style: "percent",
+                    })}`}
+                    subTitle={`of ${formatBytes(row.diskCapacity)}`}
+                    thresholds={[{ value: 60 }, { value: 90 }]}
+                  />
+                </ChartDonutThreshold>
+              </div>
+            </FlexItem>
+          </Flex>
         );
       }}
     />
