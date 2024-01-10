@@ -9,7 +9,6 @@ import {
   ClipboardCopy,
   Flex,
   FlexItem,
-  Label,
   Text,
   TextContent,
   Tooltip,
@@ -86,14 +85,14 @@ export function NodesTable({ nodes }: { nodes: Node[] }) {
             return (
               <Td key={key} dataLabel={"Broker ID"}>
                 <Link href={`nodes/${row.id}`}>{row.id}</Link>
-                {row.isLeader && (
-                  <>
-                    &nbsp;
-                    <Label color={"purple"} isCompact={true}>
-                      Controller
-                    </Label>
-                  </>
-                )}
+                {/*{row.isLeader && (*/}
+                {/*  <>*/}
+                {/*    &nbsp;*/}
+                {/*    <Label color={"purple"} isCompact={true}>*/}
+                {/*      Controller*/}
+                {/*    </Label>*/}
+                {/*  </>*/}
+                {/*)}*/}
               </Td>
             );
           case "status":
