@@ -26,6 +26,9 @@ dependencies:
   '@patternfly/react-tokens':
     specifier: ^5.1.2
     version: 5.1.2
+  '@patternfly/react-user-feedback':
+    specifier: ^5.0.0
+    version: 5.0.0(react-dom@18.2.0)(react@18.2.0)
   '@types/lodash.groupby':
     specifier: ^4.6.9
     version: 4.6.9
@@ -2176,6 +2179,18 @@ packages:
 
   /@patternfly/react-tokens@5.1.2:
     resolution: {integrity: sha512-hu/6kEEMnyDc4GiMiaEau3kYq0BZoB3X1tZLcNfg9zQZnOydUgaLcUgR8+IlMF/nVVIqNjZF2RA/5lmKAVz2cQ==}
+    dev: false
+
+  /@patternfly/react-user-feedback@5.0.0(react-dom@18.2.0)(react@18.2.0):
+    resolution: {integrity: sha512-E28AC87z9A2X5blf9ih9YVoHsAo68tDM6fLrOWFU447v3QHmWwBIViHT7/BL+M2B7ZORQ+LtM9M4bn0lq7/Ezw==}
+    peerDependencies:
+      react: ^17 || ^18
+      react-dom: ^17 || ^18
+    dependencies:
+      '@patternfly/react-core': 5.1.2(react-dom@18.2.0)(react@18.2.0)
+      '@patternfly/react-icons': 5.1.2(react-dom@18.2.0)(react@18.2.0)
+      react: 18.2.0
+      react-dom: 18.2.0(react@18.2.0)
     dev: false
 
   /@pkgjs/parseargs@0.11.0:
