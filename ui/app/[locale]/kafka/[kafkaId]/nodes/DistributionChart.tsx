@@ -27,16 +27,12 @@ export function DistributionChart({
   data: Record<string, { leaders: number; followers: number }>;
 }) {
   const [containerRef, width] = useChartWidth();
-  const [includeLeaders, setIncludeLeaders] = useState(true);
-  const [includeFollowers, setIncludeFollowers] = useState(true);
-  const label =
-    includeFollowers || includeLeaders
-      ? includeLeaders && includeFollowers
-        ? "total partitions"
-        : includeLeaders
-          ? "leaders"
-          : "followers"
-      : "total partitions";
+  const [filter, setFilter] = useState<"all" | "leaders" | "followers">("all");
+  const label = {
+    all: "total partitions",
+    leaders: "leaders",
+    followers: "followers",
+  }[filter || "all"];
   return (
     <Card className={"pf-v5-u-mb-lg"}>
       <CardHeader>
@@ -54,13 +50,22 @@ export function DistributionChart({
       <CardBody>
         <ToggleGroup isCompact aria-label="Compact variant toggle group">
           <ToggleGroupItem
+            text={`All (${Object.values(data).reduce(
+              (acc, v) => v.followers + v.leaders + acc,
+              0,
+            )})`}
+            buttonId="toggle-group-compact-0"
+            isSelected={filter == "all"}
+            onChange={() => setFilter("all")}
+          />
+          <ToggleGroupItem
             text={`Leaders (${Object.values(data).reduce(
               (acc, v) => v.leaders + acc,
               0,
             )})`}
             buttonId="toggle-group-compact-1"
-            isSelected={includeLeaders}
-            onChange={() => setIncludeLeaders((v) => !v)}
+            isSelected={filter == "leaders"}
+            onChange={() => setFilter("leaders")}
           />
           <ToggleGroupItem
             text={`Followers (${Object.values(data).reduce(
@@ -68,14 +73,14 @@ export function DistributionChart({
               0,
             )})`}
             buttonId="toggle-group-compact-2"
-            isSelected={includeFollowers}
-            onChange={() => setIncludeFollowers((v) => !v)}
+            isSelected={filter === "followers"}
+            onChange={() => setFilter("followers")}
           />
         </ToggleGroup>
         <div ref={containerRef}>
           <Chart
-            ariaDesc="Average number of pets"
-            ariaTitle="Stack chart example"
+            ariaDesc="Shows how partitions are spread between leaders and followers"
+            ariaTitle="Partitions distribution chart"
             containerComponent={
               <ChartVoronoiContainer
                 labels={({ datum }) => `${datum.name} ${label}: ${datum.y}`}
@@ -121,14 +126,11 @@ export function DistributionChart({
                     {
                       name: `Broker ${node}`,
                       x: "x",
-                      y:
-                        includeFollowers || includeLeaders
-                          ? includeLeaders && includeFollowers
-                            ? data.leaders + data.followers
-                            : includeLeaders
-                              ? data.leaders
-                              : data.followers
-                          : data.leaders + data.followers,
+                      y: {
+                        all: data.leaders + data.followers,
+                        leaders: data.leaders,
+                        followers: data.followers,
+                      }[filter || "all"],
                     },
                   ]}
                 />
