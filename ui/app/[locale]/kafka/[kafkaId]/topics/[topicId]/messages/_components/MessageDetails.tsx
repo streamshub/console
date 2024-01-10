@@ -1,5 +1,6 @@
 import { Message } from "@/api/messages/schema";
 import { DateTime } from "@/components/DateTime";
+import { Bytes } from "@/components/Bytes";
 import { Number } from "@/components/Number";
 import {
   ClipboardCopy,
@@ -20,7 +21,9 @@ import {
   Text,
   TextContent,
   TextVariants,
+  Tooltip,
 } from "@/libs/patternfly/react-core";
+import { HelpIcon } from "@/libs/patternfly/react-icons";
 import { useTranslations } from "next-intl";
 import { NoDataCell } from "./NoDataCell";
 import { beautifyUnknownValue } from "./utils";
@@ -86,6 +89,17 @@ export function MessageDetailsBody({
             <DescriptionListTerm>{t("field.offset")}</DescriptionListTerm>
             <DescriptionListDescription>
               <Number value={message.attributes.offset} />
+            </DescriptionListDescription>
+          </DescriptionListGroup>
+          <DescriptionListGroup>
+            <DescriptionListTerm>
+                {t("field.size")}{" "}
+                <Tooltip content={t("tooltip.size")}>
+                  <HelpIcon />
+                </Tooltip>
+            </DescriptionListTerm>
+            <DescriptionListDescription>
+              <Bytes value={message.attributes.size} />
             </DescriptionListDescription>
           </DescriptionListGroup>
           <DescriptionListGroup>

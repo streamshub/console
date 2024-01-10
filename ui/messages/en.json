@@ -109,6 +109,9 @@
       "timestamp_toggle_calendar_menu": "Toggle calendar menu",
       "timestamp_toggle_time_menu": "Toggle time menu"
     },
+    "tooltip": {
+      "size": "The serialized size of the key and value. Calculated from the key/value/headers and does not include any overhead associated with the record in the physical log segment within Kafka."
+    },
     "limit_label": "Limit",
     "message": "Message",
     "no_data_body": "Data will appear shortly after we receive produced messages.",

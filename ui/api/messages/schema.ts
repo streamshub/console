@@ -10,6 +10,7 @@ export const MessageSchema = z.object({
     headers: z.record(z.any()),
     key: z.string().nullable(),
     value: z.string().nullable(),
+    size: z.number().optional(),
   }),
 });
 export const MessageApiResponse = z.object({

@@ -31,6 +31,7 @@ public class KafkaRecord {
         public static final String HEADERS = "headers";
         public static final String KEY = "key";
         public static final String VALUE = "value";
+        public static final String SIZE = "size";
 
         public static final String DEFAULT =
                     PARTITION +
@@ -39,7 +40,8 @@ public class KafkaRecord {
                     ", " + TIMESTAMP_TYPE +
                     ", " + HEADERS +
                     ", " + KEY +
-                    ", " + VALUE;
+                    ", " + VALUE +
+                    ", " + SIZE;
 
         public static final List<String> ALL = List.of(
                 PARTITION,
@@ -48,7 +50,8 @@ public class KafkaRecord {
                 TIMESTAMP_TYPE,
                 HEADERS,
                 KEY,
-                VALUE);
+                VALUE,
+                SIZE);
 
         private Fields() {
             // Prevent instances
@@ -118,6 +121,9 @@ public class KafkaRecord {
     @Schema(description = "Record value")
     String value;
 
+    @Schema(readOnly = true, description = "Size of the uncompressed record, not including the overhead of the record in the log segment.")
+    Long size;
+
     public KafkaRecord() {
         super();
     }
@@ -126,13 +132,14 @@ public class KafkaRecord {
         this.topic = topic;
     }
 
-    public KafkaRecord(String topic, Integer partition, Instant timestamp, Map<String, String> headers, String key, String value) {
+    public KafkaRecord(String topic, Integer partition, Instant timestamp, Map<String, String> headers, String key, String value, Long size) {
         this(topic);
         this.partition = partition;
         this.timestamp = timestamp;
         this.headers = headers;
         this.key = key;
         this.value = value;
+        this.size = size;
     }
 
     @JsonIgnore
@@ -211,4 +218,13 @@ public class KafkaRecord {
     public void setValue(String value) {
         this.value = value;
     }
+
+    public Long getSize() {
+        return size;
+    }
+
+    public void setSize(Long size) {
+        this.size = size;
+    }
+
 }

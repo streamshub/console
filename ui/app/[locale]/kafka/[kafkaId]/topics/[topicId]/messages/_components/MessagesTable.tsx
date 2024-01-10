@@ -9,6 +9,7 @@ import { FilterGroup } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/mes
 import { NoResultsEmptyState } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/_components/NoResultsEmptyState";
 import { PartitionSelector } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/_components/PartitionSelector";
 import { DateTime } from "@/components/DateTime";
+import { Bytes } from "@/components/Bytes";
 import { Number } from "@/components/Number";
 import { ResponsiveTable } from "@/components/table";
 import {
@@ -23,15 +24,16 @@ import {
   ToolbarGroup,
   ToolbarItem,
   ToolbarToggleGroup,
+  Tooltip,
 } from "@/libs/patternfly/react-core";
-import { FilterIcon } from "@/libs/patternfly/react-icons";
+import { FilterIcon, HelpIcon } from "@/libs/patternfly/react-icons";
 import {
   BaseCellProps,
   InnerScrollContainer,
   OuterScrollContainer,
   TableVariant,
 } from "@/libs/patternfly/react-table";
-import { useTranslations } from "next-intl";
+import { MessageKeys, useTranslations } from "next-intl";
 import { PropsWithChildren, useState } from "react";
 import { LimitSelector } from "./LimitSelector";
 import { MessageDetails, MessageDetailsProps } from "./MessageDetails";
@@ -41,6 +43,7 @@ import { beautifyUnknownValue, isSameMessage } from "./utils";
 
 const columnWidths: Record<Column, BaseCellProps["width"]> = {
   "offset-partition": 10,
+  size: 10,
   key: 15,
   timestamp: 15,
   timestampUTC: 15,
@@ -108,6 +111,21 @@ export function MessagesTable({
     return defaultColumns;
   })();
 
+  const columnTooltips: Record<Column, any> = {
+    "offset-partition": undefined,
+    size: <>
+          {" "}
+          <Tooltip content={t("tooltip.size")}>
+            <HelpIcon />
+          </Tooltip>
+        </>,
+    key: undefined,
+    timestamp: undefined,
+    timestampUTC: undefined,
+    headers: undefined,
+    value: undefined,
+  };
+
   const [selectedColumns, setSelectedColumns] = useState<Column[]>(
     previouslySelectedColumns,
   );
@@ -161,6 +179,7 @@ export function MessagesTable({
                     modifier={"nowrap"}
                   >
                     {columnLabels[column]}
+                    {columnTooltips[column] ?? ""}
                   </Th>
                 )}
                 renderCell={({ column, row, colIndex, Td, key }) => {
@@ -193,6 +212,12 @@ export function MessagesTable({
                               <Number value={row.attributes.partition} />
                             </Text>
                           </TextContent>
+                        </Cell>
+                      );
+                    case "size":
+                      return (
+                        <Cell>
+                          <Bytes value={row.attributes.size} />
                         </Cell>
                       );
                     case "timestamp":

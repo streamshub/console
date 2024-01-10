@@ -16,10 +16,12 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.core.CacheControl;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriBuilder;
 import jakarta.ws.rs.core.UriInfo;
+import jakarta.ws.rs.ext.RuntimeDelegate;
 import jakarta.ws.rs.core.Response.Status;
 
 import org.eclipse.microprofile.openapi.annotations.Operation;
@@ -95,7 +97,8 @@ public class RecordsResource {
                         KafkaRecord.Fields.TIMESTAMP_TYPE,
                         KafkaRecord.Fields.HEADERS,
                         KafkaRecord.Fields.KEY,
-                        KafkaRecord.Fields.VALUE
+                        KafkaRecord.Fields.VALUE,
+                        KafkaRecord.Fields.SIZE
                     },
                     payload = ErrorCategory.InvalidQueryParameter.class)
             @Parameter(
@@ -112,15 +115,16 @@ public class RecordsResource {
                                 KafkaRecord.Fields.TIMESTAMP_TYPE,
                                 KafkaRecord.Fields.HEADERS,
                                 KafkaRecord.Fields.KEY,
-                                KafkaRecord.Fields.VALUE
+                                KafkaRecord.Fields.VALUE,
+                                KafkaRecord.Fields.SIZE
                             }))
             List<String> fields) {
 
         requestedFields.accept(fields);
         var result = recordService.consumeRecords(topicId, params.getPartition(), params.getOffset(), params.getTimestamp(), params.getLimit(), fields, params.getMaxValueLength());
 
-        return Response.ok(new KafkaRecord.ListResponse(result)).build();
-
+        CacheControl noStore = RuntimeDelegate.getInstance().createHeaderDelegate(CacheControl.class).fromString("no-store");
+        return Response.ok(new KafkaRecord.ListResponse(result)).cacheControl(noStore).build();
     }
 
     @POST
