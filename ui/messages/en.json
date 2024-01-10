@@ -1,7 +1,7 @@
 {
   "common": {
-    "title": "Integration Developer Hub",
-    "description": "lorem dolor ipsum",
+    "title": "Red Hat AMQ Streams console",
+    "description": "Red Hat AMQ is a lightweight, high-performance, robust messaging platform.",
     "search_hint": "Filter by {label}"
   },
   "RefreshButton": {
