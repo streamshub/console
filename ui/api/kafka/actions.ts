@@ -27,7 +27,12 @@ const prom = new PrometheusDriver({
 const log = logger.child({ module: "kafka-api" });
 
 export async function getKafkaClusters(): Promise<ClusterList[]> {
-  const url = `${process.env.BACKEND_URL}/api/kafkas?fields%5Bkafkas%5D=name,namespace,kafkaVersion,bootstrapServers`;
+  const sp = new URLSearchParams({
+    "fields[kafkas]": "name,namespace,kafkaVersion,bootstrapServers",
+    "sort": "name",
+  });
+  const kafkaClustersQuery = sp.toString();
+  const url = `${process.env.BACKEND_URL}/api/kafkas?${kafkaClustersQuery}`;
   try {
     const res = await fetch(url, {
       headers: await getHeaders(),
