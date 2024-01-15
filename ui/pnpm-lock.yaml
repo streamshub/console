@@ -81,8 +81,8 @@ dependencies:
     specifier: ^8.17.2
     version: 8.17.2
   prometheus-query:
-    specifier: ^3.3.3
-    version: 3.3.3
+    specifier: ^3.4.0
+    version: 3.4.0
   react:
     specifier: 18.2.0
     version: 18.2.0
@@ -9399,8 +9399,8 @@ packages:
     engines: {node: '>=0.4.0'}
     dev: true
 
-  /prometheus-query@3.3.3:
-    resolution: {integrity: sha512-BL76MllxFdgaXUw1tOtg1osvgaDpHdq0PjUVvWTMXRr/txRxdY4TvQ4k6il9xxUL+L52qOWr4XZKXGWF3n7GZw==}
+  /prometheus-query@3.4.0:
+    resolution: {integrity: sha512-PGNwYVjXxenfj2PR4FKEUv5O4XO8ciHT92GX83J5ZJm5ki3YzLLiv+TfbmQSUxvHcXofLg9PYH6CBCSplcvr9g==}
     dependencies:
       axios: 1.6.2
     transitivePeerDependencies:
