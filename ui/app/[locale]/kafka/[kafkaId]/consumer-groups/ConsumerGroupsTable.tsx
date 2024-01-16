@@ -81,8 +81,8 @@ export function ConsumerGroupsTable({
           case "name":
             return (
               <Td key={key} dataLabel={"Consumer group name"}>
-                <Link href={`/kafka/${kafkaId}/consumer-groups/${row.id}`}>
-                  {row.id}
+                <Link href={`/kafka/${kafkaId}/consumer-groups/${row.id === "" ? "+" : row.id}`}>
+                  {row.id === "" ? <i>Empty Name</i> : row.id}
                 </Link>
               </Td>
             );

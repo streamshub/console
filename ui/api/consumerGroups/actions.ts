@@ -15,13 +15,6 @@ export async function getConsumerGroup(
   kafkaId: string,
   groupId: string,
 ): Promise<ConsumerGroup> {
-  const sp = new URLSearchParams(
-    filterUndefinedFromObj({
-      "fields[consumerGroups]":
-        "state,simpleConsumerGroup,members,offsets,authorizedOperations,coordinator,partitionAssignor",
-    }),
-  );
-  const cgQuery = sp.toString();
   const url = `${process.env.BACKEND_URL}/api/kafkas/${kafkaId}/consumerGroups/${groupId}`;
   const res = await fetch(url, {
     headers: await getHeaders(),

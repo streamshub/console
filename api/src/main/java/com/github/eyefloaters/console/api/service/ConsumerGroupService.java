@@ -156,8 +156,9 @@ public class ConsumerGroupService {
             .thenCompose(groups -> augmentList(adminClient, groups, includes));
     }
 
-    public CompletionStage<ConsumerGroup> describeConsumerGroup(String groupId, List<String> includes) {
+    public CompletionStage<ConsumerGroup> describeConsumerGroup(String requestGroupId, List<String> includes) {
         Admin adminClient = clientSupplier.get();
+        String groupId = preprocessGroupId(requestGroupId);
 
         return assertConsumerGroupExists(adminClient, groupId)
             .thenCompose(nothing -> describeConsumerGroups(adminClient, List.of(groupId), includes))
@@ -209,12 +210,12 @@ public class ConsumerGroupService {
 
     public CompletionStage<Void> patchConsumerGroup(ConsumerGroup patch) {
         Admin adminClient = clientSupplier.get();
-        String groupId = patch.getGroupId();
+        String groupId = preprocessGroupId(patch.getGroupId());
 
         return assertConsumerGroupExists(adminClient, groupId)
             .thenComposeAsync(nothing -> Optional.ofNullable(patch.getOffsets())
                     .filter(Predicate.not(Collection::isEmpty))
-                    .map(patchedOffsets -> alterConsumerGroupOffsets(adminClient, patch))
+                    .map(patchedOffsets -> alterConsumerGroupOffsets(adminClient, groupId, patch))
                     .orElseGet(() -> CompletableFuture.completedStage(null)),
                 threadContext.currentContextExecutor());
     }
@@ -230,9 +231,7 @@ public class ConsumerGroupService {
             });
     }
 
-    CompletionStage<Void> alterConsumerGroupOffsets(Admin adminClient, ConsumerGroup patch) {
-        String groupId = patch.getGroupId();
-
+    CompletionStage<Void> alterConsumerGroupOffsets(Admin adminClient, String groupId, ConsumerGroup patch) {
         var topicsToDescribe = patch.getOffsets()
                 .stream()
                 .map(OffsetAndMetadata::topicId)
@@ -389,8 +388,9 @@ public class ConsumerGroupService {
             });
     }
 
-    public CompletionStage<Void> deleteConsumerGroup(String groupId) {
+    public CompletionStage<Void> deleteConsumerGroup(String requestGroupId) {
         Admin adminClient = clientSupplier.get();
+        String groupId = preprocessGroupId(requestGroupId);
 
         return adminClient.deleteConsumerGroups(List.of(groupId))
                 .deletedGroups()
@@ -570,5 +570,9 @@ public class ConsumerGroupService {
 
             group.setOffsets(offsets);
         }
+    }
+
+    static String preprocessGroupId(String groupId) {
+        return "+".equals(groupId) ? "" : groupId;
     }
 }

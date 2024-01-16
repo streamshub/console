@@ -455,6 +455,30 @@ class ConsumerGroupsResourceIT {
     }
 
     @Test
+    void testDescribeConsumerGroupWithEmptyGroupId() {
+        String topic1 = "t1-" + UUID.randomUUID().toString();
+        String group1 = "";
+        String client1 = "c1-" + UUID.randomUUID().toString();
+
+        try (var consumer = groupUtils.request()
+                .groupId(group1)
+                .topic(topic1, 2)
+                .clientId(client1)
+                .autoClose(false)
+                // Don't actually produce or consume anything
+                .messagesPerTopic(0)
+                .consumeMessages(0)
+                .consume()) {
+            // must be fetched with a single blank space character
+            whenRequesting(req -> req.get("{groupId}", clusterId1, "+"))
+                .assertThat()
+                .statusCode(is(Status.OK.getStatusCode()))
+                .body("data.id", is(group1))
+                .body("data.attributes.state", is(Matchers.notNullValue(String.class)));
+        }
+    }
+
+    @Test
     void testDescribeConsumerGroupWithFetchGroupOffsetsError() {
         Answer<ListConsumerGroupOffsetsResult> listConsumerGroupOffsetsFailed = args -> {
             KafkaFutureImpl<Map<TopicPartition, OffsetAndMetadata>> failure = new KafkaFutureImpl<>();

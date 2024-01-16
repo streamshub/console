@@ -39,7 +39,7 @@ function Header({
 }) {
   return (
     <AppHeader
-      title={groupId}
+      title={decodeURIComponent(groupId) === "+" ? <i>Empty Name</i> : groupId}
       actions={[
         <Tooltip
           key={"reset"}
