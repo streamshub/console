@@ -49,7 +49,11 @@ export async function getKafkaClusters(): Promise<ClusterList[]> {
 export async function getKafkaCluster(
   clusterId: string,
 ): Promise<ClusterDetail | null> {
-  const url = `${process.env.BACKEND_URL}/api/kafkas/${clusterId}/?fields%5Bkafkas%5D=name,namespace,creationTimestamp,status,kafkaVersion,nodes,controller,authorizedOperations,bootstrapServers,listeners,authType`;
+  const sp = new URLSearchParams({
+    "fields[kafkas]": "name,namespace,creationTimestamp,status,kafkaVersion,nodes,controller,authorizedOperations,bootstrapServers,listeners,authType,conditions"
+  });
+  const kafkaClusterQuery = sp.toString();
+  const url = `${process.env.BACKEND_URL}/api/kafkas/${clusterId}?${kafkaClusterQuery}`;
   try {
     const res = await fetch(url, {
       headers: await getHeaders(),

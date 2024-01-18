@@ -1,3 +1,5 @@
+import { ConsumerGroupsResponse } from "@/api/consumerGroups/schema";
+import { getConsumerGroups } from "@/api/consumerGroups/actions";
 import {
   ClusterMetric,
   getKafkaClusterKpis,
@@ -25,9 +27,10 @@ export default function OverviewPage({ params }: { params: KafkaParams }) {
     "outgoingByteRate",
     "incomingByteRate",
   ]);
+  const consumerGroups = getConsumerGroups(params.kafkaId, { fields: "state" });
   return (
     <PageLayout
-      clusterOverview={<ConnectedClusterCard data={kpi} />}
+      clusterOverview={<ConnectedClusterCard data={kpi} consumerGroups={consumerGroups} />}
       topicsPartitions={<ConnectedTopicsPartitionsCard data={kpi} />}
       clusterCharts={<ConnectedClusterChartsCard data={cluster} />}
       topicCharts={<ConnectedTopicChartsCard data={topic} />}
@@ -37,21 +40,39 @@ export default function OverviewPage({ params }: { params: KafkaParams }) {
 
 async function ConnectedClusterCard({
   data,
+  consumerGroups,
 }: {
   data: Promise<{ cluster: ClusterDetail; kpis: ClusterKpis } | null>;
+  consumerGroups: Promise<ConsumerGroupsResponse>;
 }) {
   const res = await data;
+  const groupCount = await consumerGroups.then(grpResp => grpResp.meta.page.total ?? 0);
   const brokersTotal = Object.keys(res?.kpis.broker_state || {}).length;
   const brokersOnline =
     Object.values(res?.kpis.broker_state || {}).filter((s) => s === 3).length ||
     0;
+  const messages = res?.cluster
+    .attributes
+    .conditions
+    ?.filter((c) => "Ready" !== c.type)
+    .map((c) => ({
+      variant: c.type === "Error" ? "danger" : "warning" as ("danger" | "warning"),
+      subject: {
+        type: "cluster" as ("cluster" | "broker" | "topic"),
+        name: res?.cluster.attributes.name ?? "",
+        id: res?.cluster.id ?? "",
+      },
+      message: c.message ?? "",
+      date: c.lastTransitionTime ?? ""
+    }));
+
   return (
     <ClusterCard
       isLoading={false}
       status={res?.cluster.attributes.status || "n/a"}
-      messages={[]}
+      messages={messages ?? []}
       name={res?.cluster.attributes.name || "n/a"}
-      consumerGroups={0}
+      consumerGroups={groupCount}
       brokersOnline={brokersOnline}
       brokersTotal={brokersTotal}
       kafkaVersion={res?.cluster.attributes.kafkaVersion || "n/a"}

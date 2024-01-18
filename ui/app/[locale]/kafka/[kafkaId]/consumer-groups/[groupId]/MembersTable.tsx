@@ -29,17 +29,17 @@ export function MembersTable({
   let members: ConsumerGroup["attributes"]["members"] | undefined = undefined;
 
   if (consumerGroup) {
-    if (consumerGroup.attributes.members.length === 0) {
-      members = consumerGroup.attributes.offsets.map((o) => ({
+    if (consumerGroup.attributes.members?.length === 0) {
+      members = ([{
         memberId: "unknown",
         host: "N/A",
         clientId: "unknown",
-        assignments: consumerGroup.attributes.offsets.map((o) => ({
+        assignments: consumerGroup.attributes.offsets?.map((o) => ({
           topicId: o.topicId,
           topicName: o.topicName,
           partition: o.partition,
         })),
-      }));
+      }]);
     } else {
       members = consumerGroup.attributes.members;
     }
@@ -87,12 +87,12 @@ export function MembersTable({
               </Td>
             );
           case "overallLag":
-            const topics = row.assignments.map((a) => a.topicId);
+            const topics = row.assignments?.map((a) => a.topicId);
             return (
               <Td key={key} dataLabel={"Overall lag"}>
                 <Number
                   value={consumerGroup!.attributes.offsets
-                    .filter((o) => topics.includes(o.topicId))
+                    ?.filter((o) => topics?.includes(o.topicId))
                     .map((o) => o.lag)
                     // lag values may not be available from API, e.g. when there is an error listing the topic offsets
                     .reduce((acc, v) => (acc ?? NaN) + (v ?? NaN), 0)}
@@ -102,7 +102,7 @@ export function MembersTable({
           case "assignedPartitions":
             return (
               <Td key={key} dataLabel={"Assigned partitions"}>
-                <Number value={row.assignments.length} />
+                <Number value={row.assignments?.length} />
               </Td>
             );
         }
@@ -112,13 +112,13 @@ export function MembersTable({
       }}
       getExpandedRow={({ row }) => {
         const offsets: ConsumerGroup["attributes"]["offsets"] =
-          row.assignments.map((a) => ({
+          row.assignments?.map((a) => ({
             ...a,
-            ...consumerGroup!.attributes.offsets.find(
+            ...consumerGroup!.attributes.offsets?.find(
               (o) => o.topicId === a.topicId && o.partition === a.partition,
             )!,
           }));
-        offsets.sort((a, b) => a.topicName.localeCompare(b.topicName));
+        offsets?.sort((a, b) => a.topicName.localeCompare(b.topicName));
         return (
           <div className={"pf-v5-u-p-lg"}>
             <LagTable kafkaId={kafkaId} offsets={offsets} />

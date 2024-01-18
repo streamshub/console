@@ -97,16 +97,14 @@ export function ConsumerGroupsTable({
               <Td key={key} dataLabel={"Overall lag"}>
                 <Number
                   value={row.attributes.offsets
-                    .map((o) => o.lag)
+                    ?.map((o) => o.lag)
                     // lag values may not be available from API, e.g. when there is an error listing the topic offsets
                     .reduce((acc, v) => (acc ?? NaN) + (v ?? NaN), 0)}
                 />
               </Td>
             );
           case "topics":
-            const allTopics = row.attributes.members.flatMap((m) =>
-              m.assignments.map((a) => a),
-            );
+            const allTopics = row.attributes.members?.flatMap((m) => m.assignments ?? []) ?? [];
             return (
               <Td key={key} dataLabel={"Assigned topics"}>
                 <LabelGroup>
@@ -129,7 +127,7 @@ export function ConsumerGroupsTable({
           case "members":
             return (
               <Td key={key} dataLabel={"Members"}>
-                <Number value={row.attributes.members.length} />
+                <Number value={row.attributes.members?.length} />
               </Td>
             );
         }
