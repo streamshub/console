@@ -48,7 +48,7 @@
     "@storybook/addon-interactions": "^7.6.10",
     "@storybook/addon-links": "^7.6.9",
     "@storybook/blocks": "^7.6.10",
-    "@storybook/nextjs": "^7.6.9",
+    "@storybook/nextjs": "^7.6.10",
     "@storybook/react": "^7.6.9",
     "@storybook/testing-library": "^0.2.2",
     "eslint-config-prettier": "^9.1.0",
