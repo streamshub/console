@@ -22,19 +22,19 @@ const MemberDescriptionSchema = z.object({
   groupInstanceId: z.string().nullable().optional(),
   clientId: z.string(),
   host: z.string(),
-  assignments: z.array(PartitionKeySchema),
+  assignments: z.array(PartitionKeySchema).optional(),
 });
 export const ConsumerGroupSchema = z.object({
   id: z.string(),
   type: z.literal("consumerGroups"),
   attributes: z.object({
-    simpleConsumerGroup: z.boolean(),
-    state: z.string(),
-    members: z.array(MemberDescriptionSchema),
+    simpleConsumerGroup: z.boolean().optional(),
+    state: z.string().optional(),
+    members: z.array(MemberDescriptionSchema).optional(),
     partitionAssignor: z.string().nullable().optional(),
     coordinator: NodeSchema.nullable().optional(),
     authorizedOperations: z.array(z.string()).nullable().optional(),
-    offsets: z.array(OffsetAndMetadataSchema),
+    offsets: z.array(OffsetAndMetadataSchema).optional(),
     errors: z.array(ApiError).optional(),
   }),
 });

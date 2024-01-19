@@ -31,6 +31,7 @@ export async function getConsumerGroup(
 export async function getConsumerGroups(
   kafkaId: string,
   params: {
+    fields?: string;
     pageSize?: number;
     pageCursor?: string;
     sort?: string;
@@ -39,8 +40,7 @@ export async function getConsumerGroups(
 ): Promise<ConsumerGroupsResponse> {
   const sp = new URLSearchParams(
     filterUndefinedFromObj({
-      "fields[consumerGroups]":
-        "state,simpleConsumerGroup,members,offsets",
+      "fields[consumerGroups]": params.fields ?? "state,simpleConsumerGroup,members,offsets",
       // TODO: pass filter from UI
       "filter[state]": "in,STABLE,PREPARING_REBALANCE,COMPLETING_REBALANCE",
       "page[size]": params.pageSize,

@@ -42,6 +42,15 @@ const ClusterDetailSchema = z.object({
         authType: z.string().nullable(),
       }),
     ),
+    conditions: z.array(
+      z.object({
+        type: z.string().optional(),
+        status: z.string().optional(),
+        reason: z.string().optional(),
+        message: z.string().optional(),
+        lastTransitionTime: z.string().optional(),
+      }),
+    ),
   }),
 });
 export const ClusterResponse = z.object({
