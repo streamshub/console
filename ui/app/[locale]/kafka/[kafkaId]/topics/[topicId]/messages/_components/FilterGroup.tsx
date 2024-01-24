@@ -39,9 +39,13 @@ export function FilterGroup({
 }: FilterGroupProps) {
   const t = useTranslations("message-browser");
   const [value, setValue] = useState<string | undefined>();
-  const [currentCategory, setCurrentCategory] = useState<Category>(
+  const [currentCategory, _setCurrentCategory] = useState<Category>(
     offset ? "offset" : timestamp ? "timestamp" : epoch ? "epoch" : "latest",
   );
+  const setCurrentCategory: typeof _setCurrentCategory = (value) => {
+    _setCurrentCategory(value);
+    setValue(undefined);
+  };
   const [isOpen, setIsOpen] = useState(false);
   const labels: { [key in Category]: string } = {
     offset: t("filter.offset"),
