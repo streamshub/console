@@ -21,7 +21,12 @@ export function DateTimePicker({
 }: DateTimePickerProps) {
   const [date, setDate] = useState(value ? parseISO(value) : undefined);
 
-  const time = date ? format(date, "hh:mm aa") : undefined;
+  let timePart: string | undefined = undefined;
+  let datePart: string | undefined = undefined;
+  try {
+    timePart = date ? format(date, "hh:mm aa") : undefined;
+    datePart = date ? format(date, "yyyy-MM-dd") : undefined;
+  } catch {}
 
   const onSelectTime: TimePickerProps["onChange"] = (
     _,
@@ -59,7 +64,7 @@ export function DateTimePicker({
     <InputGroup>
       <DatePicker
         isDisabled={isDisabled}
-        value={date ? format(date, "yyyy-MM-dd") : undefined}
+        value={datePart}
         onChange={(_, __, date) => {
           if (date) {
             setDate(date);
@@ -69,7 +74,7 @@ export function DateTimePicker({
       />
       <TimePicker
         isDisabled={!date || isDisabled}
-        time={time ? time : ""}
+        time={timePart ? timePart : ""}
         onChange={onSelectTime}
       />
     </InputGroup>
