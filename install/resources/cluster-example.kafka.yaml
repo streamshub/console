@@ -1,0 +1,72 @@
+apiVersion: kafka.strimzi.io/v1beta2
+kind: Kafka
+metadata:
+  name: cluster-example
+spec:
+  entityOperator:
+    topicOperator: {}
+    userOperator: {}
+  kafka:
+    authorization:
+      clientId: kafka
+      delegateToKafkaAcls: false
+      tokenEndpointUri: http://console-keycloak-service.${NAMESPACE}.svc.cluster.local:8080/realms/preview/protocol/openid-connect/token
+      type: keycloak
+    config:
+      allow.everyone.if.no.acl.found: 'true'
+      default.replication.factor: 3
+      inter.broker.protocol.version: '3.5'
+      min.insync.replicas: 2
+      offsets.topic.replication.factor: 3
+      transaction.state.log.min.isr: 2
+      transaction.state.log.replication.factor: 3
+    listeners:
+      - name: oauth
+        port: 9093
+        tls: true
+        type: ${LISTENER_TYPE}
+        authentication:
+          jwksEndpointUri: http://console-keycloak-service.${NAMESPACE}.svc.cluster.local:8080/realms/preview/protocol/openid-connect/certs
+          type: oauth
+          enablePlain: true
+          userNameClaim: preferred_username
+          validIssuerUri: https://console-keycloak.${CLUSTER_DOMAIN}/realms/preview
+        configuration:
+          bootstrap:
+            host: bootstrap.cluster-example.${CLUSTER_DOMAIN}
+            annotations:
+              eyefloaters.github.com/console-listener: 'true'
+          brokers:
+          - broker: 0
+            host: broker-0.cluster-example.${CLUSTER_DOMAIN}
+          - broker: 1
+            host: broker-1.cluster-example.${CLUSTER_DOMAIN}
+          - broker: 2
+            host: broker-2.cluster-example.${CLUSTER_DOMAIN}
+    replicas: 3
+    storage:
+      type: jbod
+      volumes:
+      - id: 0
+        type: persistent-claim
+        size: 10Gi
+        deleteClaim: false
+    metricsConfig:
+      type: jmxPrometheusExporter
+      valueFrom:
+        configMapKeyRef:
+          name: cluster-example-metrics
+          key: kafka-metrics-config.yml
+    version: 3.5.0
+  zookeeper:
+    replicas: 3
+    storage:
+      deleteClaim: false
+      size: 10Gi
+      type: persistent-claim
+    metricsConfig:
+      type: jmxPrometheusExporter
+      valueFrom:
+        configMapKeyRef:
+          name: cluster-example-metrics
+          key: zookeeper-metrics-config.yml

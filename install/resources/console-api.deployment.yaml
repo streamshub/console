@@ -1,0 +1,67 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: console-api
+spec:
+  replicas: 1
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app: console-api
+  template:
+    metadata:
+      labels:
+        app: console-api
+    spec:
+      serviceAccountName: console-api-server
+      volumes:
+      - emptyDir: {}
+        name: cache
+      containers:
+      - name: console-api
+        image: quay.io/eyefloaters/console-api:0.0.24
+        ports:
+        - containerPort: 8080
+        env:
+        - name: QUARKUS_OIDC_AUTH_SERVER_URL
+          value: 'http://console-keycloak-service.${NAMESPACE}.svc.cluster.local:8080/realms/preview'
+        - name: CONSOLE_METRICS_PROMETHEUS_URL
+          value: 'http://prometheus-operated.${NAMESPACE}.svc.cluster.local:9090'
+      - name: console-ui
+        image: quay.io/eyefloaters/ui:0.0.24
+        volumeMounts:
+        - mountPath: /app/.next/cache
+          name: cache
+        env:
+        - name: SESSION_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: console-ui-secrets
+              key: SESSION_SECRET
+        - name: NEXTAUTH_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: console-ui-secrets
+              key: NEXTAUTH_SECRET
+        - name: BACKEND_URL
+          value: 'http://console-api.${NAMESPACE}.svc.cluster.local'
+        - name: NEXTAUTH_URL
+          value: 'https://console-ui.${CLUSTER_DOMAIN}'
+        - name: NEXT_PUBLIC_KEYCLOAK_URL
+          value: 'https://console-keycloak.${CLUSTER_DOMAIN}/realms/preview'
+        - name: NODE_TLS_REJECT_UNAUTHORIZED
+          value: '0'
+        - name: CONSOLE_METRICS_PROMETHEUS_URL
+          value: 'http://prometheus-operated.${NAMESPACE}.svc.cluster.local:9090'
+        - name: KEYCLOAK_CLIENTID
+          valueFrom:
+            secretKeyRef:
+              name: console-ui-secrets
+              key: KEYCLOAK_CLIENTID
+        - name: KEYCLOAK_CLIENTSECRET
+          valueFrom:
+            secretKeyRef:
+              name: console-ui-secrets
+              key: KEYCLOAK_CLIENTSECRET
+        ports:
+        - containerPort: 3000
