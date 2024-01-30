@@ -98,7 +98,7 @@ export default function Home() {
                   </b>
                   <Text component={"small"}>
                   The last 5 topics this account has accessed from the AMQ 
-                  streams console.
+                  Streams console.
                   </Text>
                 </TextContent>
               }
