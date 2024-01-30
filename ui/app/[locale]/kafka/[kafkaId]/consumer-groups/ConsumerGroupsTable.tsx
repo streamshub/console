@@ -4,8 +4,9 @@ import { ConsumerGroup } from "@/api/consumerGroups/schema";
 import { LabelLink } from "@/components/LabelLink";
 import { Number } from "@/components/Number";
 import { TableView } from "@/components/table";
-import { LabelGroup } from "@/libs/patternfly/react-core";
+import { LabelGroup, Tooltip } from "@/libs/patternfly/react-core";
 import { Link } from "@/navigation";
+import { HelpIcon } from "@/libs/patternfly/react-icons";
 import { useEffect, useState } from "react";
 
 export function ConsumerGroupsTable({
@@ -53,19 +54,42 @@ export function ConsumerGroupsTable({
           case "state":
             return (
               <Th key={key} dataLabel={"State"}>
-                State
+                State{" "}
+                <Tooltip
+                    content={`Reflects the current operational state of the consumer group. 
+                    Possible states include 'Stable,' 'Rebalancing,' or 'Empty.' 'Stable' indicates normal functioning,
+                     'Rebalancing' means ongoing adjustments to the group's members, and 'Empty' suggests no active members.
+                    If in the 'Empty' state, consider adding members to the group.`}
+                  >
+                    <HelpIcon />
+                  </Tooltip>
               </Th>
             );
           case "lag":
             return (
               <Th key={key} dataLabel={"Overall lag"}>
-                Overall lag
+                Overall lag{" "}
+                <Tooltip
+                    style={{whiteSpace:'pre-line'}}
+                    content={
+                      `The cumulative lag across all partitions assigned to the consumer group.
+                       Consumer lag is the difference in the rate of production and consumption of messages.
+                       Specifically, consumer lag for a given consumer in a group indicates the delay between the last message in the partition and the message being currently picked up by that consumer.`
+                    }
+                  >
+                    <HelpIcon />
+                  </Tooltip>
               </Th>
             );
           case "members":
             return (
               <Th key={key} dataLabel={"Members"}>
-                Members
+                Members{" "}
+                <Tooltip
+                    content={"Represents an individual member consumer within the consumer group. Monitor the lag of each member for insights into the health of the consumer group."}
+                  >
+                    <HelpIcon />
+                  </Tooltip>
               </Th>
             );
           case "topics":

@@ -66,7 +66,7 @@ export function ClusterChartsCard({
             CPU usage{" "}
             <Tooltip
               content={
-                "CPU utilization for all brokers over a specified period. Sustained high usage may indicate the need for resource optimization."
+                "CPU utilization for all brokers over a specified period. Sustained high usage may indicate the need for resource optimization. Sustained high usage may indicate the need to review cluster capacity, producer send, or consumer fetch configurations."
               }
             >
               <HelpIcon />

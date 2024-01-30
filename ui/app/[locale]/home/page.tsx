@@ -51,8 +51,8 @@ export default function Home() {
                 Welcome to the AMQ streams console
               </Title>
               <Text className={"pf-v5-u-color-200"}>
-                Red Hat AMQ is a lightweight, high-performance, robust messaging
-                platform.
+                The Red Hat AMQ Streams console provides a user interface for managing
+                and monitoring your streaming resources
               </Text>
             </TextContent>
           </div>
@@ -97,8 +97,8 @@ export default function Home() {
                     </Tooltip>
                   </b>
                   <Text component={"small"}>
-                    The last 5 topic this account has accessed to from the AMQ
-                    streams console.
+                  The last 5 topics this account has accessed from the AMQ 
+                  Streams console.
                   </Text>
                 </TextContent>
               }

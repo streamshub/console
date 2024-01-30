@@ -145,7 +145,9 @@ export function PartitionsTable({
                   Preferred leader{" "}
                   <Tooltip
                     content={
-                      "Whenever a new topic is created, Kafka runs its leader election algorithm to figure out the preferred leader of a partition from a list of replicas."
+                      `Whenever a new topic is created, Kafka runs its leader election algorithm for each partition to assign a leader from the list of replicas. 
+                       This algorithm aims to create a balanced spread of leadership assignments across the brokers. A "Yes" value indicates that the current leader is the preferred leader.
+                       A "No" value may indicate that the leadership assignments in the cluster are not balanced.`
                     }
                   >
                     <HelpIcon />
@@ -157,9 +159,11 @@ export function PartitionsTable({
                 <Th key={key} dataLabel={"Leader"} width={15}>
                   Leader{" "}
                   <Tooltip
+                    style={{whiteSpace:'pre-line'}}
                     content={
-                      "The ID of the partition leader.\n" +
-                      "For a given partition, a broker is elected as the leader, handling all produce requests. Followers on other brokers replicate the leader's data. A follower is considered in sync if it catches up with the leader's latest committed message. Under-replication occurs when the replicas for a partition fall below the configured replication factor."
+                      `The ID of the partition leader.
+                       For a given partition, a broker is elected as the leader, handling all produce requests. Followers on other brokers replicate the leader's data. A follower is considered in-sync if it catches up with the leader's latest committed message. Under-replication occurs when the replicas for a partition fall below the configured replication factor.`
+
                     }
                   >
                     <HelpIcon />
@@ -172,7 +176,7 @@ export function PartitionsTable({
                   Replicas{" "}
                   <Tooltip
                     content={
-                      "Each partition has designated replicas, with one being the 'leader' and the rest as 'follower' or `in-sync` partitions. The leader handles produce requests, and followers replicate the leader's data."
+                      `Each partition has designated replicas, with one being the 'leader' and the rest as 'follower' or 'in-sync' partitions. The leader handles produce requests, and followers replicate the leader's data. Replicas can be either "in-sync" or "Under-replicated" in case any of the replicas are not in-sync`
                     }
                   >
                     <HelpIcon />
