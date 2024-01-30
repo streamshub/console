@@ -230,7 +230,18 @@ export function TopicsTable({
           case "status":
             return (
               <Th key={key} dataLabel={"Status"}>
-                Status
+               Status {" "}
+              <Tooltip
+               style={{whiteSpace:'pre-line'}}
+               content={
+                   `Indicates the replication status of the partitions in the Kafka topic.
+                   A partition is fully replicated when its replicas (followers) are 'in-sync' with the designated partition leader.
+                   A partition is under-replicated if partition replicas (followers) are not 'in-sync with their designated partition leader.
+                   If the status shows unavailable, some or all partitions are currently unavailable due to underlying issues.`
+                }                  
+              >
+                <HelpIcon />
+              </Tooltip>
               </Th>
             );
           case "consumerGroups":
@@ -427,7 +438,7 @@ export function TopicsTable({
               Hide internal topics&nbsp;
               <Tooltip
                 content={
-                  "Internal topic names start with an underscore (_) and should not be individually modified."
+                  "By convention internal topics are prefixed with __. These topics are usually created and managed by Kafka."
                 }
               >
                 <HelpIcon />

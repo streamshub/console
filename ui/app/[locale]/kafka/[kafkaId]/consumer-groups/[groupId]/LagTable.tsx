@@ -1,6 +1,8 @@
 import { ConsumerGroup } from "@/api/consumerGroups/schema";
 import { Number } from "@/components/Number";
 import { ResponsiveTable } from "@/components/table";
+import { Tooltip } from "@/libs/patternfly/react-core";
+import { HelpIcon } from "@/libs/patternfly/react-icons";
 import { Link } from "@/navigation";
 import { TableVariant } from "@patternfly/react-table";
 
@@ -32,9 +34,19 @@ export function LagTable({
           case "behind":
             return <Th key={key}>Lag</Th>;
           case "currentOffset":
-            return <Th key={key}>Committed offset</Th>;
+            return <Th key={key}>Committed offset{" "}
+             <Tooltip
+                    content={"The offset in the Kafka topic marking the last successfully consumed message by the consumer."}
+                  >
+                    <HelpIcon />
+                  </Tooltip></Th>;
           case "endOffset":
-            return <Th key={key}>End offset</Th>;
+            return <Th key={key}>End offset{" "}
+            <Tooltip
+                    content={"The highest offset in the Kafka topic, representing the latest available message."}
+                  >
+                    <HelpIcon />
+                  </Tooltip></Th>;
         }
       }}
       renderCell={({ column, key, row, Td }) => {
