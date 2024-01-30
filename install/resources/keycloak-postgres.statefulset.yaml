@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: keycloak-postgres
+spec:
+  serviceName: keycloak-postgres-db-service
+  selector:
+    matchLabels:
+      app: keycloak-postgres
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: keycloak-postgres
+    spec:
+      volumes:
+        - name: keycloak-postgres-data
+          persistentVolumeClaim:
+            claimName: keycloak-postgres-data
+      containers:
+        - name: postgres
+          image: quay.io/sclorg/postgresql-15-c9s
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ ALL ]
+            seccompProfile:
+              type: RuntimeDefault
+          volumeMounts:
+            - name: keycloak-postgres-data
+              mountPath: /var/lib/pgsql
+          env:
+            - name: POSTGRESQL_DATABASE
+              value: keycloak
+            - name: POSTGRESQL_USER
+              valueFrom:
+                secretKeyRef:
+                  name: keycloak-postgres-secret
+                  key: username
+            - name: POSTGRESQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: keycloak-postgres-secret
+                  key: password
