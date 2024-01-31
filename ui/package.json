@@ -44,18 +44,18 @@
     "zod": "^3.22.4"
   },
   "devDependencies": {
-    "@storybook/addon-essentials": "^7.6.10",
-    "@storybook/addon-interactions": "^7.6.10",
-    "@storybook/addon-links": "^7.6.10",
-    "@storybook/blocks": "^7.6.10",
-    "@storybook/nextjs": "^7.6.10",
-    "@storybook/react": "^7.6.10",
+    "@storybook/addon-essentials": "^7.6.11",
+    "@storybook/addon-interactions": "^7.6.11",
+    "@storybook/addon-links": "^7.6.11",
+    "@storybook/blocks": "^7.6.11",
+    "@storybook/nextjs": "^7.6.11",
+    "@storybook/react": "^7.6.11",
     "@storybook/testing-library": "^0.2.2",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-storybook": "^0.6.15",
     "pino-pretty": "^10.3.1",
     "prettier": "^3.2.4",
-    "storybook": "^7.6.10",
+    "storybook": "^7.6.11",
     "tsconfig-paths-webpack-plugin": "^4.1.0"
   }
 }
