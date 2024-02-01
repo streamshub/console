@@ -1,5 +1,6 @@
 package com.github.eyefloaters.console.api;
 
+import java.util.Base64;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -35,6 +36,7 @@ import org.apache.kafka.common.config.SaslConfigs;
 import org.apache.kafka.common.config.SslConfigs;
 import org.apache.kafka.common.security.auth.SecurityProtocol;
 import org.apache.kafka.common.security.oauthbearer.OAuthBearerLoginModule;
+import org.apache.kafka.common.security.scram.ScramLoginModule;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.jboss.logging.Logger;
@@ -43,6 +45,10 @@ import com.github.eyefloaters.console.api.service.KafkaClusterService;
 
 import io.fabric8.kubernetes.client.informers.SharedIndexInformer;
 import io.strimzi.api.kafka.model.Kafka;
+import io.strimzi.api.kafka.model.listener.KafkaListenerAuthenticationCustom;
+import io.strimzi.api.kafka.model.listener.KafkaListenerAuthenticationOAuth;
+import io.strimzi.api.kafka.model.listener.KafkaListenerAuthenticationScramSha512;
+import io.strimzi.api.kafka.model.listener.arraylistener.GenericKafkaListener;
 import io.strimzi.api.kafka.model.status.ListenerStatus;
 
 /**
@@ -61,11 +67,16 @@ import io.strimzi.api.kafka.model.status.ListenerStatus;
 @ApplicationScoped
 public class ClientFactory {
 
+    private static final String BASIC = "Basic ";
     private static final String BEARER = "Bearer ";
-    private static final String OAUTHBEARER = "OAUTHBEARER";
+    private static final String OAUTHBEARER = OAuthBearerLoginModule.OAUTHBEARER_MECHANISM;
     private static final String SASL_OAUTH_CONFIG_TEMPLATE = OAuthBearerLoginModule.class.getName()
             + " required"
-            + " oauth.access.token=\"%s\";";
+            + " oauth.access.token=\"%s\" ;";
+    private static final String SASL_SCRAM_CONFIG_TEMPLATE = ScramLoginModule.class.getName()
+            + " required"
+            + " username=\"%s\""
+            + " password=\"%s\" ;";
     private static final String NO_COMPATIBLE_LISTENER = """
             Request to access Kafka cluster %s could not be fulfilled because no listeners were found with:
             \t(1) authentication disabled
@@ -205,24 +216,52 @@ public class ClientFactory {
 
     Map<String, Object> buildConfiguration(Kafka cluster) {
         return KafkaClusterService.consoleListener(cluster)
-            .map(l -> buildConfiguration(cluster, l))
+            .map(this::buildConfiguration)
             .orElseThrow(() -> {
                 log.warnf(NO_COMPATIBLE_LISTENER, cluster.getStatus().getClusterId());
                 return noSuchKafka.get();
             });
     }
 
-    Map<String, Object> buildConfiguration(Kafka cluster, ListenerStatus listenerStatus) {
+    Map<String, Object> buildConfiguration(Map.Entry<GenericKafkaListener, ListenerStatus> listener) {
         Map<String, Object> config = new HashMap<>();
-        String authType = KafkaClusterService.getAuthType(cluster, listenerStatus).orElse("");
+        var authentication = listener.getKey().getAuth();
+        String authType = Optional.ofNullable(authentication.getType()).orElse("");
         boolean saslEnabled;
+
+        switch (authType) {
+        case KafkaListenerAuthenticationOAuth.TYPE_OAUTH:
+            saslEnabled = true;
+            configureOAuthBearer(config);
+            break;
+        case KafkaListenerAuthenticationScramSha512.SCRAM_SHA_512:
+            saslEnabled = true;
+            //TODO: configureScram
+            break;
+        case KafkaListenerAuthenticationCustom.TYPE_CUSTOM:
+            if (KafkaClusterService.mechanismEnabled(
+                    (KafkaListenerAuthenticationCustom) authentication, OAUTHBEARER)) {
+                saslEnabled = true;
+                configureOAuthBearer(config);
+            } else if (KafkaClusterService.mechanismEnabled(
+                    (KafkaListenerAuthenticationCustom) authentication, "SCRAM-")) {
+                saslEnabled = true;
+                //TODO: configureScram
+            } else {
+                saslEnabled = false;
+            }
+
+            break;
+        default:
+            log.trace("Broker authentication/SASL disabled");
+            saslEnabled = false;
+            break;
+        }
 
         if (authType.isBlank()) {
             log.trace("Broker authentication/SASL disabled");
             saslEnabled = false;
         } else {
-            saslEnabled = true;
-            configureOAuthBearer(config);
         }
 
         StringBuilder protocol = new StringBuilder();
@@ -231,6 +270,7 @@ public class ClientFactory {
             protocol.append("SASL_");
         }
 
+        var listenerStatus = listener.getValue();
         List<String> certificates = Optional.ofNullable(listenerStatus.getCertificates()).orElseGet(Collections::emptyList);
 
         if (!certificates.isEmpty()) {
@@ -255,11 +295,35 @@ public class ClientFactory {
         // May still cause warnings to be logged when token will expire in less than SASL_LOGIN_REFRESH_MIN_PERIOD_SECONDS.
         config.put(SaslConfigs.SASL_LOGIN_REFRESH_BUFFER_SECONDS, "0");
 
-        final String accessToken = Optional.ofNullable(headers.getHeaderString(HttpHeaders.AUTHORIZATION))
-                .filter(header -> header.regionMatches(true, 0, BEARER, 0, BEARER.length()))
-                .map(header -> header.substring(BEARER.length()))
+        String jaasConfig = getAuthorization(BEARER)
+                .map(SASL_OAUTH_CONFIG_TEMPLATE::formatted)
                 .orElseThrow(() -> new NotAuthorizedException(BEARER.trim()));
 
-        config.put(SaslConfigs.SASL_JAAS_CONFIG, String.format(SASL_OAUTH_CONFIG_TEMPLATE, accessToken));
+        config.put(SaslConfigs.SASL_JAAS_CONFIG, jaasConfig);
+    }
+
+    void configureScram(Map<String, Object> config) {
+        log.trace("SASL/SCRAM enabled");
+        config.put(SaslConfigs.SASL_MECHANISM, "SCRAM-SHA-512");
+
+        String jassConfig = getAuthorization(BASIC)
+                .map(Base64.getDecoder()::decode)
+                .map(String::new)
+                .filter(authn -> authn.indexOf(':') >= 0)
+                .map(authn -> new String[] {
+                    authn.substring(0, authn.indexOf(':')),
+                    authn.substring(authn.indexOf(':') + 1)
+                })
+                .filter(userPass -> !userPass[0].isEmpty() && !userPass[1].isEmpty())
+                .map(SASL_SCRAM_CONFIG_TEMPLATE::formatted)
+                .orElseThrow(() -> new NotAuthorizedException(BASIC.trim()));
+
+        config.put(SaslConfigs.SASL_JAAS_CONFIG, jassConfig);
+    }
+
+    Optional<String> getAuthorization(String scheme) {
+        return Optional.ofNullable(headers.getHeaderString(HttpHeaders.AUTHORIZATION))
+                .filter(header -> header.regionMatches(true, 0, scheme, 0, scheme.length()))
+                .map(header -> header.substring(scheme.length()));
     }
 }

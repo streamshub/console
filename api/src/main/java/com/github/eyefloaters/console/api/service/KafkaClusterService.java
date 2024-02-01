@@ -8,6 +8,7 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -38,6 +39,7 @@ import io.strimzi.api.kafka.model.Kafka;
 import io.strimzi.api.kafka.model.listener.KafkaListenerAuthentication;
 import io.strimzi.api.kafka.model.listener.KafkaListenerAuthenticationCustom;
 import io.strimzi.api.kafka.model.listener.KafkaListenerAuthenticationOAuth;
+import io.strimzi.api.kafka.model.listener.KafkaListenerAuthenticationScramSha512;
 import io.strimzi.api.kafka.model.listener.arraylistener.GenericKafkaListener;
 import io.strimzi.api.kafka.model.listener.arraylistener.GenericKafkaListenerConfiguration;
 import io.strimzi.api.kafka.model.listener.arraylistener.KafkaListenerType;
@@ -204,7 +206,7 @@ public class KafkaClusterService {
                 .findFirst();
     }
 
-    public static Optional<ListenerStatus> consoleListener(Kafka kafka) {
+    public static Optional<Map.Entry<GenericKafkaListener, ListenerStatus>> consoleListener(Kafka kafka) {
         return kafka.getSpec().getKafka().getListeners().stream()
             .filter(listener -> !KafkaListenerType.INTERNAL.equals(listener.getType()))
             .filter(KafkaClusterService::supportedAuthentication)
@@ -212,7 +214,8 @@ public class KafkaClusterService {
                     listenerSortKey(l1, Annotations.CONSOLE_LISTENER),
                     listenerSortKey(l2, Annotations.CONSOLE_LISTENER)))
             .findFirst()
-            .flatMap(listener -> listenerStatus(kafka, listener));
+            .flatMap(listener -> listenerStatus(kafka, listener)
+                    .map(status -> Map.entry(listener, status)));
     }
 
     static boolean supportedAuthentication(GenericKafkaListener listener) {
@@ -222,17 +225,23 @@ public class KafkaClusterService {
             return true;
         } else if (listenerAuth instanceof KafkaListenerAuthenticationOAuth) {
             return true;
+        } else if (listenerAuth instanceof KafkaListenerAuthenticationScramSha512) {
+            return true;
         } else if (listenerAuth instanceof KafkaListenerAuthenticationCustom customAuth) {
-            return Optional.of(customAuth)
+            return mechanismEnabled(customAuth, "OAUTHBEARER", "SCRAM-");
+        } else {
+            return false;
+        }
+    }
+
+    public static boolean mechanismEnabled(KafkaListenerAuthenticationCustom customAuth, String... mechanism) {
+        return Optional.of(customAuth)
                 .filter(KafkaListenerAuthenticationCustom::isSasl)
                 .map(KafkaListenerAuthenticationCustom::getListenerConfig)
                 .map(listenerConfig -> listenerConfig.get("sasl.enabled.mechanisms"))
                 .map(mechanisms -> Arrays.asList(mechanisms.toString().toUpperCase(Locale.ROOT).split(",")))
-                .map(mechanisms -> mechanisms.contains("OAUTHBEARER"))
+                .map(mechanisms -> Stream.of(mechanism).anyMatch(mechanisms::contains))
                 .orElse(false);
-        } else {
-            return false;
-        }
     }
 
     static int listenerSortKey(GenericKafkaListener listener, Annotations listenerAnnotation) {
@@ -256,7 +265,7 @@ public class KafkaClusterService {
             .orElse(false);
     }
 
-    static Optional<ListenerStatus> listenerStatus(Kafka kafka, GenericKafkaListener listener) {
+    public static Optional<ListenerStatus> listenerStatus(Kafka kafka, GenericKafkaListener listener) {
         String listenerName = listener.getName();
 
         return Optional.ofNullable(kafka.getStatus())
@@ -265,16 +274,6 @@ public class KafkaClusterService {
             .orElseGet(Stream::empty)
             .filter(listenerStatus -> listenerName.equals(listenerStatus.getName()))
             .findFirst();
-    }
-
-    public static Optional<String> getAuthType(Kafka kafka, ListenerStatus listener) {
-        return kafka.getSpec()
-            .getKafka()
-            .getListeners()
-            .stream()
-            .filter(sl -> sl.getName().equals(listener.getName()))
-            .findFirst()
-            .flatMap(KafkaClusterService::getAuthType);
     }
 
     static Optional<String> getAuthType(GenericKafkaListener listener) {
