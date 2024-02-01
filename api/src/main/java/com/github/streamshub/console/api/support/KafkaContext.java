@@ -19,16 +19,19 @@ public class KafkaContext implements Closeable {
     final Kafka resource;
     final Map<Class<?>, Map<String, Object>> configs;
     final Admin admin;
+    boolean applicationScoped;
 
     public KafkaContext(KafkaClusterConfig clusterConfig, Kafka resource, Map<Class<?>, Map<String, Object>> configs, Admin admin) {
         this.clusterConfig = clusterConfig;
         this.resource = resource;
         this.configs = Map.copyOf(configs);
         this.admin = admin;
+        this.applicationScoped = true;
     }
 
     public KafkaContext(KafkaContext other, Admin admin) {
         this(other.clusterConfig, other.resource, other.configs, admin);
+        this.applicationScoped = false;
     }
 
     @Override
@@ -74,5 +77,9 @@ public class KafkaContext implements Closeable {
 
     public Admin admin() {
         return admin;
+    }
+
+    public boolean applicationScoped() {
+        return applicationScoped;
     }
 }

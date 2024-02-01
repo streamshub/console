@@ -18,10 +18,12 @@ public class KafkaClusterConfig {
 
     @JsonIgnore
     public String clusterKey() {
-        if (namespace == null || namespace.isBlank()) {
-            return name;
-        }
-        return "%s/%s".formatted(namespace, name);
+        return hasNamespace() ? "%s/%s".formatted(namespace, name) : name;
+    }
+
+    @JsonIgnore
+    public boolean hasNamespace() {
+        return namespace != null && !namespace.isBlank();
     }
 
     public String getId() {

@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import io.fabric8.kubernetes.client.Config;
 import io.fabric8.kubernetes.client.KubernetesClientBuilder;
@@ -30,13 +31,29 @@ public class StrimziCrdResourceManager implements QuarkusTestResourceLifecycleMa
         devConfig = context.devServicesProperties();
     }
 
+    <T> Optional<T> get(String key, Function<String, T> mapper) {
+        return Optional.ofNullable(devConfig.get(PREFIX + key))
+            .map(mapper);
+    }
+
     Optional<String> get(String key) {
         return get(key, Function.identity());
     }
 
-    <T> Optional<T> get(String key, Function<String, T> mapper) {
-        return Optional.ofNullable(devConfig.get(PREFIX + key))
-            .map(mapper);
+    <T> T get(String key, Function<String, T> mapper, Supplier<T> defaultValue) {
+        return get(key, mapper).orElseGet(defaultValue);
+    }
+
+    String get(String key, Supplier<String> defaultValue) {
+        return get(key, Function.identity())
+                .orElseGet(defaultValue);
+    }
+
+    Integer durationMs(String key, Supplier<Integer> defaultValue) {
+        return get(key, Duration::parse)
+                .map(Duration::toMillis)
+                .map(Integer.class::cast)
+                .orElseGet(defaultValue);
     }
 
     @Override
@@ -45,31 +62,28 @@ public class StrimziCrdResourceManager implements QuarkusTestResourceLifecycleMa
 
         var k8s = new KubernetesClientBuilder()
             .editOrNewConfig()
-                .withTrustCerts(get("trust-certs", Boolean::parseBoolean).orElseGet(base::isTrustCerts))
-                .withWatchReconnectLimit(get("watch-reconnect-limit", Integer::parseInt).orElseGet(base::getWatchReconnectLimit))
-                .withWatchReconnectInterval((int) get("watch-reconnect-interval", Duration::parse)
-                        .orElse(Duration.ofMillis(base.getWatchReconnectInterval())).toMillis())
-                .withConnectionTimeout((int) get("connection-timeout", Duration::parse)
-                        .orElse(Duration.ofMillis(base.getConnectionTimeout())).toMillis())
-                .withRequestTimeout((int) get("request-timeout", Duration::parse)
-                        .orElse(Duration.ofMillis(base.getRequestTimeout())).toMillis())
-                .withMasterUrl(get("api-server-url").or(() -> get("master-url")).orElse(base.getMasterUrl()))
-                .withNamespace(get("namespace").orElseGet(base::getNamespace))
-                .withUsername(get("username").orElse(base.getUsername()))
-                .withPassword(get("password").orElse(base.getPassword()))
-                .withCaCertFile(get("ca-cert-file").orElse(base.getCaCertFile()))
-                .withCaCertData(get("ca-cert-data").orElse(base.getCaCertData()))
-                .withClientCertFile(get("client-cert-file").orElse(base.getClientCertFile()))
-                .withClientCertData(get("client-cert-data").orElse(base.getClientCertData()))
-                .withClientKeyFile(get("client-key-file").orElse(base.getClientKeyFile()))
-                .withClientKeyData(get("client-key-data").orElse(base.getClientKeyData()))
-                .withClientKeyPassphrase(get("client-key-passphrase").orElse(base.getClientKeyPassphrase()))
-                .withClientKeyAlgo(get("client-key-algo").orElse(base.getClientKeyAlgo()))
-                .withHttpProxy(get("http-proxy").orElse(base.getHttpProxy()))
-                .withHttpsProxy(get("https-proxy").orElse(base.getHttpsProxy()))
-                .withProxyUsername(get("proxy-username").orElse(base.getProxyUsername()))
-                .withProxyPassword(get("proxy-password").orElse(base.getProxyPassword()))
-                .withNoProxy(get("no-proxy", s -> s.split(",")).orElse(base.getNoProxy()))
+                .withTrustCerts(get("trust-certs", Boolean::parseBoolean, base::isTrustCerts))
+                .withWatchReconnectLimit(get("watch-reconnect-limit", Integer::parseInt, base::getWatchReconnectLimit))
+                .withWatchReconnectInterval(durationMs("watch-reconnect-interval", base::getWatchReconnectInterval))
+                .withConnectionTimeout(durationMs("connection-timeout", base::getConnectionTimeout))
+                .withRequestTimeout(durationMs("request-timeout", base::getRequestTimeout))
+                .withMasterUrl(get("api-server-url").or(() -> get("master-url")).orElseGet(base::getMasterUrl))
+                .withNamespace(get("namespace", base::getNamespace))
+                .withUsername(get("username", base::getUsername))
+                .withPassword(get("password", base::getPassword))
+                .withCaCertFile(get("ca-cert-file", base::getCaCertFile))
+                .withCaCertData(get("ca-cert-data", base::getCaCertData))
+                .withClientCertFile(get("client-cert-file", base::getClientCertFile))
+                .withClientCertData(get("client-cert-data", base::getClientCertData))
+                .withClientKeyFile(get("client-key-file", base::getClientKeyFile))
+                .withClientKeyData(get("client-key-data", base::getClientKeyData))
+                .withClientKeyPassphrase(get("client-key-passphrase", base::getClientKeyPassphrase))
+                .withClientKeyAlgo(get("client-key-algo", base::getClientKeyAlgo))
+                .withHttpProxy(get("http-proxy", base::getHttpProxy))
+                .withHttpsProxy(get("https-proxy", base::getHttpsProxy))
+                .withProxyUsername(get("proxy-username", base::getProxyUsername))
+                .withProxyPassword(get("proxy-password", base::getProxyPassword))
+                .withNoProxy(get("no-proxy", s -> s.split(",")).orElseGet(base::getNoProxy))
             .endConfig()
             .build();
 

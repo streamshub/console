@@ -56,7 +56,6 @@ import io.quarkus.test.junit.TestProfile;
 import io.strimzi.api.kafka.model.kafka.Kafka;
 import io.strimzi.api.kafka.model.kafka.KafkaBuilder;
 import io.strimzi.api.kafka.model.kafka.listener.KafkaListenerAuthenticationCustomBuilder;
-import io.strimzi.api.kafka.model.kafka.listener.KafkaListenerAuthenticationOAuthBuilder;
 import io.strimzi.api.kafka.model.kafka.listener.KafkaListenerAuthenticationScramSha512Builder;
 import io.strimzi.test.container.StrimziKafkaContainer;
 
@@ -543,8 +542,7 @@ class KafkaClustersResourceIT {
          * Create a Kafka CR with OAuth that proxies to kafka1.
          * test-kafka3 is predefined in KafkaUnsecuredResourceManager with SSL
          */
-        Kafka kafka = new KafkaBuilder(utils.buildKafkaResource("test-kafka3", clusterId, bootstrapServers,
-                            new KafkaListenerAuthenticationOAuthBuilder().build()))
+        Kafka kafka = new KafkaBuilder(utils.buildKafkaResource("test-kafka3", clusterId, bootstrapServers))
                 .editStatus()
                     .editMatchingListener(l -> "listener0".equals(l.getName()))
                         .addToCertificates("""

@@ -7,6 +7,7 @@ import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.util.Base64;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocket;
@@ -32,14 +33,26 @@ public class TrustAllCertificateManager implements X509TrustManager {
     @Inject
     Logger log;
 
+    Map<String, String> trustedCertificates = new ConcurrentHashMap<>();
+
     public void trustClusterCertificate(Map<String, Object> cfg) {
+        String bootstrap = (String) cfg.get(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG);
+        String trusted = trustedCertificates.computeIfAbsent(bootstrap, this::loadCertificates);
+
+        if (trusted != null) {
+            cfg.put(SslConfigs.SSL_TRUSTSTORE_CERTIFICATES_CONFIG, trusted);
+            cfg.put(SslConfigs.SSL_TRUSTSTORE_TYPE_CONFIG, "PEM");
+        }
+    }
+
+    private String loadCertificates(String bootstrap) {
         TrustManager[] trustAllCerts = {this};
+        String certificates = null;
 
         try {
             SSLContext sc = SSLContext.getInstance("TLSv1.2");
             sc.init(null, trustAllCerts, new SecureRandom());
             SSLSocketFactory factory = sc.getSocketFactory();
-            String bootstrap = (String) cfg.get(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG);
             String[] hostport = bootstrap.split(",")[0].split(":");
             ByteArrayOutputStream certificateOut = new ByteArrayOutputStream();
 
@@ -52,13 +65,13 @@ public class TrustAllCertificateManager implements X509TrustManager {
                 }
             }
 
-            cfg.put(SslConfigs.SSL_TRUSTSTORE_CERTIFICATES_CONFIG,
-                    new String(certificateOut.toByteArray(), StandardCharsets.UTF_8).trim());
-            cfg.put(SslConfigs.SSL_TRUSTSTORE_TYPE_CONFIG, "PEM");
+            certificates = new String(certificateOut.toByteArray(), StandardCharsets.UTF_8).trim();
             log.warnf("Certificate hosted at %s:%s is automatically trusted", hostport[0], hostport[1]);
         } catch (Exception e) {
             log.infof("Exception setting up trusted certificate: %s", e.getMessage());
         }
+
+        return certificates;
     }
 
     public X509Certificate[] getAcceptedIssuers() {
