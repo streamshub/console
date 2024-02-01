@@ -59,28 +59,28 @@ export const ClusterResponse = z.object({
 export type ClusterDetail = z.infer<typeof ClusterDetailSchema>;
 
 export const ClusterKpisSchema = z.object({
-  broker_state: z.record(z.number()),
-  total_topics: z.number(),
-  total_partitions: z.number(),
-  underreplicated_topics: z.number(),
+  broker_state: z.record(z.number()).optional(),
+  total_topics: z.number().optional(),
+  total_partitions: z.number().optional(),
+  underreplicated_topics: z.number().optional(),
   replica_count: z.object({
-    byNode: z.record(z.number()),
-    total: z.number(),
-  }),
+    byNode: z.record(z.number()).optional(),
+    total: z.number().optional(),
+  }).optional(),
   leader_count: z.object({
-    byNode: z.record(z.number()),
-    total: z.number(),
-  }),
+    byNode: z.record(z.number()).optional(),
+    total: z.number().optional(),
+  }).optional(),
   volume_stats_capacity_bytes: z.object({
-    byNode: z.record(z.number()),
-    total: z.number(),
-  }),
+    byNode: z.record(z.number()).optional(),
+    total: z.number().optional(),
+  }).optional(),
   volume_stats_used_bytes: z.object({
-    byNode: z.record(z.number()),
-    total: z.number(),
-  }),
+    byNode: z.record(z.number()).optional(),
+    total: z.number().optional(),
+  }).optional(),
 });
 export type ClusterKpis = z.infer<typeof ClusterKpisSchema>;
 
-export const MetricRangeSchema = z.record(z.string(), z.record(z.number()));
+export const MetricRangeSchema = z.record(z.string(), z.record(z.number()).optional());
 export type MetricRange = z.infer<typeof MetricRangeSchema>;

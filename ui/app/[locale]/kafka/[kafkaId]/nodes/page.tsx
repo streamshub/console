@@ -8,6 +8,10 @@ import {
 import { PageSection } from "@/libs/patternfly/react-core";
 import { redirect } from "@/navigation";
 
+function nodeMetric(metrics: Record<string, number> | undefined, nodeId: number): number {
+    return metrics ? (metrics[nodeId.toString()] ?? 0) : 0;
+}
+
 export default async function NodesPage({ params }: { params: KafkaParams }) {
   const res = await getKafkaClusterKpis(params.kafkaId);
   if (!res) {
@@ -20,11 +24,11 @@ export default async function NodesPage({ params }: { params: KafkaParams }) {
   }
 
   const nodes: Node[] = cluster.attributes.nodes.map((node) => {
-    const status = kpis.broker_state[node.id] === 3 ? "Stable" : "Unstable";
-    const leaders = kpis.leader_count.byNode[node.id];
-    const followers = kpis.replica_count.byNode[node.id] - leaders;
-    const diskCapacity = kpis.volume_stats_capacity_bytes.byNode[node.id];
-    const diskUsage = kpis.volume_stats_used_bytes.byNode[node.id];
+    const status = nodeMetric(kpis.broker_state, node.id) === 3 ? "Stable" : "Unstable";
+    const leaders = nodeMetric(kpis.leader_count?.byNode, node.id);
+    const followers = nodeMetric(kpis.replica_count?.byNode, node.id) - leaders;
+    const diskCapacity = nodeMetric(kpis.volume_stats_capacity_bytes?.byNode, node.id);
+    const diskUsage = nodeMetric(kpis.volume_stats_used_bytes?.byNode, node.id);
     return {
       id: node.id,
       status,

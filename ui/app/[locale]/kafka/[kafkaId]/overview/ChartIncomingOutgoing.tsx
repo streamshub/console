@@ -18,8 +18,8 @@ import { useFormatter } from "next-intl";
 import { useChartWidth } from "./useChartWidth";
 
 type ChartIncomingOutgoingProps = {
-  incoming: Record<string, TimeSeriesMetrics>;
-  outgoing: Record<string, TimeSeriesMetrics>;
+  incoming: Record<string, TimeSeriesMetrics | undefined>;
+  outgoing: Record<string, TimeSeriesMetrics | undefined>;
 };
 
 type Datum = {
@@ -42,7 +42,7 @@ export function ChartIncomingOutgoing({
   const hasMetrics =
     Object.keys(incoming).length > 0 && Object.keys(outgoing).length > 0;
   if (!hasMetrics) {
-    return <div>TODO</div>;
+    return <div><i>Not available</i></div>;
   }
   // const showDate = shouldShowDate(duration);
   const CursorVoronoiContainer = createContainer("voronoi", "cursor");
@@ -124,7 +124,7 @@ export function ChartIncomingOutgoing({
         />
         <ChartGroup>
           {Object.entries(incoming).map(([name, entries], idx) => {
-            const entriesArray = Object.entries(entries);
+            const entriesArray = Object.entries(entries ?? {});
             return (
               <ChartArea
                 key={`incoming-line-${name}}`}
@@ -140,8 +140,8 @@ export function ChartIncomingOutgoing({
             );
           })}
           {Object.entries(outgoing).map(([name, entries], idx) => {
-            const entriesArray = Object.entries(entries);
-            const incomingArray = Object.keys(incoming[name]);
+            const entriesArray = Object.entries(entries ?? {});
+            const incomingArray = Object.keys(incoming[name] ?? {});
             return (
               <ChartArea
                 key={`outgoing-line-${name}}`}

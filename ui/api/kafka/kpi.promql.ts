@@ -65,7 +65,7 @@ or
 sum by (__console_metric_name__, nodeId) (
   label_replace(
     label_replace(
-      kafka_cluster_partition_replicascount{namespace="${namespace}",pod=~"${cluster}-.+-\\\\d+",strimzi_io_kind="Kafka"} > 0,
+      kafka_server_replicamanager_partitioncount{namespace="${namespace}",pod=~"${cluster}-.+-\\\\d+",strimzi_io_kind="Kafka"} > 0,
       "nodeId",
       "$1",
       "pod",
