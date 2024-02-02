@@ -35,7 +35,7 @@
     "next-auth": "^4.24.5",
     "next-intl": "^3.5.4",
     "next-logger": "^3.0.2",
-    "pino": "^8.17.2",
+    "pino": "^8.18.0",
     "prometheus-query": "^3.4.0",
     "react": "18.2.0",
     "react-dom": "18.2.0",
