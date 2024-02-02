@@ -20,7 +20,7 @@
     "@patternfly/react-tokens": "^5.1.2",
     "@patternfly/react-user-feedback": "^5.0.0",
     "@types/lodash.groupby": "^4.6.9",
-    "@types/node": "20.11.14",
+    "@types/node": "20.11.16",
     "@types/react": "18.2.50",
     "@types/react-dom": "18.2.18",
     "classnames": "^2.5.1",
