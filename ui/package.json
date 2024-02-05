@@ -11,7 +11,7 @@
     "build-storybook": "storybook build"
   },
   "dependencies": {
-    "@patternfly/patternfly": "^5.1.0",
+    "@patternfly/patternfly": "^5.2.0",
     "@patternfly/quickstarts": "^5.1.0",
     "@patternfly/react-charts": "^7.1.2",
     "@patternfly/react-core": "^5.1.2",
