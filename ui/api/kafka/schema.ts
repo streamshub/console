@@ -37,6 +37,7 @@ const ClusterDetailSchema = z.object({
     authType: z.string().optional().nullable(),
     listeners: z.array(
       z.object({
+        name: z.string(),
         type: z.string(),
         bootstrapServers: z.string().nullable(),
         authType: z.string().nullable(),

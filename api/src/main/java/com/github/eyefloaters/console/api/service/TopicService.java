@@ -24,6 +24,7 @@ import java.util.stream.Stream;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.inject.Named;
 
 import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.clients.admin.CreatePartitionsOptions;
@@ -59,7 +60,11 @@ import com.github.eyefloaters.console.api.support.TopicValidation;
 import com.github.eyefloaters.console.api.support.UnknownTopicIdPatch;
 import com.github.eyefloaters.console.api.support.ValidationProxy;
 
+import io.fabric8.kubernetes.api.model.ObjectMeta;
+import io.fabric8.kubernetes.client.KubernetesClient;
 import io.strimzi.api.kafka.model.Kafka;
+import io.strimzi.api.kafka.model.KafkaTopic;
+import io.strimzi.api.kafka.model.KafkaTopicBuilder;
 
 import static org.apache.kafka.clients.admin.NewPartitions.increaseTo;
 
@@ -101,6 +106,14 @@ public class TopicService {
 
     @Inject
     Supplier<Admin> clientSupplier;
+
+    @Inject
+    @Named("KafkaTopics")
+    Map<String, Map<String, Map<String, KafkaTopic>>> managedTopics;
+
+    @Inject
+    @Named("userK8sClient")
+    Supplier<KubernetesClient> userK8sClient;
 
     @Inject
     ConfigService configService;
@@ -159,7 +172,9 @@ public class TopicService {
 
         return listTopics(adminClient, true)
             .thenApply(list -> list.stream().map(Topic::fromTopicListing).toList())
-            .thenComposeAsync(list -> augmentList(adminClient, list, fetchList, offsetSpec), threadContext.currentContextExecutor())
+            .thenComposeAsync(
+                    list -> augmentList(adminClient, list, fetchList, offsetSpec),
+                    threadContext.currentContextExecutor())
             .thenApply(list -> list.stream()
                     .filter(listSupport)
                     .map(topic -> tallyStatus(statuses, topic))
@@ -168,7 +183,10 @@ public class TopicService {
                     .sorted(listSupport.getSortComparator())
                     .dropWhile(listSupport::beforePageBegin)
                     .takeWhile(listSupport::pageCapacityAvailable)
-                    .toList());
+                    .map(this::setManaged))
+            .thenApplyAsync(
+                    topics -> topics.map(this::setManaged).toList(),
+                    threadContext.currentContextExecutor());
     }
 
     Topic tallyStatus(Map<String, Integer> statuses, Topic topic) {
@@ -192,6 +210,7 @@ public class TopicService {
         CompletableFuture<Topic> describePromise = describeTopics(adminClient, List.of(id), fields, offsetSpec)
             .thenApply(result -> result.get(id))
             .thenApply(result -> result.getOrThrow(CompletionException::new))
+            .thenApplyAsync(this::setManaged, threadContext.currentContextExecutor())
             .toCompletableFuture();
 
         return describePromise.thenComposeAsync(topic -> {
@@ -221,30 +240,66 @@ public class TopicService {
         return describeTopic(topicId, List.of(Topic.Fields.CONFIGS), KafkaOffsetSpec.LATEST)
             .thenApply(topic -> validationService.validate(new TopicValidation.TopicPatchInputs(kafka, topic, patch)))
             .thenApply(TopicValidation.TopicPatchInputs::topic)
-            .thenComposeAsync(topic -> {
-                List<CompletableFuture<Void>> pending = new ArrayList<>();
+            .thenComposeAsync(topic -> getManagedTopic(topic)
+                    .map(kafkaTopic -> patchManagedTopic(kafkaTopic, patch, validateOnly))
+                    .orElseGet(() -> patchUnmanagedTopic(topic, patch, validateOnly)),
+                    threadContext.currentContextExecutor());
+    }
 
-                pending.add(maybeCreatePartitions(topic, patch, validateOnly));
-                if (!validateOnly) {
-                    pending.addAll(maybeAlterPartitionAssignments(topic, patch));
+    CompletionStage<Void> patchManagedTopic(KafkaTopic topic, TopicPatch patch, boolean validateOnly) {
+        if (validateOnly) {
+            return CompletableFuture.completedStage(null);
+        }
+
+        Map<String, Object> modifiedConfig = Optional.ofNullable(patch.configs())
+            .map(Map::entrySet)
+            .map(Collection::stream)
+            .orElseGet(Stream::empty)
+            .map(e -> Map.entry(e.getKey(), e.getValue().getValue()))
+            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+        KafkaTopic modifiedTopic = new KafkaTopicBuilder(topic)
+            .editSpec()
+                .withPartitions(patch.numPartitions())
+                .withReplicas(patch.replicasAssignments()
+                        .values()
+                        .stream()
+                        .findFirst()
+                        .map(Collection::size)
+                        .orElseGet(() -> topic.getSpec().getReplicas()))
+                .addToConfig(modifiedConfig)
+            .endSpec()
+            .build();
+
+        KubernetesClient k8sClient = userK8sClient.get();
+        return CompletableFuture.runAsync(() -> k8sClient.resource(modifiedTopic).serverSideApply());
+    }
+
+    CompletionStage<Void> patchUnmanagedTopic(Topic topic, TopicPatch patch, boolean validateOnly) {
+        List<CompletableFuture<Void>> pending = new ArrayList<>();
+
+        pending.add(maybeCreatePartitions(topic, patch, validateOnly));
+
+        if (!validateOnly) {
+            pending.addAll(maybeAlterPartitionAssignments(topic, patch));
+        }
+
+        pending.add(maybeAlterConfigs(topic, patch, validateOnly));
+
+        return CompletableFuture.allOf(pending.stream().toArray(CompletableFuture[]::new))
+            .whenComplete((nothing, error) -> {
+                if (error != null) {
+                    pending.stream()
+                        .filter(CompletableFuture::isCompletedExceptionally)
+                        .forEach(fut -> fut.exceptionally(ex -> {
+                            if (ex instanceof CompletionException ce) {
+                                ex = ce.getCause();
+                            }
+                            error.addSuppressed(ex);
+                            return null;
+                        }));
                 }
-                pending.add(maybeAlterConfigs(topic, patch, validateOnly));
-
-                return CompletableFuture.allOf(pending.stream().toArray(CompletableFuture[]::new))
-                    .whenComplete((nothing, error) -> {
-                        if (error != null) {
-                            pending.stream()
-                                .filter(CompletableFuture::isCompletedExceptionally)
-                                .forEach(fut -> fut.exceptionally(ex -> {
-                                    if (ex instanceof CompletionException ce) {
-                                        ex = ce.getCause();
-                                    }
-                                    error.addSuppressed(ex);
-                                    return null;
-                                }));
-                        }
-                    });
-            }, threadContext.currentContextExecutor());
+            });
     }
 
     CompletableFuture<Void> maybeCreatePartitions(Topic topic, TopicPatch topicPatch, boolean validateOnly) {
@@ -371,6 +426,21 @@ public class TopicService {
                 .topicIdValues()
                 .get(id)
                 .toCompletionStage();
+    }
+
+    Topic setManaged(Topic topic) {
+        topic.addMeta("managed", getManagedTopic(topic)
+                .map(kafkaTopic -> Boolean.TRUE)
+                .orElse(Boolean.FALSE));
+        return topic;
+    }
+
+    Optional<KafkaTopic> getManagedTopic(Topic topic) {
+        ObjectMeta kafkaMeta = kafkaCluster.get().getMetadata();
+
+        return Optional.ofNullable(managedTopics.get(kafkaMeta.getNamespace()))
+            .map(clustersInNamespace -> clustersInNamespace.get(kafkaMeta.getName()))
+            .map(topicsInCluster -> topicsInCluster.get(topic.name()));
     }
 
     CompletionStage<List<Topic>> augmentList(Admin adminClient, List<Topic> list, List<String> fields, String offsetSpec) {

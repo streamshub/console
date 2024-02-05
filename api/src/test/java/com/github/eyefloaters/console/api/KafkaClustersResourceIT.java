@@ -553,7 +553,7 @@ class KafkaClustersResourceIT {
     }
 
     @Test
-    void testDescribeClusterWithScram() {
+    void testDescribeClusterWithScramWithoutCredentials() {
         String clusterId = UUID.randomUUID().toString();
 
         // Create a Kafka CR with SCRAM-SHA that proxies to kafka1
@@ -564,10 +564,10 @@ class KafkaClustersResourceIT {
 
         whenRequesting(req -> req.get("{clusterId}", clusterId))
             .assertThat()
-            .statusCode(is(Status.NOT_FOUND.getStatusCode()))
+            .statusCode(is(Status.UNAUTHORIZED.getStatusCode()))
             .body("errors.size()", is(1))
-            .body("errors.status", contains("404"))
-            .body("errors.code", contains("4041"));
+            .body("errors.status", contains("401"))
+            .body("errors.code", contains("4011"));
     }
 
     @Test
