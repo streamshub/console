@@ -21,8 +21,8 @@ dependencies:
     specifier: ^5.2.0
     version: 5.2.0(react-dom@18.2.0)(react@18.2.0)
   '@patternfly/react-table':
-    specifier: ^5.1.2
-    version: 5.1.2(react-dom@18.2.0)(react@18.2.0)
+    specifier: ^5.2.0
+    version: 5.2.0(react-dom@18.2.0)(react@18.2.0)
   '@patternfly/react-tokens':
     specifier: ^5.1.2
     version: 5.1.2
@@ -2164,6 +2164,22 @@ packages:
       tslib: 2.6.1
     dev: false
 
+  /@patternfly/react-core@5.2.0(react-dom@18.2.0)(react@18.2.0):
+    resolution: {integrity: sha512-AUd7jccCgE2ZRwVtpEbJNF2Sq1A//ZhRaEQ/QHZiiq8mQRQM0Bkpnx0HdefToZT+TgUIjmPW4AXO3ooRJmt26w==}
+    peerDependencies:
+      react: ^17 || ^18
+      react-dom: ^17 || ^18
+    dependencies:
+      '@patternfly/react-icons': 5.2.0(react-dom@18.2.0)(react@18.2.0)
+      '@patternfly/react-styles': 5.2.0
+      '@patternfly/react-tokens': 5.2.0
+      focus-trap: 7.5.2
+      react: 18.2.0
+      react-dom: 18.2.0(react@18.2.0)
+      react-dropzone: 14.2.3(react@18.2.0)
+      tslib: 2.6.2
+    dev: false
+
   /@patternfly/react-icons@5.2.0(react-dom@18.2.0)(react@18.2.0):
     resolution: {integrity: sha512-vklAF2unvtK0trwx9Kk8nf4Xa2+nie4zxaIaQdnjIL7kX6a5SdsewDjlavOC3cRxnibZLQ5HQtpDZ4EmuXm8DQ==}
     peerDependencies:
@@ -2178,24 +2194,32 @@ packages:
     resolution: {integrity: sha512-rGNo8MstZG2r3yDS1tWwYDctK1qWW5RT1UwKF1DrQfhZ8ruEEL6m2ZXXM0u62hmM3qq4Q8h5lgn/bVHBnOHSLA==}
     dev: false
 
-  /@patternfly/react-table@5.1.2(react-dom@18.2.0)(react@18.2.0):
-    resolution: {integrity: sha512-C+ctkW6oWmdVhGv1rawVlo54baSu5G3ja3ZDtBjVsgMmpsGD0GIBXpvwtFO+OJVeY7T6qXHInMyuW3QNz/0rog==}
+  /@patternfly/react-styles@5.2.0:
+    resolution: {integrity: sha512-u8in9RSU8YzcT0npgVeiIHi1Bdp7UdER9azWGi7vlJWooRI1hgQjIDpm22wopGFg0h8VOqhfIFWIyvqxuzhW6A==}
+    dev: false
+
+  /@patternfly/react-table@5.2.0(react-dom@18.2.0)(react@18.2.0):
+    resolution: {integrity: sha512-Pd+llSuAU9i1dvteQL1keEXmsQv6d8x4+F2arqGQS1umeOR3lvvycyFac1OboJ4oV2rAX97GVmtZdoJjaqxdhg==}
     peerDependencies:
       react: ^17 || ^18
       react-dom: ^17 || ^18
     dependencies:
-      '@patternfly/react-core': 5.1.2(react-dom@18.2.0)(react@18.2.0)
+      '@patternfly/react-core': 5.2.0(react-dom@18.2.0)(react@18.2.0)
       '@patternfly/react-icons': 5.2.0(react-dom@18.2.0)(react@18.2.0)
-      '@patternfly/react-styles': 5.1.2
-      '@patternfly/react-tokens': 5.1.2
+      '@patternfly/react-styles': 5.2.0
+      '@patternfly/react-tokens': 5.2.0
       lodash: 4.17.21
       react: 18.2.0
       react-dom: 18.2.0(react@18.2.0)
-      tslib: 2.6.1
+      tslib: 2.6.2
     dev: false
 
   /@patternfly/react-tokens@5.1.2:
     resolution: {integrity: sha512-hu/6kEEMnyDc4GiMiaEau3kYq0BZoB3X1tZLcNfg9zQZnOydUgaLcUgR8+IlMF/nVVIqNjZF2RA/5lmKAVz2cQ==}
+    dev: false
+
+  /@patternfly/react-tokens@5.2.0:
+    resolution: {integrity: sha512-ZsrLpStHJQfvUJLIXT+cObJbA3jM4r9iWwULLva0s7DzznXJ6iIACQQfgwDtcSVyM95z5S1a/LHPj/wYgaqUIg==}
     dev: false
 
   /@patternfly/react-user-feedback@5.0.0(react-dom@18.2.0)(react@18.2.0):
