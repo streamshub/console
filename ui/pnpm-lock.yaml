@@ -18,8 +18,8 @@ dependencies:
     specifier: ^5.1.2
     version: 5.1.2(react-dom@18.2.0)(react@18.2.0)
   '@patternfly/react-icons':
-    specifier: ^5.1.2
-    version: 5.1.2(react-dom@18.2.0)(react@18.2.0)
+    specifier: ^5.2.0
+    version: 5.2.0(react-dom@18.2.0)(react@18.2.0)
   '@patternfly/react-table':
     specifier: ^5.1.2
     version: 5.1.2(react-dom@18.2.0)(react@18.2.0)
@@ -2154,7 +2154,7 @@ packages:
       react: ^17 || ^18
       react-dom: ^17 || ^18
     dependencies:
-      '@patternfly/react-icons': 5.1.2(react-dom@18.2.0)(react@18.2.0)
+      '@patternfly/react-icons': 5.2.0(react-dom@18.2.0)(react@18.2.0)
       '@patternfly/react-styles': 5.1.2
       '@patternfly/react-tokens': 5.1.2
       focus-trap: 7.5.2
@@ -2164,8 +2164,8 @@ packages:
       tslib: 2.6.1
     dev: false
 
-  /@patternfly/react-icons@5.1.2(react-dom@18.2.0)(react@18.2.0):
-    resolution: {integrity: sha512-hgf3OchvNyCcxqDrRJCkxauFdxENtVX2d6uTkMfOQWP3hs8hqYGHR5S0pe2teJ1SwAs2Rgtf7ezzmzKAouAjkw==}
+  /@patternfly/react-icons@5.2.0(react-dom@18.2.0)(react@18.2.0):
+    resolution: {integrity: sha512-vklAF2unvtK0trwx9Kk8nf4Xa2+nie4zxaIaQdnjIL7kX6a5SdsewDjlavOC3cRxnibZLQ5HQtpDZ4EmuXm8DQ==}
     peerDependencies:
       react: ^17 || ^18
       react-dom: ^17 || ^18
@@ -2185,7 +2185,7 @@ packages:
       react-dom: ^17 || ^18
     dependencies:
       '@patternfly/react-core': 5.1.2(react-dom@18.2.0)(react@18.2.0)
-      '@patternfly/react-icons': 5.1.2(react-dom@18.2.0)(react@18.2.0)
+      '@patternfly/react-icons': 5.2.0(react-dom@18.2.0)(react@18.2.0)
       '@patternfly/react-styles': 5.1.2
       '@patternfly/react-tokens': 5.1.2
       lodash: 4.17.21
@@ -2205,7 +2205,7 @@ packages:
       react-dom: ^17 || ^18
     dependencies:
       '@patternfly/react-core': 5.1.2(react-dom@18.2.0)(react@18.2.0)
-      '@patternfly/react-icons': 5.1.2(react-dom@18.2.0)(react@18.2.0)
+      '@patternfly/react-icons': 5.2.0(react-dom@18.2.0)(react@18.2.0)
       react: 18.2.0
       react-dom: 18.2.0(react@18.2.0)
     dev: false
