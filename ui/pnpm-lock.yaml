@@ -10,13 +10,13 @@ dependencies:
     version: 5.2.0
   '@patternfly/quickstarts':
     specifier: ^5.1.0
-    version: 5.1.0(@patternfly/react-core@5.1.2)(react-dom@18.2.0)(react@18.2.0)(showdown@2.1.0)
+    version: 5.1.0(@patternfly/react-core@5.2.0)(react-dom@18.2.0)(react@18.2.0)(showdown@2.1.0)
   '@patternfly/react-charts':
     specifier: ^7.2.0
     version: 7.2.0(react-dom@18.2.0)(react@18.2.0)
   '@patternfly/react-core':
-    specifier: ^5.1.2
-    version: 5.1.2(react-dom@18.2.0)(react@18.2.0)
+    specifier: ^5.2.0
+    version: 5.2.0(react-dom@18.2.0)(react@18.2.0)
   '@patternfly/react-icons':
     specifier: ^5.2.0
     version: 5.2.0(react-dom@18.2.0)(react@18.2.0)
@@ -2138,7 +2138,7 @@ packages:
     resolution: {integrity: sha512-phdsXcCRO+JICFXIKtORxSbOWoBr9zRCgtFTKTJ8hAIzm6wEUCdcHZrvsd+SXNR3q/4b/+KlmHUC4Q4KGUiuYw==}
     dev: false
 
-  /@patternfly/quickstarts@5.1.0(@patternfly/react-core@5.1.2)(react-dom@18.2.0)(react@18.2.0)(showdown@2.1.0):
+  /@patternfly/quickstarts@5.1.0(@patternfly/react-core@5.2.0)(react-dom@18.2.0)(react@18.2.0)(showdown@2.1.0):
     resolution: {integrity: sha512-ql5Q8IlW+Yp1Y7rqDqrsoDhYrSv3/HTp+1BYg7n4vyOsTc9QL+PxW4+PI8mLLk/tB6Z93yS7l76b5gaACPgH2g==}
     peerDependencies:
       '@patternfly/react-core': '>=5.0.0'
@@ -2147,7 +2147,7 @@ packages:
       showdown: '>=2.1.0'
     dependencies:
       '@patternfly/react-catalog-view-extension': 5.0.0(react-dom@18.2.0)(react@18.2.0)
-      '@patternfly/react-core': 5.1.2(react-dom@18.2.0)(react@18.2.0)
+      '@patternfly/react-core': 5.2.0(react-dom@18.2.0)(react@18.2.0)
       dompurify: 2.4.7
       history: 5.3.0
       react: 18.2.0
@@ -2161,7 +2161,7 @@ packages:
       react: ^17 || ^18
       react-dom: ^17 || ^18
     dependencies:
-      '@patternfly/react-core': 5.1.2(react-dom@18.2.0)(react@18.2.0)
+      '@patternfly/react-core': 5.2.0(react-dom@18.2.0)(react@18.2.0)
       '@patternfly/react-styles': 5.2.0
       react: 18.2.0
       react-dom: 18.2.0(react@18.2.0)
@@ -2199,22 +2199,6 @@ packages:
       victory-zoom-container: 36.8.6(react@18.2.0)
     dev: false
 
-  /@patternfly/react-core@5.1.2(react-dom@18.2.0)(react@18.2.0):
-    resolution: {integrity: sha512-MeSasp7PgkqlirlbbGuEj6j3KqXVoNkE3c3N6rfxTZOF025ullDJjtzf/L/Fiyht4tH1uNCtkdlpnea6jqTMPg==}
-    peerDependencies:
-      react: ^17 || ^18
-      react-dom: ^17 || ^18
-    dependencies:
-      '@patternfly/react-icons': 5.2.0(react-dom@18.2.0)(react@18.2.0)
-      '@patternfly/react-styles': 5.1.2
-      '@patternfly/react-tokens': 5.2.0
-      focus-trap: 7.5.2
-      react: 18.2.0
-      react-dom: 18.2.0(react@18.2.0)
-      react-dropzone: 14.2.3(react@18.2.0)
-      tslib: 2.6.1
-    dev: false
-
   /@patternfly/react-core@5.2.0(react-dom@18.2.0)(react@18.2.0):
     resolution: {integrity: sha512-AUd7jccCgE2ZRwVtpEbJNF2Sq1A//ZhRaEQ/QHZiiq8mQRQM0Bkpnx0HdefToZT+TgUIjmPW4AXO3ooRJmt26w==}
     peerDependencies:
@@ -2239,10 +2223,6 @@ packages:
     dependencies:
       react: 18.2.0
       react-dom: 18.2.0(react@18.2.0)
-    dev: false
-
-  /@patternfly/react-styles@5.1.2:
-    resolution: {integrity: sha512-rGNo8MstZG2r3yDS1tWwYDctK1qWW5RT1UwKF1DrQfhZ8ruEEL6m2ZXXM0u62hmM3qq4Q8h5lgn/bVHBnOHSLA==}
     dev: false
 
   /@patternfly/react-styles@5.2.0:
@@ -2275,7 +2255,7 @@ packages:
       react: ^17 || ^18
       react-dom: ^17 || ^18
     dependencies:
-      '@patternfly/react-core': 5.1.2(react-dom@18.2.0)(react@18.2.0)
+      '@patternfly/react-core': 5.2.0(react-dom@18.2.0)(react@18.2.0)
       '@patternfly/react-icons': 5.2.0(react-dom@18.2.0)(react@18.2.0)
       react: 18.2.0
       react-dom: 18.2.0(react@18.2.0)
