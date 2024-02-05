@@ -24,8 +24,8 @@ dependencies:
     specifier: ^5.2.0
     version: 5.2.0(react-dom@18.2.0)(react@18.2.0)
   '@patternfly/react-tokens':
-    specifier: ^5.1.2
-    version: 5.1.2
+    specifier: ^5.2.0
+    version: 5.2.0
   '@patternfly/react-user-feedback':
     specifier: ^5.0.0
     version: 5.0.0(react-dom@18.2.0)(react@18.2.0)
@@ -2123,7 +2123,7 @@ packages:
       react-dom: ^17 || ^18
     dependencies:
       '@patternfly/react-styles': 5.1.2
-      '@patternfly/react-tokens': 5.1.2
+      '@patternfly/react-tokens': 5.2.0
       hoist-non-react-statics: 3.3.2
       lodash: 4.17.21
       react: 18.2.0
@@ -2156,7 +2156,7 @@ packages:
     dependencies:
       '@patternfly/react-icons': 5.2.0(react-dom@18.2.0)(react@18.2.0)
       '@patternfly/react-styles': 5.1.2
-      '@patternfly/react-tokens': 5.1.2
+      '@patternfly/react-tokens': 5.2.0
       focus-trap: 7.5.2
       react: 18.2.0
       react-dom: 18.2.0(react@18.2.0)
@@ -2212,10 +2212,6 @@ packages:
       react: 18.2.0
       react-dom: 18.2.0(react@18.2.0)
       tslib: 2.6.2
-    dev: false
-
-  /@patternfly/react-tokens@5.1.2:
-    resolution: {integrity: sha512-hu/6kEEMnyDc4GiMiaEau3kYq0BZoB3X1tZLcNfg9zQZnOydUgaLcUgR8+IlMF/nVVIqNjZF2RA/5lmKAVz2cQ==}
     dev: false
 
   /@patternfly/react-tokens@5.2.0:
