@@ -3,6 +3,16 @@ type Messages = typeof import("./messages/en.json");
 
 declare interface IntlMessages extends Messages {}
 
+declare global {
+  interface Window {
+    analytics?: {
+      page: () => void;
+    };
+
+    [key: string]: any;
+  }
+}
+
 type TYear = `${number}${number}${number}${number}`;
 type TMonth = `${number}${number}`;
 type TDay = `${number}${number}`;
