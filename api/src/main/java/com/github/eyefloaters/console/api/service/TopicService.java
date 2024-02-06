@@ -240,7 +240,7 @@ public class TopicService {
         return describeTopic(topicId, List.of(Topic.Fields.CONFIGS), KafkaOffsetSpec.LATEST)
             .thenApply(topic -> validationService.validate(new TopicValidation.TopicPatchInputs(kafka, topic, patch)))
             .thenApply(TopicValidation.TopicPatchInputs::topic)
-            .thenComposeAsync(topic -> getManagedTopic(topic)
+            .thenComposeAsync(topic -> getManagedTopic(topic.name())
                     .map(kafkaTopic -> patchManagedTopic(kafkaTopic, patch, validateOnly))
                     .orElseGet(() -> patchUnmanagedTopic(topic, patch, validateOnly)),
                     threadContext.currentContextExecutor());
@@ -429,18 +429,28 @@ public class TopicService {
     }
 
     Topic setManaged(Topic topic) {
-        topic.addMeta("managed", getManagedTopic(topic)
+        topic.addMeta("managed", getManagedTopic(topic.name())
                 .map(kafkaTopic -> Boolean.TRUE)
                 .orElse(Boolean.FALSE));
         return topic;
     }
 
-    Optional<KafkaTopic> getManagedTopic(Topic topic) {
+    Optional<KafkaTopic> getManagedTopic(String topicName) {
         ObjectMeta kafkaMeta = kafkaCluster.get().getMetadata();
 
         return Optional.ofNullable(managedTopics.get(kafkaMeta.getNamespace()))
             .map(clustersInNamespace -> clustersInNamespace.get(kafkaMeta.getName()))
-            .map(topicsInCluster -> topicsInCluster.get(topic.name()));
+            .map(topicsInCluster -> topicsInCluster.get(topicName))
+            .filter(this::isManaged);
+    }
+
+    boolean isManaged(KafkaTopic topic) {
+        return Optional.of(topic)
+            .map(KafkaTopic::getMetadata)
+            .map(ObjectMeta::getAnnotations)
+            .map(annotations -> annotations.getOrDefault("strimzi.io/managed", "true"))
+            .map(managed -> !"false".equals(managed))
+            .orElse(true);
     }
 
     CompletionStage<List<Topic>> augmentList(Admin adminClient, List<Topic> list, List<String> fields, String offsetSpec) {
