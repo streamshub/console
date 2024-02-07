@@ -111,8 +111,8 @@ dependencies:
     specifier: ~36.8.6
     version: 36.8.6(react@18.2.0)
   victory-core:
-    specifier: ~36.8.6
-    version: 36.8.6(react@18.2.0)
+    specifier: ~36.9.1
+    version: 36.9.1(react@18.2.0)
   victory-create-container:
     specifier: ~36.8.6
     version: 36.8.6(react@18.2.0)
@@ -11155,7 +11155,7 @@ packages:
       lodash: 4.17.21
       react: 18.2.0
       react-fast-compare: 3.2.2
-      victory-core: 36.9.0(react@18.2.0)
+      victory-core: 36.9.1(react@18.2.0)
     dev: false
 
   /victory-chart@36.8.6(react@18.2.0):
@@ -11185,15 +11185,15 @@ packages:
       victory-vendor: 36.9.0
     dev: false
 
-  /victory-core@36.9.0(react@18.2.0):
-    resolution: {integrity: sha512-RawQkhPQaV4Oi+8KLHm8mzEwxL6mirdQOcn5+BaGrUnP9MK7jjEdjzNvDESuJdk/bDuemXvWEEriG+ofDmvzfQ==}
+  /victory-core@36.9.1(react@18.2.0):
+    resolution: {integrity: sha512-voPTyOyyVipzJPjelxvszVixiI98ApMNb6X9qfaFYK7fHyavF/Hy4sf/Hwq1otatLI7zpr2hC4wF+af6HDELqA==}
     peerDependencies:
       react: '>=16.6.0'
     dependencies:
       lodash: 4.17.21
       react: 18.2.0
       react-fast-compare: 3.2.2
-      victory-vendor: 36.9.0
+      victory-vendor: 36.9.1
     dev: false
 
   /victory-create-container@36.8.6(react@18.2.0):
@@ -11277,7 +11277,7 @@ packages:
     dependencies:
       lodash: 4.17.21
       react: 18.2.0
-      victory-core: 36.9.0(react@18.2.0)
+      victory-core: 36.9.1(react@18.2.0)
     dev: false
 
   /victory-scatter@36.8.6(react@18.2.0):
@@ -11298,7 +11298,7 @@ packages:
     dependencies:
       lodash: 4.17.21
       react: 18.2.0
-      victory-core: 36.9.0(react@18.2.0)
+      victory-core: 36.9.1(react@18.2.0)
     dev: false
 
   /victory-shared-events@36.9.0(react@18.2.0):
@@ -11310,7 +11310,7 @@ packages:
       lodash: 4.17.21
       react: 18.2.0
       react-fast-compare: 3.2.2
-      victory-core: 36.9.0(react@18.2.0)
+      victory-core: 36.9.1(react@18.2.0)
     dev: false
 
   /victory-stack@36.8.6(react@18.2.0):
@@ -11339,6 +11339,25 @@ packages:
 
   /victory-vendor@36.9.0:
     resolution: {integrity: sha512-n1A0J1xgwHb5nh56M0d8XlQabMCeTktvEqqr5WNAHspWEsVVGGaaaRg0TcQUtyC1akX0Cox1lMZdIv0Jl7o0ew==}
+    dependencies:
+      '@types/d3-array': 3.0.7
+      '@types/d3-ease': 3.0.0
+      '@types/d3-interpolate': 3.0.1
+      '@types/d3-scale': 4.0.4
+      '@types/d3-shape': 3.1.2
+      '@types/d3-time': 3.0.0
+      '@types/d3-timer': 3.0.0
+      d3-array: 3.2.4
+      d3-ease: 3.0.1
+      d3-interpolate: 3.0.1
+      d3-scale: 4.0.2
+      d3-shape: 3.2.0
+      d3-time: 3.1.0
+      d3-timer: 3.0.1
+    dev: false
+
+  /victory-vendor@36.9.1:
+    resolution: {integrity: sha512-+pZIP+U3pEJdDCeFmsXwHzV7vNHQC/eIbHklfe2ZCZqayYRH7lQbHcVgsJ0XOOv27hWs4jH4MONgXxHMObTMSA==}
     dependencies:
       '@types/d3-array': 3.0.7
       '@types/d3-ease': 3.0.0
