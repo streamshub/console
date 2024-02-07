@@ -21,7 +21,7 @@
     "@patternfly/react-user-feedback": "^5.0.0",
     "@types/lodash.groupby": "^4.6.9",
     "@types/node": "20.11.16",
-    "@types/react": "18.2.54",
+    "@types/react": "18.2.55",
     "@types/react-dom": "18.2.18",
     "classnames": "^2.5.1",
     "convert": "^4.14.1",
@@ -61,18 +61,18 @@
     "victory-zoom-container": "~36.8.6"
   },
   "devDependencies": {
-    "@storybook/addon-essentials": "^7.6.12",
-    "@storybook/addon-interactions": "^7.6.12",
-    "@storybook/addon-links": "^7.6.12",
-    "@storybook/blocks": "^7.6.12",
-    "@storybook/nextjs": "^7.6.12",
-    "@storybook/react": "^7.6.12",
+    "@storybook/addon-essentials": "^7.6.13",
+    "@storybook/addon-interactions": "^7.6.13",
+    "@storybook/addon-links": "^7.6.13",
+    "@storybook/blocks": "^7.6.13",
+    "@storybook/nextjs": "^7.6.13",
+    "@storybook/react": "^7.6.13",
     "@storybook/testing-library": "^0.2.2",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-storybook": "^0.6.15",
     "pino-pretty": "^10.3.1",
     "prettier": "^3.2.5",
-    "storybook": "^7.6.12",
+    "storybook": "^7.6.13",
     "tsconfig-paths-webpack-plugin": "^4.1.0"
   }
 }
