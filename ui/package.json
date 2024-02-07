@@ -44,7 +44,7 @@
     "zod": "^3.22.4",
     "victory-area": "~36.8.6",
     "victory-axis": "~36.8.6",
-    "victory-bar": "~36.8.6",
+    "victory-bar": "~36.9.1",
     "victory-box-plot": "~36.8.6",
     "victory-chart": "~36.8.6",
     "victory-core": "~36.8.6",
