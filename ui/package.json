@@ -58,7 +58,7 @@
     "victory-stack": "~36.8.6",
     "victory-tooltip": "~36.8.6",
     "victory-voronoi-container": "~36.8.6",
-    "victory-zoom-container": "~36.8.6"
+    "victory-zoom-container": "~36.9.1"
   },
   "devDependencies": {
     "@storybook/addon-essentials": "^7.6.13",

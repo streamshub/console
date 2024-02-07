@@ -144,8 +144,8 @@ dependencies:
     specifier: ~36.8.6
     version: 36.8.6(react@18.2.0)
   victory-zoom-container:
-    specifier: ~36.8.6
-    version: 36.8.6(react@18.2.0)
+    specifier: ~36.9.1
+    version: 36.9.1(react@18.2.0)
   zod:
     specifier: ^3.22.4
     version: 3.22.4
@@ -11196,6 +11196,17 @@ packages:
       victory-vendor: 36.9.0
     dev: false
 
+  /victory-core@36.9.1(react@18.2.0):
+    resolution: {integrity: sha512-voPTyOyyVipzJPjelxvszVixiI98ApMNb6X9qfaFYK7fHyavF/Hy4sf/Hwq1otatLI7zpr2hC4wF+af6HDELqA==}
+    peerDependencies:
+      react: '>=16.6.0'
+    dependencies:
+      lodash: 4.17.21
+      react: 18.2.0
+      react-fast-compare: 3.2.2
+      victory-vendor: 36.9.1
+    dev: false
+
   /victory-create-container@36.8.6(react@18.2.0):
     resolution: {integrity: sha512-ckQzNXg12TdmlTDFOoleV66XEP7c5NA/LLs9/cQaIEQPQnWe8PAGMvcFLG9Wvtz1mfGWFVgmzWqtlmjnHYmN6w==}
     peerDependencies:
@@ -11356,6 +11367,25 @@ packages:
       d3-timer: 3.0.1
     dev: false
 
+  /victory-vendor@36.9.1:
+    resolution: {integrity: sha512-+pZIP+U3pEJdDCeFmsXwHzV7vNHQC/eIbHklfe2ZCZqayYRH7lQbHcVgsJ0XOOv27hWs4jH4MONgXxHMObTMSA==}
+    dependencies:
+      '@types/d3-array': 3.0.7
+      '@types/d3-ease': 3.0.0
+      '@types/d3-interpolate': 3.0.1
+      '@types/d3-scale': 4.0.4
+      '@types/d3-shape': 3.1.2
+      '@types/d3-time': 3.0.0
+      '@types/d3-timer': 3.0.0
+      d3-array: 3.2.4
+      d3-ease: 3.0.1
+      d3-interpolate: 3.0.1
+      d3-scale: 4.0.2
+      d3-shape: 3.2.0
+      d3-time: 3.1.0
+      d3-timer: 3.0.1
+    dev: false
+
   /victory-voronoi-container@36.8.6(react@18.2.0):
     resolution: {integrity: sha512-bhikEGWJnLVTRP/jkAwC1U7dre52pdF3LgSAF4aZudTgPy4o66vVoIrdBJhG5yY9QSXou/sPRJt6p/xtZ6vRag==}
     peerDependencies:
@@ -11379,6 +11409,16 @@ packages:
       prop-types: 15.8.1
       react: 18.2.0
       victory-core: 36.8.6(react@18.2.0)
+    dev: false
+
+  /victory-zoom-container@36.9.1(react@18.2.0):
+    resolution: {integrity: sha512-2G+2iUsmTCpt1ItUWVOzK0CCRYCFf+/rH4uXuvXqipHjRnotz5bxOkuW68Fdx1MzGoexIc8DfQoKxKd/q0HkZA==}
+    peerDependencies:
+      react: '>=16.6.0'
+    dependencies:
+      lodash: 4.17.21
+      react: 18.2.0
+      victory-core: 36.9.1(react@18.2.0)
     dev: false
 
   /vm-browserify@1.1.2:
