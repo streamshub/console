@@ -56,7 +56,7 @@
     "victory-pie": "~36.8.6",
     "victory-scatter": "~36.8.6",
     "victory-stack": "~36.8.6",
-    "victory-tooltip": "~36.8.6",
+    "victory-tooltip": "~36.9.1",
     "victory-voronoi-container": "~36.8.6",
     "victory-zoom-container": "~36.8.6"
   },
