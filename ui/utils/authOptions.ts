@@ -1,61 +1,37 @@
-import { keycloak, refreshToken } from "@/app/api/auth/[...nextauth]/keycloak";
-
+import keycloak from "@/app/api/auth/[...nextauth]/keycloak";
+import openshift from "@/app/api/auth/[...nextauth]/openshift";
 import { logger } from "@/utils/logger";
-import NextAuth, { NextAuthOptions, Session } from "next-auth";
-import { JWT } from "next-auth/jwt";
+import NextAuth, { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
+import { Provider } from "next-auth/providers/index";
 
 const log = logger.child({ module: "auth" });
 
-const anonymousProvider = CredentialsProvider({
-  // The name to display on the sign in form (e.g. 'Sign in with...')
-  name: "Anonymous Session",
-
-  credentials: {},
-
-  async authorize() {
-    return { id: "1", name: "Anonymous", email: "anonymous@example.com" };
-  },
-});
-
-let _providers = [];
+let _providers: Provider[] = [];
 let _callbacks = {};
 
-if (keycloak && keycloak.options?.issuer) {
+if (keycloak.isEnabled()) {
   log.debug("Using keycloak provider");
-  _providers.push(keycloak);
+  _providers.push(keycloak.provider as Provider);
   _callbacks = {
-    async jwt({ token, account }: { token: JWT; account: any }) {
-      // Persist the OAuth access_token and or the user id to the token right after signin
-      if (account) {
-        log.trace("account present, saving new token");
-        // Save the access token and refresh token in the JWT on the initial login
-        return {
-          access_token: account.access_token,
-          expires_at: account.expires_at,
-          refresh_token: account.refresh_token,
-          email: token.email,
-          name: token.name,
-          picture: token.picture,
-          sub: token.sub,
-        };
-      }
-
-      return refreshToken(token);
-    },
-    async session({ session, token }: { session: Session; token: JWT }) {
-      // Send properties to the client, like an access_token from a provider.
-      log.trace(token, "Creating session from token");
-      return {
-        ...session,
-        error: token.error,
-        accessToken: token.access_token,
-      };
-    },
+    jwt: keycloak.jwt,
+    session: keycloak.session,
   };
+} else if (openshift.isEnabled()) {
+  log.debug("Using OpenShift provider");
+  _providers.push(openshift.provider);
 } else {
   log.debug("Using anonymous provider");
-  _providers.push(anonymousProvider);
+  _providers.push(CredentialsProvider({
+    // The name to display on the sign in form (e.g. 'Sign in with...')
+    name: "Anonymous Session",
+
+    credentials: {},
+
+    async authorize() {
+      return { id: "1", name: "Anonymous", email: "anonymous@example.com" };
+    }
+  }));
 }
 
 export const authOptions: NextAuthOptions = {
