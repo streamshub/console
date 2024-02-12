@@ -51,7 +51,7 @@ export async function ClusterConnectionDetails({
               {external.map((l, idx) => (
                 <ListItem key={idx} className={"pf-v5-u-py-sm"}>
                   <ClipboardCopy isReadOnly={true}>
-                    {l.bootstrapServers}
+                    {l.bootstrapServers ?? ""}
                   </ClipboardCopy>
                   <Text component={"small"}>
                     {/*Listener type: {l.type}*/}
@@ -82,7 +82,7 @@ export async function ClusterConnectionDetails({
               {internal.map((l, idx) => (
                 <ListItem key={idx} className={"pf-v5-u-py-sm"}>
                   <ClipboardCopy isReadOnly={true}>
-                    {l.bootstrapServers}
+                    {l.bootstrapServers ?? ""}
                   </ClipboardCopy>
                   <Text component={"small"}>
                     Authentication type: {l.authType || "none"}
