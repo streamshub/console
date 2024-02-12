@@ -4,6 +4,7 @@ metadata:
   name: console-prometheus-ingress
   annotations:
     nginx.ingress.kubernetes.io/backend-protocol: HTTP
+    route.openshift.io/termination: edge
 spec:
   defaultBackend:
     service:
