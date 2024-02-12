@@ -7,6 +7,7 @@ import {
   TopicsTable,
 } from "@/app/[locale]/kafka/[kafkaId]/topics/(page)/TopicsTable";
 import { PageSection } from "@/libs/patternfly/react-core";
+import { readonly } from "@/utils/runmode";
 import { stringToInt } from "@/utils/stringToInt";
 import { Suspense } from "react";
 
@@ -59,7 +60,7 @@ export default function TopicsPage({
             sortDir={sortDir}
             includeHidden={includeHidden}
             status={status}
-            canCreate={process.env.CONSOLE_MODE === "read-write"}
+            canCreate={!readonly()}
             baseurl={`/kafka/${params.kafkaId}/topics`}
             page={1}
             nextPageCursor={undefined}
@@ -133,7 +134,7 @@ async function ConnectedTopicsTable({
       sortDir={sortDir}
       includeHidden={includeHidden}
       status={status}
-      canCreate={process.env.CONSOLE_MODE === "read-write"}
+      canCreate={!readonly()}
       baseurl={`/kafka/${kafkaId}/topics`}
       page={topics.meta.page.pageNumber || 1}
       nextPageCursor={nextPageCursor}

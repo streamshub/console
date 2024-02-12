@@ -6,6 +6,7 @@ import { Bytes } from "@/components/Bytes";
 import { Number } from "@/components/Number";
 import { TableView } from "@/components/table";
 import { EmptyStateNoMatchFound } from "@/components/table/EmptyStateNoMatchFound";
+import { readonly } from "@/utils/runmode";
 import { Switch } from "@/libs/patternfly/react-core";
 import { TableVariant } from "@/libs/patternfly/react-table";
 import { Link, useRouter } from "@/navigation";
@@ -238,7 +239,7 @@ export function TopicsTable({
                    A partition is fully replicated when its replicas (followers) are 'in-sync' with the designated partition leader.
                    A partition is under-replicated if partition replicas (followers) are not 'in-sync with their designated partition leader.
                    If the status shows unavailable, some or all partitions are currently unavailable due to underlying issues.`
-                }                  
+                }
               >
                 <HelpIcon />
               </Tooltip>
@@ -312,7 +313,7 @@ export function TopicsTable({
             );
         }
       }}
-      renderActions={({ row, ActionsColumn }) => (
+      renderActions={({ row, ActionsColumn }) => readonly() ? <></> : (
         <ActionsColumn
           items={[
             {

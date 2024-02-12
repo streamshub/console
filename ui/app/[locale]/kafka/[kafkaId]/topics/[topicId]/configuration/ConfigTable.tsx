@@ -4,6 +4,7 @@ import { Error } from "@/app/[locale]/kafka/[kafkaId]/topics/create/Errors";
 import { topicMutateErrorToFieldError } from "@/app/[locale]/kafka/[kafkaId]/topics/create/topicMutateErrorToFieldError";
 import { Number } from "@/components/Number";
 import { ResponsiveTableProps, TableView } from "@/components/table";
+import { readonly } from "@/utils/runmode";
 import { usePathname, useRouter } from "@/navigation";
 import {
   Button,
@@ -322,6 +323,10 @@ export function ConfigTable({
         }}
         renderCell={renderCell}
         renderActions={({ row: [name, property] }) => {
+          if (readonly()) {
+            return <></>;
+          }
+
           return isEditing[name] ? (
             <div
               className="pf-v5-c-inline-edit pf-m-inline-editable"

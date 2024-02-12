@@ -1,14 +1,28 @@
 package com.github.eyefloaters.console.api;
 
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
+import java.io.ByteArrayOutputStream;
+import java.nio.charset.StandardCharsets;
+import java.security.SecureRandom;
+import java.security.cert.Certificate;
+import java.security.cert.X509Certificate;
+import java.util.Base64;
+import java.util.Collection;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSocket;
+import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.context.RequestScoped;
@@ -16,7 +30,6 @@ import jakarta.enterprise.inject.Disposes;
 import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Inject;
 import jakarta.inject.Named;
-import jakarta.ws.rs.NotAuthorizedException;
 import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.UriInfo;
@@ -30,19 +43,18 @@ import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerConfig;
-import org.apache.kafka.common.MetricName;
-import org.apache.kafka.common.config.SaslConfigs;
 import org.apache.kafka.common.config.SslConfigs;
-import org.apache.kafka.common.security.auth.SecurityProtocol;
-import org.apache.kafka.common.security.oauthbearer.OAuthBearerLoginModule;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
+import org.eclipse.microprofile.config.Config;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
 import com.github.eyefloaters.console.api.service.KafkaClusterService;
 
-import io.fabric8.kubernetes.client.informers.SharedIndexInformer;
+import io.fabric8.kubernetes.client.informers.cache.Cache;
 import io.strimzi.api.kafka.model.Kafka;
+import io.strimzi.api.kafka.model.status.KafkaStatus;
 import io.strimzi.api.kafka.model.status.ListenerStatus;
 
 /**
@@ -61,26 +73,27 @@ import io.strimzi.api.kafka.model.status.ListenerStatus;
 @ApplicationScoped
 public class ClientFactory {
 
-    private static final String BEARER = "Bearer ";
-    private static final String OAUTHBEARER = "OAUTHBEARER";
-    private static final String SASL_OAUTH_CONFIG_TEMPLATE = OAuthBearerLoginModule.class.getName()
-            + " required"
-            + " oauth.access.token=\"%s\";";
-    private static final String NO_COMPATIBLE_LISTENER = """
-            Request to access Kafka cluster %s could not be fulfilled because no listeners were found with:
-            \t(1) authentication disabled
-            \t(2) authentication type `oauth`, or
-            \t(3) authentication type `custom` and SASL mechanism OAUTHBEARER supported.
-            """;
-
-    private final Supplier<NotFoundException> noSuchKafka =
-            () -> new NotFoundException("Requested Kafka cluster does not exist or is not configured with a compatible listener");
+    static final String KAFKA_CONFIG_PREFIX = "console.kafka";
+    static final String NO_SUCH_KAFKA_MESSAGE = "Requested Kafka cluster %s does not exist or is not configured";
+    private final Function<String, NotFoundException> noSuchKafka =
+            clusterName -> new NotFoundException(NO_SUCH_KAFKA_MESSAGE.formatted(clusterName));
 
     @Inject
     Logger log;
 
     @Inject
-    SharedIndexInformer<Kafka> kafkaInformer;
+    Config config;
+
+    @Inject
+    @ConfigProperty(name = "console.security.trust-certificates", defaultValue = "false")
+    boolean trustCertificates;
+
+    @Inject
+    @ConfigProperty(name = KAFKA_CONFIG_PREFIX)
+    Map<String, String> clusterNames;
+
+    @Inject
+    KafkaClusterService kafkaClusterService;
 
     @Inject
     HttpHeaders headers;
@@ -121,61 +134,77 @@ public class ClientFactory {
                     + "but the requested operation does not provide a Kafka cluster ID");
         }
 
-        Kafka cluster = KafkaClusterService.findCluster(kafkaInformer, clusterId)
-                .orElseThrow(noSuchKafka);
+        Kafka cluster = kafkaClusterService.findCluster(clusterId)
+                .orElseThrow(() -> noSuchKafka.apply(clusterId));
 
         return () -> cluster;
     }
 
     @Produces
-    @RequestScoped
-    public Supplier<Admin> adminClientSupplier(Function<Map<String, Object>, Admin> adminBuilder, Supplier<Kafka> cluster) {
-        Map<String, Object> config = buildConfiguration(cluster.get());
-
-        config.put(AdminClientConfig.METADATA_MAX_AGE_CONFIG, "30000");
-        config.put(AdminClientConfig.REQUEST_TIMEOUT_MS_CONFIG, "10000");
-        config.put(AdminClientConfig.DEFAULT_API_TIMEOUT_MS_CONFIG, "10000");
-
-        if (log.isTraceEnabled()) {
-            String msg = config.entrySet()
-                .stream()
-                .map(entry -> "\t%s = %s".formatted(entry.getKey(), entry.getValue()))
-                .collect(Collectors.joining("\n", "AdminClient configuration:\n", ""));
-            log.trace(msg);
-        }
-
-        Admin client = adminBuilder.apply(config);
-        return () -> client;
+    @ApplicationScoped
+    Map<String, Admin> getAdmins(Function<Map<String, Object>, Admin> adminBuilder) {
+        return clusterNames.entrySet()
+            .stream()
+            .map(e -> {
+                var clusterKey = unquote(e.getValue());
+                String[] namespaceName = clusterKey.split("/");
+                var cluster = kafkaClusterService.findCluster(namespaceName[0], namespaceName[1]);
+                var configs = buildConfig(AdminClientConfig.configNames(), e.getKey(), cluster.get());
+                logConfig("Admin[" + e.getKey() + ']', configs);
+                var client = adminBuilder.apply(configs);
+                return Map.entry(clusterKey, client);
+            })
+            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
-    public void adminClientDisposer(@Disposes Supplier<Admin> client) {
-        if (log.isTraceEnabled()) {
-            String msg = client.get().metrics().entrySet()
-                .stream()
-                .sorted(Map.Entry.comparingByKey(Comparator.comparing(MetricName::name)))
-                .map(entry -> "\t%-20s = %s".formatted(entry.getValue().metricValue(), entry.getKey()))
-                .collect(Collectors.joining("\n", "AdminClient metrics:\n", ""));
-            log.trace(msg);
-        }
+    void closeAdmins(@Disposes Map<String, Admin> admins) {
+        admins.values().parallelStream().forEach(admin -> {
+            try {
+                admin.close();
+            } catch (Exception e) {
+                log.warnf("Exception occurred closing admin: %s", e.getMessage());
+            }
+        });
+    }
 
-        client.get().close();
+    @Produces
+    @RequestScoped
+    public Supplier<Admin> adminClientSupplier(Supplier<Kafka> cluster, Map<String, Admin> admins) {
+        String clusterKey = Cache.metaNamespaceKeyFunc(cluster.get());
+
+        return Optional.ofNullable(admins.get(clusterKey))
+            .<Supplier<Admin>>map(client -> () -> client)
+            .orElseThrow(() -> noSuchKafka.apply(cluster.get().getStatus().getClusterId()));
     }
 
     @Produces
     @RequestScoped
     public Supplier<Consumer<byte[], byte[]>> consumerSupplier(Supplier<Kafka> cluster) {
-        Map<String, Object> config = buildConfiguration(cluster.get());
+        String clusterKey = Cache.metaNamespaceKeyFunc(cluster.get());
 
-        config.put(ConsumerConfig.ALLOW_AUTO_CREATE_TOPICS_CONFIG, "false");
-        config.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class.getName());
-        config.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class.getName());
-        config.put(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, 50_000);
-        config.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
-        config.put(ConsumerConfig.DEFAULT_API_TIMEOUT_MS_CONFIG, 5000);
+        return clusterNames.entrySet()
+            .stream()
+            .filter(e -> clusterKey.equals(e.getValue()))
+            .<Supplier<Consumer<byte[], byte[]>>>map(e -> {
+                Set<String> configNames = ConsumerConfig.configNames().stream()
+                        // Do not allow a group Id to be set for this application
+                        .filter(Predicate.not(ConsumerConfig.GROUP_ID_CONFIG::equals))
+                        .collect(Collectors.toSet());
+                var configs = buildConfig(configNames, e.getKey(), cluster.get());
+                configs.put(ConsumerConfig.ALLOW_AUTO_CREATE_TOPICS_CONFIG, "false");
+                configs.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class.getName());
+                configs.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class.getName());
+                configs.put(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, 50_000);
+                configs.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+                configs.put(ConsumerConfig.DEFAULT_API_TIMEOUT_MS_CONFIG, 5000);
 
-        @SuppressWarnings("resource") // No leak, it will be closed by the disposer
-        Consumer<byte[], byte[]> consumer = new KafkaConsumer<>(config);
-        return () -> consumer;
+                logConfig("Consumer[" + e.getKey() + ']', configs);
+                @SuppressWarnings("resource") // no resource leak - client closed by disposer
+                Consumer<byte[], byte[]> client = new KafkaConsumer<>(configs);
+                return () -> client;
+            })
+            .findFirst()
+            .orElseThrow(() -> noSuchKafka.apply(cluster.get().getStatus().getClusterId()));
     }
 
     public void consumerDisposer(@Disposes Supplier<Consumer<byte[], byte[]>> consumer) {
@@ -185,81 +214,146 @@ public class ClientFactory {
     @Produces
     @RequestScoped
     public Supplier<Producer<String, String>> producerSupplier(Supplier<Kafka> cluster) {
-        Map<String, Object> config = buildConfiguration(cluster.get());
+        String clusterKey = Cache.metaNamespaceKeyFunc(cluster.get());
 
-        config.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
-        config.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
-        config.put(ProducerConfig.ACKS_CONFIG, "all");
-        config.put(ProducerConfig.MAX_BLOCK_MS_CONFIG, 5000);
-        config.put(ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG, false);
-        config.put(ProducerConfig.RETRIES_CONFIG, 0);
+        return clusterNames.entrySet()
+            .stream()
+            .filter(e -> clusterKey.equals(e.getValue()))
+            .<Supplier<Producer<String, String>>>map(e -> {
+                var configs = buildConfig(ProducerConfig.configNames(), e.getKey(), cluster.get());
+                configs.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
+                configs.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
+                configs.put(ProducerConfig.ACKS_CONFIG, "all");
+                configs.put(ProducerConfig.MAX_BLOCK_MS_CONFIG, 5000);
+                configs.put(ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG, false);
+                configs.put(ProducerConfig.RETRIES_CONFIG, 0);
 
-        @SuppressWarnings("resource") // No leak, it will be closed by the disposer
-        Producer<String, String> producer = new KafkaProducer<>(config);
-        return () -> producer;
+                logConfig("Producer[" + e.getKey() + ']', configs);
+                @SuppressWarnings("resource") // no resource leak - client closed by disposer
+                Producer<String, String> client = new KafkaProducer<>(configs);
+                return () -> client;
+            })
+            .findFirst()
+            .orElseThrow(() -> noSuchKafka.apply(cluster.get().getStatus().getClusterId()));
     }
 
     public void producerDisposer(@Disposes Supplier<Producer<String, String>> producer) {
         producer.get().close();
     }
 
-    Map<String, Object> buildConfiguration(Kafka cluster) {
-        return KafkaClusterService.consoleListener(cluster)
-            .map(l -> buildConfiguration(cluster, l))
-            .orElseThrow(() -> {
-                log.warnf(NO_COMPATIBLE_LISTENER, cluster.getStatus().getClusterId());
-                return noSuchKafka.get();
+    Map<String, Object> buildConfig(Set<String> configNames, String clusterKey, Kafka cluster) {
+        Map<String, Object> cfg = configNames
+            .stream()
+            .map(configName -> getClusterConfig(clusterKey, configName)
+                    .or(() -> getDefaultConfig(clusterKey, configName))
+                    .map(configValue -> Map.entry(configName, configValue)))
+            .filter(Optional::isPresent)
+            .map(Optional::get)
+            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+        if (truststoreRequired(cfg)) {
+            if (trustCertificates) {
+                trustClusterCertificate(cfg);
+            } else {
+                Optional.ofNullable(cluster.getStatus())
+                    .map(KafkaStatus::getListeners)
+                    .map(Collection::stream)
+                    .orElseGet(Stream::empty)
+                    .filter(listener -> Objects.equals(
+                            cfg.get(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG),
+                            listener.getBootstrapServers()))
+                    .map(ListenerStatus::getCertificates)
+                    .filter(Predicate.not(Collection::isEmpty))
+                    .findFirst()
+                    .ifPresent(certificates -> {
+                        cfg.put(SslConfigs.SSL_TRUSTSTORE_TYPE_CONFIG, "PEM");
+                        cfg.put(SslConfigs.SSL_TRUSTSTORE_CERTIFICATES_CONFIG, String.join("\n", certificates).trim());
+                    });
+            }
+        }
+
+        return cfg;
+    }
+
+    Optional<String> getClusterConfig(String clusterKey, String configName) {
+        return config.getOptionalValue(KAFKA_CONFIG_PREFIX + "." + clusterKey + '.' + configName, String.class)
+            .map(cfg -> {
+                log.tracef("OVERRIDE config %s for cluster %s", configName, clusterKey);
+                return unquote(cfg);
             });
     }
 
-    Map<String, Object> buildConfiguration(Kafka cluster, ListenerStatus listenerStatus) {
-        Map<String, Object> config = new HashMap<>();
-        String authType = KafkaClusterService.getAuthType(cluster, listenerStatus).orElse("");
-        boolean saslEnabled;
-
-        if (authType.isBlank()) {
-            log.trace("Broker authentication/SASL disabled");
-            saslEnabled = false;
-        } else {
-            saslEnabled = true;
-            configureOAuthBearer(config);
-        }
-
-        StringBuilder protocol = new StringBuilder();
-
-        if (saslEnabled) {
-            protocol.append("SASL_");
-        }
-
-        List<String> certificates = Optional.ofNullable(listenerStatus.getCertificates()).orElseGet(Collections::emptyList);
-
-        if (!certificates.isEmpty()) {
-            protocol.append(SecurityProtocol.SSL.name);
-            config.put(SslConfigs.SSL_TRUSTSTORE_TYPE_CONFIG, "PEM");
-            config.put(SslConfigs.SSL_TRUSTSTORE_CERTIFICATES_CONFIG, String.join("\n", certificates).trim());
-        } else {
-            protocol.append(SecurityProtocol.PLAINTEXT.name);
-        }
-
-        config.put(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, listenerStatus.getBootstrapServers());
-        config.put(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, protocol.toString());
-
-        return config;
+    Optional<String> getDefaultConfig(String clusterKey, String configName) {
+        return config.getOptionalValue("kafka." + configName, String.class)
+            .map(cfg -> {
+                log.tracef("DEFAULT config %s for cluster %s", configName, clusterKey);
+                return unquote(cfg);
+            });
     }
 
-    void configureOAuthBearer(Map<String, Object> config) {
-        log.trace("SASL/OAUTHBEARER enabled");
-        config.put(SaslConfigs.SASL_MECHANISM, OAUTHBEARER);
-        config.put(SaslConfigs.SASL_LOGIN_CALLBACK_HANDLER_CLASS, "io.strimzi.kafka.oauth.client.JaasClientOauthLoginCallbackHandler");
-        // Do not attempt token refresh ahead of expiration (ExpiringCredentialRefreshingLogin)
-        // May still cause warnings to be logged when token will expire in less than SASL_LOGIN_REFRESH_MIN_PERIOD_SECONDS.
-        config.put(SaslConfigs.SASL_LOGIN_REFRESH_BUFFER_SECONDS, "0");
+    String unquote(String cfg) {
+        return BOUNDARY_QUOTES.matcher(cfg).replaceAll("");
+    }
 
-        final String accessToken = Optional.ofNullable(headers.getHeaderString(HttpHeaders.AUTHORIZATION))
-                .filter(header -> header.regionMatches(true, 0, BEARER, 0, BEARER.length()))
-                .map(header -> header.substring(BEARER.length()))
-                .orElseThrow(() -> new NotAuthorizedException(BEARER.trim()));
+    boolean truststoreRequired(Map<String, Object> cfg) {
+        var securityProtocol = cfg.getOrDefault(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, "");
+        var trustStoreMissing = !cfg.containsKey(SslConfigs.SSL_TRUSTSTORE_CERTIFICATES_CONFIG);
 
-        config.put(SaslConfigs.SASL_JAAS_CONFIG, String.format(SASL_OAUTH_CONFIG_TEMPLATE, accessToken));
+        return trustStoreMissing && securityProtocol.toString().contains("SSL");
+    }
+
+    void trustClusterCertificate(Map<String, Object> cfg) {
+        TrustManager[] trustAllCerts = {new TrustAnyManager()};
+
+        try {
+            SSLContext sc = SSLContext.getInstance("TLS");
+            sc.init(null, trustAllCerts, new SecureRandom());
+            SSLSocketFactory factory = sc.getSocketFactory();
+            String bootstrap = (String) cfg.get(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG);
+            String[] hostport = bootstrap.split(",")[0].split(":");
+            ByteArrayOutputStream certificateOut = new ByteArrayOutputStream();
+
+            try (SSLSocket socket = (SSLSocket) factory.createSocket(hostport[0], Integer.parseInt(hostport[1]))) {
+                Certificate[] chain = socket.getSession().getPeerCertificates();
+                for (Certificate certificate : chain) {
+                    certificateOut.write("-----BEGIN CERTIFICATE-----\n".getBytes(StandardCharsets.UTF_8));
+                    certificateOut.write(Base64.getMimeEncoder(80, new byte[] {'\n'}).encode(certificate.getEncoded()));
+                    certificateOut.write("\n-----END CERTIFICATE-----\n".getBytes(StandardCharsets.UTF_8));
+                }
+            }
+
+            cfg.put(SslConfigs.SSL_TRUSTSTORE_CERTIFICATES_CONFIG,
+                    new String(certificateOut.toByteArray(), StandardCharsets.UTF_8).trim());
+            cfg.put(SslConfigs.SSL_TRUSTSTORE_TYPE_CONFIG, "PEM");
+            log.warnf("Certificate hosted at %s:%s is automatically trusted", hostport[0], hostport[1]);
+        } catch (Exception e) {
+            log.infof("Exception setting up trusted certificate: %s", e.getMessage());
+        }
+    }
+
+    void logConfig(String clientType, Map<String, Object> config) {
+        if (log.isDebugEnabled()) {
+            String msg = config.entrySet()
+                .stream()
+                .map(entry -> "\t%s = %s".formatted(entry.getKey(), entry.getValue()))
+                .collect(Collectors.joining("\n", "%s configuration:\n", ""));
+            log.debugf(msg, clientType);
+        }
+    }
+
+    private static final Pattern BOUNDARY_QUOTES = Pattern.compile("(^[\"'])|([\"']$)");
+
+    private static final class TrustAnyManager implements X509TrustManager {
+        public X509Certificate[] getAcceptedIssuers() {
+            return null; // NOSONAR
+        }
+
+        public void checkClientTrusted(X509Certificate[] certs, String authType) { // NOSONAR
+            // all trusted
+        }
+
+        public void checkServerTrusted(X509Certificate[] certs, String authType) { // NOSONAR
+            // all trusted
+        }
     }
 }

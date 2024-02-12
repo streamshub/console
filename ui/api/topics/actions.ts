@@ -162,7 +162,7 @@ export async function updateTopic(
       return TopicMutateResponseErrorSchema.parse(rawData);
     }
   } catch (e) {
-    log.error(e, "deleteTopic unknown error");
+    log.error(e, "updateTopic unknown error");
   }
   return false;
 }
@@ -199,7 +199,7 @@ export type ViewedTopic = {
 };
 
 export async function getViewedTopics(): Promise<ViewedTopic[]> {
-  log.info("getViewedTopics");
+  log.debug("getViewedTopics");
   const recentTopicsSession =
     await getSession<ViewedTopicsSession>("recent-topics");
   log.debug(recentTopicsSession, "getViewedTopics session");
@@ -207,7 +207,7 @@ export async function getViewedTopics(): Promise<ViewedTopic[]> {
 }
 
 export async function setTopicAsViewed(kafkaId: string, topicId: string) {
-  log.info({ kafkaId, topicId }, "setTopicAsViewed");
+  log.debug({ kafkaId, topicId }, "setTopicAsViewed");
   const cluster = await getKafkaCluster(kafkaId);
   const topic = await getTopic(kafkaId, topicId);
   const viewedTopics = await getViewedTopics();
