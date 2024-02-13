@@ -3,7 +3,6 @@ package com.github.eyefloaters.console.api;
 import java.io.IOException;
 import java.io.StringReader;
 import java.net.MalformedURLException;
-import java.net.ServerSocket;
 import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
@@ -55,7 +54,6 @@ import org.eclipse.microprofile.config.Config;
 import org.hamcrest.Description;
 import org.hamcrest.TypeSafeMatcher;
 import org.json.JSONException;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -131,13 +129,11 @@ class TopicsResourceIT {
     String clusterId1;
     URI bootstrapServers1;
     String clusterId2;
-    ServerSocket randomSocket;
 
     @BeforeEach
     void setup() throws IOException {
         bootstrapServers1 = URI.create(deployments.getExternalBootstrapServers());
-        randomSocket = new ServerSocket(0);
-        URI randomBootstrapServers = URI.create("dummy://localhost:" + randomSocket.getLocalPort());
+        URI randomBootstrapServers = URI.create(config.getValue("console.kafka.testk2.bootstrap.servers", String.class));
 
         topicUtils = new TopicHelper(bootstrapServers1, config, null);
         topicUtils.deleteAllTopics();
@@ -149,7 +145,7 @@ class TopicsResourceIT {
         clusterId1 = utils.getClusterId();
         clusterId2 = UUID.randomUUID().toString();
 
-        client.resources(Kafka.class).delete();
+        client.resources(Kafka.class).inAnyNamespace().delete();
         client.resources(Kafka.class)
             .resource(utils.buildKafkaResource("test-kafka1", clusterId1, bootstrapServers1))
             .create();
@@ -161,13 +157,6 @@ class TopicsResourceIT {
         // Wait for the informer cache to be populated with all Kafka CRs
         await().atMost(10, TimeUnit.SECONDS)
             .until(() -> Objects.equals(kafkaInformer.getStore().list().size(), 2));
-    }
-
-    @AfterEach
-    void teardown() throws IOException {
-        if (randomSocket != null) {
-            randomSocket.close();
-        }
     }
 
     @Test

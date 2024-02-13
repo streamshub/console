@@ -60,6 +60,7 @@ public class TestHelper {
     public Kafka buildKafkaResource(String name, String id, URI bootstrapServers, KafkaListenerAuthentication auth) {
         return new KafkaBuilder()
             .withNewMetadata()
+                .withNamespace("default")
                 .withName(name)
             .endMetadata()
             .withNewSpec()

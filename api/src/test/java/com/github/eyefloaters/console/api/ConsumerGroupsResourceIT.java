@@ -124,7 +124,7 @@ class ConsumerGroupsResourceIT {
         clusterId1 = utils.getClusterId();
         clusterId2 = UUID.randomUUID().toString();
 
-        client.resources(Kafka.class).delete();
+        client.resources(Kafka.class).inAnyNamespace().delete();
         client.resources(Kafka.class)
             .resource(utils.buildKafkaResource("test-kafka1", clusterId1, bootstrapServers))
             .create();

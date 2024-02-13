@@ -7,13 +7,16 @@ import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.util.Base64;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.function.UnaryOperator;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -52,6 +55,8 @@ import org.jboss.logging.Logger;
 
 import com.github.eyefloaters.console.api.service.KafkaClusterService;
 
+import io.fabric8.kubernetes.client.informers.ResourceEventHandler;
+import io.fabric8.kubernetes.client.informers.SharedIndexInformer;
 import io.fabric8.kubernetes.client.informers.cache.Cache;
 import io.strimzi.api.kafka.model.Kafka;
 import io.strimzi.api.kafka.model.status.KafkaStatus;
@@ -90,7 +95,10 @@ public class ClientFactory {
 
     @Inject
     @ConfigProperty(name = KAFKA_CONFIG_PREFIX)
-    Map<String, String> clusterNames;
+    Optional<Map<String, String>> clusterNames;
+
+    @Inject
+    SharedIndexInformer<Kafka> kafkaInformer;
 
     @Inject
     KafkaClusterService kafkaClusterService;
@@ -102,14 +110,28 @@ public class ClientFactory {
     UriInfo requestUri;
 
     /**
-     * An inject-able function to produce an Admin client for a given
-     * configuration map. This is used in order to allow tests to provide
-     * an overridden function to supply a mocked/spy Admin instance.
+     * An inject-able function to produce an Admin client for a given configuration
+     * map. This is used in order to allow tests to provide an overridden function
+     * to supply a mocked/spy Admin instance.
      */
     @Produces
     @ApplicationScoped
     @Named("kafkaAdminBuilder")
     Function<Map<String, Object>, Admin> kafkaAdminBuilder = Admin::create;
+
+    /**
+     * An inject-able operator to filter an Admin client. This is used in order to
+     * allow tests to provide an overridden function to supply a mocked/spy Admin
+     * instance.
+     */
+    @Produces
+    @ApplicationScoped
+    @Named("kafkaAdminFilter")
+    UnaryOperator<Admin> kafkaAdminFilter = UnaryOperator.identity();
+
+    private Map<String, String> clusterNames() {
+        return clusterNames.orElseGet(Collections::emptyMap);
+    }
 
     /**
      * Provides the Strimzi Kafka custom resource addressed by the current request
@@ -143,18 +165,43 @@ public class ClientFactory {
     @Produces
     @ApplicationScoped
     Map<String, Admin> getAdmins(Function<Map<String, Object>, Admin> adminBuilder) {
-        return clusterNames.entrySet()
-            .stream()
-            .map(e -> {
-                var clusterKey = unquote(e.getValue());
-                String[] namespaceName = clusterKey.split("/");
-                var cluster = kafkaClusterService.findCluster(namespaceName[0], namespaceName[1]);
-                var configs = buildConfig(AdminClientConfig.configNames(), e.getKey(), cluster.get());
-                logConfig("Admin[" + e.getKey() + ']', configs);
-                var client = adminBuilder.apply(configs);
-                return Map.entry(clusterKey, client);
-            })
-            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        final Map<String, Admin> adminClients = new HashMap<>();
+
+        kafkaInformer.addEventHandlerWithResyncPeriod(new ResourceEventHandler<Kafka>() {
+            public void onAdd(Kafka kafka) {
+                put(kafka, "Adding");
+            }
+
+            public void onUpdate(Kafka oldKafka, Kafka newKafka) {
+                put(newKafka, "Updating");
+            }
+
+            private void put(Kafka kafka, String eventType) {
+                String clusterKey = Cache.metaNamespaceKeyFunc(kafka);
+
+                clusterNames().entrySet()
+                    .stream()
+                    .filter(e -> clusterKey.equals(e.getValue()))
+                    .findFirst()
+                    .map(e -> {
+                        var configs = buildConfig(AdminClientConfig.configNames(), e.getKey(), "admin", kafka);
+                        logConfig("Admin[key=%s, id=%s]".formatted(e.getKey(), kafka.getStatus().getClusterId()), configs);
+                        return adminBuilder.apply(configs);
+                    })
+                    .ifPresent(client -> {
+                        log.info("%s Admin client for Kafka cluster %s".formatted(eventType, kafka.getStatus().getClusterId()));
+                        adminClients.put(clusterKey, client);
+                    });
+            }
+
+            public void onDelete(Kafka kafka, boolean deletedFinalStateUnknown) {
+                String clusterKey = Cache.metaNamespaceKeyFunc(kafka);
+                log.info("Removing Admin client for Kafka cluster %s".formatted(kafka.getStatus().getClusterId()));
+                adminClients.remove(clusterKey);
+            }
+        }, TimeUnit.MINUTES.toMillis(1));
+
+        return adminClients;
     }
 
     void closeAdmins(@Disposes Map<String, Admin> admins) {
@@ -169,12 +216,21 @@ public class ClientFactory {
 
     @Produces
     @RequestScoped
-    public Supplier<Admin> adminClientSupplier(Supplier<Kafka> cluster, Map<String, Admin> admins) {
+    public Supplier<Admin> adminClientSupplier(Supplier<Kafka> cluster, Map<String, Admin> admins, UnaryOperator<Admin> filter) {
         String clusterKey = Cache.metaNamespaceKeyFunc(cluster.get());
 
         return Optional.ofNullable(admins.get(clusterKey))
+            .map(filter::apply)
             .<Supplier<Admin>>map(client -> () -> client)
             .orElseThrow(() -> noSuchKafka.apply(cluster.get().getStatus().getClusterId()));
+    }
+
+    public void adminClientDisposer(@Disposes Supplier<Admin> client, Map<String, Admin> admins) {
+        Admin admin = client.get();
+
+        if (!admins.values().contains(admin)) {
+            admin.close();
+        }
     }
 
     @Produces
@@ -182,7 +238,7 @@ public class ClientFactory {
     public Supplier<Consumer<byte[], byte[]>> consumerSupplier(Supplier<Kafka> cluster) {
         String clusterKey = Cache.metaNamespaceKeyFunc(cluster.get());
 
-        return clusterNames.entrySet()
+        return clusterNames().entrySet()
             .stream()
             .filter(e -> clusterKey.equals(e.getValue()))
             .<Supplier<Consumer<byte[], byte[]>>>map(e -> {
@@ -190,7 +246,7 @@ public class ClientFactory {
                         // Do not allow a group Id to be set for this application
                         .filter(Predicate.not(ConsumerConfig.GROUP_ID_CONFIG::equals))
                         .collect(Collectors.toSet());
-                var configs = buildConfig(configNames, e.getKey(), cluster.get());
+                var configs = buildConfig(configNames, e.getKey(), "consumer", cluster.get());
                 configs.put(ConsumerConfig.ALLOW_AUTO_CREATE_TOPICS_CONFIG, "false");
                 configs.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class.getName());
                 configs.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class.getName());
@@ -216,11 +272,11 @@ public class ClientFactory {
     public Supplier<Producer<String, String>> producerSupplier(Supplier<Kafka> cluster) {
         String clusterKey = Cache.metaNamespaceKeyFunc(cluster.get());
 
-        return clusterNames.entrySet()
+        return clusterNames().entrySet()
             .stream()
             .filter(e -> clusterKey.equals(e.getValue()))
             .<Supplier<Producer<String, String>>>map(e -> {
-                var configs = buildConfig(ProducerConfig.configNames(), e.getKey(), cluster.get());
+                var configs = buildConfig(ProducerConfig.configNames(), e.getKey(), "producer", cluster.get());
                 configs.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
                 configs.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
                 configs.put(ProducerConfig.ACKS_CONFIG, "all");
@@ -241,11 +297,11 @@ public class ClientFactory {
         producer.get().close();
     }
 
-    Map<String, Object> buildConfig(Set<String> configNames, String clusterKey, Kafka cluster) {
+    Map<String, Object> buildConfig(Set<String> configNames, String clusterKey, String clientType, Kafka cluster) {
         Map<String, Object> cfg = configNames
             .stream()
-            .map(configName -> getClusterConfig(clusterKey, configName)
-                    .or(() -> getDefaultConfig(clusterKey, configName))
+            .map(configName -> getClusterConfig(clusterKey, clientType, configName)
+                    .or(() -> getDefaultConfig(clusterKey, clientType, configName))
                     .map(configValue -> Map.entry(configName, configValue)))
             .filter(Optional::isPresent)
             .map(Optional::get)
@@ -259,9 +315,9 @@ public class ClientFactory {
                     .map(KafkaStatus::getListeners)
                     .map(Collection::stream)
                     .orElseGet(Stream::empty)
-                    .filter(listener -> Objects.equals(
-                            cfg.get(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG),
-                            listener.getBootstrapServers()))
+                    .filter(listener -> cfg.getOrDefault(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, "")
+                            .toString()
+                            .contains(listener.getBootstrapServers()))
                     .map(ListenerStatus::getCertificates)
                     .filter(Predicate.not(Collection::isEmpty))
                     .findFirst()
@@ -275,16 +331,24 @@ public class ClientFactory {
         return cfg;
     }
 
-    Optional<String> getClusterConfig(String clusterKey, String configName) {
-        return config.getOptionalValue(KAFKA_CONFIG_PREFIX + "." + clusterKey + '.' + configName, String.class)
+    Optional<String> getClusterConfig(String clusterKey, String clientType, String configName) {
+        String clientSpecificKey = "%s.%s.%s.%s".formatted(KAFKA_CONFIG_PREFIX, clusterKey, clientType, configName);
+        String generalKey = "%s.%s.%s".formatted(KAFKA_CONFIG_PREFIX, clusterKey, configName);
+
+        return config.getOptionalValue(clientSpecificKey, String.class)
+            .or(() -> config.getOptionalValue(generalKey, String.class))
             .map(cfg -> {
                 log.tracef("OVERRIDE config %s for cluster %s", configName, clusterKey);
                 return unquote(cfg);
             });
     }
 
-    Optional<String> getDefaultConfig(String clusterKey, String configName) {
-        return config.getOptionalValue("kafka." + configName, String.class)
+    Optional<String> getDefaultConfig(String clusterKey, String clientType, String configName) {
+        String clientSpecificKey = "kafka.%s.%s".formatted(clientType, configName);
+        String generalKey = "kafka.%s".formatted(configName);
+
+        return config.getOptionalValue(clientSpecificKey, String.class)
+            .or(() -> config.getOptionalValue(generalKey, String.class))
             .map(cfg -> {
                 log.tracef("DEFAULT config %s for cluster %s", configName, clusterKey);
                 return unquote(cfg);
@@ -296,10 +360,13 @@ public class ClientFactory {
     }
 
     boolean truststoreRequired(Map<String, Object> cfg) {
-        var securityProtocol = cfg.getOrDefault(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, "");
-        var trustStoreMissing = !cfg.containsKey(SslConfigs.SSL_TRUSTSTORE_CERTIFICATES_CONFIG);
+        if (cfg.containsKey(SslConfigs.SSL_TRUSTSTORE_CERTIFICATES_CONFIG)) {
+            return false;
+        }
 
-        return trustStoreMissing && securityProtocol.toString().contains("SSL");
+        return cfg.getOrDefault(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, "")
+                .toString()
+                .contains("SSL");
     }
 
     void trustClusterCertificate(Map<String, Object> cfg) {

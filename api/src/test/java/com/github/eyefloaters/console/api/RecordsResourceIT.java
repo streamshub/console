@@ -1,7 +1,6 @@
 package com.github.eyefloaters.console.api;
 
 import java.io.IOException;
-import java.net.ServerSocket;
 import java.net.URI;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
@@ -28,7 +27,6 @@ import org.awaitility.core.EvaluatedCondition;
 import org.awaitility.core.TimeoutEvent;
 import org.eclipse.microprofile.config.Config;
 import org.jboss.logging.Logger;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -82,13 +80,11 @@ class RecordsResourceIT {
     RecordHelper recordUtils;
     String clusterId1;
     String clusterId2;
-    ServerSocket randomSocket;
 
     @BeforeEach
     void setup() throws IOException {
         URI bootstrapServers = URI.create(deployments.getExternalBootstrapServers());
-        randomSocket = new ServerSocket(0);
-        URI randomBootstrapServers = URI.create("dummy://localhost:" + randomSocket.getLocalPort());
+        URI randomBootstrapServers = URI.create(config.getValue("console.kafka.testk2.bootstrap.servers", String.class));
 
         topicUtils = new TopicHelper(bootstrapServers, config, null);
         topicUtils.deleteAllTopics();
@@ -99,7 +95,7 @@ class RecordsResourceIT {
         clusterId1 = utils.getClusterId();
         clusterId2 = UUID.randomUUID().toString();
 
-        client.resources(Kafka.class).delete();
+        client.resources(Kafka.class).inAnyNamespace().delete();
         client.resources(Kafka.class)
             .resource(utils.buildKafkaResource("test-kafka1", clusterId1, bootstrapServers))
             .create();
@@ -107,13 +103,6 @@ class RecordsResourceIT {
         client.resources(Kafka.class)
             .resource(utils.buildKafkaResource("test-kafka2", clusterId2, randomBootstrapServers))
             .create();
-    }
-
-    @AfterEach
-    void teardown() throws IOException {
-        if (randomSocket != null) {
-            randomSocket.close();
-        }
     }
 
     @Test

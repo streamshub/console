@@ -62,10 +62,11 @@ class BrokersResourceIT {
         utils = new TestHelper(bootstrapServers, config, null);
         clusterId = utils.getClusterId();
 
-        client.resources(Kafka.class).delete();
+        client.resources(Kafka.class).inAnyNamespace().delete();
         client.resources(Kafka.class).resource(new KafkaBuilder()
                 .withNewMetadata()
                     .withName("test-kafka1")
+                    .withNamespace("default")
                 .endMetadata()
                 .withNewSpec()
                     .withNewKafka()

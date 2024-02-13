@@ -200,19 +200,6 @@ public class KafkaClusterService {
                 .findFirst();
     }
 
-    public Optional<Kafka> findCluster(String namespace, String name) {
-        return kafkaInformer.getStore()
-                .list()
-                .stream()
-                .filter(k -> {
-                    var meta = k.getMetadata();
-                    return Objects.equals(meta.getNamespace(), namespace)
-                            && Objects.equals(meta.getName(), name);
-                })
-                .filter(Predicate.not(k -> annotatedKafka(k, Annotations.CONSOLE_HIDDEN)))
-                .findFirst();
-    }
-
     static int listenerSortKey(GenericKafkaListener listener, Annotations listenerAnnotation) {
         return annotatedListener(listener, listenerAnnotation) ? -1 : 1;
     }

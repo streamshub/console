@@ -1,8 +1,8 @@
 package com.github.eyefloaters.console.api;
 
 import java.io.IOException;
-import java.net.ServerSocket;
 import java.net.URI;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Base64;
 import java.util.HashMap;
@@ -27,7 +27,7 @@ import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.Response.Status;
 
 import org.apache.kafka.clients.CommonClientConfigs;
-import org.apache.kafka.common.config.SaslConfigs;
+import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.common.config.SslConfigs;
 import org.apache.kafka.common.security.auth.SecurityProtocol;
 import org.eclipse.microprofile.config.Config;
@@ -51,6 +51,7 @@ import com.github.eyefloaters.console.test.TestHelper;
 
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.informers.SharedIndexInformer;
+import io.fabric8.kubernetes.client.informers.cache.Cache;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.common.http.TestHTTPEndpoint;
 import io.quarkus.test.junit.QuarkusMock;
@@ -68,9 +69,11 @@ import static com.github.eyefloaters.console.test.TestHelper.whenRequesting;
 import static java.util.Objects.isNull;
 import static java.util.function.Predicate.not;
 import static org.awaitility.Awaitility.await;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.everyItem;
 import static org.hamcrest.Matchers.hasEntry;
@@ -102,6 +105,9 @@ class KafkaClustersResourceIT {
     @Inject
     SharedIndexInformer<Kafka> kafkaInformer;
 
+    @Inject
+    Map<String, Admin> configuredAdmins;
+
     @DeploymentManager.InjectDeploymentManager
     DeploymentManager deployments;
 
@@ -111,22 +117,20 @@ class KafkaClustersResourceIT {
     String clusterId1;
     String clusterId2;
     URI bootstrapServers;
-    ServerSocket randomSocket;
     URI randomBootstrapServers;
 
     @BeforeEach
     void setup() throws IOException {
         kafkaContainer = deployments.getKafkaContainer();
         bootstrapServers = URI.create(kafkaContainer.getBootstrapServers());
-        randomSocket = new ServerSocket(0);
-        randomBootstrapServers = URI.create("dummy://localhost:" + randomSocket.getLocalPort());
+        randomBootstrapServers = URI.create(config.getValue("console.kafka.testk2.bootstrap.servers", String.class));
 
         utils = new TestHelper(bootstrapServers, config, null);
 
         clusterId1 = utils.getClusterId();
         clusterId2 = UUID.randomUUID().toString();
 
-        client.resources(Kafka.class).delete();
+        client.resources(Kafka.class).inAnyNamespace().delete();
         client.resources(Kafka.class)
             .resource(new KafkaBuilder(utils.buildKafkaResource("test-kafka1", clusterId1, bootstrapServers,
                         new KafkaListenerAuthenticationCustomBuilder()
@@ -160,15 +164,12 @@ class KafkaClustersResourceIT {
 
     @AfterEach
     void teardown() throws IOException {
-        client.resources(Kafka.class).list()
+        client.resources(Kafka.class).inAnyNamespace()
+            .list()
             .getItems()
             .stream()
             .filter(not(k -> Set.of("test-kafka1", "test-kafka2").contains(k.getMetadata().getName())))
             .forEach(k -> client.resource(k).delete());
-
-        if (randomSocket != null) {
-            randomSocket.close();
-        }
     }
 
     @Test
@@ -488,8 +489,8 @@ class KafkaClustersResourceIT {
     }
 
     @Test
-    void testDescribeClusterWithCustomOAuth() {
-        Map<String, Object> clientConfig =  mockAdminClient();
+    void testDescribeClusterWithCustomAuthType() {
+        mockAdminClient();
 
         whenRequesting(req -> req
                 .auth()
@@ -506,50 +507,41 @@ class KafkaClustersResourceIT {
             .body("data.attributes.listeners", hasItem(allOf(
                     hasEntry("bootstrapServers", bootstrapServers.getHost() + ":" + bootstrapServers.getPort()),
                     hasEntry("authType", "custom"))));
-
-        assertEquals("SASL_PLAINTEXT", clientConfig.get(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG));
     }
 
     @Test
-    void testDescribeClusterWithCustomOAuthWithoutBearerToken() {
-        whenRequesting(req -> req.get("{clusterId}", clusterId1))
-            .assertThat()
-            .statusCode(is(Status.UNAUTHORIZED.getStatusCode()))
-            .body("errors.size()", is(1))
-            .body("errors.status", contains("401"))
-            .body("errors.code", contains("4011"));
-    }
-
-    @Test
-    void testDescribeClusterWithOAuthAndCertificates() {
+    void testDescribeClusterWithCertificates() {
         String clusterId = UUID.randomUUID().toString();
 
         // Create a Kafka CR with OAuth that proxies to kafka1
-        Kafka kafka = new KafkaBuilder(utils.buildKafkaResource("test-kafka-" + clusterId, clusterId, bootstrapServers,
+        Kafka kafka = new KafkaBuilder(utils.buildKafkaResource("test-kafka3", clusterId, bootstrapServers,
                             new KafkaListenerAuthenticationOAuthBuilder().build()))
                 .editStatus()
                     .editMatchingListener(l -> "listener0".equals(l.getName()))
-                        .addToCertificates("CERTIFICATE PLACEHOLDER")
+                        .addToCertificates("""
+                                -----BEGIN CERTIFICATE-----
+                                FAKE/CERTIFICATE
+                                -----END CERTIFICATE-----
+                                """)
                     .endListener()
                 .endStatus()
                 .build();
 
-        client.resources(Kafka.class).resource(kafka).create();
-
         Map<String, Object> clientConfig = mockAdminClient();
 
-        whenRequesting(req -> req
-                .auth()
-                    .oauth2("fake-access-token")
-                .get("{clusterId}", clusterId))
+        client.resources(Kafka.class).resource(kafka).create();
+
+        await().atMost(Duration.ofSeconds(5))
+            .until(() -> configuredAdmins.containsKey(Cache.metaNamespaceKeyFunc(kafka)));
+
+        whenRequesting(req -> req.get("{clusterId}", clusterId))
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()));
             // Ignoring response data since they are from test-kafka-1
 
-        assertEquals("SASL_SSL", clientConfig.get(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG));
-        assertEquals("OAUTHBEARER", clientConfig.get(SaslConfigs.SASL_MECHANISM));
+        assertEquals("SSL", clientConfig.get(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG));
         assertEquals("PEM", clientConfig.get(SslConfigs.SSL_TRUSTSTORE_TYPE_CONFIG));
-        assertEquals("CERTIFICATE PLACEHOLDER", clientConfig.get(SslConfigs.SSL_TRUSTSTORE_CERTIFICATES_CONFIG));
+        assertThat((String) clientConfig.get(SslConfigs.SSL_TRUSTSTORE_CERTIFICATES_CONFIG), containsString("FAKE/CERTIFICATE"));
     }
 
     @Test
@@ -738,14 +730,17 @@ class KafkaClustersResourceIT {
     // Helper methods
 
     static Map<String, Object> mockAdminClient() {
+        return mockAdminClient(Map.of(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, SecurityProtocol.PLAINTEXT.name));
+    }
+
+    static Map<String, Object> mockAdminClient(Map<String, Object> overrides) {
         Map<String, Object> clientConfig = new HashMap<>();
 
         AdminClientSpy.install(config -> {
             clientConfig.putAll(config);
 
             Map<String, Object> newConfig = new HashMap<>(config);
-            // Disable SASL since the Kafka cluster is not actually using it
-            newConfig.put(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, SecurityProtocol.PLAINTEXT.name);
+            newConfig.putAll(overrides);
             return newConfig;
         }, client -> { /* No-op */ });
 
