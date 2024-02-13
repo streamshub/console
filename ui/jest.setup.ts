@@ -1,4 +1,5 @@
 import { chromium, Browser, Page } from "playwright";
+import  { beforeAll, afterAll }from '@jest/globals';
 
 let browser: Browser;
 let page: Page;
