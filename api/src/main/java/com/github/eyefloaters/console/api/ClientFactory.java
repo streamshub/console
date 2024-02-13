@@ -1,11 +1,5 @@
 package com.github.eyefloaters.console.api;
 
-import java.io.ByteArrayOutputStream;
-import java.nio.charset.StandardCharsets;
-import java.security.SecureRandom;
-import java.security.cert.Certificate;
-import java.security.cert.X509Certificate;
-import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -21,15 +15,10 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSocket;
-import javax.net.ssl.SSLSocketFactory;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
-
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.enterprise.inject.Disposes;
+import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Inject;
 import jakarta.inject.Named;
@@ -54,6 +43,7 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
 import com.github.eyefloaters.console.api.service.KafkaClusterService;
+import com.github.eyefloaters.console.api.support.TrustAllCertificateManager;
 
 import io.fabric8.kubernetes.client.informers.ResourceEventHandler;
 import io.fabric8.kubernetes.client.informers.SharedIndexInformer;
@@ -90,10 +80,6 @@ public class ClientFactory {
     Config config;
 
     @Inject
-    @ConfigProperty(name = "console.security.trust-certificates", defaultValue = "false")
-    boolean trustCertificates;
-
-    @Inject
     @ConfigProperty(name = KAFKA_CONFIG_PREFIX)
     Optional<Map<String, String>> clusterNames;
 
@@ -102,6 +88,9 @@ public class ClientFactory {
 
     @Inject
     KafkaClusterService kafkaClusterService;
+
+    @Inject
+    Instance<TrustAllCertificateManager> trustManager;
 
     @Inject
     HttpHeaders headers;
@@ -197,7 +186,8 @@ public class ClientFactory {
             public void onDelete(Kafka kafka, boolean deletedFinalStateUnknown) {
                 String clusterKey = Cache.metaNamespaceKeyFunc(kafka);
                 log.info("Removing Admin client for Kafka cluster %s".formatted(kafka.getStatus().getClusterId()));
-                adminClients.remove(clusterKey);
+                Admin admin = adminClients.remove(clusterKey);
+                Optional.ofNullable(admin).ifPresent(Admin::close);
             }
         }, TimeUnit.MINUTES.toMillis(1));
 
@@ -308,8 +298,8 @@ public class ClientFactory {
             .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
         if (truststoreRequired(cfg)) {
-            if (trustCertificates) {
-                trustClusterCertificate(cfg);
+            if (trustManager.isResolvable()) {
+                trustManager.get().trustClusterCertificate(cfg);
             } else {
                 Optional.ofNullable(cluster.getStatus())
                     .map(KafkaStatus::getListeners)
@@ -369,35 +359,6 @@ public class ClientFactory {
                 .contains("SSL");
     }
 
-    void trustClusterCertificate(Map<String, Object> cfg) {
-        TrustManager[] trustAllCerts = {new TrustAnyManager()};
-
-        try {
-            SSLContext sc = SSLContext.getInstance("TLS");
-            sc.init(null, trustAllCerts, new SecureRandom());
-            SSLSocketFactory factory = sc.getSocketFactory();
-            String bootstrap = (String) cfg.get(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG);
-            String[] hostport = bootstrap.split(",")[0].split(":");
-            ByteArrayOutputStream certificateOut = new ByteArrayOutputStream();
-
-            try (SSLSocket socket = (SSLSocket) factory.createSocket(hostport[0], Integer.parseInt(hostport[1]))) {
-                Certificate[] chain = socket.getSession().getPeerCertificates();
-                for (Certificate certificate : chain) {
-                    certificateOut.write("-----BEGIN CERTIFICATE-----\n".getBytes(StandardCharsets.UTF_8));
-                    certificateOut.write(Base64.getMimeEncoder(80, new byte[] {'\n'}).encode(certificate.getEncoded()));
-                    certificateOut.write("\n-----END CERTIFICATE-----\n".getBytes(StandardCharsets.UTF_8));
-                }
-            }
-
-            cfg.put(SslConfigs.SSL_TRUSTSTORE_CERTIFICATES_CONFIG,
-                    new String(certificateOut.toByteArray(), StandardCharsets.UTF_8).trim());
-            cfg.put(SslConfigs.SSL_TRUSTSTORE_TYPE_CONFIG, "PEM");
-            log.warnf("Certificate hosted at %s:%s is automatically trusted", hostport[0], hostport[1]);
-        } catch (Exception e) {
-            log.infof("Exception setting up trusted certificate: %s", e.getMessage());
-        }
-    }
-
     void logConfig(String clientType, Map<String, Object> config) {
         if (log.isDebugEnabled()) {
             String msg = config.entrySet()
@@ -410,17 +371,4 @@ public class ClientFactory {
 
     private static final Pattern BOUNDARY_QUOTES = Pattern.compile("(^[\"'])|([\"']$)");
 
-    private static final class TrustAnyManager implements X509TrustManager {
-        public X509Certificate[] getAcceptedIssuers() {
-            return null; // NOSONAR
-        }
-
-        public void checkClientTrusted(X509Certificate[] certs, String authType) { // NOSONAR
-            // all trusted
-        }
-
-        public void checkServerTrusted(X509Certificate[] certs, String authType) { // NOSONAR
-            // all trusted
-        }
-    }
 }

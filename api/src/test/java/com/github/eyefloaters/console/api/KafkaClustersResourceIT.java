@@ -260,6 +260,8 @@ class KafkaClustersResourceIT {
 
     @Test
     void testListClustersWithRangePaginationTruncated() {
+        mockAdminClient();
+
         List<String> allKafkaNames = Stream.concat(STATIC_KAFKAS.stream(),
                 IntStream.range(3, 10)
                     .mapToObj(i -> "test-kafka" + i)
@@ -314,6 +316,8 @@ class KafkaClustersResourceIT {
         " , 8,  5, 5", // skip last one (8 remain), limit to 5 on page
     })
     void testListClustersWithPaginationCursors(Integer afterIndex, Integer beforeIndex, Integer pageSize, int expectedResultCount) {
+        mockAdminClient();
+
         List<String> allKafkaNames = Stream.concat(STATIC_KAFKAS.stream(),
                 IntStream.range(3, 10)
                     .mapToObj(i -> "test-kafka" + i)
