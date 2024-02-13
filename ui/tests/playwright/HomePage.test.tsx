@@ -1,4 +1,4 @@
-import { page } from "./setup";
+import { page } from "../../jest.setup";
 describe("Home page", () => {
   test("Column headings are present", async () => {
     const columnHeadings = await page.$$eval(

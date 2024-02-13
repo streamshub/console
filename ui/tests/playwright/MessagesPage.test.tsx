@@ -1,4 +1,4 @@
-import { page } from "./setup";
+import { page } from "../../jest.setup";
 describe("Messages page", () => {
   test("Messages page should display table", async () => {
     await page.goto(

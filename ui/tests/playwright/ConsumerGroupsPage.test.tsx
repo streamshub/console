@@ -1,4 +1,4 @@
-import { page } from "./setup";
+import { page } from "../../jest.setup";
 describe("Consumer groups page", () => {
   test("Consumer groups page should display table", async () => {
     await page.goto(

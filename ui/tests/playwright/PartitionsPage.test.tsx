@@ -1,4 +1,4 @@
-import { page } from "./setup";
+import { page } from "../../jest.setup";
 describe("Partitions page", () => {
   test("Partitions page should display table", async () => {
     await page.goto(

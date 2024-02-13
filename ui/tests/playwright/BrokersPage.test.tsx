@@ -1,4 +1,4 @@
-import { page } from "./setup";
+import { page } from "../../jest.setup";
 describe("Brokers page", () => {
   test("Brokers page should display table", async () => {
     await page.goto(

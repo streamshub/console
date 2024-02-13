@@ -1,4 +1,4 @@
-import { page } from "./setup";
+import { page } from "../../jest.setup";
 describe("Create Topic", () => {
   test("Create Topic form should appear", async () => {
     await page.goto(

@@ -1,4 +1,4 @@
-import { page } from "./setup";
+import { page } from "../../jest.setup";
 describe("Cluster Overview page", () => {
   test("Cluster overview page should display correctly", async () => {
     await page.goto(

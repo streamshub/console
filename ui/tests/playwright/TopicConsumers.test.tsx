@@ -1,4 +1,4 @@
-import { page } from "./setup";
+import { page } from "../../jest.setup";
 describe("Topic Consumers", () => {
   test("Topic Consumers page should display table", async () => {
     await page.goto(

@@ -1,4 +1,4 @@
-import { page } from "./setup";
+import { page } from "../../jest.setup";
 describe("Topic Configuration", () => {
   test("Topic Configuration form should appear", async () => {
     await page.goto(
