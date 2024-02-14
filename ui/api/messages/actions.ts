@@ -44,7 +44,7 @@ export async function getTopicMessages(
   );
   const consumeRecordsQuery = sp.toString();
   const url = `${process.env.BACKEND_URL}/api/kafkas/${kafkaId}/topics/${topicId}/records?${consumeRecordsQuery}`;
-  log.info(
+  log.debug(
     { url, params: Object.fromEntries(sp.entries()) },
     "Fetching topic messages",
   );
@@ -66,7 +66,7 @@ export async function getTopicMessage(
     offset: number;
   },
 ): Promise<Message | undefined> {
-  log.info({ kafkaId, topicId, params }, "getTopicMessage");
+  log.debug({ kafkaId, topicId, params }, "getTopicMessage");
   const { messages } = await getTopicMessages(kafkaId, topicId, {
     pageSize: 1,
     partition: params.partition,

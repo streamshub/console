@@ -4,6 +4,9 @@ import { authOptions } from "@/utils/authOptions";
 import { sealData, unsealData } from "iron-session";
 import { getServerSession } from "next-auth";
 import { cookies } from "next/headers";
+import { logger } from "@/utils/logger";
+
+const log = logger.child({ module: "session" });
 
 export async function getSession<T extends Record<string, unknown>>(
   scope: string,
@@ -49,6 +52,7 @@ export async function setSession<T extends Record<string, unknown>>(
 }
 
 export async function getUser() {
+  log.trace("About to getServerSession");
   const auth = await getServerSession(authOptions);
 
   return {

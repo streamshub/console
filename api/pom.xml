@@ -39,11 +39,14 @@
         <strimzi-test-container.version>0.105.0</strimzi-test-container.version>
         <!-- System test image dependencies -->
         <keycloak.image>quay.io/keycloak/keycloak:21.1</keycloak.image>
-        <strimzi-kafka.tag>quay.io/strimzi/kafka:0.35.1-kafka-3.4.0</strimzi-kafka.tag>
+        <strimzi-kafka.tag>quay.io/strimzi/kafka:0.38.0-kafka-3.6.0</strimzi-kafka.tag>
 
         <!-- Sonar settings -->
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
         <sonar.organization>eyefloaters</sonar.organization>
+        <sonar.exclusions>
+        	src/main/java/com/github/eyefloaters/console/api/support/TrustAllCertificateManager.java
+        </sonar.exclusions>
     </properties>
 
     <scm>
@@ -114,10 +117,6 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-oidc</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-resteasy-reactive</artifactId>
         </dependency>
         <dependency>
@@ -162,7 +161,7 @@
         <dependency>
             <groupId>io.strimzi</groupId>
             <artifactId>api</artifactId>
-            <version>0.39.0</version>
+            <version>0.38.0</version>
         </dependency>
         <dependency>
             <groupId>io.strimzi</groupId>
@@ -436,6 +435,9 @@
                             <goal>prepare-agent</goal>
                         </goals>
                         <configuration>
+                            <excludes>
+                                <exclude>com/github/eyefloaters/console/api/support/TrustAllCertificateManager.class</exclude>
+                            </excludes>
                             <exclClassLoaders>*QuarkusClassLoader</exclClassLoaders>
                             <destFile>${project.build.directory}/jacoco-quarkus.exec</destFile>
                             <append>true</append>
@@ -447,6 +449,9 @@
                             <goal>prepare-agent-integration</goal>
                         </goals>
                         <configuration>
+                            <excludes>
+                                <exclude>com/github/eyefloaters/console/api/support/TrustAllCertificateManager.class</exclude>
+                            </excludes>
                             <exclClassLoaders>*QuarkusClassLoader</exclClassLoaders>
                             <destFile>${project.build.directory}/jacoco-quarkus.exec</destFile>
                             <append>true</append>

@@ -16,6 +16,7 @@ import jakarta.enterprise.inject.spi.CDI;
 
 import org.eclipse.microprofile.openapi.OASFactory;
 import org.eclipse.microprofile.openapi.OASFilter;
+import org.eclipse.microprofile.openapi.models.Components;
 import org.eclipse.microprofile.openapi.models.OpenAPI;
 import org.eclipse.microprofile.openapi.models.PathItem;
 import org.eclipse.microprofile.openapi.models.media.Content;
@@ -116,11 +117,11 @@ public class OASModelFilter extends AbstractOperationFilter implements OASFilter
         // Prune any schemas no longer referenced
         FilterUtil.applyFilter(new UnusedSchemaFilter(), openAPI);
 
-        /*
-         * Required until https://github.com/quarkusio/quarkus/pull/36460 is available.
-         */
         config.getOptionalValue("quarkus.oidc.auth-server-url", String.class)
-            .ifPresent(openAPI.getComponents().getSecuritySchemes().get("ConsoleSecurity")::setOpenIdConnectUrl);
+            .ifPresent(url -> Optional.of(openAPI.getComponents())
+                    .map(Components::getSecuritySchemes)
+                    .map(schemes -> schemes.get("ConsoleSecurity"))
+                    .ifPresent(scheme -> scheme.setOpenIdConnectUrl(url)));
     }
 
     void maybeSaveReference(Schema schema, String propertyName) {

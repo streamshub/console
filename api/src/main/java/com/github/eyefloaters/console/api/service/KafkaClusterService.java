@@ -3,11 +3,9 @@ package com.github.eyefloaters.console.api.service;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -36,8 +34,6 @@ import io.fabric8.kubernetes.api.model.ObjectMeta;
 import io.fabric8.kubernetes.client.informers.SharedIndexInformer;
 import io.strimzi.api.kafka.model.Kafka;
 import io.strimzi.api.kafka.model.listener.KafkaListenerAuthentication;
-import io.strimzi.api.kafka.model.listener.KafkaListenerAuthenticationCustom;
-import io.strimzi.api.kafka.model.listener.KafkaListenerAuthenticationOAuth;
 import io.strimzi.api.kafka.model.listener.arraylistener.GenericKafkaListener;
 import io.strimzi.api.kafka.model.listener.arraylistener.GenericKafkaListenerConfiguration;
 import io.strimzi.api.kafka.model.listener.arraylistener.KafkaListenerType;
@@ -103,7 +99,7 @@ public class KafkaClusterService {
     }
 
     KafkaCluster addKafkaResourceData(KafkaCluster cluster) {
-        findCluster(kafkaInformer, cluster.getId())
+        findCluster(cluster.getId())
             .ifPresent(kafka -> setKafkaClusterProperties(cluster, kafka));
 
         return cluster;
@@ -195,44 +191,13 @@ public class KafkaClusterService {
         }
     }
 
-    public static Optional<Kafka> findCluster(SharedIndexInformer<Kafka> kafkaInformer, String clusterId) {
+    public Optional<Kafka> findCluster(String clusterId) {
         return kafkaInformer.getStore()
                 .list()
                 .stream()
                 .filter(k -> Objects.equals(clusterId, k.getStatus().getClusterId()))
                 .filter(Predicate.not(k -> annotatedKafka(k, Annotations.CONSOLE_HIDDEN)))
                 .findFirst();
-    }
-
-    public static Optional<ListenerStatus> consoleListener(Kafka kafka) {
-        return kafka.getSpec().getKafka().getListeners().stream()
-            .filter(listener -> !KafkaListenerType.INTERNAL.equals(listener.getType()))
-            .filter(KafkaClusterService::supportedAuthentication)
-            .sorted((l1, l2) -> Integer.compare(
-                    listenerSortKey(l1, Annotations.CONSOLE_LISTENER),
-                    listenerSortKey(l2, Annotations.CONSOLE_LISTENER)))
-            .findFirst()
-            .flatMap(listener -> listenerStatus(kafka, listener));
-    }
-
-    static boolean supportedAuthentication(GenericKafkaListener listener) {
-        KafkaListenerAuthentication listenerAuth = listener.getAuth();
-
-        if (listenerAuth == null) {
-            return true;
-        } else if (listenerAuth instanceof KafkaListenerAuthenticationOAuth) {
-            return true;
-        } else if (listenerAuth instanceof KafkaListenerAuthenticationCustom customAuth) {
-            return Optional.of(customAuth)
-                .filter(KafkaListenerAuthenticationCustom::isSasl)
-                .map(KafkaListenerAuthenticationCustom::getListenerConfig)
-                .map(listenerConfig -> listenerConfig.get("sasl.enabled.mechanisms"))
-                .map(mechanisms -> Arrays.asList(mechanisms.toString().toUpperCase(Locale.ROOT).split(",")))
-                .map(mechanisms -> mechanisms.contains("OAUTHBEARER"))
-                .orElse(false);
-        } else {
-            return false;
-        }
     }
 
     static int listenerSortKey(GenericKafkaListener listener, Annotations listenerAnnotation) {

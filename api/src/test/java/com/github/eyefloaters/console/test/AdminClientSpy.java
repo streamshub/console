@@ -144,17 +144,29 @@ public class AdminClientSpy implements Admin {
                 private static final long serialVersionUID = 1L;
             };
 
-    static final AnnotationLiteral<Named> NAMED_ANNOTATION = new NamedKafkaAdminBuilder();
+    static final TypeLiteral<UnaryOperator<Admin>> CLIENT_FILTER_TYPE_LITERAL =
+            new TypeLiteral<UnaryOperator<Admin>>() {
+                private static final long serialVersionUID = 1L;
+            };
 
     @SuppressWarnings("all")
-    static class NamedKafkaAdminBuilder extends AnnotationLiteral<Named> implements Named {
+    static class NamedLiteral extends AnnotationLiteral<Named> implements Named {
         private static final long serialVersionUID = 1L;
+
+        final String value;
+
+        public NamedLiteral(String value) {
+            this.value = value;
+        }
 
         @Override
         public String value() {
-            return "kafkaAdminBuilder";
+            return value;
         }
     }
+
+    static final String KAFKA_ADMIN_BUILDER = "kafkaAdminBuilder";
+    static final String KAFKA_ADMIN_FILTER = "kafkaAdminFilter";
 
     /**
      * Create and install a spy Admin instance to be used for a request instead of
@@ -163,7 +175,13 @@ public class AdminClientSpy implements Admin {
      * @param adminSetup a consumer that accepts the Admin client for spying
      */
     public static void install(Consumer<Admin> adminSetup) {
-        install(UnaryOperator.identity(), adminSetup);
+        UnaryOperator<Admin> filter = client -> {
+            client = Mockito.spy(new AdminClientSpy(client));
+            adminSetup.accept(client);
+            return client;
+        };
+
+        QuarkusMock.installMockForType(filter, CLIENT_FILTER_TYPE_LITERAL, new NamedLiteral(KAFKA_ADMIN_FILTER));
     }
 
     /**
@@ -180,13 +198,17 @@ public class AdminClientSpy implements Admin {
             return client;
         };
 
-        QuarkusMock.installMockForType(builder, CLIENT_BUILDER_TYPE_LITERAL, NAMED_ANNOTATION);
+        QuarkusMock.installMockForType(builder, CLIENT_BUILDER_TYPE_LITERAL, new NamedLiteral(KAFKA_ADMIN_BUILDER));
     }
 
     final Admin delegate;
 
+    private AdminClientSpy(Admin delegate) {
+        this.delegate = delegate;
+    }
+
     private AdminClientSpy(Map<String, Object> config) {
-        delegate = Admin.create(config);
+        this(Admin.create(config));
     }
 
     public void close(Duration timeout) {

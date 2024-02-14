@@ -1,5 +1,6 @@
 import { getTopic, updateTopic } from "@/api/topics/actions";
 import { KafkaTopicParams } from "@/app/[locale]/kafka/[kafkaId]/topics/kafkaTopic.params";
+import { readonly } from "@/utils/runmode";
 import { PageSection } from "@/libs/patternfly/react-core";
 import { redirect } from "@/navigation";
 import { Suspense } from "react";
@@ -35,6 +36,10 @@ async function ConnectedTopicConfiguration({
 
   async function onSaveProperty(name: string, value: string) {
     "use server";
+    if (readonly()) {
+      // silently ignore attempt to change a property value in read-only mode
+      return true;
+    }
     return updateTopic(kafkaId, topicId, undefined, undefined, {
       [name]: {
         value,
