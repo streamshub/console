@@ -99,6 +99,10 @@ async function ConnectedTopicsPartitionsCard({
   );
 }
 
+function timeSeriesMetrics(ranges: Record<ClusterMetric, MetricRange> | undefined, rangeName: ClusterMetric) : TimeSeriesMetrics[] {
+    return ranges ? Object.values(ranges[rangeName] ?? {}).map(val => val ?? {}) : [];
+}
+
 async function ConnectedClusterChartsCard({
   data,
 }: {
@@ -112,10 +116,10 @@ async function ConnectedClusterChartsCard({
     <>
       <ClusterChartsCard
         isLoading={false}
-        usedDiskSpace={Object.values(res?.ranges["volumeUsed"] || {})}
-        availableDiskSpace={Object.values(res?.ranges["volumeCapacity"] || {})}
-        memoryUsage={Object.values(res?.ranges["memory"] || {})}
-        cpuUsage={Object.values(res?.ranges["cpu"] || {})}
+        usedDiskSpace={ timeSeriesMetrics(res?.ranges, "volumeUsed") }
+        availableDiskSpace={ timeSeriesMetrics(res?.ranges, "volumeCapacity") }
+        memoryUsage={ timeSeriesMetrics(res?.ranges, "memory") }
+        cpuUsage={ timeSeriesMetrics(res?.ranges, "cpu") }
       />
     </>
   );
