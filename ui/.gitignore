@@ -37,3 +37,7 @@ next-env.d.ts
 # storybook
 build-storybook.log
 storybook-static
+
+# other package management lock files
+pnpm-lock.yaml
+yarn.lock
