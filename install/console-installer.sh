@@ -38,8 +38,6 @@ function display_suggested_subscription {
     local NAME_PATTERN="${2}"
 
     local AVAILABLE_PKGS="$(fetch_available_packages "${NAME_PATTERN}")"
-
-    #echo -e "${AVAILABLE_PKGS}"
     echo -e "${INFO} ${OPERATOR_NAME} may be installed by creating one of the following resources:"
     COUNTER=0
 
@@ -86,12 +84,6 @@ if ! [[ ${PROVIDED_APIS} == *"kafka.v1beta2.kafka.strimzi.io"* ]]; then
     INSTALL=false
 fi
 
-if ! [[ ${PROVIDED_APIS} == *"keycloak.v2alpha1.k8s.keycloak.org"* ]]; then
-    echo -e "${WARN} Keycloak Operator is not available for namespace ${NAMESPACE}"
-    display_suggested_subscription "keycloak-operator" "keycloak-operator|rhbk-operator"
-    INSTALL=false
-fi
-
 if ! [[ ${PROVIDED_APIS} == *"prometheus.v1.monitoring.coreos.com"* ]]; then
     echo -e "${WARN} Prometheus Operator is not available for namespace ${NAMESPACE}"
     display_suggested_subscription "prometheus-operator" "prometheus"
@@ -100,62 +92,18 @@ fi
 
 assert_installable
 
-echo -e "${INFO} Creating Keycloak PostgreSQL PVC"
-kubectl apply -n ${NAMESPACE} -f ${RESOURCE_PATH}/keycloak-postgres-data.persistentvolumeclaim.yaml
-
-echo -e "${INFO} Creating Keycloak PostgreSQL Credentials"
-kubectl create secret generic keycloak-postgres-secret -n ${NAMESPACE} \
-    --dry-run=client \
-    --from-literal=username='keycloak' \
-    --from-literal=password="$(tr -dc A-Za-z0-9 </dev/urandom | head -c 13; echo)" \
-    -o yaml | kubectl apply -n ${NAMESPACE} -f -
-
-echo -e "${INFO} Creating Keycloak PostgreSQL StatefulSet"
-if kubectl get statefulset keycloak-postgres -n ${NAMESPACE} ; then
-    kubectl scale --replicas=0 statefulset/keycloak-postgres -n ${NAMESPACE}
-fi
-kubectl apply -n ${NAMESPACE} -f ${RESOURCE_PATH}/keycloak-postgres.statefulset.yaml
-
-echo -e "${INFO} Creating Keycloak PostgreSQL Service"
-kubectl apply -n ${NAMESPACE} -f ${RESOURCE_PATH}/keycloak-postgres.service.yaml
-
-echo -e "${INFO} Creating Keycloak Instance"
-if kubectl get statefulset console-keycloak -n ${NAMESPACE} ; then
-    kubectl scale --replicas=0 statefulset/console-keycloak -n ${NAMESPACE}
-fi
-yq '.spec.hostname.hostname = "console-keycloak." + strenv(CLUSTER_DOMAIN)' ${RESOURCE_PATH}/console-keycloak.keycloak.yaml \
-    | kubectl apply -n ${NAMESPACE} -f -
-
-CONSOLE_UI_SECRET=$(tr -dc A-Za-z0-9 </dev/urandom | head -c 13; echo)
-
-if kubectl get job console-preview -n ${NAMESPACE} ; then
-    kubectl delete job console-preview -n ${NAMESPACE}
-fi
-
-yq '
-  select(.spec.realm.clients[] | select(.clientId=="console-ui").secret = "'${CONSOLE_UI_SECRET}'") |
-  select(.spec.realm.clients[] | select(.clientId=="console-ui").redirectUris += "https://console-ui." + strenv(CLUSTER_DOMAIN) + "/*" ) |
-  select(.spec.realm.clients[] | select(.clientId=="kafka").secret = "'$(tr -dc A-Za-z0-9 </dev/urandom | head -c 13; echo)'")
-' resources/console-preview.keycloakrealmimport.yaml \
-    | kubectl apply -n ${NAMESPACE} -f -
-
+### Prometheus
 kubectl apply -n ${NAMESPACE} -f ${RESOURCE_PATH}/console-prometheus-server.clusterrole.yaml
 kubectl apply -n ${NAMESPACE} -f ${RESOURCE_PATH}/console-prometheus-server.serviceaccount.yaml
-yq '.subjects[0].namespace = strenv(NAMESPACE)' ${RESOURCE_PATH}/console-prometheus-server.clusterrolebinding.yaml \
-    | kubectl apply -n ${NAMESPACE} -f -
-
+yq '.subjects[0].namespace = strenv(NAMESPACE)' ${RESOURCE_PATH}/console-prometheus-server.clusterrolebinding.yaml | kubectl apply -n ${NAMESPACE} -f -
 kubectl apply -n ${NAMESPACE} -f ${RESOURCE_PATH}/kafka-resources.podmonitor.yaml
 kubectl apply -n ${NAMESPACE} -f ${RESOURCE_PATH}/kubernetes-scrape-configs.secret.yaml
 kubectl apply -n ${NAMESPACE} -f ${RESOURCE_PATH}/console-prometheus.prometheus.yaml
 
-yq '.spec.rules[0].host = "console-prometheus." + strenv(CLUSTER_DOMAIN)' ${RESOURCE_PATH}/console-prometheus.ingress.yaml \
-    | kubectl apply -n ${NAMESPACE} -f -
-
+### Console
 kubectl apply -n ${NAMESPACE} -f ${RESOURCE_PATH}/console-api-server.clusterrole.yaml
 kubectl apply -n ${NAMESPACE} -f ${RESOURCE_PATH}/console-api-server.serviceaccount.yaml
-yq '.subjects[0].namespace = strenv(NAMESPACE)' ${RESOURCE_PATH}/console-api-server.clusterrolebinding.yaml \
-    | kubectl apply -n ${NAMESPACE} -f -
-
+yq '.subjects[0].namespace = strenv(NAMESPACE)' ${RESOURCE_PATH}/console-api-server.clusterrolebinding.yaml | kubectl apply -n ${NAMESPACE} -f -
 kubectl apply -n ${NAMESPACE} -f ${RESOURCE_PATH}/console-api.service.yaml
 kubectl apply -n ${NAMESPACE} -f ${RESOURCE_PATH}/console-ui.service.yaml
 
@@ -164,8 +112,6 @@ kubectl create secret generic console-ui-secrets -n ${NAMESPACE} \
     --dry-run=client \
     --from-literal=SESSION_SECRET="$(tr -dc A-Za-z0-9 </dev/urandom | head -c 32; echo)" \
     --from-literal=NEXTAUTH_SECRET="$(tr -dc A-Za-z0-9 </dev/urandom | head -c 32; echo)" \
-    --from-literal=KEYCLOAK_CLIENTID="console-ui" \
-    --from-literal=KEYCLOAK_CLIENTSECRET="${CONSOLE_UI_SECRET}" \
     -o yaml | kubectl apply -n ${NAMESPACE} -f -
 
 if kubectl get deployment console-api -n ${NAMESPACE} ; then

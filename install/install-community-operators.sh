@@ -18,17 +18,6 @@ spec:
 echo "apiVersion: operators.coreos.com/v1alpha1
 kind: Subscription
 metadata:
-  name: keycloak-operator
-spec:
-  name: keycloak-operator
-  channel: fast
-  source: community-operators
-  sourceNamespace: openshift-marketplace" \
- | kubectl apply -n ${NAMESPACE} -f -
-
-echo "apiVersion: operators.coreos.com/v1alpha1
-kind: Subscription
-metadata:
   name: prometheus-operator
 spec:
   name: prometheus
