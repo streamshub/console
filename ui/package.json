@@ -61,18 +61,18 @@
     "victory-zoom-container": "~36.8.6"
   },
   "devDependencies": {
-    "@storybook/addon-essentials": "^7.6.14",
-    "@storybook/addon-interactions": "^7.6.14",
-    "@storybook/addon-links": "^7.6.14",
-    "@storybook/blocks": "^7.6.14",
-    "@storybook/nextjs": "^7.6.14",
-    "@storybook/react": "^7.6.14",
+    "@storybook/addon-essentials": "^7.6.15",
+    "@storybook/addon-interactions": "^7.6.15",
+    "@storybook/addon-links": "^7.6.15",
+    "@storybook/blocks": "^7.6.15",
+    "@storybook/nextjs": "^7.6.15",
+    "@storybook/react": "^7.6.15",
     "@storybook/testing-library": "^0.2.2",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-storybook": "^0.6.15",
     "pino-pretty": "^10.3.1",
     "prettier": "^3.2.5",
-    "storybook": "^7.6.14",
+    "storybook": "^7.6.15",
     "tsconfig-paths-webpack-plugin": "^4.1.0"
   }
 }
