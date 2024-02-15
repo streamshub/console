@@ -9,8 +9,6 @@ import {
 import { KafkaTopicParams } from "@/app/[locale]/kafka/[kafkaId]/topics/kafkaTopic.params";
 import { redirect } from "@/navigation";
 
-export const revalidate = 0;
-
 export default async function MessagesPage({
   params: { kafkaId, topicId },
   searchParams,
