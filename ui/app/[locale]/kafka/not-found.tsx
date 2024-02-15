@@ -38,13 +38,10 @@ export default function NotFound() {
             headingLevel={"h1"}
             icon={<EmptyStateIcon icon={PathMissingIcon} />}
           />
-          <EmptyStateBody>
-            The selected cluster is unavailable. Please check the connection and
-            try again.
-          </EmptyStateBody>
+          <EmptyStateBody>The selected cluster is unavailable.</EmptyStateBody>
           <EmptyStateFooter>
             <EmptyStateActions>
-              <ButtonLink href={"/resources"}>Check the connection</ButtonLink>
+              <ButtonLink href={"/"}>Back to the homepage</ButtonLink>
             </EmptyStateActions>
           </EmptyStateFooter>
         </EmptyState>

@@ -444,7 +444,6 @@ export const DeletableRow = memo<DeletableRowProps>(
   ({ isDeleted, isSelected, onClick, children, rowOuiaId }) => {
     return (
       <Tr
-        // isHoverable={!isDeleted && onClick !== undefined}
         onRowClick={(e) => {
           if (e?.target instanceof HTMLElement) {
             if (!["a", "button"].includes(e.target.tagName.toLowerCase())) {
@@ -452,7 +451,7 @@ export const DeletableRow = memo<DeletableRowProps>(
             }
           }
         }}
-        isClickable={!!onClick}
+        isClickable={!isDeleted && !!onClick}
         isSelectable={!!onClick}
         ouiaId={rowOuiaId}
         isRowSelected={isSelected}
