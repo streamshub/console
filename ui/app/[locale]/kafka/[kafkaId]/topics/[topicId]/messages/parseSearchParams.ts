@@ -1,12 +1,12 @@
 import { stringToInt } from "@/utils/stringToInt";
 
 export type MessagesSearchParams = {
-  limit: string | undefined;
-  partition: string | undefined;
-  selected: string | undefined;
-  "filter[offset]": string | undefined;
-  "filter[timestamp]": string | undefined;
-  "filter[epoch]": string | undefined;
+  limit?: string;
+  partition?: string;
+  selected?: string;
+  "filter[offset]"?: string;
+  "filter[timestamp]"?: string;
+  "filter[epoch]"?: string;
 };
 
 export function parseSearchParams(searchParams: MessagesSearchParams) {
@@ -24,8 +24,8 @@ export function parseSearchParams(searchParams: MessagesSearchParams) {
   const filter = offset
     ? { type: "offset" as const, value: offset }
     : timestamp
-    ? { type: "timestamp" as const, value: timestamp }
-    : undefined;
+      ? { type: "timestamp" as const, value: timestamp }
+      : undefined;
 
   const [selectedPartition, selectedOffset] = selected
     ? decodeURIComponent(selected).split(":").map(stringToInt)

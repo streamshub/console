@@ -1,3 +1,4 @@
+"use client";
 import { Message } from "@/api/messages/schema";
 import {
   Column,
@@ -8,8 +9,8 @@ import {
 import { FilterGroup } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/_components/FilterGroup";
 import { NoResultsEmptyState } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/_components/NoResultsEmptyState";
 import { PartitionSelector } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/_components/PartitionSelector";
-import { DateTime } from "@/components/DateTime";
 import { Bytes } from "@/components/Bytes";
+import { DateTime } from "@/components/DateTime";
 import { Number } from "@/components/Number";
 import { ResponsiveTable } from "@/components/table";
 import {
@@ -33,8 +34,8 @@ import {
   OuterScrollContainer,
   TableVariant,
 } from "@/libs/patternfly/react-table";
-import { MessageKeys, useTranslations } from "next-intl";
-import { PropsWithChildren, useState } from "react";
+import { useTranslations } from "next-intl";
+import { PropsWithChildren, useEffect, useState } from "react";
 import { LimitSelector } from "./LimitSelector";
 import { MessageDetails, MessageDetailsProps } from "./MessageDetails";
 import { NoDataCell } from "./NoDataCell";
@@ -51,7 +52,12 @@ const columnWidths: Record<Column, BaseCellProps["width"]> = {
   value: undefined,
 };
 
-const defaultColumns = ["offset", "timestampUTC", "key", "value"];
+const defaultColumns: Column[] = [
+  "offset-partition",
+  "timestampUTC",
+  "key",
+  "value",
+];
 
 export type MessageBrowserProps = {
   isRefreshing: boolean;
@@ -98,27 +104,17 @@ export function MessagesTable({
   const [showColumnsManagement, setShowColumnsManagement] = useState(false);
   const [defaultTab, setDefaultTab] =
     useState<MessageDetailsProps["defaultTab"]>("value");
-  const previouslySelectedColumns = (() => {
-    const v = localStorage.getItem("message-browser-columns");
-    if (v) {
-      try {
-        const pv = JSON.parse(v);
-        if (Array.isArray(pv)) {
-          return pv;
-        }
-      } catch {}
-    }
-    return defaultColumns;
-  })();
 
   const columnTooltips: Record<Column, any> = {
     "offset-partition": undefined,
-    size: <>
-          {" "}
-          <Tooltip content={t("tooltip.size")}>
-            <HelpIcon />
-          </Tooltip>
-        </>,
+    size: (
+      <>
+        {" "}
+        <Tooltip content={t("tooltip.size")}>
+          <HelpIcon />
+        </Tooltip>
+      </>
+    ),
     key: undefined,
     timestamp: undefined,
     timestampUTC: undefined,
@@ -126,9 +122,20 @@ export function MessagesTable({
     value: undefined,
   };
 
-  const [selectedColumns, setSelectedColumns] = useState<Column[]>(
-    previouslySelectedColumns,
-  );
+  const [selectedColumns, setSelectedColumns] =
+    useState<Column[]>(defaultColumns);
+
+  useEffect(() => {
+    const v = localStorage.getItem("message-browser-columns");
+    if (v) {
+      try {
+        const pv = JSON.parse(v);
+        if (Array.isArray(pv)) {
+          setSelectedColumns(pv);
+        }
+      } catch {}
+    }
+  }, []);
 
   return (
     <PageSection
