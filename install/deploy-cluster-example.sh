@@ -3,7 +3,7 @@
 set -euo pipefail
 
 CONSOLE_INSTALL_PATH="$(cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P)"
-RESOURCE_PATH=${CONSOLE_INSTALL_PATH}/resources
+RESOURCE_PATH=${CONSOLE_INSTALL_PATH}/resources/kafka
 
 export NAMESPACE="${1}"
 export CLUSTER_DOMAIN="${2}"

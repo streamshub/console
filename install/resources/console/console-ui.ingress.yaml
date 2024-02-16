@@ -12,7 +12,7 @@ spec:
       port:
         number: 80
   rules:
-    - host: console-ui.${CLUSTER_DOMAIN}
+    - host: ${CONSOLE_HOSTNAME}
       http:
         paths:
           - pathType: ImplementationSpecific
