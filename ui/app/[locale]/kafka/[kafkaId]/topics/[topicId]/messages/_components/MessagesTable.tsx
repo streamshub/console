@@ -142,6 +142,10 @@ export function MessagesTable({
       isFilled={true}
       hasOverflowScroll={true}
       aria-label={t("title")}
+      style={{
+        height: "calc(100vh - 70px - 170px)",
+      }}
+      padding={{ default: "noPadding" }}
     >
       <Drawer isInline={true} isExpanded={selectedMessage !== undefined}>
         <DrawerContent

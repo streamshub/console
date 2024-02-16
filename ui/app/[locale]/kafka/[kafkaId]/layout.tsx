@@ -24,7 +24,7 @@ export default function KafkaLayout({
 }>) {
   return (
     <>
-      <PageGroup stickyOnBreakpoint={{ default: "top" }}>
+      <PageGroup /*stickyOnBreakpoint={{ default: "top" }}*/>
         <PageBreadcrumb>
           <Breadcrumb>
             <BreadcrumbItem>Kafka clusters</BreadcrumbItem>

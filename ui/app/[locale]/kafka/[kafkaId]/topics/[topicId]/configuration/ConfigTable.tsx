@@ -4,8 +4,8 @@ import { Error } from "@/app/[locale]/kafka/[kafkaId]/topics/create/Errors";
 import { topicMutateErrorToFieldError } from "@/app/[locale]/kafka/[kafkaId]/topics/create/topicMutateErrorToFieldError";
 import { Number } from "@/components/Number";
 import { ResponsiveTableProps, TableView } from "@/components/table";
-import { readonly } from "@/utils/runmode";
 import { usePathname, useRouter } from "@/navigation";
+import { readonly } from "@/utils/runmode";
 import {
   Button,
   FormGroup,
@@ -228,175 +228,185 @@ export function ConfigTable({
           <Error error={error} />
         </PageSection>
       )}
-      <TableView
-        ariaLabel={"Node configuration"}
-        toolbarBreakpoint={"md"}
-        columns={columns}
-        data={filteredData}
-        isFiltered={filteredData.length !== allData.length}
-        onClearAllFilters={onReset}
-        filters={{
-          Property: {
-            type: "search",
-            onSearch: (value) => {
-              router.push(
-                pathname +
-                  "?" +
-                  createQueryString([
-                    { name: "filter", value },
-                    {
-                      name: "data-source",
-                      value: selectedDataSources.join(","),
-                    },
-                  ]),
-              );
-            },
-            errorMessage: "",
-            validate: () => true,
-            onRemoveGroup: () => {
-              router.push(
-                pathname +
-                  "?" +
-                  createQueryString([
-                    { name: "filter", value: "" },
-                    {
-                      name: "data-source",
-                      value: selectedDataSources.join(","),
-                    },
-                  ]),
-              );
-            },
-            chips: propertyFilter ? [propertyFilter] : [],
-            onRemoveChip: () => {
-              router.push(
-                pathname +
-                  "?" +
-                  createQueryString([
-                    { name: "filter", value: "" },
-                    {
-                      name: "data-source",
-                      value: selectedDataSources.join(","),
-                    },
-                  ]),
-              );
-            },
-          },
-          "Data source": {
-            type: "checkbox",
-            options: Object.fromEntries(dataSources.map((s) => [s, s])),
-            onRemoveChip: onRemoveDataSource,
-            chips: selectedDataSources,
-            onRemoveGroup: () => {
-              router.push(
-                pathname +
-                  "?" +
-                  createQueryString([
-                    { name: "filter", value: propertyFilter || "" },
-                    {
-                      name: "data-source",
-                      value: "",
-                    },
-                  ]),
-              );
-            },
-            onToggle: onRemoveDataSource,
-          },
+      <PageSection
+        isFilled={true}
+        hasOverflowScroll={true}
+        aria-label={"Configuration"}
+        style={{
+          height: "calc(100vh - 70px - 137px)",
         }}
-        emptyStateNoData={<div></div>}
-        emptyStateNoResults={<NoResultsEmptyState onReset={onReset} />}
-        onPageChange={() => {}}
-        renderHeader={({ column, key, Th }) => {
-          switch (column) {
-            case "property":
-              return (
-                <Th key={key} dataLabel={"Property"} width={40}>
-                  Property
-                </Th>
-              );
-            case "value":
-              return (
-                <Th key={key} dataLabel={"Value"}>
-                  Value
-                </Th>
-              );
-          }
-        }}
-        renderCell={renderCell}
-        renderActions={({ row: [name, property] }) => {
-          if (readonly()) {
-            return <></>;
-          }
+        padding={{ default: "noPadding" }}
+      >
+        <TableView
+          ariaLabel={"Node configuration"}
+          toolbarBreakpoint={"md"}
+          columns={columns}
+          data={filteredData}
+          isFiltered={filteredData.length !== allData.length}
+          onClearAllFilters={onReset}
+          filters={{
+            Property: {
+              type: "search",
+              onSearch: (value) => {
+                router.push(
+                  pathname +
+                    "?" +
+                    createQueryString([
+                      { name: "filter", value },
+                      {
+                        name: "data-source",
+                        value: selectedDataSources.join(","),
+                      },
+                    ]),
+                );
+              },
+              errorMessage: "",
+              validate: () => true,
+              onRemoveGroup: () => {
+                router.push(
+                  pathname +
+                    "?" +
+                    createQueryString([
+                      { name: "filter", value: "" },
+                      {
+                        name: "data-source",
+                        value: selectedDataSources.join(","),
+                      },
+                    ]),
+                );
+              },
+              chips: propertyFilter ? [propertyFilter] : [],
+              onRemoveChip: () => {
+                router.push(
+                  pathname +
+                    "?" +
+                    createQueryString([
+                      { name: "filter", value: "" },
+                      {
+                        name: "data-source",
+                        value: selectedDataSources.join(","),
+                      },
+                    ]),
+                );
+              },
+            },
+            "Data source": {
+              type: "checkbox",
+              options: Object.fromEntries(dataSources.map((s) => [s, s])),
+              onRemoveChip: onRemoveDataSource,
+              chips: selectedDataSources,
+              onRemoveGroup: () => {
+                router.push(
+                  pathname +
+                    "?" +
+                    createQueryString([
+                      { name: "filter", value: propertyFilter || "" },
+                      {
+                        name: "data-source",
+                        value: "",
+                      },
+                    ]),
+                );
+              },
+              onToggle: onRemoveDataSource,
+            },
+          }}
+          emptyStateNoData={<div></div>}
+          emptyStateNoResults={<NoResultsEmptyState onReset={onReset} />}
+          onPageChange={() => {}}
+          renderHeader={({ column, key, Th }) => {
+            switch (column) {
+              case "property":
+                return (
+                  <Th key={key} dataLabel={"Property"} width={40}>
+                    Property
+                  </Th>
+                );
+              case "value":
+                return (
+                  <Th key={key} dataLabel={"Value"}>
+                    Value
+                  </Th>
+                );
+            }
+          }}
+          renderCell={renderCell}
+          renderActions={({ row: [name, property] }) => {
+            if (readonly()) {
+              return <></>;
+            }
 
-          return isEditing[name] ? (
-            <div
-              className="pf-v5-c-inline-edit pf-m-inline-editable"
-              id="inline-edit-action-group-icon-buttons-example"
-            >
-              <div className="pf-v5-c-inline-edit__group pf-m-action-group pf-m-icon-group">
-                <div className="pf-v5-c-inline-edit__action pf-m-valid">
-                  <Button
-                    variant={"plain"}
-                    isLoading={isEditing[name] === "saving"}
-                    isDisabled={isEditing[name] === "saving"}
-                    onClick={async () => {
-                      setIsEditing((isEditing) => ({
-                        ...isEditing,
-                        [name]: "saving",
-                      }));
-                      const res = await onSaveProperty!(name, options[name]);
-                      if (res === true) {
+            return isEditing[name] ? (
+              <div
+                className="pf-v5-c-inline-edit pf-m-inline-editable"
+                id="inline-edit-action-group-icon-buttons-example"
+              >
+                <div className="pf-v5-c-inline-edit__group pf-m-action-group pf-m-icon-group">
+                  <div className="pf-v5-c-inline-edit__action pf-m-valid">
+                    <Button
+                      variant={"plain"}
+                      isLoading={isEditing[name] === "saving"}
+                      isDisabled={isEditing[name] === "saving"}
+                      onClick={async () => {
+                        setIsEditing((isEditing) => ({
+                          ...isEditing,
+                          [name]: "saving",
+                        }));
+                        const res = await onSaveProperty!(name, options[name]);
+                        if (res === true) {
+                          setIsEditing((isEditing) => ({
+                            ...isEditing,
+                            [name]: undefined,
+                          }));
+                        } else {
+                          if (res !== false) {
+                            setError(res);
+                          } else {
+                            setError("unknown");
+                          }
+                          setIsEditing((isEditing) => ({
+                            ...isEditing,
+                            [name]: "editing",
+                          }));
+                        }
+                      }}
+                    >
+                      <CheckIcon />
+                    </Button>
+                  </div>
+                  <div className="pf-v5-c-inline-edit__action">
+                    <Button
+                      variant={"plain"}
+                      isDisabled={isEditing[name] === "saving"}
+                      onClick={() => {
                         setIsEditing((isEditing) => ({
                           ...isEditing,
                           [name]: undefined,
                         }));
-                      } else {
-                        if (res !== false) {
-                          setError(res);
-                        } else {
-                          setError("unknown");
-                        }
-                        setIsEditing((isEditing) => ({
-                          ...isEditing,
-                          [name]: "editing",
-                        }));
-                      }
-                    }}
-                  >
-                    <CheckIcon />
-                  </Button>
-                </div>
-                <div className="pf-v5-c-inline-edit__action">
-                  <Button
-                    variant={"plain"}
-                    isDisabled={isEditing[name] === "saving"}
-                    onClick={() => {
-                      setIsEditing((isEditing) => ({
-                        ...isEditing,
-                        [name]: undefined,
-                      }));
-                    }}
-                  >
-                    <TimesIcon />
-                  </Button>
+                      }}
+                    >
+                      <TimesIcon />
+                    </Button>
+                  </div>
                 </div>
               </div>
-            </div>
-          ) : (
-            <Button
-              variant={"plain"}
-              onClick={() =>
-                setIsEditing((isEditing) => ({
-                  ...isEditing,
-                  [name]: "editing",
-                }))
-              }
-            >
-              <PencilAltIcon />
-            </Button>
-          );
-        }}
-        variant={TableVariant.compact}
-      />
+            ) : (
+              <Button
+                variant={"plain"}
+                onClick={() =>
+                  setIsEditing((isEditing) => ({
+                    ...isEditing,
+                    [name]: "editing",
+                  }))
+                }
+              >
+                <PencilAltIcon />
+              </Button>
+            );
+          }}
+          variant={TableVariant.compact}
+        />
+      </PageSection>
     </>
   );
 }
