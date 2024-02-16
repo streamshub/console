@@ -1,5 +1,6 @@
 import { getTopicMessage, getTopicMessages } from "@/api/messages/actions";
 import { getTopic } from "@/api/topics/actions";
+import { MessagesTableSkeleton } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/_components/MessagesTable";
 import { NoDataEmptyState } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/_components/NoDataEmptyState";
 import { ConnectedMessagesTable } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/ConnectedMessagesTable";
 import {
@@ -8,8 +9,38 @@ import {
 } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/parseSearchParams";
 import { KafkaTopicParams } from "@/app/[locale]/kafka/[kafkaId]/topics/kafkaTopic.params";
 import { redirect } from "@/navigation";
+import { Suspense } from "react";
 
-export default async function MessagesPage({
+export default function MessagesPage({
+  params: { kafkaId, topicId },
+  searchParams,
+}: {
+  params: KafkaTopicParams;
+  searchParams: MessagesSearchParams;
+}) {
+  const { partition, offset, timestamp, epoch, limit } =
+    parseSearchParams(searchParams);
+  return (
+    <Suspense
+      fallback={
+        <MessagesTableSkeleton
+          limit={limit}
+          partition={partition}
+          filterTimestamp={timestamp}
+          filterEpoch={epoch}
+          filterOffset={offset}
+        />
+      }
+    >
+      <ConnectedMessagesPage
+        params={{ kafkaId, topicId }}
+        searchParams={searchParams}
+      />
+    </Suspense>
+  );
+}
+
+async function ConnectedMessagesPage({
   params: { kafkaId, topicId },
   searchParams,
 }: {
