@@ -113,6 +113,7 @@ export function FilterGroup({
           </MenuToggle>
         )}
         isOpen={isOpen}
+        onOpenChange={setIsOpen}
         onSelect={() => setIsOpen(false)}
       >
         <DropdownItem
