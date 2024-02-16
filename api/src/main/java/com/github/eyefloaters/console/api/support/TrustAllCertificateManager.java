@@ -36,7 +36,7 @@ public class TrustAllCertificateManager implements X509TrustManager {
         TrustManager[] trustAllCerts = {this};
 
         try {
-            SSLContext sc = SSLContext.getInstance("TLS");
+            SSLContext sc = SSLContext.getInstance("TLSv1.2");
             sc.init(null, trustAllCerts, new SecureRandom());
             SSLSocketFactory factory = sc.getSocketFactory();
             String bootstrap = (String) cfg.get(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG);
