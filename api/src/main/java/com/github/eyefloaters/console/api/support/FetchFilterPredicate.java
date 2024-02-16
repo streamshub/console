@@ -24,10 +24,37 @@ public class FetchFilterPredicate<B, F> implements Predicate<B> {
         if (operator.equals("like")) {
             // throws ClassCastException if this class is constructed with an incorrect operandParser (API bug)
             String firstOperand = (String) firstOperand();
-            likePattern = Pattern.compile(firstOperand
-                .replace(".", "\\.")
-                .replace("*", ".*")
-                .replace("?", "."));
+            StringBuilder pattern = new StringBuilder();
+            StringBuilder quoted = new StringBuilder();
+            Runnable appendQuoted = () -> {
+                if (quoted.length() > 0) {
+                    pattern.append(Pattern.quote(quoted.toString()));
+                    quoted.setLength(0);
+                }
+            };
+
+            firstOperand.chars().forEach(c -> {
+                switch (c) {
+                    case '.':
+                        appendQuoted.run();
+                        pattern.append("\\.");
+                        break;
+                    case '*':
+                        appendQuoted.run();
+                        pattern.append(".*");
+                        break;
+                    case '?':
+                        appendQuoted.run();
+                        pattern.append(".");
+                        break;
+                    default:
+                        quoted.append((char) c);
+                        break;
+                }
+            });
+
+            appendQuoted.run();
+            likePattern = Pattern.compile(pattern.toString());
         } else {
             likePattern = null;
         }
