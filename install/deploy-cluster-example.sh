@@ -19,5 +19,6 @@ fi
 export LISTENER_TYPE
 
 # Replace env variables
-yq '(.. | select(tag == "!!str")) |= envsubst(ne)' ${RESOURCE_PATH}/cluster-example.kafka.yaml \
-    | kubectl apply -n ${NAMESPACE} -f -
+yq '(.. | select(tag == "!!str")) |= envsubst(ne)' ${RESOURCE_PATH}/cluster-example.kafka.yaml | kubectl apply -n ${NAMESPACE} -f -
+
+kubectl apply -n ${NAMESPACE} -f ${RESOURCE_PATH}/cluster-example-user1.kafkauser.yaml

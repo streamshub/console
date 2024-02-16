@@ -8,29 +8,22 @@ spec:
     userOperator: {}
   kafka:
     authorization:
-      clientId: kafka
-      delegateToKafkaAcls: false
-      tokenEndpointUri: http://console-keycloak-service.${NAMESPACE}.svc.cluster.local:8080/realms/preview/protocol/openid-connect/token
-      type: keycloak
+      type: simple
     config:
       allow.everyone.if.no.acl.found: 'true'
       default.replication.factor: 3
-      inter.broker.protocol.version: '3.5'
+      inter.broker.protocol.version: '3.6'
       min.insync.replicas: 2
       offsets.topic.replication.factor: 3
       transaction.state.log.min.isr: 2
       transaction.state.log.replication.factor: 3
     listeners:
-      - name: oauth
+      - name: secure
         port: 9093
         tls: true
         type: ${LISTENER_TYPE}
         authentication:
-          jwksEndpointUri: http://console-keycloak-service.${NAMESPACE}.svc.cluster.local:8080/realms/preview/protocol/openid-connect/certs
-          type: oauth
-          enablePlain: true
-          userNameClaim: preferred_username
-          validIssuerUri: https://console-keycloak.${CLUSTER_DOMAIN}/realms/preview
+          type: scram-sha-512
         configuration:
           bootstrap:
             host: bootstrap.cluster-example.${CLUSTER_DOMAIN}
@@ -57,7 +50,7 @@ spec:
         configMapKeyRef:
           name: cluster-example-metrics
           key: kafka-metrics-config.yml
-    version: 3.5.0
+    version: 3.6.0
   zookeeper:
     replicas: 3
     storage:
