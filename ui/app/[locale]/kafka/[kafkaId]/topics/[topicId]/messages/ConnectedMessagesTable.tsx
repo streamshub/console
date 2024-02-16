@@ -1,18 +1,19 @@
 "use client";
 
 import { Message } from "@/api/messages/schema";
-import { RefreshInterval, RefreshSelector } from "@/components/RefreshSelector";
+import { ConnectedRefreshSelector } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/ConnectedRefreshSelector";
+import { RefreshInterval } from "@/components/RefreshSelector";
 import { useFilterParams } from "@/utils/useFilterParams";
-import { useEffect, useLayoutEffect, useState, useTransition } from "react";
-import { createPortal } from "react-dom";
+import { useCallback, useEffect, useState, useTransition } from "react";
 import { MessagesTable } from "./_components/MessagesTable";
 
 export function ConnectedMessagesTable({
-  messages,
-  lastRefresh,
+  messages: initialData,
+  lastRefresh: initialRefresh,
   selectedMessage,
   partitions,
   params,
+  refresh,
 }: {
   messages: Message[];
   lastRefresh: Date | undefined;
@@ -26,11 +27,15 @@ export function ConnectedMessagesTable({
     "filter[epoch]": number | undefined;
     limit: number;
   };
+  refresh: () => Promise<{ messages: Message[]; ts: Date }>;
 }) {
+  const [{ messages, lastRefresh }, setMessages] = useState({
+    messages: initialData,
+    lastRefresh: initialRefresh,
+  });
   const [automaticRefresh, setAutomaticRefresh] = useState(false);
   const [refreshInterval, setRefreshInterval] = useState<RefreshInterval>(1);
   const [isPending, startTransition] = useTransition();
-  const [isAutorefreshing, startAutorefreshTransition] = useTransition();
   const updateUrl = useFilterParams(params);
 
   function setPartition(partition: number | undefined) {
@@ -113,25 +118,29 @@ export function ConnectedMessagesTable({
     });
   }
 
-  function refresh() {
-    startTransition(() => {
-      updateUrl({ ...params, _ts: Date.now() });
-    });
-  }
+  const doRefresh = useCallback(
+    async function doRefresh() {
+      const { messages, ts } = await refresh();
+      startTransition(() => {
+        setMessages({ messages, lastRefresh: ts });
+      });
+    },
+    [refresh],
+  );
 
   useEffect(() => {
-    let interval: ReturnType<typeof setInterval>;
-    if (automaticRefresh) {
-      interval = setInterval(async () => {
-        if (!isAutorefreshing) {
-          startAutorefreshTransition(() =>
-            updateUrl({ ...params, _ts: Date.now() }),
-          );
-        }
-      }, refreshInterval * 1000);
+    let t: ReturnType<typeof setTimeout>;
+
+    async function tick() {
+      if (automaticRefresh) {
+        await doRefresh();
+      }
+      t = setTimeout(tick, refreshInterval * 1000);
     }
-    return () => clearInterval(interval);
-  }, [params, updateUrl, automaticRefresh, refreshInterval, isAutorefreshing]);
+
+    void tick();
+    return () => clearTimeout(t);
+  }, [params, updateUrl, automaticRefresh, refreshInterval, doRefresh]);
 
   return (
     <>
@@ -155,61 +164,16 @@ export function ConnectedMessagesTable({
         onSelectMessage={setSelected}
         onDeselectMessage={deselectMessage}
       />
+
       <ConnectedRefreshSelector
         isRefreshing={isPending}
         isLive={automaticRefresh}
         refreshInterval={refreshInterval}
         lastRefresh={lastRefresh}
-        onRefresh={refresh}
+        onRefresh={doRefresh}
         onRefreshInterval={setRefreshInterval}
         onToggleLive={setAutomaticRefresh}
       />
     </>
   );
-}
-
-function ConnectedRefreshSelector({
-  isRefreshing,
-  isLive,
-  refreshInterval,
-  lastRefresh,
-  onRefresh,
-  onRefreshInterval,
-  onToggleLive,
-}: {
-  isRefreshing: boolean;
-  isLive: boolean;
-  refreshInterval: RefreshInterval;
-  lastRefresh: Date | undefined;
-  onRefresh: () => void;
-  onRefreshInterval: (interval: RefreshInterval) => void;
-  onToggleLive: (enable: boolean) => void;
-}) {
-  const [container, setContainer] = useState<Element | undefined>();
-
-  function seekContainer() {
-    const el = document.getElementById("topic-header-portal");
-    if (el) {
-      setContainer(el);
-    } else {
-      setTimeout(seekContainer, 100);
-    }
-  }
-
-  useLayoutEffect(seekContainer, []); // we want to run this just once
-
-  return container
-    ? createPortal(
-        <RefreshSelector
-          isRefreshing={isRefreshing}
-          isLive={isLive}
-          refreshInterval={refreshInterval}
-          lastRefresh={lastRefresh}
-          onRefresh={onRefresh}
-          onToggleLive={onToggleLive}
-          onIntervalChange={onRefreshInterval}
-        />,
-        container,
-      )
-    : null;
 }

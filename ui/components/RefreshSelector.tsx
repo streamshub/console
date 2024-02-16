@@ -57,7 +57,6 @@ export function RefreshSelector({
                 ref={toggleRef}
                 onClick={toggleOpen}
                 isExpanded={isOpen}
-                isDisabled={isRefreshing}
                 variant={"default"}
                 splitButtonOptions={{
                   variant: "action",
@@ -98,7 +97,7 @@ export function RefreshSelector({
             key={"refresh"}
             onClick={onRefresh}
             isRefreshing={isRefreshing}
-            isDisabled={isRefreshing}
+            isDisabled={isRefreshing || isLive}
           />
         </FlexItem>
       </Flex>
