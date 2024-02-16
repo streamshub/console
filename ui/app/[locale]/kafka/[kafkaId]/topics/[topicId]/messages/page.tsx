@@ -1,6 +1,6 @@
 import { getTopicMessage, getTopicMessages } from "@/api/messages/actions";
+import { Message } from "@/api/messages/schema";
 import { getTopic } from "@/api/topics/actions";
-import { MessagesTableSkeleton } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/_components/MessagesTable";
 import { NoDataEmptyState } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/_components/NoDataEmptyState";
 import { ConnectedMessagesTable } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/ConnectedMessagesTable";
 import {
@@ -9,38 +9,8 @@ import {
 } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/parseSearchParams";
 import { KafkaTopicParams } from "@/app/[locale]/kafka/[kafkaId]/topics/kafkaTopic.params";
 import { redirect } from "@/navigation";
-import { Suspense } from "react";
 
-export default function MessagesPage({
-  params: { kafkaId, topicId },
-  searchParams,
-}: {
-  params: KafkaTopicParams;
-  searchParams: MessagesSearchParams;
-}) {
-  const { partition, offset, timestamp, epoch, limit } =
-    parseSearchParams(searchParams);
-  return (
-    <Suspense
-      fallback={
-        <MessagesTableSkeleton
-          limit={limit}
-          partition={partition}
-          filterTimestamp={timestamp}
-          filterEpoch={epoch}
-          filterOffset={offset}
-        />
-      }
-    >
-      <ConnectedMessagesPage
-        params={{ kafkaId, topicId }}
-        searchParams={searchParams}
-      />
-    </Suspense>
-  );
-}
-
-async function ConnectedMessagesPage({
+export default async function ConnectedMessagesPage({
   params: { kafkaId, topicId },
   searchParams,
 }: {
@@ -63,12 +33,17 @@ async function ConnectedMessagesPage({
     epoch,
   } = parseSearchParams(searchParams);
 
-  const { messages, ts } = await getTopicMessages(kafkaId, topicId, {
-    pageSize: limit,
-    partition,
-    filter,
-    maxValueLength: 150,
-  });
+  async function refresh(): Promise<{ messages: Message[]; ts: Date }> {
+    "use server";
+    const { messages, ts } = await getTopicMessages(kafkaId, topicId, {
+      pageSize: limit,
+      partition,
+      filter,
+      maxValueLength: 150,
+    });
+    return { messages, ts };
+  }
+
   const selectedMessage =
     selectedOffset !== undefined && selectedPartition !== undefined
       ? await getTopicMessage(kafkaId, topicId, {
@@ -78,6 +53,8 @@ async function ConnectedMessagesPage({
       : undefined;
 
   const isFiltered = partition || epoch || offset || timestamp;
+
+  const { messages, ts } = await refresh();
 
   switch (true) {
     case !isFiltered && (messages === null || messages.length === 0):
@@ -97,6 +74,7 @@ async function ConnectedMessagesPage({
             "filter[epoch]": epoch,
             "filter[offset]": offset,
           }}
+          refresh={refresh}
         />
       );
   }

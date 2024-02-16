@@ -36,7 +36,7 @@ export function LimitSelector({
         </MenuToggle>
       )}
     >
-      {[20, 50, 100, 200, 500, 1000].map((value, idx) => (
+      {[5, 10, 25, 50, 75, 100].map((value, idx) => (
         <SelectOption key={idx} value={value} onClick={() => onChange(value)}>
           {value}
         </SelectOption>

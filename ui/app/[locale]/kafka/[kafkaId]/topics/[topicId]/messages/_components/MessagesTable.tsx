@@ -155,7 +155,6 @@ export function MessagesTable({
         >
           <OuterScrollContainer>
             <MessagesTableToolbar
-              isRefreshing={isRefreshing}
               partitions={partitions}
               partition={partition}
               limit={limit}
@@ -335,7 +334,6 @@ export function MessagesTable({
 }
 
 export function MessagesTableToolbar({
-  isRefreshing,
   filterEpoch,
   filterTimestamp,
   filterOffset,
@@ -351,7 +349,6 @@ export function MessagesTableToolbar({
   onColumnManagement,
 }: Pick<
   MessageBrowserProps,
-  | "isRefreshing"
   | "filterEpoch"
   | "filterTimestamp"
   | "filterOffset"
@@ -384,7 +381,7 @@ export function MessagesTableToolbar({
           }}
         >
           <FilterGroup
-            isDisabled={isRefreshing}
+            isDisabled={false}
             offset={filterOffset}
             epoch={filterEpoch}
             timestamp={filterTimestamp}
@@ -404,7 +401,7 @@ export function MessagesTableToolbar({
             value={partition}
             partitions={partitions}
             onChange={onPartitionChange}
-            isDisabled={isRefreshing}
+            isDisabled={false}
           />
         </ToolbarItem>
 
@@ -418,7 +415,7 @@ export function MessagesTableToolbar({
         >
           <ToolbarItem>
             <FilterGroup
-              isDisabled={isRefreshing}
+              isDisabled={false}
               offset={filterOffset}
               epoch={filterEpoch}
               timestamp={filterTimestamp}
@@ -433,7 +430,7 @@ export function MessagesTableToolbar({
               value={partition}
               partitions={partitions}
               onChange={onPartitionChange}
-              isDisabled={isRefreshing}
+              isDisabled={false}
             />
           </ToolbarItem>
         </ToolbarToggleGroup>
@@ -448,7 +445,7 @@ export function MessagesTableToolbar({
           <LimitSelector
             value={limit}
             onChange={onLimitChange}
-            isDisabled={isRefreshing}
+            isDisabled={false}
           />
         </ToolbarGroup>
         <ToolbarGroup variant="icon-button-group">
@@ -477,7 +474,6 @@ export function MessagesTableSkeleton({
       aria-label={t("title")}
     >
       <MessagesTableToolbar
-        isRefreshing={true}
         partitions={1}
         partition={partition}
         limit={limit}
