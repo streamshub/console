@@ -55,7 +55,7 @@ spec:
               name: console-ui-secrets
               key: SESSION_SECRET
         - name: NEXTAUTH_URL
-          value: 'https://console-ui.${CLUSTER_DOMAIN}'
+          value: 'https://${CONSOLE_HOSTNAME}'
         - name: BACKEND_URL
           value: 'http://console-api.${NAMESPACE}.svc.cluster.local'
         - name: CONSOLE_METRICS_PROMETHEUS_URL
