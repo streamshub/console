@@ -99,6 +99,7 @@ export function PartitionSelector({
   return (
     <Select
       onSelect={(_, value) => handleChange(value as string)}
+      onOpenChange={setIsOpen}
       isOpen={isOpen}
       aria-labelledby={titleId}
       data-testid={"partition-selector"}
