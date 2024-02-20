@@ -19,6 +19,7 @@
     "@patternfly/react-table": "^5.2.0",
     "@patternfly/react-tokens": "^5.2.0",
     "@patternfly/react-user-feedback": "^5.0.0",
+    "@tanstack/react-virtual": "^3.1.2",
     "@types/lodash.groupby": "^4.6.9",
     "@types/node": "20.11.21",
     "@types/react": "18.2.60",
@@ -40,9 +41,9 @@
     "prometheus-query": "^3.4.0",
     "react": "18.2.0",
     "react-dom": "18.2.0",
+    "react-json-view-lite": "^1.2.1",
     "typescript": "5.3.3",
     "use-resize-observer": "^9.1.0",
-    "zod": "^3.22.4",
     "victory-area": "~36.8.6",
     "victory-axis": "~36.8.6",
     "victory-bar": "~36.8.6",
@@ -59,7 +60,8 @@
     "victory-stack": "~36.8.6",
     "victory-tooltip": "~36.8.6",
     "victory-voronoi-container": "~36.8.6",
-    "victory-zoom-container": "~36.8.6"
+    "victory-zoom-container": "~36.8.6",
+    "zod": "^3.22.4"
   },
   "devDependencies": {
     "@storybook/addon-essentials": "^7.6.17",

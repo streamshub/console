@@ -13,6 +13,15 @@ export function beautifyUnknownValue(value: string): string {
   return value;
 }
 
+export function maybeJson(value: string): string {
+  try {
+    return JSON.parse(value);
+  } catch (e) {
+    // noop
+  }
+  return value;
+}
+
 export function truncate(value: string, length: number): [string, boolean] {
   const shouldTruncate = value.length > length;
   return [
