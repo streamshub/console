@@ -1,12 +1,12 @@
 kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: console-api-server
+  name: console-server
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: console-api-server
+  name: console-server
 subjects:
   - kind: ServiceAccount
-    name: console-api-server
+    name: console-server
     namespace: ${NAMESPACE}
