@@ -1,25 +1,25 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: console-api
+  name: console
 spec:
   replicas: 1
   revisionHistoryLimit: 3
   selector:
     matchLabels:
-      app: console-api
+      app: console
   template:
     metadata:
       labels:
-        app: console-api
+        app: console
     spec:
-      serviceAccountName: console-api-server
+      serviceAccountName: console-server
       volumes:
       - emptyDir: {}
         name: cache
       containers:
       - name: console-api
-        image: quay.io/eyefloaters/console-api:0.0.26
+        image: quay.io/eyefloaters/console-api:0.0.27
         ports:
         - containerPort: 8080
         env:
@@ -28,18 +28,18 @@ spec:
         - name: KAFKA_SASL_MECHANISM
           value: SCRAM-SHA-512
         - name: CONSOLE_KAFKA_EXAMPLE
-          value: ${NAMESPACE}/cluster-example
+          value: ${NAMESPACE}/demo-cluster
         - name: CONSOLE_KAFKA_EXAMPLE_BOOTSTRAP_SERVERS
-          value: bootstrap.cluster-example.apps-crc.testing:443
+          value: bootstrap.demo-cluster.apps-crc.testing:443
         - name: CONSOLE_KAFKA_EXAMPLE_SASL_JAAS_CONFIG
           valueFrom:
             secretKeyRef:
-              name: cluster-example-user1
+              name: demo-cluster-user1
               key: sasl.jaas.config
         - name: CONSOLE_METRICS_PROMETHEUS_URL
           value: 'http://prometheus-operated.${NAMESPACE}.svc.cluster.local:9090'
       - name: console-ui
-        image: quay.io/eyefloaters/ui:0.0.26
+        image: quay.io/eyefloaters/ui:0.0.27
         volumeMounts:
         - mountPath: /app/.next/cache
           name: cache

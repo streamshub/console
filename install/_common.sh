@@ -5,50 +5,27 @@ INFO="[ \033[38;5;33mINFO${NC} ]"
 WARN="[ \033[38;5;208mWARN${NC} ]"
 ERROR="[ \033[38;5;196mERROR${NC} ]"
 
-function fetch_available_packages {
-    local NAME_PATTERN="${1}"
+KUBE="$(which oc 2>/dev/null || which kubectl 2>/dev/null)"
 
-    for pm in $(kubectl get packagemanifests -o name | grep -Pe '^packagemanifest\.packages\.operators\.coreos\.com/('"${NAME_PATTERN}"')$') ; do
-        kubectl get $pm -o yaml | yq -o=json '{
-            "name": .status.packageName,
-            "channel": .status.defaultChannel,
-            "catalogSource": .status.catalogSource,
-            "catalogSourceNamespace": .status.catalogSourceNamespace
-        }'
-    done | yq ea -p=json '[.]' | yq -o=csv | tail -n +2
-}
+if [ "${KUBE}" == "" ] ; then
+    echo -e "${ERROR} Neither 'oc' or 'kubectl' command line utilities found on the PATH"
+    exit 1
+fi
 
-function display_suggested_subscription {
-    local OPERATOR_NAME="${1}"
-    local NAME_PATTERN="${2}"
+YQ="$(which yq 2>/dev/null)"
 
-    local AVAILABLE_PKGS="$(fetch_available_packages "${NAME_PATTERN}")"
-    echo -e "${INFO} ${OPERATOR_NAME} may be installed by creating one of the following resources:"
-    COUNTER=0
+if [ "${YQ}" == "" ] ; then
+    echo -e "${ERROR} 'yq' command line utility found on the PATH"
+    exit 1
+fi
 
-    while IFS=, read -r PKG_NAME PKG_CHANNEL PKG_CTLG_SRC PKG_CTLG_SRC_NS; do
-        COUNTER=$(( COUNTER + 1 ))
-        echo -e "${INFO} ----- Option ${COUNTER} -----"
-        echo "apiVersion: operators.coreos.com/v1alpha1
-kind: Subscription
-metadata:
-  name: ${OPERATOR_NAME}
-  namespace: ${NAMESPACE}
-spec:
-  name: ${PKG_NAME}
-  channel: ${PKG_CHANNEL}
-  source: ${PKG_CTLG_SRC}
-  sourceNamespace: ${PKG_CTLG_SRC_NS}" | yq
-    done < <(echo "${AVAILABLE_PKGS}")
-}
-
-if kubectl get namespace/${NAMESPACE} >/dev/null 2>&1 ; then
+if ${KUBE} get namespace/${NAMESPACE} >/dev/null 2>&1 ; then
     echo -e "${INFO} Namespace '${NAMESPACE}' exists"
 else
     echo -e "${WARN} Namespace '${NAMESPACE}' not found... creating"
-    kubectl create namespace ${NAMESPACE} >/dev/null
+    ${KUBE} create namespace ${NAMESPACE} >/dev/null
 
-    if kubectl get namespace/${NAMESPACE} >/dev/null 2>&1 ; then
+    if ${KUBE} get namespace/${NAMESPACE} >/dev/null 2>&1 ; then
         echo -e "${INFO} Namespace '${NAMESPACE}' created"
     else
         echo -e "${WARN} Namespace '${NAMESPACE}' could not be created"
