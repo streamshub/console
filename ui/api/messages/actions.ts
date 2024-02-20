@@ -6,12 +6,19 @@ import { logger } from "@/utils/logger";
 
 const log = logger.child({ module: "messages-api" });
 
+export type GetTopicMessagesReturn = {
+  messages: Message[];
+  ts: Date;
+  error?: "topic-not-found" | "unknown";
+};
+
 export async function getTopicMessages(
   kafkaId: string,
   topicId: string,
   params: {
     pageSize: number;
-    partition: number | undefined;
+    partition?: number;
+    query?: string;
     filter:
       | {
           type: "offset";
@@ -24,7 +31,7 @@ export async function getTopicMessages(
       | undefined;
     maxValueLength: number | undefined;
   },
-): Promise<{ messages: Message[]; ts: Date }> {
+): Promise<GetTopicMessagesReturn> {
   const sp = new URLSearchParams(
     filterUndefinedFromObj({
       "fields[records]":
@@ -39,7 +46,7 @@ export async function getTopicMessages(
           ? "gte," + params.filter?.value
           : undefined,
       "page[size]": params.pageSize,
-      maxValueLength: Math.min(params.maxValueLength || 150, 50000),
+      // maxValueLength: Math.min(params.maxValueLength || 150, 50000),
     }),
   );
   const consumeRecordsQuery = sp.toString();
@@ -50,12 +57,44 @@ export async function getTopicMessages(
   );
   const res = await fetch(url, {
     headers: await getHeaders(),
-
+    cache: "no-store",
     next: { tags: [`messages-${topicId}`] },
   });
   const rawData = await res.json();
   log.trace({ rawData }, "Received messages");
-  return { messages: MessageApiResponse.parse(rawData).data, ts: new Date() };
+  try {
+    const messages = MessageApiResponse.parse(rawData).data;
+
+    if (params.query !== undefined && params.query !== null) {
+      const query = params.query;
+      const filteredMessages = messages.filter(
+        (m) =>
+          m.attributes.key?.includes(query) ||
+          m.attributes.value?.includes(query),
+      );
+      log.trace({ filteredMessages, query: params.query }, "Filtered messages");
+      return { messages: filteredMessages, ts: new Date() };
+    } else {
+      return { messages, ts: new Date() };
+    }
+  } catch {
+    log.error(
+      { status: res.status, message: rawData, url },
+      "Error fetching message",
+    );
+    if (res.status === 404) {
+      return {
+        messages: [],
+        ts: new Date(),
+        error: "topic-not-found",
+      };
+    }
+    return {
+      messages: [],
+      ts: new Date(),
+      error: "unknown",
+    };
+  }
 }
 
 export async function getTopicMessage(
@@ -70,6 +109,7 @@ export async function getTopicMessage(
   const { messages } = await getTopicMessages(kafkaId, topicId, {
     pageSize: 1,
     partition: params.partition,
+    query: undefined,
     filter: {
       type: "offset",
       value: params.offset,

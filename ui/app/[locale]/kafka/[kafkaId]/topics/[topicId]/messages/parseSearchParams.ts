@@ -4,6 +4,7 @@ export type MessagesSearchParams = {
   limit?: string;
   partition?: string;
   selected?: string;
+  query?: string;
   "filter[offset]"?: string;
   "filter[timestamp]"?: string;
   "filter[epoch]"?: string;
@@ -15,6 +16,7 @@ export function parseSearchParams(searchParams: MessagesSearchParams) {
   const ts = stringToInt(searchParams["filter[timestamp]"]);
   const epoch = stringToInt(searchParams["filter[epoch]"]);
   const selected = searchParams.selected;
+  const query = searchParams.query;
   const partition = stringToInt(searchParams.partition);
 
   const timeFilter = epoch ? epoch * 1000 : ts;
@@ -40,5 +42,6 @@ export function parseSearchParams(searchParams: MessagesSearchParams) {
     selectedPartition,
     partition,
     filter,
+    query,
   };
 }

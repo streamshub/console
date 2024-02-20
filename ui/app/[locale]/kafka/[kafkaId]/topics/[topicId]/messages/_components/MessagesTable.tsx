@@ -34,6 +34,7 @@ import {
   OuterScrollContainer,
   TableVariant,
 } from "@/libs/patternfly/react-table";
+import { SearchInput } from "@patternfly/react-core";
 import { useTranslations } from "next-intl";
 import { PropsWithChildren, useEffect, useState } from "react";
 import { LimitSelector } from "./LimitSelector";
@@ -61,19 +62,21 @@ const defaultColumns: Column[] = [
 
 export type MessageBrowserProps = {
   isRefreshing: boolean;
-  selectedMessage: Message | undefined;
-  lastUpdated: Date | undefined;
+  selectedMessage?: Message;
+  lastUpdated?: Date;
   messages: Message[];
   partitions: number;
-  partition: number | undefined;
   limit: number;
-  filterOffset: number | undefined;
-  filterEpoch: number | undefined;
-  filterTimestamp: string | undefined;
+  filterQuery?: string;
+  filterOffset?: number;
+  filterEpoch?: number;
+  filterTimestamp?: string;
+  filterPartition?: number;
   onPartitionChange: (value: number | undefined) => void;
   onOffsetChange: (value: number | undefined) => void;
   onTimestampChange: (value: string | undefined) => void;
   onEpochChange: (value: number | undefined) => void;
+  onQueryChange: (value: string | undefined) => void;
   onLatest: () => void;
   onLimitChange: (value: number) => void;
   onSelectMessage: (message: Message) => void;
@@ -85,11 +88,13 @@ export function MessagesTable({
   selectedMessage,
   messages,
   partitions,
-  partition,
   limit,
+  filterQuery,
   filterOffset,
   filterEpoch,
   filterTimestamp,
+  filterPartition,
+  onQueryChange,
   onPartitionChange,
   onOffsetChange,
   onTimestampChange,
@@ -156,11 +161,13 @@ export function MessagesTable({
           <OuterScrollContainer>
             <MessagesTableToolbar
               partitions={partitions}
-              partition={partition}
               limit={limit}
+              filterQuery={filterQuery}
               filterOffset={filterOffset}
               filterEpoch={filterEpoch}
               filterTimestamp={filterTimestamp}
+              filterPartition={filterPartition}
+              onQueryChange={onQueryChange}
               onPartitionChange={onPartitionChange}
               onOffsetChange={onOffsetChange}
               onTimestampChange={onTimestampChange}
@@ -334,12 +341,14 @@ export function MessagesTable({
 }
 
 export function MessagesTableToolbar({
+  filterQuery,
   filterEpoch,
   filterTimestamp,
   filterOffset,
-  partition,
+  filterPartition,
   partitions,
   limit,
+  onQueryChange,
   onEpochChange,
   onTimestampChange,
   onOffsetChange,
@@ -349,12 +358,14 @@ export function MessagesTableToolbar({
   onColumnManagement,
 }: Pick<
   MessageBrowserProps,
+  | "filterQuery"
   | "filterEpoch"
   | "filterTimestamp"
   | "filterOffset"
-  | "partition"
+  | "filterPartition"
   | "partitions"
   | "limit"
+  | "onQueryChange"
   | "onEpochChange"
   | "onTimestampChange"
   | "onOffsetChange"
@@ -380,6 +391,19 @@ export function MessagesTableToolbar({
             [toolbarBreakpoint]: "visible",
           }}
         >
+          <SearchInput
+            value={filterQuery}
+            onChange={(_, v) => onQueryChange(v)}
+            onClear={() => onQueryChange(undefined)}
+            id={"filter-query"}
+          />
+        </ToolbarItem>
+        <ToolbarItem
+          visibility={{
+            default: "hidden",
+            [toolbarBreakpoint]: "visible",
+          }}
+        >
           <FilterGroup
             isDisabled={false}
             offset={filterOffset}
@@ -398,7 +422,7 @@ export function MessagesTableToolbar({
           }}
         >
           <PartitionSelector
-            value={partition}
+            value={filterPartition}
             partitions={partitions}
             onChange={onPartitionChange}
             isDisabled={false}
@@ -414,6 +438,14 @@ export function MessagesTableToolbar({
           }}
         >
           <ToolbarItem>
+            <SearchInput
+              value={filterQuery}
+              onChange={(_, v) => onQueryChange(v)}
+              onClear={() => onQueryChange(undefined)}
+              id={"filter-query"}
+            />
+          </ToolbarItem>
+          <ToolbarItem>
             <FilterGroup
               isDisabled={false}
               offset={filterOffset}
@@ -427,7 +459,7 @@ export function MessagesTableToolbar({
           </ToolbarItem>
           <ToolbarItem>
             <PartitionSelector
-              value={partition}
+              value={filterPartition}
               partitions={partitions}
               onChange={onPartitionChange}
               isDisabled={false}
@@ -457,14 +489,20 @@ export function MessagesTableToolbar({
 }
 
 export function MessagesTableSkeleton({
-  partition,
   limit,
+  filterQuery,
+  filterPartition,
   filterTimestamp,
   filterOffset,
   filterEpoch,
 }: Pick<
   MessageBrowserProps,
-  "partition" | "limit" | "filterTimestamp" | "filterOffset" | "filterEpoch"
+  | "filterPartition"
+  | "limit"
+  | "filterQuery"
+  | "filterTimestamp"
+  | "filterOffset"
+  | "filterEpoch"
 >) {
   const t = useTranslations("message-browser");
   return (
@@ -475,11 +513,13 @@ export function MessagesTableSkeleton({
     >
       <MessagesTableToolbar
         partitions={1}
-        partition={partition}
         limit={limit}
+        filterQuery={filterQuery}
         filterOffset={filterOffset}
         filterEpoch={filterEpoch}
         filterTimestamp={filterTimestamp}
+        filterPartition={filterPartition}
+        onQueryChange={() => {}}
         onPartitionChange={() => {}}
         onOffsetChange={() => {}}
         onTimestampChange={() => {}}

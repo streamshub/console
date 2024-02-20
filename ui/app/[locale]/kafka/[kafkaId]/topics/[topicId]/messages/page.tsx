@@ -9,6 +9,8 @@ import {
 } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/parseSearchParams";
 import { KafkaTopicParams } from "@/app/[locale]/kafka/[kafkaId]/topics/kafkaTopic.params";
 import { redirect } from "@/navigation";
+import { unstable_noStore as noStore } from "next/cache";
+import { cookies } from "next/headers";
 
 export default async function ConnectedMessagesPage({
   params: { kafkaId, topicId },
@@ -17,6 +19,8 @@ export default async function ConnectedMessagesPage({
   params: KafkaTopicParams;
   searchParams: MessagesSearchParams;
 }) {
+  noStore();
+  const _ = cookies(); // this is stupid, but required to tell next.js that this action should never be cached
   const topic = await getTopic(kafkaId, topicId);
   if (!topic) {
     redirect(`/kafka/${kafkaId}`);
@@ -25,6 +29,7 @@ export default async function ConnectedMessagesPage({
   const {
     limit,
     partition,
+    query,
     filter,
     selectedOffset,
     selectedPartition,
@@ -35,13 +40,14 @@ export default async function ConnectedMessagesPage({
 
   async function refresh(): Promise<{ messages: Message[]; ts: Date }> {
     "use server";
-    const { messages, ts } = await getTopicMessages(kafkaId, topicId, {
+    const _ = cookies(); // this is stupid, but required to tell next.js that this action should never be cached
+    return await getTopicMessages(kafkaId, topicId, {
       pageSize: limit,
+      query,
       partition,
       filter,
       maxValueLength: 150,
     });
-    return { messages, ts };
   }
 
   const selectedMessage =
@@ -52,7 +58,7 @@ export default async function ConnectedMessagesPage({
         })
       : undefined;
 
-  const isFiltered = partition || epoch || offset || timestamp;
+  const isFiltered = partition || epoch || offset || timestamp || query;
 
   const { messages, ts } = await refresh();
 
@@ -70,11 +76,12 @@ export default async function ConnectedMessagesPage({
             limit,
             partition,
             selected: searchParams.selected,
+            query,
             "filter[timestamp]": timestamp,
             "filter[epoch]": epoch,
             "filter[offset]": offset,
           }}
-          refresh={refresh}
+          onRefresh={refresh}
         />
       );
   }

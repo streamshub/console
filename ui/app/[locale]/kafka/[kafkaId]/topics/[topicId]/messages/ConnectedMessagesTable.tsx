@@ -1,42 +1,58 @@
 "use client";
 
+import { GetTopicMessagesReturn } from "@/api/messages/actions";
 import { Message } from "@/api/messages/schema";
 import { ConnectedRefreshSelector } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/ConnectedRefreshSelector";
 import { RefreshInterval } from "@/components/RefreshSelector";
+import { Alert, PageSection } from "@/libs/patternfly/react-core";
 import { useFilterParams } from "@/utils/useFilterParams";
+import { AlertActionLink } from "@patternfly/react-core";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState, useTransition } from "react";
 import { MessagesTable } from "./_components/MessagesTable";
 
 export function ConnectedMessagesTable({
-  messages: initialData,
-  lastRefresh: initialRefresh,
+  messages: serverData,
+  lastRefresh: serverRefresh,
   selectedMessage,
   partitions,
   params,
-  refresh,
+  onRefresh,
 }: {
   messages: Message[];
-  lastRefresh: Date | undefined;
+  lastRefresh: Date;
   selectedMessage: Message | undefined;
   partitions: number;
   params: {
     selected: string | undefined;
     partition: number | undefined;
+    query: string | undefined;
     "filter[offset]": number | undefined;
     "filter[timestamp]": string | undefined;
     "filter[epoch]": number | undefined;
     limit: number;
   };
-  refresh: () => Promise<{ messages: Message[]; ts: Date }>;
+  onRefresh: () => Promise<GetTopicMessagesReturn>;
 }) {
-  const [{ messages, lastRefresh }, setMessages] = useState({
-    messages: initialData,
-    lastRefresh: initialRefresh,
-  });
+  const [{ messages, ts, error }, setMessages] =
+    useState<GetTopicMessagesReturn>({
+      messages: serverData,
+      ts: serverRefresh,
+    });
   const [automaticRefresh, setAutomaticRefresh] = useState(false);
   const [refreshInterval, setRefreshInterval] = useState<RefreshInterval>(1);
   const [isPending, startTransition] = useTransition();
   const updateUrl = useFilterParams(params);
+  const router = useRouter();
+
+  function setQuery(query: string | undefined) {
+    startTransition(() => {
+      updateUrl({
+        ...params,
+        query,
+      });
+    });
+  }
 
   function setPartition(partition: number | undefined) {
     startTransition(() => {
@@ -119,42 +135,91 @@ export function ConnectedMessagesTable({
   }
 
   const doRefresh = useCallback(
-    async function doRefresh() {
-      const { messages, ts } = await refresh();
-      startTransition(() => {
-        setMessages({ messages, lastRefresh: ts });
-      });
+    async function doRefresh(append = false) {
+      const { messages: newMessages, ts, error } = await onRefresh();
+      if (error) {
+        setMessages({ messages, ts, error });
+      } else if (append) {
+        const messagesToAdd = newMessages.filter(
+          (m) =>
+            !messages.find(
+              (m2) =>
+                m2.attributes.offset === m.attributes.offset &&
+                m2.attributes.partition === m.attributes.partition,
+            ),
+        );
+        console.log({ messages, newMessages, messagesToAdd });
+        startTransition(() => {
+          setMessages({
+            messages: Array.from(new Set([...messagesToAdd, ...messages])),
+            ts,
+          });
+        });
+      } else {
+        startTransition(() => {
+          setMessages({
+            messages: newMessages,
+            ts,
+          });
+        });
+      }
     },
-    [refresh],
+    [messages, onRefresh],
   );
 
   useEffect(() => {
-    let t: ReturnType<typeof setTimeout>;
+    let t: ReturnType<typeof setTimeout> | undefined;
 
     async function tick() {
-      if (automaticRefresh) {
-        await doRefresh();
+      if (automaticRefresh && t === undefined) {
+        await doRefresh(true);
       }
       t = setTimeout(tick, refreshInterval * 1000);
     }
 
     void tick();
-    return () => clearTimeout(t);
+    return () => {
+      clearTimeout(t);
+      t = undefined;
+    };
   }, [params, updateUrl, automaticRefresh, refreshInterval, doRefresh]);
+
+  useEffect(() => {
+    setMessages({ messages: serverData, ts: serverRefresh });
+  }, [serverData, serverRefresh]);
 
   return (
     <>
+      {error === "topic-not-found" && (
+        <PageSection>
+          <Alert
+            variant="danger"
+            title="Topic not found"
+            ouiaId="topic-not-found"
+            actionLinks={
+              <AlertActionLink onClick={() => router.push("../")}>
+                Go back to the list of topics
+              </AlertActionLink>
+            }
+          >
+            This topic was deleted, or you don&amp;t have the correct
+            permissions to see it.
+          </Alert>
+        </PageSection>
+      )}
       <MessagesTable
         isRefreshing={isPending}
         selectedMessage={selectedMessage}
         lastUpdated={new Date()}
         messages={messages}
         partitions={partitions}
-        partition={params.partition}
         limit={params.limit}
+        filterQuery={params.query}
         filterOffset={params["filter[offset]"]}
         filterEpoch={params["filter[epoch]"]}
         filterTimestamp={params["filter[timestamp]"]}
+        filterPartition={params.partition}
+        onQueryChange={setQuery}
         onPartitionChange={setPartition}
         onOffsetChange={setOffset}
         onTimestampChange={setTimestamp}
@@ -169,8 +234,8 @@ export function ConnectedMessagesTable({
         isRefreshing={isPending}
         isLive={automaticRefresh}
         refreshInterval={refreshInterval}
-        lastRefresh={lastRefresh}
-        onRefresh={doRefresh}
+        lastRefresh={ts}
+        onRefresh={() => doRefresh()}
         onRefreshInterval={setRefreshInterval}
         onToggleLive={setAutomaticRefresh}
       />

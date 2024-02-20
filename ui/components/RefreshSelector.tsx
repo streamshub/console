@@ -96,7 +96,7 @@ export function RefreshSelector({
           <RefreshButton
             key={"refresh"}
             onClick={onRefresh}
-            isRefreshing={isRefreshing}
+            isRefreshing={isRefreshing && !isLive}
             isDisabled={isRefreshing || isLive}
           />
         </FlexItem>

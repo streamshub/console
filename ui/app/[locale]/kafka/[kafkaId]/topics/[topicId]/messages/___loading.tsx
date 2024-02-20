@@ -17,7 +17,7 @@ export default function MessagesLoading() {
   return (
     <MessagesTableSkeleton
       limit={limit}
-      partition={partition}
+      filterPartition={partition}
       filterTimestamp={timestamp}
       filterEpoch={epoch}
       filterOffset={offset}
