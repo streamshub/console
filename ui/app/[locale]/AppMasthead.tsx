@@ -17,11 +17,9 @@ import {
   CogIcon,
   QuestionCircleIcon,
 } from "@/libs/patternfly/react-icons";
-import logo from "@/public/Logo-Red_Hat-AMQ-A-Reverse-RGB.svg";
 import { FeedbackModal } from "@patternfly/react-user-feedback";
 import { useSession } from "next-auth/react";
 import { useTranslations } from "next-intl";
-import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import { UserDropdown } from "./UserDropdown";
@@ -52,11 +50,10 @@ export function AppMasthead() {
         </MastheadToggle>
         <MastheadMain>
           <Link href={"/"} className={"pf-v5-c-masthead_brand"}>
-            <Image
+            <img
               className={"pf-v5-c-brand"}
-              src={logo}
+              src={"/Logo-Red_Hat-AMQ-A-Reverse-RGB.svg"}
               alt={t("common.title")}
-              priority={true}
               style={{ height: 48 }}
             />
           </Link>
