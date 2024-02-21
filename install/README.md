@@ -34,6 +34,17 @@ Once the two prerequisite components have been installed, the demo Kafka cluster
 `KafkaUser` custom resource for a user to access the cluster. Additionally, the Kafka cluster will be configured via
 a ConfigMap to export metrics in the way expected by the Prometheus instance created earlier.
 
+### Authorization
+
+In order to allow the necessary access for the console to function, a minimum level of authorization must be configured
+for the principal in use for each Kafka cluster connection. While the definition of the permissions may vary depending
+on the authorization framework in use (e.g. ACLs, Keycloak Authorization, OPA, or custom) the minimum required in terms
+of ACL types are:
+
+1. `DESCRIBE`, `DESCRIBE_CONFIGS` for the `CLUSTER` resource
+1. `READ`, `DESCRIBE`, `DESCRIBE_CONFIGS` for all `TOPIC` resources
+1. `READ`, `DESCRIBE` for all `GROUP` resources
+
 ## Installation
 
 With the prerequisites met, the console can be deployed using the `003-install-console.sh` script. This script will
@@ -49,7 +60,7 @@ Configurations that apply to all Kafka connections should use the format `KAFKA_
 if all clusters are configured to use `SASL_SSL` for the Kafka `security.protocol` property, you may set env
 `KAFKA_SECURITY_PROTOCOL` to `SASL_SSL`.
 
-Each individual cluster must be configured with a variable like ``CONSOLE_KAFKA_CLUSTER1` where `CLUSTER1` is a unique
+Each individual cluster must be configured with a variable like `CONSOLE_KAFKA_CLUSTER1` where `CLUSTER1` is a unique
 name or identifier for each cluster and the value of the env is the `${namespace}/${name}` of the `Kafka` CR that
 represents the cluster.
 
