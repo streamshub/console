@@ -62,7 +62,6 @@ fi
 ${KUBE} apply -n ${NAMESPACE} -f ${RESOURCE_PATH}/console/console-server.clusterrole.yaml
 ${KUBE} apply -n ${NAMESPACE} -f ${RESOURCE_PATH}/console/console-server.serviceaccount.yaml
 ${YQ} '.subjects[0].namespace = strenv(NAMESPACE)' ${RESOURCE_PATH}/console/console-server.clusterrolebinding.yaml | ${KUBE} apply -n ${NAMESPACE} -f -
-${KUBE} apply -n ${NAMESPACE} -f ${RESOURCE_PATH}/console/console-api.service.yaml
 ${KUBE} apply -n ${NAMESPACE} -f ${RESOURCE_PATH}/console/console-ui.service.yaml
 
 if ! ${KUBE} get secret console-ui-secrets -n ${NAMESPACE} 1>/dev/null 2>&1 ; then
