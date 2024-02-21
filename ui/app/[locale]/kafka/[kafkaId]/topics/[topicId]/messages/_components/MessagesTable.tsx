@@ -146,6 +146,7 @@ export function MessagesTable({
     <PageSection
       isFilled={true}
       hasOverflowScroll={true}
+      style={{ height: "calc(100vh - 170px - 70px)" }}
       aria-label={t("title")}
     >
       <Drawer isInline={true} isExpanded={selectedMessage !== undefined}>

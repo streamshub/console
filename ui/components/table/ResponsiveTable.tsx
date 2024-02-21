@@ -228,6 +228,7 @@ export const ResponsiveTable = <TRow, TCol>({
         className={showColumns ? "" : "pf-m-grid"}
         ouiaId={tableOuiaId}
         variant={variant}
+        isStickyHeader={true}
       >
         <Thead>
           <Tr>

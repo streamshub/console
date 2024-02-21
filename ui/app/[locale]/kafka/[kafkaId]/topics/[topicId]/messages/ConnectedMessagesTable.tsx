@@ -186,7 +186,14 @@ export function ConnectedMessagesTable({
 
   useEffect(() => {
     setMessages({ messages: serverData, ts: serverRefresh });
-  }, [serverData, serverRefresh]);
+  }, [
+    params.limit,
+    params.partition,
+    params["filter[epoch]"],
+    params["filter[offset]"],
+    params["filter[timestamp]"],
+    params.query,
+  ]);
 
   return (
     <>
