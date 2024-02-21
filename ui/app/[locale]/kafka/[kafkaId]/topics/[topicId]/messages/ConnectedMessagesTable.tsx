@@ -209,7 +209,7 @@ export function ConnectedMessagesTable({
               </AlertActionLink>
             }
           >
-            This topic was deleted, or you don&amp;t have the correct
+            This topic was deleted, or you don&apos;t have the correct
             permissions to see it.
           </Alert>
         </PageSection>

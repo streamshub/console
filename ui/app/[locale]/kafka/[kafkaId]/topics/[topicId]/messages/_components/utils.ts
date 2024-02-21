@@ -21,11 +21,3 @@ export function maybeJson(value: string): string {
   }
   return value;
 }
-
-export function truncate(value: string, length: number): [string, boolean] {
-  const shouldTruncate = value.length > length;
-  return [
-    shouldTruncate ? `${value.substring(0, length)}...` : value,
-    shouldTruncate,
-  ];
-}

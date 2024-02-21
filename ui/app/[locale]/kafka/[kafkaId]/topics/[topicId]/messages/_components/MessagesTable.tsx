@@ -261,7 +261,7 @@ export function MessagesTable({
                           {row.attributes.key ? (
                             <UnknownValuePreview
                               value={row.attributes.key}
-                              truncateAt={40}
+                              highlight={filterQuery}
                               onClick={() => {
                                 setDefaultTab("key");
                                 onSelectMessage(row);
@@ -280,6 +280,7 @@ export function MessagesTable({
                               value={beautifyUnknownValue(
                                 JSON.stringify(row.attributes.headers),
                               )}
+                              highlight={filterQuery}
                               onClick={() => {
                                 setDefaultTab("headers");
                                 onSelectMessage(row);
@@ -296,7 +297,7 @@ export function MessagesTable({
                           {row.attributes.value ? (
                             <UnknownValuePreview
                               value={row.attributes.value}
-                              truncateAt={149}
+                              highlight={filterQuery}
                               onClick={() => {
                                 setDefaultTab("value");
                                 onSelectMessage(row);

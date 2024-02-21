@@ -317,7 +317,12 @@ export const ResponsiveTable = <TRow, TCol>({
           const rowExpandable =
             isRowExpandable && isRowExpandable({ rowIndex, row });
           return (
-            <Tbody key={`row_${rowIndex}`} isExpanded={rowExpanded}>
+            <Tbody
+              key={vrow.key}
+              data-index={vrow.index}
+              isExpanded={rowExpanded}
+              ref={virtualizer.measureElement}
+            >
               <DeletableRow
                 isDeleted={deleted}
                 isSelected={selected}
