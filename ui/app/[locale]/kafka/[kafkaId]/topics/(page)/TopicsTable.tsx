@@ -17,6 +17,7 @@ import {
   ExclamationCircleIcon,
   ExclamationTriangleIcon,
   HelpIcon,
+  MigrationIcon,
 } from "@patternfly/react-icons";
 import { useTranslations } from "next-intl";
 import { ReactNode, useOptimistic, useTransition } from "react";
@@ -279,6 +280,13 @@ export function TopicsTable({
             return (
               <Td key={key} dataLabel={"Status"}>
                 {StatusLabel[row.attributes.status]}
+                {(row.meta?.managed ?? false) ?
+                  <>,&nbsp;
+                    <Icon status={"info"}>
+                      <MigrationIcon />
+                    </Icon>
+                    &nbsp;Managed
+                  </> : <></>}
               </Td>
             );
           case "consumerGroups":

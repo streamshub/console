@@ -96,6 +96,7 @@ async function ConnectedTopicHeader({
   return (
     <AppHeader
       title={topic?.attributes.name}
+      subTitle={(topic?.meta?.managed ?? false) ? "Managed" : "Unmanaged"}
       navigation={
         <PageNavigation>
           <Nav aria-label="Group section navigation" variant="tertiary">

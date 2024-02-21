@@ -70,6 +70,9 @@ export type TopicStatus = z.infer<typeof TopicStatusSchema>;
 const TopicSchema = z.object({
   id: z.string(),
   type: z.literal("topics"),
+  meta: z.object({
+    managed: z.boolean().optional(),
+  }).optional(),
   attributes: z.object({
     name: z.string(),
     status: TopicStatusSchema,
@@ -97,6 +100,7 @@ const TopicListSchema = z.object({
     page: z.object({
       cursor: z.string(),
     }),
+    managed: z.boolean().optional(),
   }),
   attributes: TopicSchema.shape.attributes.pick({
     name: true,
