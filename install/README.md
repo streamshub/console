@@ -41,6 +41,42 @@ create the role, role binding, service account, services, and ingress (or route 
 Finally, the console deployment is applied to the Kubernetes/OpenShift cluster. A link to access the application will
 be printed to the script's output if no errors are encountered.
 
+The configurations used by the console to connect to Kafka may be customized by altering the environment variables
+for the `console-api` container in `resources/console/console.deployment.yaml`. The format used for the variables
+is as follows.
+
+Configurations that apply to all Kafka connections should use the format `KAFKA_CONFIG_WITH_UNDERSCORES`. For example,
+if all clusters are configured to use `SASL_SSL` for the Kafka `security.protocol` property, you may set env
+`KAFKA_SECURITY_PROTOCOL` to `SASL_SSL`.
+
+Each individual cluster must be configured with a variable like ``CONSOLE_KAFKA_CLUSTER1` where `CLUSTER1` is a unique
+name or identifier for each cluster and the value of the env is the `${namespace}/${name}` of the `Kafka` CR that
+represents the cluster.
+
+Configurations that apply to an individual Kafka connection should use the format `CONSOLE_KAFKA_CLUSTER1_CONFIG_WITH_UNDERSCORES`.
+Using the example above, if you would like to configure one cluster to use `SASL_SSL` for the Kafka `security.protocol` property,
+the following env settings would be needed:
+
+```yaml
+- name: CONSOLE_KAFKA_EXAMPLE
+  value: example-ns/demo-cluster
+- name: CONSOLE_KAFKA_EXAMPLE_SECURITY_PROTOCOL
+  value: SASL_SSL
+- name: CONSOLE_KAFKA_EXAMPLE_BOOTSTRAP_SERVERS
+  value: bootstrap.demo-cluster.example.com:443
+```
+
+As always, configuration properties that contain sensitive information may be mounted from a `Secret`. For example, to
+set the `sasl.jaas.config` property, you could use an env entry such as the following.
+
+```yaml
+- name: CONSOLE_KAFKA_EXAMPLE_SASL_JAAS_CONFIG
+  valueFrom:
+    secretKeyRef:
+      name: demo-cluster-user1
+      key: sasl.jaas.config
+```
+
 ## References
 
 [1] yq [releases](https://github.com/mikefarah/yq/releases)
