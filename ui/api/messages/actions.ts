@@ -70,7 +70,8 @@ export async function getTopicMessages(
       const filteredMessages = messages.filter(
         (m) =>
           m.attributes.key?.includes(query) ||
-          m.attributes.value?.includes(query),
+          m.attributes.value?.includes(query) ||
+          JSON.stringify(m.attributes.headers).includes(query),
       );
       log.trace({ filteredMessages, query: params.query }, "Filtered messages");
       return { messages: filteredMessages, ts: new Date() };

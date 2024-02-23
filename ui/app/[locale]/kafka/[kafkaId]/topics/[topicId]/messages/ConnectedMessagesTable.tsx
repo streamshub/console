@@ -195,7 +195,7 @@ export function ConnectedMessagesTable({
     case messages === undefined:
       return (
         <MessagesTableSkeleton
-          limit={limit}
+          filterLimit={limit}
           filterTimestamp={timestamp}
           filterPartition={partition}
           filterOffset={offset}
@@ -231,7 +231,7 @@ export function ConnectedMessagesTable({
           lastUpdated={ts}
           messages={messages}
           partitions={partitions}
-          limit={limit}
+          filterLimit={limit}
           filterQuery={query}
           filterOffset={offset}
           filterEpoch={epoch}

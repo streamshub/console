@@ -16,7 +16,7 @@ export default function MessagesLoading() {
     parseSearchParams(searchParams);
   return (
     <MessagesTableSkeleton
-      limit={limit}
+      filterLimit={limit}
       filterPartition={partition}
       filterTimestamp={timestamp}
       filterEpoch={epoch}

@@ -96,7 +96,7 @@ export type MessageBrowserProps = {
   lastUpdated?: Date;
   messages: Message[];
   partitions: number;
-  limit: number;
+  filterLimit: number;
   filterQuery?: string;
   filterOffset?: number;
   filterEpoch?: number;
@@ -112,7 +112,7 @@ export function MessagesTable({
   selectedMessage,
   messages,
   partitions,
-  limit,
+  filterLimit,
   filterQuery,
   filterOffset,
   filterEpoch,
@@ -180,7 +180,7 @@ export function MessagesTable({
           <OuterScrollContainer>
             <MessagesTableToolbar
               partitions={partitions}
-              limit={limit}
+              filterLimit={filterLimit}
               filterQuery={filterQuery}
               filterOffset={filterOffset}
               filterEpoch={filterEpoch}
@@ -361,7 +361,7 @@ export function MessagesTableToolbar({
   filterOffset,
   filterPartition,
   partitions,
-  limit,
+  filterLimit,
   onSearch,
   onColumnManagement,
 }: Pick<
@@ -372,7 +372,7 @@ export function MessagesTableToolbar({
   | "filterOffset"
   | "filterPartition"
   | "partitions"
-  | "limit"
+  | "filterLimit"
   | "onSearch"
 > & {
   onColumnManagement: () => void;
@@ -391,89 +391,6 @@ export function MessagesTableToolbar({
       collapseListedFiltersBreakpoint={toolbarBreakpoint}
     >
       <ToolbarContent>
-        {/*
-        <ToolbarItem
-          visibility={{
-            default: "hidden",
-            [toolbarBreakpoint]: "visible",
-          }}
-        >
-          <SearchInput
-            value={filterQuery}
-            onChange={(_, v) => handleQueryChange(v)}
-            onClear={() => onQueryChange(undefined)}
-            id={"filter-query"}
-          />
-        </ToolbarItem>
-        <ToolbarItem
-          visibility={{
-            default: "hidden",
-            [toolbarBreakpoint]: "visible",
-          }}
-        >
-          <FilterGroup
-            isDisabled={false}
-            offset={filterOffset}
-            epoch={filterEpoch}
-            timestamp={filterTimestamp}
-            onOffsetChange={onOffsetChange}
-            onTimestampChange={onTimestampChange}
-            onEpochChange={onEpochChange}
-            onLatest={onLatest}
-          />
-        </ToolbarItem>
-        <ToolbarItem
-          visibility={{
-            default: "hidden",
-            [toolbarBreakpoint]: "visible",
-          }}
-        >
-          <PartitionSelector
-            value={filterPartition}
-            partitions={partitions}
-            onChange={onPartitionChange}
-            isDisabled={false}
-          />
-        </ToolbarItem>
-
-        <ToolbarToggleGroup
-          toggleIcon={<FilterIcon />}
-          breakpoint={toolbarBreakpoint}
-          visibility={{
-            default: "visible",
-            [toolbarBreakpoint]: "hidden",
-          }}
-        >
-          <ToolbarItem>
-            <SearchInput
-              value={filterQuery}
-              onChange={(_, v) => onQueryChange(v)}
-              onClear={() => onQueryChange(undefined)}
-              id={"filter-query"}
-            />
-          </ToolbarItem>
-          <ToolbarItem>
-            <FilterGroup
-              isDisabled={false}
-              offset={filterOffset}
-              epoch={filterEpoch}
-              timestamp={filterTimestamp}
-              onOffsetChange={onOffsetChange}
-              onTimestampChange={onTimestampChange}
-              onEpochChange={onEpochChange}
-              onLatest={onLatest}
-            />
-          </ToolbarItem>
-          <ToolbarItem>
-            <PartitionSelector
-              value={filterPartition}
-              partitions={partitions}
-              onChange={onPartitionChange}
-              isDisabled={false}
-            />
-          </ToolbarItem>
-        </ToolbarToggleGroup>
-*/}
         <ToolbarItem
           variant={"search-filter"}
           widths={{ default: "calc(100% - 58px)" }}
@@ -484,6 +401,7 @@ export function MessagesTableToolbar({
             filterOffset={filterOffset}
             filterPartition={filterPartition}
             filterTimestamp={filterTimestamp}
+            filterLimit={filterLimit}
             onSearch={onSearch}
           />
         </ToolbarItem>
@@ -516,26 +434,13 @@ export function MessagesTableToolbar({
             </DropdownList>
           </Dropdown>
         </ToolbarItem>
-
-        {/*
-        <ToolbarGroup align={{ default: "alignRight" }}>
-          <LimitSelector
-            value={limit}
-            onChange={onLimitChange}
-            isDisabled={false}
-          />
-        </ToolbarGroup>
-        <ToolbarGroup variant="icon-button-group">
-          <ToolbarItem></ToolbarItem>
-        </ToolbarGroup>
-*/}
       </ToolbarContent>
     </Toolbar>
   );
 }
 
 export function MessagesTableSkeleton({
-  limit,
+  filterLimit,
   filterQuery,
   filterPartition,
   filterTimestamp,
@@ -544,7 +449,7 @@ export function MessagesTableSkeleton({
 }: Pick<
   MessageBrowserProps,
   | "filterPartition"
-  | "limit"
+  | "filterLimit"
   | "filterQuery"
   | "filterTimestamp"
   | "filterOffset"
@@ -560,7 +465,7 @@ export function MessagesTableSkeleton({
     >
       <MessagesTableToolbar
         partitions={1}
-        limit={limit}
+        filterLimit={filterLimit}
         filterQuery={filterQuery}
         filterOffset={filterOffset}
         filterEpoch={filterEpoch}
@@ -574,7 +479,7 @@ export function MessagesTableSkeleton({
         ariaLabel={t("table_aria_label")}
         columns={columns}
         data={undefined}
-        expectedLength={limit}
+        expectedLength={filterLimit}
         renderCell={() => <div></div>}
         renderHeader={() => <div></div>}
       />

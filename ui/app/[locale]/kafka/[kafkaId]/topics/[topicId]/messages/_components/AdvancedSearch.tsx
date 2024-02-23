@@ -39,6 +39,7 @@ export function AdvancedSearch({
   filterOffset,
   filterPartition,
   filterTimestamp,
+  filterLimit,
   onSearch,
 }: Pick<
   MessageBrowserProps,
@@ -47,27 +48,30 @@ export function AdvancedSearch({
   | "filterOffset"
   | "filterPartition"
   | "filterTimestamp"
+  | "filterLimit"
   | "onSearch"
 >) {
   const searchInputRef = useRef<HTMLInputElement>(null);
   const paneRef = useRef(null);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [query, setQuery] = useState(filterQuery);
-  const [epoch, setEpoch] = useState(filterEpoch);
-  const [timestamp, setTimestamp] = useState(filterTimestamp);
-  const [offset, setOffset] = useState(filterOffset);
-  const [sholdSubmit, setShouldSubmit] = useState(false);
+  const [fromEpoch, setFromEpoch] = useState(filterEpoch);
+  const [fromTimestamp, setFromTimestamp] = useState(filterTimestamp);
+  const [fromOffset, setFromOffset] = useState(filterOffset);
+  const [untilLimit, setUntilLimit] = useState(filterLimit);
+  const [shouldSubmit, setShouldSubmit] = useState(false);
   const [_, startTransition] = useTransition();
 
   function setLatest() {
-    setEpoch(undefined);
-    setTimestamp(undefined);
-    setOffset(undefined);
+    setFromEpoch(undefined);
+    setFromTimestamp(undefined);
+    setFromOffset(undefined);
   }
 
   function onClear() {
     setQuery(undefined);
     setLatest();
+    setUntilLimit(50);
     setShouldSubmit(true);
   }
 
@@ -78,69 +82,179 @@ export function AdvancedSearch({
     setShouldSubmit(true);
   }
 
+  const getParameters = useCallback((): SearchParams => {
+    const from = ((): SearchParams["from"] => {
+      if (fromOffset) {
+        return { type: "offset", value: fromOffset };
+      } else if (fromEpoch) {
+        return { type: "epoch", value: fromEpoch };
+      } else if (fromTimestamp) {
+        return { type: "timestamp", value: fromTimestamp };
+      } else {
+        return { type: "latest" };
+      }
+    })();
+    return {
+      query: query
+        ? {
+            value: query,
+            where: {
+              type: "everywhere",
+            },
+          }
+        : undefined,
+      from,
+      until: {
+        type: "limit",
+        value: untilLimit,
+      },
+    };
+  }, [query, untilLimit, fromOffset, fromEpoch, fromTimestamp]);
+
+  const getSearchInputValue = useCallback(() => {
+    const parameters = getParameters();
+    const { query, from, until, partition } = parameters;
+    return (() => {
+      let composed: string[] = [];
+      if (query) {
+        composed.push(query.value);
+        if (query.where.type !== "everywhere") {
+          composed.push(`where=${query.where.type}`);
+        }
+      }
+      if (from) {
+        if ("value" in from) {
+          composed.push(`from=${from.type}:${from.value}`);
+        } else {
+          composed.push(`from=now`);
+        }
+      }
+      if (until) {
+        if ("value" in until) {
+          composed.push(`until=${until.type}:${until.value}`);
+        }
+      }
+      return composed.join(" ");
+    })();
+  }, [getParameters]);
+
+  const [searchInputValue, setSearchInputValue] = useState(
+    getSearchInputValue(),
+  );
+
   const doSubmit = useCallback(
     (e?: MouseEvent<HTMLButtonElement> | SyntheticEvent<HTMLButtonElement>) => {
       e && e.preventDefault();
       startTransition(() => {
-        const from = ((): SearchParams["from"] => {
-          if (offset) {
-            return { type: "offset", value: offset };
-          } else if (epoch) {
-            return { type: "epoch", value: epoch };
-          } else if (timestamp) {
-            return { type: "timestamp", value: timestamp };
-          } else {
-            return { type: "latest" };
-          }
-        })();
-        onSearch({
-          query: query
-            ? {
-                value: query,
-                where: {
-                  type: "everywhere",
-                },
-              }
-            : undefined,
-          from,
-          until: {
-            type: "limit",
-            value: 50,
-          },
-        });
+        onSearch(getParameters());
       });
     },
-    [epoch, offset, onSearch, query, timestamp],
+    [getParameters, onSearch],
   );
 
+  function onComposed(value: string) {
+    const parts = value.split(" ");
+    let queryParts: string[] = [];
+    parts.forEach((p) => {
+      if (p.indexOf(`where=`) === 0) {
+        const [_, where] = p.split("=");
+        // TODO set where
+      } else if (p.indexOf(`from=`) === 0) {
+        const [_, from] = p.split("=");
+        if (from === "now") {
+          setLatest();
+        } else {
+          const [type, value] = from.split(":");
+          switch (type) {
+            case "offset": {
+              const number = parseInt(value, 10);
+              if (Number.isSafeInteger(number)) {
+                setFromOffset(number);
+              } else {
+                setLatest();
+              }
+              break;
+            }
+            case "epoch": {
+              const number = parseInt(value, 10);
+              if (Number.isSafeInteger(number)) {
+                setFromEpoch(number);
+              } else {
+                setLatest();
+              }
+              break;
+            }
+            case "timestamp": {
+              setFromTimestamp(value);
+              break;
+            }
+            default:
+              setLatest();
+          }
+        }
+      } else if (p.indexOf("until=") === 0) {
+        const [_, until] = p.split("=");
+        const [type, value] = until.split(":");
+        switch (type) {
+          case "limit": {
+            const number = parseInt(value, 10);
+            if (Number.isSafeInteger(number)) {
+              setUntilLimit(number);
+            }
+            break;
+          }
+          case "partition": {
+            // const number = parseInt(value, 10);
+            // if (Number.isSafeInteger(number)) {
+            //   setEpoch(number);
+            // } else {
+            //   setLatest();
+            // }
+            break;
+          }
+          case "timestamp": {
+            // TODO
+            break;
+          }
+          default:
+            setLatest();
+        }
+      } else {
+        queryParts.push(p);
+      }
+    });
+    setQuery(queryParts.join(" "));
+  }
+
   useEffect(() => {
-    if (sholdSubmit) {
+    if (shouldSubmit) {
       setShouldSubmit(false);
       setIsPanelOpen(false);
       void doSubmit();
     }
-  }, [doSubmit, sholdSubmit]);
+  }, [doSubmit, shouldSubmit]);
 
   const searchInput = (
     <SearchInput
-      value={query}
-      onChange={(_, v) => {
-        setQuery(v);
-      }}
+      value={searchInputValue}
+      onChange={(_, v) => setSearchInputValue(v)}
       onToggleAdvancedSearch={(e) => {
         e.stopPropagation();
         setIsPanelOpen((v) => !v);
       }}
       isAdvancedSearchOpen={isPanelOpen}
       onClear={onClear}
-      onSearch={onSubmit}
+      onSearch={(e) => {
+        onComposed(searchInputValue);
+        onSubmit(e);
+      }}
       ref={searchInputRef}
       id="search"
     />
   );
 
   const advancedForm = (
-    <div ref={paneRef} role="dialog" aria-label="Advanced search form">
+    <div ref={paneRef} role="dialog" aria-label="Search messages">
       <Panel variant="raised">
         <PanelMain>
           <PanelMainBody>
@@ -193,9 +307,9 @@ export function AdvancedSearch({
                   offset={filterOffset}
                   epoch={filterEpoch}
                   timestamp={filterTimestamp}
-                  onOffsetChange={setOffset}
-                  onTimestampChange={setTimestamp}
-                  onEpochChange={setEpoch}
+                  onOffsetChange={setFromOffset}
+                  onTimestampChange={setFromTimestamp}
+                  onEpochChange={setFromEpoch}
                   onLatest={setLatest}
                 />
               </FormGroup>
@@ -231,7 +345,7 @@ export function AdvancedSearch({
                       data-testid={"filter-group"}
                       ref={toggleRef}
                     >
-                      50
+                      {untilLimit}
                     </MenuToggle>
                   )}
                   isOpen={false}
@@ -289,7 +403,7 @@ export function AdvancedSearch({
       popperRef={paneRef}
       isVisible={isPanelOpen}
       enableFlip={false}
-      appendTo={() => document.querySelector("#search")!}
+      appendTo={() => document.querySelector("body")!}
     />
   );
 }

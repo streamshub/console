@@ -6,7 +6,7 @@ import {
 } from "@/libs/patternfly/react-core";
 import { Divider, MenuToggle } from "@patternfly/react-core";
 import { useTranslations } from "next-intl";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { DateTimePicker } from "./DateTimePicker";
 
 type Category = "offset" | "timestamp" | "epoch" | "latest";
@@ -69,7 +69,7 @@ export function FilterGroup({
     else onEpochChange(undefined);
   }
 
-  function onConfirm(value: string | undefined) {
+  useEffect(() => {
     if (value === undefined) {
       return;
     }
@@ -89,7 +89,14 @@ export function FilterGroup({
       default:
         onLatest();
     }
-  }
+  }, [
+    currentCategory,
+    onConfirmEpoch,
+    onConfirmOffset,
+    onConfirmTimestamp,
+    onLatest,
+    value,
+  ]);
 
   return (
     <InputGroup>
