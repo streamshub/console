@@ -26,7 +26,7 @@ export function RefreshButton({
     <Tooltip content={tooltip || defaultTooltip}>
       <Button
         className="pf-m-hoverable"
-        variant="secondary"
+        variant="plain"
         aria-label={ariaLabel || t("refresh_button_label")}
         isDisabled={isDisabled}
         onClick={isDisabled === true ? undefined : onClick}

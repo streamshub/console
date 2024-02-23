@@ -1,20 +1,18 @@
 "use client";
 import { Message } from "@/api/messages/schema";
+import { AdvancedSearch } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/_components/AdvancedSearch";
 import {
   Column,
   columns,
   ColumnsModal,
   useColumnLabels,
 } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/_components/ColumnsModal";
-import { FilterGroup } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/_components/FilterGroup";
 import { NoResultsEmptyState } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/_components/NoResultsEmptyState";
-import { PartitionSelector } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/_components/PartitionSelector";
 import { Bytes } from "@/components/Bytes";
 import { DateTime } from "@/components/DateTime";
 import { Number } from "@/components/Number";
 import { ResponsiveTable } from "@/components/table";
 import {
-  Button,
   Drawer,
   DrawerContent,
   PageSection,
@@ -22,22 +20,25 @@ import {
   TextContent,
   Toolbar,
   ToolbarContent,
-  ToolbarGroup,
   ToolbarItem,
-  ToolbarToggleGroup,
   Tooltip,
 } from "@/libs/patternfly/react-core";
-import { FilterIcon, HelpIcon } from "@/libs/patternfly/react-icons";
+import { HelpIcon } from "@/libs/patternfly/react-icons";
 import {
   BaseCellProps,
   InnerScrollContainer,
   OuterScrollContainer,
   TableVariant,
 } from "@/libs/patternfly/react-table";
-import { SearchInput } from "@patternfly/react-core";
+import {
+  Dropdown,
+  DropdownItem,
+  DropdownList,
+  MenuToggle,
+} from "@patternfly/react-core";
+import { EllipsisVIcon } from "@patternfly/react-icons";
 import { useTranslations } from "next-intl";
 import { PropsWithChildren, useEffect, useState } from "react";
-import { LimitSelector } from "./LimitSelector";
 import { MessageDetails, MessageDetailsProps } from "./MessageDetails";
 import { NoDataCell } from "./NoDataCell";
 import { UnknownValuePreview } from "./UnknownValuePreview";
@@ -60,6 +61,35 @@ const defaultColumns: Column[] = [
   "value",
 ];
 
+export type SearchParams = {
+  partition?: number;
+  query?: {
+    value: string;
+    where:
+      | { type: "headers" }
+      | { type: "key" }
+      | { type: "value" }
+      | { type: "everywhere" }
+      | {
+          type: "jq";
+          filter: string;
+        };
+  };
+  from:
+    | { type: "timestamp"; value: string }
+    | { type: "epoch"; value: number }
+    | { type: "offset"; value: number }
+    | { type: "latest" };
+  until:
+    | { type: "limit"; value: number }
+    | { type: "live" }
+    | { type: "timestamp"; value: string }
+    | {
+        type: "partition";
+        value: number;
+      };
+};
+
 export type MessageBrowserProps = {
   isRefreshing: boolean;
   selectedMessage?: Message;
@@ -72,13 +102,7 @@ export type MessageBrowserProps = {
   filterEpoch?: number;
   filterTimestamp?: string;
   filterPartition?: number;
-  onPartitionChange: (value: number | undefined) => void;
-  onOffsetChange: (value: number | undefined) => void;
-  onTimestampChange: (value: string | undefined) => void;
-  onEpochChange: (value: number | undefined) => void;
-  onQueryChange: (value: string | undefined) => void;
-  onLatest: () => void;
-  onLimitChange: (value: number) => void;
+  onSearch: (params: SearchParams) => void;
   onSelectMessage: (message: Message) => void;
   onDeselectMessage: () => void;
 };
@@ -94,13 +118,7 @@ export function MessagesTable({
   filterEpoch,
   filterTimestamp,
   filterPartition,
-  onQueryChange,
-  onPartitionChange,
-  onOffsetChange,
-  onTimestampChange,
-  onEpochChange,
-  onLatest,
-  onLimitChange,
+  onSearch,
   onSelectMessage,
   onDeselectMessage,
 }: MessageBrowserProps) {
@@ -168,13 +186,7 @@ export function MessagesTable({
               filterEpoch={filterEpoch}
               filterTimestamp={filterTimestamp}
               filterPartition={filterPartition}
-              onQueryChange={onQueryChange}
-              onPartitionChange={onPartitionChange}
-              onOffsetChange={onOffsetChange}
-              onTimestampChange={onTimestampChange}
-              onEpochChange={onEpochChange}
-              onLatest={onLatest}
-              onLimitChange={onLimitChange}
+              onSearch={onSearch}
               onColumnManagement={() => setShowColumnsManagement(true)}
             />
             <InnerScrollContainer>
@@ -350,13 +362,7 @@ export function MessagesTableToolbar({
   filterPartition,
   partitions,
   limit,
-  onQueryChange,
-  onEpochChange,
-  onTimestampChange,
-  onOffsetChange,
-  onPartitionChange,
-  onLimitChange,
-  onLatest,
+  onSearch,
   onColumnManagement,
 }: Pick<
   MessageBrowserProps,
@@ -367,13 +373,7 @@ export function MessagesTableToolbar({
   | "filterPartition"
   | "partitions"
   | "limit"
-  | "onQueryChange"
-  | "onEpochChange"
-  | "onTimestampChange"
-  | "onOffsetChange"
-  | "onPartitionChange"
-  | "onLimitChange"
-  | "onLatest"
+  | "onSearch"
 > & {
   onColumnManagement: () => void;
 }) {
@@ -381,12 +381,17 @@ export function MessagesTableToolbar({
 
   function onClearAllFilters() {}
 
+  // const handleQueryChange = useDebouncedCallback((value: string) => {
+  //   onQueryChange(value);
+  // }, 300);
+
   return (
     <Toolbar
       clearAllFilters={onClearAllFilters}
       collapseListedFiltersBreakpoint={toolbarBreakpoint}
     >
       <ToolbarContent>
+        {/*
         <ToolbarItem
           visibility={{
             default: "hidden",
@@ -395,7 +400,7 @@ export function MessagesTableToolbar({
         >
           <SearchInput
             value={filterQuery}
-            onChange={(_, v) => onQueryChange(v)}
+            onChange={(_, v) => handleQueryChange(v)}
             onClear={() => onQueryChange(undefined)}
             id={"filter-query"}
           />
@@ -468,13 +473,51 @@ export function MessagesTableToolbar({
             />
           </ToolbarItem>
         </ToolbarToggleGroup>
-
-        <ToolbarItem>
-          <Button onClick={onColumnManagement} variant={"link"}>
-            Manage columns
-          </Button>
+*/}
+        <ToolbarItem
+          variant={"search-filter"}
+          widths={{ default: "calc(100% - 58px)" }}
+        >
+          <AdvancedSearch
+            filterQuery={filterQuery}
+            filterEpoch={filterEpoch}
+            filterOffset={filterOffset}
+            filterPartition={filterPartition}
+            filterTimestamp={filterTimestamp}
+            onSearch={onSearch}
+          />
         </ToolbarItem>
 
+        <ToolbarItem>
+          <Dropdown
+            popperProps={{ position: "right" }}
+            isOpen={false}
+            onOpenChange={(isOpen: boolean) => {}}
+            toggle={(toggleRef) => (
+              <MenuToggle
+                ref={toggleRef}
+                isExpanded={false}
+                onClick={() => {}}
+                variant="plain"
+                aria-label="Table options"
+              >
+                <EllipsisVIcon aria-hidden="true" />
+              </MenuToggle>
+            )}
+          >
+            <DropdownList>
+              <DropdownItem>Action</DropdownItem>
+              <DropdownItem
+                // Prevent the default onClick functionality for example purposes
+                onClick={() => onColumnManagement()}
+              >
+                Manage columns
+              </DropdownItem>
+            </DropdownList>
+          </Dropdown>
+        </ToolbarItem>
+
+        {/*
         <ToolbarGroup align={{ default: "alignRight" }}>
           <LimitSelector
             value={limit}
@@ -485,6 +528,7 @@ export function MessagesTableToolbar({
         <ToolbarGroup variant="icon-button-group">
           <ToolbarItem></ToolbarItem>
         </ToolbarGroup>
+*/}
       </ToolbarContent>
     </Toolbar>
   );
@@ -511,6 +555,7 @@ export function MessagesTableSkeleton({
     <PageSection
       isFilled={true}
       hasOverflowScroll={true}
+      style={{ height: "calc(100vh - 170px - 70px)" }}
       aria-label={t("title")}
     >
       <MessagesTableToolbar
@@ -521,13 +566,7 @@ export function MessagesTableSkeleton({
         filterEpoch={filterEpoch}
         filterTimestamp={filterTimestamp}
         filterPartition={filterPartition}
-        onQueryChange={() => {}}
-        onPartitionChange={() => {}}
-        onOffsetChange={() => {}}
-        onTimestampChange={() => {}}
-        onEpochChange={() => {}}
-        onLatest={() => {}}
-        onLimitChange={() => {}}
+        onSearch={() => {}}
         onColumnManagement={() => {}}
       />
       <ResponsiveTable
@@ -535,7 +574,7 @@ export function MessagesTableSkeleton({
         ariaLabel={t("table_aria_label")}
         columns={columns}
         data={undefined}
-        expectedLength={20}
+        expectedLength={limit}
         renderCell={() => <div></div>}
         renderHeader={() => <div></div>}
       />

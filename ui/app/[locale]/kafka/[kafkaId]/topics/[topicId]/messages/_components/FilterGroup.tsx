@@ -4,13 +4,7 @@ import {
   InputGroup,
   TextInput,
 } from "@/libs/patternfly/react-core";
-import {
-  Button,
-  Divider,
-  InputGroupItem,
-  MenuToggle,
-} from "@patternfly/react-core";
-import { CheckIcon, TimesIcon } from "@patternfly/react-icons";
+import { Divider, MenuToggle } from "@patternfly/react-core";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { DateTimePicker } from "./DateTimePicker";
@@ -183,32 +177,6 @@ export function FilterGroup({
           value={value}
           defaultValue={epoch}
         />
-      )}
-      {currentCategory !== "latest" && (
-        <>
-          <InputGroupItem>
-            <Button
-              id="cancel"
-              variant="control"
-              onClick={() => {
-                setValue("");
-                onConfirm("");
-              }}
-            >
-              <TimesIcon />
-            </Button>
-          </InputGroupItem>
-          <InputGroupItem>
-            <Button
-              id="confirm"
-              variant="control"
-              onClick={() => onConfirm(value)}
-              isDisabled={value === undefined || value === ""}
-            >
-              <CheckIcon />
-            </Button>
-          </InputGroupItem>
-        </>
       )}
     </InputGroup>
   );

@@ -1,4 +1,6 @@
 import { stringToInt } from "@/utils/stringToInt";
+import { useSearchParams } from "next/navigation";
+import { useMemo } from "react";
 
 export type MessagesSearchParams = {
   limit?: string;
@@ -23,12 +25,6 @@ export function parseSearchParams(searchParams: MessagesSearchParams) {
   const date = timeFilter ? new Date(timeFilter) : undefined;
   const timestamp = date?.toISOString();
 
-  const filter = offset
-    ? { type: "offset" as const, value: offset }
-    : timestamp
-      ? { type: "timestamp" as const, value: timestamp }
-      : undefined;
-
   const [selectedPartition, selectedOffset] = selected
     ? decodeURIComponent(selected).split(":").map(stringToInt)
     : [undefined, undefined];
@@ -41,7 +37,14 @@ export function parseSearchParams(searchParams: MessagesSearchParams) {
     selectedOffset,
     selectedPartition,
     partition,
-    filter,
     query,
   };
+}
+
+export function useParseSearchParams() {
+  const searchParamsEntities = useSearchParams();
+  return useMemo(() => {
+    const searchParams = Object.fromEntries(searchParamsEntities);
+    return parseSearchParams(searchParams);
+  }, [searchParamsEntities]);
 }

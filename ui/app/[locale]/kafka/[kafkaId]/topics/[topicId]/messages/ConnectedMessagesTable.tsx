@@ -1,125 +1,74 @@
 "use client";
 
-import { GetTopicMessagesReturn } from "@/api/messages/actions";
+import {
+  getTopicMessages,
+  GetTopicMessagesReturn,
+} from "@/api/messages/actions";
 import { Message } from "@/api/messages/schema";
-import { ConnectedRefreshSelector } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/ConnectedRefreshSelector";
+import { NoDataEmptyState } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/_components/NoDataEmptyState";
+import { useParseSearchParams } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/parseSearchParams";
 import { RefreshInterval } from "@/components/RefreshSelector";
 import { Alert, PageSection } from "@/libs/patternfly/react-core";
 import { useFilterParams } from "@/utils/useFilterParams";
 import { AlertActionLink } from "@patternfly/react-core";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState, useTransition } from "react";
-import { MessagesTable } from "./_components/MessagesTable";
+import {
+  MessagesTable,
+  MessagesTableSkeleton,
+  SearchParams,
+} from "./_components/MessagesTable";
 
 export function ConnectedMessagesTable({
-  messages: serverData,
-  lastRefresh: serverRefresh,
+  kafkaId,
+  topicId,
   selectedMessage,
   partitions,
-  params,
-  onRefresh,
 }: {
-  messages: Message[];
-  lastRefresh: Date;
+  kafkaId: string;
+  topicId: string;
   selectedMessage: Message | undefined;
   partitions: number;
-  params: {
-    selected: string | undefined;
-    partition: number | undefined;
-    query: string | undefined;
-    "filter[offset]": number | undefined;
-    "filter[timestamp]": string | undefined;
-    "filter[epoch]": number | undefined;
-    limit: number;
-  };
-  onRefresh: () => Promise<GetTopicMessagesReturn>;
 }) {
+  const searchParams = useParseSearchParams();
+  const updateUrl = useFilterParams(searchParams);
+  const router = useRouter();
+  const { limit, partition, query, offset, timestamp, epoch } = searchParams;
+
   const [{ messages, ts, error }, setMessages] =
     useState<GetTopicMessagesReturn>({
-      messages: serverData,
-      ts: serverRefresh,
+      messages: undefined,
+      ts: undefined,
     });
   const [automaticRefresh, setAutomaticRefresh] = useState(false);
   const [refreshInterval, setRefreshInterval] = useState<RefreshInterval>(1);
   const [isPending, startTransition] = useTransition();
-  const updateUrl = useFilterParams(params);
-  const router = useRouter();
 
-  function setQuery(query: string | undefined) {
-    startTransition(() => {
-      updateUrl({
-        ...params,
-        query,
-      });
-    });
-  }
+  const isFiltered = partition || epoch || offset || timestamp || query;
 
-  function setPartition(partition: number | undefined) {
+  function onSearch({ query, from, until, partition }: SearchParams) {
+    console.table({ query, from, until, partition });
+    setMessages({ messages: undefined, ts: undefined, error: undefined });
     startTransition(() => {
-      updateUrl({
-        ...params,
-        partition,
-      });
-    });
-  }
-
-  function setOffset(offset: number | undefined) {
-    startTransition(() => {
-      updateUrl({
-        ...params,
-        "filter[epoch]": undefined,
-        "filter[timestamp]": undefined,
-        "filter[offset]": offset,
-      });
-    });
-  }
-
-  function setTimestamp(value: string | undefined) {
-    startTransition(() => {
-      updateUrl({
-        ...params,
-        "filter[offset]": undefined,
-        "filter[epoch]": undefined,
-        "filter[timestamp]": value,
-      });
-    });
-  }
-
-  function setEpoch(value: number | undefined) {
-    startTransition(() => {
-      updateUrl({
-        ...params,
-        "filter[offset]": undefined,
-        "filter[timestamp]": undefined,
-        "filter[epoch]": value,
-      });
-    });
-  }
-
-  function setLatest() {
-    startTransition(() => {
-      updateUrl({
-        ...params,
-        "filter[offset]": undefined,
-        "filter[timestamp]": undefined,
-        "filter[epoch]": undefined,
-      });
-    });
-  }
-
-  function setLimit(limit: number) {
-    startTransition(() => {
-      updateUrl({
-        ...params,
-        limit,
-      });
+      const newQuery = {
+        ...searchParams,
+        query: query?.value,
+        "filter[offset]": from.type === "offset" ? from.value : "",
+        "filter[timestamp]": from.type === "timestamp" ? from.value : "",
+        "filter[epoch]": from.type === "epoch" ? from.value : "",
+        limit: until.type === "limit" ? until.value : "",
+        _: Date.now(),
+      };
+      console.log(newQuery);
+      updateUrl(newQuery);
+      setAutomaticRefresh(until.type === "live");
     });
   }
 
   function setSelected(message: Message) {
     startTransition(() => {
       updateUrl({
-        ...params,
+        ...searchParams,
         selected: `${message.attributes.partition}:${message.attributes.offset}`,
       });
     });
@@ -128,31 +77,63 @@ export function ConnectedMessagesTable({
   function deselectMessage() {
     startTransition(() => {
       updateUrl({
-        ...params,
+        ...searchParams,
         selected: undefined,
       });
     });
   }
 
-  const doRefresh = useCallback(
-    async function doRefresh(append = false) {
-      const { messages: newMessages, ts, error } = await onRefresh();
+  const fetchMessages = useCallback(
+    async function fetchMessages({
+      limit,
+      offset,
+      partition,
+      query,
+      timestamp,
+      append = false,
+    }: {
+      limit?: number;
+      offset?: number;
+      partition?: number;
+      query?: string;
+      timestamp?: string;
+      append?: boolean;
+    }) {
+      const filter = offset
+        ? { type: "offset" as const, value: offset }
+        : timestamp
+          ? { type: "timestamp" as const, value: timestamp }
+          : undefined;
+
+      const {
+        messages: newMessages = [],
+        ts,
+        error,
+      } = await getTopicMessages(kafkaId, topicId, {
+        pageSize: limit ?? 50,
+        query,
+        partition,
+        filter,
+        maxValueLength: 150,
+      });
       if (error) {
-        setMessages({ messages, ts, error });
+        setMessages({ messages: newMessages, ts, error });
       } else if (append) {
-        const messagesToAdd = newMessages.filter(
-          (m) =>
-            !messages.find(
-              (m2) =>
-                m2.attributes.offset === m.attributes.offset &&
-                m2.attributes.partition === m.attributes.partition,
-            ),
-        );
-        console.log({ messages, newMessages, messagesToAdd });
         startTransition(() => {
-          setMessages({
-            messages: Array.from(new Set([...messagesToAdd, ...messages])),
-            ts,
+          setMessages(({ messages = [] }) => {
+            const messagesToAdd = newMessages.filter(
+              (m) =>
+                !messages.find(
+                  (m2) =>
+                    m2.attributes.offset === m.attributes.offset &&
+                    m2.attributes.partition === m.attributes.partition,
+                ),
+            );
+
+            return {
+              messages: Array.from(new Set([...messagesToAdd, ...messages])),
+              ts,
+            };
           });
         });
       } else {
@@ -164,7 +145,7 @@ export function ConnectedMessagesTable({
         });
       }
     },
-    [messages, onRefresh],
+    [kafkaId, topicId],
   );
 
   useEffect(() => {
@@ -172,7 +153,14 @@ export function ConnectedMessagesTable({
 
     async function tick() {
       if (automaticRefresh && t === undefined) {
-        await doRefresh(true);
+        await fetchMessages({
+          limit,
+          offset,
+          partition,
+          query,
+          timestamp,
+          append: true,
+        });
       }
       t = setTimeout(tick, refreshInterval * 1000);
     }
@@ -182,22 +170,43 @@ export function ConnectedMessagesTable({
       clearTimeout(t);
       t = undefined;
     };
-  }, [params, updateUrl, automaticRefresh, refreshInterval, doRefresh]);
-
-  useEffect(() => {
-    setMessages({ messages: serverData, ts: serverRefresh });
   }, [
-    params.limit,
-    params.partition,
-    params["filter[epoch]"],
-    params["filter[offset]"],
-    params["filter[timestamp]"],
-    params.query,
+    automaticRefresh,
+    fetchMessages,
+    limit,
+    offset,
+    partition,
+    query,
+    refreshInterval,
+    timestamp,
   ]);
 
-  return (
-    <>
-      {error === "topic-not-found" && (
+  useEffect(() => {
+    void fetchMessages({
+      limit,
+      offset,
+      partition,
+      query,
+      timestamp,
+    });
+  }, [fetchMessages, limit, offset, partition, query, timestamp]);
+
+  switch (true) {
+    case messages === undefined:
+      return (
+        <MessagesTableSkeleton
+          limit={limit}
+          filterTimestamp={timestamp}
+          filterPartition={partition}
+          filterOffset={offset}
+          filterEpoch={epoch}
+          filterQuery={query}
+        />
+      );
+    case !isFiltered && messages?.length === 0:
+      return <NoDataEmptyState />;
+    case error === "topic-not-found":
+      return (
         <PageSection>
           <Alert
             variant="danger"
@@ -213,39 +222,37 @@ export function ConnectedMessagesTable({
             permissions to see it.
           </Alert>
         </PageSection>
-      )}
-      <MessagesTable
-        isRefreshing={isPending}
-        selectedMessage={selectedMessage}
-        lastUpdated={new Date()}
-        messages={messages}
-        partitions={partitions}
-        limit={params.limit}
-        filterQuery={params.query}
-        filterOffset={params["filter[offset]"]}
-        filterEpoch={params["filter[epoch]"]}
-        filterTimestamp={params["filter[timestamp]"]}
-        filterPartition={params.partition}
-        onQueryChange={setQuery}
-        onPartitionChange={setPartition}
-        onOffsetChange={setOffset}
-        onTimestampChange={setTimestamp}
-        onEpochChange={setEpoch}
-        onLatest={setLatest}
-        onLimitChange={setLimit}
-        onSelectMessage={setSelected}
-        onDeselectMessage={deselectMessage}
-      />
+      );
+    default:
+      return (
+        <MessagesTable
+          isRefreshing={isPending}
+          selectedMessage={selectedMessage}
+          lastUpdated={ts}
+          messages={messages}
+          partitions={partitions}
+          limit={limit}
+          filterQuery={query}
+          filterOffset={offset}
+          filterEpoch={epoch}
+          filterTimestamp={timestamp}
+          filterPartition={partition}
+          onSearch={onSearch}
+          onSelectMessage={setSelected}
+          onDeselectMessage={deselectMessage}
+        />
+      );
 
-      <ConnectedRefreshSelector
-        isRefreshing={isPending}
-        isLive={automaticRefresh}
-        refreshInterval={refreshInterval}
-        lastRefresh={ts}
-        onRefresh={() => doRefresh()}
-        onRefreshInterval={setRefreshInterval}
-        onToggleLive={setAutomaticRefresh}
-      />
-    </>
-  );
+    /*
+    <ConnectedRefreshSelector
+      isRefreshing={isPending}
+      isLive={automaticRefresh}
+      refreshInterval={refreshInterval}
+      lastRefresh={ts}
+      onRefresh={() => doRefresh()}
+      onRefreshInterval={setRefreshInterval}
+      onToggleLive={setAutomaticRefresh}
+    />
+*/
+  }
 }

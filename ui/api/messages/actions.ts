@@ -7,8 +7,8 @@ import { logger } from "@/utils/logger";
 const log = logger.child({ module: "messages-api" });
 
 export type GetTopicMessagesReturn = {
-  messages: Message[];
-  ts: Date;
+  messages?: Message[];
+  ts?: Date;
   error?: "topic-not-found" | "unknown";
 };
 
@@ -52,7 +52,7 @@ export async function getTopicMessages(
   const consumeRecordsQuery = sp.toString();
   const url = `${process.env.BACKEND_URL}/api/kafkas/${kafkaId}/topics/${topicId}/records?${consumeRecordsQuery}`;
   log.debug(
-    { url, params: Object.fromEntries(sp.entries()) },
+    { url, query: Object.fromEntries(sp.entries()), params },
     "Fetching topic messages",
   );
   const res = await fetch(url, {
@@ -75,7 +75,7 @@ export async function getTopicMessages(
       log.trace({ filteredMessages, query: params.query }, "Filtered messages");
       return { messages: filteredMessages, ts: new Date() };
     } else {
-      return { messages, ts: new Date() };
+      return { messages: messages, ts: new Date() };
     }
   } catch {
     log.error(
@@ -117,7 +117,7 @@ export async function getTopicMessage(
     maxValueLength: 50000,
   });
 
-  log.debug({ messages }, "getTopicMessage response");
+  log.debug({ liveMessages: messages }, "getTopicMessage response");
 
-  return messages.length === 1 ? messages[0] : undefined;
+  return messages?.length === 1 ? messages[0] : undefined;
 }
