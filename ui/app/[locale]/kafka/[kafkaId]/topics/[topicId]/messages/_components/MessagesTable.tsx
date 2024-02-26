@@ -195,9 +195,27 @@ export function MessagesTable({
                   <Th
                     key={key}
                     width={columnWidths[column]}
-                    isStickyColumn={colIndex === 0}
-                    hasRightBorder={colIndex === 0}
+                    isStickyColumn={colIndex < 2}
+                    hasRightBorder={colIndex === 1}
+                    stickyMinWidth={colIndex === 1 ? "100px" : undefined}
+                    stickyLeftOffset={colIndex === 1 ? "187px" : undefined}
                     modifier={"nowrap"}
+                    sort={
+                      column === "timestamp" ||
+                      column === "timestampUTC" ||
+                      column === "offset-partition"
+                        ? {
+                            columnIndex: colIndex,
+                            sortBy: {
+                              index: colIndex,
+                              direction:
+                                filterOffset || filterTimestamp || filterEpoch
+                                  ? "asc"
+                                  : "desc",
+                            },
+                          }
+                        : undefined
+                    }
                   >
                     {columnLabels[column]}
                     {columnTooltips[column] ?? ""}
@@ -213,8 +231,10 @@ export function MessagesTable({
                       <Td
                         key={key}
                         dataLabel={columnLabels[column]}
-                        isStickyColumn={colIndex === 0}
-                        hasRightBorder={colIndex === 0}
+                        isStickyColumn={colIndex < 2}
+                        hasRightBorder={colIndex === 1}
+                        stickyMinWidth={colIndex === 1 ? "100px" : undefined}
+                        stickyLeftOffset={colIndex === 1 ? "187px" : undefined}
                         modifier={"nowrap"}
                       >
                         {children}

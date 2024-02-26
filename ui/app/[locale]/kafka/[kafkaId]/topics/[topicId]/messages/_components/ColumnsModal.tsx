@@ -13,10 +13,10 @@ import {
 import { useState } from "react";
 
 export const columns = [
+  "timestampUTC",
+  "timestamp",
   "offset-partition",
   "size",
-  "timestamp",
-  "timestampUTC",
   "key",
   "headers",
   "value",

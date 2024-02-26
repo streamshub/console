@@ -81,6 +81,7 @@ export function AdvancedSearch({
   function onClear() {
     setQuery(undefined);
     setLatest();
+    setPartition(undefined);
     setUntilLimit(50);
     setShouldSubmit(true);
   }
