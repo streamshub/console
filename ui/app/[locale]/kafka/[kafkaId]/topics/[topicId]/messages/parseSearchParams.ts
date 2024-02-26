@@ -8,18 +8,18 @@ export type MessagesSearchParams = {
   selected?: string;
   query?: string;
   where?: string;
-  "filter[offset]"?: string;
-  "filter[timestamp]"?: string;
-  "filter[epoch]"?: string;
+  offset?: string;
+  timestamp?: string;
+  epoch?: string;
   _?: string;
 };
 
 export function parseSearchParams(searchParams: MessagesSearchParams) {
-  const refresh = searchParams._;
+  const _ = searchParams._;
   const limit = stringToInt(searchParams.limit) || 50;
-  const offset = stringToInt(searchParams["filter[offset]"]);
-  const ts = stringToInt(searchParams["filter[timestamp]"]);
-  const epoch = stringToInt(searchParams["filter[epoch]"]);
+  const offset = stringToInt(searchParams["offset"]);
+  const timestamp = searchParams["timestamp"];
+  const epoch = stringToInt(searchParams["epoch"]);
   const selected = searchParams.selected;
   const query = searchParams.query;
   const where = (() => {
@@ -39,10 +39,6 @@ export function parseSearchParams(searchParams: MessagesSearchParams) {
   })();
   const partition = stringToInt(searchParams.partition);
 
-  const timeFilter = epoch ? epoch * 1000 : ts;
-  const date = timeFilter ? new Date(timeFilter) : undefined;
-  const timestamp = date?.toISOString();
-
   const [selectedPartition, selectedOffset] = selected
     ? decodeURIComponent(selected).split(":").map(stringToInt)
     : [undefined, undefined];
@@ -57,14 +53,17 @@ export function parseSearchParams(searchParams: MessagesSearchParams) {
     partition,
     query,
     where,
-    refresh,
+    _,
   };
 }
 
-export function useParseSearchParams() {
+export function useParseSearchParams(): [
+  ReturnType<typeof parseSearchParams>,
+  Record<string, string>,
+] {
   const searchParamsEntities = useSearchParams();
   return useMemo(() => {
     const searchParams = Object.fromEntries(searchParamsEntities);
-    return parseSearchParams(searchParams);
+    return [parseSearchParams(searchParams), searchParams];
   }, [searchParamsEntities]);
 }

@@ -30,11 +30,11 @@ export function ConnectedMessagesTable({
   selectedMessage: Message | undefined;
   partitions: number;
 }) {
-  const searchParams = useParseSearchParams();
-  const updateUrl = useFilterParams(searchParams);
+  const [params, sp] = useParseSearchParams();
+  const updateUrl = useFilterParams(sp);
   const router = useRouter();
-  const { limit, partition, query, where, offset, timestamp, epoch, refresh } =
-    searchParams;
+  const { limit, partition, query, where, offset, timestamp, epoch, _ } =
+    params;
 
   const [{ messages, ts, error }, setMessages] =
     useState<GetTopicMessagesReturn>({
@@ -51,13 +51,12 @@ export function ConnectedMessagesTable({
     setMessages({ messages: undefined, ts: undefined, error: undefined });
     startTransition(() => {
       const newQuery = {
-        ...searchParams,
         query: query?.value,
         where: query?.where,
         partition,
-        "filter[offset]": from.type === "offset" ? from.value : "",
-        "filter[timestamp]": from.type === "timestamp" ? from.value : "",
-        "filter[epoch]": from.type === "epoch" ? from.value : "",
+        offset: from.type === "offset" ? from.value : "",
+        timestamp: from.type === "timestamp" ? from.value : "",
+        epoch: from.type === "epoch" ? from.value : "",
         limit: until.type === "limit" ? until.value : "",
         _: Date.now(),
       };
@@ -69,7 +68,7 @@ export function ConnectedMessagesTable({
   function setSelected(message: Message) {
     startTransition(() => {
       updateUrl({
-        ...searchParams,
+        ...params,
         selected: `${message.attributes.partition}:${message.attributes.offset}`,
       });
     });
@@ -78,7 +77,7 @@ export function ConnectedMessagesTable({
   function deselectMessage() {
     startTransition(() => {
       updateUrl({
-        ...searchParams,
+        ...params,
         selected: undefined,
       });
     });
@@ -90,6 +89,7 @@ export function ConnectedMessagesTable({
       offset,
       partition,
       query,
+      where,
       timestamp,
       append = false,
     }: {
@@ -97,14 +97,16 @@ export function ConnectedMessagesTable({
       offset?: number;
       partition?: number;
       query?: string;
+      where?: "key" | "headers" | "value" | `jq:${string}`;
       timestamp?: string;
       append?: boolean;
     }) {
-      const filter = offset
-        ? { type: "offset" as const, value: offset }
-        : timestamp
-          ? { type: "timestamp" as const, value: timestamp }
-          : undefined;
+      const filter = (() => {
+        if (offset) return { type: "offset" as const, value: offset };
+        if (timestamp) return { type: "timestamp" as const, value: timestamp };
+        if (epoch) return { type: "epoch" as const, value: epoch };
+        return undefined;
+      })();
 
       const {
         messages: newMessages = [],
@@ -113,6 +115,7 @@ export function ConnectedMessagesTable({
       } = await getTopicMessages(kafkaId, topicId, {
         pageSize: limit ?? 50,
         query,
+        where,
         partition,
         filter,
         maxValueLength: 150,
@@ -159,6 +162,7 @@ export function ConnectedMessagesTable({
           offset,
           partition,
           query,
+          where,
           timestamp,
           append: true,
         });
@@ -189,9 +193,10 @@ export function ConnectedMessagesTable({
       offset,
       partition,
       query,
+      where,
       timestamp,
     });
-  }, [fetchMessages, limit, offset, partition, query, timestamp, refresh]);
+  }, [fetchMessages, limit, offset, partition, query, timestamp, _]);
 
   switch (true) {
     case messages === undefined:

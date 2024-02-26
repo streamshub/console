@@ -257,9 +257,21 @@ export function AdvancedSearch({
                         offset={filterOffset}
                         epoch={filterEpoch}
                         timestamp={filterTimestamp}
-                        onOffsetChange={setFromOffset}
-                        onTimestampChange={setFromTimestamp}
-                        onEpochChange={setFromEpoch}
+                        onOffsetChange={(v) => {
+                          setFromOffset(v);
+                          setFromEpoch(undefined);
+                          setFromTimestamp(undefined);
+                        }}
+                        onTimestampChange={(v) => {
+                          setFromOffset(undefined);
+                          setFromEpoch(undefined);
+                          setFromTimestamp(v);
+                        }}
+                        onEpochChange={(v) => {
+                          setFromOffset(undefined);
+                          setFromEpoch(v);
+                          setFromTimestamp(undefined);
+                        }}
                         onLatest={setLatest}
                       />
                     </FormGroup>

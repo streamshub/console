@@ -6,7 +6,7 @@ import {
 } from "@/libs/patternfly/react-core";
 import { Divider, MenuToggle } from "@patternfly/react-core";
 import { useTranslations } from "next-intl";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { DateTimePicker } from "./DateTimePicker";
 
 type Category = "offset" | "timestamp" | "epoch" | "latest";
@@ -33,9 +33,7 @@ export function FilterGroup({
 }: FilterGroupProps) {
   const t = useTranslations("message-browser");
   const [value, setValue] = useState<string | undefined>();
-  const [currentCategory, _setCurrentCategory] = useState<Category>(
-    offset ? "offset" : timestamp ? "timestamp" : epoch ? "epoch" : "latest",
-  );
+  const [currentCategory, _setCurrentCategory] = useState<Category>("latest");
   const setCurrentCategory: typeof _setCurrentCategory = (value) => {
     _setCurrentCategory(value);
     setValue(undefined);
@@ -48,26 +46,41 @@ export function FilterGroup({
     latest: t("filter.latest"),
   };
 
-  function onConfirmOffset(value: string) {
-    if (value !== "") {
-      const newOffset = parseInt(value, 10);
-      if (Number.isInteger(newOffset)) {
-        onOffsetChange(newOffset);
+  const onConfirmOffset = useCallback(
+    (value: string) => {
+      if (value !== "") {
+        const newOffset = parseInt(value, 10);
+        if (Number.isInteger(newOffset)) {
+          onOffsetChange(newOffset);
+        }
+      } else {
+        onOffsetChange(undefined);
       }
-    } else {
-      onOffsetChange(undefined);
-    }
-  }
+    },
+    [onOffsetChange],
+  );
 
-  function onConfirmTimestamp(value: string) {
-    if (value !== "") onTimestampChange(value);
-    else onTimestampChange(undefined);
-  }
+  const onConfirmTimestamp = useCallback(
+    (value: string) => {
+      if (value !== "") onTimestampChange(value);
+      else onTimestampChange(undefined);
+    },
+    [onTimestampChange],
+  );
 
-  function onConfirmEpoch(value: string) {
-    if (value !== "" && Number(value) >= 0) onEpochChange(Number(value));
-    else onEpochChange(undefined);
-  }
+  const onConfirmEpoch = useCallback(
+    (value: string) => {
+      if (value !== "" && Number(value) >= 0) onEpochChange(Number(value));
+      else onEpochChange(undefined);
+    },
+    [onEpochChange],
+  );
+
+  useEffect(() => {
+    setCurrentCategory(
+      offset ? "offset" : timestamp ? "timestamp" : epoch ? "epoch" : "latest",
+    );
+  }, [epoch, offset, timestamp]);
 
   useEffect(() => {
     if (value === undefined) {
@@ -169,7 +182,7 @@ export function FilterGroup({
         <DateTimePicker
           isDisabled={isDisabled}
           value={value || timestamp}
-          onChange={(value) => setValue(value.toString())}
+          onChange={(value) => setValue(new Date(value).toISOString())}
         />
       )}
       {currentCategory === "epoch" && (

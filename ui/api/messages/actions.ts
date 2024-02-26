@@ -29,10 +29,30 @@ export async function getTopicMessages(
           type: "timestamp";
           value: string;
         }
+      | {
+          type: "epoch";
+          value: number;
+        }
       | undefined;
     maxValueLength: number | undefined;
   },
 ): Promise<GetTopicMessagesReturn> {
+  let timestamp: string | undefined;
+  try {
+    if (params.filter?.type === "epoch") {
+      const maybeEpoch = params.filter.value;
+      const maybeDate = Number.isInteger(maybeEpoch)
+        ? maybeEpoch * 1000
+        : params.filter.value;
+      const date = maybeDate ? new Date(maybeDate) : undefined;
+      timestamp = date?.toISOString();
+    }
+    if (params.filter?.type === "timestamp") {
+      const maybeDate = params.filter.value;
+      const date = maybeDate ? new Date(maybeDate) : undefined;
+      timestamp = date?.toISOString();
+    }
+  } catch {}
   const sp = new URLSearchParams(
     filterUndefinedFromObj({
       "fields[records]":
@@ -42,10 +62,7 @@ export async function getTopicMessages(
         params.filter?.type === "offset"
           ? "gte," + params.filter?.value
           : undefined,
-      "filter[timestamp]":
-        params.filter?.type === "timestamp"
-          ? "gte," + params.filter?.value
-          : undefined,
+      "filter[timestamp]": timestamp ? "gte," + timestamp : undefined,
       "page[size]": params.pageSize,
       // maxValueLength: Math.min(params.maxValueLength || 150, 50000),
     }),
