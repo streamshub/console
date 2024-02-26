@@ -25,7 +25,7 @@ jobs:
         working-directory: ./ui
 
       - name: Publish to Chromatic
-        uses: chromaui/action@v10
+        uses: chromaui/action@v11
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           projectToken: chpt_0314d7b0d66ad0c
