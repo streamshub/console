@@ -65,15 +65,7 @@ export type SearchParams = {
   partition?: number;
   query?: {
     value: string;
-    where:
-      | { type: "headers" }
-      | { type: "key" }
-      | { type: "value" }
-      | { type: "everywhere" }
-      | {
-          type: "jq";
-          filter: string;
-        };
+    where: "headers" | "key" | "value" | "everywhere" | `jq:${string}`;
   };
   from:
     | { type: "timestamp"; value: string }
@@ -98,6 +90,7 @@ export type MessageBrowserProps = {
   partitions: number;
   filterLimit: number;
   filterQuery?: string;
+  filterWhere?: "key" | "headers" | "value" | `jq:${string}`;
   filterOffset?: number;
   filterEpoch?: number;
   filterTimestamp?: string;
@@ -114,6 +107,7 @@ export function MessagesTable({
   partitions,
   filterLimit,
   filterQuery,
+  filterWhere,
   filterOffset,
   filterEpoch,
   filterTimestamp,
@@ -182,6 +176,7 @@ export function MessagesTable({
               partitions={partitions}
               filterLimit={filterLimit}
               filterQuery={filterQuery}
+              filterWhere={filterWhere}
               filterOffset={filterOffset}
               filterEpoch={filterEpoch}
               filterTimestamp={filterTimestamp}
@@ -356,6 +351,7 @@ export function MessagesTable({
 
 export function MessagesTableToolbar({
   filterQuery,
+  filterWhere,
   filterEpoch,
   filterTimestamp,
   filterOffset,
@@ -367,6 +363,7 @@ export function MessagesTableToolbar({
 }: Pick<
   MessageBrowserProps,
   | "filterQuery"
+  | "filterWhere"
   | "filterEpoch"
   | "filterTimestamp"
   | "filterOffset"
@@ -397,11 +394,13 @@ export function MessagesTableToolbar({
         >
           <AdvancedSearch
             filterQuery={filterQuery}
+            filterWhere={filterWhere}
             filterEpoch={filterEpoch}
             filterOffset={filterOffset}
             filterPartition={filterPartition}
             filterTimestamp={filterTimestamp}
             filterLimit={filterLimit}
+            partitions={partitions}
             onSearch={onSearch}
           />
         </ToolbarItem>
@@ -442,6 +441,7 @@ export function MessagesTableToolbar({
 export function MessagesTableSkeleton({
   filterLimit,
   filterQuery,
+  filterWhere,
   filterPartition,
   filterTimestamp,
   filterOffset,
@@ -451,6 +451,7 @@ export function MessagesTableSkeleton({
   | "filterPartition"
   | "filterLimit"
   | "filterQuery"
+  | "filterWhere"
   | "filterTimestamp"
   | "filterOffset"
   | "filterEpoch"
@@ -467,6 +468,7 @@ export function MessagesTableSkeleton({
         partitions={1}
         filterLimit={filterLimit}
         filterQuery={filterQuery}
+        filterWhere={filterWhere}
         filterOffset={filterOffset}
         filterEpoch={filterEpoch}
         filterTimestamp={filterTimestamp}

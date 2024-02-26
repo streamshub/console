@@ -108,7 +108,6 @@ export function PartitionSelector({
           ref={toggleRef}
           onClick={toggleOpen}
           isExpanded={isOpen}
-          isFullWidth
           isDisabled={isDisabled}
         >
           {value !== -1

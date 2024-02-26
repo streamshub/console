@@ -33,7 +33,8 @@ export function ConnectedMessagesTable({
   const searchParams = useParseSearchParams();
   const updateUrl = useFilterParams(searchParams);
   const router = useRouter();
-  const { limit, partition, query, offset, timestamp, epoch } = searchParams;
+  const { limit, partition, query, where, offset, timestamp, epoch, refresh } =
+    searchParams;
 
   const [{ messages, ts, error }, setMessages] =
     useState<GetTopicMessagesReturn>({
@@ -47,19 +48,19 @@ export function ConnectedMessagesTable({
   const isFiltered = partition || epoch || offset || timestamp || query;
 
   function onSearch({ query, from, until, partition }: SearchParams) {
-    console.table({ query, from, until, partition });
     setMessages({ messages: undefined, ts: undefined, error: undefined });
     startTransition(() => {
       const newQuery = {
         ...searchParams,
         query: query?.value,
+        where: query?.where,
+        partition,
         "filter[offset]": from.type === "offset" ? from.value : "",
         "filter[timestamp]": from.type === "timestamp" ? from.value : "",
         "filter[epoch]": from.type === "epoch" ? from.value : "",
         limit: until.type === "limit" ? until.value : "",
         _: Date.now(),
       };
-      console.log(newQuery);
       updateUrl(newQuery);
       setAutomaticRefresh(until.type === "live");
     });
@@ -177,6 +178,7 @@ export function ConnectedMessagesTable({
     offset,
     partition,
     query,
+    where,
     refreshInterval,
     timestamp,
   ]);
@@ -189,7 +191,7 @@ export function ConnectedMessagesTable({
       query,
       timestamp,
     });
-  }, [fetchMessages, limit, offset, partition, query, timestamp]);
+  }, [fetchMessages, limit, offset, partition, query, timestamp, refresh]);
 
   switch (true) {
     case messages === undefined:
@@ -201,6 +203,7 @@ export function ConnectedMessagesTable({
           filterOffset={offset}
           filterEpoch={epoch}
           filterQuery={query}
+          filterWhere={where}
         />
       );
     case !isFiltered && messages?.length === 0:
@@ -233,6 +236,7 @@ export function ConnectedMessagesTable({
           partitions={partitions}
           filterLimit={limit}
           filterQuery={query}
+          filterWhere={where}
           filterOffset={offset}
           filterEpoch={epoch}
           filterTimestamp={timestamp}

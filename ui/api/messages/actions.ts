@@ -19,6 +19,7 @@ export async function getTopicMessages(
     pageSize: number;
     partition?: number;
     query?: string;
+    where?: "key" | "headers" | "value" | `jq:${string}`;
     filter:
       | {
           type: "offset";
@@ -65,13 +66,17 @@ export async function getTopicMessages(
   try {
     const messages = MessageApiResponse.parse(rawData).data;
 
-    if (params.query !== undefined && params.query !== null) {
-      const query = params.query;
+    const query = params.query;
+    const where = params.where;
+    if (query !== undefined && query !== null && query.length > 0) {
       const filteredMessages = messages.filter(
         (m) =>
-          m.attributes.key?.includes(query) ||
-          m.attributes.value?.includes(query) ||
-          JSON.stringify(m.attributes.headers).includes(query),
+          ((where === "key" || where === undefined) &&
+            m.attributes.key?.includes(query)) ||
+          ((where === "value" || where === undefined) &&
+            m.attributes.value?.includes(query)) ||
+          ((where === "headers" || where === undefined) &&
+            JSON.stringify(m.attributes.headers).includes(query)),
       );
       log.trace({ filteredMessages, query: params.query }, "Filtered messages");
       return { messages: filteredMessages, ts: new Date() };

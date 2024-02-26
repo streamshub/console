@@ -3,6 +3,9 @@ import {
   MessageBrowserProps,
   SearchParams,
 } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/_components/MessagesTable";
+import { parseSearchInput } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/_components/parseSearchInput";
+import { PartitionSelector } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/_components/PartitionSelector";
+import { WhereSelector } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/_components/WhereSelector";
 import {
   ActionGroup,
   Button,
@@ -11,6 +14,7 @@ import {
   Form,
   FormGroup,
   FormHelperText,
+  FormSection,
   Grid,
   GridItem,
   HelperText,
@@ -35,26 +39,32 @@ import {
 
 export function AdvancedSearch({
   filterQuery,
+  filterWhere,
   filterEpoch,
   filterOffset,
   filterPartition,
   filterTimestamp,
   filterLimit,
   onSearch,
+  partitions,
 }: Pick<
   MessageBrowserProps,
   | "filterQuery"
+  | "filterWhere"
   | "filterEpoch"
   | "filterOffset"
   | "filterPartition"
   | "filterTimestamp"
   | "filterLimit"
   | "onSearch"
+  | "partitions"
 >) {
   const searchInputRef = useRef<HTMLInputElement>(null);
   const paneRef = useRef(null);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [query, setQuery] = useState(filterQuery);
+  const [where, setWhere] = useState(filterWhere);
+  const [partition, setPartition] = useState(filterPartition);
   const [fromEpoch, setFromEpoch] = useState(filterEpoch);
   const [fromTimestamp, setFromTimestamp] = useState(filterTimestamp);
   const [fromOffset, setFromOffset] = useState(filterOffset);
@@ -98,18 +108,25 @@ export function AdvancedSearch({
       query: query
         ? {
             value: query,
-            where: {
-              type: "everywhere",
-            },
+            where: where ?? "everywhere",
           }
         : undefined,
+      partition,
       from,
       until: {
         type: "limit",
         value: untilLimit,
       },
     };
-  }, [query, untilLimit, fromOffset, fromEpoch, fromTimestamp]);
+  }, [
+    query,
+    where,
+    partition,
+    untilLimit,
+    fromOffset,
+    fromEpoch,
+    fromTimestamp,
+  ]);
 
   const getSearchInputValue = useCallback(() => {
     const parameters = getParameters();
@@ -118,9 +135,12 @@ export function AdvancedSearch({
       let composed: string[] = [];
       if (query) {
         composed.push(query.value);
-        if (query.where.type !== "everywhere") {
-          composed.push(`where=${query.where.type}`);
+        if (query.where !== "everywhere") {
+          composed.push(`where=${query.where}`);
         }
+      }
+      if (partition) {
+        composed.push(`partition=${partition}`);
       }
       if (from) {
         if ("value" in from) {
@@ -152,80 +172,6 @@ export function AdvancedSearch({
     [getParameters, onSearch],
   );
 
-  function onComposed(value: string) {
-    const parts = value.split(" ");
-    let queryParts: string[] = [];
-    parts.forEach((p) => {
-      if (p.indexOf(`where=`) === 0) {
-        const [_, where] = p.split("=");
-        // TODO set where
-      } else if (p.indexOf(`from=`) === 0) {
-        const [_, from] = p.split("=");
-        if (from === "now") {
-          setLatest();
-        } else {
-          const [type, value] = from.split(":");
-          switch (type) {
-            case "offset": {
-              const number = parseInt(value, 10);
-              if (Number.isSafeInteger(number)) {
-                setFromOffset(number);
-              } else {
-                setLatest();
-              }
-              break;
-            }
-            case "epoch": {
-              const number = parseInt(value, 10);
-              if (Number.isSafeInteger(number)) {
-                setFromEpoch(number);
-              } else {
-                setLatest();
-              }
-              break;
-            }
-            case "timestamp": {
-              setFromTimestamp(value);
-              break;
-            }
-            default:
-              setLatest();
-          }
-        }
-      } else if (p.indexOf("until=") === 0) {
-        const [_, until] = p.split("=");
-        const [type, value] = until.split(":");
-        switch (type) {
-          case "limit": {
-            const number = parseInt(value, 10);
-            if (Number.isSafeInteger(number)) {
-              setUntilLimit(number);
-            }
-            break;
-          }
-          case "partition": {
-            // const number = parseInt(value, 10);
-            // if (Number.isSafeInteger(number)) {
-            //   setEpoch(number);
-            // } else {
-            //   setLatest();
-            // }
-            break;
-          }
-          case "timestamp": {
-            // TODO
-            break;
-          }
-          default:
-            setLatest();
-        }
-      } else {
-        queryParts.push(p);
-      }
-    });
-    setQuery(queryParts.join(" "));
-  }
-
   useEffect(() => {
     if (shouldSubmit) {
       setShouldSubmit(false);
@@ -245,8 +191,13 @@ export function AdvancedSearch({
       isAdvancedSearchOpen={isPanelOpen}
       onClear={onClear}
       onSearch={(e) => {
-        onComposed(searchInputValue);
-        onSubmit(e);
+        e.preventDefault();
+        const sp = parseSearchInput({
+          value: searchInputValue,
+        });
+        startTransition(() => {
+          onSearch(sp);
+        });
       }}
       ref={searchInputRef}
       id="search"
@@ -258,121 +209,132 @@ export function AdvancedSearch({
       <Panel variant="raised">
         <PanelMain>
           <PanelMainBody>
-            <Form>
-              <Grid hasGutter={true}>
-                <GridItem span={6}>
-                  <FormGroup
-                    label="Has the words"
-                    fieldId="has-words"
-                    key="has-words"
-                  >
-                    <TextInput
-                      type="text"
-                      id="query"
-                      value={query}
-                      onChange={(_event, value) => setQuery(value)}
-                    />
-                  </FormGroup>
-                </GridItem>
+            <Form isHorizontal={true}>
+              <FormSection title={"Filter"}>
+                <Grid hasGutter={true}>
+                  <GridItem>
+                    <FormGroup
+                      label="Has the words"
+                      fieldId="has-words"
+                      key="has-words"
+                    >
+                      <TextInput
+                        type="text"
+                        id="query"
+                        value={query}
+                        onChange={(_event, value) => setQuery(value)}
+                      />
+                    </FormGroup>
+                  </GridItem>
 
-                <GridItem span={6}>
-                  <FormGroup label={"Where"}>
-                    <Dropdown
-                      data-testid={"filter-group-dropdown"}
-                      toggle={(toggleRef) => (
-                        <MenuToggle
-                          onClick={() => {}}
-                          isDisabled={false}
-                          isExpanded={false}
-                          data-testid={"filter-group"}
-                          ref={toggleRef}
-                        >
-                          Anywhere
-                        </MenuToggle>
-                      )}
-                      isOpen={false}
-                      onOpenChange={() => {}}
-                      onSelect={() => {}}
+                  <GridItem>
+                    <FormGroup label={"Where"}>
+                      <WhereSelector value={where} onChange={setWhere} />
+                    </FormGroup>
+                  </GridItem>
+                  <GridItem>
+                    <FormGroup
+                      label="In partition"
+                      fieldId="in-partition"
+                      key="in-partition"
                     >
-                      <DropdownItem key="offset" value="offset">
-                        Anywhere
-                      </DropdownItem>
-                    </Dropdown>
-                  </FormGroup>
-                </GridItem>
-              </Grid>
-              <FormGroup label={"Search from"}>
-                <FilterGroup
-                  isDisabled={false}
-                  offset={filterOffset}
-                  epoch={filterEpoch}
-                  timestamp={filterTimestamp}
-                  onOffsetChange={setFromOffset}
-                  onTimestampChange={setFromTimestamp}
-                  onEpochChange={setFromEpoch}
-                  onLatest={setLatest}
-                />
-              </FormGroup>
-              <FormGroup label={"Until"}>
-                <Dropdown
-                  data-testid={"filter-group-dropdown"}
-                  toggle={(toggleRef) => (
-                    <MenuToggle
-                      onClick={() => {}}
-                      isDisabled={false}
-                      isExpanded={false}
-                      data-testid={"filter-group"}
-                      ref={toggleRef}
+                      <PartitionSelector
+                        value={partition}
+                        partitions={partitions}
+                        isDisabled={false}
+                        onChange={setPartition}
+                      />
+                    </FormGroup>
+                  </GridItem>
+                </Grid>
+              </FormSection>
+              <FormSection title={"Range"}>
+                <Grid hasGutter={true}>
+                  <GridItem>
+                    <FormGroup label={"Search from"}>
+                      <FilterGroup
+                        isDisabled={false}
+                        offset={filterOffset}
+                        epoch={filterEpoch}
+                        timestamp={filterTimestamp}
+                        onOffsetChange={setFromOffset}
+                        onTimestampChange={setFromTimestamp}
+                        onEpochChange={setFromEpoch}
+                        onLatest={setLatest}
+                      />
+                    </FormGroup>
+                  </GridItem>
+
+                  <GridItem>
+                    <FormGroup label={"Until"}>
+                      <Dropdown
+                        data-testid={"filter-group-dropdown"}
+                        toggle={(toggleRef) => (
+                          <MenuToggle
+                            onClick={() => {}}
+                            isDisabled={false}
+                            isExpanded={false}
+                            data-testid={"filter-group"}
+                            ref={toggleRef}
+                          >
+                            Number of messages
+                          </MenuToggle>
+                        )}
+                        isOpen={false}
+                        onOpenChange={() => {}}
+                        onSelect={() => {}}
+                      >
+                        <DropdownItem key="offset" value="offset">
+                          Now
+                        </DropdownItem>
+                      </Dropdown>
+                      <Dropdown
+                        data-testid={"filter-group-dropdown"}
+                        toggle={(toggleRef) => (
+                          <MenuToggle
+                            onClick={() => {}}
+                            isDisabled={false}
+                            isExpanded={false}
+                            data-testid={"filter-group"}
+                            ref={toggleRef}
+                          >
+                            {untilLimit}
+                          </MenuToggle>
+                        )}
+                        isOpen={false}
+                        onOpenChange={() => {}}
+                        onSelect={() => {}}
+                      >
+                        <DropdownItem key="offset" value="offset">
+                          Now
+                        </DropdownItem>
+                      </Dropdown>
+                    </FormGroup>
+                  </GridItem>
+                </Grid>
+              </FormSection>
+              <FormSection title={"Transformation"}>
+                <Grid>
+                  <GridItem>
+                    <FormGroup
+                      label="Value transformation"
+                      fieldId="has-words"
+                      key="has-words"
                     >
-                      Number of messages
-                    </MenuToggle>
-                  )}
-                  isOpen={false}
-                  onOpenChange={() => {}}
-                  onSelect={() => {}}
-                >
-                  <DropdownItem key="offset" value="offset">
-                    Now
-                  </DropdownItem>
-                </Dropdown>
-                <Dropdown
-                  data-testid={"filter-group-dropdown"}
-                  toggle={(toggleRef) => (
-                    <MenuToggle
-                      onClick={() => {}}
-                      isDisabled={false}
-                      isExpanded={false}
-                      data-testid={"filter-group"}
-                      ref={toggleRef}
-                    >
-                      {untilLimit}
-                    </MenuToggle>
-                  )}
-                  isOpen={false}
-                  onOpenChange={() => {}}
-                  onSelect={() => {}}
-                >
-                  <DropdownItem key="offset" value="offset">
-                    Now
-                  </DropdownItem>
-                </Dropdown>
-              </FormGroup>
-              <FormGroup
-                label="Value transformation"
-                fieldId="has-words"
-                key="has-words"
-              >
-                <TextInput type="text" id="has-words" />
-                <FormHelperText>
-                  <HelperText>
-                    <HelperTextItem>
-                      Tranform the value using a jq filter. This is useful when
-                      the value contains many fields and you want a quick glance
-                      at some of them.
-                    </HelperTextItem>
-                  </HelperText>
-                </FormHelperText>
-              </FormGroup>
+                      <TextInput type="text" id="has-words" />
+                      <FormHelperText>
+                        <HelperText>
+                          <HelperTextItem>
+                            Tranform the value using a jq filter. This is useful
+                            when the value contains many fields and you want a
+                            quick glance at some of them.
+                          </HelperTextItem>
+                        </HelperText>
+                      </FormHelperText>
+                    </FormGroup>
+                  </GridItem>
+                </Grid>
+              </FormSection>
               <ActionGroup>
                 <Button
                   variant="primary"
