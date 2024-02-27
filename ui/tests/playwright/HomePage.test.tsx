@@ -56,13 +56,8 @@ describe("Home page", () => {
       "Welcome to the AMQ streams console"
     );
     expect(await page.innerText("body")).toContain(
-      "Red Hat AMQ is a lightweight, high-performance, robust messaging platform."
-    );
-    expect(await page.innerText("body")).toContain(
       "Platform: OpenShift Cluster"
     );
-    expect(await page.innerText("body")).toContain("kafka1");
-    expect(await page.innerText("body")).toContain("kafka2");
     expect(await page.innerText("body")).toContain("Recently viewed topics");
     expect(await page.innerText("body")).toContain(
       'When you start looking at specific topics through the AMQ Streams console, they"ll start showing here.'

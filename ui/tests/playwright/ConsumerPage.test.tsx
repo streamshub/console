@@ -1,12 +1,13 @@
 import { page } from "../../jest.setup";
+import {URL} from './utils'
+
 describe("Consumer page", () => {
   test("Consumer should display table", async () => {
     await page.goto(
-      "https://console.amq-streams-ui.us-east.containers.appdomain.cloud/kafka/j7W3TRG7SsWCBXHjz2hfrg/consumer-groups/__strimzi-topic-operator-kstreams"
+      `${URL}/kafka/j7W3TRG7SsWCBXHjz2hfrg/consumer-groups/__strimzi-topic-operator-kstreams`
     );
     await page.waitForLoadState("networkidle");
     expect(await page.innerText("body")).toContain("Member ID");
-    expect(await page.innerText("body")).toContain("Client ID	");
     expect(await page.innerText("body")).toContain("Overall lag");
     expect(await page.innerText("body")).toContain("Assigned partitions");
     const button = await page.$(

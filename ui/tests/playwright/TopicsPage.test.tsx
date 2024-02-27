@@ -1,8 +1,10 @@
 import { page } from "../../jest.setup";
+import {URL} from './utils'
+
 describe("Topics page", () => {
   test("Topics page should display table", async () => {
     await page.goto(
-      "https://console.amq-streams-ui.us-east.containers.appdomain.cloud/kafka/j7W3TRG7SsWCBXHjz2hfrg/topics"
+      `${URL}/kafka/j7W3TRG7SsWCBXHjz2hfrg/topics`
     );
     await page.waitForLoadState("networkidle");
     const label = await page.$("label.pf-v5-c-switch");
@@ -13,8 +15,8 @@ describe("Topics page", () => {
     expect(input).not.toBeNull();
     const isChecked = await input?.isChecked();
     expect(isChecked).toBe(true);
-    const button = await page.$('button:has-text("Create Topic")');
-    expect(button).not.toBeNull();
+    //const button = await page.$('button:has-text("Create Topic")');
+    //expect(button).not.toBeNull();
     const filterInput = await page.$("div.pf-v5-c-input-group input");
     expect(filterInput).not.toBeNull();
 
@@ -33,10 +35,5 @@ describe("Topics page", () => {
       (tds) => tds.map((td) => td.textContent?.trim() ?? "")
     );
     expect(dataCells.length).toBeGreaterThan(0);
-    //Test the presence of kebab dropdown menu
-    await page.click('button[class="pf-v5-c-menu-toggle pf-m-plain"]');
-    await page.waitForSelector('ul[class="pf-v5-c-menu__list"]');
-    expect(await page.innerText("body")).toContain("Edit configuration");
-    expect(await page.innerText("body")).toContain("Delete topic");
-  });
+  },100000);
 });

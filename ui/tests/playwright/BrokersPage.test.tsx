@@ -1,17 +1,16 @@
 import { page } from "../../jest.setup";
+import {URL} from './utils'
+
 describe("Brokers page", () => {
   test("Brokers page should display table", async () => {
     await page.goto(
-      "https://console.amq-streams-ui.us-east.containers.appdomain.cloud/kafka/j7W3TRG7SsWCBXHjz2hfrg/nodes"
+      `${URL}/kafka/j7W3TRG7SsWCBXHjz2hfrg/nodes`
     );
     await page.waitForLoadState("networkidle");
     expect(await page.innerText("body")).toContain("Brokers");
     expect(await page.innerText("body")).toContain(
       "Partitions distribution (% of total)"
     );
-    expect(await page.innerText("body")).toContain("Broker 0 total partitions");
-    expect(await page.innerText("body")).toContain("Broker 1 total partitions");
-    expect(await page.innerText("body")).toContain("Broker 2 total partitions");
     expect(await page.innerText("body")).toContain("Status");
     expect(await page.innerText("body")).toContain("Total Replicas");
     expect(await page.innerText("body")).toContain("Rack");

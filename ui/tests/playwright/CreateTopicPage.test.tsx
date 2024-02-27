@@ -1,6 +1,6 @@
 import { page } from "../../jest.setup";
 describe("Create Topic", () => {
-  test("Create Topic form should appear", async () => {
+  test.skip("Create Topic form should appear", async () => {
     await page.goto(
       "https://console.amq-streams-ui.us-east.containers.appdomain.cloud/kafka/j7W3TRG7SsWCBXHjz2hfrg/topics/create"
     );

@@ -20,15 +20,6 @@ jobs:
     - name: Install dependencies
       run: npm install
 
-    - name: Deploy API
-      run: |
-        # Add commands to deploy your API to the specified environment
-        echo "Deploying API to staging environment"
-        # Your deployment commands go here
-
     - name: Run Playwright Tests
       run: |
-        # Set the base URL for Playwright tests using an environment variable if needed
-        #export BASE_URL=env.BASE_API_URL
-        # Run npm test to execute your Playwright tests
         npm test

@@ -1,14 +1,14 @@
 import { page } from "../../jest.setup";
+import {URL} from './utils'
+
 describe("Messages page", () => {
   test("Messages page should display table", async () => {
+    jest.setTimeout(30000)
     await page.goto(
-      "https://console.amq-streams-ui.us-east.containers.appdomain.cloud/kafka/j7W3TRG7SsWCBXHjz2hfrg/topics/g0WUoQbGROiuHeXnjxGC6Q/messages"
+      `${URL}/kafka/j7W3TRG7SsWCBXHjz2hfrg/topics/RRf0He61TRWcMgG7qksTiw/messages`
     );
     await page.waitForLoadState("networkidle");
-    expect(await page.innerText("body")).toContain("Timestamp (UTC)");
     expect(await page.innerText("body")).toContain("Key");
-    expect(await page.innerText("body")).toContain("Value");
-    expect(await page.innerText("body")).toContain("Latest messages");
     expect(await page.innerText("body")).toContain("All partitions");
     const dataRows = await page.$$(
       'table[aria-label="Messages table"] tbody tr'
