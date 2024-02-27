@@ -10,7 +10,8 @@ export type UntilGroupProps = {
 };
 
 export function UntilGroup({
-  limit,
+  limit = 50,
+  live,
   onLimitChange,
   onLiveChange,
 }: UntilGroupProps) {
@@ -18,7 +19,7 @@ export function UntilGroup({
     limit: "Number of messages",
     live: "Live mode (consume messages forever)",
   };
-  const [category, setCategory] = useState<Category>(limit ? "limit" : "live");
+  const [category, setCategory] = useState<Category>(live ? "live" : "limit");
   const [isCategoryMenuOpen, setIsCategoryMenuOpen] = useState(false);
   const [isLimitMenuOpen, setIsLimitMenuOpen] = useState(false);
 

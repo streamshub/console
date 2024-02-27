@@ -294,8 +294,14 @@ export function AdvancedSearch({
                       <UntilGroup
                         limit={untilLimit}
                         live={untilLive}
-                        onLimitChange={setUntilLimit}
-                        onLiveChange={setUntilLive}
+                        onLimitChange={(v) => {
+                          setUntilLimit(v);
+                          setUntilLive(false);
+                        }}
+                        onLiveChange={() => {
+                          setUntilLive(true);
+                          setUntilLimit(undefined);
+                        }}
                       />
                     </FormGroup>
                   </GridItem>
