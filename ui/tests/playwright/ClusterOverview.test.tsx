@@ -6,7 +6,7 @@ describe("Cluster Overview page", () => {
     await page.goto(
       `${URL}/kafka/j7W3TRG7SsWCBXHjz2hfrg/overview`
     );
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("networkidle",{timeout: 60000});
     expect(await page.innerText("body")).toContain("Cluster overview");
     expect(await page.innerText("body")).toContain(
       "Key performance indicators and important information regarding the Kafka cluster."

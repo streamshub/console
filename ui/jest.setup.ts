@@ -13,7 +13,6 @@ beforeAll(async () => {
   );
   await page.click('button[type="submit"]');
   await page.waitForLoadState("networkidle");
-  await page.waitForLoadState("networkidle");
 }, 100000);
 
 afterAll(async () => {

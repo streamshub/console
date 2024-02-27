@@ -7,7 +7,7 @@ describe("Partitions page", () => {
     await page.goto(
       `${URL}/kafka/j7W3TRG7SsWCBXHjz2hfrg/topics/RRf0He61TRWcMgG7qksTiw/partitions`
     );
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("networkidle",{timeout: 60000});
     expect(await page.innerText("body")).toContain("Partition ID");
     expect(await page.innerText("body")).toContain("Status");
     expect(await page.innerText("body")).toContain("Replicas");

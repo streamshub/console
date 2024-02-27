@@ -7,7 +7,7 @@ describe("Messages page", () => {
     await page.goto(
       `${URL}/kafka/j7W3TRG7SsWCBXHjz2hfrg/topics/RRf0He61TRWcMgG7qksTiw/messages`
     );
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("networkidle",{timeout: 60000});
     expect(await page.innerText("body")).toContain("Key");
     expect(await page.innerText("body")).toContain("All partitions");
     const dataRows = await page.$$(

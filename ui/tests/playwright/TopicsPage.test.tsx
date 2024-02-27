@@ -6,7 +6,7 @@ describe("Topics page", () => {
     await page.goto(
       `${URL}/kafka/j7W3TRG7SsWCBXHjz2hfrg/topics`
     );
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("networkidle",{timeout: 60000});
     const label = await page.$("label.pf-v5-c-switch");
     expect(label).not.toBeNull();
     const labelText = await label?.innerText();

@@ -1,10 +1,12 @@
 import { page } from "../../jest.setup";
+import {URL} from './utils'
+
 describe("Create Topic", () => {
   test.skip("Create Topic form should appear", async () => {
     await page.goto(
-      "https://console.amq-streams-ui.us-east.containers.appdomain.cloud/kafka/j7W3TRG7SsWCBXHjz2hfrg/topics/create"
+      `${URL}/kafka/j7W3TRG7SsWCBXHjz2hfrg/topics/create`
     );
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("networkidle", { timeout: 10000 });
     const screenshot = await page.screenshot();
     expect(screenshot).toMatchSnapshot();
     await page.click("#step-options");
