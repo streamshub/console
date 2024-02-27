@@ -1,4 +1,3 @@
-"use client";
 import { Message } from "@/api/messages/schema";
 import {
   Column,
@@ -56,7 +55,8 @@ export type MessageBrowserProps = {
   lastUpdated?: Date;
   messages: Message[];
   partitions: number;
-  filterLimit: number;
+  filterLimit?: number;
+  filterLive?: boolean;
   filterQuery?: string;
   filterWhere?: "key" | "headers" | "value" | `jq:${string}`;
   filterOffset?: number;
@@ -73,6 +73,7 @@ export function MessagesTable({
   messages,
   partitions,
   filterLimit,
+  filterLive,
   filterQuery,
   filterWhere,
   filterOffset,
@@ -141,6 +142,7 @@ export function MessagesTable({
             <MessagesTableToolbar
               partitions={partitions}
               filterLimit={filterLimit}
+              filterLive={filterLive}
               filterQuery={filterQuery}
               filterWhere={filterWhere}
               filterOffset={filterOffset}

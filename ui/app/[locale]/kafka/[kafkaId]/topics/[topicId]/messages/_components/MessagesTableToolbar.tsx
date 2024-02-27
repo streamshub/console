@@ -19,8 +19,9 @@ export function MessagesTableToolbar({
   filterTimestamp,
   filterOffset,
   filterPartition,
-  partitions,
   filterLimit,
+  filterLive,
+  partitions,
   onSearch,
   onColumnManagement,
 }: Pick<
@@ -31,8 +32,9 @@ export function MessagesTableToolbar({
   | "filterTimestamp"
   | "filterOffset"
   | "filterPartition"
-  | "partitions"
   | "filterLimit"
+  | "filterLive"
+  | "partitions"
   | "onSearch"
 > & {
   onColumnManagement: () => void;
@@ -60,6 +62,7 @@ export function MessagesTableToolbar({
             filterPartition={filterPartition}
             filterTimestamp={filterTimestamp}
             filterLimit={filterLimit}
+            filterLive={filterLive}
             partitions={partitions}
             onSearch={onSearch}
           />

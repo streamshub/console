@@ -73,19 +73,11 @@ export function parseSearchInput({ value }: { value: string }): SearchParams {
           }
           break;
         }
-        // case "partition": {
-        //   sp.until = {
-        //     type: "partition",
-        //     value
-        //   }
-        //   break;
-        // }
-        case "timestamp": {
+
+        case "live": {
           sp.until = {
-            type: "timestamp",
-            value,
+            type: "live",
           };
-          break;
         }
       }
     } else {

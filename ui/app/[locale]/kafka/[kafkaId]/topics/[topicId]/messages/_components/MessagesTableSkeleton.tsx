@@ -8,6 +8,7 @@ import { useTranslations } from "next-intl";
 
 export function MessagesTableSkeleton({
   filterLimit,
+  filterLive,
   filterQuery,
   filterWhere,
   filterPartition,
@@ -18,6 +19,7 @@ export function MessagesTableSkeleton({
   MessageBrowserProps,
   | "filterPartition"
   | "filterLimit"
+  | "filterLive"
   | "filterQuery"
   | "filterWhere"
   | "filterTimestamp"
@@ -35,6 +37,7 @@ export function MessagesTableSkeleton({
       <MessagesTableToolbar
         partitions={1}
         filterLimit={filterLimit}
+        filterLive={filterLive}
         filterQuery={filterQuery}
         filterWhere={filterWhere}
         filterOffset={filterOffset}

@@ -9,16 +9,11 @@ import { format, parseISO, setHours, setMinutes } from "date-fns";
 import { useEffect, useState } from "react";
 
 export type DateTimePickerProps = {
-  isDisabled: boolean;
   value: string | undefined;
   onChange: (value: number) => void;
 };
 
-export function DateTimePicker({
-  isDisabled,
-  value,
-  onChange,
-}: DateTimePickerProps) {
+export function DateTimePicker({ value, onChange }: DateTimePickerProps) {
   const [date, setDate] = useState(value ? parseISO(value) : undefined);
 
   let timePart: string | undefined = undefined;
@@ -63,7 +58,6 @@ export function DateTimePicker({
   return (
     <InputGroup>
       <DatePicker
-        isDisabled={isDisabled}
         value={datePart}
         onChange={(_, __, date) => {
           if (date) {
@@ -73,7 +67,7 @@ export function DateTimePicker({
         }}
       />
       <TimePicker
-        isDisabled={!date || isDisabled}
+        isDisabled={!date}
         time={timePart ? timePart : ""}
         onChange={onSelectTime}
       />

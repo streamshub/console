@@ -10,8 +10,7 @@ import { useCallback, useEffect, useState } from "react";
 import { DateTimePicker } from "./DateTimePicker";
 
 type Category = "offset" | "timestamp" | "epoch" | "latest";
-export type FilterGroupProps = {
-  isDisabled: boolean;
+export type FromGroupProps = {
   offset: number | undefined;
   epoch: number | undefined;
   timestamp: string | undefined;
@@ -21,8 +20,7 @@ export type FilterGroupProps = {
   onLatest: () => void;
 };
 
-export function FilterGroup({
-  isDisabled,
+export function FromGroup({
   offset,
   epoch,
   timestamp,
@@ -30,7 +28,7 @@ export function FilterGroup({
   onTimestampChange,
   onEpochChange,
   onLatest,
-}: FilterGroupProps) {
+}: FromGroupProps) {
   const t = useTranslations("message-browser");
   const [value, setValue] = useState<string | undefined>();
   const [currentCategory, _setCurrentCategory] = useState<Category>("latest");
@@ -118,7 +116,6 @@ export function FilterGroup({
         toggle={(toggleRef) => (
           <MenuToggle
             onClick={() => setIsOpen((v) => !v)}
-            isDisabled={isDisabled}
             isExpanded={isOpen}
             data-testid={"filter-group"}
             ref={toggleRef}
@@ -169,7 +166,6 @@ export function FilterGroup({
       </Dropdown>
       {currentCategory === "offset" && (
         <TextInput
-          isDisabled={isDisabled}
           type={"number"}
           aria-label={t("filter.offset_aria_label")}
           placeholder={t("filter.offset_placeholder")}
@@ -180,14 +176,12 @@ export function FilterGroup({
       )}
       {currentCategory === "timestamp" && (
         <DateTimePicker
-          isDisabled={isDisabled}
           value={value || timestamp}
           onChange={(value) => setValue(new Date(value).toISOString())}
         />
       )}
       {currentCategory === "epoch" && (
         <TextInput
-          isDisabled={isDisabled}
           type={"number"}
           aria-label={t("filter.epoch_aria_label")}
           placeholder={t("filter.epoch_placeholder")}

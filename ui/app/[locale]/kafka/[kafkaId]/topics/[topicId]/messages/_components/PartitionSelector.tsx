@@ -8,14 +8,12 @@ const MAX_OPTIONS = 20;
 export type PartitionSelectorProps = {
   value: number | undefined;
   partitions: number | undefined;
-  isDisabled: boolean;
   onChange: (value: number | undefined) => void;
 };
 
 export function PartitionSelector({
   value = -1,
   partitions,
-  isDisabled,
   onChange,
 }: PartitionSelectorProps) {
   const t = useTranslations("message-browser");
@@ -84,18 +82,6 @@ export function PartitionSelector({
     return makeOptions(allPartitions);
   }, [allPartitions, makeOptions]);
 
-  // const handleFilter: SelectProps["onFilter"] = useCallback(
-  //   (_, filter: string) => {
-  //     if (filter !== "") {
-  //       return makeOptions(
-  //         allPartitions.filter((partition) => partition.includes(filter)),
-  //       );
-  //     }
-  //     return options;
-  //   },
-  //   [allPartitions, makeOptions, options],
-  // );
-
   return (
     <Select
       onSelect={(_, value) => handleChange(value as string)}
@@ -104,12 +90,7 @@ export function PartitionSelector({
       aria-labelledby={titleId}
       data-testid={"partition-selector"}
       toggle={(toggleRef) => (
-        <MenuToggle
-          ref={toggleRef}
-          onClick={toggleOpen}
-          isExpanded={isOpen}
-          isDisabled={isDisabled}
-        >
+        <MenuToggle ref={toggleRef} onClick={toggleOpen} isExpanded={isOpen}>
           {value !== -1
             ? t("partition_option", { value })
             : t("partition_placeholder")}

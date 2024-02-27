@@ -1,14 +1,13 @@
-import { FilterGroup } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/_components/FilterGroup";
+import { FromGroup } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/_components/FromGroup";
 import { MessageBrowserProps } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/_components/MessagesTable";
 import { parseSearchInput } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/_components/parseSearchInput";
 import { PartitionSelector } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/_components/PartitionSelector";
+import { UntilGroup } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/_components/UntilGroup";
 import { WhereSelector } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/_components/WhereSelector";
 import { SearchParams } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/types";
 import {
   ActionGroup,
   Button,
-  Dropdown,
-  DropdownItem,
   Form,
   FormGroup,
   FormHelperText,
@@ -17,7 +16,6 @@ import {
   GridItem,
   HelperText,
   HelperTextItem,
-  MenuToggle,
   Panel,
   PanelMain,
   PanelMainBody,
@@ -43,6 +41,7 @@ export function AdvancedSearch({
   filterPartition,
   filterTimestamp,
   filterLimit,
+  filterLive,
   onSearch,
   partitions,
 }: Pick<
@@ -54,6 +53,7 @@ export function AdvancedSearch({
   | "filterPartition"
   | "filterTimestamp"
   | "filterLimit"
+  | "filterLive"
   | "onSearch"
   | "partitions"
 >) {
@@ -67,6 +67,7 @@ export function AdvancedSearch({
   const [fromTimestamp, setFromTimestamp] = useState(filterTimestamp);
   const [fromOffset, setFromOffset] = useState(filterOffset);
   const [untilLimit, setUntilLimit] = useState(filterLimit);
+  const [untilLive, setUntilLive] = useState(filterLive);
   const [shouldSubmit, setShouldSubmit] = useState(false);
   const [_, startTransition] = useTransition();
 
@@ -103,6 +104,23 @@ export function AdvancedSearch({
         return { type: "latest" };
       }
     })();
+    const until = ((): SearchParams["until"] => {
+      if (untilLimit) {
+        return {
+          type: "limit",
+          value: untilLimit,
+        };
+      } else if (untilLive) {
+        return {
+          type: "live",
+        };
+      } else {
+        return {
+          type: "limit",
+          value: 50,
+        };
+      }
+    })();
     return {
       query: query
         ? {
@@ -112,19 +130,17 @@ export function AdvancedSearch({
         : undefined,
       partition,
       from,
-      until: {
-        type: "limit",
-        value: untilLimit,
-      },
+      until,
     };
   }, [
     query,
     where,
     partition,
-    untilLimit,
     fromOffset,
     fromEpoch,
     fromTimestamp,
+    untilLimit,
+    untilLive,
   ]);
 
   const getSearchInputValue = useCallback(() => {
@@ -151,6 +167,8 @@ export function AdvancedSearch({
       if (until) {
         if ("value" in until) {
           composed.push(`until=${until.type}:${until.value}`);
+        } else {
+          composed.push(`until=live`);
         }
       }
       return composed.join(" ");
@@ -240,7 +258,6 @@ export function AdvancedSearch({
                       <PartitionSelector
                         value={partition}
                         partitions={partitions}
-                        isDisabled={false}
                         onChange={setPartition}
                       />
                     </FormGroup>
@@ -251,8 +268,7 @@ export function AdvancedSearch({
                 <Grid hasGutter={true}>
                   <GridItem>
                     <FormGroup label={"Search from"}>
-                      <FilterGroup
-                        isDisabled={false}
+                      <FromGroup
                         offset={filterOffset}
                         epoch={filterEpoch}
                         timestamp={filterTimestamp}
@@ -278,48 +294,12 @@ export function AdvancedSearch({
 
                   <GridItem>
                     <FormGroup label={"Until"}>
-                      <Dropdown
-                        data-testid={"filter-group-dropdown"}
-                        toggle={(toggleRef) => (
-                          <MenuToggle
-                            onClick={() => {}}
-                            isDisabled={false}
-                            isExpanded={false}
-                            data-testid={"filter-group"}
-                            ref={toggleRef}
-                          >
-                            Number of messages
-                          </MenuToggle>
-                        )}
-                        isOpen={false}
-                        onOpenChange={() => {}}
-                        onSelect={() => {}}
-                      >
-                        <DropdownItem key="offset" value="offset">
-                          Now
-                        </DropdownItem>
-                      </Dropdown>
-                      <Dropdown
-                        data-testid={"filter-group-dropdown"}
-                        toggle={(toggleRef) => (
-                          <MenuToggle
-                            onClick={() => {}}
-                            isDisabled={false}
-                            isExpanded={false}
-                            data-testid={"filter-group"}
-                            ref={toggleRef}
-                          >
-                            {untilLimit}
-                          </MenuToggle>
-                        )}
-                        isOpen={false}
-                        onOpenChange={() => {}}
-                        onSelect={() => {}}
-                      >
-                        <DropdownItem key="offset" value="offset">
-                          Now
-                        </DropdownItem>
-                      </Dropdown>
+                      <UntilGroup
+                        limit={untilLimit}
+                        live={untilLive}
+                        onLimitChange={setUntilLimit}
+                        onLiveChange={setUntilLive}
+                      />
                     </FormGroup>
                   </GridItem>
                 </Grid>

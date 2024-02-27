@@ -9,7 +9,6 @@ import { MessagesTableSkeleton } from "@/app/[locale]/kafka/[kafkaId]/topics/[to
 import { NoDataEmptyState } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/_components/NoDataEmptyState";
 import { useParseSearchParams } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/parseSearchParams";
 import { SearchParams } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/types";
-import { RefreshInterval } from "@/components/RefreshSelector";
 import { Alert, PageSection } from "@/libs/patternfly/react-core";
 import { useFilterParams } from "@/utils/useFilterParams";
 import { AlertActionLink } from "@patternfly/react-core";
@@ -31,7 +30,7 @@ export function ConnectedMessagesTable({
   const [params, sp] = useParseSearchParams();
   const updateUrl = useFilterParams(sp);
   const router = useRouter();
-  const { limit, partition, query, where, offset, timestamp, epoch, _ } =
+  const { limit, live, partition, query, where, offset, timestamp, epoch, _ } =
     params;
 
   const [{ messages, ts, error }, setMessages] =
@@ -39,8 +38,6 @@ export function ConnectedMessagesTable({
       messages: undefined,
       ts: undefined,
     });
-  const [automaticRefresh, setAutomaticRefresh] = useState(false);
-  const [refreshInterval, setRefreshInterval] = useState<RefreshInterval>(1);
   const [isPending, startTransition] = useTransition();
 
   const isFiltered = partition || epoch || offset || timestamp || query;
@@ -56,10 +53,10 @@ export function ConnectedMessagesTable({
         timestamp: from.type === "timestamp" ? from.value : "",
         epoch: from.type === "epoch" ? from.value : "",
         limit: until.type === "limit" ? until.value : "",
+        live: until.type === "live",
         _: Date.now(),
       };
       updateUrl(newQuery);
-      setAutomaticRefresh(until.type === "live");
     });
   }
 
@@ -89,6 +86,7 @@ export function ConnectedMessagesTable({
       query,
       where,
       timestamp,
+      epoch,
       append = false,
     }: {
       limit?: number;
@@ -97,6 +95,7 @@ export function ConnectedMessagesTable({
       query?: string;
       where?: "key" | "headers" | "value" | `jq:${string}`;
       timestamp?: string;
+      epoch?: number;
       append?: boolean;
     }) {
       const filter = (() => {
@@ -154,35 +153,36 @@ export function ConnectedMessagesTable({
     let t: ReturnType<typeof setTimeout> | undefined;
 
     async function tick() {
-      if (automaticRefresh && t === undefined) {
+      if (live && messages) {
+        const latestTs = messages[0]?.attributes.timestamp;
         await fetchMessages({
-          limit,
-          offset,
+          limit: 50,
           partition,
           query,
           where,
-          timestamp,
+          timestamp: latestTs,
           append: true,
         });
       }
-      t = setTimeout(tick, refreshInterval * 1000);
+      t = setTimeout(tick, 1000);
     }
 
-    void tick();
+    t = setTimeout(tick, 1000);
     return () => {
       clearTimeout(t);
       t = undefined;
     };
   }, [
-    automaticRefresh,
+    live,
     fetchMessages,
     limit,
     offset,
     partition,
     query,
     where,
-    refreshInterval,
     timestamp,
+    epoch,
+    messages,
   ]);
 
   useEffect(() => {
@@ -193,14 +193,26 @@ export function ConnectedMessagesTable({
       query,
       where,
       timestamp,
+      epoch,
     });
-  }, [fetchMessages, limit, offset, partition, query, timestamp, _]);
+  }, [
+    fetchMessages,
+    limit,
+    offset,
+    partition,
+    query,
+    timestamp,
+    _,
+    where,
+    epoch,
+  ]);
 
   switch (true) {
     case messages === undefined:
       return (
         <MessagesTableSkeleton
           filterLimit={limit}
+          filterLive={live}
           filterTimestamp={timestamp}
           filterPartition={partition}
           filterOffset={offset}
@@ -237,6 +249,7 @@ export function ConnectedMessagesTable({
           messages={messages}
           partitions={partitions}
           filterLimit={limit}
+          filterLive={live}
           filterQuery={query}
           filterWhere={where}
           filterOffset={offset}
