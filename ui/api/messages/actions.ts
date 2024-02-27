@@ -83,17 +83,17 @@ export async function getTopicMessages(
   try {
     const messages = MessageApiResponse.parse(rawData).data;
 
-    const query = params.query;
+    const query = params.query?.toLowerCase();
     const where = params.where;
     if (query !== undefined && query !== null && query.length > 0) {
       const filteredMessages = messages.filter(
         (m) =>
           ((where === "key" || where === undefined) &&
-            m.attributes.key?.includes(query)) ||
+            m.attributes.key?.toLowerCase().includes(query)) ||
           ((where === "value" || where === undefined) &&
-            m.attributes.value?.includes(query)) ||
+            m.attributes.value?.toLowerCase().includes(query)) ||
           ((where === "headers" || where === undefined) &&
-            JSON.stringify(m.attributes.headers).includes(query)),
+            JSON.stringify(m.attributes.headers).toLowerCase().includes(query)),
       );
       log.trace({ filteredMessages, query: params.query }, "Filtered messages");
       return { messages: filteredMessages, ts: new Date() };
