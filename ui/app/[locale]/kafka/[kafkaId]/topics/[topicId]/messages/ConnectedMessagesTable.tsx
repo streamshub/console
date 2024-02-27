@@ -232,7 +232,6 @@ export function ConnectedMessagesTable({
     default:
       return (
         <MessagesTable
-          isRefreshing={isPending}
           selectedMessage={selectedMessage}
           lastUpdated={ts}
           messages={messages}
