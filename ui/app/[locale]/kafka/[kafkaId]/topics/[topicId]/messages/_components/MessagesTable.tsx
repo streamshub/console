@@ -1,13 +1,14 @@
 "use client";
 import { Message } from "@/api/messages/schema";
-import { AdvancedSearch } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/_components/AdvancedSearch";
 import {
   Column,
   columns,
   ColumnsModal,
   useColumnLabels,
 } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/_components/ColumnsModal";
+import { MessagesTableToolbar } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/_components/MessagesTableToolbar";
 import { NoResultsEmptyState } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/_components/NoResultsEmptyState";
+import { SearchParams } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/types";
 import { Bytes } from "@/components/Bytes";
 import { DateTime } from "@/components/DateTime";
 import { Number } from "@/components/Number";
@@ -18,9 +19,6 @@ import {
   PageSection,
   Text,
   TextContent,
-  Toolbar,
-  ToolbarContent,
-  ToolbarItem,
   Tooltip,
 } from "@/libs/patternfly/react-core";
 import { HelpIcon } from "@/libs/patternfly/react-icons";
@@ -30,13 +28,6 @@ import {
   OuterScrollContainer,
   TableVariant,
 } from "@/libs/patternfly/react-table";
-import {
-  Dropdown,
-  DropdownItem,
-  DropdownList,
-  MenuToggle,
-} from "@patternfly/react-core";
-import { EllipsisVIcon } from "@patternfly/react-icons";
 import { useTranslations } from "next-intl";
 import { PropsWithChildren, useEffect, useState } from "react";
 import { MessageDetails, MessageDetailsProps } from "./MessageDetails";
@@ -55,35 +46,13 @@ const columnWidths: Record<Column, BaseCellProps["width"]> = {
 };
 
 const defaultColumns: Column[] = [
-  "offset-partition",
   "timestampUTC",
+  "offset-partition",
   "key",
   "value",
 ];
 
-export type SearchParams = {
-  partition?: number;
-  query?: {
-    value: string;
-    where: "headers" | "key" | "value" | "everywhere" | `jq:${string}`;
-  };
-  from:
-    | { type: "timestamp"; value: string }
-    | { type: "epoch"; value: number }
-    | { type: "offset"; value: number }
-    | { type: "latest" };
-  until:
-    | { type: "limit"; value: number }
-    | { type: "live" }
-    | { type: "timestamp"; value: string }
-    | {
-        type: "partition";
-        value: number;
-      };
-};
-
 export type MessageBrowserProps = {
-  isRefreshing: boolean;
   selectedMessage?: Message;
   lastUpdated?: Date;
   messages: Message[];
@@ -101,7 +70,6 @@ export type MessageBrowserProps = {
 };
 
 export function MessagesTable({
-  isRefreshing,
   selectedMessage,
   messages,
   partitions,
@@ -364,146 +332,6 @@ export function MessagesTable({
           setShowColumnsManagement(false);
         }}
         onCancel={() => setShowColumnsManagement(false)}
-      />
-    </PageSection>
-  );
-}
-
-export function MessagesTableToolbar({
-  filterQuery,
-  filterWhere,
-  filterEpoch,
-  filterTimestamp,
-  filterOffset,
-  filterPartition,
-  partitions,
-  filterLimit,
-  onSearch,
-  onColumnManagement,
-}: Pick<
-  MessageBrowserProps,
-  | "filterQuery"
-  | "filterWhere"
-  | "filterEpoch"
-  | "filterTimestamp"
-  | "filterOffset"
-  | "filterPartition"
-  | "partitions"
-  | "filterLimit"
-  | "onSearch"
-> & {
-  onColumnManagement: () => void;
-}) {
-  const toolbarBreakpoint = "md";
-
-  function onClearAllFilters() {}
-
-  // const handleQueryChange = useDebouncedCallback((value: string) => {
-  //   onQueryChange(value);
-  // }, 300);
-
-  return (
-    <Toolbar
-      clearAllFilters={onClearAllFilters}
-      collapseListedFiltersBreakpoint={toolbarBreakpoint}
-    >
-      <ToolbarContent>
-        <ToolbarItem
-          variant={"search-filter"}
-          widths={{ default: "calc(100% - 58px)" }}
-        >
-          <AdvancedSearch
-            filterQuery={filterQuery}
-            filterWhere={filterWhere}
-            filterEpoch={filterEpoch}
-            filterOffset={filterOffset}
-            filterPartition={filterPartition}
-            filterTimestamp={filterTimestamp}
-            filterLimit={filterLimit}
-            partitions={partitions}
-            onSearch={onSearch}
-          />
-        </ToolbarItem>
-
-        <ToolbarItem>
-          <Dropdown
-            popperProps={{ position: "right" }}
-            isOpen={false}
-            onOpenChange={(isOpen: boolean) => {}}
-            toggle={(toggleRef) => (
-              <MenuToggle
-                ref={toggleRef}
-                isExpanded={false}
-                onClick={() => {}}
-                variant="plain"
-                aria-label="Table options"
-              >
-                <EllipsisVIcon aria-hidden="true" />
-              </MenuToggle>
-            )}
-          >
-            <DropdownList>
-              <DropdownItem>Action</DropdownItem>
-              <DropdownItem
-                // Prevent the default onClick functionality for example purposes
-                onClick={() => onColumnManagement()}
-              >
-                Manage columns
-              </DropdownItem>
-            </DropdownList>
-          </Dropdown>
-        </ToolbarItem>
-      </ToolbarContent>
-    </Toolbar>
-  );
-}
-
-export function MessagesTableSkeleton({
-  filterLimit,
-  filterQuery,
-  filterWhere,
-  filterPartition,
-  filterTimestamp,
-  filterOffset,
-  filterEpoch,
-}: Pick<
-  MessageBrowserProps,
-  | "filterPartition"
-  | "filterLimit"
-  | "filterQuery"
-  | "filterWhere"
-  | "filterTimestamp"
-  | "filterOffset"
-  | "filterEpoch"
->) {
-  const t = useTranslations("message-browser");
-  return (
-    <PageSection
-      isFilled={true}
-      hasOverflowScroll={true}
-      style={{ height: "calc(100vh - 170px - 70px)" }}
-      aria-label={t("title")}
-    >
-      <MessagesTableToolbar
-        partitions={1}
-        filterLimit={filterLimit}
-        filterQuery={filterQuery}
-        filterWhere={filterWhere}
-        filterOffset={filterOffset}
-        filterEpoch={filterEpoch}
-        filterTimestamp={filterTimestamp}
-        filterPartition={filterPartition}
-        onSearch={() => {}}
-        onColumnManagement={() => {}}
-      />
-      <ResponsiveTable
-        variant={TableVariant.compact}
-        ariaLabel={t("table_aria_label")}
-        columns={columns}
-        data={undefined}
-        expectedLength={filterLimit}
-        renderCell={() => <div></div>}
-        renderHeader={() => <div></div>}
       />
     </PageSection>
   );

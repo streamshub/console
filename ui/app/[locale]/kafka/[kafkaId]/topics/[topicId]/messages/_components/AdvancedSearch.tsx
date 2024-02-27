@@ -1,11 +1,9 @@
 import { FilterGroup } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/_components/FilterGroup";
-import {
-  MessageBrowserProps,
-  SearchParams,
-} from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/_components/MessagesTable";
+import { MessageBrowserProps } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/_components/MessagesTable";
 import { parseSearchInput } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/_components/parseSearchInput";
 import { PartitionSelector } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/_components/PartitionSelector";
 import { WhereSelector } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/_components/WhereSelector";
+import { SearchParams } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/types";
 import {
   ActionGroup,
   Button,

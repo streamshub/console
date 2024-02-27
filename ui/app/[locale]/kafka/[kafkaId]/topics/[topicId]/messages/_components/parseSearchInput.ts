@@ -1,4 +1,4 @@
-import { SearchParams } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/_components/MessagesTable";
+import { SearchParams } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/types";
 
 export function parseSearchInput({ value }: { value: string }): SearchParams {
   let sp: SearchParams = {
