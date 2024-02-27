@@ -10,6 +10,7 @@ import {
   ToolbarItem,
 } from "@/libs/patternfly/react-core";
 import { EllipsisVIcon } from "@/libs/patternfly/react-icons";
+import { useState } from "react";
 
 export function MessagesTableToolbar({
   filterQuery,
@@ -37,12 +38,9 @@ export function MessagesTableToolbar({
   onColumnManagement: () => void;
 }) {
   const toolbarBreakpoint = "md";
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   function onClearAllFilters() {}
-
-  // const handleQueryChange = useDebouncedCallback((value: string) => {
-  //   onQueryChange(value);
-  // }, 300);
 
   return (
     <Toolbar
@@ -70,26 +68,26 @@ export function MessagesTableToolbar({
         <ToolbarItem>
           <Dropdown
             popperProps={{ position: "right" }}
-            isOpen={false}
-            onOpenChange={(isOpen: boolean) => {}}
+            isOpen={isMenuOpen}
+            onOpenChange={() => {
+              setIsMenuOpen((v) => !v);
+            }}
             toggle={(toggleRef) => (
               <MenuToggle
                 ref={toggleRef}
-                isExpanded={false}
-                onClick={() => {}}
+                isExpanded={isMenuOpen}
+                onClick={() => {
+                  setIsMenuOpen(true);
+                }}
                 variant="plain"
-                aria-label="Table options"
+                aria-label="Table actions"
               >
                 <EllipsisVIcon aria-hidden="true" />
               </MenuToggle>
             )}
           >
             <DropdownList>
-              <DropdownItem>Action</DropdownItem>
-              <DropdownItem
-                // Prevent the default onClick functionality for example purposes
-                onClick={() => onColumnManagement()}
-              >
+              <DropdownItem onClick={onColumnManagement}>
                 Manage columns
               </DropdownItem>
             </DropdownList>
