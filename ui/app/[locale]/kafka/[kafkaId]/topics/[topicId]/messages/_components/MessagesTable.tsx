@@ -69,6 +69,7 @@ export type MessageBrowserProps = {
 };
 
 export function MessagesTable({
+  lastUpdated,
   selectedMessage,
   messages,
   partitions,
@@ -310,6 +311,16 @@ export function MessagesTable({
               </ResponsiveTable>
             </InnerScrollContainer>
           </OuterScrollContainer>
+          <TextContent>
+            <Text component={"small"} className={"pf-v5-u-px-md pf-v5-u-py-sm"}>
+              Last updated:{" "}
+              <DateTime
+                value={lastUpdated}
+                timeStyle={"medium"}
+                dateStyle={"short"}
+              />
+            </Text>
+          </TextContent>
         </DrawerContent>
       </Drawer>
       {showColumnsManagement && (
