@@ -1,7 +1,7 @@
 apiVersion: kafka.strimzi.io/v1beta2
 kind: Kafka
 metadata:
-  name: demo-cluster
+  name: console-kafka
 spec:
   entityOperator:
     topicOperator: {}
@@ -26,16 +26,16 @@ spec:
           type: scram-sha-512
         configuration:
           bootstrap:
-            host: bootstrap.demo-cluster.${CLUSTER_DOMAIN}
+            host: bootstrap.console-kafka.${CLUSTER_DOMAIN}
             annotations:
               eyefloaters.github.com/console-listener: 'true'
           brokers:
           - broker: 0
-            host: broker-0.demo-cluster.${CLUSTER_DOMAIN}
+            host: broker-0.console-kafka.${CLUSTER_DOMAIN}
           - broker: 1
-            host: broker-1.demo-cluster.${CLUSTER_DOMAIN}
+            host: broker-1.console-kafka.${CLUSTER_DOMAIN}
           - broker: 2
-            host: broker-2.demo-cluster.${CLUSTER_DOMAIN}
+            host: broker-2.console-kafka.${CLUSTER_DOMAIN}
     replicas: 3
     storage:
       type: jbod
@@ -48,7 +48,7 @@ spec:
       type: jmxPrometheusExporter
       valueFrom:
         configMapKeyRef:
-          name: demo-cluster-metrics
+          name: console-kafka-metrics
           key: kafka-metrics-config.yml
     version: 3.6.0
   zookeeper:
@@ -61,5 +61,5 @@ spec:
       type: jmxPrometheusExporter
       valueFrom:
         configMapKeyRef:
-          name: demo-cluster-metrics
+          name: console-kafka-metrics
           key: zookeeper-metrics-config.yml

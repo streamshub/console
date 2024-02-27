@@ -28,13 +28,13 @@ spec:
         - name: KAFKA_SASL_MECHANISM
           value: SCRAM-SHA-512
         - name: CONSOLE_KAFKA_EXAMPLE
-          value: ${NAMESPACE}/demo-cluster
+          value: ${NAMESPACE}/console-kafka
         - name: CONSOLE_KAFKA_EXAMPLE_BOOTSTRAP_SERVERS
-          value: bootstrap.demo-cluster.apps-crc.testing:443
+          value: bootstrap.console-kafka.apps-crc.testing:443
         - name: CONSOLE_KAFKA_EXAMPLE_SASL_JAAS_CONFIG
           valueFrom:
             secretKeyRef:
-              name: demo-cluster-user1
+              name: console-kafka-user1
               key: sasl.jaas.config
         - name: CONSOLE_METRICS_PROMETHEUS_URL
           value: 'http://prometheus-operated.${NAMESPACE}.svc.cluster.local:9090'

@@ -30,7 +30,7 @@ configured to scrape metrics from any Kafka clusters deployed by Strimzi within 
 ### Apache Kafka Cluster
 
 Once the two prerequisite components have been installed, the demo Kafka cluster may be created using the
-`002-deploy-demo-cluster.sh` script. This script will create a Strimzi `Kafka` custom resource as well as a
+`002-deploy-console-kafka.sh` script. This script will create a Strimzi `Kafka` custom resource as well as a
 `KafkaUser` custom resource for a user to access the cluster. Additionally, the Kafka cluster will be configured via
 a ConfigMap to export metrics in the way expected by the Prometheus instance created earlier.
 
@@ -70,11 +70,11 @@ the following env settings would be needed:
 
 ```yaml
 - name: CONSOLE_KAFKA_EXAMPLE
-  value: example-ns/demo-cluster
+  value: example-ns/console-kafka
 - name: CONSOLE_KAFKA_EXAMPLE_SECURITY_PROTOCOL
   value: SASL_SSL
 - name: CONSOLE_KAFKA_EXAMPLE_BOOTSTRAP_SERVERS
-  value: bootstrap.demo-cluster.example.com:443
+  value: bootstrap.console-kafka.example.com:443
 ```
 
 As always, configuration properties that contain sensitive information may be mounted from a `Secret`. For example, to
@@ -84,7 +84,7 @@ set the `sasl.jaas.config` property, you could use an env entry such as the foll
 - name: CONSOLE_KAFKA_EXAMPLE_SASL_JAAS_CONFIG
   valueFrom:
     secretKeyRef:
-      name: demo-cluster-user1
+      name: console-kafka-user1
       key: sasl.jaas.config
 ```
 

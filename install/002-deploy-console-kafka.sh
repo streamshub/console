@@ -10,7 +10,7 @@ export CLUSTER_DOMAIN="${2?Please provide the base domain name for Kafka listene
 
 source ${CONSOLE_INSTALL_PATH}/_common.sh
 
-${KUBE} apply -n ${NAMESPACE} -f ${RESOURCE_PATH}/demo-cluster-metrics.configmap.yaml
+${KUBE} apply -n ${NAMESPACE} -f ${RESOURCE_PATH}/console-kafka-metrics.configmap.yaml
 
 if [ "$(${KUBE} api-resources --api-group=route.openshift.io -o=name)" != "" ] ; then
     LISTENER_TYPE='route'
@@ -21,6 +21,6 @@ fi
 export LISTENER_TYPE
 
 # Replace env variables
-${YQ} '(.. | select(tag == "!!str")) |= envsubst(ne)' ${RESOURCE_PATH}/demo-cluster.kafka.yaml | ${KUBE} apply -n ${NAMESPACE} -f -
+${YQ} '(.. | select(tag == "!!str")) |= envsubst(ne)' ${RESOURCE_PATH}/console-kafka.kafka.yaml | ${KUBE} apply -n ${NAMESPACE} -f -
 
-${KUBE} apply -n ${NAMESPACE} -f ${RESOURCE_PATH}/demo-cluster-user1.kafkauser.yaml
+${KUBE} apply -n ${NAMESPACE} -f ${RESOURCE_PATH}/console-kafka-user1.kafkauser.yaml
