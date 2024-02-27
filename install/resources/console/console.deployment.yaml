@@ -1,0 +1,64 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: console
+spec:
+  replicas: 1
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app: console
+  template:
+    metadata:
+      labels:
+        app: console
+    spec:
+      serviceAccountName: console-server
+      volumes:
+      - emptyDir: {}
+        name: cache
+      containers:
+      - name: console-api
+        image: quay.io/eyefloaters/console-api:0.0.27
+        ports:
+        - containerPort: 8080
+        env:
+        - name: KAFKA_SECURITY_PROTOCOL
+          value: SASL_SSL
+        - name: KAFKA_SASL_MECHANISM
+          value: SCRAM-SHA-512
+        - name: CONSOLE_KAFKA_EXAMPLE
+          value: ${NAMESPACE}/console-kafka
+        - name: CONSOLE_KAFKA_EXAMPLE_BOOTSTRAP_SERVERS
+          value: bootstrap.console-kafka.apps-crc.testing:443
+        - name: CONSOLE_KAFKA_EXAMPLE_SASL_JAAS_CONFIG
+          valueFrom:
+            secretKeyRef:
+              name: console-kafka-user1
+              key: sasl.jaas.config
+        - name: CONSOLE_METRICS_PROMETHEUS_URL
+          value: 'http://prometheus-operated.${NAMESPACE}.svc.cluster.local:9090'
+      - name: console-ui
+        image: quay.io/eyefloaters/ui:0.0.27
+        volumeMounts:
+        - mountPath: /app/.next/cache
+          name: cache
+        env:
+        - name: NEXTAUTH_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: console-ui-secrets
+              key: NEXTAUTH_SECRET
+        - name: SESSION_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: console-ui-secrets
+              key: SESSION_SECRET
+        - name: NEXTAUTH_URL
+          value: 'https://${CONSOLE_HOSTNAME}'
+        - name: BACKEND_URL
+          value: 'http://127.0.0.1:8080'
+        - name: CONSOLE_METRICS_PROMETHEUS_URL
+          value: 'http://prometheus-operated.${NAMESPACE}.svc.cluster.local:9090'
+        ports:
+        - containerPort: 3000
