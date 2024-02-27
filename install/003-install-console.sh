@@ -68,8 +68,8 @@ if ! ${KUBE} get secret console-ui-secrets -n ${NAMESPACE} 1>/dev/null 2>&1 ; th
     echo -e "${INFO} Creating Console Credentials"
     ${KUBE} create secret generic console-ui-secrets -n ${NAMESPACE} \
         --dry-run=client \
-        --from-literal=SESSION_SECRET="$(tr -dc A-Za-z0-9 </dev/urandom | head -c 32; echo)" \
-        --from-literal=NEXTAUTH_SECRET="$(tr -dc A-Za-z0-9 </dev/urandom | head -c 32; echo)" \
+        --from-literal=SESSION_SECRET="$(LC_CTYPE=C tr -dc A-Za-z0-9 </dev/urandom | head -c 32; echo)" \
+        --from-literal=NEXTAUTH_SECRET="$(LC_CTYPE=C tr -dc A-Za-z0-9 </dev/urandom | head -c 32; echo)" \
         -o yaml | ${KUBE} apply -n ${NAMESPACE} -f -
 else
     echo -e "${WARN} Console Credential secret console-ui-secrets already exists, nothing applied"
