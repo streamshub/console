@@ -10,12 +10,9 @@ import {
   Button,
   Form,
   FormGroup,
-  FormHelperText,
   FormSection,
   Grid,
   GridItem,
-  HelperText,
-  HelperTextItem,
   Panel,
   PanelMain,
   PanelMainBody,
@@ -300,28 +297,6 @@ export function AdvancedSearch({
                         onLimitChange={setUntilLimit}
                         onLiveChange={setUntilLive}
                       />
-                    </FormGroup>
-                  </GridItem>
-                </Grid>
-              </FormSection>
-              <FormSection title={"Transformation"}>
-                <Grid>
-                  <GridItem>
-                    <FormGroup
-                      label="Value transformation"
-                      fieldId="has-words"
-                      key="has-words"
-                    >
-                      <TextInput type="text" id="has-words" />
-                      <FormHelperText>
-                        <HelperText>
-                          <HelperTextItem>
-                            Tranform the value using a jq filter. This is useful
-                            when the value contains many fields and you want a
-                            quick glance at some of them.
-                          </HelperTextItem>
-                        </HelperText>
-                      </FormHelperText>
                     </FormGroup>
                   </GridItem>
                 </Grid>

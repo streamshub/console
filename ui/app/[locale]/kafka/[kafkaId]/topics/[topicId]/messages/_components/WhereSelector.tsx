@@ -85,9 +85,9 @@ export function WhereSelector({
           >
             Value
           </DropdownItem>
-          <DropdownItem isSelected={isJqFilter} onClick={() => onChange("jq:")}>
-            jq filter
-          </DropdownItem>
+          {/*<DropdownItem isSelected={isJqFilter} onClick={() => onChange("jq:")}>*/}
+          {/*  jq filter*/}
+          {/*</DropdownItem>*/}
         </Dropdown>
       </FlexItem>
       {isJqFilter && (
