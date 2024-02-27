@@ -2,7 +2,6 @@
 import { Message } from "@/api/messages/schema";
 import {
   Column,
-  columns,
   ColumnsModal,
   useColumnLabels,
 } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/_components/ColumnsModal";
@@ -107,8 +106,7 @@ export function MessagesTable({
     value: undefined,
   };
 
-  const [selectedColumns, setSelectedColumns] =
-    useState<Column[]>(defaultColumns);
+  const [chosenColumns, setChosenColumns] = useState<Column[]>(defaultColumns);
 
   useEffect(() => {
     const v = localStorage.getItem("message-browser-columns");
@@ -116,7 +114,7 @@ export function MessagesTable({
       try {
         const pv = JSON.parse(v);
         if (Array.isArray(pv)) {
-          setSelectedColumns(pv);
+          setChosenColumns(pv);
         }
       } catch {}
     }
@@ -156,17 +154,13 @@ export function MessagesTable({
               <ResponsiveTable
                 variant={TableVariant.compact}
                 ariaLabel={t("table_aria_label")}
-                columns={columns.filter((c) => selectedColumns.includes(c))}
+                columns={chosenColumns}
                 data={messages}
                 expectedLength={messages.length}
                 renderHeader={({ colIndex, column, Th, key }) => (
                   <Th
                     key={key}
                     width={columnWidths[column]}
-                    isStickyColumn={colIndex < 2}
-                    hasRightBorder={colIndex === 1}
-                    stickyMinWidth={colIndex === 1 ? "100px" : undefined}
-                    stickyLeftOffset={colIndex === 1 ? "187px" : undefined}
                     modifier={"nowrap"}
                     sort={
                       column === "timestamp" ||
@@ -199,10 +193,6 @@ export function MessagesTable({
                       <Td
                         key={key}
                         dataLabel={columnLabels[column]}
-                        isStickyColumn={colIndex < 2}
-                        hasRightBorder={colIndex === 1}
-                        stickyMinWidth={colIndex === 1 ? "100px" : undefined}
-                        stickyLeftOffset={colIndex === 1 ? "187px" : undefined}
                         modifier={"nowrap"}
                       >
                         {children}
@@ -320,19 +310,20 @@ export function MessagesTable({
           </OuterScrollContainer>
         </DrawerContent>
       </Drawer>
-      <ColumnsModal
-        isOpen={showColumnsManagement}
-        selectedColumns={selectedColumns}
-        onConfirm={(columns) => {
-          setSelectedColumns(columns);
-          localStorage.setItem(
-            "message-browser-columns",
-            JSON.stringify(columns),
-          );
-          setShowColumnsManagement(false);
-        }}
-        onCancel={() => setShowColumnsManagement(false)}
-      />
+      {showColumnsManagement && (
+        <ColumnsModal
+          chosenColumns={chosenColumns}
+          onConfirm={(columns) => {
+            setChosenColumns(columns);
+            localStorage.setItem(
+              "message-browser-columns",
+              JSON.stringify(columns),
+            );
+            setShowColumnsManagement(false);
+          }}
+          onCancel={() => setShowColumnsManagement(false)}
+        />
+      )}
     </PageSection>
   );
 }
