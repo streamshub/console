@@ -26,8 +26,9 @@ import {
   OuterScrollContainer,
   TableVariant,
 } from "@/libs/patternfly/react-table";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import { useTranslations } from "next-intl";
-import { PropsWithChildren, useEffect, useState } from "react";
+import { PropsWithChildren, useEffect, useRef, useState } from "react";
 import { MessageDetails, MessageDetailsProps } from "./MessageDetails";
 import { NoDataCell } from "./NoDataCell";
 import { UnknownValuePreview } from "./UnknownValuePreview";
@@ -122,6 +123,14 @@ export function MessagesTable({
     }
   }, []);
 
+  const parentRef = useRef<HTMLDivElement>(null);
+  const virtualizer = useVirtualizer({
+    count: messages.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 34,
+    overscan: 20,
+  });
+
   return (
     <PageSection
       isFilled={true}
@@ -154,161 +163,179 @@ export function MessagesTable({
               onColumnManagement={() => setShowColumnsManagement(true)}
             />
             <InnerScrollContainer>
-              <ResponsiveTable
-                variant={TableVariant.compact}
-                ariaLabel={t("table_aria_label")}
-                columns={chosenColumns}
-                data={messages}
-                expectedLength={messages.length}
-                renderHeader={({ colIndex, column, Th, key }) => (
-                  <Th
-                    key={key}
-                    width={columnWidths[column]}
-                    modifier={"nowrap"}
-                    sort={
-                      column === "timestamp" ||
-                      column === "timestampUTC" ||
-                      column === "offset-partition"
-                        ? {
-                            columnIndex: colIndex,
-                            sortBy: {
-                              index: colIndex,
-                              direction:
-                                filterOffset || filterTimestamp || filterEpoch
-                                  ? "asc"
-                                  : "desc",
-                            },
-                          }
-                        : undefined
-                    }
-                  >
-                    {columnLabels[column]}
-                    {columnTooltips[column] ?? ""}
-                  </Th>
-                )}
-                renderCell={({ column, row, colIndex, Td, key }) => {
-                  const empty = (
-                    <NoDataCell columnLabel={columnLabels[column]} />
-                  );
-
-                  function Cell({ children }: PropsWithChildren) {
-                    return (
-                      <Td
-                        key={key}
-                        dataLabel={columnLabels[column]}
-                        modifier={"nowrap"}
-                      >
-                        {children}
-                      </Td>
+              <div ref={parentRef}>
+                <ResponsiveTable
+                  variant={TableVariant.compact}
+                  ariaLabel={t("table_aria_label")}
+                  columns={chosenColumns}
+                  data={virtualizer.getVirtualItems()}
+                  expectedLength={messages.length}
+                  renderHeader={({ colIndex, column, Th, key }) => (
+                    <Th
+                      key={key}
+                      width={columnWidths[column]}
+                      modifier={"nowrap"}
+                      sort={
+                        column === "timestamp" ||
+                        column === "timestampUTC" ||
+                        column === "offset-partition"
+                          ? {
+                              columnIndex: colIndex,
+                              sortBy: {
+                                index: colIndex,
+                                direction:
+                                  filterOffset || filterTimestamp || filterEpoch
+                                    ? "asc"
+                                    : "desc",
+                              },
+                            }
+                          : undefined
+                      }
+                    >
+                      {columnLabels[column]}
+                      {columnTooltips[column] ?? ""}
+                    </Th>
+                  )}
+                  renderCell={({ column, row: vrow, colIndex, Td, key }) => {
+                    const row = messages[vrow.index];
+                    const empty = (
+                      <NoDataCell columnLabel={columnLabels[column]} />
                     );
-                  }
 
-                  switch (column) {
-                    case "offset-partition":
+                    function Cell({ children }: PropsWithChildren) {
                       return (
-                        <Cell>
-                          <Number value={row.attributes.offset} />
-                          <TextContent>
-                            <Text component={"small"}>
-                              Partition{" "}
-                              <Number value={row.attributes.partition} />
-                            </Text>
-                          </TextContent>
-                        </Cell>
+                        <Td
+                          key={key}
+                          dataLabel={columnLabels[column]}
+                          modifier={"nowrap"}
+                        >
+                          {children}
+                        </Td>
                       );
-                    case "size":
-                      return (
-                        <Cell>
-                          <Bytes value={row.attributes.size} />
-                        </Cell>
-                      );
-                    case "timestamp":
-                      return (
-                        <Cell>
-                          <DateTime
-                            value={row.attributes.timestamp}
-                            dateStyle={"short"}
-                            timeStyle={"medium"}
-                          />
-                        </Cell>
-                      );
-                    case "timestampUTC":
-                      return (
-                        <Cell>
-                          <DateTime
-                            value={row.attributes.timestamp}
-                            dateStyle={"short"}
-                            timeStyle={"medium"}
-                            tz={"UTC"}
-                          />
-                        </Cell>
-                      );
-                    case "key":
-                      return (
-                        <Cell>
-                          {row.attributes.key ? (
-                            <UnknownValuePreview
-                              value={row.attributes.key}
-                              highlight={filterQuery}
-                              onClick={() => {
-                                setDefaultTab("key");
-                                onSelectMessage(row);
-                              }}
+                    }
+
+                    switch (column) {
+                      case "offset-partition":
+                        return (
+                          <Cell>
+                            <Number value={row.attributes.offset} />
+                            <TextContent>
+                              <Text component={"small"}>
+                                Partition{" "}
+                                <Number value={row.attributes.partition} />
+                              </Text>
+                            </TextContent>
+                          </Cell>
+                        );
+                      case "size":
+                        return (
+                          <Cell>
+                            <Bytes value={row.attributes.size} />
+                          </Cell>
+                        );
+                      case "timestamp":
+                        return (
+                          <Cell>
+                            <DateTime
+                              value={row.attributes.timestamp}
+                              dateStyle={"short"}
+                              timeStyle={"medium"}
                             />
-                          ) : (
-                            empty
-                          )}
-                        </Cell>
-                      );
-                    case "headers":
-                      return (
-                        <Cell>
-                          {Object.keys(row.attributes.headers).length > 0 ? (
-                            <UnknownValuePreview
-                              value={beautifyUnknownValue(
-                                JSON.stringify(row.attributes.headers),
-                              )}
-                              highlight={filterQuery}
-                              onClick={() => {
-                                setDefaultTab("headers");
-                                onSelectMessage(row);
-                              }}
+                          </Cell>
+                        );
+                      case "timestampUTC":
+                        return (
+                          <Cell>
+                            <DateTime
+                              value={row.attributes.timestamp}
+                              dateStyle={"short"}
+                              timeStyle={"medium"}
+                              tz={"UTC"}
                             />
-                          ) : (
-                            empty
-                          )}
-                        </Cell>
-                      );
-                    case "value":
-                      return (
-                        <Cell>
-                          {row.attributes.value ? (
-                            <UnknownValuePreview
-                              value={row.attributes.value}
-                              highlight={filterQuery}
-                              onClick={() => {
-                                setDefaultTab("value");
-                                onSelectMessage(row);
-                              }}
-                            />
-                          ) : (
-                            empty
-                          )}
-                        </Cell>
-                      );
-                  }
-                }}
-                isRowSelected={({ row }) =>
-                  selectedMessage !== undefined &&
-                  isSameMessage(row, selectedMessage)
-                }
-                onRowClick={({ row }) => {
-                  setDefaultTab("value");
-                  onSelectMessage(row);
-                }}
-              >
-                <NoResultsEmptyState />
-              </ResponsiveTable>
+                          </Cell>
+                        );
+                      case "key":
+                        return (
+                          <Cell>
+                            {row.attributes.key ? (
+                              <UnknownValuePreview
+                                value={row.attributes.key}
+                                highlight={filterQuery}
+                                onClick={() => {
+                                  setDefaultTab("key");
+                                  onSelectMessage(row);
+                                }}
+                              />
+                            ) : (
+                              empty
+                            )}
+                          </Cell>
+                        );
+                      case "headers":
+                        return (
+                          <Cell>
+                            {Object.keys(row.attributes.headers).length > 0 ? (
+                              <UnknownValuePreview
+                                value={beautifyUnknownValue(
+                                  JSON.stringify(row.attributes.headers),
+                                )}
+                                highlight={filterQuery}
+                                onClick={() => {
+                                  setDefaultTab("headers");
+                                  onSelectMessage(row);
+                                }}
+                              />
+                            ) : (
+                              empty
+                            )}
+                          </Cell>
+                        );
+                      case "value":
+                        return (
+                          <Cell>
+                            {row.attributes.value ? (
+                              <UnknownValuePreview
+                                value={row.attributes.value}
+                                highlight={filterQuery}
+                                onClick={() => {
+                                  setDefaultTab("value");
+                                  onSelectMessage(row);
+                                }}
+                              />
+                            ) : (
+                              empty
+                            )}
+                          </Cell>
+                        );
+                    }
+                  }}
+                  getRowProps={({ row: vrow, rowIndex }) => {
+                    return {
+                      innerRef: virtualizer.measureElement,
+                      style: {
+                        height: `${vrow.size}px`,
+                        transform: `translateY(${
+                          vrow.start - rowIndex * vrow.size
+                        }px)`,
+                      },
+                    };
+                  }}
+                  isRowSelected={({ row: vrow }) => {
+                    const row = messages[vrow.index];
+                    return (
+                      selectedMessage !== undefined &&
+                      isSameMessage(row, selectedMessage)
+                    );
+                  }}
+                  onRowClick={({ row: vrow }) => {
+                    const row = messages[vrow.index];
+                    setDefaultTab("value");
+                    onSelectMessage(row);
+                  }}
+                >
+                  <NoResultsEmptyState />
+                </ResponsiveTable>
+              </div>
             </InnerScrollContainer>
           </OuterScrollContainer>
           <TextContent>
