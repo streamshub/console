@@ -6,7 +6,7 @@ describe("Brokers page", () => {
     await page.goto(
       `${URL}/kafka/j7W3TRG7SsWCBXHjz2hfrg/nodes`
     );
-    await page.waitForLoadState("networkidle",{timeout: 60000});
+    await page.waitForLoadState("networkidle");
     expect(await page.innerText("body")).toContain("Brokers");
     expect(await page.innerText("body")).toContain(
       "Partitions distribution (% of total)"

@@ -6,7 +6,7 @@ describe("Consumer groups page", () => {
     await page.goto(
       `${URL}/kafka/j7W3TRG7SsWCBXHjz2hfrg/consumer-groups`
     );
-    await page.waitForLoadState("networkidle",{timeout: 60000});
+    await page.waitForLoadState("networkidle");
     expect(await page.innerText("body")).toContain("Consumer group name");
     expect(await page.innerText("body")).toContain("State");
     expect(await page.innerText("body")).toContain("Overall lag");

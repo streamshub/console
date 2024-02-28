@@ -1,6 +1,11 @@
 import { page } from "../../jest.setup";
+import {URL} from './utils'
+
 describe("Home page", () => {
   test("Column headings are present", async () => {
+    await page.goto(
+      `${URL}/home`
+    );
     const columnHeadings = await page.$$eval(
       'table[aria-label="Kafka clusters"] thead th',
       (ths) => ths.map((th) => th.textContent?.trim())

@@ -6,7 +6,7 @@ describe("Consumer page", () => {
     await page.goto(
       `${URL}/kafka/j7W3TRG7SsWCBXHjz2hfrg/consumer-groups/__strimzi-topic-operator-kstreams`
     );
-    await page.waitForLoadState("networkidle",{timeout: 60000});
+    await page.waitForLoadState("networkidle");
     expect(await page.innerText("body")).toContain("Member ID");
     expect(await page.innerText("body")).toContain("Overall lag");
     expect(await page.innerText("body")).toContain("Assigned partitions");
