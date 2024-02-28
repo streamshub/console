@@ -91,6 +91,7 @@ export function MessagesTable({
   const [showColumnsManagement, setShowColumnsManagement] = useState(false);
   const [defaultTab, setDefaultTab] =
     useState<MessageDetailsProps["defaultTab"]>("value");
+  const [chosenColumns, setChosenColumns] = useState<Column[]>(defaultColumns);
 
   const columnTooltips: Record<Column, any> = {
     "offset-partition": undefined,
@@ -108,8 +109,6 @@ export function MessagesTable({
     headers: undefined,
     value: undefined,
   };
-
-  const [chosenColumns, setChosenColumns] = useState<Column[]>(defaultColumns);
 
   useEffect(() => {
     const v = localStorage.getItem("message-browser-columns");

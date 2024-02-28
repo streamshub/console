@@ -1,15 +1,12 @@
 import { AdvancedSearch } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/_components/AdvancedSearch";
 import { MessageBrowserProps } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/_components/MessagesTable";
 import {
-  Dropdown,
-  DropdownItem,
-  DropdownList,
-  MenuToggle,
   Toolbar,
   ToolbarContent,
   ToolbarItem,
 } from "@/libs/patternfly/react-core";
-import { EllipsisVIcon } from "@/libs/patternfly/react-icons";
+import { Button, Tooltip } from "@patternfly/react-core";
+import { ColumnsIcon } from "@patternfly/react-icons";
 import { useState } from "react";
 
 export function MessagesTableToolbar({
@@ -69,32 +66,11 @@ export function MessagesTableToolbar({
         </ToolbarItem>
 
         <ToolbarItem>
-          <Dropdown
-            popperProps={{ position: "right" }}
-            isOpen={isMenuOpen}
-            onOpenChange={() => {
-              setIsMenuOpen((v) => !v);
-            }}
-            toggle={(toggleRef) => (
-              <MenuToggle
-                ref={toggleRef}
-                isExpanded={isMenuOpen}
-                onClick={() => {
-                  setIsMenuOpen(true);
-                }}
-                variant="plain"
-                aria-label="Table actions"
-              >
-                <EllipsisVIcon aria-hidden="true" />
-              </MenuToggle>
-            )}
-          >
-            <DropdownList>
-              <DropdownItem onClick={onColumnManagement}>
-                Manage columns
-              </DropdownItem>
-            </DropdownList>
-          </Dropdown>
+          <Tooltip content={"Manage columns"}>
+            <Button onClick={onColumnManagement} variant={"plain"}>
+              <ColumnsIcon />
+            </Button>
+          </Tooltip>
         </ToolbarItem>
       </ToolbarContent>
     </Toolbar>
