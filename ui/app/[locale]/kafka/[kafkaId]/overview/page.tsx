@@ -1,5 +1,5 @@
-import { ConsumerGroupsResponse } from "@/api/consumerGroups/schema";
 import { getConsumerGroups } from "@/api/consumerGroups/actions";
+import { ConsumerGroupsResponse } from "@/api/consumerGroups/schema";
 import {
   ClusterMetric,
   getKafkaClusterKpis,
@@ -30,7 +30,9 @@ export default function OverviewPage({ params }: { params: KafkaParams }) {
   const consumerGroups = getConsumerGroups(params.kafkaId, { fields: "state" });
   return (
     <PageLayout
-      clusterOverview={<ConnectedClusterCard data={kpi} consumerGroups={consumerGroups} />}
+      clusterOverview={
+        <ConnectedClusterCard data={kpi} consumerGroups={consumerGroups} />
+      }
       topicsPartitions={<ConnectedTopicsPartitionsCard data={kpi} />}
       clusterCharts={<ConnectedClusterChartsCard data={cluster} />}
       topicCharts={<ConnectedTopicChartsCard data={topic} />}
@@ -46,24 +48,25 @@ async function ConnectedClusterCard({
   consumerGroups: Promise<ConsumerGroupsResponse>;
 }) {
   const res = await data;
-  const groupCount = await consumerGroups.then(grpResp => grpResp.meta.page.total ?? 0);
+  const groupCount = await consumerGroups.then(
+    (grpResp) => grpResp.meta.page.total ?? 0,
+  );
   const brokersTotal = Object.keys(res?.kpis.broker_state || {}).length;
   const brokersOnline =
     Object.values(res?.kpis.broker_state || {}).filter((s) => s === 3).length ||
     0;
-  const messages = res?.cluster
-    .attributes
-    .conditions
+  const messages = res?.cluster.attributes.conditions
     ?.filter((c) => "Ready" !== c.type)
     .map((c) => ({
-      variant: c.type === "Error" ? "danger" : "warning" as ("danger" | "warning"),
+      variant:
+        c.type === "Error" ? "danger" : ("warning" as "danger" | "warning"),
       subject: {
-        type: "cluster" as ("cluster" | "broker" | "topic"),
+        type: "cluster" as "cluster" | "broker" | "topic",
         name: res?.cluster.attributes.name ?? "",
         id: res?.cluster.id ?? "",
       },
       message: c.message ?? "",
-      date: c.lastTransitionTime ?? ""
+      date: c.lastTransitionTime ?? "",
     }));
 
   return (
@@ -91,16 +94,21 @@ async function ConnectedTopicsPartitionsCard({
   return (
     <TopicsPartitionsCard
       isLoading={false}
-      partitions={res?.kpis.total_partitions || 0}
-      topicsReplicated={topicsTotal - topicsUnderreplicated}
-      topicsTotal={topicsTotal}
-      topicsUnderReplicated={topicsUnderreplicated}
+      partitions={Math.max(0, res?.kpis.total_partitions || 0)}
+      topicsReplicated={Math.max(0, topicsTotal - topicsUnderreplicated)}
+      topicsTotal={Math.max(0, topicsTotal)}
+      topicsUnderReplicated={Math.max(0, topicsUnderreplicated)}
     />
   );
 }
 
-function timeSeriesMetrics(ranges: Record<ClusterMetric, MetricRange> | undefined, rangeName: ClusterMetric) : TimeSeriesMetrics[] {
-    return ranges ? Object.values(ranges[rangeName] ?? {}).map(val => val ?? {}) : [];
+function timeSeriesMetrics(
+  ranges: Record<ClusterMetric, MetricRange> | undefined,
+  rangeName: ClusterMetric,
+): TimeSeriesMetrics[] {
+  return ranges
+    ? Object.values(ranges[rangeName] ?? {}).map((val) => val ?? {})
+    : [];
 }
 
 async function ConnectedClusterChartsCard({
@@ -116,10 +124,10 @@ async function ConnectedClusterChartsCard({
     <>
       <ClusterChartsCard
         isLoading={false}
-        usedDiskSpace={ timeSeriesMetrics(res?.ranges, "volumeUsed") }
-        availableDiskSpace={ timeSeriesMetrics(res?.ranges, "volumeCapacity") }
-        memoryUsage={ timeSeriesMetrics(res?.ranges, "memory") }
-        cpuUsage={ timeSeriesMetrics(res?.ranges, "cpu") }
+        usedDiskSpace={timeSeriesMetrics(res?.ranges, "volumeUsed")}
+        availableDiskSpace={timeSeriesMetrics(res?.ranges, "volumeCapacity")}
+        memoryUsage={timeSeriesMetrics(res?.ranges, "memory")}
+        cpuUsage={timeSeriesMetrics(res?.ranges, "cpu")}
       />
     </>
   );
