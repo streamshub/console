@@ -1,15 +1,16 @@
 "use client";
 import { TopicList, TopicStatus } from "@/api/topics/schema";
 import { EmptyStateNoTopics } from "@/app/[locale]/kafka/[kafkaId]/topics/(page)/EmptyStateNoTopics";
+import { ManagedTopicLabel } from "@/app/components/ManagedTopicLabel";
 import { ButtonLink } from "@/components/ButtonLink";
 import { Bytes } from "@/components/Bytes";
 import { Number } from "@/components/Number";
 import { TableView } from "@/components/table";
 import { EmptyStateNoMatchFound } from "@/components/table/EmptyStateNoMatchFound";
-import { readonly } from "@/utils/runmode";
 import { Switch } from "@/libs/patternfly/react-core";
 import { TableVariant } from "@/libs/patternfly/react-table";
 import { Link, useRouter } from "@/navigation";
+import { readonly } from "@/utils/runmode";
 import { useFilterParams } from "@/utils/useFilterParams";
 import { Icon, Tooltip } from "@patternfly/react-core";
 import {
@@ -17,7 +18,6 @@ import {
   ExclamationCircleIcon,
   ExclamationTriangleIcon,
   HelpIcon,
-  MigrationIcon,
 } from "@patternfly/react-icons";
 import { useTranslations } from "next-intl";
 import { ReactNode, useOptimistic, useTransition } from "react";
@@ -232,18 +232,16 @@ export function TopicsTable({
           case "status":
             return (
               <Th key={key} dataLabel={"Status"}>
-               Status {" "}
-              <Tooltip
-               style={{whiteSpace:'pre-line'}}
-               content={
-                   `Indicates the replication status of the partitions in the Kafka topic.
+                Status{" "}
+                <Tooltip
+                  style={{ whiteSpace: "pre-line" }}
+                  content={`Indicates the replication status of the partitions in the Kafka topic.
                    A partition is fully replicated when its replicas (followers) are 'in-sync' with the designated partition leader.
                    A partition is under-replicated if partition replicas (followers) are not 'in-sync with their designated partition leader.
-                   If the status shows unavailable, some or all partitions are currently unavailable due to underlying issues.`
-                }
-              >
-                <HelpIcon />
-              </Tooltip>
+                   If the status shows unavailable, some or all partitions are currently unavailable due to underlying issues.`}
+                >
+                  <HelpIcon />
+                </Tooltip>
               </Th>
             );
           case "consumerGroups":
@@ -274,19 +272,13 @@ export function TopicsTable({
                 <Link href={`${baseurl}/${row.id}/messages`}>
                   {row.attributes.name}
                 </Link>
+                {row.meta?.managed === true && <ManagedTopicLabel />}
               </Td>
             );
           case "status":
             return (
               <Td key={key} dataLabel={"Status"}>
                 {StatusLabel[row.attributes.status]}
-                {(row.meta?.managed ?? false) ?
-                  <>,&nbsp;
-                    <Icon status={"info"}>
-                      <MigrationIcon />
-                    </Icon>
-                    &nbsp;Managed
-                  </> : <></>}
               </Td>
             );
           case "consumerGroups":
@@ -321,31 +313,35 @@ export function TopicsTable({
             );
         }
       }}
-      renderActions={({ row, ActionsColumn }) => readonly() ? <></> : (
-        <ActionsColumn
-          items={[
-            {
-              title: "Edit configuration",
-              onClick: () => {
-                startTransition(() => {
-                  router.push(`${baseurl}/${row.id}/configuration`);
-                });
+      renderActions={({ row, ActionsColumn }) =>
+        readonly() ? (
+          <></>
+        ) : (
+          <ActionsColumn
+            items={[
+              {
+                title: "Edit configuration",
+                onClick: () => {
+                  startTransition(() => {
+                    router.push(`${baseurl}/${row.id}/configuration`);
+                  });
+                },
               },
-            },
-            {
-              isSeparator: true,
-            },
-            {
-              title: "Delete topic",
-              onClick: () => {
-                startTransition(() => {
-                  router.push(`${baseurl}/${row.id}/delete`);
-                });
+              {
+                isSeparator: true,
               },
-            },
-          ]}
-        />
-      )}
+              {
+                title: "Delete topic",
+                onClick: () => {
+                  startTransition(() => {
+                    router.push(`${baseurl}/${row.id}/delete`);
+                  });
+                },
+              },
+            ]}
+          />
+        )
+      }
       filters={{
         Name: {
           type: "search",
