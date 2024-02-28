@@ -23,6 +23,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import jakarta.inject.Inject;
+import jakarta.inject.Named;
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonReader;
@@ -70,6 +71,7 @@ import com.github.eyefloaters.console.test.AdminClientSpy;
 import com.github.eyefloaters.console.test.TestHelper;
 import com.github.eyefloaters.console.test.TopicHelper;
 
+import io.fabric8.kubernetes.api.model.ObjectMeta;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.informers.SharedIndexInformer;
 import io.quarkus.test.common.QuarkusTestResource;
@@ -78,6 +80,8 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.quarkus.test.kubernetes.client.KubernetesServerTestResource;
 import io.strimzi.api.kafka.model.Kafka;
+import io.strimzi.api.kafka.model.KafkaTopic;
+import io.strimzi.api.kafka.model.KafkaTopicBuilder;
 
 import static com.github.eyefloaters.console.test.TestHelper.whenRequesting;
 import static org.awaitility.Awaitility.await;
@@ -120,12 +124,17 @@ class TopicsResourceIT {
     @Inject
     SharedIndexInformer<Kafka> kafkaInformer;
 
+    @Inject
+    @Named("KafkaTopics")
+    Map<String, Map<String, Map<String, KafkaTopic>>> managedTopics;
+
     @DeploymentManager.InjectDeploymentManager
     DeploymentManager deployments;
 
     TestHelper utils;
     TopicHelper topicUtils;
     ConsumerUtils groupUtils;
+    final String clusterName1 = "test-kafka1";
     String clusterId1;
     URI bootstrapServers1;
     String clusterId2;
@@ -146,8 +155,10 @@ class TopicsResourceIT {
         clusterId2 = UUID.randomUUID().toString();
 
         client.resources(Kafka.class).inAnyNamespace().delete();
+        client.resources(KafkaTopic.class).inAnyNamespace().delete();
+
         client.resources(Kafka.class)
-            .resource(utils.buildKafkaResource("test-kafka1", clusterId1, bootstrapServers1))
+            .resource(utils.buildKafkaResource(clusterName1, clusterId1, bootstrapServers1))
             .create();
         // Second cluster is offline/non-existent
         client.resources(Kafka.class)
@@ -689,6 +700,161 @@ class TopicsResourceIT {
             .body("data.size()", equalTo(topicIds.size()))
             .body("data.id", containsInAnyOrder(topicIds.toArray(String[]::new)))
             .body("data.attributes.numPartitions", containsInAnyOrder(1, 2, 3, 4, 5, 6, 7, 8, 9));
+    }
+
+    @Test
+    void testListTopicsWithManagedTopic() {
+        String topic1 = "t1-" + UUID.randomUUID().toString();
+        String topic2 = "t2-" + UUID.randomUUID().toString();
+        topicUtils.createTopics(clusterId1, List.of(topic1), 1);
+        topicUtils.createTopics(clusterId1, List.of(topic2), 1);
+
+        client.resource(new KafkaTopicBuilder()
+                    .withNewMetadata()
+                        .withName(topic1)
+                        .withNamespace("default")
+                        .withLabels(Map.of("strimzi.io/cluster", clusterName1))
+                    .endMetadata()
+                    .withNewSpec()
+                        .withTopicName(topic1)
+                        .withPartitions(1)
+                    .endSpec()
+                .build())
+            .create();
+
+        // Wait for the managed topic list to include the topic
+        await().atMost(10, TimeUnit.SECONDS)
+            .until(() -> Optional.ofNullable(managedTopics.get("default"))
+                    .map(clustersInNamespace -> clustersInNamespace.get(clusterName1))
+                    .map(topicsInCluster -> topicsInCluster.get(topic1))
+                    .isPresent());
+
+        whenRequesting(req -> req.get("", clusterId1))
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()))
+            .body("data.size()", is(2))
+            .body("data.find { it.attributes.name == '%s' }.meta.managed".formatted(topic1), is(true))
+            .body("data.find { it.attributes.name == '%s' }.meta.managed".formatted(topic2), is(false));
+    }
+
+    @Test
+    void testListTopicsWithManagedTopicMissingCluster() {
+        String topic1 = "t1-" + UUID.randomUUID().toString();
+        String topic2 = "t2-" + UUID.randomUUID().toString();
+        topicUtils.createTopics(clusterId1, List.of(topic1), 1);
+        topicUtils.createTopics(clusterId1, List.of(topic2), 1);
+
+        KafkaTopic topicCR = new KafkaTopicBuilder()
+                    .withNewMetadata()
+                    .withName(topic1)
+                    .withNamespace("default")
+                    .withLabels(Map.of("strimzi.io/cluster", clusterName1))
+                .endMetadata()
+                .withNewSpec()
+                    .withTopicName(topic1)
+                    .withPartitions(1)
+                .endSpec()
+            .build();
+
+        client.resource(topicCR).create();
+
+        // Wait for the managed topic list to include the topic
+        await().atMost(10, TimeUnit.SECONDS)
+            .until(() -> Optional.ofNullable(managedTopics.get("default"))
+                    .map(clustersInNamespace -> clustersInNamespace.get(clusterName1))
+                    .map(topicsInCluster -> topicsInCluster.get(topic1))
+                    .isPresent());
+
+        whenRequesting(req -> req.get("", clusterId1))
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()))
+            .body("data.size()", is(2))
+            .body("data.find { it.attributes.name == '%s' }.meta.managed".formatted(topic1), is(true))
+            .body("data.find { it.attributes.name == '%s' }.meta.managed".formatted(topic2), is(false));
+
+        client.resource(new KafkaTopicBuilder(topicCR)
+                    .editMetadata()
+                        .withLabels(Collections.emptyMap())
+                    .endMetadata()
+                .build())
+            .patch();
+
+        // Wait for the managed topic list to contain the updated CR
+        await().atMost(10, TimeUnit.SECONDS)
+            .until(() -> Optional.ofNullable(managedTopics.get("default"))
+                    .map(clustersInNamespace -> clustersInNamespace.get(clusterName1))
+                    .map(topicsInCluster -> topicsInCluster.get(topic1))
+                    .isEmpty());
+
+        whenRequesting(req -> req.get("", clusterId1))
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()))
+            .body("data.size()", is(2))
+            .body("data.find { it.attributes.name == '%s' }.meta.managed".formatted(topic1), is(false))
+            .body("data.find { it.attributes.name == '%s' }.meta.managed".formatted(topic2), is(false));
+
+    }
+
+    @Test
+    void testListTopicsWithManagedTopicBecomingUnmanaged() {
+        String topic1 = "t1-" + UUID.randomUUID().toString();
+        String topic2 = "t2-" + UUID.randomUUID().toString();
+        topicUtils.createTopics(clusterId1, List.of(topic1), 1);
+        topicUtils.createTopics(clusterId1, List.of(topic2), 1);
+
+        KafkaTopic topicCR = new KafkaTopicBuilder()
+                    .withNewMetadata()
+                    .withName(topic1)
+                    .withNamespace("default")
+                    .withLabels(Map.of("strimzi.io/cluster", clusterName1))
+                .endMetadata()
+                .withNewSpec()
+                    .withTopicName(topic1)
+                    .withPartitions(1)
+                .endSpec()
+            .build();
+
+        client.resource(topicCR).create();
+
+        // Wait for the managed topic list to include the topic
+        await().atMost(10, TimeUnit.SECONDS)
+            .until(() -> Optional.ofNullable(managedTopics.get("default"))
+                    .map(clustersInNamespace -> clustersInNamespace.get(clusterName1))
+                    .map(topicsInCluster -> topicsInCluster.get(topic1))
+                    .isPresent());
+
+        whenRequesting(req -> req.get("", clusterId1))
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()))
+            .body("data.size()", is(2))
+            .body("data.find { it.attributes.name == '%s' }.meta.managed".formatted(topic1), is(true))
+            .body("data.find { it.attributes.name == '%s' }.meta.managed".formatted(topic2), is(false));
+
+        client.resource(new KafkaTopicBuilder(topicCR)
+                    .editMetadata()
+                        .withAnnotations(Map.of("strimzi.io/managed", "false"))
+                    .endMetadata()
+                .build())
+            .patch();
+
+        // Wait for the managed topic list to contain the updated CR
+        await().atMost(10, TimeUnit.SECONDS)
+            .until(() -> Optional.ofNullable(managedTopics.get("default"))
+                    .map(clustersInNamespace -> clustersInNamespace.get(clusterName1))
+                    .map(topicsInCluster -> topicsInCluster.get(topic1))
+                    .map(KafkaTopic::getMetadata)
+                    .map(ObjectMeta::getAnnotations)
+                    .map(annotations -> annotations.getOrDefault("strimzi.io/managed", "true"))
+                    .map(managed -> "false".equals(managed))
+                    .isPresent());
+
+        whenRequesting(req -> req.get("", clusterId1))
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()))
+            .body("data.size()", is(2))
+            .body("data.find { it.attributes.name == '%s' }.meta.managed".formatted(topic1), is(false))
+            .body("data.find { it.attributes.name == '%s' }.meta.managed".formatted(topic2), is(false));
+
     }
 
     @Test

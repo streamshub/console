@@ -64,7 +64,6 @@ import io.fabric8.kubernetes.api.model.ObjectMeta;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.strimzi.api.kafka.model.Kafka;
 import io.strimzi.api.kafka.model.KafkaTopic;
-import io.strimzi.api.kafka.model.KafkaTopicBuilder;
 
 import static org.apache.kafka.clients.admin.NewPartitions.increaseTo;
 
@@ -239,37 +238,39 @@ public class TopicService {
             .thenApply(topic -> validationService.validate(new TopicValidation.TopicPatchInputs(kafka, topic, patch)))
             .thenApply(TopicValidation.TopicPatchInputs::topic)
             .thenComposeAsync(topic -> getManagedTopic(topic.name())
-                    .map(kafkaTopic -> patchManagedTopic(kafkaTopic, patch, validateOnly))
+                    .map(kafkaTopic -> patchManagedTopic())
                     .orElseGet(() -> patchUnmanagedTopic(topic, patch, validateOnly)),
                     threadContext.currentContextExecutor());
     }
 
-    CompletionStage<Void> patchManagedTopic(KafkaTopic topic, TopicPatch patch, boolean validateOnly) {
-        if (validateOnly) {
-            return CompletableFuture.completedStage(null);
-        }
-
-        Map<String, Object> modifiedConfig = Optional.ofNullable(patch.configs())
-            .map(Map::entrySet)
-            .map(Collection::stream)
-            .orElseGet(Stream::empty)
-            .map(e -> Map.entry(e.getKey(), e.getValue().getValue()))
-            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-
-        KafkaTopic modifiedTopic = new KafkaTopicBuilder(topic)
-            .editSpec()
-                .withPartitions(patch.numPartitions())
-                .withReplicas(patch.replicasAssignments()
-                        .values()
-                        .stream()
-                        .findFirst()
-                        .map(Collection::size)
-                        .orElseGet(() -> topic.getSpec().getReplicas()))
-                .addToConfig(modifiedConfig)
-            .endSpec()
-            .build();
-
-        return CompletableFuture.runAsync(() -> k8s.resource(modifiedTopic).serverSideApply());
+    // Modifications disabled for now
+    CompletionStage<Void> patchManagedTopic(/*KafkaTopic topic, TopicPatch patch, boolean validateOnly*/) {
+        return CompletableFuture.completedStage(null);
+//        if (validateOnly) { // NOSONAR
+//            return CompletableFuture.completedStage(null);
+//        }
+//
+//        Map<String, Object> modifiedConfig = Optional.ofNullable(patch.configs())
+//            .map(Map::entrySet)
+//            .map(Collection::stream)
+//            .orElseGet(Stream::empty)
+//            .map(e -> Map.entry(e.getKey(), e.getValue().getValue()))
+//            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+//
+//        KafkaTopic modifiedTopic = new KafkaTopicBuilder(topic)
+//            .editSpec()
+//                .withPartitions(patch.numPartitions())
+//                .withReplicas(patch.replicasAssignments()
+//                        .values()
+//                        .stream()
+//                        .findFirst()
+//                        .map(Collection::size)
+//                        .orElseGet(() -> topic.getSpec().getReplicas()))
+//                .addToConfig(modifiedConfig)
+//            .endSpec()
+//            .build();
+//
+//        return CompletableFuture.runAsync(() -> k8s.resource(modifiedTopic).serverSideApply());
     }
 
     CompletionStage<Void> patchUnmanagedTopic(Topic topic, TopicPatch patch, boolean validateOnly) {
