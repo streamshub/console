@@ -64,7 +64,7 @@ export async function getTopics(
   });
   log.debug({ url }, "getTopics");
   const rawData = await res.json();
-  log.debug({ url, rawData }, "getTopics response");
+  log.trace({ url, rawData }, "getTopics response");
   return TopicsResponseSchema.parse(rawData);
 }
 
@@ -80,7 +80,7 @@ export async function getTopic(
     },
   });
   const rawData = await res.json();
-  log.debug(rawData, "getTopic");
+  log.trace(rawData, "getTopic");
   try {
     return TopicResponse.parse(rawData).data;
   } catch {
@@ -202,7 +202,7 @@ export async function getViewedTopics(): Promise<ViewedTopic[]> {
   log.debug("getViewedTopics");
   const recentTopicsSession =
     await getSession<ViewedTopicsSession>("recent-topics");
-  log.debug(recentTopicsSession, "getViewedTopics session");
+  log.trace(recentTopicsSession, "getViewedTopics session");
   return recentTopicsSession.viewedTopics || [];
 }
 
@@ -219,13 +219,13 @@ export async function setTopicAsViewed(kafkaId: string, topicId: string) {
       topicName: topic.attributes.name,
     };
     if (viewedTopics.find((t) => t.topicId === viewedTopic.topicId)) {
-      log.debug(
+      log.trace(
         { kafkaId, topicId },
         "setTopicAsViewed: topic was already in the list, ignoring",
       );
       return viewedTopics;
     }
-    log.debug(
+    log.trace(
       { kafkaId, topicId },
       "setTopicAsViewed: adding topic to the list",
     );
@@ -233,10 +233,10 @@ export async function setTopicAsViewed(kafkaId: string, topicId: string) {
     await setSession<ViewedTopicsSession>("recent-topics", {
       viewedTopics: updatedViewedTopics,
     });
-    log.debug(updatedViewedTopics, "setTopicAsViewed: updated list");
+    log.trace(updatedViewedTopics, "setTopicAsViewed: updated list");
     return updatedViewedTopics;
   } else {
-    log.debug({ topic, cluster }, "setTopicAsViewed: invalid topic/cluster");
+    log.trace({ topic, cluster }, "setTopicAsViewed: invalid topic/cluster");
     return viewedTopics;
   }
 }

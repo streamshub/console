@@ -4,20 +4,13 @@ import {
   InputGroup,
   TextInput,
 } from "@/libs/patternfly/react-core";
-import {
-  Button,
-  Divider,
-  InputGroupItem,
-  MenuToggle,
-} from "@patternfly/react-core";
-import { CheckIcon, TimesIcon } from "@patternfly/react-icons";
+import { Divider, MenuToggle } from "@patternfly/react-core";
 import { useTranslations } from "next-intl";
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { DateTimePicker } from "./DateTimePicker";
 
 type Category = "offset" | "timestamp" | "epoch" | "latest";
-export type FilterGroupProps = {
-  isDisabled: boolean;
+export type FromGroupProps = {
   offset: number | undefined;
   epoch: number | undefined;
   timestamp: string | undefined;
@@ -27,8 +20,7 @@ export type FilterGroupProps = {
   onLatest: () => void;
 };
 
-export function FilterGroup({
-  isDisabled,
+export function FromGroup({
   offset,
   epoch,
   timestamp,
@@ -36,12 +28,10 @@ export function FilterGroup({
   onTimestampChange,
   onEpochChange,
   onLatest,
-}: FilterGroupProps) {
+}: FromGroupProps) {
   const t = useTranslations("message-browser");
   const [value, setValue] = useState<string | undefined>();
-  const [currentCategory, _setCurrentCategory] = useState<Category>(
-    offset ? "offset" : timestamp ? "timestamp" : epoch ? "epoch" : "latest",
-  );
+  const [currentCategory, _setCurrentCategory] = useState<Category>("latest");
   const setCurrentCategory: typeof _setCurrentCategory = (value) => {
     _setCurrentCategory(value);
     setValue(undefined);
@@ -54,28 +44,43 @@ export function FilterGroup({
     latest: t("filter.latest"),
   };
 
-  function onConfirmOffset(value: string) {
-    if (value !== "") {
-      const newOffset = parseInt(value, 10);
-      if (Number.isInteger(newOffset)) {
-        onOffsetChange(newOffset);
+  const onConfirmOffset = useCallback(
+    (value: string) => {
+      if (value !== "") {
+        const newOffset = parseInt(value, 10);
+        if (Number.isInteger(newOffset)) {
+          onOffsetChange(newOffset);
+        }
+      } else {
+        onOffsetChange(undefined);
       }
-    } else {
-      onOffsetChange(undefined);
-    }
-  }
+    },
+    [onOffsetChange],
+  );
 
-  function onConfirmTimestamp(value: string) {
-    if (value !== "") onTimestampChange(value);
-    else onTimestampChange(undefined);
-  }
+  const onConfirmTimestamp = useCallback(
+    (value: string) => {
+      if (value !== "") onTimestampChange(value);
+      else onTimestampChange(undefined);
+    },
+    [onTimestampChange],
+  );
 
-  function onConfirmEpoch(value: string) {
-    if (value !== "" && Number(value) >= 0) onEpochChange(Number(value));
-    else onEpochChange(undefined);
-  }
+  const onConfirmEpoch = useCallback(
+    (value: string) => {
+      if (value !== "" && Number(value) >= 0) onEpochChange(Number(value));
+      else onEpochChange(undefined);
+    },
+    [onEpochChange],
+  );
 
-  function onConfirm(value: string | undefined) {
+  useEffect(() => {
+    setCurrentCategory(
+      offset ? "offset" : timestamp ? "timestamp" : epoch ? "epoch" : "latest",
+    );
+  }, [epoch, offset, timestamp]);
+
+  useEffect(() => {
     if (value === undefined) {
       return;
     }
@@ -95,7 +100,14 @@ export function FilterGroup({
       default:
         onLatest();
     }
-  }
+  }, [
+    currentCategory,
+    onConfirmEpoch,
+    onConfirmOffset,
+    onConfirmTimestamp,
+    onLatest,
+    value,
+  ]);
 
   return (
     <InputGroup>
@@ -104,7 +116,6 @@ export function FilterGroup({
         toggle={(toggleRef) => (
           <MenuToggle
             onClick={() => setIsOpen((v) => !v)}
-            isDisabled={isDisabled}
             isExpanded={isOpen}
             data-testid={"filter-group"}
             ref={toggleRef}
@@ -155,7 +166,6 @@ export function FilterGroup({
       </Dropdown>
       {currentCategory === "offset" && (
         <TextInput
-          isDisabled={isDisabled}
           type={"number"}
           aria-label={t("filter.offset_aria_label")}
           placeholder={t("filter.offset_placeholder")}
@@ -166,14 +176,12 @@ export function FilterGroup({
       )}
       {currentCategory === "timestamp" && (
         <DateTimePicker
-          isDisabled={isDisabled}
           value={value || timestamp}
-          onChange={(value) => setValue(value.toString())}
+          onChange={(value) => setValue(new Date(value).toISOString())}
         />
       )}
       {currentCategory === "epoch" && (
         <TextInput
-          isDisabled={isDisabled}
           type={"number"}
           aria-label={t("filter.epoch_aria_label")}
           placeholder={t("filter.epoch_placeholder")}
@@ -183,32 +191,6 @@ export function FilterGroup({
           value={value}
           defaultValue={epoch}
         />
-      )}
-      {currentCategory !== "latest" && (
-        <>
-          <InputGroupItem>
-            <Button
-              id="cancel"
-              variant="control"
-              onClick={() => {
-                setValue("");
-                onConfirm("");
-              }}
-            >
-              <TimesIcon />
-            </Button>
-          </InputGroupItem>
-          <InputGroupItem>
-            <Button
-              id="confirm"
-              variant="control"
-              onClick={() => onConfirm(value)}
-              isDisabled={value === undefined || value === ""}
-            >
-              <CheckIcon />
-            </Button>
-          </InputGroupItem>
-        </>
       )}
     </InputGroup>
   );

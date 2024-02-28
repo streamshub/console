@@ -1,22 +1,19 @@
+import { Button, Modal, Text, TextContent } from "@/libs/patternfly/react-core";
 import {
-  Button,
   DataList,
   DataListCell,
   DataListCheck,
-  DataListItem,
+  DataListControl,
   DataListItemCells,
-  DataListItemRow,
-  Modal,
-  Text,
-  TextContent,
-} from "@/libs/patternfly/react-core";
+} from "@patternfly/react-core";
+import { DragDropSort } from "@patternfly/react-drag-drop";
 import { useState } from "react";
 
 export const columns = [
+  "timestampUTC",
+  "timestamp",
   "offset-partition",
   "size",
-  "timestamp",
-  "timestampUTC",
   "key",
   "headers",
   "value",
@@ -38,36 +35,67 @@ export function useColumnLabels() {
 }
 
 export function ColumnsModal({
-  isOpen,
-  selectedColumns: initialValue,
+  chosenColumns: initialValue,
   onConfirm,
   onCancel,
 }: {
-  isOpen: boolean;
-  selectedColumns: Column[];
+  chosenColumns: Column[];
   onConfirm: (columns: Column[]) => void;
   onCancel: () => void;
 }) {
   const columnLabels = useColumnLabels();
-  const [selectedColumns, setSelectedColumns] = useState(initialValue);
+  const [chosenColumns, setChosenColumns] = useState(initialValue);
+  const [sortedColumns, setSortedColumns] = useState(getInitialColumns());
 
-  function selectAllColumns() {
-    setSelectedColumns([...columns]);
+  function getInitialColumns() {
+    return [
+      ...chosenColumns,
+      ...columns.filter((c) => !chosenColumns.includes(c)),
+    ];
+  }
+
+  function colToDraggable(column: Column) {
+    return {
+      id: column,
+      content: (
+        <>
+          <DataListControl>
+            <DataListCheck
+              aria-labelledby={`item-${column}`}
+              name={`item-${column}`}
+              otherControls
+              isChecked={chosenColumns.includes(column)}
+              onChange={(_, checked) => {
+                setChosenColumns((cols) =>
+                  checked
+                    ? [column, ...cols]
+                    : cols.filter((cc) => cc !== column),
+                );
+              }}
+            />
+          </DataListControl>
+          <DataListItemCells
+            dataListCells={[
+              <DataListCell key={`item-${column}`}>
+                <span id={`item-${column}`}>{columnLabels[column]}</span>
+              </DataListCell>,
+            ]}
+          />
+        </>
+      ),
+    };
   }
 
   return (
     <Modal
       title="Manage columns"
-      isOpen={isOpen}
+      isOpen={true}
       variant="small"
       description={
         <TextContent>
           <Text component={"p"}>
-            Selected fields will be displayed in the table.
+            Chosen fields will be displayed in the table.
           </Text>
-          <Button isInline onClick={selectAllColumns} variant="link">
-            Select all
-          </Button>
         </TextContent>
       }
       onClose={onCancel}
@@ -75,8 +103,10 @@ export function ColumnsModal({
         <Button
           key="save"
           variant="primary"
-          onClick={() => onConfirm(selectedColumns)}
-          isDisabled={selectedColumns.length === 0}
+          onClick={() =>
+            onConfirm(sortedColumns.filter((c) => chosenColumns.includes(c)))
+          }
+          isDisabled={chosenColumns.length === 0}
         >
           Save
         </Button>,
@@ -85,40 +115,15 @@ export function ColumnsModal({
         </Button>,
       ]}
     >
-      <DataList
-        aria-label="Table column management"
-        id="table-column-management"
-        isCompact
+      <DragDropSort
+        items={sortedColumns.map(colToDraggable)}
+        onDrop={(_, newItems) => {
+          setSortedColumns(newItems.map((c) => c.id as Column));
+        }}
+        variant="DataList"
       >
-        {columns.map((c) => (
-          <DataListItem key={c} aria-labelledby={c}>
-            <DataListItemRow>
-              <DataListCheck
-                aria-labelledby={c}
-                checked={selectedColumns.includes(c)}
-                name={`check-${c}`}
-                id={`check-${c}`}
-                onChange={() =>
-                  setSelectedColumns((sc) => {
-                    if (sc.includes(c)) {
-                      return sc.filter((cc) => cc !== c);
-                    } else {
-                      return [...sc, c];
-                    }
-                  })
-                }
-              />
-              <DataListItemCells
-                dataListCells={[
-                  <DataListCell id={c} key={c}>
-                    <label htmlFor={`check-${c}`}>{columnLabels[c]}</label>
-                  </DataListCell>,
-                ]}
-              />
-            </DataListItemRow>
-          </DataListItem>
-        ))}
-      </DataList>
+        <DataList aria-label="Columns" isCompact />
+      </DragDropSort>
     </Modal>
   );
 }

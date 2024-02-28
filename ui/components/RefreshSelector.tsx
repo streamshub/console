@@ -51,13 +51,14 @@ export function RefreshSelector({
             aria-label={t("refresh_button_label")}
             selected={refreshInterval ? refreshInterval : -1}
             isOpen={isOpen}
+            isPlain={true}
             onSelect={() => setIsOpen(false)}
             toggle={(toggleRef) => (
               <MenuToggle
                 ref={toggleRef}
                 onClick={toggleOpen}
                 isExpanded={isOpen}
-                variant={"default"}
+                variant={"plain"}
                 splitButtonOptions={{
                   variant: "action",
                   items: [
@@ -96,7 +97,7 @@ export function RefreshSelector({
           <RefreshButton
             key={"refresh"}
             onClick={onRefresh}
-            isRefreshing={isRefreshing}
+            isRefreshing={isRefreshing && !isLive}
             isDisabled={isRefreshing || isLive}
           />
         </FlexItem>

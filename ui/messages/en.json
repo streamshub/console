@@ -97,14 +97,14 @@
       "value": "Value"
     },
     "filter": {
-      "epoch": "From Unix timestamp",
+      "epoch": "Unix timestamp",
       "epoch_aria_label": "Specify Unix timestamp",
       "epoch_placeholder": "Specify Unix timestamp",
-      "latest": "Latest messages",
-      "offset": "From offset",
+      "latest": "Now (latest messages)",
+      "offset": "Offset",
       "offset_aria_label": "Specify offset",
       "offset_placeholder": "Specify offset",
-      "timestamp": "From timestamp",
+      "timestamp": "Timestamp",
       "timestamp_aria_label": "Specify timestamp",
       "timestamp_toggle_calendar_menu": "Toggle calendar menu",
       "timestamp_toggle_time_menu": "Toggle time menu"

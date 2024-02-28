@@ -1,9 +1,8 @@
 import { Message } from "@/api/messages/schema";
-import { DateTime } from "@/components/DateTime";
 import { Bytes } from "@/components/Bytes";
+import { DateTime } from "@/components/DateTime";
 import { Number } from "@/components/Number";
 import {
-  ClipboardCopy,
   DescriptionList,
   DescriptionListDescription,
   DescriptionListGroup,
@@ -25,8 +24,9 @@ import {
 } from "@/libs/patternfly/react-core";
 import { HelpIcon } from "@/libs/patternfly/react-icons";
 import { useTranslations } from "next-intl";
+import { allExpanded, defaultStyles, JsonView } from "react-json-view-lite";
 import { NoDataCell } from "./NoDataCell";
-import { beautifyUnknownValue } from "./utils";
+import { maybeJson } from "./utils";
 
 export type MessageDetailsProps = {
   onClose: () => void;
@@ -93,10 +93,10 @@ export function MessageDetailsBody({
           </DescriptionListGroup>
           <DescriptionListGroup>
             <DescriptionListTerm>
-                {t("field.size")}{" "}
-                <Tooltip content={t("tooltip.size")}>
-                  <HelpIcon />
-                </Tooltip>
+              {t("field.size")}{" "}
+              <Tooltip content={t("tooltip.size")}>
+                <HelpIcon />
+              </Tooltip>
             </DescriptionListTerm>
             <DescriptionListDescription>
               <Bytes value={message.attributes.size} />
@@ -144,32 +144,31 @@ export function MessageDetailsBody({
             eventKey={"value"}
             title={<TabTitleText>{t("field.value")}</TabTitleText>}
           >
-            <ClipboardCopy isCode={true} isExpanded={true} isReadOnly={true}>
-              {beautifyUnknownValue(
-                message.attributes.value || "Message has no value",
-              )}
-            </ClipboardCopy>
+            <JsonView
+              data={maybeJson(message.attributes.value || "{}")}
+              shouldExpandNode={allExpanded}
+              style={defaultStyles}
+            />
           </Tab>
           <Tab
             eventKey={"key"}
             title={<TabTitleText>{t("field.key")}</TabTitleText>}
           >
-            <ClipboardCopy isCode={true} isExpanded={true} isReadOnly={true}>
-              {beautifyUnknownValue(
-                message.attributes.key || "Message has no key",
-              )}
-            </ClipboardCopy>
+            <JsonView
+              data={maybeJson(message.attributes.key || "{}")}
+              shouldExpandNode={allExpanded}
+              style={defaultStyles}
+            />
           </Tab>
           <Tab
             eventKey={"headers"}
             title={<TabTitleText>{t("field.headers")}</TabTitleText>}
           >
-            <ClipboardCopy isCode={true} isExpanded={true} isReadOnly={true}>
-              {beautifyUnknownValue(
-                JSON.stringify(message.attributes.headers) ||
-                  "Message has no header",
-              )}
-            </ClipboardCopy>
+            <JsonView
+              data={message.attributes.headers || {}}
+              shouldExpandNode={allExpanded}
+              style={defaultStyles}
+            />
           </Tab>
         </Tabs>
       </FlexItem>

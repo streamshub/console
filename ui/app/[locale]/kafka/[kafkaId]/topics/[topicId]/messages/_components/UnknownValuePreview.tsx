@@ -1,22 +1,18 @@
-import { Flex, FlexItem } from "@/libs/patternfly/react-core";
-import { useTranslations } from "next-intl";
-import { truncate } from "./utils";
-
-const PREVIEW_LENGTH = 170;
+import { Flex } from "@/libs/patternfly/react-core";
+import truncate from "@stdlib/string-truncate";
+import Highlighter from "react-highlight-words";
 
 export type UnknownValuePreviewProps = {
   value: string;
-  truncateAt?: number;
+  highlight?: string;
   onClick?: () => void;
 };
 
 export function UnknownValuePreview({
   value,
-  truncateAt = PREVIEW_LENGTH,
+  highlight,
   onClick,
 }: UnknownValuePreviewProps) {
-  const t = useTranslations("message-browser");
-  const [preview, truncated] = truncate(value, truncateAt);
   return (
     <Flex
       direction={{ default: "column" }}
@@ -30,12 +26,19 @@ export function UnknownValuePreview({
           : undefined
       }
     >
-      <FlexItem>{preview}</FlexItem>
-      {truncated && (
-        <FlexItem>
-          <a>{t("show_more")}</a>
-        </FlexItem>
+      {highlight && value.includes(highlight) ? (
+        <Highlighter
+          searchWords={[highlight]}
+          autoEscape={true}
+          textToHighlight={value}
+        />
+      ) : (
+        <TruncatedValue>{value}</TruncatedValue>
       )}
     </Flex>
   );
+}
+
+function TruncatedValue({ children }: { children: string }) {
+  return truncate(children, 50000);
 }

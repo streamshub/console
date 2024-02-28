@@ -29,7 +29,7 @@ const log = logger.child({ module: "kafka-api" });
 export async function getKafkaClusters(): Promise<ClusterList[]> {
   const sp = new URLSearchParams({
     "fields[kafkas]": "name,namespace,kafkaVersion,bootstrapServers",
-    "sort": "name",
+    sort: "name",
   });
   const kafkaClustersQuery = sp.toString();
   const url = `${process.env.BACKEND_URL}/api/kafkas?${kafkaClustersQuery}`;
@@ -38,7 +38,7 @@ export async function getKafkaClusters(): Promise<ClusterList[]> {
       headers: await getHeaders(),
     });
     const rawData = await res.json();
-    log.debug(rawData, "getKafkaClusters response");
+    log.trace(rawData, "getKafkaClusters response");
     return ClustersResponseSchema.parse(rawData).data;
   } catch (err) {
     log.error(err, "getKafkaClusters");
@@ -50,7 +50,8 @@ export async function getKafkaCluster(
   clusterId: string,
 ): Promise<ClusterDetail | null> {
   const sp = new URLSearchParams({
-    "fields[kafkas]": "name,namespace,creationTimestamp,status,kafkaVersion,nodes,controller,authorizedOperations,bootstrapServers,listeners,authType,conditions"
+    "fields[kafkas]":
+      "name,namespace,creationTimestamp,status,kafkaVersion,nodes,controller,authorizedOperations,bootstrapServers,listeners,authType,conditions",
   });
   const kafkaClusterQuery = sp.toString();
   const url = `${process.env.BACKEND_URL}/api/kafkas/${clusterId}?${kafkaClusterQuery}`;
@@ -60,7 +61,7 @@ export async function getKafkaCluster(
       cache: "force-cache",
     });
     const rawData = await res.json();
-    log.debug(rawData, "getKafkaCluster response");
+    log.trace(rawData, "getKafkaCluster response");
     return ClusterResponse.parse(rawData).data;
   } catch (err) {
     log.error({ err, clusterId }, "getKafkaCluster");

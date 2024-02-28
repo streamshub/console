@@ -1,8 +1,8 @@
-"use client";
 import { TableSkeleton } from "@/components/table/TableSkeleton";
 import type {
   ActionsColumnProps,
   TableVariant,
+  TbodyProps,
   TdProps,
   ThProps,
 } from "@patternfly/react-table";
@@ -16,11 +16,15 @@ import {
   Thead,
   Tr,
 } from "@patternfly/react-table";
-import type { PropsWithChildren, ReactElement, ReactNode } from "react";
 import {
   cloneElement,
+  CSSProperties,
   forwardRef,
   memo,
+  PropsWithChildren,
+  ReactElement,
+  ReactNode,
+  Ref,
   useCallback,
   useMemo,
   useState,
@@ -76,6 +80,9 @@ export type ResponsiveTableProps<TRow, TCol> = {
   onRowClick?: (props: RowProps<TRow>) => void;
   setActionCellOuiaId?: (props: RowProps<TRow>) => string;
   setRowOuiaId?: (props: RowProps<TRow>) => string;
+  getRowProps?: (
+    props: RowProps<TRow>,
+  ) => Omit<TbodyProps, "ref"> & { innerRef?: Ref<HTMLTableSectionElement> };
   tableOuiaId?: string;
   variant?: TableVariant;
   disableAutomaticColumns?: boolean;
@@ -104,6 +111,7 @@ export const ResponsiveTable = <TRow, TCol>({
   setActionCellOuiaId,
   setRowOuiaId,
   tableOuiaId,
+  getRowProps = () => ({}),
   children,
   variant,
   disableAutomaticColumns = true,
@@ -214,6 +222,7 @@ export const ResponsiveTable = <TRow, TCol>({
       className={showColumns ? "" : "pf-m-grid"}
       ouiaId={tableOuiaId}
       variant={variant}
+      isStickyHeader={true}
     >
       <Thead>
         <Tr>
@@ -299,8 +308,15 @@ export const ResponsiveTable = <TRow, TCol>({
         const rowExpanded = expanded[rowIndex] !== undefined;
         const rowExpandable =
           isRowExpandable && isRowExpandable({ rowIndex, row });
+        const { innerRef, ...rowProps } = getRowProps({ row, rowIndex });
         return (
-          <Tbody key={`row_${rowIndex}`} isExpanded={rowExpanded}>
+          <Tbody
+            key={`tr-${rowIndex}`}
+            data-index={rowIndex}
+            isExpanded={rowExpanded}
+            {...rowProps}
+            ref={innerRef}
+          >
             <DeletableRow
               isDeleted={deleted}
               isSelected={selected}
@@ -439,9 +455,10 @@ export type DeletableRowProps = PropsWithChildren<{
   isDeleted: boolean;
   onClick?: () => void;
   rowOuiaId?: string;
+  style?: CSSProperties;
 }>;
 export const DeletableRow = memo<DeletableRowProps>(
-  ({ isDeleted, isSelected, onClick, children, rowOuiaId }) => {
+  ({ isDeleted, isSelected, onClick, children, rowOuiaId, style }) => {
     return (
       <Tr
         onRowClick={(e) => {
@@ -460,6 +477,7 @@ export const DeletableRow = memo<DeletableRowProps>(
           .filter((v) => !!v)
           .join(" ")}
         role={"row"}
+        style={style}
       >
         {children}
       </Tr>

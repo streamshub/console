@@ -1,42 +1,34 @@
-"use client";
 import { Message } from "@/api/messages/schema";
 import {
   Column,
-  columns,
   ColumnsModal,
   useColumnLabels,
 } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/_components/ColumnsModal";
-import { FilterGroup } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/_components/FilterGroup";
+import { MessagesTableToolbar } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/_components/MessagesTableToolbar";
 import { NoResultsEmptyState } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/_components/NoResultsEmptyState";
-import { PartitionSelector } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/_components/PartitionSelector";
+import { SearchParams } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/types";
 import { Bytes } from "@/components/Bytes";
 import { DateTime } from "@/components/DateTime";
 import { Number } from "@/components/Number";
 import { ResponsiveTable } from "@/components/table";
 import {
-  Button,
   Drawer,
   DrawerContent,
   PageSection,
   Text,
   TextContent,
-  Toolbar,
-  ToolbarContent,
-  ToolbarGroup,
-  ToolbarItem,
-  ToolbarToggleGroup,
   Tooltip,
 } from "@/libs/patternfly/react-core";
-import { FilterIcon, HelpIcon } from "@/libs/patternfly/react-icons";
+import { HelpIcon } from "@/libs/patternfly/react-icons";
 import {
   BaseCellProps,
   InnerScrollContainer,
   OuterScrollContainer,
   TableVariant,
 } from "@/libs/patternfly/react-table";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import { useTranslations } from "next-intl";
-import { PropsWithChildren, useEffect, useState } from "react";
-import { LimitSelector } from "./LimitSelector";
+import { PropsWithChildren, useEffect, useRef, useState } from "react";
 import { MessageDetails, MessageDetailsProps } from "./MessageDetails";
 import { NoDataCell } from "./NoDataCell";
 import { UnknownValuePreview } from "./UnknownValuePreview";
@@ -53,49 +45,44 @@ const columnWidths: Record<Column, BaseCellProps["width"]> = {
 };
 
 const defaultColumns: Column[] = [
-  "offset-partition",
   "timestampUTC",
+  "offset-partition",
   "key",
   "value",
 ];
 
 export type MessageBrowserProps = {
-  isRefreshing: boolean;
-  selectedMessage: Message | undefined;
-  lastUpdated: Date | undefined;
+  selectedMessage?: Message;
+  lastUpdated?: Date;
   messages: Message[];
   partitions: number;
-  partition: number | undefined;
-  limit: number;
-  filterOffset: number | undefined;
-  filterEpoch: number | undefined;
-  filterTimestamp: string | undefined;
-  onPartitionChange: (value: number | undefined) => void;
-  onOffsetChange: (value: number | undefined) => void;
-  onTimestampChange: (value: string | undefined) => void;
-  onEpochChange: (value: number | undefined) => void;
-  onLatest: () => void;
-  onLimitChange: (value: number) => void;
+  filterLimit?: number;
+  filterLive?: boolean;
+  filterQuery?: string;
+  filterWhere?: "key" | "headers" | "value" | `jq:${string}`;
+  filterOffset?: number;
+  filterEpoch?: number;
+  filterTimestamp?: string;
+  filterPartition?: number;
+  onSearch: (params: SearchParams) => void;
   onSelectMessage: (message: Message) => void;
   onDeselectMessage: () => void;
 };
 
 export function MessagesTable({
-  isRefreshing,
+  lastUpdated,
   selectedMessage,
   messages,
   partitions,
-  partition,
-  limit,
+  filterLimit,
+  filterLive,
+  filterQuery,
+  filterWhere,
   filterOffset,
   filterEpoch,
   filterTimestamp,
-  onPartitionChange,
-  onOffsetChange,
-  onTimestampChange,
-  onEpochChange,
-  onLatest,
-  onLimitChange,
+  filterPartition,
+  onSearch,
   onSelectMessage,
   onDeselectMessage,
 }: MessageBrowserProps) {
@@ -104,6 +91,7 @@ export function MessagesTable({
   const [showColumnsManagement, setShowColumnsManagement] = useState(false);
   const [defaultTab, setDefaultTab] =
     useState<MessageDetailsProps["defaultTab"]>("value");
+  const [chosenColumns, setChosenColumns] = useState<Column[]>(defaultColumns);
 
   const columnTooltips: Record<Column, any> = {
     "offset-partition": undefined,
@@ -122,25 +110,31 @@ export function MessagesTable({
     value: undefined,
   };
 
-  const [selectedColumns, setSelectedColumns] =
-    useState<Column[]>(defaultColumns);
-
   useEffect(() => {
     const v = localStorage.getItem("message-browser-columns");
     if (v) {
       try {
         const pv = JSON.parse(v);
         if (Array.isArray(pv)) {
-          setSelectedColumns(pv);
+          setChosenColumns(pv);
         }
       } catch {}
     }
   }, []);
 
+  const parentRef = useRef<HTMLDivElement>(null);
+  const virtualizer = useVirtualizer({
+    count: messages.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 34,
+    overscan: 20,
+  });
+
   return (
     <PageSection
       isFilled={true}
       hasOverflowScroll={true}
+      style={{ height: "calc(100vh - 170px - 70px)" }}
       aria-label={t("title")}
     >
       <Drawer isInline={true} isExpanded={selectedMessage !== undefined}>
@@ -156,347 +150,219 @@ export function MessagesTable({
           <OuterScrollContainer>
             <MessagesTableToolbar
               partitions={partitions}
-              partition={partition}
-              limit={limit}
+              filterLimit={filterLimit}
+              filterLive={filterLive}
+              filterQuery={filterQuery}
+              filterWhere={filterWhere}
               filterOffset={filterOffset}
               filterEpoch={filterEpoch}
               filterTimestamp={filterTimestamp}
-              onPartitionChange={onPartitionChange}
-              onOffsetChange={onOffsetChange}
-              onTimestampChange={onTimestampChange}
-              onEpochChange={onEpochChange}
-              onLatest={onLatest}
-              onLimitChange={onLimitChange}
+              filterPartition={filterPartition}
+              onSearch={onSearch}
               onColumnManagement={() => setShowColumnsManagement(true)}
             />
             <InnerScrollContainer>
-              <ResponsiveTable
-                variant={TableVariant.compact}
-                ariaLabel={t("table_aria_label")}
-                columns={columns.filter((c) => selectedColumns.includes(c))}
-                data={messages}
-                expectedLength={messages.length}
-                renderHeader={({ colIndex, column, Th, key }) => (
-                  <Th
-                    key={key}
-                    width={columnWidths[column]}
-                    isStickyColumn={colIndex === 0}
-                    hasRightBorder={colIndex === 0}
-                    modifier={"nowrap"}
-                  >
-                    {columnLabels[column]}
-                    {columnTooltips[column] ?? ""}
-                  </Th>
-                )}
-                renderCell={({ column, row, colIndex, Td, key }) => {
-                  const empty = (
-                    <NoDataCell columnLabel={columnLabels[column]} />
-                  );
-
-                  function Cell({ children }: PropsWithChildren) {
-                    return (
-                      <Td
-                        key={key}
-                        dataLabel={columnLabels[column]}
-                        isStickyColumn={colIndex === 0}
-                        hasRightBorder={colIndex === 0}
-                        modifier={"nowrap"}
-                      >
-                        {children}
-                      </Td>
+              <div ref={parentRef}>
+                <ResponsiveTable
+                  variant={TableVariant.compact}
+                  ariaLabel={t("table_aria_label")}
+                  columns={chosenColumns}
+                  data={virtualizer.getVirtualItems()}
+                  expectedLength={messages.length}
+                  renderHeader={({ colIndex, column, Th, key }) => (
+                    <Th
+                      key={key}
+                      width={columnWidths[column]}
+                      modifier={"nowrap"}
+                      sort={
+                        column === "timestamp" ||
+                        column === "timestampUTC" ||
+                        column === "offset-partition"
+                          ? {
+                              columnIndex: colIndex,
+                              sortBy: {
+                                index: colIndex,
+                                direction:
+                                  filterOffset || filterTimestamp || filterEpoch
+                                    ? "asc"
+                                    : "desc",
+                              },
+                            }
+                          : undefined
+                      }
+                    >
+                      {columnLabels[column]}
+                      {columnTooltips[column] ?? ""}
+                    </Th>
+                  )}
+                  renderCell={({ column, row: vrow, colIndex, Td, key }) => {
+                    const row = messages[vrow.index];
+                    const empty = (
+                      <NoDataCell columnLabel={columnLabels[column]} />
                     );
-                  }
 
-                  switch (column) {
-                    case "offset-partition":
+                    function Cell({ children }: PropsWithChildren) {
                       return (
-                        <Cell>
-                          <Number value={row.attributes.offset} />
-                          <TextContent>
-                            <Text component={"small"}>
-                              Partition{" "}
-                              <Number value={row.attributes.partition} />
-                            </Text>
-                          </TextContent>
-                        </Cell>
+                        <Td
+                          key={key}
+                          dataLabel={columnLabels[column]}
+                          modifier={"nowrap"}
+                        >
+                          {children}
+                        </Td>
                       );
-                    case "size":
-                      return (
-                        <Cell>
-                          <Bytes value={row.attributes.size} />
-                        </Cell>
-                      );
-                    case "timestamp":
-                      return (
-                        <Cell>
-                          <DateTime
-                            value={row.attributes.timestamp}
-                            dateStyle={"short"}
-                            timeStyle={"medium"}
-                          />
-                        </Cell>
-                      );
-                    case "timestampUTC":
-                      return (
-                        <Cell>
-                          <DateTime
-                            value={row.attributes.timestamp}
-                            dateStyle={"short"}
-                            timeStyle={"medium"}
-                            tz={"UTC"}
-                          />
-                        </Cell>
-                      );
-                    case "key":
-                      return (
-                        <Cell>
-                          {row.attributes.key ? (
-                            <UnknownValuePreview
-                              value={row.attributes.key}
-                              truncateAt={40}
-                              onClick={() => {
-                                setDefaultTab("key");
-                                onSelectMessage(row);
-                              }}
+                    }
+
+                    switch (column) {
+                      case "offset-partition":
+                        return (
+                          <Cell>
+                            <Number value={row.attributes.offset} />
+                            <TextContent>
+                              <Text component={"small"}>
+                                Partition{" "}
+                                <Number value={row.attributes.partition} />
+                              </Text>
+                            </TextContent>
+                          </Cell>
+                        );
+                      case "size":
+                        return (
+                          <Cell>
+                            <Bytes value={row.attributes.size} />
+                          </Cell>
+                        );
+                      case "timestamp":
+                        return (
+                          <Cell>
+                            <DateTime
+                              value={row.attributes.timestamp}
+                              dateStyle={"short"}
+                              timeStyle={"medium"}
                             />
-                          ) : (
-                            empty
-                          )}
-                        </Cell>
-                      );
-                    case "headers":
-                      return (
-                        <Cell>
-                          {Object.keys(row.attributes.headers).length > 0 ? (
-                            <UnknownValuePreview
-                              value={beautifyUnknownValue(
-                                JSON.stringify(row.attributes.headers),
-                              )}
-                              onClick={() => {
-                                setDefaultTab("headers");
-                                onSelectMessage(row);
-                              }}
+                          </Cell>
+                        );
+                      case "timestampUTC":
+                        return (
+                          <Cell>
+                            <DateTime
+                              value={row.attributes.timestamp}
+                              dateStyle={"short"}
+                              timeStyle={"medium"}
+                              tz={"UTC"}
                             />
-                          ) : (
-                            empty
-                          )}
-                        </Cell>
-                      );
-                    case "value":
-                      return (
-                        <Cell>
-                          {row.attributes.value ? (
-                            <UnknownValuePreview
-                              value={row.attributes.value}
-                              truncateAt={149}
-                              onClick={() => {
-                                setDefaultTab("value");
-                                onSelectMessage(row);
-                              }}
-                            />
-                          ) : (
-                            empty
-                          )}
-                        </Cell>
-                      );
-                  }
-                }}
-                isRowSelected={({ row }) =>
-                  selectedMessage !== undefined &&
-                  isSameMessage(row, selectedMessage)
-                }
-                onRowClick={({ row }) => {
-                  setDefaultTab("value");
-                  onSelectMessage(row);
-                }}
-              >
-                <NoResultsEmptyState />
-              </ResponsiveTable>
+                          </Cell>
+                        );
+                      case "key":
+                        return (
+                          <Cell>
+                            {row.attributes.key ? (
+                              <UnknownValuePreview
+                                value={row.attributes.key}
+                                highlight={filterQuery}
+                                onClick={() => {
+                                  setDefaultTab("key");
+                                  onSelectMessage(row);
+                                }}
+                              />
+                            ) : (
+                              empty
+                            )}
+                          </Cell>
+                        );
+                      case "headers":
+                        return (
+                          <Cell>
+                            {Object.keys(row.attributes.headers).length > 0 ? (
+                              <UnknownValuePreview
+                                value={beautifyUnknownValue(
+                                  JSON.stringify(row.attributes.headers),
+                                )}
+                                highlight={filterQuery}
+                                onClick={() => {
+                                  setDefaultTab("headers");
+                                  onSelectMessage(row);
+                                }}
+                              />
+                            ) : (
+                              empty
+                            )}
+                          </Cell>
+                        );
+                      case "value":
+                        return (
+                          <Cell>
+                            {row.attributes.value ? (
+                              <UnknownValuePreview
+                                value={row.attributes.value}
+                                highlight={filterQuery}
+                                onClick={() => {
+                                  setDefaultTab("value");
+                                  onSelectMessage(row);
+                                }}
+                              />
+                            ) : (
+                              empty
+                            )}
+                          </Cell>
+                        );
+                    }
+                  }}
+                  getRowProps={({ row: vrow, rowIndex }) => {
+                    return {
+                      innerRef: virtualizer.measureElement,
+                      style: {
+                        height: `${vrow.size}px`,
+                        transform: `translateY(${
+                          vrow.start - rowIndex * vrow.size
+                        }px)`,
+                      },
+                    };
+                  }}
+                  isRowSelected={({ row: vrow }) => {
+                    const row = messages[vrow.index];
+                    return (
+                      selectedMessage !== undefined &&
+                      isSameMessage(row, selectedMessage)
+                    );
+                  }}
+                  onRowClick={({ row: vrow }) => {
+                    const row = messages[vrow.index];
+                    setDefaultTab("value");
+                    onSelectMessage(row);
+                  }}
+                >
+                  <NoResultsEmptyState />
+                </ResponsiveTable>
+              </div>
             </InnerScrollContainer>
           </OuterScrollContainer>
+          <TextContent>
+            <Text component={"small"} className={"pf-v5-u-px-md pf-v5-u-py-sm"}>
+              Last updated:{" "}
+              <DateTime
+                value={lastUpdated}
+                timeStyle={"medium"}
+                dateStyle={"short"}
+              />
+            </Text>
+          </TextContent>
         </DrawerContent>
       </Drawer>
-      <ColumnsModal
-        isOpen={showColumnsManagement}
-        selectedColumns={selectedColumns}
-        onConfirm={(columns) => {
-          setSelectedColumns(columns);
-          localStorage.setItem(
-            "message-browser-columns",
-            JSON.stringify(columns),
-          );
-          setShowColumnsManagement(false);
-        }}
-        onCancel={() => setShowColumnsManagement(false)}
-      />
-    </PageSection>
-  );
-}
-
-export function MessagesTableToolbar({
-  filterEpoch,
-  filterTimestamp,
-  filterOffset,
-  partition,
-  partitions,
-  limit,
-  onEpochChange,
-  onTimestampChange,
-  onOffsetChange,
-  onPartitionChange,
-  onLimitChange,
-  onLatest,
-  onColumnManagement,
-}: Pick<
-  MessageBrowserProps,
-  | "filterEpoch"
-  | "filterTimestamp"
-  | "filterOffset"
-  | "partition"
-  | "partitions"
-  | "limit"
-  | "onEpochChange"
-  | "onTimestampChange"
-  | "onOffsetChange"
-  | "onPartitionChange"
-  | "onLimitChange"
-  | "onLatest"
-> & {
-  onColumnManagement: () => void;
-}) {
-  const toolbarBreakpoint = "md";
-
-  function onClearAllFilters() {}
-
-  return (
-    <Toolbar
-      clearAllFilters={onClearAllFilters}
-      collapseListedFiltersBreakpoint={toolbarBreakpoint}
-    >
-      <ToolbarContent>
-        <ToolbarItem
-          visibility={{
-            default: "hidden",
-            [toolbarBreakpoint]: "visible",
+      {showColumnsManagement && (
+        <ColumnsModal
+          chosenColumns={chosenColumns}
+          onConfirm={(columns) => {
+            setChosenColumns(columns);
+            localStorage.setItem(
+              "message-browser-columns",
+              JSON.stringify(columns),
+            );
+            setShowColumnsManagement(false);
           }}
-        >
-          <FilterGroup
-            isDisabled={false}
-            offset={filterOffset}
-            epoch={filterEpoch}
-            timestamp={filterTimestamp}
-            onOffsetChange={onOffsetChange}
-            onTimestampChange={onTimestampChange}
-            onEpochChange={onEpochChange}
-            onLatest={onLatest}
-          />
-        </ToolbarItem>
-        <ToolbarItem
-          visibility={{
-            default: "hidden",
-            [toolbarBreakpoint]: "visible",
-          }}
-        >
-          <PartitionSelector
-            value={partition}
-            partitions={partitions}
-            onChange={onPartitionChange}
-            isDisabled={false}
-          />
-        </ToolbarItem>
-
-        <ToolbarToggleGroup
-          toggleIcon={<FilterIcon />}
-          breakpoint={toolbarBreakpoint}
-          visibility={{
-            default: "visible",
-            [toolbarBreakpoint]: "hidden",
-          }}
-        >
-          <ToolbarItem>
-            <FilterGroup
-              isDisabled={false}
-              offset={filterOffset}
-              epoch={filterEpoch}
-              timestamp={filterTimestamp}
-              onOffsetChange={onOffsetChange}
-              onTimestampChange={onTimestampChange}
-              onEpochChange={onEpochChange}
-              onLatest={onLatest}
-            />
-          </ToolbarItem>
-          <ToolbarItem>
-            <PartitionSelector
-              value={partition}
-              partitions={partitions}
-              onChange={onPartitionChange}
-              isDisabled={false}
-            />
-          </ToolbarItem>
-        </ToolbarToggleGroup>
-
-        <ToolbarItem>
-          <Button onClick={onColumnManagement} variant={"link"}>
-            Manage columns
-          </Button>
-        </ToolbarItem>
-
-        <ToolbarGroup align={{ default: "alignRight" }}>
-          <LimitSelector
-            value={limit}
-            onChange={onLimitChange}
-            isDisabled={false}
-          />
-        </ToolbarGroup>
-        <ToolbarGroup variant="icon-button-group">
-          <ToolbarItem></ToolbarItem>
-        </ToolbarGroup>
-      </ToolbarContent>
-    </Toolbar>
-  );
-}
-
-export function MessagesTableSkeleton({
-  partition,
-  limit,
-  filterTimestamp,
-  filterOffset,
-  filterEpoch,
-}: Pick<
-  MessageBrowserProps,
-  "partition" | "limit" | "filterTimestamp" | "filterOffset" | "filterEpoch"
->) {
-  const t = useTranslations("message-browser");
-  return (
-    <PageSection
-      isFilled={true}
-      hasOverflowScroll={true}
-      aria-label={t("title")}
-    >
-      <MessagesTableToolbar
-        partitions={1}
-        partition={partition}
-        limit={limit}
-        filterOffset={filterOffset}
-        filterEpoch={filterEpoch}
-        filterTimestamp={filterTimestamp}
-        onPartitionChange={() => {}}
-        onOffsetChange={() => {}}
-        onTimestampChange={() => {}}
-        onEpochChange={() => {}}
-        onLatest={() => {}}
-        onLimitChange={() => {}}
-        onColumnManagement={() => {}}
-      />
-      <ResponsiveTable
-        variant={TableVariant.compact}
-        ariaLabel={t("table_aria_label")}
-        columns={columns}
-        data={undefined}
-        expectedLength={20}
-        renderCell={() => <div></div>}
-        renderHeader={() => <div></div>}
-      />
+          onCancel={() => setShowColumnsManagement(false)}
+        />
+      )}
     </PageSection>
   );
 }

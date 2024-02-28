@@ -1,31 +1,46 @@
+import { stringToBoolean } from "@/utils/stringToBoolean";
 import { stringToInt } from "@/utils/stringToInt";
+import { useSearchParams } from "next/navigation";
+import { useMemo } from "react";
 
 export type MessagesSearchParams = {
   limit?: string;
+  live?: string;
   partition?: string;
   selected?: string;
-  "filter[offset]"?: string;
-  "filter[timestamp]"?: string;
-  "filter[epoch]"?: string;
+  query?: string;
+  where?: string;
+  offset?: string;
+  timestamp?: string;
+  epoch?: string;
+  _?: string;
 };
 
 export function parseSearchParams(searchParams: MessagesSearchParams) {
-  const limit = stringToInt(searchParams.limit) || 50;
-  const offset = stringToInt(searchParams["filter[offset]"]);
-  const ts = stringToInt(searchParams["filter[timestamp]"]);
-  const epoch = stringToInt(searchParams["filter[epoch]"]);
+  const _ = searchParams._;
+  const limit = stringToInt(searchParams.limit);
+  const live = stringToBoolean(searchParams.live);
+  const offset = stringToInt(searchParams["offset"]);
+  const timestamp = searchParams["timestamp"];
+  const epoch = stringToInt(searchParams["epoch"]);
   const selected = searchParams.selected;
+  const query = searchParams.query;
+  const where = (() => {
+    switch (searchParams.where) {
+      case "key":
+        return "key" as const;
+      case "headers":
+        return "headers" as const;
+      case "value":
+        return "value" as const;
+      default:
+        if (searchParams.where?.indexOf("jq:") === 0) {
+          return searchParams.where as `jq:${string}`;
+        }
+        return undefined;
+    }
+  })();
   const partition = stringToInt(searchParams.partition);
-
-  const timeFilter = epoch ? epoch * 1000 : ts;
-  const date = timeFilter ? new Date(timeFilter) : undefined;
-  const timestamp = date?.toISOString();
-
-  const filter = offset
-    ? { type: "offset" as const, value: offset }
-    : timestamp
-      ? { type: "timestamp" as const, value: timestamp }
-      : undefined;
 
   const [selectedPartition, selectedOffset] = selected
     ? decodeURIComponent(selected).split(":").map(stringToInt)
@@ -33,12 +48,26 @@ export function parseSearchParams(searchParams: MessagesSearchParams) {
 
   return {
     limit,
+    live,
     offset,
     timestamp,
     epoch,
     selectedOffset,
     selectedPartition,
     partition,
-    filter,
+    query,
+    where,
+    _,
   };
+}
+
+export function useParseSearchParams(): [
+  ReturnType<typeof parseSearchParams>,
+  Record<string, string>,
+] {
+  const searchParamsEntities = useSearchParams();
+  return useMemo(() => {
+    const searchParams = Object.fromEntries(searchParamsEntities);
+    return [parseSearchParams(searchParams), searchParams];
+  }, [searchParamsEntities]);
 }
