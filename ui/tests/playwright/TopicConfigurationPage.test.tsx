@@ -3,7 +3,7 @@ import {URL} from './utils'
 describe("Topic Configuration", () => {
   test("Topic Configuration form should appear", async () => {
     await page.goto(
-      `${URL}/kafka/j7W3TRG7SsWCBXHjz2hfrg/topics/RRf0He61TRWcMgG7qksTiw/configuration`
+      `${URL}/kafka/j7W3TRG7SsWCBXHjz2hfrg/topics/ifT6uNQ9QyeVSDEnd9S9Zg/configuration`
     );
     await page.waitForLoadState("networkidle");
     const screenshot = await page.screenshot();

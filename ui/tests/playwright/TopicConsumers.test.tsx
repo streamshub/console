@@ -4,7 +4,7 @@ import {URL} from './utils'
 describe("Topic Consumers", () => {
   test("Topic Consumers page should display table", async () => {
     await page.goto(
-      `${URL}/kafka/j7W3TRG7SsWCBXHjz2hfrg/topics/RRf0He61TRWcMgG7qksTiw/consumer-groups`
+      `${URL}/kafka/j7W3TRG7SsWCBXHjz2hfrg/topics/ifT6uNQ9QyeVSDEnd9S9Zg/consumer-groups`
     );
     await page.waitForLoadState("networkidle");
     expect(await page.innerText("body")).toContain("Consumer group name");

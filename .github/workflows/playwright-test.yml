@@ -20,6 +20,10 @@ jobs:
     - name: Install dependencies
       run: npm install
       working-directory: ./ui
+     
+    - name: Install Playwright Browsers
+      run: npx playwright install --with-deps
+      working-directory: ./ui
 
     - name: Run Playwright Tests
       run:  npm test

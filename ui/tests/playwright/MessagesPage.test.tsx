@@ -5,7 +5,7 @@ describe("Messages page", () => {
   test("Messages page should display table", async () => {
     jest.setTimeout(30000)
     await page.goto(
-      `${URL}/kafka/j7W3TRG7SsWCBXHjz2hfrg/topics/RRf0He61TRWcMgG7qksTiw/messages`
+      `${URL}/kafka/j7W3TRG7SsWCBXHjz2hfrg/topics/ifT6uNQ9QyeVSDEnd9S9Zg/messages`
     );
     await page.waitForLoadState("networkidle");
     expect(await page.innerText("body")).toContain("Key");
