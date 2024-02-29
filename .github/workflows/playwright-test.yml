@@ -22,6 +22,5 @@ jobs:
       working-directory: ./ui
 
     - name: Run Playwright Tests
-      run: |
-        npm test
+      run:  npm test
       working-directory: ./ui
