@@ -1,6 +1,7 @@
 import { getKafkaCluster } from "@/api/kafka/actions";
 import { getTopic } from "@/api/topics/actions";
 import { KafkaTopicParams } from "@/app/[locale]/kafka/[kafkaId]/topics/kafkaTopic.params";
+import { ManagedTopicLabel } from "@/app/components/ManagedTopicLabel";
 import { AppHeader } from "@/components/AppHeader";
 import { NavItemLink } from "@/components/NavItemLink";
 import { Number } from "@/components/Number";
@@ -95,7 +96,12 @@ async function ConnectedTopicHeader({
   const topic = await getTopic(cluster.id, topicId);
   return (
     <AppHeader
-      title={topic?.attributes.name}
+      title={
+        <>
+          {topic?.attributes.name}
+          {topic?.meta?.managed === true && <ManagedTopicLabel />}
+        </>
+      }
       navigation={
         <PageNavigation>
           <Nav aria-label="Group section navigation" variant="tertiary">
