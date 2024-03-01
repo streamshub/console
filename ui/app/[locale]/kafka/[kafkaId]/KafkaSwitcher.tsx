@@ -49,7 +49,7 @@ export function KafkaSwitcher<T extends string>({
     .filter(
       (b) =>
         searchText === "" ||
-        `${b.attributes.name}${b.attributes.bootstrapServers}`
+        b.attributes.name
           .toLowerCase()
           .includes(searchText.toLowerCase()),
     )

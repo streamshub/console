@@ -18,8 +18,9 @@ spec:
       - emptyDir: {}
         name: cache
       containers:
+      ### API
       - name: console-api
-        image: quay.io/eyefloaters/console-api:0.0.27
+        image: quay.io/eyefloaters/console-api:0.0.28
         ports:
         - containerPort: 8080
         env:
@@ -36,10 +37,9 @@ spec:
             secretKeyRef:
               name: console-kafka-user1
               key: sasl.jaas.config
-        - name: CONSOLE_METRICS_PROMETHEUS_URL
-          value: 'http://prometheus-operated.${NAMESPACE}.svc.cluster.local:9090'
+      ### User Interface
       - name: console-ui
-        image: quay.io/eyefloaters/ui:0.0.27
+        image: quay.io/eyefloaters/ui:0.0.28
         volumeMounts:
         - mountPath: /app/.next/cache
           name: cache

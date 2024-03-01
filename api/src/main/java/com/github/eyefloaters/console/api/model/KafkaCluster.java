@@ -2,13 +2,10 @@ package com.github.eyefloaters.console.api.model;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.function.Predicate;
 
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
@@ -36,16 +33,6 @@ public class KafkaCluster {
         public static final String NODES = "nodes";
         public static final String CONTROLLER = "controller";
         public static final String AUTHORIZED_OPERATIONS = "authorizedOperations";
-        /**
-         * @deprecated use the listeners array instead
-         **/
-        @Deprecated(forRemoval = true)
-        public static final String BOOTSTRAP_SERVERS = "bootstrapServers";
-        /**
-         * @deprecated use the listeners array instead
-         **/
-        @Deprecated(forRemoval = true)
-        public static final String AUTH_TYPE = "authType";
         public static final String LISTENERS = "listeners";
         public static final String METRICS = "metrics";
         public static final String KAFKA_VERSION = "kafkaVersion";
@@ -69,8 +56,6 @@ public class KafkaCluster {
                 NAME + ", "
                 + NAMESPACE + ", "
                 + CREATION_TIMESTAMP + ", "
-                + BOOTSTRAP_SERVERS + ", "
-                + AUTH_TYPE + ", "
                 + LISTENERS + ", "
                 + KAFKA_VERSION + ", "
                 + STATUS + ", "
@@ -83,8 +68,6 @@ public class KafkaCluster {
                 + NODES + ", "
                 + CONTROLLER + ", "
                 + AUTHORIZED_OPERATIONS + ", "
-                + BOOTSTRAP_SERVERS + ", "
-                + AUTH_TYPE + ", "
                 + LISTENERS + ", "
                 + KAFKA_VERSION + ", "
                 + STATUS + ", "
@@ -144,7 +127,6 @@ public class KafkaCluster {
     @Schema(readOnly = true, description = """
             Contains the set of metrics optionally retrieved only in a describe operation.
             """)
-    Metrics metrics = new Metrics();
     String kafkaVersion;
     String status;
     List<Condition> conditions;
@@ -234,40 +216,12 @@ public class KafkaCluster {
         return authorizedOperations;
     }
 
-    @Deprecated(forRemoval = true)
-    /**
-     * @deprecated use the listeners array instead
-     **/
-    public String getBootstrapServers() {
-        return Optional.ofNullable(listeners)
-            .filter(Predicate.not(Collection::isEmpty))
-            .map(l -> l.get(0))
-            .map(KafkaListener::bootstrapServers)
-            .orElse(null);
-    }
-
-    @Deprecated(forRemoval = true)
-    /**
-     * @deprecated use the listeners array instead
-     **/
-    public String getAuthType() {
-        return Optional.ofNullable(listeners)
-            .filter(Predicate.not(Collection::isEmpty))
-            .map(l -> l.get(0))
-            .map(KafkaListener::authType)
-            .orElse(null);
-    }
-
     public List<KafkaListener> getListeners() {
         return listeners;
     }
 
     public void setListeners(List<KafkaListener> listeners) {
         this.listeners = listeners;
-    }
-
-    public Metrics getMetrics() {
-        return metrics;
     }
 
     public String getKafkaVersion() {

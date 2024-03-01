@@ -14,7 +14,6 @@ export const ClusterListSchema = z.object({
     name: z.string(),
     namespace: z.string(),
     kafkaVersion: z.string().optional(),
-    bootstrapServers: z.string(),
   }),
 });
 export const ClustersResponseSchema = z.object({
@@ -33,8 +32,6 @@ const ClusterDetailSchema = z.object({
     nodes: z.array(NodeSchema),
     controller: NodeSchema,
     authorizedOperations: z.array(z.string()),
-    bootstrapServers: z.string(),
-    authType: z.string().optional().nullable(),
     listeners: z.array(
       z.object({
         type: z.string(),
