@@ -1,11 +1,8 @@
-import { page } from "../../jest.setup";
-import {URL} from './utils'
+import { expect, test } from "@playwright/test";
 
-describe("Topics page", () => {
-  test("Topics page should display table", async () => {
-    await page.goto(
-      `${URL}/kafka/j7W3TRG7SsWCBXHjz2hfrg/topics`
-    );
+test.describe("Topics page", () => {
+  test("Topics page should display table", async ({ page }) => {
+    await page.goto(`./kafka/j7W3TRG7SsWCBXHjz2hfrg/topics`);
     await page.waitForLoadState("networkidle");
     const label = await page.$("label.pf-v5-c-switch");
     expect(label).not.toBeNull();
@@ -32,8 +29,8 @@ describe("Topics page", () => {
     expect(dataRows.length).toBeGreaterThan(0);
     const dataCells = await page.$$eval(
       'table[aria-label="Topics"] tbody tr td',
-      (tds) => tds.map((td) => td.textContent?.trim() ?? "")
+      (tds) => tds.map((td) => td.textContent?.trim() ?? ""),
     );
     expect(dataCells.length).toBeGreaterThan(0);
-  },100000);
+  }, 100000);
 });

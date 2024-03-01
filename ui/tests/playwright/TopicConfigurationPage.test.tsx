@@ -1,9 +1,9 @@
-import { page } from "../../jest.setup";
-import {URL} from './utils'
-describe("Topic Configuration", () => {
-  test("Topic Configuration form should appear", async () => {
+import { expect, test } from "@playwright/test";
+
+test.describe("Topic Configuration", () => {
+  test("Topic Configuration form should appear", async ({ page }) => {
     await page.goto(
-      `${URL}/kafka/j7W3TRG7SsWCBXHjz2hfrg/topics/ifT6uNQ9QyeVSDEnd9S9Zg/configuration`
+      `./kafka/j7W3TRG7SsWCBXHjz2hfrg/topics/ifT6uNQ9QyeVSDEnd9S9Zg/configuration`,
     );
     await page.waitForLoadState("networkidle");
     const screenshot = await page.screenshot();
