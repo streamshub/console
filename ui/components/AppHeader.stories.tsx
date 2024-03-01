@@ -5,7 +5,7 @@ import {
   PageNavigation,
 } from "@/libs/patternfly/react-core";
 import type { Meta, StoryObj } from "@storybook/react";
-import { AppHeader } from "./AppHeader"; // Adjust the import path as necessary
+import { AppHeader } from "./AppHeader";
 
 const meta: Meta<typeof AppHeader> = {
   title: "Components/AppHeader",

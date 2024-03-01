@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { userEvent, within } from "@storybook/testing-library";
-import { ButtonLink } from "./ButtonLink"; // Adjust the import path as necessary
+import { ButtonLink } from "./ButtonLink";
 
 const meta: Meta<typeof ButtonLink> = {
   title: "Components/ButtonLink",
