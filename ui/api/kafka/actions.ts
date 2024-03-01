@@ -28,7 +28,7 @@ const log = logger.child({ module: "kafka-api" });
 
 export async function getKafkaClusters(): Promise<ClusterList[]> {
   const sp = new URLSearchParams({
-    "fields[kafkas]": "name,namespace,kafkaVersion,bootstrapServers",
+    "fields[kafkas]": "name,namespace,kafkaVersion",
     sort: "name",
   });
   const kafkaClustersQuery = sp.toString();
@@ -51,7 +51,7 @@ export async function getKafkaCluster(
 ): Promise<ClusterDetail | null> {
   const sp = new URLSearchParams({
     "fields[kafkas]":
-      "name,namespace,creationTimestamp,status,kafkaVersion,nodes,controller,authorizedOperations,bootstrapServers,listeners,authType,conditions",
+      "name,namespace,creationTimestamp,status,kafkaVersion,nodes,controller,authorizedOperations,listeners,conditions",
   });
   const kafkaClusterQuery = sp.toString();
   const url = `${process.env.BACKEND_URL}/api/kafkas/${clusterId}?${kafkaClusterQuery}`;

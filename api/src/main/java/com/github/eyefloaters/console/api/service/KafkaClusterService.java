@@ -1,14 +1,10 @@
 package com.github.eyefloaters.console.api.service;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -54,9 +50,6 @@ public class KafkaClusterService {
     @Inject
     Supplier<Admin> clientSupplier;
 
-    @Inject
-    MetricsService metricsService;
-
     public List<KafkaCluster> listClusters(ListRequestContext<KafkaCluster> listSupport) {
         return kafkaInformer.getStore()
                 .list()
@@ -88,8 +81,7 @@ public class KafkaClusterService {
                         get(result::nodes).stream().map(Node::fromKafkaModel).toList(),
                         Node.fromKafkaModel(get(result::controller)),
                         enumNames(get(result::authorizedOperations))))
-            .thenApply(this::addKafkaResourceData)
-            .thenCompose(cluster -> addMetrics(cluster, fields));
+            .thenApply(this::addKafkaResourceData);
     }
 
     KafkaCluster toKafkaCluster(Kafka kafka) {
@@ -156,39 +148,6 @@ public class KafkaClusterService {
                                     () -> cluster.setStatus("Ready"));
                     });
             });
-    }
-
-    CompletionStage<KafkaCluster> addMetrics(KafkaCluster cluster, List<String> fields) {
-        if (!fields.contains(KafkaCluster.Fields.METRICS)) {
-            return CompletableFuture.completedStage(cluster);
-        }
-
-        if (metricsService.disabled()) {
-            logger.warnf("Kafka cluster metrics were requested, but Prometheus URL is not configured");
-            return CompletableFuture.completedStage(cluster);
-        }
-
-        String namespace = cluster.getNamespace();
-        String name = cluster.getName();
-        int controllerId = cluster.getController().id();
-
-        try (var rangesStream = getClass().getResourceAsStream("/metrics/queries/kafkaCluster_ranges.promql");
-             var valuesStream = getClass().getResourceAsStream("/metrics/queries/kafkaCluster_values.promql")) {
-            String rangeQuery = new String(rangesStream.readAllBytes(), StandardCharsets.UTF_8)
-                    .formatted(namespace, name);
-            String valueQuery = new String(valuesStream.readAllBytes(), StandardCharsets.UTF_8)
-                    .formatted(namespace, name, controllerId);
-
-            var rangeResults = metricsService.queryRanges(rangeQuery).toCompletableFuture();
-            var valueResults = metricsService.queryValues(valueQuery).toCompletableFuture();
-
-            return CompletableFuture.allOf(
-                    rangeResults.thenAccept(cluster.getMetrics().ranges()::putAll),
-                    valueResults.thenAccept(cluster.getMetrics().values()::putAll))
-                .thenApply(nothing -> cluster);
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
     }
 
     public Optional<Kafka> findCluster(String clusterId) {

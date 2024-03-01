@@ -3,7 +3,6 @@ package com.github.eyefloaters.console.api;
 import java.io.IOException;
 import java.net.URI;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
@@ -22,8 +21,6 @@ import jakarta.inject.Inject;
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonString;
-import jakarta.ws.rs.InternalServerErrorException;
-import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.Response.Status;
 
 import org.apache.kafka.clients.CommonClientConfigs;
@@ -31,8 +28,6 @@ import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.common.config.SslConfigs;
 import org.apache.kafka.common.security.auth.SecurityProtocol;
 import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.rest.client.inject.RestClient;
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -41,9 +36,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.Mockito;
 
 import com.github.eyefloaters.console.api.model.ListFetchParams;
-import com.github.eyefloaters.console.api.service.MetricsService;
 import com.github.eyefloaters.console.api.support.ErrorCategory;
-import com.github.eyefloaters.console.api.support.PrometheusAPI;
 import com.github.eyefloaters.console.kafka.systemtest.TestPlainProfile;
 import com.github.eyefloaters.console.kafka.systemtest.deployment.DeploymentManager;
 import com.github.eyefloaters.console.test.AdminClientSpy;
@@ -82,11 +75,6 @@ import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 
 @QuarkusTest
 @QuarkusTestResource(KubernetesServerTestResource.class)
@@ -183,10 +171,6 @@ class KafkaClustersResourceIT {
             .body("data.size()", equalTo(2))
             .body("data.id", containsInAnyOrder(clusterId1, clusterId2))
             .body("data.attributes.name", containsInAnyOrder("test-kafka1", "test-kafka2"))
-            // deprecated properties - begin
-            .body("data.attributes.bootstrapServers", containsInAnyOrder(k1Bootstrap, k2Bootstrap))
-            .body("data.attributes.authType", containsInAnyOrder(equalTo("custom"), nullValue()))
-            // deprecated properties - end
             .body("data.find { it.attributes.name == 'test-kafka1'}.attributes.status", is("Ready"))
             .body("data.find { it.attributes.name == 'test-kafka1'}.attributes.listeners", hasItem(allOf(
                     hasEntry("bootstrapServers", k1Bootstrap),
@@ -504,10 +488,6 @@ class KafkaClustersResourceIT {
             .statusCode(is(Status.OK.getStatusCode()))
             .body("data.id", equalTo(clusterId1))
             .body("data.attributes.name", equalTo("test-kafka1"))
-            // deprecated properties - begin
-            .body("data.attributes.bootstrapServers", equalTo(bootstrapServers.getHost() + ":" + bootstrapServers.getPort()))
-            .body("data.attributes.authType", equalTo("custom"))
-            // deprecated properties - end
             .body("data.attributes.listeners", hasItem(allOf(
                     hasEntry("bootstrapServers", bootstrapServers.getHost() + ":" + bootstrapServers.getPort()),
                     hasEntry("authType", "custom"))));
@@ -602,133 +582,6 @@ class KafkaClustersResourceIT {
             .body("errors.size()", is(1))
             .body("errors.status", contains("404"))
             .body("errors.code", contains("4041"));
-    }
-
-    @Test
-    void testDescribeClusterWithMetrics() {
-        mockAdminClient(); // Allow Oauth HTTP requests to drop auth in back-end
-
-        JsonObject mockValues = Json.createObjectBuilder()
-                .add("data", Json.createObjectBuilder()
-                        .add("result", Json.createArrayBuilder()
-                                .add(Json.createObjectBuilder()
-                                        .add("metric", Json.createObjectBuilder()
-                                                .add(MetricsService.METRIC_NAME, "test_value_metric")
-                                                .add("custom_attribute", "custom_attribute_value"))
-                                        .add("value", Json.createArrayBuilder()
-                                                .add(0.999)
-                                                .add("999")))))
-                .build();
-        JsonObject mockRanges = Json.createObjectBuilder()
-                .add("data", Json.createObjectBuilder()
-                        .add("result", Json.createArrayBuilder()
-                                .add(Json.createObjectBuilder()
-                                        .add("metric", Json.createObjectBuilder()
-                                                .add(MetricsService.METRIC_NAME, "test_range_metric")
-                                                .add("custom_attribute", "custom_attribute_value"))
-                                        .add("values", Json.createArrayBuilder()
-                                                .add(Json.createArrayBuilder()
-                                                        .add(0.123)
-                                                        .add("0"))
-                                                .add(Json.createArrayBuilder()
-                                                        .add(1.456)
-                                                        .add("1"))
-                                                .add(Json.createArrayBuilder()
-                                                        .add(2.789)
-                                                        .add("2"))
-                                                ))))
-                .build();
-
-        PrometheusAPI prometheusMock = Mockito.mock(PrometheusAPI.class);
-        doReturn(mockValues).when(prometheusMock).query(anyString(), anyString());
-        doReturn(mockRanges).when(prometheusMock).queryRange(anyString(), anyString(), anyString(), anyString());
-        QuarkusMock.installMockForType(prometheusMock, PrometheusAPI.class, RestClient.LITERAL);
-
-        whenRequesting(req -> req
-                .auth()
-                    .oauth2("my-access-token")
-                .queryParam("fields[kafkas]", "name,metrics")
-                .get("{clusterId}", clusterId1))
-            .assertThat()
-            .statusCode(is(Status.OK.getStatusCode()))
-            .body("data.id", is(clusterId1))
-            .body("data.attributes.name", is("test-kafka1"))
-            .body("data.attributes.metrics", allOf(hasKey("values"), hasKey("ranges")))
-            .body("data.attributes.metrics.values.test_value_metric[0].custom_attribute", is("custom_attribute_value"))
-            .body("data.attributes.metrics.values.test_value_metric[0].value", is("999"))
-            .body("data.attributes.metrics.ranges.test_range_metric[0].custom_attribute", is("custom_attribute_value"))
-            .body("data.attributes.metrics.ranges.test_range_metric[0].range", contains(
-                    contains(Instant.ofEpochMilli(123).toString(), "0"),
-                    contains(Instant.ofEpochMilli(1456).toString(), "1"),
-                    contains(Instant.ofEpochMilli(2789).toString(), "2")));
-    }
-
-    @Test
-    void testDescribeClusterWithMetricsErrors() {
-        mockAdminClient(); // Allow Oauth HTTP requests to drop auth in back-end
-
-        PrometheusAPI prometheusMock = Mockito.mock(PrometheusAPI.class);
-
-        doThrow(new InternalServerErrorException(Response.serverError()
-                .entity("EXPECTED TEST EXCEPTION - METRICS HTTP 500 ERROR").build()))
-            .when(prometheusMock).query(anyString(), anyString());
-
-        doThrow(new RuntimeException("EXPECTED TEST EXCEPTION - METRICS RUNTIME ERROR"))
-            .when(prometheusMock).queryRange(anyString(), anyString(), anyString(), anyString());
-
-        QuarkusMock.installMockForType(prometheusMock, PrometheusAPI.class, RestClient.LITERAL);
-
-        whenRequesting(req -> req
-                .auth()
-                    .oauth2("my-access-token")
-                .queryParam("fields[kafkas]", "name,metrics")
-                .get("{clusterId}", clusterId1))
-            .assertThat()
-            .statusCode(is(Status.OK.getStatusCode()))
-            .body("data.id", is(clusterId1))
-            .body("data.attributes.name", is("test-kafka1"))
-            .body("data.attributes.metrics", allOf(hasKey("values"), hasKey("ranges")))
-            .body("data.attributes.metrics.values", is(Matchers.anEmptyMap()))
-            .body("data.attributes.metrics.ranges", is(Matchers.anEmptyMap()));
-
-        verify(prometheusMock, times(1)).query(anyString(), anyString());
-        verify(prometheusMock, times(1)).queryRange(anyString(), anyString(), anyString(), anyString());
-    }
-
-    @Test
-    void testDescribeClusterWithMetricsDisabled() {
-        mockAdminClient(); // Allow Oauth HTTP requests to drop auth in back-end
-
-        PrometheusAPI prometheusMock = Mockito.spy(PrometheusAPI.class);
-        QuarkusMock.installMockForType(prometheusMock, PrometheusAPI.class, RestClient.LITERAL);
-
-        String prometheusUrl = System.getProperty("console.metrics.prometheus-url");
-
-        try {
-            System.setProperty("console.metrics.prometheus-url", "");
-
-            whenRequesting(req -> req
-                    .auth()
-                        .oauth2("my-access-token")
-                    .queryParam("fields[kafkas]", "name,metrics")
-                    .get("{clusterId}", clusterId1))
-                .assertThat()
-                .statusCode(is(Status.OK.getStatusCode()))
-                .body("data.id", is(clusterId1))
-                .body("data.attributes.name", is("test-kafka1"))
-                .body("data.attributes.metrics", allOf(hasKey("values"), hasKey("ranges")))
-                .body("data.attributes.metrics.values", is(Matchers.anEmptyMap()))
-                .body("data.attributes.metrics.ranges", is(Matchers.anEmptyMap()));
-        } finally {
-            if (prometheusUrl != null) {
-                System.setProperty("console.metrics.prometheus-url", prometheusUrl);
-            } else {
-                System.clearProperty("console.metrics.prometheus-url");
-            }
-        }
-
-        verify(prometheusMock, times(0)).query(anyString(), anyString());
-        verify(prometheusMock, times(0)).queryRange(anyString(), anyString(), anyString(), anyString());
     }
 
     // Helper methods
