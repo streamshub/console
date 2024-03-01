@@ -75,6 +75,7 @@
     "@storybook/addon-interactions": "^7.6.17",
     "@storybook/addon-links": "^7.6.17",
     "@storybook/blocks": "^7.6.15",
+    "@storybook/jest": "^0.2.3",
     "@storybook/nextjs": "^7.6.17",
     "@storybook/react": "^7.6.15",
     "@storybook/test-runner": "^0.16.0",

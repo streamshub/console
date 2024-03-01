@@ -3,7 +3,6 @@ import { userEvent, within } from "@storybook/testing-library";
 import { ButtonLink } from "./ButtonLink";
 
 const meta: Meta<typeof ButtonLink> = {
-  title: "Components/ButtonLink",
   component: ButtonLink,
   args: {
     children: "Click Me",
