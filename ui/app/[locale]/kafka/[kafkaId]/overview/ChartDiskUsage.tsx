@@ -14,7 +14,7 @@ import {
   ChartThreshold,
   createContainer,
 } from "@/libs/patternfly/react-charts";
-import { useFormatBytes } from "@/utils/format";
+import { useFormatBytes } from "@/utils/useFormatBytes";
 import { useFormatter } from "next-intl";
 import { useChartWidth } from "./useChartWidth";
 

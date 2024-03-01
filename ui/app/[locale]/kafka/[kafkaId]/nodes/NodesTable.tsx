@@ -14,7 +14,7 @@ import {
   Tooltip,
 } from "@/libs/patternfly/react-core";
 import { HelpIcon } from "@/libs/patternfly/react-icons";
-import { useFormatBytes } from "@/utils/format";
+import { useFormatBytes } from "@/utils/useFormatBytes";
 import { Icon } from "@patternfly/react-core";
 import {
   CheckCircleIcon,
