@@ -27,7 +27,7 @@ type Story = StoryObj<typeof Bytes>;
 export const Default: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await waitFor(() => expect(canvas.getByText("1 KB")).toBeInTheDocument());
+    await waitFor(() => expect(canvas.getByText("1 KiB")).toBeInTheDocument());
   },
 };
 
@@ -43,31 +43,37 @@ export const BytesValue: Story = {
 
 export const KilobytesWithDecimal: Story = {
   args: {
-    value: 1536, // 1.5 KB
+    value: 1536, // 1.5 KiB
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await waitFor(() => expect(canvas.getByText("1.5 KB")).toBeInTheDocument());
+    await waitFor(() =>
+      expect(canvas.getByText("1.5 KiB")).toBeInTheDocument(),
+    );
   },
 };
 
 export const MegabytesWithDecimal: Story = {
   args: {
-    value: 1048576 * 1.5, // 1.5 MB
+    value: 1048576 * 1.5, // 1.5 MiB
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await waitFor(() => expect(canvas.getByText("1.5 MB")).toBeInTheDocument());
+    await waitFor(() =>
+      expect(canvas.getByText("1.5 MiB")).toBeInTheDocument(),
+    );
   },
 };
 
 export const GigabytesWithDecimal: Story = {
   args: {
-    value: 1073741824 * 1.5, // 1.5 GB
+    value: 1073741824 * 1.5, // 1.5 GiB
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await waitFor(() => expect(canvas.getByText("1.5 GB")).toBeInTheDocument());
+    await waitFor(() =>
+      expect(canvas.getByText("1.5 GiB")).toBeInTheDocument(),
+    );
   },
 };
 
@@ -77,7 +83,9 @@ export const TerabytesWithDecimal: Story = {
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await waitFor(() => expect(canvas.getByText("1.5 TB")).toBeInTheDocument());
+    await waitFor(() =>
+      expect(canvas.getByText("1.5 TiB")).toBeInTheDocument(),
+    );
   },
 };
 
