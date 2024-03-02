@@ -1,7 +1,6 @@
 import { Breadcrumb } from "@/libs/patternfly/react-core";
-import { expect } from "@storybook/jest";
 import type { Meta, StoryObj } from "@storybook/react";
-import { waitFor, within } from "@storybook/testing-library";
+import { expect, waitFor, within } from "@storybook/test";
 import { BreadcrumbLink } from "./BreadcrumbLink";
 
 const meta: Meta<typeof BreadcrumbLink> = {

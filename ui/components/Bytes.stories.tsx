@@ -1,6 +1,5 @@
-import { expect } from "@storybook/jest";
 import type { Meta, StoryObj } from "@storybook/react";
-import { waitFor, within } from "@storybook/testing-library";
+import { expect, waitFor, within } from "@storybook/test";
 
 import { Bytes } from "./Bytes";
 

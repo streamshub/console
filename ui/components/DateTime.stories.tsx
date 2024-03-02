@@ -1,6 +1,5 @@
-import { expect } from "@storybook/jest";
 import type { Meta, StoryObj } from "@storybook/react";
-import { waitFor, within } from "@storybook/testing-library";
+import { expect, waitFor, within } from "@storybook/test";
 import { DateTime } from "./DateTime";
 
 const meta: Meta<typeof DateTime> = {
