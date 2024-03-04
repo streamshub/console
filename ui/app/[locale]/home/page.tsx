@@ -97,7 +97,7 @@ export default function Home() {
                     </Tooltip>
                   </b>
                   <Text component={"small"}>
-                  The last 5 topics this account has accessed from the AMQ 
+                  The last 5 topics this account has accessed from the AMQ
                   Streams console.
                   </Text>
                 </TextContent>
@@ -297,7 +297,14 @@ async function ConnectedClustersTable({
   const allClusters = await clusterPromise;
   const clusters = allClusters.map<EnrichedClusterList>((c) => {
     async function getNodesCounts() {
-      const cluster = await getKafkaCluster(c.id);
+      let cluster;
+
+      if (c.meta.configured === true) {
+        cluster = await getKafkaCluster(c.id);
+      } else {
+        cluster = null;
+      }
+
       if (cluster) {
         return {
           count: cluster.attributes.nodes.length,
@@ -311,8 +318,15 @@ async function ConnectedClustersTable({
     }
 
     async function getConsumerGroupsCount() {
-      const cg = await getConsumerGroups(c.id, {});
-      return cg.meta.page.total || 0;
+      let cg;
+
+      if (c.meta.configured === true) {
+        cg = await getConsumerGroups(c.id, {});
+      } else {
+        cg = null;
+      }
+
+      return cg?.meta.page.total ?? 0;
     }
 
     const ec: EnrichedClusterList = {

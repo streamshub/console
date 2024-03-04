@@ -93,6 +93,7 @@ public class KafkaCluster {
                     .map(entry -> {
                         var rsrc = new KafkaClusterResource(entry);
                         rsrc.addMeta("page", listSupport.buildPageMeta(entry::toCursor));
+                        rsrc.addMeta("configured", entry.isConfigured());
                         return rsrc;
                     })
                     .toList());
@@ -130,6 +131,8 @@ public class KafkaCluster {
     String kafkaVersion;
     String status;
     List<Condition> conditions;
+    @JsonIgnore
+    boolean configured;
 
     public KafkaCluster(String id, List<Node> nodes, Node controller, List<String> authorizedOperations) {
         super();
@@ -246,5 +249,13 @@ public class KafkaCluster {
 
     public void setConditions(List<Condition> conditions) {
         this.conditions = conditions;
+    }
+
+    public boolean isConfigured() {
+        return configured;
+    }
+
+    public void setConfigured(boolean configured) {
+        this.configured = configured;
     }
 }

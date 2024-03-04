@@ -3,6 +3,7 @@ package com.github.eyefloaters.console.api.service;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
@@ -17,6 +18,7 @@ import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.clients.admin.DescribeClusterOptions;
 import org.apache.kafka.clients.admin.DescribeClusterResult;
 import org.apache.kafka.common.KafkaFuture;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
 import com.github.eyefloaters.console.api.Annotations;
@@ -28,6 +30,7 @@ import com.github.eyefloaters.console.api.support.ListRequestContext;
 
 import io.fabric8.kubernetes.api.model.ObjectMeta;
 import io.fabric8.kubernetes.client.informers.SharedIndexInformer;
+import io.fabric8.kubernetes.client.informers.cache.Cache;
 import io.strimzi.api.kafka.model.Kafka;
 import io.strimzi.api.kafka.model.listener.KafkaListenerAuthentication;
 import io.strimzi.api.kafka.model.listener.arraylistener.GenericKafkaListener;
@@ -41,11 +44,17 @@ import static com.github.eyefloaters.console.api.BlockingSupplier.get;
 @ApplicationScoped
 public class KafkaClusterService {
 
+    static final String KAFKA_CONFIG_PREFIX = "console.kafka";
+
     @Inject
     Logger logger;
 
     @Inject
     SharedIndexInformer<Kafka> kafkaInformer;
+
+    @Inject
+    @ConfigProperty(name = KAFKA_CONFIG_PREFIX)
+    Optional<Map<String, String>> clusterNames;
 
     @Inject
     Supplier<Admin> clientSupplier;
@@ -87,6 +96,11 @@ public class KafkaClusterService {
     KafkaCluster toKafkaCluster(Kafka kafka) {
         KafkaCluster cluster = new KafkaCluster(kafka.getStatus().getClusterId(), null, null, null);
         setKafkaClusterProperties(cluster, kafka);
+
+        // Identify that the cluster is configured with connection information
+        String clusterKey = Cache.metaNamespaceKeyFunc(kafka);
+        cluster.setConfigured(clusterNames.map(names -> names.containsValue(clusterKey)).orElse(false));
+
         return cluster;
     }
 
