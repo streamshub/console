@@ -1,10 +1,10 @@
 import { ConsumerGroup } from "@/api/consumerGroups/schema";
 import { Number } from "@/components/Number";
+import { ResponsiveTable } from "@/components/Table";
 import { Tooltip } from "@/libs/patternfly/react-core";
 import { HelpIcon } from "@/libs/patternfly/react-icons";
 import { Link } from "@/navigation";
 import { TableVariant } from "@patternfly/react-table";
-import { ResponsiveTable } from "../../../../../../components/Table";
 
 export function LagTable({
   kafkaId,

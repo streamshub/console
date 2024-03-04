@@ -1,11 +1,8 @@
 "use client";
 import { ConfigMap, NewConfigMap } from "@/api/topics/schema";
+import { ResponsiveTable, ResponsiveTableProps } from "@/components/Table";
 import { TableVariant } from "@patternfly/react-table";
 import { useCallback, useMemo } from "react";
-import {
-  ResponsiveTable,
-  ResponsiveTableProps,
-} from "../../../../../../components/Table";
 
 type Column = "property" | "new-value" | "initial-value";
 const columns: readonly Column[] = [

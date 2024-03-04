@@ -2,11 +2,11 @@
 import { ConsumerGroup } from "@/api/consumerGroups/schema";
 import { LagTable } from "@/app/[locale]/kafka/[kafkaId]/consumer-groups/[groupId]/LagTable";
 import { Number } from "@/components/Number";
+import { ResponsiveTable } from "@/components/Table";
 import { Tooltip } from "@/libs/patternfly/react-core";
 import { HelpIcon } from "@/libs/patternfly/react-icons";
 import { TableVariant } from "@/libs/patternfly/react-table";
 import { useEffect, useState } from "react";
-import { ResponsiveTable } from "../../../../../../components/Table";
 
 export function MembersTable({
   kafkaId,

@@ -3,11 +3,11 @@
 import { ConsumerGroup } from "@/api/consumerGroups/schema";
 import { LabelLink } from "@/components/LabelLink";
 import { Number } from "@/components/Number";
+import { TableView } from "@/components/Table";
 import { LabelGroup, Tooltip } from "@/libs/patternfly/react-core";
 import { HelpIcon } from "@/libs/patternfly/react-icons";
 import { Link } from "@/navigation";
 import { useEffect, useState } from "react";
-import { TableView } from "../../../../../components/Table";
 
 export function ConsumerGroupsTable({
   kafkaId,

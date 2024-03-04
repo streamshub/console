@@ -1,5 +1,6 @@
 "use client";
 
+import { ResponsiveTable } from "@/components/Table";
 import {
   ChartDonutThreshold,
   ChartDonutUtilization,
@@ -21,7 +22,6 @@ import {
 } from "@patternfly/react-icons";
 import { useFormatter } from "next-intl";
 import Link from "next/link";
-import { ResponsiveTable } from "../../../../../components/Table";
 
 const columns = ["id", "status", "replicas", "rack"] as const;
 

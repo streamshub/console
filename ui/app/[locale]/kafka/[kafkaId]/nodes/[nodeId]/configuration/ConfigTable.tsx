@@ -2,12 +2,12 @@
 
 import { NodeConfig } from "@/api/nodes/schema";
 import { Number } from "@/components/Number";
+import { TableView } from "@/components/Table";
 import { usePathname, useRouter } from "@/navigation";
 import { Label, LabelGroup, List, ListItem } from "@patternfly/react-core";
 import { TableVariant } from "@patternfly/react-table";
 import { useSearchParams } from "next/navigation";
 import { useCallback } from "react";
-import { TableView } from "../../../../../../../components/Table";
 import { NoResultsEmptyState } from "./NoResultsEmptyState";
 
 export function ConfigTable({ config }: { config: NodeConfig }) {
