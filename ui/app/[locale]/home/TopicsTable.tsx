@@ -1,6 +1,6 @@
 "use client";
 import { ViewedTopic } from "@/api/topics/actions";
-import { ResponsiveTable } from "@/components/table";
+import { ResponsiveTable } from "@/components/Table";
 import { Link } from "@/navigation";
 import { Truncate } from "@patternfly/react-core";
 import { TableVariant } from "@patternfly/react-table";

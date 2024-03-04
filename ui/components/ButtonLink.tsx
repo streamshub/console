@@ -7,7 +7,7 @@ export function ButtonLink<T extends string>({
   href,
   variant,
   children,
-}: ButtonProps & { href: Route<T> | URL }) {
+}: Pick<ButtonProps, "variant" | "children"> & { href: Route<T> | URL }) {
   return (
     <Link className={`pf-v5-c-button pf-m-${variant}`} href={href}>
       {children}

@@ -1,6 +1,10 @@
-import { useFormatBytes } from "@/utils/format";
+import { useFormatBytes } from "@/utils/useFormatBytes";
 
-export function Bytes({ value }: { value: string | number | null | undefined }) {
+export function Bytes({
+  value,
+}: {
+  value: string | number | null | undefined;
+}) {
   const formatter = useFormatBytes();
   if (value === undefined || value === null) {
     return "-";

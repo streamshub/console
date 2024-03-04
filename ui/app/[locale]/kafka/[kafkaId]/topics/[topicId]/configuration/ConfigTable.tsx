@@ -3,9 +3,9 @@ import { Topic, TopicMutateError } from "@/api/topics/schema";
 import { Error } from "@/app/[locale]/kafka/[kafkaId]/topics/create/Errors";
 import { topicMutateErrorToFieldError } from "@/app/[locale]/kafka/[kafkaId]/topics/create/topicMutateErrorToFieldError";
 import { Number } from "@/components/Number";
-import { ResponsiveTableProps, TableView } from "@/components/table";
-import { readonly } from "@/utils/runmode";
+import { ResponsiveTableProps, TableView } from "@/components/Table";
 import { usePathname, useRouter } from "@/navigation";
+import { readonly } from "@/utils/runmode";
 import {
   Button,
   FormGroup,

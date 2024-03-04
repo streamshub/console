@@ -4,7 +4,7 @@ import {
   NavExpandable as PFNavExpendable,
   NavExpandableProps,
 } from "@patternfly/react-core";
-import { PropsWithChildren, useState } from "react";
+import { PropsWithChildren } from "react";
 
 export function NavExpandable({
   title,
@@ -20,7 +20,7 @@ export function NavExpandable({
 >) {
   const pathname = usePathname();
   const isActive = pathname.startsWith(url.toString());
-  const [expanded, setExpanded] = useState(startExpanded || isActive);
+  const expanded = startExpanded || isActive;
   return (
     <PFNavExpendable
       title={title}

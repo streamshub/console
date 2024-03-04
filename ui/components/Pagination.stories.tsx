@@ -1,5 +1,5 @@
-import type { StoryFn, Meta } from "@storybook/react";
-import { Pagination } from "./pagination";
+import type { Meta, StoryFn } from "@storybook/react";
+import { Pagination } from "./Pagination";
 
 export default {
   component: Pagination,

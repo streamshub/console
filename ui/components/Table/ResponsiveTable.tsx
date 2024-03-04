@@ -1,4 +1,4 @@
-import { TableSkeleton } from "@/components/table/TableSkeleton";
+import { TableSkeleton } from "@/components/Table/TableSkeleton";
 import type {
   ActionsColumnProps,
   TableVariant,

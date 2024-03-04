@@ -12,7 +12,7 @@ import {
   ChartThemeColor,
   createContainer,
 } from "@/libs/patternfly/react-charts";
-import { useFormatBytes } from "@/utils/format";
+import { useFormatBytes } from "@/utils/useFormatBytes";
 import { ChartArea } from "@patternfly/react-charts";
 import { useFormatter } from "next-intl";
 import { useChartWidth } from "./useChartWidth";
@@ -42,7 +42,11 @@ export function ChartIncomingOutgoing({
   const hasMetrics =
     Object.keys(incoming).length > 0 && Object.keys(outgoing).length > 0;
   if (!hasMetrics) {
-    return <div><i>Not available</i></div>;
+    return (
+      <div>
+        <i>Not available</i>
+      </div>
+    );
   }
   // const showDate = shouldShowDate(duration);
   const CursorVoronoiContainer = createContainer("voronoi", "cursor");

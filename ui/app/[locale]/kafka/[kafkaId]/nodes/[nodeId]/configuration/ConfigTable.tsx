@@ -2,7 +2,7 @@
 
 import { NodeConfig } from "@/api/nodes/schema";
 import { Number } from "@/components/Number";
-import { TableView } from "@/components/table";
+import { TableView } from "@/components/Table";
 import { usePathname, useRouter } from "@/navigation";
 import { Label, LabelGroup, List, ListItem } from "@patternfly/react-core";
 import { TableVariant } from "@patternfly/react-table";

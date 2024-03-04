@@ -1,7 +1,7 @@
 import { columns } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/_components/ColumnsModal";
 import { MessageBrowserProps } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/_components/MessagesTable";
 import { MessagesTableToolbar } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/_components/MessagesTableToolbar";
-import { ResponsiveTable } from "@/components/table";
+import { ResponsiveTable } from "@/components/Table";
 import { PageSection } from "@/libs/patternfly/react-core";
 import { TableVariant } from "@/libs/patternfly/react-table";
 import { useTranslations } from "next-intl";

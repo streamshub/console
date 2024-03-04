@@ -10,7 +10,7 @@ import { SearchParams } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/me
 import { Bytes } from "@/components/Bytes";
 import { DateTime } from "@/components/DateTime";
 import { Number } from "@/components/Number";
-import { ResponsiveTable } from "@/components/table";
+import { ResponsiveTable } from "@/components/Table";
 import {
   Drawer,
   DrawerContent,

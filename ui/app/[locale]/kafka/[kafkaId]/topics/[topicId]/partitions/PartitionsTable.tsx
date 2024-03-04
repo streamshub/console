@@ -3,7 +3,7 @@ import { getTopic } from "@/api/topics/actions";
 import { PartitionStatus, Topic } from "@/api/topics/schema";
 import { NoResultsEmptyState } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/partitions/NoResultsEmptyState";
 import { Bytes } from "@/components/Bytes";
-import { TableView } from "@/components/table";
+import { TableView } from "@/components/Table";
 import {
   Icon,
   Label,
@@ -144,11 +144,9 @@ export function PartitionsTable({
                 <Th key={key} dataLabel={"Preferred leader"} width={20}>
                   Preferred leader{" "}
                   <Tooltip
-                    content={
-                      `Whenever a new topic is created, Kafka runs its leader election algorithm for each partition to assign a leader from the list of replicas. 
+                    content={`Whenever a new topic is created, Kafka runs its leader election algorithm for each partition to assign a leader from the list of replicas. 
                        This algorithm aims to create a balanced spread of leadership assignments across the brokers. A "Yes" value indicates that the current leader is the preferred leader.
-                       A "No" value may indicate that the leadership assignments in the cluster are not balanced.`
-                    }
+                       A "No" value may indicate that the leadership assignments in the cluster are not balanced.`}
                   >
                     <HelpIcon />
                   </Tooltip>
@@ -159,12 +157,9 @@ export function PartitionsTable({
                 <Th key={key} dataLabel={"Leader"} width={15}>
                   Leader{" "}
                   <Tooltip
-                    style={{whiteSpace:'pre-line'}}
-                    content={
-                      `The ID of the partition leader.
-                       For a given partition, a broker is elected as the leader, handling all produce requests. Followers on other brokers replicate the leader's data. A follower is considered in-sync if it catches up with the leader's latest committed message. Under-replication occurs when the replicas for a partition fall below the configured replication factor.`
-
-                    }
+                    style={{ whiteSpace: "pre-line" }}
+                    content={`The ID of the partition leader.
+                       For a given partition, a broker is elected as the leader, handling all produce requests. Followers on other brokers replicate the leader's data. A follower is considered in-sync if it catches up with the leader's latest committed message. Under-replication occurs when the replicas for a partition fall below the configured replication factor.`}
                   >
                     <HelpIcon />
                   </Tooltip>
@@ -175,9 +170,7 @@ export function PartitionsTable({
                 <Th key={key} dataLabel={"Replicas"} width={20}>
                   Replicas{" "}
                   <Tooltip
-                    content={
-                      `Each partition has designated replicas, with one being the 'leader' and the rest as 'follower' or 'in-sync' partitions. The leader handles produce requests, and followers replicate the leader's data. Replicas can be either "in-sync" or "Under-replicated" in case any of the replicas are not in-sync`
-                    }
+                    content={`Each partition has designated replicas, with one being the 'leader' and the rest as 'follower' or 'in-sync' partitions. The leader handles produce requests, and followers replicate the leader's data. Replicas can be either "in-sync" or "Under-replicated" in case any of the replicas are not in-sync`}
                   >
                     <HelpIcon />
                   </Tooltip>

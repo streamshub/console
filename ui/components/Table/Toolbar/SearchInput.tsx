@@ -7,7 +7,6 @@ import {
   ValidatedOptions,
 } from "@/libs/patternfly/react-core";
 import { ArrowRightIcon } from "@/libs/patternfly/react-icons";
-import { useTranslations } from "next-intl";
 import type { KeyboardEvent } from "react";
 import { useCallback, useRef, useState } from "react";
 
@@ -24,7 +23,6 @@ export function SearchInput({
   validate,
   onSearch,
 }: SearchInputProps) {
-  const t = useTranslations("common");
   const [value, setValue] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -69,7 +67,7 @@ export function SearchInput({
         isDisabled={!canSearch}
         variant={ButtonVariant.control}
         onClick={handleSearch}
-        // aria-label={t("common:search_button_label")}
+        aria-label={"Search"}
       >
         <ArrowRightIcon />
       </Button>
