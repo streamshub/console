@@ -9,7 +9,7 @@
     "lint": "next lint",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
-    "test-storybook": "test-storybook --skipTags=\"skip-test\""
+    "test-storybook": "test-storybook"
   },
   "dependencies": {
     "@patternfly/patternfly": "^5.2.0",

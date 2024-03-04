@@ -74,52 +74,51 @@ export const MobileMultipleFilters: Story = {
       defaultViewport: "xs",
     },
   },
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    // check that the "desktop" filter is being hidden by the PF toolbar
-    await expect(
-      canvasElement
-        .querySelector(
-          "[data-ouia-canvasonent-id='chip-filter-selector-large-viewport']",
-        )
-        ?.closest(".pf-c-toolbar__item.pf-m-search-filter.pf-m-hidden"),
-    ).toBeInTheDocument();
-
-    // check that the "mobile" filter is in the toggleable group that is shown after clicking the filter button
-    await expect(
-      canvasElement
-        .querySelector(
-          "[data-ouia-canvasonent-id='chip-filter-selector-small-viewport']",
-        )
-        ?.closest(".pf-c-toolbar__group.pf-m-toggle-group"),
-    ).toBeInTheDocument();
-
-    await userEvent.click(canvas.getByLabelText("Show Filters"));
-
-    // check that the "mobile" filter is shown in the expanded area of the toolbar
-    await expect(
-      canvasElement
-        .querySelector(
-          "[data-ouia-canvasonent-id='chip-filter-selector-small-viewport']",
-        )
-        ?.closest(".pf-c-toolbar__expandable-content.pf-m-expanded"),
-    ).toBeInTheDocument();
-
-    const toolbar = within(
-      canvasElement.querySelector(
-        ".pf-c-toolbar__expandable-content.pf-m-expanded",
-      ) as HTMLElement,
-    );
-
-    await userEvent.click(toolbar.getByText("Name"));
-    await userEvent.click(toolbar.getByText("Options"));
-
-    expect(
-      toolbar.queryByPlaceholderText("Filter by name"),
-    ).not.toBeInTheDocument();
-    expect(toolbar.getByText("Filter by options")).toBeInTheDocument();
-  },
-  tags: ["skip-test"], // Mobile rendering needs to be double-checked
+  // play: async ({ canvasElement }) => {
+  //   const canvas = within(canvasElement);
+  //   // check that the "desktop" filter is being hidden by the PF toolbar
+  //   await expect(
+  //     canvasElement
+  //       .querySelector(
+  //         "[data-ouia-canvasonent-id='chip-filter-selector-large-viewport']",
+  //       )
+  //       ?.closest(".pf-c-toolbar__item.pf-m-search-filter.pf-m-hidden"),
+  //   ).toBeInTheDocument();
+  //
+  //   // check that the "mobile" filter is in the toggleable group that is shown after clicking the filter button
+  //   await expect(
+  //     canvasElement
+  //       .querySelector(
+  //         "[data-ouia-canvasonent-id='chip-filter-selector-small-viewport']",
+  //       )
+  //       ?.closest(".pf-c-toolbar__group.pf-m-toggle-group"),
+  //   ).toBeInTheDocument();
+  //
+  //   await userEvent.click(canvas.getByLabelText("Show Filters"));
+  //
+  //   // check that the "mobile" filter is shown in the expanded area of the toolbar
+  //   await expect(
+  //     canvasElement
+  //       .querySelector(
+  //         "[data-ouia-canvasonent-id='chip-filter-selector-small-viewport']",
+  //       )
+  //       ?.closest(".pf-c-toolbar__expandable-content.pf-m-expanded"),
+  //   ).toBeInTheDocument();
+  //
+  //   const toolbar = within(
+  //     canvasElement.querySelector(
+  //       ".pf-c-toolbar__expandable-content.pf-m-expanded",
+  //     ) as HTMLElement,
+  //   );
+  //
+  //   await userEvent.click(toolbar.getByText("Name"));
+  //   await userEvent.click(toolbar.getByText("Options"));
+  //
+  //   expect(
+  //     toolbar.queryByPlaceholderText("Filter by name"),
+  //   ).not.toBeInTheDocument();
+  //   expect(toolbar.getByText("Filter by options")).toBeInTheDocument();
+  // },
 };
 
 export const MobileMultipleFiltersWithChips: Story = {
@@ -134,21 +133,20 @@ export const MobileMultipleFiltersWithChips: Story = {
       defaultViewport: "xs",
     },
   },
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    await userEvent.click(canvas.getByLabelText("Show Filters"));
-
-    const toolbar = within(
-      canvasElement.querySelector(
-        ".pf-c-toolbar__expandable-content.pf-m-expanded",
-      ) as HTMLElement,
-    );
-
-    expect(toolbar.queryByText("2 filters applied")).not.toBeInTheDocument();
-    expect(toolbar.getByText("foo")).toBeVisible();
-    expect(toolbar.getByText("Option 2")).toBeVisible();
-  },
-  tags: ["skip-test"], // Mobile rendering needs to be double-checked
+  // play: async ({ canvasElement }) => {
+  //   const canvas = within(canvasElement);
+  //   await userEvent.click(canvas.getByLabelText("Show Filters"));
+  //
+  //   const toolbar = within(
+  //     canvasElement.querySelector(
+  //       ".pf-c-toolbar__expandable-content.pf-m-expanded",
+  //     ) as HTMLElement,
+  //   );
+  //
+  //   expect(toolbar.queryByText("2 filters applied")).not.toBeInTheDocument();
+  //   expect(toolbar.getByText("foo")).toBeVisible();
+  //   expect(toolbar.getByText("Option 2")).toBeVisible();
+  // },
 };
 
 export const DesktopSingleFilter: Story = {
@@ -190,25 +188,24 @@ export const MobileSingleFilter: Story = {
       defaultViewport: "xs",
     },
   },
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    await expect(
-      canvas.queryByTestId("chip-filter-selector-small-viewport"),
-    ).not.toBeInTheDocument();
-
-    await userEvent.click(canvas.getByLabelText("Show Filters"));
-
-    const toolbar = within(
-      canvasElement.querySelector(
-        ".pf-c-toolbar__expandable-content.pf-m-expanded",
-      ) as HTMLElement,
-    );
-
-    expect(
-      toolbar.queryByPlaceholderText("Filter by name"),
-    ).toBeInTheDocument();
-  },
-  tags: ["skip-test"], // Mobile rendering needs to be double-checked
+  // play: async ({ canvasElement }) => {
+  //   const canvas = within(canvasElement);
+  //   await expect(
+  //     canvas.queryByTestId("chip-filter-selector-small-viewport"),
+  //   ).not.toBeInTheDocument();
+  //
+  //   await userEvent.click(canvas.getByLabelText("Show Filters"));
+  //
+  //   const toolbar = within(
+  //     canvasElement.querySelector(
+  //       ".pf-c-toolbar__expandable-content.pf-m-expanded",
+  //     ) as HTMLElement,
+  //   );
+  //
+  //   expect(
+  //     toolbar.queryByPlaceholderText("Filter by name"),
+  //   ).toBeInTheDocument();
+  // },
 };
 
 export const MobileSingleFilterWithChips: Story = {
@@ -222,16 +219,15 @@ export const MobileSingleFilterWithChips: Story = {
       defaultViewport: "xs",
     },
   },
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    await userEvent.click(canvas.getByLabelText("Show Filters"));
-
-    const toolbar = within(
-      canvasElement.querySelector(
-        ".pf-c-toolbar__expandable-content.pf-m-expanded",
-      ) as HTMLElement,
-    );
-    expect(toolbar.getByText("foo")).toBeInTheDocument();
-  },
-  tags: ["skip-test"], // Mobile rendering needs to be double-checked
+  // play: async ({ canvasElement }) => {
+  //   const canvas = within(canvasElement);
+  //   await userEvent.click(canvas.getByLabelText("Show Filters"));
+  //
+  //   const toolbar = within(
+  //     canvasElement.querySelector(
+  //       ".pf-c-toolbar__expandable-content.pf-m-expanded",
+  //     ) as HTMLElement,
+  //   );
+  //   expect(toolbar.getByText("foo")).toBeInTheDocument();
+  // },
 };
