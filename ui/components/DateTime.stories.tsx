@@ -5,7 +5,7 @@ import { DateTime } from "./DateTime";
 const meta: Meta<typeof DateTime> = {
   component: DateTime,
   args: {
-    value: new Date().toISOString(),
+    value: new Date(1709561281).toISOString(),
     tz: "local",
     empty: "-",
   },
@@ -43,7 +43,6 @@ export const Default: Story = {};
 
 export const FullDateLongTime: Story = {
   args: {
-    value: "2023-04-01T12:00:00Z", // A static date value
     dateStyle: "full",
     timeStyle: "long",
   },
@@ -70,8 +69,12 @@ export const LongDateFullTime: Story = {
   },
 };
 
-export const FullDateLongTimeTest: Story = {
-  ...FullDateLongTime,
+export const DateTimeString: Story = {
+  args: {
+    value: "2023-04-01T12:00:00Z", // A static date value
+    dateStyle: "full",
+    timeStyle: "long",
+  },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await waitFor(() => {
