@@ -30,6 +30,10 @@ updates:
   ignore:
   - dependency-name: "victory-*"
   groups:
+    patternfly:
+      patterns:
+      - "@patternfly/patternfly"
+      - "@patternfly/react-*"
     storybook:
       patterns:
       - "storybook"
