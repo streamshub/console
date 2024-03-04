@@ -43,6 +43,16 @@ export const LargeNumber: Story = {
   },
 };
 
+export const NotANumber: Story = {
+  args: {
+    value: "definitely not a number",
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByText(/-/)).toBeInTheDocument();
+  },
+};
+
 export const StringNumber: Story = {
   args: {
     value: "5678",
