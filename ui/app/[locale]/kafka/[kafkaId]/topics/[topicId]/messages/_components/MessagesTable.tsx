@@ -10,7 +10,6 @@ import { SearchParams } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/me
 import { Bytes } from "@/components/Bytes";
 import { DateTime } from "@/components/DateTime";
 import { Number } from "@/components/Number";
-import { ResponsiveTable } from "@/components/table";
 import {
   Drawer,
   DrawerContent,
@@ -29,6 +28,7 @@ import {
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useTranslations } from "next-intl";
 import { PropsWithChildren, useEffect, useRef, useState } from "react";
+import { ResponsiveTable } from "../../../../../../../../components/Table";
 import { MessageDetails, MessageDetailsProps } from "./MessageDetails";
 import { NoDataCell } from "./NoDataCell";
 import { UnknownValuePreview } from "./UnknownValuePreview";

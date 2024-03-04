@@ -2,11 +2,11 @@
 import { ConsumerGroup } from "@/api/consumerGroups/schema";
 import { LagTable } from "@/app/[locale]/kafka/[kafkaId]/consumer-groups/[groupId]/LagTable";
 import { Number } from "@/components/Number";
-import { ResponsiveTable } from "@/components/table";
 import { Tooltip } from "@/libs/patternfly/react-core";
 import { HelpIcon } from "@/libs/patternfly/react-icons";
 import { TableVariant } from "@/libs/patternfly/react-table";
 import { useEffect, useState } from "react";
+import { ResponsiveTable } from "../../../../../../components/Table";
 
 export function MembersTable({
   kafkaId,
@@ -32,16 +32,18 @@ export function MembersTable({
 
   if (consumerGroup) {
     if (consumerGroup.attributes.members?.length === 0) {
-      members = ([{
-        memberId: "unknown",
-        host: "N/A",
-        clientId: "unknown",
-        assignments: consumerGroup.attributes.offsets?.map((o) => ({
-          topicId: o.topicId,
-          topicName: o.topicName,
-          partition: o.partition,
-        })),
-      }]);
+      members = [
+        {
+          memberId: "unknown",
+          host: "N/A",
+          clientId: "unknown",
+          assignments: consumerGroup.attributes.offsets?.map((o) => ({
+            topicId: o.topicId,
+            topicName: o.topicName,
+            partition: o.partition,
+          })),
+        },
+      ];
     } else {
       members = consumerGroup.attributes.members;
     }
@@ -67,26 +69,28 @@ export function MembersTable({
               <Th width={20} key={key}>
                 Client ID{" "}
                 <Tooltip
-                    content={
-                      'The unique identifier assigned to the client (consumer) within the consumer group. A client ID helps identify and manage individual consumers.'
-                    }
-                  >
-                    <HelpIcon />
-                  </Tooltip>
+                  content={
+                    "The unique identifier assigned to the client (consumer) within the consumer group. A client ID helps identify and manage individual consumers."
+                  }
+                >
+                  <HelpIcon />
+                </Tooltip>
               </Th>
             );
           case "overallLag":
-            return <Th key={key}>Overall lag{" "}
-             <Tooltip
-                    style={{whiteSpace:"pre-line"}}
-                    content={
-                      `The cumulative lag across all partitions assigned to the consumer group.
+            return (
+              <Th key={key}>
+                Overall lag{" "}
+                <Tooltip
+                  style={{ whiteSpace: "pre-line" }}
+                  content={`The cumulative lag across all partitions assigned to the consumer group.
                        Consumer lag is the difference in the rate of production and consumption of messages.
-                       Specifically, consumer lag for a given consumer in a group indicates the delay between the last message in the partition and the message being currently picked up by that consumer.`
-                    }
-                  >
-                    <HelpIcon />
-                  </Tooltip></Th>;
+                       Specifically, consumer lag for a given consumer in a group indicates the delay between the last message in the partition and the message being currently picked up by that consumer.`}
+                >
+                  <HelpIcon />
+                </Tooltip>
+              </Th>
+            );
           case "assignedPartitions":
             return <Th key={key}>Assigned partitions</Th>;
         }

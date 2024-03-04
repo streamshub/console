@@ -3,11 +3,11 @@
 import { ConsumerGroup } from "@/api/consumerGroups/schema";
 import { LabelLink } from "@/components/LabelLink";
 import { Number } from "@/components/Number";
-import { TableView } from "@/components/table";
 import { LabelGroup, Tooltip } from "@/libs/patternfly/react-core";
-import { Link } from "@/navigation";
 import { HelpIcon } from "@/libs/patternfly/react-icons";
+import { Link } from "@/navigation";
 import { useEffect, useState } from "react";
+import { TableView } from "../../../../../components/Table";
 
 export function ConsumerGroupsTable({
   kafkaId,
@@ -56,13 +56,13 @@ export function ConsumerGroupsTable({
               <Th key={key} dataLabel={"State"}>
                 State{" "}
                 <Tooltip
-                    content={`Reflects the current operational state of the consumer group. 
+                  content={`Reflects the current operational state of the consumer group. 
                     Possible states include 'Stable,' 'Rebalancing,' or 'Empty.' 'Stable' indicates normal functioning,
                      'Rebalancing' means ongoing adjustments to the group's members, and 'Empty' suggests no active members.
                     If in the 'Empty' state, consider adding members to the group.`}
-                  >
-                    <HelpIcon />
-                  </Tooltip>
+                >
+                  <HelpIcon />
+                </Tooltip>
               </Th>
             );
           case "lag":
@@ -70,15 +70,13 @@ export function ConsumerGroupsTable({
               <Th key={key} dataLabel={"Overall lag"}>
                 Overall lag{" "}
                 <Tooltip
-                    style={{whiteSpace:'pre-line'}}
-                    content={
-                      `The cumulative lag across all partitions assigned to the consumer group.
+                  style={{ whiteSpace: "pre-line" }}
+                  content={`The cumulative lag across all partitions assigned to the consumer group.
                        Consumer lag is the difference in the rate of production and consumption of messages.
-                       Specifically, consumer lag for a given consumer in a group indicates the delay between the last message in the partition and the message being currently picked up by that consumer.`
-                    }
-                  >
-                    <HelpIcon />
-                  </Tooltip>
+                       Specifically, consumer lag for a given consumer in a group indicates the delay between the last message in the partition and the message being currently picked up by that consumer.`}
+                >
+                  <HelpIcon />
+                </Tooltip>
               </Th>
             );
           case "members":
@@ -86,10 +84,12 @@ export function ConsumerGroupsTable({
               <Th key={key} dataLabel={"Members"}>
                 Members{" "}
                 <Tooltip
-                    content={"Represents an individual member consumer within the consumer group. Monitor the lag of each member for insights into the health of the consumer group."}
-                  >
-                    <HelpIcon />
-                  </Tooltip>
+                  content={
+                    "Represents an individual member consumer within the consumer group. Monitor the lag of each member for insights into the health of the consumer group."
+                  }
+                >
+                  <HelpIcon />
+                </Tooltip>
               </Th>
             );
           case "topics":
@@ -105,7 +105,9 @@ export function ConsumerGroupsTable({
           case "name":
             return (
               <Td key={key} dataLabel={"Consumer group name"}>
-                <Link href={`/kafka/${kafkaId}/consumer-groups/${row.id === "" ? "+" : row.id}`}>
+                <Link
+                  href={`/kafka/${kafkaId}/consumer-groups/${row.id === "" ? "+" : row.id}`}
+                >
                   {row.id === "" ? <i>Empty Name</i> : row.id}
                 </Link>
               </Td>
@@ -128,7 +130,8 @@ export function ConsumerGroupsTable({
               </Td>
             );
           case "topics":
-            const allTopics = row.attributes.members?.flatMap((m) => m.assignments ?? []) ?? [];
+            const allTopics =
+              row.attributes.members?.flatMap((m) => m.assignments ?? []) ?? [];
             return (
               <Td key={key} dataLabel={"Assigned topics"}>
                 <LabelGroup>

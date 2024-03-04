@@ -1,5 +1,4 @@
 import { ConfigMap, NewConfigMap } from "@/api/topics/schema";
-import { ResponsiveTable, ResponsiveTableProps } from "@/components/table";
 import {
   FormGroup,
   FormHelperText,
@@ -9,6 +8,10 @@ import {
 } from "@patternfly/react-core";
 import { TableVariant } from "@patternfly/react-table";
 import { useCallback, useMemo } from "react";
+import {
+  ResponsiveTable,
+  ResponsiveTableProps,
+} from "../../../../../../components/Table";
 
 type Column = "property" | "value";
 const columns: readonly Column[] = ["property", "value"] as const;

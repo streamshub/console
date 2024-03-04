@@ -31,11 +31,11 @@ import {
 import type { ReactElement } from "react";
 import { useState } from "react";
 import { Loading } from "../Loading";
-import { Pagination } from "../pagination";
-import type { ChipFilterProps } from "../tableToolbar";
-import { ChipFilter } from "../tableToolbar";
+import { Pagination } from "../Pagination";
 import type { ResponsiveTableProps } from "./ResponsiveTable";
 import { ResponsiveTable } from "./ResponsiveTable";
+import type { ChipFilterProps } from "./Toolbar";
+import { ChipFilter } from "./Toolbar";
 
 export type ToolbarAction = {
   label: string;

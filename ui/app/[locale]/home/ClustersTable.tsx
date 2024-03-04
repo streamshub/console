@@ -4,12 +4,12 @@ import { ClusterList } from "@/api/kafka/schema";
 
 import { useOpenClusterConnectionPanel } from "@/app/[locale]/ClusterDrawerContext";
 import { Number } from "@/components/Number";
-import { ResponsiveTable } from "@/components/table";
 import { Skeleton, Truncate } from "@/libs/patternfly/react-core";
 import { ExternalLinkAltIcon } from "@/libs/patternfly/react-icons";
 import { TableVariant } from "@/libs/patternfly/react-table";
 import Link from "next/link";
 import { Suspense } from "react";
+import { ResponsiveTable } from "../../../components/Table";
 
 const columns = ["name", "nodes", "consumers", "version", "namespace"] as const;
 

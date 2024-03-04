@@ -5,8 +5,7 @@ import { ManagedTopicLabel } from "@/app/components/ManagedTopicLabel";
 import { ButtonLink } from "@/components/ButtonLink";
 import { Bytes } from "@/components/Bytes";
 import { Number } from "@/components/Number";
-import { TableView } from "@/components/table";
-import { EmptyStateNoMatchFound } from "@/components/table/EmptyStateNoMatchFound";
+import { EmptyStateNoMatchFound } from "@/components/Table/EmptyStateNoMatchFound";
 import { Switch } from "@/libs/patternfly/react-core";
 import { TableVariant } from "@/libs/patternfly/react-table";
 import { Link, useRouter } from "@/navigation";
@@ -21,6 +20,7 @@ import {
 } from "@patternfly/react-icons";
 import { useTranslations } from "next-intl";
 import { ReactNode, useOptimistic, useTransition } from "react";
+import { TableView } from "../../../../../../components/Table";
 
 export const TopicsTableColumns = [
   "name",

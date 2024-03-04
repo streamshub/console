@@ -1,4 +1,4 @@
-import { Breadcrumb } from "@/libs/patternfly/react-core";
+import { Breadcrumb } from "@patternfly/react-core";
 import type { Meta, StoryObj } from "@storybook/react";
 import { expect, waitFor, within } from "@storybook/test";
 import { BreadcrumbLink } from "./BreadcrumbLink";

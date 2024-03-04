@@ -3,9 +3,8 @@ import { Topic, TopicMutateError } from "@/api/topics/schema";
 import { Error } from "@/app/[locale]/kafka/[kafkaId]/topics/create/Errors";
 import { topicMutateErrorToFieldError } from "@/app/[locale]/kafka/[kafkaId]/topics/create/topicMutateErrorToFieldError";
 import { Number } from "@/components/Number";
-import { ResponsiveTableProps, TableView } from "@/components/table";
-import { readonly } from "@/utils/runmode";
 import { usePathname, useRouter } from "@/navigation";
+import { readonly } from "@/utils/runmode";
 import {
   Button,
   FormGroup,
@@ -23,6 +22,10 @@ import { CheckIcon, PencilAltIcon, TimesIcon } from "@patternfly/react-icons";
 import { TableVariant } from "@patternfly/react-table";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useState } from "react";
+import {
+  ResponsiveTableProps,
+  TableView,
+} from "../../../../../../../components/Table";
 import { NoResultsEmptyState } from "./NoResultsEmptyState";
 
 type Column = "property" | "value";

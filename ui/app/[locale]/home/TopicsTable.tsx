@@ -1,10 +1,10 @@
 "use client";
 import { ViewedTopic } from "@/api/topics/actions";
-import { ResponsiveTable } from "@/components/table";
 import { Link } from "@/navigation";
 import { Truncate } from "@patternfly/react-core";
 import { TableVariant } from "@patternfly/react-table";
 import { useTranslations } from "next-intl";
+import { ResponsiveTable } from "../../../components/Table";
 
 export const TopicsTableColumns = ["name", "cluster"] as const;
 
