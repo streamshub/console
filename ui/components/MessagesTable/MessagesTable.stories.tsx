@@ -55,10 +55,18 @@ export const SearchWithMatches: Story = {
   args: {
     filterQuery: "foo",
   },
+  play: async ({ canvasElement }) => {
+    await expect(canvasElement.querySelectorAll("mark").length).not.toBe(0);
+  },
 };
 export const SearchWithoutMatches: Story = {
   args: {
     filterQuery: "lorem dolor",
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvasElement.querySelectorAll("mark").length).toBe(0);
+    expect(canvas.getByText("No messages data")).toBeInTheDocument();
   },
 };
 // export const AdvancedSearch: Story = {
