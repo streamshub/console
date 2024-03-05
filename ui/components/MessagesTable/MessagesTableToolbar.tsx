@@ -1,5 +1,3 @@
-import { AdvancedSearch } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/_components/AdvancedSearch";
-import { MessageBrowserProps } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/_components/MessagesTable";
 import {
   Toolbar,
   ToolbarContent,
@@ -8,6 +6,8 @@ import {
 import { Button, Tooltip } from "@patternfly/react-core";
 import { ColumnsIcon } from "@patternfly/react-icons";
 import { useState } from "react";
+import { AdvancedSearch } from "./AdvancedSearch";
+import { MessageBrowserProps } from "./MessagesTable";
 
 export function MessagesTableToolbar({
   filterQuery,

@@ -5,16 +5,16 @@ import {
   GetTopicMessagesReturn,
 } from "@/api/messages/actions";
 import { Message } from "@/api/messages/schema";
-import { MessagesTableSkeleton } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/_components/MessagesTableSkeleton";
-import { NoDataEmptyState } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/_components/NoDataEmptyState";
-import { useParseSearchParams } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/parseSearchParams";
-import { SearchParams } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/types";
+import { MessagesTable } from "@/components/MessagesTable/MessagesTable";
+import { MessagesTableSkeleton } from "@/components/MessagesTable/MessagesTableSkeleton";
+import { NoDataEmptyState } from "@/components/MessagesTable/NoDataEmptyState";
+import { SearchParams } from "@/components/MessagesTable/types";
 import { Alert, PageSection } from "@/libs/patternfly/react-core";
 import { useFilterParams } from "@/utils/useFilterParams";
 import { AlertActionLink } from "@patternfly/react-core";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState, useTransition } from "react";
-import { MessagesTable } from "./_components/MessagesTable";
+import { useParseSearchParams } from "./parseSearchParams";
 
 export function ConnectedMessagesTable({
   kafkaId,

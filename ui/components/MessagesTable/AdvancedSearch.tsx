@@ -1,10 +1,3 @@
-import { FromGroup } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/_components/FromGroup";
-import { MessageBrowserProps } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/_components/MessagesTable";
-import { parseSearchInput } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/_components/parseSearchInput";
-import { PartitionSelector } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/_components/PartitionSelector";
-import { UntilGroup } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/_components/UntilGroup";
-import { WhereSelector } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/_components/WhereSelector";
-import { SearchParams } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/types";
 import {
   ActionGroup,
   Button,
@@ -29,6 +22,13 @@ import {
   useState,
   useTransition,
 } from "react";
+import { FromGroup } from "./FromGroup";
+import { MessageBrowserProps } from "./MessagesTable";
+import { parseSearchInput } from "./parseSearchInput";
+import { PartitionSelector } from "./PartitionSelector";
+import { SearchParams } from "./types";
+import { UntilGroup } from "./UntilGroup";
+import { WhereSelector } from "./WhereSelector";
 
 export function AdvancedSearch({
   filterQuery,

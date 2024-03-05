@@ -13,11 +13,12 @@ export function beautifyUnknownValue(value: string): string {
   return value;
 }
 
-export function maybeJson(value: string): string {
+export function maybeJson(value: string): [string | object, boolean] {
   try {
-    return JSON.parse(value);
+    const parsed = JSON.parse(value);
+    return [parsed, typeof parsed !== "string"];
   } catch (e) {
     // noop
   }
-  return value;
+  return [value, false];
 }

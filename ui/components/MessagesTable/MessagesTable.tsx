@@ -1,14 +1,7 @@
 import { Message } from "@/api/messages/schema";
-import {
-  Column,
-  ColumnsModal,
-  useColumnLabels,
-} from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/_components/ColumnsModal";
-import { MessagesTableToolbar } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/_components/MessagesTableToolbar";
-import { NoResultsEmptyState } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/_components/NoResultsEmptyState";
-import { SearchParams } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/types";
 import { Bytes } from "@/components/Bytes";
 import { DateTime } from "@/components/DateTime";
+import { SearchParams } from "@/components/MessagesTable/types";
 import { Number } from "@/components/Number";
 import { ResponsiveTable } from "@/components/Table";
 import {
@@ -29,8 +22,11 @@ import {
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useTranslations } from "next-intl";
 import { PropsWithChildren, useEffect, useRef, useState } from "react";
+import { Column, ColumnsModal, useColumnLabels } from "./ColumnsModal";
 import { MessageDetails, MessageDetailsProps } from "./MessageDetails";
+import { MessagesTableToolbar } from "./MessagesTableToolbar";
 import { NoDataCell } from "./NoDataCell";
+import { NoResultsEmptyState } from "./NoResultsEmptyState";
 import { UnknownValuePreview } from "./UnknownValuePreview";
 import { beautifyUnknownValue, isSameMessage } from "./utils";
 

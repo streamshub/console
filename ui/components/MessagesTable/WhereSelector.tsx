@@ -1,4 +1,3 @@
-import { MessageBrowserProps } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/_components/MessagesTable";
 import {
   Dropdown,
   DropdownItem,
@@ -8,6 +7,7 @@ import {
   TextInput,
 } from "@patternfly/react-core";
 import { useEffect, useState } from "react";
+import { MessageBrowserProps } from "./MessagesTable";
 
 export function WhereSelector({
   value,
