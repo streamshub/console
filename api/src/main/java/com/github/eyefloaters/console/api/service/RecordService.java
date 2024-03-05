@@ -52,6 +52,8 @@ import org.jboss.logging.Logger;
 import com.github.eyefloaters.console.api.model.KafkaRecord;
 import com.github.eyefloaters.console.api.support.SizeLimitedSortedSet;
 
+import static java.util.Objects.requireNonNullElse;
+
 @ApplicationScoped
 public class RecordService {
 
@@ -385,14 +387,16 @@ public class RecordService {
             if (!hasNext()) {
                 throw new NoSuchElementException();
             }
-            var records = consumer.poll(Duration.between(Instant.now(), timeout));
+
+            var pollTimeout = Duration.between(Instant.now(), timeout);
+            var records = consumer.poll(pollTimeout.isNegative() ? Duration.ZERO : pollTimeout);
             int pollSize = 0;
 
             for (var partition : records.partitions()) {
                 var partitionRecords = records.records(partition);
                 int consumed = partitionRecords.size();
                 pollSize += consumed;
-                int total = partitionConsumed.compute(partition, (k, v) -> (v == null ? 0 : v) + consumed);
+                int total = partitionConsumed.compute(partition, (k, v) -> requireNonNullElse(v, 0) + consumed);
                 long maxOffset = partitionRecords.stream().mapToLong(ConsumerRecord::offset).max().orElse(-1);
 
                 if (total >= limit || maxOffset >= endOffsets.get(partition)) {

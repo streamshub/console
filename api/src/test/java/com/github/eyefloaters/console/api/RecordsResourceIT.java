@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
 import jakarta.inject.Inject;
@@ -147,7 +148,7 @@ class RecordsResourceIT {
     }
 
     @ParameterizedTest
-    @ValueSource(ints = { -1, 0 })
+    @ValueSource(ints = { -1, 0, 1001 })
     void testConsumeRecordWithInvalidPageSize(int pageSize) {
         final String topicName = UUID.randomUUID().toString();
         var topicIds = topicUtils.createTopics(clusterId1, List.of(topicName), 2);
@@ -436,6 +437,47 @@ class RecordsResourceIT {
             .body("data", hasSize(1))
             .body("data[0].attributes.offset", is(equalTo(3)))
             .body("data[0].attributes.value", is(equalTo("fourth")));
+    }
+
+    @Test
+    void testConsumeRecordFromTimestampAcrossPartitions() {
+        final String topicName = UUID.randomUUID().toString();
+        var topicIds = topicUtils.createTopics(clusterId1, List.of(topicName), 3);
+
+        Instant ts1 = Instant.now();
+        recordUtils.produceRecord(topicName, 0, ts1, null, null, "message A");
+        recordUtils.produceRecord(topicName, 1, ts1, null, null, "message A");
+        recordUtils.produceRecord(topicName, 2, ts1, null, null, "message A");
+
+        Instant ts2 = ts1.plusSeconds(1);
+        recordUtils.produceRecord(topicName, 0, ts2, null, null, "message B");
+        recordUtils.produceRecord(topicName, 1, ts2, null, null, "message B");
+        recordUtils.produceRecord(topicName, 2, ts2, null, null, "message B");
+
+        Instant ts3 = ts2.plusSeconds(1);
+        recordUtils.produceRecord(topicName, 0, ts3, null, null, "message C");
+        recordUtils.produceRecord(topicName, 1, ts3, null, null, "message C");
+        recordUtils.produceRecord(topicName, 2, ts3, null, null, "message C");
+
+        await().atMost(5, TimeUnit.SECONDS)
+            .until(() -> topicUtils.getTopicSize(topicName) == 9);
+
+        AtomicInteger offset = new AtomicInteger(0);
+
+        Stream.of(ts1, ts2, ts3).forEach(ts -> {
+            int expectedOffset = offset.getAndIncrement();
+
+            whenRequesting(req -> req
+                    .param("filter[timestamp]", "gte," + ts.toString())
+                    .param("page[size]", 3)
+                    .get("", clusterId1, topicIds.get(topicName)))
+                .assertThat()
+                .statusCode(is(Status.OK.getStatusCode()))
+                .body("data", hasSize(3))
+                .body("data[0].attributes", allOf(hasEntry("partition", 0), hasEntry("offset", expectedOffset)))
+                .body("data[1].attributes", allOf(hasEntry("partition", 1), hasEntry("offset", expectedOffset)))
+                .body("data[2].attributes", allOf(hasEntry("partition", 2), hasEntry("offset", expectedOffset)));
+        });
     }
 
     @Test

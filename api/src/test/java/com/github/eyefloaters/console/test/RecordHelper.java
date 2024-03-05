@@ -37,7 +37,11 @@ public class RecordHelper {
     }
 
     public void produceRecord(String topicName, Instant timestamp, Map<String, Object> headers, String key, String value) {
-        produceRecord(producerConfig, topicName, timestamp, headers, key, value);
+        produceRecord(producerConfig, topicName, null, timestamp, headers, key, value);
+    }
+
+    public void produceRecord(String topicName, Integer partition, Instant timestamp, Map<String, Object> headers, String key, String value) {
+        produceRecord(producerConfig, topicName, partition, timestamp, headers, key, value);
     }
 
     public void produceRecord(String topicName, Instant timestamp, Map<String, Object> headers, byte[] key, byte[] value) {
@@ -45,13 +49,13 @@ public class RecordHelper {
         producerConfig.putAll(this.producerConfig);
         producerConfig.setProperty(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, ByteArraySerializer.class.getName());
         producerConfig.setProperty(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, ByteArraySerializer.class.getName());
-        produceRecord(producerConfig, topicName, timestamp, headers, key, value);
+        produceRecord(producerConfig, topicName, null, timestamp, headers, key, value);
     }
 
-    static <K, V> void produceRecord(Properties config, String topicName, Instant timestamp, Map<String, Object> headers, K key, V value) {
+    static <K, V> void produceRecord(Properties config, String topicName, Integer partition, Instant timestamp, Map<String, Object> headers, K key, V value) {
         try (Producer<K, V> producer = new KafkaProducer<>(config)) {
             Long timestampMs = timestamp != null ? timestamp.toEpochMilli() : null;
-            ProducerRecord<K, V> rec = new ProducerRecord<>(topicName, null, timestampMs, key, value);
+            ProducerRecord<K, V> rec = new ProducerRecord<>(topicName, partition, timestampMs, key, value);
             if (headers != null) {
                 headers.forEach((k, v) -> rec.headers().add(k, String.valueOf(v).getBytes()));
             }
