@@ -35,7 +35,7 @@ export function DateTimePicker({ value, onChange }: DateTimePickerProps) {
       isValid &&
       date &&
       hour != undefined &&
-      hour > 0 &&
+      hour >= 0 &&
       (time.includes("AM") || time.includes("PM"))
     ) {
       let newDate = date;

@@ -1,11 +1,15 @@
+import { LimitSelector } from "@/components/MessagesTable/components/LimitSelector";
 import {
   ActionGroup,
   Button,
   Form,
   FormGroup,
+  FormHelperText,
   FormSection,
   Grid,
   GridItem,
+  HelperText,
+  HelperTextItem,
   Panel,
   PanelMain,
   PanelMainBody,
@@ -27,7 +31,6 @@ import { SearchParams } from "../types";
 import { FromGroup } from "./FromGroup";
 import { parseSearchInput } from "./parseSearchInput";
 import { PartitionSelector } from "./PartitionSelector";
-import { UntilGroup } from "./UntilGroup";
 import { WhereSelector } from "./WhereSelector";
 
 export function AdvancedSearch({
@@ -60,6 +63,7 @@ export function AdvancedSearch({
   const [query, setQuery] = useState(filterQuery);
   const [where, setWhere] = useState(filterWhere);
   const [partition, setPartition] = useState(filterPartition);
+  const [limit, setLimit] = useState(filterLimit ?? 50);
   const [fromEpoch, setFromEpoch] = useState(filterEpoch);
   const [fromTimestamp, setFromTimestamp] = useState(filterTimestamp);
   const [fromOffset, setFromOffset] = useState(filterOffset);
@@ -101,23 +105,6 @@ export function AdvancedSearch({
         return { type: "latest" };
       }
     })();
-    const until = ((): SearchParams["until"] => {
-      if (untilLimit) {
-        return {
-          type: "limit",
-          value: untilLimit,
-        };
-      } else if (untilLive) {
-        return {
-          type: "live",
-        };
-      } else {
-        return {
-          type: "limit",
-          value: 50,
-        };
-      }
-    })();
     return {
       query: query
         ? {
@@ -127,45 +114,32 @@ export function AdvancedSearch({
         : undefined,
       partition,
       from,
-      until,
+      limit,
     };
-  }, [
-    query,
-    where,
-    partition,
-    fromOffset,
-    fromEpoch,
-    fromTimestamp,
-    untilLimit,
-    untilLive,
-  ]);
+  }, [query, where, partition, limit, fromOffset, fromEpoch, fromTimestamp]);
 
   const getSearchInputValue = useCallback(() => {
     const parameters = getParameters();
-    const { query, from, until, partition } = parameters;
+    const { query, from, limit, partition } = parameters;
     return (() => {
       let composed: string[] = [];
-      if (query) {
-        composed.push(query.value);
-        if (query.where !== "everywhere") {
-          composed.push(`where=${query.where}`);
+      if (from) {
+        if ("value" in from) {
+          composed.push(`messages=${from.type}:${from.value}`);
+        } else {
+          composed.push(`messages=latest`);
         }
+      }
+      if (limit) {
+        composed.push(`limit=${limit}`);
       }
       if (partition) {
         composed.push(`partition=${partition}`);
       }
-      if (from) {
-        if ("value" in from) {
-          composed.push(`from=${from.type}:${from.value}`);
-        } else {
-          composed.push(`from=now`);
-        }
-      }
-      if (until) {
-        if ("value" in until) {
-          composed.push(`until=${until.type}:${until.value}`);
-        } else {
-          composed.push(`until=live`);
+      if (query) {
+        composed.push(query.value);
+        if (query.where !== "everywhere") {
+          composed.push(`where=${query.where}`);
         }
       }
       return composed.join(" ");
@@ -223,7 +197,7 @@ export function AdvancedSearch({
       <Panel variant="raised">
         <PanelMain>
           <PanelMainBody>
-            <Form isHorizontal={true}>
+            <Form isHorizontal={true} isWidthLimited={true}>
               <FormSection title={"Filter"}>
                 <Grid hasGutter={true}>
                   <GridItem>
@@ -238,6 +212,15 @@ export function AdvancedSearch({
                         value={query}
                         onChange={(_event, value) => setQuery(value)}
                       />
+                      <FormHelperText>
+                        <HelperText>
+                          <HelperTextItem>
+                            Enter your search terms to find matches within the
+                            selected field. Wildcards and regular expressions
+                            are not required or supported.
+                          </HelperTextItem>
+                        </HelperText>
+                      </FormHelperText>
                     </FormGroup>
                   </GridItem>
 
@@ -246,25 +229,12 @@ export function AdvancedSearch({
                       <WhereSelector value={where} onChange={setWhere} />
                     </FormGroup>
                   </GridItem>
-                  <GridItem>
-                    <FormGroup
-                      label="In partition"
-                      fieldId="in-partition"
-                      key="in-partition"
-                    >
-                      <PartitionSelector
-                        value={partition}
-                        partitions={partitions}
-                        onChange={setPartition}
-                      />
-                    </FormGroup>
-                  </GridItem>
                 </Grid>
               </FormSection>
-              <FormSection title={"Range"}>
+              <FormSection title={"Parameters"}>
                 <Grid hasGutter={true}>
                   <GridItem>
-                    <FormGroup label={"Search from"}>
+                    <FormGroup label={"Messages"}>
                       <FromGroup
                         offset={filterOffset}
                         epoch={filterEpoch}
@@ -290,18 +260,24 @@ export function AdvancedSearch({
                   </GridItem>
 
                   <GridItem>
-                    <FormGroup label={"Until"}>
-                      <UntilGroup
-                        limit={untilLimit}
-                        live={untilLive}
-                        onLimitChange={(v) => {
-                          setUntilLimit(v);
-                          setUntilLive(false);
-                        }}
-                        onLiveChange={() => {
-                          setUntilLive(true);
-                          setUntilLimit(undefined);
-                        }}
+                    <FormGroup label={"Limit"}>
+                      <LimitSelector
+                        value={untilLimit ?? 50}
+                        onChange={setUntilLimit}
+                      />
+                    </FormGroup>
+                  </GridItem>
+
+                  <GridItem>
+                    <FormGroup
+                      label="In partition"
+                      fieldId="in-partition"
+                      key="in-partition"
+                    >
+                      <PartitionSelector
+                        value={partition}
+                        partitions={partitions}
+                        onChange={setPartition}
                       />
                     </FormGroup>
                   </GridItem>

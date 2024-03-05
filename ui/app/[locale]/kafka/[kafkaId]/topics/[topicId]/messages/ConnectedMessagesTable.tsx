@@ -42,7 +42,7 @@ export function ConnectedMessagesTable({
 
   const isFiltered = partition || epoch || offset || timestamp || query;
 
-  function onSearch({ query, from, until, partition }: SearchParams) {
+  function onSearch({ query, from, limit, partition }: SearchParams) {
     setMessages({ messages: undefined, ts: undefined, error: undefined });
     startTransition(() => {
       const newQuery = {
@@ -52,8 +52,7 @@ export function ConnectedMessagesTable({
         offset: from.type === "offset" ? from.value : "",
         timestamp: from.type === "timestamp" ? from.value : "",
         epoch: from.type === "epoch" ? from.value : "",
-        limit: until.type === "limit" ? until.value : "",
-        live: until.type === "live",
+        limit: limit,
         _: Date.now(),
       };
       updateUrl(newQuery);
