@@ -2,9 +2,9 @@ import { ResponsiveTable } from "@/components/Table";
 import { PageSection } from "@/libs/patternfly/react-core";
 import { TableVariant } from "@/libs/patternfly/react-table";
 import { useTranslations } from "next-intl";
-import { columns } from "./ColumnsModal";
-import { MessageBrowserProps } from "./MessagesTable";
-import { MessagesTableToolbar } from "./MessagesTableToolbar";
+import { columns } from "./components/ColumnsModal";
+import { MessagesTableToolbar } from "./components/MessagesTableToolbar";
+import { MessagesTableProps } from "./MessagesTable";
 
 export function MessagesTableSkeleton({
   filterLimit,
@@ -16,7 +16,7 @@ export function MessagesTableSkeleton({
   filterOffset,
   filterEpoch,
 }: Pick<
-  MessageBrowserProps,
+  MessagesTableProps,
   | "filterPartition"
   | "filterLimit"
   | "filterLive"

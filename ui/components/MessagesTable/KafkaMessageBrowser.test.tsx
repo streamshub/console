@@ -2,7 +2,7 @@ import { userEvent } from "@storybook/testing-library";
 import { composeStories } from "@storybook/testing-react";
 import { waitFor, within } from "@testing-library/react";
 import { render, waitForI18n, waitForPopper } from "../../test-utils";
-import * as stories from "./KafkaMessageBrowser.stories";
+import * as stories from "./MessagesTable.stories";
 
 const { Example, InitialLoading, NoData, ApiError, NoMatch } =
   composeStories(stories);
@@ -20,15 +20,15 @@ describe("KafkaMessageBrowser", () => {
     const row = within(rows[2]);
 
     userEvent.click(
-      row.getAllByText("this-is-a-very-long-key", { exact: false })[0]
+      row.getAllByText("this-is-a-very-long-key", { exact: false })[0],
     );
     const details = await comp.findByTestId("message-details");
     expect(details).toBeInTheDocument();
     let detailsCont = within(details);
     expect(
       detailsCont.getByText(
-        "this-is-a-very-long-key-that-might-cause-some-trouble-figuring-out-column-widths"
-      )
+        "this-is-a-very-long-key-that-might-cause-some-trouble-figuring-out-column-widths",
+      ),
     );
     userEvent.click(comp.getByLabelText("Close drawer panel"));
     await waitFor(() => {
@@ -41,12 +41,12 @@ describe("KafkaMessageBrowser", () => {
     expect(
       detailsCont.getByText('"post-office-box"', {
         exact: false,
-      })
+      }),
     ).toBeInTheDocument();
     expect(
       detailsCont.getByDisplayValue('"post-office-box"', {
         exact: false,
-      })
+      }),
     ).toBeInTheDocument();
     userEvent.click(comp.getByLabelText("Close drawer panel"));
 
@@ -56,12 +56,12 @@ describe("KafkaMessageBrowser", () => {
     expect(
       detailsCont.getByText('"123 any st"', {
         exact: false,
-      })
+      }),
     ).toBeInTheDocument();
     expect(
       detailsCont.getByDisplayValue('"123 any st"', {
         exact: false,
-      })
+      }),
     ).toBeInTheDocument();
   });
 
@@ -77,7 +77,7 @@ describe("KafkaMessageBrowser", () => {
     // change partition
     userEvent.type(
       await toolbar.findByLabelText("Specify partition value"),
-      "1337"
+      "1337",
     );
     userEvent.keyboard("[ArrowDown][Enter]");
     userEvent.click(filterGroup);
@@ -179,7 +179,7 @@ describe("KafkaMessageBrowser", () => {
     userEvent.click(toolbar.getByText("Epoch timestamp"));
     userEvent.type(
       toolbar.getByLabelText("Specify epoch timestamp"),
-      "1650637783"
+      "1650637783",
     );
 
     // check for the buttons' states
@@ -236,8 +236,8 @@ describe("KafkaMessageBrowser", () => {
     await waitForI18n(comp);
     expect(
       await comp.findByText(
-        "Data will appear shortly after we receive produced messages."
-      )
+        "Data will appear shortly after we receive produced messages.",
+      ),
     ).toBeInTheDocument();
     expect(getMessages).toBeCalledTimes(1);
     userEvent.click(comp.getByText("Check for new data"));
@@ -250,8 +250,8 @@ describe("KafkaMessageBrowser", () => {
     await waitForI18n(comp);
     expect(
       await comp.findByText(
-        "Data will appear shortly after we receive produced messages."
-      )
+        "Data will appear shortly after we receive produced messages.",
+      ),
     ).toBeInTheDocument();
     expect(getMessages).toBeCalledTimes(1);
     userEvent.click(comp.getByText("Check for new data"));
@@ -269,7 +269,7 @@ describe("KafkaMessageBrowser", () => {
     await waitForI18n(comp);
     await NoMatch.play({ canvasElement: comp.container });
     expect(
-      await comp.findByText("Adjust your selection criteria and try again.")
+      await comp.findByText("Adjust your selection criteria and try again."),
     ).toBeInTheDocument();
     userEvent.click(comp.getByText("Show latest messages"));
     await waitFor(() => expect(comp.queryAllByRole("row")).toHaveLength(11));

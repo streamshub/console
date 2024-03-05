@@ -6,8 +6,8 @@ import {
 import { Button, Tooltip } from "@patternfly/react-core";
 import { ColumnsIcon } from "@patternfly/react-icons";
 import { useState } from "react";
+import { MessagesTableProps } from "../MessagesTable";
 import { AdvancedSearch } from "./AdvancedSearch";
-import { MessageBrowserProps } from "./MessagesTable";
 
 export function MessagesTableToolbar({
   filterQuery,
@@ -22,7 +22,7 @@ export function MessagesTableToolbar({
   onSearch,
   onColumnManagement,
 }: Pick<
-  MessageBrowserProps,
+  MessagesTableProps,
   | "filterQuery"
   | "filterWhere"
   | "filterEpoch"

@@ -1,4 +1,4 @@
-import { SearchParams } from "./types";
+import { SearchParams } from "../types";
 
 export function parseSearchInput({ value }: { value: string }): SearchParams {
   let sp: SearchParams = {

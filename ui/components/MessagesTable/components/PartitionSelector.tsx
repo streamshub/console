@@ -19,7 +19,7 @@ export function PartitionSelector({
   const t = useTranslations("message-browser");
   const [isOpen, setIsOpen] = useState(false);
   const toggleOpen = () => setIsOpen((o) => !o);
-  const titleId = "partition-selector";
+  const titleId = "in-partition";
 
   const handleChange = useCallback(
     (value: string) => {
@@ -87,7 +87,7 @@ export function PartitionSelector({
       onSelect={(_, value) => handleChange(value as string)}
       onOpenChange={setIsOpen}
       isOpen={isOpen}
-      aria-labelledby={titleId}
+      id={titleId}
       data-testid={"partition-selector"}
       toggle={(toggleRef) => (
         <MenuToggle ref={toggleRef} onClick={toggleOpen} isExpanded={isOpen}>

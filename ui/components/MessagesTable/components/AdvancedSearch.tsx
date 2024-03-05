@@ -22,11 +22,11 @@ import {
   useState,
   useTransition,
 } from "react";
+import { MessagesTableProps } from "../MessagesTable";
+import { SearchParams } from "../types";
 import { FromGroup } from "./FromGroup";
-import { MessageBrowserProps } from "./MessagesTable";
 import { parseSearchInput } from "./parseSearchInput";
 import { PartitionSelector } from "./PartitionSelector";
-import { SearchParams } from "./types";
 import { UntilGroup } from "./UntilGroup";
 import { WhereSelector } from "./WhereSelector";
 
@@ -42,7 +42,7 @@ export function AdvancedSearch({
   onSearch,
   partitions,
 }: Pick<
-  MessageBrowserProps,
+  MessagesTableProps,
   | "filterQuery"
   | "filterWhere"
   | "filterEpoch"

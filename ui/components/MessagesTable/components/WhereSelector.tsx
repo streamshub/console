@@ -7,14 +7,14 @@ import {
   TextInput,
 } from "@patternfly/react-core";
 import { useEffect, useState } from "react";
-import { MessageBrowserProps } from "./MessagesTable";
+import { MessagesTableProps } from "../MessagesTable";
 
 export function WhereSelector({
   value,
   onChange,
 }: {
-  value: MessageBrowserProps["filterWhere"];
-  onChange: (value: MessageBrowserProps["filterWhere"]) => void;
+  value: MessagesTableProps["filterWhere"];
+  onChange: (value: MessagesTableProps["filterWhere"]) => void;
 }) {
   const [isJqFilter, filter] = (() => {
     if (value?.indexOf("jq:") === 0) {

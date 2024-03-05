@@ -22,13 +22,20 @@ import {
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useTranslations } from "next-intl";
 import { PropsWithChildren, useEffect, useRef, useState } from "react";
-import { Column, ColumnsModal, useColumnLabels } from "./ColumnsModal";
-import { MessageDetails, MessageDetailsProps } from "./MessageDetails";
-import { MessagesTableToolbar } from "./MessagesTableToolbar";
-import { NoDataCell } from "./NoDataCell";
-import { NoResultsEmptyState } from "./NoResultsEmptyState";
-import { UnknownValuePreview } from "./UnknownValuePreview";
-import { beautifyUnknownValue, isSameMessage } from "./utils";
+import {
+  Column,
+  ColumnsModal,
+  useColumnLabels,
+} from "./components/ColumnsModal";
+import {
+  MessageDetails,
+  MessageDetailsProps,
+} from "./components/MessageDetails";
+import { MessagesTableToolbar } from "./components/MessagesTableToolbar";
+import { NoDataCell } from "./components/NoDataCell";
+import { NoResultsEmptyState } from "./components/NoResultsEmptyState";
+import { UnknownValuePreview } from "./components/UnknownValuePreview";
+import { beautifyUnknownValue, isSameMessage } from "./components/utils";
 
 const columnWidths: Record<Column, BaseCellProps["width"]> = {
   "offset-partition": 10,
@@ -47,7 +54,7 @@ const defaultColumns: Column[] = [
   "value",
 ];
 
-export type MessageBrowserProps = {
+export type MessagesTableProps = {
   selectedMessage?: Message;
   lastUpdated?: Date;
   messages: Message[];
@@ -81,7 +88,7 @@ export function MessagesTable({
   onSearch,
   onSelectMessage,
   onDeselectMessage,
-}: MessageBrowserProps) {
+}: MessagesTableProps) {
   const t = useTranslations("message-browser");
   const columnLabels = useColumnLabels();
   const [showColumnsManagement, setShowColumnsManagement] = useState(false);
