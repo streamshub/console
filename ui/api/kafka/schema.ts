@@ -10,6 +10,9 @@ export type KafkaNode = z.infer<typeof NodeSchema>;
 export const ClusterListSchema = z.object({
   id: z.string(),
   type: z.literal("kafkas"),
+  meta: z.object({
+    configured: z.boolean(),
+  }),
   attributes: z.object({
     name: z.string(),
     namespace: z.string(),

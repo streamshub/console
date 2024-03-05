@@ -46,7 +46,7 @@ export function AppLayout({ children }: PropsWithChildren) {
 
 async function Clusters() {
   const clusters = await getKafkaClusters();
-  return clusters.map((s, idx) => (
+  return clusters.filter(c => c.meta.configured === true).map((s, idx) => (
     <NavExpandable
       key={s.id}
       title={s.attributes.name}

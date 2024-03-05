@@ -56,21 +56,29 @@ export function ClustersTable({
           case "name":
             return (
               <Td key={key}>
-                <Link href={`/kafka/${row.id}`}>
-                  <Truncate content={row.attributes.name} />
-                </Link>
+                {
+                  row.meta.configured === true ? (
+                    <Link href={`/kafka/${row.id}`}>
+                      <Truncate content={row.attributes.name} />
+                    </Link>
+                  ) : (
+                    <Truncate content={row.attributes.name} />
+                  )
+                }
               </Td>
             );
           case "nodes":
-            return (
+            return row.meta.configured === true ? (
               <Td key={key}>
                 <Suspense fallback={<Skeleton />}>
                   <NodesCell kafkaId={row.id} data={row.extra.nodes} />
                 </Suspense>
               </Td>
+            ) : (
+              <i>Connection not configured</i>
             );
           case "consumers":
-            return (
+            return row.meta.configured === true ? (
               <Td key={key}>
                 <Suspense fallback={<Skeleton />}>
                   <ConsumersCell
@@ -79,9 +87,11 @@ export function ClustersTable({
                   />
                 </Suspense>
               </Td>
+            ) : (
+              <i>Connection not configured</i>
             );
           case "version":
-            return <Td key={key}>{row.attributes.kafkaVersion || "n/a"}</Td>;
+            return <Td key={key}>{row.attributes.kafkaVersion ?? "n/a"}</Td>;
           case "namespace":
             return <Td key={key}>{row.attributes.namespace}</Td>;
         }

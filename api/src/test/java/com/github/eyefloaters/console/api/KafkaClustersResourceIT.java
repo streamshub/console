@@ -477,6 +477,31 @@ class KafkaClustersResourceIT {
     }
 
     @Test
+    void testListClustersWithUnconfiguredCluster() {
+        String clusterId = UUID.randomUUID().toString();
+        String clusterName = "test-kafka-" + clusterId;
+
+        // Create a Kafka CR with SCRAM-SHA that proxies to kafka1
+        client.resources(Kafka.class)
+            .resource(utils.buildKafkaResource(clusterName, clusterId, bootstrapServers))
+            .create();
+
+        // Wait for the informer cache to be populated with all Kafka CRs
+        await().atMost(10, TimeUnit.SECONDS)
+            .until(() -> Objects.equals(kafkaInformer.getStore().list().size(), 3));
+
+        whenRequesting(req -> req.get())
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()))
+            .body("data.size()", equalTo(3))
+            .body("data.id", containsInAnyOrder(clusterId1, clusterId2, clusterId))
+            .body("data.attributes.name", containsInAnyOrder("test-kafka1", "test-kafka2", clusterName))
+            .body("data.find { it.attributes.name == 'test-kafka1'}.meta.configured", is(true))
+            .body("data.find { it.attributes.name == 'test-kafka2'}.meta.configured", is(true))
+            .body("data.find { it.attributes.name == '" + clusterName + "'}.meta.configured", is(false));
+    }
+
+    @Test
     void testDescribeClusterWithCustomAuthType() {
         mockAdminClient();
 
