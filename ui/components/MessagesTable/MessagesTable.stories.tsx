@@ -1,5 +1,6 @@
 import { Message } from "@/api/messages/schema";
 import type { Meta, StoryObj } from "@storybook/react";
+import { expect, fn, userEvent, within } from "@storybook/test";
 import { subSeconds } from "date-fns";
 import { MessagesTable, MessagesTableProps } from "./MessagesTable";
 
@@ -8,13 +9,47 @@ export default {
   args: {
     lastUpdated: new Date(),
     partitions: 5,
+    onSearch: fn(),
+    onSelectMessage: fn(),
+    onDeselectMessage: fn(),
   },
   render: (props) => <MessagesTable {...props} messages={sampleData(props)} />,
 } as Meta<typeof MessagesTable>;
 
 type Story = StoryObj<typeof MessagesTable>;
 
-export const Example: Story = {};
+export const Example: Story = {
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement);
+    const messages = sampleData(args);
+
+    const rows = await canvas.findAllByRole("row");
+
+    const row = within(rows[2]);
+    await userEvent.click(
+      row.getAllByText("this-is-a-very-long-key", { exact: false })[0],
+    );
+    await expect(args.onSelectMessage).toHaveBeenCalledWith(messages[1]);
+    const search = canvas.getByDisplayValue("from=now until=limit:50");
+    expect(search).toBeInTheDocument();
+    await userEvent.type(search, " foo bar");
+    userEvent.keyboard("[Enter]");
+    await expect(args.onSearch).toBeCalledWith({
+      from: {
+        type: "latest",
+      },
+      partition: undefined,
+      query: {
+        value: "foo bar",
+        where: "everywhere",
+      },
+      until: {
+        type: "limit",
+        value: 50,
+      },
+    });
+  },
+};
 
 export const SearchWithMatches: Story = {
   args: {
