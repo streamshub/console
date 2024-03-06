@@ -1,4 +1,4 @@
-import { LimitSelector } from "@/components/MessagesTable/components/LimitSelector";
+import { UntilGroup } from "@/components/MessagesTable/components/UntilGroup";
 import {
   ActionGroup,
   Button,
@@ -41,7 +41,6 @@ export function AdvancedSearch({
   filterPartition,
   filterTimestamp,
   filterLimit,
-  filterLive,
   onSearch,
   partitions,
 }: Pick<
@@ -53,7 +52,6 @@ export function AdvancedSearch({
   | "filterPartition"
   | "filterTimestamp"
   | "filterLimit"
-  | "filterLive"
   | "onSearch"
   | "partitions"
 >) {
@@ -63,12 +61,10 @@ export function AdvancedSearch({
   const [query, setQuery] = useState(filterQuery);
   const [where, setWhere] = useState(filterWhere);
   const [partition, setPartition] = useState(filterPartition);
-  const [limit, setLimit] = useState(filterLimit ?? 50);
+  const [limit, setLimit] = useState(filterLimit);
   const [fromEpoch, setFromEpoch] = useState(filterEpoch);
   const [fromTimestamp, setFromTimestamp] = useState(filterTimestamp);
   const [fromOffset, setFromOffset] = useState(filterOffset);
-  const [untilLimit, setUntilLimit] = useState(filterLimit);
-  const [untilLive, setUntilLive] = useState(filterLive);
   const [shouldSubmit, setShouldSubmit] = useState(false);
   const [_, startTransition] = useTransition();
 
@@ -82,7 +78,7 @@ export function AdvancedSearch({
     setQuery(undefined);
     setLatest();
     setPartition(undefined);
-    setUntilLimit(50);
+    setLimit(50);
     setShouldSubmit(true);
   }
 
@@ -114,7 +110,7 @@ export function AdvancedSearch({
         : undefined,
       partition,
       from,
-      limit,
+      limit: limit ?? 50,
     };
   }, [query, where, partition, limit, fromOffset, fromEpoch, fromTimestamp]);
 
@@ -260,10 +256,15 @@ export function AdvancedSearch({
                   </GridItem>
 
                   <GridItem>
-                    <FormGroup label={"Limit"}>
-                      <LimitSelector
-                        value={untilLimit ?? 50}
-                        onChange={setUntilLimit}
+                    <FormGroup label={"Consume until"}>
+                      <UntilGroup
+                        limit={limit ?? 50}
+                        onLimitChange={(limit) => {
+                          setLimit(limit);
+                        }}
+                        onLive={() => {
+                          setLimit("forever");
+                        }}
                       />
                     </FormGroup>
                   </GridItem>

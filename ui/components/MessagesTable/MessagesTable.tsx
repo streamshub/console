@@ -59,8 +59,7 @@ export type MessagesTableProps = {
   lastUpdated?: Date;
   messages: Message[];
   partitions: number;
-  filterLimit?: number;
-  filterLive?: boolean;
+  filterLimit?: number | "forever";
   filterQuery?: string;
   filterWhere?: "key" | "headers" | "value" | `jq:${string}`;
   filterOffset?: number;
@@ -78,7 +77,6 @@ export function MessagesTable({
   messages,
   partitions,
   filterLimit,
-  filterLive,
   filterQuery,
   filterWhere,
   filterOffset,
@@ -154,7 +152,6 @@ export function MessagesTable({
             <MessagesTableToolbar
               partitions={partitions}
               filterLimit={filterLimit}
-              filterLive={filterLive}
               filterQuery={filterQuery}
               filterWhere={filterWhere}
               filterOffset={filterOffset}

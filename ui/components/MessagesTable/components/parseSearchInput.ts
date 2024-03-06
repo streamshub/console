@@ -59,9 +59,13 @@ export function parseSearchInput({ value }: { value: string }): SearchParams {
       }
     } else if (p.indexOf("limit=") === 0) {
       const [_, limit] = p.split("=");
-      const number = parseInt(limit, 10);
-      if (Number.isSafeInteger(number)) {
-        sp.limit = number;
+      if (limit === "forever") {
+        sp.limit = "forever";
+      } else {
+        const number = parseInt(limit, 10);
+        if (Number.isSafeInteger(number)) {
+          sp.limit = number;
+        }
       }
     } else if (p.indexOf("partition=") === 0) {
       const [_, partition] = p.split("=");

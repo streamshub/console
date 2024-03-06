@@ -30,7 +30,7 @@ export function ConnectedMessagesTable({
   const [params, sp] = useParseSearchParams();
   const updateUrl = useFilterParams(sp);
   const router = useRouter();
-  const { limit, live, partition, query, where, offset, timestamp, epoch, _ } =
+  const { limit, partition, query, where, offset, timestamp, epoch, _ } =
     params;
 
   const [{ messages, ts, error }, setMessages] =
@@ -78,25 +78,7 @@ export function ConnectedMessagesTable({
   }
 
   const fetchMessages = useCallback(
-    async function fetchMessages({
-      limit,
-      offset,
-      partition,
-      query,
-      where,
-      timestamp,
-      epoch,
-      append = false,
-    }: {
-      limit?: number;
-      offset?: number;
-      partition?: number;
-      query?: string;
-      where?: "key" | "headers" | "value" | `jq:${string}`;
-      timestamp?: string;
-      epoch?: number;
-      append?: boolean;
-    }) {
+    async function fetchMessages() {
       const filter = (() => {
         if (offset) return { type: "offset" as const, value: offset };
         if (timestamp) return { type: "timestamp" as const, value: timestamp };
@@ -109,7 +91,7 @@ export function ConnectedMessagesTable({
         ts,
         error,
       } = await getTopicMessages(kafkaId, topicId, {
-        pageSize: limit ?? 50,
+        pageSize: limit === "forever" ? 50 : limit ?? 50,
         query,
         where,
         partition,
@@ -118,24 +100,6 @@ export function ConnectedMessagesTable({
       });
       if (error) {
         setMessages({ messages: newMessages, ts, error });
-      } else if (append) {
-        startTransition(() => {
-          setMessages(({ messages = [] }) => {
-            const messagesToAdd = newMessages.filter(
-              (m) =>
-                !messages.find(
-                  (m2) =>
-                    m2.attributes.offset === m.attributes.offset &&
-                    m2.attributes.partition === m.attributes.partition,
-                ),
-            );
-
-            return {
-              messages: Array.from(new Set([...messagesToAdd, ...messages])),
-              ts,
-            };
-          });
-        });
       } else {
         startTransition(() => {
           setMessages({
@@ -145,65 +109,89 @@ export function ConnectedMessagesTable({
         });
       }
     },
-    [kafkaId, topicId],
+    [
+      epoch,
+      kafkaId,
+      limit,
+      offset,
+      partition,
+      query,
+      timestamp,
+      topicId,
+      where,
+    ],
   );
+
+  const appendMessages = useCallback(async () => {
+    const previousTs = messages
+      ? messages[0]?.attributes.timestamp
+      : new Date().toISOString();
+
+    const {
+      messages: newMessages = [],
+      ts,
+      error,
+    } = await getTopicMessages(kafkaId, topicId, {
+      pageSize: 10,
+      query,
+      where,
+      partition,
+      filter: {
+        type: "timestamp",
+        value: previousTs,
+      },
+      maxValueLength: 150,
+    });
+    if (error) {
+      setMessages({ messages: newMessages, ts, error });
+    } else {
+      startTransition(() => {
+        setMessages(({ messages = [] }) => {
+          const messagesToAdd = newMessages.filter(
+            (m) =>
+              !messages.find(
+                (m2, i) =>
+                  m2.attributes.offset === m.attributes.offset &&
+                  m2.attributes.partition === m.attributes.partition,
+              ),
+          );
+
+          return {
+            messages: Array.from(
+              new Set([...messagesToAdd, ...messages]),
+            ).slice(0, 100),
+            ts,
+          };
+        });
+      });
+    }
+  }, [kafkaId, messages, partition, query, topicId, where]);
 
   useEffect(() => {
     let t: ReturnType<typeof setTimeout> | undefined;
 
     async function tick() {
-      if (live && messages) {
-        const latestTs = messages[0]?.attributes.timestamp;
-        await fetchMessages({
-          limit: 50,
-          partition,
-          query,
-          where,
-          timestamp: latestTs,
-          append: true,
-        });
+      if (limit === "forever") {
+        await appendMessages();
+        t = setTimeout(tick, 5000);
       }
-      t = setTimeout(tick, 1000);
     }
 
-    t = setTimeout(tick, 1000);
+    if (limit === "forever") {
+      void tick();
+    }
+
     return () => {
       clearTimeout(t);
       t = undefined;
     };
-  }, [
-    live,
-    fetchMessages,
-    limit,
-    offset,
-    partition,
-    query,
-    where,
-    timestamp,
-    epoch,
-    messages,
-  ]);
+  }, [appendMessages, limit]);
 
   useEffect(() => {
-    void fetchMessages({
-      limit,
-      offset,
-      partition,
-      query,
-      where,
-      timestamp,
-      epoch,
-    });
+    void fetchMessages();
   }, [
     fetchMessages,
-    limit,
-    offset,
-    partition,
-    query,
-    timestamp,
-    _,
-    where,
-    epoch,
+    _, // when clicking search multiple times, the search parameters remain the same but a timestamp is added to _. We listen for changes to _ to know we have to trigger a new fetch
   ]);
 
   switch (true) {
@@ -211,7 +199,6 @@ export function ConnectedMessagesTable({
       return (
         <MessagesTableSkeleton
           filterLimit={limit}
-          filterLive={live}
           filterTimestamp={timestamp}
           filterPartition={partition}
           filterOffset={offset}
@@ -248,7 +235,6 @@ export function ConnectedMessagesTable({
           messages={messages}
           partitions={partitions}
           filterLimit={limit}
-          filterLive={live}
           filterQuery={query}
           filterWhere={where}
           filterOffset={offset}

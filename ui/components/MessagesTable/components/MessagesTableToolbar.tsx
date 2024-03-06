@@ -5,7 +5,6 @@ import {
 } from "@/libs/patternfly/react-core";
 import { Button, Tooltip } from "@patternfly/react-core";
 import { ColumnsIcon } from "@patternfly/react-icons";
-import { useState } from "react";
 import { MessagesTableProps } from "../MessagesTable";
 import { AdvancedSearch } from "./AdvancedSearch";
 
@@ -17,7 +16,6 @@ export function MessagesTableToolbar({
   filterOffset,
   filterPartition,
   filterLimit,
-  filterLive,
   partitions,
   onSearch,
   onColumnManagement,
@@ -30,14 +28,12 @@ export function MessagesTableToolbar({
   | "filterOffset"
   | "filterPartition"
   | "filterLimit"
-  | "filterLive"
   | "partitions"
   | "onSearch"
 > & {
   onColumnManagement: () => void;
 }) {
   const toolbarBreakpoint = "md";
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   function onClearAllFilters() {}
 
@@ -59,7 +55,6 @@ export function MessagesTableToolbar({
             filterPartition={filterPartition}
             filterTimestamp={filterTimestamp}
             filterLimit={filterLimit}
-            filterLive={filterLive}
             partitions={partitions}
             onSearch={onSearch}
           />

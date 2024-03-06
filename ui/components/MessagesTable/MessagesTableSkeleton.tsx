@@ -8,7 +8,6 @@ import { MessagesTableProps } from "./MessagesTable";
 
 export function MessagesTableSkeleton({
   filterLimit,
-  filterLive,
   filterQuery,
   filterWhere,
   filterPartition,
@@ -19,7 +18,6 @@ export function MessagesTableSkeleton({
   MessagesTableProps,
   | "filterPartition"
   | "filterLimit"
-  | "filterLive"
   | "filterQuery"
   | "filterWhere"
   | "filterTimestamp"
@@ -37,7 +35,6 @@ export function MessagesTableSkeleton({
       <MessagesTableToolbar
         partitions={1}
         filterLimit={filterLimit}
-        filterLive={filterLive}
         filterQuery={filterQuery}
         filterWhere={filterWhere}
         filterOffset={filterOffset}
@@ -52,7 +49,7 @@ export function MessagesTableSkeleton({
         ariaLabel={t("table_aria_label")}
         columns={columns}
         data={undefined}
-        expectedLength={filterLimit}
+        expectedLength={typeof filterLimit === "number" ? filterLimit : 50}
         renderCell={() => <div></div>}
         renderHeader={() => <div></div>}
       />

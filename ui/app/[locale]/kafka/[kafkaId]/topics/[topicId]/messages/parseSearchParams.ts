@@ -18,7 +18,10 @@ export type MessagesSearchParams = {
 
 export function parseSearchParams(searchParams: MessagesSearchParams) {
   const _ = searchParams._;
-  const limit = stringToInt(searchParams.limit);
+  const limit =
+    searchParams.limit === "forever"
+      ? ("forever" as const)
+      : stringToInt(searchParams.limit);
   const live = stringToBoolean(searchParams.live);
   const offset = stringToInt(searchParams["offset"]);
   const timestamp = searchParams["timestamp"];
