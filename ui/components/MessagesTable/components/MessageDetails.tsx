@@ -25,6 +25,7 @@ import {
 import { HelpIcon } from "@/libs/patternfly/react-icons";
 import { ClipboardCopy } from "@patternfly/react-core";
 import { useTranslations } from "next-intl";
+import { useMemo } from "react";
 import { allExpanded, defaultStyles, JsonView } from "react-json-view-lite";
 import { NoDataCell } from "./NoDataCell";
 import { maybeJson } from "./utils";
@@ -42,6 +43,18 @@ export function MessageDetails({
 }: MessageDetailsProps) {
   const t = useTranslations("message-browser");
 
+  const body = useMemo(() => {
+    return (
+      message && (
+        <MessageDetailsBody
+          defaultTab={defaultTab}
+          messageKey={message.attributes.key}
+          {...message}
+        />
+      )
+    );
+  }, [message, defaultTab]);
+
   return (
     <DrawerPanelContent isResizable={true} minSize={"400px"}>
       <DrawerHead>
@@ -52,15 +65,7 @@ export function MessageDetails({
           <DrawerCloseButton onClick={onClose} />
         </DrawerActions>
       </DrawerHead>
-      <DrawerContentBody>
-        {message && (
-          <MessageDetailsBody
-            defaultTab={defaultTab}
-            messageKey={message.attributes.key}
-            {...message}
-          />
-        )}
-      </DrawerContentBody>
+      <DrawerContentBody>{body}</DrawerContentBody>
     </DrawerPanelContent>
   );
 }
