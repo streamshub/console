@@ -61,8 +61,8 @@ export function ColumnsModal({
         <>
           <DataListControl>
             <DataListCheck
-              aria-labelledby={`item-${column}`}
-              name={`item-${column}`}
+              aria-labelledby={`item-${column}-label`}
+              id={`item-${column}`}
               otherControls
               isChecked={chosenColumns.includes(column)}
               onChange={(_, checked) => {
@@ -77,7 +77,9 @@ export function ColumnsModal({
           <DataListItemCells
             dataListCells={[
               <DataListCell key={`item-${column}`}>
-                <span id={`item-${column}`}>{columnLabels[column]}</span>
+                <label id={`item-${column}-label`} htmlFor={`item-${column}`}>
+                  {columnLabels[column]}
+                </label>
               </DataListCell>,
             ]}
           />
