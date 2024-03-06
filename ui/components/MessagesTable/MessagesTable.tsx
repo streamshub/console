@@ -59,7 +59,7 @@ export type MessagesTableProps = {
   lastUpdated?: Date;
   messages: Message[];
   partitions: number;
-  filterLimit?: number | "forever";
+  filterLimit?: number | "continuously";
   filterQuery?: string;
   filterWhere?: "key" | "headers" | "value" | `jq:${string}`;
   filterOffset?: number;

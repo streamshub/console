@@ -4,7 +4,7 @@ import { useState } from "react";
 
 type Category = "limit" | "live";
 export type UntilGroupProps = {
-  limit?: number | "forever";
+  limit?: number | "continuously";
   onLimitChange: (value: number | undefined) => void;
   onLive: (enabled: boolean) => void;
 };
@@ -16,10 +16,10 @@ export function UntilGroup({
 }: UntilGroupProps) {
   const labels: { [K in Category]: string } = {
     limit: "Number of messages",
-    live: "Live mode (consume messages forever)",
+    live: "Continuously",
   };
   const [category, setCategory] = useState<Category>(
-    limit === "forever" ? "live" : "limit",
+    limit === "continuously" ? "live" : "limit",
   );
   const [isCategoryMenuOpen, setIsCategoryMenuOpen] = useState(false);
   const [isLimitMenuOpen, setIsLimitMenuOpen] = useState(false);
@@ -64,7 +64,7 @@ export function UntilGroup({
       </Dropdown>
       {category === "limit" && (
         <LimitSelector
-          value={limit !== "forever" ? limit : 50}
+          value={limit !== "continuously" ? limit : 50}
           onChange={onLimitChange}
         />
       )}

@@ -52,7 +52,7 @@ export function ConnectedMessagesTable({
         offset: from.type === "offset" ? from.value : "",
         timestamp: from.type === "timestamp" ? from.value : "",
         epoch: from.type === "epoch" ? from.value : "",
-        limit: limit,
+        retrieve: limit,
         _: Date.now(),
       };
       updateUrl(newQuery);
@@ -91,7 +91,7 @@ export function ConnectedMessagesTable({
         ts,
         error,
       } = await getTopicMessages(kafkaId, topicId, {
-        pageSize: limit === "forever" ? 50 : limit ?? 50,
+        pageSize: limit === "continuously" ? 50 : limit ?? 50,
         query,
         where,
         partition,
@@ -171,13 +171,13 @@ export function ConnectedMessagesTable({
     let t: ReturnType<typeof setTimeout> | undefined;
 
     async function tick() {
-      if (limit === "forever") {
+      if (limit === "continuously" && t === undefined) {
         await appendMessages();
         t = setTimeout(tick, 5000);
       }
     }
 
-    if (limit === "forever") {
+    if (limit === "continuously") {
       void tick();
     }
 

@@ -127,7 +127,7 @@ export function AdvancedSearch({
         }
       }
       if (limit) {
-        composed.push(`limit=${limit}`);
+        composed.push(`retrieve=${limit}`);
       }
       if (partition) {
         composed.push(`partition=${partition}`);
@@ -256,14 +256,14 @@ export function AdvancedSearch({
                   </GridItem>
 
                   <GridItem>
-                    <FormGroup label={"Consume until"}>
+                    <FormGroup label={"Retrieve"}>
                       <UntilGroup
                         limit={limit ?? 50}
                         onLimitChange={(limit) => {
                           setLimit(limit);
                         }}
                         onLive={() => {
-                          setLimit("forever");
+                          setLimit("continuously");
                         }}
                       />
                     </FormGroup>

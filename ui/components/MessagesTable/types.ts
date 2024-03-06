@@ -1,6 +1,6 @@
 export type SearchParams = {
   partition?: number;
-  limit: number | "forever";
+  limit: number | "continuously";
   query?: {
     value: string;
     where: "headers" | "key" | "value" | "everywhere" | `jq:${string}`;

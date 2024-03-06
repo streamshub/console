@@ -30,7 +30,7 @@ export const Example: Story = {
       row.getAllByText("this-is-a-very-long-key", { exact: false })[0],
     );
     await expect(args.onSelectMessage).toHaveBeenCalledWith(messages[1]);
-    const search = canvas.getByDisplayValue("messages=latest limit=50");
+    const search = canvas.getByDisplayValue("messages=latest retrieve=50");
     expect(search).toBeInTheDocument();
     await userEvent.type(search, " foo bar");
     userEvent.keyboard("[Enter]");

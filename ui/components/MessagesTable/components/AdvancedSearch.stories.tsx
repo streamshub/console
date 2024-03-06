@@ -104,3 +104,20 @@ export const SearchUntilLimit: Story = {
     );
   },
 };
+
+export const SearchContinuously: Story = {
+  args: {
+    filterLimit: "continuously",
+  },
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(
+      canvas.getAllByRole("button", { name: /search/i })[1],
+    );
+    await expect(args.onSearch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        limit: "continuously",
+      }),
+    );
+  },
+};

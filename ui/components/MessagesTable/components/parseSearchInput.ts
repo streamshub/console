@@ -57,10 +57,10 @@ export function parseSearchInput({ value }: { value: string }): SearchParams {
           }
         }
       }
-    } else if (p.indexOf("limit=") === 0) {
+    } else if (p.indexOf("retrieve=") === 0) {
       const [_, limit] = p.split("=");
-      if (limit === "forever") {
-        sp.limit = "forever";
+      if (limit === "continuously") {
+        sp.limit = "continuously";
       } else {
         const number = parseInt(limit, 10);
         if (Number.isSafeInteger(number)) {
