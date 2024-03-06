@@ -1,4 +1,3 @@
-"use client";
 import type { TimePickerProps } from "@/libs/patternfly/react-core";
 import {
   DatePicker,
@@ -10,6 +9,7 @@ import {
 } from "@/libs/patternfly/react-core";
 import {
   format,
+  formatISO,
   getHours,
   getMinutes,
   getSeconds,
@@ -24,7 +24,7 @@ import { useEffect, useState } from "react";
 
 export type DateTimePickerProps = {
   value: string | undefined;
-  onChange: (value: number) => void;
+  onChange: (value: string) => void;
 };
 
 export function DateTimePicker({ value, onChange }: DateTimePickerProps) {
@@ -81,7 +81,7 @@ export function DateTimePicker({ value, onChange }: DateTimePickerProps) {
 
   useEffect(() => {
     if (date && isDate(date)) {
-      onChange(date.getTime());
+      onChange(formatISO(date));
     }
   }, [date, onChange]);
 

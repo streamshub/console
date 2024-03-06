@@ -25,7 +25,8 @@ export function parseSearchInput({ value }: { value: string }): SearchParams {
           type: "latest",
         };
       } else {
-        const [type, value] = from.split(":");
+        const [type, ...valueParts] = from.split(":");
+        const value = valueParts.join(":");
         switch (type) {
           case "offset": {
             const number = parseInt(value, 10);

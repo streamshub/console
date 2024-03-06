@@ -38,8 +38,8 @@ export const SearchWithPartition: Story = {
     await expect(args.onSearch).toHaveBeenCalledWith(
       expect.objectContaining({
         partition: 3,
-        from: {
-          query: "error",
+        query: {
+          value: "error",
           where: "everywhere",
         },
       }),
@@ -70,7 +70,7 @@ export const SearchWithWhere: Story = {
 
 export const SearchFromTimestamp: Story = {
   args: {
-    filterTimestamp: "2023-01-01T00:00:00Z",
+    filterTimestamp: "2024-03-06T09:13:18.662Z",
   },
   play: async ({ canvasElement, args }) => {
     const canvas = within(canvasElement);
@@ -81,7 +81,7 @@ export const SearchFromTimestamp: Story = {
       expect.objectContaining({
         from: {
           type: "timestamp",
-          value: "2023-01-01T00:00:00Z",
+          value: "2024-03-06T09:13:18.662Z",
         },
       }),
     );
@@ -99,10 +99,7 @@ export const SearchUntilLimit: Story = {
     );
     await expect(args.onSearch).toHaveBeenCalledWith(
       expect.objectContaining({
-        until: {
-          type: "limit",
-          value: 50,
-        },
+        limit: 50,
       }),
     );
   },

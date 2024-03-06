@@ -177,7 +177,7 @@ export function FromGroup({
       {currentCategory === "timestamp" && (
         <DateTimePicker
           value={value || timestamp}
-          onChange={(value) => setValue(new Date(value).toISOString())}
+          onChange={(value) => setValue(value)}
         />
       )}
       {currentCategory === "epoch" && (
