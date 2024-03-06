@@ -64,8 +64,8 @@ export function ChartDiskUsage({ usages, available }: ChartDiskUsageProps) {
             labelComponent={
               <ChartLegendTooltip
                 legendData={legendData}
-                title={(datum: Datum) =>
-                  format.dateTime(datum.x, {
+                title={(args) =>
+                  format.dateTime(args?.x ?? 0, {
                     timeZone: "UTC",
                     timeStyle: "medium",
                     dateStyle: "short",
