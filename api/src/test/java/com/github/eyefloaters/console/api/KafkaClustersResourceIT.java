@@ -64,6 +64,7 @@ import static java.util.function.Predicate.not;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.anEmptyMap;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
@@ -522,7 +523,10 @@ class KafkaClustersResourceIT {
     void testDescribeClusterWithCertificates() {
         String clusterId = UUID.randomUUID().toString();
 
-        // Create a Kafka CR with OAuth that proxies to kafka1
+        /*
+         * Create a Kafka CR with OAuth that proxies to kafka1.
+         * test-kafka3 is predefined in KafkaUnsecuredResourceManager with SSL
+         */
         Kafka kafka = new KafkaBuilder(utils.buildKafkaResource("test-kafka3", clusterId, bootstrapServers,
                             new KafkaListenerAuthenticationOAuthBuilder().build()))
                 .editStatus()
@@ -551,6 +555,39 @@ class KafkaClustersResourceIT {
         assertEquals("SSL", clientConfig.get(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG));
         assertEquals("PEM", clientConfig.get(SslConfigs.SSL_TRUSTSTORE_TYPE_CONFIG));
         assertThat((String) clientConfig.get(SslConfigs.SSL_TRUSTSTORE_CERTIFICATES_CONFIG), containsString("FAKE/CERTIFICATE"));
+    }
+
+    @Test
+    void testDescribeClusterWithTLSMissingCertificates() {
+        String clusterId = UUID.randomUUID().toString();
+
+        /*
+         * Create a Kafka CR without certificates
+         * test-kafka3 is predefined in KafkaUnsecuredResourceManager with SSL
+         */
+        Kafka kafka = new KafkaBuilder(utils.buildKafkaResource("test-kafka3", clusterId, bootstrapServers))
+                .build();
+
+        Map<String, Object> clientConfig = mockAdminClient();
+
+        client.resources(Kafka.class).resource(kafka).create();
+
+        await().atMost(Duration.ofSeconds(5))
+            .until(() -> kafkaInformer
+                    .getStore()
+                    .list()
+                    .stream()
+                    .anyMatch(k -> Objects.equals(
+                            Cache.metaNamespaceKeyFunc(kafka),
+                            Cache.metaNamespaceKeyFunc(k))));
+
+        whenRequesting(req -> req.get("{clusterId}", clusterId))
+            .assertThat()
+            .statusCode(is(Status.NOT_FOUND.getStatusCode()));
+            // Ignoring response data since they are from test-kafka-1
+
+        // adminBuilder was never called to update configuration
+        assertThat(clientConfig, is(anEmptyMap()));
     }
 
     @Test
