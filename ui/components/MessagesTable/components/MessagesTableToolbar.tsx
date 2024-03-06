@@ -62,7 +62,11 @@ export function MessagesTableToolbar({
 
         <ToolbarItem>
           <Tooltip content={"Manage columns"}>
-            <Button onClick={onColumnManagement} variant={"plain"}>
+            <Button
+              onClick={onColumnManagement}
+              variant={"plain"}
+              aria-label={"Columns management"}
+            >
               <ColumnsIcon />
             </Button>
           </Tooltip>
