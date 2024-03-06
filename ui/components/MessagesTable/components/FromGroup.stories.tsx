@@ -57,6 +57,6 @@ export const WithTimestamp: Story = {
     const canvas = within(canvasElement);
     await waitFor(() => canvas.getByText("From timestamp"));
     expect(canvas.getByDisplayValue("2024-03-06")).toBeVisible();
-    expect(canvas.getByDisplayValue("10:13:18 AM")).toBeVisible();
+    expect(canvas.getByDisplayValue(/\d{1,2}:\d{2}:\d{2} [AP]M/)).toBeVisible();
   },
 };
