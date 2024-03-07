@@ -119,20 +119,20 @@ export function AdvancedSearch({
     const { query, from, limit, partition } = parameters;
     return (() => {
       let composed: string[] = [];
-      if (from) {
+      if (from !== undefined) {
         if ("value" in from) {
           composed.push(`messages=${from.type}:${from.value}`);
         } else {
           composed.push(`messages=latest`);
         }
       }
-      if (limit) {
+      if (limit !== undefined) {
         composed.push(`retrieve=${limit}`);
       }
-      if (partition) {
+      if (partition !== undefined) {
         composed.push(`partition=${partition}`);
       }
-      if (query) {
+      if (query !== undefined) {
         composed.push(query.value);
         if (query.where !== "everywhere") {
           composed.push(`where=${query.where}`);

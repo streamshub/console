@@ -259,7 +259,7 @@ function Refresher({
         ts,
         error,
       } = await getTopicMessages(kafkaId, topicId, {
-        pageSize: 10,
+        pageSize: 50,
         query,
         where,
         partition,
