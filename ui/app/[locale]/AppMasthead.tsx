@@ -1,7 +1,9 @@
 "use client";
 import { useAppLayout } from "@/app/[locale]/AppLayoutProvider";
+import { TechPreviewPopover } from "@/components/TechPreviewPopover";
 import {
   Button,
+  Label,
   Masthead,
   MastheadContent,
   MastheadMain,
@@ -12,11 +14,7 @@ import {
   ToolbarGroup,
   ToolbarItem,
 } from "@/libs/patternfly/react-core";
-import {
-  BarsIcon,
-  CogIcon,
-  QuestionCircleIcon,
-} from "@/libs/patternfly/react-icons";
+import { BarsIcon, QuestionCircleIcon } from "@/libs/patternfly/react-icons";
 import { FeedbackModal } from "@patternfly/react-user-feedback";
 import { useSession } from "next-auth/react";
 import { useTranslations } from "next-intl";
@@ -76,12 +74,11 @@ export function AppMasthead() {
                   visibility={{ default: "hidden", lg: "visible" }}
                 >
                   <ToolbarItem>
-                    <Button
-                      aria-label="Settings"
-                      variant={"plain"}
-                      icon={<CogIcon />}
-                      ouiaId={"setting-button"}
-                    />
+                    <TechPreviewPopover>
+                      <Label color={"blue"} isCompact={true}>
+                        Tech preview
+                      </Label>
+                    </TechPreviewPopover>
                   </ToolbarItem>
                   <ToolbarItem>
                     <Button
