@@ -97,14 +97,14 @@
       "value": "Value"
     },
     "filter": {
-      "epoch": "Unix timestamp",
+      "epoch": "From Unix timestamp",
       "epoch_aria_label": "Specify Unix timestamp",
       "epoch_placeholder": "Specify Unix timestamp",
-      "latest": "Now (latest messages)",
-      "offset": "Offset",
+      "latest": "Latest messages",
+      "offset": "From offset",
       "offset_aria_label": "Specify offset",
       "offset_placeholder": "Specify offset",
-      "timestamp": "Timestamp",
+      "timestamp": "From timestamp",
       "timestamp_aria_label": "Specify timestamp",
       "timestamp_toggle_calendar_menu": "Toggle calendar menu",
       "timestamp_toggle_time_menu": "Toggle time menu"
@@ -125,7 +125,7 @@
     "partition_option": "Partition {value}",
     "partitions_hidden": "{count, plural, =0 {And one more partition} {And {count} more partitions}}",
     "per_page_aria_label": "Limit to {value} messages",
-    "per_page_label": "Limit to <strong>{value}</strong> messages",
+    "per_page_label": "is <strong>{value}</strong>",
     "select_partition_aria_label": "Specify partition",
     "select_partition_of_count": "of {partitions}",
     "select_partition_typeahead": "Specify partition value",

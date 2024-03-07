@@ -5,99 +5,97 @@ import {
   GetTopicMessagesReturn,
 } from "@/api/messages/actions";
 import { Message } from "@/api/messages/schema";
-import { MessagesTableSkeleton } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/_components/MessagesTableSkeleton";
-import { NoDataEmptyState } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/_components/NoDataEmptyState";
-import { useParseSearchParams } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/parseSearchParams";
-import { SearchParams } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/types";
+import { MessagesTable } from "@/components/MessagesTable/MessagesTable";
+import { MessagesTableSkeleton } from "@/components/MessagesTable/MessagesTableSkeleton";
+import { NoDataEmptyState } from "@/components/MessagesTable/NoDataEmptyState";
+import { SearchParams } from "@/components/MessagesTable/types";
 import { Alert, PageSection } from "@/libs/patternfly/react-core";
 import { useFilterParams } from "@/utils/useFilterParams";
 import { AlertActionLink } from "@patternfly/react-core";
+import { PauseIcon, PlayIcon } from "@patternfly/react-icons";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState, useTransition } from "react";
-import { MessagesTable } from "./_components/MessagesTable";
+import {
+  startTransition,
+  useCallback,
+  useEffect,
+  useOptimistic,
+  useRef,
+  useState,
+} from "react";
+import { useParseSearchParams } from "./parseSearchParams";
 
 export function ConnectedMessagesTable({
   kafkaId,
   topicId,
-  selectedMessage,
+  topicName,
+  selectedMessage: serverSelectedMessage,
   partitions,
 }: {
   kafkaId: string;
   topicId: string;
+  topicName: string;
   selectedMessage: Message | undefined;
   partitions: number;
 }) {
   const [params, sp] = useParseSearchParams();
   const updateUrl = useFilterParams(sp);
   const router = useRouter();
-  const { limit, live, partition, query, where, offset, timestamp, epoch, _ } =
+  const { limit, partition, query, where, offset, timestamp, epoch, _ } =
     params;
+  const [selectedMessage, setOptimisticSelectedMessage] = useOptimistic<
+    Message | undefined
+  >(serverSelectedMessage);
 
   const [{ messages, ts, error }, setMessages] =
     useState<GetTopicMessagesReturn>({
       messages: undefined,
       ts: undefined,
     });
-  const [isPending, startTransition] = useTransition();
 
-  const isFiltered = partition || epoch || offset || timestamp || query;
-
-  function onSearch({ query, from, until, partition }: SearchParams) {
+  function onSearch({ query, from, limit, partition }: SearchParams) {
     setMessages({ messages: undefined, ts: undefined, error: undefined });
-    startTransition(() => {
-      const newQuery = {
-        query: query?.value,
-        where: query?.where,
-        partition,
-        offset: from.type === "offset" ? from.value : "",
-        timestamp: from.type === "timestamp" ? from.value : "",
-        epoch: from.type === "epoch" ? from.value : "",
-        limit: until.type === "limit" ? until.value : "",
-        live: until.type === "live",
-        _: Date.now(),
-      };
-      updateUrl(newQuery);
-    });
+    const newQuery = {
+      query: query?.value,
+      where: query?.where,
+      partition,
+      offset: from.type === "offset" ? from.value : "",
+      timestamp: from.type === "timestamp" ? from.value : "",
+      epoch: from.type === "epoch" ? from.value : "",
+      retrieve: limit,
+      _: Date.now(),
+    };
+    updateUrl(newQuery);
   }
 
   function setSelected(message: Message) {
-    startTransition(() => {
-      updateUrl({
-        ...params,
-        selected: `${message.attributes.partition}:${message.attributes.offset}`,
-      });
+    startTransition(() => setOptimisticSelectedMessage(message));
+    updateUrl({
+      ...params,
+      selected: `${message.attributes.partition}:${message.attributes.offset}`,
     });
   }
 
   function deselectMessage() {
-    startTransition(() => {
-      updateUrl({
-        ...params,
-        selected: undefined,
-      });
+    startTransition(() => setOptimisticSelectedMessage(undefined));
+    updateUrl({
+      ...params,
+      selected: undefined,
+    });
+  }
+
+  function onReset() {
+    onSearch({
+      query: undefined,
+      from: {
+        type: "latest",
+      },
+      limit: 50,
+      partition: undefined,
     });
   }
 
   const fetchMessages = useCallback(
-    async function fetchMessages({
-      limit,
-      offset,
-      partition,
-      query,
-      where,
-      timestamp,
-      epoch,
-      append = false,
-    }: {
-      limit?: number;
-      offset?: number;
-      partition?: number;
-      query?: string;
-      where?: "key" | "headers" | "value" | `jq:${string}`;
-      timestamp?: string;
-      epoch?: number;
-      append?: boolean;
-    }) {
+    async function fetchMessages() {
       const filter = (() => {
         if (offset) return { type: "offset" as const, value: offset };
         if (timestamp) return { type: "timestamp" as const, value: timestamp };
@@ -110,109 +108,70 @@ export function ConnectedMessagesTable({
         ts,
         error,
       } = await getTopicMessages(kafkaId, topicId, {
-        pageSize: limit ?? 50,
+        pageSize: limit === "continuously" ? 50 : limit ?? 50,
         query,
         where,
         partition,
         filter,
-        maxValueLength: 150,
       });
       if (error) {
         setMessages({ messages: newMessages, ts, error });
-      } else if (append) {
-        startTransition(() => {
-          setMessages(({ messages = [] }) => {
-            const messagesToAdd = newMessages.filter(
-              (m) =>
-                !messages.find(
-                  (m2) =>
-                    m2.attributes.offset === m.attributes.offset &&
-                    m2.attributes.partition === m.attributes.partition,
-                ),
-            );
-
-            return {
-              messages: Array.from(new Set([...messagesToAdd, ...messages])),
-              ts,
-            };
-          });
-        });
       } else {
-        startTransition(() => {
-          setMessages({
-            messages: newMessages,
-            ts,
-          });
+        setMessages({
+          messages: newMessages,
+          ts,
         });
       }
     },
-    [kafkaId, topicId],
-  );
-
-  useEffect(() => {
-    let t: ReturnType<typeof setTimeout> | undefined;
-
-    async function tick() {
-      if (live && messages) {
-        const latestTs = messages[0]?.attributes.timestamp;
-        await fetchMessages({
-          limit: 50,
-          partition,
-          query,
-          where,
-          timestamp: latestTs,
-          append: true,
-        });
-      }
-      t = setTimeout(tick, 1000);
-    }
-
-    t = setTimeout(tick, 1000);
-    return () => {
-      clearTimeout(t);
-      t = undefined;
-    };
-  }, [
-    live,
-    fetchMessages,
-    limit,
-    offset,
-    partition,
-    query,
-    where,
-    timestamp,
-    epoch,
-    messages,
-  ]);
-
-  useEffect(() => {
-    void fetchMessages({
+    [
+      epoch,
+      kafkaId,
       limit,
       offset,
       partition,
       query,
-      where,
       timestamp,
-      epoch,
-    });
+      topicId,
+      where,
+    ],
+  );
+
+  useEffect(() => {
+    void fetchMessages();
   }, [
     fetchMessages,
-    limit,
-    offset,
-    partition,
-    query,
-    timestamp,
-    _,
-    where,
-    epoch,
+    _, // when clicking search multiple times, the search parameters remain the same but a timestamp is added to _. We listen for changes to _ to know we have to trigger a new fetch
   ]);
+
+  const onUpdates = useCallback((newMessages: Message[], ts?: string) => {
+    startTransition(() =>
+      setMessages(({ messages = [] }) => {
+        const messagesToAdd = newMessages.filter(
+          (m) =>
+            !messages.find(
+              (m2) =>
+                m2.attributes.offset === m.attributes.offset &&
+                m2.attributes.partition === m.attributes.partition,
+            ),
+        );
+        return {
+          messages: Array.from(new Set([...messagesToAdd, ...messages])).slice(
+            0,
+            100,
+          ),
+          ts: ts ? new Date(ts) : undefined,
+        };
+      }),
+    );
+  }, []);
+
+  const isFiltered = partition || epoch || offset || timestamp || query;
 
   switch (true) {
     case messages === undefined:
       return (
         <MessagesTableSkeleton
           filterLimit={limit}
-          filterLive={live}
           filterTimestamp={timestamp}
           filterPartition={partition}
           filterOffset={offset}
@@ -221,7 +180,7 @@ export function ConnectedMessagesTable({
           filterWhere={where}
         />
       );
-    case !isFiltered && messages?.length === 0:
+    case !isFiltered && messages && messages?.length === 0:
       return <NoDataEmptyState />;
     case error === "topic-not-found":
       return (
@@ -243,35 +202,153 @@ export function ConnectedMessagesTable({
       );
     default:
       return (
-        <MessagesTable
-          selectedMessage={selectedMessage}
-          lastUpdated={ts}
-          messages={messages}
-          partitions={partitions}
-          filterLimit={limit}
-          filterLive={live}
-          filterQuery={query}
-          filterWhere={where}
-          filterOffset={offset}
-          filterEpoch={epoch}
-          filterTimestamp={timestamp}
-          filterPartition={partition}
-          onSearch={onSearch}
-          onSelectMessage={setSelected}
-          onDeselectMessage={deselectMessage}
-        />
+        <>
+          <MessagesTable
+            topicName={topicName}
+            selectedMessage={selectedMessage}
+            lastUpdated={ts}
+            messages={messages}
+            partitions={partitions}
+            filterLimit={limit}
+            filterQuery={query}
+            filterWhere={where}
+            filterOffset={offset}
+            filterEpoch={epoch}
+            filterTimestamp={timestamp}
+            filterPartition={partition}
+            onSearch={onSearch}
+            onSelectMessage={setSelected}
+            onDeselectMessage={deselectMessage}
+            onReset={onReset}
+          >
+            {limit === "continuously" && (
+              <Refresher
+                topicId={topicId}
+                kafkaId={kafkaId}
+                query={query}
+                where={where}
+                partition={partition}
+                onUpdates={onUpdates}
+              />
+            )}
+          </MessagesTable>
+        </>
       );
-
-    /*
-    <ConnectedRefreshSelector
-      isRefreshing={isPending}
-      isLive={automaticRefresh}
-      refreshInterval={refreshInterval}
-      lastRefresh={ts}
-      onRefresh={() => doRefresh()}
-      onRefreshInterval={setRefreshInterval}
-      onToggleLive={setAutomaticRefresh}
-    />
-*/
   }
+}
+
+function Refresher({
+  kafkaId,
+  topicId,
+  query,
+  where,
+  partition,
+  onUpdates,
+}: {
+  kafkaId: string;
+  topicId: string;
+  query?: string;
+  where: any;
+  partition?: number;
+  onUpdates: (messages: Message[], ts?: string) => void;
+}) {
+  const previousTs = useRef<string>(new Date().toISOString());
+  const isFetching = useRef(false);
+  const [isPaused, setIsPaused] = useState(false);
+
+  useEffect(() => {
+    let t: ReturnType<typeof setInterval> | undefined;
+
+    async function appendMessages() {
+      const { messages: newMessages = [], error } = await getTopicMessages(
+        kafkaId,
+        topicId,
+        {
+          pageSize: 50,
+          query,
+          where,
+          partition,
+          filter: {
+            type: "timestamp",
+            value: previousTs.current,
+          },
+        },
+      );
+      if (!error) {
+        const sortedMessages = newMessages
+          .sort(
+            (a, b) =>
+              new Date(b.attributes.timestamp).getTime() -
+              new Date(a.attributes.timestamp).getTime(),
+          )
+          .sort((a, b) => b.attributes.offset - a.attributes.offset);
+        return {
+          messages: sortedMessages,
+          ts: sortedMessages[0]?.attributes.timestamp,
+        };
+      }
+    }
+
+    async function tick() {
+      // console.log("tick", {
+      //   ts: Date.now(),
+      //   fetching: isFetching.current,
+      //   kafkaId,
+      //   topicId,
+      //   partition,
+      //   query,
+      //   where,
+      // });
+      if (!isFetching.current && !isPaused) {
+        isFetching.current = true;
+        const res = await appendMessages();
+        if (!isPaused && res) {
+          if (res.ts) {
+            previousTs.current = res.ts;
+          }
+          onUpdates(res.messages, res.ts);
+        }
+        isFetching.current = false;
+      }
+    }
+
+    t = setInterval(tick, 1000);
+    void tick();
+
+    return () => {
+      // console.log("destroy", {
+      //   kafkaId,
+      //   topicId,
+      //   partition,
+      //   query,
+      //   where,
+      // });
+      clearInterval(t);
+      t = undefined;
+    };
+  }, [isPaused, kafkaId, onUpdates, partition, query, topicId, where]);
+
+  return (
+    <Alert
+      title={
+        "The screen displays only the most recent 100 messages, with older messages rotating out."
+      }
+      variant={"info"}
+      isInline={true}
+      className={"pf-v5-u-mx-md"}
+      actionLinks={
+        <AlertActionLink onClick={() => setIsPaused((p) => !p)}>
+          {isPaused ? (
+            <>
+              <PlayIcon /> Continue
+            </>
+          ) : (
+            <>
+              <PauseIcon /> Pause
+            </>
+          )}
+        </AlertActionLink>
+      }
+    />
+  );
 }

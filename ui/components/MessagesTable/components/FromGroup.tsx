@@ -1,10 +1,9 @@
 import {
   Dropdown,
   DropdownItem,
-  InputGroup,
   TextInput,
 } from "@/libs/patternfly/react-core";
-import { Divider, MenuToggle } from "@patternfly/react-core";
+import { Divider, Flex, FlexItem, MenuToggle } from "@patternfly/react-core";
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useState } from "react";
 import { DateTimePicker } from "./DateTimePicker";
@@ -110,88 +109,92 @@ export function FromGroup({
   ]);
 
   return (
-    <InputGroup>
-      <Dropdown
-        data-testid={"filter-group-dropdown"}
-        toggle={(toggleRef) => (
-          <MenuToggle
-            onClick={() => setIsOpen((v) => !v)}
-            isExpanded={isOpen}
-            data-testid={"filter-group"}
-            ref={toggleRef}
+    <Flex direction={{ default: "column" }}>
+      <FlexItem>
+        <Dropdown
+          data-testid={"filter-group-dropdown"}
+          toggle={(toggleRef) => (
+            <MenuToggle
+              onClick={() => setIsOpen((v) => !v)}
+              isExpanded={isOpen}
+              data-testid={"filter-group"}
+              ref={toggleRef}
+              className={"pf-v5-u-w-100"}
+            >
+              {labels[currentCategory]}
+            </MenuToggle>
+          )}
+          isOpen={isOpen}
+          onOpenChange={setIsOpen}
+          onSelect={() => setIsOpen(false)}
+        >
+          <DropdownItem
+            key="offset"
+            value="offset"
+            autoFocus={currentCategory === "offset"}
+            onClick={() => setCurrentCategory("offset")}
           >
-            {labels[currentCategory]}
-          </MenuToggle>
+            {labels["offset"]}
+          </DropdownItem>
+          <DropdownItem
+            key="timestamp"
+            value="timestamp"
+            autoFocus={currentCategory === "timestamp"}
+            onClick={() => setCurrentCategory("timestamp")}
+          >
+            {labels["timestamp"]}
+          </DropdownItem>
+          <DropdownItem
+            key="epoch"
+            value="epoch"
+            autoFocus={currentCategory === "epoch"}
+            onClick={() => setCurrentCategory("epoch")}
+          >
+            {labels["epoch"]}
+          </DropdownItem>
+          <Divider component="li" key="separator" />
+          <DropdownItem
+            key="latest"
+            value="latest"
+            autoFocus={currentCategory === "latest"}
+            onClick={() => {
+              setCurrentCategory("latest");
+              onLatest();
+            }}
+          >
+            {labels["latest"]}
+          </DropdownItem>
+        </Dropdown>
+      </FlexItem>
+      <FlexItem>
+        {currentCategory === "offset" && (
+          <TextInput
+            type={"number"}
+            aria-label={t("filter.offset_aria_label")}
+            placeholder={t("filter.offset_placeholder")}
+            onChange={(_, value) => setValue(value)}
+            value={value}
+            defaultValue={offset}
+          />
         )}
-        isOpen={isOpen}
-        onOpenChange={setIsOpen}
-        onSelect={() => setIsOpen(false)}
-      >
-        <DropdownItem
-          key="offset"
-          value="offset"
-          autoFocus={currentCategory === "offset"}
-          onClick={() => setCurrentCategory("offset")}
-        >
-          {labels["offset"]}
-        </DropdownItem>
-        <DropdownItem
-          key="timestamp"
-          value="timestamp"
-          autoFocus={currentCategory === "timestamp"}
-          onClick={() => setCurrentCategory("timestamp")}
-        >
-          {labels["timestamp"]}
-        </DropdownItem>
-        <DropdownItem
-          key="epoch"
-          value="epoch"
-          autoFocus={currentCategory === "epoch"}
-          onClick={() => setCurrentCategory("epoch")}
-        >
-          {labels["epoch"]}
-        </DropdownItem>
-        <Divider component="li" key="separator" />
-        <DropdownItem
-          key="latest"
-          value="latest"
-          autoFocus={currentCategory === "latest"}
-          onClick={() => {
-            setCurrentCategory("latest");
-            onLatest();
-          }}
-        >
-          {labels["latest"]}
-        </DropdownItem>
-      </Dropdown>
-      {currentCategory === "offset" && (
-        <TextInput
-          type={"number"}
-          aria-label={t("filter.offset_aria_label")}
-          placeholder={t("filter.offset_placeholder")}
-          onChange={(_, value) => setValue(value)}
-          value={value}
-          defaultValue={offset}
-        />
-      )}
-      {currentCategory === "timestamp" && (
-        <DateTimePicker
-          value={value || timestamp}
-          onChange={(value) => setValue(new Date(value).toISOString())}
-        />
-      )}
-      {currentCategory === "epoch" && (
-        <TextInput
-          type={"number"}
-          aria-label={t("filter.epoch_aria_label")}
-          placeholder={t("filter.epoch_placeholder")}
-          className="pf-u-flex-basis-auto pf-u-flex-grow-0 pf-u-w-initial"
-          size={t("filter.epoch_placeholder").length}
-          onChange={(_, value) => setValue(value)}
-          value={value}
-          defaultValue={epoch}
-        />
-      )}
-    </InputGroup>
+        {currentCategory === "timestamp" && (
+          <DateTimePicker
+            value={value || timestamp}
+            onChange={(value) => setValue(value)}
+          />
+        )}
+        {currentCategory === "epoch" && (
+          <TextInput
+            type={"number"}
+            aria-label={t("filter.epoch_aria_label")}
+            placeholder={t("filter.epoch_placeholder")}
+            size={t("filter.epoch_placeholder").length}
+            onChange={(_, value) => setValue(value)}
+            value={value}
+            defaultValue={epoch}
+          />
+        )}
+      </FlexItem>
+    </Flex>
   );
 }

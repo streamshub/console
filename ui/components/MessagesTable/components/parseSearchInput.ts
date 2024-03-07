@@ -1,14 +1,11 @@
-import { SearchParams } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/types";
+import { SearchParams } from "../types";
 
 export function parseSearchInput({ value }: { value: string }): SearchParams {
   let sp: SearchParams = {
     from: {
       type: "latest",
     },
-    until: {
-      type: "limit",
-      value: 50,
-    },
+    limit: 50,
     partition: undefined,
     query: {
       where: "everywhere",
@@ -21,14 +18,15 @@ export function parseSearchInput({ value }: { value: string }): SearchParams {
     if (p.indexOf(`where=`) === 0) {
       const [_, where] = p.split("=");
       sp.query!.where = parseWhere(where);
-    } else if (p.indexOf(`from=`) === 0) {
+    } else if (p.indexOf(`messages=`) === 0) {
       const [_, from] = p.split("=");
-      if (from === "now") {
+      if (from === "latest") {
         sp.from = {
           type: "latest",
         };
       } else {
-        const [type, value] = from.split(":");
+        const [type, ...valueParts] = from.split(":");
+        const value = valueParts.join(":");
         switch (type) {
           case "offset": {
             const number = parseInt(value, 10);
@@ -59,26 +57,21 @@ export function parseSearchInput({ value }: { value: string }): SearchParams {
           }
         }
       }
-    } else if (p.indexOf("until=") === 0) {
-      const [_, until] = p.split("=");
-      const [type, value] = until.split(":");
-      switch (type) {
-        case "limit": {
-          const number = parseInt(value, 10);
-          if (Number.isSafeInteger(number)) {
-            sp.until = {
-              type: "limit",
-              value: number,
-            };
-          }
-          break;
+    } else if (p.indexOf("retrieve=") === 0) {
+      const [_, limit] = p.split("=");
+      if (limit === "continuously") {
+        sp.limit = "continuously";
+      } else {
+        const number = parseInt(limit, 10);
+        if (Number.isSafeInteger(number)) {
+          sp.limit = number;
         }
-
-        case "live": {
-          sp.until = {
-            type: "live",
-          };
-        }
+      }
+    } else if (p.indexOf("partition=") === 0) {
+      const [_, partition] = p.split("=");
+      const number = parseInt(partition, 10);
+      if (Number.isSafeInteger(number)) {
+        sp.partition = number;
       }
     } else {
       queryParts.push(p);
@@ -102,9 +95,6 @@ export function parseWhere(where: string | undefined) {
     case "value":
       return "value" as const;
     default:
-      if (where?.indexOf("jq:") === 0) {
-        return where as `jq:${string}`;
-      }
       return "everywhere" as const;
   }
 }

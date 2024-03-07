@@ -4,15 +4,10 @@ import { useState } from "react";
 
 export type LimitSelectorProps = {
   value: number;
-  isDisabled: boolean;
   onChange: (value: number) => void;
 };
 
-export function LimitSelector({
-  value,
-  isDisabled,
-  onChange,
-}: LimitSelectorProps) {
+export function LimitSelector({ value, onChange }: LimitSelectorProps) {
   const t = useTranslations("message-browser");
   const [isOpen, setIsOpen] = useState(false);
   const toggleOpen = () => setIsOpen((o) => !o);
@@ -29,8 +24,7 @@ export function LimitSelector({
           ref={toggleRef}
           onClick={toggleOpen}
           isExpanded={isOpen}
-          isDisabled={isDisabled}
-          variant={"plainText"}
+          className={"pf-v5-u-w-100"}
         >
           {t.rich("per_page_label", { value })}
         </MenuToggle>

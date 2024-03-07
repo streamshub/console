@@ -16,6 +16,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
       - name: Install Dependencies
         run: npm install
         working-directory: ./ui
@@ -25,9 +26,17 @@ jobs:
         working-directory: ./ui
 
       - name: Publish to Chromatic
+        id: chromatic
         uses: chromaui/action@v11
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           projectToken: chpt_0314d7b0d66ad0c
           storybookBuildDir: "storybook-static"
           workingDir: "./ui"
+          exitOnceUploaded: true
+
+      - name: Test the deployed Storybook
+        run: |
+          npx playwright install
+          npm run test-storybook -- --url ${{ steps.chromatic.outputs.storybookUrl }}
+        working-directory: ./ui

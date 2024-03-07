@@ -23,9 +23,11 @@ import {
   Tooltip,
 } from "@/libs/patternfly/react-core";
 import { HelpIcon } from "@/libs/patternfly/react-icons";
+import { ClipboardCopy } from "@patternfly/react-core";
 import { useTranslations } from "next-intl";
+import { useMemo } from "react";
 import { allExpanded, defaultStyles, JsonView } from "react-json-view-lite";
-import { NoDataCell } from "./NoDataCell";
+import { NoData } from "./NoData";
 import { maybeJson } from "./utils";
 
 export type MessageDetailsProps = {
@@ -41,6 +43,18 @@ export function MessageDetails({
 }: MessageDetailsProps) {
   const t = useTranslations("message-browser");
 
+  const body = useMemo(() => {
+    return (
+      message && (
+        <MessageDetailsBody
+          defaultTab={defaultTab}
+          messageKey={message.attributes.key}
+          {...message}
+        />
+      )
+    );
+  }, [message, defaultTab]);
+
   return (
     <DrawerPanelContent isResizable={true} minSize={"400px"}>
       <DrawerHead>
@@ -51,15 +65,7 @@ export function MessageDetails({
           <DrawerCloseButton onClick={onClose} />
         </DrawerActions>
       </DrawerHead>
-      <DrawerContentBody>
-        {message && (
-          <MessageDetailsBody
-            defaultTab={defaultTab}
-            messageKey={message.attributes.key}
-            {...message}
-          />
-        )}
-      </DrawerContentBody>
+      <DrawerContentBody>{body}</DrawerContentBody>
     </DrawerPanelContent>
   );
 }
@@ -74,6 +80,8 @@ export function MessageDetailsBody({
   ...message
 }: MessageDetailsBodyProps) {
   const t = useTranslations("message-browser");
+  const [key, isKeyJson] = maybeJson(message.attributes.key || "{}");
+  const [value, isValueJson] = maybeJson(message.attributes.value || "{}");
 
   return (
     <Flex direction={{ default: "column" }} data-testid={"message-details"}>
@@ -107,7 +115,7 @@ export function MessageDetailsBody({
             <DescriptionListDescription>
               <DateTime
                 value={message.attributes.timestamp}
-                empty={<NoDataCell columnLabel={t("field.timestamp")} />}
+                empty={<NoData />}
               />
             </DescriptionListDescription>
           </DescriptionListGroup>
@@ -118,7 +126,7 @@ export function MessageDetailsBody({
             <DescriptionListDescription>
               <DateTime
                 value={message.attributes.timestamp}
-                empty={<NoDataCell columnLabel={t("field.timestamp")} />}
+                empty={<NoData />}
                 tz={"UTC"}
               />
             </DescriptionListDescription>
@@ -131,7 +139,7 @@ export function MessageDetailsBody({
                   new Date(message.attributes.timestamp).getTime() / 1000,
                 )
               ) : (
-                <NoDataCell columnLabel={t("field.epoch")} />
+                <NoData />
               )}
             </DescriptionListDescription>
           </DescriptionListGroup>
@@ -144,26 +152,53 @@ export function MessageDetailsBody({
             eventKey={"value"}
             title={<TabTitleText>{t("field.value")}</TabTitleText>}
           >
-            <JsonView
-              data={maybeJson(message.attributes.value || "{}")}
-              shouldExpandNode={allExpanded}
-              style={defaultStyles}
-            />
+            <ClipboardCopy
+              isCode
+              isReadOnly
+              hoverTip="Copy"
+              clickTip="Copied"
+              variant={isValueJson ? "inline" : "expansion"}
+              isExpanded={!isValueJson}
+            >
+              {message.attributes.value ?? "-"}
+            </ClipboardCopy>
+            {isValueJson && (
+              <JsonView
+                data={value}
+                shouldExpandNode={allExpanded}
+                style={defaultStyles}
+              />
+            )}
           </Tab>
           <Tab
             eventKey={"key"}
             title={<TabTitleText>{t("field.key")}</TabTitleText>}
           >
-            <JsonView
-              data={maybeJson(message.attributes.key || "{}")}
-              shouldExpandNode={allExpanded}
-              style={defaultStyles}
-            />
+            <ClipboardCopy
+              isCode
+              isReadOnly
+              hoverTip="Copy"
+              clickTip="Copied"
+              variant={isKeyJson ? "inline" : "expansion"}
+              isExpanded={!isKeyJson}
+            >
+              {message.attributes.key ?? "-"}
+            </ClipboardCopy>
+            {isKeyJson && (
+              <JsonView
+                data={key}
+                shouldExpandNode={allExpanded}
+                style={defaultStyles}
+              />
+            )}
           </Tab>
           <Tab
             eventKey={"headers"}
             title={<TabTitleText>{t("field.headers")}</TabTitleText>}
           >
+            <ClipboardCopy isCode isReadOnly hoverTip="Copy" clickTip="Copied">
+              {JSON.stringify(message.attributes.headers ?? {})}
+            </ClipboardCopy>
             <JsonView
               data={message.attributes.headers || {}}
               shouldExpandNode={allExpanded}

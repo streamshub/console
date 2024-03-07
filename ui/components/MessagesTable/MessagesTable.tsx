@@ -1,14 +1,7 @@
 import { Message } from "@/api/messages/schema";
-import {
-  Column,
-  ColumnsModal,
-  useColumnLabels,
-} from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/_components/ColumnsModal";
-import { MessagesTableToolbar } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/_components/MessagesTableToolbar";
-import { NoResultsEmptyState } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/_components/NoResultsEmptyState";
-import { SearchParams } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/types";
 import { Bytes } from "@/components/Bytes";
 import { DateTime } from "@/components/DateTime";
+import { SearchParams } from "@/components/MessagesTable/types";
 import { Number } from "@/components/Number";
 import { ResponsiveTable } from "@/components/Table";
 import {
@@ -29,10 +22,20 @@ import {
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useTranslations } from "next-intl";
 import { PropsWithChildren, useEffect, useRef, useState } from "react";
-import { MessageDetails, MessageDetailsProps } from "./MessageDetails";
-import { NoDataCell } from "./NoDataCell";
-import { UnknownValuePreview } from "./UnknownValuePreview";
-import { beautifyUnknownValue, isSameMessage } from "./utils";
+import {
+  Column,
+  ColumnsModal,
+  useColumnLabels,
+} from "./components/ColumnsModal";
+import {
+  MessageDetails,
+  MessageDetailsProps,
+} from "./components/MessageDetails";
+import { MessagesTableToolbar } from "./components/MessagesTableToolbar";
+import { NoData } from "./components/NoData";
+import { NoResultsEmptyState } from "./components/NoResultsEmptyState";
+import { UnknownValuePreview } from "./components/UnknownValuePreview";
+import { beautifyUnknownValue, isSameMessage } from "./components/utils";
 
 const columnWidths: Record<Column, BaseCellProps["width"]> = {
   "offset-partition": 10,
@@ -51,15 +54,15 @@ const defaultColumns: Column[] = [
   "value",
 ];
 
-export type MessageBrowserProps = {
+export type MessagesTableProps = {
   selectedMessage?: Message;
   lastUpdated?: Date;
+  topicName: string;
   messages: Message[];
   partitions: number;
-  filterLimit?: number;
-  filterLive?: boolean;
+  filterLimit?: number | "continuously";
   filterQuery?: string;
-  filterWhere?: "key" | "headers" | "value" | `jq:${string}`;
+  filterWhere?: "key" | "headers" | "value";
   filterOffset?: number;
   filterEpoch?: number;
   filterTimestamp?: string;
@@ -67,15 +70,16 @@ export type MessageBrowserProps = {
   onSearch: (params: SearchParams) => void;
   onSelectMessage: (message: Message) => void;
   onDeselectMessage: () => void;
+  onReset: () => void;
 };
 
 export function MessagesTable({
   lastUpdated,
   selectedMessage,
+  topicName,
   messages,
   partitions,
   filterLimit,
-  filterLive,
   filterQuery,
   filterWhere,
   filterOffset,
@@ -85,7 +89,9 @@ export function MessagesTable({
   onSearch,
   onSelectMessage,
   onDeselectMessage,
-}: MessageBrowserProps) {
+  onReset,
+  children,
+}: PropsWithChildren<MessagesTableProps>) {
   const t = useTranslations("message-browser");
   const columnLabels = useColumnLabels();
   const [showColumnsManagement, setShowColumnsManagement] = useState(false);
@@ -149,9 +155,10 @@ export function MessagesTable({
         >
           <OuterScrollContainer>
             <MessagesTableToolbar
+              topicName={topicName}
+              messages={messages}
               partitions={partitions}
               filterLimit={filterLimit}
-              filterLive={filterLive}
               filterQuery={filterQuery}
               filterWhere={filterWhere}
               filterOffset={filterOffset}
@@ -161,6 +168,7 @@ export function MessagesTable({
               onSearch={onSearch}
               onColumnManagement={() => setShowColumnsManagement(true)}
             />
+            {children}
             <InnerScrollContainer>
               <div ref={parentRef}>
                 <ResponsiveTable
@@ -197,9 +205,7 @@ export function MessagesTable({
                   )}
                   renderCell={({ column, row: vrow, colIndex, Td, key }) => {
                     const row = messages[vrow.index];
-                    const empty = (
-                      <NoDataCell columnLabel={columnLabels[column]} />
-                    );
+                    const empty = <NoData />;
 
                     function Cell({ children }: PropsWithChildren) {
                       return (
@@ -332,7 +338,7 @@ export function MessagesTable({
                     onSelectMessage(row);
                   }}
                 >
-                  <NoResultsEmptyState />
+                  <NoResultsEmptyState onReset={onReset} />
                 </ResponsiveTable>
               </div>
             </InnerScrollContainer>

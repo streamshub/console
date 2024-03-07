@@ -33,6 +33,15 @@ export const Default: Story = {
   },
 };
 
+export const ZeroIsANumber: Story = {
+  args: {
+    value: 0,
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByText(/0/)).toBeInTheDocument();
+  },
+};
 export const LargeNumber: Story = {
   args: {
     value: 1000000,
