@@ -32,7 +32,7 @@ import {
   MessageDetailsProps,
 } from "./components/MessageDetails";
 import { MessagesTableToolbar } from "./components/MessagesTableToolbar";
-import { NoDataCell } from "./components/NoDataCell";
+import { NoData } from "./components/NoData";
 import { NoResultsEmptyState } from "./components/NoResultsEmptyState";
 import { UnknownValuePreview } from "./components/UnknownValuePreview";
 import { beautifyUnknownValue, isSameMessage } from "./components/utils";
@@ -197,9 +197,7 @@ export function MessagesTable({
                   )}
                   renderCell={({ column, row: vrow, colIndex, Td, key }) => {
                     const row = messages[vrow.index];
-                    const empty = (
-                      <NoDataCell columnLabel={columnLabels[column]} />
-                    );
+                    const empty = <NoData />;
 
                     function Cell({ children }: PropsWithChildren) {
                       return (

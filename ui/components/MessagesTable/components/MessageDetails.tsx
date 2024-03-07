@@ -27,7 +27,7 @@ import { ClipboardCopy } from "@patternfly/react-core";
 import { useTranslations } from "next-intl";
 import { useMemo } from "react";
 import { allExpanded, defaultStyles, JsonView } from "react-json-view-lite";
-import { NoDataCell } from "./NoDataCell";
+import { NoData } from "./NoData";
 import { maybeJson } from "./utils";
 
 export type MessageDetailsProps = {
@@ -115,7 +115,7 @@ export function MessageDetailsBody({
             <DescriptionListDescription>
               <DateTime
                 value={message.attributes.timestamp}
-                empty={<NoDataCell columnLabel={t("field.timestamp")} />}
+                empty={<NoData />}
               />
             </DescriptionListDescription>
           </DescriptionListGroup>
@@ -126,7 +126,7 @@ export function MessageDetailsBody({
             <DescriptionListDescription>
               <DateTime
                 value={message.attributes.timestamp}
-                empty={<NoDataCell columnLabel={t("field.timestamp")} />}
+                empty={<NoData />}
                 tz={"UTC"}
               />
             </DescriptionListDescription>
@@ -139,7 +139,7 @@ export function MessageDetailsBody({
                   new Date(message.attributes.timestamp).getTime() / 1000,
                 )
               ) : (
-                <NoDataCell columnLabel={t("field.epoch")} />
+                <NoData />
               )}
             </DescriptionListDescription>
           </DescriptionListGroup>
