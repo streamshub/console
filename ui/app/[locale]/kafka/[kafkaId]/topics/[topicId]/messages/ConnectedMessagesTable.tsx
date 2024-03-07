@@ -151,9 +151,7 @@ export function ConnectedMessagesTable({
       },
       maxValueLength: 150,
     });
-    if (error) {
-      setMessages({ messages: newMessages, ts, error });
-    } else {
+    if (!error) {
       setMessages(({ messages = [] }) => {
         const messagesToAdd = newMessages.filter(
           (m) =>
