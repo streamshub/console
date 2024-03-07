@@ -88,7 +88,8 @@ export function MessagesTable({
   onSelectMessage,
   onDeselectMessage,
   onReset,
-}: MessagesTableProps) {
+  children,
+}: PropsWithChildren<MessagesTableProps>) {
   const t = useTranslations("message-browser");
   const columnLabels = useColumnLabels();
   const [showColumnsManagement, setShowColumnsManagement] = useState(false);
@@ -163,6 +164,7 @@ export function MessagesTable({
               onSearch={onSearch}
               onColumnManagement={() => setShowColumnsManagement(true)}
             />
+            {children}
             <InnerScrollContainer>
               <div ref={parentRef}>
                 <ResponsiveTable

@@ -12,6 +12,7 @@ import { SearchParams } from "@/components/MessagesTable/types";
 import { Alert, PageSection } from "@/libs/patternfly/react-core";
 import { useFilterParams } from "@/utils/useFilterParams";
 import { AlertActionLink } from "@patternfly/react-core";
+import { PauseIcon, PlayIcon } from "@patternfly/react-icons";
 import { useRouter } from "next/navigation";
 import {
   startTransition,
@@ -140,7 +141,7 @@ export function ConnectedMessagesTable({
     _, // when clicking search multiple times, the search parameters remain the same but a timestamp is added to _. We listen for changes to _ to know we have to trigger a new fetch
   ]);
 
-  const onUpdates = useCallback((newMessages: Message[], ts?: Date) => {
+  const onUpdates = useCallback((newMessages: Message[], ts?: string) => {
     startTransition(() =>
       setMessages(({ messages = [] }) => {
         const messagesToAdd = newMessages.filter(
@@ -156,7 +157,7 @@ export function ConnectedMessagesTable({
             0,
             100,
           ),
-          ts,
+          ts: ts ? new Date(ts) : undefined,
         };
       }),
     );
@@ -216,17 +217,18 @@ export function ConnectedMessagesTable({
             onSelectMessage={setSelected}
             onDeselectMessage={deselectMessage}
             onReset={onReset}
-          />
-          {limit === "continuously" && (
-            <Refresher
-              topicId={topicId}
-              kafkaId={kafkaId}
-              query={query}
-              where={where}
-              partition={partition}
-              onUpdates={onUpdates}
-            />
-          )}
+          >
+            {limit === "continuously" && (
+              <Refresher
+                topicId={topicId}
+                kafkaId={kafkaId}
+                query={query}
+                where={where}
+                partition={partition}
+                onUpdates={onUpdates}
+              />
+            )}
+          </MessagesTable>
         </>
       );
   }
@@ -245,32 +247,42 @@ function Refresher({
   query?: string;
   where: any;
   partition?: number;
-  onUpdates: (messages: Message[], ts?: Date) => void;
+  onUpdates: (messages: Message[], ts?: string) => void;
 }) {
   const previousTs = useRef<string>(new Date().toISOString());
   const isFetching = useRef(false);
+  const [isPaused, setIsPaused] = useState(false);
 
   useEffect(() => {
     let t: ReturnType<typeof setInterval> | undefined;
 
     async function appendMessages() {
-      const {
-        messages: newMessages = [],
-        ts,
-        error,
-      } = await getTopicMessages(kafkaId, topicId, {
-        pageSize: 50,
-        query,
-        where,
-        partition,
-        filter: {
-          type: "timestamp",
-          value: previousTs.current,
+      const { messages: newMessages = [], error } = await getTopicMessages(
+        kafkaId,
+        topicId,
+        {
+          pageSize: 50,
+          query,
+          where,
+          partition,
+          filter: {
+            type: "timestamp",
+            value: previousTs.current,
+          },
         },
-      });
+      );
       if (!error) {
-        previousTs.current = newMessages[0]?.attributes.timestamp;
-        onUpdates(newMessages, ts);
+        const sortedMessages = newMessages
+          .sort(
+            (a, b) =>
+              new Date(b.attributes.timestamp).getTime() -
+              new Date(a.attributes.timestamp).getTime(),
+          )
+          .sort((a, b) => b.attributes.offset - a.attributes.offset);
+        return {
+          messages: sortedMessages,
+          ts: sortedMessages[0]?.attributes.timestamp,
+        };
       }
     }
 
@@ -284,9 +296,15 @@ function Refresher({
       //   query,
       //   where,
       // });
-      if (!isFetching.current) {
+      if (!isFetching.current && !isPaused) {
         isFetching.current = true;
-        await appendMessages();
+        const res = await appendMessages();
+        if (!isPaused && res) {
+          if (res.ts) {
+            previousTs.current = res.ts;
+          }
+          onUpdates(res.messages, res.ts);
+        }
         isFetching.current = false;
       }
     }
@@ -305,6 +323,29 @@ function Refresher({
       clearInterval(t);
       t = undefined;
     };
-  }, [kafkaId, onUpdates, partition, query, topicId, where]);
-  return null;
+  }, [isPaused, kafkaId, onUpdates, partition, query, topicId, where]);
+
+  return (
+    <Alert
+      title={
+        "The screen displays only the most recent 100 entries of data, with older entries rotating out."
+      }
+      variant={"info"}
+      isInline={true}
+      className={"pf-v5-u-mx-md"}
+      actionLinks={
+        <AlertActionLink onClick={() => setIsPaused((p) => !p)}>
+          {isPaused ? (
+            <>
+              <PlayIcon /> Continue
+            </>
+          ) : (
+            <>
+              <PauseIcon /> Pause
+            </>
+          )}
+        </AlertActionLink>
+      }
+    />
+  );
 }
