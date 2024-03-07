@@ -3,7 +3,7 @@ export type SearchParams = {
   limit: number | "continuously";
   query?: {
     value: string;
-    where: "headers" | "key" | "value" | "everywhere" | `jq:${string}`;
+    where: "headers" | "key" | "value" | "everywhere";
   };
   from:
     | { type: "timestamp"; value: string }

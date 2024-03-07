@@ -34,9 +34,6 @@ export function parseSearchParams(searchParams: MessagesSearchParams) {
       case "value":
         return "value" as const;
       default:
-        if (searchParams.where?.indexOf("jq:") === 0) {
-          return searchParams.where as `jq:${string}`;
-        }
         return undefined;
     }
   })();

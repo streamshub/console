@@ -95,9 +95,6 @@ export function parseWhere(where: string | undefined) {
     case "value":
       return "value" as const;
     default:
-      if (where?.indexOf("jq:") === 0) {
-        return where as `jq:${string}`;
-      }
       return "everywhere" as const;
   }
 }
