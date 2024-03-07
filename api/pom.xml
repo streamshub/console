@@ -6,7 +6,7 @@
     <groupId>com.github.eyefloaters</groupId>
     <artifactId>console-api</artifactId>
     <packaging>jar</packaging>
-    <version>0.0.30-SNAPSHOT</version>
+    <version>0.0.30</version>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -52,7 +52,7 @@
     <scm>
         <connection>scm:git:git://github.com/eyefloaters/console.git</connection>
         <developerConnection>scm:git:git@github.com:eyefloaters/console.git</developerConnection>
-        <tag>HEAD</tag>
+        <tag>0.0.30</tag>
     </scm>
 
     <dependencyManagement>
