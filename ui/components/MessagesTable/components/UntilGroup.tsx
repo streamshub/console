@@ -1,5 +1,12 @@
 import { LimitSelector } from "@/components/MessagesTable/components/LimitSelector";
-import { Dropdown, DropdownItem, MenuToggle } from "@patternfly/react-core";
+import {
+  Dropdown,
+  DropdownItem,
+  Flex,
+  FlexItem,
+  FormHelperText,
+  MenuToggle,
+} from "@patternfly/react-core";
 import { useState } from "react";
 
 type Category = "limit" | "live";
@@ -39,35 +46,48 @@ export function UntilGroup({
   }
 
   return (
-    <>
-      <Dropdown
-        data-testid={"until-group"}
-        toggle={(toggleRef) => (
-          <MenuToggle
-            onClick={() => {
-              setIsCategoryMenuOpen(true);
-            }}
-            isExpanded={isCategoryMenuOpen}
-            data-testid={"until-group-toggle"}
-            ref={toggleRef}
-          >
-            {labels[category]}
-          </MenuToggle>
-        )}
-        isOpen={isCategoryMenuOpen}
-        onOpenChange={() => {
-          setIsCategoryMenuOpen((v) => !v);
-        }}
-      >
-        <DropdownItem onClick={handleLimit}>{labels["limit"]}</DropdownItem>
-        <DropdownItem onClick={handleLive}>{labels["live"]}</DropdownItem>
-      </Dropdown>
+    <Flex direction={{ default: "column" }}>
+      <FlexItem>
+        <Dropdown
+          data-testid={"until-group"}
+          toggle={(toggleRef) => (
+            <MenuToggle
+              onClick={() => {
+                setIsCategoryMenuOpen(true);
+              }}
+              isExpanded={isCategoryMenuOpen}
+              data-testid={"until-group-toggle"}
+              ref={toggleRef}
+              className={"pf-v5-u-w-100"}
+            >
+              {labels[category]}
+            </MenuToggle>
+          )}
+          isOpen={isCategoryMenuOpen}
+          onOpenChange={() => {
+            setIsCategoryMenuOpen((v) => !v);
+          }}
+        >
+          <DropdownItem onClick={handleLimit}>{labels["limit"]}</DropdownItem>
+          <DropdownItem onClick={handleLive}>{labels["live"]}</DropdownItem>
+        </Dropdown>
+      </FlexItem>
       {category === "limit" && (
-        <LimitSelector
-          value={limit !== "continuously" ? limit : 50}
-          onChange={onLimitChange}
-        />
+        <FlexItem>
+          <LimitSelector
+            value={limit !== "continuously" ? limit : 50}
+            onChange={onLimitChange}
+          />
+        </FlexItem>
       )}
-    </>
+      {category === "live" && (
+        <FlexItem>
+          <FormHelperText>
+            The screen displays only the most recent 100 messages, with older
+            messages rotating out.
+          </FormHelperText>
+        </FlexItem>
+      )}
+    </Flex>
   );
 }

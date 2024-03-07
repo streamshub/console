@@ -328,7 +328,7 @@ function Refresher({
   return (
     <Alert
       title={
-        "The screen displays only the most recent 100 entries of data, with older entries rotating out."
+        "The screen displays only the most recent 100 messages, with older messages rotating out."
       }
       variant={"info"}
       isInline={true}

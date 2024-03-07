@@ -61,7 +61,7 @@ export type MessagesTableProps = {
   partitions: number;
   filterLimit?: number | "continuously";
   filterQuery?: string;
-  filterWhere?: "key" | "headers" | "value" | `jq:${string}`;
+  filterWhere?: "key" | "headers" | "value";
   filterOffset?: number;
   filterEpoch?: number;
   filterTimestamp?: string;

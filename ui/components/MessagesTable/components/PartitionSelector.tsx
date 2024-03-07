@@ -90,7 +90,12 @@ export function PartitionSelector({
       id={titleId}
       data-testid={"partition-selector"}
       toggle={(toggleRef) => (
-        <MenuToggle ref={toggleRef} onClick={toggleOpen} isExpanded={isOpen}>
+        <MenuToggle
+          ref={toggleRef}
+          onClick={toggleOpen}
+          isExpanded={isOpen}
+          className={"pf-v5-u-w-100"}
+        >
           {value !== -1
             ? t("partition_option", { value })
             : t("partition_placeholder")}

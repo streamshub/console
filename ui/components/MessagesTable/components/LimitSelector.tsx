@@ -20,7 +20,12 @@ export function LimitSelector({ value, onChange }: LimitSelectorProps) {
       onSelect={() => setIsOpen(false)}
       data-testid={"limit-selector"}
       toggle={(toggleRef) => (
-        <MenuToggle ref={toggleRef} onClick={toggleOpen} isExpanded={isOpen}>
+        <MenuToggle
+          ref={toggleRef}
+          onClick={toggleOpen}
+          isExpanded={isOpen}
+          className={"pf-v5-u-w-100"}
+        >
           {t.rich("per_page_label", { value })}
         </MenuToggle>
       )}
