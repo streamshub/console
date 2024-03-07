@@ -13,13 +13,20 @@ import { Alert, PageSection } from "@/libs/patternfly/react-core";
 import { useFilterParams } from "@/utils/useFilterParams";
 import { AlertActionLink } from "@patternfly/react-core";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  startTransition,
+  useCallback,
+  useEffect,
+  useOptimistic,
+  useRef,
+  useState,
+} from "react";
 import { useParseSearchParams } from "./parseSearchParams";
 
 export function ConnectedMessagesTable({
   kafkaId,
   topicId,
-  selectedMessage,
+  selectedMessage: serverSelectedMessage,
   partitions,
 }: {
   kafkaId: string;
@@ -30,18 +37,11 @@ export function ConnectedMessagesTable({
   const [params, sp] = useParseSearchParams();
   const updateUrl = useFilterParams(sp);
   const router = useRouter();
-  const {
-    limit,
-    partition,
-    query,
-    where,
-    offset,
-    timestamp,
-    epoch,
-    _,
-    selectedOffset,
-    selectedPartition,
-  } = params;
+  const { limit, partition, query, where, offset, timestamp, epoch, _ } =
+    params;
+  const [selectedMessage, setOptimisticSelectedMessage] = useOptimistic<
+    Message | undefined
+  >(serverSelectedMessage);
 
   const [{ messages, ts, error }, setMessages] =
     useState<GetTopicMessagesReturn>({
@@ -65,6 +65,7 @@ export function ConnectedMessagesTable({
   }
 
   function setSelected(message: Message) {
+    startTransition(() => setOptimisticSelectedMessage(message));
     updateUrl({
       ...params,
       selected: `${message.attributes.partition}:${message.attributes.offset}`,
@@ -72,6 +73,7 @@ export function ConnectedMessagesTable({
   }
 
   function deselectMessage() {
+    startTransition(() => setOptimisticSelectedMessage(undefined));
     updateUrl({
       ...params,
       selected: undefined,
@@ -108,7 +110,6 @@ export function ConnectedMessagesTable({
         where,
         partition,
         filter,
-        maxValueLength: 150,
       });
       if (error) {
         setMessages({ messages: newMessages, ts, error });
@@ -132,26 +133,15 @@ export function ConnectedMessagesTable({
     ],
   );
 
-  const previousTsRef = useRef<string>();
-  const appendMessages = useCallback(async () => {
-    const previousTs = previousTsRef.current ?? new Date().toISOString();
+  useEffect(() => {
+    void fetchMessages();
+  }, [
+    fetchMessages,
+    _, // when clicking search multiple times, the search parameters remain the same but a timestamp is added to _. We listen for changes to _ to know we have to trigger a new fetch
+  ]);
 
-    const {
-      messages: newMessages = [],
-      ts,
-      error,
-    } = await getTopicMessages(kafkaId, topicId, {
-      pageSize: 10,
-      query,
-      where,
-      partition,
-      filter: {
-        type: "timestamp",
-        value: previousTs,
-      },
-      maxValueLength: 150,
-    });
-    if (!error) {
+  const onUpdates = useCallback((newMessages: Message[], ts?: Date) => {
+    startTransition(() =>
       setMessages(({ messages = [] }) => {
         const messagesToAdd = newMessages.filter(
           (m) =>
@@ -161,7 +151,6 @@ export function ConnectedMessagesTable({
                 m2.attributes.partition === m.attributes.partition,
             ),
         );
-        previousTsRef.current = messagesToAdd[0]?.attributes.timestamp;
         return {
           messages: Array.from(new Set([...messagesToAdd, ...messages])).slice(
             0,
@@ -169,36 +158,9 @@ export function ConnectedMessagesTable({
           ),
           ts,
         };
-      });
-    }
-  }, [kafkaId, partition, query, topicId, where]);
-
-  useEffect(() => {
-    let t: ReturnType<typeof setTimeout> | undefined;
-
-    async function tick() {
-      if (limit === "continuously") {
-        await appendMessages();
-        t = setTimeout(tick, 1000);
-      }
-    }
-
-    if (limit === "continuously") {
-      void tick();
-    }
-
-    return () => {
-      clearTimeout(t);
-      t = undefined;
-    };
-  }, [appendMessages, limit]);
-
-  useEffect(() => {
-    void fetchMessages();
-  }, [
-    fetchMessages,
-    _, // when clicking search multiple times, the search parameters remain the same but a timestamp is added to _. We listen for changes to _ to know we have to trigger a new fetch
-  ]);
+      }),
+    );
+  }, []);
 
   const isFiltered = partition || epoch || offset || timestamp || query;
 
@@ -237,35 +199,112 @@ export function ConnectedMessagesTable({
       );
     default:
       return (
-        <MessagesTable
-          selectedMessage={selectedMessage}
-          lastUpdated={ts}
-          messages={messages}
-          partitions={partitions}
-          filterLimit={limit}
-          filterQuery={query}
-          filterWhere={where}
-          filterOffset={offset}
-          filterEpoch={epoch}
-          filterTimestamp={timestamp}
-          filterPartition={partition}
-          onSearch={onSearch}
-          onSelectMessage={setSelected}
-          onDeselectMessage={deselectMessage}
-          onReset={onReset}
-        />
+        <>
+          <MessagesTable
+            selectedMessage={selectedMessage}
+            lastUpdated={ts}
+            messages={messages}
+            partitions={partitions}
+            filterLimit={limit}
+            filterQuery={query}
+            filterWhere={where}
+            filterOffset={offset}
+            filterEpoch={epoch}
+            filterTimestamp={timestamp}
+            filterPartition={partition}
+            onSearch={onSearch}
+            onSelectMessage={setSelected}
+            onDeselectMessage={deselectMessage}
+            onReset={onReset}
+          />
+          {limit === "continuously" && (
+            <Refresher
+              topicId={topicId}
+              kafkaId={kafkaId}
+              query={query}
+              where={where}
+              partition={partition}
+              onUpdates={onUpdates}
+            />
+          )}
+        </>
       );
-
-    /*
-    <ConnectedRefreshSelector
-      isRefreshing={isPending}
-      isLive={automaticRefresh}
-      refreshInterval={refreshInterval}
-      lastRefresh={ts}
-      onRefresh={() => doRefresh()}
-      onRefreshInterval={setRefreshInterval}
-      onToggleLive={setAutomaticRefresh}
-    />
-*/
   }
+}
+
+function Refresher({
+  kafkaId,
+  topicId,
+  query,
+  where,
+  partition,
+  onUpdates,
+}: {
+  kafkaId: string;
+  topicId: string;
+  query?: string;
+  where: any;
+  partition?: number;
+  onUpdates: (messages: Message[], ts?: Date) => void;
+}) {
+  const previousTs = useRef<string>(new Date().toISOString());
+  const isFetching = useRef(false);
+
+  useEffect(() => {
+    let t: ReturnType<typeof setInterval> | undefined;
+
+    async function appendMessages() {
+      const {
+        messages: newMessages = [],
+        ts,
+        error,
+      } = await getTopicMessages(kafkaId, topicId, {
+        pageSize: 10,
+        query,
+        where,
+        partition,
+        filter: {
+          type: "timestamp",
+          value: previousTs.current,
+        },
+      });
+      if (!error) {
+        previousTs.current = newMessages[0]?.attributes.timestamp;
+        onUpdates(newMessages, ts);
+      }
+    }
+
+    async function tick() {
+      // console.log("tick", {
+      //   ts: Date.now(),
+      //   fetching: isFetching.current,
+      //   kafkaId,
+      //   topicId,
+      //   partition,
+      //   query,
+      //   where,
+      // });
+      if (!isFetching.current) {
+        isFetching.current = true;
+        await appendMessages();
+        isFetching.current = false;
+      }
+    }
+
+    t = setInterval(tick, 1000);
+    void tick();
+
+    return () => {
+      // console.log("destroy", {
+      //   kafkaId,
+      //   topicId,
+      //   partition,
+      //   query,
+      //   where,
+      // });
+      clearInterval(t);
+      t = undefined;
+    };
+  }, [kafkaId, onUpdates, partition, query, topicId, where]);
+  return null;
 }

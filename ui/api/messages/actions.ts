@@ -34,7 +34,7 @@ export async function getTopicMessages(
           value: number;
         }
       | undefined;
-    maxValueLength: number | undefined;
+    maxValueLength?: number;
   },
 ): Promise<GetTopicMessagesReturn> {
   let timestamp: string | undefined;
