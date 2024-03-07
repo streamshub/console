@@ -69,6 +69,7 @@ export type MessagesTableProps = {
   onSearch: (params: SearchParams) => void;
   onSelectMessage: (message: Message) => void;
   onDeselectMessage: () => void;
+  onReset: () => void;
 };
 
 export function MessagesTable({
@@ -86,6 +87,7 @@ export function MessagesTable({
   onSearch,
   onSelectMessage,
   onDeselectMessage,
+  onReset,
 }: MessagesTableProps) {
   const t = useTranslations("message-browser");
   const columnLabels = useColumnLabels();
@@ -330,7 +332,7 @@ export function MessagesTable({
                     onSelectMessage(row);
                   }}
                 >
-                  <NoResultsEmptyState />
+                  <NoResultsEmptyState onReset={onReset} />
                 </ResponsiveTable>
               </div>
             </InnerScrollContainer>

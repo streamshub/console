@@ -87,7 +87,6 @@ export const SearchWithoutMatches: Story = {
 function sampleData({
   filterEpoch,
   filterLimit,
-  filterLive,
   filterOffset,
   filterPartition,
   filterQuery,
@@ -97,7 +96,6 @@ function sampleData({
   MessagesTableProps,
   | "filterEpoch"
   | "filterLimit"
-  | "filterLive"
   | "filterOffset"
   | "filterPartition"
   | "filterQuery"
@@ -171,7 +169,8 @@ function sampleData({
       },
     },
   ];
-  const numberOfMessages = filterLimit ?? 50;
+  const numberOfMessages =
+    filterLimit === "continuously" ? 50 : filterLimit ?? 50;
   return new Array(Math.ceil(numberOfMessages / messages.length))
     .fill(0)
     .flatMap((_, i) =>
