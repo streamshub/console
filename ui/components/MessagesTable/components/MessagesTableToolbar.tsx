@@ -94,6 +94,9 @@ export function MessagesTableToolbar({
         <ToolbarItem
           variant={"search-filter"}
           widths={{ default: "calc(100% - 52px * 2)" }}
+          style={{
+            maxWidth: 700,
+          }}
         >
           <AdvancedSearch
             filterQuery={filterQuery}
