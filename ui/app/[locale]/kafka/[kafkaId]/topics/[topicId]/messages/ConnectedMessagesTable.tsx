@@ -27,11 +27,13 @@ import { useParseSearchParams } from "./parseSearchParams";
 export function ConnectedMessagesTable({
   kafkaId,
   topicId,
+  topicName,
   selectedMessage: serverSelectedMessage,
   partitions,
 }: {
   kafkaId: string;
   topicId: string;
+  topicName: string;
   selectedMessage: Message | undefined;
   partitions: number;
 }) {
@@ -202,6 +204,7 @@ export function ConnectedMessagesTable({
       return (
         <>
           <MessagesTable
+            topicName={topicName}
             selectedMessage={selectedMessage}
             lastUpdated={ts}
             messages={messages}

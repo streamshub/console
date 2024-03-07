@@ -34,6 +34,7 @@ export default async function ConnectedMessagesPage({
     <ConnectedMessagesTable
       kafkaId={kafkaId}
       topicId={topicId}
+      topicName={topic.attributes.name}
       selectedMessage={selectedMessage}
       partitions={topic.attributes.numPartitions ?? 0}
     />

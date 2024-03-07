@@ -33,6 +33,8 @@ export function MessagesTableSkeleton({
       aria-label={t("title")}
     >
       <MessagesTableToolbar
+        topicName={""}
+        messages={[]}
         partitions={1}
         filterLimit={filterLimit}
         filterQuery={filterQuery}

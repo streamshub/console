@@ -3,8 +3,10 @@ import {
   ToolbarContent,
   ToolbarItem,
 } from "@/libs/patternfly/react-core";
-import { Button, Tooltip } from "@patternfly/react-core";
-import { ColumnsIcon } from "@patternfly/react-icons";
+import { Button, ToolbarGroup, Tooltip } from "@patternfly/react-core";
+import { ColumnsIcon, FileCsvIcon } from "@patternfly/react-icons";
+import { useMemo } from "react";
+import CsvDownloader from "react-csv-downloader";
 import { MessagesTableProps } from "../MessagesTable";
 import { AdvancedSearch } from "./AdvancedSearch";
 
@@ -19,6 +21,8 @@ export function MessagesTableToolbar({
   partitions,
   onSearch,
   onColumnManagement,
+  topicName,
+  messages,
 }: Pick<
   MessagesTableProps,
   | "filterQuery"
@@ -30,12 +34,56 @@ export function MessagesTableToolbar({
   | "filterLimit"
   | "partitions"
   | "onSearch"
+  | "topicName"
+  | "messages"
 > & {
   onColumnManagement: () => void;
 }) {
   const toolbarBreakpoint = "md";
 
   function onClearAllFilters() {}
+
+  const csv = useMemo(() => {
+    return messages.map((m) => ({
+      timestamp: m.attributes.timestamp,
+      offset: `${m.attributes.offset}`,
+      partition: `${m.attributes.partition}`,
+      size: `${m.attributes.size}`,
+      headers: encodeURIComponent(JSON.stringify(m.attributes.headers)),
+      key: encodeURIComponent(m.attributes.key || ""),
+      value: encodeURIComponent(m.attributes.value || ""),
+    }));
+  }, [messages]);
+  const columns = [
+    {
+      id: "timestamp",
+      displayName: "Timestamp UTC",
+    },
+    {
+      id: "offset",
+      displayName: "Offset",
+    },
+    {
+      id: "partition",
+      displayName: "Partition",
+    },
+    {
+      id: "size",
+      displayName: "Size",
+    },
+    {
+      id: "headers",
+      displayName: "Headers",
+    },
+    {
+      id: "key",
+      displayName: "Key",
+    },
+    {
+      id: "value",
+      displayName: "Value",
+    },
+  ];
 
   return (
     <Toolbar
@@ -45,7 +93,7 @@ export function MessagesTableToolbar({
       <ToolbarContent>
         <ToolbarItem
           variant={"search-filter"}
-          widths={{ default: "calc(100% - 58px)" }}
+          widths={{ default: "calc(100% - 52px * 2)" }}
         >
           <AdvancedSearch
             filterQuery={filterQuery}
@@ -60,17 +108,37 @@ export function MessagesTableToolbar({
           />
         </ToolbarItem>
 
-        <ToolbarItem>
-          <Tooltip content={"Manage columns"}>
-            <Button
-              onClick={onColumnManagement}
-              variant={"plain"}
-              aria-label={"Columns management"}
-            >
-              <ColumnsIcon />
-            </Button>
-          </Tooltip>
-        </ToolbarItem>
+        <ToolbarGroup variant={"icon-button-group"}>
+          <ToolbarItem>
+            <Tooltip content={"Manage columns"}>
+              <Button
+                onClick={onColumnManagement}
+                variant={"plain"}
+                aria-label={"Columns management"}
+              >
+                <ColumnsIcon />
+              </Button>
+            </Tooltip>
+          </ToolbarItem>
+          <ToolbarItem>
+            <Tooltip content={"Download as CSV"}>
+              <CsvDownloader
+                filename={topicName}
+                datas={csv}
+                columns={columns}
+                separator={";"}
+              >
+                <Button
+                  variant={"plain"}
+                  aria-label={"Download as CSV"}
+                  isDisabled={messages.length === 0}
+                >
+                  <FileCsvIcon />
+                </Button>
+              </CsvDownloader>
+            </Tooltip>
+          </ToolbarItem>
+        </ToolbarGroup>
       </ToolbarContent>
     </Toolbar>
   );

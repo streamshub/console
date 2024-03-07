@@ -6,6 +6,8 @@ const meta: Meta<typeof Comp> = {
   component: Comp,
   args: {
     onColumnManagement: fn(),
+    messages: [],
+    topicName: "Example",
   },
 };
 

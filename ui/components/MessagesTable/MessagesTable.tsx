@@ -57,6 +57,7 @@ const defaultColumns: Column[] = [
 export type MessagesTableProps = {
   selectedMessage?: Message;
   lastUpdated?: Date;
+  topicName: string;
   messages: Message[];
   partitions: number;
   filterLimit?: number | "continuously";
@@ -75,6 +76,7 @@ export type MessagesTableProps = {
 export function MessagesTable({
   lastUpdated,
   selectedMessage,
+  topicName,
   messages,
   partitions,
   filterLimit,
@@ -153,6 +155,8 @@ export function MessagesTable({
         >
           <OuterScrollContainer>
             <MessagesTableToolbar
+              topicName={topicName}
+              messages={messages}
               partitions={partitions}
               filterLimit={filterLimit}
               filterQuery={filterQuery}

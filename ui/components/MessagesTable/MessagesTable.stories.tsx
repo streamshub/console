@@ -9,6 +9,8 @@ export default {
   args: {
     lastUpdated: new Date(),
     partitions: 5,
+    messages: [],
+    topicName: "Example",
     onSearch: fn(),
     onSelectMessage: fn(),
     onDeselectMessage: fn(),
