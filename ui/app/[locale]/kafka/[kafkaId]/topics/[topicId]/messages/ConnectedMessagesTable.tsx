@@ -13,7 +13,7 @@ import { Alert, PageSection } from "@/libs/patternfly/react-core";
 import { useFilterParams } from "@/utils/useFilterParams";
 import { AlertActionLink } from "@patternfly/react-core";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useParseSearchParams } from "./parseSearchParams";
 
 export function ConnectedMessagesTable({
@@ -132,10 +132,9 @@ export function ConnectedMessagesTable({
     ],
   );
 
+  const previousTsRef = useRef<string>();
   const appendMessages = useCallback(async () => {
-    const previousTs = messages
-      ? messages[0]?.attributes.timestamp
-      : new Date().toISOString();
+    const previousTs = previousTsRef.current ?? new Date().toISOString();
 
     const {
       messages: newMessages = [],
@@ -164,7 +163,7 @@ export function ConnectedMessagesTable({
                 m2.attributes.partition === m.attributes.partition,
             ),
         );
-
+        previousTsRef.current = messagesToAdd[0]?.attributes.timestamp;
         return {
           messages: Array.from(new Set([...messagesToAdd, ...messages])).slice(
             0,
@@ -174,15 +173,15 @@ export function ConnectedMessagesTable({
         };
       });
     }
-  }, [kafkaId, messages, partition, query, topicId, where]);
+  }, [kafkaId, partition, query, topicId, where]);
 
   useEffect(() => {
     let t: ReturnType<typeof setTimeout> | undefined;
 
     async function tick() {
-      if (limit === "continuously" && t === undefined) {
+      if (limit === "continuously") {
         await appendMessages();
-        t = setTimeout(tick, 5000);
+        t = setTimeout(tick, 1000);
       }
     }
 
