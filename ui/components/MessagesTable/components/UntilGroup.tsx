@@ -29,7 +29,6 @@ export function UntilGroup({
     limit === "continuously" ? "live" : "limit",
   );
   const [isCategoryMenuOpen, setIsCategoryMenuOpen] = useState(false);
-  const [isLimitMenuOpen, setIsLimitMenuOpen] = useState(false);
 
   function handleLimit() {
     setCategory("limit");
@@ -53,7 +52,7 @@ export function UntilGroup({
           toggle={(toggleRef) => (
             <MenuToggle
               onClick={() => {
-                setIsCategoryMenuOpen(true);
+                setIsCategoryMenuOpen((v) => !v);
               }}
               isExpanded={isCategoryMenuOpen}
               data-testid={"until-group-toggle"}
