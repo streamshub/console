@@ -174,12 +174,23 @@ public class ClientFactory {
                     .findFirst()
                     .map(e -> {
                         var configs = buildConfig(AdminClientConfig.configNames(), e.getKey(), "admin", kafka);
-                        logConfig("Admin[key=%s, id=%s]".formatted(e.getKey(), kafka.getStatus().getClusterId()), configs);
-                        return adminBuilder.apply(configs);
+                        if (truststoreRequired(configs)) {
+                            log.warnf("""
+                                    %s Admin client for Kafka cluster %s failed. Connection \
+                                    requires truststore which could not be obtained from the \
+                                    Kafka resource status.
+                                    """
+                                    .formatted(eventType, kafka.getStatus().getClusterId()));
+                            return null;
+                        } else {
+                            logConfig("Admin[key=%s, id=%s]".formatted(e.getKey(), kafka.getStatus().getClusterId()), configs);
+                            return adminBuilder.apply(configs);
+                        }
                     })
                     .ifPresent(client -> {
                         log.info("%s Admin client for Kafka cluster %s".formatted(eventType, kafka.getStatus().getClusterId()));
-                        adminClients.put(clusterKey, client);
+                        Admin previous = adminClients.put(clusterKey, client);
+                        Optional.ofNullable(previous).ifPresent(Admin::close);
                     });
             }
 
