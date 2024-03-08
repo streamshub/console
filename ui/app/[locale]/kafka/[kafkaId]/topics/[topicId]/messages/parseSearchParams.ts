@@ -1,11 +1,9 @@
-import { stringToBoolean } from "@/utils/stringToBoolean";
 import { stringToInt } from "@/utils/stringToInt";
 import { useSearchParams } from "next/navigation";
 import { useMemo } from "react";
 
 export type MessagesSearchParams = {
-  limit?: string;
-  live?: string;
+  retrieve?: string;
   partition?: string;
   selected?: string;
   query?: string;
@@ -18,8 +16,10 @@ export type MessagesSearchParams = {
 
 export function parseSearchParams(searchParams: MessagesSearchParams) {
   const _ = searchParams._;
-  const limit = stringToInt(searchParams.limit);
-  const live = stringToBoolean(searchParams.live);
+  const limit =
+    searchParams.retrieve === "continuously"
+      ? ("continuously" as const)
+      : stringToInt(searchParams.retrieve);
   const offset = stringToInt(searchParams["offset"]);
   const timestamp = searchParams["timestamp"];
   const epoch = stringToInt(searchParams["epoch"]);
@@ -34,9 +34,6 @@ export function parseSearchParams(searchParams: MessagesSearchParams) {
       case "value":
         return "value" as const;
       default:
-        if (searchParams.where?.indexOf("jq:") === 0) {
-          return searchParams.where as `jq:${string}`;
-        }
         return undefined;
     }
   })();
@@ -48,7 +45,6 @@ export function parseSearchParams(searchParams: MessagesSearchParams) {
 
   return {
     limit,
-    live,
     offset,
     timestamp,
     epoch,

@@ -1,12 +1,9 @@
 import { getTopicMessage } from "@/api/messages/actions";
 import { getTopic } from "@/api/topics/actions";
-import { ConnectedMessagesTable } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/ConnectedMessagesTable";
-import {
-  MessagesSearchParams,
-  parseSearchParams,
-} from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/parseSearchParams";
 import { KafkaTopicParams } from "@/app/[locale]/kafka/[kafkaId]/topics/kafkaTopic.params";
 import { redirect } from "@/navigation";
+import { ConnectedMessagesTable } from "./ConnectedMessagesTable";
+import { MessagesSearchParams, parseSearchParams } from "./parseSearchParams";
 
 export const revalidate = 0;
 export const dynamic = "force-dynamic";
@@ -37,6 +34,7 @@ export default async function ConnectedMessagesPage({
     <ConnectedMessagesTable
       kafkaId={kafkaId}
       topicId={topicId}
+      topicName={topic.attributes.name}
       selectedMessage={selectedMessage}
       partitions={topic.attributes.numPartitions ?? 0}
     />

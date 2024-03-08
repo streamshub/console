@@ -1,14 +1,13 @@
-import { columns } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/_components/ColumnsModal";
-import { MessageBrowserProps } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/_components/MessagesTable";
-import { MessagesTableToolbar } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/_components/MessagesTableToolbar";
 import { ResponsiveTable } from "@/components/Table";
 import { PageSection } from "@/libs/patternfly/react-core";
 import { TableVariant } from "@/libs/patternfly/react-table";
 import { useTranslations } from "next-intl";
+import { columns } from "./components/ColumnsModal";
+import { MessagesTableToolbar } from "./components/MessagesTableToolbar";
+import { MessagesTableProps } from "./MessagesTable";
 
 export function MessagesTableSkeleton({
   filterLimit,
-  filterLive,
   filterQuery,
   filterWhere,
   filterPartition,
@@ -16,10 +15,9 @@ export function MessagesTableSkeleton({
   filterOffset,
   filterEpoch,
 }: Pick<
-  MessageBrowserProps,
+  MessagesTableProps,
   | "filterPartition"
   | "filterLimit"
-  | "filterLive"
   | "filterQuery"
   | "filterWhere"
   | "filterTimestamp"
@@ -35,9 +33,10 @@ export function MessagesTableSkeleton({
       aria-label={t("title")}
     >
       <MessagesTableToolbar
+        topicName={""}
+        messages={[]}
         partitions={1}
         filterLimit={filterLimit}
-        filterLive={filterLive}
         filterQuery={filterQuery}
         filterWhere={filterWhere}
         filterOffset={filterOffset}
@@ -52,7 +51,7 @@ export function MessagesTableSkeleton({
         ariaLabel={t("table_aria_label")}
         columns={columns}
         data={undefined}
-        expectedLength={filterLimit}
+        expectedLength={typeof filterLimit === "number" ? filterLimit : 50}
         renderCell={() => <div></div>}
         renderHeader={() => <div></div>}
       />
