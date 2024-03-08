@@ -143,7 +143,7 @@ export function ConnectedMessagesTable({
     _, // when clicking search multiple times, the search parameters remain the same but a timestamp is added to _. We listen for changes to _ to know we have to trigger a new fetch
   ]);
 
-  const onUpdates = useCallback((newMessages: Message[], ts?: string) => {
+  const onUpdates = useCallback((newMessages: Message[], ts: Date) => {
     startTransition(() =>
       setMessages(({ messages = [] }) => {
         const messagesToAdd = newMessages.filter(
@@ -159,7 +159,7 @@ export function ConnectedMessagesTable({
             0,
             100,
           ),
-          ts: ts ? new Date(ts) : undefined,
+          ts,
         };
       }),
     );
@@ -250,7 +250,7 @@ function Refresher({
   query?: string;
   where: any;
   partition?: number;
-  onUpdates: (messages: Message[], ts?: string) => void;
+  onUpdates: (messages: Message[], ts: Date) => void;
 }) {
   const previousTs = useRef<string>(new Date().toISOString());
   const isFetching = useRef(false);
@@ -306,7 +306,7 @@ function Refresher({
           if (res.ts) {
             previousTs.current = res.ts;
           }
-          onUpdates(res.messages, res.ts);
+          onUpdates(res.messages, new Date());
         }
         isFetching.current = false;
       }
