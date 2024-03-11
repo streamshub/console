@@ -7,21 +7,22 @@ import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -50,6 +51,8 @@ import org.jboss.logging.Logger;
 
 import com.github.eyefloaters.console.api.model.KafkaRecord;
 import com.github.eyefloaters.console.api.support.SizeLimitedSortedSet;
+
+import static java.util.Objects.requireNonNullElse;
 
 @ApplicationScoped
 public class RecordService {
@@ -98,56 +101,23 @@ public class RecordService {
 
         Consumer<byte[], byte[]> consumer = consumerSupplier.get();
         consumer.assign(assignments);
+        var endOffsets = consumer.endOffsets(assignments);
 
         if (timestamp != null) {
             seekToTimestamp(consumer, assignments, timestamp);
         } else {
-            seekToOffset(consumer, assignments, offset, limit);
+            seekToOffset(consumer, assignments, endOffsets, offset, limit);
         }
 
-        Instant timeout = Instant.now().plusSeconds(2);
-        int maxRecords = assignments.size() * limit;
-        List<KafkaRecord> results = new ArrayList<>();
-        AtomicInteger recordsConsumed = new AtomicInteger(0);
-
-        Iterable<ConsumerRecords<byte[], byte[]>> poll = () -> new Iterator<>() {
-            boolean emptyPoll = false;
-
-            @Override
-            public boolean hasNext() {
-                return !emptyPoll && recordsConsumed.get() < maxRecords && Instant.now().isBefore(timeout);
-            }
-
-            @Override
-            public ConsumerRecords<byte[], byte[]> next() {
-                if (!hasNext()) {
-                    throw new NoSuchElementException();
-                }
-                var records = consumer.poll(Duration.between(Instant.now(), timeout));
-                int pollSize = records.count();
-                emptyPoll = pollSize == 0;
-                recordsConsumed.addAndGet(pollSize);
-                if (logger.isTraceEnabled()) {
-                    logger.tracef("next() consumed records: %d; total %s", pollSize, recordsConsumed.get());
-                }
-                return records;
-            }
-        };
-
+        Iterable<ConsumerRecords<byte[], byte[]>> poll = () -> new ConsumerRecordsIterator<>(consumer, endOffsets, limit);
         var limitSet = new SizeLimitedSortedSet<ConsumerRecord<byte[], byte[]>>(buildComparator(timestamp, offset), limit);
 
-        StreamSupport.stream(poll.spliterator(), false)
+        return StreamSupport.stream(poll.spliterator(), false)
                 .flatMap(records -> StreamSupport.stream(records.spliterator(), false))
                 .collect(Collectors.toCollection(() -> limitSet))
                 .stream()
                 .map(rec -> getItems(rec, topicId, include, maxValueLength))
-                .forEach(results::add);
-
-        if (logger.isDebugEnabled()) {
-            logger.debugf("Total consumed records: %d", recordsConsumed.get());
-        }
-
-        return results;
+                .toList();
     }
 
     public CompletionStage<KafkaRecord> produceRecord(String topicId, KafkaRecord input) {
@@ -267,9 +237,8 @@ public class RecordService {
             });
     }
 
-    void seekToOffset(Consumer<byte[], byte[]> consumer, List<TopicPartition> assignments, Long offset, int limit) {
+    void seekToOffset(Consumer<byte[], byte[]> consumer, List<TopicPartition> assignments, Map<TopicPartition, Long> endOffsets, Long offset, int limit) {
         var beginningOffsets = consumer.beginningOffsets(assignments);
-        var endOffsets = consumer.endOffsets(assignments);
 
         assignments.forEach(p -> {
             long partitionBegin = beginningOffsets.get(p);
@@ -384,4 +353,71 @@ public class RecordService {
         return new InvalidPartitionsException("Partition " + partition + " is not valid for topic " + topicId);
     }
 
+    static class ConsumerRecordsIterator<K, V> implements Iterator<ConsumerRecords<K, V>> {
+        private static final Logger LOGGER = Logger.getLogger(ConsumerRecordsIterator.class);
+
+        private Instant timeout = Instant.now().plusSeconds(2);
+        private int recordsConsumed = 0;
+        private Map<TopicPartition, Integer> partitionConsumed = new HashMap<>();
+        private final Consumer<K, V> consumer;
+        private final Set<TopicPartition> assignments;
+        private final Map<TopicPartition, Long> endOffsets;
+        private final int limit;
+
+        public ConsumerRecordsIterator(Consumer<K, V> consumer, Map<TopicPartition, Long> endOffsets, int limit) {
+            this.consumer = consumer;
+            this.assignments = new HashSet<>(consumer.assignment());
+            this.endOffsets = endOffsets;
+            this.limit = limit;
+        }
+
+        @Override
+        public boolean hasNext() {
+            boolean moreRecords = !assignments.isEmpty() && Instant.now().isBefore(timeout);
+
+            if (!moreRecords && LOGGER.isDebugEnabled()) {
+                LOGGER.debugf("Total consumed records: %d", recordsConsumed);
+            }
+
+            return moreRecords;
+        }
+
+        @Override
+        public ConsumerRecords<K, V> next() {
+            if (!hasNext()) {
+                throw new NoSuchElementException();
+            }
+
+            var pollTimeout = Duration.between(Instant.now(), timeout);
+            var records = consumer.poll(pollTimeout.isNegative() ? Duration.ZERO : pollTimeout);
+            int pollSize = 0;
+
+            for (var partition : records.partitions()) {
+                var partitionRecords = records.records(partition);
+                int consumed = partitionRecords.size();
+                pollSize += consumed;
+                int total = partitionConsumed.compute(partition, (k, v) -> requireNonNullElse(v, 0) + consumed);
+                long maxOffset = partitionRecords.stream().mapToLong(ConsumerRecord::offset).max().orElse(-1);
+
+                if (total >= limit || maxOffset >= endOffsets.get(partition)) {
+                    // Consumed `limit` records for this partition or reached the end of the partition
+                    assignments.remove(partition);
+                }
+            }
+
+            if (pollSize == 0) {
+                // End of stream, unsubscribe everything
+                assignments.clear();
+            }
+
+            consumer.assign(assignments);
+            recordsConsumed += pollSize;
+
+            if (LOGGER.isTraceEnabled()) {
+                LOGGER.tracef("next() consumed records: %d; total %s", pollSize, recordsConsumed);
+            }
+
+            return records;
+        }
+    }
 }

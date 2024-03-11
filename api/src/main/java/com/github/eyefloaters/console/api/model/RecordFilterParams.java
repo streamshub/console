@@ -138,15 +138,19 @@ public class RecordFilterParams {
     FetchFilter timestamp;
 
     @QueryParam("page[size]")
-    @DefaultValue("20")
+    @DefaultValue(ListFetchParams.PAGE_SIZE_DEFAULT + "")
     @Parameter(
         description = "Limit the number of records fetched and returned",
-        schema = @Schema(implementation = Integer.class, minimum = "1"))
+        schema = @Schema(
+                implementation = Integer.class,
+                minimum = "1",
+                maximum = ListFetchParams.PAGE_SIZE_MAX + "",
+                defaultValue = ListFetchParams.PAGE_SIZE_DEFAULT + ""))
     @Expression(
         when = "self != null",
-        value = "val = Integer.parseInt(self); val >= 1 && val <= Integer.MAX_VALUE",
+        value = "val = Integer.parseInt(self); val >= 1 && val <= " + ListFetchParams.PAGE_SIZE_MAX,
         exceptionalValue = ExceptionalValue.FALSE,
-        message = "must be an integer between 1 and " + Integer.MAX_VALUE + ", inclusive",
+        message = "must be an integer between 1 and " + ListFetchParams.PAGE_SIZE_MAX + ", inclusive",
         payload = ErrorCategory.InvalidQueryParameter.class,
         node = "page[size]")
     String pageSize;
