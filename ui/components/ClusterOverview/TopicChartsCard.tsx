@@ -1,16 +1,17 @@
 "use client";
 import { MetricRange } from "@/api/kafka/schema";
-import { ChartIncomingOutgoing } from "@/app/[locale]/kafka/[kafkaId]/overview/ChartIncomingOutgoing";
-import { ChartSkeletonLoader } from "@/app/[locale]/kafka/[kafkaId]/overview/ChartSkeletonLoader";
 import {
   Card,
   CardBody,
   CardHeader,
   CardTitle,
   Flex,
+  Title,
+  Tooltip,
 } from "@/libs/patternfly/react-core";
-import { Title, Tooltip } from "@patternfly/react-core";
-import { HelpIcon } from "@patternfly/react-icons";
+import { HelpIcon } from "@/libs/patternfly/react-icons";
+import { ChartIncomingOutgoing } from "./components/ChartIncomingOutgoing";
+import { ChartSkeletonLoader } from "./components/ChartSkeletonLoader";
 
 type TopicChartsCardProps = {
   incoming: MetricRange;

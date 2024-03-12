@@ -8,8 +8,10 @@ import {
   EmptyStateIcon,
 } from "@/libs/patternfly/react-core";
 import { SearchIcon } from "@/libs/patternfly/react-icons";
+import { useTranslations } from "next-intl";
 
 export function EmptyStateNoMatchFound({ onClear }: { onClear: () => void }) {
+  const t = useTranslations();
   return (
     <EmptyState>
       <EmptyStateHeader
@@ -18,12 +20,14 @@ export function EmptyStateNoMatchFound({ onClear }: { onClear: () => void }) {
         icon={<EmptyStateIcon icon={SearchIcon} />}
       />
       <EmptyStateBody>
-        No results match the filter criteria. Clear all filters and try again.
+        {t(
+          "Table.EmptyStateNoMatchFound.no_results_match_the_filter_criteria_clear_all_fil",
+        )}
       </EmptyStateBody>
       <EmptyStateFooter>
         <EmptyStateActions>
           <Button variant="link" onClick={onClear}>
-            Clear all filters
+            {t("Table.EmptyStateNoMatchFound.clear_all_filters")}
           </Button>
         </EmptyStateActions>
       </EmptyStateFooter>

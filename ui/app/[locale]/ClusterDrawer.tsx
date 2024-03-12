@@ -13,9 +13,11 @@ import {
   Title,
 } from "@/libs/patternfly/react-core";
 import { Skeleton } from "@patternfly/react-core";
+import { useTranslations } from "next-intl";
 import { PropsWithChildren, Suspense } from "react";
 
 export function ClusterDrawer({ children }: PropsWithChildren) {
+  const t = useTranslations();
   const { expanded, clusterId, close } = useClusterDrawerContext();
   return (
     <Drawer isExpanded={expanded}>
@@ -23,7 +25,9 @@ export function ClusterDrawer({ children }: PropsWithChildren) {
         panelContent={
           <DrawerPanelContent isResizable={true}>
             <DrawerHead>
-              <Title headingLevel={"h3"}>Cluster connection details</Title>
+              <Title headingLevel={"h3"}>
+                {t("ClusterDrawer.cluster_connection_details")}
+              </Title>
               <DrawerActions>
                 <DrawerCloseButton onClick={close} />
               </DrawerActions>

@@ -9,11 +9,11 @@ import {
 } from "@/api/kafka/actions";
 import { ClusterDetail, ClusterKpis, MetricRange } from "@/api/kafka/schema";
 import { KafkaParams } from "@/app/[locale]/kafka/[kafkaId]/kafka.params";
-import { ClusterCard } from "@/app/[locale]/kafka/[kafkaId]/overview/ClusterCard";
-import { ClusterChartsCard } from "@/app/[locale]/kafka/[kafkaId]/overview/ClusterChartsCard";
-import { PageLayout } from "@/app/[locale]/kafka/[kafkaId]/overview/PageLayout";
-import { TopicChartsCard } from "@/app/[locale]/kafka/[kafkaId]/overview/TopicChartsCard";
-import { TopicsPartitionsCard } from "@/app/[locale]/kafka/[kafkaId]/overview/TopicsPartitionsCard";
+import { ClusterCard } from "@/components/ClusterOverview/ClusterCard";
+import { ClusterChartsCard } from "@/components/ClusterOverview/ClusterChartsCard";
+import { PageLayout } from "@/components/ClusterOverview/PageLayout";
+import { TopicChartsCard } from "@/components/ClusterOverview/TopicChartsCard";
+import { TopicsPartitionsCard } from "@/components/ClusterOverview/TopicsPartitionsCard";
 
 export default function OverviewPage({ params }: { params: KafkaParams }) {
   const kpi = getKafkaClusterKpis(params.kafkaId);

@@ -1,0 +1,10 @@
+import type { Meta, StoryObj } from "@storybook/react";
+
+import { EmptyStateNoTopics as Comp } from "./EmptyStateNoTopics";
+
+export default {
+  component: Comp,
+} as Meta<typeof Comp>;
+type Story = StoryObj<typeof Comp>;
+
+export const EmptyStateNoTopics: Story = {};

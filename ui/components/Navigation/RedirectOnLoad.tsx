@@ -1,5 +1,5 @@
 "use client";
-import { Loading } from "@/components/Loading";
+import { EmptyStateLoading } from "@/components/EmptyStateLoading";
 import { useRouter } from "@/navigation";
 import { useEffect } from "react";
 
@@ -8,5 +8,5 @@ export function RedirectOnLoad({ url }: { url: string }) {
   useEffect(() => {
     router.replace(url);
   }, [router, url]);
-  return <Loading />;
+  return <EmptyStateLoading />;
 }

@@ -3,11 +3,12 @@
 import { ClusterList } from "@/api/kafka/schema";
 
 import { useOpenClusterConnectionPanel } from "@/app/[locale]/ClusterDrawerContext";
-import { Number } from "@/components/Number";
+import { Number } from "@/components/Format/Number";
 import { ResponsiveTable } from "@/components/Table";
 import { Skeleton, Truncate } from "@/libs/patternfly/react-core";
 import { ExternalLinkAltIcon } from "@/libs/patternfly/react-icons";
 import { TableVariant } from "@/libs/patternfly/react-table";
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { Suspense } from "react";
 
@@ -30,6 +31,7 @@ export function ClustersTable({
 }: {
   clusters: EnrichedClusterList[] | undefined;
 }) {
+  const t = useTranslations();
   const open = useOpenClusterConnectionPanel();
   return (
     <ResponsiveTable
@@ -40,15 +42,15 @@ export function ClustersTable({
       renderHeader={({ column, Th }) => {
         switch (column) {
           case "name":
-            return <Th width={25}>Name</Th>;
+            return <Th width={25}>{t("ClustersTable.name")}</Th>;
           case "nodes":
-            return <Th>Brokers</Th>;
+            return <Th>{t("ClustersTable.brokers")}</Th>;
           case "consumers":
-            return <Th>Consumer groups</Th>;
+            return <Th>{t("ClustersTable.consumer_groups")}</Th>;
           case "version":
-            return <Th>Kafka version</Th>;
+            return <Th>{t("ClustersTable.kafka_version")}</Th>;
           case "namespace":
-            return <Th>Project</Th>;
+            return <Th>{t("ClustersTable.project")}</Th>;
         }
       }}
       renderCell={({ key, column, row, Td }) => {
@@ -56,15 +58,13 @@ export function ClustersTable({
           case "name":
             return (
               <Td key={key}>
-                {
-                  row.meta.configured === true ? (
-                    <Link href={`/kafka/${row.id}`}>
-                      <Truncate content={row.attributes.name} />
-                    </Link>
-                  ) : (
+                {row.meta.configured === true ? (
+                  <Link href={`/kafka/${row.id}`}>
                     <Truncate content={row.attributes.name} />
-                  )
-                }
+                  </Link>
+                ) : (
+                  <Truncate content={row.attributes.name} />
+                )}
               </Td>
             );
           case "nodes":
@@ -75,7 +75,7 @@ export function ClustersTable({
                 </Suspense>
               </Td>
             ) : (
-              <i>Connection not configured</i>
+              <i>{t("ClustersTable.connection_not_configured")}</i>
             );
           case "consumers":
             return row.meta.configured === true ? (
@@ -88,7 +88,7 @@ export function ClustersTable({
                 </Suspense>
               </Td>
             ) : (
-              <i>Connection not configured</i>
+              <i>{t("ClustersTable.connection_not_configured")}</i>
             );
           case "version":
             return <Td key={key}>{row.attributes.kafkaVersion ?? "n/a"}</Td>;
@@ -124,6 +124,7 @@ async function NodesCell({
   kafkaId: string;
   data: AsyncNodesExtra;
 }) {
+  const t = useTranslations();
   const { online, count } = await data;
   return (
     <>
@@ -131,7 +132,9 @@ async function NodesCell({
       /
       <Number value={count} />
       &nbsp;online&nbsp;
-      <Link href={`/kafka/${kafkaId}/nodes`}>Brokers</Link>
+      <Link href={`/kafka/${kafkaId}/nodes`}>
+        {t("ClustersTable.brokers_link")}
+      </Link>
     </>
   );
 }

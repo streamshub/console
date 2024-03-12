@@ -1,12 +1,13 @@
 "use client";
 
 import { ConsumerGroup } from "@/api/consumerGroups/schema";
-import { LabelLink } from "@/components/LabelLink";
-import { Number } from "@/components/Number";
+import { Number } from "@/components/Format/Number";
+import { LabelLink } from "@/components/Navigation/LabelLink";
 import { TableView } from "@/components/Table";
 import { LabelGroup, Tooltip } from "@/libs/patternfly/react-core";
 import { HelpIcon } from "@/libs/patternfly/react-icons";
 import { Link } from "@/navigation";
+import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 
 export function ConsumerGroupsTable({
@@ -22,6 +23,7 @@ export function ConsumerGroupsTable({
   consumerGroups: ConsumerGroup[] | undefined;
   refresh: (() => Promise<ConsumerGroup[]>) | undefined;
 }) {
+  const t = useTranslations();
   const [consumerGroups, setConsumerGroups] = useState(initialData);
   useEffect(() => {
     let interval: ReturnType<typeof setInterval>;
@@ -39,41 +41,38 @@ export function ConsumerGroupsTable({
       page={page}
       onPageChange={() => {}}
       data={consumerGroups}
-      emptyStateNoData={<div>No consumer groups</div>}
-      emptyStateNoResults={<div>todo</div>}
-      ariaLabel={"Consumer groups"}
+      emptyStateNoData={
+        <div>{t("ConsumerGroupsTable.no_consumer_groups")}</div>
+      }
+      emptyStateNoResults={
+        <div>{t("ConsumerGroupsTable.no_consumer_groups")}</div>
+      }
+      ariaLabel={t("ConsumerGroupsTable.title")}
       columns={["name", "state", "lag", "members", "topics"] as const}
       renderHeader={({ column, key, Th }) => {
         switch (column) {
           case "name":
             return (
-              <Th key={key} width={30} dataLabel={"Consumer group name"}>
-                Consumer group name
+              <Th key={key} width={30}>
+                {t("ConsumerGroupsTable.consumer_group_name")}
               </Th>
             );
           case "state":
             return (
-              <Th key={key} dataLabel={"State"}>
-                State{" "}
-                <Tooltip
-                  content={`Reflects the current operational state of the consumer group. 
-                    Possible states include 'Stable,' 'Rebalancing,' or 'Empty.' 'Stable' indicates normal functioning,
-                     'Rebalancing' means ongoing adjustments to the group's members, and 'Empty' suggests no active members.
-                    If in the 'Empty' state, consider adding members to the group.`}
-                >
+              <Th key={key}>
+                {t("ConsumerGroupsTable.state")}{" "}
+                <Tooltip content={t.rich("ConsumerGroupsTable.state_tooltip")}>
                   <HelpIcon />
                 </Tooltip>
               </Th>
             );
           case "lag":
             return (
-              <Th key={key} dataLabel={"Overall lag"}>
-                Overall lag{" "}
+              <Th key={key}>
+                {t("ConsumerGroupsTable.overall_lag")}{" "}
                 <Tooltip
                   style={{ whiteSpace: "pre-line" }}
-                  content={`The cumulative lag across all partitions assigned to the consumer group.
-                       Consumer lag is the difference in the rate of production and consumption of messages.
-                       Specifically, consumer lag for a given consumer in a group indicates the delay between the last message in the partition and the message being currently picked up by that consumer.`}
+                  content={t.rich("ConsumerGroupsTable.overall_lag_tooltip")}
                 >
                   <HelpIcon />
                 </Tooltip>
@@ -81,46 +80,47 @@ export function ConsumerGroupsTable({
             );
           case "members":
             return (
-              <Th key={key} dataLabel={"Members"}>
-                Members{" "}
+              <Th key={key}>
+                {t("ConsumerGroupsTable.members")}{" "}
                 <Tooltip
-                  content={
-                    "Represents an individual member consumer within the consumer group. Monitor the lag of each member for insights into the health of the consumer group."
-                  }
+                  content={t.rich("ConsumerGroupsTable.members_tooltip")}
                 >
                   <HelpIcon />
                 </Tooltip>
               </Th>
             );
           case "topics":
-            return (
-              <Th key={key} dataLabel={"Topics"}>
-                Topics
-              </Th>
-            );
+            return <Th key={key}>{t("ConsumerGroupsTable.topics")}</Th>;
         }
       }}
       renderCell={({ row, column, key, Td }) => {
         switch (column) {
           case "name":
             return (
-              <Td key={key} dataLabel={"Consumer group name"}>
+              <Td
+                key={key}
+                dataLabel={t("ConsumerGroupsTable.consumer_group_name")}
+              >
                 <Link
                   href={`/kafka/${kafkaId}/consumer-groups/${row.id === "" ? "+" : row.id}`}
                 >
-                  {row.id === "" ? <i>Empty Name</i> : row.id}
+                  {row.id === "" ? (
+                    <i>{t("ConsumerGroupsTable.empty_name")}</i>
+                  ) : (
+                    row.id
+                  )}
                 </Link>
               </Td>
             );
           case "state":
             return (
-              <Td key={key} dataLabel={"State"}>
+              <Td key={key} dataLabel={t("ConsumerGroupsTable.state")}>
                 {row.attributes.state}
               </Td>
             );
           case "lag":
             return (
-              <Td key={key} dataLabel={"Overall lag"}>
+              <Td key={key} dataLabel={t("ConsumerGroupsTable.overall_lag")}>
                 <Number
                   value={row.attributes.offsets
                     ?.map((o) => o.lag)
@@ -133,7 +133,7 @@ export function ConsumerGroupsTable({
             const allTopics =
               row.attributes.members?.flatMap((m) => m.assignments ?? []) ?? [];
             return (
-              <Td key={key} dataLabel={"Assigned topics"}>
+              <Td key={key} dataLabel={t("ConsumerGroupsTable.topics")}>
                 <LabelGroup>
                   {Array.from(new Set(allTopics.map((a) => a.topicName))).map(
                     (topic, idx) => (
@@ -153,7 +153,7 @@ export function ConsumerGroupsTable({
             );
           case "members":
             return (
-              <Td key={key} dataLabel={"Members"}>
+              <Td key={key} dataLabel={t("ConsumerGroupsTable.members")}>
                 <Number value={row.attributes.members?.length} />
               </Td>
             );

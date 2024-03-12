@@ -151,7 +151,7 @@ export const ResponsiveTable = <TRow, TCol>({
   );
 
   const header = useMemo(() => {
-    return columns.map((column, index) => {
+    const headerCols = columns.map((column, index) => {
       const Th = forwardRef<HTMLTableCellElement, ThProps>(
         ({ children, ...props }, ref) => {
           return (
@@ -177,12 +177,14 @@ export const ResponsiveTable = <TRow, TCol>({
         colIndex: index,
       });
     });
+    return renderActions ? [...headerCols, <Th key={"actions"} />] : headerCols;
   }, [
     canColumnBeHidden,
     columns,
     isColumnSortable,
     minimumColumnWidth,
     renderHeader,
+    renderActions,
     width,
   ]);
 

@@ -1,7 +1,6 @@
 "use client";
-import { ExpandableMessages } from "@/app/[locale]/kafka/[kafkaId]/overview/ExpandableMessages";
-import { DateTime } from "@/components/DateTime";
-import { Number } from "@/components/Number";
+import { DateTime } from "@/components/Format/DateTime";
+import { Number } from "@/components/Format/Number";
 import {
   Card,
   CardBody,
@@ -28,6 +27,8 @@ import {
   ExclamationTriangleIcon,
 } from "@/libs/patternfly/react-icons";
 import { Link } from "@/navigation";
+import { useTranslations } from "next-intl";
+import { ErrorsAndWarnings } from "./components/ErrorsAndWarnings";
 
 type ClusterCardProps = {
   name: string;
@@ -58,6 +59,7 @@ export function ClusterCard({
       isLoading: false;
     } & ClusterCardProps)
   | ({ isLoading: true } & { [K in keyof ClusterCardProps]?: undefined })) {
+  const t = useTranslations();
   const warnings = messages?.filter((m) => m.variant === "warning").length || 0;
   const dangers = messages?.filter((m) => m.variant === "danger").length || 0;
   return (
@@ -133,7 +135,9 @@ export function ClusterCard({
                     )}
                   </Link>
                   <TextContent>
-                    <Text component={"small"}>Online brokers</Text>
+                    <Text component={"small"}>
+                      {t("ClusterCard.online_brokers")}
+                    </Text>
                   </TextContent>
                 </GridItem>
                 <GridItem span={12} xl={4}>
@@ -152,7 +156,9 @@ export function ClusterCard({
                     )}
                   </Link>
                   <TextContent>
-                    <Text component={"small"}>Consumer groups</Text>
+                    <Text component={"small"}>
+                      {t("ClusterCard.consumer_groups")}
+                    </Text>
                   </TextContent>
                 </GridItem>
                 <GridItem span={12} xl={4}>
@@ -160,7 +166,9 @@ export function ClusterCard({
                     {isLoading ? <Skeleton /> : kafkaVersion}
                   </div>
                   <TextContent>
-                    <Text component={"small"}>Kafka version</Text>
+                    <Text component={"small"}>
+                      {t("ClusterCard.kafka_version")}
+                    </Text>
                   </TextContent>
                 </GridItem>
               </Grid>
@@ -168,9 +176,9 @@ export function ClusterCard({
           </Flex>
           <Divider />
           <FlexItem>
-            <ExpandableMessages warnings={warnings} dangers={dangers}>
+            <ErrorsAndWarnings warnings={warnings} dangers={dangers}>
               <DataList
-                aria-label="Cluster errors and warnings"
+                aria-label={t("ClusterCard.cluster_errors_and_warnings")}
                 isCompact={true}
               >
                 {isLoading ? (
@@ -201,7 +209,9 @@ export function ClusterCard({
                           <DataListItemCells
                             dataListCells={[
                               <DataListCell key="name">
-                                <span id={"no-messages"}>No messages</span>
+                                <span id={"no-messages"}>
+                                  {t("ClusterCard.no_messages")}
+                                </span>
                               </DataListCell>,
                             ]}
                           />
@@ -270,7 +280,7 @@ export function ClusterCard({
                   </>
                 )}
               </DataList>
-            </ExpandableMessages>
+            </ErrorsAndWarnings>
           </FlexItem>
         </Flex>
       </CardBody>

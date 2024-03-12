@@ -11,7 +11,11 @@
     "refresh_interval": "{value} seconds"
   },
   "Table": {
-    "skeleton_loader_screenreader_text": "Loading data"
+    "skeleton_loader_screenreader_text": "Loading data",
+    "EmptyStateNoMatchFound": {
+      "no_results_match_the_filter_criteria_clear_all_fil": "No results match the filter criteria. Clear all filters and try again.",
+      "clear_all_filters": "Clear all filters"
+    }
   },
   "homepage": {
     "title": "Integration Developer Hub"
@@ -145,5 +149,179 @@
   "delete-topic": {
     "message": "The <b>{topicName}</b> topic will be deleted and removed from this instance. Applications will no longer have access to this topic.",
     "title": "Delete topic?"
+  },
+  "Loading": {
+    "loading": "Loading"
+  },
+  "ManagedTopicLabel": {
+    "label": "Managed",
+    "tooltip": "Managed topics are created using the KafkaTopic custom resource and are created and updated in the Kafka cluster by the AMQ Streams Topic Operator."
+  },
+  "AdvancedSearch": {
+    "dialog_label": "Search messages",
+    "has_the_words": "Has the words",
+    "query_helper": "Enter your search terms to find matches within the selected field. Wildcards and regular expressions are not required or supported.",
+    "in_partition": "In partition",
+    "search": "Search",
+    "reset": "Reset"
+  },
+  "AppLayout": {
+    "main_navigation_aria_label": "Main navigation",
+    "home": "Home",
+    "kafka_clusters": "Kafka clusters",
+    "tech_preview_label": "This is a Tech Preview version. You are logged in as an anonymous user with read-only access.",
+    "cluster_overview": "Cluster overview",
+    "topics": "Topics",
+    "brokers": "Brokers",
+    "consumer_groups": "Consumer groups"
+  },
+  "AppMasthead": {
+    "global_navigation": "Global navigation",
+    "tech_preview_label": "Tech preview",
+    "help": "Help"
+  },
+  "ChartCpuUsage": {
+    "data_unavailable": "Data unavailable, please try again later"
+  },
+  "ChartDiskUsage": {
+    "data_unavailable": "Data unavailable, please try again later"
+  },
+  "ChartIncomingOutgoing": {
+    "data_unavailable": "Data unavailable, please try again later"
+  },
+  "ChartMemoryUsage": {
+    "data_unavailable": "Data unavailable, please try again later"
+  },
+  "ClusterCard": {
+    "online_brokers": "Online brokers",
+    "consumer_groups": "Consumer groups",
+    "kafka_version": "Kafka version",
+    "cluster_errors_and_warnings": "Cluster errors and warnings",
+    "no_messages": "No messages"
+  },
+  "ClusterChartsCard": {
+    "cluster_metrics": "Cluster metrics",
+    "used_disk_space": "Used disk space",
+    "used_disk_space_tooltip": "Used and available disk capacity for all brokers over a specified period. Make sure there's enough space for everyday operations.",
+    "cpu_usage": "CPU usage",
+    "cpu_usage_tooltip": "CPU utilization for all brokers over a specified period. Sustained high usage may indicate the need for resource optimization. Sustained high usage may indicate the need to review cluster capacity, producer send, or consumer fetch configurations.",
+    "memory_usage": "Memory usage",
+    "memory_usage_tooltip": "Memory utilization for all brokers over a specified period. Efficient memory allocation is essential for optimal performance of Kafka."
+  },
+  "ClusterConnectionDetails": {
+    "description": "To connect to a Kafka cluster, add a bootstrap address and the properties to establish a secure connection to the configuration of your client application.",
+    "external_servers_bootstraps": "External servers bootstraps",
+    "external_servers_bootstraps_description": "External listeners provide client access to a Kafka cluster from outside the OpenShift cluster.",
+    "authentication_type": "Authentication type:",
+    "internal_servers_bootstraps": "Internal servers bootstraps",
+    "internal_Servers_bootstraps_description": "Internal listeners provide client access to a Kafka cluster only from within the OpenShift cluster.",
+    "when_you_have_established_a_connection": "When you have established a connection, you can begin consuming messages from Kafka topics or producing messages to them.",
+    "developing_kafka_client_applications": "Developing Kafka client applications",
+    "amq_streams_portal": "AMQ Streams portal"
+  },
+  "ClusterDrawer": {
+    "cluster_connection_details": "Cluster connection details"
+  },
+  "ClustersTable": {
+    "name": "Name",
+    "brokers": "Brokers",
+    "consumer_groups": "Consumer groups",
+    "kafka_version": "Kafka version",
+    "project": "Project",
+    "connection_not_configured": "Connection not configured",
+    "brokers_link": "Brokers"
+  },
+  "ColumnsModal": {
+    "title": "Manage columns",
+    "description": "Chosen fields will be displayed in the table.",
+    "save": "Save",
+    "cancel": "Cancel",
+    "columns": "Columns"
+  },
+  "useColumnLabels": {
+    "key": "Key",
+    "headers": "Headers",
+    "offset-partition": "Offset",
+    "value": "Value",
+    "size": "Size",
+    "timestamp": "Timestamp ({timeZone})",
+    "timestampUTC": "Timestamp (UTC)"
+  },
+  "ConfigTable": {
+    "property": "Property",
+    "value": "Value",
+    "read_only": "Read only"
+  },
+  "ConnectButton": {
+    "cluster_connection_details": "Cluster connection details"
+  },
+  "AlertTopicGone": {
+    "topic_not_found": "Topic not found",
+    "go_back_to_the_list_of_topics": "Go back to the list of topics",
+    "this_topic_was_deleted_or_you_donapost_have_the_co": "This topic was deleted, or you don&apos;t have the correct permissions to see it."
+  },
+  "AlertContinuousMode": {
+    "continue": "Continue",
+    "title": "The screen displays only the most recent 100 messages, with older messages rotating out.",
+    "pause": "Pause"
+  },
+  "ConsumerGroupsTable": {
+    "title": "Consumer groups",
+    "no_consumer_groups": "No consumer groups",
+    "consumer_group_name": "Consumer group name",
+    "state": "State",
+    "state_tooltip": "<p>Reflects the current operational state of the consumer group.</p><p>Possible states include 'Stable,' 'Rebalancing,' or 'Empty.' 'Stable' indicates normal functioning, 'Rebalancing' means ongoing adjustments to the group's members, and 'Empty' suggests no active members.</p><p>If in the 'Empty' state, consider adding members to the group.</p>",
+    "overall_lag": "Overall lag",
+    "overall_lag_tooltip": "<p>The cumulative lag across all partitions assigned to the consumer group.</p><p>Consumer lag is the difference in the rate of production and consumption of messages.</p><p>Specifically, consumer lag for a given consumer in a group indicates the delay between the last message in the partition and the message being currently picked up by that consumer.</p>",
+    "members": "Members",
+    "members_tooltip": "Represents an individual member consumer within the consumer group. Monitor the lag of each member for insights into the health of the consumer group.",
+    "topics": "Topics",
+    "empty_name": "Empty Name"
+  },
+  "CreateTopic": {
+    "title": "Topic creation wizard",
+    "topic_details": "Topic details",
+    "options": "Options",
+    "review": "Review",
+    "create_topic": "Create topic",
+    "next": "Next",
+    "back": "Back",
+    "review_and_finish": "Review and finish",
+    "review_and_finish_tooltip": "Topic can now be created. You can continue to configure your topic, or you can skip ahead to the review step.",
+    "cancel": "Cancel"
+  },
+  "DistributionChart": {
+    "partitions_distribution_of_total": "Partitions distribution (% of total)",
+    "partitions_distribution_of_total_tooltip": "The percentage distribution of partitions across brokers in the cluster. Consider rebalancing if the distribution is uneven to ensure efficient resource utilization.",
+    "distribution_toggles": "Compact variant toggle group",
+    "distribution_chart_title": "Partitions distribution chart",
+    "distribution_chart_description": "Shows how partitions are spread between leaders and followers",
+    "all_label": "All ({count})",
+    "leaders_label": "Leaders ({count})",
+    "followers_label": "Followers ({count})",
+    "broker_node_legend_all": "Broker {node} total partitions",
+    "broker_node_legend_leaders": "Broker {node} leaders",
+    "broker_node_legend_followers": "Broker {node} followers",
+    "broker_node_voronoi_all": "{name} total partitions: {value}",
+    "broker_node_voronoi_leaders": "{name} leaders: {value}",
+    "broker_node_voronoi_followers": "{name} followers: {value}"
+  },
+  "EmptyStateNoTopics": {
+    "to_get_started_create_your_first_topic": "To get started, create your first topic",
+    "create_a_topic": "Create a topic"
+  },
+  "ApplicationError": {
+    "body": "Try clicking the button below, or refreshing the page. If the problem persists, contact your organization administrator.",
+    "error": "Error",
+    "title": "This page is temporarily unavailable",
+    "retry": "Retry",
+    "message": "Message",
+    "error_details": "Show more"
+  },
+  "ClusterOverview": {
+    "ErrorsAndWarnings": {
+      "cluster_errors_and_warnings": "Cluster errors and warnings",
+      "tooltip": "Issues encountered in the Kafka cluster. Investigate and address these issues to ensure continued operation of the cluster."
+    }
   }
 }

@@ -1,14 +1,20 @@
 "use client";
-import { Label, LabelGroup, Title, Tooltip } from "@/libs/patternfly/react-core";
+import {
+  ExpandableSection,
+  Label,
+  LabelGroup,
+  Title,
+  Tooltip,
+} from "@/libs/patternfly/react-core";
 import {
   ExclamationCircleIcon,
   ExclamationTriangleIcon,
-  HelpIcon
+  HelpIcon,
 } from "@/libs/patternfly/react-icons";
-import { ExpandableSection } from "@patternfly/react-core";
+import { useTranslations } from "next-intl";
 import { PropsWithChildren, useState } from "react";
 
-export function ExpandableMessages({
+export function ErrorsAndWarnings({
   warnings,
   dangers,
   children,
@@ -16,6 +22,7 @@ export function ExpandableMessages({
   warnings: number;
   dangers: number;
 }>) {
+  const t = useTranslations();
   const [showMessages, setShowMessages] = useState(warnings + dangers > 0);
   return (
     <ExpandableSection
@@ -23,15 +30,10 @@ export function ExpandableMessages({
       onToggle={(_, isOpen) => setShowMessages(isOpen)}
       toggleContent={
         <Title headingLevel={"h3"} className={"pf-v5-u-font-size-sm"}>
-          Cluster errors and warnings{" "}
-          <Tooltip
-              content={
-                "Issues encountered in the Kafka cluster. Investigate and address these issues to ensure continued operation of the cluster."
-              }
-            >
-              <HelpIcon />
-          </Tooltip>
-            {" "}
+          {t("ClusterOverview.ErrorsAndWarnings.cluster_errors_and_warnings")}{" "}
+          <Tooltip content={t("ClusterOverview.ErrorsAndWarnings.tooltip")}>
+            <HelpIcon />
+          </Tooltip>{" "}
           <LabelGroup>
             <Label color={"red"} isCompact={true}>
               <ExclamationCircleIcon /> {dangers}

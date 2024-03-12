@@ -1,61 +1,52 @@
 "use client";
 import {
-  getHeight,
-  getPadding,
-} from "@/app/[locale]/kafka/[kafkaId]/overview/chartConsts";
-import {
   Chart,
   ChartArea,
   ChartAxis,
-  ChartGroup,
   ChartLegend,
   ChartLegendTooltip,
+  ChartStack,
   ChartThemeColor,
-  ChartThreshold,
   createContainer,
 } from "@/libs/patternfly/react-charts";
 import { useFormatBytes } from "@/utils/useFormatBytes";
-import { useFormatter } from "next-intl";
+import { useFormatter, useTranslations } from "next-intl";
+import { getHeight, getPadding } from "./chartConsts";
 import { useChartWidth } from "./useChartWidth";
 
 type ChartDiskUsageProps = {
   usages: TimeSeriesMetrics[];
-  available: TimeSeriesMetrics[];
 };
+
 type Datum = {
   x: number;
   y: number;
   name: string;
 };
 
-export function ChartDiskUsage({ usages, available }: ChartDiskUsageProps) {
+export function ChartMemoryUsage({ usages }: ChartDiskUsageProps) {
+  const t = useTranslations();
   const format = useFormatter();
   const formatBytes = useFormatBytes();
   const [containerRef, width] = useChartWidth();
 
-  const itemsPerRow = width > 650 ? 2 : 1;
+  const itemsPerRow = width > 650 ? 6 : width > 300 ? 3 : 1;
 
   const hasMetrics = Object.keys(usages).length > 0;
   if (!hasMetrics) {
-    return <div>TODO</div>;
+    return <div>{t("ChartMemoryUsage.data_unavailable")}</div>;
   }
+
   const CursorVoronoiContainer = createContainer("voronoi", "cursor");
-  const legendData = [
-    ...usages.map((_, idx) => ({
-      name: `Node ${idx}`,
-      childName: `node ${idx}`,
-    })),
-    ...usages.map((_, idx) => ({
-      name: `Available storage threshold (node ${idx + 1})`,
-      childName: `threshold ${idx}`,
-      symbol: { type: "threshold" },
-    })),
-  ];
+  const legendData = usages.map((_, idx) => ({
+    name: `Node ${idx}`,
+    childName: `node ${idx}`,
+  }));
   const padding = getPadding(legendData.length / itemsPerRow);
   return (
     <div ref={containerRef}>
       <Chart
-        ariaTitle={"Used disk space"}
+        ariaTitle={"Memory usage"}
         containerComponent={
           <CursorVoronoiContainer
             cursorDimension="x"
@@ -114,12 +105,12 @@ export function ChartDiskUsage({ usages, available }: ChartDiskUsageProps) {
             return formatBytes(d, { maximumFractionDigits: 0 });
           }}
         />
-        <ChartGroup>
+        <ChartStack>
           {usages.map((usage, idx) => {
             const usageArray = Object.entries(usage);
             return (
               <ChartArea
-                key={`usage-area-${idx}`}
+                key={`memory-usage-${idx}`}
                 data={usageArray.map(([x, y]) => ({
                   name: `Node ${idx + 1}`,
                   x,
@@ -129,22 +120,7 @@ export function ChartDiskUsage({ usages, available }: ChartDiskUsageProps) {
               />
             );
           })}
-          {usages.map((usage, idx) => {
-            const usageArray = Object.entries(usage);
-            const data = Object.entries(available[idx]);
-            return (
-              <ChartThreshold
-                key={`chart-softlimit-${idx}}`}
-                data={data.map(([_, y], x) => ({
-                  name: `Available storage threshold (node ${idx + 1})`,
-                  x: usageArray[x][0],
-                  y,
-                }))}
-                name={`threshold ${idx}`}
-              />
-            );
-          })}
-        </ChartGroup>
+        </ChartStack>
       </Chart>
     </div>
   );

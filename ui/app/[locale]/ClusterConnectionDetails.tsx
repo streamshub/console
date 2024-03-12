@@ -1,6 +1,6 @@
 import { getKafkaCluster } from "@/api/kafka/actions";
 import { ExpandableSection } from "@/components/ExpandableSection";
-import { ExternalLink } from "@/components/ExternalLink";
+import { ExternalLink } from "@/components/Navigation/ExternalLink";
 import {
   Badge,
   ClipboardCopy,
@@ -10,12 +10,14 @@ import {
   TextContent,
 } from "@/libs/patternfly/react-core";
 import { Divider, Stack, StackItem } from "@patternfly/react-core";
+import { useTranslations } from "next-intl";
 
 export async function ClusterConnectionDetails({
   clusterId,
 }: {
   clusterId: string;
 }) {
+  const t = useTranslations();
   const data = await getKafkaCluster(clusterId);
   if (!data) {
     return null;
@@ -27,25 +29,22 @@ export async function ClusterConnectionDetails({
     <Stack>
       <StackItem isFilled={true}>
         <TextContent className={"pf-v5-u-p-lg"}>
-          <Text>
-            To connect to a Kafka cluster, add a bootstrap address and the
-            properties to establish a secure connection to the configuration of
-            your client application.
-          </Text>
+          <Text>{t("ClusterConnectionDetails.description")}</Text>
 
           <ExpandableSection
             displaySize={"lg"}
             initialExpanded={true}
             toggleContent={
               <div>
-                External servers bootstraps{" "}
+                {t("ClusterConnectionDetails.external_servers_bootstraps")}{" "}
                 <Badge isRead={true}>{external.length}</Badge>
               </div>
             }
           >
             <Text>
-              External listeners provide client access to a Kafka cluster from
-              outside the OpenShift cluster.
+              {t(
+                "ClusterConnectionDetails.external_servers_bootstraps_description",
+              )}
             </Text>
             <List isPlain={true}>
               {external.map((l, idx) => (
@@ -56,7 +55,8 @@ export async function ClusterConnectionDetails({
                   <Text component={"small"}>
                     {/*Listener type: {l.type}*/}
                     {/*<br />*/}
-                    Authentication type: {l.authType || "none"}
+                    {t("ClusterConnectionDetails.authentication_type")}{" "}
+                    {l.authType || "none"}
                   </Text>
                 </ListItem>
               ))}
@@ -68,15 +68,16 @@ export async function ClusterConnectionDetails({
             initialExpanded={true}
             toggleContent={
               <div>
-                Internal servers bootstraps{" "}
+                {t("ClusterConnectionDetails.internal_servers_bootstraps")}{" "}
                 <Badge isRead={true}>{internal.length}</Badge>
               </div>
             }
             className={"pf-v5-u-mt-lg"}
           >
             <Text>
-              Internal listeners provide client access to a Kafka cluster only
-              from within the OpenShift cluster.
+              {t(
+                "ClusterConnectionDetails.internal_Servers_bootstraps_description",
+              )}
             </Text>
             <List isPlain={true}>
               {internal.map((l, idx) => (
@@ -85,15 +86,17 @@ export async function ClusterConnectionDetails({
                     {l.bootstrapServers ?? ""}
                   </ClipboardCopy>
                   <Text component={"small"}>
-                    Authentication type: {l.authType || "none"}
+                    {t("ClusterConnectionDetails.authentication_type")}{" "}
+                    {l.authType || "none"}
                   </Text>
                 </ListItem>
               ))}
             </List>
 
             <Text>
-              When you have established a connection, you can begin consuming
-              messages from Kafka topics or producing messages to them.
+              {t(
+                "ClusterConnectionDetails.when_you_have_established_a_connection",
+              )}
             </Text>
           </ExpandableSection>
         </TextContent>
@@ -108,7 +111,9 @@ export async function ClusterConnectionDetails({
                 "https://access.redhat.com/documentation/en-us/red_hat_amq_streams/2.5/html/developing_kafka_client_applications/"
               }
             >
-              Developing Kafka client applications
+              {t(
+                "ClusterConnectionDetails.developing_kafka_client_applications",
+              )}
             </ExternalLink>
           </StackItem>
           <StackItem>
@@ -118,7 +123,7 @@ export async function ClusterConnectionDetails({
                 "https://access.redhat.com/documentation/en-us/red_hat_amq/7.7/html-single/amq_streams_on_openshift_overview/index"
               }
             >
-              AMQ Streams portal
+              {t("ClusterConnectionDetails.amq_streams_portal")}
             </ExternalLink>
           </StackItem>
         </Stack>

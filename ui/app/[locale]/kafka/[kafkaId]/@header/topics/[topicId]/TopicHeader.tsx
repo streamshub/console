@@ -2,9 +2,9 @@ import { getKafkaCluster } from "@/api/kafka/actions";
 import { getTopic } from "@/api/topics/actions";
 import { KafkaTopicParams } from "@/app/[locale]/kafka/[kafkaId]/topics/kafkaTopic.params";
 import { AppHeader } from "@/components/AppHeader";
+import { Number } from "@/components/Format/Number";
 import { ManagedTopicLabel } from "@/components/ManagedTopicLabel";
-import { NavItemLink } from "@/components/NavItemLink";
-import { Number } from "@/components/Number";
+import { NavItemLink } from "@/components/Navigation/NavItemLink";
 import {
   Label,
   Nav,

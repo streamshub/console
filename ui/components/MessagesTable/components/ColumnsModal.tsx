@@ -7,6 +7,7 @@ import {
   DataListItemCells,
 } from "@patternfly/react-core";
 import { DragDropSort } from "@patternfly/react-drag-drop";
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 
 export const columns = [
@@ -21,15 +22,16 @@ export const columns = [
 export type Column = (typeof columns)[number];
 
 export function useColumnLabels() {
+  const t = useTranslations();
   const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const columnLabels: Record<Column, string> = {
-    key: "Key",
-    headers: "Headers",
-    "offset-partition": "Offset",
-    value: "Value",
-    size: "Size",
-    timestamp: `Timestamp (${timeZone})`,
-    timestampUTC: "Timestamp (UTC)",
+    key: t("useColumnLabels.key"),
+    headers: t("useColumnLabels.headers"),
+    "offset-partition": t("useColumnLabels.offset-partition"),
+    value: t("useColumnLabels.value"),
+    size: t("useColumnLabels.size"),
+    timestamp: t("useColumnLabels.timestamp", { timeZone }),
+    timestampUTC: t("useColumnLabels.timestampUTC"),
   };
   return columnLabels;
 }
@@ -43,6 +45,7 @@ export function ColumnsModal({
   onConfirm: (columns: Column[]) => void;
   onCancel: () => void;
 }) {
+  const t = useTranslations();
   const columnLabels = useColumnLabels();
   const [chosenColumns, setChosenColumns] = useState(initialValue);
   const [sortedColumns, setSortedColumns] = useState(getInitialColumns());
@@ -90,14 +93,12 @@ export function ColumnsModal({
 
   return (
     <Modal
-      title="Manage columns"
+      title={t("ColumnsModal.title")}
       isOpen={true}
       variant="small"
       description={
         <TextContent>
-          <Text component={"p"}>
-            Chosen fields will be displayed in the table.
-          </Text>
+          <Text component={"p"}>{t("ColumnsModal.description")}</Text>
         </TextContent>
       }
       onClose={onCancel}
@@ -110,10 +111,10 @@ export function ColumnsModal({
           }
           isDisabled={chosenColumns.length === 0}
         >
-          Save
+          {t("ColumnsModal.save")}
         </Button>,
         <Button key="cancel" variant="secondary" onClick={onCancel}>
-          Cancel
+          {t("ColumnsModal.cancel")}
         </Button>,
       ]}
     >
@@ -124,7 +125,7 @@ export function ColumnsModal({
         }}
         variant="DataList"
       >
-        <DataList aria-label="Columns" isCompact />
+        <DataList aria-label={t("ColumnsModal.columns")} isCompact />
       </DragDropSort>
     </Modal>
   );

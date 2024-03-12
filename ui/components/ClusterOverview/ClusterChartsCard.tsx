@@ -1,8 +1,8 @@
 "use client";
-import { ChartCpuUsage } from "@/app/[locale]/kafka/[kafkaId]/overview/ChartCpuUsage";
-import { ChartDiskUsage } from "@/app/[locale]/kafka/[kafkaId]/overview/ChartDiskUsage";
-import { ChartMemoryUsage } from "@/app/[locale]/kafka/[kafkaId]/overview/ChartMemoryUsage";
-import { ChartSkeletonLoader } from "@/app/[locale]/kafka/[kafkaId]/overview/ChartSkeletonLoader";
+import { ChartCpuUsage } from "@/components/ClusterOverview/components/ChartCpuUsage";
+import { ChartDiskUsage } from "@/components/ClusterOverview/components/ChartDiskUsage";
+import { ChartMemoryUsage } from "@/components/ClusterOverview/components/ChartMemoryUsage";
+import { ChartSkeletonLoader } from "@/components/ClusterOverview/components/ChartSkeletonLoader";
 import {
   Card,
   CardBody,
@@ -10,9 +10,11 @@ import {
   CardTitle,
   Divider,
   Flex,
+  Title,
+  Tooltip,
 } from "@/libs/patternfly/react-core";
-import { Title, Tooltip } from "@patternfly/react-core";
-import { HelpIcon } from "@patternfly/react-icons";
+import { HelpIcon } from "@/libs/patternfly/react-icons";
+import { useTranslations } from "next-intl";
 
 type ClusterChartsCardProps = {
   usedDiskSpace: TimeSeriesMetrics[];
@@ -32,24 +34,21 @@ export function ClusterChartsCard({
   | ({
       isLoading: true;
     } & Partial<{ [key in keyof ClusterChartsCardProps]?: undefined }>)) {
+  const t = useTranslations();
   return (
     <Card>
       <CardHeader>
         <CardTitle>
           <Title headingLevel={"h2"} size={"lg"}>
-            Cluster metrics
+            {t("ClusterChartsCard.cluster_metrics")}
           </Title>
         </CardTitle>
       </CardHeader>
       <CardBody>
         <Flex direction={{ default: "column" }} gap={{ default: "gapLg" }}>
           <b>
-            Used disk space{" "}
-            <Tooltip
-              content={
-                "Used and available disk capacity for all brokers over a specified period. Make sure there's enough space for everyday operations."
-              }
-            >
+            {t("ClusterChartsCard.used_disk_space")}{" "}
+            <Tooltip content={t("ClusterChartsCard.used_disk_space_tooltip")}>
               <HelpIcon />
             </Tooltip>
           </b>
@@ -63,12 +62,8 @@ export function ClusterChartsCard({
           )}
           <Divider />
           <b>
-            CPU usage{" "}
-            <Tooltip
-              content={
-                "CPU utilization for all brokers over a specified period. Sustained high usage may indicate the need for resource optimization. Sustained high usage may indicate the need to review cluster capacity, producer send, or consumer fetch configurations."
-              }
-            >
+            {t("ClusterChartsCard.cpu_usage")}{" "}
+            <Tooltip content={t("ClusterChartsCard.cpu_usage_tooltip")}>
               <HelpIcon />
             </Tooltip>
           </b>
@@ -79,12 +74,8 @@ export function ClusterChartsCard({
           )}
           <Divider />
           <b>
-            Memory usage{" "}
-            <Tooltip
-              content={
-                "Memory utilization for all brokers over a specified period. Efficient memory allocation is essential for optimal performance of Kafka."
-              }
-            >
+            {t("ClusterChartsCard.memory_usage")}{" "}
+            <Tooltip content={t("ClusterChartsCard.memory_usage_tooltip")}>
               <HelpIcon />
             </Tooltip>
           </b>

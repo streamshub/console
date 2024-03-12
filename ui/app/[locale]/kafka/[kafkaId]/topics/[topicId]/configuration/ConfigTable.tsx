@@ -2,7 +2,7 @@
 import { Topic, TopicMutateError } from "@/api/topics/schema";
 import { Error } from "@/app/[locale]/kafka/[kafkaId]/topics/create/Errors";
 import { topicMutateErrorToFieldError } from "@/app/[locale]/kafka/[kafkaId]/topics/create/topicMutateErrorToFieldError";
-import { Number } from "@/components/Number";
+import { Number } from "@/components/Format/Number";
 import { ResponsiveTableProps, TableView } from "@/components/Table";
 import { usePathname, useRouter } from "@/navigation";
 import { readonly } from "@/utils/runmode";
@@ -21,6 +21,7 @@ import {
 } from "@patternfly/react-core";
 import { CheckIcon, PencilAltIcon, TimesIcon } from "@patternfly/react-icons";
 import { TableVariant } from "@patternfly/react-table";
+import { useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useState } from "react";
 import { NoResultsEmptyState } from "./NoResultsEmptyState";
@@ -37,6 +38,7 @@ export function ConfigTable({
     | ((name: string, value: string) => Promise<boolean | TopicMutateError>)
     | undefined;
 }) {
+  const t = useTranslations();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -155,7 +157,7 @@ export function ConfigTable({
       switch (column) {
         case "property":
           return (
-            <Td key={key} dataLabel={"Property"}>
+            <Td key={key} dataLabel={t("ConfigTable.property")}>
               <div>{name}</div>
               <LabelGroup>
                 <Label isCompact={true} color={"cyan"}>
@@ -163,7 +165,7 @@ export function ConfigTable({
                 </Label>
                 {property.readOnly && (
                   <Label isCompact={true} color={"grey"}>
-                    Read only
+                    {t("ConfigTable.read_only")}
                   </Label>
                 )}
               </LabelGroup>
@@ -173,7 +175,7 @@ export function ConfigTable({
           if (isEditing[name] !== undefined) {
             const validated = fieldError?.field === name ? "error" : "default";
             return (
-              <Td key={name} dataLabel={"Value"}>
+              <Td key={name} dataLabel={t("ConfigTable.value")}>
                 <FormGroup fieldId={name}>
                   <TextInput
                     id={`property-${name}`}
@@ -215,7 +217,7 @@ export function ConfigTable({
           }
       }
     },
-    [fieldError?.error, fieldError?.field, isEditing, options],
+    [fieldError?.error, fieldError?.field, isEditing, options, t],
   );
 
   return (
@@ -309,20 +311,16 @@ export function ConfigTable({
           switch (column) {
             case "property":
               return (
-                <Th key={key} dataLabel={"Property"} width={40}>
-                  Property
+                <Th key={key} width={40}>
+                  {t("ConfigTable.property")}
                 </Th>
               );
             case "value":
-              return (
-                <Th key={key} dataLabel={"Value"}>
-                  Value
-                </Th>
-              );
+              return <Th key={key}>{t("ConfigTable.value")}</Th>;
           }
         }}
         renderCell={renderCell}
-        renderActions={({ row: [name, property] }) => {
+        renderActions={({ row: [name] }) => {
           if (readonly()) {
             return <></>;
           }

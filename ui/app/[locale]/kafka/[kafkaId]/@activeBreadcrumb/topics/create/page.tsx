@@ -1,5 +1,5 @@
 import { KafkaParams } from "@/app/[locale]/kafka/[kafkaId]/kafka.params";
-import { BreadcrumbLink } from "@/components/BreadcrumbLink";
+import { BreadcrumbLink } from "@/components/Navigation/BreadcrumbLink";
 import { BreadcrumbItem } from "@/libs/patternfly/react-core";
 
 export default function TopicsActiveBreadcrumb({

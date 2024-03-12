@@ -1,9 +1,5 @@
 "use client";
 import {
-  getHeight,
-  getPadding,
-} from "@/app/[locale]/kafka/[kafkaId]/overview/chartConsts";
-import {
   Chart,
   ChartArea,
   ChartAxis,
@@ -13,11 +9,11 @@ import {
   ChartThemeColor,
   createContainer,
 } from "@/libs/patternfly/react-charts";
-import { useFormatBytes } from "@/utils/useFormatBytes";
-import { useFormatter } from "next-intl";
+import { useFormatter, useTranslations } from "next-intl";
+import { getHeight, getPadding } from "./chartConsts";
 import { useChartWidth } from "./useChartWidth";
 
-type ChartDiskUsageProps = {
+type ChartCpuUsageProps = {
   usages: TimeSeriesMetrics[];
 };
 
@@ -27,18 +23,18 @@ type Datum = {
   name: string;
 };
 
-export function ChartMemoryUsage({ usages }: ChartDiskUsageProps) {
+export function ChartCpuUsage({ usages }: ChartCpuUsageProps) {
+  const t = useTranslations();
   const format = useFormatter();
-  const formatBytes = useFormatBytes();
   const [containerRef, width] = useChartWidth();
 
   const itemsPerRow = width > 650 ? 6 : width > 300 ? 3 : 1;
 
   const hasMetrics = Object.keys(usages).length > 0;
   if (!hasMetrics) {
-    return <div>TODO</div>;
+    return <div>{t("ChartCpuUsage.data_unavailable")}</div>;
   }
-
+  // const showDate = shouldShowDate(duration);
   const CursorVoronoiContainer = createContainer("voronoi", "cursor");
   const legendData = usages.map((_, idx) => ({
     name: `Node ${idx}`,
@@ -48,7 +44,7 @@ export function ChartMemoryUsage({ usages }: ChartDiskUsageProps) {
   return (
     <div ref={containerRef}>
       <Chart
-        ariaTitle={"Memory usage"}
+        ariaTitle={"Cpu usage"}
         containerComponent={
           <CursorVoronoiContainer
             cursorDimension="x"
@@ -67,7 +63,7 @@ export function ChartMemoryUsage({ usages }: ChartDiskUsageProps) {
               />
             }
             labels={({ datum }: { datum: Datum }) =>
-              datum.y !== null ? formatBytes(datum.y) : "no data"
+              datum.y !== null ? `${format.number(datum.y * 1000)}m` : "no data"
             }
             constrainToVisibleArea
           />
@@ -104,7 +100,7 @@ export function ChartMemoryUsage({ usages }: ChartDiskUsageProps) {
           dependentAxis
           showGrid={true}
           tickFormat={(d) => {
-            return formatBytes(d, { maximumFractionDigits: 0 });
+            return format.number(d * 1000) + "m";
           }}
         />
         <ChartStack>
@@ -112,7 +108,7 @@ export function ChartMemoryUsage({ usages }: ChartDiskUsageProps) {
             const usageArray = Object.entries(usage);
             return (
               <ChartArea
-                key={`memory-usage-${idx}`}
+                key={`cpu-usage-${idx}}`}
                 data={usageArray.map(([x, y]) => ({
                   name: `Node ${idx + 1}`,
                   x,

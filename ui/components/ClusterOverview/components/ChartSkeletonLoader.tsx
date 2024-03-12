@@ -1,8 +1,5 @@
-import {
-  getHeight,
-  getPadding,
-} from "@/app/[locale]/kafka/[kafkaId]/overview/chartConsts";
 import { Flex, FlexItem, Skeleton } from "@/libs/patternfly/react-core";
+import { getHeight, getPadding } from "./chartConsts";
 
 export function ChartSkeletonLoader() {
   const height = getHeight(0);

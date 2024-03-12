@@ -1,4 +1,4 @@
-import { ExternalLink } from "@/components/ExternalLink";
+import { ExternalLink } from "@/components/Navigation/ExternalLink";
 import { Popover } from "@/libs/patternfly/react-core";
 import { PopoverProps } from "@patternfly/react-core";
 
