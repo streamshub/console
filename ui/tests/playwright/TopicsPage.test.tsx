@@ -1,9 +1,12 @@
 import { expect, test } from "@playwright/test";
 
-test.describe("Topics page", () => {
-  test("Topics page should display table", async ({ page }) => {
-    await page.goto(`./kafka/j7W3TRG7SsWCBXHjz2hfrg/topics`);
-    await page.waitForLoadState("networkidle");
+test("Topics page", async ({page}) => {
+  await test.step("Navigate to topics page", async () => {
+    await page.goto("./home");
+    await page.click('text="Topics"');
+    await page.waitForSelector('text="Hide internal topics"', { timeout: 500000 });
+  })
+  await test.step("Topics page should display table", async () => {
     const label = await page.$("label.pf-v5-c-switch");
     expect(label).not.toBeNull();
     const labelText = await label?.innerText();
@@ -32,5 +35,5 @@ test.describe("Topics page", () => {
       (tds) => tds.map((td) => td.textContent?.trim() ?? ""),
     );
     expect(dataCells.length).toBeGreaterThan(0);
-  }, 100000);
+  });
 });

@@ -1,21 +1,26 @@
 import { expect, test } from "@playwright/test";
 
-test.describe("Cluster Overview page", () => {
-  test("Cluster overview page should display correctly", async ({ page }) => {
-    await page.goto(`./kafka/j7W3TRG7SsWCBXHjz2hfrg/overview`);
-    await page.waitForLoadState("networkidle");
-    expect(await page.innerText("body")).toContain("Cluster overview");
-    expect(await page.innerText("body")).toContain(
+test("Cluster Overview page", async ({ page }) => {
+  await test.step("Navigate to cluster overview page", async () => {
+    await page.goto("./home");
+    await page.click('text="Cluster overview"');
+    await page.waitForSelector('text="Key performance indicators and important information regarding the Kafka cluster."', { timeout: 500000 });
+   
+  })
+  await test.step("Cluster overview page should display correctly", async () => {
+    const newPage = page.mainFrame();
+    expect(await newPage.innerText("body")).toContain("Cluster overview");
+    expect(await newPage.innerText("body")).toContain(
       "Key performance indicators and important information regarding the Kafka cluster.",
     );
-    expect(await page.innerText("body")).toContain("Online brokers");
-    expect(await page.innerText("body")).toContain("Consumer groups");
-    expect(await page.innerText("body")).toContain("Kafka version");
-    expect(await page.innerText("body")).toContain("Used disk space");
-    expect(await page.innerText("body")).toContain("CPU usage");
-    expect(await page.innerText("body")).toContain("Memory usage");
-    expect(await page.innerText("body")).toContain("Topic metrics");
-    expect(await page.innerText("body")).toContain(
+    expect(await newPage.innerText("body")).toContain("Online brokers");
+    expect(await newPage.innerText("body")).toContain("Consumer groups");
+    expect(await newPage.innerText("body")).toContain("Kafka version");
+    expect(await newPage.innerText("body")).toContain("Used disk space");
+    expect(await newPage.innerText("body")).toContain("CPU usage");
+    expect(await newPage.innerText("body")).toContain("Memory usage");
+    expect(await newPage.innerText("body")).toContain("Topic metrics");
+    expect(await newPage.innerText("body")).toContain(
       "Topics bytes incoming and outgoing",
     );
   });

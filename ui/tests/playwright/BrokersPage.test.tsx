@@ -1,8 +1,12 @@
 import { expect, test } from "@playwright/test";
 
-test.describe("Brokers page", () => {
-  test("Brokers page should display table", async ({ page }) => {
-    await page.goto(`./kafka/j7W3TRG7SsWCBXHjz2hfrg/nodes`);
+test("Brokers page", async ({page}) => {
+  await test.step("Navigate to brokers page", async () => {
+    await page.goto("./home");
+    await page.click('text="Brokers"');
+    await page.waitForSelector('text="Rack"', { timeout: 500000 });
+  })
+  await test.step("Brokers page should display table", async () => {
     await page.waitForLoadState("networkidle");
     expect(await page.innerText("body")).toContain("Brokers");
     expect(await page.innerText("body")).toContain(

@@ -1,8 +1,12 @@
 import { expect, test } from "@playwright/test";
 
-test.describe("Consumer groups page", () => {
-  test("Consumer groups page should display table", async ({ page }) => {
-    await page.goto(`./kafka/j7W3TRG7SsWCBXHjz2hfrg/consumer-groups`);
+test("Consumer groups page", async ({page}) => {
+  await test.step("Navigate to consumers group page", async () => {
+    await page.goto("./home");
+    await page.click('text="Consumer groups"');
+    await page.waitForSelector('text="Consumer group name"', { timeout: 500000 });
+  })
+  await test.step("Consumer groups page should display table", async () => {
     await page.waitForLoadState("networkidle");
     expect(await page.innerText("body")).toContain("Consumer group name");
     expect(await page.innerText("body")).toContain("State");

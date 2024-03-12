@@ -11,6 +11,7 @@ export default defineConfig({
         storageState: "tests/playwright/.auth/user.json",
       },
       dependencies: ["setup"],
+      timeout: 120000,
     },
 
     {
@@ -21,6 +22,7 @@ export default defineConfig({
         storageState: "tests/playwright/.auth/user.json",
       },
       dependencies: ["setup"],
+      timeout: 60000,
     },
   ],
   // Run your local dev server before starting the tests
@@ -33,6 +35,6 @@ export default defineConfig({
     timeout: 120 * 1000,
   },
   use: {
-    baseURL: " http://localhost:3000",
+    baseURL: " http://localhost:3000",  
   },
 });
