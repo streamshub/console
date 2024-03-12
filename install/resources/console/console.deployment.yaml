@@ -20,7 +20,7 @@ spec:
       containers:
       ### API
       - name: console-api
-        image: quay.io/eyefloaters/console-api:0.0.28
+        image: quay.io/eyefloaters/console-api:0.0.31
         ports:
         - containerPort: 8080
         env:
@@ -39,7 +39,7 @@ spec:
               key: sasl.jaas.config
       ### User Interface
       - name: console-ui
-        image: quay.io/eyefloaters/ui:0.0.28
+        image: quay.io/eyefloaters/ui:0.0.31
         volumeMounts:
         - mountPath: /app/.next/cache
           name: cache
