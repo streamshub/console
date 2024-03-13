@@ -29,13 +29,15 @@ export const Example: Story = {
 
     const row = within(rows[2]);
     await userEvent.click(
-      row.getAllByText("this-is-a-very-long-key", { exact: false })[0],
+      row
+        .getAllByText("this-is-a-very-long-key", { exact: false })[0]
+        .closest("tr"),
     );
     await expect(args.onSelectMessage).toHaveBeenCalledWith(messages[1]);
     const search = canvas.getByDisplayValue("messages=latest retrieve=50");
     expect(search).toBeInTheDocument();
     await userEvent.type(search, " foo bar");
-    userEvent.keyboard("[Enter]");
+    await userEvent.keyboard("[Enter]");
     await expect(args.onSearch).toBeCalledWith({
       from: {
         type: "latest",
