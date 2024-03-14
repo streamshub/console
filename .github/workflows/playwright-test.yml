@@ -26,5 +26,7 @@ jobs:
       working-directory: ./ui
 
     - name: Run Playwright Tests
-      run:  npm run build && npm test
+      run: |
+        export NEXTAUTH_SECRET=${{ secrets.CI_FAKE_NEXTAUTH_SECRET }}
+        npm run build && npm test
       working-directory: ./ui

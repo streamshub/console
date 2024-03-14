@@ -28,13 +28,21 @@ export default defineConfig({
   // Run your local dev server before starting the tests
   webServer: {
     command: "npm run start",
-    url: " http://127.0.0.1:3000",
+    url: "http://localhost:3000",
+    env: {
+      NEXTAUTH_SECRET: "SvZMwFKn7myfCwQwDEvWgG3S7iLX32VMyLbTDxM1Oyg=",
+      BACKEND_URL:
+        "https://console-api-eyefloaters-dev.mycluster-us-east-107719-da779aef12eee96bd4161f4e402b70ec-0000.us-east.containers.appdomain.cloud",
+      LOG_LEVEL: "info",
+      CONSOLE_MODE: "read-only",
+      CONSOLE_METRICS_PROMETHEUS_URL: "https://foo",
+    },
     reuseExistingServer: !process.env.CI,
-    stdout: "ignore",
+    stdout: "pipe",
     stderr: "pipe",
-    timeout: 120 * 1000,
+    timeout: 15000,
   },
   use: {
-    baseURL: " http://localhost:3000",  
+    baseURL: " http://localhost:3000",
   },
 });

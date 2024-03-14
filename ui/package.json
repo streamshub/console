@@ -10,7 +10,7 @@
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
     "test-storybook": "test-storybook",
-    "test": "npx playwright test"
+    "test": "DEBUG=pw:webserver npx playwright test"
   },
   "dependencies": {
     "@patternfly/patternfly": "^5.2.1",
