@@ -18,6 +18,7 @@ import {
   WizardFooterWrapper,
   WizardStep,
 } from "@patternfly/react-core";
+import { useTranslations } from "next-intl";
 import { useCallback, useState, useTransition } from "react";
 
 export function CreateTopic({
@@ -37,6 +38,7 @@ export function CreateTopic({
     validateOnly: boolean,
   ) => Promise<TopicCreateResponse>;
 }) {
+  const t = useTranslations();
   const router = useRouter();
   const [name, setName] = useState("");
   const [partitions, setPartitions] = useState(1);
@@ -57,7 +59,6 @@ export function CreateTopic({
         if ("errors" in result) {
           setError(result);
         } else {
-          console.log("???", result, result.data.id);
           router.push(`/kafka/${kafkaId}/topics/${result.data.id}`);
         }
       });
@@ -94,9 +95,9 @@ export function CreateTopic({
 
   return (
     <PageSection type={"wizard"}>
-      <Wizard title="Topic creation wizard" onClose={() => router.back()}>
+      <Wizard title={t("CreateTopic.title")} onClose={() => router.back()}>
         <WizardStep
-          name="Topic details"
+          name={t("CreateTopic.topic_details")}
           id="step-details"
           footer={
             <SkipReviewFooter
@@ -118,7 +119,7 @@ export function CreateTopic({
           />
         </WizardStep>
         <WizardStep
-          name="Options"
+          name={t("CreateTopic.options")}
           id="step-options"
           footer={
             <AsyncFooter
@@ -126,7 +127,7 @@ export function CreateTopic({
               nextDisabled={formInvalid || error !== undefined}
               onClick={(success) => validate(success)}
               loading={pending || loading}
-              primaryLabel={"Next"}
+              primaryLabel={t("CreateTopic.next")}
             />
           }
         >
@@ -138,7 +139,7 @@ export function CreateTopic({
           />
         </WizardStep>
         <WizardStep
-          name="Review"
+          name={t("CreateTopic.review")}
           id="step-review"
           footer={
             <AsyncFooter
@@ -146,7 +147,7 @@ export function CreateTopic({
               nextDisabled={formInvalid}
               onClick={save}
               loading={pending || loading}
-              primaryLabel={"Create topic"}
+              primaryLabel={t("CreateTopic.create_topic")}
             />
           }
         >
@@ -173,22 +174,21 @@ const SkipReviewFooter = ({
   onClick: (success: () => void) => void;
   loading: boolean;
 }) => {
+  const t = useTranslations();
   const { goToNextStep, goToStepById, close } = useWizardContext();
   return (
     <WizardFooterWrapper>
-      <Button isDisabled={true}>Back</Button>
+      <Button isDisabled={true}>{t("CreateTopic.back")}</Button>
       <Button
         variant="primary"
         onClick={() => onClick(goToNextStep)}
         isLoading={loading}
         isDisabled={loading}
       >
-        Next
+        {t("CreateTopic.next")}
       </Button>
       <Tooltip
-        content={
-          "Topic can now be created. You can continue to configure your topic, or you can skip ahead to the review step."
-        }
+        content={t("CreateTopic.review_and_finish_tooltip")}
         triggerRef={() => document.getElementById("review-button")!}
       >
         <Button
@@ -197,11 +197,11 @@ const SkipReviewFooter = ({
           id={"review-button"}
           isDisabled={loading}
         >
-          Review and finish
+          {t("CreateTopic.review_and_finish")}
         </Button>
       </Tooltip>
       <Button variant={"link"} onClick={close}>
-        Cancel
+        {t("CreateTopic.cancel")}
       </Button>
     </WizardFooterWrapper>
   );
@@ -220,11 +220,12 @@ const AsyncFooter = ({
   primaryLabel: string;
   onClick: (success: () => void) => void;
 }) => {
+  const t = useTranslations();
   const { goToPrevStep, goToStepById, close } = useWizardContext();
   return (
     <WizardFooterWrapper>
       <Button variant={"secondary"} onClick={goToPrevStep} disabled={loading}>
-        Back
+        {t("CreateTopic.back")}
       </Button>
       <Button
         variant="primary"
@@ -239,7 +240,7 @@ const AsyncFooter = ({
         {primaryLabel}
       </Button>
       <Button variant={"link"} onClick={close} disabled={loading}>
-        Cancel
+        {t("CreateTopic.cancel")}
       </Button>
     </WizardFooterWrapper>
   );

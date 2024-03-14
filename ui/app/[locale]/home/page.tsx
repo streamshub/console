@@ -8,8 +8,8 @@ import {
 } from "@/app/[locale]/home/ClustersTable";
 import { ExpandableCard } from "@/app/[locale]/home/ExpandableCard";
 import { TopicsTable } from "@/app/[locale]/home/TopicsTable";
-import { ExternalLink } from "@/components/ExternalLink";
-import { Number } from "@/components/Number";
+import { Number } from "@/components/Format/Number";
+import { ExternalLink } from "@/components/Navigation/ExternalLink";
 import {
   CardBody,
   DataList,
@@ -51,8 +51,8 @@ export default function Home() {
                 Welcome to the AMQ streams console
               </Title>
               <Text className={"pf-v5-u-color-200"}>
-                The Red Hat AMQ Streams console provides a user interface for managing
-                and monitoring your streaming resources
+                The Red Hat AMQ Streams console provides a user interface for
+                managing and monitoring your streaming resources
               </Text>
             </TextContent>
           </div>
@@ -97,8 +97,8 @@ export default function Home() {
                     </Tooltip>
                   </b>
                   <Text component={"small"}>
-                  The last 5 topics this account has accessed from the AMQ
-                  Streams console.
+                    The last 5 topics this account has accessed from the AMQ
+                    Streams console.
                   </Text>
                 </TextContent>
               }

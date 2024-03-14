@@ -1,6 +1,6 @@
 import { getKafkaCluster } from "@/api/kafka/actions";
 import { KafkaNodeParams } from "@/app/[locale]/kafka/[kafkaId]/nodes/kafkaNode.params";
-import { BreadcrumbLink } from "@/components/BreadcrumbLink";
+import { BreadcrumbLink } from "@/components/Navigation/BreadcrumbLink";
 import { BreadcrumbItem } from "@/libs/patternfly/react-core";
 import { Skeleton } from "@patternfly/react-core";
 import { notFound } from "next/navigation";

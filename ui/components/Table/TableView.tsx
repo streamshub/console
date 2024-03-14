@@ -30,7 +30,7 @@ import {
 } from "@/libs/patternfly/react-table";
 import type { ReactElement } from "react";
 import { useState } from "react";
-import { Loading } from "../Loading";
+import { EmptyStateLoading } from "../EmptyStateLoading";
 import { Pagination } from "../Pagination";
 import type { ResponsiveTableProps } from "./ResponsiveTable";
 import { ResponsiveTable } from "./ResponsiveTable";
@@ -99,7 +99,7 @@ export const TableView = <TRow, TCol>({
     (s) => s.sortBy.index === s.columnIndex,
   );
   if (data === null) {
-    return <Loading />;
+    return <EmptyStateLoading />;
   }
   if (data?.length === 0 && !isFiltered) {
     return emptyStateNoData;

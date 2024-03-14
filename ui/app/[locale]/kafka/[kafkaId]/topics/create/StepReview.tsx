@@ -1,7 +1,7 @@
 import { ConfigMap, NewConfigMap, TopicMutateError } from "@/api/topics/schema";
 import { Error } from "@/app/[locale]/kafka/[kafkaId]/topics/create/Errors";
 import { ReviewTable } from "@/app/[locale]/kafka/[kafkaId]/topics/create/ReviewTable";
-import { Number } from "@/components/Number";
+import { Number } from "@/components/Format/Number";
 import {
   DescriptionList,
   DescriptionListDescription,

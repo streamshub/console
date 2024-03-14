@@ -40,7 +40,7 @@ export function AppMasthead() {
         <MastheadToggle>
           <PageToggleButton
             variant="plain"
-            aria-label="Global navigation"
+            aria-label={t("AppMasthead.global_navigation")}
             onClick={toggleSidebar}
           >
             <BarsIcon />
@@ -76,13 +76,13 @@ export function AppMasthead() {
                   <ToolbarItem>
                     <TechPreviewPopover>
                       <Label color={"blue"} isCompact={true}>
-                        Tech preview
+                        {t("AppMasthead.tech_preview_label")}
                       </Label>
                     </TechPreviewPopover>
                   </ToolbarItem>
                   <ToolbarItem>
                     <Button
-                      aria-label="Help"
+                      aria-label={t("AppMasthead.help")}
                       variant={"plain"}
                       icon={<QuestionCircleIcon />}
                       ouiaId={"help-button"}

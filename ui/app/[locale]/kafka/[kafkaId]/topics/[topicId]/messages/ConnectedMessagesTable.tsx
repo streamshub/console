@@ -5,14 +5,14 @@ import {
   GetTopicMessagesReturn,
 } from "@/api/messages/actions";
 import { Message } from "@/api/messages/schema";
+import { AlertContinuousMode } from "@/components/MessagesTable/AlertContinuousMode";
+import { AlertTopicGone } from "@/components/MessagesTable/AlertTopicGone";
 import { MessagesTable } from "@/components/MessagesTable/MessagesTable";
 import { MessagesTableSkeleton } from "@/components/MessagesTable/MessagesTableSkeleton";
 import { NoDataEmptyState } from "@/components/MessagesTable/NoDataEmptyState";
 import { SearchParams } from "@/components/MessagesTable/types";
-import { Alert, PageSection } from "@/libs/patternfly/react-core";
+import { PageSection } from "@/libs/patternfly/react-core";
 import { useFilterParams } from "@/utils/useFilterParams";
-import { AlertActionLink } from "@patternfly/react-core";
-import { PauseIcon, PlayIcon } from "@patternfly/react-icons";
 import { useRouter } from "next/navigation";
 import {
   startTransition,
@@ -185,19 +185,7 @@ export function ConnectedMessagesTable({
     case error === "topic-not-found":
       return (
         <PageSection>
-          <Alert
-            variant="danger"
-            title="Topic not found"
-            ouiaId="topic-not-found"
-            actionLinks={
-              <AlertActionLink onClick={() => router.push("../")}>
-                Go back to the list of topics
-              </AlertActionLink>
-            }
-          >
-            This topic was deleted, or you don&apos;t have the correct
-            permissions to see it.
-          </Alert>
+          <AlertTopicGone onClick={() => router.push("../")} />
         </PageSection>
       );
     default:
@@ -329,26 +317,9 @@ function Refresher({
   }, [isPaused, kafkaId, onUpdates, partition, query, topicId, where]);
 
   return (
-    <Alert
-      title={
-        "The screen displays only the most recent 100 messages, with older messages rotating out."
-      }
-      variant={"info"}
-      isInline={true}
-      className={"pf-v5-u-mx-md"}
-      actionLinks={
-        <AlertActionLink onClick={() => setIsPaused((p) => !p)}>
-          {isPaused ? (
-            <>
-              <PlayIcon /> Continue
-            </>
-          ) : (
-            <>
-              <PauseIcon /> Pause
-            </>
-          )}
-        </AlertActionLink>
-      }
+    <AlertContinuousMode
+      isPaused={isPaused}
+      onToggle={() => setIsPaused((p) => !p)}
     />
   );
 }

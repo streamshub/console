@@ -8,6 +8,7 @@ import {
   TextInput,
 } from "@patternfly/react-core";
 import { TableVariant } from "@patternfly/react-table";
+import { useTranslations } from "next-intl";
 import { useCallback, useMemo } from "react";
 
 type Column = "property" | "value";
@@ -27,6 +28,7 @@ export function ConfigTable({
     error: string;
   };
 }) {
+  const t = useTranslations();
   const data = useMemo(() => Object.entries(initialOptions), [initialOptions]);
   const renderCell = useCallback<
     ResponsiveTableProps<(typeof data)[number], Column>["renderCell"]
@@ -35,14 +37,14 @@ export function ConfigTable({
       switch (column) {
         case "property":
           return (
-            <Td key={key}>
+            <Td key={key} dataLabel={t("ConfigTable.property")}>
               <div>{name}</div>
             </Td>
           );
         case "value": {
           const validated = fieldError?.field === name ? "error" : "default";
           return (
-            <Td key={name}>
+            <Td key={name} dataLabel={t("ConfigTable.value")}>
               <FormGroup fieldId={name}>
                 <TextInput
                   id={`property-${name}`}
@@ -77,7 +79,7 @@ export function ConfigTable({
         }
       }
     },
-    [fieldError?.error, fieldError?.field, onChange, options],
+    [fieldError?.error, fieldError?.field, onChange, options, t],
   );
   return (
     <ResponsiveTable
@@ -89,11 +91,11 @@ export function ConfigTable({
           case "property":
             return (
               <Th width={40} key={key}>
-                Property
+                {t("ConfigTable.property")}
               </Th>
             );
           case "value":
-            return <Th key={key}>Value</Th>;
+            return <Th key={key}>{t("ConfigTable.value")}</Th>;
         }
       }}
       renderCell={renderCell}

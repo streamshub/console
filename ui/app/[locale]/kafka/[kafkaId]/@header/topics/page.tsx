@@ -1,7 +1,7 @@
 import { getTopics } from "@/api/topics/actions";
 import { KafkaParams } from "@/app/[locale]/kafka/[kafkaId]/kafka.params";
 import { AppHeader } from "@/components/AppHeader";
-import { Number } from "@/components/Number";
+import { Number } from "@/components/Format/Number";
 import {
   Label,
   Spinner,
@@ -32,8 +32,8 @@ async function ConnectedHeader({ params }: { params: KafkaParams }) {
       ok={topics.meta.summary.statuses.FullyReplicated || 0}
       warning={topics.meta.summary.statuses.UnderReplicated || 0}
       error={
-          (topics.meta.summary.statuses.PartiallyOffline || 0) +
-          (topics.meta.summary.statuses.Offline || 0)
+        (topics.meta.summary.statuses.PartiallyOffline || 0) +
+        (topics.meta.summary.statuses.Offline || 0)
       }
     />
   );
@@ -43,7 +43,7 @@ function Header({
   total,
   ok,
   warning,
-  error
+  error,
 }: {
   total?: number;
   ok?: number;

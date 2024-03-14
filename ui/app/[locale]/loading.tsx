@@ -1,10 +1,10 @@
-import { Loading } from "@/components/Loading";
+import { EmptyStateLoading } from "@/components/EmptyStateLoading";
 import { PageSection } from "@/libs/patternfly/react-core";
 
 export default function AppLoading() {
   return (
     <PageSection isFilled={true}>
-      <Loading />
+      <EmptyStateLoading />
     </PageSection>
   );
 }

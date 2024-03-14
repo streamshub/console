@@ -1,9 +1,5 @@
 "use client";
 import {
-  getHeight,
-  getPadding,
-} from "@/app/[locale]/kafka/[kafkaId]/overview/chartConsts";
-import {
   Chart,
   ChartAxis,
   ChartGroup,
@@ -14,7 +10,8 @@ import {
 } from "@/libs/patternfly/react-charts";
 import { useFormatBytes } from "@/utils/useFormatBytes";
 import { ChartArea } from "@patternfly/react-charts";
-import { useFormatter } from "next-intl";
+import { useFormatter, useTranslations } from "next-intl";
+import { getHeight, getPadding } from "./chartConsts";
 import { useChartWidth } from "./useChartWidth";
 
 type ChartIncomingOutgoingProps = {
@@ -33,6 +30,7 @@ export function ChartIncomingOutgoing({
   incoming,
   outgoing,
 }: ChartIncomingOutgoingProps) {
+  const t = useTranslations();
   const formatBytes = useFormatBytes();
   const format = useFormatter();
   const [containerRef, width] = useChartWidth();
@@ -44,7 +42,7 @@ export function ChartIncomingOutgoing({
   if (!hasMetrics) {
     return (
       <div>
-        <i>Not available</i>
+        <i>{t("ChartIncomingOutgoing.data_unavailable")}</i>
       </div>
     );
   }

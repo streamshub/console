@@ -1,4 +1,4 @@
-import { Number } from "@/components/Number";
+import { Number } from "@/components/Format/Number";
 import {
   Card,
   CardBody,

@@ -17,17 +17,17 @@ export function RefreshButton({
   tooltip,
   isRefreshing,
 }: RefreshButtonProps) {
-  const t = useTranslations("RefreshButton");
+  const t = useTranslations();
 
   const defaultTooltip = isRefreshing
-    ? t("refreshing_tooltip")
-    : t("refresh_description");
+    ? t("RefreshButton.refreshing_tooltip")
+    : t("RefreshButton.refresh_description");
   return (
     <Tooltip content={tooltip || defaultTooltip}>
       <Button
         className="pf-m-hoverable"
         variant="plain"
-        aria-label={ariaLabel || t("refresh_button_label")}
+        aria-label={ariaLabel || t("RefreshButton.refresh_button_label")}
         isDisabled={isDisabled}
         onClick={isDisabled === true ? undefined : onClick}
         icon={
