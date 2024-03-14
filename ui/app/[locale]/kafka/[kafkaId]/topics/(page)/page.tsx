@@ -4,12 +4,11 @@ import { KafkaParams } from "@/app/[locale]/kafka/[kafkaId]/kafka.params";
 import {
   SortableColumns,
   SortableTopicsTableColumns,
-  TopicsTable,
-} from "@/app/[locale]/kafka/[kafkaId]/topics/(page)/TopicsTable";
+} from "@/components/TopicsTable/TopicsTable";
 import { PageSection } from "@/libs/patternfly/react-core";
-import { readonly } from "@/utils/runmode";
 import { stringToInt } from "@/utils/stringToInt";
 import { Suspense } from "react";
+import { ConnectedTopicsTable } from "./ConnectedTopicsTable";
 
 export const dynamic = "force-dynamic";
 
@@ -31,7 +30,7 @@ export default function TopicsPage({
     sort: string | undefined;
     sortDir: string | undefined;
     page: string | undefined;
-    hidden: string | undefined;
+    includeHidden: string | undefined;
     status: string | undefined;
   };
 }) {
@@ -41,7 +40,7 @@ export default function TopicsPage({
   const sort = (searchParams["sort"] || "name") as SortableTopicsTableColumns;
   const sortDir = (searchParams["sortDir"] || "asc") as "asc" | "desc";
   const pageCursor = searchParams["page"];
-  const includeHidden = searchParams["hidden"] === "y";
+  const includeHidden = searchParams["includeHidden"] === "true";
   const status = (searchParams["status"] || "")
     .split(",")
     .filter((v) => !!v) as TopicStatus[] | undefined;
@@ -50,7 +49,7 @@ export default function TopicsPage({
     <PageSection isFilled>
       <Suspense
         fallback={
-          <TopicsTable
+          <ConnectedTopicsTable
             topics={undefined}
             topicsCount={0}
             id={id}
@@ -60,7 +59,6 @@ export default function TopicsPage({
             sortDir={sortDir}
             includeHidden={includeHidden}
             status={status}
-            canCreate={!readonly()}
             baseurl={`/kafka/${params.kafkaId}/topics`}
             page={1}
             nextPageCursor={undefined}
@@ -68,7 +66,7 @@ export default function TopicsPage({
           />
         }
       >
-        <ConnectedTopicsTable
+        <AsyncTopicsTable
           id={id}
           name={name}
           sort={sort}
@@ -84,7 +82,7 @@ export default function TopicsPage({
   );
 }
 
-async function ConnectedTopicsTable({
+async function AsyncTopicsTable({
   kafkaId,
   id,
   name,
@@ -124,7 +122,7 @@ async function ConnectedTopicsTable({
     : undefined;
   const prevPageCursor = prevPageQuery?.get("page[after]");
   return (
-    <TopicsTable
+    <ConnectedTopicsTable
       topics={topics.data}
       topicsCount={topics.meta.page.total}
       id={id}
@@ -134,7 +132,6 @@ async function ConnectedTopicsTable({
       sortDir={sortDir}
       includeHidden={includeHidden}
       status={status}
-      canCreate={!readonly()}
       baseurl={`/kafka/${kafkaId}/topics`}
       page={topics.meta.page.pageNumber || 1}
       nextPageCursor={nextPageCursor}

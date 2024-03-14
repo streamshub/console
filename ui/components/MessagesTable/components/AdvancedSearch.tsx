@@ -17,6 +17,7 @@ import {
   SearchInput,
   TextInput,
 } from "@patternfly/react-core";
+import { useTranslations } from "next-intl";
 import {
   MouseEvent,
   SyntheticEvent,
@@ -55,6 +56,7 @@ export function AdvancedSearch({
   | "onSearch"
   | "partitions"
 >) {
+  const t = useTranslations();
   const searchInputRef = useRef<HTMLInputElement>(null);
   const paneRef = useRef(null);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
@@ -189,7 +191,11 @@ export function AdvancedSearch({
   );
 
   const advancedForm = (
-    <div ref={paneRef} role="dialog" aria-label="Search messages">
+    <div
+      ref={paneRef}
+      role="dialog"
+      aria-label={t("AdvancedSearch.dialog_label")}
+    >
       <Panel variant="raised">
         <PanelMain>
           <PanelMainBody>
@@ -198,7 +204,7 @@ export function AdvancedSearch({
                 <Grid hasGutter={true}>
                   <GridItem>
                     <FormGroup
-                      label="Has the words"
+                      label={t("AdvancedSearch.has_the_words")}
                       fieldId="has-words"
                       key="has-words"
                     >
@@ -211,9 +217,7 @@ export function AdvancedSearch({
                       <FormHelperText>
                         <HelperText>
                           <HelperTextItem>
-                            Enter your search terms to find matches within the
-                            selected field. Wildcards and regular expressions
-                            are not required or supported.
+                            {t("AdvancedSearch.query_helper")}
                           </HelperTextItem>
                         </HelperText>
                       </FormHelperText>
@@ -271,7 +275,7 @@ export function AdvancedSearch({
 
                   <GridItem>
                     <FormGroup
-                      label="In partition"
+                      label={t("AdvancedSearch.in_partition")}
                       fieldId="in-partition"
                       key="in-partition"
                     >
@@ -290,11 +294,11 @@ export function AdvancedSearch({
                   type="submit"
                   onClick={(e) => onSubmit(e)}
                 >
-                  Search
+                  {t("AdvancedSearch.search")}
                 </Button>
                 {!!onClear && (
                   <Button variant="link" type="reset" onClick={onClear}>
-                    Reset
+                    {t("AdvancedSearch.reset")}
                   </Button>
                 )}
               </ActionGroup>

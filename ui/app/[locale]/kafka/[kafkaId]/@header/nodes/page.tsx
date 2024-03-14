@@ -1,7 +1,7 @@
 import { getKafkaCluster } from "@/api/kafka/actions";
 import { KafkaParams } from "@/app/[locale]/kafka/[kafkaId]/kafka.params";
 import { AppHeader } from "@/components/AppHeader";
-import { Number } from "@/components/Number";
+import { Number } from "@/components/Format/Number";
 import { Label, Spinner, Split, SplitItem } from "@/libs/patternfly/react-core";
 import { CheckCircleIcon } from "@/libs/patternfly/react-icons";
 import { Suspense } from "react";

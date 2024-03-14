@@ -5,7 +5,7 @@ import { ClusterDrawer } from "@/app/[locale]/ClusterDrawer";
 
 import { ClusterDrawerProvider } from "@/app/[locale]/ClusterDrawerProvider";
 import { NavExpandable } from "@/components/NavExpandable";
-import { NavItemLink } from "@/components/NavItemLink";
+import { NavItemLink } from "@/components/Navigation/NavItemLink";
 import { TechPreviewPopover } from "@/components/TechPreviewPopover";
 import {
   Banner,
@@ -16,19 +16,21 @@ import {
   SplitItem,
 } from "@/libs/patternfly/react-core";
 import { HelpIcon } from "@/libs/patternfly/react-icons";
+import { useTranslations } from "next-intl";
 import { PropsWithChildren, Suspense } from "react";
 
 export function AppLayout({ children }: PropsWithChildren) {
+  const t = useTranslations();
   return (
     <Page
       header={<AppMasthead />}
       sidebar={
         <AppSidebar>
-          <Nav aria-label="Nav">
+          <Nav aria-label={t("AppLayout.main_navigation_aria_label")}>
             <NavList>
-              <NavItemLink url={"/home"}>Home</NavItemLink>
+              <NavItemLink url={"/home"}>{t("AppLayout.home")}</NavItemLink>
               <NavExpandable
-                title={"Kafka clusters"}
+                title={t("AppLayout.kafka_clusters")}
                 url={"/kafka"}
                 startExpanded={true}
               >
@@ -50,8 +52,7 @@ export function AppLayout({ children }: PropsWithChildren) {
           <Banner variant={"blue"}>
             <Split>
               <SplitItem isFilled={true}>
-                This is a Tech Preview version. You are logged in as an
-                anonymous user with read-only access.
+                {t("AppLayout.tech_preview_label")}
               </SplitItem>
               <SplitItem>
                 <TechPreviewPopover>
@@ -69,6 +70,7 @@ export function AppLayout({ children }: PropsWithChildren) {
 }
 
 async function Clusters() {
+  const t = useTranslations();
   const clusters = await getKafkaClusters();
   return clusters
     .filter((c) => c.meta.configured === true)
@@ -80,17 +82,21 @@ async function Clusters() {
         startExpanded={idx === 0}
       >
         <NavItemLink url={`/kafka/${s.id}/overview`}>
-          Cluster overview
+          {t("AppLayout.cluster_overview")}
         </NavItemLink>
-        <NavItemLink url={`/kafka/${s.id}/topics`}>Topics</NavItemLink>
-        <NavItemLink url={`/kafka/${s.id}/nodes`}>Brokers</NavItemLink>
+        <NavItemLink url={`/kafka/${s.id}/topics`}>
+          {t("AppLayout.topics")}
+        </NavItemLink>
+        <NavItemLink url={`/kafka/${s.id}/nodes`}>
+          {t("AppLayout.brokers")}
+        </NavItemLink>
         {/*
       <NavItemLink url={`/kafka/${s.id}/service-registry`}>
         Service registry
       </NavItemLink>
 */}
         <NavItemLink url={`/kafka/${s.id}/consumer-groups`}>
-          Consumer groups
+          {t("AppLayout.consumer_groups")}
         </NavItemLink>
       </NavExpandable>
     ));

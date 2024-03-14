@@ -1,5 +1,5 @@
 import { ConsumerGroup } from "@/api/consumerGroups/schema";
-import { Number } from "@/components/Number";
+import { Number } from "@/components/Format/Number";
 import { ResponsiveTable } from "@/components/Table";
 import { Tooltip } from "@/libs/patternfly/react-core";
 import { HelpIcon } from "@/libs/patternfly/react-icons";

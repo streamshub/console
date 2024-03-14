@@ -1,8 +1,8 @@
 import { Message } from "@/api/messages/schema";
-import { Bytes } from "@/components/Bytes";
-import { DateTime } from "@/components/DateTime";
+import { Bytes } from "@/components/Format/Bytes";
+import { DateTime } from "@/components/Format/DateTime";
+import { Number } from "@/components/Format/Number";
 import { SearchParams } from "@/components/MessagesTable/types";
-import { Number } from "@/components/Number";
 import { ResponsiveTable } from "@/components/Table";
 import {
   Drawer,

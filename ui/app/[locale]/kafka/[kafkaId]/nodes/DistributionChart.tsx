@@ -1,6 +1,6 @@
 "use client";
 
-import { useChartWidth } from "@/app/[locale]/kafka/[kafkaId]/overview/useChartWidth";
+import { useChartWidth } from "@/components/ClusterOverview/components/useChartWidth";
 import {
   Chart,
   ChartAxis,
@@ -19,6 +19,7 @@ import {
   Tooltip,
 } from "@/libs/patternfly/react-core";
 import { HelpIcon } from "@/libs/patternfly/react-icons";
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 
 export function DistributionChart({
@@ -26,52 +27,58 @@ export function DistributionChart({
 }: {
   data: Record<string, { leaders: number; followers: number }>;
 }) {
+  const t = useTranslations();
   const [containerRef, width] = useChartWidth();
   const [filter, setFilter] = useState<"all" | "leaders" | "followers">("all");
-  const label = {
-    all: "total partitions",
-    leaders: "leaders",
-    followers: "followers",
-  }[filter || "all"];
+  const allCount = Object.values(data).reduce(
+    (acc, v) => v.followers + v.leaders + acc,
+    0,
+  );
+  const leadersCount = Object.values(data).reduce(
+    (acc, v) => v.leaders + acc,
+    0,
+  );
+  const followersCount = Object.values(data).reduce(
+    (acc, v) => v.followers + acc,
+    0,
+  );
   return (
     <Card className={"pf-v5-u-mb-lg"}>
       <CardHeader>
         <CardTitle>
-          Partitions distribution (% of total){" "}
+          {t("DistributionChart.partitions_distribution_of_total")}{" "}
           <Tooltip
-            content={
-              "The percentage distribution of partitions across brokers in the cluster. Consider rebalancing if the distribution is uneven to ensure efficient resource utilization."
-            }
+            content={t(
+              "DistributionChart.partitions_distribution_of_total_tooltip",
+            )}
           >
             <HelpIcon />
           </Tooltip>
         </CardTitle>
       </CardHeader>
       <CardBody>
-        <ToggleGroup isCompact aria-label="Compact variant toggle group">
+        <ToggleGroup
+          isCompact
+          aria-label={t("DistributionChart.distribution_toggles")}
+        >
           <ToggleGroupItem
-            text={`All (${Object.values(data).reduce(
-              (acc, v) => v.followers + v.leaders + acc,
-              0,
-            )})`}
+            text={t("DistributionChart.all_label", {
+              count: allCount,
+            })}
             buttonId="toggle-group-compact-0"
             isSelected={filter == "all"}
             onChange={() => setFilter("all")}
           />
           <ToggleGroupItem
-            text={`Leaders (${Object.values(data).reduce(
-              (acc, v) => v.leaders + acc,
-              0,
-            )})`}
+            text={t("DistributionChart.leaders_label", { count: leadersCount })}
             buttonId="toggle-group-compact-1"
             isSelected={filter == "leaders"}
             onChange={() => setFilter("leaders")}
           />
           <ToggleGroupItem
-            text={`Followers (${Object.values(data).reduce(
-              (acc, v) => v.followers + acc,
-              0,
-            )})`}
+            text={t("DistributionChart.followers_label", {
+              count: followersCount,
+            })}
             buttonId="toggle-group-compact-2"
             isSelected={filter === "followers"}
             onChange={() => setFilter("followers")}
@@ -79,11 +86,29 @@ export function DistributionChart({
         </ToggleGroup>
         <div ref={containerRef}>
           <Chart
-            ariaDesc="Shows how partitions are spread between leaders and followers"
-            ariaTitle="Partitions distribution chart"
+            ariaDesc={t("DistributionChart.distribution_chart_description")}
+            ariaTitle={t("DistributionChart.distribution_chart_title")}
             containerComponent={
               <ChartVoronoiContainer
-                labels={({ datum }) => `${datum.name} ${label}: ${datum.y}`}
+                labels={({ datum }) => {
+                  switch (filter) {
+                    case "followers":
+                      return t(
+                        "DistributionChart.broker_node_voronoi_followers",
+                        { name: datum.name, value: datum.y },
+                      );
+                    case "leaders":
+                      return t(
+                        "DistributionChart.broker_node_voronoi_leaders",
+                        { name: datum.name, value: datum.y },
+                      );
+                    default:
+                      return t("DistributionChart.broker_node_voronoi_all", {
+                        name: datum.name,
+                        value: datum.y,
+                      });
+                  }
+                }}
                 constrainToVisibleArea
               />
             }
@@ -92,11 +117,31 @@ export function DistributionChart({
             legendComponent={
               <ChartLegend
                 orientation={"horizontal"}
-                data={Object.keys(data).flatMap((node) => [
-                  {
-                    name: `Broker ${node} ${label}`,
-                  },
-                ])}
+                data={Object.keys(data).flatMap((node) => {
+                  const name = (() => {
+                    switch (filter) {
+                      case "followers":
+                        return t(
+                          "DistributionChart.broker_node_legend_followers",
+                          { node },
+                        );
+                      case "leaders":
+                        return t(
+                          "DistributionChart.broker_node_legend_leaders",
+                          { node },
+                        );
+                      default:
+                        return t("DistributionChart.broker_node_legend_all", {
+                          node,
+                        });
+                    }
+                  })();
+                  return [
+                    {
+                      name,
+                    },
+                  ];
+                })}
                 itemsPerRow={width > 600 ? 3 : 1}
               />
             }

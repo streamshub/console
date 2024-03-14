@@ -2,7 +2,7 @@
 import { getTopic } from "@/api/topics/actions";
 import { PartitionStatus, Topic } from "@/api/topics/schema";
 import { NoResultsEmptyState } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/partitions/NoResultsEmptyState";
-import { Bytes } from "@/components/Bytes";
+import { Bytes } from "@/components/Format/Bytes";
 import { TableView } from "@/components/Table";
 import {
   Icon,

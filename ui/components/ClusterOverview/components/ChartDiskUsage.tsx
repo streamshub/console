@@ -1,52 +1,59 @@
 "use client";
 import {
-  getHeight,
-  getPadding,
-} from "@/app/[locale]/kafka/[kafkaId]/overview/chartConsts";
-import {
   Chart,
   ChartArea,
   ChartAxis,
+  ChartGroup,
   ChartLegend,
   ChartLegendTooltip,
-  ChartStack,
   ChartThemeColor,
+  ChartThreshold,
   createContainer,
 } from "@/libs/patternfly/react-charts";
-import { useFormatter } from "next-intl";
+import { useFormatBytes } from "@/utils/useFormatBytes";
+import { useFormatter, useTranslations } from "next-intl";
+import { getHeight, getPadding } from "./chartConsts";
 import { useChartWidth } from "./useChartWidth";
 
-type ChartCpuUsageProps = {
+type ChartDiskUsageProps = {
   usages: TimeSeriesMetrics[];
+  available: TimeSeriesMetrics[];
 };
-
 type Datum = {
   x: number;
   y: number;
   name: string;
 };
 
-export function ChartCpuUsage({ usages }: ChartCpuUsageProps) {
+export function ChartDiskUsage({ usages, available }: ChartDiskUsageProps) {
+  const t = useTranslations();
   const format = useFormatter();
+  const formatBytes = useFormatBytes();
   const [containerRef, width] = useChartWidth();
 
-  const itemsPerRow = width > 650 ? 6 : width > 300 ? 3 : 1;
+  const itemsPerRow = width > 650 ? 2 : 1;
 
   const hasMetrics = Object.keys(usages).length > 0;
   if (!hasMetrics) {
-    return <div>TODO</div>;
+    return <div>{t("ChartDiskUsage.data_unavailable")}</div>;
   }
-  // const showDate = shouldShowDate(duration);
   const CursorVoronoiContainer = createContainer("voronoi", "cursor");
-  const legendData = usages.map((_, idx) => ({
-    name: `Node ${idx}`,
-    childName: `node ${idx}`,
-  }));
+  const legendData = [
+    ...usages.map((_, idx) => ({
+      name: `Node ${idx}`,
+      childName: `node ${idx}`,
+    })),
+    ...usages.map((_, idx) => ({
+      name: `Available storage threshold (node ${idx + 1})`,
+      childName: `threshold ${idx}`,
+      symbol: { type: "threshold" },
+    })),
+  ];
   const padding = getPadding(legendData.length / itemsPerRow);
   return (
     <div ref={containerRef}>
       <Chart
-        ariaTitle={"Cpu usage"}
+        ariaTitle={"Used disk space"}
         containerComponent={
           <CursorVoronoiContainer
             cursorDimension="x"
@@ -65,7 +72,7 @@ export function ChartCpuUsage({ usages }: ChartCpuUsageProps) {
               />
             }
             labels={({ datum }: { datum: Datum }) =>
-              datum.y !== null ? `${format.number(datum.y * 1000)}m` : "no data"
+              datum.y !== null ? formatBytes(datum.y) : "no data"
             }
             constrainToVisibleArea
           />
@@ -102,15 +109,15 @@ export function ChartCpuUsage({ usages }: ChartCpuUsageProps) {
           dependentAxis
           showGrid={true}
           tickFormat={(d) => {
-            return format.number(d * 1000) + "m";
+            return formatBytes(d, { maximumFractionDigits: 0 });
           }}
         />
-        <ChartStack>
+        <ChartGroup>
           {usages.map((usage, idx) => {
             const usageArray = Object.entries(usage);
             return (
               <ChartArea
-                key={`cpu-usage-${idx}}`}
+                key={`usage-area-${idx}`}
                 data={usageArray.map(([x, y]) => ({
                   name: `Node ${idx + 1}`,
                   x,
@@ -120,7 +127,22 @@ export function ChartCpuUsage({ usages }: ChartCpuUsageProps) {
               />
             );
           })}
-        </ChartStack>
+          {usages.map((usage, idx) => {
+            const usageArray = Object.entries(usage);
+            const data = Object.entries(available[idx]);
+            return (
+              <ChartThreshold
+                key={`chart-softlimit-${idx}}`}
+                data={data.map(([_, y], x) => ({
+                  name: `Available storage threshold (node ${idx + 1})`,
+                  x: usageArray[x][0],
+                  y,
+                }))}
+                name={`threshold ${idx}`}
+              />
+            );
+          })}
+        </ChartGroup>
       </Chart>
     </div>
   );

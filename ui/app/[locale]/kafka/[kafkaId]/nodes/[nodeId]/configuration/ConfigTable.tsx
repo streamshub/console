@@ -1,16 +1,18 @@
 "use client";
 
 import { NodeConfig } from "@/api/nodes/schema";
-import { Number } from "@/components/Number";
+import { Number } from "@/components/Format/Number";
 import { TableView } from "@/components/Table";
 import { usePathname, useRouter } from "@/navigation";
 import { Label, LabelGroup, List, ListItem } from "@patternfly/react-core";
 import { TableVariant } from "@patternfly/react-table";
+import { useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
 import { useCallback } from "react";
 import { NoResultsEmptyState } from "./NoResultsEmptyState";
 
 export function ConfigTable({ config }: { config: NodeConfig }) {
+  const t = useTranslations();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -163,14 +165,14 @@ export function ConfigTable({ config }: { config: NodeConfig }) {
         switch (column) {
           case "property":
             return (
-              <Th key={key} dataLabel={"Property"}>
-                Property
+              <Th key={key} dataLabel={t("ConfigTable.property")}>
+                {t("ConfigTable.property")}
               </Th>
             );
           case "value":
             return (
-              <Th key={key} dataLabel={"Value"}>
-                Value
+              <Th key={key} dataLabel={t("ConfigTable.value")}>
+                {t("ConfigTable.value")}
               </Th>
             );
         }
@@ -215,7 +217,7 @@ export function ConfigTable({ config }: { config: NodeConfig }) {
                   </Label>
                   {property.readOnly && (
                     <Label isCompact={true} color={"grey"}>
-                      Read only
+                      {t("ConfigTable.read_only")}
                     </Label>
                   )}
                 </LabelGroup>

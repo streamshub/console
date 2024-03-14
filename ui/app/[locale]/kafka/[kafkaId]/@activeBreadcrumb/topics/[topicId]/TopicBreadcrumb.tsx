@@ -1,6 +1,6 @@
 import { getTopic } from "@/api/topics/actions";
 import { KafkaTopicParams } from "@/app/[locale]/kafka/[kafkaId]/topics/kafkaTopic.params";
-import { BreadcrumbLink } from "@/components/BreadcrumbLink";
+import { BreadcrumbLink } from "@/components/Navigation/BreadcrumbLink";
 import { BreadcrumbItem } from "@/libs/patternfly/react-core";
 
 export const fetchCache = "force-cache";

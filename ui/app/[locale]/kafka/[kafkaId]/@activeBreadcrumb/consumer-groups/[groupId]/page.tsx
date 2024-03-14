@@ -1,5 +1,5 @@
 import { KafkaConsumerGroupMembersParams } from "@/app/[locale]/kafka/[kafkaId]/consumer-groups/[groupId]/KafkaConsumerGroupMembers.params";
-import { BreadcrumbLink } from "@/components/BreadcrumbLink";
+import { BreadcrumbLink } from "@/components/Navigation/BreadcrumbLink";
 import { BreadcrumbItem } from "@/libs/patternfly/react-core";
 
 export default function ConsumerGroupsActiveBreadcrumb({

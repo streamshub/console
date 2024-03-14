@@ -1,7 +1,3 @@
-import { ClusterCard } from "@/app/[locale]/kafka/[kafkaId]/overview/ClusterCard";
-import { ClusterChartsCard } from "@/app/[locale]/kafka/[kafkaId]/overview/ClusterChartsCard";
-import { TopicChartsCard } from "@/app/[locale]/kafka/[kafkaId]/overview/TopicChartsCard";
-import { TopicsPartitionsCard } from "@/app/[locale]/kafka/[kafkaId]/overview/TopicsPartitionsCard";
 import {
   Flex,
   FlexItem,
@@ -10,6 +6,10 @@ import {
   PageSection,
 } from "@/libs/patternfly/react-core";
 import { ReactNode, Suspense } from "react";
+import { ClusterCard } from "./ClusterCard";
+import { ClusterChartsCard } from "./ClusterChartsCard";
+import { TopicChartsCard } from "./TopicChartsCard";
+import { TopicsPartitionsCard } from "./TopicsPartitionsCard";
 
 export function PageLayout({
   clusterOverview,

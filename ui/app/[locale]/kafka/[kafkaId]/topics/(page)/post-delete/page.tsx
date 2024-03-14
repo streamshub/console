@@ -1,5 +1,5 @@
 import { KafkaParams } from "@/app/[locale]/kafka/[kafkaId]/kafka.params";
-import { RedirectOnLoad } from "@/components/RedirectOnLoad";
+import { RedirectOnLoad } from "@/components/Navigation/RedirectOnLoad";
 import { revalidatePath } from "next/cache";
 
 export default function PostDeletePage({
