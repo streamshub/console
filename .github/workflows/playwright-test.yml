@@ -9,6 +9,8 @@ jobs:
   test:
     name: Run Playwright Tests
     runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.42.1-jammy
 
     steps:
     - name: Checkout code
@@ -18,13 +20,9 @@ jobs:
       uses: actions/setup-node@v2
 
     - name: Install dependencies
-      run: npm install
+      run: npm ci --omit=dev
       working-directory: ./ui
      
-    - name: Install Playwright Browsers
-      run: npx playwright install --with-deps
-      working-directory: ./ui
-
     - name: Run Playwright Tests
       run: |
         npm run build
