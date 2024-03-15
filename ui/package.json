@@ -31,7 +31,7 @@
     "@types/react-highlight-words": "^0.16.7",
     "classnames": "^2.5.1",
     "convert": "^5.0.0",
-    "date-fns": "^3.4.0",
+    "date-fns": "^3.5.0",
     "date-fns-tz": "^2.0.0",
     "eslint": "8.57.0",
     "eslint-config-next": "14.1.3",
