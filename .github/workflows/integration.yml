@@ -2,7 +2,7 @@ name: Build
 on:
   push:
     branches: [ 'main' ]
-  pull_request_target:
+  pull_request:
     branches: [ 'main' ]
     types: [ opened, reopened, synchronize ]
 
@@ -79,9 +79,3 @@ jobs:
           push: false
           tags: |
             eyefloaters/ui:latest
-          build-args: |
-            BACKEND_URL=${{ secrets.BACKEND_URL }}
-            CONSOLE_METRICS_PROMETHEUS_URL=${{ secrets.CONSOLE_METRICS_PROMETHEUS_URL }}
-            NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }}
-            LOG_LEVEL=${{ secrets.LOG_LEVEL }}
-            CONSOLE_MODE=${{ secrets.CONSOLE_MODE }}

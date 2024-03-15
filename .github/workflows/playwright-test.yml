@@ -3,7 +3,7 @@ name: Playwright Tests
 on:
   push:
     branches: [ 'main' ]
-  pull_request_target:
+  pull_request:
     branches: [ 'main' ]
     types: [ opened, reopened, synchronize ]
 
@@ -32,6 +32,7 @@ jobs:
         NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
         LOG_LEVEL: ${{ secrets.LOG_LEVEL }}
         CONSOLE_MODE: ${{ secrets.CONSOLE_MODE }}
+        HOME: /root
       run: |
         npm run build
         npm test
