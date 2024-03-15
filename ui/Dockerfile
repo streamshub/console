@@ -15,7 +15,13 @@ USER 0
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+
 ENV NEXT_TELEMETRY_DISABLED 1
+ENV BACKEND_URL $backend_url
+ENV CONSOLE_METRICS_PROMETHEUS_URL $console_metrics_prometheus_url
+ENV NEXTAUTH_SECRET $nextauth_secret
+ENV LOG_LEVEL $log_level
+ENV CONSOLE_MODE $console_mode
 RUN npm run build
 
 FROM registry.access.redhat.com/ubi9/nodejs-18-minimal AS runner

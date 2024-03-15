@@ -11,7 +11,7 @@ export default defineConfig({
         storageState: "tests/playwright/.auth/user.json",
       },
       dependencies: ["setup"],
-      timeout: 120000,
+      timeout: 15000,
     },
 
     {
@@ -22,7 +22,7 @@ export default defineConfig({
         storageState: "tests/playwright/.auth/user.json",
       },
       dependencies: ["setup"],
-      timeout: 60000,
+      timeout: 15000,
     },
   ],
   // Run your local dev server before starting the tests
@@ -30,12 +30,12 @@ export default defineConfig({
     command: "npm run start",
     url: "http://localhost:3000",
     env: {
-      NEXTAUTH_SECRET: "SvZMwFKn7myfCwQwDEvWgG3S7iLX32VMyLbTDxM1Oyg=",
-      BACKEND_URL:
-        "https://console-api-eyefloaters-dev.mycluster-us-east-107719-da779aef12eee96bd4161f4e402b70ec-0000.us-east.containers.appdomain.cloud",
-      LOG_LEVEL: "info",
-      CONSOLE_MODE: "read-only",
-      CONSOLE_METRICS_PROMETHEUS_URL: "https://foo",
+      NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,
+      BACKEND_URL: process.env.BACKEND_URL,
+      LOG_LEVEL: process.env.LOG_LEVEL,
+      CONSOLE_MODE: process.env.CONSOLE_MODE,
+      CONSOLE_METRICS_PROMETHEUS_URL:
+        process.env.CONSOLE_METRICS_PROMETHEUS_URL,
     },
     reuseExistingServer: !process.env.CI,
     stdout: "pipe",

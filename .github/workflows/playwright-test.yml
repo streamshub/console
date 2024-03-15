@@ -1,9 +1,11 @@
 name: Playwright Tests
 
 on:
-  pull_request:
-    branches:
-      - main
+  push:
+    branches: [ 'main' ]
+  pull_request_target:
+    branches: [ 'main' ]
+    types: [ opened, reopened, synchronize ]
 
 jobs:
   test:
@@ -24,6 +26,12 @@ jobs:
       working-directory: ./ui
      
     - name: Run Playwright Tests
+      env:
+        BACKEND_URL: ${{ secrets.BACKEND_URL }}
+        CONSOLE_METRICS_PROMETHEUS_URL: ${{ secrets.CONSOLE_METRICS_PROMETHEUS_URL }}
+        NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
+        LOG_LEVEL: ${{ secrets.LOG_LEVEL }}
+        CONSOLE_MODE: ${{ secrets.CONSOLE_MODE }}
       run: |
         npm run build
         npm test
