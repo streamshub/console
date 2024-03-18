@@ -21,8 +21,8 @@
         <docker.push>false</docker.push>
 
         <!-- Dependencies -->
-        <quarkus.version>3.2.10.Final</quarkus.version>
-        <jandex-maven-plugin.version>3.1.6</jandex-maven-plugin.version>
+        <quarkus.version>3.2.11.Final</quarkus.version>
+        <jandex-maven-plugin.version>3.1.7</jandex-maven-plugin.version>
         <strimzi-oauth.version>0.15.0</strimzi-oauth.version>
         <hamcrest.version>2.2</hamcrest.version>
 
@@ -380,7 +380,7 @@
                     <dependency>
                         <groupId>com.puppycrawl.tools</groupId>
                         <artifactId>checkstyle</artifactId>
-                        <version>10.14.0</version>
+                        <version>10.14.2</version>
                     </dependency>
                 </dependencies>
                 <executions>
