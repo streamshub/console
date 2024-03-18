@@ -10,12 +10,12 @@ test("Brokers property page", async ({page}) => {
   })
   await test.step("Brokers page should display properties", async () => {
     await page.waitForLoadState("networkidle");
-    const dataRows = await page.$$('table[aria-label="Node configuration"] tbody tr');
-    expect(dataRows.length).toBeGreaterThan(0);
-    const dataCells = await page.$$eval(
-      'table[aria-label="Node configuration"] tbody tr td',
-      (tds) => tds.map((td) => td.textContent?.trim() ?? ""),
+    const dataRows = await page.locator('table[aria-label="Node configuration"] tbody tr').count();
+    expect(dataRows).toBeGreaterThan(0);
+    const dataCells = await page.locator('table[aria-label="Node configuration"] tbody tr td').evaluateAll((tds) =>
+      tds.map((td) => td.textContent?.trim() ?? "")
     );
+
     expect(dataCells.length).toBeGreaterThan(0);
   });
 });

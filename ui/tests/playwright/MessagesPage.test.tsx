@@ -13,14 +13,11 @@ test("Messages page", async ({page}) => {
     try{
     expect(await page.innerText("body")).toContain("Key");
     expect(await page.innerText("body")).toContain("All partitions");
-    const dataRows = await page.$$(
-      'table[aria-label="Messages table"] tbody tr',
-    );
+    const dataRows = await page.locator('table[aria-label="Messages table"] tbody tr').elementHandles();
     expect(dataRows.length).toBeGreaterThan(0);
-    const dataCells = await page.$$eval(
-      'table[aria-label="Messages table"] tbody tr td',
-      (tds) => tds.map((td) => td.textContent?.trim() ?? ""),
-    );
+    const dataCells = await page.locator('table[aria-label="Messages table"] tbody tr td').evaluateAll((tds) =>
+    tds.map((td) => td.textContent?.trim() ?? "")
+  );  
     expect(dataCells.length).toBeGreaterThan(0);
     }
     catch (e) {

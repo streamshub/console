@@ -12,9 +12,7 @@ test("Consumer  page", async ({page}) => {
     expect(await page.innerText("body")).toContain("Member ID");
     expect(await page.innerText("body")).toContain("Overall lag");
     expect(await page.innerText("body")).toContain("Assigned partitions");
-    const button = await page.$(
-      'button[aria-labelledby="simple-node0 00"][aria-label="Details"]',
-    );
+    const button = await page.locator('button[aria-labelledby="simple-node0 00"][aria-label="Details"]').first();
     await button?.click();
     expect(await page.innerText("body")).toContain("Committed offset");
     expect(await page.innerText("body")).toContain("Topic");

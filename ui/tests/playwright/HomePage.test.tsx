@@ -3,10 +3,8 @@ import { expect, test } from "@playwright/test";
 test("Home page", async ({ page }) => {
   await test.step("Column headings are present", async () => {
     await page.goto("./home");
-    const columnHeadings = await page.$$eval(
-      'table[aria-label="Kafka clusters"] thead th',
-      (ths) => ths.map((th) => th.textContent?.trim()),
-    );
+    const columnHeadings = await page.locator('table[aria-label="Kafka clusters"] thead th').evaluateAll((ths) =>
+  ths.map((th) => th.textContent?.trim()));
     expect(columnHeadings).toContain("Name");
     expect(columnHeadings).toContain("Brokers");
     expect(columnHeadings).toContain("Consumer groups");
@@ -30,25 +28,21 @@ test("Home page", async ({ page }) => {
     expect(await page.innerText("body")).toContain(
       "External listeners provide client access to a Kafka cluster from outside the OpenShift cluster.",
     );
-    const inputValues = await page.$$eval(
-      '.pf-v5-c-form-control input[type="text"]',
-      (inputs: HTMLInputElement[]) => inputs.map((input) => input.value),
-    );
+    const inputValues = await page.locator('.pf-v5-c-form-control input[type="text"]').evaluateAll((inputs) =>
+    inputs.map((input) => (input as HTMLInputElement).value)
+  );  
     expect(inputValues.every((value) => value.length > 1)).toBe(true); //await page.waitForSelector('span[class="pf-v5-c-form-control pf-m-readonly"] input[id="text-input-13"]');
   });
 
   await test.step("Data rows are present", async () => {
-    const dataRows = await page.$$(
-      'table[aria-label="Kafka clusters"] tbody tr',
-    );
+    const dataRows = await page.locator('table[aria-label="Kafka clusters"] tbody tr').elementHandles();
     expect(dataRows.length).toBeGreaterThan(0);
   });
 
   await test.step("Data cells in each row are present", async () => {
-    const dataCells = await page.$$eval(
-      'table[aria-label="Kafka clusters"] tbody tr td',
-      (tds) => tds.map((td) => td.textContent?.trim() ?? ""),
-    );
+    const dataCells = await page.locator('table[aria-label="Kafka clusters"] tbody tr td').evaluateAll((tds) =>
+    tds.map((td) => td.textContent?.trim() ?? "")
+  );  
     expect(dataCells.length).toBeGreaterThan(0);
   });
 

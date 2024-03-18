@@ -11,12 +11,11 @@ test("Topics configuration", async ({page}) => {
     await page.waitForSelector('text="Clear all filters"', { timeout: 500000 });   
   })
   await test.step("Topics configuration page should display table", async () => {
-    const dataRows = await page.$$('table[aria-label="Node configuration"] tbody tr');
+    const dataRows = await page.locator('table[aria-label="Node configuration"] tbody tr').elementHandles();
     expect(dataRows.length).toBeGreaterThan(0);
-    const dataCells = await page.$$eval(
-      'table[aria-label="Node configuration"] tbody tr td',
-      (tds) => tds.map((td) => td.textContent?.trim() ?? ""),
-    );
+    const dataCells = await page.locator('table[aria-label="Node configuration"] tbody tr td').evaluateAll((tds) =>
+    tds.map((td) => td.textContent?.trim() ?? "")
+  );  
     expect(dataCells.length).toBeGreaterThan(0);
   });
 });

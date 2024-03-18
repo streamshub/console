@@ -17,14 +17,10 @@ test("Topics consumers", async ({page}) => {
     expect(await page.innerText("body")).toContain("State");
     expect(await page.innerText("body")).toContain("Topics");
     expect(await page.innerText("body")).toContain("Members");
-    const dataRows = await page.$$(
-      'table[aria-label="Consumer groups"] tbody tr',
-    );
+    const dataRows = await page.locator('table[aria-label="Consumer groups"] tbody tr').elementHandles();
     expect(dataRows.length).toBeGreaterThan(0);
-    const dataCells = await page.$$eval(
-      'table[aria-label="Consumer groups"] tbody tr td',
-      (tds) => tds.map((td) => td.textContent?.trim() ?? ""),
-    );
+    const dataCells = await page.locator('table[aria-label="Consumer groups"] tbody tr td').evaluateAll((tds) =>
+    tds.map((td) => td.textContent?.trim() ?? ""));  
     expect(dataCells.length).toBeGreaterThan(0);
   });
 });
