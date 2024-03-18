@@ -31,13 +31,13 @@ import com.github.eyefloaters.console.api.support.ListRequestContext;
 import io.fabric8.kubernetes.api.model.ObjectMeta;
 import io.fabric8.kubernetes.client.informers.SharedIndexInformer;
 import io.fabric8.kubernetes.client.informers.cache.Cache;
-import io.strimzi.api.kafka.model.Kafka;
-import io.strimzi.api.kafka.model.listener.KafkaListenerAuthentication;
-import io.strimzi.api.kafka.model.listener.arraylistener.GenericKafkaListener;
-import io.strimzi.api.kafka.model.listener.arraylistener.GenericKafkaListenerConfiguration;
-import io.strimzi.api.kafka.model.listener.arraylistener.KafkaListenerType;
-import io.strimzi.api.kafka.model.status.KafkaStatus;
-import io.strimzi.api.kafka.model.status.ListenerStatus;
+import io.strimzi.api.kafka.model.kafka.Kafka;
+import io.strimzi.api.kafka.model.kafka.KafkaStatus;
+import io.strimzi.api.kafka.model.kafka.listener.GenericKafkaListener;
+import io.strimzi.api.kafka.model.kafka.listener.GenericKafkaListenerConfiguration;
+import io.strimzi.api.kafka.model.kafka.listener.KafkaListenerAuthentication;
+import io.strimzi.api.kafka.model.kafka.listener.KafkaListenerType;
+import io.strimzi.api.kafka.model.kafka.listener.ListenerStatus;
 
 import static com.github.eyefloaters.console.api.BlockingSupplier.get;
 

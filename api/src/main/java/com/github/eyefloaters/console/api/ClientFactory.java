@@ -48,9 +48,9 @@ import com.github.eyefloaters.console.api.support.TrustAllCertificateManager;
 import io.fabric8.kubernetes.client.informers.ResourceEventHandler;
 import io.fabric8.kubernetes.client.informers.SharedIndexInformer;
 import io.fabric8.kubernetes.client.informers.cache.Cache;
-import io.strimzi.api.kafka.model.Kafka;
-import io.strimzi.api.kafka.model.status.KafkaStatus;
-import io.strimzi.api.kafka.model.status.ListenerStatus;
+import io.strimzi.api.kafka.model.kafka.Kafka;
+import io.strimzi.api.kafka.model.kafka.KafkaStatus;
+import io.strimzi.api.kafka.model.kafka.listener.ListenerStatus;
 
 /**
  * The ClientFactory is responsible for managing the life-cycles of Kafka clients

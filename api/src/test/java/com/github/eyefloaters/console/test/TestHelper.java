@@ -23,10 +23,10 @@ import com.github.eyefloaters.console.kafka.systemtest.utils.ClientsConfig;
 import io.restassured.response.Response;
 import io.restassured.response.ValidatableResponse;
 import io.restassured.specification.RequestSpecification;
-import io.strimzi.api.kafka.model.Kafka;
-import io.strimzi.api.kafka.model.KafkaBuilder;
-import io.strimzi.api.kafka.model.listener.KafkaListenerAuthentication;
-import io.strimzi.api.kafka.model.listener.arraylistener.KafkaListenerType;
+import io.strimzi.api.kafka.model.kafka.Kafka;
+import io.strimzi.api.kafka.model.kafka.KafkaBuilder;
+import io.strimzi.api.kafka.model.kafka.listener.KafkaListenerAuthentication;
+import io.strimzi.api.kafka.model.kafka.listener.KafkaListenerType;
 
 import static io.restassured.RestAssured.given;
 import static org.junit.jupiter.api.Assertions.fail;

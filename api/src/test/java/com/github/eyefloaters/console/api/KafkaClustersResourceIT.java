@@ -51,11 +51,11 @@ import io.quarkus.test.junit.QuarkusMock;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.quarkus.test.kubernetes.client.KubernetesServerTestResource;
-import io.strimzi.api.kafka.model.Kafka;
-import io.strimzi.api.kafka.model.KafkaBuilder;
-import io.strimzi.api.kafka.model.listener.KafkaListenerAuthenticationCustomBuilder;
-import io.strimzi.api.kafka.model.listener.KafkaListenerAuthenticationOAuthBuilder;
-import io.strimzi.api.kafka.model.listener.KafkaListenerAuthenticationScramSha512Builder;
+import io.strimzi.api.kafka.model.kafka.Kafka;
+import io.strimzi.api.kafka.model.kafka.KafkaBuilder;
+import io.strimzi.api.kafka.model.kafka.listener.KafkaListenerAuthenticationCustomBuilder;
+import io.strimzi.api.kafka.model.kafka.listener.KafkaListenerAuthenticationOAuthBuilder;
+import io.strimzi.api.kafka.model.kafka.listener.KafkaListenerAuthenticationScramSha512Builder;
 import io.strimzi.test.container.StrimziKafkaContainer;
 
 import static com.github.eyefloaters.console.test.TestHelper.whenRequesting;
