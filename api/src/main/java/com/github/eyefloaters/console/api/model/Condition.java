@@ -11,7 +11,7 @@ public record Condition(
         String type,
         String lastTransitionTime) {
 
-    public Condition(io.strimzi.api.kafka.model.status.Condition condition) {
+    public Condition(io.strimzi.api.kafka.model.common.Condition condition) {
         this(condition.getStatus(),
             condition.getReason(),
             condition.getMessage(),

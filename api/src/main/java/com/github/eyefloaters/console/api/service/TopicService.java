@@ -62,8 +62,8 @@ import com.github.eyefloaters.console.api.support.ValidationProxy;
 
 import io.fabric8.kubernetes.api.model.ObjectMeta;
 import io.fabric8.kubernetes.client.KubernetesClient;
-import io.strimzi.api.kafka.model.Kafka;
-import io.strimzi.api.kafka.model.KafkaTopic;
+import io.strimzi.api.kafka.model.kafka.Kafka;
+import io.strimzi.api.kafka.model.topic.KafkaTopic;
 
 import static org.apache.kafka.clients.admin.NewPartitions.increaseTo;
 
