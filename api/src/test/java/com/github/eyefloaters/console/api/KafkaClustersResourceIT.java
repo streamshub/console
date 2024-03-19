@@ -30,12 +30,14 @@ import org.apache.kafka.common.security.auth.SecurityProtocol;
 import org.eclipse.microprofile.config.Config;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.Mockito;
 
 import com.github.eyefloaters.console.api.model.ListFetchParams;
+import com.github.eyefloaters.console.api.service.KafkaClusterService;
 import com.github.eyefloaters.console.api.support.ErrorCategory;
 import com.github.eyefloaters.console.kafka.systemtest.TestPlainProfile;
 import com.github.eyefloaters.console.kafka.systemtest.deployment.DeploymentManager;
@@ -97,6 +99,9 @@ class KafkaClustersResourceIT {
     @Inject
     Map<String, Admin> configuredAdmins;
 
+    @Inject
+    KafkaClusterService kafkaClusterService;
+
     @DeploymentManager.InjectDeploymentManager
     DeploymentManager deployments;
 
@@ -149,6 +154,8 @@ class KafkaClustersResourceIT {
         // Wait for the informer cache to be populated with all Kafka CRs
         await().atMost(10, TimeUnit.SECONDS)
             .until(() -> Objects.equals(kafkaInformer.getStore().list().size(), 2));
+
+        kafkaClusterService.setListUnconfigured(false);
     }
 
     @AfterEach
@@ -245,6 +252,7 @@ class KafkaClustersResourceIT {
 
     @Test
     void testListClustersWithRangePaginationTruncated() {
+        kafkaClusterService.setListUnconfigured(true);
         mockAdminClient();
 
         List<String> allKafkaNames = Stream.concat(STATIC_KAFKAS.stream(),
@@ -301,6 +309,7 @@ class KafkaClustersResourceIT {
         " , 8,  5, 5", // skip last one (8 remain), limit to 5 on page
     })
     void testListClustersWithPaginationCursors(Integer afterIndex, Integer beforeIndex, Integer pageSize, int expectedResultCount) {
+        kafkaClusterService.setListUnconfigured(true);
         mockAdminClient();
 
         List<String> allKafkaNames = Stream.concat(STATIC_KAFKAS.stream(),
@@ -478,6 +487,7 @@ class KafkaClustersResourceIT {
     }
 
     @Test
+    @Disabled("Only configured clusters are returned at this time")
     void testListClustersWithUnconfiguredCluster() {
         String clusterId = UUID.randomUUID().toString();
         String clusterName = "test-kafka-" + clusterId;

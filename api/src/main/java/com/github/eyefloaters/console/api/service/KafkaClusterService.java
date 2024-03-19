@@ -59,12 +59,16 @@ public class KafkaClusterService {
     @Inject
     Supplier<Admin> clientSupplier;
 
+    boolean listUnconfigured = false;
+    Predicate<KafkaCluster> includeAll = k -> listUnconfigured;
+
     public List<KafkaCluster> listClusters(ListRequestContext<KafkaCluster> listSupport) {
         return kafkaInformer.getStore()
                 .list()
                 .stream()
                 .filter(Predicate.not(k -> annotatedKafka(k, Annotations.CONSOLE_HIDDEN)))
                 .map(this::toKafkaCluster)
+                .filter(includeAll.or(KafkaCluster::isConfigured)) // Hide unconfigured clusters for now.
                 .map(listSupport::tally)
                 .filter(listSupport::betweenCursors)
                 .sorted(listSupport.getSortComparator())
@@ -226,5 +230,9 @@ public class KafkaClusterService {
                 .map(Collection::stream)
                 .map(ops -> ops.map(Enum::name).toList())
                 .orElse(null);
+    }
+
+    /* test */ public void setListUnconfigured(boolean listUnconfigured) {
+        this.listUnconfigured = listUnconfigured;
     }
 }
