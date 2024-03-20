@@ -41,3 +41,6 @@ storybook-static
 # other package management lock files
 pnpm-lock.yaml
 yarn.lock
+
+tests/playwright/.auth/*.json
+/test-results/

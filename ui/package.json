@@ -9,7 +9,8 @@
     "lint": "next lint",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
-    "test-storybook": "test-storybook"
+    "test-storybook": "test-storybook",
+    "test": "npx playwright test --config ./tests/playwright/playwright.config.ts"
   },
   "dependencies": {
     "@patternfly/patternfly": "^5.2.1",
@@ -36,6 +37,8 @@
     "eslint": "8.57.0",
     "eslint-config-next": "14.1.4",
     "eslint-config-prettier": "^9.1.0",
+    "eslint-import-resolver-typescript": "^3.6.1",
+    "eslint-plugin-storybook": "^0.8.0",
     "iron-session": "^8.0.1",
     "lodash.groupby": "^4.6.0",
     "next": "^14.1.4",
@@ -72,6 +75,7 @@
     "zod": "^3.22.4"
   },
   "devDependencies": {
+    "@playwright/test": "^1.42.0",
     "@storybook/addon-essentials": "^8.0.2",
     "@storybook/addon-interactions": "^8.0.2",
     "@storybook/addon-links": "^8.0.2",
@@ -80,8 +84,8 @@
     "@storybook/react": "^8.0.0",
     "@storybook/test": "^8.0.0",
     "@storybook/test-runner": "^0.17.0",
-    "eslint-plugin-storybook": "^0.8.0",
     "pino-pretty": "^10.3.1",
+    "playwright": "^1.41.2",
     "prettier": "^3.2.5",
     "storybook": "^8.0.2",
     "tsconfig-paths-webpack-plugin": "^4.1.0"
