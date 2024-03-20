@@ -34,7 +34,7 @@ import com.github.eyefloaters.console.api.model.ReplicaAssignment;
 import com.github.eyefloaters.console.api.model.Topic;
 import com.github.eyefloaters.console.api.model.TopicPatch;
 
-import io.strimzi.api.kafka.model.Kafka;
+import io.strimzi.api.kafka.model.kafka.Kafka;
 
 /**
  * Collection of types responsible for validating the inputs to the createTopic
