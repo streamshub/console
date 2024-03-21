@@ -4,7 +4,7 @@ This project is a web console designed to facilitate interactions with Apache Ka
 It is composed of two main parts: 
 
 - a REST API backend developed with Java Quarkus
-- a user interface (UI) built with Next.js and  [PatternFly](https://patternfly.org)
+- a user interface (UI) built with Next.js and [PatternFly](https://patternfly.org)
 
 ### Getting started
 
