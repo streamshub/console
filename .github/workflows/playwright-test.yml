@@ -3,7 +3,7 @@ name: Playwright Tests
 on:
   push:
     branches: [ 'main' ]
-  pull_request:
+  pull_request_target:
     branches: [ 'main' ]
     types: [ opened, reopened, synchronize ]
 
@@ -14,6 +14,7 @@ jobs:
     container:
       image: mcr.microsoft.com/playwright:v1.42.1-jammy
 
+    if: contains(github.event.pull_request.labels.*.name, 'safe to test') || ${{ github.actor == 'dependabot[bot]' }}
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
