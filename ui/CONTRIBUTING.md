@@ -1,20 +1,28 @@
-# Console UI
+# Contributing to the UI
 
 This part of the project contains the user interface for the Kafka console, developed using Next.js and the [PatternFly](https://patternfly.org) UI library.
+
+## Prerequisites
+
+Please make sure you have working installations of:
+
+- node (v18+)
+- npm (v10+)
+
+To run a development version of the UI working in all its sections, you will need to install the console on a development cluster first. Please refer to the [install/README.md](../install/README.md) file for detailed instructions about how to do it.
+
+Alternatively, you can run the API module locally, but sections depending on the metrics exported on Prometheus will not work correctly.
 
 ## Getting Started
 
 Create a `.env` file containing the details about where to find the API server, and some additional config.
 
 ```.dotenv
-BACKEND_URL=http://localhost:8080
-CONSOLE_METRICS_PROMETHEUS_URL=http://localhost:9090
-NEXTAUTH_SECRET=abcdefghijklmnopqrstuvwxyz1234567890=
+# the actual URLs will depend on how you installed the console
+BACKEND_URL=http://api.my-cluster
+CONSOLE_METRICS_PROMETHEUS_URL=http://prometheus.my-cluster
 LOG_LEVEL=info
 ```
-
-[!WARNING]
-Please generate a valid and secure value for `NEXTAUTH_SECRET`. We suggest running `openssl rand -base64 32` to get started.
 
 Install the required dependencies.
 
