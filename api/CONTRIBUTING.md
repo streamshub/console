@@ -49,22 +49,31 @@ Please commit generated files along with the PR for review.
 
 1. Creating topic
 
+Use the `kafka-topics.sh` tool to manage topics. kafka-topics.sh is part of the [Apache Kafka distribution](https://kafka.apache.org/downloads) and is found in the bin directory.
+
 ```
 kafka-topics.sh --create --bootstrap-server localhost:9092  --partitions=3 --replication-factor=1 --topic test --command-config ./hack/binscripts.properties
 ```
 
 2. Produce messages using kcat
+
+Use [`kcat`](https://github.com/edenhill/kcat) to produce messages. 
+
 ```
 kcat -b localhost:9092 -F ./hack/kcat.properties -P -t test
 ```
 
 
 4. Consume messages
+   
+Use [`kcat`](https://github.com/edenhill/kcat) to consume messages.
+
 ```
- kcat -b localhost:9092 -F ./hack/kcat.properties  -C -t test
+kcat -b localhost:9092 -F ./hack/kcat.properties  -C -t test
 ```
 
 6. Interact with the API to view results
+
 `
 curl -s -u admin:admin-secret http://localhost:8080/api/v1/consumer-groups | jq
 `
