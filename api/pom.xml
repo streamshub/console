@@ -64,6 +64,12 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
+            <!-- Manage nimbus-jose-jwt for CVE-2023-52428 -->
+            <dependency>
+                <groupId>com.nimbusds</groupId>
+                <artifactId>nimbus-jose-jwt</artifactId>
+                <version>9.37.2</version>
+            </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-bom</artifactId>
