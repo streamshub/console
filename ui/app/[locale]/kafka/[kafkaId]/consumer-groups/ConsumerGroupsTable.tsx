@@ -102,7 +102,7 @@ export function ConsumerGroupsTable({
                 dataLabel={t("ConsumerGroupsTable.consumer_group_name")}
               >
                 <Link
-                  href={`/kafka/${kafkaId}/consumer-groups/${row.id === "" ? "+" : row.id}`}
+                  href={`/kafka/${kafkaId}/consumer-groups/${row.id === "" ? "+" : encodeURIComponent(row.id)}`}
                 >
                   {row.id === "" ? (
                     <i>{t("ConsumerGroupsTable.empty_name")}</i>
