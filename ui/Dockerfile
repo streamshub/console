@@ -16,20 +16,23 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-ENV BACKEND_URL http://example
-ENV CONSOLE_METRICS_PROMETHEUS_URL http://example
-ENV NEXTAUTH_SECRET examplesecret
-ENV LOG_LEVEL info
-ENV CONSOLE_MODE read-only
-ENV NEXT_TELEMETRY_DISABLED 1
+ARG backend_url=http://example
+ARG console_metrics_prometheus_url=http://example
+ARG nextauth_secret=examplesecret
+ARG log_level=info
+ARG console_mode=read-only
+
+ENV BACKEND_URL=$backend_url
+ENV CONSOLE_METRICS_PROMETHEUS_URL=$console_metrics_prometheus_url
+ENV NEXTAUTH_SECRET=$nextauth_secret
+ENV LOG_LEVEL=$log_level
+ENV CONSOLE_MODE=$console_mode
 
 RUN npm run build
 
 FROM registry.access.redhat.com/ubi9/nodejs-18-minimal AS runner
 USER 0
 WORKDIR /app
-
-ENV NODE_ENV production
 
 COPY --from=builder /app/public ./public
 COPY --from=builder --chown=1001:1001 /app/.next/standalone ./
@@ -39,7 +42,7 @@ USER 1001
 
 EXPOSE 3000
 
+ENV NODE_ENV production
 ENV PORT 3000
-ENV HOSTNAME "0.0.0.0"
 
 CMD ["node", "server.js"]
