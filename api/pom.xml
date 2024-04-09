@@ -30,7 +30,7 @@
         <maven.compiler.version>3.13.0</maven.compiler.version>
         <maven.dependency.version>3.6.1</maven.dependency.version>
         <maven.checkstyle.version>3.3.1</maven.checkstyle.version>
-        <spotbugs.version>4.8.3</spotbugs.version>
+        <spotbugs.version>4.8.4</spotbugs.version>
         <surefire-plugin.version>3.2.5</surefire-plugin.version>
         <version.jacoco.plugin>0.8.11</version.jacoco.plugin>
 
@@ -68,7 +68,7 @@
             <dependency>
                 <groupId>com.nimbusds</groupId>
                 <artifactId>nimbus-jose-jwt</artifactId>
-                <version>9.37.2</version>
+                <version>9.37.3</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
@@ -386,7 +386,7 @@
                     <dependency>
                         <groupId>com.puppycrawl.tools</groupId>
                         <artifactId>checkstyle</artifactId>
-                        <version>10.14.2</version>
+                        <version>10.15.0</version>
                     </dependency>
                 </dependencies>
                 <executions>
