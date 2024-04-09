@@ -32,7 +32,7 @@
         <maven.checkstyle.version>3.3.1</maven.checkstyle.version>
         <spotbugs.version>4.8.4</spotbugs.version>
         <surefire-plugin.version>3.2.5</surefire-plugin.version>
-        <version.jacoco.plugin>0.8.11</version.jacoco.plugin>
+        <version.jacoco.plugin>0.8.12</version.jacoco.plugin>
 
         <!-- Test Dependencies -->
         <hamcrest.version>2.1</hamcrest.version>
