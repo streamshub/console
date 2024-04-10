@@ -1,0 +1,8 @@
+# See https://docs.snyk.io/snyk-cli/scan-and-maintain-projects-using-the-cli/snyk-cli-for-snyk-code/exclude-directories-and-files-from-snyk-code-cli-tests
+ignore: {}
+version: v1.25.0
+patch: {}
+exclude:
+  global:
+    # CWE-295 TrustAllCertificateManager is non-production code, therefore exclusion is reasonable
+    - ./api/src/main/java/com/github/eyefloaters/console/api/support/TrustAllCertificateManager.java
