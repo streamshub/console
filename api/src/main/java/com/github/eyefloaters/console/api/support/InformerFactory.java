@@ -19,6 +19,7 @@ import io.fabric8.kubernetes.client.informers.ResourceEventHandler;
 import io.fabric8.kubernetes.client.informers.SharedIndexInformer;
 import io.strimzi.api.kafka.model.kafka.Kafka;
 import io.strimzi.api.kafka.model.topic.KafkaTopic;
+import io.strimzi.api.kafka.model.topic.KafkaTopicSpec;
 
 @ApplicationScoped
 public class InformerFactory {
@@ -58,7 +59,7 @@ public class InformerFactory {
         topicInformer.addEventHandler(new ResourceEventHandler<KafkaTopic>() {
             @Override
             public void onAdd(KafkaTopic topic) {
-                topicMap(topic).ifPresent(map -> map.put(topic.getSpec().getTopicName(), topic));
+                topicMap(topic).ifPresent(map -> map.put(topicName(topic), topic));
             }
 
             @Override
@@ -69,7 +70,13 @@ public class InformerFactory {
 
             @Override
             public void onDelete(KafkaTopic topic, boolean deletedFinalStateUnknown) {
-                topicMap(topic).ifPresent(map -> map.remove(topic.getSpec().getTopicName()));
+                topicMap(topic).ifPresent(map -> map.remove(topicName(topic)));
+            }
+
+            private static String topicName(KafkaTopic topic) {
+                return Optional.ofNullable(topic.getSpec())
+                        .map(KafkaTopicSpec::getTopicName)
+                        .orElseGet(() -> topic.getMetadata().getName());
             }
 
             Optional<Map<String, KafkaTopic>> topicMap(KafkaTopic topic) {
