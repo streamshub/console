@@ -706,8 +706,10 @@ class TopicsResourceIT {
     void testListTopicsWithManagedTopic() {
         String topic1 = "t1-" + UUID.randomUUID().toString();
         String topic2 = "t2-" + UUID.randomUUID().toString();
+        String topic3 = "t3-" + UUID.randomUUID().toString();
         topicUtils.createTopics(clusterId1, List.of(topic1), 1);
         topicUtils.createTopics(clusterId1, List.of(topic2), 1);
+        topicUtils.createTopics(clusterId1, List.of(topic3), 1);
 
         client.resource(new KafkaTopicBuilder()
                     .withNewMetadata()
@@ -717,6 +719,19 @@ class TopicsResourceIT {
                     .endMetadata()
                     .withNewSpec()
                         .withTopicName(topic1)
+                        .withPartitions(1)
+                    .endSpec()
+                .build())
+            .create();
+
+        client.resource(new KafkaTopicBuilder()
+                    .withNewMetadata()
+                        .withName(topic3)
+                        .withNamespace("default")
+                        .withLabels(Map.of("strimzi.io/cluster", clusterName1))
+                    .endMetadata()
+                    .withNewSpec()
+                        // topicName (optional) is not set
                         .withPartitions(1)
                     .endSpec()
                 .build())
@@ -732,9 +747,10 @@ class TopicsResourceIT {
         whenRequesting(req -> req.get("", clusterId1))
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
-            .body("data.size()", is(2))
+            .body("data.size()", is(3))
             .body("data.find { it.attributes.name == '%s' }.meta.managed".formatted(topic1), is(true))
-            .body("data.find { it.attributes.name == '%s' }.meta.managed".formatted(topic2), is(false));
+            .body("data.find { it.attributes.name == '%s' }.meta.managed".formatted(topic2), is(false))
+            .body("data.find { it.attributes.name == '%s' }.meta.managed".formatted(topic3), is(true));
     }
 
     @Test
