@@ -20,9 +20,10 @@ spec:
       containers:
       ### API
       - name: console-api
-        image: quay.io/eyefloaters/console-api:0.0.31
+        image: quay.io/eyefloaters/console-api:0.0.33
         ports:
         - containerPort: 8080
+        # Adjust KAFKA and CONSOLE_KAFKA variables to match your Kafka cluster
         env:
         - name: KAFKA_SECURITY_PROTOCOL
           value: SASL_SSL
@@ -31,6 +32,7 @@ spec:
         - name: CONSOLE_KAFKA_EXAMPLE
           value: ${NAMESPACE}/console-kafka
         - name: CONSOLE_KAFKA_EXAMPLE_BOOTSTRAP_SERVERS
+          # Replace with your Kafka's boostrap address
           value: bootstrap.console-kafka.apps-crc.testing:443
         - name: CONSOLE_KAFKA_EXAMPLE_SASL_JAAS_CONFIG
           valueFrom:
@@ -39,7 +41,7 @@ spec:
               key: sasl.jaas.config
       ### User Interface
       - name: console-ui
-        image: quay.io/eyefloaters/ui:0.0.31
+        image: quay.io/eyefloaters/ui:0.0.33
         volumeMounts:
         - mountPath: /app/.next/cache
           name: cache
