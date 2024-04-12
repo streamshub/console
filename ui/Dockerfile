@@ -1,3 +1,6 @@
+ARG log_level=info
+ARG console_mode=read-only
+
 FROM registry.access.redhat.com/ubi9/nodejs-18 AS deps
 USER 0
 WORKDIR /app
@@ -19,8 +22,8 @@ COPY . .
 ARG backend_url=http://example
 ARG console_metrics_prometheus_url=http://example
 ARG nextauth_secret=examplesecret
-ARG log_level=info
-ARG console_mode=read-only
+ARG log_level
+ARG console_mode
 
 ENV BACKEND_URL=$backend_url
 ENV CONSOLE_METRICS_PROMETHEUS_URL=$console_metrics_prometheus_url
@@ -37,6 +40,13 @@ WORKDIR /app
 COPY --from=builder /app/public ./public
 COPY --from=builder --chown=1001:1001 /app/.next/standalone ./
 COPY --from=builder --chown=1001:1001 /app/.next/static ./.next/static
+
+ARG log_level
+ARG console_mode
+
+# Ensure set to some default for runtime
+ENV LOG_LEVEL=$log_level
+ENV CONSOLE_MODE=$console_mode
 
 USER 1001
 
