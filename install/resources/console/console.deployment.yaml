@@ -33,7 +33,7 @@ spec:
           value: ${NAMESPACE}/console-kafka
         - name: CONSOLE_KAFKA_EXAMPLE_BOOTSTRAP_SERVERS
           # Replace with your Kafka's boostrap address
-          value: bootstrap.console-kafka.apps-crc.testing:443
+          value: bootstrap.console-kafka.${CLUSTER_DOMAIN}:443
         - name: CONSOLE_KAFKA_EXAMPLE_SASL_JAAS_CONFIG
           valueFrom:
             secretKeyRef:
@@ -62,5 +62,9 @@ spec:
           value: 'http://127.0.0.1:8080'
         - name: CONSOLE_METRICS_PROMETHEUS_URL
           value: 'http://prometheus-operated.${NAMESPACE}.svc.cluster.local:9090'
+        - name: CONSOLE_MODE
+          value: read-only
+        - name: LOG_LEVEL
+          value: info
         ports:
         - containerPort: 3000
