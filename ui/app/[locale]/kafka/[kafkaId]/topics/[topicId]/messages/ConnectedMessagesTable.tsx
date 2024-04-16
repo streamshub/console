@@ -5,6 +5,7 @@ import {
   GetTopicMessagesReturn,
 } from "@/api/messages/actions";
 import { Message } from "@/api/messages/schema";
+import { useParseSearchParams } from "@/app/[locale]/kafka/[kafkaId]/topics/[topicId]/messages/useParseSearchParams";
 import { AlertContinuousMode } from "@/components/MessagesTable/AlertContinuousMode";
 import { AlertTopicGone } from "@/components/MessagesTable/AlertTopicGone";
 import { MessagesTable } from "@/components/MessagesTable/MessagesTable";
@@ -22,7 +23,6 @@ import {
   useRef,
   useState,
 } from "react";
-import { useParseSearchParams } from "./parseSearchParams";
 
 export function ConnectedMessagesTable({
   kafkaId,
