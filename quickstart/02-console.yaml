@@ -1,0 +1,109 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: console-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: console-api
+  template:
+    metadata:
+      labels:
+        app: console-api
+    spec:
+      containers:
+        - name: console-api
+          image: quay.io/eyefloaters/console-api:latest
+          ports:
+            - containerPort: 8080
+          env:
+            - name: CONSOLE_KAFKA_MC
+              value: kafka/my-cluster
+            - name: CONSOLE_KAFKA_MC_BOOTSTRAP_SERVERS
+              value: my-cluster-kafka-0.my-cluster-kafka-brokers.kafka.svc:9092
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: console-api
+spec:
+  selector:
+    app: console-api
+  type: NodePort
+  ports:
+    - protocol: TCP
+      port: 8080
+      name: api
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ui
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ui
+  template:
+    metadata:
+      labels:
+        app: ui
+    spec:
+      containers:
+        - name: ui
+          image: quay.io/eyefloaters/console-ui:latest
+          ports:
+            - containerPort: 3000
+          env:
+            - name: HOSTNAME
+              value: 0.0.0.0
+            - name: NEXTAUTH_URL
+              value: http://localhost:3000
+            - name: NEXTAUTH_URL_INTERNAL
+              value: http://console-ui:3000
+            - name: NEXTAUTH_SECRET
+              value: changeme
+            - name: BACKEND_URL
+              value: "http://console-api:8080"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ui
+spec:
+  selector:
+    app: ui
+  type: NodePort
+  ports:
+    - protocol: TCP
+      port: 3000
+      name: web
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: console-api-kafka-watch-all
+rules:
+  - verbs:
+      - get
+      - watch
+      - list
+    apiGroups:
+      - kafka.strimzi.io
+    resources:
+      - kafkas
+      - kafkatopics
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: console-api-kafka-watch-all
+subjects:
+  - kind: ServiceAccount
+    name: default
+    namespace: console
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: console-api-kafka-watch-all
