@@ -1,6 +1,4 @@
 import { stringToInt } from "@/utils/stringToInt";
-import { useSearchParams } from "next/navigation";
-import { useMemo } from "react";
 
 export type MessagesSearchParams = {
   retrieve?: string;
@@ -55,15 +53,4 @@ export function parseSearchParams(searchParams: MessagesSearchParams) {
     where,
     _,
   };
-}
-
-export function useParseSearchParams(): [
-  ReturnType<typeof parseSearchParams>,
-  Record<string, string>,
-] {
-  const searchParamsEntities = useSearchParams();
-  return useMemo(() => {
-    const searchParams = Object.fromEntries(searchParamsEntities);
-    return [parseSearchParams(searchParams), searchParams];
-  }, [searchParamsEntities]);
 }
