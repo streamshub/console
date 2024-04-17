@@ -1,10 +1,13 @@
-# Console for Apache Kafka® on Kubernetes
+# Console for Apache Kafka<sup>®</sup> on Kubernetes
 
-This project is a web console designed to facilitate interactions with Apache Kafka® instances on Kubernetes, leveraging the [Strimzi](https://strimzi.io) Cluster Operator.
-It is composed of two main parts:
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](http://www.apache.org/licenses/LICENSE-2.0) [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=streamshub_console&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=streamshub_console) [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=streamshub_console&metric=coverage)](https://sonarcloud.io/summary/new_code?id=streamshub_console)
 
-- a REST API backend developed with Java and [Quarkus](https://quarkus.io/)
-- a user interface (UI) built with [Next.js](https://nextjs.org/) and [PatternFly](https://patternfly.org)
+This project is a web console designed to facilitate interactions with Apache Kafka<sup>®</sup> instances on Kubernetes, leveraging the [Strimzi](https://strimzi.io) Cluster Operator.
+It is composed of three main parts:
+
+- a [REST API](./api) backend developed with Java and [Quarkus](https://quarkus.io/)
+- a [user interface (UI)](./ui) built with [Next.js](https://nextjs.org/) and [PatternFly](https://patternfly.org)
+- a Kubernetes [operator](./operator) developed with Java and [Quarkus](https://quarkus.io/)
 
 #### Roadmap / Goals
 
@@ -27,7 +30,7 @@ Please refer to the [installation README](./install/README.md) file for detailed
 ### Run locally
 
 Running the console locally requires the use of a remote or locally-running Kubernetes cluster that hosts the Strimzi Kafka operator
-and any Apache Kafka® clusters that will be accessed from the console. To get started, you will need to provide a console configuration
+and any Apache Kafka<sup>®</sup> clusters that will be accessed from the console. To get started, you will need to provide a console configuration
 file and credentials to connect to the Kubernetes cluster where Strimzi and Kafka are available.
 
 1. Using the [console-config-example.yaml](./console-config-example.yaml) file as an example, create your own configuration
@@ -71,7 +74,24 @@ file and credentials to connect to the Kubernetes cluster where Strimzi and Kafk
 ## Contributing
 
 We welcome contributions of all forms. Please see the [CONTRIBUTING](./CONTRIBUTING.md) file for how to get started.
-Join us in enhancing the capabilities of this console for Apache Kafka® on Kubernetes.
+Join us in enhancing the capabilities of this console for Apache Kafka<sup>®</sup> on Kubernetes.
+
+## Releasing
+
+### Milestones
+Each release requires an open milestone that includes the issues/pull requests that are part of the release. All issues in the release milestone must be closed. The name of the milestone must match the version number to be released.
+
+### Configuration
+The release action flow requires that the following secrets are configured in the repository:
+* `IMAGE_REPO_HOSTNAME` - the host (optionally including a port number) of the image repository where images will be pushed
+* `IMAGE_REPO_NAMESPACE` - namespace/library/user where the image will be pushed
+* `IMAGE_REPO_USERNAME` - user name for authentication to server `IMAGE_REPO_HOSTNAME`
+* `IMAGE_REPO_PASSWORD` - password for authentication to server `IMAGE_REPO_HOSTNAME`
+These credentials will be used to push the release image to the repository configured in the `.github/workflows/release.yml` workflow.
+
+### Performing the Release
+Releases are performed by modifying the `.github/project.yml` file, setting `current-version` to the release version and `next-version` to the next SNAPSHOT. Open a pull request with the changed `project.yml` to initiate the pre-release workflows. At this phase, the project milestone will be checked and it will be verified that no issues for the release milestone are still open. Additionally, the project's integration test will be run.
+Once approved and the pull request is merged, the release action will execute. This action will execute the Maven release plugin to tag the release commit, build the application artifacts, create the build image, and push the image to (currently) quay.io. If successful, the action will push the new tag to the Github repository and generate release notes listing all of the closed issues included in the milestone. Finally, the milestone will be closed.
 
 ## License
 
