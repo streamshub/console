@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: placeholder
+spec:
+  replicas: 1
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app: placeholder
+  template:
+    metadata:
+      labels:
+        app: placeholder
+    spec:
+      serviceAccountName: placeholder
+      volumes:
+      - emptyDir: {}
+        name: cache
+      containers:
+      ### API
+      - name: console-api
+        image: quay.io/eyefloaters/console-api:0.0.33
+        ports:
+        - containerPort: 8080
+        env: []
+      ### User Interface
+      - name: console-ui
+        image: quay.io/eyefloaters/ui:0.0.33
+        volumeMounts:
+        - mountPath: /app/.next/cache
+          name: cache
+        ports:
+        - containerPort: 3000
+        env:
+        - name: NEXTAUTH_SECRET
+          valueFrom:
+            secretKeyRef:
+              key: NEXTAUTH_SECRET
+        - name: NEXTAUTH_URL
+          value: 'https://${CONSOLE_HOSTNAME}'
+        - name: BACKEND_URL
+          value: 'http://127.0.0.1:8080'
+        - name: CONSOLE_METRICS_PROMETHEUS_URL
+          value: 'http://prometheus-operated.${NAMESPACE}.svc.cluster.local:9090'
+        - name: CONSOLE_MODE
+          value: read-only
+        - name: LOG_LEVEL
+          value: info

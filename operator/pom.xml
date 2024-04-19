@@ -60,6 +60,11 @@
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-container-image-jib</artifactId>
     </dependency>
+    <dependency>
+      <groupId>io.strimzi</groupId>
+      <artifactId>api</artifactId>
+      <version>0.40.0</version>
+    </dependency>
   </dependencies>
 
   <build>

@@ -1,0 +1,12 @@
+apiVersion: console.eyefloaters.github.com/v1alpha1
+kind: Console
+metadata:
+  name: example
+  namespace: streams-console
+spec:
+  hostname: example-console1.apps-crc.testing
+  kafkaClusters:
+    - kafkaUserName: console-kafka-user1
+      listener: secure
+      name: console-kafka
+      namespace: streams-console

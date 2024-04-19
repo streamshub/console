@@ -1,0 +1,23 @@
+kind: Ingress
+apiVersion: networking.k8s.io/v1
+metadata:
+  name: console-ui-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/backend-protocol: HTTP
+    route.openshift.io/termination: edge
+spec:
+  defaultBackend:
+    service:
+      name: console-ui
+      port:
+        number: 80
+  rules:
+    - host: placeholder
+      http:
+        paths:
+          - pathType: ImplementationSpecific
+            backend:
+              service:
+                name: console-ui
+                port:
+                  number: 80

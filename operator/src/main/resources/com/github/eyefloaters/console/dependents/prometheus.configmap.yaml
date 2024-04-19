@@ -1,0 +1,184 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-server-config
+  namespace: prometheus
+data:
+  prometheus.yml: |
+    global:
+      evaluation_interval: 30s
+      scrape_interval: 30s
+      external_labels:
+        prometheus: streams-console/console-prometheus
+        prometheus_replica: $(POD_NAME)
+    scrape_configs:
+    - job_name: podMonitor/streams-console/kafka-resources/0
+      honor_labels: false
+      kubernetes_sd_configs:
+      - role: pod
+        namespaces:
+          names:
+          - streams-console
+      metrics_path: /metrics
+      relabel_configs:
+      - source_labels:
+        - job
+        target_label: __tmp_prometheus_job_name
+      - action: keep
+        source_labels:
+        - __meta_kubernetes_pod_label_strimzi_io_kind
+        - __meta_kubernetes_pod_labelpresent_strimzi_io_kind
+        regex: (Kafka);true
+      - action: keep
+        source_labels:
+        - __meta_kubernetes_pod_container_port_name
+        regex: tcp-prometheus
+      - source_labels:
+        - __meta_kubernetes_namespace
+        target_label: namespace
+      - source_labels:
+        - __meta_kubernetes_pod_container_name
+        target_label: container
+      - source_labels:
+        - __meta_kubernetes_pod_name
+        target_label: pod
+      - target_label: job
+        replacement: streams-console/kafka-resources
+      - target_label: endpoint
+        replacement: tcp-prometheus
+      - separator: ;
+        regex: __meta_kubernetes_pod_label_(strimzi_io_.+)
+        replacement: $1
+        action: labelmap
+      - source_labels:
+        - __meta_kubernetes_namespace
+        separator: ;
+        target_label: namespace
+        regex: (.*)
+        replacement: $1
+        action: replace
+      - source_labels:
+        - __meta_kubernetes_pod_name
+        separator: ;
+        target_label: kubernetes_pod_name
+        regex: (.*)
+        replacement: $1
+        action: replace
+      - source_labels:
+        - __meta_kubernetes_pod_node_name
+        separator: ;
+        target_label: node_name
+        regex: (.*)
+        replacement: $1
+        action: replace
+      - source_labels:
+        - __meta_kubernetes_pod_host_ip
+        separator: ;
+        target_label: node_ip
+        regex: (.*)
+        replacement: $1
+        action: replace
+      - source_labels:
+        - __address__
+        target_label: __tmp_hash
+        modulus: 1
+        action: hashmod
+      - source_labels:
+        - __tmp_hash
+        regex: $(SHARD)
+        action: keep
+      metric_relabel_configs: []
+    - job_name: kubernetes-cadvisor
+      honor_labels: true
+      scrape_interval: 10s
+      scrape_timeout: 10s
+      metrics_path: /metrics/cadvisor
+      scheme: https
+      kubernetes_sd_configs:
+      - role: node
+        namespaces:
+          names: []
+      bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+      tls_config:
+        ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+        insecure_skip_verify: true
+      relabel_configs:
+      - separator: ;
+        regex: __meta_kubernetes_node_label_(.+)
+        replacement: $1
+        action: labelmap
+      - separator: ;
+        regex: (.*)
+        target_label: __address__
+        replacement: kubernetes.default.svc:443
+        action: replace
+      - source_labels:
+        - __meta_kubernetes_node_name
+        separator: ;
+        regex: (.+)
+        target_label: __metrics_path__
+        replacement: /api/v1/nodes/${1}/proxy/metrics/cadvisor
+        action: replace
+      - source_labels:
+        - __meta_kubernetes_node_name
+        separator: ;
+        regex: (.*)
+        target_label: node_name
+        replacement: $1
+        action: replace
+      - source_labels:
+        - __meta_kubernetes_node_address_InternalIP
+        separator: ;
+        regex: (.*)
+        target_label: node_ip
+        replacement: $1
+        action: replace
+      metric_relabel_configs:
+      - source_labels:
+        - container
+        - __name__
+        separator: ;
+        regex: POD;container_(network).*
+        target_label: container
+        replacement: $1
+        action: replace
+      - source_labels:
+        - container
+        separator: ;
+        regex: POD
+        replacement: $1
+        action: drop
+      - source_labels:
+        - container
+        separator: ;
+        regex: ^$
+        replacement: $1
+        action: drop
+      - source_labels:
+        - __name__
+        separator: ;
+        regex: container_(network_tcp_usage_total|tasks_state|memory_failures_total|network_udp_usage_total)
+        replacement: $1
+        action: drop
+    - job_name: kubernetes-nodes-kubelet
+      scrape_interval: 10s
+      scrape_timeout: 10s
+      scheme: https
+      kubernetes_sd_configs:
+      - role: node
+        namespaces:
+          names: []
+      bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+      tls_config:
+        ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+        insecure_skip_verify: true
+      relabel_configs:
+      - action: labelmap
+        regex: __meta_kubernetes_node_label_(.+)
+      - target_label: __address__
+        replacement: kubernetes.default.svc:443
+      - source_labels:
+        - __meta_kubernetes_node_name
+        regex: (.+)
+        target_label: __metrics_path__
+        replacement: /api/v1/nodes/${1}/proxy/metrics

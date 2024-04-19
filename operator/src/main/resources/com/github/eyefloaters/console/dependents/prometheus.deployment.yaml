@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prometheus-server
+  namespace: prometheus
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: prometheus-server
+  template:
+    metadata:
+      labels:
+        app: prometheus-server
+    spec:
+      containers:
+        - name: prometheus
+          image: quay.io/prometheus/prometheus
+          ports:
+            - containerPort: 9090
+          volumeMounts:
+            - name: config-volume
+              mountPath: /etc/prometheus
+            - name: prometheus-console-prometheus-db
+              mountPath: /prometheus
+          args:
+            - '--web.console.templates=/etc/prometheus/consoles'
+            - '--web.console.libraries=/etc/prometheus/console_libraries'
+            - '--storage.tsdb.retention.time=24h'
+            - '--config.file=/etc/prometheus/prometheus.yml'
+            - '--storage.tsdb.path=/prometheus'
+            - '--web.enable-lifecycle'
+            - '--web.route-prefix=/'
+#            - '--web.config.file=/etc/prometheus/web_config/web-config.yaml'
+      volumes:
+        - name: config-volume
+          configMap:
+            name: prometheus-server-config
+            defaultMode: 420
+        - name: prometheus-console-prometheus-db
+          emptyDir: {}
