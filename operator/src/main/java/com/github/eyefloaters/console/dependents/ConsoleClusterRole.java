@@ -1,20 +1,24 @@
 package com.github.eyefloaters.console.dependents;
 
-import com.github.eyefloaters.console.api.v1alpha1.Console;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import io.javaoperatorsdk.operator.processing.dependent.kubernetes.KubernetesDependent;
 
+@ApplicationScoped
 @KubernetesDependent(
         labelSelector = ConsoleResource.MANAGEMENT_SELECTOR,
         resourceDiscriminator = ConsoleClusterRole.class)
 public class ConsoleClusterRole extends BaseClusterRole {
 
+    public static final String NAME = "console-clusterrole";
+
     public ConsoleClusterRole() {
-        super("console", "console.clusterrole.yaml", ConsoleClusterRole::name);
+        super("console", "console.clusterrole.yaml");
     }
 
-    public static String name(Console primary) {
-        return primary.getMetadata().getName() + "-console-clusterrole";
+    @Override
+    public String resourceName() {
+        return NAME;
     }
 
 }

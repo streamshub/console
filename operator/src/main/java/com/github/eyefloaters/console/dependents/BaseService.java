@@ -1,7 +1,6 @@
 package com.github.eyefloaters.console.dependents;
 
 import java.util.Optional;
-import java.util.function.Function;
 
 import com.github.eyefloaters.console.api.v1alpha1.Console;
 
@@ -13,21 +12,19 @@ import io.javaoperatorsdk.operator.processing.dependent.kubernetes.CRUDKubernete
 abstract class BaseService extends CRUDKubernetesDependentResource<Service, Console>
     implements ResourceDiscriminator<Service, Console>, ConsoleResource {
 
-    private final String name;
+    private final String appName;
     private final String resourceName;
-    private final Function<Console, String> nameBuilder;
 
-    protected BaseService(String name, String resourceName, Function<Console, String> nameBuilder) {
+    protected BaseService(String appName, String resourceName) {
         super(Service.class);
-        this.name = name;
+        this.appName = appName;
         this.resourceName = resourceName;
-        this.nameBuilder = nameBuilder;
     }
 
     @Override
     public Optional<Service> distinguish(Class<Service> resourceType, Console primary, Context<Console> context) {
         return context.getSecondaryResourcesAsStream(resourceType)
-                .filter(d -> name.equals(d.getMetadata().getLabels().get(NAME_LABEL)))
+                .filter(d -> appName.equals(d.getMetadata().getLabels().get(NAME_LABEL)))
                 .findFirst();
     }
 
@@ -36,20 +33,16 @@ abstract class BaseService extends CRUDKubernetesDependentResource<Service, Cons
         return load(context, resourceName, Service.class)
             .edit()
             .editMetadata()
-                .withName(nameBuilder.apply(primary))
+                .withName(instanceName(primary))
                 .withNamespace(primary.getMetadata().getNamespace())
-                .withLabels(MANAGEMENT_LABEL)
-                .addToLabels(NAME_LABEL, name)
+                .withLabels(commonLabels(appName))
             .endMetadata()
             .editSpec()
-                .addToSelector("app", appName(primary))
+                .addToSelector(INSTANCE_LABEL, appName(primary))
             .endSpec()
             .build();
     }
 
     protected abstract String appName(Console primary);
 
-    public static String name(Console primary) {
-        return primary.getMetadata().getName() + "-console-service";
-    }
 }

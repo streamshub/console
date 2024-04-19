@@ -3,6 +3,9 @@ package com.github.eyefloaters.console.dependents;
 import java.util.Map;
 import java.util.Optional;
 
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+
 import com.github.eyefloaters.console.api.v1alpha1.Console;
 
 import io.fabric8.kubernetes.api.model.apps.Deployment;
@@ -11,10 +14,13 @@ import io.javaoperatorsdk.operator.api.reconciler.ResourceDiscriminator;
 import io.javaoperatorsdk.operator.processing.dependent.kubernetes.CRUDKubernetesDependentResource;
 import io.javaoperatorsdk.operator.processing.dependent.kubernetes.KubernetesDependent;
 
+@ApplicationScoped
 @KubernetesDependent(
         labelSelector = ConsoleResource.MANAGEMENT_SELECTOR,
         resourceDiscriminator = PrometheusDeployment.Discriminator.class)
 public class PrometheusDeployment extends CRUDKubernetesDependentResource<Deployment, Console> implements ConsoleResource {
+
+    public static final String NAME = "prometheus-deployment";
 
     public static class Discriminator implements ResourceDiscriminator<Deployment, Console> {
         @Override
@@ -25,35 +31,46 @@ public class PrometheusDeployment extends CRUDKubernetesDependentResource<Deploy
         }
     }
 
+    @Inject
+    PrometheusServiceAccount serviceAccount;
+
+    @Inject
+    PrometheusConfigMap configMap;
+
     public PrometheusDeployment() {
         super(Deployment.class);
     }
 
     @Override
+    public String resourceName() {
+        return NAME;
+    }
+
+    @Override
     protected Deployment desired(Console primary, Context<Console> context) {
         Deployment desired = load(context, "prometheus.deployment.yaml", Deployment.class);
-        String name = name(primary);
+        String name = instanceName(primary);
 
         return desired.edit()
             .editMetadata()
                 .withName(name)
                 .withNamespace(primary.getMetadata().getNamespace())
-                .withLabels(MANAGEMENT_LABEL)
-                .addToLabels(NAME_LABEL, "prometheus")
+                .withLabels(commonLabels("prometheus"))
             .endMetadata()
             .editSpec()
                 .editSelector()
-                    .withMatchLabels(Map.of("app", name))
+                    .withMatchLabels(Map.of(INSTANCE_LABEL, name))
                 .endSelector()
                 .editTemplate()
                     .editMetadata()
-                        .addToLabels(Map.of("app", name))
+                        .addToLabels(Map.of(INSTANCE_LABEL, name))
+                        .addToAnnotations("eyefloaters.github.com/dependency-digest", serializeDigest(context, "prometheus-digest"))
                     .endMetadata()
                     .editSpec()
-                        .withServiceAccountName(PrometheusServiceAccount.name(primary))
+                        .withServiceAccountName(serviceAccount.instanceName(primary))
                         .editMatchingVolume(c -> "config-volume".equals(c.getName()))
                             .editConfigMap()
-                                .withName(PrometheusConfigMap.name(primary))
+                                .withName(configMap.instanceName(primary))
                             .endConfigMap()
                         .endVolume()
                     .endSpec()
@@ -62,7 +79,4 @@ public class PrometheusDeployment extends CRUDKubernetesDependentResource<Deploy
             .build();
     }
 
-    public static String name(Console primary) {
-        return primary.getMetadata().getName() + "-prometheus";
-    }
 }

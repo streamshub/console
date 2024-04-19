@@ -6,12 +6,10 @@ spec:
   replicas: 1
   revisionHistoryLimit: 3
   selector:
-    matchLabels:
-      app: placeholder
+    matchLabels: {}
   template:
     metadata:
-      labels:
-        app: placeholder
+      labels: {}
     spec:
       serviceAccountName: placeholder
       volumes:

@@ -6,12 +6,10 @@ metadata:
 spec:
   replicas: 1
   selector:
-    matchLabels:
-      app: prometheus-server
+    matchLabels: {}
   template:
     metadata:
-      labels:
-        app: prometheus-server
+      labels: {}
     spec:
       containers:
         - name: prometheus

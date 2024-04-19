@@ -8,17 +8,16 @@ data:
     global:
       evaluation_interval: 30s
       scrape_interval: 30s
-      external_labels:
-        prometheus: streams-console/console-prometheus
-        prometheus_replica: $(POD_NAME)
     scrape_configs:
-    - job_name: podMonitor/streams-console/kafka-resources/0
+    - job_name: kafka-resources
       honor_labels: false
       kubernetes_sd_configs:
       - role: pod
         namespaces:
-          names:
-          - streams-console
+          names: []
+        selectors:
+        - role: pod
+          label: "strimzi.io/kind in (Kafka)"
       metrics_path: /metrics
       relabel_configs:
       - source_labels:
@@ -43,7 +42,7 @@ data:
         - __meta_kubernetes_pod_name
         target_label: pod
       - target_label: job
-        replacement: streams-console/kafka-resources
+        replacement: kafka-resources
       - target_label: endpoint
         replacement: tcp-prometheus
       - separator: ;

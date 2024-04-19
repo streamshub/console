@@ -4,8 +4,7 @@ metadata:
   name: prometheus-service
   namespace: prometheus
 spec:
-  selector:
-    app: prometheus-server
+  selector: {}
   ports:
     - protocol: TCP
       port: 9090

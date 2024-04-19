@@ -2,7 +2,6 @@ package com.github.eyefloaters.console.dependents;
 
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Function;
 
 import com.github.eyefloaters.console.api.v1alpha1.Console;
 
@@ -25,21 +24,19 @@ abstract class BaseClusterRoleBinding extends KubernetesDependentResource<Cluste
         Deleter<Console>,
         ConsoleResource {
 
-    private final String name;
+    private final String appName;
     private final String resourceName;
-    private final Function<Console, String> nameBuilder;
 
-    protected BaseClusterRoleBinding(String name, String resourceName, Function<Console, String> nameBuilder) {
+    protected BaseClusterRoleBinding(String appName, String resourceName) {
         super(ClusterRoleBinding.class);
-        this.name = name;
+        this.appName = appName;
         this.resourceName = resourceName;
-        this.nameBuilder = nameBuilder;
     }
 
     @Override
     public Optional<ClusterRoleBinding> distinguish(Class<ClusterRoleBinding> resourceType, Console primary, Context<Console> context) {
         return context.getSecondaryResourcesAsStream(resourceType)
-                .filter(d -> name.equals(d.getMetadata().getLabels().get(NAME_LABEL)))
+                .filter(d -> appName.equals(d.getMetadata().getLabels().get(NAME_LABEL)))
                 .findFirst();
     }
 
@@ -48,9 +45,8 @@ abstract class BaseClusterRoleBinding extends KubernetesDependentResource<Cluste
         return load(context, resourceName, ClusterRoleBinding.class)
             .edit()
             .editMetadata()
-                .withName(nameBuilder.apply(primary))
-                .withLabels(MANAGEMENT_LABEL)
-                .addToLabels(NAME_LABEL, name)
+                .withName(instanceName(primary))
+                .withLabels(commonLabels(appName))
             .endMetadata()
             .editRoleRef()
                 .withName(roleName(primary))

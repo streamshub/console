@@ -1,19 +1,24 @@
 package com.github.eyefloaters.console.dependents;
 
-import com.github.eyefloaters.console.api.v1alpha1.Console;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import io.javaoperatorsdk.operator.processing.dependent.kubernetes.KubernetesDependent;
 
+@ApplicationScoped
 @KubernetesDependent(
         labelSelector = ConsoleResource.MANAGEMENT_SELECTOR,
         resourceDiscriminator = PrometheusServiceAccount.class)
 public class PrometheusServiceAccount extends BaseServiceAccount {
 
+    public static final String NAME = "prometheus-serviceaccount";
+
     public PrometheusServiceAccount() {
-        super("prometheus", "prometheus.serviceaccount.yaml", PrometheusServiceAccount::name);
+        super("prometheus", "prometheus.serviceaccount.yaml");
     }
 
-    public static String name(Console primary) {
-        return primary.getMetadata().getName() + "-prometheus-serviceaccount";
+    @Override
+    public String resourceName() {
+        return NAME;
     }
+
 }

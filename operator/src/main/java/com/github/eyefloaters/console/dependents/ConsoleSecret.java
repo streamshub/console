@@ -6,7 +6,10 @@ import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
+import java.util.Map;
 import java.util.Random;
+
+import jakarta.enterprise.context.ApplicationScoped;
 
 import com.github.eyefloaters.console.api.v1alpha1.Console;
 
@@ -16,9 +19,11 @@ import io.javaoperatorsdk.operator.api.reconciler.Context;
 import io.javaoperatorsdk.operator.processing.dependent.kubernetes.CRUDKubernetesDependentResource;
 import io.javaoperatorsdk.operator.processing.dependent.kubernetes.KubernetesDependent;
 
+@ApplicationScoped
 @KubernetesDependent(labelSelector = ConsoleResource.MANAGEMENT_SELECTOR)
 public class ConsoleSecret extends CRUDKubernetesDependentResource<Secret, Console> implements ConsoleResource {
 
+    public static final String NAME = "console-secret";
     private static final Random RANDOM = new Random();
 
     public ConsoleSecret() {
@@ -26,15 +31,23 @@ public class ConsoleSecret extends CRUDKubernetesDependentResource<Secret, Conso
     }
 
     @Override
+    public String resourceName() {
+        return NAME;
+    }
+
+    @Override
     protected Secret desired(Console primary, Context<Console> context) {
         var nextAuth = context.getSecondaryResource(Secret.class).map(s -> s.getData().get("NEXTAUTH_SECRET"));
+        var data = Map.of("NEXTAUTH_SECRET", nextAuth.orElseGet(() -> Base64.getEncoder().encodeToString(base64String(32).getBytes(StandardCharsets.UTF_8))));
+        updateDigest(context, "console-digest", data);
+
         return new SecretBuilder()
                 .withNewMetadata()
-                    .withName(name(primary))
+                    .withName(instanceName(primary))
                     .withNamespace(primary.getMetadata().getNamespace())
-                    .withLabels(MANAGEMENT_LABEL)
+                    .withLabels(commonLabels("console"))
                 .endMetadata()
-                .addToData("NEXTAUTH_SECRET", nextAuth.orElseGet(() -> Base64.getEncoder().encodeToString(base64String(32).getBytes(StandardCharsets.UTF_8))))
+                .withData(data)
                 .build();
     }
 
@@ -51,9 +64,5 @@ public class ConsoleSecret extends CRUDKubernetesDependentResource<Secret, Conso
         });
 
         return new String(buffer.toByteArray()).substring(0, length);
-    }
-
-    public static String name(Console primary) {
-        return primary.getMetadata().getName() + "-console-secret";
     }
 }

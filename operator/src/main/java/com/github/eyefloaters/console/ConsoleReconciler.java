@@ -25,90 +25,89 @@ import io.javaoperatorsdk.operator.api.reconciler.dependent.Dependent;
 
 @ControllerConfiguration(dependents = {
         @Dependent(
-            name = "prometheus.cluster-role",
-            //useEventSourceWithName = "cluster-roles",
-            type = PrometheusClusterRole.class),
+                name = PrometheusClusterRole.NAME,
+                //useEventSourceWithName = "cluster-roles",
+                type = PrometheusClusterRole.class),
         @Dependent(
-            name = "prometheus.service-account",
-            //useEventSourceWithName = "service-accounts",
-            type = PrometheusServiceAccount.class),
+                name = PrometheusServiceAccount.NAME,
+                //useEventSourceWithName = "service-accounts",
+                type = PrometheusServiceAccount.class),
         @Dependent(
-            name = "prometheus.cluster-role-binding",
-            //useEventSourceWithName = "cluster-role-bindings",
-            type = PrometheusClusterRoleBinding.class,
-            dependsOn = {
-                "prometheus.cluster-role",
-                "prometheus.service-account"
-            }),
+                name = PrometheusClusterRoleBinding.NAME,
+                //useEventSourceWithName = "cluster-role-bindings",
+                type = PrometheusClusterRoleBinding.class,
+                dependsOn = {
+                        PrometheusClusterRole.NAME,
+                        PrometheusServiceAccount.NAME
+                }),
         @Dependent(
-            name = "prometheus.configmap",
-            type = PrometheusConfigMap.class),
+                name = PrometheusConfigMap.NAME,
+                type = PrometheusConfigMap.class),
         @Dependent(
-            name = "prometheus.deployment",
-            //useEventSourceWithName = "deployments",
-            type = PrometheusDeployment.class,
-            dependsOn = {
-                "prometheus.cluster-role-binding",
-                "prometheus.configmap"
-            }),
+                name = PrometheusDeployment.NAME,
+                //useEventSourceWithName = "deployments",
+                type = PrometheusDeployment.class,
+                dependsOn = {
+                        PrometheusClusterRoleBinding.NAME,
+                        PrometheusConfigMap.NAME
+                }),
         @Dependent(
-            name = "prometheus.service",
-            //useEventSourceWithName = "services",
-            type = PrometheusService.class,
-            dependsOn = {
-                "prometheus.deployment"
-            }),
+                name = PrometheusService.NAME,
+                //useEventSourceWithName = "services",
+                type = PrometheusService.class,
+                dependsOn = {
+                        PrometheusDeployment.NAME
+                }),
         @Dependent(
-            name = "console.cluster-role",
-            //useEventSourceWithName = "cluster-roles",
-            type = ConsoleClusterRole.class),
+                name = ConsoleClusterRole.NAME,
+                //useEventSourceWithName = "cluster-roles",
+                type = ConsoleClusterRole.class),
         @Dependent(
-            name = "console.service-account",
-            //useEventSourceWithName = "service-accounts",
-            type = ConsoleServiceAccount.class),
+                name = ConsoleServiceAccount.NAME,
+                //useEventSourceWithName = "service-accounts",
+                type = ConsoleServiceAccount.class),
         @Dependent(
-            name = "console.cluster-role-binding",
-            //useEventSourceWithName = "cluster-role-bindings",
-            type = ConsoleClusterRoleBinding.class,
-            dependsOn = {
-                "console.cluster-role",
-                "console.service-account"
-            }),
+                name = ConsoleClusterRoleBinding.NAME,
+                //useEventSourceWithName = "cluster-role-bindings",
+                type = ConsoleClusterRoleBinding.class,
+                dependsOn = {
+                        ConsoleClusterRole.NAME,
+                        ConsoleServiceAccount.NAME
+                }),
         @Dependent(
-            name = "console.secret",
-            type = ConsoleSecret.class),
+                name = ConsoleSecret.NAME,
+                type = ConsoleSecret.class),
         @Dependent(
-            name = "console.deployment",
-            //useEventSourceWithName = "deployments",
-            type = ConsoleDeployment.class,
-            dependsOn = {
-                "console.cluster-role-binding",
-                "console.secret"
-            }),
+                name = ConsoleIngress.NAME,
+                type = ConsoleIngress.class),
         @Dependent(
-            name = "console.service",
-            //useEventSourceWithName = "services",
-            type = ConsoleService.class,
-            dependsOn = {
-                "console.deployment"
-            }),
+                name = ConsoleDeployment.NAME,
+                //useEventSourceWithName = "deployments",
+                type = ConsoleDeployment.class,
+                dependsOn = {
+                        ConsoleClusterRoleBinding.NAME,
+                        ConsoleSecret.NAME,
+                        ConsoleIngress.NAME,
+                        PrometheusService.NAME
+                }),
         @Dependent(
-            name = "console.ingress",
-            type = ConsoleIngress.class,
-            dependsOn = {
-                "console.service"
-            }),
+                name = ConsoleService.NAME,
+                //useEventSourceWithName = "services",
+                type = ConsoleService.class,
+                dependsOn = {
+                        ConsoleDeployment.NAME
+                }),
 })
 public class ConsoleReconciler implements /* EventSourceInitializer<Console> */ Reconciler<Console>, Cleaner<Console> {
 
 //    @Override
 //    public Map<String, EventSource> prepareEventSources(EventSourceContext<Console> context) {
-//        // TODO Auto-generated method stub
 //        return Collections.emptyMap();
 //    }
 
     @Override
     public UpdateControl<Console> reconcile(Console resource, Context<Console> context) throws Exception {
+        resource.getOrCreateStatus();
         return UpdateControl.patchStatus(resource);
     }
 

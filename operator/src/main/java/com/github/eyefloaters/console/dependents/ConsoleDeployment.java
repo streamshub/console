@@ -6,6 +6,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+
 import com.github.eyefloaters.console.api.v1alpha1.Console;
 
 import io.fabric8.kubernetes.api.model.EnvVar;
@@ -19,10 +22,13 @@ import io.strimzi.api.kafka.model.kafka.Kafka;
 import io.strimzi.api.kafka.model.kafka.listener.GenericKafkaListener;
 import io.strimzi.api.kafka.model.kafka.listener.ListenerStatus;
 
+@ApplicationScoped
 @KubernetesDependent(
         labelSelector = ConsoleResource.MANAGEMENT_SELECTOR,
         resourceDiscriminator = ConsoleDeployment.Discriminator.class)
 public class ConsoleDeployment extends CRUDKubernetesDependentResource<Deployment, Console> implements ConsoleResource {
+
+    public static final String NAME = "console-deployment";
 
     public static class Discriminator implements ResourceDiscriminator<Deployment, Console> {
         @Override
@@ -33,15 +39,73 @@ public class ConsoleDeployment extends CRUDKubernetesDependentResource<Deploymen
         }
     }
 
+    @Inject
+    PrometheusService prometheusService;
+
+    @Inject
+    ConsoleServiceAccount serviceAccount;
+
+    @Inject
+    ConsoleSecret secret;
+
     public ConsoleDeployment() {
         super(Deployment.class);
     }
 
     @Override
+    public String resourceName() {
+        return NAME;
+    }
+
+    @Override
     protected Deployment desired(Console primary, Context<Console> context) {
         Deployment desired = load(context, "console.deployment.yaml", Deployment.class);
-        String name = name(primary);
+        String name = instanceName(primary);
 
+        return desired.edit()
+            .editMetadata()
+                .withName(name)
+                .withNamespace(primary.getMetadata().getNamespace())
+                .withLabels(commonLabels("console"))
+            .endMetadata()
+            .editSpec()
+                .editSelector()
+                    .withMatchLabels(Map.of(INSTANCE_LABEL, name))
+                .endSelector()
+                .editTemplate()
+                    .editMetadata()
+                        .addToLabels(Map.of(INSTANCE_LABEL, name))
+                        .addToAnnotations(
+                                "eyefloaters.github.com/dependency-digest",
+                                serializeDigest(context, "console-digest"))
+                    .endMetadata()
+                    .editSpec()
+                        .withServiceAccountName(serviceAccount.instanceName(primary))
+                        .editMatchingContainer(c -> "console-api".equals(c.getName()))
+                            .addToEnv(buildKafkaEnvVars(primary, context).toArray(EnvVar[]::new))
+                        .endContainer()
+                        .editMatchingContainer(c -> "console-ui".equals(c.getName()))
+                            .editMatchingEnv(env -> "CONSOLE_METRICS_PROMETHEUS_URL".equals(env.getName()))
+                                .withValue(getAttribute(context, PrometheusService.NAME + ".url", String.class))
+                            .endEnv()
+                            .editMatchingEnv(env -> "NEXTAUTH_URL".equals(env.getName()))
+                                .withValue(getAttribute(context, ConsoleIngress.NAME + ".url", String.class))
+                            .endEnv()
+                            .editMatchingEnv(env -> "NEXTAUTH_SECRET".equals(env.getName()))
+                                .editValueFrom()
+                                    .editSecretKeyRef()
+                                        .withName(secret.instanceName(primary))
+                                    .endSecretKeyRef()
+                                .endValueFrom()
+                            .endEnv()
+                        .endContainer()
+                    .endSpec()
+                .endTemplate()
+            .endSpec()
+            .build();
+    }
+
+    private List<EnvVar> buildKafkaEnvVars(Console primary, Context<Console> context) {
         AtomicInteger k = new AtomicInteger(0);
         List<EnvVar> vars = new ArrayList<>();
 
@@ -93,8 +157,7 @@ public class ConsoleDeployment extends CRUDKubernetesDependentResource<Deploymen
                     case "scram-sha-512":
                         mechanism = "SCRAM-SHA-512";
                         break;
-                    case "tls":
-                    case "custom":
+                    case "tls", "custom":
                     default:
                         // Nothing yet
                         break;
@@ -133,48 +196,6 @@ public class ConsoleDeployment extends CRUDKubernetesDependentResource<Deploymen
             }
         }
 
-        return desired.edit()
-            .editMetadata()
-                .withName(name)
-                .withNamespace(primary.getMetadata().getNamespace())
-                .withLabels(MANAGEMENT_LABEL)
-                .addToLabels(NAME_LABEL, "console")
-            .endMetadata()
-            .editSpec()
-                .editSelector()
-                    .withMatchLabels(Map.of("app", name))
-                .endSelector()
-                .editTemplate()
-                    .editMetadata()
-                        .addToLabels(Map.of("app", name))
-                    .endMetadata()
-                    .editSpec()
-                        .withServiceAccountName(ConsoleServiceAccount.name(primary))
-                        .editMatchingContainer(c -> "console-api".equals(c.getName()))
-                            .addToEnv(vars.toArray(EnvVar[]::new))
-                        .endContainer()
-                        .editMatchingContainer(c -> "console-ui".equals(c.getName()))
-                            .editMatchingEnv(env -> "CONSOLE_METRICS_PROMETHEUS_URL".equals(env.getName()))
-                                .withValue("http://" + PrometheusService.host(primary) + ":9090")
-                            .endEnv()
-                            .editMatchingEnv(env -> "NEXTAUTH_URL".equals(env.getName()))
-                                .withValue("https://" + ConsoleIngress.host(primary))
-                            .endEnv()
-                            .editMatchingEnv(env -> "NEXTAUTH_SECRET".equals(env.getName()))
-                                .editValueFrom()
-                                    .editSecretKeyRef()
-                                        .withName(ConsoleSecret.name(primary))
-                                    .endSecretKeyRef()
-                                .endValueFrom()
-                            .endEnv()
-                        .endContainer()
-                    .endSpec()
-                .endTemplate()
-            .endSpec()
-            .build();
-    }
-
-    public static String name(Console primary) {
-        return primary.getMetadata().getName() + "-console";
+        return vars;
     }
 }
