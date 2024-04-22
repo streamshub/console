@@ -35,7 +35,7 @@
         <version.jacoco.plugin>0.8.12</version.jacoco.plugin>
 
         <!-- Test Dependencies -->
-        <hamcrest.version>2.1</hamcrest.version>
+        <hamcrest.version>2.2</hamcrest.version>
         <strimzi-test-container.version>0.106.0</strimzi-test-container.version>
         <!-- System test image dependencies -->
         <keycloak.image>quay.io/keycloak/keycloak:21.1</keycloak.image>
