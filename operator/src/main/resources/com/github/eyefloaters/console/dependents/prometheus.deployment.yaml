@@ -22,14 +22,9 @@ spec:
             - name: prometheus-console-prometheus-db
               mountPath: /prometheus
           args:
-            - '--web.console.templates=/etc/prometheus/consoles'
-            - '--web.console.libraries=/etc/prometheus/console_libraries'
             - '--storage.tsdb.retention.time=24h'
             - '--config.file=/etc/prometheus/prometheus.yml'
             - '--storage.tsdb.path=/prometheus'
-            - '--web.enable-lifecycle'
-            - '--web.route-prefix=/'
-#            - '--web.config.file=/etc/prometheus/web_config/web-config.yaml'
       volumes:
         - name: config-volume
           configMap:

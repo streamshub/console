@@ -2,18 +2,10 @@ package com.github.eyefloaters.console.api.v1alpha1;
 
 public class KafkaCluster {
 
-    String name;
     String namespace;
+    String name;
     String listener;
     String kafkaUserName;
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
 
     public String getNamespace() {
         return namespace;
@@ -21,6 +13,14 @@ public class KafkaCluster {
 
     public void setNamespace(String namespace) {
         this.namespace = namespace;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 
     public String getListener() {

@@ -1,5 +1,8 @@
 package com.github.eyefloaters.console;
 
+import java.util.Collections;
+import java.util.Map;
+
 import com.github.eyefloaters.console.api.v1alpha1.Console;
 import com.github.eyefloaters.console.dependents.ConsoleClusterRole;
 import com.github.eyefloaters.console.dependents.ConsoleClusterRoleBinding;
@@ -19,9 +22,12 @@ import io.javaoperatorsdk.operator.api.reconciler.Cleaner;
 import io.javaoperatorsdk.operator.api.reconciler.Context;
 import io.javaoperatorsdk.operator.api.reconciler.ControllerConfiguration;
 import io.javaoperatorsdk.operator.api.reconciler.DeleteControl;
+import io.javaoperatorsdk.operator.api.reconciler.EventSourceContext;
+import io.javaoperatorsdk.operator.api.reconciler.EventSourceInitializer;
 import io.javaoperatorsdk.operator.api.reconciler.Reconciler;
 import io.javaoperatorsdk.operator.api.reconciler.UpdateControl;
 import io.javaoperatorsdk.operator.api.reconciler.dependent.Dependent;
+import io.javaoperatorsdk.operator.processing.event.source.EventSource;
 
 @ControllerConfiguration(dependents = {
         @Dependent(
@@ -98,15 +104,15 @@ import io.javaoperatorsdk.operator.api.reconciler.dependent.Dependent;
                         ConsoleDeployment.NAME
                 }),
 })
-public class ConsoleReconciler implements /* EventSourceInitializer<Console> */ Reconciler<Console>, Cleaner<Console> {
-
-//    @Override
-//    public Map<String, EventSource> prepareEventSources(EventSourceContext<Console> context) {
-//        return Collections.emptyMap();
-//    }
+public class ConsoleReconciler implements EventSourceInitializer<Console>, Reconciler<Console>, Cleaner<Console> {
 
     @Override
-    public UpdateControl<Console> reconcile(Console resource, Context<Console> context) throws Exception {
+    public Map<String, EventSource> prepareEventSources(EventSourceContext<Console> context) {
+        return Collections.emptyMap();
+    }
+
+    @Override
+    public UpdateControl<Console> reconcile(Console resource, Context<Console> context) {
         resource.getOrCreateStatus();
         return UpdateControl.patchStatus(resource);
     }
