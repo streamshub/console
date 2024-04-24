@@ -44,10 +44,24 @@ async function ConnectedClusterCard({
   data,
   consumerGroups,
 }: {
-  data: Promise<{ cluster: ClusterDetail; kpis: ClusterKpis } | null>;
+  data: Promise<{ cluster: ClusterDetail; kpis: ClusterKpis | null } | null>;
   consumerGroups: Promise<ConsumerGroupsResponse>;
 }) {
   const res = await data;
+  if (!res?.kpis) {
+    return (
+      <ClusterCard
+        isLoading={false}
+        status={res?.cluster.attributes.status || "n/a"}
+        messages={[]}
+        name={res?.cluster.attributes.name || "n/a"}
+        consumerGroups={undefined}
+        brokersOnline={undefined}
+        brokersTotal={undefined}
+        kafkaVersion={res?.cluster.attributes.kafkaVersion || "n/a"}
+      />
+    );
+  }
   const groupCount = await consumerGroups.then(
     (grpResp) => grpResp.meta.page.total ?? 0,
   );
@@ -86,9 +100,12 @@ async function ConnectedClusterCard({
 async function ConnectedTopicsPartitionsCard({
   data,
 }: {
-  data: Promise<{ cluster: ClusterDetail; kpis: ClusterKpis } | null>;
+  data: Promise<{ cluster: ClusterDetail; kpis: ClusterKpis | null } | null>;
 }) {
   const res = await data;
+  if (!res?.kpis) {
+    return null;
+  }
   const topicsTotal = res?.kpis.total_topics || 0;
   const topicsUnderreplicated = res?.kpis.underreplicated_topics || 0;
   return (

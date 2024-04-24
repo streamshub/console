@@ -1,19 +1,25 @@
-import { Session, TokenSet } from "next-auth";
+import { logger } from "@/utils/logger";
+import { TokenSet } from "next-auth";
 import { JWT } from "next-auth/jwt";
 import KeycloakProvider from "next-auth/providers/keycloak";
-import { logger } from "@/utils/logger";
 
 const log = logger.child({ module: "keycloak" });
 
-export const keycloak = KeycloakProvider({
-  clientId: process.env.KEYCLOAK_CLIENTID,
-  clientSecret: process.env.KEYCLOAK_CLIENTSECRET,
-  issuer: process.env.NEXT_PUBLIC_KEYCLOAK_URL,
-});
+const { KEYCLOAK_CLIENTID, KEYCLOAK_CLIENTSECRET, NEXT_PUBLIC_KEYCLOAK_URL } =
+  process.env;
+
+export const keycloak =
+  KEYCLOAK_CLIENTSECRET && KEYCLOAK_CLIENTID && NEXT_PUBLIC_KEYCLOAK_URL
+    ? KeycloakProvider({
+        clientId: KEYCLOAK_CLIENTID,
+        clientSecret: KEYCLOAK_CLIENTSECRET,
+        issuer: NEXT_PUBLIC_KEYCLOAK_URL,
+      })
+    : undefined;
 
 let _tokenEndpoint: string | undefined = undefined;
 async function getTokenEndpoint() {
-  if (keycloak.wellKnown) {
+  if (keycloak && keycloak.wellKnown) {
     const kc = await fetch(keycloak.wellKnown);
     const res = await kc.json();
     _tokenEndpoint = res.token_endpoint;
@@ -24,6 +30,10 @@ async function getTokenEndpoint() {
 export async function refreshToken(token: JWT): Promise<JWT> {
   try {
     const tokenEndpoint = await getTokenEndpoint();
+    if (!keycloak) {
+      log.error("Invalid Keycloak configuratio");
+      throw token;
+    }
     if (!tokenEndpoint) {
       log.error("Invalid Keycloak wellKnow");
       throw token;

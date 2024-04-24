@@ -33,9 +33,9 @@ import { ErrorsAndWarnings } from "./components/ErrorsAndWarnings";
 type ClusterCardProps = {
   name: string;
   status: string;
-  brokersOnline: number;
-  brokersTotal: number;
-  consumerGroups: number;
+  brokersOnline?: number;
+  brokersTotal?: number;
+  consumerGroups?: number;
   kafkaVersion: string;
   messages: Array<{
     variant: "danger" | "warning";

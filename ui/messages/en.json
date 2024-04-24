@@ -23,6 +23,9 @@
   "overview": {
     "title": "Overview"
   },
+  "nodes": {
+    "kpis_offline": "Prometheus can't be reached, information on the page will be incomplete. Please check your configuration."
+  },
   "node-config-table": {
     "no_results_title": "No properties found",
     "no_results_body": "Adjust your selection criteria and try again.",

@@ -20,9 +20,11 @@ import * as topic from "./topic.promql";
 export type ClusterMetric = keyof typeof cluster;
 export type TopicMetric = keyof typeof topic;
 
-const prom = new PrometheusDriver({
-  endpoint: process.env.CONSOLE_METRICS_PROMETHEUS_URL,
-});
+const prom = process.env.CONSOLE_METRICS_PROMETHEUS_URL
+  ? new PrometheusDriver({
+      endpoint: process.env.CONSOLE_METRICS_PROMETHEUS_URL,
+    })
+  : undefined;
 
 const log = logger.child({ module: "kafka-api" });
 
@@ -71,11 +73,18 @@ export async function getKafkaCluster(
 
 export async function getKafkaClusterKpis(
   clusterId: string,
-): Promise<{ cluster: ClusterDetail; kpis: ClusterKpis } | null> {
+): Promise<{ cluster: ClusterDetail; kpis: ClusterKpis | null } | null> {
   try {
     const cluster = await getKafkaCluster(clusterId);
     if (!cluster) {
       return null;
+    }
+
+    log.debug({ cluster, prom }, "????");
+
+    if (!prom) {
+      log.debug({ clusterId }, "getKafkaClusterKpis Prometheus unavailable");
+      return { cluster, kpis: null };
     }
 
     const valuesRes = await prom.instantQuery(
@@ -208,7 +217,7 @@ export async function getKafkaClusterMetrics(
     const start = new Date().getTime() - 1 * 60 * 60 * 1000;
     const end = new Date();
     const step = 60 * 1;
-    const seriesRes = await prom.rangeQuery(
+    const seriesRes = await prom!.rangeQuery(
       cluster[metric](namespace, name),
       start,
       end,
@@ -227,7 +236,7 @@ export async function getKafkaClusterMetrics(
 
   try {
     const cluster = await getKafkaCluster(clusterId);
-    if (!cluster) {
+    if (!cluster || !prom) {
       return null;
     }
 
@@ -271,7 +280,7 @@ export async function getKafkaTopicMetrics(
     const start = new Date().getTime() - 1 * 60 * 60 * 1000;
     const end = new Date();
     const step = 60 * 1;
-    const seriesRes = await prom.rangeQuery(
+    const seriesRes = await prom!.rangeQuery(
       topic[metric](namespace, name),
       start,
       end,
@@ -290,7 +299,7 @@ export async function getKafkaTopicMetrics(
 
   try {
     const cluster = await getKafkaCluster(clusterId);
-    if (!cluster) {
+    if (!cluster || !prom) {
       return null;
     }
 
