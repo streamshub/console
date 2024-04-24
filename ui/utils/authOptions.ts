@@ -1,31 +1,31 @@
 import { keycloak, refreshToken } from "@/app/api/auth/[...nextauth]/keycloak";
-import CredentialsProvider from "next-auth/providers/credentials";
 
 import { logger } from "@/utils/logger";
 import NextAuth, { NextAuthOptions, Session } from "next-auth";
 import { JWT } from "next-auth/jwt";
+import CredentialsProvider from "next-auth/providers/credentials";
 
 const log = logger.child({ module: "auth" });
 
 const anonymousProvider = CredentialsProvider({
   // The name to display on the sign in form (e.g. 'Sign in with...')
-  name: 'Anonymous Session',
+  name: "Anonymous Session",
 
-  credentials: { },
+  credentials: {},
 
   async authorize() {
-    return { id: '1', name: 'Anonymous', email: 'anonymous@example.com' };
-  }
+    return { id: "1", name: "Anonymous", email: "anonymous@example.com" };
+  },
 });
 
 let _providers = [];
 let _callbacks = {};
 
-if (keycloak.options?.issuer) {
+if (keycloak && keycloak.options?.issuer) {
   log.debug("Using keycloak provider");
   _providers.push(keycloak);
   _callbacks = {
-    async jwt({ token, account }: { token: JWT, account: any }) {
+    async jwt({ token, account }: { token: JWT; account: any }) {
       // Persist the OAuth access_token and or the user id to the token right after signin
       if (account) {
         log.trace("account present, saving new token");
@@ -43,7 +43,7 @@ if (keycloak.options?.issuer) {
 
       return refreshToken(token);
     },
-    async session({ session, token }: { session: Session, token: JWT }) {
+    async session({ session, token }: { session: Session; token: JWT }) {
       // Send properties to the client, like an access_token from a provider.
       log.trace(token, "Creating session from token");
       return {

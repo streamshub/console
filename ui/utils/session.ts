@@ -1,10 +1,10 @@
 "use server";
 
 import { authOptions } from "@/utils/authOptions";
+import { logger } from "@/utils/logger";
 import { sealData, unsealData } from "iron-session";
 import { getServerSession } from "next-auth";
 import { cookies } from "next/headers";
-import { logger } from "@/utils/logger";
 
 const log = logger.child({ module: "session" });
 
@@ -23,7 +23,7 @@ export async function getSession<T extends Record<string, unknown>>(
   }
   try {
     const rawSession = await unsealData(encryptedSession, {
-      password: process.env.SESSION_SECRET,
+      password: process.env.SESSION_SECRET ?? "strimziconsole",
     });
     return rawSession as T;
   } catch {
@@ -40,7 +40,7 @@ export async function setSession<T extends Record<string, unknown>>(
     throw new Error("Can't set session for unauthenticated users");
   }
   const encryptedSession = await sealData(session, {
-    password: process.env.SESSION_SECRET,
+    password: process.env.SESSION_SECRET ?? "strimziconsole",
   });
 
   cookies().set({

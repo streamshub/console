@@ -25,24 +25,24 @@ import { useState } from "react";
 export function DistributionChart({
   data,
 }: {
-  data: Record<string, { leaders: number; followers: number }>;
+  data: Record<string, { leaders?: number; followers?: number }>;
 }) {
   const t = useTranslations();
   const [containerRef, width] = useChartWidth();
   const [filter, setFilter] = useState<"all" | "leaders" | "followers">("all");
   const allCount = Object.values(data).reduce(
-    (acc, v) => v.followers + v.leaders + acc,
+    (acc, v) => (v.followers ?? 0) + (v.leaders ?? 0) + acc,
     0,
   );
   const leadersCount = Object.values(data).reduce(
-    (acc, v) => v.leaders + acc,
+    (acc, v) => (v.leaders ?? 0) + acc,
     0,
   );
   const followersCount = Object.values(data).reduce(
-    (acc, v) => v.followers + acc,
+    (acc, v) => (v.followers ?? 0) + acc,
     0,
   );
-  return (
+  return allCount > 0 ? (
     <Card className={"pf-v5-u-mb-lg"}>
       <CardHeader>
         <CardTitle>
@@ -172,7 +172,7 @@ export function DistributionChart({
                       name: `Broker ${node}`,
                       x: "x",
                       y: {
-                        all: data.leaders + data.followers,
+                        all: (data.leaders ?? 0) + (data.followers ?? 0),
                         leaders: data.leaders,
                         followers: data.followers,
                       }[filter || "all"],
@@ -185,5 +185,5 @@ export function DistributionChart({
         </div>
       </CardBody>
     </Card>
-  );
+  ) : null;
 }
