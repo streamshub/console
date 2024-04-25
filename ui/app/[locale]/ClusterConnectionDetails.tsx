@@ -105,25 +105,13 @@ export async function ClusterConnectionDetails({
         <Divider />
         <Stack hasGutter={true} className={"pf-v5-u-p-lg"}>
           <StackItem>
-            <ExternalLink
-              testId={"drawer-footer-help-1"}
-              href={
-                "https://access.redhat.com/documentation/en-us/red_hat_amq_streams/2.5/html/developing_kafka_client_applications/"
-              }
-            >
-              {t(
-                "ClusterConnectionDetails.developing_kafka_client_applications",
-              )}
+            <ExternalLink testId={"drawer-footer-help-1"} href={t("learning.links.connecting")}>
+              {t("ClusterConnectionDetails.developing_kafka_client_applications",)}
             </ExternalLink>
           </StackItem>
           <StackItem>
-            <ExternalLink
-              testId={"drawer-footer-help-1"}
-              href={
-                "https://access.redhat.com/documentation/en-us/red_hat_amq/7.7/html-single/amq_streams_on_openshift_overview/index"
-              }
-            >
-              {t("ClusterConnectionDetails.amq_streams_portal")}
+            <ExternalLink testId={"drawer-footer-help-1"} href={t("learning.links.overview")}>
+              {t("ClusterConnectionDetails.streams_portal")}
             </ExternalLink>
           </StackItem>
         </Stack>

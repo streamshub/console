@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import { getConsumerGroups } from "@/api/consumerGroups/actions";
 import { getKafkaCluster, getKafkaClusters } from "@/api/kafka/actions";
 import { ClusterList } from "@/api/kafka/schema";
@@ -40,6 +41,7 @@ import { Suspense } from "react";
 import styles from "./home.module.css";
 
 export default function Home() {
+  const t = useTranslations();
   const allClusters = getKafkaClusters();
   return (
     <>
@@ -48,10 +50,10 @@ export default function Home() {
           <div>
             <TextContent>
               <Title headingLevel={"h1"} size={"2xl"}>
-                Welcome to the AMQ streams console
+                Welcome to the {t("common.product")} console
               </Title>
               <Text className={"pf-v5-u-color-200"}>
-                The Red Hat AMQ Streams console provides a user interface for
+                The {t("common.brand")} {t("common.product")} console provides a user interface for
                 managing and monitoring your streaming resources
               </Text>
             </TextContent>
@@ -90,15 +92,14 @@ export default function Home() {
                     Recently viewed topics{" "}
                     <Tooltip
                       content={
-                        "When you start looking at specific topics through the AMQ Streams console, they'll start showing here."
+                        `When you start looking at specific topics through the ${t("common.product")} console, they'll start showing here.`
                       }
                     >
                       <HelpIcon />
                     </Tooltip>
                   </b>
                   <Text component={"small"}>
-                    The last 5 topics this account has accessed from the AMQ
-                    Streams console.
+                    The last 5 topics this account has accessed from the {t("common.product")} console.
                   </Text>
                 </TextContent>
               }
@@ -164,7 +165,7 @@ export default function Home() {
                         dataListCells={[
                           <DataListCell key="gs-1-1" width={2}>
                             <span id="gs-1-1">
-                              AMQ Streams on OpenShift Overview
+                              {t("common.product")} on OpenShift Overview
                             </span>
                           </DataListCell>,
                           <DataListCell key="gs-1-2">
@@ -173,12 +174,7 @@ export default function Home() {
                             </Label>
                           </DataListCell>,
                           <DataListCell key="gs-1-3">
-                            <ExternalLink
-                              testId={"gs-1-3"}
-                              href={
-                                "https://access.redhat.com/documentation/en-us/red_hat_amq_streams/2.5/html/amq_streams_on_openshift_overview"
-                              }
-                            >
+                            <ExternalLink testId={"gs-1-3"} href={t("learning.links.overview")}>
                               View documentation
                             </ExternalLink>
                           </DataListCell>,
@@ -192,7 +188,7 @@ export default function Home() {
                         dataListCells={[
                           <DataListCell key="gs-2-1" width={2}>
                             <span id="gs-2-1">
-                              Getting Started with AMQ Streams on Openshift
+                              Getting Started with {t("common.product")} on Openshift
                             </span>
                           </DataListCell>,
                           <DataListCell key="gs-2-2">
@@ -201,12 +197,7 @@ export default function Home() {
                             </Label>
                           </DataListCell>,
                           <DataListCell key="gs-2-3">
-                            <ExternalLink
-                              testId={"gs-2-3"}
-                              href={
-                                "https://access.redhat.com/documentation/en-us/red_hat_amq_streams/2.5/html/getting_started_with_amq_streams_on_openshift"
-                              }
-                            >
+                            <ExternalLink testId={"gs-2-3"} href={t("learning.links.gettingStarted")}>
                               View documentation
                             </ExternalLink>
                           </DataListCell>,
@@ -229,12 +220,7 @@ export default function Home() {
                             </Label>
                           </DataListCell>,
                           <DataListCell key="gs-3-3">
-                            <ExternalLink
-                              testId={"gs-3-3"}
-                              href={
-                                "https://access.redhat.com/documentation/en-us/red_hat_amq_streams/2.5/html/developing_kafka_client_applications"
-                              }
-                            >
+                            <ExternalLink testId={"gs-3-3"} href={t("learning.links.connecting")}>
                               View documentation
                             </ExternalLink>
                           </DataListCell>,
@@ -257,12 +243,7 @@ export default function Home() {
                             </Label>
                           </DataListCell>,
                           <DataListCell key="gs-4-3">
-                            <ExternalLink
-                              testId={"gs-4-3"}
-                              href={
-                                "https://access.redhat.com/documentation/en-us/red_hat_amq_streams/2.5/html/deploying_and_managing_amq_streams_on_openshift/using-the-topic-operator-str#doc-wrapper"
-                              }
-                            >
+                            <ExternalLink testId={"gs-4-3"} href={t("learning.links.topicOperatorUse")}>
                               View documentation
                             </ExternalLink>
                           </DataListCell>,
@@ -342,6 +323,7 @@ async function ConnectedClustersTable({
 }
 
 async function RecentTopics() {
+  const t = useTranslations();
   const viewedTopics = await getViewedTopics();
   return viewedTopics.length > 0 ? (
     <TopicsTable topics={viewedTopics} />
@@ -349,17 +331,11 @@ async function RecentTopics() {
     <EmptyState variant={"xs"}>
       <EmptyStateHeader title={"No topics were viewed yet"} />
       <EmptyStateBody>
-        When you start looking at specific topics through the AMQ Streams
-        console, they&quot;ll start showing here.
+        When you start looking at specific topics through the {t("common.product")} console, they&quot;ll start showing here.
       </EmptyStateBody>
       <EmptyStateFooter>
         <EmptyStateActions className={"pf-v5-u-font-size-sm"}>
-          <ExternalLink
-            testId={"recent-topics-empty-state-link"}
-            href={
-              "https://access.redhat.com/documentation/en-us/red_hat_amq_streams/2.5/html-single/deploying_and_managing_amq_streams_on_openshift/index#ref-operator-topic-str"
-            }
-          >
+          <ExternalLink testId={"recent-topics-empty-state-link"} href={t("learning.links.topicOperatorUse")}>
             Using the Topic Operator to manage Kafka topics
           </ExternalLink>
         </EmptyStateActions>
