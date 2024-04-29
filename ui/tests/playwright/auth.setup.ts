@@ -13,7 +13,7 @@ setup("authenticate", async ({ page }) => {
   // Sometimes login flow sets cookies in the process of several redirects.
   await page.waitForURL("./home", { waitUntil: "commit" });
   await expect(
-    page.getByText("Welcome to the AMQ streams console"),
+    page.getByText("Welcome to the Streams for Apache Kafka console"),
   ).toBeVisible();
 
   await page.context().storageState({ path: authFile });

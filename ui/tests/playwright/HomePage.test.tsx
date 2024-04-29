@@ -30,7 +30,7 @@ test("Home page", async ({ page }) => {
     );
     const inputValues = await page.locator('.pf-v5-c-form-control input[type="text"]').evaluateAll((inputs) =>
     inputs.map((input) => (input as HTMLInputElement).value)
-  );  
+  );
     expect(inputValues.every((value) => value.length > 1)).toBe(true); //await page.waitForSelector('span[class="pf-v5-c-form-control pf-m-readonly"] input[id="text-input-13"]');
   });
 
@@ -42,30 +42,30 @@ test("Home page", async ({ page }) => {
   await test.step("Data cells in each row are present", async () => {
     const dataCells = await page.locator('table[aria-label="Kafka clusters"] tbody tr td').evaluateAll((tds) =>
     tds.map((td) => td.textContent?.trim() ?? "")
-  );  
+  );
     expect(dataCells.length).toBeGreaterThan(0);
   });
 
   await test.step("Text on Home Page", async () => {
     // Assertions for the presence of specific strings in the inner text of page elements
     expect(await page.innerText("body")).toContain(
-      "Welcome to the AMQ streams console",
+      "Welcome to the Streams for Apache Kafka console",
     );
     expect(await page.innerText("body")).toContain(
       "Platform: OpenShift Cluster",
     );
     expect(await page.innerText("body")).toContain("Recently viewed topics");
     expect(await page.innerText("body")).toContain(
-      'When you start looking at specific topics through the AMQ Streams console, they"ll start showing here.',
+      'When you start looking at specific topics through the Streams for Apache Kafka console, they"ll start showing here.',
     );
     expect(await page.innerText("body")).toContain(
-      "AMQ Streams on OpenShift Overview",
+      "Streams for Apache Kafka on OpenShift Overview",
     );
     expect(await page.innerText("body")).toContain(
       "Recommended learning resources",
     );
     expect(await page.innerText("body")).toContain(
-      "Getting Started with AMQ Streams on Openshift",
+      "Getting Started with Streams for Apache Kafka on Openshift",
     );
     expect(await page.innerText("body")).toContain(
       "Connect to a Kafka cluster from an application",
