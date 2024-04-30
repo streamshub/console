@@ -225,7 +225,7 @@ export function ConfigTable({ config }: { config: NodeConfig }) {
             );
           case "value":
             return (
-              <Td key={key} dataLabel={"Value"}>
+              <Td key={`${key}-value`} dataLabel={"Value"}>
                 {format(property)}
               </Td>
             );
