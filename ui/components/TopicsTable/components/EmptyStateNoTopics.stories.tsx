@@ -7,4 +7,11 @@ export default {
 } as Meta<typeof Comp>;
 type Story = StoryObj<typeof Comp>;
 
-export const EmptyStateNoTopics: Story = {};
+export const Default: Story = {};
+
+export const CanCreate: Story = {
+  args: {
+    canCreate: true,
+    createHref: "#/sample",
+  },
+};

@@ -369,7 +369,8 @@
   },
   "EmptyStateNoTopics": {
     "to_get_started_create_your_first_topic": "To get started, create your first topic",
-    "create_a_topic": "Create a topic"
+    "create_a_topic": "Create a topic",
+    "show_hidden_topics": "Show hidden topics"
   },
   "ApplicationError": {
     "body": "Try clicking the button below, or refreshing the page. If the problem persists, contact your organization administrator.",

@@ -1,5 +1,6 @@
 import { ButtonLink } from "@/components/Navigation/ButtonLink";
 import {
+  Button,
   EmptyState,
   EmptyStateActions,
   EmptyStateBody,
@@ -7,15 +8,17 @@ import {
   EmptyStateHeader,
   EmptyStateIcon,
 } from "@/libs/patternfly/react-core";
-import { PlusCircleIcon } from "@patternfly/react-icons";
+import { PlusCircleIcon } from "@/libs/patternfly/react-icons";
 import { useTranslations } from "next-intl";
 
 export function EmptyStateNoTopics({
   canCreate,
   createHref,
+  onShowHiddenTopics,
 }: {
   canCreate: boolean;
   createHref: string;
+  onShowHiddenTopics: () => void;
 }) {
   const t = useTranslations();
   return (
@@ -28,15 +31,18 @@ export function EmptyStateNoTopics({
       <EmptyStateBody>
         {t("EmptyStateNoTopics.to_get_started_create_your_first_topic")}{" "}
       </EmptyStateBody>
-      {canCreate && (
-        <EmptyStateFooter>
-          <EmptyStateActions>
+      <EmptyStateFooter>
+        <EmptyStateActions>
+          {canCreate && (
             <ButtonLink variant="primary" href={createHref}>
               {t("EmptyStateNoTopics.create_a_topic")}
             </ButtonLink>
-          </EmptyStateActions>
-        </EmptyStateFooter>
-      )}
+          )}
+          <Button variant="secondary" onClick={onShowHiddenTopics}>
+            {t("EmptyStateNoTopics.show_hidden_topics")}
+          </Button>
+        </EmptyStateActions>
+      </EmptyStateFooter>
     </EmptyState>
   );
 }

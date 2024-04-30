@@ -124,6 +124,7 @@ export function TopicsTable({
         <EmptyStateNoTopics
           canCreate={isReadOnly === false}
           createHref={`${baseurl}/create`}
+          onShowHiddenTopics={() => onInternalTopicsChange(true)}
         />
       }
       emptyStateNoResults={
