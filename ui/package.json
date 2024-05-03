@@ -72,7 +72,7 @@
     "victory-tooltip": "~36.8.6",
     "victory-voronoi-container": "~36.8.6",
     "victory-zoom-container": "~36.8.6",
-    "zod": "^3.23.5"
+    "zod": "^3.23.6"
   },
   "devDependencies": {
     "@playwright/test": "^1.43.1",
