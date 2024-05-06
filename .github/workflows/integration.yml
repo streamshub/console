@@ -27,6 +27,12 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-maven-
 
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
       - name: Build and Test
         env:
           GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
@@ -40,7 +46,9 @@ jobs:
           #
           # See: https://quarkus.io/guides/tests-with-coverage#coverage-for-integration-tests
           #
-          mvn verify -Pdocker -B --no-transfer-progress -Dquarkus.package.write-transformed-bytecode-to-build-output=true
+          mvn verify -Pdocker -B --no-transfer-progress \
+            -Dquarkus.package.write-transformed-bytecode-to-build-output=true \
+            -Dquarkus.docker.buildx.platform=linux/amd64,linux/arm64
 
       - name: Archive Results
         uses: actions/upload-artifact@v4
@@ -74,10 +82,17 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
       - name: Build UI Image
         uses: docker/build-push-action@v6
         with:
           context: ui/
+          platforms: linux/amd64,linux/arm64
           push: false
           tags: |
             streamshub/console-ui:latest
