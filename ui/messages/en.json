@@ -1,18 +1,17 @@
 {
   "common": {
     "brand": "Red Hat",
-    "product": "Streams for Apache Kafka",
-    "title": "Red Hat Streams for Apache Kafka console",
-    "description": "Red Hat Streams for Apache Kafka is a lightweight, high-performance, robust messaging platform.",
+    "product": "streams for Apache Kafka",
+    "title": "Red Hat streams for Apache Kafka console",
+    "description": "Red Hat streams for Apache Kafka is a lightweight, high-performance, robust messaging platform.",
     "search_hint": "Filter by {label}"
   },
   "learning": {
     "links": {
-      "overview": "https://access.redhat.com/documentation/en-us/red_hat_amq_streams/2.5/html/amq_streams_on_openshift_overview",
-      "gettingStarted": "https://access.redhat.com/documentation/en-us/red_hat_amq_streams/2.5/html/getting_started_with_amq_streams_on_openshift",
-      "connecting": "https://access.redhat.com/documentation/en-us/red_hat_amq_streams/2.5/html/developing_kafka_client_applications",
-      "topicOperatorUse": "https://access.redhat.com/documentation/en-us/red_hat_amq_streams/2.5/html/deploying_and_managing_amq_streams_on_openshift/using-the-topic-operator-str#doc-wrapper"
-
+      "overview": "https://docs.redhat.com/en/documentation/red_hat_streams_for_apache_kafka/2.7/html/streams_for_apache_kafka_on_openshift_overview",
+      "gettingStarted": "https://docs.redhat.com/en/documentation/red_hat_streams_for_apache_kafka/2.7/html/getting_started_with_streams_for_apache_kafka_on_openshift",
+      "connecting": "https://docs.redhat.com/en/documentation/red_hat_streams_for_apache_kafka/2.7/html/developing_kafka_client_applications",
+      "topicOperatorUse": "https://docs.redhat.com/en/documentation/red_hat_streams_for_apache_kafka/2.7/html/deploying_and_managing_streams_for_apache_kafka_on_openshift/using-the-topic-operator-str#doc-wrapper"
     }
   },
   "RefreshButton": {
@@ -169,7 +168,7 @@
   },
   "ManagedTopicLabel": {
     "label": "Managed",
-    "tooltip": "Managed topics are created using the KafkaTopic custom resource and are created and updated in the Kafka cluster by the Streams for Apache Kafka Topic Operator."
+    "tooltip": "Managed topics are created using the KafkaTopic custom resource and are created and updated in the Kafka cluster by the streams for Apache Kafka Topic Operator."
   },
   "AdvancedSearch": {
     "dialog_label": "Search messages",
@@ -231,7 +230,7 @@
     "internal_Servers_bootstraps_description": "Internal listeners provide client access to a Kafka cluster only from within the OpenShift cluster.",
     "when_you_have_established_a_connection": "When you have established a connection, you can begin consuming messages from Kafka topics or producing messages to them.",
     "developing_kafka_client_applications": "Developing Kafka client applications",
-    "streams_portal": "Streams for Apache Kafka portal"
+    "streams_portal": "streams for Apache Kafka portal"
   },
   "ClusterDrawer": {
     "cluster_connection_details": "Cluster connection details"

@@ -331,7 +331,7 @@ async function RecentTopics() {
     <EmptyState variant={"xs"}>
       <EmptyStateHeader title={"No topics were viewed yet"} />
       <EmptyStateBody>
-        When you start looking at specific topics through the {t("common.product")} console, they&quot;ll start showing here.
+        When you start looking at specific topics through the {t("common.product")} console, they&#39;ll start showing here.
       </EmptyStateBody>
       <EmptyStateFooter>
         <EmptyStateActions className={"pf-v5-u-font-size-sm"}>
