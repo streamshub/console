@@ -1,19 +1,22 @@
 package com.github.eyefloaters.console.kafka.systemtest.deployment;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.ServerSocket;
 import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.StandardOpenOption;
 import java.util.Map;
 
 import org.apache.kafka.clients.CommonClientConfigs;
-import org.apache.kafka.common.security.auth.SecurityProtocol;
 
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
 
 public class KafkaUnsecuredResourceManager extends KafkaResourceManager implements QuarkusTestResourceLifecycleManager {
 
     ServerSocket randomSocket;
+    File configFile;
 
     @Override
     public Map<String, String> start() {
@@ -30,16 +33,39 @@ public class KafkaUnsecuredResourceManager extends KafkaResourceManager implemen
 
         URI randomBootstrapServers = URI.create("dummy://localhost:" + randomSocket.getLocalPort());
 
+        try {
+            configFile = File.createTempFile("console-test-config-", ".yaml");
+            configFile.deleteOnExit();
+
+            Files.writeString(configFile.toPath(), """
+                    kafka:
+                      clusters:
+                        - name: test-kafka1
+                          namespace: default
+                          properties:
+                            bootstrap.servers: %s
+                        - name: test-kafka2
+                          namespace: default
+                          properties:
+                            bootstrap.servers: %s
+                        - name: test-kafka3
+                          namespace: default
+                          properties:
+                            bootstrap.servers: %s
+                            security.protocol: SSL
+                    """.formatted(
+                            externalBootstrap,
+                            randomBootstrapServers.toString(),
+                            externalBootstrap),
+                    StandardOpenOption.WRITE);
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+
         return Map.ofEntries(
                 Map.entry(profile + CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, externalBootstrap),
-                Map.entry(profile + "console.kafka.testk1", "default/test-kafka1"),
-                Map.entry(profile + "console.kafka.testk1." + CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, externalBootstrap),
-                Map.entry(profile + "console.kafka.testk2", "default/test-kafka2"),
-                Map.entry(profile + "console.kafka.testk2." + CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, randomBootstrapServers.toString()),
-                // Placeholder configuration to allow for a CR to be added named test-kafka3 that will proxy to test-kafka1
-                Map.entry(profile + "console.kafka.testk3", "default/test-kafka3"),
-                Map.entry(profile + "console.kafka.testk3." + CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, SecurityProtocol.SSL.name),
-                Map.entry(profile + "console.kafka.testk3." + CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, externalBootstrap));
+                Map.entry(profile + "console.config-path", configFile.getAbsolutePath()));
     }
 
     @Override
@@ -53,5 +79,7 @@ public class KafkaUnsecuredResourceManager extends KafkaResourceManager implemen
                 throw new UncheckedIOException(e);
             }
         }
+
+        configFile.delete();
     }
 }

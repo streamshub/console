@@ -1,9 +1,13 @@
 package com.github.eyefloaters.console.api;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.UncheckedIOException;
+import java.nio.file.Path;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -42,6 +46,10 @@ import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.github.eyefloaters.console.api.config.ConsoleConfig;
+import com.github.eyefloaters.console.api.config.KafkaClusterConfig;
 import com.github.eyefloaters.console.api.service.KafkaClusterService;
 import com.github.eyefloaters.console.api.support.TrustAllCertificateManager;
 
@@ -68,7 +76,6 @@ import io.strimzi.api.kafka.model.kafka.listener.ListenerStatus;
 @ApplicationScoped
 public class ClientFactory {
 
-    static final String KAFKA_CONFIG_PREFIX = "console.kafka";
     static final String NO_SUCH_KAFKA_MESSAGE = "Requested Kafka cluster %s does not exist or is not configured";
     private final Function<String, NotFoundException> noSuchKafka =
             clusterName -> new NotFoundException(NO_SUCH_KAFKA_MESSAGE.formatted(clusterName));
@@ -80,8 +87,8 @@ public class ClientFactory {
     Config config;
 
     @Inject
-    @ConfigProperty(name = KAFKA_CONFIG_PREFIX)
-    Optional<Map<String, String>> clusterNames;
+    @ConfigProperty(name = "console.config-path")
+    Optional<String> configPath;
 
     @Inject
     SharedIndexInformer<Kafka> kafkaInformer;
@@ -118,8 +125,29 @@ public class ClientFactory {
     @Named("kafkaAdminFilter")
     UnaryOperator<Admin> kafkaAdminFilter = UnaryOperator.identity();
 
-    private Map<String, String> clusterNames() {
-        return clusterNames.orElseGet(Collections::emptyMap);
+    @Produces
+    @ApplicationScoped
+    public ConsoleConfig produceConsoleConfig() {
+        return configPath.map(Path::of)
+            .map(Path::toUri)
+            .map(uri -> {
+                try {
+                    return uri.toURL();
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
+                }
+            })
+            .filter(Objects::nonNull)
+            .map(url -> {
+                ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
+
+                try (InputStream stream = url.openStream()) {
+                    return mapper.readValue(stream, ConsoleConfig.class);
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
+                }
+            })
+            .orElseGet(ConsoleConfig::new);
     }
 
     /**
@@ -153,7 +181,7 @@ public class ClientFactory {
 
     @Produces
     @ApplicationScoped
-    Map<String, Admin> getAdmins(Function<Map<String, Object>, Admin> adminBuilder) {
+    Map<String, Admin> getAdmins(ConsoleConfig consoleConfig, Function<Map<String, Object>, Admin> adminBuilder) {
         final Map<String, Admin> adminClients = new HashMap<>();
 
         kafkaInformer.addEventHandlerWithResyncPeriod(new ResourceEventHandler<Kafka>() {
@@ -168,12 +196,11 @@ public class ClientFactory {
             private void put(Kafka kafka, String eventType) {
                 String clusterKey = Cache.metaNamespaceKeyFunc(kafka);
 
-                clusterNames().entrySet()
-                    .stream()
-                    .filter(e -> clusterKey.equals(e.getValue()))
-                    .findFirst()
+                consoleConfig.getKafka()
+                    .getCluster(clusterKey)
                     .map(e -> {
-                        var configs = buildConfig(AdminClientConfig.configNames(), e.getKey(), "admin", kafka);
+                        var configs = buildConfig(AdminClientConfig.configNames(), e, "admin", e::getAdminProperties, kafka);
+
                         if (truststoreRequired(configs)) {
                             log.warnf("""
                                     %s Admin client for Kafka cluster %s failed. Connection \
@@ -183,7 +210,11 @@ public class ClientFactory {
                                     .formatted(eventType, kafka.getStatus().getClusterId()));
                             return null;
                         } else {
-                            logConfig("Admin[key=%s, id=%s]".formatted(e.getKey(), kafka.getStatus().getClusterId()), configs);
+                            logConfig("Admin[name=%s, namespace=%s, id=%s]".formatted(
+                                    e.getName(),
+                                    e.getNamespace(),
+                                    kafka.getStatus().getClusterId()),
+                                    configs);
                             return adminBuilder.apply(configs);
                         }
                     })
@@ -236,18 +267,19 @@ public class ClientFactory {
 
     @Produces
     @RequestScoped
-    public Supplier<Consumer<byte[], byte[]>> consumerSupplier(Supplier<Kafka> cluster) {
+    public Supplier<Consumer<byte[], byte[]>> consumerSupplier(ConsoleConfig consoleConfig, Supplier<Kafka> cluster) {
         String clusterKey = Cache.metaNamespaceKeyFunc(cluster.get());
 
-        return clusterNames().entrySet()
-            .stream()
-            .filter(e -> clusterKey.equals(e.getValue()))
+        return consoleConfig.getKafka()
+            .getCluster(clusterKey)
             .<Supplier<Consumer<byte[], byte[]>>>map(e -> {
+
                 Set<String> configNames = ConsumerConfig.configNames().stream()
                         // Do not allow a group Id to be set for this application
                         .filter(Predicate.not(ConsumerConfig.GROUP_ID_CONFIG::equals))
                         .collect(Collectors.toSet());
-                var configs = buildConfig(configNames, e.getKey(), "consumer", cluster.get());
+
+                var configs = buildConfig(configNames, e, "consumer", e::getConsumerProperties, cluster.get());
                 configs.put(ConsumerConfig.ALLOW_AUTO_CREATE_TOPICS_CONFIG, "false");
                 configs.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class.getName());
                 configs.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class.getName());
@@ -255,12 +287,14 @@ public class ClientFactory {
                 configs.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
                 configs.put(ConsumerConfig.DEFAULT_API_TIMEOUT_MS_CONFIG, 5000);
 
-                logConfig("Consumer[" + e.getKey() + ']', configs);
+                logConfig("Consumer[name=%s, namespace=%s]".formatted(
+                        e.getName(),
+                        e.getNamespace()),
+                        configs);
                 @SuppressWarnings("resource") // no resource leak - client closed by disposer
                 Consumer<byte[], byte[]> client = new KafkaConsumer<>(configs);
                 return () -> client;
             })
-            .findFirst()
             .orElseThrow(() -> noSuchKafka.apply(cluster.get().getStatus().getClusterId()));
     }
 
@@ -270,14 +304,13 @@ public class ClientFactory {
 
     @Produces
     @RequestScoped
-    public Supplier<Producer<String, String>> producerSupplier(Supplier<Kafka> cluster) {
+    public Supplier<Producer<String, String>> producerSupplier(ConsoleConfig consoleConfig, Supplier<Kafka> cluster) {
         String clusterKey = Cache.metaNamespaceKeyFunc(cluster.get());
 
-        return clusterNames().entrySet()
-            .stream()
-            .filter(e -> clusterKey.equals(e.getValue()))
+        return consoleConfig.getKafka()
+            .getCluster(clusterKey)
             .<Supplier<Producer<String, String>>>map(e -> {
-                var configs = buildConfig(ProducerConfig.configNames(), e.getKey(), "producer", cluster.get());
+                var configs = buildConfig(ProducerConfig.configNames(), e, "producer", e::getProducerProperties, cluster.get());
                 configs.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
                 configs.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
                 configs.put(ProducerConfig.ACKS_CONFIG, "all");
@@ -285,12 +318,14 @@ public class ClientFactory {
                 configs.put(ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG, false);
                 configs.put(ProducerConfig.RETRIES_CONFIG, 0);
 
-                logConfig("Producer[" + e.getKey() + ']', configs);
+                logConfig("Producer[name=%s, namespace=%s]".formatted(
+                        e.getName(),
+                        e.getNamespace()),
+                        configs);
                 @SuppressWarnings("resource") // no resource leak - client closed by disposer
                 Producer<String, String> client = new KafkaProducer<>(configs);
                 return () -> client;
             })
-            .findFirst()
             .orElseThrow(() -> noSuchKafka.apply(cluster.get().getStatus().getClusterId()));
     }
 
@@ -298,11 +333,17 @@ public class ClientFactory {
         producer.get().close();
     }
 
-    Map<String, Object> buildConfig(Set<String> configNames, String clusterKey, String clientType, Kafka cluster) {
+    Map<String, Object> buildConfig(Set<String> configNames,
+            KafkaClusterConfig config,
+            String clientType,
+            Supplier<Map<String, String>> clientProperties,
+            Kafka cluster) {
+
         Map<String, Object> cfg = configNames
             .stream()
-            .map(configName -> getClusterConfig(clusterKey, clientType, configName)
-                    .or(() -> getDefaultConfig(clusterKey, clientType, configName))
+            .map(configName -> Optional.ofNullable(clientProperties.get().get(configName))
+                    .or(() -> Optional.ofNullable(config.getProperties().get(configName)))
+                    .or(() -> getDefaultConfig(clientType, configName))
                     .map(configValue -> Map.entry(configName, configValue)))
             .filter(Optional::isPresent)
             .map(Optional::get)
@@ -316,10 +357,17 @@ public class ClientFactory {
                     .map(KafkaStatus::getListeners)
                     .map(Collection::stream)
                     .orElseGet(Stream::empty)
-                    .filter(listener -> cfg.getOrDefault(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, "")
-                            .toString()
-                            .contains(listener.getBootstrapServers()))
+                    .filter(listener -> {
+                        if (listener.getName().equals(config.getListener())) {
+                            return true;
+                        }
+
+                        return cfg.getOrDefault(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, "")
+                                .toString()
+                                .contains(listener.getBootstrapServers());
+                    })
                     .map(ListenerStatus::getCertificates)
+                    .filter(Objects::nonNull)
                     .filter(Predicate.not(Collection::isEmpty))
                     .findFirst()
                     .ifPresent(certificates -> {
@@ -332,28 +380,13 @@ public class ClientFactory {
         return cfg;
     }
 
-    Optional<String> getClusterConfig(String clusterKey, String clientType, String configName) {
-        String clientSpecificKey = "%s.%s.%s.%s".formatted(KAFKA_CONFIG_PREFIX, clusterKey, clientType, configName);
-        String generalKey = "%s.%s.%s".formatted(KAFKA_CONFIG_PREFIX, clusterKey, configName);
+    Optional<String> getDefaultConfig(String clientType, String configName) {
+        String clientSpecificKey = "console.kafka.%s.%s".formatted(clientType, configName);
+        String generalKey = "console.kafka.%s".formatted(configName);
 
         return config.getOptionalValue(clientSpecificKey, String.class)
             .or(() -> config.getOptionalValue(generalKey, String.class))
-            .map(cfg -> {
-                log.tracef("OVERRIDE config %s for cluster %s", configName, clusterKey);
-                return unquote(cfg);
-            });
-    }
-
-    Optional<String> getDefaultConfig(String clusterKey, String clientType, String configName) {
-        String clientSpecificKey = "kafka.%s.%s".formatted(clientType, configName);
-        String generalKey = "kafka.%s".formatted(configName);
-
-        return config.getOptionalValue(clientSpecificKey, String.class)
-            .or(() -> config.getOptionalValue(generalKey, String.class))
-            .map(cfg -> {
-                log.tracef("DEFAULT config %s for cluster %s", configName, clusterKey);
-                return unquote(cfg);
-            });
+            .map(this::unquote);
     }
 
     String unquote(String cfg) {

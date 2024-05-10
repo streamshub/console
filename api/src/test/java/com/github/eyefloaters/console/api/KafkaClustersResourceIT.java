@@ -36,6 +36,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.Mockito;
 
+import com.github.eyefloaters.console.api.config.ConsoleConfig;
 import com.github.eyefloaters.console.api.model.ListFetchParams;
 import com.github.eyefloaters.console.api.service.KafkaClusterService;
 import com.github.eyefloaters.console.api.support.ErrorCategory;
@@ -102,6 +103,9 @@ class KafkaClustersResourceIT {
     @Inject
     KafkaClusterService kafkaClusterService;
 
+    @Inject
+    ConsoleConfig consoleConfig;
+
     @DeploymentManager.InjectDeploymentManager
     DeploymentManager deployments;
 
@@ -117,7 +121,10 @@ class KafkaClustersResourceIT {
     void setup() throws IOException {
         kafkaContainer = deployments.getKafkaContainer();
         bootstrapServers = URI.create(kafkaContainer.getBootstrapServers());
-        randomBootstrapServers = URI.create(config.getValue("console.kafka.testk2.bootstrap.servers", String.class));
+        randomBootstrapServers = URI.create(consoleConfig.getKafka()
+                .getCluster("default/test-kafka2")
+                .map(k -> k.getProperties().get("bootstrap.servers"))
+                .orElseThrow());
 
         utils = new TestHelper(bootstrapServers, config, null);
 

@@ -3,7 +3,6 @@ package com.github.eyefloaters.console.api.service;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
@@ -18,10 +17,10 @@ import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.clients.admin.DescribeClusterOptions;
 import org.apache.kafka.clients.admin.DescribeClusterResult;
 import org.apache.kafka.common.KafkaFuture;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
 import com.github.eyefloaters.console.api.Annotations;
+import com.github.eyefloaters.console.api.config.ConsoleConfig;
 import com.github.eyefloaters.console.api.model.Condition;
 import com.github.eyefloaters.console.api.model.KafkaCluster;
 import com.github.eyefloaters.console.api.model.KafkaListener;
@@ -44,8 +43,6 @@ import static com.github.eyefloaters.console.api.BlockingSupplier.get;
 @ApplicationScoped
 public class KafkaClusterService {
 
-    static final String KAFKA_CONFIG_PREFIX = "console.kafka";
-
     @Inject
     Logger logger;
 
@@ -53,8 +50,7 @@ public class KafkaClusterService {
     SharedIndexInformer<Kafka> kafkaInformer;
 
     @Inject
-    @ConfigProperty(name = KAFKA_CONFIG_PREFIX)
-    Optional<Map<String, String>> clusterNames;
+    ConsoleConfig consoleConfig;
 
     @Inject
     Supplier<Admin> clientSupplier;
@@ -103,7 +99,7 @@ public class KafkaClusterService {
 
         // Identify that the cluster is configured with connection information
         String clusterKey = Cache.metaNamespaceKeyFunc(kafka);
-        cluster.setConfigured(clusterNames.map(names -> names.containsValue(clusterKey)).orElse(false));
+        cluster.setConfigured(consoleConfig.getKafka().getCluster(clusterKey).isPresent());
 
         return cluster;
     }

@@ -322,6 +322,8 @@
                         </goals>
                         <configuration>
                             <systemProperties>
+                                <quarkus.jacoco.reuse-data-file>true</quarkus.jacoco.reuse-data-file>
+                                <quarkus.jacoco.report>false</quarkus.jacoco.report>
                                 <quarkus.docker.dockerfile-jvm-path>src/main/docker/Dockerfile</quarkus.docker.dockerfile-jvm-path>
                             </systemProperties>
                         </configuration>
