@@ -20,7 +20,7 @@ spec:
       containers:
       ### API
       - name: console-api
-        image: quay.io/eyefloaters/console-api:0.0.33
+        image: quay.io/eyefloaters/console-api:0.0.35
         ports:
         - containerPort: 8080
         # Adjust KAFKA and CONSOLE_KAFKA variables to match your Kafka cluster
@@ -41,7 +41,7 @@ spec:
               key: sasl.jaas.config
       ### User Interface
       - name: console-ui
-        image: quay.io/eyefloaters/ui:0.0.33
+        image: quay.io/eyefloaters/ui:0.0.35
         volumeMounts:
         - mountPath: /app/.next/cache
           name: cache
