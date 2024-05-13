@@ -1,0 +1,33 @@
+---
+version: '3.9'
+
+networks:
+  streams-console:
+    driver: bridge
+
+services:
+  console-api:
+    image: ${CONSOLE_API_IMAGE}
+    hostname: api
+    container_name: console-api
+    volumes:
+      - ${PWD}/console-config.yaml:/deployments/console-config.yaml:z
+    environment:
+      CONSOLE_CONFIG_PATH: /deployments/console-config.yaml
+      QUARKUS_KUBERNETES_CLIENT_API_SERVER_URL: ${CONSOLE_API_KUBERNETES_API_SERVER_URL}
+      QUARKUS_KUBERNETES_CLIENT_TOKEN: ${CONSOLE_API_SERVICE_ACCOUNT_TOKEN}
+    networks:
+      - streams-console
+
+  console-ui:
+    image: ${CONSOLE_UI_IMAGE}
+    hostname: ui
+    container_name: console-ui
+    ports:
+      - "3000:3000"
+    environment:
+      NEXTAUTH_SECRET: ${CONSOLE_UI_NEXTAUTH_SECRET}
+      NEXTAUTH_URL: http://localhost:3000
+      BACKEND_URL: http://api:8080/
+    networks:
+      - streams-console
