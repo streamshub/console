@@ -28,7 +28,23 @@
     }
   },
   "homepage": {
-    "title": "Integration Developer Hub"
+    "title": "Integration Developer Hub",
+    "connected_kafka_clusters": "Connected Kafka clusters",
+    "page_header": "Welcome to the {product} console",
+    "page_subtitle": "The {brand} {product} console provides a user interface formanaging and monitoring your streaming resources",
+    "platform_openshift_cluster": "<strong>Platform: OpenShift Cluster</strong>", 
+    "recently_viewed_topics_header": "Recently viewed topics",
+    "recently_viewed_topics_header_popover": "When you start looking at specific topics through the {product} console, they'll start showing here.",
+    "last_accessed_topics": "The last 5 topics this account has accessed from the {product} console.",
+    "empty_topics_description": "When you start looking at specific topics through the {product} console, they'll start showing here.",
+    "topic_operator_link": "Using the Topic Operator to manage Kafka topics",
+    "recommended_learning_resources": "<b>Recommended learning resources</b>",
+    "documentation": "Documentation",
+    "view_documentation": "View documentation",
+    "get_started_with_openshift":"Getting Started with {product} on Openshift",
+    "openshift_overview": "{product} on OpenShift Overview",
+    "connect_to_kafka_cluster": "Connect to a Kafka cluster from an application",
+    "using_topic_operator_to_manage_kafka_topic": "Using the Topic Operator to manage Kafka topics"
   },
   "overview": {
     "title": "Overview"

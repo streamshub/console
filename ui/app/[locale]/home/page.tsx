@@ -43,6 +43,9 @@ import styles from "./home.module.css";
 export default function Home() {
   const t = useTranslations();
   const allClusters = getKafkaClusters();
+
+  const productName = t('common.product');
+  const brand = t("common.brand")
   return (
     <>
       <PageSection padding={{ default: "noPadding" }} variant={"light"}>
@@ -50,11 +53,10 @@ export default function Home() {
           <div>
             <TextContent>
               <Title headingLevel={"h1"} size={"2xl"}>
-                Welcome to the {t("common.product")} console
+                {t.rich('homepage.page_header', { product: productName })}
               </Title>
               <Text className={"pf-v5-u-color-200"}>
-                The {t("common.brand")} {t("common.product")} console provides a user interface for
-                managing and monitoring your streaming resources
+                {t('homepage.page_subtitle', { brand: brand, product: productName })}
               </Text>
             </TextContent>
           </div>
@@ -66,11 +68,11 @@ export default function Home() {
             <ExpandableCard
               title={
                 <TextContent>
-                  <strong>Platform: OpenShift Cluster</strong>
+                  {t.rich('homepage.platform_openshift_cluster')}
                   <Text component={"small"}>
                     <Suspense fallback={<Skeleton width={"200px"} />}>
                       <ClustersCount clusterPromise={allClusters} />
-                      &nbsp;Connected Kafka clusters
+                      &nbsp;{t('homepage.connected_kafka_clusters')}
                     </Suspense>
                   </Text>
                 </TextContent>
@@ -89,17 +91,17 @@ export default function Home() {
               title={
                 <TextContent>
                   <b>
-                    Recently viewed topics{" "}
+                    {t("homepage.recently_viewed_topics_header")} {" "}
                     <Tooltip
                       content={
-                        `When you start looking at specific topics through the ${t("common.product")} console, they'll start showing here.`
+                        t("homepage.recently_viewed_topics_header_popover", { product: productName })
                       }
                     >
                       <HelpIcon />
                     </Tooltip>
                   </b>
                   <Text component={"small"}>
-                    The last 5 topics this account has accessed from the {t("common.product")} console.
+                    {t('homepage.last_accessed_topics', { product: productName })}
                   </Text>
                 </TextContent>
               }
@@ -118,7 +120,7 @@ export default function Home() {
                 <Level>
                   <LevelItem>
                     <TextContent>
-                      <b>Recommended learning resources</b>
+                      {t.rich("homepage.recommended_learning_resources")}
                     </TextContent>
                   </LevelItem>
                   {/*<LevelItem>*/}
@@ -132,13 +134,13 @@ export default function Home() {
                     <Stack>
                       <StackItem>
                         <TextContent>
-                          <b>Recommended learning resources</b>
+                          {t.rich("homepage.recommended_learning_resources")}
                         </TextContent>
                       </StackItem>
                       <StackItem>
                         <LabelGroup isCompact>
                           <Label isCompact color="orange">
-                            Documentation
+                            {t('homepage.documentation')}
                           </Label>
                           {/*<Label isCompact icon={<InfoCircleIcon />} color="green">*/}
                           {/*  Quick starts*/}
@@ -165,17 +167,17 @@ export default function Home() {
                         dataListCells={[
                           <DataListCell key="gs-1-1" width={2}>
                             <span id="gs-1-1">
-                              {t("common.product")} on OpenShift Overview
+                              {t('homepage.openshift_overview', { product: productName })}
                             </span>
                           </DataListCell>,
                           <DataListCell key="gs-1-2">
                             <Label isCompact={true} color={"orange"}>
-                              Documentation
+                              {t('homepage.documentation')}
                             </Label>
                           </DataListCell>,
                           <DataListCell key="gs-1-3">
                             <ExternalLink testId={"gs-1-3"} href={t("learning.links.overview")}>
-                              View documentation
+                              {t('homepage.view_documentation')}
                             </ExternalLink>
                           </DataListCell>,
                         ]}
@@ -188,17 +190,17 @@ export default function Home() {
                         dataListCells={[
                           <DataListCell key="gs-2-1" width={2}>
                             <span id="gs-2-1">
-                              Getting Started with {t("common.product")} on Openshift
+                              {t('homepage.get_started_with_openshift', { product: productName })}
                             </span>
                           </DataListCell>,
                           <DataListCell key="gs-2-2">
                             <Label isCompact={true} color={"orange"}>
-                              Documentation
+                              {t('homepage.documentation')}
                             </Label>
                           </DataListCell>,
                           <DataListCell key="gs-2-3">
                             <ExternalLink testId={"gs-2-3"} href={t("learning.links.gettingStarted")}>
-                              View documentation
+                              {t('homepage.view_documentation')}
                             </ExternalLink>
                           </DataListCell>,
                         ]}
@@ -211,17 +213,17 @@ export default function Home() {
                         dataListCells={[
                           <DataListCell key="gs-3-1" width={2}>
                             <span id="gs-3-1">
-                              Connect to a Kafka cluster from an application
+                              {t('homepage.connect_to_kafka_cluster')}
                             </span>
                           </DataListCell>,
                           <DataListCell key="gs-3-2">
                             <Label isCompact={true} color={"orange"}>
-                              Documentation
+                              {t('homepage.documentation')}
                             </Label>
                           </DataListCell>,
                           <DataListCell key="gs-3-3">
                             <ExternalLink testId={"gs-3-3"} href={t("learning.links.connecting")}>
-                              View documentation
+                              {t('homepage.view_documentation')}
                             </ExternalLink>
                           </DataListCell>,
                         ]}
@@ -234,17 +236,17 @@ export default function Home() {
                         dataListCells={[
                           <DataListCell key="gs-4-1" width={2}>
                             <span id="gs-4-1">
-                              Using the Topic Operator to manage Kafka topics
+                              {t('homepage.using_topic_operator_to_manage_kafka_topic')}
                             </span>
                           </DataListCell>,
                           <DataListCell key="gs-4-2">
                             <Label isCompact={true} color={"orange"}>
-                              Documentation
+                              {t('homepage.documentation')}
                             </Label>
                           </DataListCell>,
                           <DataListCell key="gs-4-3">
                             <ExternalLink testId={"gs-4-3"} href={t("learning.links.topicOperatorUse")}>
-                              View documentation
+                              {t('homepage.view_documentation')}
                             </ExternalLink>
                           </DataListCell>,
                         ]}
@@ -324,6 +326,7 @@ async function ConnectedClustersTable({
 
 async function RecentTopics() {
   const t = useTranslations();
+  const productName = t('common.product');
   const viewedTopics = await getViewedTopics();
   return viewedTopics.length > 0 ? (
     <TopicsTable topics={viewedTopics} />
@@ -331,12 +334,12 @@ async function RecentTopics() {
     <EmptyState variant={"xs"}>
       <EmptyStateHeader title={"No topics were viewed yet"} />
       <EmptyStateBody>
-        When you start looking at specific topics through the {t("common.product")} console, they&#39;ll start showing here.
+        {t("homepage.empty_topics_description", { product: productName })}
       </EmptyStateBody>
       <EmptyStateFooter>
         <EmptyStateActions className={"pf-v5-u-font-size-sm"}>
           <ExternalLink testId={"recent-topics-empty-state-link"} href={t("learning.links.topicOperatorUse")}>
-            Using the Topic Operator to manage Kafka topics
+            {t("homepage.topic_operator_link")}
           </ExternalLink>
         </EmptyStateActions>
       </EmptyStateFooter>
