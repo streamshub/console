@@ -23,6 +23,7 @@ import {
   ExclamationTriangleIcon,
 } from "@patternfly/react-icons";
 import { ReactNode, useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 
 const Columns = [
   "id",
@@ -73,6 +74,8 @@ export function PartitionsTable({
   kafkaId: string;
   topic: Topic | undefined;
 }) {
+  const t = useTranslations("topics");
+
   const [topic, setTopic] = useState(initialData);
   const [filter, setFilter] = useState<"all" | PartitionStatus>("all");
   const [sort, setSort] = useState<{
@@ -116,7 +119,7 @@ export function PartitionsTable({
       <TableView
         itemCount={sortedData?.length}
         page={1}
-        onPageChange={() => {}}
+        onPageChange={() => { }}
         data={sortedData}
         emptyStateNoData={<div>No partitions</div>}
         emptyStateNoResults={
@@ -130,23 +133,21 @@ export function PartitionsTable({
             case "id":
               return (
                 <Th key={key} dataLabel={"Partition Id"} width={15}>
-                  Partition ID
+                  {t("partition_table.partition_id")}
                 </Th>
               );
             case "status":
               return (
                 <Th key={key} dataLabel={"Status"} width={15}>
-                  Status
+                  {t("partition_table.status")}
                 </Th>
               );
             case "preferredLeader":
               return (
                 <Th key={key} dataLabel={"Preferred leader"} width={20}>
-                  Preferred leader{" "}
+                  {t("partition_table.preferred_leader")}{" "}
                   <Tooltip
-                    content={`Whenever a new topic is created, Kafka runs its leader election algorithm for each partition to assign a leader from the list of replicas. 
-                       This algorithm aims to create a balanced spread of leadership assignments across the brokers. A "Yes" value indicates that the current leader is the preferred leader.
-                       A "No" value may indicate that the leadership assignments in the cluster are not balanced.`}
+                    content={t("partition_table.leader_tooltip")}
                   >
                     <HelpIcon />
                   </Tooltip>
@@ -155,11 +156,10 @@ export function PartitionsTable({
             case "leader":
               return (
                 <Th key={key} dataLabel={"Leader"} width={15}>
-                  Leader{" "}
+                  {t("partition_table.leader")}{" "}
                   <Tooltip
                     style={{ whiteSpace: "pre-line" }}
-                    content={`The ID of the partition leader.
-                       For a given partition, a broker is elected as the leader, handling all produce requests. Followers on other brokers replicate the leader's data. A follower is considered in-sync if it catches up with the leader's latest committed message. Under-replication occurs when the replicas for a partition fall below the configured replication factor.`}
+                    content={t("partition_table.leader_tooltip")}
                   >
                     <HelpIcon />
                   </Tooltip>
@@ -168,9 +168,9 @@ export function PartitionsTable({
             case "replicas":
               return (
                 <Th key={key} dataLabel={"Replicas"} width={20}>
-                  Replicas{" "}
+                  {t('partition_table.replicas')}{" "}
                   <Tooltip
-                    content={`Each partition has designated replicas, with one being the 'leader' and the rest as 'follower' or 'in-sync' partitions. The leader handles produce requests, and followers replicate the leader's data. Replicas can be either "in-sync" or "Under-replicated" in case any of the replicas are not in-sync`}
+                    content={t("partition_table.replicas_tooltip")}
                   >
                     <HelpIcon />
                   </Tooltip>
@@ -179,7 +179,7 @@ export function PartitionsTable({
             case "storage":
               return (
                 <Th key={key} dataLabel={"Storage"}>
-                  Size
+                  {t('partition_table.size')}
                 </Th>
               );
           }

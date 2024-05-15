@@ -5,6 +5,7 @@ import { Tooltip } from "@/libs/patternfly/react-core";
 import { HelpIcon } from "@/libs/patternfly/react-icons";
 import { Link } from "@/navigation";
 import { TableVariant } from "@patternfly/react-table";
+import { useTranslations } from "next-intl";
 
 export function LagTable({
   kafkaId,
@@ -13,6 +14,8 @@ export function LagTable({
   kafkaId: string;
   offsets: ConsumerGroup["attributes"]["offsets"];
 }) {
+  const t = useTranslations("MemberTable");
+
   return (
     <ResponsiveTable
       ariaLabel={"Consumer group lag"}
@@ -26,21 +29,19 @@ export function LagTable({
           case "topic":
             return (
               <Th key={key} width={30}>
-                Topic
+                {t("topic")}
               </Th>
             );
           case "partition":
-            return <Th key={key}>Partition</Th>;
+            return <Th key={key}>{t("partition")}</Th>;
           case "behind":
-            return <Th key={key}>Lag</Th>;
+            return <Th key={key}>{t("lag")}</Th>;
           case "currentOffset":
             return (
               <Th key={key}>
-                Committed offset{" "}
+                {t("committed_offset")}{" "}
                 <Tooltip
-                  content={
-                    "The offset in the Kafka topic marking the last successfully consumed message by the consumer."
-                  }
+                  content={t("committed_offset_tooltip")}
                 >
                   <HelpIcon />
                 </Tooltip>
@@ -49,11 +50,9 @@ export function LagTable({
           case "endOffset":
             return (
               <Th key={key}>
-                End offset{" "}
+                {t("end_offset")}{" "}
                 <Tooltip
-                  content={
-                    "The highest offset in the Kafka topic, representing the latest available message."
-                  }
+                  content={t("end_offset_tooltip")}
                 >
                   <HelpIcon />
                 </Tooltip>

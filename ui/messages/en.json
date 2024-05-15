@@ -113,7 +113,27 @@
     "topic_list_table": "Topic list table",
     "topic_name": "Name",
     "topic_search": "Search topics button",
-    "topic_search_input": "Topic search input"
+    "topic_search_input": "Topic search input",
+    "hide_internal_topics": "Hide internal topics",
+    "hide_internal_topics_tooltip": "By convention internal topics are prefixed with __. These topics are usually created and managed by Kafka.",
+    "status": "Status",
+    "topic_status_tooltip": "Indicates the replication status of the partitions in the Kafka topic.A partition is fully replicated when its replicas (followers) are 'in-sync' with the designated partition leader A partition is under-replicated if partition replicas (followers) are not 'in-sync with their designated partition leader.If the status shows unavailable, some or all partitions are currently unavailable due to underlying issues.",
+    "consumer_groups": "Consumer groups",
+    "storage": "Storage",
+    "partition_table": {
+      "partition_id": "Partition ID",
+      "status": "Status",
+      "leader": "Leader",
+      "leader_tooltip": "The ID of the partition leader. For a given partition, a broker is elected as the leader, handling all produce requests. Followers on other brokers replicate the leader's data. A follower is considered in-sync if it catches up with the leader's latest committed message. Under-replication occurs when the replicas for a partition fall below the configured replication factor.",
+      "preferred_leader": "Preferred leader",
+      "preferred_leader_tooltip": "Whenever a new topic is created, Kafka runs its leader election algorithm for each partition to assign a leader from the list of replicas. This algorithm aims to create a balanced spread of leadership assignments across the brokers. A \"Yes\" value indicates that the current leader is the preferred leader. A \"No\" value may indicate that the leadership assignments in the cluster are not balanced.",
+      "replicas": "Replicas",
+      "replicas_tooltip": "Each partition has designated replicas, with one being the 'leader' and the rest as 'follower' or 'in-sync' partitions. The leader handles produce requests, and followers replicate the leader's data. Replicas can be either \"in-sync\" or \"Under-replicated\" in case any of the replicas are not in-sync",
+      "size": "Size",
+      "partition_empty_title": "No results",
+      "partition_empty_state_body": "No partitions matching the filter.",
+      "reset_filter": "Reset filters"
+    }
   },
   "topic-creator": {
     "title": "Create a Kafka topic",
@@ -358,5 +378,24 @@
       "cluster_errors_and_warnings": "Cluster errors and warnings",
       "tooltip": "Issues encountered in the Kafka cluster. Investigate and address these issues to ensure continued operation of the cluster."
     }
-  }
+    },
+    "MemberTable": {
+      "member_id": "Member ID",
+      "client_id": "Client ID",
+      "client_id_tooltip": "The unique identifier assigned to the client (consumer) within the consumer group. A client ID helps identify and manage individual consumers.",
+      "overall_lag": "Overall lag",
+      "overall_lag_tooltip": "The cumulative lag across all partitions assigned to the consumer group. Consumer lag is the difference in the rate of production and consumption of messages.Specifically, consumer lag for a given consumer in a group indicates the delay between the last message in the partition and the message being currently picked up by that consumer.",
+      "assigned_partitions": "Assigned partitions",
+      "topic": "Topic",
+      "partition": "Partition",
+      "lag": "Lag",
+      "committed_offset": "Commited offset",
+      "committed_offset_tooltip": "The offset in the Kafka topic marking the last successfully consumed message by the consumer.",
+      "end_offset": "End offset",
+      "end_offset_tooltip": "The highest offset in the Kafka topic, representing the latest available message." 
+    },
+    "ConsumerGroup":{
+      "reset_offset": "Reset offset",
+      "delete": "Delete"
+    }
 }

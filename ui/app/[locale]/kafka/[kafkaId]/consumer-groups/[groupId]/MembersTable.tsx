@@ -7,6 +7,7 @@ import { Tooltip } from "@/libs/patternfly/react-core";
 import { HelpIcon } from "@/libs/patternfly/react-icons";
 import { TableVariant } from "@/libs/patternfly/react-table";
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 
 export function MembersTable({
   kafkaId,
@@ -17,6 +18,7 @@ export function MembersTable({
   consumerGroup?: ConsumerGroup;
   refresh?: () => Promise<ConsumerGroup>;
 }) {
+  const t = useTranslations("MemberTable");
   const [consumerGroup, setConsumerGroup] = useState(initialData);
   useEffect(() => {
     let interval: ReturnType<typeof setInterval>;
@@ -61,17 +63,15 @@ export function MembersTable({
           case "member":
             return (
               <Th width={30} key={key}>
-                Member ID
+                {t("member_id")}
               </Th>
             );
           case "clientId":
             return (
               <Th width={20} key={key}>
-                Client ID{" "}
+                {t("client_id")}{" "}
                 <Tooltip
-                  content={
-                    "The unique identifier assigned to the client (consumer) within the consumer group. A client ID helps identify and manage individual consumers."
-                  }
+                  content={t("client_id_tooltip")}
                 >
                   <HelpIcon />
                 </Tooltip>
@@ -80,7 +80,7 @@ export function MembersTable({
           case "overallLag":
             return (
               <Th key={key}>
-                Overall lag{" "}
+                {t("overall_lag")}{" "}
                 <Tooltip
                   style={{ whiteSpace: "pre-line" }}
                   content={`The cumulative lag across all partitions assigned to the consumer group.
@@ -92,7 +92,7 @@ export function MembersTable({
               </Th>
             );
           case "assignedPartitions":
-            return <Th key={key}>Assigned partitions</Th>;
+            return <Th key={key}>{t("assigned_partitions")}</Th>;
         }
       }}
       renderCell={({ column, key, row, Td }) => {
