@@ -34,7 +34,13 @@
     "title": "Overview"
   },
   "nodes": {
-    "kpis_offline": "Prometheus can't be reached, information on the page will be incomplete. Please check your configuration."
+    "kpis_offline": "Prometheus can't be reached, information on the page will be incomplete. Please check your configuration.",
+    "broker_id": "Broker ID",
+    "status": "Status",
+    "replicas": "Total Replicas",
+    "rack": "Rack",
+    "replicas_tooltip": "The overall count of partition replicas hosted by the broker. Replicas provide fault tolerance and data availability.",
+    "rack_tooltip": "Represents the ID of the rack or datacenter in which the broker resides."
   },
   "node-config-table": {
     "no_results_title": "No properties found",
