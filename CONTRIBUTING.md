@@ -17,7 +17,7 @@ The DCO text is also included verbatim in the [dco.txt](dco.txt) file in the roo
 
 ## Reporting an issue
 
-This project uses GitHub issues to manage the issues. Open an issue directly in GitHub. you can also open JIRA issues at https://issues.redhat.com/browse/MGDSTRM
+This project uses GitHub issues to manage the issues. Open an issue directly in GitHub.
 
 If you believe you found a bug, and it's likely possible, please indicate a way to reproduce it, what you are seeing and what you would expect to see.
 

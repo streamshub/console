@@ -37,7 +37,7 @@ npm run build
 npm run start
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the console.
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the console user interface.
 
 ## Build
 
@@ -97,4 +97,4 @@ npm run build
 npm run test
 ```
 
-This will run Playwright against a production build of the application. 
+This will run Playwright against the built application.

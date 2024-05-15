@@ -6,7 +6,7 @@ Please check the project's [contributing guide](../CONTRIBUTING.md) first.
 
 ## Prerequisites
 
-Ensure you have Kubernetes and Strimzi Cluster Operator installed on your system.
+Ensure you have Kubernetes and Strimzi Cluster Operator installed on your system. Either [minikube](https://minikube.sigs.k8s.io/) or [OpenShifot Local](https://developers.redhat.com/products/openshift-local) are good options.
 One option to get started is to follow [Strimzi's Quick Starts](https://strimzi.io/quickstarts/).
 
 You will also need a working installation of:
@@ -21,60 +21,13 @@ You will also need a working installation of:
 
 ### Continuous Integration
 
- kafka-admin-api CI is based on GitHub Actions, which means that everyone has the ability to automatically execute CI in their forks as part of the process of making changes. We ask that all non-trivial changes go through this process, so that the contributor gets immediate feedback, while at the same time keeping our CI fast and healthy for everyone.
+This project's CI is based on GitHub Actions, which means that everyone has the ability to automatically execute CI in their forks as part of the process of making changes. We ask that all non-trivial changes go through this process, so that the contributor gets immediate feedback, while at the same time keeping our CI fast and healthy for everyone.
 
 ### Tests and documentation are not optional
 
-Don't forget to include tests in your pull requests.
-Also don't forget the documentation (reference documentation, javadoc...).
+Do not forget to include or update tests in your pull requests and update any related documentation (reference documentation, javadoc...).
 
 ### Installing Checkstyle
 
-Project uses checkstyle mvn plugin that is executed during `mvn validate` pase.
-Please follow your ide setup for checkstyle. For example for intelij:
-
-https://plugins.jetbrains.com/plugin/1065-checkstyle-idea
-
-## Regenerating OpenAPI file
-
-PRs that make changes in the API should update openapi file by executing:
-
-```
-mvn -Popenapi-generate process-classes
-```
-
-Please commit generated files along with the PR for review.
-
-### Interacting with local kafka
-
-1. Creating topic
-
-Use the `kafka-topics.sh` tool to manage topics. kafka-topics.sh is part of the [Apache Kafka distribution](https://kafka.apache.org/downloads) and is found in the bin directory.
-
-```
-kafka-topics.sh --create --bootstrap-server localhost:9092  --partitions=3 --replication-factor=1 --topic test --command-config ./hack/binscripts.properties
-```
-
-2. Produce messages using kcat
-
-Use [`kcat`](https://github.com/edenhill/kcat) to produce messages. 
-
-```
-kcat -b localhost:9092 -F ./hack/kcat.properties -P -t test
-```
-
-
-4. Consume messages
-   
-Use [`kcat`](https://github.com/edenhill/kcat) to consume messages.
-
-```
-kcat -b localhost:9092 -F ./hack/kcat.properties  -C -t test
-```
-
-6. Interact with the API to view results
-
-`
-curl -s -u admin:admin-secret http://localhost:8080/api/v1/consumer-groups | jq
-`
-
+Project uses checkstyle mvn plugin that is executed during `mvn validate` phase. Make sure to verify this
+passes before pushing to Github.
