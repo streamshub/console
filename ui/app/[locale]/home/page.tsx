@@ -43,7 +43,7 @@ import styles from "./home.module.css";
 export default function Home() {
   const t = useTranslations();
   const allClusters = getKafkaClusters();
-  const productName = t('common.product');
+  const productName = t("common.product");
   const brand = t("common.brand");
 
   return (
@@ -326,7 +326,7 @@ async function ConnectedClustersTable({
 
 async function RecentTopics() {
   const t = useTranslations();
-  const productName = t('common.product');
+  const productName = t("common.product");
   const viewedTopics = await getViewedTopics();
   return viewedTopics.length > 0 ? (
     <TopicsTable topics={viewedTopics} />
