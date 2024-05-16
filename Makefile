@@ -6,6 +6,7 @@ include *compose.env
 CONSOLE_API_IMAGE ?= quay.io/eyefloaters/console-api:latest
 CONSOLE_UI_IMAGE ?= quay.io/eyefloaters/console-api:latest
 CONSOLE_UI_NEXTAUTH_SECRET ?= $(shell openssl rand -base64 32)
+CONSOLE_METRICS_PROMETHEUS_URL ?= 
 CONTAINER_RUNTIME ?= $(shell which podman || which docker)
 
 container-image-api:
@@ -31,6 +32,7 @@ compose-up:
 	echo "CONSOLE_API_KUBERNETES_API_SERVER_URL=$(CONSOLE_API_KUBERNETES_API_SERVER_URL)" >> compose-runtime.env 
 	echo "CONSOLE_UI_IMAGE=$(CONSOLE_UI_IMAGE)" >> compose-runtime.env
 	echo "CONSOLE_UI_NEXTAUTH_SECRET=$(CONSOLE_UI_NEXTAUTH_SECRET)" >> compose-runtime.env
+	echo "CONSOLE_METRICS_PROMETHEUS_URL=$(CONSOLE_METRICS_PROMETHEUS_URL)" >> compose-runtime.env
 	$(CONTAINER_RUNTIME) compose --env-file compose-runtime.env up -d
 
 compose-down:

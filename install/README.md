@@ -24,7 +24,7 @@ configured to scrape metrics from Kafka clusters deployed by Strimzi within the 
 
 ```shell
 000-install-dependency-operators.sh ${TARGET_NAMESPACE}
-001-deploy-prometheus.sh ${TARGET_NAMESPACE}
+001-deploy-prometheus.sh ${TARGET_NAMESPACE} ${CLUSTER_DOMAIN}
 ```
 
 ### 2. Apache Kafka Cluster

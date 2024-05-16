@@ -26,6 +26,7 @@ services:
     ports:
       - "3000:3000"
     environment:
+      CONSOLE_METRICS_PROMETHEUS_URL: ${CONSOLE_METRICS_PROMETHEUS_URL}
       NEXTAUTH_SECRET: ${CONSOLE_UI_NEXTAUTH_SECRET}
       NEXTAUTH_URL: http://localhost:3000
       BACKEND_URL: http://api:8080/

@@ -6,6 +6,16 @@ It is composed of two main parts:
 - a REST API backend developed with Java and [Quarkus](https://quarkus.io/)
 - a user interface (UI) built with [Next.js](https://nextjs.org/) and [PatternFly](https://patternfly.org)
 
+#### Roadmap / Goals
+
+The future goals of this project are to provide a user interface to interact with and manage additional data streaming components such as:
+
+- [Apicurio Registry](https://www.apicur.io/registry/) for message serialization and de-serialization + validation
+- [Kroxylicious](https://kroxylicious.io/)
+- [Apache Flink](https://flink.apache.org/)
+
+Contributions and discussions around use cases for these (and other relevant) components are both welcome and encouraged.
+
 ## Running the Application
 
 The console application may either be run in a Kubernetes cluster or locally to try it out.
