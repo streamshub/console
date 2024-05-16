@@ -12,6 +12,7 @@ import {
 import { HelpIcon } from "@/libs/patternfly/react-icons";
 import { ChartIncomingOutgoing } from "./components/ChartIncomingOutgoing";
 import { ChartSkeletonLoader } from "./components/ChartSkeletonLoader";
+import { useTranslations } from "next-intl";
 
 type TopicChartsCardProps = {
   incoming: MetricRange;
@@ -25,26 +26,24 @@ export function TopicChartsCard({
 }:
   | ({ isLoading: false } & TopicChartsCardProps)
   | ({
-      isLoading: true;
-    } & Partial<{ [key in keyof TopicChartsCardProps]?: undefined }>)) {
+    isLoading: true;
+  } & Partial<{ [key in keyof TopicChartsCardProps]?: undefined }>)) {
+  const t = useTranslations();
+
   return (
     <Card>
       <CardHeader>
         <CardTitle>
           <Title headingLevel={"h2"} size={"lg"}>
-            Topic metrics
+            {t("topicMetricsCard.topic_metric")}
           </Title>
         </CardTitle>
       </CardHeader>
       <CardBody>
         <Flex direction={{ default: "column" }} gap={{ default: "gapLg" }}>
           <b>
-            Topics bytes incoming and outgoing{" "}
-            <Tooltip
-              content={
-                "Bytes incoming and outgoing are the total bytes for all topics or total bytes for a selected topic in the Kafka cluster. This metric enables you to assess data transfer in and out of your Kafka cluster. To modify incoming and outgoing bytes, you can adjust topic message size or other topic properties as needed."
-              }
-            >
+            {t("topicMetricsCard.topics_bytes_incoming_and_outgoing")}{" "}
+            <Tooltip content={t("topicMetricsCard.topics_bytes_incoming_and_outgoing_tooltip")}>
               <HelpIcon />
             </Tooltip>
           </b>

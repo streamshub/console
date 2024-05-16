@@ -142,40 +142,37 @@ export function TopicsTable({
           case "name":
             return (
               <Th key={key} width={30} dataLabel={"Topic"}>
-                Name
+                {t("topic_name")}
               </Th>
             );
           case "status":
             return (
               <Th key={key} dataLabel={"Status"}>
-                Status{" "}
+                {t("status")}{" "}
                 <Tooltip
                   style={{ whiteSpace: "pre-line" }}
-                  content={`Indicates the replication status of the partitions in the Kafka topic.
-                   A partition is fully replicated when its replicas (followers) are 'in-sync' with the designated partition leader.
-                   A partition is under-replicated if partition replicas (followers) are not 'in-sync with their designated partition leader.
-                   If the status shows unavailable, some or all partitions are currently unavailable due to underlying issues.`}
+                  content={t("topic_status_tooltip")}
                 >
                   <HelpIcon />
                 </Tooltip>
-              </Th>
+              </Th >
             );
           case "consumerGroups":
             return (
               <Th key={key} dataLabel={"Consumer groups"}>
-                Consumer groups
+                {t("consumer_groups")}
               </Th>
             );
           case "partitions":
             return (
               <Th key={key} dataLabel={"Partitions"}>
-                Partitions
+                {t("fields.partitions")}
               </Th>
             );
           case "storage":
             return (
               <Th key={key} dataLabel={"Storage"}>
-                Storage
+                {t("storage")}
               </Th>
             );
         }
@@ -236,14 +233,14 @@ export function TopicsTable({
           <ActionsColumn
             items={[
               {
-                title: "Edit configuration",
+                title: t("table.actions.edit"),
                 onClick: () => onEditTopic(row),
               },
               {
                 isSeparator: true,
               },
               {
-                title: "Delete topic",
+                title: t("table.actions.delete"),
                 onClick: () => onDeleteTopic(row),
               },
             ]}
@@ -300,12 +297,12 @@ export function TopicsTable({
       actions={
         isReadOnly === false
           ? [
-              {
-                label: t("create_topic"),
-                onClick: onCreateTopic,
-                isPrimary: true,
-              },
-            ]
+            {
+              label: t("create_topic"),
+              onClick: onCreateTopic,
+              isPrimary: true,
+            },
+          ]
           : undefined
       }
       tools={[
@@ -313,11 +310,9 @@ export function TopicsTable({
           key={"ht"}
           label={
             <>
-              Hide internal topics&nbsp;
+              {t("hide_internal_topics")}&nbsp;
               <Tooltip
-                content={
-                  "By convention internal topics are prefixed with __. These topics are usually created and managed by Kafka."
-                }
+                content={t("hide_internal_topics_tooltip")}
               >
                 <HelpIcon />
               </Tooltip>

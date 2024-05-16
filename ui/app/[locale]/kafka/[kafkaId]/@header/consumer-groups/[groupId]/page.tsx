@@ -3,6 +3,7 @@ import { KafkaConsumerGroupMembersParams } from "@/app/[locale]/kafka/[kafkaId]/
 import { AppHeader } from "@/components/AppHeader";
 import { Button, Tooltip } from "@/libs/patternfly/react-core";
 import { Suspense } from "react";
+import { useTranslations } from "next-intl";
 
 export const fetchCache = "force-cache";
 
@@ -37,6 +38,8 @@ function Header({
   disabled: boolean;
   params: KafkaConsumerGroupMembersParams;
 }) {
+  const t = useTranslations();
+
   return (
     <AppHeader
       title={decodeURIComponent(groupId) === "+" ? <i>Empty Name</i> : groupId}
@@ -48,7 +51,7 @@ function Header({
           }
         >
           <Button isDisabled={disabled} aria-disabled={disabled} id={"reset"}>
-            Reset offset
+            {t("ConsumerGroup.reset_offset")}
           </Button>
         </Tooltip>,
         <Tooltip
@@ -60,7 +63,7 @@ function Header({
             aria-disabled={disabled}
             isDisabled={disabled}
           >
-            Delete
+            {t("ConsumerGroup.delete")}
           </Button>
         </Tooltip>,
       ]}

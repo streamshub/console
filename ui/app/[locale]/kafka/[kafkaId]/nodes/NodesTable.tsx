@@ -23,6 +23,7 @@ import {
 } from "@patternfly/react-icons";
 import { useFormatter } from "next-intl";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 
 const columns = ["id", "status", "replicas", "rack"] as const;
 
@@ -39,6 +40,8 @@ export type Node = {
 };
 
 export function NodesTable({ nodes }: { nodes: Node[] }) {
+
+  const t = useTranslations();
   const format = useFormatter();
   const formatBytes = useFormatBytes();
   return (
@@ -49,16 +52,16 @@ export function NodesTable({ nodes }: { nodes: Node[] }) {
       renderHeader={({ column, key, Th }) => {
         switch (column) {
           case "id":
-            return <Th key={key}>Broker ID</Th>;
+            return <Th key={key}>{t("nodes.broker_id")}</Th>;
           case "status":
-            return <Th key={key}>Status</Th>;
+            return <Th key={key}>{t("nodes.status")}</Th>;
           case "replicas":
             return (
               <Th key={key}>
-                Total Replicas{" "}
+                {t("nodes.replicas")}{" "}
                 <Tooltip
                   content={
-                    "The overall count of partition replicas hosted by the broker. Replicas provide fault tolerance and data availability."
+                    t("nodes.replicas_tooltip")
                   }
                 >
                   <HelpIcon />
@@ -68,10 +71,10 @@ export function NodesTable({ nodes }: { nodes: Node[] }) {
           case "rack":
             return (
               <Th key={key}>
-                Rack{" "}
+                {t("nodes.rack")}{" "}
                 <Tooltip
                   content={
-                    "Represents the ID of the rack or datacenter in which the broker resides."
+                    t("nodes.rack_tooltip")
                   }
                 >
                   <HelpIcon />
@@ -182,8 +185,8 @@ export function NodesTable({ nodes }: { nodes: Node[] }) {
                         labels={({ datum }) =>
                           datum.x
                             ? `${datum.x}: ${format.number(datum.y / 100, {
-                                style: "percent",
-                              })}`
+                              style: "percent",
+                            })}`
                             : null
                         }
                         legendData={[
