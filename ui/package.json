@@ -43,7 +43,7 @@
     "lodash.groupby": "^4.6.0",
     "next": "^14.2.3",
     "next-auth": "^4.24.7",
-    "next-intl": "^3.13.0",
+    "next-intl": "^3.14.0",
     "next-logger": "^4.0.0",
     "pino": "^9.1.0",
     "prometheus-query": "^3.4.0",
@@ -76,18 +76,18 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.44.0",
-    "@storybook/addon-essentials": "^8.1.0",
-    "@storybook/addon-interactions": "^8.1.0",
-    "@storybook/addon-links": "^8.1.0",
+    "@storybook/addon-essentials": "^8.1.1",
+    "@storybook/addon-interactions": "^8.1.1",
+    "@storybook/addon-links": "^8.1.1",
     "@storybook/blocks": "^8.0.0",
-    "@storybook/nextjs": "^8.1.0",
+    "@storybook/nextjs": "^8.1.1",
     "@storybook/react": "^8.0.0",
     "@storybook/test": "^8.0.0",
     "@storybook/test-runner": "^0.18.0",
     "pino-pretty": "^11.0.0",
     "playwright": "^1.44.0",
     "prettier": "^3.2.5",
-    "storybook": "^8.1.0",
+    "storybook": "^8.1.1",
     "tsconfig-paths-webpack-plugin": "^4.1.0"
   }
 }
