@@ -20,6 +20,7 @@ import {
   HelpIcon,
 } from "@/libs/patternfly/react-icons";
 import { Link } from "@/navigation";
+import { useTranslations } from "next-intl";
 
 type TopicsPartitionsCardProps = {
   topicsTotal: number;
@@ -37,16 +38,18 @@ export function TopicsPartitionsCard({
 }:
   | ({ isLoading: false } & TopicsPartitionsCardProps)
   | ({
-      isLoading: true;
-    } & Partial<{ [key in keyof TopicsPartitionsCardProps]?: undefined }>)) {
+    isLoading: true;
+  } & Partial<{ [key in keyof TopicsPartitionsCardProps]?: undefined }>)) {
+
+  const t = useTranslations();
   return (
     <Card component={"div"}>
       <CardHeader
         actions={{
-          actions: <Link href={"./topics"}>View all</Link>,
+          actions: <Link href={"./topics"}>{t("ClusterOverview.view_all_topics")}</Link>,
         }}
       >
-        <CardTitle>Topics</CardTitle>
+        <CardTitle>{t("ClusterOverview.topic_header")}</CardTitle>
       </CardHeader>
       <CardBody>
         <Flex gap={{ default: "gapLg" }}>
@@ -64,7 +67,7 @@ export function TopicsPartitionsCard({
                     <TextContent>
                       <Text component={"small"}>
                         <Link href={"./topics"}>
-                          <Number value={topicsTotal} /> total topics
+                          <Number value={topicsTotal} /> {t("ClusterOverview.total_topics")}
                         </Link>
                       </Text>
                     </TextContent>
@@ -74,7 +77,7 @@ export function TopicsPartitionsCard({
                     <TextContent>
                       <Text component={"small"}>
                         <Number value={partitions} />
-                        &nbsp; partitions
+                        &nbsp; {t("ClusterOverview.partition")}
                       </Text>
                     </TextContent>
                   </FlexItem>
@@ -107,12 +110,8 @@ export function TopicsPartitionsCard({
                   <Icon status={"success"}>
                     <CheckCircleIcon />
                   </Icon>
-                  &nbsp;Fully replicated&nbsp;
-                  <Tooltip
-                    content={
-                      "All partitions are fully replicated. A partition is fully-replicated when its replicas (followers) are 'in sync' with the designated partition leader. Replicas are 'in sync' if they have fetched records up to the log end offset of the leader partition within an allowable lag time, as determined by replica.lag.time.max.ms."
-                    }
-                  >
+                  &nbsp;{t("ClusterOverview.fully_replicated_partition")}&nbsp;
+                  <Tooltip content={t("ClusterOverview.fully_replicated_partition_tooltip")}>
                     <HelpIcon />
                   </Tooltip>
                 </Text>
@@ -135,12 +134,8 @@ export function TopicsPartitionsCard({
                   <Icon status={"warning"}>
                     <ExclamationTriangleIcon />
                   </Icon>
-                  &nbsp;Under replicated&nbsp;
-                  <Tooltip
-                    content={
-                      "Some partitions are not fully replicated. A partition is fully replicated when its replicas (followers) are 'in sync' with the designated partition leader. Replicas are 'in sync' if they have fetched records up to the log end offset of the leader partition within an allowable lag time, as determined by replica.lag.time.max.ms."
-                    }
-                  >
+                  &nbsp;{t("ClusterOverview.under_replicated_partition")}&nbsp;
+                  <Tooltip content={t("ClusterOverview.under_replicated_partition_tooltip")}>
                     <HelpIcon />
                   </Tooltip>
                 </Text>
@@ -167,12 +162,8 @@ export function TopicsPartitionsCard({
                   <Icon status={"danger"}>
                     <ExclamationCircleIcon />
                   </Icon>
-                  &nbsp;Unavailable&nbsp;
-                  <Tooltip
-                    content={
-                      "Some or all partitions are currently unavailable. This may be due to issues such as broker failures or network problems. Investigate and address the underlying issues to restore normal functionality."
-                    }
-                  >
+                  &nbsp;{t("ClusterOverview.unavailable_partition")}&nbsp;
+                  <Tooltip content={t("ClusterOverview.unavailable_partition_tooltip")}>
                     <HelpIcon />
                   </Tooltip>
                 </Text>

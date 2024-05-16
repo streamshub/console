@@ -374,11 +374,23 @@
     "error_details": "Show more"
   },
   "ClusterOverview": {
+    "header": "Cluster overview",
+    "description": "Key performance indicators and important information regarding the Kafka cluster.",
     "ErrorsAndWarnings": {
       "cluster_errors_and_warnings": "Cluster errors and warnings",
       "tooltip": "Issues encountered in the Kafka cluster. Investigate and address these issues to ensure continued operation of the cluster."
-    }
     },
+    "topic_header": "Topics",
+    "total_topics": "total topics",
+    "partition": "Partition",
+    "view_all_topics": "View all",
+    "fully_replicated_partition": "Fully replicated",
+    "fully_replicated_partition_tooltip": "All partitions are fully replicated. A partition is fully-replicated when its replicas (followers) are 'in sync' with the designated partition leader. Replicas are 'in sync' if they have fetched records up to the log end offset of the leader partition within an allowable lag time, as determined by replica.lag.time.max.ms.",
+    "under_replicated_partition": "Under replicated",
+    "under_replicated_partition_tooltip": "Some partitions are not fully replicated. A partition is fully replicated when its replicas (followers) are 'in sync' with the designated partition leader. Replicas are 'in sync' if they have fetched records up to the log end offset of the leader partition within an allowable lag time, as determined by replica.lag.time.max.ms.",
+    "unavailable_partition": "Unavailable",
+    "unavailable_partition_tooltip": "Some or all partitions are currently unavailable. This may be due to issues such as broker failures or network problems. Investigate and address the underlying issues to restore normal functionality."
+  },
     "MemberTable": {
       "member_id": "Member ID",
       "client_id": "Client ID",
