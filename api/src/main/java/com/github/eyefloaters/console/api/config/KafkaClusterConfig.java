@@ -10,7 +10,6 @@ public class KafkaClusterConfig {
     private String name;
     private String namespace;
     private String listener;
-    private boolean readOnly;
     private Map<String, String> properties = new HashMap<>();
     private Map<String, String> adminProperties = new HashMap<>();
     private Map<String, String> consumerProperties = new HashMap<>();
@@ -43,14 +42,6 @@ public class KafkaClusterConfig {
 
     public void setListener(String listener) {
         this.listener = listener;
-    }
-
-    public boolean isReadOnly() {
-        return readOnly;
-    }
-
-    public void setReadOnly(boolean readOnly) {
-        this.readOnly = readOnly;
     }
 
     public Map<String, String> getProperties() {

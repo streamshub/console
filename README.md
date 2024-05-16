@@ -11,10 +11,38 @@ It is composed of two main parts:
 The console application may either be run in a Kubernetes cluster or locally to try it out.
 
 ### Install to Kubernetes
+
 Please refer to the [installation README](./install/README.md) file for detailed information about how to install the latest release of the console in a Kubernetes cluster.
 
 ### Run locally
 
+Running the console locally requires the use of a remote or locally-running Kubernetes cluster that hosts the Strimzi Kafka operator
+and any Apache Kafka™ clusters that will be accessed from the console. To get started, you will need to provide a console configuration
+file and credentials to connect to the Kubernetes cluster where Strimzi and Kafka are available.
+
+1. Using the [console-config-example.yaml](./console-config-example.yaml) file as an example, create your own configuration
+   in a file `console-config.yaml` in the repository root. The `compose.yaml` file expects this location to be used and
+   and difference in name or location requires an adjustment to the compose file.
+
+2. Provide the API server endpoint and service account token that you would like to use to connect to the Kubernetes cluster. These
+   may be placed in a `compose.env` file that will be detected when starting the console.
+   ```
+   CONSOLE_API_SERVICE_ACCOUNT_TOKEN=<TOKEN>
+   CONSOLE_API_KUBERNETES_API_SERVER_URL=https://my-kubernetes-api.example.com:6443
+   ```
+   The service account token may be obtain using the `kubectl create token` command. For example, to create a token
+   that expires in 1 year:
+   ```shell
+   kubectl create token <service account name> -n <service account namespace> --duration=$((365*24))h
+   ```
+
+3. By default, the provided configuration will use the latest console release container images. If you would like to
+   build your own images with changes you've made locally, you may also set the `CONSOLE_API_IMAGE` and `CONSOLE_UI_IMAGE`
+   in your `compose.env` and build them with `make container-images`
+
+4. Start the environment with `make compose-up`.
+
+5. When finished with the local console process, you may run `make compose-down` to clean up.
 
 ## Contributing
 

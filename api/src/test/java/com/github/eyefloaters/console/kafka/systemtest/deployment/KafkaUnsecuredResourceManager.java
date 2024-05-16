@@ -50,8 +50,9 @@ public class KafkaUnsecuredResourceManager extends KafkaResourceManager implemen
                             bootstrap.servers: %s
                         - name: test-kafka3
                           namespace: default
+                          # listener is named and bootstrap.servers not set (will be retrieved from Kafka CR)
+                          listener: listener0
                           properties:
-                            bootstrap.servers: %s
                             security.protocol: SSL
                     """.formatted(
                             externalBootstrap,
@@ -59,8 +60,7 @@ public class KafkaUnsecuredResourceManager extends KafkaResourceManager implemen
                             externalBootstrap),
                     StandardOpenOption.WRITE);
         } catch (IOException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            throw new UncheckedIOException(e);
         }
 
         return Map.ofEntries(
