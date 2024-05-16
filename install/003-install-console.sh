@@ -7,6 +7,7 @@ RESOURCE_PATH=${CONSOLE_INSTALL_PATH}/resources
 
 export NAMESPACE="${1?Please provide the deployment namespace}"
 export CLUSTER_DOMAIN="${2?Please provide the base domain name for Kafka listener ingress}"
+export CONSOLE_CONFIG="${3?Please provide the path to a console configuration YAML. See console-config-example.yaml for sample}"
 
 source ${CONSOLE_INSTALL_PATH}/_common.sh
 
@@ -75,6 +76,11 @@ if ! ${KUBE} get secret console-ui-secrets -n ${NAMESPACE} 1>/dev/null 2>&1 ; th
 else
     echo -e "${WARN} Console Credential secret console-ui-secrets already exists, nothing applied"
 fi
+
+${KUBE} create secret generic console-config -n ${NAMESPACE} \
+    --dry-run=client \
+    --from-file=console-config.yaml="${CONSOLE_CONFIG}" \
+    -o yaml | ${KUBE} apply -n ${NAMESPACE} -f -
 
 if ${KUBE} get deployment console -n ${NAMESPACE} 1>/dev/null 2>&1 ; then
     ${KUBE} scale --replicas=0 deployment/console -n ${NAMESPACE}

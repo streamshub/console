@@ -139,6 +139,8 @@ public class ClientFactory {
             })
             .filter(Objects::nonNull)
             .map(url -> {
+                log.infof("Loading console configuration from %s", url);
+
                 ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
 
                 try (InputStream stream = url.openStream()) {
@@ -147,7 +149,10 @@ public class ClientFactory {
                     throw new UncheckedIOException(e);
                 }
             })
-            .orElseGet(ConsoleConfig::new);
+            .orElseGet(() -> {
+                log.infof("Console configuration not specified");
+                return new ConsoleConfig();
+            });
     }
 
     /**
@@ -348,6 +353,17 @@ public class ClientFactory {
             .filter(Optional::isPresent)
             .map(Optional::get)
             .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+        if (!cfg.containsKey(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG)) {
+            Optional.ofNullable(cluster.getStatus())
+                .map(KafkaStatus::getListeners)
+                .map(Collection::stream)
+                .orElseGet(Stream::empty)
+                .filter(listener -> listener.getName().equals(config.getListener()))
+                .map(ListenerStatus::getBootstrapServers)
+                .findFirst()
+                .ifPresent(bootstrapServers -> cfg.put(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers));
+        }
 
         if (truststoreRequired(cfg)) {
             if (trustManager.isResolvable()) {
