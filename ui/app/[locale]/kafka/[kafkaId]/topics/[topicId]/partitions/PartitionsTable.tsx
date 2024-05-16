@@ -168,7 +168,7 @@ export function PartitionsTable({
             case "replicas":
               return (
                 <Th key={key} dataLabel={"Replicas"} width={20}>
-                  {t('partition_table.replicas')}{" "}
+                  {t("partition_table.replicas")}{" "}
                   <Tooltip
                     content={t("partition_table.replicas_tooltip")}
                   >
@@ -179,7 +179,7 @@ export function PartitionsTable({
             case "storage":
               return (
                 <Th key={key} dataLabel={"Storage"}>
-                  {t('partition_table.size')}
+                  {t("partition_table.size")}
                 </Th>
               );
           }

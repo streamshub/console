@@ -43,9 +43,9 @@ import styles from "./home.module.css";
 export default function Home() {
   const t = useTranslations();
   const allClusters = getKafkaClusters();
-
   const productName = t('common.product');
-  const brand = t("common.brand")
+  const brand = t("common.brand");
+
   return (
     <>
       <PageSection padding={{ default: "noPadding" }} variant={"light"}>
@@ -53,10 +53,10 @@ export default function Home() {
           <div>
             <TextContent>
               <Title headingLevel={"h1"} size={"2xl"}>
-                {t.rich('homepage.page_header', { product: productName })}
+                {t.rich("homepage.page_header", { product: productName })}
               </Title>
               <Text className={"pf-v5-u-color-200"}>
-                {t('homepage.page_subtitle', { brand: brand, product: productName })}
+                {t("homepage.page_subtitle", { brand: brand, product: productName })}
               </Text>
             </TextContent>
           </div>
@@ -68,11 +68,11 @@ export default function Home() {
             <ExpandableCard
               title={
                 <TextContent>
-                  {t.rich('homepage.platform_openshift_cluster')}
+                  {t.rich("homepage.platform_openshift_cluster")}
                   <Text component={"small"}>
                     <Suspense fallback={<Skeleton width={"200px"} />}>
                       <ClustersCount clusterPromise={allClusters} />
-                      &nbsp;{t('homepage.connected_kafka_clusters')}
+                      &nbsp;{t("homepage.connected_kafka_clusters")}
                     </Suspense>
                   </Text>
                 </TextContent>
@@ -101,7 +101,7 @@ export default function Home() {
                     </Tooltip>
                   </b>
                   <Text component={"small"}>
-                    {t('homepage.last_accessed_topics', { product: productName })}
+                    {t("homepage.last_accessed_topics", { product: productName })}
                   </Text>
                 </TextContent>
               }
@@ -140,7 +140,7 @@ export default function Home() {
                       <StackItem>
                         <LabelGroup isCompact>
                           <Label isCompact color="orange">
-                            {t('homepage.documentation')}
+                            {t("homepage.documentation")}
                           </Label>
                           {/*<Label isCompact icon={<InfoCircleIcon />} color="green">*/}
                           {/*  Quick starts*/}
@@ -167,17 +167,17 @@ export default function Home() {
                         dataListCells={[
                           <DataListCell key="gs-1-1" width={2}>
                             <span id="gs-1-1">
-                              {t('homepage.openshift_overview', { product: productName })}
+                              {t("homepage.openshift_overview", { product: productName })}
                             </span>
                           </DataListCell>,
                           <DataListCell key="gs-1-2">
                             <Label isCompact={true} color={"orange"}>
-                              {t('homepage.documentation')}
+                              {t("homepage.documentation")}
                             </Label>
                           </DataListCell>,
                           <DataListCell key="gs-1-3">
                             <ExternalLink testId={"gs-1-3"} href={t("learning.links.overview")}>
-                              {t('homepage.view_documentation')}
+                              {t("homepage.view_documentation")}
                             </ExternalLink>
                           </DataListCell>,
                         ]}
@@ -190,17 +190,17 @@ export default function Home() {
                         dataListCells={[
                           <DataListCell key="gs-2-1" width={2}>
                             <span id="gs-2-1">
-                              {t('homepage.get_started_with_openshift', { product: productName })}
+                              {t("homepage.get_started_with_openshift", { product: productName })}
                             </span>
                           </DataListCell>,
                           <DataListCell key="gs-2-2">
                             <Label isCompact={true} color={"orange"}>
-                              {t('homepage.documentation')}
+                              {t("homepage.documentation")}
                             </Label>
                           </DataListCell>,
                           <DataListCell key="gs-2-3">
                             <ExternalLink testId={"gs-2-3"} href={t("learning.links.gettingStarted")}>
-                              {t('homepage.view_documentation')}
+                              {t("homepage.view_documentation")}
                             </ExternalLink>
                           </DataListCell>,
                         ]}
@@ -213,17 +213,17 @@ export default function Home() {
                         dataListCells={[
                           <DataListCell key="gs-3-1" width={2}>
                             <span id="gs-3-1">
-                              {t('homepage.connect_to_kafka_cluster')}
+                              {t("homepage.connect_to_kafka_cluster")}
                             </span>
                           </DataListCell>,
                           <DataListCell key="gs-3-2">
                             <Label isCompact={true} color={"orange"}>
-                              {t('homepage.documentation')}
+                              {t("homepage.documentation")}
                             </Label>
                           </DataListCell>,
                           <DataListCell key="gs-3-3">
                             <ExternalLink testId={"gs-3-3"} href={t("learning.links.connecting")}>
-                              {t('homepage.view_documentation')}
+                              {t("homepage.view_documentation")}
                             </ExternalLink>
                           </DataListCell>,
                         ]}
@@ -236,17 +236,17 @@ export default function Home() {
                         dataListCells={[
                           <DataListCell key="gs-4-1" width={2}>
                             <span id="gs-4-1">
-                              {t('homepage.using_topic_operator_to_manage_kafka_topic')}
+                              {t("homepage.using_topic_operator_to_manage_kafka_topic")}
                             </span>
                           </DataListCell>,
                           <DataListCell key="gs-4-2">
                             <Label isCompact={true} color={"orange"}>
-                              {t('homepage.documentation')}
+                              {t("homepage.documentation")}
                             </Label>
                           </DataListCell>,
                           <DataListCell key="gs-4-3">
                             <ExternalLink testId={"gs-4-3"} href={t("learning.links.topicOperatorUse")}>
-                              {t('homepage.view_documentation')}
+                              {t("homepage.view_documentation")}
                             </ExternalLink>
                           </DataListCell>,
                         ]}

@@ -142,16 +142,16 @@ export function TopicsTable({
           case "name":
             return (
               <Th key={key} width={30} dataLabel={"Topic"}>
-                {t('topic_name')}
+                {t("topic_name")}
               </Th>
             );
           case "status":
             return (
               <Th key={key} dataLabel={"Status"}>
-                {t('status')}{" "}
+                {t("status")}{" "}
                 <Tooltip
                   style={{ whiteSpace: "pre-line" }}
-                  content={t('topic_status_tooltip')}
+                  content={t("topic_status_tooltip")}
                 >
                   <HelpIcon />
                 </Tooltip>
@@ -160,7 +160,7 @@ export function TopicsTable({
           case "consumerGroups":
             return (
               <Th key={key} dataLabel={"Consumer groups"}>
-                {t('consumer_groups')}
+                {t("consumer_groups")}
               </Th>
             );
           case "partitions":
@@ -233,14 +233,14 @@ export function TopicsTable({
           <ActionsColumn
             items={[
               {
-                title: "Edit configuration",
+                title: t("table.actions.edit"),
                 onClick: () => onEditTopic(row),
               },
               {
                 isSeparator: true,
               },
               {
-                title: "Delete topic",
+                title: t("table.actions.delete"),
                 onClick: () => onDeleteTopic(row),
               },
             ]}

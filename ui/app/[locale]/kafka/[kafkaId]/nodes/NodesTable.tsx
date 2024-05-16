@@ -42,7 +42,6 @@ export type Node = {
 export function NodesTable({ nodes }: { nodes: Node[] }) {
 
   const t = useTranslations();
-
   const format = useFormatter();
   const formatBytes = useFormatBytes();
   return (
@@ -75,7 +74,7 @@ export function NodesTable({ nodes }: { nodes: Node[] }) {
                 {t("nodes.rack")}{" "}
                 <Tooltip
                   content={
-                    t('nodes.rack_tooltip')
+                    t("nodes.rack_tooltip")
                   }
                 >
                   <HelpIcon />

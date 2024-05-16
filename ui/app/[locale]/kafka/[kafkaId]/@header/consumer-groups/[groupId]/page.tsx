@@ -51,7 +51,7 @@ function Header({
           }
         >
           <Button isDisabled={disabled} aria-disabled={disabled} id={"reset"}>
-            {t('ConsumerGroup.reset_offset')}
+            {t("ConsumerGroup.reset_offset")}
           </Button>
         </Tooltip>,
         <Tooltip
@@ -63,7 +63,7 @@ function Header({
             aria-disabled={disabled}
             isDisabled={disabled}
           >
-            {t('ConsumerGroup.delete')}
+            {t("ConsumerGroup.delete")}
           </Button>
         </Tooltip>,
       ]}
