@@ -40,10 +40,15 @@ file and credentials to connect to the Kubernetes cluster where Strimzi and Kafk
    CONSOLE_API_SERVICE_ACCOUNT_TOKEN=<TOKEN>
    CONSOLE_API_KUBERNETES_API_SERVER_URL=https://my-kubernetes-api.example.com:6443
    ```
-   The service account token may be obtain using the `kubectl create token` command. For example, to create a token
-   that expires in 1 year:
+   The service account token may be obtain using the `kubectl create token` command. For example, to create a service account
+   named "console-server" (from [console-server.serviceaccount.yaml](./install/resources/console/console-server.serviceaccount.yaml)
+   with the correct permissions and a token that expires in 1 year ([yq](https://github.com/mikefarah/yq/releases) required):
    ```shell
-   kubectl create token <service account name> -n <service account namespace> --duration=$((365*24))h
+   export NAMESPACE=<service account namespace>
+   kubectl apply -n ${NAMESPACE} -f ./install/resources/console/console-server.clusterrole.yaml
+   kubectl apply -n ${NAMESPACE} -f ./install/resources/console/console-server.serviceaccount.yaml
+   yq '.subjects[0].namespace = strenv(NAMESPACE)' ./install/resources/console/console-server.clusterrolebinding.yaml | kubectl apply -n ${NAMESPACE} -f -
+   kubectl create token console-server -n ${NAMESPACE} --duration=$((365*24))h
    ```
 
 3. By default, the provided configuration will use the latest console release container images. If you would like to
