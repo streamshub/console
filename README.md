@@ -1,6 +1,6 @@
-# Console for Apache Kafka™ on Kubernetes
+# Console for Apache Kafka® on Kubernetes
 
-This project is a web console designed to facilitate interactions with Apache Kafka™ instances on Kubernetes, leveraging the [Strimzi](https://strimzi.io) Cluster Operator.
+This project is a web console designed to facilitate interactions with Apache Kafka® instances on Kubernetes, leveraging the [Strimzi](https://strimzi.io) Cluster Operator.
 It is composed of two main parts:
 
 - a REST API backend developed with Java and [Quarkus](https://quarkus.io/)
@@ -13,7 +13,7 @@ Please refer to the [installation README](./install/README.md) file for detailed
 ## Contributing
 
 We welcome contributions of all forms. Please see the [CONTRIBUTING](./CONTRIBUTING.md) file for how to get started.
-Join us in enhancing the capabilities of this console for Apache Kafka™ on Kubernetes.
+Join us in enhancing the capabilities of this console for Apache Kafka® on Kubernetes.
 
 ## License
 

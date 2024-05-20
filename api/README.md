@@ -5,7 +5,7 @@
 This repository contains the Console API server to interact with [Strimzi](https://strimzi.io) Kafka instances running
 in a Kubernetes cluster.
 
-The API provides a way to manage [Apache Kafka<sup>TM</sup>](https://kafka.apache.org/) topics and consumer groups, as
+The API provides a way to manage [Apache Kafka<sup>®</sup>](https://kafka.apache.org/) topics and consumer groups, as
 well as endpoints to publish and browse messages.
 
 ## Getting Started
