@@ -32,7 +32,7 @@
     "connected_kafka_clusters": "Connected Kafka clusters",
     "page_header": "Welcome to the {product} console",
     "page_subtitle": "The {brand} {product} console provides a user interface formanaging and monitoring your streaming resources",
-    "platform_openshift_cluster": "<strong>Platform: OpenShift Cluster</strong>", 
+    "platform_openshift_cluster": "<strong>Platform: OpenShift Cluster</strong>",
     "recently_viewed_topics_header": "Recently viewed topics",
     "recently_viewed_topics_header_popover": "When you start looking at specific topics through the {product} console, they'll start showing here.",
     "last_accessed_topics": "The last 5 topics this account has accessed from the {product} console.",
@@ -407,10 +407,10 @@
       "topic": "Topic",
       "partition": "Partition",
       "lag": "Lag",
-      "committed_offset": "Commited offset",
+      "committed_offset": "Committed offset",
       "committed_offset_tooltip": "The offset in the Kafka topic marking the last successfully consumed message by the consumer.",
       "end_offset": "End offset",
-      "end_offset_tooltip": "The highest offset in the Kafka topic, representing the latest available message." 
+      "end_offset_tooltip": "The highest offset in the Kafka topic, representing the latest available message."
     },
     "ConsumerGroup":{
       "reset_offset": "Reset offset",
