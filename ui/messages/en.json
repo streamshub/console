@@ -56,7 +56,9 @@
     "replicas": "Total Replicas",
     "rack": "Rack",
     "replicas_tooltip": "The overall count of partition replicas hosted by the broker. Replicas provide fault tolerance and data availability.",
-    "rack_tooltip": "Represents the ID of the rack or datacenter in which the broker resides."
+    "rack_tooltip": "Represents the ID of the rack or datacenter in which the broker resides.",
+    "broker_host_name": "<b>Broker host name</b>",
+    "broker_disk_usage": "<b>Broker disk usage</b>"
   },
   "node-config-table": {
     "no_results_title": "No properties found",

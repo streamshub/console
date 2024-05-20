@@ -137,7 +137,7 @@ export function NodesTable({ nodes }: { nodes: Node[] }) {
             <FlexItem flex={{ default: "flex_1" }} style={{ maxWidth: "50%" }}>
               <TextContent>
                 <Text>
-                  <b>Broker host name</b>
+                  {t.rich("nodes.broker_host_name")}
                 </Text>
                 <Text>
                   <ClipboardCopy
@@ -153,7 +153,7 @@ export function NodesTable({ nodes }: { nodes: Node[] }) {
             <FlexItem>
               <TextContent>
                 <Text>
-                  <b>Broker disk usage</b>
+                  {t.rich("nodes.broker_disk_usage")}
                 </Text>
               </TextContent>
               <div style={{ width: 350, height: 200 }}>
