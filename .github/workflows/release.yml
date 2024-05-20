@@ -46,6 +46,7 @@ jobs:
           export QUARKUS_CONTAINER_IMAGE_USERNAME="${{ secrets.IMAGE_REPO_USERNAME }}"
           export QUARKUS_CONTAINER_IMAGE_PASSWORD="${{ secrets.IMAGE_REPO_PASSWORD }}"
           export QUARKUS_CONTAINER_IMAGE_PUSH="true"
+          export QUARKUS_CONTAINER_IMAGE_ADDITIONAL_TAGS=latest
           export GIT_REVISION=$(git rev-parse --short release)
           # Build and push the release images using the commit tagged in `release:prepare`
           mvn -B -P docker release:perform -f api/pom.xml
@@ -63,7 +64,8 @@ jobs:
           context: ui/
           push: true
           tags: |
-            ${{ secrets.IMAGE_REPO_HOSTNAME }}/${{ secrets.IMAGE_REPO_NAMESPACE }}/ui:${{steps.metadata.outputs.current-version}}
+            ${{ secrets.IMAGE_REPO_HOSTNAME }}/${{ secrets.IMAGE_REPO_NAMESPACE }}/console-ui:${{steps.metadata.outputs.current-version}}
+            ${{ secrets.IMAGE_REPO_HOSTNAME }}/${{ secrets.IMAGE_REPO_NAMESPACE }}/console-ui:latest
 
       - name: Push Release Tag
         run: |

@@ -34,6 +34,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import com.github.eyefloaters.console.api.config.ConsoleConfig;
 import com.github.eyefloaters.console.api.service.RecordService;
 import com.github.eyefloaters.console.kafka.systemtest.TestPlainProfile;
 import com.github.eyefloaters.console.kafka.systemtest.deployment.DeploymentManager;
@@ -71,6 +72,9 @@ class RecordsResourceIT {
     Config config;
 
     @Inject
+    ConsoleConfig consoleConfig;
+
+    @Inject
     KubernetesClient client;
 
     @DeploymentManager.InjectDeploymentManager
@@ -85,7 +89,10 @@ class RecordsResourceIT {
     @BeforeEach
     void setup() throws IOException {
         URI bootstrapServers = URI.create(deployments.getExternalBootstrapServers());
-        URI randomBootstrapServers = URI.create(config.getValue("console.kafka.testk2.bootstrap.servers", String.class));
+        URI randomBootstrapServers = URI.create(consoleConfig.getKafka()
+                .getCluster("default/test-kafka2")
+                .map(k -> k.getProperties().get("bootstrap.servers"))
+                .orElseThrow());
 
         topicUtils = new TopicHelper(bootstrapServers, config, null);
         topicUtils.deleteAllTopics();

@@ -64,6 +64,7 @@ import org.mockito.stubbing.Answer;
 import org.skyscreamer.jsonassert.JSONAssert;
 import org.skyscreamer.jsonassert.JSONCompareMode;
 
+import com.github.eyefloaters.console.api.config.ConsoleConfig;
 import com.github.eyefloaters.console.kafka.systemtest.TestPlainProfile;
 import com.github.eyefloaters.console.kafka.systemtest.deployment.DeploymentManager;
 import com.github.eyefloaters.console.kafka.systemtest.utils.ConsumerUtils;
@@ -119,6 +120,9 @@ class TopicsResourceIT {
     Config config;
 
     @Inject
+    ConsoleConfig consoleConfig;
+
+    @Inject
     KubernetesClient client;
 
     @Inject
@@ -142,7 +146,10 @@ class TopicsResourceIT {
     @BeforeEach
     void setup() throws IOException {
         bootstrapServers1 = URI.create(deployments.getExternalBootstrapServers());
-        URI randomBootstrapServers = URI.create(config.getValue("console.kafka.testk2.bootstrap.servers", String.class));
+        URI randomBootstrapServers = URI.create(consoleConfig.getKafka()
+                .getCluster("default/test-kafka2")
+                .map(k -> k.getProperties().get("bootstrap.servers"))
+                .orElseThrow());
 
         topicUtils = new TopicHelper(bootstrapServers1, config, null);
         topicUtils.deleteAllTopics();

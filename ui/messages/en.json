@@ -290,7 +290,7 @@
     "kafka_version": "Kafka version",
     "project": "Project",
     "connection_not_configured": "Connection not configured",
-    "brokers_link": "Brokers"
+    "brokers_link": "brokers"
   },
   "ColumnsModal": {
     "title": "Manage columns",

@@ -4,14 +4,8 @@ ARG console_mode=read-only
 FROM registry.access.redhat.com/ubi9/nodejs-18 AS deps
 USER 0
 WORKDIR /app
-RUN npm install -g yarn
-COPY package.json yarn.lock* package-lock.json* pnpm-lock.yaml* ./
-RUN \
-  if [ -f yarn.lock ]; then yarn --frozen-lockfile; \
-  elif [ -f package-lock.json ]; then npm ci --omit=dev; \
-  elif [ -f pnpm-lock.yaml ]; then yarn global add pnpm && pnpm i --frozen-lockfile; \
-  else echo "Lockfile not found." && exit 1; \
-  fi
+COPY package.json package-lock.json* ./
+RUN npm ci --omit=dev
 
 FROM registry.access.redhat.com/ubi9/nodejs-18 AS builder
 USER 0

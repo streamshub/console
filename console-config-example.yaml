@@ -1,0 +1,28 @@
+kafka:
+  clusters:
+    - name: my-kafka1 # name of the Strimzi Kafka CR
+      namespace: my-namespace1 # namespace of the Strimzi Kafka CR
+      listener: "secure" # name of the listener to use for connections from the console
+      # `properties` contains keys/values to use for any Kafka connection
+      properties:
+        security.protocol: SASL_SSL
+        sasl.mechanism: SCRAM-SHA-512
+        bootstrap.servers: my-kafka1.cloud.example.com:9093 # optional, if omitted the bootstrap servers from the Strimzi Kafka CR are used
+        sasl.jaas.config: org.apache.kafka.common.security.scram.ScramLoginModule required username="kafka1-user" password="sCr@m!";
+      # `adminProperties` contains keys/values to use for Admin client Kafka connections.
+      # Properties specified here override properties of the same name in `properties`
+      adminProperties: {}
+      # `consumerProperties` contains keys/values to use for Consumer client Kafka connections.
+      # Properties specified here override properties of the same name in `properties`
+      consumerProperties: {}
+      # `producerProperties` contains keys/values to use for Producer client Kafka connections.
+      # Properties specified here override properties of the same name in `properties`
+      producerProperties: {}
+
+    - name: my-kafka2
+      namespace: my-namespace2
+      listener: "secure"
+      properties:
+        security.protocol: SASL_SSL
+        sasl.mechanism: SCRAM-SHA-512
+        sasl.jaas.config: org.apache.kafka.common.security.scram.ScramLoginModule required username="kafka2-user" password="sCr@m!";

@@ -6,6 +6,7 @@ CONSOLE_INSTALL_PATH="$(cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P)"
 RESOURCE_PATH=${CONSOLE_INSTALL_PATH}/resources
 
 export NAMESPACE="${1?Please provide the deployment namespace}"
+export CLUSTER_DOMAIN="${2:-}"
 source ${CONSOLE_INSTALL_PATH}/_common.sh
 
 if ! ${KUBE} get crd prometheuses.monitoring.coreos.com >/dev/null ; then
@@ -26,3 +27,9 @@ ${KUBE} apply -n ${NAMESPACE} -f ${RESOURCE_PATH}/prometheus/kubernetes-scrape-c
 
 echo -e "${INFO} Apply Prometheus instance"
 ${KUBE} apply -n ${NAMESPACE} -f ${RESOURCE_PATH}/prometheus/console-prometheus.prometheus.yaml
+${KUBE} apply -n ${NAMESPACE} -f ${RESOURCE_PATH}/prometheus/console-prometheus.service.yaml
+
+if [ -n "${CLUSTER_DOMAIN}" ] ; then
+    # Replace env variables
+    ${YQ} '(.. | select(tag == "!!str")) |= envsubst(ne)' ${RESOURCE_PATH}/prometheus/console-prometheus.ingress.yaml | ${KUBE} apply -n ${NAMESPACE} -f -
+fi

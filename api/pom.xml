@@ -6,7 +6,7 @@
     <groupId>com.github.eyefloaters</groupId>
     <artifactId>console-api</artifactId>
     <packaging>jar</packaging>
-    <version>0.0.36-SNAPSHOT</version>
+    <version>0.1.0-SNAPSHOT</version>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -322,6 +322,8 @@
                         </goals>
                         <configuration>
                             <systemProperties>
+                                <quarkus.jacoco.reuse-data-file>true</quarkus.jacoco.reuse-data-file>
+                                <quarkus.jacoco.report>false</quarkus.jacoco.report>
                                 <quarkus.docker.dockerfile-jvm-path>src/main/docker/Dockerfile</quarkus.docker.dockerfile-jvm-path>
                             </systemProperties>
                         </configuration>

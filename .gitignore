@@ -21,6 +21,10 @@ release.properties
 .factorypath
 .vscode
 
-
 # env files
 .env*
+
+# User-provided and generated compose configurations
+/compose-runtime.env
+/console-config.yaml
+/compose.env
