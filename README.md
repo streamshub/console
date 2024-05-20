@@ -34,11 +34,20 @@ file and credentials to connect to the Kubernetes cluster where Strimzi and Kafk
    in a file `console-config.yaml` in the repository root. The `compose.yaml` file expects this location to be used and
    and difference in name or location requires an adjustment to the compose file.
 
-2. Provide the API server endpoint and service account token that you would like to use to connect to the Kubernetes cluster. These
-   may be placed in a `compose.env` file that will be detected when starting the console.
+2. Install the prerequisite software into the Kubernetes cluster. This step assumes none have yet been installed.
+   ```shell
+   ./install/000-install-dependency-operators.sh <your namespace>
+   ./install/001-deploy-prometheus.sh <your namespace> <your cluster base domain>
+   ./install/002-deploy-console-kafka.sh <your namespace> <your cluster base domain>
+   ```
+   Note that the Prometheus instance will be available at `http://console-prometheus.<your cluster base domain>` when this step
+   completes.
+
+3. Provide the Prometheus endpoint, the API server endpoint, and the service account token that you would like to use to connect to the Kubernetes cluster. These may be placed in a `compose.env` file that will be detected when starting the console.
    ```
    CONSOLE_API_SERVICE_ACCOUNT_TOKEN=<TOKEN>
    CONSOLE_API_KUBERNETES_API_SERVER_URL=https://my-kubernetes-api.example.com:6443
+   CONSOLE_METRICS_PROMETHEUS_URL=http://console-prometheus.<your cluster base domain>
    ```
    The service account token may be obtain using the `kubectl create token` command. For example, to create a service account
    named "console-server" (from [console-server.serviceaccount.yaml](./install/resources/console/console-server.serviceaccount.yaml)
@@ -51,13 +60,13 @@ file and credentials to connect to the Kubernetes cluster where Strimzi and Kafk
    kubectl create token console-server -n ${NAMESPACE} --duration=$((365*24))h
    ```
 
-3. By default, the provided configuration will use the latest console release container images. If you would like to
+4. By default, the provided configuration will use the latest console release container images. If you would like to
    build your own images with changes you've made locally, you may also set the `CONSOLE_API_IMAGE` and `CONSOLE_UI_IMAGE`
    in your `compose.env` and build them with `make container-images`
 
-4. Start the environment with `make compose-up`.
+5. Start the environment with `make compose-up`.
 
-5. When finished with the local console process, you may run `make compose-down` to clean up.
+6. When finished with the local console process, you may run `make compose-down` to clean up.
 
 ## Contributing
 
