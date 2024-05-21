@@ -27,7 +27,7 @@ Please refer to the [installation README](./install/README.md) file for detailed
 ### Run locally
 
 Running the console locally requires the use of a remote or locally-running Kubernetes cluster that hosts the Strimzi Kafka operator
-and any Apache Kafka™ clusters that will be accessed from the console. To get started, you will need to provide a console configuration
+and any Apache Kafka® clusters that will be accessed from the console. To get started, you will need to provide a console configuration
 file and credentials to connect to the Kubernetes cluster where Strimzi and Kafka are available.
 
 1. Using the [console-config-example.yaml](./console-config-example.yaml) file as an example, create your own configuration
