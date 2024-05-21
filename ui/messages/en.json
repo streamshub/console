@@ -134,7 +134,8 @@
       "size": "Size",
       "partition_empty_title": "No results",
       "partition_empty_state_body": "No partitions matching the filter.",
-      "reset_filter": "Reset filters"
+      "reset_filter": "Reset filters",
+      "no_partition": "No partitions"
     }
   },
   "topic-creator": {

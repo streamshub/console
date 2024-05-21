@@ -83,10 +83,7 @@ export function MembersTable({
                 {t("overall_lag")}{" "}
                 <Tooltip
                   style={{ whiteSpace: "pre-line" }}
-                  content={`The cumulative lag across all partitions assigned to the consumer group.
-                       Consumer lag is the difference in the rate of production and consumption of messages.
-                       Specifically, consumer lag for a given consumer in a group indicates the delay between the last message in the partition and the message being currently picked up by that consumer.`}
-                >
+                  content={t("overall_lag_tooltip")}>
                   <HelpIcon />
                 </Tooltip>
               </Th>

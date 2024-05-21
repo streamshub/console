@@ -121,7 +121,7 @@ export function PartitionsTable({
         page={1}
         onPageChange={() => { }}
         data={sortedData}
-        emptyStateNoData={<div>No partitions</div>}
+        emptyStateNoData={<div>{t("partition_table.no_partition")}</div>}
         emptyStateNoResults={
           <NoResultsEmptyState onReset={() => setFilter("all")} />
         }
