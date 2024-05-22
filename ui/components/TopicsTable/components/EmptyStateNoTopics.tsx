@@ -39,7 +39,7 @@ export function EmptyStateNoTopics({
             </ButtonLink>
           )}
           <Button variant="secondary" onClick={onShowHiddenTopics}>
-            {t("EmptyStateNoTopics.show_hidden_topics")}
+            {t("EmptyStateNoTopics.show_internal_topics")}
           </Button>
         </EmptyStateActions>
       </EmptyStateFooter>
