@@ -135,7 +135,11 @@
       "partition_empty_title": "No results",
       "partition_empty_state_body": "No partitions matching the filter.",
       "reset_filter": "Reset filters",
-      "no_partition": "No partitions"
+      "no_partition": "No partitions",
+      "broker_id": "Broker ID",
+      "partition_leader": "Partition leader",
+      "replica": "Replica"
+
     }
   },
   "topic-creator": {

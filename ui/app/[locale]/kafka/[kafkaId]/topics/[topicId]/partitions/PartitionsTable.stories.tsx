@@ -36,7 +36,7 @@ const sampleTopicWithData = {
       },
       {
         partition: 2,
-        status: "Offline",
+        status: "FullyReplicated",
         leaderId: 0,
         replicas: [
           { nodeId: 0, inSync: true },
