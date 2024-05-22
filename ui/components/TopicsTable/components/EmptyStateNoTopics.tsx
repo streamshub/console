@@ -1,4 +1,5 @@
 import { ButtonLink } from "@/components/Navigation/ButtonLink";
+import { ExternalLink } from "@/components/Navigation/ExternalLink";
 import {
   Button,
   EmptyState,
@@ -41,6 +42,11 @@ export function EmptyStateNoTopics({
           <Button variant="secondary" onClick={onShowHiddenTopics}>
             {t("EmptyStateNoTopics.show_internal_topics")}
           </Button>
+        </EmptyStateActions>
+        <EmptyStateActions>
+          <ExternalLink testId={"create-topic"} href={t("EmptyStateNoTopics.create_topic_external_link")}>
+            {t("EmptyStateNoTopics.view_documentation")}
+          </ExternalLink>
         </EmptyStateActions>
       </EmptyStateFooter>
     </EmptyState>
