@@ -369,7 +369,10 @@
   },
   "EmptyStateNoTopics": {
     "to_get_started_create_your_first_topic": "To get started, create your first topic",
-    "create_a_topic": "Create a topic"
+    "create_a_topic": "Create a topic",
+    "show_internal_topics": "Show internal topics",
+    "view_documentation": "Learn about configuring Kafka topics",
+    "create_topic_external_link": "https://docs.redhat.com/en/documentation/red_hat_amq_streams/2.6/html-single/deploying_and_managing_amq_streams_on_openshift/index#proc-configuring-kafka-topic-str"
   },
   "ApplicationError": {
     "body": "Try clicking the button below, or refreshing the page. If the problem persists, contact your organization administrator.",
