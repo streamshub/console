@@ -365,7 +365,8 @@
     "broker_node_legend_followers": "Broker {node} followers",
     "broker_node_voronoi_all": "{name} total partitions: {value}",
     "broker_node_voronoi_leaders": "{name} leaders: {value}",
-    "broker_node_voronoi_followers": "{name} followers: {value}"
+    "broker_node_voronoi_followers": "{name} followers: {value}",
+    "broker_node_count": "Broker {node}: {count} partitions ({percentage}%)"
   },
   "EmptyStateNoTopics": {
     "to_get_started_create_your_first_topic": "To get started, create your first topic",

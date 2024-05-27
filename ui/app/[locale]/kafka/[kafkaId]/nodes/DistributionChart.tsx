@@ -144,8 +144,7 @@ export function DistributionChart({
                 data={Object.keys(data).map((node) => {
                   const count = getCount(data[node]);
                   const percentage = getPercentage(count);
-                  const name = `Broker ${node}: ${count} partitions (${percentage}%)`;
-                  return { name };
+                  return { name: t("DistributionChart.broker_node_count", { node, count, percentage }) };
                 })}
                 itemsPerRow={width > 600 ? 3 : 1}
               />
