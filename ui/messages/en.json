@@ -297,7 +297,8 @@
     "kafka_version": "Kafka version",
     "project": "Project",
     "connection_not_configured": "Connection not configured",
-    "brokers_link": "brokers"
+    "brokers_link": "brokers",
+    "online": "online"
   },
   "ColumnsModal": {
     "title": "Manage columns",
