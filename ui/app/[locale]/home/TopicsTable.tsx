@@ -25,13 +25,13 @@ export function TopicsTable({ topics }: TopicsTableProps) {
           case "name":
             return (
               <Th key={key} width={70} dataLabel={"Topic"}>
-                Name
+                {t("recently_viewed_topics.topic_name")}
               </Th>
             );
           case "cluster":
             return (
               <Th key={key} dataLabel={"Cluster"}>
-                Cluster
+                {t("recently_viewed_topics.cluster")}
               </Th>
             );
         }

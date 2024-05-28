@@ -139,7 +139,10 @@
       "broker_id": "Broker ID",
       "partition_leader": "Partition leader",
       "replica": "Replica"
-
+    },
+    "recently_viewed_topics": {
+      "topic_name": "Name",
+      "cluster": "Cluster"
     }
   },
   "topic-creator": {
@@ -357,7 +360,25 @@
     "back": "Back",
     "review_and_finish": "Review and finish",
     "review_and_finish_tooltip": "Topic can now be created. You can continue to configure your topic, or you can skip ahead to the review step.",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "topic_name_field": "Topic name",
+    "topic_name_field_description": "Unique name used to recognize your topic. The topic name is also used by your producers and consumers as part of the connection information,so make it something easy to recognize.",
+    "length_invalid_helper_text": "Must be at least 3 characters",
+    "name_invalid_helper_text": "Cannot be \".\" or \"..\"",
+    "format_invalid_helper_text": "Must be letters (Aa-Zz), numbers, underscores ( _ ), periods ( .), or hyphens ( - )",
+    "topic_partition_field": "Partitions",
+    "topic_partition_field_description": "An ordered list of messages. One or more partitions make up a topic.Partitions are distributed across the brokers to increase the scalability of your topic. You can also use them to distribute messages across the members of the consumer group.",
+    "topic_partition_helper_text": "One partition is sufficient for getting started, but production systems often have more.",
+    "topic_replica_field": "Replicas",
+    "topic_replica_field_description": "How many copies of a topic will be made for high availability. The partitions of each topic can be replicated across a configurable number of brokers.",
+    "topic_replica_helper_text": "Replicas are copies of partitions in a topic. Partition replicas are distributed over multiple brokers in the cluster to ensure topic availability if a broker fails. When a follower replica is in sync with a partition leader, the follower replica can become the new partition leader if needed. (replication.factor)",
+    "review_table": {
+      "property": "Property",
+      "new_value": "New value",
+      "initial_value": "Initial value"
+    },
+    "step_option_title": "Options",
+    "step_option_description": "Configure other topic configuration options"
   },
   "DistributionChart": {
     "partitions_distribution_of_total": "Partitions distribution (% of total)",
