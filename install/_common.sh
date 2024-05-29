@@ -31,3 +31,15 @@ else
         echo -e "${WARN} Namespace '${NAMESPACE}' could not be created"
     fi
 fi
+
+OLM=$(kubectl get crd | grep operators.coreos.com) || :
+
+if [ "${OLM}" == "" ] ; then
+    echo -e "${ERROR} Operator Lifecycle Manager not found, please install it.
+
+$ operator-sdk olm install
+
+For more info please visit https://sdk.operatorframework.io/
+"
+    exit 1
+fi
