@@ -2,9 +2,9 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { DistributionChart } from "./DistributionChart";
 
 const sampleData = {
-  1: { leaders: 23, followers: 47 },
-  2: { leaders: 24, followers: 46 },
-  3: { leaders: 50, followers: 20 },
+  1: { leaders: 20, followers: 80 },
+  2: { leaders: 30, followers: 60 },
+  3: { leaders: 45, followers: 65 },
 };
 
 const meta: Meta<typeof DistributionChart> = {
