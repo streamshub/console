@@ -7,6 +7,7 @@ import {
   PageBreadcrumb,
   PageGroup,
 } from "@/libs/patternfly/react-core";
+import { useTranslations } from "next-intl";
 import { notFound } from "next/navigation";
 import { PropsWithChildren, ReactNode, Suspense } from "react";
 
@@ -22,12 +23,13 @@ export default function KafkaLayout({
   activeBreadcrumb: ReactNode;
   modal: ReactNode;
 }>) {
+  const t = useTranslations();
   return (
     <>
       <PageGroup stickyOnBreakpoint={{ default: "top" }}>
         <PageBreadcrumb>
           <Breadcrumb>
-            <BreadcrumbItem>Kafka clusters</BreadcrumbItem>
+            <BreadcrumbItem>{t("AppLayout.kafka_clusters")}</BreadcrumbItem>
             <BreadcrumbItem>
               <Suspense>
                 <ConnectedKafkaBreadcrumbItem

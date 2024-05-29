@@ -13,6 +13,7 @@ import {
   TextContent,
   Title,
 } from "@patternfly/react-core";
+import { useTranslations } from "next-intl";
 
 export function StepReview({
   name,
@@ -29,32 +30,33 @@ export function StepReview({
   initialOptions: ConfigMap;
   error: TopicMutateError | "unknown" | undefined;
 }) {
+  const t = useTranslations();
   const optionEntries = Object.entries(options);
   return (
     <Grid hasGutter={true}>
       <GridItem>
-        <Title headingLevel={"h2"}>Review your topic</Title>
+        <Title headingLevel={"h2"}>{t("CreateTopic.review_topic")}</Title>
       </GridItem>
       <GridItem>
-        <Title headingLevel={"h3"}>Topic details</Title>
+        <Title headingLevel={"h3"}>{t("CreateTopic.topic_details")}</Title>
       </GridItem>
       {error && <Error error={error} />}
       <GridItem>
         <DescriptionList isHorizontal>
           <DescriptionListGroup>
-            <DescriptionListTerm>Name</DescriptionListTerm>
+            <DescriptionListTerm>{t("CreateTopic.name")}</DescriptionListTerm>
             <DescriptionListDescription>
-              {name || <i>empty</i>}
+              {name || <i>{t("CreateTopic.empty")}</i>}
             </DescriptionListDescription>
           </DescriptionListGroup>
           <DescriptionListGroup>
-            <DescriptionListTerm>Partitions</DescriptionListTerm>
+            <DescriptionListTerm>{t("CreateTopic.topic_partition_field")}</DescriptionListTerm>
             <DescriptionListDescription>
               <Number value={partitions} />
             </DescriptionListDescription>
           </DescriptionListGroup>
           <DescriptionListGroup>
-            <DescriptionListTerm>Replicas</DescriptionListTerm>
+            <DescriptionListTerm>{t("CreateTopic.topic_replica_field")}</DescriptionListTerm>
             <DescriptionListDescription>
               <Number value={replicas} />
             </DescriptionListDescription>
@@ -62,14 +64,14 @@ export function StepReview({
         </DescriptionList>
       </GridItem>
       <GridItem>
-        <Title headingLevel={"h3"}>Options</Title>
+        <Title headingLevel={"h3"}>{t("CreateTopic.step_option_title")}</Title>
       </GridItem>
       <GridItem>
         {optionEntries.length > 0 ? (
           <ReviewTable options={options} initialOptions={initialOptions} />
         ) : (
           <TextContent>
-            <Text component={"small"}>No advanced options specified.</Text>
+            <Text component={"small"}>{t("CreateTopic.no_advanced_options_specified")}</Text>
           </TextContent>
         )}
       </GridItem>

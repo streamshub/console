@@ -378,7 +378,12 @@
       "initial_value": "Initial value"
     },
     "step_option_title": "Options",
-    "step_option_description": "Configure other topic configuration options"
+    "step_option_description": "Configure other topic configuration options",
+    "review_topic": "Review your topic",
+    "name": "Name",
+    "empty": "Empty",
+    "no_advanced_options_specified": "No advanced options specified."
+
   },
   "DistributionChart": {
     "partitions_distribution_of_total": "Partitions distribution (% of total)",
