@@ -30,6 +30,7 @@ export function DistributionChart({
   const t = useTranslations();
   const [containerRef, width] = useChartWidth();
   const [filter, setFilter] = useState<"all" | "leaders" | "followers">("all");
+
   const allCount = Object.values(data).reduce(
     (acc, v) => (v.followers ?? 0) + (v.leaders ?? 0) + acc,
     0,
@@ -42,6 +43,29 @@ export function DistributionChart({
     (acc, v) => (v.followers ?? 0) + acc,
     0,
   );
+
+  const getCount = (nodeData: { leaders?: number; followers?: number }) => {
+    switch (filter) {
+      case "leaders":
+        return nodeData.leaders ?? 0;
+      case "followers":
+        return nodeData.followers ?? 0;
+      default:
+        return (nodeData.leaders ?? 0) + (nodeData.followers ?? 0);
+    }
+  };
+
+  const getPercentage = (count: number) => {
+    switch (filter) {
+      case "leaders":
+        return ((count / leadersCount) * 100).toFixed(2);
+      case "followers":
+        return ((count / followersCount) * 100).toFixed(2);
+      default:
+        return ((count / allCount) * 100).toFixed(2);
+    }
+  };
+
   return allCount > 0 ? (
     <Card className={"pf-v5-u-mb-lg"}>
       <CardHeader>
@@ -117,30 +141,10 @@ export function DistributionChart({
             legendComponent={
               <ChartLegend
                 orientation={"horizontal"}
-                data={Object.keys(data).flatMap((node) => {
-                  const name = (() => {
-                    switch (filter) {
-                      case "followers":
-                        return t(
-                          "DistributionChart.broker_node_legend_followers",
-                          { node },
-                        );
-                      case "leaders":
-                        return t(
-                          "DistributionChart.broker_node_legend_leaders",
-                          { node },
-                        );
-                      default:
-                        return t("DistributionChart.broker_node_legend_all", {
-                          node,
-                        });
-                    }
-                  })();
-                  return [
-                    {
-                      name,
-                    },
-                  ];
+                data={Object.keys(data).map((node) => {
+                  const count = getCount(data[node]);
+                  const percentage = getPercentage(count);
+                  return { name: t("DistributionChart.broker_node_count", { node, count, percentage }) };
                 })}
                 itemsPerRow={width > 600 ? 3 : 1}
               />
@@ -171,11 +175,7 @@ export function DistributionChart({
                     {
                       name: `Broker ${node}`,
                       x: "x",
-                      y: {
-                        all: (data.leaders ?? 0) + (data.followers ?? 0),
-                        leaders: data.leaders,
-                        followers: data.followers,
-                      }[filter || "all"],
+                      y: getCount(data),
                     },
                   ]}
                 />
