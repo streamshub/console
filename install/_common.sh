@@ -5,14 +5,14 @@ INFO="[ \033[38;5;33mINFO${NC} ]"
 WARN="[ \033[38;5;208mWARN${NC} ]"
 ERROR="[ \033[38;5;196mERROR${NC} ]"
 
-KUBE="$(which oc 2>/dev/null || which kubectl 2>/dev/null)"
+KUBE="$(which oc 2>/dev/null || which kubectl 2>/dev/null)" || :
 
 if [ "${KUBE}" == "" ] ; then
     echo -e "${ERROR} Neither 'oc' or 'kubectl' command line utilities found on the PATH"
     exit 1
 fi
 
-YQ="$(which yq 2>/dev/null)"
+YQ="$(which yq 2>/dev/null)" || :
 
 if [ "${YQ}" == "" ] ; then
     echo -e "${ERROR} 'yq' command line utility found on the PATH"
