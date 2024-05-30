@@ -100,13 +100,13 @@ export function ClustersTable({
         <ActionsColumn
           items={[
             {
-              title: "Connection details",
+              title: t("ClustersTable.connection_details"),
               onClick: () => {
                 open(row.id);
               },
             },
             {
-              title: "View in OpenShift console",
+              title: t("ClustersTable.view_openshift_console"),
               icon: <ExternalLinkAltIcon />,
               isDisabled: true,
             },
