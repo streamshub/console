@@ -29,32 +29,32 @@ type Story = StoryObj<typeof ClustersTable>;
 
 const clustersData = [
   {
-    id: '1',
+    id: "1",
     attributes: {
-      name: 'Cluster 1',
-      kafkaVersion: '2.8.0',
-      namespace: 'default',
+      name: "Kafka1",
+      kafkaVersion: "3.5.0",
+      namespace: "eyefloaters-dev",
     },
     meta: {
       configured: true,
     },
     extra: {
       nodes: Promise.resolve({
-        online: 3,
-        count: 5,
+        online: 1,
+        count: 3,
       }),
       consumerGroupsCount: Promise.resolve(10),
     },
   },
   {
-    id: '2',
+    id: "2",
     attributes: {
-      name: 'Cluster 2',
-      kafkaVersion: '2.7.1',
-      namespace: 'development',
+      name: "kafka2",
+      kafkaVersion: "3.6.0",
+      namespace: "eyefloaters-dev",
     },
     meta: {
-      configured: true,
+      configured: false,
     },
     extra: {
       nodes: Promise.resolve({
