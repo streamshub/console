@@ -300,7 +300,6 @@
     "kafka_version": "Kafka version",
     "project": "Project",
     "connection_not_configured": "Connection not configured",
-    "brokers_link": "brokers",
     "online": "online",
     "connection_details": "Connection details",
     "view_openshift_console": "View in OpenShift console"

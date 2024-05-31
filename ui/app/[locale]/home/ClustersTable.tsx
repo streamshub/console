@@ -133,7 +133,7 @@ async function NodesCell({
       <Number value={count} />
       &nbsp;{t("ClustersTable.online")}&nbsp;
       <Link href={`/kafka/${kafkaId}/nodes`}>
-        {t("ClustersTable.brokers_link")}
+        {t("ClustersTable.brokers")}
       </Link>
     </>
   );
