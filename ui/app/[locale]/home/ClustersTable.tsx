@@ -100,7 +100,7 @@ export function ClustersTable({
         <ActionsColumn
           items={[
             {
-              title: "Connection details",
+              title: t("ClustersTable.connection_details"),
               onClick: () => {
                 open(row.id);
               },
