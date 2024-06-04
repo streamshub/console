@@ -121,7 +121,7 @@ export function PartitionsTable({
         page={1}
         onPageChange={() => { }}
         data={sortedData}
-        emptyStateNoData={<div>No partitions</div>}
+        emptyStateNoData={<div>{t("partition_table.no_partition")}</div>}
         emptyStateNoResults={
           <NoResultsEmptyState onReset={() => setFilter("all")} />
         }
@@ -218,9 +218,9 @@ export function PartitionsTable({
                     <Tooltip
                       content={
                         <>
-                          Broker ID: {leader.nodeId}
+                          {t("partition_table.broker_id")}: {leader.nodeId}
                           <br />
-                          Partition leader
+                          {t("partition_table.preferred_leader")}
                         </>
                       }
                     >
@@ -248,9 +248,9 @@ export function PartitionsTable({
                           key={idx}
                           content={
                             <>
-                              Broker ID: {r.nodeId}
+                              {t("partition_table.broker_id")}: {r.nodeId}
                               <br />
-                              Replica{" "}
+                              {t("partition_table.replica")}{" "}
                               {r.inSync ? "in-sync" : "under replicated"}
                             </>
                           }

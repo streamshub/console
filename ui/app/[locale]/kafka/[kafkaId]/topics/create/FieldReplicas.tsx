@@ -9,6 +9,7 @@ import {
   TextContent,
   Title,
 } from "@patternfly/react-core";
+import { useTranslations } from "next-intl";
 
 export function FieldReplicas({
   replicas,
@@ -23,14 +24,13 @@ export function FieldReplicas({
   showErrors: boolean;
   backendError: string | false;
 }) {
+  const t = useTranslations();
   return (
-    <FormSection>
+    < FormSection >
       <TextContent>
-        <Title headingLevel={"h3"}>Replicas</Title>
+        <Title headingLevel={"h3"}>{t("CreateTopic.topic_replica_field")}</Title>
         <Text component={"small"}>
-          How many copies of a topic will be made for high availability. The
-          partitions of each topic can be replicated across a configurable
-          number of brokers.
+          {t("CreateTopic.topic_replica_field_description")}
         </Text>
       </TextContent>
       <FormGroup label="Replicas" isRequired fieldId="topic-replicas">
@@ -54,11 +54,7 @@ export function FieldReplicas({
         <FormHelperText>
           <HelperText id={"topic-replicas-helper"}>
             <HelperTextItem variant={"indeterminate"}>
-              Replicas are copies of partitions in a topic. Partition replicas
-              are distributed over multiple brokers in the cluster to ensure
-              topic availability if a broker fails. When a follower replica is
-              in sync with a partition leader, the follower replica can become
-              the new partition leader if needed. (replication.factor)
+              {t("CreateTopic.topic_replica_helper_text")}
             </HelperTextItem>
             {backendError && (
               <HelperTextItem isDynamic variant={"error"} component={"li"}>
