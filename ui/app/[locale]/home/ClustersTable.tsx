@@ -100,13 +100,13 @@ export function ClustersTable({
         <ActionsColumn
           items={[
             {
-              title: "Connection details",
+              title: t("ClustersTable.connection_details"),
               onClick: () => {
                 open(row.id);
               },
             },
             {
-              title: "View in OpenShift console",
+              title: t("ClustersTable.view_openshift_console"),
               icon: <ExternalLinkAltIcon />,
               isDisabled: true,
             },
@@ -131,9 +131,9 @@ async function NodesCell({
       <Number value={online} />
       /
       <Number value={count} />
-      &nbsp;online&nbsp;
+      &nbsp;{t("ClustersTable.online")}&nbsp;
       <Link href={`/kafka/${kafkaId}/nodes`}>
-        {t("ClustersTable.brokers_link")}
+        {t("ClustersTable.brokers")}
       </Link>
     </>
   );

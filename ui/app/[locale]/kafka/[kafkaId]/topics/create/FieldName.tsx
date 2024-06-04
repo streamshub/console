@@ -9,6 +9,7 @@ import {
   TextInput,
   Title,
 } from "@patternfly/react-core";
+import { useTranslations } from "next-intl";
 
 export function FieldName({
   name,
@@ -25,15 +26,14 @@ export function FieldName({
   formatInvalid: boolean;
   backendError: string | false;
 }) {
+  const t = useTranslations();
   const showErrors = name !== "";
   return (
     <FormSection>
       <TextContent>
-        <Title headingLevel={"h3"}>Topic name</Title>
+        <Title headingLevel={"h3"}>{t("CreateTopic.topic_name_field")}</Title>
         <Text component={"small"}>
-          Unique name used to recognize your topic. The topic name is also used
-          by your producers and consumers as part of the connection information,
-          so make it something easy to recognize.
+          {t("CreateTopic.topic_name_field_description")}
         </Text>
       </TextContent>
       <FormGroup label="Topic name" isRequired fieldId="topic-name">
@@ -47,7 +47,7 @@ export function FieldName({
           onChange={(_, value) => onChange(value)}
           validated={
             showErrors &&
-            (nameInvalid || lengthInvalid || formatInvalid || backendError)
+              (nameInvalid || lengthInvalid || formatInvalid || backendError)
               ? "error"
               : "default"
           }
@@ -59,22 +59,21 @@ export function FieldName({
               variant={showErrors && lengthInvalid ? "error" : "indeterminate"}
               component="li"
             >
-              Must be at least 3 characters
+              {t("CreateTopic.length_invalid_helper_text")}
             </HelperTextItem>
             <HelperTextItem
               isDynamic
               variant={showErrors && nameInvalid ? "error" : "indeterminate"}
               component="li"
             >
-              Cannot be &quot;.&quot; or &quot;..&quot;
+              {t("CreateTopic.name_invalid_helper_text")}
             </HelperTextItem>
             <HelperTextItem
               isDynamic
               variant={showErrors && formatInvalid ? "error" : "indeterminate"}
               component={"li"}
             >
-              Must be letters (Aa-Zz), numbers, underscores ( _ ), periods ( .
-              ), or hyphens ( - )
+              {t("CreateTopic.format_invalid_helper_text")}
             </HelperTextItem>
             {backendError && (
               <HelperTextItem isDynamic variant={"error"} component={"li"}>
@@ -87,3 +86,5 @@ export function FieldName({
     </FormSection>
   );
 }
+
+

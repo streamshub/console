@@ -9,6 +9,7 @@ import {
   TextContent,
   Title,
 } from "@patternfly/react-core";
+import { useTranslations } from "next-intl";
 
 export function FieldPartitions({
   partitions,
@@ -21,15 +22,13 @@ export function FieldPartitions({
   invalid: boolean;
   backendError: string | false;
 }) {
+  const t = useTranslations();
   return (
     <FormSection>
       <TextContent>
-        <Title headingLevel={"h3"}>Partitions</Title>
+        <Title headingLevel={"h3"}>{t("CreateTopic.topic_partition_field")}</Title>
         <Text component={"small"}>
-          An ordered list of messages. One or more partitions make up a topic.
-          Partitions are distributed across the brokers to increase the
-          scalability of your topic. You can also use them to distribute
-          messages across the members of the consumer group.
+          {t("CreateTopic.topic_partition_field_description")}
         </Text>
       </TextContent>
       <FormGroup label="Partitions" isRequired fieldId="topic-partitions">
@@ -50,8 +49,7 @@ export function FieldPartitions({
         <FormHelperText>
           <HelperText id={"topic-partitions-helper"}>
             <HelperTextItem variant={"indeterminate"}>
-              One partition is sufficient for getting started, but production
-              systems often have more.{" "}
+              {t("CreateTopic.topic_partition_helper_text")}
             </HelperTextItem>
             {backendError && (
               <HelperTextItem isDynamic variant={"error"} component={"li"}>

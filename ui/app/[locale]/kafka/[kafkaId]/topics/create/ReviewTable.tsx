@@ -2,6 +2,7 @@
 import { ConfigMap, NewConfigMap } from "@/api/topics/schema";
 import { ResponsiveTable, ResponsiveTableProps } from "@/components/Table";
 import { TableVariant } from "@patternfly/react-table";
+import { useTranslations } from "next-intl";
 import { useCallback, useMemo } from "react";
 
 type Column = "property" | "new-value" | "initial-value";
@@ -18,6 +19,7 @@ export function ReviewTable({
   options: NewConfigMap;
   initialOptions: ConfigMap;
 }) {
+  const t = useTranslations();
   const data = useMemo(() => Object.entries(options), [options]);
   const renderCell = useCallback<
     ResponsiveTableProps<(typeof data)[number], Column>["renderCell"]
@@ -48,13 +50,13 @@ export function ReviewTable({
           case "property":
             return (
               <Th width={40} key={key}>
-                Property
+                {t("CreateTopic.review_table.property")}
               </Th>
             );
           case "new-value":
-            return <Th key={key}>New value</Th>;
+            return <Th key={key}> {t("CreateTopic.review_table.new_value")}</Th>;
           case "initial-value":
-            return <Th key={key}>Initial value</Th>;
+            return <Th key={key}> {t("CreateTopic.review_table.initial_value")}</Th>;
         }
       }}
       renderCell={renderCell}

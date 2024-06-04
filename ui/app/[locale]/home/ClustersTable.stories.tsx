@@ -1,0 +1,76 @@
+import type { Meta, StoryObj } from "@storybook/react";
+import { ClustersTable } from "./ClustersTable";
+import { ClusterDrawerContext } from "../../../app/[locale]/ClusterDrawerContext"
+
+const meta: Meta<typeof ClustersTable> = {
+  component: ClustersTable,
+  decorators: [
+    (Story) => (
+      <ClusterDrawerContext.Provider
+        value={{
+          open: () => { },
+          close: () => { },
+          expanded: false,
+          clusterId: undefined,
+        }}
+      >
+        <Story />
+      </ClusterDrawerContext.Provider>
+    ),
+  ],
+  args: {
+    clusters: [],
+  },
+} as Meta<typeof ClustersTable>;
+
+
+export default meta;
+type Story = StoryObj<typeof ClustersTable>;
+
+const clustersData = [
+  {
+    id: "1",
+    attributes: {
+      name: "Kafka1",
+      kafkaVersion: "3.5.0",
+      namespace: "eyefloaters-dev",
+    },
+    meta: {
+      configured: true,
+    },
+    extra: {
+      nodes: Promise.resolve({
+        online: 1,
+        count: 3,
+      }),
+      consumerGroupsCount: Promise.resolve(10),
+    },
+  },
+  {
+    id: "2",
+    attributes: {
+      name: "kafka2",
+      kafkaVersion: "3.6.0",
+      namespace: "eyefloaters-dev",
+    },
+    meta: {
+      configured: false,
+    },
+    extra: {
+      nodes: Promise.resolve({
+        online: 2,
+        count: 4,
+      }),
+      consumerGroupsCount: Promise.resolve(5),
+    },
+  },
+];
+
+export const Default: Story = {
+  args: {
+    clusters: clustersData
+  },
+};
+
+
+
