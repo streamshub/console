@@ -14,7 +14,7 @@ test("Home page", async ({ page }) => {
 
   await test.step("Connection details should show URL", async () => {
     // Click on the kebab toggle button
-    await page.click('button[class="pf-v5-c-menu-toggle pf-m-expanded pf-m-plain"]');
+    await page.click('button[class="pf-v5-c-menu-toggle pf-m-plain"]');
 
     // Wait for the dropdown menu to appear
     await page.waitForSelector('ul[class="pf-v5-c-menu__list"]');
