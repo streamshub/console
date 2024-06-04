@@ -86,7 +86,7 @@
     "@storybook/test-runner": "^0.18.2",
     "pino-pretty": "^11.1.0",
     "playwright": "^1.44.1",
-    "prettier": "^3.2.5",
+    "prettier": "^3.3.0",
     "storybook": "^8.1.5",
     "tsconfig-paths-webpack-plugin": "^4.1.0"
   }
