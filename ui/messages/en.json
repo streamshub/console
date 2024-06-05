@@ -1,17 +1,30 @@
 {
   "common": {
-    "brand": "Red Hat",
-    "product": "streams for Apache Kafka",
-    "title": "Red Hat streams for Apache Kafka console",
-    "description": "Red Hat streams for Apache Kafka is a lightweight, high-performance, robust messaging platform.",
+    "brand": "",
+    "product": "StreamsHub",
+    "title": "StreamsHub console",
     "search_hint": "Filter by {label}"
   },
-  "learning": {
+  "feedback": {
     "links": {
-      "overview": "https://docs.redhat.com/en/documentation/red_hat_streams_for_apache_kafka/2.7/html/streams_for_apache_kafka_on_openshift_overview",
-      "gettingStarted": "https://docs.redhat.com/en/documentation/red_hat_streams_for_apache_kafka/2.7/html/getting_started_with_streams_for_apache_kafka_on_openshift",
-      "connecting": "https://docs.redhat.com/en/documentation/red_hat_streams_for_apache_kafka/2.7/html/developing_kafka_client_applications",
-      "topicOperatorUse": "https://docs.redhat.com/en/documentation/red_hat_streams_for_apache_kafka/2.7/html/deploying_and_managing_streams_for_apache_kafka_on_openshift/using-the-topic-operator-str#doc-wrapper"
+      "share": "https://github.com/streamshub/console/issues/new?assignees=&labels=&projects=&template=share-feeedback.md&title=",
+      "informDirection": "https://github.com/streamshub/console/issues/new?assignees=&labels=&projects=&template=inform-the-direction-of-products.md&title=",
+      "bugReport": "https://github.com/streamshub/console/issues/new?assignees=&labels=&projects=&template=bug_report.md&title=",
+      "supportCase": "https://github.com/streamshub/console/issues/new?assignees=&labels=&projects=&template=open-support-case.md&title="
+    }
+  },
+  "learning": {
+    "labels": {
+      "overview": "Strimzi Overview",
+      "gettingStarted":"Getting Started with StreamsHub",
+      "connecting": "Connect to a Kafka cluster from an application",
+      "topicOperatorUse": "Using the Topic Operator to manage Kafka topics"
+    },
+    "links": {
+      "overview": "https://strimzi.io/docs/operators/latest/overview",
+      "gettingStarted": "",
+      "connecting": "",
+      "topicOperatorUse": "https://strimzi.io/docs/operators/latest/overview#overview-concepts-topic-operator-str"
     }
   },
   "RefreshButton": {
@@ -31,22 +44,17 @@
     "title": "Integration Developer Hub",
     "connected_kafka_clusters": "Connected Kafka clusters",
     "page_header": "Welcome to the {product} console",
-    "page_subtitle": "The {brand} {product} console provides a user interface formanaging and monitoring your streaming resources",
+    "page_subtitle": "The {brand} {product} console provides a user interface for managing and monitoring your streaming resources",
     "platform_openshift_cluster": "<strong>Platform: OpenShift Cluster</strong>",
     "recently_viewed_topics_header": "Recently viewed topics",
     "recently_viewed_topics_header_popover": "When you start looking at specific topics through the {product} console, they'll start showing here.",
     "last_accessed_topics": "The last 5 topics this account has accessed from the {product} console.",
     "topics_empty_state_header": "No topics were viewed yet",
     "empty_topics_description": "When you start looking at specific topics through the {product} console, they'll start showing here.",
-    "topic_operator_link": "Using the Topic Operator to manage Kafka topics",
     "recommended_learning_resources": "<b>Recommended learning resources</b>",
     "recommended_learning_resources_label": "Recommended learning resources",
     "documentation": "Documentation",
-    "view_documentation": "View documentation",
-    "get_started_with_openshift":"Getting Started with {product} on Openshift",
-    "openshift_overview": "{product} on OpenShift Overview",
-    "connect_to_kafka_cluster": "Connect to a Kafka cluster from an application",
-    "using_topic_operator_to_manage_kafka_topic": "Using the Topic Operator to manage Kafka topics"
+    "view_documentation": "View documentation"
   },
   "overview": {
     "title": "Overview"
@@ -412,8 +420,7 @@
     "to_get_started_create_your_first_topic": "To get started, create your first topic",
     "create_a_topic": "Create a topic",
     "show_internal_topics": "Show internal topics",
-    "view_documentation": "Learn about configuring Kafka topics",
-    "create_topic_external_link": "https://docs.redhat.com/en/documentation/red_hat_amq_streams/2.6/html-single/deploying_and_managing_amq_streams_on_openshift/index#proc-configuring-kafka-topic-str"
+    "view_documentation": "Learn about configuring Kafka topics"
   },
   "ApplicationError": {
     "body": "Try clicking the button below, or refreshing the page. If the problem persists, contact your organization administrator.",

@@ -39,6 +39,7 @@ import {
 import { HelpIcon } from "@/libs/patternfly/react-icons";
 import { Suspense } from "react";
 import styles from "./home.module.css";
+import { enabled as learningLinksEnabled } from "@/utils/learningLinks";
 
 export default function Home() {
   const t = useTranslations();
@@ -114,6 +115,7 @@ export default function Home() {
               </CardBody>
             </ExpandableCard>
           </StackItem>
+          { learningLinksEnabled() &&
           <StackItem>
             <ExpandableCard
               title={
@@ -123,9 +125,6 @@ export default function Home() {
                       {t.rich("homepage.recommended_learning_resources")}
                     </TextContent>
                   </LevelItem>
-                  {/*<LevelItem>*/}
-                  {/*  <Link href={"/learning-resources"}>View all</Link>*/}
-                  {/*</LevelItem>*/}
                 </Level>
               }
               collapsedTitle={
@@ -142,19 +141,10 @@ export default function Home() {
                           <Label isCompact color="orange">
                             {t("homepage.documentation")}
                           </Label>
-                          {/*<Label isCompact icon={<InfoCircleIcon />} color="green">*/}
-                          {/*  Quick starts*/}
-                          {/*</Label>*/}
-                          {/*<Label isCompact icon={<InfoCircleIcon />} color="orange">*/}
-                          {/*  Learning resources*/}
-                          {/*</Label>*/}
                         </LabelGroup>
                       </StackItem>
                     </Stack>
                   </LevelItem>
-                  {/*<LevelItem>*/}
-                  {/*  <Link href={"/learning-resources"}>View all</Link>*/}
-                  {/*</LevelItem>*/}
                 </Level>
               }
               isCompact={true}
@@ -167,7 +157,7 @@ export default function Home() {
                         dataListCells={[
                           <DataListCell key="gs-1-1" width={2}>
                             <span id="gs-1-1">
-                              {t("homepage.openshift_overview", { product: productName })}
+                              {t("learning.labels.overview")}
                             </span>
                           </DataListCell>,
                           <DataListCell key="gs-1-2">
@@ -184,13 +174,14 @@ export default function Home() {
                       />
                     </DataListItemRow>
                   </DataListItem>
+                  { t("learning.links.gettingStarted") &&
                   <DataListItem aria-labelledby="gs-2-1">
                     <DataListItemRow>
                       <DataListItemCells
                         dataListCells={[
                           <DataListCell key="gs-2-1" width={2}>
                             <span id="gs-2-1">
-                              {t("homepage.get_started_with_openshift", { product: productName })}
+                              {t("learning.labels.gettingStarted")}
                             </span>
                           </DataListCell>,
                           <DataListCell key="gs-2-2">
@@ -207,13 +198,15 @@ export default function Home() {
                       />
                     </DataListItemRow>
                   </DataListItem>
+                  }
+                  { t("learning.links.connecting") &&
                   <DataListItem aria-labelledby="gs-3-1">
                     <DataListItemRow>
                       <DataListItemCells
                         dataListCells={[
                           <DataListCell key="gs-3-1" width={2}>
                             <span id="gs-3-1">
-                              {t("homepage.connect_to_kafka_cluster")}
+                              {t("learning.labels.connecting")}
                             </span>
                           </DataListCell>,
                           <DataListCell key="gs-3-2">
@@ -230,13 +223,14 @@ export default function Home() {
                       />
                     </DataListItemRow>
                   </DataListItem>
+                  }
                   <DataListItem aria-labelledby="gs-4-1">
                     <DataListItemRow>
                       <DataListItemCells
                         dataListCells={[
                           <DataListCell key="gs-4-1" width={2}>
                             <span id="gs-4-1">
-                              {t("homepage.using_topic_operator_to_manage_kafka_topic")}
+                              {t("learning.labels.topicOperatorUse")}
                             </span>
                           </DataListCell>,
                           <DataListCell key="gs-4-2">
@@ -257,6 +251,7 @@ export default function Home() {
               </CardBody>
             </ExpandableCard>
           </StackItem>
+          }
         </Stack>
       </PageSection>
     </>
@@ -336,13 +331,15 @@ async function RecentTopics() {
       <EmptyStateBody>
         {t("homepage.empty_topics_description", { product: productName })}
       </EmptyStateBody>
+      { learningLinksEnabled() &&
       <EmptyStateFooter>
         <EmptyStateActions className={"pf-v5-u-font-size-sm"}>
           <ExternalLink testId={"recent-topics-empty-state-link"} href={t("learning.links.topicOperatorUse")}>
-            {t("homepage.topic_operator_link")}
+            {t("learning.labels.topicOperatorUse")}
           </ExternalLink>
         </EmptyStateActions>
       </EmptyStateFooter>
+      }
     </EmptyState>
   );
 }

@@ -128,12 +128,11 @@ async function NodesCell({
   const { online, count } = await data;
   return (
     <>
-      <Number value={online} />
-      /
-      <Number value={count} />
-      &nbsp;{t("ClustersTable.online")}&nbsp;
       <Link href={`/kafka/${kafkaId}/nodes`}>
-        {t("ClustersTable.brokers")}
+          <Number value={online} />
+          /
+          <Number value={count} />
+          &nbsp;{t("ClustersTable.online")}
       </Link>
     </>
   );

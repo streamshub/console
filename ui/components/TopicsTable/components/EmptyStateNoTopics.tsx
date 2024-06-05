@@ -11,6 +11,7 @@ import {
 } from "@/libs/patternfly/react-core";
 import { PlusCircleIcon } from "@/libs/patternfly/react-icons";
 import { useTranslations } from "next-intl";
+import { enabled as learningLinksEnabled } from "@/utils/learningLinks";
 
 export function EmptyStateNoTopics({
   canCreate,
@@ -22,6 +23,7 @@ export function EmptyStateNoTopics({
   onShowHiddenTopics: () => void;
 }) {
   const t = useTranslations();
+  const showLearningLinks = learningLinksEnabled();
   return (
     <EmptyState>
       <EmptyStateHeader
@@ -43,11 +45,13 @@ export function EmptyStateNoTopics({
             {t("EmptyStateNoTopics.show_internal_topics")}
           </Button>
         </EmptyStateActions>
-        <EmptyStateActions>
-          <ExternalLink testId={"create-topic"} href={t("EmptyStateNoTopics.create_topic_external_link")}>
-            {t("EmptyStateNoTopics.view_documentation")}
-          </ExternalLink>
-        </EmptyStateActions>
+        {showLearningLinks && (
+          <EmptyStateActions>
+            <ExternalLink testId={"create-topic"} href={t("learning.links.topicOperatorUse")}>
+              {t("EmptyStateNoTopics.view_documentation")}
+            </ExternalLink>
+          </EmptyStateActions>
+        )}
       </EmptyStateFooter>
     </EmptyState>
   );
