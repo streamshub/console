@@ -23,7 +23,7 @@ spec:
       containers:
       ### API
       - name: console-api
-        image: quay.io/eyefloaters/console-api:latest
+        image: quay.io/streamshub/console-api:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 8080
@@ -36,7 +36,7 @@ spec:
           value: /deployments/console-config.yaml
       ### User Interface
       - name: console-ui
-        image: quay.io/eyefloaters/console-ui:latest
+        image: quay.io/streamshub/console-ui:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 3000

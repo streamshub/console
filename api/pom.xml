@@ -3,7 +3,7 @@
 
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.github.eyefloaters</groupId>
+    <groupId>com.github.streamshub</groupId>
     <artifactId>console-api</artifactId>
     <packaging>jar</packaging>
     <version>0.1.1-SNAPSHOT</version>
@@ -16,7 +16,7 @@
 
         <!-- Container image properties for systemtests -->
         <docker.registry>localhost</docker.registry>
-        <docker.group>eyefloaters</docker.group>
+        <docker.group>streamshub</docker.group>
         <docker.tag>${project.version}</docker.tag>
         <docker.push>false</docker.push>
 
@@ -42,15 +42,15 @@
 
         <!-- Sonar settings -->
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
-        <sonar.organization>eyefloaters</sonar.organization>
+        <sonar.organization>streamshub</sonar.organization>
         <sonar.exclusions>
-        	src/main/java/com/github/eyefloaters/console/api/support/TrustAllCertificateManager.java
+        	src/main/java/com/github/streamshub/console/api/support/TrustAllCertificateManager.java
         </sonar.exclusions>
     </properties>
 
     <scm>
-        <connection>scm:git:git://github.com/eyefloaters/console.git</connection>
-        <developerConnection>scm:git:git@github.com:eyefloaters/console.git</developerConnection>
+        <connection>scm:git:git://github.com/streamshub/console.git</connection>
+        <developerConnection>scm:git:git@github.com:streamshub/console.git</developerConnection>
         <tag>HEAD</tag>
     </scm>
 
@@ -440,7 +440,7 @@
                         </goals>
                         <configuration>
                             <excludes>
-                                <exclude>com/github/eyefloaters/console/api/support/TrustAllCertificateManager.class</exclude>
+                                <exclude>com/github/streamshub/console/api/support/TrustAllCertificateManager.class</exclude>
                             </excludes>
                             <exclClassLoaders>*QuarkusClassLoader</exclClassLoaders>
                             <destFile>${project.build.directory}/jacoco-quarkus.exec</destFile>
@@ -454,7 +454,7 @@
                         </goals>
                         <configuration>
                             <excludes>
-                                <exclude>com/github/eyefloaters/console/api/support/TrustAllCertificateManager.class</exclude>
+                                <exclude>com/github/streamshub/console/api/support/TrustAllCertificateManager.class</exclude>
                             </excludes>
                             <exclClassLoaders>*QuarkusClassLoader</exclClassLoaders>
                             <destFile>${project.build.directory}/jacoco-quarkus.exec</destFile>

@@ -28,7 +28,7 @@ spec:
           bootstrap:
             host: bootstrap.console-kafka.${CLUSTER_DOMAIN}
             annotations:
-              eyefloaters.github.com/console-listener: 'true'
+              streamshub.github.com/console-listener: 'true'
           brokers:
           - broker: 0
             host: broker-0.console-kafka.${CLUSTER_DOMAIN}

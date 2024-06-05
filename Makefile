@@ -3,8 +3,8 @@
 
 include *compose.env
 
-CONSOLE_API_IMAGE ?= quay.io/eyefloaters/console-api:latest
-CONSOLE_UI_IMAGE ?= quay.io/eyefloaters/console-ui:latest
+CONSOLE_API_IMAGE ?= quay.io/streamshub/console-api:latest
+CONSOLE_UI_IMAGE ?= quay.io/streamshub/console-ui:latest
 CONSOLE_UI_NEXTAUTH_SECRET ?= $(shell openssl rand -base64 32)
 CONSOLE_METRICS_PROMETHEUS_URL ?= 
 CONTAINER_RUNTIME ?= $(shell which podman || which docker)

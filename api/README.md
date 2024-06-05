@@ -1,4 +1,4 @@
-[![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](http://www.apache.org/licenses/LICENSE-2.0) [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=eyefloaters_console&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=eyefloaters_console) [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=eyefloaters_console&metric=coverage)](https://sonarcloud.io/summary/new_code?id=eyefloaters_console)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](http://www.apache.org/licenses/LICENSE-2.0) [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=streamshub_console&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=streamshub_console) [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=streamshub_console&metric=coverage)](https://sonarcloud.io/summary/new_code?id=streamshub_console)
 
 # Console API
 
@@ -24,7 +24,7 @@ There are a few things you need to have installed to run this project:
 To run this project locally, first clone it with Git and execute a Maven build
 
 ```shell
-git clone git@github.com:eyefloaters/console.git
+git clone git@github.com:streamshub/console.git
 cd console/api
 mvn install -DskipTests
 ```

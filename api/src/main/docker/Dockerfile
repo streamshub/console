@@ -56,7 +56,7 @@
 FROM registry.access.redhat.com/ubi9/openjdk-17:1.18
 
 ENV LANGUAGE='en_US:en'
-LABEL org.opencontainers.image.source="https://github.com/eyefloaters/console"
+LABEL org.opencontainers.image.source="https://github.com/streamshub/console"
 
 
 # We make four distinct layers so if there are application changes the library layers can be re-used
