@@ -8,7 +8,7 @@ export default defineConfig({
       use: {
         ...devices["Desktop Chrome"],
         // Use prepared auth state.
-        storageState: "tests/playwright/.auth/user.json",
+        // storageState: "tests/playwright/.auth/user.json",
       },
       dependencies: ["setup"],
       timeout: 15000,
@@ -19,7 +19,7 @@ export default defineConfig({
       use: {
         ...devices["Desktop Firefox"],
         // Use prepared auth state.
-        storageState: "tests/playwright/.auth/user.json",
+        // storageState: "tests/playwright/.auth/user.json",
       },
       dependencies: ["setup"],
       timeout: 15000,
