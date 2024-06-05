@@ -12,11 +12,9 @@ export async function getSession<T extends Record<string, unknown>>(
   scope: string,
 ) {
   const user = await getUser();
-  if (!user.username) {
-    throw new Error("Can't get session for unauthenticated users");
-  }
+  const username = user.username ?? "anonymous";
   const cookieStore = cookies();
-  const encryptedSession = cookieStore.get(`${user.username}:${scope}`)?.value;
+  const encryptedSession = cookieStore.get(`${username}:${scope}`)?.value;
 
   if (!encryptedSession) {
     return {} as T;
@@ -36,15 +34,13 @@ export async function setSession<T extends Record<string, unknown>>(
   session: T,
 ) {
   const user = await getUser();
-  if (!user.username) {
-    throw new Error("Can't set session for unauthenticated users");
-  }
+  const username = user.username ?? "anonymous";
   const encryptedSession = await sealData(session, {
     password: process.env.SESSION_SECRET ?? "strimziconsole",
   });
 
   cookies().set({
-    name: `${user.username}:${scope}`,
+    name: `${username}:${scope}`,
     value: encryptedSession,
     httpOnly: true,
   });
