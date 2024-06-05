@@ -78,4 +78,4 @@ jobs:
           context: ui/
           push: false
           tags: |
-            eyefloaters/ui:latest
+            streamshub/ui:latest

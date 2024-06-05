@@ -16,7 +16,7 @@ jobs:
           GITHUB_CONTEXT: ${{ toJson(github) }}
 
   analyze:
-    if: ${{ github.repository == 'eyefloaters/console' && github.event.workflow_run.conclusion == 'success' }}
+    if: ${{ github.repository == 'streamshub/console' && github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     name: Analyze
     steps:
@@ -111,7 +111,7 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
           mvn -B --no-transfer-progress org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -f api/pom.xml \
-            -Dsonar.projectKey=eyefloaters_console  \
+            -Dsonar.projectKey=streamshub_console  \
             -Dsonar.token=${SONAR_TOKEN} \
             -Dsonar.scm.revision=${{ github.event.workflow_run.head_sha }} \
             -Dsonar.pullrequest.key=${{ fromJson(steps.build_context.outputs.content).event.number }} \
@@ -126,7 +126,7 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
           mvn -B --no-transfer-progress org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -f api/pom.xml \
-            -Dsonar.projectKey=eyefloaters_console \
+            -Dsonar.projectKey=streamshub_console \
             -Dsonar.token=${SONAR_TOKEN} \
             -Dsonar.scm.revision=${{ github.event.workflow_run.head_sha }} \
             -Dsonar.branch.name=${{ github.event.workflow_run.head_branch }}

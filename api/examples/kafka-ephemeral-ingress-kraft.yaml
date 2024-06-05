@@ -61,7 +61,7 @@ spec:
           bootstrap:
             host: bootstrap-oauth.${cluster_name}.${kube_ip}.nip.io
             annotations:
-              "eyefloaters.github.com/console-listener": "true"
+              "streamshub.github.com/console-listener": "true"
           brokers:
           - broker: 0
             host: broker-0-oauth.${cluster_name}.${kube_ip}.nip.io
