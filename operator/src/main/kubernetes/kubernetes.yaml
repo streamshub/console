@@ -35,7 +35,7 @@ rules:
       - list
 
   - apiGroups:
-      - console.eyefloaters.github.com
+      - console.streamshub.github.com
     resources:
       - consoles
       - consoles/status
