@@ -332,7 +332,7 @@ async function RecentTopics() {
     <TopicsTable topics={viewedTopics} />
   ) : (
     <EmptyState variant={"xs"}>
-      <EmptyStateHeader title={"No topics were viewed yet"} />
+      <EmptyStateHeader title={t("homepage.topics_empty_state_header")} />
       <EmptyStateBody>
         {t("homepage.empty_topics_description", { product: productName })}
       </EmptyStateBody>
