@@ -21,10 +21,9 @@
         <docker.push>false</docker.push>
 
         <!-- Dependencies -->
-        <quarkus.version>3.2.12.Final</quarkus.version>
+        <quarkus.version>3.8.4</quarkus.version>
         <jandex-maven-plugin.version>3.2.0</jandex-maven-plugin.version>
         <strimzi-oauth.version>0.15.0</strimzi-oauth.version>
-        <hamcrest.version>2.2</hamcrest.version>
 
         <!-- Plugin Versions -->
         <maven.compiler.version>3.13.0</maven.compiler.version>
@@ -57,13 +56,6 @@
 
     <dependencyManagement>
         <dependencies>
-            <dependency>
-                <groupId>io.fabric8</groupId>
-                <artifactId>kubernetes-client-bom</artifactId>
-                <version>6.9.2</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
             <!-- Manage nimbus-jose-jwt for CVE-2023-52428 -->
             <dependency>
                 <groupId>com.nimbusds</groupId>
@@ -80,6 +72,11 @@
             <dependency>
                 <groupId>io.strimzi</groupId>
                 <artifactId>kafka-oauth-client</artifactId>
+                <version>${strimzi-oauth.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.strimzi</groupId>
+                <artifactId>kafka-oauth-common</artifactId>
                 <version>${strimzi-oauth.version}</version>
             </dependency>
             <dependency>
@@ -263,7 +260,6 @@
         <dependency>
             <groupId>org.hamcrest</groupId>
             <artifactId>hamcrest</artifactId>
-            <version>${hamcrest.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
