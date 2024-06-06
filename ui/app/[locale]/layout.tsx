@@ -25,18 +25,14 @@ export default async function Layout({ children, params: { locale } }: Props) {
   }
   const session = await getServerSession(authOptions);
   return (
-    <html lang="en">
-      <body>
-        <NextIntlProvider locale={locale} messages={messages}>
-          <AppSessionProvider session={session}>
-            <AppLayoutProvider>
-              <AppLayout>{children}</AppLayout>
-            </AppLayoutProvider>
-            <SessionRefresher />
-          </AppSessionProvider>
-        </NextIntlProvider>
-      </body>
-    </html>
+    <NextIntlProvider locale={locale} messages={messages}>
+      <AppSessionProvider session={session}>
+        <AppLayoutProvider>
+          <AppLayout>{children}</AppLayout>
+        </AppLayoutProvider>
+        <SessionRefresher />
+      </AppSessionProvider>
+    </NextIntlProvider>
   );
 }
 
