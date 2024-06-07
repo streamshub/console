@@ -38,6 +38,14 @@ a ConfigMap to export metrics in the way expected by the Prometheus instance cre
 002-deploy-console-kafka.sh ${TARGET_NAMESPACE} ${CLUSTER_DOMAIN}
 ```
 
+By default, the Kafka cluster will be created in KRaft mode (Zookeeper-less). If you would like to create a cluster
+that uses ZooKeeper, an additional third argument with the value `zk` may be given. The value may also be `kraft` to
+explicitly request a KRaft cluster.
+
+```shell
+002-deploy-console-kafka.sh ${TARGET_NAMESPACE} ${CLUSTER_DOMAIN} zk
+```
+
 ### Authorization
 
 In order to allow the necessary access for the console to function, a minimum level of authorization must be configured

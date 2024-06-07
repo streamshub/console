@@ -38,6 +38,7 @@ public class KafkaCluster {
         public static final String KAFKA_VERSION = "kafkaVersion";
         public static final String STATUS = "status";
         public static final String CONDITIONS = "conditions";
+        public static final String NODE_POOLS = "nodePools";
 
         static final Comparator<KafkaCluster> ID_COMPARATOR =
                 comparing(KafkaCluster::getId, nullsLast(String::compareTo));
@@ -59,7 +60,8 @@ public class KafkaCluster {
                 + LISTENERS + ", "
                 + KAFKA_VERSION + ", "
                 + STATUS + ", "
-                + CONDITIONS + ", ";
+                + CONDITIONS + ", "
+                + NODE_POOLS;
 
         public static final String DESCRIBE_DEFAULT =
                 NAME + ", "
@@ -71,7 +73,8 @@ public class KafkaCluster {
                 + LISTENERS + ", "
                 + KAFKA_VERSION + ", "
                 + STATUS + ", "
-                + CONDITIONS + ", ";
+                + CONDITIONS + ", "
+                + NODE_POOLS;
 
         private Fields() {
             // Prevent instances
@@ -133,6 +136,7 @@ public class KafkaCluster {
     List<Condition> conditions;
     @JsonIgnore
     boolean configured;
+    List<String> nodePools;
 
     public KafkaCluster(String id, List<Node> nodes, Node controller, List<String> authorizedOperations) {
         super();
@@ -257,5 +261,13 @@ public class KafkaCluster {
 
     public void setConfigured(boolean configured) {
         this.configured = configured;
+    }
+
+    public List<String> getNodePools() {
+        return nodePools;
+    }
+
+    public void setNodePools(List<String> nodePools) {
+        this.nodePools = nodePools;
     }
 }

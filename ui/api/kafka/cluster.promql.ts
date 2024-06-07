@@ -34,11 +34,11 @@ export const memory = (namespace: string, cluster: string) => `
   )
 `;
 
-export const volumeCapacity = (namespace: string, cluster: string) => `
+export const volumeCapacity = (namespace: string, cluster: string, nodePools: string) => `
   sum by (nodeId, __console_metric_name__) (
     label_replace(
       label_replace(
-        kubelet_volume_stats_capacity_bytes{namespace="${namespace}",persistentvolumeclaim=~"data(?:-\\\\d+)?-${cluster}-kafka-\\\\d+"},
+        kubelet_volume_stats_capacity_bytes{namespace="${namespace}",persistentvolumeclaim=~"data(?:-\\\\d+)?-${cluster}-(kafka|${nodePools})-\\\\d+"},
         "nodeId",
         "$1",
         "persistentvolumeclaim",
@@ -52,11 +52,11 @@ export const volumeCapacity = (namespace: string, cluster: string) => `
   )
 `;
 
-export const volumeUsed = (namespace: string, cluster: string) => `
+export const volumeUsed = (namespace: string, cluster: string, nodePools: string) => `
   sum by (nodeId, __console_metric_name__) (
     label_replace(
       label_replace(
-        kubelet_volume_stats_used_bytes{namespace="${namespace}",persistentvolumeclaim=~"data(?:-\\\\d+)?-${cluster}-kafka-\\\\d+"},
+        kubelet_volume_stats_used_bytes{namespace="${namespace}",persistentvolumeclaim=~"data(?:-\\\\d+)?-${cluster}-(kafka|${nodePools})-\\\\d+"},
         "nodeId",
         "$1",
         "persistentvolumeclaim",

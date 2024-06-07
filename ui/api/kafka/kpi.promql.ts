@@ -2,6 +2,7 @@ export const values = (
   namespace: string,
   cluster: string,
   controller: number,
+  nodePools: string,
 ) => `
 sum by (__console_metric_name__, nodeId) (
   label_replace(
@@ -101,7 +102,7 @@ or
 sum by (__console_metric_name__, nodeId) (
   label_replace(
     label_replace(
-      kubelet_volume_stats_capacity_bytes{namespace="${namespace}",persistentvolumeclaim=~"data(?:-\\\\d+)?-${cluster}-kafka-\\\\d+"},
+      kubelet_volume_stats_capacity_bytes{namespace="${namespace}",persistentvolumeclaim=~"data(?:-\\\\d+)?-${cluster}-(kafka|${nodePools})-\\\\d+"},
       "nodeId",
       "$1",
       "persistentvolumeclaim",
@@ -119,7 +120,7 @@ or
 sum by (__console_metric_name__, nodeId) (
   label_replace(
     label_replace(
-      kubelet_volume_stats_used_bytes{namespace="${namespace}",persistentvolumeclaim=~"data(?:-\\\\d+)?-${cluster}-kafka-\\\\d+"},
+      kubelet_volume_stats_used_bytes{namespace="${namespace}",persistentvolumeclaim=~"data(?:-\\\\d+)?-${cluster}-(kafka|${nodePools})-\\\\d+"},
       "nodeId",
       "$1",
       "persistentvolumeclaim",

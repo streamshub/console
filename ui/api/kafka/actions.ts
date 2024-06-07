@@ -53,7 +53,7 @@ export async function getKafkaCluster(
 ): Promise<ClusterDetail | null> {
   const sp = new URLSearchParams({
     "fields[kafkas]":
-      "name,namespace,creationTimestamp,status,kafkaVersion,nodes,controller,authorizedOperations,listeners,conditions",
+      "name,namespace,creationTimestamp,status,kafkaVersion,nodes,controller,authorizedOperations,listeners,conditions,nodePools",
   });
   const kafkaClusterQuery = sp.toString();
   const url = `${process.env.BACKEND_URL}/api/kafkas/${clusterId}?${kafkaClusterQuery}`;
@@ -92,6 +92,7 @@ export async function getKafkaClusterKpis(
         cluster.attributes.namespace,
         cluster.attributes.name,
         cluster.attributes.controller.id,
+        cluster.attributes.nodePools?.join("|") ?? "",
       ),
     );
 
@@ -212,13 +213,14 @@ export async function getKafkaClusterMetrics(
   async function getRangeByNodeId(
     namespace: string,
     name: string,
+    nodePools: string,
     metric: ClusterMetric,
   ) {
     const start = new Date().getTime() - 1 * 60 * 60 * 1000;
     const end = new Date();
     const step = 60 * 1;
     const seriesRes = await prom!.rangeQuery(
-      cluster[metric](namespace, name),
+      cluster[metric](namespace, name, nodePools),
       start,
       end,
       step,
@@ -246,6 +248,7 @@ export async function getKafkaClusterMetrics(
           getRangeByNodeId(
             cluster.attributes.namespace,
             cluster.attributes.name,
+            cluster.attributes.nodePools?.join("|") ?? "",
             m,
           ),
         ),

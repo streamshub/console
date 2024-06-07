@@ -143,6 +143,9 @@ class KafkaClustersResourceIT {
                         .withType("Ready")
                         .withStatus("True")
                     .endCondition()
+                    .addNewKafkaNodePool()
+                        .withName("my-node-pool")
+                    .endKafkaNodePool()
                 .endStatus()
                 .build())
             .create();
@@ -187,6 +190,7 @@ class KafkaClustersResourceIT {
             .body("data.id", containsInAnyOrder(clusterId1, clusterId2))
             .body("data.attributes.name", containsInAnyOrder("test-kafka1", "test-kafka2"))
             .body("data.find { it.attributes.name == 'test-kafka1'}.attributes.status", is("Ready"))
+            .body("data.find { it.attributes.name == 'test-kafka1'}.attributes.nodePools", contains("my-node-pool"))
             .body("data.find { it.attributes.name == 'test-kafka1'}.attributes.listeners", hasItem(allOf(
                     hasEntry("bootstrapServers", k1Bootstrap),
                     hasEntry("authType", "custom"))))

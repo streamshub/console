@@ -161,6 +161,8 @@ public class KafkaClusterService {
                                     c -> cluster.setStatus("NotReady"),
                                     () -> cluster.setStatus("Ready"));
                     });
+                Optional.ofNullable(status.getKafkaNodePools())
+                    .ifPresent(pools -> cluster.setNodePools(pools.stream().map(pool -> pool.getName()).toList()));
             });
     }
 

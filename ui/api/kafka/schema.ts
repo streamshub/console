@@ -51,6 +51,7 @@ const ClusterDetailSchema = z.object({
         lastTransitionTime: z.string().optional(),
       }),
     ),
+    nodePools: z.array(z.string()).optional().nullable(),
   }),
 });
 export const ClusterResponse = z.object({
