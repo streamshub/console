@@ -2,8 +2,6 @@ import { getAuthOptions } from "@/app/api/auth/[...nextauth]/route";
 
 import { getServerSession } from "next-auth";
 import { ReactNode } from "react";
-import { AppLayout } from "../../../components/AppLayout";
-import { AppLayoutProvider } from "../../../components/AppLayoutProvider";
 import { AppSessionProvider } from "./AppSessionProvider";
 import { SessionRefresher } from "./SessionRefresher";
 

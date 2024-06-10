@@ -1,5 +1,3 @@
-import { getKafkaClusters } from "@/api/kafka/actions";
-import { AuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { Provider } from "next-auth/providers/index";
 

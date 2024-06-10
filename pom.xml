@@ -19,6 +19,7 @@
         <quarkus.platform.version>3.15.1</quarkus.platform.version>
         <strimzi-api.version>0.43.0</strimzi-api.version>
         <strimzi-oauth.version>0.15.0</strimzi-oauth.version>
+        <kafka.version>3.7.1</kafka.version>
 
         <!-- Test Dependencies -->
         <hamcrest.version>3.0</hamcrest.version>
@@ -74,6 +75,16 @@
 
     <dependencyManagement>
         <dependencies>
+            <dependency>
+                <groupId>org.apache.kafka</groupId>
+                <artifactId>kafka-clients</artifactId>
+                <version>${kafka.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.kafka</groupId>
+                <artifactId>kafka-metadata</artifactId>
+                <version>${kafka.version}</version>
+            </dependency>
             <!-- Manage nimbus-jose-jwt for CVE-2023-52428 -->
             <dependency>
                 <groupId>com.nimbusds</groupId>

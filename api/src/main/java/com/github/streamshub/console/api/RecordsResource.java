@@ -35,11 +35,14 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 import com.github.streamshub.console.api.model.KafkaRecord;
 import com.github.streamshub.console.api.model.RecordFilterParams;
+import com.github.streamshub.console.api.security.Authorized;
+import com.github.streamshub.console.api.security.ResourcePrivilege;
 import com.github.streamshub.console.api.service.RecordService;
 import com.github.streamshub.console.api.support.ErrorCategory;
 import com.github.streamshub.console.api.support.FieldFilter;
 import com.github.streamshub.console.api.support.KafkaUuid;
 import com.github.streamshub.console.api.support.StringEnumeration;
+import com.github.streamshub.console.config.security.Privilege;
 
 @Path("/api/kafkas/{clusterId}/topics/{topicId}/records")
 @Tag(name = "Kafka Cluster Resources")
@@ -72,6 +75,8 @@ public class RecordsResource {
     @APIResponse(responseCode = "404", ref = "NotFound")
     @APIResponse(responseCode = "500", ref = "ServerError")
     @APIResponse(responseCode = "504", ref = "ServerTimeout")
+    @Authorized
+    @ResourcePrivilege(action = Privilege.LIST)
     public Response consumeRecords(
             @Parameter(description = "Cluster identifier")
             @PathParam("clusterId")
@@ -140,6 +145,8 @@ public class RecordsResource {
     @APIResponse(responseCode = "404", ref = "NotFound")
     @APIResponse(responseCode = "500", ref = "ServerError")
     @APIResponse(responseCode = "504", ref = "ServerTimeout")
+    @Authorized
+    @ResourcePrivilege(action = Privilege.CREATE)
     public CompletionStage<Response> produceRecord(
             @Parameter(description = "Cluster identifier")
             @PathParam("clusterId")

@@ -30,19 +30,35 @@ import { isProductizedBuild } from "@/utils/env";
 import { getTranslations } from "next-intl/server";
 import { Suspense } from "react";
 import styles from "./home.module.css";
+import config from '@/app/api/config';
+import { logger } from "@/utils/logger";
+import { getAuthOptions } from "@/app/api/auth/[...nextauth]/route";
+import { getServerSession } from "next-auth";
+
+const log = logger.child({ module: "home" });
 
 export default async function Home() {
   const t = await getTranslations();
+  log.debug("fetching known Kafka clusters")
   const allClusters = await getKafkaClusters();
   const productName = t("common.product");
   const brand = t("common.brand");
+  let cfg = await config();
+  let oidcCfg = cfg?.security?.oidc;
+  let username: string | undefined;
 
-  if (allClusters.length === 1) {
+  if (oidcCfg) {
+    const authOptions = await getAuthOptions();
+    const session = await getServerSession(authOptions);
+    username = (session?.user?.name || session?.user?.email) ?? undefined;
+  }
+
+  if (allClusters.length === 1 && !oidcCfg) {
     return <RedirectOnLoad url={`/kafka/${allClusters[0].id}/login`} />;
   }
 
   return (
-    <AppLayout>
+    <AppLayout username={username}>
       <PageSection padding={{ default: "noPadding" }} variant={"light"}>
         <div className={styles.hero}>
           <div>
@@ -76,8 +92,8 @@ export default async function Home() {
                 </TextContent>
               </CardTitle>
               <CardBody>
-                <Suspense fallback={<ClustersTable clusters={undefined} />}>
-                  <ClustersTable clusters={allClusters} />
+                <Suspense fallback={<ClustersTable clusters={undefined} authenticated={oidcCfg} />}>
+                  <ClustersTable clusters={allClusters} authenticated={oidcCfg} />
                 </Suspense>
               </CardBody>
             </Card>

@@ -6,6 +6,7 @@ import java.util.Map;
 import jakarta.validation.constraints.NotBlank;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.github.streamshub.console.config.security.SecurityConfig;
 
 public class KafkaClusterConfig {
 
@@ -14,6 +15,7 @@ public class KafkaClusterConfig {
     private String name;
     private String namespace;
     private String listener;
+    private SecurityConfig security = new SecurityConfig();
     private Map<String, String> properties = new LinkedHashMap<>();
     private Map<String, String> adminProperties = new LinkedHashMap<>();
     private Map<String, String> consumerProperties = new LinkedHashMap<>();
@@ -51,6 +53,14 @@ public class KafkaClusterConfig {
 
     public void setNamespace(String namespace) {
         this.namespace = namespace;
+    }
+
+    public SecurityConfig getSecurity() {
+        return security;
+    }
+
+    public void setSecurity(SecurityConfig security) {
+        this.security = security;
     }
 
     public String getListener() {

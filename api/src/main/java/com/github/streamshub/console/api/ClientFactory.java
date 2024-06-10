@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
-import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -50,8 +49,6 @@ import org.apache.kafka.common.config.SaslConfigs;
 import org.apache.kafka.common.config.SslConfigs;
 import org.apache.kafka.common.security.auth.SecurityProtocol;
 import org.apache.kafka.common.security.oauthbearer.OAuthBearerLoginModule;
-import org.apache.kafka.common.security.plain.PlainLoginModule;
-import org.apache.kafka.common.security.scram.ScramLoginModule;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.eclipse.microprofile.config.Config;
@@ -60,6 +57,7 @@ import org.jboss.logging.Logger;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.github.streamshub.console.api.security.SaslJaasConfigCredential;
 import com.github.streamshub.console.api.service.KafkaClusterService;
 import com.github.streamshub.console.api.support.Holder;
 import com.github.streamshub.console.api.support.KafkaContext;
@@ -71,6 +69,7 @@ import com.github.streamshub.console.config.KafkaClusterConfig;
 import io.fabric8.kubernetes.client.informers.ResourceEventHandler;
 import io.fabric8.kubernetes.client.informers.SharedIndexInformer;
 import io.fabric8.kubernetes.client.informers.cache.Cache;
+import io.quarkus.security.identity.SecurityIdentity;
 import io.strimzi.api.kafka.model.kafka.Kafka;
 import io.strimzi.api.kafka.model.kafka.KafkaClusterSpec;
 import io.strimzi.api.kafka.model.kafka.KafkaSpec;
@@ -100,20 +99,11 @@ public class ClientFactory {
     public static final String SCRAM_SHA256 = "SCRAM-SHA-256";
     public static final String SCRAM_SHA512 = "SCRAM-SHA-512";
 
-    private static final String BEARER = "Bearer ";
     private static final String STRIMZI_OAUTH_CALLBACK = "io.strimzi.kafka.oauth.client.JaasClientOauthLoginCallbackHandler";
-    private static final String SASL_OAUTH_CONFIG_TEMPLATE = OAuthBearerLoginModule.class.getName()
-            + " required"
-            + " oauth.access.token=\"%s\" ;";
 
-    private static final String BASIC = "Basic ";
-    private static final String BASIC_TEMPLATE = "%s required username=\"%%s\" password=\"%%s\" ;";
-    private static final String SASL_PLAIN_CONFIG_TEMPLATE = BASIC_TEMPLATE.formatted(PlainLoginModule.class.getName());
-    private static final String SASL_SCRAM_CONFIG_TEMPLATE = BASIC_TEMPLATE.formatted(ScramLoginModule.class.getName());
-
-    static final String NO_SUCH_KAFKA_MESSAGE = "Requested Kafka cluster %s does not exist or is not configured";
+    public static final String NO_SUCH_KAFKA_MESSAGE = "Requested Kafka cluster %s does not exist or is not configured";
     private final Function<String, NotFoundException> noSuchKafka =
-            clusterName -> new NotFoundException(NO_SUCH_KAFKA_MESSAGE.formatted(clusterName));
+            clusterId -> new NotFoundException(NO_SUCH_KAFKA_MESSAGE.formatted(clusterId));
 
     @Inject
     Logger log;
@@ -277,7 +267,7 @@ public class ClientFactory {
                 findConfig(kafka).ifPresentOrElse(
                         clusterConfig -> {
                             String clusterKey = clusterConfig.clusterKey();
-                            String clusterId = clusterId(clusterConfig, Optional.of(kafka));
+                            String clusterId = KafkaContext.clusterId(clusterConfig, Optional.of(kafka));
                             log.infof("Removing KafkaContext for cluster %s, id=%s", clusterKey, clusterId);
                             log.debugf("Known KafkaContext identifiers: %s", contexts.keySet());
                             KafkaContext previous = contexts.remove(clusterId);
@@ -337,7 +327,7 @@ public class ClientFactory {
         }
 
         String clusterKey = clusterConfig.clusterKey();
-        String clusterId = clusterId(clusterConfig, kafkaResource);
+        String clusterId = KafkaContext.clusterId(clusterConfig, kafkaResource);
 
         if (!replace && contexts.containsKey(clusterId)) {
             log.warnf("""
@@ -368,12 +358,6 @@ public class ClientFactory {
 
     boolean defaultedClusterId(KafkaClusterConfig clusterConfig, Optional<Kafka> kafkaResource) {
         return clusterConfig.getId() == null && kafkaResource.map(Kafka::getStatus).map(KafkaStatus::getClusterId).isEmpty();
-    }
-
-    String clusterId(KafkaClusterConfig clusterConfig, Optional<Kafka> kafkaResource) {
-        return Optional.ofNullable(clusterConfig.getId())
-                .or(() -> kafkaResource.map(Kafka::getStatus).map(KafkaStatus::getClusterId))
-                .orElseGet(clusterConfig::getName);
     }
 
     /**
@@ -479,6 +463,7 @@ public class ClientFactory {
     @Produces
     @RequestScoped
     public KafkaContext produceKafkaContext(Map<String, KafkaContext> contexts,
+            SecurityIdentity identity,
             UnaryOperator<Admin> filter,
             Function<Map<String, Object>, Admin> adminBuilder) {
 
@@ -488,22 +473,28 @@ public class ClientFactory {
             return KafkaContext.EMPTY;
         }
 
-        return Optional.ofNullable(contexts.get(clusterId))
-                .map(ctx -> {
-                    if (ctx.admin() == null) {
-                        /*
-                         * Admin may be null if credentials were not given in the
-                         * configuration. The user must provide the login secrets
-                         * in the request in that case.
-                         */
-                        var adminConfigs = maybeAuthenticate(ctx, Admin.class);
-                        var admin = adminBuilder.apply(adminConfigs);
-                        return new KafkaContext(ctx, filter.apply(admin));
-                    }
+        KafkaContext ctx = contexts.get(clusterId);
 
-                    return ctx;
-                })
-                .orElseThrow(() -> noSuchKafka.apply(clusterId));
+        if (ctx == null) {
+            throw noSuchKafka.apply(clusterId);
+        }
+
+        if (identity.isAnonymous()) {
+            return ctx;
+        }
+
+        if (ctx.admin() == null) {
+            /*
+             * Admin may be null if credentials were not given in the
+             * configuration. The user must provide the login secrets
+             * in the request in that case.
+             */
+            var adminConfigs = maybeAuthenticate(identity, ctx, Admin.class);
+            var admin = adminBuilder.apply(adminConfigs);
+            return new KafkaContext(ctx, filter.apply(admin));
+        }
+
+        return ctx;
     }
 
     public void disposeKafkaContext(@Disposes KafkaContext context, Map<String, KafkaContext> contexts) {
@@ -520,8 +511,8 @@ public class ClientFactory {
 
     @Produces
     @RequestScoped
-    public Supplier<Consumer<byte[], byte[]>> consumerSupplier(ConsoleConfig consoleConfig, KafkaContext context) {
-        var configs = maybeAuthenticate(context, Consumer.class);
+    public Supplier<Consumer<byte[], byte[]>> consumerSupplier(ConsoleConfig consoleConfig, KafkaContext context, SecurityIdentity identity) {
+        var configs = maybeAuthenticate(identity, context, Consumer.class);
         Consumer<byte[], byte[]> client = new KafkaConsumer<>(configs); // NOSONAR / closed in consumerDisposer
         return () -> client;
     }
@@ -532,8 +523,8 @@ public class ClientFactory {
 
     @Produces
     @RequestScoped
-    public Supplier<Producer<String, String>> producerSupplier(ConsoleConfig consoleConfig, KafkaContext context) {
-        var configs = maybeAuthenticate(context, Producer.class);
+    public Supplier<Producer<String, String>> producerSupplier(ConsoleConfig consoleConfig, KafkaContext context, SecurityIdentity identity) {
+        var configs = maybeAuthenticate(identity, context, Producer.class);
         Producer<String, String> client = new KafkaProducer<>(configs); // NOSONAR / closed in producerDisposer
         return () -> client;
     }
@@ -542,13 +533,13 @@ public class ClientFactory {
         producer.get().close();
     }
 
-    Map<String, Object> maybeAuthenticate(KafkaContext context, Class<?> clientType) {
+    Map<String, Object> maybeAuthenticate(SecurityIdentity identity, KafkaContext context, Class<?> clientType) {
         Map<String, Object> configs = context.configs(clientType);
 
         if (configs.containsKey(SaslConfigs.SASL_MECHANISM)
                 && !configs.containsKey(SaslConfigs.SASL_JAAS_CONFIG)) {
             configs = new HashMap<>(configs);
-            configureAuthentication(context.saslMechanism(clientType), configs);
+            configureAuthentication(identity, context.saslMechanism(clientType), configs);
         }
 
         return configs;
@@ -725,23 +716,25 @@ public class ClientFactory {
         }
     }
 
-    void configureAuthentication(String saslMechanism, Map<String, Object> configs) {
+    void configureAuthentication(SecurityIdentity identity, String saslMechanism, Map<String, Object> configs) {
+        SaslJaasConfigCredential credential = identity.getCredential(SaslJaasConfigCredential.class);
+
         switch (saslMechanism) {
             case OAUTHBEARER:
-                configureOAuthBearer(configs);
+                configureOAuthBearer(credential, configs);
                 break;
             case PLAIN:
-                configureBasic(configs, SASL_PLAIN_CONFIG_TEMPLATE);
+                configureBasic(credential, configs);
                 break;
             case SCRAM_SHA256, SCRAM_SHA512:
-                configureBasic(configs, SASL_SCRAM_CONFIG_TEMPLATE);
+                configureBasic(credential, configs);
                 break;
             default:
                 throw new NotAuthorizedException("Unknown");
         }
     }
 
-    void configureOAuthBearer(Map<String, Object> configs) {
+    void configureOAuthBearer(SaslJaasConfigCredential credential, Map<String, Object> configs) {
         log.trace("SASL/OAUTHBEARER enabled");
 
         configs.putIfAbsent(SaslConfigs.SASL_LOGIN_CALLBACK_HANDLER_CLASS, STRIMZI_OAUTH_CALLBACK);
@@ -749,39 +742,12 @@ public class ClientFactory {
         // May still cause warnings to be logged when token will expire in less than SASL_LOGIN_REFRESH_MIN_PERIOD_SECONDS.
         configs.putIfAbsent(SaslConfigs.SASL_LOGIN_REFRESH_BUFFER_SECONDS, "0");
 
-        String jaasConfig = getAuthorization(BEARER)
-                .map(SASL_OAUTH_CONFIG_TEMPLATE::formatted)
-                .orElseThrow(() -> new NotAuthorizedException(BEARER.trim()));
-
-        configs.put(SaslConfigs.SASL_JAAS_CONFIG, jaasConfig);
+        configs.put(SaslConfigs.SASL_JAAS_CONFIG, credential.value());
     }
 
-    void configureBasic(Map<String, Object> configs, String template) {
+    void configureBasic(SaslJaasConfigCredential credential, Map<String, Object> configs) {
         log.trace("SASL/SCRAM enabled");
-
-        String jaasConfig = getBasicAuthentication()
-                .map(template::formatted)
-                .orElseThrow(() -> new NotAuthorizedException(BASIC.trim()));
-
-        configs.put(SaslConfigs.SASL_JAAS_CONFIG, jaasConfig);
-    }
-
-    Optional<String[]> getBasicAuthentication() {
-        return getAuthorization(BASIC)
-            .map(Base64.getDecoder()::decode)
-            .map(String::new)
-            .filter(authn -> authn.indexOf(':') >= 0)
-            .map(authn -> new String[] {
-                authn.substring(0, authn.indexOf(':')),
-                authn.substring(authn.indexOf(':') + 1)
-            })
-            .filter(userPass -> !userPass[0].isEmpty() && !userPass[1].isEmpty());
-    }
-
-    Optional<String> getAuthorization(String scheme) {
-        return Optional.ofNullable(headers.getHeaderString(HttpHeaders.AUTHORIZATION))
-                .filter(header -> header.regionMatches(true, 0, scheme, 0, scheme.length()))
-                .map(header -> header.substring(scheme.length()));
+        configs.put(SaslConfigs.SASL_JAAS_CONFIG, credential.value());
     }
 
     private static final Pattern BOUNDARY_QUOTES = Pattern.compile("(^[\"'])|([\"']$)");
