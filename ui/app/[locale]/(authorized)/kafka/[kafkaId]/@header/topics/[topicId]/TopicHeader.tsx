@@ -1,4 +1,3 @@
-import { getKafkaCluster } from "@/api/kafka/actions";
 import { getTopic } from "@/api/topics/actions";
 import { KafkaTopicParams } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/topics/kafkaTopic.params";
 import { AppHeader } from "@/components/AppHeader";
@@ -13,7 +12,6 @@ import {
   Spinner,
 } from "@/libs/patternfly/react-core";
 import { Skeleton } from "@patternfly/react-core";
-import { notFound } from "next/navigation";
 import { ReactNode, Suspense } from "react";
 
 export type TopicHeaderProps = {
@@ -98,11 +96,14 @@ async function ConnectedTopicHeader({
   showRefresh?: boolean;
   portal: ReactNode;
 }) {
-  const cluster = await getKafkaCluster(kafkaId);
-  if (!cluster) {
-    notFound();
+  const response = await getTopic(kafkaId, topicId);
+
+  if (response.errors) {
+    return <AppHeader title={ `Topic ${topicId}` } />;
   }
-  const topic = await getTopic(cluster.id, topicId);
+
+  const topic = response.payload;
+
   return (
     <AppHeader
       title={

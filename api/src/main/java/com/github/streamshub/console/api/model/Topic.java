@@ -33,7 +33,8 @@ import static java.util.Comparator.nullsLast;
 @Schema(name = "Topic")
 public class Topic extends RelatableResource<Topic.Attributes, Topic.Relationships> {
 
-    public static final String FIELDS_PARAM = "fields[topics]";
+    public static final String API_TYPE = "topics";
+    public static final String FIELDS_PARAM = "fields[" + API_TYPE + "]";
 
     public static final class Fields {
         public static final String NAME = "name";
@@ -197,7 +198,7 @@ public class Topic extends RelatableResource<Topic.Attributes, Topic.Relationshi
                 return null;
             }
 
-            return partitions.getOptionalPrimary().map(Collection::size).orElse(0);
+            return partitions.getOptionalPrimary().map(Collection::size).orElse(null);
         }
 
         @Schema(readOnly = true, description = """
@@ -209,6 +210,10 @@ public class Topic extends RelatableResource<Topic.Attributes, Topic.Relationshi
                 may also include the size of remote replica storage.
                 """)
         public BigInteger getTotalLeaderLogBytes() {
+            if (partitions == null) {
+                return null;
+            }
+
             return partitions.getOptionalPrimary()
                 .map(Collection::stream)
                 .map(p -> p.map(PartitionInfo::leaderLocalStorage)
@@ -223,11 +228,11 @@ public class Topic extends RelatableResource<Topic.Attributes, Topic.Relationshi
     @JsonFilter("fieldFilter")
     static class Relationships {
         @JsonProperty
-        final DataList<Identifier> consumerGroups = new DataList<>();
+        DataList<Identifier> consumerGroups = new DataList<>();
     }
 
     public Topic(String name, boolean internal, String id) {
-        super(id, "topics", new Attributes(name, internal), new Relationships());
+        super(id, API_TYPE, new Attributes(name, internal), new Relationships());
     }
 
     public static Topic fromTopicListing(org.apache.kafka.clients.admin.TopicListing listing) {
@@ -356,6 +361,10 @@ public class Topic extends RelatableResource<Topic.Attributes, Topic.Relationshi
 
     public DataList<Identifier> consumerGroups() {
         return relationships.consumerGroups;
+    }
+
+    public void consumerGroups(DataList<Identifier> consumerGroups) {
+        relationships.consumerGroups = consumerGroups;
     }
 
     public boolean partitionsOnline() {

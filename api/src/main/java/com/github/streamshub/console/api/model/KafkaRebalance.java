@@ -98,7 +98,18 @@ public class KafkaRebalance extends Resource<KafkaRebalance.Attributes> implemen
                 + STATUS + ", "
                 + MODE + ", "
                 + BROKERS + ", "
-                + GOALS;
+                + GOALS + ", "
+                + SKIP_HARD_GOAL_CHECK + ", "
+                + REBALANCE_DISK + ", "
+                + EXCLUDED_TOPICS + ", "
+                + CONCURRENT_PARTITION_MOVEMENTS_PER_BROKER + ", "
+                + CONCURRENT_INTRABROKER_PARTITION_MOVEMENTS + ", "
+                + CONCURRENT_LEADER_MOVEMENTS + ", "
+                + REPLICATION_THROTTLE + ", "
+                + REPLICA_MOVEMENT_STRATEGIES + ", "
+                + SESSION_ID + ", "
+                + OPTIMIZATION_RESULT + ", "
+                + CONDITIONS;
 
         private Fields() {
             // Prevent instances

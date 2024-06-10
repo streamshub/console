@@ -1,10 +1,11 @@
+import { ApiResponse } from "@/api/api";
 import { getTopic, updateTopic } from "@/api/topics/actions";
 import { KafkaTopicParams } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/topics/kafkaTopic.params";
 import { PageSection } from "@/libs/patternfly/react-core";
-import { redirect } from "@/i18n/routing";
 import { isReadonly } from "@/utils/env";
 import { Suspense } from "react";
 import { ConfigTable } from "./ConfigTable";
+import { NoDataErrorState } from "@/components/NoDataErrorState";
 
 export default function TopicConfiguration({
   params: { kafkaId, topicId },
@@ -27,19 +28,22 @@ async function ConnectedTopicConfiguration({
 }: {
   params: KafkaTopicParams;
 }) {
-  const topic = await getTopic(kafkaId, topicId);
+  const response = await getTopic(kafkaId, topicId);
 
-  if (!topic) {
-    redirect(`/kafka/${kafkaId}`);
-    return null;
+  if (response.errors) {
+    return <NoDataErrorState errors={response.errors} />;
   }
+
+  const topic = response.payload!;
 
   async function onSaveProperty(name: string, value: string) {
     "use server";
+
     if (isReadonly) {
       // silently ignore attempt to change a property value in read-only mode
-      return true;
+      return Promise.resolve({ payload: undefined } as ApiResponse<undefined>);
     }
+
     return updateTopic(kafkaId, topicId, undefined, undefined, {
       [name]: {
         value,

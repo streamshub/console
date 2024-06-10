@@ -63,6 +63,8 @@ class BrokersResourceIT {
         utils = new TestHelper(bootstrapServers, config, null);
 
         client.resources(Kafka.class).inAnyNamespace().delete();
+        consoleConfig.clearSecurity();
+
         utils.apply(client, new KafkaBuilder()
                 .withNewMetadata()
                     .withName("test-kafka1")

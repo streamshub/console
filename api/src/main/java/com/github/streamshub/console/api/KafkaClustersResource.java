@@ -32,11 +32,14 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 import com.github.streamshub.console.api.model.KafkaCluster;
 import com.github.streamshub.console.api.model.ListFetchParams;
+import com.github.streamshub.console.api.security.Authorized;
+import com.github.streamshub.console.api.security.ResourcePrivilege;
 import com.github.streamshub.console.api.service.KafkaClusterService;
 import com.github.streamshub.console.api.support.ErrorCategory;
 import com.github.streamshub.console.api.support.FieldFilter;
 import com.github.streamshub.console.api.support.ListRequestContext;
 import com.github.streamshub.console.api.support.StringEnumeration;
+import com.github.streamshub.console.config.security.Privilege;
 
 import io.xlate.validation.constraints.Expression;
 
@@ -63,6 +66,8 @@ public class KafkaClustersResource {
     @APIResponseSchema(KafkaCluster.KafkaClusterDataList.class)
     @APIResponse(responseCode = "500", ref = "ServerError")
     @APIResponse(responseCode = "504", ref = "ServerTimeout")
+    @Authorized
+    @ResourcePrivilege(Privilege.LIST)
     public Response listClusters(
             @QueryParam(KafkaCluster.FIELDS_PARAM)
             @DefaultValue(KafkaCluster.Fields.LIST_DEFAULT)
@@ -121,6 +126,8 @@ public class KafkaClustersResource {
     @APIResponse(responseCode = "404", ref = "NotFound")
     @APIResponse(responseCode = "500", ref = "ServerError")
     @APIResponse(responseCode = "504", ref = "ServerTimeout")
+    @Authorized
+    @ResourcePrivilege(Privilege.GET)
     public CompletionStage<Response> describeCluster(
             @Parameter(description = "Cluster identifier")
             @PathParam("clusterId")
@@ -194,6 +201,8 @@ public class KafkaClustersResource {
         node = { "data", "id" },
         payload = ErrorCategory.InvalidResource.class,
         validationAppliesTo = ConstraintTarget.PARAMETERS)
+    @Authorized
+    @ResourcePrivilege(Privilege.UPDATE)
     public Response patchCluster(
             @Parameter(description = "Cluster identifier")
             @PathParam("clusterId")
@@ -205,7 +214,7 @@ public class KafkaClustersResource {
         // Return all fields
         requestedFields.accept(Arrays.asList(KafkaCluster.Fields.DESCRIBE_DEFAULT.split(",\\s*")));
 
-        var result = clusterService.patchCluster(clusterId, clusterData.getData());
+        var result = clusterService.patchCluster(clusterData.getData());
         var responseEntity = new KafkaCluster.KafkaClusterData(result);
 
         return Response.ok(responseEntity).build();

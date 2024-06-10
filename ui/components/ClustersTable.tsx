@@ -6,6 +6,7 @@ import { ResponsiveTable } from "@/components/Table";
 import { Truncate } from "@/libs/patternfly/react-core";
 import { TableVariant } from "@/libs/patternfly/react-table";
 import { useTranslations } from "next-intl";
+import { Link } from "@/i18n/routing";
 
 const columns = [
   "name",
@@ -13,14 +14,28 @@ const columns = [
   "namespace",
   "authentication",
   "login",
-] as const;
+];
 
 export function ClustersTable({
   clusters,
+  authenticated,
 }: {
   clusters: ClusterList[] | undefined;
+  authenticated: boolean
 }) {
   const t = useTranslations();
+  const columns = authenticated ? [
+        "name",
+        "version",
+        "namespace",
+    ] as const : [
+        "name",
+        "version",
+        "namespace",
+        "authentication",
+        "login",
+    ] as const;
+
   return (
     <ResponsiveTable
       ariaLabel={"Kafka clusters"}
@@ -56,7 +71,12 @@ export function ClustersTable({
           case "name":
             return (
               <Td key={key}>
-                <Truncate content={row.attributes.name} />
+                {authenticated
+                    ? <Link href={`/kafka/${row.id}`}>
+                        <Truncate content={row.attributes.name} />
+                      </Link>
+                    : <Truncate content={row.attributes.name} />
+                }
               </Td>
             );
           case "version":
@@ -87,8 +107,8 @@ export function ClustersTable({
           case "login":
             return (
               <Td key={key} modifier={"fitContent"}>
-                <ButtonLink href={`/kafka/${row.id}/login`} variant={"primary"}>
-                  Login to cluster
+                <ButtonLink href={ authenticated ? `/kafka/${row.id}` : `/kafka/${row.id}/login`} variant={"primary"}>
+                  { authenticated ? "View" : "Login to cluster" }
                 </ButtonLink>
               </Td>
             );

@@ -41,6 +41,7 @@ import org.skyscreamer.jsonassert.JSONAssert;
 import com.github.streamshub.console.api.support.KafkaContext;
 import com.github.streamshub.console.api.support.serdes.RecordData;
 import com.github.streamshub.console.config.ConsoleConfig;
+import com.github.streamshub.console.config.KafkaClusterConfig;
 import com.github.streamshub.console.kafka.systemtest.TestPlainProfile;
 import com.github.streamshub.console.kafka.systemtest.deployment.DeploymentManager;
 import com.github.streamshub.console.test.RecordHelper;
@@ -110,10 +111,19 @@ class RecordsResourceIT {
         recordUtils = new RecordHelper(bootstrapServers, config, null);
 
         client.resources(Kafka.class).inAnyNamespace().delete();
+        consoleConfig.clearSecurity();
 
         utils.apply(client, utils.buildKafkaResource("test-kafka1", utils.getClusterId(), bootstrapServers));
         // Second cluster is offline/non-existent
         utils.apply(client, utils.buildKafkaResource("test-kafka2", UUID.randomUUID().toString(), randomBootstrapServers));
+
+        // Wait for the context map to be populated with all Kafka configurations
+        await().atMost(10, TimeUnit.SECONDS).until(() -> kafkaContexts.values()
+                .stream()
+                .map(KafkaContext::clusterConfig)
+                .map(KafkaClusterConfig::getName)
+                .toList()
+                .containsAll(List.of("test-kafka1", "test-kafka2")));
 
         clusterId1 = consoleConfig.getKafka().getCluster("default/test-kafka1").get().getId();
         clusterId2 = consoleConfig.getKafka().getCluster("default/test-kafka2").get().getId();

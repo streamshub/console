@@ -4,8 +4,8 @@ type Props = {
   children: ReactNode;
 };
 
-export const fetchCache = "force-no-store";
-export const dynamic = "force-dynamic";
+//export const fetchCache = "force-no-store";
+//export const dynamic = "force-dynamic";
 
 // Since we have a `not-found.tsx` page on the root, a layout file
 // is required, even if it's just passing children through.

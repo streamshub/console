@@ -8,11 +8,7 @@ import {
   partitionSelection,
 } from "../types";
 import { useRouter } from "@/i18n/routing";
-import {
-  getDryrunResult,
-  updateConsumerGroup,
-} from "@/api/consumerGroups/actions";
-import { UpdateConsumerGroupErrorSchema } from "@/api/consumerGroups/schema";
+import { updateConsumerGroup } from "@/api/consumerGroups/actions";
 import { Dryrun } from "./Dryrun";
 import { LoadingPage } from "./LoadingPage";
 import { ResetOffset } from "./ResetOffset";
@@ -68,7 +64,7 @@ export function ResetConsumerOffset({
 
   const [error, setError] = useState<string | undefined>();
 
-  const [newoffsetData, setNewOffsetData] = useState<Offset[]>([]);
+  const [newOffsetData, setNewOffsetData] = useState<Offset[]>([]);
 
   const [showDryRun, setShowDryRun] = useState(false);
 
@@ -208,13 +204,27 @@ export function ResetConsumerOffset({
 
   const openDryrun = async () => {
     const uniqueOffsets = generateOffsets();
-    const res = await getDryrunResult(
+    const response = await updateConsumerGroup(
       kafkaId,
       consumerGroupName,
       uniqueOffsets,
+      true // dryRun
     );
-    setNewOffsetData(res?.attributes?.offsets ?? []);
-    setShowDryRun(true);
+
+    if (response.payload) {
+      const res = response.payload;
+      const offsets: Offset[] = Array.from(res.attributes?.offsets ?? []).map(o => {
+        return {
+            topicId: o.topicId!,
+            topicName: o.topicName,
+            partition: o.partition,
+            offset: o.offset,
+        }
+      });
+
+      setNewOffsetData(offsets);
+      setShowDryRun(true);
+    }
   };
 
   const closeDryrun = () => {
@@ -240,12 +250,20 @@ export function ResetConsumerOffset({
 
     try {
       const uniqueOffsets = generateOffsets();
-      const success = await updateConsumerGroup(
+      const response = await updateConsumerGroup(
         kafkaId,
         consumerGroupName,
         uniqueOffsets,
       );
-      if (success === true) {
+
+      if (response.errors) {
+        const errorMessages = response.errors.map((err) => err.detail);
+        const errorMessage =
+          errorMessages.length > 0
+            ? errorMessages[0]
+            : "Failed to update consumer group";
+        setError(errorMessage);
+      } else {
         closeResetOffset();
         addAlert({
           title: t("ConsumerGroupsTable.reset_offset_submitted_successfully", {
@@ -253,16 +271,6 @@ export function ResetConsumerOffset({
           }),
           variant: "success",
         });
-      } else {
-        const errorMessages =
-          (success as UpdateConsumerGroupErrorSchema)?.errors.map(
-            (err) => err.detail,
-          ) || [];
-        const errorMessage =
-          errorMessages.length > 0
-            ? errorMessages[0]
-            : "Failed to update consumer group";
-        setError(errorMessage);
       }
     } catch (e: unknown) {
       setError("Unknown error occurred");
@@ -278,7 +286,7 @@ export function ResetConsumerOffset({
       ) : showDryRun ? (
         <Dryrun
           consumerGroupName={consumerGroupName}
-          newOffset={newoffsetData}
+          newOffset={newOffsetData}
           onClickCloseDryrun={closeDryrun}
           cliCommand={generateCliCommand()}
         />
