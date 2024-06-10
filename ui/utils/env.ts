@@ -3,14 +3,6 @@ export const isReadonly = (() => {
     return true;
   }
 
-  if (
-    process.env.NEXT_PUBLIC_KEYCLOAK_URL &&
-    process.env.KEYCLOAK_CLIENTID &&
-    process.env.KEYCLOAK_CLIENTSECRET
-  ) {
-    return false;
-  }
-
   return true;
 })();
 

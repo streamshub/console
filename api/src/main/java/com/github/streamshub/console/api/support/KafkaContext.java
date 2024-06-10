@@ -16,6 +16,7 @@ import com.github.streamshub.console.config.KafkaClusterConfig;
 import io.strimzi.api.kafka.model.kafka.Kafka;
 import io.strimzi.api.kafka.model.kafka.KafkaClusterSpec;
 import io.strimzi.api.kafka.model.kafka.KafkaSpec;
+import io.strimzi.api.kafka.model.kafka.KafkaStatus;
 import io.strimzi.api.kafka.model.kafka.listener.GenericKafkaListener;
 import io.strimzi.api.kafka.model.kafka.listener.KafkaListenerAuthenticationOAuth;
 import io.strimzi.kafka.oauth.client.ClientConfig;
@@ -43,6 +44,12 @@ public class KafkaContext implements Closeable {
         this.applicationScoped = false;
     }
 
+    public static String clusterId(KafkaClusterConfig clusterConfig, Optional<Kafka> kafkaResource) {
+        return Optional.ofNullable(clusterConfig.getId())
+                .or(() -> kafkaResource.map(Kafka::getStatus).map(KafkaStatus::getClusterId))
+                .orElseGet(clusterConfig::getName);
+    }
+
     @Override
     public boolean equals(Object obj) {
         if (!(obj instanceof KafkaContext)) {
@@ -66,6 +73,10 @@ public class KafkaContext implements Closeable {
         if (admin != null) {
             admin.close();
         }
+    }
+
+    public String clusterId() {
+        return clusterId(clusterConfig, Optional.ofNullable(resource));
     }
 
     public KafkaClusterConfig clusterConfig() {
