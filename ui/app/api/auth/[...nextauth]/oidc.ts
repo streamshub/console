@@ -1,9 +1,9 @@
 import { logger } from "@/utils/logger";
 import { Session, TokenSet } from "next-auth";
 import { JWT } from "next-auth/jwt";
-import KeycloakProvider from "next-auth/providers/keycloak";
+import { OAuthConfig } from "next-auth/providers/index";
 
-const log = logger.child({ module: "keycloak" });
+const log = logger.child({ module: "oidc" });
 
 const {
   CONSOLE_OAUTH_PROVIDER,
@@ -12,34 +12,54 @@ const {
   CONSOLE_OAUTH_ISSUER
 } = process.env;
 
-class Keycloak {
-  provider = this.keycloakConfigured()
-    ? KeycloakProvider({
-        clientId: CONSOLE_OAUTH_CLIENT_ID!,
-        clientSecret: CONSOLE_OAUTH_CLIENT_SECRET!,
-        issuer: CONSOLE_OAUTH_ISSUER,
-      })
+class OpenIdConnect {
+
+  provider: OAuthConfig<any> | null = this.oidcConfigured()
+    ? {
+      id: "oidc",
+      name: process.env.CONSOLE_OAUTH_PROVIDER_NAME ?? "",
+      type: "oauth",
+      clientId: CONSOLE_OAUTH_CLIENT_ID,
+      clientSecret: CONSOLE_OAUTH_CLIENT_SECRET,
+      wellKnown: `${CONSOLE_OAUTH_ISSUER}/.well-known/openid-configuration`,
+      authorization: { params: { scope: "openid email profile groups" } },
+      idToken: true,
+      profile(profile) {
+        return {
+          id: profile.sub,
+          name: profile.name ?? profile.preferred_username,
+          email: profile.email,
+          image: profile.image,
+        }
+      },
+    }
     : null;
 
-  keycloakConfigured() {
-    return CONSOLE_OAUTH_PROVIDER === "keycloak"
+  oidcConfigured() {
+    return CONSOLE_OAUTH_PROVIDER === "oidc"
       && CONSOLE_OAUTH_CLIENT_ID
       && CONSOLE_OAUTH_CLIENT_SECRET
       && CONSOLE_OAUTH_ISSUER;
   }
 
   isEnabled() {
-    return this.provider !== null;
+    return process.env.CONSOLE_OAUTH_PROVIDER === "oidc"
+      && process.env.CONSOLE_OAUTH_ISSUER
+      && process.env.CONSOLE_OAUTH_CLIENT_ID
+      && process.env.CONSOLE_OAUTH_CLIENT_SECRET;
   }
 
   async getTokenEndpoint() {
     let _tokenEndpoint: string | undefined = undefined;
 
     if (this.provider?.wellKnown) {
+      log.debug(`wellKnown endpoint: ${this.provider.wellKnown}`);
       const kc = await fetch(this.provider.wellKnown);
       const res = await kc.json();
       _tokenEndpoint = res.token_endpoint;
     }
+
+    log.debug(`token endpoint: ${_tokenEndpoint}`);
 
     return _tokenEndpoint;
   }
@@ -125,7 +145,7 @@ class Keycloak {
   async jwt({ token, account }: { token: JWT, account: any }) {
     // Persist the OAuth access_token and or the user id to the token right after signin
     if (account) {
-      log.trace("account present, saving new token");
+      log.trace(`account ${JSON.stringify(account)} present, saving new token: ${JSON.stringify(token)}`);
       // Save the access token and refresh token in the JWT on the initial login
       return {
         access_token: account.access_token,
@@ -152,5 +172,5 @@ class Keycloak {
   };
 }
 
-const keycloak = new Keycloak();
-export default keycloak;
+const oidc = new OpenIdConnect();
+export default oidc;

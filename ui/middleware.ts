@@ -30,7 +30,7 @@ const authMiddleware = withAuth(
 );
 
 export default async function middleware(req: NextRequest) {
-  return process.env.KEYCLOAK_CLIENTID
+  return process.env.CONSOLE_OAUTH_PROVIDER
     ? (authMiddleware as any)(req)
     : intlMiddleware(req);
 }
