@@ -42,6 +42,8 @@ import com.github.streamshub.console.api.model.NewTopic;
 import com.github.streamshub.console.api.model.Topic;
 import com.github.streamshub.console.api.model.TopicFilterParams;
 import com.github.streamshub.console.api.model.TopicPatch;
+import com.github.streamshub.console.api.security.Authorized;
+import com.github.streamshub.console.api.security.ResourcePrivilege;
 import com.github.streamshub.console.api.service.ConsumerGroupService;
 import com.github.streamshub.console.api.service.TopicService;
 import com.github.streamshub.console.api.support.ErrorCategory;
@@ -50,6 +52,7 @@ import com.github.streamshub.console.api.support.KafkaOffsetSpec;
 import com.github.streamshub.console.api.support.KafkaUuid;
 import com.github.streamshub.console.api.support.ListRequestContext;
 import com.github.streamshub.console.api.support.StringEnumeration;
+import com.github.streamshub.console.config.security.Privilege;
 
 import io.xlate.validation.constraints.Expression;
 
@@ -83,6 +86,8 @@ public class TopicsResource {
     @APIResponse(responseCode = "201",
         description = "New topic successfully created",
         content = @Content(schema = @Schema(implementation = NewTopic.NewTopicDocument.class)))
+    @Authorized
+    @ResourcePrivilege(action = Privilege.CREATE)
     public CompletionStage<Response> createTopic(
             @Parameter(description = "Cluster identifier")
             @PathParam("clusterId")
@@ -119,6 +124,8 @@ public class TopicsResource {
     @Path("{topicId}")
     @DELETE
     @APIResponseSchema(responseCode = "204", value = Void.class)
+    @Authorized
+    @ResourcePrivilege(action = Privilege.DELETE)
     public CompletionStage<Response> deleteTopic(
             @Parameter(description = "Cluster identifier")
             @PathParam("clusterId")
@@ -138,6 +145,8 @@ public class TopicsResource {
     @APIResponseSchema(Topic.ListResponse.class)
     @APIResponse(responseCode = "500", ref = "ServerError")
     @APIResponse(responseCode = "504", ref = "ServerTimeout")
+    @Authorized
+    @ResourcePrivilege(action = Privilege.LIST)
     public CompletionStage<Response> listTopics(
             @Parameter(description = "Cluster identifier")
             @PathParam("clusterId")
@@ -221,6 +230,8 @@ public class TopicsResource {
     @APIResponse(responseCode = "404", ref = "NotFound")
     @APIResponse(responseCode = "500", ref = "ServerError")
     @APIResponse(responseCode = "504", ref = "ServerTimeout")
+    @Authorized
+    @ResourcePrivilege(action = Privilege.GET)
     public CompletionStage<Response> describeTopic(
             @Parameter(description = "Cluster identifier")
             @PathParam("clusterId")
@@ -362,6 +373,8 @@ public class TopicsResource {
         node = { "data", "id" },
         payload = ErrorCategory.InvalidResource.class,
         validationAppliesTo = ConstraintTarget.PARAMETERS)
+    @Authorized
+    @ResourcePrivilege(action = Privilege.UPDATE)
     public CompletionStage<Response> patchTopic(
             @Parameter(description = "Cluster identifier")
             @PathParam("clusterId")

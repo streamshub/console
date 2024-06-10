@@ -53,15 +53,18 @@ import com.github.streamshub.console.api.model.PartitionInfo;
 import com.github.streamshub.console.api.model.ReplicaLocalStorage;
 import com.github.streamshub.console.api.model.Topic;
 import com.github.streamshub.console.api.model.TopicPatch;
+import com.github.streamshub.console.api.security.ConsolePermission;
 import com.github.streamshub.console.api.support.KafkaContext;
 import com.github.streamshub.console.api.support.KafkaOffsetSpec;
 import com.github.streamshub.console.api.support.ListRequestContext;
 import com.github.streamshub.console.api.support.TopicValidation;
 import com.github.streamshub.console.api.support.UnknownTopicIdPatch;
 import com.github.streamshub.console.api.support.ValidationProxy;
+import com.github.streamshub.console.config.security.Privilege;
 
 import io.fabric8.kubernetes.api.model.ObjectMeta;
 import io.fabric8.kubernetes.client.KubernetesClient;
+import io.quarkus.security.identity.SecurityIdentity;
 import io.strimzi.api.kafka.model.kafka.Kafka;
 import io.strimzi.api.kafka.model.topic.KafkaTopic;
 
@@ -96,6 +99,9 @@ public class TopicService {
      */
     @Inject
     ThreadContext threadContext;
+
+    @Inject
+    SecurityIdentity securityIdentity;
 
     @Inject
     ValidationProxy validationService;
@@ -165,7 +171,7 @@ public class TopicService {
         final Map<String, Integer> statuses = new HashMap<>();
         listSupport.meta().put("summary", Map.of("statuses", statuses));
 
-        return listTopics(adminClient, true)
+        return listTopics(true)
             .thenApply(list -> list.stream().map(Topic::fromTopicListing).toList())
             .thenComposeAsync(
                     list -> augmentList(adminClient, list, fetchList, offsetSpec),
@@ -188,12 +194,19 @@ public class TopicService {
         return topic;
     }
 
-    CompletableFuture<List<TopicListing>> listTopics(Admin adminClient, boolean listInternal) {
+    CompletableFuture<List<TopicListing>> listTopics(boolean listInternal) {
+        Admin adminClient = kafkaContext.admin();
+        ConsolePermission required = new ConsolePermission(
+                "kafkas/%s/topics".formatted(kafkaContext.clusterId()),
+                Privilege.LIST);
+
         return adminClient
             .listTopics(new ListTopicsOptions().listInternal(listInternal))
             .listings()
-            .thenApply(topics -> topics.stream().toList())
             .toCompletionStage()
+            .thenApplyAsync(topics -> topics.stream()
+                    .filter(t -> securityIdentity.checkPermissionBlocking(required.resourceName(t.name())))
+                    .toList(), threadContext.currentContextExecutor())
             .toCompletableFuture();
     }
 
