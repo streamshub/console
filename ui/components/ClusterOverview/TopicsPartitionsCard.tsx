@@ -21,12 +21,16 @@ import {
 } from "@/libs/patternfly/react-icons";
 import { Link } from "@/i18n/routing";
 import { useTranslations } from "next-intl";
+import { ApiError } from "@/api/api";
+import { NoDataErrorState } from "@/components/NoDataErrorState";
 
 type TopicsPartitionsCardProps = {
   topicsReplicated: number;
   topicsUnderReplicated: number;
   topicsOffline: number;
+  topicsUnknown: number;
   partitions: number;
+  errors?: ApiError[];
 };
 
 export function TopicsPartitionsCard({
@@ -34,27 +38,21 @@ export function TopicsPartitionsCard({
   topicsReplicated,
   topicsUnderReplicated,
   topicsOffline,
+  topicsUnknown,
   partitions,
+  errors,
 }:
   | ({ isLoading: false } & TopicsPartitionsCardProps)
   | ({
       isLoading: true;
     } & Partial<{ [key in keyof TopicsPartitionsCardProps]?: undefined }>)) {
   const t = useTranslations();
-  return (
-    <Card component={"div"}>
-      <CardHeader
-        actions={{
-          actions: (
-            <Link href={"./topics"}>
-              {t("ClusterOverview.view_all_topics")}
-            </Link>
-          ),
-        }}
-      >
-        <CardTitle>{t("ClusterOverview.topic_header")}</CardTitle>
-      </CardHeader>
-      <CardBody>
+  let cardBody;
+
+  if (errors) {
+    cardBody = <NoDataErrorState errors={ errors } />
+  } else {
+    cardBody = (
         <Flex gap={{ default: "gapLg" }}>
           <Flex
             flex={{ default: "flex_1" }}
@@ -70,7 +68,7 @@ export function TopicsPartitionsCard({
                     <TextContent>
                       <Text component={"small"}>
                         <Link href={"./topics"}>
-                          <Number value={topicsReplicated + topicsUnderReplicated + topicsOffline} />{" "}
+                          <Number value={topicsReplicated + topicsUnderReplicated + topicsOffline + topicsUnknown} />{" "}
                           {t("ClusterOverview.total_topics")}
                         </Link>
                       </Text>
@@ -183,6 +181,24 @@ export function TopicsPartitionsCard({
             </FlexItem>
           </Flex>
         </Flex>
+    );
+  }
+
+  return (
+    <Card component={"div"}>
+      <CardHeader
+        actions={{
+          actions: (
+            <Link href={"./topics"}>
+              {t("ClusterOverview.view_all_topics")}
+            </Link>
+          ),
+        }}
+      >
+        <CardTitle>{t("ClusterOverview.topic_header")}</CardTitle>
+      </CardHeader>
+      <CardBody>
+        { cardBody }
       </CardBody>
     </Card>
   );

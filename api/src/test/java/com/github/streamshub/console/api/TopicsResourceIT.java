@@ -18,6 +18,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import java.util.logging.Level;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -55,23 +56,33 @@ import org.eclipse.microprofile.config.Config;
 import org.hamcrest.Description;
 import org.hamcrest.TypeSafeMatcher;
 import org.json.JSONException;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.aggregator.AggregateWith;
 import org.junit.jupiter.params.provider.CsvFileSource;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.stubbing.Answer;
 import org.skyscreamer.jsonassert.JSONAssert;
 import org.skyscreamer.jsonassert.JSONCompareMode;
 
+import com.github.streamshub.console.api.security.ConsoleAuthenticationMechanism;
 import com.github.streamshub.console.api.support.Holder;
 import com.github.streamshub.console.config.ConsoleConfig;
+import com.github.streamshub.console.config.security.Audit;
+import com.github.streamshub.console.config.security.Privilege;
+import com.github.streamshub.console.config.security.ResourceTypes;
+import com.github.streamshub.console.config.security.SecurityConfigBuilder;
 import com.github.streamshub.console.kafka.systemtest.TestPlainProfile;
 import com.github.streamshub.console.kafka.systemtest.deployment.DeploymentManager;
 import com.github.streamshub.console.kafka.systemtest.utils.ConsumerUtils;
 import com.github.streamshub.console.test.AdminClientSpy;
+import com.github.streamshub.console.test.LogCapture;
 import com.github.streamshub.console.test.TestHelper;
 import com.github.streamshub.console.test.TopicHelper;
+import com.github.streamshub.console.test.VarargsAggregator;
 
 import io.fabric8.kubernetes.api.model.ObjectMeta;
 import io.fabric8.kubernetes.client.KubernetesClient;
@@ -89,13 +100,17 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.aMapWithSize;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.anEmptyMap;
+import static org.hamcrest.Matchers.both;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.everyItem;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.hasEntry;
+import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasKey;
+import static org.hamcrest.Matchers.hasProperty;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.iterableWithSize;
@@ -113,6 +128,11 @@ import static org.mockito.Mockito.doAnswer;
 @TestHTTPEndpoint(TopicsResource.class)
 @TestProfile(TestPlainProfile.class)
 class TopicsResourceIT {
+
+    static LogCapture auditLogCapture = LogCapture.with(logRecord -> logRecord
+            .getLoggerName()
+            .equals(ConsoleAuthenticationMechanism.class.getName()),
+            Level.INFO);
 
     @Inject
     Config config;
@@ -141,6 +161,16 @@ class TopicsResourceIT {
     URI bootstrapServers1;
     String clusterId2;
 
+    @BeforeAll
+    static void initialize() {
+        auditLogCapture.register();
+    }
+
+    @AfterAll
+    static void cleanup() {
+        auditLogCapture.deregister();
+    }
+
     @BeforeEach
     void setup() throws IOException {
         bootstrapServers1 = URI.create(deployments.getExternalBootstrapServers());
@@ -158,6 +188,9 @@ class TopicsResourceIT {
 
         client.resources(Kafka.class).inAnyNamespace().delete();
         client.resources(KafkaTopic.class).inAnyNamespace().delete();
+        consoleConfig.clearSecurity();
+
+        auditLogCapture.records().clear();
 
         utils.apply(client, utils.buildKafkaResource(clusterName1, utils.getClusterId(), bootstrapServers1));
         // Second cluster is offline/non-existent
@@ -723,6 +756,47 @@ class TopicsResourceIT {
             .body("data.size()", equalTo(topicIds.size()))
             .body("data.id", containsInAnyOrder(topicIds.toArray(String[]::new)))
             .body("data.attributes.numPartitions", containsInAnyOrder(1, 2, 3, 4, 5, 6, 7, 8, 9));
+    }
+
+
+    @ParameterizedTest
+    @CsvSource({
+        "name, LIST",
+        // numPartitions requires an additional describe
+        "'name,numPartitions', LIST, GET"
+    })
+    void testListTopicsWithAuditLogging(String fields, @AggregateWith(VarargsAggregator.class) Privilege... privilegesAudited) {
+        String topicName = UUID.randomUUID().toString();
+        topicUtils.createTopics(clusterId1, List.of(topicName), 1);
+
+        consoleConfig.getKafka().getClusterById(clusterId1).ifPresent(clusterConfig -> {
+            clusterConfig.setSecurity(new SecurityConfigBuilder()
+                    .addNewAudit()
+                        .withDecision(Audit.ALL)
+                        .withResources(ResourceTypes.Kafka.TOPICS.value())
+                        .withPrivileges(privilegesAudited)
+                    .endAudit()
+                    .build());
+        });
+
+        whenRequesting(req -> req
+                .queryParam("fields[topics]", fields)
+                .get("", clusterId1))
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()))
+            .body("data.size()", equalTo(1));
+
+        var auditLogs = auditLogCapture.records();
+        final String auditTmpl = "ANONYMOUS allowed console:kafkas/test-kafka1/topics:[%s]:[%s]";
+
+        assertThat(auditLogs, not(hasItem(hasProperty("message", containsString("denied")))));
+        assertThat(auditLogs, hasItem(both(hasProperty("message", containsString(auditTmpl.formatted("", Privilege.LIST))))
+                .and(hasProperty("level", equalTo(Level.INFO)))));
+
+        for (var p : privilegesAudited) {
+            assertThat(auditLogs, hasItem(both(hasProperty("message", containsString(auditTmpl.formatted(topicName, p))))
+                    .and(hasProperty("level", equalTo(Level.INFO)))));
+        }
     }
 
     @Test

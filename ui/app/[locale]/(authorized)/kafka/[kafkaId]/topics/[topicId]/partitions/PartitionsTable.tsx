@@ -85,13 +85,18 @@ export function PartitionsTable({
     sort: (typeof SortColumns)[number];
     dir: "asc" | "desc";
   }>({ sort: "id", dir: "asc" });
+
   useEffect(() => {
     let interval: ReturnType<typeof setInterval>;
+
     if (initialData) {
       interval = setInterval(async () => {
-        const topic = await getTopic(kafkaId, initialData.id);
-        if (topic) {
-          setTopic(topic);
+        const response = await getTopic(kafkaId, initialData.id);
+
+        if (response.errors) {
+          console.warn("Failed to reload topic", { kafkaId, topicId: initialData.id });
+        } else {
+          setTopic(response.payload!);
         }
       }, 30000);
     }

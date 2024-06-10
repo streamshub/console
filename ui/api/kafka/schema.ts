@@ -55,7 +55,7 @@ const ClusterDetailSchema = z.object({
     kafkaVersion: z.string().nullable().optional(),
     nodes: z.array(NodeSchema),
     controller: NodeSchema,
-    authorizedOperations: z.array(z.string()),
+    authorizedOperations: z.array(z.string()).optional(),
     cruiseControlEnabled: z.boolean().optional(),
     listeners: z
       .array(

@@ -26,7 +26,3 @@ export async function generateMetadata({
     title: t("title"),
   };
 }
-
-// export function generateStaticParams() {
-//   return [{ locale: "en" }];
-// }

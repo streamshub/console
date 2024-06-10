@@ -14,7 +14,6 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response.Status;
 
 import org.eclipse.microprofile.config.Config;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -121,6 +120,7 @@ class KafkaRebalancesResourceIT {
 
         client.resources(Kafka.class).inAnyNamespace().delete();
         client.resources(KafkaRebalance.class).inAnyNamespace().delete();
+        consoleConfig.clearSecurity();
 
         utils.apply(client, new KafkaBuilder(utils.buildKafkaResource("test-kafka1", utils.getClusterId(), bootstrapServers))
                 .editSpec()
@@ -158,12 +158,6 @@ class KafkaRebalancesResourceIT {
 
         clusterId1 = consoleConfig.getKafka().getCluster("default/test-kafka1").get().getId();
         clusterId2 = consoleConfig.getKafka().getCluster("default/test-kafka2").get().getId();
-    }
-
-    @AfterEach
-    void tearDown() {
-        client.resources(Kafka.class).inAnyNamespace().delete();
-        client.resources(KafkaRebalance.class).inAnyNamespace().delete();
     }
 
     @Test

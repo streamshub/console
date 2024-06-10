@@ -2,7 +2,6 @@ import { locales, routing } from "@/i18n/routing";
 import withAuth from "next-auth/middleware";
 import createIntlMiddleware from "next-intl/middleware";
 import { NextRequest, NextResponse } from "next/server";
-
 import { logger } from "@/utils/logger";
 
 const log = logger.child({ module: "middleware" });
@@ -24,7 +23,7 @@ const authMiddleware = withAuth(
       authorized: ({ token }) => token != null,
     },
     pages: {
-      signIn: `/kafka/1/login`,
+      //signIn: `/kafka/1/login`,
     },
   },
 ) as any;
@@ -44,16 +43,22 @@ const protectedPathnameRegex = RegExp(
 );
 
 export default async function middleware(req: NextRequest) {
+    /*
+     * Next.js middleware doesn't support reading files, so here we make a (cached)
+     * call to the /config endpoint within the same application :(
+     */
+  let oidcEnabled = await fetch(`http://127.0.0.1:${process.env.PORT}/config`, { cache: "force-cache" })
+    .then(cfg => cfg.json())
+    .then(cfg => cfg["oidc"]);
+
   const requestPath = req.nextUrl.pathname;
-  const isPublicPage = publicPathnameRegex.test(requestPath);
-  const isProtectedPage = protectedPathnameRegex.test(requestPath);
+  const isPublicPage = !oidcEnabled && publicPathnameRegex.test(requestPath);
+  const isProtectedPage = oidcEnabled || protectedPathnameRegex.test(requestPath);
 
   if (isPublicPage) {
-    log.trace({ requestPath: requestPath }, "public page");
     return intlMiddleware(req);
   } else if (isProtectedPage) {
-    log.trace({ requestPath: requestPath }, "protected page");
-    return (authMiddleware as any)(req);
+    return (authMiddleware)(req);
   } else {
     log.debug(
       {
@@ -70,5 +75,5 @@ export default async function middleware(req: NextRequest) {
 export const config = {
   // Skip all paths that should not be internationalized. This example skips the
   // folders "api", "healthz", "_next" and all files with an extension (e.g. favicon.ico)
-  matcher: ["/((?!api|healthz|_next|.*\\..*).*)"],
+  matcher: ["/((?!api|config|healthz|_next|.*\\..*).*)"],
 };

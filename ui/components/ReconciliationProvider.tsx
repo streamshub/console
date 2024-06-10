@@ -25,7 +25,7 @@ export function ReconciliationProvider({
 
     const fetchReconciliationState = async () => {
       try {
-        const cluster = await getKafkaCluster(kafkaId);
+        const cluster = (await getKafkaCluster(kafkaId))?.payload;
         const reconciliationPaused =
           cluster?.meta?.reconciliationPaused ?? false;
         setReconciliationPaused(reconciliationPaused);

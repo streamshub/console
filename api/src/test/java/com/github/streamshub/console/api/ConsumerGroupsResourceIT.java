@@ -125,6 +125,8 @@ class ConsumerGroupsResourceIT {
         utils = new TestHelper(bootstrapServers, config, null);
 
         client.resources(Kafka.class).inAnyNamespace().delete();
+        consoleConfig.clearSecurity();
+
         utils.apply(client, utils.buildKafkaResource("test-kafka1", utils.getClusterId(), bootstrapServers));
 
         // Wait for the informer cache to be populated with all Kafka CRs

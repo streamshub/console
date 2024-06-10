@@ -34,10 +34,12 @@ import com.github.streamshub.console.api.model.Condition;
 import com.github.streamshub.console.api.model.KafkaCluster;
 import com.github.streamshub.console.api.model.KafkaListener;
 import com.github.streamshub.console.api.model.Node;
+import com.github.streamshub.console.api.security.PermissionService;
 import com.github.streamshub.console.api.support.Holder;
 import com.github.streamshub.console.api.support.KafkaContext;
 import com.github.streamshub.console.api.support.ListRequestContext;
 import com.github.streamshub.console.config.ConsoleConfig;
+import com.github.streamshub.console.config.security.Privilege;
 
 import io.fabric8.kubernetes.api.model.ObjectMeta;
 import io.fabric8.kubernetes.client.KubernetesClient;
@@ -96,6 +98,9 @@ public class KafkaClusterService {
      */
     KafkaContext kafkaContext;
 
+    @Inject
+    PermissionService permissionService;
+
     boolean listUnconfigured = false;
     Predicate<KafkaCluster> includeAll = k -> listUnconfigured;
 
@@ -127,6 +132,7 @@ public class KafkaClusterService {
                 .toList();
 
         return Stream.concat(configuredClusters.values().stream(), otherClusters.stream())
+                .filter(permissionService.permitted(KafkaCluster.API_TYPE, Privilege.LIST, KafkaCluster::name))
                 .map(listSupport::tally)
                 .filter(listSupport::betweenCursors)
                 .sorted(listSupport.getSortComparator())
@@ -159,7 +165,7 @@ public class KafkaClusterService {
             .thenApply(this::setManaged);
     }
 
-    public KafkaCluster patchCluster(String id, KafkaCluster cluster) {
+    public KafkaCluster patchCluster(KafkaCluster cluster) {
         Kafka resource = kafkaContext.resource();
 
         if (resource != null) {

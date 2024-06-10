@@ -34,7 +34,8 @@ import static java.util.Comparator.nullsLast;
 @JsonFilter("fieldFilter")
 public class ConsumerGroup {
 
-    public static final String FIELDS_PARAM = "fields[consumerGroups]";
+    public static final String API_TYPE = "consumerGroups";
+    public static final String FIELDS_PARAM = "fields[" + API_TYPE + "]";
 
     public static final class Fields {
         public static final String STATE = "state";
@@ -118,7 +119,7 @@ public class ConsumerGroup {
         payload = ErrorCategory.InvalidResource.class)
     @Expression(
         when = "self.type != null",
-        value = "self.type == 'consumerGroups'",
+        value = "self.type == '" + API_TYPE + "'",
         message = "resource type conflicts with operation",
         node = "type",
         payload = ErrorCategory.ResourceConflict.class)
@@ -135,7 +136,7 @@ public class ConsumerGroup {
          * Used by list and describe
          */
         public ConsumerGroupResource(ConsumerGroup attributes) {
-            super(attributes.groupId, "consumerGroups", attributes);
+            super(attributes.groupId, API_TYPE, attributes);
 
             if (attributes.errors != null) {
                 addMeta("errors", attributes.errors);

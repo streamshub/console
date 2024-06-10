@@ -1,0 +1,135 @@
+kubernetes:
+  # enable/disable use of Kubernetes to obtain additional information from Strimzi
+  # Kafka and KafkaTopic custom resources. Enabled by default
+  enabled: true
+
+metricsSources:
+  # Array of Prometheus API servers that my be referenced by Kafka cluster configurations
+  # for metrics retrieval to render graphs in the UI and provide other information based
+  # on the cluster metrics
+  - name: cluster-monitoring
+    type: openshift-monitoring
+    url: https://thanos-querier-openshift-monitoring.cloud.example.com
+  - name: my-custom-prometheus
+    type: standalone
+    url: http://my-custom-prometheus.cloud2.example.com
+
+schemaRegistries:
+  # Array of Apicurio Registries that my be referenced by Kafka cluster configurations
+  # to resolve Avro or Protobuf schemas for topic message browsing
+  - name: "my-apicurio-registry"
+    url: "http://registry.example.com/apis/registry/v2/"
+
+security:
+  # OpenID connect security configuration. When OIDC is in use, all Kafka clusters must have credentials provided
+  # (if security is enabled for the cluster). Additionally, `security.subjects` may not be used at the cluster
+  # level when OIDC is in use.
+  oidc:
+    authServerUrl: 'https://my-oidc.example.com'
+    clientId: streamshub-console-client
+    clientSecret: ${console.client.secret}
+
+  subjects:
+    # Subjects and their roles may be specified in terms of JWT claims or their subject name (user1, user100 below).
+    # Using claims is only supported when OIDC security is enabled.
+    - claim: groups
+      include:
+        - team-a
+        - team-b
+      roleNames:
+        - developers
+    - claim: groups
+      include:
+        - team-c
+      roleNames:
+        - administrators
+    - include:
+        # When no claim is specified, the subject's name will be used. For JWT, this is typically `preferred_username`
+        # `upn`, or `sub` claims. When using per-Kafka authentication credentials, this will be the user name used to
+        # authenticate.
+        - user1
+        - user200
+      roleNames:
+        - administrators
+
+  # Roles and associate rules for global resources (currently only Kafka clusters) are given here in the `security.roles`
+  # section. Rules for Kafka-scoped resources are specified within the cluster configuration section below. That is,
+  # at paths `kafka.clusters[].security.rules[].
+  roles:
+    # developers may perform any operation with clusters 'a' and 'b'.
+    - name: developers
+      rules:
+        - resources:
+            - kafkas
+        - resourceNames:
+            - dev-cluster-a
+            - dev-cluster-b
+        - privileges:
+            - '*'
+    # administrators may operate on any (unspecified) Kafka clusters
+    - name: administrators
+      rules:
+        - resources:
+            - kafkas
+        - privileges:
+            - '*'
+
+kafka:
+  clusters:
+    - name: my-kafka1 # name of the Strimzi Kafka CR
+      namespace: my-namespace1 # namespace of the Strimzi Kafka CR (optional)
+      id: my-kafka1-id # value to be used as an identifier for the cluster. Must be specified when namespace is not.
+      listener: "secure" # name of the listener to use for connections from the console
+      metricsSource: cluster-monitoring
+      schemaRegistry: "my-apicurio-registry" # name of the schema registry to use with this Kafka (optional)
+      # `properties` contains keys/values to use for any Kafka connection
+      properties:
+        security.protocol: SASL_SSL
+        sasl.mechanism: SCRAM-SHA-512
+        bootstrap.servers: my-kafka1.cloud.example.com:9093 # optional, if omitted the bootstrap servers from the Strimzi Kafka CR are used
+        sasl.jaas.config: org.apache.kafka.common.security.scram.ScramLoginModule required username="kafka1-user" password="sCr@m!";
+      # `adminProperties` contains keys/values to use for Admin client Kafka connections.
+      # Properties specified here override properties of the same name in `properties`
+      adminProperties: {}
+      # `consumerProperties` contains keys/values to use for Consumer client Kafka connections.
+      # Properties specified here override properties of the same name in `properties`
+      consumerProperties: {}
+      # `producerProperties` contains keys/values to use for Producer client Kafka connections.
+      # Properties specified here override properties of the same name in `properties`
+      producerProperties: {}
+      security:
+        roles:
+          # developers may only list and view some resources
+          - name: developers
+            rules:
+              - resources:
+                  - topics
+                  - topics/records
+                  - consumerGroups
+                  - rebalances
+              - privileges:
+                  - get
+                  - list
+
+          # administrators may list, view, and update an expanded set of resources
+          - name: administrators
+            rules:
+              - resources:
+                  - topics
+                  - topics/records
+                  - consumerGroups
+                  - rebalances
+                  - nodes/configs
+              - privileges:
+                  - get
+                  - list
+                  - update
+
+    - name: my-kafka2
+      namespace: my-namespace2
+      listener: "secure"
+      metricsSource: my-custom-prometheus
+      properties:
+        security.protocol: SASL_SSL
+        sasl.mechanism: SCRAM-SHA-512
+        sasl.jaas.config: org.apache.kafka.common.security.scram.ScramLoginModule required username="kafka2-user" password="sCr@m!";

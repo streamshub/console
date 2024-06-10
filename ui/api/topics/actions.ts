@@ -1,5 +1,5 @@
 "use server";
-import { getHeaders } from "@/api/api";
+import { fetchData, patchData, postData, getHeaders, ApiResponse, filterEq, filterIn, filterLike, sortParam } from "@/api/api";
 import { getKafkaCluster } from "@/api/kafka/actions";
 import {
   describeTopicsQuery,
@@ -7,8 +7,6 @@ import {
   Topic,
   TopicCreateResponse,
   TopicCreateResponseSchema,
-  TopicMutateError,
-  TopicMutateResponseErrorSchema,
   TopicResponse,
   TopicsResponse,
   TopicsResponseSchema,
@@ -33,18 +31,15 @@ export async function getTopics(
     sortDir?: string;
     includeHidden?: boolean;
   },
-): Promise<TopicsResponse> {
+): Promise<ApiResponse<TopicsResponse>> {
   const sp = new URLSearchParams(
     filterUndefinedFromObj({
       "fields[topics]":
         params.fields ??
         "name,status,visibility,numPartitions,totalLeaderLogBytes,consumerGroups",
-      "filter[id]": params.id ? `eq,${params.id}` : undefined,
-      "filter[name]": params.name ? `like,*${params.name}*` : undefined,
-      "filter[status]":
-        params.status && params.status.length > 0
-          ? `in,${params.status.join(",")}`
-          : undefined,
+      "filter[id]": filterEq(params.id),
+      "filter[name]": filterLike(params.name),
+      "filter[status]": filterIn(params.status),
       "filter[visibility]": params.includeHidden
         ? "in,external,internal"
         : "eq,external",
@@ -60,38 +55,23 @@ export async function getTopics(
         : undefined,
     }),
   );
-  const topicsQuery = sp.toString();
-  const url = `${process.env.BACKEND_URL}/api/kafkas/${kafkaId}/topics?${topicsQuery}&`;
-  const res = await fetch(url, {
-    headers: await getHeaders(),
-    next: {
-      tags: ["topics"],
-    },
-  });
-  log.debug({ url }, "getTopics");
-  const rawData = await res.json();
-  log.trace({ url, rawData }, "getTopics response");
-  return TopicsResponseSchema.parse(rawData);
+
+  return fetchData(
+    `/api/kafkas/${kafkaId}/topics`,
+    sp,
+    (rawData: any) => TopicsResponseSchema.parse(rawData),
+  );
 }
 
 export async function getTopic(
   kafkaId: string,
   topicId: string,
-): Promise<Topic | null> {
-  const url = `${process.env.BACKEND_URL}/api/kafkas/${kafkaId}/topics/${topicId}?${describeTopicsQuery}`;
-  const res = await fetch(url, {
-    headers: await getHeaders(),
-    next: {
-      tags: [`topic-${topicId}`],
-    },
-  });
-  const rawData = await res.json();
-  log.trace(rawData, "getTopic");
-  try {
-    return TopicResponse.parse(rawData).data;
-  } catch {
-    return null;
-  }
+): Promise<ApiResponse<Topic>> {
+  return fetchData(
+    `/api/kafkas/${kafkaId}/topics/${topicId}`,
+    describeTopicsQuery,
+    (rawData: any) => TopicResponse.parse(rawData).data,
+  );
 }
 
 export async function createTopic(
@@ -101,33 +81,25 @@ export async function createTopic(
   replicationFactor: number,
   configs: NewConfigMap,
   validateOnly = false,
-): Promise<TopicCreateResponse> {
-  const url = `${process.env.BACKEND_URL}/api/kafkas/${kafkaId}/topics`;
-  const body = {
-    meta: {
-      validateOnly,
-    },
-    data: {
-      type: "topics",
-      attributes: {
-        name,
-        numPartitions,
-        replicationFactor,
-        configs: filterUndefinedFromObj(configs),
+): Promise<ApiResponse<TopicCreateResponse>> {
+  return postData(
+    `/api/kafkas/${kafkaId}/topics`,
+    {
+      meta: {
+        validateOnly,
+      },
+      data: {
+        type: "topics",
+        attributes: {
+          name,
+          numPartitions,
+          replicationFactor,
+          configs: filterUndefinedFromObj(configs),
+        },
       },
     },
-  };
-  log.debug({ url, body }, "calling createTopic");
-  const res = await fetch(url, {
-    headers: await getHeaders(),
-    method: "POST",
-    body: JSON.stringify(body),
-  });
-  const rawData = await res.json();
-  log.debug({ url, rawData }, "createTopic response");
-  const response = TopicCreateResponseSchema.parse(rawData);
-  log.debug(response, "createTopic response parsed");
-  return response;
+    (rawData) => TopicCreateResponseSchema.parse(rawData)
+  );
 }
 
 export async function updateTopic(
@@ -136,37 +108,22 @@ export async function updateTopic(
   numPartitions?: number,
   replicationFactor?: number,
   configs?: NewConfigMap,
-): Promise<boolean | TopicMutateError> {
-  const url = `${process.env.BACKEND_URL}/api/kafkas/${kafkaId}/topics/${topicId}`;
-  const body = {
-    data: {
-      type: "topics",
-      id: topicId,
-      attributes: {
-        numPartitions,
-        replicationFactor,
-        configs: filterUndefinedFromObj(configs || {}),
+): Promise<ApiResponse<undefined>> {
+  return patchData(
+    `/api/kafkas/${kafkaId}/topics/${topicId}`,
+    {
+      data: {
+        type: "topics",
+        id: topicId,
+        attributes: {
+          numPartitions,
+          replicationFactor,
+          configs: filterUndefinedFromObj(configs ?? {}),
+        },
       },
     },
-  };
-  log.debug({ url, body }, "calling updateTopic");
-  const res = await fetch(url, {
-    headers: await getHeaders(),
-    method: "PATCH",
-    body: JSON.stringify(body),
-  });
-  log.debug({ status: res.status }, "updateTopic response");
-  try {
-    if (res.status === 204) {
-      return true;
-    } else {
-      const rawData = await res.json();
-      return TopicMutateResponseErrorSchema.parse(rawData);
-    }
-  } catch (e) {
-    log.error(e, "updateTopic unknown error");
-  }
-  return false;
+    _ => undefined
+  );
 }
 
 export async function deleteTopic(
@@ -208,10 +165,11 @@ export async function getViewedTopics(): Promise<ViewedTopic[]> {
 }
 
 export async function setTopicAsViewed(kafkaId: string, topicId: string) {
-  log.debug({ kafkaId, topicId }, "setTopicAsViewed");
-  const cluster = await getKafkaCluster(kafkaId);
-  const topic = await getTopic(kafkaId, topicId);
+  log.trace({ kafkaId, topicId }, "setTopicAsViewed");
+  const cluster = (await getKafkaCluster(kafkaId)).payload;
+  const topic = (await getTopic(kafkaId, topicId)).payload;
   const viewedTopics = await getViewedTopics();
+
   if (cluster && topic) {
     const viewedTopic: ViewedTopic = {
       kafkaId,

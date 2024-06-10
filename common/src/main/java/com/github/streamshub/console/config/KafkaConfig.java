@@ -11,7 +11,10 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 
+import io.sundr.builder.annotations.Buildable;
+
 @JsonInclude(Include.NON_NULL)
+@Buildable(editableEnabled = false)
 public class KafkaConfig {
 
     @Valid
@@ -27,6 +30,13 @@ public class KafkaConfig {
     public Optional<KafkaClusterConfig> getCluster(String clusterKey) {
         return clusters.stream()
             .filter(k -> k.clusterKey().equals(clusterKey))
+            .findFirst();
+    }
+
+    @JsonIgnore
+    public Optional<KafkaClusterConfig> getClusterById(String clusterId) {
+        return clusters.stream()
+            .filter(k -> clusterId.equals(k.getId()))
             .findFirst();
     }
 

@@ -1,0 +1,24 @@
+---
+kind: Ingress
+apiVersion: networking.k8s.io/v1
+metadata:
+  name: console-dex
+  annotations:
+    nginx.ingress.kubernetes.io/backend-protocol: HTTP
+    route.openshift.io/termination: edge
+spec:
+  defaultBackend:
+    service:
+      name: console-dex
+      port:
+        number: 5556
+  rules:
+    - host: console-dex.${CLUSTER_DOMAIN}
+      http:
+        paths:
+          - pathType: ImplementationSpecific
+            backend:
+              service:
+                name: console-dex
+                port:
+                  number: 5556

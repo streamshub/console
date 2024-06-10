@@ -5,10 +5,12 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 import com.github.streamshub.console.kafka.systemtest.deployment.KafkaUnsecuredResourceManager;
+import com.github.streamshub.console.kafka.systemtest.deployment.KeycloakResourceManager;
 import com.github.streamshub.console.kafka.systemtest.deployment.StrimziCrdResourceManager;
 
 import io.quarkus.test.junit.QuarkusTestProfile;
@@ -19,6 +21,14 @@ public class TestPlainProfile implements QuarkusTestProfile {
     public static final int MAX_PARTITIONS = 100;
     public static final int EXCESSIVE_PARTITIONS = 101;
 
+    static {
+        /*
+         * Requires JDK 11.0.4+. If the `Host` header is not set, Keycloak will
+         * generate tokens with an issuer URI containing localhost:<random port>.
+         */
+        System.setProperty("jdk.httpclient.allowRestrictedHeaders", "host");
+    }
+
     @Override
     public String getConfigProfile() {
         return PROFILE;
@@ -27,8 +37,9 @@ public class TestPlainProfile implements QuarkusTestProfile {
     @Override
     public List<TestResourceEntry> testResources() {
         return List.of(
-                new TestResourceEntry(StrimziCrdResourceManager.class),
-                new TestResourceEntry(KafkaUnsecuredResourceManager.class, Map.of("profile", PROFILE)));
+                new TestResourceEntry(StrimziCrdResourceManager.class, Collections.emptyMap(), true),
+                new TestResourceEntry(KeycloakResourceManager.class, Collections.emptyMap(), true),
+                new TestResourceEntry(KafkaUnsecuredResourceManager.class, Map.of("profile", PROFILE), true));
     }
 
     @Override

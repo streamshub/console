@@ -1,0 +1,62 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: console-dex
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: console-dex
+  template:
+    metadata:
+      labels:
+        app: console-dex
+    spec:
+      serviceAccountName: console-dex
+      volumes:
+      - name: config
+        secret:
+          secretName: console-dex
+          items:
+          - key: config.yaml
+            path: config.yaml
+      - name: openshift-ca
+        configMap:
+          name: kube-root-ca.crt
+          items:
+          - key: ca.crt
+            path: openshift.pem
+      containers:
+      - image: ghcr.io/dexidp/dex:v2.32.0
+        name: dex
+        command: ["/usr/local/bin/dex", "serve", "/etc/dex/cfg/config.yaml"]
+
+        ports:
+        - name: http
+          containerPort: 5556
+
+        volumeMounts:
+        - name: config
+          mountPath: /etc/dex/cfg
+        - name: openshift-ca
+          mountPath: /etc/ssl/openshift.pem
+          subPath: openshift.pem
+
+        env:
+        - name: OPENSHIFT_OAUTH_CLIENT_ID
+          valueFrom:
+            secretKeyRef:
+              name: console-dex-secrets
+              key: DEX_CLIENT_ID
+        - name: OPENSHIFT_OAUTH_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: console-dex-secrets
+              key: DEX_CLIENT_SECRET
+
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: 5556
+            scheme: HTTP

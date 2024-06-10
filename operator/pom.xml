@@ -35,7 +35,6 @@
         <dependency>
             <groupId>io.sundr</groupId>
             <artifactId>builder-annotations</artifactId>
-            <version>0.200.0</version>
         </dependency>
         <dependency>
             <groupId>jakarta.validation</groupId>

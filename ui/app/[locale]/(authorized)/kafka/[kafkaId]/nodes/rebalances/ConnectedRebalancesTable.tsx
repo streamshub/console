@@ -22,7 +22,7 @@ import {
   RebalanceStatus,
 } from "@/api/rebalance/schema";
 import { ValidationModal } from "./ValidationModal";
-import { getRebalanceDetails } from "@/api/rebalance/actions";
+import { patchRebalance } from "@/api/rebalance/actions";
 import { useAlert } from "@/components/AlertContext";
 
 export type ConnectedReabalancesTableProps = {
@@ -141,7 +141,7 @@ export function ConnectedReabalancesTable({
         : t("refresh_alert");
 
   const onConfirm = async () => {
-    await getRebalanceDetails(kafkaId, RebalanceId, approvalStatus);
+    await patchRebalance(kafkaId, RebalanceId, approvalStatus);
     setModalOpen(false);
     addAlert({
       title: alertMessage,

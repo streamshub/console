@@ -6,7 +6,6 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.net.http.HttpResponse.BodyHandlers;
 import java.util.UUID;
 
 import jakarta.json.Json;
@@ -14,7 +13,6 @@ import jakarta.json.JsonObject;
 import jakarta.json.JsonReader;
 import jakarta.ws.rs.core.HttpHeaders;
 
-import org.apache.kafka.common.config.SaslConfigs;
 import org.eclipse.microprofile.config.Config;
 
 import io.restassured.http.Header;
@@ -24,7 +22,7 @@ public class TokenUtils {
     final String tokenEndpoint;
 
     public TokenUtils(Config config) {
-        this.tokenEndpoint = config.getValue(SaslConfigs.SASL_OAUTHBEARER_TOKEN_ENDPOINT_URL, String.class);
+        this.tokenEndpoint = config.getValue("console.test.oidc-url", String.class) + "/protocol/openid-connect/token";
     }
 
     public Header authorizationHeader(String username) {
@@ -44,30 +42,33 @@ public class TokenUtils {
     }
 
     public JsonObject getTokenObject(String username) {
-        final String payload = String.format("grant_type=password&username=%1$s&password=%1$s-password&client_id=kafka-cli", username);
+        final String form = String.format("grant_type=password&"
+                + "username=%1$s&"
+                + "password=%1$s-password&"
+                + "client_id=console-client", username);
 
-        /*
-         * Requires JDK 11.0.4+. If the `Host` header is not set, Keycloak will
-         * generate tokens with an issuer URI containing localhost:<random port>.
-         */
-        System.setProperty("jdk.httpclient.allowRestrictedHeaders", "host");
+        HttpClient client = HttpClient.newBuilder().build();
 
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(tokenEndpoint))
-                .header("Host", "keycloak:8080")
+                .header("Host", "localhost:8080")
                 .header("Content-Type", "application/x-www-form-urlencoded")
-                .POST(HttpRequest.BodyPublishers.ofString(payload))
+                .POST(HttpRequest.BodyPublishers.ofString(form))
                 .build();
 
         try {
-            HttpResponse<String> response = HttpClient
-                    .newBuilder()
-                    .build()
-                    .send(request, BodyHandlers.ofString());
+            HttpResponse<String> response = client.send(request, java.net.http.HttpResponse.BodyHandlers.ofString());
+            JsonObject payload;
 
             try (JsonReader reader = Json.createReader(new StringReader(response.body()))) {
-                return reader.readObject();
+                payload = reader.readObject();
             }
+
+            if (response.statusCode() != 200) {
+                throw new RuntimeException(payload.toString());
+            }
+
+            return payload;
         } catch (IOException | InterruptedException e) {
             throw new RuntimeException(e);
         }

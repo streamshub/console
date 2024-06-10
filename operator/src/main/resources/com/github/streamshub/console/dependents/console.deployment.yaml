@@ -75,8 +75,11 @@ spec:
       - name: console-ui
         image: quay.io/streamshub/console-ui
         volumeMounts:
-        - mountPath: /app/.next/cache
-          name: cache
+        - name: cache
+          mountPath: /app/.next/cache
+        - name: config
+          mountPath: /app/console-config.yaml
+          subPath: console-config.yaml
         ports:
         - containerPort: 3000
           name: http
@@ -90,6 +93,8 @@ spec:
           value: 'https://${CONSOLE_HOSTNAME}'
         - name: BACKEND_URL
           value: 'http://127.0.0.1:8080'
+        - name: CONSOLE_CONFIG_PATH
+          value: /app/console-config.yaml
         - name: CONSOLE_MODE
           value: read-only
         - name: LOG_LEVEL

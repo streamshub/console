@@ -10,7 +10,7 @@ import {
 import { ConsumerGroupState } from "@/api/consumerGroups/schema";
 import { ConnectedConsumerGroupTable } from "./ConnectedConsumerGroupTable";
 import { stringToInt } from "@/utils/stringToInt";
-import { notFound } from "next/navigation";
+import { NoDataErrorState } from "@/components/NoDataErrorState";
 
 export async function generateMetadata() {
   const t = await getTranslations();
@@ -101,18 +101,19 @@ async function AsyncConsumerGroupTable({
 } & KafkaParams) {
   async function refresh() {
     "use server";
-    const consumerGroup = await getConsumerGroups(kafkaId, {
+    const consumerGroup = (await getConsumerGroups(kafkaId, {
       id,
       sort: sortMap[sort],
       sortDir,
       pageSize,
       pageCursor,
       state,
-    });
+    }))?.payload;
+
     return consumerGroup?.data ?? [];
   }
 
-  const consumerGroups = await getConsumerGroups(kafkaId, {
+  const response = await getConsumerGroups(kafkaId, {
     id,
     sort: sortMap[sort],
     sortDir,
@@ -121,9 +122,11 @@ async function AsyncConsumerGroupTable({
     state,
   });
 
-  if (!consumerGroups) {
-    notFound();
+  if (response.errors) {
+    return <NoDataErrorState errors={response.errors!} />;
   }
+
+  const consumerGroups = response.payload!;
 
   const nextPageQuery = consumerGroups.links.next
     ? new URLSearchParams(consumerGroups.links.next)
