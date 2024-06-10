@@ -3,13 +3,20 @@ package com.github.streamshub.console.config;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.github.streamshub.console.config.security.ResourceTypes;
+import com.github.streamshub.console.config.security.SecurityConfig;
+import com.github.streamshub.console.config.security.ResourceTypes.ValidResourceTypes;
+
+import io.sundr.builder.annotations.Buildable;
 
 @JsonInclude(Include.NON_NULL)
+@Buildable(editableEnabled = false)
 public class KafkaClusterConfig implements Named {
 
     private String id;
@@ -17,6 +24,9 @@ public class KafkaClusterConfig implements Named {
     private String name;
     private String namespace;
     private String listener;
+    @Valid
+    @ValidResourceTypes(type = ResourceTypes.Kafka.class)
+    private SecurityConfig security = new SecurityConfig();
     /**
      * Name of a configured metrics source used by this Kafka cluster
      */
@@ -64,6 +74,14 @@ public class KafkaClusterConfig implements Named {
 
     public void setNamespace(String namespace) {
         this.namespace = namespace;
+    }
+
+    public SecurityConfig getSecurity() {
+        return security;
+    }
+
+    public void setSecurity(SecurityConfig security) {
+        this.security = security;
     }
 
     public String getListener() {

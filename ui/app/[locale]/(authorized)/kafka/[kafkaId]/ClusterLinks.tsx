@@ -40,6 +40,6 @@ export function ClusterLinks({ kafkaId }: { kafkaId: string }) {
 }
 
 async function ClusterName({ kafkaId }: { kafkaId: string }) {
-  const cluster = await getKafkaCluster(kafkaId);
+  const cluster = (await getKafkaCluster(kafkaId))?.payload;
   return cluster?.attributes.name ?? `Cluster ${kafkaId}`;
 }

@@ -1,5 +1,6 @@
-import { ConfigMap, NewConfigMap, TopicMutateError } from "@/api/topics/schema";
-import { Error } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/topics/create/Errors";
+import { ApiError } from "@/api/api";
+import { ConfigMap, NewConfigMap } from "@/api/topics/schema";
+import { Errors } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/topics/create/Errors";
 import { ReviewTable } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/topics/create/ReviewTable";
 import { Number } from "@/components/Format/Number";
 import {
@@ -21,14 +22,14 @@ export function StepReview({
   replicas,
   options,
   initialOptions,
-  error,
+  errors,
 }: {
   name: string;
   partitions: number;
   replicas: number;
   options: NewConfigMap;
   initialOptions: ConfigMap;
-  error: TopicMutateError | "unknown" | undefined;
+  errors: ApiError[] | undefined;
 }) {
   const t = useTranslations();
   const optionEntries = Object.entries(options);
@@ -40,7 +41,7 @@ export function StepReview({
       <GridItem>
         <Title headingLevel={"h3"}>{t("CreateTopic.topic_details")}</Title>
       </GridItem>
-      {error && <Error error={error} />}
+      {errors && <Errors errors={errors} />}
       <GridItem>
         <DescriptionList isHorizontal>
           <DescriptionListGroup>

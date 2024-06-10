@@ -18,6 +18,7 @@ import org.eclipse.microprofile.config.Config;
 import org.jboss.logging.Logger;
 
 import com.github.streamshub.console.api.Annotations;
+import com.github.streamshub.console.config.security.GlobalSecurityConfigBuilder;
 import com.github.streamshub.console.kafka.systemtest.utils.ClientsConfig;
 
 import io.fabric8.kubernetes.client.CustomResource;
@@ -163,5 +164,15 @@ public class TestHelper {
         RequestSpecification requestSpec = given().log().ifValidationFails();
         Response response = requestFn.apply(requestSpec);
         return response.then().log().ifValidationFails();
+    }
+
+    public GlobalSecurityConfigBuilder oidcSecurity() {
+        return new GlobalSecurityConfigBuilder()
+            .withNewOidc()
+                .withClientId("console-client")
+                .withClientSecret("console-client-secret")
+                .withAuthServerUrl(config.getValue("console.test.oidc-url", String.class))
+                .withIssuer(config.getValue("console.test.oidc-issuer", String.class))
+            .endOidc();
     }
 }

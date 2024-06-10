@@ -1,9 +1,10 @@
 "use client";
+
+import { ApiResponse, ApiError } from "@/api/api";
 import {
   ConfigMap,
   NewConfigMap,
   TopicCreateResponse,
-  TopicMutateError,
 } from "@/api/topics/schema";
 import { StepDetails } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/topics/create/StepDetails";
 import { StepOptions } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/topics/create/StepOptions";
@@ -36,7 +37,7 @@ export function CreateTopic({
     replicas: number,
     options: NewConfigMap,
     validateOnly: boolean,
-  ) => Promise<TopicCreateResponse>;
+  ) => Promise<ApiResponse<TopicCreateResponse>>;
 }) {
   const t = useTranslations();
   const router = useRouter();
@@ -46,24 +47,28 @@ export function CreateTopic({
   const [options, setOptions] = useState<NewConfigMap>({});
   const [pending, startTransition] = useTransition();
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<TopicMutateError | "unknown" | undefined>(
+  const [errors, setErrors] = useState<ApiError[] | undefined>(
     undefined,
   );
 
   const save = useCallback(async () => {
     try {
       setLoading(true);
-      setError(undefined);
-      const result = await onSave(name, partitions, replicas, options, false);
+      setErrors(undefined);
+      const response = await onSave(name, partitions, replicas, options, false);
+
       startTransition(() => {
-        if ("errors" in result) {
-          setError(result);
+        if (response.errors) {
+          setErrors(response.errors);
         } else {
-          router.push(`/kafka/${kafkaId}/topics/${result.data.id}`);
+          router.push(`/kafka/${kafkaId}/topics/${response.payload?.data.id}`);
         }
       });
     } catch (e: unknown) {
-      setError("unknown");
+      setErrors([{
+        title: "Unknown error",
+        detail: String(e),
+      }]);
     } finally {
       setLoading(false);
     }
@@ -73,17 +78,20 @@ export function CreateTopic({
     async (success: () => void) => {
       try {
         setLoading(true);
-        setError(undefined);
-        const result = await onSave(name, partitions, replicas, options, true);
+        setErrors(undefined);
+        const response = await onSave(name, partitions, replicas, options, true);
         startTransition(() => {
-          if ("errors" in result) {
-            setError(result);
+          if (response.errors) {
+            setErrors(response.errors);
           } else {
             success();
           }
         });
       } catch (e: unknown) {
-        setError("unknown");
+        setErrors([{
+          title: "Unknown error",
+          detail: String(e),
+        }]);
       } finally {
         setLoading(false);
       }
@@ -91,7 +99,7 @@ export function CreateTopic({
     [name, onSave, options, partitions, replicas],
   );
 
-  const formInvalid = error !== undefined;
+  const formInvalid = errors !== undefined;
 
   return (
     <PageSection type={"wizard"}>
@@ -115,7 +123,7 @@ export function CreateTopic({
             onNameChange={setName}
             onPartitionsChange={setPartitions}
             onReplicasChange={setReplicas}
-            error={error}
+            errors={errors}
           />
         </WizardStep>
         <WizardStep
@@ -124,7 +132,7 @@ export function CreateTopic({
           footer={
             <AsyncFooter
               nextStepId={"step-review"}
-              nextDisabled={formInvalid || error !== undefined}
+              nextDisabled={formInvalid || errors !== undefined}
               onClick={(success) => validate(success)}
               loading={pending || loading}
               primaryLabel={t("CreateTopic.next")}
@@ -135,7 +143,7 @@ export function CreateTopic({
             options={options}
             initialOptions={initialOptions}
             onChange={setOptions}
-            error={error}
+            errors={errors}
           />
         </WizardStep>
         <WizardStep
@@ -157,7 +165,7 @@ export function CreateTopic({
             replicas={replicas}
             options={options}
             initialOptions={initialOptions}
-            error={error}
+            errors={errors}
           />
         </WizardStep>
       </Wizard>

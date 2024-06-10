@@ -25,8 +25,9 @@ import {
   SidebarPanel,
   Stack,
   StackItem,
+  TextContent,
+  Text,
 } from "@/libs/patternfly/react-core";
-import { TextContent, Text } from "@/libs/patternfly/react-core";
 import { useTranslations } from "next-intl";
 import { DownloadIcon } from "@/libs/patternfly/react-icons";
 
@@ -34,7 +35,6 @@ export type NewOffset = {
   topicName: string;
   partition: number;
   offset: number | string;
-  topicId: string;
   metadata?: string;
 };
 

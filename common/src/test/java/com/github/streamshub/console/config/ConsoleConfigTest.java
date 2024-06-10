@@ -10,6 +10,16 @@ import jakarta.validation.Validator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import com.github.streamshub.console.config.security.Audit;
+import com.github.streamshub.console.config.security.GlobalSecurityConfigBuilder;
+import com.github.streamshub.console.config.security.Privilege;
+import com.github.streamshub.console.config.security.ResourceTypes;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.everyItem;
+import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.hasProperty;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -158,5 +168,123 @@ class ConsoleConfigTest {
         var violations = validator.validate(config);
 
         assertTrue(violations.isEmpty());
+    }
+
+    @Test
+    void testKnownResourceTypesPassValidation() {
+        config.setSecurity(new GlobalSecurityConfigBuilder()
+                .addNewAudit()
+                    .withDecision(Audit.ALLOWED)
+                    .withResources(ResourceTypes.Global.KAFKAS.value())
+                    .withPrivileges(Privilege.forValue("*"))
+                .endAudit()
+                .addNewRole()
+                    .withName("role1")
+                    .addNewRule()
+                        .withResources(ResourceTypes.Global.KAFKAS.value())
+                        .withPrivileges(Privilege.forValue("*"))
+                    .endRule()
+                .endRole()
+            .build());
+
+        config.getKafka().getClusters().add(new KafkaClusterConfigBuilder()
+                .withName("kafka1")
+                .withNewSecurity()
+                    .addNewAudit()
+                        .withDecision(Audit.ALLOWED)
+                        .withResources(ResourceTypes.Kafka.ALL.value())
+                        .withPrivileges(Privilege.forValue("*"))
+                    .endAudit()
+                    .addNewRole()
+                        .withName("role1")
+                        .addNewRule()
+                            .withResources(ResourceTypes.Kafka.ALL.value())
+                            .withPrivileges(Privilege.forValue("*"))
+                        .endRule()
+                    .endRole()
+                .endSecurity()
+            .build());
+
+        var violations = validator.validate(config);
+        assertTrue(violations.isEmpty(), () -> String.valueOf(violations));
+    }
+
+    @Test
+    void testKnownResourceTypesFailValidation() {
+        String unknownResource = "unknown";
+
+        config.setSecurity(new GlobalSecurityConfigBuilder()
+                .addNewAudit()
+                    .withDecision(Audit.ALLOWED)
+                    .withResources(
+                            ResourceTypes.Global.KAFKAS.value(),
+                            unknownResource)
+                    .withPrivileges(Privilege.forValue("*"))
+                .endAudit()
+                .addNewRole()
+                    .withName("role1")
+                    .addNewRule()
+                        .withResources(ResourceTypes.Global.KAFKAS.value())
+                        .withPrivileges(Privilege.forValue("*"))
+                    .endRule()
+                    .addNewRule()
+                        .withResources(
+                                unknownResource,
+                                ResourceTypes.Global.KAFKAS.value())
+                        .withPrivileges(Privilege.forValue("*"))
+                    .endRule()
+                .endRole()
+            .build());
+
+        config.getKafka().getClusters().add(new KafkaClusterConfigBuilder()
+                .withName("kafka1")
+                .withNewSecurity()
+                    .addNewAudit()
+                        .withDecision(Audit.ALLOWED)
+                        .withResources(ResourceTypes.Kafka.ALL.value())
+                        .withPrivileges(Privilege.forValue("CREATE"))
+                    .endAudit()
+                    .addNewAudit()
+                        .withDecision(Audit.DENIED)
+                        .withResources(unknownResource)
+                        .withPrivileges(Privilege.forValue("DELETE"))
+                    .endAudit()
+                    .addNewAudit()
+                        .withDecision(Audit.ALL)
+                        .withResources(ResourceTypes.Kafka.CONSUMER_GROUPS.value(), unknownResource)
+                        .withPrivileges(Privilege.forValue("UPDATE"))
+                    .endAudit()
+                    .addNewRole()
+                        .withName("role1")
+                        .addNewRule()
+                            .withResources(ResourceTypes.Kafka.NODE_CONFIGS.value())
+                            .withPrivileges(Privilege.forValue("*"))
+                        .endRule()
+                        .addNewRule()
+                            .withResources(unknownResource, ResourceTypes.Kafka.ALL.value())
+                            .withPrivileges(Privilege.forValue("*"))
+                        .endRule()
+                    .endRole()
+                    .addNewRole()
+                        .withName("role2")
+                        .addNewRule()
+                            .withResources(ResourceTypes.Kafka.CONSUMER_GROUPS.value(), unknownResource)
+                            .withPrivileges(Privilege.forValue("*"))
+                        .endRule()
+                    .endRole()
+                .endSecurity()
+            .build());
+
+        var violations = validator.validate(config);
+        assertEquals(6, violations.size(), () -> String.valueOf(violations));
+        assertThat(violations, everyItem(hasProperty("message", equalTo("Invalid resource"))));
+
+        var propertyPaths = violations.stream().map(v -> v.getPropertyPath().toString()).toList();
+        assertThat(propertyPaths, hasItem(equalTo("security.audit[0].resources[1]")));
+        assertThat(propertyPaths, hasItem(equalTo("security.roles[0].rules[1].resources[0]")));
+        assertThat(propertyPaths, hasItem(equalTo("kafka.clusters[0].security.audit[1].resources[0]")));
+        assertThat(propertyPaths, hasItem(equalTo("kafka.clusters[0].security.audit[2].resources[1]")));
+        assertThat(propertyPaths, hasItem(equalTo("kafka.clusters[0].security.roles[0].rules[1].resources[0]")));
+        assertThat(propertyPaths, hasItem(equalTo("kafka.clusters[0].security.roles[1].rules[0].resources[1]")));
     }
 }

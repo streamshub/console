@@ -1,6 +1,7 @@
 "use client";
-import { Topic, TopicMutateError } from "@/api/topics/schema";
-import { Error } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/topics/create/Errors";
+import { ApiResponse, ApiError } from "@/api/api";
+import { Topic } from "@/api/topics/schema";
+import { Errors } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/topics/create/Errors";
 import { topicMutateErrorToFieldError } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/topics/create/topicMutateErrorToFieldError";
 import { Number } from "@/components/Format/Number";
 import { ResponsiveTableProps, TableView } from "@/components/Table";
@@ -35,7 +36,7 @@ export function ConfigTable({
 }: {
   topic: Topic | undefined;
   onSaveProperty:
-    | ((name: string, value: string) => Promise<boolean | TopicMutateError>)
+    | ((name: string, value: string) => Promise<ApiResponse<undefined>>)
     | undefined;
 }) {
   const t = useTranslations();
@@ -113,11 +114,9 @@ export function ConfigTable({
     Record<string, "editing" | "saving" | undefined>
   >({});
   const [options, setOptions] = useState<Record<string, string>>({});
-  const [error, setError] = useState<TopicMutateError | "unknown" | undefined>(
-    undefined,
-  );
+  const [errors, setErrors] = useState<ApiError[] | undefined>();
   const fieldError = topicMutateErrorToFieldError(
-    error,
+    errors,
     true,
     Object.keys(topic?.attributes.configs || {}),
   );
@@ -222,12 +221,12 @@ export function ConfigTable({
 
   return (
     <>
-      {error && !fieldError && (
+      {errors && !fieldError && (
         <PageSection
           padding={{ default: "noPadding" }}
           className={"pf-v5-u-pb-md"}
         >
-          <Error error={error} />
+          <Errors errors={errors} />
         </PageSection>
       )}
       <TableView
@@ -341,21 +340,19 @@ export function ConfigTable({
                         ...isEditing,
                         [name]: "saving",
                       }));
-                      const res = await onSaveProperty!(name, options[name]);
-                      if (res === true) {
-                        setIsEditing((isEditing) => ({
-                          ...isEditing,
-                          [name]: undefined,
-                        }));
-                      } else {
-                        if (res !== false) {
-                          setError(res);
-                        } else {
-                          setError("unknown");
-                        }
+
+                      const res = (onSaveProperty && await onSaveProperty(name, options[name])) ?? { errors: undefined };
+
+                      if (res.errors) {
+                        setErrors(res.errors);
                         setIsEditing((isEditing) => ({
                           ...isEditing,
                           [name]: "editing",
+                        }));
+                      } else {
+                        setIsEditing((isEditing) => ({
+                          ...isEditing,
+                          [name]: undefined,
                         }));
                       }
                     }}

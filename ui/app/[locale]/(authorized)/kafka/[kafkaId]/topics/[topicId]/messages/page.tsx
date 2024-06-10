@@ -1,12 +1,12 @@
 import { getTopicMessage } from "@/api/messages/actions";
 import { getTopic } from "@/api/topics/actions";
 import { KafkaTopicParams } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/topics/kafkaTopic.params";
-import { redirect } from "@/i18n/routing";
 import { ConnectedMessagesTable } from "./ConnectedMessagesTable";
 import { MessagesSearchParams, parseSearchParams } from "./parseSearchParams";
+import { NoDataErrorState } from "@/components/NoDataErrorState";
 
-export const revalidate = 0;
-export const dynamic = "force-dynamic";
+//export const revalidate = 0;
+//export const dynamic = "force-dynamic";
 
 export default async function ConnectedMessagesPage({
   params: { kafkaId, topicId },
@@ -15,11 +15,13 @@ export default async function ConnectedMessagesPage({
   params: KafkaTopicParams;
   searchParams: MessagesSearchParams;
 }) {
-  const topic = await getTopic(kafkaId, topicId);
-  if (!topic) {
-    redirect(`/kafka/${kafkaId}`);
-    return null;
+  const response = await getTopic(kafkaId, topicId);
+
+  if (response.errors) {
+    return <NoDataErrorState errors={response.errors} />;
   }
+
+  const topic = response.payload!;
   const { selectedOffset, selectedPartition } = parseSearchParams(searchParams);
 
   const selectedMessage =
@@ -27,7 +29,7 @@ export default async function ConnectedMessagesPage({
       ? await getTopicMessage(kafkaId, topicId, {
           offset: selectedOffset,
           partition: selectedPartition,
-        })
+        }).then(resp => resp.payload ?? undefined)
       : undefined;
 
   return (

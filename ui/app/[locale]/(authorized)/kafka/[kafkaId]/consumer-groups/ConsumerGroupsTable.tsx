@@ -193,30 +193,28 @@ export function ConsumerGroupsTable({
               </Td>
             );
           case "topics":
-            const allTopics: { topicId: string; topicName: string }[] = [];
+            const allTopics: Record<string, string | undefined> = {};
             row.attributes.members
               ?.flatMap((m) => m.assignments ?? [])
               .forEach((a) =>
-                allTopics.push({ topicId: a.topicId, topicName: a.topicName }),
+                allTopics[a.topicName] = a.topicId,
               );
             row.attributes.offsets?.forEach((a) =>
-              allTopics.push({ topicId: a.topicId, topicName: a.topicName }),
+              allTopics[a.topicName] = a.topicId,
             );
             return (
               <Td key={key} dataLabel={t("ConsumerGroupsTable.topics")}>
                 <LabelGroup>
-                  {Array.from(new Set(allTopics.map((a) => a.topicName))).map(
-                    (topic, idx) => (
+                  {Object.entries(allTopics).map(
+                    ([topicName, topicId]) => (
                       <LabelLink
-                        key={idx}
+                        key={topicName}
                         color={"blue"}
-                        href={`/kafka/${kafkaId}/topics/${
-                          allTopics.find((t) => t.topicName === topic)!.topicId
-                        }`}
+                        href={topicId ? `/kafka/${kafkaId}/topics/${topicId}` : "#"}
                       >
-                        {topic}
+                        {topicName}
                       </LabelLink>
-                    ),
+                    )
                   )}
                 </LabelGroup>
               </Td>

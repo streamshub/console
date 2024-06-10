@@ -1,5 +1,8 @@
 package com.github.streamshub.console.config;
 
+import io.sundr.builder.annotations.Buildable;
+
+@Buildable(editableEnabled = false)
 public class KubernetesConfig {
 
     boolean enabled = true;

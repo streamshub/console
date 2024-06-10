@@ -20,7 +20,7 @@ export async function ClusterConnectionDetails({
   clusterId: string;
 }) {
   const t = useTranslations();
-  const data = await getKafkaCluster(clusterId);
+  const data = (await getKafkaCluster(clusterId))?.payload;
   if (!data) {
     return null;
   }

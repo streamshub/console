@@ -24,8 +24,11 @@ async function ConnectedAppHeader({
 }: {
   params: KafkaConsumerGroupMembersParams;
 }) {
-  const cg = await getConsumerGroup(kafkaId, groupId);
-  const disabled = cg.attributes.state !== "EMPTY";
+  const disabled = (await getConsumerGroup(kafkaId, groupId))?.
+    payload?.
+    attributes.
+    state !== "EMPTY";
+
   return <Header params={{ kafkaId, groupId }} disabled={disabled} />;
 }
 
