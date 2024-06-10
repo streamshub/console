@@ -84,7 +84,7 @@
     "@storybook/react": "^8.0.0",
     "@storybook/test": "^8.0.0",
     "@storybook/test-runner": "^0.18.2",
-    "pino-pretty": "^11.1.0",
+    "pino-pretty": "^11.2.0",
     "playwright": "^1.44.1",
     "prettier": "^3.3.1",
     "storybook": "^8.1.6",
