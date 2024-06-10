@@ -44,7 +44,7 @@ export function ChartDiskUsage({ usages, available }: ChartDiskUsageProps) {
       childName: `node ${idx}`,
     })),
     ...usages.map((_, idx) => ({
-      name: `Available storage threshold (node ${idx + 1})`,
+      name: `Available storage threshold (node ${idx})`,
       childName: `threshold ${idx}`,
       symbol: { type: "threshold" },
     })),

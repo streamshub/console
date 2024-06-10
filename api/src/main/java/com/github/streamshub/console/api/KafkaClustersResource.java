@@ -72,6 +72,7 @@ public class KafkaClustersResource {
                         KafkaCluster.Fields.KAFKA_VERSION,
                         KafkaCluster.Fields.STATUS,
                         KafkaCluster.Fields.CONDITIONS,
+                        KafkaCluster.Fields.NODE_POOLS,
                     },
                     message = "list contains a value that is not valid or not available for the operation",
                     payload = ErrorCategory.InvalidQueryParameter.class)
@@ -90,6 +91,7 @@ public class KafkaClustersResource {
                                 KafkaCluster.Fields.KAFKA_VERSION,
                                 KafkaCluster.Fields.STATUS,
                                 KafkaCluster.Fields.CONDITIONS,
+                                KafkaCluster.Fields.NODE_POOLS,
                             }))
             List<String> fields,
 
@@ -134,6 +136,7 @@ public class KafkaClustersResource {
                         KafkaCluster.Fields.KAFKA_VERSION,
                         KafkaCluster.Fields.STATUS,
                         KafkaCluster.Fields.CONDITIONS,
+                        KafkaCluster.Fields.NODE_POOLS,
                     },
                     payload = ErrorCategory.InvalidQueryParameter.class)
             @Parameter(
@@ -155,6 +158,7 @@ public class KafkaClustersResource {
                                 KafkaCluster.Fields.KAFKA_VERSION,
                                 KafkaCluster.Fields.STATUS,
                                 KafkaCluster.Fields.CONDITIONS,
+                                KafkaCluster.Fields.NODE_POOLS,
                             }))
             List<String> fields) {
 
