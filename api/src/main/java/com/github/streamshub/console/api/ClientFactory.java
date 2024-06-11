@@ -149,6 +149,16 @@ public class ClientFactory {
                     throw new UncheckedIOException(e);
                 }
             })
+            .map(consoleConfig -> {
+                consoleConfig.getKafka().getClusters().stream().forEach(cluster -> {
+                    resolveValues(cluster.getProperties());
+                    resolveValues(cluster.getAdminProperties());
+                    resolveValues(cluster.getProducerProperties());
+                    resolveValues(cluster.getConsumerProperties());
+                });
+
+                return consoleConfig;
+            })
             .orElseGet(() -> {
                 log.infof("Console configuration not specified");
                 return new ConsoleConfig();
@@ -394,6 +404,29 @@ public class ClientFactory {
         }
 
         return cfg;
+    }
+
+    private void resolveValues(Map<String, String> properties) {
+        properties.entrySet().forEach(entry ->
+            entry.setValue(resolveValue(entry.getValue())));
+    }
+
+    /**
+     * If the given value is an expression referencing a configuration value,
+     * replace it with the target property value.
+     *
+     * @param value configuration value that may be a reference to another
+     *              configuration property
+     * @return replacement property or the same value if the given string is not a
+     *         reference.
+     */
+    private String resolveValue(String value) {
+        if (value.startsWith("${") && value.endsWith("}")) {
+            String replacement = value.substring(2, value.length() - 1);
+            return config.getOptionalValue(replacement, String.class).orElse(value);
+        }
+
+        return value;
     }
 
     Optional<String> getDefaultConfig(String clientType, String configName) {

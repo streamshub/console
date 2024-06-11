@@ -43,21 +43,18 @@ public class KafkaUnsecuredResourceManager extends KafkaResourceManager implemen
                         - name: test-kafka1
                           namespace: default
                           properties:
-                            bootstrap.servers: %s
+                            bootstrap.servers: ${console.test.external-bootstrap}
                         - name: test-kafka2
                           namespace: default
                           properties:
-                            bootstrap.servers: %s
+                            bootstrap.servers: ${console.test.random-bootstrap}
                         - name: test-kafka3
                           namespace: default
                           # listener is named and bootstrap.servers not set (will be retrieved from Kafka CR)
                           listener: listener0
                           properties:
                             security.protocol: SSL
-                    """.formatted(
-                            externalBootstrap,
-                            randomBootstrapServers.toString(),
-                            externalBootstrap),
+                    """,
                     StandardOpenOption.WRITE);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
@@ -65,7 +62,9 @@ public class KafkaUnsecuredResourceManager extends KafkaResourceManager implemen
 
         return Map.ofEntries(
                 Map.entry(profile + CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, externalBootstrap),
-                Map.entry(profile + "console.config-path", configFile.getAbsolutePath()));
+                Map.entry(profile + "console.config-path", configFile.getAbsolutePath()),
+                Map.entry(profile + "console.test.external-bootstrap", externalBootstrap),
+                Map.entry(profile + "console.test.random-bootstrap", randomBootstrapServers.toString()));
     }
 
     @Override
