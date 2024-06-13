@@ -40,6 +40,7 @@
     "empty_topics_description": "When you start looking at specific topics through the {product} console, they'll start showing here.",
     "topic_operator_link": "Using the Topic Operator to manage Kafka topics",
     "recommended_learning_resources": "<b>Recommended learning resources</b>",
+    "recommended_learning_resources_label": "Recommended learning resources",
     "documentation": "Documentation",
     "view_documentation": "View documentation",
     "get_started_with_openshift":"Getting Started with {product} on Openshift",
