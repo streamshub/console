@@ -160,7 +160,7 @@ export default function Home() {
               isCompact={true}
             >
               <CardBody>
-                <DataList aria-label="Reccomended learning resources">
+                <DataList aria-label={t("homepage.recommended_learning_resources_label")}>
                   <DataListItem aria-labelledby="gs-1-1">
                     <DataListItemRow>
                       <DataListItemCells
