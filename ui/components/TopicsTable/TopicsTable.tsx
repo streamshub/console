@@ -78,6 +78,7 @@ export type TopicsTableProps = {
   filterId: string | undefined;
   filterName: string | undefined;
   filterStatus: TopicStatus[] | undefined;
+  showLearningLinks: boolean;
   onEditTopic: (topic: TopicList) => void;
   onDeleteTopic: (topic: TopicList) => void;
   onCreateTopic: () => void;
@@ -111,6 +112,7 @@ export function TopicsTable({
   onFilterIdChange,
   onFilterNameChange,
   onFilterStatusChange,
+  showLearningLinks,
 }: TopicsTableProps) {
   const t = useTranslations("topics");
   return (
@@ -125,6 +127,7 @@ export function TopicsTable({
           canCreate={isReadOnly === false}
           createHref={`${baseurl}/create`}
           onShowHiddenTopics={() => onInternalTopicsChange(true)}
+          showLearningLinks={showLearningLinks}
         />
       }
       emptyStateNoResults={
@@ -156,7 +159,7 @@ export function TopicsTable({
                 >
                   <HelpIcon />
                 </Tooltip>
-              </Th >
+              </Th>
             );
           case "consumerGroups":
             return (
@@ -298,12 +301,12 @@ export function TopicsTable({
       actions={
         isReadOnly === false
           ? [
-            {
-              label: t("create_topic"),
-              onClick: onCreateTopic,
-              isPrimary: true,
-            },
-          ]
+              {
+                label: t("create_topic"),
+                onClick: onCreateTopic,
+                isPrimary: true,
+              },
+            ]
           : undefined
       }
       tools={[
@@ -312,9 +315,7 @@ export function TopicsTable({
           label={
             <>
               {t("hide_internal_topics")}&nbsp;
-              <Tooltip
-                content={t("hide_internal_topics_tooltip")}
-              >
+              <Tooltip content={t("hide_internal_topics_tooltip")}>
                 <HelpIcon />
               </Tooltip>
             </>

@@ -5,7 +5,7 @@ import { topicMutateErrorToFieldError } from "@/app/[locale]/kafka/[kafkaId]/top
 import { Number } from "@/components/Format/Number";
 import { ResponsiveTableProps, TableView } from "@/components/Table";
 import { usePathname, useRouter } from "@/navigation";
-import { readonly } from "@/utils/runmode";
+import { isReadonly } from "@/utils/env";
 import {
   Button,
   FormGroup,
@@ -321,7 +321,7 @@ export function ConfigTable({
         }}
         renderCell={renderCell}
         renderActions={({ row: [name] }) => {
-          if (readonly()) {
+          if (isReadonly) {
             return <></>;
           }
 

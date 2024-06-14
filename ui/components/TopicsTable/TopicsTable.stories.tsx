@@ -11,6 +11,7 @@ export default {
     topics: [],
     includeHidden: false,
     topicsCount: 0,
+    showLearningLinks: true,
   },
 } as Meta<typeof Comp>;
 type Story = StoryObj<typeof Comp>;

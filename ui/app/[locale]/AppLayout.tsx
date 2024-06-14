@@ -19,7 +19,10 @@ import { HelpIcon } from "@/libs/patternfly/react-icons";
 import { useTranslations } from "next-intl";
 import { PropsWithChildren, Suspense } from "react";
 
-export function AppLayout({ children }: PropsWithChildren) {
+export function AppLayout({
+  children,
+  showLearningLinks,
+}: PropsWithChildren<{ showLearningLinks: boolean }>) {
   const t = useTranslations();
   return (
     <Page
@@ -45,7 +48,7 @@ export function AppLayout({ children }: PropsWithChildren) {
     >
       {/*<HelpContainer>*/}
       <ClusterDrawerProvider>
-        <ClusterDrawer>
+        <ClusterDrawer showLearningLinks={showLearningLinks}>
           <Banner variant={"blue"}>
             <Split>
               <SplitItem isFilled={true}>

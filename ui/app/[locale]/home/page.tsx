@@ -1,4 +1,3 @@
-import { useTranslations } from "next-intl";
 import { getConsumerGroups } from "@/api/consumerGroups/actions";
 import { getKafkaCluster, getKafkaClusters } from "@/api/kafka/actions";
 import { ClusterList } from "@/api/kafka/schema";
@@ -37,9 +36,10 @@ import {
   Tooltip,
 } from "@/libs/patternfly/react-core";
 import { HelpIcon } from "@/libs/patternfly/react-icons";
+import { isProductizedBuild } from "@/utils/env";
+import { useTranslations } from "next-intl";
 import { Suspense } from "react";
 import styles from "./home.module.css";
-import { enabled as learningLinksEnabled } from "@/utils/learningLinks";
 
 export default function Home() {
   const t = useTranslations();
@@ -57,7 +57,10 @@ export default function Home() {
                 {t.rich("homepage.page_header", { product: productName })}
               </Title>
               <Text className={"pf-v5-u-color-200"}>
-                {t("homepage.page_subtitle", { brand: brand, product: productName })}
+                {t("homepage.page_subtitle", {
+                  brand: brand,
+                  product: productName,
+                })}
               </Text>
             </TextContent>
           </div>
@@ -92,17 +95,20 @@ export default function Home() {
               title={
                 <TextContent>
                   <b>
-                    {t("homepage.recently_viewed_topics_header")} {" "}
+                    {t("homepage.recently_viewed_topics_header")}{" "}
                     <Tooltip
-                      content={
-                        t("homepage.recently_viewed_topics_header_popover", { product: productName })
-                      }
+                      content={t(
+                        "homepage.recently_viewed_topics_header_popover",
+                        { product: productName },
+                      )}
                     >
                       <HelpIcon />
                     </Tooltip>
                   </b>
                   <Text component={"small"}>
-                    {t("homepage.last_accessed_topics", { product: productName })}
+                    {t("homepage.last_accessed_topics", {
+                      product: productName,
+                    })}
                   </Text>
                 </TextContent>
               }
@@ -115,143 +121,155 @@ export default function Home() {
               </CardBody>
             </ExpandableCard>
           </StackItem>
-          { learningLinksEnabled() &&
-          <StackItem>
-            <ExpandableCard
-              title={
-                <Level>
-                  <LevelItem>
-                    <TextContent>
-                      {t.rich("homepage.recommended_learning_resources")}
-                    </TextContent>
-                  </LevelItem>
-                </Level>
-              }
-              collapsedTitle={
-                <Level>
-                  <LevelItem>
-                    <Stack>
-                      <StackItem>
-                        <TextContent>
-                          {t.rich("homepage.recommended_learning_resources")}
-                        </TextContent>
-                      </StackItem>
-                      <StackItem>
-                        <LabelGroup isCompact>
-                          <Label isCompact color="orange">
-                            {t("homepage.documentation")}
-                          </Label>
-                        </LabelGroup>
-                      </StackItem>
-                    </Stack>
-                  </LevelItem>
-                </Level>
-              }
-              isCompact={true}
-            >
-              <CardBody>
-                <DataList aria-label={t("homepage.recommended_learning_resources_label")}>
-                  <DataListItem aria-labelledby="gs-1-1">
-                    <DataListItemRow>
-                      <DataListItemCells
-                        dataListCells={[
-                          <DataListCell key="gs-1-1" width={2}>
-                            <span id="gs-1-1">
-                              {t("learning.labels.overview")}
-                            </span>
-                          </DataListCell>,
-                          <DataListCell key="gs-1-2">
-                            <Label isCompact={true} color={"orange"}>
+          {isProductizedBuild && (
+            <StackItem>
+              <ExpandableCard
+                title={
+                  <Level>
+                    <LevelItem>
+                      <TextContent>
+                        {t.rich("homepage.recommended_learning_resources")}
+                      </TextContent>
+                    </LevelItem>
+                  </Level>
+                }
+                collapsedTitle={
+                  <Level>
+                    <LevelItem>
+                      <Stack>
+                        <StackItem>
+                          <TextContent>
+                            {t.rich("homepage.recommended_learning_resources")}
+                          </TextContent>
+                        </StackItem>
+                        <StackItem>
+                          <LabelGroup isCompact>
+                            <Label isCompact color="orange">
                               {t("homepage.documentation")}
                             </Label>
-                          </DataListCell>,
-                          <DataListCell key="gs-1-3">
-                            <ExternalLink testId={"gs-1-3"} href={t("learning.links.overview")}>
-                              {t("homepage.view_documentation")}
-                            </ExternalLink>
-                          </DataListCell>,
-                        ]}
-                      />
-                    </DataListItemRow>
-                  </DataListItem>
-                  { t("learning.links.gettingStarted") &&
-                  <DataListItem aria-labelledby="gs-2-1">
-                    <DataListItemRow>
-                      <DataListItemCells
-                        dataListCells={[
-                          <DataListCell key="gs-2-1" width={2}>
-                            <span id="gs-2-1">
-                              {t("learning.labels.gettingStarted")}
-                            </span>
-                          </DataListCell>,
-                          <DataListCell key="gs-2-2">
-                            <Label isCompact={true} color={"orange"}>
-                              {t("homepage.documentation")}
-                            </Label>
-                          </DataListCell>,
-                          <DataListCell key="gs-2-3">
-                            <ExternalLink testId={"gs-2-3"} href={t("learning.links.gettingStarted")}>
-                              {t("homepage.view_documentation")}
-                            </ExternalLink>
-                          </DataListCell>,
-                        ]}
-                      />
-                    </DataListItemRow>
-                  </DataListItem>
-                  }
-                  { t("learning.links.connecting") &&
-                  <DataListItem aria-labelledby="gs-3-1">
-                    <DataListItemRow>
-                      <DataListItemCells
-                        dataListCells={[
-                          <DataListCell key="gs-3-1" width={2}>
-                            <span id="gs-3-1">
-                              {t("learning.labels.connecting")}
-                            </span>
-                          </DataListCell>,
-                          <DataListCell key="gs-3-2">
-                            <Label isCompact={true} color={"orange"}>
-                              {t("homepage.documentation")}
-                            </Label>
-                          </DataListCell>,
-                          <DataListCell key="gs-3-3">
-                            <ExternalLink testId={"gs-3-3"} href={t("learning.links.connecting")}>
-                              {t("homepage.view_documentation")}
-                            </ExternalLink>
-                          </DataListCell>,
-                        ]}
-                      />
-                    </DataListItemRow>
-                  </DataListItem>
-                  }
-                  <DataListItem aria-labelledby="gs-4-1">
-                    <DataListItemRow>
-                      <DataListItemCells
-                        dataListCells={[
-                          <DataListCell key="gs-4-1" width={2}>
-                            <span id="gs-4-1">
-                              {t("learning.labels.topicOperatorUse")}
-                            </span>
-                          </DataListCell>,
-                          <DataListCell key="gs-4-2">
-                            <Label isCompact={true} color={"orange"}>
-                              {t("homepage.documentation")}
-                            </Label>
-                          </DataListCell>,
-                          <DataListCell key="gs-4-3">
-                            <ExternalLink testId={"gs-4-3"} href={t("learning.links.topicOperatorUse")}>
-                              {t("homepage.view_documentation")}
-                            </ExternalLink>
-                          </DataListCell>,
-                        ]}
-                      />
-                    </DataListItemRow>
-                  </DataListItem>
-                </DataList>
-              </CardBody>
-            </ExpandableCard>
-          </StackItem>
-          }
+                          </LabelGroup>
+                        </StackItem>
+                      </Stack>
+                    </LevelItem>
+                  </Level>
+                }
+                isCompact={true}
+              >
+                <CardBody>
+                  <DataList aria-label="Recommended learning resources">
+                    <DataListItem aria-labelledby="gs-1-1">
+                      <DataListItemRow>
+                        <DataListItemCells
+                          dataListCells={[
+                            <DataListCell key="gs-1-1" width={2}>
+                              <span id="gs-1-1">
+                                {t("learning.labels.overview")}
+                              </span>
+                            </DataListCell>,
+                            <DataListCell key="gs-1-2">
+                              <Label isCompact={true} color={"orange"}>
+                                {t("homepage.documentation")}
+                              </Label>
+                            </DataListCell>,
+                            <DataListCell key="gs-1-3">
+                              <ExternalLink
+                                testId={"gs-1-3"}
+                                href={t("learning.links.overview")}
+                              >
+                                {t("homepage.view_documentation")}
+                              </ExternalLink>
+                            </DataListCell>,
+                          ]}
+                        />
+                      </DataListItemRow>
+                    </DataListItem>
+                    {t("learning.links.gettingStarted") && (
+                      <DataListItem aria-labelledby="gs-2-1">
+                        <DataListItemRow>
+                          <DataListItemCells
+                            dataListCells={[
+                              <DataListCell key="gs-2-1" width={2}>
+                                <span id="gs-2-1">
+                                  {t("learning.labels.gettingStarted")}
+                                </span>
+                              </DataListCell>,
+                              <DataListCell key="gs-2-2">
+                                <Label isCompact={true} color={"orange"}>
+                                  {t("homepage.documentation")}
+                                </Label>
+                              </DataListCell>,
+                              <DataListCell key="gs-2-3">
+                                <ExternalLink
+                                  testId={"gs-2-3"}
+                                  href={t("learning.links.gettingStarted")}
+                                >
+                                  {t("homepage.view_documentation")}
+                                </ExternalLink>
+                              </DataListCell>,
+                            ]}
+                          />
+                        </DataListItemRow>
+                      </DataListItem>
+                    )}
+                    {t("learning.links.connecting") && (
+                      <DataListItem aria-labelledby="gs-3-1">
+                        <DataListItemRow>
+                          <DataListItemCells
+                            dataListCells={[
+                              <DataListCell key="gs-3-1" width={2}>
+                                <span id="gs-3-1">
+                                  {t("learning.labels.connecting")}
+                                </span>
+                              </DataListCell>,
+                              <DataListCell key="gs-3-2">
+                                <Label isCompact={true} color={"orange"}>
+                                  {t("homepage.documentation")}
+                                </Label>
+                              </DataListCell>,
+                              <DataListCell key="gs-3-3">
+                                <ExternalLink
+                                  testId={"gs-3-3"}
+                                  href={t("learning.links.connecting")}
+                                >
+                                  {t("homepage.view_documentation")}
+                                </ExternalLink>
+                              </DataListCell>,
+                            ]}
+                          />
+                        </DataListItemRow>
+                      </DataListItem>
+                    )}
+                    <DataListItem aria-labelledby="gs-4-1">
+                      <DataListItemRow>
+                        <DataListItemCells
+                          dataListCells={[
+                            <DataListCell key="gs-4-1" width={2}>
+                              <span id="gs-4-1">
+                                {t("learning.labels.topicOperatorUse")}
+                              </span>
+                            </DataListCell>,
+                            <DataListCell key="gs-4-2">
+                              <Label isCompact={true} color={"orange"}>
+                                {t("homepage.documentation")}
+                              </Label>
+                            </DataListCell>,
+                            <DataListCell key="gs-4-3">
+                              <ExternalLink
+                                testId={"gs-4-3"}
+                                href={t("learning.links.topicOperatorUse")}
+                              >
+                                {t("homepage.view_documentation")}
+                              </ExternalLink>
+                            </DataListCell>,
+                          ]}
+                        />
+                      </DataListItemRow>
+                    </DataListItem>
+                  </DataList>
+                </CardBody>
+              </ExpandableCard>
+            </StackItem>
+          )}
         </Stack>
       </PageSection>
     </>
@@ -331,15 +349,18 @@ async function RecentTopics() {
       <EmptyStateBody>
         {t("homepage.empty_topics_description", { product: productName })}
       </EmptyStateBody>
-      { learningLinksEnabled() &&
-      <EmptyStateFooter>
-        <EmptyStateActions className={"pf-v5-u-font-size-sm"}>
-          <ExternalLink testId={"recent-topics-empty-state-link"} href={t("learning.links.topicOperatorUse")}>
-            {t("learning.labels.topicOperatorUse")}
-          </ExternalLink>
-        </EmptyStateActions>
-      </EmptyStateFooter>
-      }
+      {isProductizedBuild && (
+        <EmptyStateFooter>
+          <EmptyStateActions className={"pf-v5-u-font-size-sm"}>
+            <ExternalLink
+              testId={"recent-topics-empty-state-link"}
+              href={t("learning.links.topicOperatorUse")}
+            >
+              {t("learning.labels.topicOperatorUse")}
+            </ExternalLink>
+          </EmptyStateActions>
+        </EmptyStateFooter>
+      )}
     </EmptyState>
   );
 }

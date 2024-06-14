@@ -11,12 +11,13 @@ import {
 } from "@/libs/patternfly/react-core";
 import { Divider, Stack, StackItem } from "@patternfly/react-core";
 import { useTranslations } from "next-intl";
-import { enabled as learningLinksEnabled } from "@/utils/learningLinks";
 
 export async function ClusterConnectionDetails({
   clusterId,
+  showLearningLinks,
 }: {
   clusterId: string;
+  showLearningLinks: boolean;
 }) {
   const t = useTranslations();
   const data = await getKafkaCluster(clusterId);
@@ -102,25 +103,33 @@ export async function ClusterConnectionDetails({
           </ExpandableSection>
         </TextContent>
       </StackItem>
-      { learningLinksEnabled() &&
-      <StackItem>
-        <Divider />
-        <Stack hasGutter={true} className={"pf-v5-u-p-lg"}>
-          { t("learning.links.connecting") &&
-          <StackItem>
-            <ExternalLink testId={"drawer-footer-help-1"} href={t("learning.links.connecting")}>
-              {t("ClusterConnectionDetails.developing_kafka_client_applications",)}
-            </ExternalLink>
-          </StackItem>
-          }
-          <StackItem>
-            <ExternalLink testId={"drawer-footer-help-1"} href={t("learning.links.overview")}>
-              {t("ClusterConnectionDetails.streams_portal")}
-            </ExternalLink>
-          </StackItem>
-        </Stack>
-      </StackItem>
-      }
+      {showLearningLinks && (
+        <StackItem>
+          <Divider />
+          <Stack hasGutter={true} className={"pf-v5-u-p-lg"}>
+            {t("learning.links.connecting") && (
+              <StackItem>
+                <ExternalLink
+                  testId={"drawer-footer-help-1"}
+                  href={t("learning.links.connecting")}
+                >
+                  {t(
+                    "ClusterConnectionDetails.developing_kafka_client_applications",
+                  )}
+                </ExternalLink>
+              </StackItem>
+            )}
+            <StackItem>
+              <ExternalLink
+                testId={"drawer-footer-help-1"}
+                href={t("learning.links.overview")}
+              >
+                {t("ClusterConnectionDetails.streams_portal")}
+              </ExternalLink>
+            </StackItem>
+          </Stack>
+        </StackItem>
+      )}
     </Stack>
   );
 }

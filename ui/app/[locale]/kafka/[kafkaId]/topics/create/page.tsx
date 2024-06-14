@@ -3,8 +3,8 @@ import { createTopic } from "@/api/topics/actions";
 import { NewConfigMap } from "@/api/topics/schema";
 import { KafkaParams } from "@/app/[locale]/kafka/[kafkaId]/kafka.params";
 import { CreateTopic } from "@/app/[locale]/kafka/[kafkaId]/topics/create/CreateTopic";
-import { readonly } from "@/utils/runmode";
 import { redirect } from "@/navigation";
+import { isReadonly } from "@/utils/env";
 import { notFound } from "next/navigation";
 
 export default async function CreateTopicPage({
@@ -12,7 +12,7 @@ export default async function CreateTopicPage({
 }: {
   params: KafkaParams;
 }) {
-  if (readonly()) {
+  if (isReadonly) {
     redirect(`/kafka/${kafkaId}`);
     return;
   }
