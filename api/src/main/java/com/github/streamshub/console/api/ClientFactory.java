@@ -13,6 +13,7 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -42,10 +43,17 @@ import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerConfig;
+import org.apache.kafka.common.Uuid;
+import org.apache.kafka.common.acl.AccessControlEntryFilter;
+import org.apache.kafka.common.acl.AclBindingFilter;
 import org.apache.kafka.common.config.SaslConfigs;
 import org.apache.kafka.common.config.SslConfigs;
+import org.apache.kafka.common.resource.ResourcePatternFilter;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
+import org.apache.kafka.metadata.authorizer.StandardAcl;
+import org.apache.kafka.metadata.authorizer.StandardAuthorizer;
+import org.apache.kafka.server.authorizer.Authorizer;
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
@@ -301,7 +309,8 @@ public class ClientFactory {
                         trusted certificate which is no longer available.""", clusterKey);
             }
         } else {
-            KafkaContext ctx = new KafkaContext(clusterConfig, kafkaResource.orElse(null), clientConfigs, admin);
+            Authorizer authz = admin != null ? createAuthorizer(kafkaResource.orElse(null), admin) : null;
+            KafkaContext ctx = new KafkaContext(clusterConfig, kafkaResource.orElse(null), clientConfigs, admin, authz);
             log.infof("%s KafkaContext for cluster %s, id=%s", replace ? "Replacing" : "Adding", clusterKey, clusterId);
             KafkaContext previous = contexts.put(clusterId, ctx);
             Optional.ofNullable(previous).ifPresent(KafkaContext::close);
@@ -422,6 +431,70 @@ public class ClientFactory {
             log.infof("Closing out-of-date KafkaContext %s", Cache.metaNamespaceKeyFunc(context.resource()));
             context.close();
         }
+    }
+
+    Authorizer createAuthorizer(Kafka resource, Admin admin) {
+//        KafkaClusterSpec kafkaSpec = resource.getSpec().getKafka();
+//        KafkaAuthorization authSpec = kafkaSpec.getAuthorization();
+
+//        if (!KafkaAuthorizationSimple.TYPE_SIMPLE.equals(authSpec.getType())) {
+            // TODO Support other authorizer types allowed by Strimzi
+//            return null;
+//        }
+
+        StandardAuthorizer authorizer = new StandardAuthorizer() {
+            ScheduledFuture<?> reloadTask;
+
+            void loadSnapshot() {
+                String clusterKey = Cache.metaNamespaceKeyFunc(resource);
+                log.tracef("Retrieving ACLs for Kafka cluster %s", clusterKey);
+
+                var snapshot = admin.describeAcls(new AclBindingFilter(ResourcePatternFilter.ANY, AccessControlEntryFilter.ANY))
+                    .values()
+                    .toCompletionStage()
+                    .toCompletableFuture()
+                    .join()
+                    .stream()
+                    .map(binding -> Map.entry(
+                            new Uuid(binding.pattern().hashCode(), binding.entry().hashCode()),
+                            StandardAcl.fromAclBinding(binding)))
+                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+                loadSnapshot(snapshot);
+                log.debugf("Loaded %d ACLs from Kafka cluster %s", snapshot.size(), clusterKey);
+            }
+
+            @Override
+            public void completeInitialLoad() {
+                loadSnapshot();
+                super.completeInitialLoad();
+                reloadTask = scheduler.scheduleWithFixedDelay(this::loadSnapshot, 30, 30, TimeUnit.SECONDS);
+            }
+
+            @Override
+            public void close() throws IOException {
+                Optional.ofNullable(reloadTask).ifPresent(task -> task.cancel(true));
+                super.close();
+            }
+        };
+
+        Map<String, String> configuration = new HashMap<>();
+//        var authorization = (KafkaAuthorizationSimple) authSpec;
+//        configuration.put(
+//                StandardAuthorizer.SUPER_USERS_CONFIG,
+//                Optional.ofNullable(authorization.getSuperUsers()).orElseGet(Collections::emptyList)
+//                    .stream().map(e -> String.format("User:%s", e)).collect(Collectors.joining(";")));
+//
+//        if (kafkaSpec.getConfig().containsKey(StandardAuthorizer.ALLOW_EVERYONE_IF_NO_ACL_IS_FOUND_CONFIG)) {
+//            configuration.put(
+//                    StandardAuthorizer.ALLOW_EVERYONE_IF_NO_ACL_IS_FOUND_CONFIG,
+//                    (String) kafkaSpec.getConfig().get(StandardAuthorizer.ALLOW_EVERYONE_IF_NO_ACL_IS_FOUND_CONFIG));
+//        }
+
+        authorizer.configure(configuration);
+        authorizer.completeInitialLoad();
+
+        return authorizer;
     }
 
     @Produces

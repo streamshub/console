@@ -53,6 +53,7 @@ import com.github.streamshub.console.api.model.PartitionInfo;
 import com.github.streamshub.console.api.model.ReplicaLocalStorage;
 import com.github.streamshub.console.api.model.Topic;
 import com.github.streamshub.console.api.model.TopicPatch;
+import com.github.streamshub.console.api.support.AdminDecorator;
 import com.github.streamshub.console.api.support.KafkaContext;
 import com.github.streamshub.console.api.support.KafkaOffsetSpec;
 import com.github.streamshub.console.api.support.ListRequestContext;
@@ -102,6 +103,9 @@ public class TopicService {
 
     @Inject
     KafkaContext kafkaContext;
+
+    @Inject
+    AdminDecorator admin;
 
     @Inject
     @Named("KafkaTopics")
@@ -165,7 +169,7 @@ public class TopicService {
         final Map<String, Integer> statuses = new HashMap<>();
         listSupport.meta().put("summary", Map.of("statuses", statuses));
 
-        return listTopics(adminClient, true)
+        return listTopics(true)
             .thenApply(list -> list.stream().map(Topic::fromTopicListing).toList())
             .thenComposeAsync(
                     list -> augmentList(adminClient, list, fetchList, offsetSpec),
@@ -188,12 +192,9 @@ public class TopicService {
         return topic;
     }
 
-    CompletableFuture<List<TopicListing>> listTopics(Admin adminClient, boolean listInternal) {
-        return adminClient
+    CompletableFuture<List<TopicListing>> listTopics(boolean listInternal) {
+        return this.admin
             .listTopics(new ListTopicsOptions().listInternal(listInternal))
-            .listings()
-            .thenApply(topics -> topics.stream().toList())
-            .toCompletionStage()
             .toCompletableFuture();
     }
 

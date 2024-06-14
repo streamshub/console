@@ -436,7 +436,7 @@ public class ConsumerGroupService {
 
         Map<String, Either<ConsumerGroup, Throwable>> result = new LinkedHashMap<>(groupIds.size());
 
-        var pendingTopicsIds = topicService.listTopics(adminClient, true)
+        var pendingTopicsIds = topicService.listTopics(true)
                 .thenApply(topics -> topics.stream()
                         .collect(Collectors.toMap(TopicListing::name, l -> l.topicId().toString())));
 

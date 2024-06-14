@@ -85,8 +85,16 @@
             <artifactId>quarkus-kubernetes-client</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-oidc</artifactId>
+        </dependency>
+        <dependency>
             <groupId>io.smallrye.common</groupId>
             <artifactId>smallrye-common-annotation</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.kafka</groupId>
+            <artifactId>kafka-metadata</artifactId>
         </dependency>
 
         <dependency>

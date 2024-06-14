@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.Objects;
 
 import org.apache.kafka.clients.admin.Admin;
+import org.apache.kafka.server.authorizer.Authorizer;
 
 import com.github.streamshub.console.config.KafkaClusterConfig;
 
@@ -13,22 +14,24 @@ import io.strimzi.api.kafka.model.kafka.Kafka;
 
 public class KafkaContext implements Closeable {
 
-    public static final KafkaContext EMPTY = new KafkaContext(null, null, Collections.emptyMap(), null);
+    public static final KafkaContext EMPTY = new KafkaContext(null, null, Collections.emptyMap(), null, null);
 
     final KafkaClusterConfig clusterConfig;
     final Kafka resource;
     final Map<Class<?>, Map<String, Object>> configs;
     final Admin admin;
+    final Authorizer authorizer;
 
-    public KafkaContext(KafkaClusterConfig clusterConfig, Kafka resource, Map<Class<?>, Map<String, Object>> configs, Admin admin) {
+    public KafkaContext(KafkaClusterConfig clusterConfig, Kafka resource, Map<Class<?>, Map<String, Object>> configs, Admin admin, Authorizer authorizer) {
         this.clusterConfig = clusterConfig;
         this.resource = resource;
         this.configs = Map.copyOf(configs);
         this.admin = admin;
+        this.authorizer = authorizer;
     }
 
     public KafkaContext(KafkaContext other, Admin admin) {
-        this(other.clusterConfig, other.resource, other.configs, admin);
+        this(other.clusterConfig, other.resource, other.configs, admin, other.authorizer);
     }
 
     @Override
@@ -74,5 +77,9 @@ public class KafkaContext implements Closeable {
 
     public Admin admin() {
         return admin;
+    }
+
+    public Authorizer authorizer() {
+        return authorizer;
     }
 }
