@@ -5,11 +5,15 @@ import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -27,7 +31,6 @@ import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Inject;
 import jakarta.inject.Named;
 import jakarta.ws.rs.NotFoundException;
-import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.UriInfo;
 
 import org.apache.kafka.clients.CommonClientConfigs;
@@ -39,9 +42,16 @@ import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerConfig;
+import org.apache.kafka.common.Uuid;
+import org.apache.kafka.common.acl.AccessControlEntryFilter;
+import org.apache.kafka.common.acl.AclBindingFilter;
 import org.apache.kafka.common.config.SslConfigs;
+import org.apache.kafka.common.resource.ResourcePatternFilter;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
+import org.apache.kafka.metadata.authorizer.StandardAcl;
+import org.apache.kafka.metadata.authorizer.StandardAuthorizer;
+import org.apache.kafka.server.authorizer.Authorizer;
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
@@ -49,6 +59,7 @@ import org.jboss.logging.Logger;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.github.streamshub.console.api.service.KafkaClusterService;
+import com.github.streamshub.console.api.support.KafkaContext;
 import com.github.streamshub.console.api.support.TrustAllCertificateManager;
 import com.github.streamshub.console.config.ConsoleConfig;
 import com.github.streamshub.console.config.KafkaClusterConfig;
@@ -57,6 +68,9 @@ import io.fabric8.kubernetes.client.informers.ResourceEventHandler;
 import io.fabric8.kubernetes.client.informers.SharedIndexInformer;
 import io.fabric8.kubernetes.client.informers.cache.Cache;
 import io.strimzi.api.kafka.model.kafka.Kafka;
+import io.strimzi.api.kafka.model.kafka.KafkaAuthorization;
+import io.strimzi.api.kafka.model.kafka.KafkaAuthorizationSimple;
+import io.strimzi.api.kafka.model.kafka.KafkaClusterSpec;
 import io.strimzi.api.kafka.model.kafka.KafkaStatus;
 import io.strimzi.api.kafka.model.kafka.listener.ListenerStatus;
 
@@ -87,6 +101,9 @@ public class ClientFactory {
     Config config;
 
     @Inject
+    ScheduledExecutorService scheduler;
+
+    @Inject
     @ConfigProperty(name = "console.config-path")
     Optional<String> configPath;
 
@@ -98,9 +115,6 @@ public class ClientFactory {
 
     @Inject
     Instance<TrustAllCertificateManager> trustManager;
-
-    @Inject
-    HttpHeaders headers;
 
     @Inject
     UriInfo requestUri;
@@ -165,39 +179,10 @@ public class ClientFactory {
             });
     }
 
-    /**
-     * Provides the Strimzi Kafka custom resource addressed by the current request
-     * URL as an injectable bean. This allows for the Kafka to be obtained by
-     * application logic without an additional lookup.
-     *
-     * @return a supplier that gives the Strimzi Kafka CR specific to the current
-     *         request
-     * @throws IllegalStateException when an attempt is made to access an injected
-     *                               Kafka Supplier but the current request does not
-     *                               include the Kafka clusterId path parameter.
-     * @throws NotFoundException     when the provided Kafka clusterId does not
-     *                               match any known Kafka cluster.
-     */
-    @Produces
-    @RequestScoped
-    public Supplier<Kafka> kafkaResourceSupplier() {
-        String clusterId = requestUri.getPathParameters().getFirst("clusterId");
-
-        if (clusterId == null) {
-            throw new IllegalStateException("Admin client was accessed, "
-                    + "but the requested operation does not provide a Kafka cluster ID");
-        }
-
-        Kafka cluster = kafkaClusterService.findCluster(clusterId)
-                .orElseThrow(() -> noSuchKafka.apply(clusterId));
-
-        return () -> cluster;
-    }
-
     @Produces
     @ApplicationScoped
-    Map<String, Admin> getAdmins(ConsoleConfig consoleConfig, Function<Map<String, Object>, Admin> adminBuilder) {
-        final Map<String, Admin> adminClients = new HashMap<>();
+    Map<String, KafkaContext> produceKafkaContexts(ConsoleConfig consoleConfig, Function<Map<String, Object>, Admin> adminBuilder) {
+        final Map<String, KafkaContext> contexts = new ConcurrentHashMap<>();
 
         kafkaInformer.addEventHandlerWithResyncPeriod(new ResourceEventHandler<Kafka>() {
             public void onAdd(Kafka kafka) {
@@ -234,56 +219,147 @@ public class ClientFactory {
                         }
                     })
                     .ifPresent(client -> {
-                        log.info("%s Admin client for Kafka cluster %s".formatted(eventType, kafka.getStatus().getClusterId()));
-                        Admin previous = adminClients.put(clusterKey, client);
-                        Optional.ofNullable(previous).ifPresent(Admin::close);
+                        log.info("%s KafkaContext for Kafka cluster %s".formatted(eventType, kafka.getStatus().getClusterId()));
+                        KafkaContext context = new KafkaContext(kafka, client, createAuthorizer(kafka, client));
+                        KafkaContext previous = contexts.put(clusterKey, context);
+                        Optional.ofNullable(previous).ifPresent(KafkaContext::close);
                     });
             }
 
             public void onDelete(Kafka kafka, boolean deletedFinalStateUnknown) {
                 String clusterKey = Cache.metaNamespaceKeyFunc(kafka);
-                log.info("Removing Admin client for Kafka cluster %s".formatted(kafka.getStatus().getClusterId()));
-                Admin admin = adminClients.remove(clusterKey);
-                Optional.ofNullable(admin).ifPresent(Admin::close);
+                log.info("Removing KafkaContext for Kafka cluster %s".formatted(kafka.getStatus().getClusterId()));
+                KafkaContext context = contexts.remove(clusterKey);
+                Optional.ofNullable(context).ifPresent(KafkaContext::close);
             }
         }, TimeUnit.MINUTES.toMillis(1));
 
-        return adminClients;
+        return contexts;
     }
 
-    void closeAdmins(@Disposes Map<String, Admin> admins) {
-        admins.values().parallelStream().forEach(admin -> {
+    void disposeKafkaContexts(@Disposes Map<String, KafkaContext> contexts) {
+        log.infof("Closing all known KafkaContexts");
+
+        contexts.values().parallelStream().forEach(context -> {
+            log.infof("Closing KafkaContext %s", Cache.metaNamespaceKeyFunc(context.resource()));
             try {
-                admin.close();
+                context.close();
             } catch (Exception e) {
-                log.warnf("Exception occurred closing admin: %s", e.getMessage());
+                log.warnf("Exception occurred closing context: %s", e.getMessage());
             }
         });
     }
 
+    /**
+     * Provides the Strimzi Kafka custom resource addressed by the current request
+     * URL as an injectable bean. This allows for the Kafka to be obtained by
+     * application logic without an additional lookup.
+     *
+     * @return a supplier that gives the Strimzi Kafka CR specific to the current
+     *         request
+     * @throws IllegalStateException when an attempt is made to access an injected
+     *                               Kafka Supplier but the current request does not
+     *                               include the Kafka clusterId path parameter.
+     * @throws NotFoundException     when the provided Kafka clusterId does not
+     *                               match any known Kafka cluster.
+     */
     @Produces
     @RequestScoped
-    public Supplier<Admin> adminClientSupplier(Supplier<Kafka> cluster, Map<String, Admin> admins, UnaryOperator<Admin> filter) {
+    public KafkaContext produceKafkaContext(Map<String, KafkaContext> contexts, UnaryOperator<Admin> filter) {
+        String clusterId = requestUri.getPathParameters().getFirst("clusterId");
+
+        if (clusterId == null) {
+            return KafkaContext.EMPTY;
+        }
+
+        Optional<Kafka> cluster = kafkaClusterService.findCluster(clusterId);
+
+        if (cluster.isEmpty()) {
+            throw noSuchKafka.apply(clusterId);
+        }
+
         String clusterKey = Cache.metaNamespaceKeyFunc(cluster.get());
 
-        return Optional.ofNullable(admins.get(clusterKey))
-            .map(filter::apply)
-            .<Supplier<Admin>>map(client -> () -> client)
-            .orElseThrow(() -> noSuchKafka.apply(cluster.get().getStatus().getClusterId()));
+        return Optional.ofNullable(contexts.get(clusterKey))
+                .map(ctx -> new KafkaContext(ctx.resource(), filter.apply(ctx.client()), ctx.authorizer()))
+                .orElseThrow(() -> noSuchKafka.apply(cluster.get().getStatus().getClusterId()));
     }
 
-    public void adminClientDisposer(@Disposes Supplier<Admin> client, Map<String, Admin> admins) {
-        Admin admin = client.get();
-
-        if (!admins.values().contains(admin)) {
-            admin.close();
+    public void disposeKafkaContext(@Disposes KafkaContext context, Map<String, KafkaContext> contexts) {
+        if (!contexts.values().contains(context)) {
+            log.infof("Closing out-of-date KafkaContext %s", Cache.metaNamespaceKeyFunc(context.resource()));
+            context.close();
         }
     }
 
+    Authorizer createAuthorizer(Kafka resource, Admin admin) {
+        KafkaClusterSpec kafkaSpec = resource.getSpec().getKafka();
+        KafkaAuthorization authSpec = kafkaSpec.getAuthorization();
+
+        if (!KafkaAuthorizationSimple.TYPE_SIMPLE.equals(authSpec.getType())) {
+            // TODO Support other authorizer types allowed by Strimzi
+            return null;
+        }
+
+        StandardAuthorizer authorizer = new StandardAuthorizer() {
+            ScheduledFuture<?> reloadTask;
+
+            void loadSnapshot() {
+                String clusterKey = Cache.metaNamespaceKeyFunc(resource);
+                log.tracef("Retrieving ACLs for Kafka cluster %s", clusterKey);
+
+                var snapshot = admin.describeAcls(new AclBindingFilter(ResourcePatternFilter.ANY, AccessControlEntryFilter.ANY))
+                    .values()
+                    .toCompletionStage()
+                    .toCompletableFuture()
+                    .join()
+                    .stream()
+                    .map(binding -> Map.entry(
+                            new Uuid(binding.pattern().hashCode(), binding.entry().hashCode()),
+                            StandardAcl.fromAclBinding(binding)))
+                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+                loadSnapshot(snapshot);
+                log.debugf("Loaded %d ACLs from Kafka cluster %s", snapshot.size(), clusterKey);
+            }
+
+            @Override
+            public void completeInitialLoad() {
+                loadSnapshot();
+                super.completeInitialLoad();
+                reloadTask = scheduler.scheduleWithFixedDelay(this::loadSnapshot, 30, 30, TimeUnit.SECONDS);
+            }
+
+            @Override
+            public void close() throws IOException {
+                Optional.ofNullable(reloadTask).ifPresent(task -> task.cancel(true));
+                super.close();
+            }
+        };
+
+        Map<String, String> configuration = new HashMap<>();
+        var authorization = (KafkaAuthorizationSimple) authSpec;
+        configuration.put(
+                StandardAuthorizer.SUPER_USERS_CONFIG,
+                Optional.ofNullable(authorization.getSuperUsers()).orElseGet(Collections::emptyList)
+                    .stream().map(e -> String.format("User:%s", e)).collect(Collectors.joining(";")));
+
+        if (kafkaSpec.getConfig().containsKey(StandardAuthorizer.ALLOW_EVERYONE_IF_NO_ACL_IS_FOUND_CONFIG)) {
+            configuration.put(
+                    StandardAuthorizer.ALLOW_EVERYONE_IF_NO_ACL_IS_FOUND_CONFIG,
+                    (String) kafkaSpec.getConfig().get(StandardAuthorizer.ALLOW_EVERYONE_IF_NO_ACL_IS_FOUND_CONFIG));
+        }
+
+        authorizer.configure(configuration);
+        authorizer.completeInitialLoad();
+
+        return authorizer;
+    }
+
     @Produces
     @RequestScoped
-    public Supplier<Consumer<byte[], byte[]>> consumerSupplier(ConsoleConfig consoleConfig, Supplier<Kafka> cluster) {
-        String clusterKey = Cache.metaNamespaceKeyFunc(cluster.get());
+    public Supplier<Consumer<byte[], byte[]>> consumerSupplier(ConsoleConfig consoleConfig, KafkaContext context) {
+        String clusterKey = Cache.metaNamespaceKeyFunc(context.resource());
 
         return consoleConfig.getKafka()
             .getCluster(clusterKey)
@@ -294,7 +370,7 @@ public class ClientFactory {
                         .filter(Predicate.not(ConsumerConfig.GROUP_ID_CONFIG::equals))
                         .collect(Collectors.toSet());
 
-                var configs = buildConfig(configNames, e, "consumer", e::getConsumerProperties, cluster.get());
+                var configs = buildConfig(configNames, e, "consumer", e::getConsumerProperties, context.resource());
                 configs.put(ConsumerConfig.ALLOW_AUTO_CREATE_TOPICS_CONFIG, "false");
                 configs.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class.getName());
                 configs.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class.getName());
@@ -310,7 +386,7 @@ public class ClientFactory {
                 Consumer<byte[], byte[]> client = new KafkaConsumer<>(configs);
                 return () -> client;
             })
-            .orElseThrow(() -> noSuchKafka.apply(cluster.get().getStatus().getClusterId()));
+            .orElseThrow(() -> noSuchKafka.apply(context.resource().getStatus().getClusterId()));
     }
 
     public void consumerDisposer(@Disposes Supplier<Consumer<byte[], byte[]>> consumer) {
@@ -319,13 +395,13 @@ public class ClientFactory {
 
     @Produces
     @RequestScoped
-    public Supplier<Producer<String, String>> producerSupplier(ConsoleConfig consoleConfig, Supplier<Kafka> cluster) {
-        String clusterKey = Cache.metaNamespaceKeyFunc(cluster.get());
+    public Supplier<Producer<String, String>> producerSupplier(ConsoleConfig consoleConfig, KafkaContext context) {
+        String clusterKey = Cache.metaNamespaceKeyFunc(context.resource());
 
         return consoleConfig.getKafka()
             .getCluster(clusterKey)
             .<Supplier<Producer<String, String>>>map(e -> {
-                var configs = buildConfig(ProducerConfig.configNames(), e, "producer", e::getProducerProperties, cluster.get());
+                var configs = buildConfig(ProducerConfig.configNames(), e, "producer", e::getProducerProperties, context.resource());
                 configs.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
                 configs.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
                 configs.put(ProducerConfig.ACKS_CONFIG, "all");
@@ -341,7 +417,7 @@ public class ClientFactory {
                 Producer<String, String> client = new KafkaProducer<>(configs);
                 return () -> client;
             })
-            .orElseThrow(() -> noSuchKafka.apply(cluster.get().getStatus().getClusterId()));
+            .orElseThrow(() -> noSuchKafka.apply(context.resource().getStatus().getClusterId()));
     }
 
     public void producerDisposer(@Disposes Supplier<Producer<String, String>> producer) {

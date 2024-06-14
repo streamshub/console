@@ -7,7 +7,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -24,12 +23,14 @@ import com.github.streamshub.console.api.model.Condition;
 import com.github.streamshub.console.api.model.KafkaCluster;
 import com.github.streamshub.console.api.model.KafkaListener;
 import com.github.streamshub.console.api.model.Node;
+import com.github.streamshub.console.api.support.KafkaContext;
 import com.github.streamshub.console.api.support.ListRequestContext;
 import com.github.streamshub.console.config.ConsoleConfig;
 
 import io.fabric8.kubernetes.api.model.ObjectMeta;
 import io.fabric8.kubernetes.client.informers.SharedIndexInformer;
 import io.fabric8.kubernetes.client.informers.cache.Cache;
+import io.quarkus.security.identity.SecurityIdentity;
 import io.strimzi.api.kafka.model.kafka.Kafka;
 import io.strimzi.api.kafka.model.kafka.KafkaStatus;
 import io.strimzi.api.kafka.model.kafka.listener.GenericKafkaListener;
@@ -53,7 +54,10 @@ public class KafkaClusterService {
     ConsoleConfig consoleConfig;
 
     @Inject
-    Supplier<Admin> clientSupplier;
+    KafkaContext kafkaContext;
+
+    @Inject
+    SecurityIdentity securityIdentity;
 
     boolean listUnconfigured = false;
     Predicate<KafkaCluster> includeAll = k -> listUnconfigured;
@@ -74,7 +78,7 @@ public class KafkaClusterService {
     }
 
     public CompletionStage<KafkaCluster> describeCluster(List<String> fields) {
-        Admin adminClient = clientSupplier.get();
+        Admin adminClient = kafkaContext.client();
         DescribeClusterOptions options = new DescribeClusterOptions()
                 .includeAuthorizedOperations(fields.contains(KafkaCluster.Fields.AUTHORIZED_OPERATIONS));
         DescribeClusterResult result = adminClient.describeCluster(options);

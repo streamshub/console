@@ -16,7 +16,6 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -54,6 +53,8 @@ import com.github.streamshub.console.api.model.PartitionInfo;
 import com.github.streamshub.console.api.model.ReplicaLocalStorage;
 import com.github.streamshub.console.api.model.Topic;
 import com.github.streamshub.console.api.model.TopicPatch;
+import com.github.streamshub.console.api.support.AdminDecorator;
+import com.github.streamshub.console.api.support.KafkaContext;
 import com.github.streamshub.console.api.support.KafkaOffsetSpec;
 import com.github.streamshub.console.api.support.ListRequestContext;
 import com.github.streamshub.console.api.support.TopicValidation;
@@ -101,10 +102,10 @@ public class TopicService {
     ValidationProxy validationService;
 
     @Inject
-    Supplier<Kafka> kafkaCluster;
+    KafkaContext kafkaContext;
 
     @Inject
-    Supplier<Admin> clientSupplier;
+    AdminDecorator admin;
 
     @Inject
     @Named("KafkaTopics")
@@ -120,8 +121,8 @@ public class TopicService {
     ConsumerGroupService consumerGroupService;
 
     public CompletionStage<NewTopic> createTopic(NewTopic topic, boolean validateOnly) {
-        Kafka kafka = kafkaCluster.get();
-        Admin adminClient = clientSupplier.get();
+        Kafka kafka = kafkaContext.resource();
+        Admin adminClient = kafkaContext.client();
 
         validationService.validate(new TopicValidation.NewTopicInputs(kafka, Collections.emptyMap(), topic));
 
@@ -164,11 +165,11 @@ public class TopicService {
             fetchList.add(Topic.Fields.CONFIGS);
         }
 
-        Admin adminClient = clientSupplier.get();
+        Admin adminClient = kafkaContext.client();
         final Map<String, Integer> statuses = new HashMap<>();
         listSupport.meta().put("summary", Map.of("statuses", statuses));
 
-        return listTopics(adminClient, true)
+        return listTopics(true)
             .thenApply(list -> list.stream().map(Topic::fromTopicListing).toList())
             .thenComposeAsync(
                     list -> augmentList(adminClient, list, fetchList, offsetSpec),
@@ -191,17 +192,14 @@ public class TopicService {
         return topic;
     }
 
-    CompletableFuture<List<TopicListing>> listTopics(Admin adminClient, boolean listInternal) {
-        return adminClient
+    CompletableFuture<List<TopicListing>> listTopics(boolean listInternal) {
+        return this.admin
             .listTopics(new ListTopicsOptions().listInternal(listInternal))
-            .listings()
-            .thenApply(topics -> topics.stream().toList())
-            .toCompletionStage()
             .toCompletableFuture();
     }
 
     public CompletionStage<Topic> describeTopic(String topicId, List<String> fields, String offsetSpec) {
-        Admin adminClient = clientSupplier.get();
+        Admin adminClient = kafkaContext.client();
         Uuid id = Uuid.fromString(topicId);
 
         CompletableFuture<Topic> describePromise = describeTopics(adminClient, List.of(id), fields, offsetSpec)
@@ -232,7 +230,7 @@ public class TopicService {
      * </ul>
      */
     public CompletionStage<Void> patchTopic(String topicId, TopicPatch patch, boolean validateOnly) {
-        Kafka kafka = kafkaCluster.get();
+        Kafka kafka = kafkaContext.resource();
 
         return describeTopic(topicId, List.of(Topic.Fields.CONFIGS), KafkaOffsetSpec.LATEST)
             .thenApply(topic -> validationService.validate(new TopicValidation.TopicPatchInputs(kafka, topic, patch)))
@@ -318,7 +316,7 @@ public class TopicService {
     }
 
     CompletionStage<Void> createPartitions(String topicName, int totalCount, List<List<Integer>> newAssignments, boolean validateOnly) {
-        Admin adminClient = clientSupplier.get();
+        Admin adminClient = kafkaContext.client();
 
         org.apache.kafka.clients.admin.NewPartitions newPartitions;
 
@@ -357,7 +355,7 @@ public class TopicService {
             return Collections.emptyList();
         }
 
-        Admin adminClient = clientSupplier.get();
+        Admin adminClient = kafkaContext.client();
 
         if (logger.isDebugEnabled()) {
             logPartitionReassignments(topic, alteredAssignments);
@@ -401,8 +399,8 @@ public class TopicService {
         });
 
         logger.debugf("Altering partition reassignments for cluster %s[%s], topic %s[%s], changes=[ %s ]",
-                kafkaCluster.get().getMetadata().getName(),
-                kafkaCluster.get().getStatus().getClusterId(),
+                kafkaContext.resource().getMetadata().getName(),
+                kafkaContext.resource().getStatus().getClusterId(),
                 topic.name(),
                 topic.getId(),
                 changes);
@@ -417,7 +415,7 @@ public class TopicService {
     }
 
     public CompletionStage<Void> deleteTopic(String topicId) {
-        Admin adminClient = clientSupplier.get();
+        Admin adminClient = kafkaContext.client();
         Uuid id = Uuid.fromString(topicId);
 
         return adminClient.deleteTopics(TopicCollection.ofTopicIds(List.of(id)))
@@ -434,7 +432,7 @@ public class TopicService {
     }
 
     Optional<KafkaTopic> getManagedTopic(String topicName) {
-        ObjectMeta kafkaMeta = kafkaCluster.get().getMetadata();
+        ObjectMeta kafkaMeta = kafkaContext.resource().getMetadata();
 
         return Optional.ofNullable(managedTopics.get(kafkaMeta.getNamespace()))
             .map(clustersInNamespace -> clustersInNamespace.get(kafkaMeta.getName()))

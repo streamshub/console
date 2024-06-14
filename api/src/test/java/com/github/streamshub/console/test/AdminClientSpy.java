@@ -85,6 +85,8 @@ import org.apache.kafka.clients.admin.ExpireDelegationTokenResult;
 import org.apache.kafka.clients.admin.FeatureUpdate;
 import org.apache.kafka.clients.admin.FenceProducersOptions;
 import org.apache.kafka.clients.admin.FenceProducersResult;
+import org.apache.kafka.clients.admin.ListClientMetricsResourcesOptions;
+import org.apache.kafka.clients.admin.ListClientMetricsResourcesResult;
 import org.apache.kafka.clients.admin.ListConsumerGroupOffsetsOptions;
 import org.apache.kafka.clients.admin.ListConsumerGroupOffsetsResult;
 import org.apache.kafka.clients.admin.ListConsumerGroupOffsetsSpec;
@@ -119,6 +121,7 @@ import org.apache.kafka.common.MetricName;
 import org.apache.kafka.common.TopicCollection;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.TopicPartitionReplica;
+import org.apache.kafka.common.Uuid;
 import org.apache.kafka.common.acl.AclBinding;
 import org.apache.kafka.common.acl.AclBindingFilter;
 import org.apache.kafka.common.config.ConfigResource;
@@ -423,5 +426,13 @@ public class AdminClientSpy implements Admin {
         return delegate.metrics();
     }
 
+    @Override
+    public Uuid clientInstanceId(Duration timeout) {
+        return delegate.clientInstanceId(timeout);
+    }
 
+    @Override
+    public ListClientMetricsResourcesResult listClientMetricsResources(ListClientMetricsResourcesOptions options) {
+        return delegate.listClientMetricsResources(options);
+    }
 }
