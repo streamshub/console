@@ -76,18 +76,18 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.44.1",
-    "@storybook/addon-essentials": "^8.1.8",
-    "@storybook/addon-interactions": "^8.1.8",
-    "@storybook/addon-links": "^8.1.8",
+    "@storybook/addon-essentials": "^8.1.9",
+    "@storybook/addon-interactions": "^8.1.9",
+    "@storybook/addon-links": "^8.1.9",
     "@storybook/blocks": "^8.0.0",
-    "@storybook/nextjs": "^8.1.8",
+    "@storybook/nextjs": "^8.1.9",
     "@storybook/react": "^8.0.0",
     "@storybook/test": "^8.0.0",
     "@storybook/test-runner": "^0.18.2",
     "pino-pretty": "^11.2.1",
     "playwright": "^1.44.1",
     "prettier": "^3.3.2",
-    "storybook": "^8.1.8",
+    "storybook": "^8.1.9",
     "tsconfig-paths-webpack-plugin": "^4.1.0"
   }
 }
