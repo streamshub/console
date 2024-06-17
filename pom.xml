@@ -45,6 +45,7 @@
     <modules>
         <module>common</module>
         <module>api</module>
+        <module>operator</module>
     </modules>
 
     <build>
