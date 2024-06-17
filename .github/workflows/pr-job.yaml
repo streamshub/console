@@ -1,0 +1,102 @@
+name: Pull Request Minikube
+
+on:
+  pull_request:
+    branches:
+      - main
+
+env:
+  TARGET_NAMESPACE: console-namespace
+  CI_CLUSTER: true
+  CONFIG_YAML: ./install/resources/console/console-config.yaml
+  CLUSTER_DOMAIN: "console.dev"
+jobs:
+  test_pr:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Install yq
+        run: |
+          curl -L https://github.com/mikefarah/yq/releases/download/v4.44.1/yq_linux_amd64 > yq && chmod +x yq
+          sudo cp -v yq /usr/bin/
+
+      - name: Start minikube
+        id: minikube
+        uses: medyagh/setup-minikube@latest
+        with:
+          cpus: 4
+          memory: 4096m
+
+      - name: Enable ingress
+        run: |
+          minikube addons enable ingress
+          minikube addons enable ingress-dns
+
+      - name: Export Minikube IP
+        run: echo "MINIKUBE_IP=$(minikube ip)" >> $GITHUB_ENV
+
+      - name: Create namespace
+        run: kubectl create namespace $TARGET_NAMESPACE
+
+      - name: Install Strimzi
+        run: kubectl create -f "https://strimzi.io/install/latest?namespace=$TARGET_NAMESPACE" -n $TARGET_NAMESPACE
+
+      - name: Wait For Strimzi
+        run: kubectl wait deployment/strimzi-cluster-operator --for=condition=available --timeout=180s -n $TARGET_NAMESPACE
+
+      - name: Prometheus Operator Deployment
+        shell: bash
+        run: |
+          curl -s "https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/main/bundle.yaml" | sed "s#namespace: default#namespace: ${TARGET_NAMESPACE}#g" | kubectl create -n $TARGET_NAMESPACE -f -
+
+      - name: Prometheus Instance Deployment
+        run: ./install/001-deploy-prometheus.sh $TARGET_NAMESPACE $CLUSTER_DOMAIN
+
+      - name: Kafka Cluster Deployment
+        run: ./install/002-deploy-console-kafka.sh $TARGET_NAMESPACE $CLUSTER_DOMAIN zk
+
+      - name: Wait for Kafka
+        run: kubectl wait kafka/console-kafka --for=condition=Ready --timeout=300s -n $TARGET_NAMESPACE
+
+      - name: Show pods
+        run: kubectl get pods -n $TARGET_NAMESPACE
+
+      - name: Wait for user secret
+        run: while ! kubectl get secret console-kafka-user1 -n $TARGET_NAMESPACE; do echo "Waiting for user secret"; sleep 5; done
+      # TODO: requires images on streamshub - just like in examples
+#     Build images and run deployment
+#      - name: build images
+#        run: make container-images
+
+      - name: Console deployment
+        shell: bash
+        run: | 
+            USERPS=$(kubectl get secret console-kafka-user1 -n $TARGET_NAMESPACE -o yaml | yq '.data.password' - | base64 --decode)
+            sed -i -e "s#\$USER_PASSWORD#${USERPS}#g" -e "s#\$CLUSTER_DOMAIN#${CLUSTER_DOMAIN}#g" -e "s#\$NAMESPACE#${TARGET_NAMESPACE}#g" $CONFIG_YAML
+            ./install/003-install-console.sh $TARGET_NAMESPACE $CLUSTER_DOMAIN $CONFIG_YAML
+
+      - name: Show ingress
+        run: kubectl get ingress -A
+
+      - name: Show services
+        run: kubectl get services -n $TARGET_NAMESPACE
+
+      - name: Wait For Console
+        run: kubectl wait deployment/console --for=condition=available --timeout=180s -n $TARGET_NAMESPACE
+
+      - name: Show pods
+        run: kubectl get pods -n $TARGET_NAMESPACE
+
+      - name: Add Hosts Entry
+        shell: bash
+        run: |
+          echo "${MINIKUBE_IP} console-ui.${CLUSTER_DOMAIN}" | sudo tee -a /etc/hosts
+
+      # TODO: remove once satisfied with results
+      - name: Test Curl
+        run: |
+          sleep 20
+          curl -L -i "console-ui.${CLUSTER_DOMAIN}"
