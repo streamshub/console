@@ -16,7 +16,7 @@
         display: block;
         content: "";
         grid-area: graphic;
-        background-image: url("/RH-App_Dev-Illustration-2023_01-posborne-RBG-01.png");
+        background-image: url("/home-hero-bg.png");
         background-repeat: no-repeat;
         background-position-y: 59px;
         background-size: 380px;

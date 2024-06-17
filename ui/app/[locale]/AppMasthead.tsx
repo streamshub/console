@@ -100,10 +100,10 @@ export function AppMasthead() {
         </MastheadContent>
       </Masthead>
       <FeedbackModal
-        onShareFeedback="https://github.com/streamshub/console/issues/new?assignees=&labels=&projects=&template=share-feeedback.md&title="
-        onJoinMailingList="https://github.com/streamshub/console/issues/new?assignees=&labels=&projects=&template=inform-the-direction-of-products.md&title="
-        onOpenSupportCase="https://access.redhat.com/support/cases/#/case/new/get-support?caseCreate=true"
-        onReportABug="https://github.com/streamshub/console/issues/new?assignees=&labels=&projects=&template=bug_report.md&title="
+        onShareFeedback={t("feedback.links.share")}
+        onJoinMailingList={t("feedback.links.informDirection")}
+        onOpenSupportCase={t("feedback.links.supportCase")}
+        onReportABug={t("feedback.links.bugReport")}
         feedbackImg={"/pf_feedback.svg"}
         isOpen={isFeedbackModalOpen}
         onClose={closeFeedbackModal}

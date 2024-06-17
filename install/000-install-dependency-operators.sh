@@ -12,7 +12,7 @@ echo -e "${INFO} Create/update operator group in namespace '${NAMESPACE}'"
 ${YQ} '.spec.targetNamespaces[0] = strenv(NAMESPACE)' ${RESOURCE_PATH}/prometheus/console-operators.operatorgroup.yaml | ${KUBE} apply -n ${NAMESPACE} -f -
 
 if ${KUBE} get packagemanifests amq-streams >/dev/null ; then
-    echo -e "${INFO} Create/update AMQ Streams Kafka Operator"
+    echo -e "${INFO} Create/update Apache Kafka Operator"
     echo "apiVersion: operators.coreos.com/v1alpha1
 kind: Subscription
 metadata:

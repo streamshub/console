@@ -13,5 +13,6 @@ export const CanCreate: Story = {
   args: {
     canCreate: true,
     createHref: "#/sample",
+    showLearningLinks: true,
   },
 };

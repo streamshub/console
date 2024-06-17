@@ -16,7 +16,10 @@ import { Skeleton } from "@patternfly/react-core";
 import { useTranslations } from "next-intl";
 import { PropsWithChildren, Suspense } from "react";
 
-export function ClusterDrawer({ children }: PropsWithChildren) {
+export function ClusterDrawer({
+  children,
+  showLearningLinks,
+}: PropsWithChildren<{ showLearningLinks: boolean }>) {
   const t = useTranslations();
   const { expanded, clusterId, close } = useClusterDrawerContext();
   return (
@@ -48,7 +51,12 @@ export function ClusterDrawer({ children }: PropsWithChildren) {
                 </div>
               }
             >
-              {clusterId && <ClusterConnectionDetails clusterId={clusterId} />}
+              {clusterId && (
+                <ClusterConnectionDetails
+                  clusterId={clusterId}
+                  showLearningLinks={showLearningLinks}
+                />
+              )}
             </Suspense>
           </DrawerPanelContent>
         }

@@ -16,10 +16,12 @@ export function EmptyStateNoTopics({
   canCreate,
   createHref,
   onShowHiddenTopics,
+  showLearningLinks,
 }: {
   canCreate: boolean;
   createHref: string;
   onShowHiddenTopics: () => void;
+  showLearningLinks: boolean;
 }) {
   const t = useTranslations();
   return (
@@ -43,11 +45,16 @@ export function EmptyStateNoTopics({
             {t("EmptyStateNoTopics.show_internal_topics")}
           </Button>
         </EmptyStateActions>
-        <EmptyStateActions>
-          <ExternalLink testId={"create-topic"} href={t("EmptyStateNoTopics.create_topic_external_link")}>
-            {t("EmptyStateNoTopics.view_documentation")}
-          </ExternalLink>
-        </EmptyStateActions>
+        {showLearningLinks && (
+          <EmptyStateActions>
+            <ExternalLink
+              testId={"create-topic"}
+              href={t("learning.links.topicOperatorUse")}
+            >
+              {t("EmptyStateNoTopics.view_documentation")}
+            </ExternalLink>
+          </EmptyStateActions>
+        )}
       </EmptyStateFooter>
     </EmptyState>
   );
