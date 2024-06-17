@@ -21,7 +21,7 @@ jobs:
           token: ${{secrets.RELEASE_TOKEN}}
 
       - name: Retrieve Project Metadata
-        uses: radcortez/project-metadata-action@95ed3b828c4563fb1c1c9f4c319eceb9ce7de1b3
+        uses: radcortez/project-metadata-action@603060a0627d4f04d37d20331ebd472377fd088b
         id: metadata
         with:
           github-token: ${{secrets.GITHUB_TOKEN}}
@@ -57,7 +57,7 @@ jobs:
           registry: "${{ secrets.IMAGE_REPO_HOSTNAME }}"
           username: "${{ secrets.IMAGE_REPO_USERNAME }}"
           password: "${{ secrets.IMAGE_REPO_PASSWORD }}"
-      
+
       - name: Build and Push UI Image
         uses: docker/build-push-action@v5
         with:
@@ -73,7 +73,7 @@ jobs:
           git push --tags
 
       - name: Create GitHub Release
-        uses: radcortez/milestone-release-action@98bd3321583e9bdbbe15c08fa4b2249371efaeaa
+        uses: radcortez/milestone-release-action@89b8ddd2e11a5dad6f9b66bea5435724b00de0f6
         with:
           github-token: ${{secrets.GITHUB_TOKEN}}
           milestone-title: ${{steps.metadata.outputs.current-version}}
@@ -83,4 +83,4 @@ jobs:
         uses: renovatebot/github-action@v40.1.12
         with:
           configurationFile: .github/gitops-config.json
-          token: ${{ secrets.RELEASE_TOKEN }}     
+          token: ${{ secrets.RELEASE_TOKEN }}
