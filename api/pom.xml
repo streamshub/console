@@ -6,7 +6,7 @@
     <groupId>com.github.streamshub</groupId>
     <artifactId>console-api</artifactId>
     <packaging>jar</packaging>
-    <version>0.1.1-SNAPSHOT</version>
+    <version>0.1.1</version>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -51,7 +51,7 @@
     <scm>
         <connection>scm:git:git://github.com/streamshub/console.git</connection>
         <developerConnection>scm:git:git@github.com:streamshub/console.git</developerConnection>
-        <tag>HEAD</tag>
+        <tag>0.1.1</tag>
     </scm>
 
     <dependencyManagement>
