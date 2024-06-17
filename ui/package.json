@@ -39,7 +39,7 @@
     "eslint-config-prettier": "^9.1.0",
     "eslint-import-resolver-typescript": "^3.6.1",
     "eslint-plugin-storybook": "^0.8.0",
-    "iron-session": "^8.0.1",
+    "iron-session": "^8.0.2",
     "lodash.groupby": "^4.6.0",
     "next": "^14.2.4",
     "next-auth": "^4.24.7",
