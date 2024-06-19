@@ -1,10 +1,10 @@
 <script lang="ts">
 
-  import { faPlusCircle } from '@fortawesome/free-solid-svg-icons';
-  import { Button, Table, TableColumn, TableRow } from '@podman-desktop/ui-svelte';
-  import { streamshubClient } from '/@/api/client';
+  import {streamshubClient} from '/@/api/client';
   import NavPage from '/@/lib/upstream/NavPage.svelte';
-  import { router } from 'tinro';
+  import {faPlusCircle} from '@fortawesome/free-solid-svg-icons';
+  import {Button} from '@podman-desktop/ui-svelte';
+  import {router} from 'tinro';
 
   let submitted: boolean = false;
   let projectName: string;
@@ -12,6 +12,9 @@
   let clusterNamespace: string;
   let clusterListener: string;
   let clusterBootstrap: string;
+  let clusterProperties: string | undefined;
+  let k8sApi: string;
+  let k8sToken: string | undefined;
 
   function onNameInput(event: Event) {
     projectName = (event.target as HTMLInputElement).value || '';
@@ -31,6 +34,18 @@
 
   function onClusterBootstrapInput(event: Event) {
     clusterBootstrap = (event.target as HTMLInputElement).value || '';
+  }
+
+  function onClusterPropertiesInput(event: Event) {
+    clusterProperties = (event.target as HTMLTextAreaElement).value || '';
+  }
+
+  function onK8sApiInput(event: Event) {
+    k8sApi = (event.target as HTMLInputElement).value || '';
+  }
+
+  function onK8sTokenInput(event: Event) {
+    k8sToken = (event.target as HTMLInputElement).value || '';
   }
 
   function isReady() {
@@ -88,6 +103,12 @@
             required
             type="text" />
         </div>
+      </div>
+
+      <div class="bg-charcoal-800 m-5 pt-5 space-y-6 px-8 sm:pb-6 xl:pb-8 rounded-lg h-fit">
+            <div class="flex flex-row space-x-2 items-center text-[var(--pd-content-card-header-text)]">
+              <p class="text-lg font-semibold">Strimzi connection details</p>
+            </div>
         <div class="w-full">
           <!-- kafka name -->
           <label class="block mb-2 text-sm font-bold text-gray-400" for="projectName">Kafka cluster name</label>
@@ -116,9 +137,9 @@
         </div>
         <div class="w-full">
           <!-- kafka listener -->
-          <label class="block mb-2 text-sm font-bold text-gray-400" for="projectName">Kafka cluster listener</label>
+          <label class="block mb-2 text-sm font-bold text-gray-400" for="projectName">Cluster listener</label>
           <input
-            aria-label="Kafka cluster listener"
+            aria-label="Strimzi cluster listener"
             class="w-full p-2 outline-none text-sm bg-charcoal-600 rounded-sm text-gray-700 placeholder-gray-700"
             disabled="{submitted}"
             id="clusterListener"
@@ -129,7 +150,7 @@
         </div>
         <div class="w-full">
           <!-- kafka bootstrap -->
-          <label class="block mb-2 text-sm font-bold text-gray-400" for="projectName">Kafka bootstrap urls (comma
+          <label class="block mb-2 text-sm font-bold text-gray-400" for="projectName">Bootstrap urls (comma
             separated)</label>
           <input
             aria-label="Bootstrap url"
@@ -141,18 +162,62 @@
             required
             type="text" />
         </div>
-        <footer>
-          <div class="w-full flex flex-col">
-            <Button
-              icon="{faPlusCircle}"
-              inProgress="{submitted}"
-              on:click="{createConsole}"
-              title="Create console">
-              Create console
-            </Button>
-          </div>
-        </footer>
+        <div class="w-full">
+          <!-- kafka properties -->
+          <label class="block mb-2 text-sm font-bold text-gray-400" for="projectName">Connection properties</label>
+          <textarea
+            aria-label="Properties"
+            class="w-full p-2 outline-none text-sm bg-charcoal-600 rounded-sm text-gray-700 placeholder-gray-700 resize-y min-h-[200px]"
+            disabled="{submitted}"
+            id="clusterProperties"
+            name="clusterProperties"
+            on:input="{onClusterPropertiesInput}"
+          />
+        </div>
       </div>
+
+      <div class="bg-charcoal-800 m-5 pt-5 space-y-6 px-8 sm:pb-6 xl:pb-8 rounded-lg h-fit">
+        <div class="flex flex-row space-x-2 items-center text-[var(--pd-content-card-header-text)]">
+          <p class="text-lg font-semibold">Kubernetes connection details</p>
+        </div>
+        <div class="w-full">
+          <!-- kafka name -->
+          <label class="block mb-2 text-sm font-bold text-gray-400" for="projectName">API server url</label>
+          <input
+            aria-label="Kubernetes API server url"
+            class="w-full p-2 outline-none text-sm bg-charcoal-600 rounded-sm text-gray-700 placeholder-gray-700"
+            disabled="{submitted}"
+            id="k8sApi"
+            name="k8sApi"
+            on:input="{onK8sApiInput}"
+            required
+            type="text" />
+        </div>
+        <div class="w-full">
+          <!-- kafka namespace -->
+          <label class="block mb-2 text-sm font-bold text-gray-400" for="projectName">Service account token</label>
+          <input
+            aria-label="Kubernetes service account token"
+            class="w-full p-2 outline-none text-sm bg-charcoal-600 rounded-sm text-gray-700 placeholder-gray-700"
+            disabled="{submitted}"
+            id="k8sToken"
+            name="k8sToken"
+            on:input="{onK8sTokenInput}"
+            placeholder="Leave empty to automatically create one"
+            type="text" />
+        </div>
+      </div>
+      <footer class="bg-charcoal-800 m-5 space-y-6 p-8 rounded-lg h-fit">
+        <div class="w-full flex flex-col">
+          <Button
+            icon="{faPlusCircle}"
+            inProgress="{submitted}"
+            on:click="{createConsole}"
+            title="Create console">
+            Create console
+          </Button>
+        </div>
+      </footer>
     </div>
   </svelte:fragment>
 

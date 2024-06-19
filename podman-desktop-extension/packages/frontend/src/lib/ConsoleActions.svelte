@@ -1,8 +1,8 @@
 <script lang="ts">
-  import type { StreamshubConsoleInfo } from '/@shared/src/models/streamshub';
-  import { faExternalLink, faDisplay, faTrash, faStop } from '@fortawesome/free-solid-svg-icons';
-  import { router } from 'tinro';
-  import { streamshubClient } from '../api/client';
+  import type {StreamshubConsoleInfo} from '/@shared/src/models/streamshub';
+  import {faDisplay, faExternalLink, faPlay, faStop, faTrash} from '@fortawesome/free-solid-svg-icons';
+  import {router} from 'tinro';
+  import {streamshubClient} from '../api/client';
   import ListItemButtonIcon from './upstream/ListItemButtonIcon.svelte';
 
   export let object: StreamshubConsoleInfo;
@@ -16,6 +16,10 @@
     await streamshubClient.openLink(`http://localhost:${object.ui.ports.find(p => p.PublicPort)?.PublicPort}`);
   }
 
+  async function startConsole(): Promise<void> {
+    await streamshubClient.startConsole(object.project);
+  }
+
   async function stopConsole(): Promise<void> {
     await streamshubClient.stopConsole(object.project);
   }
@@ -25,11 +29,25 @@
   }
 </script>
 
-<ListItemButtonIcon icon="{faDisplay}" onClick="{() => openEmbeddedConsole()}"
-                    title="Open console" />
-<ListItemButtonIcon icon="{faExternalLink}" onClick="{() => openConsole()}"
-                    title="Open console" />
-<ListItemButtonIcon icon="{faStop}" onClick="{() => stopConsole()}"
-                    title="Open console" />
-<ListItemButtonIcon icon="{faTrash}" onClick="{() => deleteConsole()}"
-                    title="Open console" />
+<ListItemButtonIcon enabled={object.ui.status === 'running' && object.api.status === 'running'} icon="{faDisplay}"
+                    onClick="{() => openEmbeddedConsole()}"
+                    title="Open console"
+/>
+<ListItemButtonIcon enabled={object.ui.status === 'running' && object.api.status === 'running'} icon="{faExternalLink}"
+                    onClick="{() => openConsole()}"
+                    title="Open console in an external browser"
+/>
+{#if object.managed}
+  {#if object.api.status === 'running'}
+    <ListItemButtonIcon icon="{faStop}" onClick="{() => stopConsole()}"
+                        title="Stop console"
+    />
+  {:else}
+    <ListItemButtonIcon icon="{faPlay}" onClick="{() => startConsole()}"
+                        title="Start console"
+                        enabled={object.api.status === 'exited'}
+    />
+  {/if}
+  <ListItemButtonIcon icon="{faTrash}" onClick="{() => deleteConsole()}"
+                      title="Open console" />
+{/if}
