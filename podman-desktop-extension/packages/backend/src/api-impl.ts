@@ -20,8 +20,9 @@ import { Messages } from '/@shared/src/messages/Messages';
 import type { ConsoleCompose, ConsoleConfig, StreamshubConsoleInfo } from '/@shared/src/models/streamshub';
 import type { StreamshubApi } from '/@shared/src/StreamshubApi';
 import * as podmanDesktopApi from '@podman-desktop/api';
+import * as fs from 'node:fs/promises';
 import { telemetryLogger } from './extension';
-import { createAndStartConsole, stopConsole, stopAndDeleteConsole } from './utils';
+import { createAndStartConsole, startConsole, stopAndDeleteConsole, stopConsole } from './utils';
 
 const CONTAINER_LABEL = 'io.streamshub.console.container';
 
@@ -35,9 +36,9 @@ export class StreamshubImpl implements StreamshubApi {
     this.webview = webview;
   }
 
-
   async listConsoles(): Promise<StreamshubConsoleInfo[]> {
     const consoles: Record<string, StreamshubConsoleInfo> = {};
+    const { storagePath } = this.extensionContext;
     try {
       const containers = await podmanDesktopApi.containerEngine.listContainers();
 
@@ -46,30 +47,57 @@ export class StreamshubImpl implements StreamshubApi {
           container.Labels['com.docker.compose.project'] !== undefined &&
           container.Labels[CONTAINER_LABEL] !== undefined,
       );
-      consoleContainers
-        .forEach(container => {
-          const project = container.Labels['com.docker.compose.project'];
-          const c: StreamshubConsoleInfo = consoles[project] ?? {
-            project,
-            api: {
-              ports: [],
-              baseUrl: '',
-            },
-            ui: {
-              ports: [],
-              url: '',
-            },
-          };
-          if (container.Labels[CONTAINER_LABEL] === 'api') {
-            c.api.ports = container.Ports;
-            c.api.baseUrl = `http://localhost:${c.api.ports.find(p => p.PublicPort)?.PublicPort}`;
+      consoleContainers.forEach(container => {
+        const project = container.Labels['com.docker.compose.project'];
+        const workingDir = container.Labels['com.docker.compose.project.working_dir'];
+        const c: StreamshubConsoleInfo = consoles[project] ?? {
+          project,
+          managed: workingDir.startsWith(storagePath),
+          api: {
+            ports: [],
+            baseUrl: '',
+          },
+          ui: {
+            ports: [],
+            url: '',
+          },
+        };
+        if (container.Labels[CONTAINER_LABEL] === 'api') {
+          c.api.ports = container.Ports;
+          c.api.baseUrl = `http://localhost:${c.api.ports.find(p => p.PublicPort)?.PublicPort}`;
+          c.api.status =
+            container.State === 'running' ? 'running' : container.State === 'exited' ? 'exited' : 'starting';
+        }
+        if (container.Labels[CONTAINER_LABEL] === 'ui') {
+          c.ui.ports = container.Ports;
+          c.ui.url = `http://localhost:${c.ui.ports.find(p => p.PublicPort)?.PublicPort}`;
+          c.ui.status =
+            container.State === 'running' ? 'running' : container.State === 'exited' ? 'exited' : 'starting';
+        }
+        console.log(c);
+        consoles[project] = c;
+      });
+
+      (await fs.readdir(storagePath, { withFileTypes: true }))
+        .filter(f => f.isDirectory())
+        .forEach(f => {
+          const project = f.name;
+          if (!consoles[project]) {
+            consoles[project] = {
+              project,
+              managed: true,
+              api: {
+                ports: [],
+                baseUrl: '',
+                status: 'exited',
+              },
+              ui: {
+                ports: [],
+                url: '',
+                status: 'exited',
+              },
+            };
           }
-          if (container.Labels[CONTAINER_LABEL] === 'ui') {
-            c.ui.ports = container.Ports;
-            c.ui.url = `http://localhost:${c.ui.ports.find(p => p.PublicPort)?.PublicPort}`;
-          }
-          console.log(c);
-          consoles[project] = c;
         });
       console.log({ containers, consoleContainers, consoles });
     } catch (err) {
@@ -79,12 +107,10 @@ export class StreamshubImpl implements StreamshubApi {
     return Object.values(consoles);
   }
 
-
   async openLink(link: string): Promise<void> {
     console.log('openLink', link);
     await podmanDesktopApi.env.openExternal(podmanDesktopApi.Uri.parse(link));
   }
-
 
   // Log an event to telemetry
   async telemetryLogUsage(eventName: string, data?: Record<string, unknown>): Promise<void> {
@@ -102,6 +128,12 @@ export class StreamshubImpl implements StreamshubApi {
     await createAndStartConsole(storagePath, projectName, compose, config);
   }
 
+  async startConsole(projectName: string): Promise<void> {
+    const { storagePath } = this.extensionContext;
+    console.log('startConsole', { storagePath, projectName });
+    await startConsole(storagePath, projectName);
+  }
+
   async stopConsole(projectName: string): Promise<void> {
     const { storagePath } = this.extensionContext;
     console.log('stopConsole', { storagePath, projectName });
@@ -112,7 +144,6 @@ export class StreamshubImpl implements StreamshubApi {
     const { storagePath } = this.extensionContext;
     console.log('deleteConsole', { storagePath, projectName });
     await stopAndDeleteConsole(storagePath, projectName);
-
   }
 
   async containerChanges() {

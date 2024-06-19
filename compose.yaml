@@ -4,24 +4,26 @@ version: '3.9'
 services:
   console-api:
     image: ${CONSOLE_API_IMAGE}
-    container_name: console-api
     volumes:
       - ${PWD}/console-config.yaml:/deployments/console-config.yaml:z
-    expose:
-      - 8080
+    ports:
+      - :8080
     environment:
       CONSOLE_CONFIG_PATH: /deployments/console-config.yaml
       QUARKUS_KUBERNETES_CLIENT_API_SERVER_URL: ${CONSOLE_API_KUBERNETES_API_SERVER_URL}
       QUARKUS_KUBERNETES_CLIENT_TRUST_CERTS: "true"
       QUARKUS_KUBERNETES_CLIENT_TOKEN: ${CONSOLE_API_SERVICE_ACCOUNT_TOKEN}
+    labels:
+      io.streamshub.console.container: api
 
   console-ui:
     image: ${CONSOLE_UI_IMAGE}
-    container_name: console-ui
     ports:
-      - 3000:3000
+      - :3000
     environment:
       CONSOLE_METRICS_PROMETHEUS_URL: ${CONSOLE_METRICS_PROMETHEUS_URL}
       NEXTAUTH_SECRET: ${CONSOLE_UI_NEXTAUTH_SECRET}
       NEXTAUTH_URL: http://localhost:3000
       BACKEND_URL: http://console-api:8080/
+    labels:
+      io.streamshub.console.container: ui
