@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  l***********************************************************************/
 
-import type { ConsoleConfig, ConsoleCompose, StreamshubConsoleInfo } from './models/streamshub';
+import type { ConsoleCompose, ConsoleConfig, StreamshubConsoleInfo } from './models/streamshub';
 
 export abstract class StreamshubApi {
   abstract listConsoles(): Promise<StreamshubConsoleInfo[]>;
@@ -24,6 +24,8 @@ export abstract class StreamshubApi {
   abstract openLink(link: string): Promise<void>;
 
   abstract createConsole(projectName: string, compose: ConsoleCompose, config: ConsoleConfig): Promise<void>;
+
+  abstract startConsole(projectName: string): Promise<void>;
 
   abstract stopConsole(projectName: string): Promise<void>;
 

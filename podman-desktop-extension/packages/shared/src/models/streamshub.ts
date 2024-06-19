@@ -20,13 +20,16 @@ import type { Port } from '@podman-desktop/api';
 
 export interface StreamshubConsoleInfo {
   project: string;
+  managed: boolean;
   api: {
-    ports: Port[],
-    baseUrl: string
+    ports: Port[];
+    baseUrl: string;
+    status: 'running' | 'starting' | 'exited';
   };
   ui: {
-    ports: Port[]
-    url: string
+    ports: Port[];
+    url: string;
+    status: 'running' | 'starting' | 'exited';
   };
 }
 

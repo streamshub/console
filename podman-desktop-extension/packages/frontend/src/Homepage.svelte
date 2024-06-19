@@ -1,14 +1,16 @@
 <script lang="ts">
-  import { streamshubClient } from '/@/api/client';
+  import {streamshubClient} from '/@/api/client';
+  import ConsoleApiStatusColumn from "/@/lib/ConsoleApiStatusColumn.svelte";
   import ConsoleColumnActions from '/@/lib/ConsoleColumnActions.svelte';
   import ConsoleEmptyScreen from '/@/lib/ConsoleEmptyScreen.svelte';
   import ConsoleProjectColumn from '/@/lib/ConsoleProjectColumn.svelte';
+  import ConsoleUiStatusColumn from "/@/lib/ConsoleUiStatusColumn.svelte";
   import NavPage from '/@/lib/upstream/NavPage.svelte';
-  import { filtered } from '/@/stores/consolesInfo';
-  import type { StreamshubConsoleInfo } from '/@shared/src/models/streamshub';
-  import { Button, Table, TableColumn, TableRow } from '@podman-desktop/ui-svelte';
-  import { onMount } from 'svelte';
-  import { router } from 'tinro';
+  import {filtered} from '/@/stores/consolesInfo';
+  import type {StreamshubConsoleInfo} from '/@shared/src/models/streamshub';
+  import {Button, Table, TableColumn, TableRow} from '@podman-desktop/ui-svelte';
+  import {onMount} from 'svelte';
+  import {router} from 'tinro';
 
   let consoles: StreamshubConsoleInfoWithSelected[] | undefined = undefined;
 
@@ -39,8 +41,20 @@
     comparator: (a, b) => a.project.localeCompare(b.project),
   });
 
+  let apiStatusColumn = new TableColumn<StreamshubConsoleInfo>('API', {
+    renderer: ConsoleApiStatusColumn,
+    comparator: (a, b) => a.api.status.localeCompare(b.api.status),
+  });
+
+  let uiStatusColumn = new TableColumn<StreamshubConsoleInfo>('UI', {
+    renderer: ConsoleUiStatusColumn,
+    comparator: (a, b) => a.ui.status.localeCompare(b.ui.status),
+  });
+
   const columns: TableColumn<StreamshubConsoleInfo, StreamshubConsoleInfo | string>[] = [
     projectColumn,
+    apiStatusColumn,
+    uiStatusColumn,
     new TableColumn<StreamshubConsoleInfo>('Actions', {
       align: 'right',
       renderer: ConsoleColumnActions,
@@ -59,7 +73,7 @@
     <Button on:click="{() => createConsole()}" title="Create console">Create console</Button>
   </svelte:fragment>
 
-  <div class="flex min-w-full h-full" slot="content">
+  <div class="flex min-w-full h-full py-5" slot="content">
     {#if consoles}
       <Table
         bind:this="{table}"

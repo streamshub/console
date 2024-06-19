@@ -1,10 +1,10 @@
 import type { ConsoleCompose, ConsoleConfig } from '/@shared/src/models/streamshub';
 import * as extensionApi from '@podman-desktop/api';
-import * as os from 'node:os';
-import * as path from 'node:path';
-import * as fs from 'node:fs/promises';
 import crypto from 'crypto';
 import yaml from 'js-yaml';
+import * as fs from 'node:fs/promises';
+import * as os from 'node:os';
+import * as path from 'node:path';
 
 const CONSOLE_API_IMAGE = 'streamshub/console-api:latest';
 const CONSOLE_UI_IMAGE = 'streamshub/console-ui:latest';
@@ -57,7 +57,9 @@ async function writeConfig(projectPath: string, config: ConsoleConfig) {
 async function writeCompose(projectPath: string, compose: ConsoleCompose) {
   console.log('writeCompose', { projectPath, compose });
   const composeFile = path.join(projectPath, COMPOSEYAML);
-  await fs.writeFile(composeFile, `---
+  await fs.writeFile(
+    composeFile,
+    `---
 version: '3.9'
 
 services:
@@ -85,25 +87,20 @@ services:
       NEXTAUTH_URL: http://localhost:3000
       BACKEND_URL: http://console-api:8080/
     labels:
-      io.streamshub.console.container: ui`);
+      io.streamshub.console.container: ui`,
+  );
 }
 
 async function composeUp(projectPath: string) {
   console.log('composeUp', { projectPath });
-  await extensionApi.process.exec(getPodmanCli(), [
-    'compose',
-    'up',
-  ], {
+  await extensionApi.process.exec(getPodmanCli(), ['compose', 'up'], {
     cwd: projectPath,
   });
 }
 
 async function composeDown(projectPath: string) {
   console.log('composeDown', { projectPath });
-  await extensionApi.process.exec(getPodmanCli(), [
-    'compose',
-    'down',
-  ], {
+  await extensionApi.process.exec(getPodmanCli(), ['compose', 'down'], {
     cwd: projectPath,
   });
 }
@@ -113,15 +110,25 @@ async function deleteProject(projectPath: string) {
   await fs.rm(projectPath, { recursive: true, force: true });
 }
 
-export async function createAndStartConsole(storagePath: string, projectName: string, compose: ConsoleCompose, config: ConsoleConfig) {
+export async function createAndStartConsole(
+  storagePath: string,
+  projectName: string,
+  compose: ConsoleCompose,
+  config: ConsoleConfig,
+) {
   console.log('createAndStartConsole', { storagePath, projectName, compose, config });
   const projectPath = getProjectPath(storagePath, projectName);
-  if (await isProjectCreated(projectPath) === false) {
-    console.log('Project doesn\'t exist, creating');
+  if ((await isProjectCreated(projectPath)) === false) {
+    console.log("Project doesn't exist, creating");
     await createProject(projectPath);
     await writeCompose(projectPath, compose);
     await writeConfig(projectPath, config);
   }
+  await composeUp(projectPath);
+}
+
+export async function startConsole(storagePath: string, projectName: string) {
+  const projectPath = getProjectPath(storagePath, projectName);
   await composeUp(projectPath);
 }
 
@@ -135,7 +142,6 @@ export async function stopAndDeleteConsole(storagePath: string, projectName: str
   await composeDown(projectPath);
   await deleteProject(projectPath);
 }
-
 
 // Below functions are borrowed from the podman extension
 function getPodmanCli(): string {
