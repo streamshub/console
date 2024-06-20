@@ -124,7 +124,7 @@ export async function ClusterConnectionDetails({
                 testId={"drawer-footer-help-1"}
                 href={t("learning.links.overview")}
               >
-                {t("ClusterConnectionDetails.streams_portal")}
+                {t("learning.labels.overview")}
               </ExternalLink>
             </StackItem>
           </Stack>

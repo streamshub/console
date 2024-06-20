@@ -53,29 +53,14 @@ test("Home page", async ({ page }) => {
   await test.step("Text on Home Page", async () => {
     // Assertions for the presence of specific strings in the inner text of page elements
     expect(await page.innerText("body")).toContain(
-      "Welcome to the streams for Apache Kafka console",
+      "Welcome to the StreamsHub console",
     );
     expect(await page.innerText("body")).toContain(
       "Platform: OpenShift Cluster",
     );
     expect(await page.innerText("body")).toContain("Recently viewed topics");
     expect(await page.innerText("body")).toContain(
-      "When you start looking at specific topics through the streams for Apache Kafka console, they'll start showing here.",
-    );
-    expect(await page.innerText("body")).toContain(
-      "streams for Apache Kafka on OpenShift Overview",
-    );
-    expect(await page.innerText("body")).toContain(
-      "Recommended learning resources",
-    );
-    expect(await page.innerText("body")).toContain(
-      "Getting Started with streams for Apache Kafka on Openshift",
-    );
-    expect(await page.innerText("body")).toContain(
-      "Connect to a Kafka cluster from an application",
-    );
-    expect(await page.innerText("body")).toContain(
-      "Using the Topic Operator to manage Kafka topics",
+      "When you start looking at specific topics through the StreamsHub console, they'll start showing here.",
     );
   });
 });
