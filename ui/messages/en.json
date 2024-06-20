@@ -230,7 +230,7 @@
   },
   "ManagedTopicLabel": {
     "label": "Managed",
-    "tooltip": "Managed topics are created using the KafkaTopic custom resource and are created and updated in the Kafka cluster by the streams for Apache Kafka Topic Operator."
+    "tooltip": "Managed topics are created using the KafkaTopic custom resource and are created and updated in the Kafka cluster by the Strimzi Topic Operator."
   },
   "AdvancedSearch": {
     "dialog_label": "Search messages",
@@ -300,8 +300,7 @@
     "internal_servers_bootstraps": "Internal servers bootstraps",
     "internal_Servers_bootstraps_description": "Internal listeners provide client access to a Kafka cluster only from within the OpenShift cluster.",
     "when_you_have_established_a_connection": "When you have established a connection, you can begin consuming messages from Kafka topics or producing messages to them.",
-    "developing_kafka_client_applications": "Developing Kafka client applications",
-    "streams_portal": "streams for Apache Kafka portal"
+    "developing_kafka_client_applications": "Developing Kafka client applications"
   },
   "ClusterDrawer": {
     "cluster_connection_details": "Cluster connection details"
