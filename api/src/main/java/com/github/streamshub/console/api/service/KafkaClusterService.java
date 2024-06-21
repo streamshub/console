@@ -20,12 +20,12 @@ import org.apache.kafka.common.KafkaFuture;
 import org.jboss.logging.Logger;
 
 import com.github.streamshub.console.api.Annotations;
-import com.github.streamshub.console.api.config.ConsoleConfig;
 import com.github.streamshub.console.api.model.Condition;
 import com.github.streamshub.console.api.model.KafkaCluster;
 import com.github.streamshub.console.api.model.KafkaListener;
 import com.github.streamshub.console.api.model.Node;
 import com.github.streamshub.console.api.support.ListRequestContext;
+import com.github.streamshub.console.config.ConsoleConfig;
 
 import io.fabric8.kubernetes.api.model.ObjectMeta;
 import io.fabric8.kubernetes.client.informers.SharedIndexInformer;

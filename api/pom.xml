@@ -3,56 +3,30 @@
 
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.github.streamshub</groupId>
+    <parent>
+        <groupId>com.github.streamshub</groupId>
+        <artifactId>console</artifactId>
+        <version>0.1.2-SNAPSHOT</version>
+        <relativePath>..</relativePath>
+    </parent>
+
     <artifactId>console-api</artifactId>
     <packaging>jar</packaging>
-    <version>0.1.2-SNAPSHOT</version>
 
     <properties>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <maven.compiler.target>17</maven.compiler.target>
-        <maven.compiler.source>17</maven.compiler.source>
-
         <!-- Container image properties for systemtests -->
         <docker.registry>localhost</docker.registry>
         <docker.group>streamshub</docker.group>
         <docker.tag>${project.version}</docker.tag>
         <docker.push>false</docker.push>
 
-        <!-- Dependencies -->
-        <quarkus.version>3.8.4</quarkus.version>
-        <jandex-maven-plugin.version>3.2.0</jandex-maven-plugin.version>
-        <strimzi-oauth.version>0.15.0</strimzi-oauth.version>
-
-        <!-- Plugin Versions -->
-        <maven.compiler.version>3.13.0</maven.compiler.version>
-        <maven.dependency.version>3.7.0</maven.dependency.version>
-        <maven.checkstyle.version>3.4.0</maven.checkstyle.version>
-        <spotbugs.version>4.8.5</spotbugs.version>
-        <surefire-plugin.version>3.3.0</surefire-plugin.version>
-        <version.jacoco.plugin>0.8.12</version.jacoco.plugin>
-
         <!-- Test Dependencies -->
         <hamcrest.version>2.2</hamcrest.version>
         <strimzi-test-container.version>0.106.0</strimzi-test-container.version>
         <!-- System test image dependencies -->
         <keycloak.image>quay.io/keycloak/keycloak:21.1</keycloak.image>
-        <strimzi-kafka.tag>quay.io/strimzi/kafka:0.38.0-kafka-3.6.0</strimzi-kafka.tag>
-
-        <!-- Sonar settings -->
-        <sonar.host.url>https://sonarcloud.io</sonar.host.url>
-        <sonar.organization>streamshub</sonar.organization>
-        <sonar.exclusions>
-        	src/main/java/com/github/streamshub/console/api/support/TrustAllCertificateManager.java
-        </sonar.exclusions>
+        <strimzi-kafka.tag>quay.io/strimzi/kafka:0.41.0-kafka-3.7.0</strimzi-kafka.tag>
     </properties>
-
-    <scm>
-        <connection>scm:git:git://github.com/streamshub/console.git</connection>
-        <developerConnection>scm:git:git@github.com:streamshub/console.git</developerConnection>
-        <tag>HEAD</tag>
-    </scm>
 
     <dependencyManagement>
         <dependencies>
@@ -93,6 +67,12 @@
     </dependencyManagement>
 
     <dependencies>
+        <dependency>
+            <groupId>com.github.streamshub</groupId>
+            <artifactId>console-common</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-core</artifactId>
@@ -164,7 +144,7 @@
         <dependency>
             <groupId>io.strimzi</groupId>
             <artifactId>api</artifactId>
-            <version>0.41.0</version>
+            <version>${strimzi-api.version}</version>
         </dependency>
         <dependency>
             <groupId>io.strimzi</groupId>
@@ -276,28 +256,10 @@
     </dependencies>
 
     <build>
-        <pluginManagement>
-            <plugins>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-compiler-plugin</artifactId>
-                    <version>${maven.compiler.version}</version>
-                    <configuration>
-                        <parameters>true</parameters>
-                    </configuration>
-                </plugin>
-                <plugin>
-                    <groupId>org.jacoco</groupId>
-                    <artifactId>jacoco-maven-plugin</artifactId>
-                    <version>${version.jacoco.plugin}</version>
-                </plugin>
-            </plugins>
-        </pluginManagement>
         <plugins>
             <plugin>
                 <groupId>io.smallrye</groupId>
                 <artifactId>jandex-maven-plugin</artifactId>
-                <version>${jandex-maven-plugin.version}</version>
                 <executions>
                     <execution>
                         <id>make-index</id>
@@ -310,7 +272,6 @@
             <plugin>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-maven-plugin</artifactId>
-                <version>${quarkus.version}</version>
                 <executions>
                     <execution>
                         <goals>
@@ -329,7 +290,6 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-dependency-plugin</artifactId>
-                <version>${maven.dependency.version}</version>
                 <executions>
                     <execution>
                         <id>analyze</id>
@@ -379,14 +339,6 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-checkstyle-plugin</artifactId>
-                <version>${maven.checkstyle.version}</version>
-                <dependencies>
-                    <dependency>
-                        <groupId>com.puppycrawl.tools</groupId>
-                        <artifactId>checkstyle</artifactId>
-                        <version>10.17.0</version>
-                    </dependency>
-                </dependencies>
                 <executions>
                     <execution>
                         <id>validate</id>
@@ -408,15 +360,6 @@
             <plugin>
                 <groupId>com.github.spotbugs</groupId>
                 <artifactId>spotbugs-maven-plugin</artifactId>
-                <version>4.8.5.0</version>
-                <dependencies>
-                    <!-- overwrite dependency on spotbugs if you want to specify the version of˓→spotbugs -->
-                    <dependency>
-                        <groupId>com.github.spotbugs</groupId>
-                        <artifactId>spotbugs</artifactId>
-                        <version>${spotbugs.version}</version>
-                    </dependency>
-                </dependencies>
                 <configuration>
                     <effort>Max</effort>
                     <!-- Reports all bugs (other values are medium and max) -->
@@ -474,8 +417,8 @@
                 </executions>
             </plugin>
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>${surefire-plugin.version}</version>
                 <configuration>
                     <redirectTestOutputToFile>true</redirectTestOutputToFile>
                     <systemProperties>
@@ -488,7 +431,6 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-failsafe-plugin</artifactId>
-                <version>${surefire-plugin.version}</version>
                 <executions>
                     <execution>
                         <goals>
@@ -514,7 +456,6 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-release-plugin</artifactId>
-                <version>3.1.0</version>
                 <configuration>
                     <autoVersionSubmodules>true</autoVersionSubmodules>
                     <tagNameFormat>@{project.version}</tagNameFormat>

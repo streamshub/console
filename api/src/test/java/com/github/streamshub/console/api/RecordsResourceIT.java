@@ -34,8 +34,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import com.github.streamshub.console.api.config.ConsoleConfig;
 import com.github.streamshub.console.api.service.RecordService;
+import com.github.streamshub.console.config.ConsoleConfig;
 import com.github.streamshub.console.kafka.systemtest.TestPlainProfile;
 import com.github.streamshub.console.kafka.systemtest.deployment.DeploymentManager;
 import com.github.streamshub.console.test.RecordHelper;

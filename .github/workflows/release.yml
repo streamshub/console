@@ -38,7 +38,7 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git checkout -b release
-          mvn -B release:prepare -DreleaseVersion=${{steps.metadata.outputs.current-version}} -DdevelopmentVersion=${{steps.metadata.outputs.next-version}} -f api/pom.xml
+          mvn -B release:prepare -DreleaseVersion=${{steps.metadata.outputs.current-version}} -DdevelopmentVersion=${{steps.metadata.outputs.next-version}}
           git checkout ${{github.base_ref}}
           git rebase release
           export QUARKUS_CONTAINER_IMAGE_REGISTRY="${{ secrets.IMAGE_REPO_HOSTNAME }}"
@@ -49,7 +49,7 @@ jobs:
           export QUARKUS_CONTAINER_IMAGE_ADDITIONAL_TAGS=latest
           export GIT_REVISION=$(git rev-parse --short release)
           # Build and push the release images using the commit tagged in `release:prepare`
-          mvn -B -P docker release:perform -f api/pom.xml
+          mvn -B -P docker release:perform
 
       - name: Login to Quay
         uses: docker/login-action@v3

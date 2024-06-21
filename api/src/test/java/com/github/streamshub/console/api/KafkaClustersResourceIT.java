@@ -36,10 +36,10 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.Mockito;
 
-import com.github.streamshub.console.api.config.ConsoleConfig;
 import com.github.streamshub.console.api.model.ListFetchParams;
 import com.github.streamshub.console.api.service.KafkaClusterService;
 import com.github.streamshub.console.api.support.ErrorCategory;
+import com.github.streamshub.console.config.ConsoleConfig;
 import com.github.streamshub.console.kafka.systemtest.TestPlainProfile;
 import com.github.streamshub.console.kafka.systemtest.deployment.DeploymentManager;
 import com.github.streamshub.console.test.AdminClientSpy;

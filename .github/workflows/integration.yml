@@ -40,7 +40,7 @@ jobs:
           #
           # See: https://quarkus.io/guides/tests-with-coverage#coverage-for-integration-tests
           #
-          mvn verify -Pdocker -B --no-transfer-progress -Dquarkus.package.write-transformed-bytecode-to-build-output=true -f api/pom.xml
+          mvn verify -Pdocker -B --no-transfer-progress -Dquarkus.package.write-transformed-bytecode-to-build-output=true
 
       - name: Archive Results
         uses: actions/upload-artifact@v4
@@ -51,7 +51,9 @@ jobs:
 
       ## Save the context information for use in Sonar analysis
       - name: Save Build Context
-        run: echo "$GITHUB_CONTEXT" > api/target/build-context.json
+        run: |
+          mkdir -v target
+          echo "$GITHUB_CONTEXT" > target/build-context.json
         env:
           GITHUB_CONTEXT: ${{ toJson(github) }}
 
@@ -78,4 +80,4 @@ jobs:
           context: ui/
           push: false
           tags: |
-            streamshub/ui:latest
+            streamshub/console-ui:latest
