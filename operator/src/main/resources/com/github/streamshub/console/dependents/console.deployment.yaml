@@ -13,15 +13,24 @@ spec:
     spec:
       serviceAccountName: placeholder
       volumes:
-      - emptyDir: {}
-        name: cache
+      - name: cache
+        emptyDir: {}
+      - name: config
+        secret:
+          secretName: placeholder
       containers:
       ### API
       - name: console-api
         image: quay.io/streamshub/console-api:latest
         ports:
         - containerPort: 8080
-        env: []
+        volumeMounts:
+        - name: config
+          mountPath: /deployments/console-config.yaml
+          subPath: console-config.yaml
+        env:
+        - name: CONSOLE_CONFIG_PATH
+          value: /deployments/console-config.yaml
       ### User Interface
       - name: console-ui
         image: quay.io/streamshub/console-ui:latest
@@ -34,6 +43,7 @@ spec:
         - name: NEXTAUTH_SECRET
           valueFrom:
             secretKeyRef:
+              name: placeholder
               key: NEXTAUTH_SECRET
         - name: NEXTAUTH_URL
           value: 'https://${CONSOLE_HOSTNAME}'

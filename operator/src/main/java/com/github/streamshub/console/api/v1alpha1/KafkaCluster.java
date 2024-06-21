@@ -1,10 +1,17 @@
 package com.github.streamshub.console.api.v1alpha1;
 
+import io.fabric8.generator.annotation.Required;
+
 public class KafkaCluster {
 
+    @Required
     String namespace;
+
+    @Required
     String name;
+
     String listener;
+
     String kafkaUserName;
 
     public String getNamespace() {

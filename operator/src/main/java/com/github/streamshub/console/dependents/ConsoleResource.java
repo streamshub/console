@@ -7,6 +7,7 @@ import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Base64;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -87,5 +88,13 @@ interface ConsoleResource {
         return resourceContext.get(digestName, MessageDigest.class)
                 .map(digest -> String.format("%040x", new BigInteger(1, digest.digest())))
                 .orElseGet(() -> "0".repeat(40));
+    }
+
+    default String encodeString(String value) {
+        return Base64.getEncoder().encodeToString(value.getBytes(StandardCharsets.UTF_8));
+    }
+
+    default String decodeString(String encodedValue) {
+        return new String(Base64.getDecoder().decode(encodedValue), StandardCharsets.UTF_8);
     }
 }
