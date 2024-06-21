@@ -1,4 +1,4 @@
-package com.github.streamshub.console.api.config;
+package com.github.streamshub.console.config;
 
 import java.util.HashMap;
 import java.util.Map;

@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.github.streamshub</groupId>
+    <artifactId>console</artifactId>
+    <packaging>pom</packaging>
+    <version>0.1.2-SNAPSHOT</version>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
+
+        <!-- Dependencies -->
+        <quarkus.version>3.8.4</quarkus.version>
+        <strimzi-api.version>0.41.0</strimzi-api.version>
+        <strimzi-oauth.version>0.15.0</strimzi-oauth.version>
+
+        <!-- Plugin Versions -->
+        <maven.compiler.version>3.13.0</maven.compiler.version>
+        <maven.dependency.version>3.7.0</maven.dependency.version>
+        <maven.checkstyle.version>3.4.0</maven.checkstyle.version>
+        <jacoco-maven-plugin.version>0.8.12</jacoco-maven-plugin.version>
+        <jandex-maven-plugin.version>3.2.0</jandex-maven-plugin.version>
+        <spotbugs.version>4.8.5</spotbugs.version>
+        <surefire-plugin.version>3.3.0</surefire-plugin.version>
+
+        <!-- Sonar settings -->
+        <sonar.host.url>https://sonarcloud.io</sonar.host.url>
+        <sonar.organization>streamshub</sonar.organization>
+        <sonar.exclusions>api/src/main/java/com/github/streamshub/console/api/support/TrustAllCertificateManager.java</sonar.exclusions>
+    </properties>
+
+    <scm>
+        <connection>scm:git:git://github.com/streamshub/console.git</connection>
+        <developerConnection>scm:git:git@github.com:streamshub/console.git</developerConnection>
+        <tag>HEAD</tag>
+    </scm>
+
+    <modules>
+        <module>common</module>
+        <module>api</module>
+    </modules>
+
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <version>${maven.compiler.version}</version>
+                    <configuration>
+                        <parameters>true</parameters>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.jacoco</groupId>
+                    <artifactId>jacoco-maven-plugin</artifactId>
+                    <version>${jacoco-maven-plugin.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>io.smallrye</groupId>
+                    <artifactId>jandex-maven-plugin</artifactId>
+                    <version>${jandex-maven-plugin.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>io.quarkus</groupId>
+                    <artifactId>quarkus-maven-plugin</artifactId>
+                    <version>${quarkus.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-dependency-plugin</artifactId>
+                    <version>${maven.dependency.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-checkstyle-plugin</artifactId>
+                    <version>${maven.checkstyle.version}</version>
+                    <dependencies>
+                        <dependency>
+                            <groupId>com.puppycrawl.tools</groupId>
+                            <artifactId>checkstyle</artifactId>
+                            <version>10.17.0</version>
+                        </dependency>
+                    </dependencies>
+                </plugin>
+                <plugin>
+                    <groupId>com.github.spotbugs</groupId>
+                    <artifactId>spotbugs-maven-plugin</artifactId>
+                    <version>4.8.5.0</version>
+                    <dependencies>
+                        <!-- overwrite dependency on spotbugs if you want to specify the version of spotbugs -->
+                        <dependency>
+                            <groupId>com.github.spotbugs</groupId>
+                            <artifactId>spotbugs</artifactId>
+                            <version>${spotbugs.version}</version>
+                        </dependency>
+                    </dependencies>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <version>${surefire-plugin.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-failsafe-plugin</artifactId>
+                    <version>${surefire-plugin.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-release-plugin</artifactId>
+                    <version>3.1.0</version>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
+</project>

@@ -64,7 +64,7 @@ import org.mockito.stubbing.Answer;
 import org.skyscreamer.jsonassert.JSONAssert;
 import org.skyscreamer.jsonassert.JSONCompareMode;
 
-import com.github.streamshub.console.api.config.ConsoleConfig;
+import com.github.streamshub.console.config.ConsoleConfig;
 import com.github.streamshub.console.kafka.systemtest.TestPlainProfile;
 import com.github.streamshub.console.kafka.systemtest.deployment.DeploymentManager;
 import com.github.streamshub.console.kafka.systemtest.utils.ConsumerUtils;

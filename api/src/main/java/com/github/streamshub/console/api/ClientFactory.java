@@ -48,10 +48,10 @@ import org.jboss.logging.Logger;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import com.github.streamshub.console.api.config.ConsoleConfig;
-import com.github.streamshub.console.api.config.KafkaClusterConfig;
 import com.github.streamshub.console.api.service.KafkaClusterService;
 import com.github.streamshub.console.api.support.TrustAllCertificateManager;
+import com.github.streamshub.console.config.ConsoleConfig;
+import com.github.streamshub.console.config.KafkaClusterConfig;
 
 import io.fabric8.kubernetes.client.informers.ResourceEventHandler;
 import io.fabric8.kubernetes.client.informers.SharedIndexInformer;
