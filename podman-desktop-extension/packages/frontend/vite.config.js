@@ -17,8 +17,8 @@
  ***********************************************************************/
 
 /* eslint-env node */
-import { join } from 'path';
 import * as path from 'path';
+import { join } from 'path';
 import { svelte } from '@sveltejs/vite-plugin-svelte';
 import { defineConfig } from 'vite';
 import { fileURLToPath } from 'url';
@@ -49,9 +49,7 @@ export default defineConfig({
       { find: /^svelte$/, replacement: 'svelte/internal' },
     ],
     deps: {
-      inline: [
-
-      ],
+      inline: [],
     },
   },
   base: '',

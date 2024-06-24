@@ -1,8 +1,7 @@
 <script lang="ts">
-  import type { ClusterList } from '/@/api/api-kafka';
+  import type {ClusterList} from '/@/api/api-kafka';
   import Link from './Link.svelte';
 
-  export let project: string;
   export let object: ClusterListColumn;
 
   type ClusterListColumn = ClusterList & {

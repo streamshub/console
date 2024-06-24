@@ -11,8 +11,10 @@
   let clusterName: string;
   let clusterNamespace: string;
   let clusterListener: string;
-  let clusterBootstrap: string;
-  let clusterProperties: string | undefined;
+  let clusterBootstrap: string | undefined;
+  let clusterSaslJaas: string | undefined;
+  let clusterSaslMechanism: string | undefined;
+  let clusterSecurityProtocol: string | undefined;
   let k8sApi: string;
   let k8sToken: string | undefined;
 
@@ -36,8 +38,16 @@
     clusterBootstrap = (event.target as HTMLInputElement).value || '';
   }
 
-  function onClusterPropertiesInput(event: Event) {
-    clusterProperties = (event.target as HTMLTextAreaElement).value || '';
+  function onClusterSaslJaasInput(event: Event) {
+    clusterSaslJaas = (event.target as HTMLInputElement).value || '';
+  }
+
+  function onClusterSaslMechanism(event: Event) {
+    clusterSaslMechanism = (event.target as HTMLInputElement).value || '';
+  }
+
+  function onClusterSecurityProtocol(event: Event) {
+    clusterSecurityProtocol = (event.target as HTMLInputElement).value || '';
   }
 
   function onK8sApiInput(event: Event) {
@@ -49,7 +59,7 @@
   }
 
   function isReady() {
-    return projectName && clusterName && clusterNamespace && clusterListener && clusterBootstrap;
+    return projectName && clusterName && clusterNamespace && clusterListener;
   }
 
   async function createConsole() {
@@ -58,8 +68,8 @@
     }
     submitted = true;
     streamshubClient.createConsole(projectName, {
-      consoleApiServiceAccountToken: 'eyJhbGciOiJSUzI1NiIsImtpZCI6IlNzazBGMElDN0pRQWg2Q1RmUUZjWTVQMGYxcjRCMTlCbFVVVWJndVY5OFEifQ.eyJhdWQiOlsiaHR0cHM6Ly9rdWJlcm5ldGVzLmRlZmF1bHQuc3ZjLmNsdXN0ZXIubG9jYWwiXSwiZXhwIjoxNzQ4Njc5OTczLCJpYXQiOjE3MTcxNDM5NzMsImlzcyI6Imh0dHBzOi8va3ViZXJuZXRlcy5kZWZhdWx0LnN2Yy5jbHVzdGVyLmxvY2FsIiwianRpIjoiYjQ4ZTVhOTgtMzI2ZS00ZGViLTlmMTktODRiYTEzN2JhYmU2Iiwia3ViZXJuZXRlcy5pbyI6eyJuYW1lc3BhY2UiOiJrYWZrYSIsInNlcnZpY2VhY2NvdW50Ijp7Im5hbWUiOiJjb25zb2xlLXNlcnZlciIsInVpZCI6ImVmN2JlMTZiLTg2MGQtNDEzMS05ZjBhLTFjNTcyN2U5NDA2MCJ9fSwibmJmIjoxNzE3MTQzOTczLCJzdWIiOiJzeXN0ZW06c2VydmljZWFjY291bnQ6a2Fma2E6Y29uc29sZS1zZXJ2ZXIifQ.cVwpsYMyyKa6Da5xz-nXRsXvPxyjP8Gi4ydRDktbh5ppY48AGuj421hLK7GISfA5AivmNzPbmoqv-gGkBw2lmiW3a2QbVrxr0xpZXcHLYaN556GzJp-ljcobL48-D9-ab8WeXjUzsRMwZmnOpFNXcR1g_XhR3WKJM3F7mU7jROnkbiXX5r295c0jxB_2Vz49_SNZDSHrKqO3C9DF6_A5LWUXbPh1qfHpfIqoTqeRF-Xy8eaqsrFxmtWjEPnL5Hl6IE-w-5MAn0U5KmWyYDTz3hc3gmrr0TTHUzEuKD167kAaAmCndMkO4EdTss0L2KIqkAPe578T6xL8T0wS6d9GnQ',
-      consoleApiKubernetesApiServerUrl: 'https://192.168.49.2:8443',
+      consoleApiServiceAccountToken: k8sToken,
+      consoleApiKubernetesApiServerUrl: k8sApi,
       consoleUiImage: 'console-ui:local',
       consoleApiImage: 'console-api:local',
     }, {
@@ -69,6 +79,9 @@
         namespace: clusterNamespace,
         properties: {
           'bootstrap.servers': clusterBootstrap,
+          "sasl.jaas.config": clusterSaslJaas,
+          "sasl.mechanism": clusterSaslMechanism,
+          "security.protocol": clusterSecurityProtocol
         },
         producerProperties: {},
         adminProperties: {},
@@ -82,11 +95,22 @@
 
 <NavPage
   lastPage="{{ name: 'Streamshub', path: '/' }}"
+  loading={submitted}
   searchEnabled="{false}"
   title={'Create a Streamshub console'}
 >
+  <svelte:fragment slot="additional-actions">
+    <Button
+      icon="{faPlusCircle}"
+      inProgress="{submitted}"
+      on:click="{createConsole}"
+      title="Create console">
+      Create console
+    </Button>
+  </svelte:fragment>
+
   <svelte:fragment slot="content">
-    <div class="flex flex-col w-full">
+    <form class="flex flex-col w-full">
       <!-- form -->
       <div class="bg-charcoal-800 m-5 pt-5 space-y-6 px-8 sm:pb-6 xl:pb-8 rounded-lg h-fit">
         <div class="w-full">
@@ -94,86 +118,22 @@
           <label class="block mb-2 text-sm font-bold text-gray-400" for="projectName">Console name</label>
           <input
             aria-label="Console name"
-            class="w-full p-2 outline-none text-sm bg-charcoal-600 rounded-sm text-gray-700 placeholder-gray-700"
+            class="w-full p-2 outline-none text-sm bg-charcoal-600 rounded-sm text-gray-700 placeholder-gray-900 invalid:[&:not(:placeholder-shown):not(:focus)]:text-red-600"
             disabled="{submitted}"
             id="projectName"
             name="projectName"
             on:input="{onNameInput}"
+            pattern={"[\\w_\\p{Pd}]{3,}"}
             placeholder="Use a unique and memorable name"
             required
             type="text" />
         </div>
-      </div>
-
-      <div class="bg-charcoal-800 m-5 pt-5 space-y-6 px-8 sm:pb-6 xl:pb-8 rounded-lg h-fit">
-            <div class="flex flex-row space-x-2 items-center text-[var(--pd-content-card-header-text)]">
-              <p class="text-lg font-semibold">Strimzi connection details</p>
-            </div>
-        <div class="w-full">
-          <!-- kafka name -->
-          <label class="block mb-2 text-sm font-bold text-gray-400" for="projectName">Kafka cluster name</label>
-          <input
-            aria-label="Kafka cluster name"
-            class="w-full p-2 outline-none text-sm bg-charcoal-600 rounded-sm text-gray-700 placeholder-gray-700"
-            disabled="{submitted}"
-            id="clusterName"
-            name="clusterName"
-            on:input="{onClusterNameInput}"
-            required
-            type="text" />
-        </div>
-        <div class="w-full">
-          <!-- kafka namespace -->
-          <label class="block mb-2 text-sm font-bold text-gray-400" for="projectName">Kafka cluster namespace</label>
-          <input
-            aria-label="Kafka cluster namespace"
-            class="w-full p-2 outline-none text-sm bg-charcoal-600 rounded-sm text-gray-700 placeholder-gray-700"
-            disabled="{submitted}"
-            id="clusterNamespace"
-            name="clusterNamespace"
-            on:input="{onClusterNamespaceInput}"
-            required
-            type="text" />
-        </div>
-        <div class="w-full">
-          <!-- kafka listener -->
-          <label class="block mb-2 text-sm font-bold text-gray-400" for="projectName">Cluster listener</label>
-          <input
-            aria-label="Strimzi cluster listener"
-            class="w-full p-2 outline-none text-sm bg-charcoal-600 rounded-sm text-gray-700 placeholder-gray-700"
-            disabled="{submitted}"
-            id="clusterListener"
-            name="clusterListener"
-            on:input="{onClusterListenerInput}"
-            required
-            type="text" />
-        </div>
-        <div class="w-full">
-          <!-- kafka bootstrap -->
-          <label class="block mb-2 text-sm font-bold text-gray-400" for="projectName">Bootstrap urls (comma
-            separated)</label>
-          <input
-            aria-label="Bootstrap url"
-            class="w-full p-2 outline-none text-sm bg-charcoal-600 rounded-sm text-gray-700 placeholder-gray-700"
-            disabled="{submitted}"
-            id="clusterBootstrap"
-            name="clusterBootstrap"
-            on:input="{onClusterBootstrapInput}"
-            required
-            type="text" />
-        </div>
-        <div class="w-full">
-          <!-- kafka properties -->
-          <label class="block mb-2 text-sm font-bold text-gray-400" for="projectName">Connection properties</label>
-          <textarea
-            aria-label="Properties"
-            class="w-full p-2 outline-none text-sm bg-charcoal-600 rounded-sm text-gray-700 placeholder-gray-700 resize-y min-h-[200px]"
-            disabled="{submitted}"
-            id="clusterProperties"
-            name="clusterProperties"
-            on:input="{onClusterPropertiesInput}"
-          />
-        </div>
+        <p class="block mt-2 mb-2 text-sm text-gray-600">This will be used to create a directory on your filesystem in this extension's storage path.
+          <br>
+          <br>* It must be a unique name.
+          <br>* Name must be at least 3 characters long.
+          <br>* Only characters and numbers allowed.
+        </p>
       </div>
 
       <div class="bg-charcoal-800 m-5 pt-5 space-y-6 px-8 sm:pb-6 xl:pb-8 rounded-lg h-fit">
@@ -182,10 +142,10 @@
         </div>
         <div class="w-full">
           <!-- kafka name -->
-          <label class="block mb-2 text-sm font-bold text-gray-400" for="projectName">API server url</label>
+          <label class="block mb-2 text-sm font-bold text-gray-400" for="k8sApi">API server url</label>
           <input
             aria-label="Kubernetes API server url"
-            class="w-full p-2 outline-none text-sm bg-charcoal-600 rounded-sm text-gray-700 placeholder-gray-700"
+            class="w-full p-2 outline-none text-sm bg-charcoal-600 rounded-sm text-gray-700 placeholder-gray-900"
             disabled="{submitted}"
             id="k8sApi"
             name="k8sApi"
@@ -195,10 +155,10 @@
         </div>
         <div class="w-full">
           <!-- kafka namespace -->
-          <label class="block mb-2 text-sm font-bold text-gray-400" for="projectName">Service account token</label>
+          <label class="block mb-2 text-sm font-bold text-gray-400" for="k8sToken">Service account token</label>
           <input
             aria-label="Kubernetes service account token"
-            class="w-full p-2 outline-none text-sm bg-charcoal-600 rounded-sm text-gray-700 placeholder-gray-700"
+            class="w-full p-2 outline-none text-sm bg-charcoal-600 rounded-sm text-gray-700 placeholder-gray-900"
             disabled="{submitted}"
             id="k8sToken"
             name="k8sToken"
@@ -207,6 +167,114 @@
             type="text" />
         </div>
       </div>
+
+      <div class="bg-charcoal-800 m-5 pt-5 space-y-6 px-8 sm:pb-6 xl:pb-8 rounded-lg h-fit">
+            <div class="flex flex-row space-x-2 items-center text-[var(--pd-content-card-header-text)]">
+              <p class="text-lg font-semibold">Strimzi CR details</p>
+            </div>
+        <div class="w-full">
+          <!-- kafka name -->
+          <label class="block mb-2 text-sm font-bold text-gray-400" for="clusterName">Kafka cluster name</label>
+          <input
+            aria-label="Kafka cluster name"
+            class="w-full p-2 outline-none text-sm bg-charcoal-600 rounded-sm text-gray-700 placeholder-gray-900"
+            disabled="{submitted}"
+            id="clusterName"
+            name="clusterName"
+            on:input="{onClusterNameInput}"
+            required
+            type="text" />
+          <p class="block mt-2 mb-2 text-sm text-gray-600">Name of the Strimzi Kafka CR</p>
+        </div>
+        <div class="w-full">
+          <!-- kafka namespace -->
+          <label class="block mb-2 text-sm font-bold text-gray-400" for="clusterNamespace">Kafka cluster namespace</label>
+          <input
+            aria-label="Kafka cluster namespace"
+            class="w-full p-2 outline-none text-sm bg-charcoal-600 rounded-sm text-gray-700 placeholder-gray-900"
+            disabled="{submitted}"
+            id="clusterNamespace"
+            name="clusterNamespace"
+            on:input="{onClusterNamespaceInput}"
+            required
+            type="text" />
+          <p class="block mt-2 mb-2 text-sm text-gray-600">Namespace of the Strimzi Kafka CR</p>
+        </div>
+        <div class="w-full">
+          <!-- kafka listener -->
+          <label class="block mb-2 text-sm font-bold text-gray-400" for="clusterListener">Cluster listener</label>
+          <input
+            aria-label="Strimzi cluster listener"
+            class="w-full p-2 outline-none text-sm bg-charcoal-600 rounded-sm text-gray-700 placeholder-gray-900"
+            disabled="{submitted}"
+            id="clusterListener"
+            name="clusterListener"
+            on:input="{onClusterListenerInput}"
+            required
+            type="text" />
+          <p class="block mt-2 mb-2 text-sm text-gray-600">Name of the listener to use for connections from the console</p>
+        </div>
+      </div>
+        <div class="bg-charcoal-800 m-5 pt-5 space-y-6 px-8 sm:pb-6 xl:pb-8 rounded-lg h-fit">
+        <div class="flex flex-row space-x-2 items-center text-[var(--pd-content-card-header-text)]">
+          <p class="text-lg font-semibold">Kafka connection properties (optional)</p>
+        </div>
+        <div class="w-full">
+          <!-- kafka bootstrap -->
+          <label class="block mb-2 text-sm font-bold text-gray-400" for="clusterBootstrap">Bootstrap urls (comma
+            separated)</label>
+          <input
+            aria-label="Bootstrap url"
+            class="w-full p-2 outline-none text-sm bg-charcoal-600 rounded-sm text-gray-700 placeholder-gray-900"
+            disabled="{submitted}"
+            id="clusterBootstrap"
+            name="clusterBootstrap"
+            on:input="{onClusterBootstrapInput}"
+            required
+            type="text" />
+          <p class="block mt-2 mb-2 text-sm text-gray-600">If omitted the bootstrap servers from the Strimzi Kafka CR are used</p>
+        </div>
+        <div class="w-full">
+          <!-- kafka properties -->
+          <label class="block mb-2 text-sm font-bold text-gray-400" for="clusterSecurityProtocol">Security protocol</label>
+          <input
+            aria-label="Security protocol"
+            class="w-full p-2 outline-none text-sm bg-charcoal-600 rounded-sm text-gray-700 placeholder-gray-900"
+            disabled="{submitted}"
+            id="clusterSecurityProtocol"
+            name="clusterSecurityProtocol"
+            on:input="{onClusterSecurityProtocol}"
+            placeholder="SASL_SSL"
+            type="text" />
+        </div>
+        <div class="w-full">
+          <!-- kafka properties -->
+          <label class="block mb-2 text-sm font-bold text-gray-400" for="clusterSaslMechanism">Security protocol</label>
+          <input
+            aria-label="SASL mechanism"
+            class="w-full p-2 outline-none text-sm bg-charcoal-600 rounded-sm text-gray-700 placeholder-gray-900"
+            disabled="{submitted}"
+            id="clusterSaslMechanism"
+            name="clusterSaslMechanism"
+            on:input="{onClusterSaslMechanism}"
+            placeholder="SCRAM-SHA-512"
+            type="text" />
+        </div>
+        <div class="w-full">
+          <!-- kafka properties -->
+          <label class="block mb-2 text-sm font-bold text-gray-400" for="clusterSecurityProtocol">SASL JAAS configuration</label>
+          <input
+            aria-label="SASL JAAS configuration"
+            class="w-full p-2 outline-none text-sm bg-charcoal-600 rounded-sm text-gray-700 placeholder-gray-900"
+            disabled="{submitted}"
+            id="clusterSaslJaasConfiguration"
+            name="clusterSaslJaasConfiguration"
+            on:input="{onClusterSaslJaasInput}"
+            placeholder={`org.apache.kafka.common.security.scram.ScramLoginModule required username="my-user" password="123456"; (optional)`}
+            type="text" />
+        </div>
+      </div>
+
       <footer class="bg-charcoal-800 m-5 space-y-6 p-8 rounded-lg h-fit">
         <div class="w-full flex flex-col">
           <Button
@@ -218,7 +286,7 @@
           </Button>
         </div>
       </footer>
-    </div>
+    </form>
   </svelte:fragment>
 
 
