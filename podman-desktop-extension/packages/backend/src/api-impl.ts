@@ -20,6 +20,7 @@ import { Messages } from '/@shared/src/messages/Messages';
 import type { ConsoleCompose, ConsoleConfig, StreamshubConsoleInfo } from '/@shared/src/models/streamshub';
 import type { StreamshubApi } from '/@shared/src/StreamshubApi';
 import * as podmanDesktopApi from '@podman-desktop/api';
+import yaml from 'js-yaml';
 import * as fs from 'node:fs/promises';
 import { telemetryLogger } from './extension';
 import { createAndStartConsole, startConsole, stopAndDeleteConsole, stopConsole } from './utils';
@@ -144,6 +145,14 @@ export class StreamshubImpl implements StreamshubApi {
     const { storagePath } = this.extensionContext;
     console.log('deleteConsole', { storagePath, projectName });
     await stopAndDeleteConsole(storagePath, projectName);
+  }
+
+  async getKubernetesClusters() {
+    const kconfig = podmanDesktopApi.kubernetes.getKubeconfig();
+    const configContent = await fs.readFile(kconfig.fsPath, 'utf8');
+    const parsedConfig = yaml.load(configContent) as { clusters: { cluster: { server: string }; name: string }[] };
+    console.log('getKubernetesClusters', parsedConfig);
+    return parsedConfig?.clusters.map(c => ({ name: c.name, server: c.cluster.server })) ?? [];
   }
 
   async containerChanges() {

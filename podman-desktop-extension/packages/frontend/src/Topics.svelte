@@ -1,19 +1,16 @@
 <script lang="ts">
   import './app.css';
-  import { filterUndefinedFromObj } from '/@/api/api-common';
-  import { type ClusterList, ClustersResponseSchema } from '/@/api/api-kafka';
-  import { type TopicList, type TopicsResponse, TopicsResponseSchema, type TopicStatus } from '/@/api/api-topics';
-  import { streamshubClient } from '/@/api/client';
-  import ClusterNamespaceColumn from '/@/lib/ClusterNamespaceColumn.svelte';
-  import ClusterVersionColumn from '/@/lib/ClusterVersionColumn.svelte';
-  import ClusterNameColumn from '/@/lib/ClusterNameColumn.svelte';
+  import {filterUndefinedFromObj} from '/@/api/api-common';
+  import {type ClusterList} from '/@/api/api-kafka';
+  import {type TopicList, type TopicsResponse, TopicsResponseSchema, type TopicStatus} from '/@/api/api-topics';
+  import {streamshubClient} from '/@/api/client';
   import TopicsConsumerGroupsColumn from '/@/lib/TopicsConsumerGroupsColumn.svelte';
   import TopicsNameColumn from '/@/lib/TopicsNameColumn.svelte';
   import TopicsPartitionsColumn from '/@/lib/TopicsPartitionsColumn.svelte';
   import NavPage from '/@/lib/upstream/NavPage.svelte';
-  import type { StreamshubConsoleInfo } from '/@shared/src/models/streamshub';
-  import { Table, TableColumn, TableRow } from '@podman-desktop/ui-svelte';
-  import { onMount } from 'svelte';
+  import type {StreamshubConsoleInfo} from '/@shared/src/models/streamshub';
+  import {Table, TableColumn, TableRow} from '@podman-desktop/ui-svelte';
+  import {onMount} from 'svelte';
 
   export let project: string;
   export let cluster: string;
@@ -87,7 +84,7 @@
     comparator: (a, b) => (a.attributes.numPartitions ?? 0) - (b.attributes.numPartitions ?? 0),
   });
 
-  let consumerGroupsColumn = new TableColumn<TopicList>('Partitions', {
+  let consumerGroupsColumn = new TableColumn<TopicList>('Consumer groups', {
     renderer: TopicsConsumerGroupsColumn,
     comparator: (a, b) => (a.relationships.consumerGroups.data.length - b.relationships.consumerGroups.data.length),
   });
