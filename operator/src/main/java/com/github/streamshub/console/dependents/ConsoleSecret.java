@@ -4,7 +4,9 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
+import java.security.SecureRandom;
 import java.util.Base64;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -19,25 +21,31 @@ import org.apache.kafka.common.config.SaslConfigs;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.streamshub.console.api.v1alpha1.Console;
-import com.github.streamshub.console.api.v1alpha1.KafkaCluster;
+import com.github.streamshub.console.api.v1alpha1.spec.KafkaCluster;
 import com.github.streamshub.console.config.ConsoleConfig;
 import com.github.streamshub.console.config.KafkaClusterConfig;
 
+import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.Secret;
 import io.fabric8.kubernetes.api.model.SecretBuilder;
 import io.javaoperatorsdk.operator.api.reconciler.Context;
 import io.javaoperatorsdk.operator.processing.dependent.kubernetes.CRUDKubernetesDependentResource;
 import io.javaoperatorsdk.operator.processing.dependent.kubernetes.KubernetesDependent;
 import io.strimzi.api.kafka.model.kafka.Kafka;
+import io.strimzi.api.kafka.model.kafka.KafkaStatus;
 import io.strimzi.api.kafka.model.kafka.listener.GenericKafkaListener;
+import io.strimzi.api.kafka.model.kafka.listener.GenericKafkaListenerConfiguration;
+import io.strimzi.api.kafka.model.kafka.listener.GenericKafkaListenerConfigurationBootstrap;
 import io.strimzi.api.kafka.model.kafka.listener.ListenerStatus;
+import io.strimzi.api.kafka.model.user.KafkaUser;
+import io.strimzi.api.kafka.model.user.KafkaUserStatus;
 
 @ApplicationScoped
 @KubernetesDependent(labelSelector = ConsoleResource.MANAGEMENT_SELECTOR)
 public class ConsoleSecret extends CRUDKubernetesDependentResource<Secret, Console> implements ConsoleResource {
 
     public static final String NAME = "console-secret";
-    private static final Random RANDOM = new Random();
+    private static final Random RANDOM = new SecureRandom();
 
     @Inject
     ObjectMapper objectMapper;
@@ -68,8 +76,6 @@ public class ConsoleSecret extends CRUDKubernetesDependentResource<Secret, Conso
         }
 
         updateDigest(context, "console-digest", data);
-
-        //console-config.yaml
 
         return new SecretBuilder()
                 .withNewMetadata()
@@ -107,20 +113,18 @@ public class ConsoleSecret extends CRUDKubernetesDependentResource<Secret, Conso
     }
 
     private void addConfig(Context<Console> context, ConsoleConfig config, KafkaCluster kafkaRef) {
+        String namespace = kafkaRef.getNamespace();
+        String name = kafkaRef.getName();
+        String listenerName = kafkaRef.getListener();
+
         KafkaClusterConfig kcConfig = new KafkaClusterConfig();
-        kcConfig.setNamespace(kafkaRef.getNamespace());
-        kcConfig.setName(kafkaRef.getName());
-        kcConfig.setListener(kafkaRef.getListener());
+        kcConfig.setNamespace(namespace);
+        kcConfig.setName(name);
+        kcConfig.setListener(listenerName);
         config.getKafka().getClusters().add(kcConfig);
 
         // TODO: add informer for Kafka CRs
-        String listenerName = kafkaRef.getListener();
-
-        Kafka kafka = context.getClient()
-                .resources(Kafka.class)
-                .inNamespace(kafkaRef.getNamespace())
-                .withName(kafkaRef.getName())
-                .get();
+        Kafka kafka = getOptionalResource(context, Kafka.class, namespace, name).orElse(null);
 
         if (kafka != null && listenerName != null) {
             GenericKafkaListener listenerSpec = kafka.getSpec()
@@ -158,14 +162,17 @@ public class ConsoleSecret extends CRUDKubernetesDependentResource<Secret, Conso
                 protocol.append("PLAINTEXT");
             }
 
-            kcConfig.getProperties().put(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, protocol.toString());
+            var properties = kcConfig.getProperties();
+
+            properties.put(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, protocol.toString());
 
             if (mechanism != null) {
-                kcConfig.getProperties().put(SaslConfigs.SASL_MECHANISM, mechanism);
+                properties.put(SaslConfigs.SASL_MECHANISM, mechanism);
             }
 
-            ListenerStatus listenerStatus = kafka.getStatus()
-                    .getListeners()
+            ListenerStatus listenerStatus = Optional.ofNullable(kafka.getStatus())
+                    .map(KafkaStatus::getListeners)
+                    .orElseGet(Collections::emptyList)
                     .stream()
                     .filter(l -> l.getName().equals(listenerName))
                     .findFirst()
@@ -173,19 +180,38 @@ public class ConsoleSecret extends CRUDKubernetesDependentResource<Secret, Conso
 
             Optional.ofNullable(listenerStatus)
                 .map(ListenerStatus::getBootstrapServers)
-                .or(() -> Optional.ofNullable(listenerSpec.getConfiguration().getBootstrap().getHost()))
-                .ifPresent(bootstrapServers -> kcConfig.getProperties().put(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers));
+                .or(() -> Optional.ofNullable(listenerSpec.getConfiguration())
+                        .map(GenericKafkaListenerConfiguration::getBootstrap)
+                        .map(GenericKafkaListenerConfigurationBootstrap::getHost))
+                .ifPresent(bootstrapServers -> properties.put(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers));
 
-            if (kafkaRef.getKafkaUserName() != null) {
-                // TODO: add informer for KafkaUser CRs
-                Secret userSecret = context.getClient().secrets()
-                    .inNamespace(kafkaRef.getNamespace())
-                    .withName(kafkaRef.getKafkaUserName())
-                    .get();
+            String kafkaUserName = kafkaRef.getKafkaUserName();
 
-                kcConfig.getProperties().put(SaslConfigs.SASL_JAAS_CONFIG, decodeString(userSecret.getData().get("sasl.jaas.config")));
+            if (kafkaUserName != null) {
+                // TODO: add informer for KafkaUser CRs and the referenced Secret
+                Optional<Secret> userSecret = getOptionalResource(context, KafkaUser.class, namespace, kafkaUserName)
+                    .map(KafkaUser::getStatus)
+                    .map(KafkaUserStatus::getSecret)
+                    .flatMap(secretName -> getOptionalResource(context, Secret.class, namespace, secretName));
+
+                // TODO: fail and set warning condition if nonexistent KafkaUser or secret is referenced
+                userSecret.map(Secret::getData)
+                        .ifPresent(secretData -> properties.put(
+                                SaslConfigs.SASL_JAAS_CONFIG,
+                                decodeString(secretData.get("sasl.jaas.config"))));
             }
-
         }
+    }
+
+    static <T extends HasMetadata> Optional<T> getOptionalResource(
+            Context<Console> context, Class<T> resourceType, String namespace, String name) {
+
+        T resource = context.getClient()
+            .resources(resourceType)
+            .inNamespace(namespace)
+            .withName(name)
+            .get();
+
+        return Optional.ofNullable(resource);
     }
 }

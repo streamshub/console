@@ -1,16 +1,24 @@
 package com.github.streamshub.console;
 
+import java.time.Instant;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 import com.github.streamshub.console.api.v1alpha1.Console;
+import com.github.streamshub.console.api.v1alpha1.status.ConditionBuilder;
 import com.github.streamshub.console.dependents.ConsoleClusterRole;
 import com.github.streamshub.console.dependents.ConsoleClusterRoleBinding;
 import com.github.streamshub.console.dependents.ConsoleDeployment;
 import com.github.streamshub.console.dependents.ConsoleIngress;
+import com.github.streamshub.console.dependents.ConsoleResource;
 import com.github.streamshub.console.dependents.ConsoleSecret;
 import com.github.streamshub.console.dependents.ConsoleService;
 import com.github.streamshub.console.dependents.ConsoleServiceAccount;
+import com.github.streamshub.console.dependents.DeploymentReadyCondition;
+import com.github.streamshub.console.dependents.IngressReadyCondition;
 import com.github.streamshub.console.dependents.PrometheusClusterRole;
 import com.github.streamshub.console.dependents.PrometheusClusterRoleBinding;
 import com.github.streamshub.console.dependents.PrometheusConfigMap;
@@ -32,15 +40,12 @@ import io.javaoperatorsdk.operator.processing.event.source.EventSource;
 @ControllerConfiguration(dependents = {
         @Dependent(
                 name = PrometheusClusterRole.NAME,
-                //useEventSourceWithName = "cluster-roles",
                 type = PrometheusClusterRole.class),
         @Dependent(
                 name = PrometheusServiceAccount.NAME,
-                //useEventSourceWithName = "service-accounts",
                 type = PrometheusServiceAccount.class),
         @Dependent(
                 name = PrometheusClusterRoleBinding.NAME,
-                //useEventSourceWithName = "cluster-role-bindings",
                 type = PrometheusClusterRoleBinding.class,
                 dependsOn = {
                         PrometheusClusterRole.NAME,
@@ -51,30 +56,26 @@ import io.javaoperatorsdk.operator.processing.event.source.EventSource;
                 type = PrometheusConfigMap.class),
         @Dependent(
                 name = PrometheusDeployment.NAME,
-                //useEventSourceWithName = "deployments",
                 type = PrometheusDeployment.class,
                 dependsOn = {
                         PrometheusClusterRoleBinding.NAME,
                         PrometheusConfigMap.NAME
-                }),
+                },
+                readyPostcondition = DeploymentReadyCondition.class),
         @Dependent(
                 name = PrometheusService.NAME,
-                //useEventSourceWithName = "services",
                 type = PrometheusService.class,
                 dependsOn = {
                         PrometheusDeployment.NAME
                 }),
         @Dependent(
                 name = ConsoleClusterRole.NAME,
-                //useEventSourceWithName = "cluster-roles",
                 type = ConsoleClusterRole.class),
         @Dependent(
                 name = ConsoleServiceAccount.NAME,
-                //useEventSourceWithName = "service-accounts",
                 type = ConsoleServiceAccount.class),
         @Dependent(
                 name = ConsoleClusterRoleBinding.NAME,
-                //useEventSourceWithName = "cluster-role-bindings",
                 type = ConsoleClusterRoleBinding.class,
                 dependsOn = {
                         ConsoleClusterRole.NAME,
@@ -85,20 +86,20 @@ import io.javaoperatorsdk.operator.processing.event.source.EventSource;
                 type = ConsoleSecret.class),
         @Dependent(
                 name = ConsoleIngress.NAME,
-                type = ConsoleIngress.class),
+                type = ConsoleIngress.class,
+                readyPostcondition = IngressReadyCondition.class),
         @Dependent(
                 name = ConsoleDeployment.NAME,
-                //useEventSourceWithName = "deployments",
                 type = ConsoleDeployment.class,
                 dependsOn = {
                         ConsoleClusterRoleBinding.NAME,
                         ConsoleSecret.NAME,
                         ConsoleIngress.NAME,
                         PrometheusService.NAME
-                }),
+                },
+                readyPostcondition = DeploymentReadyCondition.class),
         @Dependent(
                 name = ConsoleService.NAME,
-                //useEventSourceWithName = "services",
                 type = ConsoleService.class,
                 dependsOn = {
                         ConsoleDeployment.NAME
@@ -113,7 +114,46 @@ public class ConsoleReconciler implements EventSourceInitializer<Console>, Recon
 
     @Override
     public UpdateControl<Console> reconcile(Console resource, Context<Console> context) {
-        resource.getOrCreateStatus();
+        var result = context.managedDependentResourceContext().getWorkflowReconcileResult();
+        var status = resource.getOrCreateStatus();
+
+        var readyCondition = Optional.ofNullable(status.getConditions())
+                .flatMap(conditions -> conditions.stream()
+                        .filter(c -> "Ready".equals(c.getType()))
+                        .findFirst())
+                .orElseGet(() -> {
+                    var condition = new ConditionBuilder()
+                            .withType("Ready")
+                            .withLastTransitionTime(Instant.now().toString())
+                            .build();
+                    status.getConditions().add(condition);
+                    return condition;
+                });
+
+        var notReady = result.map(r -> r.getNotReadyDependents());
+        boolean isReady = notReady.filter(Collection::isEmpty).map(r -> Boolean.TRUE)
+                .orElse(Boolean.FALSE);
+
+        String readyStatus = isReady ? "True" : "False";
+
+        if (!readyStatus.equals(readyCondition.getStatus())) {
+            readyCondition.setStatus(readyStatus);
+            readyCondition.setLastTransitionTime(Instant.now().toString());
+        }
+
+        if (isReady) {
+            readyCondition.setReason(null);
+            readyCondition.setMessage("All resources ready");
+        } else {
+            readyCondition.setReason("DependentsNotReady");
+            readyCondition.setMessage(notReady.map(Collection::stream)
+                    .map(deps -> "Resources not ready: %s"
+                        .formatted(deps.map(ConsoleResource.class::cast)
+                                .map(r -> "%s[%s]".formatted(r.getClass().getSimpleName(), r.instanceName(resource)))
+                                .collect(Collectors.joining("; "))))
+                    .orElse(""));
+        }
+
         return UpdateControl.patchStatus(resource);
     }
 

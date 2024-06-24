@@ -19,7 +19,7 @@ import com.github.streamshub.console.api.v1alpha1.Console;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.javaoperatorsdk.operator.api.reconciler.Context;
 
-interface ConsoleResource {
+public interface ConsoleResource {
 
     static final String MANAGED_BY_LABEL = "app.kubernetes.io/managed-by";
     static final String NAME_LABEL = "app.kubernetes.io/name";
@@ -65,7 +65,8 @@ interface ConsoleResource {
 
     private MessageDigest messageDigest() {
         try {
-            return MessageDigest.getInstance("SHA-1");
+            // Ignore java:S4790, SHA-1 is not used in sensitive context
+            return MessageDigest.getInstance("SHA-1"); // NOSONAR
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException(e);
         }
