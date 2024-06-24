@@ -105,7 +105,7 @@
   searchEnabled="{false}"
   title={clusterName}
 >
-  <div class="flex min-w-full h-full" slot="content">
+  <div class="flex min-w-full h-full py-5" slot="content">
     {#if topicsTableData}
       <Table
         bind:this="{table}"
@@ -118,7 +118,7 @@
       </Table>
 
       {#if topicsTableData.length === 0}
-        TODO no topics
+        No topics.
       {/if}
     {/if}
   </div>
