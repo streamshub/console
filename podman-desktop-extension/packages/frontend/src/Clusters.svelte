@@ -1,14 +1,14 @@
 <script lang="ts">
   import './app.css';
-  import { type ClusterList, ClustersResponseSchema } from '/@/api/api-kafka';
-  import { streamshubClient } from '/@/api/client';
+  import {type ClusterList, ClustersResponseSchema} from '/@/api/api-kafka';
+  import {streamshubClient} from '/@/api/client';
+  import ClusterNameColumn from '/@/lib/ClusterNameColumn.svelte';
   import ClusterNamespaceColumn from '/@/lib/ClusterNamespaceColumn.svelte';
   import ClusterVersionColumn from '/@/lib/ClusterVersionColumn.svelte';
-  import ClusterNameColumn from '/@/lib/ClusterNameColumn.svelte';
   import NavPage from '/@/lib/upstream/NavPage.svelte';
-  import type { StreamshubConsoleInfo } from '/@shared/src/models/streamshub';
-  import { Table, TableColumn, TableRow } from '@podman-desktop/ui-svelte';
-  import { onMount } from 'svelte';
+  import type {StreamshubConsoleInfo} from '/@shared/src/models/streamshub';
+  import {Table, TableColumn, TableRow} from '@podman-desktop/ui-svelte';
+  import {onMount} from 'svelte';
 
   export let project: string;
   let consoleObj: StreamshubConsoleInfo | undefined = undefined;
@@ -78,7 +78,7 @@
   searchEnabled="{false}"
   title={consoleObj?.project ?? ''}
 >
-  <div class="flex min-w-full h-full" slot="content">
+  <div class="flex min-w-full h-full py-5" slot="content">
     {#if clusters}
       <Table
         bind:this="{table}"
@@ -91,7 +91,7 @@
       </Table>
 
       {#if clusters.length === 0}
-        TODO no clusters
+        No clusters.
       {/if}
     {/if}
   </div>

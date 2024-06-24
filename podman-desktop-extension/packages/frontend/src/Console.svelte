@@ -1,9 +1,9 @@
 <script lang="ts">
   import './app.css';
-  import { streamshubClient } from '/@/api/client';
+  import {streamshubClient} from '/@/api/client';
   import NavPage from '/@/lib/upstream/NavPage.svelte';
-  import type { StreamshubConsoleInfo } from '/@shared/src/models/streamshub';
-  import { onMount } from 'svelte';
+  import type {StreamshubConsoleInfo} from '/@shared/src/models/streamshub';
+  import {onMount} from 'svelte';
 
   export let project: string | undefined = undefined;
   let consoleObj: StreamshubConsoleInfo | undefined = undefined;
@@ -22,7 +22,7 @@
   title={consoleObj?.project ?? ''}
 >
   <svelte:fragment slot="content">
-    <iframe class="w-full h-full" src="{consoleObj?.ui.url}"
+    <iframe class="w-full h-full py-5" src="{consoleObj?.ui.url}"
             title={consoleObj?.project}></iframe>
   </svelte:fragment>
 
