@@ -4,7 +4,7 @@ metadata:
   name: example
   namespace: streams-console
 spec:
-  hostname: example-console1.apps-crc.testing
+  hostname: example-console.apps-crc.testing
   kafkaClusters:
     - kafkaUserName: console-kafka-user1
       listener: secure

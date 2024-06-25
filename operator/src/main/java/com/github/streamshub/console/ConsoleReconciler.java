@@ -87,8 +87,14 @@ import io.quarkiverse.operatorsdk.annotations.CSVMetadata.Provider;
                 name = ConsoleSecret.NAME,
                 type = ConsoleSecret.class),
         @Dependent(
+                name = ConsoleService.NAME,
+                type = ConsoleService.class),
+        @Dependent(
                 name = ConsoleIngress.NAME,
                 type = ConsoleIngress.class,
+                dependsOn = {
+                        ConsoleService.NAME
+                },
                 readyPostcondition = IngressReadyCondition.class),
         @Dependent(
                 name = ConsoleDeployment.NAME,
@@ -100,12 +106,6 @@ import io.quarkiverse.operatorsdk.annotations.CSVMetadata.Provider;
                         PrometheusService.NAME
                 },
                 readyPostcondition = DeploymentReadyCondition.class),
-        @Dependent(
-                name = ConsoleService.NAME,
-                type = ConsoleService.class,
-                dependsOn = {
-                        ConsoleDeployment.NAME
-                }),
 })
 @CSVMetadata(provider = @Provider(name = "StreamsHub", url = "https://github.com/streamshub"))
 public class ConsoleReconciler implements EventSourceInitializer<Console>, Reconciler<Console>, Cleaner<Console> {
