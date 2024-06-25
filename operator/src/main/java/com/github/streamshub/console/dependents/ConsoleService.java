@@ -10,7 +10,7 @@ import io.javaoperatorsdk.operator.processing.dependent.kubernetes.KubernetesDep
 @ApplicationScoped
 @KubernetesDependent(
         labelSelector = ConsoleResource.MANAGEMENT_SELECTOR,
-        resourceDiscriminator = ConsoleService.class)
+        resourceDiscriminator = ConsoleLabelDiscriminator.class)
 public class ConsoleService extends BaseService {
 
     public static final String NAME = "console-service";
@@ -19,12 +19,7 @@ public class ConsoleService extends BaseService {
     ConsoleDeployment deployment;
 
     public ConsoleService() {
-        super("console", "console.service.yaml");
-    }
-
-    @Override
-    public String resourceName() {
-        return NAME;
+        super("console", "console.service.yaml", NAME);
     }
 
     @Override

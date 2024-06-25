@@ -13,8 +13,7 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <maven.compiler.source>17</maven.compiler.source>
-        <maven.compiler.target>17</maven.compiler.target>
+        <maven.compiler.release>17</maven.compiler.release>
 
         <!-- Dependencies -->
         <quarkus.version>3.8.5</quarkus.version>
@@ -34,6 +33,14 @@
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
         <sonar.organization>streamshub</sonar.organization>
         <sonar.exclusions>api/src/main/java/com/github/streamshub/console/api/support/TrustAllCertificateManager.java</sonar.exclusions>
+        <!-- Ignore rule java:S6813 about avoidance of field injection -->
+        <sonar.issue.ignore.multicriteria>e1</sonar.issue.ignore.multicriteria>
+        <sonar.issue.ignore.multicriteria.e1.ruleKey>java:S6813</sonar.issue.ignore.multicriteria.e1.ruleKey>
+        <sonar.issue.ignore.multicriteria.e1.resourceKey>**/*.java</sonar.issue.ignore.multicriteria.e1.resourceKey>
+        <!-- Ignore rule java:S110 about inheritance tree depth for operator dependent resources -->
+        <sonar.issue.ignore.multicriteria>e2</sonar.issue.ignore.multicriteria>
+        <sonar.issue.ignore.multicriteria.e2.ruleKey>java:S110</sonar.issue.ignore.multicriteria.e2.ruleKey>
+        <sonar.issue.ignore.multicriteria.e2.resourceKey>**/dependents/*.java</sonar.issue.ignore.multicriteria.e2.resourceKey>
     </properties>
 
     <scm>

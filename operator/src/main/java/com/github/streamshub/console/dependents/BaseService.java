@@ -1,36 +1,32 @@
 package com.github.streamshub.console.dependents;
 
-import java.util.Optional;
-
 import com.github.streamshub.console.api.v1alpha1.Console;
 
 import io.fabric8.kubernetes.api.model.Service;
 import io.javaoperatorsdk.operator.api.reconciler.Context;
-import io.javaoperatorsdk.operator.api.reconciler.ResourceDiscriminator;
 import io.javaoperatorsdk.operator.processing.dependent.kubernetes.CRUDKubernetesDependentResource;
 
-abstract class BaseService extends CRUDKubernetesDependentResource<Service, Console>
-    implements ResourceDiscriminator<Service, Console>, ConsoleResource {
+abstract class BaseService extends CRUDKubernetesDependentResource<Service, Console> implements ConsoleResource {
 
     private final String appName;
+    private final String templateName;
     private final String resourceName;
 
-    protected BaseService(String appName, String resourceName) {
+    protected BaseService(String appName, String templateName, String resourceName) {
         super(Service.class);
         this.appName = appName;
+        this.templateName = templateName;
         this.resourceName = resourceName;
     }
 
     @Override
-    public Optional<Service> distinguish(Class<Service> resourceType, Console primary, Context<Console> context) {
-        return context.getSecondaryResourcesAsStream(resourceType)
-                .filter(d -> appName.equals(d.getMetadata().getLabels().get(NAME_LABEL)))
-                .findFirst();
+    public String resourceName() {
+        return resourceName;
     }
 
     @Override
     protected Service desired(Console primary, Context<Console> context) {
-        return load(context, resourceName, Service.class)
+        return load(context, templateName, Service.class)
             .edit()
             .editMetadata()
                 .withName(instanceName(primary))

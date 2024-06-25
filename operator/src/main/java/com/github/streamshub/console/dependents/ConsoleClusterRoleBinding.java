@@ -10,7 +10,7 @@ import io.javaoperatorsdk.operator.processing.dependent.kubernetes.KubernetesDep
 @ApplicationScoped
 @KubernetesDependent(
         labelSelector = ConsoleResource.MANAGEMENT_SELECTOR,
-        resourceDiscriminator = ConsoleClusterRoleBinding.class)
+        resourceDiscriminator = ConsoleLabelDiscriminator.class)
 public class ConsoleClusterRoleBinding extends BaseClusterRoleBinding {
 
     public static final String NAME = "console-clusterrolebinding";
@@ -22,12 +22,7 @@ public class ConsoleClusterRoleBinding extends BaseClusterRoleBinding {
     ConsoleServiceAccount serviceAccount;
 
     public ConsoleClusterRoleBinding() {
-        super("console", "console.clusterrolebinding.yaml");
-    }
-
-    @Override
-    public String resourceName() {
-        return NAME;
+        super("console", "console.clusterrolebinding.yaml", NAME);
     }
 
     @Override

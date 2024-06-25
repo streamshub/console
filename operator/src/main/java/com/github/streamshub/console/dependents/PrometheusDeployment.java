@@ -1,7 +1,6 @@
 package com.github.streamshub.console.dependents;
 
 import java.util.Map;
-import java.util.Optional;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -10,26 +9,16 @@ import com.github.streamshub.console.api.v1alpha1.Console;
 
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.javaoperatorsdk.operator.api.reconciler.Context;
-import io.javaoperatorsdk.operator.api.reconciler.ResourceDiscriminator;
 import io.javaoperatorsdk.operator.processing.dependent.kubernetes.CRUDKubernetesDependentResource;
 import io.javaoperatorsdk.operator.processing.dependent.kubernetes.KubernetesDependent;
 
 @ApplicationScoped
 @KubernetesDependent(
         labelSelector = ConsoleResource.MANAGEMENT_SELECTOR,
-        resourceDiscriminator = PrometheusDeployment.Discriminator.class)
+        resourceDiscriminator = PrometheusLabelDiscriminator.class)
 public class PrometheusDeployment extends CRUDKubernetesDependentResource<Deployment, Console> implements ConsoleResource {
 
     public static final String NAME = "prometheus-deployment";
-
-    public static class Discriminator implements ResourceDiscriminator<Deployment, Console> {
-        @Override
-        public Optional<Deployment> distinguish(Class<Deployment> resourceType, Console primary, Context<Console> context) {
-            return context.getSecondaryResourcesAsStream(resourceType)
-                .filter(d -> "prometheus".equals(d.getMetadata().getLabels().get(NAME_LABEL)))
-                .findFirst();
-        }
-    }
 
     @Inject
     PrometheusServiceAccount serviceAccount;

@@ -20,7 +20,7 @@ public class DeploymentReadyCondition implements Condition<Deployment, Console> 
 
     private boolean isReady(Deployment deployment) {
         var readyReplicas = deployment.getStatus().getReadyReplicas();
-        var ready = readyReplicas != null && deployment.getSpec().getReplicas().equals(readyReplicas);
+        var ready = deployment.getSpec().getReplicas().equals(readyReplicas);
         LOGGER.debugf("Deployment %s ready: %s", deployment.getMetadata().getName(), ready);
         return ready;
     }

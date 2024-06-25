@@ -12,7 +12,7 @@ import io.javaoperatorsdk.operator.processing.dependent.kubernetes.KubernetesDep
 @ApplicationScoped
 @KubernetesDependent(
         labelSelector = ConsoleResource.MANAGEMENT_SELECTOR,
-        resourceDiscriminator = PrometheusService.class)
+        resourceDiscriminator = PrometheusLabelDiscriminator.class)
 public class PrometheusService extends BaseService {
 
     public static final String NAME = "prometheus-service";
@@ -21,12 +21,7 @@ public class PrometheusService extends BaseService {
     PrometheusDeployment deployment;
 
     public PrometheusService() {
-        super("prometheus", "prometheus.service.yaml");
-    }
-
-    @Override
-    public String resourceName() {
-        return NAME;
+        super("prometheus", "prometheus.service.yaml", NAME);
     }
 
     @Override
@@ -45,9 +40,4 @@ public class PrometheusService extends BaseService {
 
         return desired;
     }
-
-    public String host(Console primary) {
-        return "%s.%s.svc.cluster.local".formatted(instanceName(primary), primary.getMetadata().getNamespace());
-    }
-
 }

@@ -7,18 +7,13 @@ import io.javaoperatorsdk.operator.processing.dependent.kubernetes.KubernetesDep
 @ApplicationScoped
 @KubernetesDependent(
         labelSelector = ConsoleResource.MANAGEMENT_SELECTOR,
-        resourceDiscriminator = ConsoleClusterRole.class)
+        resourceDiscriminator = ConsoleLabelDiscriminator.class)
 public class ConsoleClusterRole extends BaseClusterRole {
 
     public static final String NAME = "console-clusterrole";
 
     public ConsoleClusterRole() {
-        super("console", "console.clusterrole.yaml");
-    }
-
-    @Override
-    public String resourceName() {
-        return NAME;
+        super("console", "console.clusterrole.yaml", NAME);
     }
 
 }

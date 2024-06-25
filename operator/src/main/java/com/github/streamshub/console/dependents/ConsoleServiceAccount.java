@@ -7,17 +7,13 @@ import io.javaoperatorsdk.operator.processing.dependent.kubernetes.KubernetesDep
 @ApplicationScoped
 @KubernetesDependent(
         labelSelector = ConsoleResource.MANAGEMENT_SELECTOR,
-        resourceDiscriminator = ConsoleServiceAccount.class)
+        resourceDiscriminator = ConsoleLabelDiscriminator.class)
 public class ConsoleServiceAccount extends BaseServiceAccount {
 
     public static final String NAME = "console-serviceaccount";
 
     public ConsoleServiceAccount() {
-        super("console", "console.serviceaccount.yaml");
+        super("console", "console.serviceaccount.yaml", NAME);
     }
 
-    @Override
-    public String resourceName() {
-        return NAME;
-    }
 }

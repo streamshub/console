@@ -10,7 +10,7 @@ import io.javaoperatorsdk.operator.processing.dependent.kubernetes.KubernetesDep
 @ApplicationScoped
 @KubernetesDependent(
         labelSelector = ConsoleResource.MANAGEMENT_SELECTOR,
-        resourceDiscriminator = PrometheusClusterRoleBinding.class)
+        resourceDiscriminator = PrometheusLabelDiscriminator.class)
 public class PrometheusClusterRoleBinding extends BaseClusterRoleBinding {
 
     public static final String NAME = "prometheus-clusterrolebinding";
@@ -22,12 +22,7 @@ public class PrometheusClusterRoleBinding extends BaseClusterRoleBinding {
     PrometheusServiceAccount serviceAccount;
 
     public PrometheusClusterRoleBinding() {
-        super("prometheus", "prometheus.clusterrolebinding.yaml");
-    }
-
-    @Override
-    public String resourceName() {
-        return NAME;
+        super("prometheus", "prometheus.clusterrolebinding.yaml", NAME);
     }
 
     @Override
@@ -39,5 +34,4 @@ public class PrometheusClusterRoleBinding extends BaseClusterRoleBinding {
     protected String subjectName(Console primary) {
         return serviceAccount.instanceName(primary);
     }
-
 }

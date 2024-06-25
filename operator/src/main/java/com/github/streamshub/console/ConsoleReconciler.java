@@ -36,6 +36,8 @@ import io.javaoperatorsdk.operator.api.reconciler.Reconciler;
 import io.javaoperatorsdk.operator.api.reconciler.UpdateControl;
 import io.javaoperatorsdk.operator.api.reconciler.dependent.Dependent;
 import io.javaoperatorsdk.operator.processing.event.source.EventSource;
+import io.quarkiverse.operatorsdk.annotations.CSVMetadata;
+import io.quarkiverse.operatorsdk.annotations.CSVMetadata.Provider;
 
 @ControllerConfiguration(dependents = {
         @Dependent(
@@ -105,6 +107,7 @@ import io.javaoperatorsdk.operator.processing.event.source.EventSource;
                         ConsoleDeployment.NAME
                 }),
 })
+@CSVMetadata(provider = @Provider(name = "StreamsHub", url = "https://github.com/streamshub"))
 public class ConsoleReconciler implements EventSourceInitializer<Console>, Reconciler<Console>, Cleaner<Console> {
 
     @Override

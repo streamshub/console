@@ -7,18 +7,13 @@ import io.javaoperatorsdk.operator.processing.dependent.kubernetes.KubernetesDep
 @ApplicationScoped
 @KubernetesDependent(
         labelSelector = ConsoleResource.MANAGEMENT_SELECTOR,
-        resourceDiscriminator = PrometheusServiceAccount.class)
+        resourceDiscriminator = PrometheusLabelDiscriminator.class)
 public class PrometheusServiceAccount extends BaseServiceAccount {
 
     public static final String NAME = "prometheus-serviceaccount";
 
     public PrometheusServiceAccount() {
-        super("prometheus", "prometheus.serviceaccount.yaml");
-    }
-
-    @Override
-    public String resourceName() {
-        return NAME;
+        super("prometheus", "prometheus.serviceaccount.yaml", NAME);
     }
 
 }

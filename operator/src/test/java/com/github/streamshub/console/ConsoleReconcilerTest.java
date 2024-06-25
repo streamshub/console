@@ -122,7 +122,7 @@ class ConsoleReconcilerTest {
                 .endStatus()
                 .build();
 
-        promDeployment = client.resource(promDeployment).patchStatus();
+        client.resource(promDeployment).patchStatus();
         LOGGER.info("Set ready replicas for Prometheus deployment");
 
         var consoleIngress = client.network().v1().ingresses()
@@ -139,7 +139,7 @@ class ConsoleReconcilerTest {
                         .endLoadBalancer()
                     .endStatus()
                     .build();
-        consoleIngress = client.resource(consoleIngress).patchStatus();
+        client.resource(consoleIngress).patchStatus();
         LOGGER.info("Set ingress status for Console ingress");
 
         await().ignoreException(NullPointerException.class).atMost(2, TimeUnit.SECONDS).untilAsserted(() -> {
@@ -167,7 +167,7 @@ class ConsoleReconcilerTest {
                 .endStatus()
                 .build();
 
-        consoleDeployment = client.resource(consoleDeployment).patchStatus();
+        client.resource(consoleDeployment).patchStatus();
 
         await().ignoreException(NullPointerException.class).atMost(2, TimeUnit.SECONDS).untilAsserted(() -> {
             var console = client.resources(Console.class)

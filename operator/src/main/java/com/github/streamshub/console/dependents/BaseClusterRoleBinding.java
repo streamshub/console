@@ -1,13 +1,11 @@
 package com.github.streamshub.console.dependents;
 
-import java.util.Optional;
 import java.util.Set;
 
 import com.github.streamshub.console.api.v1alpha1.Console;
 
 import io.fabric8.kubernetes.api.model.rbac.ClusterRoleBinding;
 import io.javaoperatorsdk.operator.api.reconciler.Context;
-import io.javaoperatorsdk.operator.api.reconciler.ResourceDiscriminator;
 import io.javaoperatorsdk.operator.api.reconciler.dependent.Deleter;
 import io.javaoperatorsdk.operator.processing.dependent.Creator;
 import io.javaoperatorsdk.operator.processing.dependent.Updater;
@@ -18,31 +16,30 @@ import io.javaoperatorsdk.operator.processing.event.source.informer.Mappers;
 
 abstract class BaseClusterRoleBinding extends KubernetesDependentResource<ClusterRoleBinding, Console>
     implements SecondaryToPrimaryMapper<ClusterRoleBinding>,
-        ResourceDiscriminator<ClusterRoleBinding, Console>,
         Creator<ClusterRoleBinding, Console>,
         Updater<ClusterRoleBinding, Console>,
         Deleter<Console>,
         ConsoleResource {
 
     private final String appName;
+    private final String templateName;
     private final String resourceName;
 
-    protected BaseClusterRoleBinding(String appName, String resourceName) {
+    protected BaseClusterRoleBinding(String appName, String templateName, String resourceName) {
         super(ClusterRoleBinding.class);
         this.appName = appName;
+        this.templateName = templateName;
         this.resourceName = resourceName;
     }
 
     @Override
-    public Optional<ClusterRoleBinding> distinguish(Class<ClusterRoleBinding> resourceType, Console primary, Context<Console> context) {
-        return context.getSecondaryResourcesAsStream(resourceType)
-                .filter(d -> appName.equals(d.getMetadata().getLabels().get(NAME_LABEL)))
-                .findFirst();
+    public String resourceName() {
+        return resourceName;
     }
 
     @Override
     protected ClusterRoleBinding desired(Console primary, Context<Console> context) {
-        return load(context, resourceName, ClusterRoleBinding.class)
+        return load(context, templateName, ClusterRoleBinding.class)
             .edit()
             .editMetadata()
                 .withName(instanceName(primary))
@@ -66,5 +63,4 @@ abstract class BaseClusterRoleBinding extends KubernetesDependentResource<Cluste
     public Set<ResourceID> toPrimaryResourceIDs(ClusterRoleBinding resource) {
         return Mappers.fromDefaultAnnotations().toPrimaryResourceIDs(resource);
     }
-
 }
