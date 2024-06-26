@@ -107,7 +107,9 @@ import io.quarkiverse.operatorsdk.annotations.CSVMetadata.Provider;
                 },
                 readyPostcondition = DeploymentReadyCondition.class),
 })
-@CSVMetadata(provider = @Provider(name = "StreamsHub", url = "https://github.com/streamshub"))
+@CSVMetadata(
+        provider = @Provider(name = "StreamsHub", url = "https://github.com/streamshub"),
+        description = "StreamsHub console provides a user interface for managing and monitoring your streaming resources")
 public class ConsoleReconciler implements EventSourceInitializer<Console>, Reconciler<Console>, Cleaner<Console> {
 
     @Override

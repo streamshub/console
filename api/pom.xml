@@ -472,7 +472,7 @@
 
     <profiles>
         <profile>
-            <id>docker</id>
+            <id>container-image</id>
             <properties>
                 <quarkus.container-image.build>true</quarkus.container-image.build>
                 <quarkus.container-image.registry>${docker.registry}</quarkus.container-image.registry>

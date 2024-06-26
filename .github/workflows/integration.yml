@@ -40,7 +40,46 @@ jobs:
           #
           # See: https://quarkus.io/guides/tests-with-coverage#coverage-for-integration-tests
           #
-          mvn verify -Pdocker -B --no-transfer-progress -Dquarkus.package.write-transformed-bytecode-to-build-output=true
+          mvn verify -P container-image -B --no-transfer-progress -Dquarkus.package.write-transformed-bytecode-to-build-output=true
+
+      - name: Build Operator Bundle Image
+        uses: docker/build-push-action@v6
+        with:
+          context: operator/target/bundle/console-operator/
+          push: false
+          file: operator/target/bundle/console-operator/bundle.Dockerfile
+          tags: |
+            streamshub/console-operator-bundle:latest
+
+      - name: Build Operator Catalog
+        run: |
+          curl -L -o opm https://github.com/operator-framework/operator-registry/releases/download/v1.43.1/linux-amd64-opm
+          chmod +x opm
+          sudo cp -v opm /usr/bin/
+          rm -vf opm
+          mkdir -p operator/target/catalog
+          opm generate dockerfile operator/target/catalog
+          opm init console-operator --default-channel=alpha --output=yaml > operator/target/catalog/operator.yaml
+          opm render operator/target/bundle/console-operator/ --output=yaml >> operator/target/catalog/operator.yaml
+          VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout | tr '[:upper:]' '[:lower:]')
+          cat << EOF >> operator/target/catalog/operator.yaml
+          ---
+          schema: olm.channel
+          package: console-operator
+          name: alpha
+          entries:
+            - name: console-operator.v${VERSION}
+          EOF
+          opm validate operator/target/catalog
+
+      - name: Build Operator Catalog Image
+        uses: docker/build-push-action@v6
+        with:
+          context: operator/target/
+          push: false
+          file: operator/target/catalog.Dockerfile
+          tags: |
+            streamshub/console-operator-catalog:latest
 
       - name: Archive Results
         uses: actions/upload-artifact@v4
