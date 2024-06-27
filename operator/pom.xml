@@ -9,7 +9,6 @@
         <groupId>com.github.streamshub</groupId>
         <artifactId>console</artifactId>
         <version>0.1.2-SNAPSHOT</version>
-        <relativePath>..</relativePath>
     </parent>
 
     <artifactId>console-operator</artifactId>

@@ -2,12 +2,7 @@
 
 SCRIPT_PATH="$(cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P)"
 
-export CONTAINER_RUNTIME="${1?Please provide the container runtime command}"
-export CONSOLE_OPERATOR_BUNDLE_IMAGE="${2}"
-export CONSOLE_OPERATOR_CATALOG_IMAGE="${3}"
-export VERSION="${4}"
-
-${CONTAINER_RUNTIME} build -t ${CONSOLE_OPERATOR_BUNDLE_IMAGE} -f ${SCRIPT_PATH}/../target/bundle/console-operator/bundle.Dockerfile
+export VERSION="${1}"
 
 CATALOG_PATH=${SCRIPT_PATH}/../target/catalog
 rm -rvf ${CATALOG_PATH} ${CATALOG_PATH}.Dockerfile
@@ -26,5 +21,3 @@ entries:
 EOF
 
 opm validate ${CATALOG_PATH}
-
-${CONTAINER_RUNTIME} build -t ${CONSOLE_OPERATOR_CATALOG_IMAGE} -f ${CATALOG_PATH}.Dockerfile

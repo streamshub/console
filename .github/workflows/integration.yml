@@ -57,20 +57,8 @@ jobs:
           chmod +x opm
           sudo cp -v opm /usr/bin/
           rm -vf opm
-          mkdir -p operator/target/catalog
-          opm generate dockerfile operator/target/catalog
-          opm init console-operator --default-channel=alpha --output=yaml > operator/target/catalog/operator.yaml
-          opm render operator/target/bundle/console-operator/ --output=yaml >> operator/target/catalog/operator.yaml
           VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout | tr '[:upper:]' '[:lower:]')
-          cat << EOF >> operator/target/catalog/operator.yaml
-          ---
-          schema: olm.channel
-          package: console-operator
-          name: alpha
-          entries:
-            - name: console-operator.v${VERSION}
-          EOF
-          opm validate operator/target/catalog
+          operator/bin/generate-catalog.sh ${VERSION} 
 
       - name: Build Operator Catalog Image
         uses: docker/build-push-action@v6
