@@ -60,3 +60,18 @@ export interface StrimziProperties {
   'bootstrap.servers'?: string;
   'sasl.jaas.config'?: string;
 }
+
+export interface KubernetesCluster {
+  name: string;
+  namespace: string;
+  listeners: {
+    authentication?: {
+      type: string;
+    };
+    tls?: boolean;
+    bootstrapServers: string;
+    name: string;
+  }[];
+  jaasConfigurations: string[];
+  token?: string;
+}

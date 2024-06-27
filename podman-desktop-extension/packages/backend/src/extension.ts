@@ -56,7 +56,6 @@ export async function activate(extensionContext: ExtensionContext): Promise<void
   });
   extensionContext.subscriptions.push(panel);
 
-
   const indexHtmlUri = extensionApi.Uri.joinPath(extensionContext.extensionUri, 'media', 'index.html');
   const indexHtmlPath = indexHtmlUri.fsPath;
   let indexHtml = await fs.promises.readFile(indexHtmlPath, 'utf8');
@@ -119,9 +118,7 @@ export async function activate(extensionContext: ExtensionContext): Promise<void
       }, 1000);
     }),
   );
-
 }
-
 
 function checkVersion(version: string): boolean {
   if (!version) {

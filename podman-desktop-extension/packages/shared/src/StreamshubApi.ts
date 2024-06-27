@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  l***********************************************************************/
 
-import type { ConsoleCompose, ConsoleConfig, StreamshubConsoleInfo } from './models/streamshub';
+import type { ConsoleCompose, ConsoleConfig, KubernetesCluster, StreamshubConsoleInfo } from './models/streamshub';
 
 export abstract class StreamshubApi {
   abstract listConsoles(): Promise<StreamshubConsoleInfo[]>;
@@ -31,7 +31,7 @@ export abstract class StreamshubApi {
 
   abstract deleteConsole(projectName: string): Promise<void>;
 
-  abstract getKubernetesClusters(): Promise<{ name: string; server: string }[]>;
+  abstract getKubernetesClusters(): Promise<{ context: string; clusters: KubernetesCluster[] }>;
 
   abstract telemetryLogUsage(eventName: string, data?: Record<string, unknown> | undefined): Promise<void>;
 
