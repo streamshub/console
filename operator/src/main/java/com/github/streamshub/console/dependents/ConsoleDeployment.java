@@ -1,9 +1,12 @@
 package com.github.streamshub.console.dependents;
 
 import java.util.Map;
+import java.util.Optional;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import com.github.streamshub.console.api.v1alpha1.Console;
 
@@ -19,6 +22,8 @@ import io.javaoperatorsdk.operator.processing.dependent.kubernetes.KubernetesDep
 public class ConsoleDeployment extends CRUDKubernetesDependentResource<Deployment, Console> implements ConsoleResource {
 
     public static final String NAME = "console-deployment";
+    private static final String DEFAULT_IMAGE_API = "quay.io/streamshub/console-api";
+    private static final String DEFAULT_IMAGE_UI = "quay.io/streamshub/console-ui";
 
     @Inject
     PrometheusService prometheusService;
@@ -28,6 +33,10 @@ public class ConsoleDeployment extends CRUDKubernetesDependentResource<Deploymen
 
     @Inject
     ConsoleSecret secret;
+
+    @Inject
+    @ConfigProperty(name = "quarkus.application.version")
+    String applicationVersion;
 
     public ConsoleDeployment() {
         super(Deployment.class);
@@ -43,6 +52,10 @@ public class ConsoleDeployment extends CRUDKubernetesDependentResource<Deploymen
         Deployment desired = load(context, "console.deployment.yaml", Deployment.class);
         String name = instanceName(primary);
         String configSecretName = secret.instanceName(primary);
+        String imageAPI = Optional.ofNullable(primary.getSpec().getImages().getApi())
+                .orElseGet(() -> DEFAULT_IMAGE_API + ":" + applicationVersion.toLowerCase());
+        String imageUI = Optional.ofNullable(primary.getSpec().getImages().getUi())
+                .orElseGet(() -> DEFAULT_IMAGE_UI + ":" + applicationVersion.toLowerCase());
 
         return desired.edit()
             .editMetadata()
@@ -68,7 +81,12 @@ public class ConsoleDeployment extends CRUDKubernetesDependentResource<Deploymen
                                 .withSecretName(configSecretName)
                             .endSecret()
                         .endVolume()
+                        .editMatchingContainer(c -> "console-api".equals(c.getName()))
+                            .withImage(imageAPI)
+                            .addAllToEnv(primary.getSpec().getEnv())
+                        .endContainer()
                         .editMatchingContainer(c -> "console-ui".equals(c.getName()))
+                            .withImage(imageUI)
                             .editMatchingEnv(env -> "CONSOLE_METRICS_PROMETHEUS_URL".equals(env.getName()))
                                 .withValue(getAttribute(context, PrometheusService.NAME + ".url", String.class))
                             .endEnv()

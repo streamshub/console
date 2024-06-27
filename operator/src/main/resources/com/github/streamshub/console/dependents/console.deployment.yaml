@@ -21,7 +21,7 @@ spec:
       containers:
       ### API
       - name: console-api
-        image: quay.io/streamshub/console-api:latest
+        image: quay.io/streamshub/console-api
         ports:
         - containerPort: 8080
         volumeMounts:
@@ -33,7 +33,7 @@ spec:
           value: /deployments/console-config.yaml
       ### User Interface
       - name: console-ui
-        image: quay.io/streamshub/console-ui:latest
+        image: quay.io/streamshub/console-ui
         volumeMounts:
         - mountPath: /app/.next/cache
           name: cache

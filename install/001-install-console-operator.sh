@@ -11,7 +11,7 @@ export CATALOG_IMAGE="${2:-${DEFAULT_CATALOG}}"
 source ${CONSOLE_INSTALL_PATH}/_common.sh
 
 echo -e "${INFO} Create/update operator group in namespace '${NAMESPACE}' to watch all namespaces"
-${YQ} '.spec.targetNamespaces[0] = ""' ${RESOURCE_PATH}/operators/console-operators.operatorgroup.yaml | ${KUBE} apply -n ${NAMESPACE} -f -
+${YQ} '.spec.targetNamespaces = []' ${RESOURCE_PATH}/operators/console-operators.operatorgroup.yaml | ${KUBE} apply -n ${NAMESPACE} -f -
 
 echo -e "${INFO} Create/update operator group in namespace '${NAMESPACE}' with catalog '${CATALOG_IMAGE}'"
 echo "apiVersion: operators.coreos.com/v1alpha1

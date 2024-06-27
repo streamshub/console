@@ -5,10 +5,12 @@ import jakarta.inject.Inject;
 
 import com.github.streamshub.console.api.v1alpha1.Console;
 
+import io.javaoperatorsdk.operator.api.reconciler.Constants;
 import io.javaoperatorsdk.operator.processing.dependent.kubernetes.KubernetesDependent;
 
 @ApplicationScoped
 @KubernetesDependent(
+        namespaces = Constants.WATCH_ALL_NAMESPACES,
         labelSelector = ConsoleResource.MANAGEMENT_SELECTOR,
         resourceDiscriminator = PrometheusLabelDiscriminator.class)
 public class PrometheusClusterRoleBinding extends BaseClusterRoleBinding {

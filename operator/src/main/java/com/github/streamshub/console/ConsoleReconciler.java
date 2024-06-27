@@ -37,6 +37,7 @@ import io.javaoperatorsdk.operator.api.reconciler.UpdateControl;
 import io.javaoperatorsdk.operator.api.reconciler.dependent.Dependent;
 import io.javaoperatorsdk.operator.processing.event.source.EventSource;
 import io.quarkiverse.operatorsdk.annotations.CSVMetadata;
+import io.quarkiverse.operatorsdk.annotations.CSVMetadata.InstallMode;
 import io.quarkiverse.operatorsdk.annotations.CSVMetadata.Provider;
 
 @ControllerConfiguration(dependents = {
@@ -109,7 +110,13 @@ import io.quarkiverse.operatorsdk.annotations.CSVMetadata.Provider;
 })
 @CSVMetadata(
         provider = @Provider(name = "StreamsHub", url = "https://github.com/streamshub"),
-        description = "StreamsHub console provides a user interface for managing and monitoring your streaming resources")
+        description = "StreamsHub console provides a user interface for managing and monitoring your streaming resources",
+        installModes = {
+                @InstallMode(type = "AllNamespaces", supported = true),
+                @InstallMode(type = "OwnNamespace", supported = true),
+                @InstallMode(type = "SingleNamespace", supported = true),
+                @InstallMode(type = "MultiNamespace", supported = false),
+        })
 public class ConsoleReconciler implements EventSourceInitializer<Console>, Reconciler<Console>, Cleaner<Console> {
 
     @Override

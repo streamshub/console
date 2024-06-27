@@ -34,15 +34,3 @@ spec:
   source: community-operators
   sourceNamespace: openshift-marketplace" | ${KUBE} apply -n ${NAMESPACE} -f -
 fi
-
-echo -e "${INFO} Create/update Prometheus Operator"
-echo "apiVersion: operators.coreos.com/v1alpha1
-kind: Subscription
-metadata:
-  name: prometheus-operator
-spec:
-  name: prometheus
-  channel: beta
-  source: community-operators
-  sourceNamespace: openshift-marketplace" \
- | ${KUBE} apply -n ${NAMESPACE} -f -

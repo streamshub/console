@@ -27,7 +27,7 @@ fi
 export LISTENER_TYPE
 
 if [ "${MODE}" == "kraft" ] ; then
-    if ! ${KUBE} get KafkaNodePool console-nodepool >/dev/null ; then
+    if ! ${KUBE} get KafkaNodePool console-nodepool -n ${NAMESPACE} >/dev/null ; then
         ${KUBE} delete Kafka console-kafka -n ${NAMESPACE} || true
     fi
 
@@ -35,7 +35,7 @@ if [ "${MODE}" == "kraft" ] ; then
     ${YQ} '(.. | select(tag == "!!str")) |= envsubst(ne)' ${RESOURCE_PATH}/console-kafka.kafka.yaml | ${KUBE} apply -n ${NAMESPACE} -f -
     ${KUBE} apply -n ${NAMESPACE} -f ${RESOURCE_PATH}/console-nodepool.kafkanodepool.yaml
 else
-    if ${KUBE} get KafkaNodePool console-nodepool >/dev/null ; then
+    if ${KUBE} get KafkaNodePool console-nodepool -n ${NAMESPACE} >/dev/null ; then
         ${KUBE} delete Kafka console-kafka -n ${NAMESPACE} || true
         ${KUBE} delete KafkaNodePool console-nodepool -n ${NAMESPACE} || true
     fi
