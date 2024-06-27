@@ -9,7 +9,7 @@ export NAMESPACE="${1?Please provide the deployment namespace}"
 source ${CONSOLE_INSTALL_PATH}/_common.sh
 
 echo -e "${INFO} Create/update operator group in namespace '${NAMESPACE}'"
-${YQ} '.spec.targetNamespaces[0] = strenv(NAMESPACE)' ${RESOURCE_PATH}/prometheus/console-operators.operatorgroup.yaml | ${KUBE} apply -n ${NAMESPACE} -f -
+${YQ} '.spec.targetNamespaces[0] = strenv(NAMESPACE)' ${RESOURCE_PATH}/operators/console-operators.operatorgroup.yaml | ${KUBE} apply -n ${NAMESPACE} -f -
 
 if ${KUBE} get packagemanifests amq-streams >/dev/null ; then
     echo -e "${INFO} Create/update Apache Kafka Operator"
