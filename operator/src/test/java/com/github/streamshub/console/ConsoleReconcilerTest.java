@@ -1,5 +1,6 @@
 package com.github.streamshub.console;
 
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import jakarta.inject.Inject;
@@ -14,6 +15,7 @@ import com.github.streamshub.console.api.v1alpha1.ConsoleBuilder;
 import io.fabric8.kubernetes.api.model.NamespaceBuilder;
 import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
 import io.fabric8.kubernetes.client.KubernetesClient;
+import io.fabric8.kubernetes.client.KubernetesClientException;
 import io.javaoperatorsdk.operator.Operator;
 import io.quarkus.test.junit.QuarkusTest;
 import io.strimzi.api.kafka.Crds;
@@ -40,20 +42,40 @@ class ConsoleReconcilerTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        operator.start();
-    }
+        client.resources(Console.class).inAnyNamespace().delete();
 
-    @Test
-    void testBasicConsoleReconciliation() {
-        client.resource(Crds.kafka()).create();
+        try {
+            client.resources(Kafka.class).inAnyNamespace().delete();
+        } catch (KubernetesClientException e) {
+            if (e.getStatus().getCode() != 404) {
+                throw e;
+            }
+        }
+
+        operator.start();
+
+        client.resource(Crds.kafka())
+            .serverSideApply();
 
         client.resource(new NamespaceBuilder()
                 .withNewMetadata()
                     .withName("ns1")
+                    .withLabels(Map.of("streamshub-operator/test", "true"))
                 .endMetadata()
                 .build())
-            .create();
+            .serverSideApply();
 
+        client.resource(new NamespaceBuilder()
+                .withNewMetadata()
+                    .withName("ns2")
+                    .withLabels(Map.of("streamshub-operator/test", "true"))
+                .endMetadata()
+                .build())
+            .serverSideApply();
+    }
+
+    @Test
+    void testBasicConsoleReconciliation() {
         Kafka kafkaCR = new KafkaBuilder()
                 .withMetadata(new ObjectMetaBuilder()
                         .withName("kafka-1")
@@ -71,13 +93,7 @@ class ConsoleReconcilerTest {
                 .endSpec()
                 .build();
 
-        client.resource(kafkaCR).create();
-        client.resource(new NamespaceBuilder()
-                .withNewMetadata()
-                    .withName("ns2")
-                .endMetadata()
-                .build())
-            .create();
+        kafkaCR = client.resource(kafkaCR).create();
 
         Console consoleCR = new ConsoleBuilder()
                 .withMetadata(new ObjectMetaBuilder()
@@ -180,6 +196,62 @@ class ConsoleReconcilerTest {
             assertEquals("True", condition.getStatus());
             assertNull(condition.getReason());
             assertEquals("All resources ready", condition.getMessage());
+        });
+    }
+
+
+    @Test
+    void testConsoleReconciliationWithInvalidListenerName() {
+        Kafka kafkaCR = new KafkaBuilder()
+                .withMetadata(new ObjectMetaBuilder()
+                        .withName("kafka-1")
+                        .withNamespace("ns1")
+                        .build())
+                .withNewSpec()
+                    .withNewKafka()
+                        .addNewListener()
+                            .withName("listener1")
+                            .withType(KafkaListenerType.INGRESS)
+                            .withPort(9093)
+                            .withTls(true)
+                        .endListener()
+                    .endKafka()
+                .endSpec()
+                .build();
+
+        kafkaCR = client.resource(kafkaCR).create();
+
+        Console consoleCR = new ConsoleBuilder()
+                .withMetadata(new ObjectMetaBuilder()
+                        .withName("console-1")
+                        .withNamespace("ns2")
+                        .build())
+                .withNewSpec()
+                    .withHostname("example.com")
+                    .addNewKafkaCluster()
+                        .withName(kafkaCR.getMetadata().getName())
+                        .withNamespace(kafkaCR.getMetadata().getNamespace())
+                        .withListener("invalid")
+                    .endKafkaCluster()
+                .endSpec()
+                .build();
+
+        client.resource(consoleCR).create();
+
+        await().ignoreException(NullPointerException.class).atMost(2, TimeUnit.SECONDS).untilAsserted(() -> {
+            var console = client.resources(Console.class)
+                    .inNamespace(consoleCR.getMetadata().getNamespace())
+                    .withName(consoleCR.getMetadata().getName())
+                    .get();
+            assertEquals(2, console.getStatus().getConditions().size());
+            var ready = console.getStatus().getConditions().get(0);
+            assertEquals("Ready", ready.getType());
+            assertEquals("False", ready.getStatus());
+            assertEquals("DependentsNotReady", ready.getReason());
+            var warning = console.getStatus().getConditions().get(1);
+            assertEquals("Warning", warning.getType());
+            assertEquals("True", warning.getStatus());
+            assertEquals("ReconcileException", warning.getReason());
         });
     }
 }

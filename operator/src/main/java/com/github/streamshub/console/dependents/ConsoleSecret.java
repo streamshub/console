@@ -9,6 +9,7 @@ import java.util.Base64;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Random;
 
@@ -133,7 +134,7 @@ public class ConsoleSecret extends CRUDKubernetesDependentResource<Secret, Conso
                     .stream()
                     .filter(l -> l.getName().equals(listenerName))
                     .findFirst()
-                    .orElseThrow();
+                    .orElseThrow(() -> new NoSuchElementException("Listener '" + listenerName + "' not found on Kafka " + name + " in namespace " + namespace));
 
             StringBuilder protocol = new StringBuilder();
             String mechanism = null;

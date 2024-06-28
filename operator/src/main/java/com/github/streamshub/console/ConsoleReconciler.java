@@ -4,11 +4,9 @@ import java.time.Instant;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 import com.github.streamshub.console.api.v1alpha1.Console;
-import com.github.streamshub.console.api.v1alpha1.status.ConditionBuilder;
 import com.github.streamshub.console.dependents.ConsoleClusterRole;
 import com.github.streamshub.console.dependents.ConsoleClusterRoleBinding;
 import com.github.streamshub.console.dependents.ConsoleDeployment;
@@ -26,10 +24,13 @@ import com.github.streamshub.console.dependents.PrometheusDeployment;
 import com.github.streamshub.console.dependents.PrometheusService;
 import com.github.streamshub.console.dependents.PrometheusServiceAccount;
 
+import io.javaoperatorsdk.operator.AggregatedOperatorException;
 import io.javaoperatorsdk.operator.api.reconciler.Cleaner;
 import io.javaoperatorsdk.operator.api.reconciler.Context;
 import io.javaoperatorsdk.operator.api.reconciler.ControllerConfiguration;
 import io.javaoperatorsdk.operator.api.reconciler.DeleteControl;
+import io.javaoperatorsdk.operator.api.reconciler.ErrorStatusHandler;
+import io.javaoperatorsdk.operator.api.reconciler.ErrorStatusUpdateControl;
 import io.javaoperatorsdk.operator.api.reconciler.EventSourceContext;
 import io.javaoperatorsdk.operator.api.reconciler.EventSourceInitializer;
 import io.javaoperatorsdk.operator.api.reconciler.Reconciler;
@@ -117,7 +118,8 @@ import io.quarkiverse.operatorsdk.annotations.CSVMetadata.Provider;
                 @InstallMode(type = "SingleNamespace", supported = true),
                 @InstallMode(type = "MultiNamespace", supported = false),
         })
-public class ConsoleReconciler implements EventSourceInitializer<Console>, Reconciler<Console>, Cleaner<Console> {
+public class ConsoleReconciler
+    implements EventSourceInitializer<Console>, Reconciler<Console>, Cleaner<Console>, ErrorStatusHandler<Console> {
 
     @Override
     public Map<String, EventSource> prepareEventSources(EventSourceContext<Console> context) {
@@ -126,22 +128,51 @@ public class ConsoleReconciler implements EventSourceInitializer<Console>, Recon
 
     @Override
     public UpdateControl<Console> reconcile(Console resource, Context<Console> context) {
+        determineReadyCondition(resource, context);
+        return UpdateControl.patchStatus(resource);
+    }
+
+    @Override
+    public ErrorStatusUpdateControl<Console> updateErrorStatus(Console resource,
+            Context<Console> context,
+            Exception e) {
+
+        determineReadyCondition(resource, context);
+
+        var status = resource.getOrCreateStatus();
+        var warning = status.getCondition("Warning");
+        warning.setStatus("True");
+        warning.setReason("ReconcileException");
+
+        Throwable rootCause = e;
+
+        while (rootCause.getCause() != null && rootCause.getCause() != rootCause) {
+            rootCause = rootCause.getCause();
+        }
+
+        String message;
+
+        if (rootCause instanceof AggregatedOperatorException aggregated) {
+            message = aggregated.getAggregatedExceptions().values().stream()
+                .map(Exception::getMessage)
+                .collect(Collectors.joining("; "));
+        } else {
+            message = rootCause.getMessage();
+        }
+
+        warning.setMessage(message);
+        return ErrorStatusUpdateControl.patchStatus(resource);
+    }
+
+    @Override
+    public DeleteControl cleanup(Console resource, Context<Console> context) {
+        return DeleteControl.defaultDelete();
+    }
+
+    private void determineReadyCondition(Console resource, Context<Console> context) {
         var result = context.managedDependentResourceContext().getWorkflowReconcileResult();
         var status = resource.getOrCreateStatus();
-
-        var readyCondition = Optional.ofNullable(status.getConditions())
-                .flatMap(conditions -> conditions.stream()
-                        .filter(c -> "Ready".equals(c.getType()))
-                        .findFirst())
-                .orElseGet(() -> {
-                    var condition = new ConditionBuilder()
-                            .withType("Ready")
-                            .withLastTransitionTime(Instant.now().toString())
-                            .build();
-                    status.getConditions().add(condition);
-                    return condition;
-                });
-
+        var readyCondition = status.getCondition("Ready");
         var notReady = result.map(r -> r.getNotReadyDependents());
         boolean isReady = notReady.filter(Collection::isEmpty).map(r -> Boolean.TRUE)
                 .orElse(Boolean.FALSE);
@@ -156,6 +187,7 @@ public class ConsoleReconciler implements EventSourceInitializer<Console>, Recon
         if (isReady) {
             readyCondition.setReason(null);
             readyCondition.setMessage("All resources ready");
+            status.clearCondition("Warning");
         } else {
             readyCondition.setReason("DependentsNotReady");
             readyCondition.setMessage(notReady.map(Collection::stream)
@@ -165,13 +197,5 @@ public class ConsoleReconciler implements EventSourceInitializer<Console>, Recon
                                 .collect(Collectors.joining("; "))))
                     .orElse(""));
         }
-
-        return UpdateControl.patchStatus(resource);
     }
-
-    @Override
-    public DeleteControl cleanup(Console resource, Context<Console> context) {
-        return DeleteControl.defaultDelete();
-    }
-
 }

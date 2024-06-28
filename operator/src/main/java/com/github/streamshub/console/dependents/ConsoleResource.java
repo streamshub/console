@@ -3,12 +3,12 @@ package com.github.streamshub.console.dependents;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
-import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
 import java.util.Comparator;
+import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -28,6 +28,8 @@ public interface ConsoleResource {
 
     static final Map<String, String> MANAGEMENT_LABEL = Map.of(MANAGED_BY_LABEL, MANAGER);
     static final String MANAGEMENT_SELECTOR = MANAGED_BY_LABEL + '=' + MANAGER;
+    static final HexFormat DIGEST_FORMAT = HexFormat.of();
+    static final String DEFAULT_DIGEST = "0".repeat(40);
 
     String resourceName();
 
@@ -87,8 +89,9 @@ public interface ConsoleResource {
     default String serializeDigest(Context<Console> context, String digestName) {
         var resourceContext = context.managedDependentResourceContext();
         return resourceContext.get(digestName, MessageDigest.class)
-                .map(digest -> String.format("%040x", new BigInteger(1, digest.digest())))
-                .orElseGet(() -> "0".repeat(40));
+                .map(MessageDigest::digest)
+                .map(DIGEST_FORMAT::formatHex)
+                .orElse(DEFAULT_DIGEST);
     }
 
     default String encodeString(String value) {
