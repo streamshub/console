@@ -16,7 +16,9 @@
         <maven.compiler.release>17</maven.compiler.release>
 
         <!-- Dependencies -->
-        <quarkus.version>3.8.5</quarkus.version>
+        <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
+        <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
+        <quarkus.platform.version>3.8.5</quarkus.platform.version>
         <strimzi-api.version>0.41.0</strimzi-api.version>
         <strimzi-oauth.version>0.15.0</strimzi-oauth.version>
 
@@ -76,9 +78,9 @@
                     <version>${jandex-maven-plugin.version}</version>
                 </plugin>
                 <plugin>
-                    <groupId>io.quarkus</groupId>
+                    <groupId>${quarkus.platform.group-id}</groupId>
                     <artifactId>quarkus-maven-plugin</artifactId>
-                    <version>${quarkus.version}</version>
+                    <version>${quarkus.platform.version}</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
