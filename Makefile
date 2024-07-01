@@ -3,17 +3,36 @@
 
 include *compose.env
 
-CONSOLE_API_IMAGE ?= quay.io/streamshub/console-api:latest
-CONSOLE_UI_IMAGE ?= quay.io/streamshub/console-ui:latest
+IMAGE_REGISTRY ?= quay.io
+IMAGE_GROUP ?= streamshub
+VERSION = $(shell mvn help:evaluate -Dexpression=project.version -q -DforceStdout | tr '[:upper:]' '[:lower:]')
+
+CONSOLE_API_IMAGE ?= $(IMAGE_REGISTRY)/$(IMAGE_GROUP)/console-api:$(VERSION)
+CONSOLE_OPERATOR_IMAGE ?= $(IMAGE_REGISTRY)/$(IMAGE_GROUP)/console-operator:$(VERSION)
+CONSOLE_OPERATOR_BUNDLE_IMAGE ?= $(IMAGE_REGISTRY)/$(IMAGE_GROUP)/console-operator-bundle:$(VERSION)
+CONSOLE_OPERATOR_CATALOG_IMAGE ?= $(IMAGE_REGISTRY)/$(IMAGE_GROUP)/console-operator-catalog:$(VERSION)
+CONSOLE_UI_IMAGE ?= $(IMAGE_REGISTRY)/$(IMAGE_GROUP)/console-ui:$(VERSION)
+
 CONSOLE_UI_NEXTAUTH_SECRET ?= $(shell openssl rand -base64 32)
 CONSOLE_METRICS_PROMETHEUS_URL ?= 
 CONTAINER_RUNTIME ?= $(shell which podman || which docker)
 
 container-image-api:
-	mvn package -f api/pom.xml -Pdocker -DskipTests -Dquarkus.container-image.image=$(CONSOLE_API_IMAGE)
+	mvn package -am -pl api -Pcontainer-image -DskipTests -Dquarkus.container-image.image=$(CONSOLE_API_IMAGE)
 
 container-image-api-push: container-image-api
 	$(CONTAINER_RUNTIME) push $(CONSOLE_API_IMAGE)
+
+container-image-operator:
+	mvn package -am -pl operator -Pcontainer-image -DskipTests -Dquarkus.container-image.image=$(CONSOLE_OPERATOR_IMAGE)
+	operator/bin/generate-catalog.sh $(VERSION)
+	$(CONTAINER_RUNTIME) build -t $(CONSOLE_OPERATOR_BUNDLE_IMAGE) -f operator/target/bundle/console-operator/bundle.Dockerfile
+	$(CONTAINER_RUNTIME) build -t $(CONSOLE_OPERATOR_CATALOG_IMAGE) -f operator/target/catalog.Dockerfile
+
+container-image-operator-push: container-image-operator
+	$(CONTAINER_RUNTIME) push $(CONSOLE_OPERATOR_IMAGE)
+	$(CONTAINER_RUNTIME) push $(CONSOLE_OPERATOR_BUNDLE_IMAGE)
+	$(CONTAINER_RUNTIME) push $(CONSOLE_OPERATOR_CATALOG_IMAGE)
 
 container-image-ui:
 	$(CONTAINER_RUNTIME) build -t $(CONSOLE_UI_IMAGE) ./ui -f ./ui/Dockerfile
@@ -21,9 +40,9 @@ container-image-ui:
 container-image-ui-push: container-image-ui
 	$(CONTAINER_RUNTIME) push $(CONSOLE_UI_IMAGE)
 
-container-images: container-image-api container-image-ui
+container-images: container-image-api container-image-ui container-image-operator
 
-container-images-push: container-image-api-push container-image-ui-push
+container-images-push: container-image-api-push container-image-ui-push container-image-operator-push
 
 compose-up:
 	> compose-runtime.env

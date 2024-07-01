@@ -7,7 +7,6 @@
         <groupId>com.github.streamshub</groupId>
         <artifactId>console</artifactId>
         <version>0.1.2-SNAPSHOT</version>
-        <relativePath>..</relativePath>
     </parent>
 
     <artifactId>console-api</artifactId>
@@ -37,9 +36,9 @@
                 <version>9.40</version>
             </dependency>
             <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-bom</artifactId>
-                <version>${quarkus.version}</version>
+                <groupId>${quarkus.platform.group-id}</groupId>
+                <artifactId>${quarkus.platform.artifact-id}</artifactId>
+                <version>${quarkus.platform.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -270,7 +269,7 @@
                 </executions>
             </plugin>
             <plugin>
-                <groupId>io.quarkus</groupId>
+                <groupId>${quarkus.platform.group-id}</groupId>
                 <artifactId>quarkus-maven-plugin</artifactId>
                 <executions>
                     <execution>
@@ -472,7 +471,7 @@
 
     <profiles>
         <profile>
-            <id>docker</id>
+            <id>container-image</id>
             <properties>
                 <quarkus.container-image.build>true</quarkus.container-image.build>
                 <quarkus.container-image.registry>${docker.registry}</quarkus.container-image.registry>

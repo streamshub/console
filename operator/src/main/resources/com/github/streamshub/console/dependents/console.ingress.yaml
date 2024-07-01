@@ -1,23 +1,23 @@
 kind: Ingress
 apiVersion: networking.k8s.io/v1
 metadata:
-  name: console-prometheus-ingress
+  name: console-ui-ingress
   annotations:
     nginx.ingress.kubernetes.io/backend-protocol: HTTP
-    route.openshift.io/termination: none
+    route.openshift.io/termination: edge
 spec:
   defaultBackend:
     service:
-      name: console-prometheus
+      name: console-ui
       port:
-        number: 9090
+        number: 80
   rules:
-    - host: console-prometheus.${CLUSTER_DOMAIN}
+    - host: placeholder
       http:
         paths:
           - pathType: ImplementationSpecific
             backend:
               service:
-                name: console-prometheus
+                name: console-ui
                 port:
-                  number: 9090
+                  number: 80

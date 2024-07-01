@@ -3,8 +3,9 @@
 This project is a web console designed to facilitate interactions with Apache Kafka® instances on Kubernetes, leveraging the [Strimzi](https://strimzi.io) Cluster Operator.
 It is composed of two main parts:
 
-- a REST API backend developed with Java and [Quarkus](https://quarkus.io/)
-- a user interface (UI) built with [Next.js](https://nextjs.org/) and [PatternFly](https://patternfly.org)
+- a [REST API](./api) backend developed with Java and [Quarkus](https://quarkus.io/)
+- a [user interface (UI)](./ui) built with [Next.js](https://nextjs.org/) and [PatternFly](https://patternfly.org)
+- a Kubernetes [operator](./operator) developed with Java and [Quarkus](https://quarkus.io/)
 
 #### Roadmap / Goals
 

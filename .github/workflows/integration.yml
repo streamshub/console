@@ -40,7 +40,34 @@ jobs:
           #
           # See: https://quarkus.io/guides/tests-with-coverage#coverage-for-integration-tests
           #
-          mvn verify -Pdocker -B --no-transfer-progress -Dquarkus.package.write-transformed-bytecode-to-build-output=true
+          mvn verify -P container-image -B --no-transfer-progress -Dquarkus.package.write-transformed-bytecode-to-build-output=true
+
+      - name: Build Operator Bundle Image
+        uses: docker/build-push-action@v6
+        with:
+          context: operator/target/bundle/console-operator/
+          push: false
+          file: operator/target/bundle/console-operator/bundle.Dockerfile
+          tags: |
+            streamshub/console-operator-bundle:latest
+
+      - name: Build Operator Catalog
+        run: |
+          curl -L -o opm https://github.com/operator-framework/operator-registry/releases/download/v1.43.1/linux-amd64-opm
+          chmod +x opm
+          sudo cp -v opm /usr/bin/
+          rm -vf opm
+          VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout | tr '[:upper:]' '[:lower:]')
+          operator/bin/generate-catalog.sh ${VERSION} 
+
+      - name: Build Operator Catalog Image
+        uses: docker/build-push-action@v6
+        with:
+          context: operator/target/
+          push: false
+          file: operator/target/catalog.Dockerfile
+          tags: |
+            streamshub/console-operator-catalog:latest
 
       - name: Archive Results
         uses: actions/upload-artifact@v4

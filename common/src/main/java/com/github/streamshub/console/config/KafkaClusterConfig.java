@@ -1,6 +1,6 @@
 package com.github.streamshub.console.config;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -10,10 +10,10 @@ public class KafkaClusterConfig {
     private String name;
     private String namespace;
     private String listener;
-    private Map<String, String> properties = new HashMap<>();
-    private Map<String, String> adminProperties = new HashMap<>();
-    private Map<String, String> consumerProperties = new HashMap<>();
-    private Map<String, String> producerProperties = new HashMap<>();
+    private Map<String, String> properties = new LinkedHashMap<>();
+    private Map<String, String> adminProperties = new LinkedHashMap<>();
+    private Map<String, String> consumerProperties = new LinkedHashMap<>();
+    private Map<String, String> producerProperties = new LinkedHashMap<>();
 
     @JsonIgnore
     public String clusterKey() {
