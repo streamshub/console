@@ -15,8 +15,6 @@ if [ "$(${KUBE} api-resources --api-group=route.openshift.io -o=name 2>/dev/null
     export CLUSTER_DOMAIN="${2?Please provide the base domain name for console ingress}"
 fi
 
-PROVIDED_APIS="$(${KUBE} get operatorgroup -n ${NAMESPACE} -o json | jq -r '.items[].metadata.annotations["olm.providedAPIs"]' | tr '[:upper:]' '[:lower:]')"
-
 if ! ${KUBE} get crd kafkas.kafka.strimzi.io 1>/dev/null 2>&1 ; then
     echo -e "${ERROR} Strimzi Kafka Operator custom resource(s) not found"
     display_suggested_subscription "strimzi-kafka-operator" "strimzi-kafka-operator|amq-streams"
@@ -51,14 +49,13 @@ fi
 
 if [ "$(${KUBE} api-resources --api-group=route.openshift.io -o=name)" != "" ] ; then
     ${KUBE} apply -n ${NAMESPACE} -f ${RESOURCE_PATH}/console/console-ui.route.yaml
-    CONSOLE_HOSTNAME=$(${KUBE} get route console-ui-route -n ${NAMESPACE} -o jsonpath='{.spec.host}')
+    export CONSOLE_HOSTNAME=$(${KUBE} get route console-ui-route -n ${NAMESPACE} -o jsonpath='{.spec.host}')
 else
-    CONSOLE_HOSTNAME="console-ui.${CLUSTER_DOMAIN}"
+    export CONSOLE_HOSTNAME="console-ui.${CLUSTER_DOMAIN}"
     ${YQ} '.spec.rules[0].host = strenv(CONSOLE_HOSTNAME)' ${RESOURCE_PATH}/console/console-ui.ingress.yaml | ${KUBE} apply -n ${NAMESPACE} -f -
 fi
 
 # Replace env variables
-export CONSOLE_HOSTNAME
 ${YQ} '(.. | select(tag == "!!str")) |= envsubst(ne)' ${RESOURCE_PATH}/console/console.deployment.yaml | ${KUBE} apply -n ${NAMESPACE} -f -
 
 echo -e "${INFO} Console deployed and available at https://${CONSOLE_HOSTNAME}"

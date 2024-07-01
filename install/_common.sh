@@ -34,7 +34,7 @@ fi
 
 OLM=$(kubectl get crd | grep operators.coreos.com) || :
 
-if [ "${OLM}" == "" ] ; then
+if [ "${OLM}" == "" ] && [ "${CI_CLUSTER}" == "" ] ; then
     echo -e "${ERROR} Operator Lifecycle Manager not found, please install it.
 
 $ operator-sdk olm install
