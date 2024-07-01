@@ -15,7 +15,6 @@ import com.github.streamshub.console.api.v1alpha1.ConsoleBuilder;
 import io.fabric8.kubernetes.api.model.NamespaceBuilder;
 import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
 import io.fabric8.kubernetes.client.KubernetesClient;
-import io.fabric8.kubernetes.client.KubernetesClientException;
 import io.javaoperatorsdk.operator.Operator;
 import io.quarkus.test.junit.QuarkusTest;
 import io.strimzi.api.kafka.Crds;
@@ -42,20 +41,20 @@ class ConsoleReconcilerTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        client.resources(Console.class).inAnyNamespace().delete();
+        client.resource(Crds.kafka()).serverSideApply();
 
-        try {
-            client.resources(Kafka.class).inAnyNamespace().delete();
-        } catch (KubernetesClientException e) {
-            if (e.getStatus().getCode() != 404) {
-                throw e;
-            }
-        }
+        var allConsoles = client.resources(Console.class).inAnyNamespace();
+        var allKafkas = client.resources(Kafka.class).inAnyNamespace();
+
+        allConsoles.delete();
+        allKafkas.delete();
+
+        await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
+            assertTrue(allConsoles.list().getItems().isEmpty());
+            assertTrue(allKafkas.list().getItems().isEmpty());
+        });
 
         operator.start();
-
-        client.resource(Crds.kafka())
-            .serverSideApply();
 
         client.resource(new NamespaceBuilder()
                 .withNewMetadata()
