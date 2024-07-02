@@ -55,7 +55,7 @@ jobs:
           export QUARKUS_CONTAINER_IMAGE_ADDITIONAL_TAGS=latest
           export GIT_REVISION=$(git rev-parse --short release)
           # Build and push the release images using the commit tagged in `release:prepare`
-          mvn -B -P docker release:perform -Dquarkus.docker.buildx.platform=linux/amd64,linux/arm64
+          mvn -B -P docker release:perform '-Drelease.arguments=-Dquarkus.docker.buildx.platform=linux/amd64,linux/arm64'
 
       - name: Login to Quay
         uses: docker/login-action@v3
@@ -64,11 +64,23 @@ jobs:
           username: "${{ secrets.IMAGE_REPO_USERNAME }}"
           password: "${{ secrets.IMAGE_REPO_PASSWORD }}"
 
+      - name: Build UI
+        working-directory: ui
+        run: |
+          npm ci --omit=dev
+          export BACKEND_URL=http://example
+          export CONSOLE_METRICS_PROMETHEUS_URL=http://example
+          export NEXTAUTH_SECRET=examplesecret
+          export LOG_LEVEL=info
+          export CONSOLE_MODE=read-only
+          npm run build
+
       - name: Build and Push UI Image
         uses: docker/build-push-action@v6
         with:
           context: ui/
           platforms: linux/amd64,linux/arm64
+          provenance: false
           push: true
           tags: |
             ${{ secrets.IMAGE_REPO_HOSTNAME }}/${{ secrets.IMAGE_REPO_NAMESPACE }}/console-ui:${{steps.metadata.outputs.current-version}}
