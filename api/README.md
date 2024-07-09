@@ -1,5 +1,3 @@
-[![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](http://www.apache.org/licenses/LICENSE-2.0) [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=streamshub_console&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=streamshub_console) [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=streamshub_console&metric=coverage)](https://sonarcloud.io/summary/new_code?id=streamshub_console)
-
 # Console API
 
 This repository contains the Console API server to interact with [Strimzi](https://strimzi.io) Kafka instances running
@@ -25,91 +23,27 @@ To run this project locally, first clone it with Git and execute a Maven build
 
 ```shell
 git clone git@github.com:streamshub/console.git
-cd console/api
-mvn install -DskipTests
+cd console
+mvn -am -pl api install -DskipTests
 ```
 
-### Enable Minikube with Ingress
-
-Start minikube and enable the ingress controller with passthrough TLS
+To run unit and integration tests
 
 ```shell
-minikube start
-minikube addons enable ingress
-kubectl patch deployment -n ingress-nginx ingress-nginx-controller \
- --type='json' \
- -p='[{"op": "add", "path": "/spec/template/spec/containers/0/args/-", "value":"--enable-ssl-passthrough"}]'
-```
-### Install OLM and Strimzi / Prometheus Operators
-
-```shell
-curl -sL https://github.com/operator-framework/operator-lifecycle-manager/releases/download/v0.26.0/install.sh | bash -s "v0.26.0"
-
-echo '---
-apiVersion: operators.coreos.com/v1alpha1
-kind: Subscription
-metadata:
-  name: strimzi-kafka-operator
-  namespace: operators
-spec:
-  channel: stable
-  name: strimzi-kafka-operator
-  source: operatorhubio-catalog
-  sourceNamespace: olm
-  config:
-    env:
-    - name: "STRIMZI_FEATURE_GATES"
-      value: "+UseKRaft,+KafkaNodePools,+UnidirectionalTopicOperator"' | kubectl create -f -
-
-echo '---
-apiVersion: operators.coreos.com/v1alpha1
-kind: Subscription
-metadata:
-  name: prometheus-operator
-  namespace: operators
-spec:
-  channel: beta
-  name: prometheus
-  source: operatorhubio-catalog
-  sourceNamespace: olm' | kubectl create -f -
+mvn -am -pl api verify
 ```
 
-### Create Kafka Clusters and Prometheus
+### Strimzi and Prometheus
 
-Create a Prometheus instance and two Kafka clusters in the `myproject` namespace, `cluster-a` and `cluster-b`. The
-Kafka clusters and API will be configured by default without OAuth authentication enabled (TODO: add OAuth instructions).
-
-```shell
-kubectl create namespace myproject
-
-# Prometheus and metrics configurations
-kubectl apply -n myproject -f examples/metrics
-
-# cluster-a (OAUTH listener disabled for example)
-sed -e '/OAUTH LISTENER BEGIN/,/OAUTH LISTENER END/d' \
-    -e 's/\${cluster_name}/cluster-a/g' \
-    -e 's/\${kube_ip}/'$(minikube ip)'/g' examples/kafka-ephemeral-ingress.yaml \
-  | kubectl apply -f - -n myproject
-
-# cluster-a metrics configuration
-sed -e 's/\${cluster_name}/cluster-a/g' examples/configmap-kafka-metrics.yaml \
-  | kubectl apply -f - -n myproject
-
-# cluster-b (OAUTH listener disabled for example)
-sed -e '/OAUTH LISTENER BEGIN/,/OAUTH LISTENER END/d' \
-    -e 's/\${cluster_name}/cluster-b/g' \
-    -e 's/\${kube_ip}/'$(minikube ip)'/g' examples/kafka-ephemeral-ingress.yaml \
-  | kubectl apply -f - -n myproject
-
-# cluster-b metrics configuration
-sed -e 's/\${cluster_name}/cluster-b/g' examples/configmap-kafka-metrics.yaml \
-  | kubectl apply -f - -n myproject
-```
+Follow the steps in the [install README](../install/README.md) to install the Strimzi and Prometheus operators and to
+create instances of both Prometheus and Kafka.
 
 ### Start Console API in Development Mode
 
+Start the API in development mode from the repository root directory.
+
 ```shell
-CONSOLE_METRICS_PROMETHEUS_URL=http://console-prometheus.$(minikube ip).nip.io/ mvn quarkus:dev
+mvn -am -pl api quarkus:dev
 ```
 
 ### Using the Instance API
@@ -120,23 +54,6 @@ Once all steps above have been completed, you can interact with the Kafka Instan
 - Health status at [http://localhost:8080/health](http://localhost:8080/health)
 - OpenAPI at [http://localhost:8080/openapi](http://localhost:8080/openapi?format=json)
 - Swagger UI at [http://localhost:8080/swagger-ui](http://localhost:8080/swagger-ui)
-
-## Releasing
-
-### Milestones
-Each release requires an open milestone that includes the issues/pull requests that are part of the release. All issues in the release milestone must be closed. The name of the milestone must match the version number to be released.
-
-### Configuration
-The release action flow requires that the following secrets are configured in the repository:
-* `IMAGE_REPO_HOSTNAME` - the host (optionally including a port number) of the image repository where images will be pushed
-* `IMAGE_REPO_NAMESPACE` - namespace/library/user where the image will be pushed
-* `IMAGE_REPO_USERNAME` - user name for authentication to server `IMAGE_REPO_HOSTNAME`
-* `IMAGE_REPO_PASSWORD` - password for authentication to server `IMAGE_REPO_HOSTNAME`
-These credentials will be used to push the release image to the repository configured in the `.github/workflows/release.yml` workflow.
-
-### Performing the Release
-Releases are performed by modifying the `.github/project.yml` file, setting `current-version` to the release version and `next-version` to the next SNAPSHOT. Open a pull request with the changed `project.yml` to initiate the pre-release workflows. At this phase, the project milestone will be checked and it will be verified that no issues for the release milestone are still open. Additionally, the project's integration test will be run.
-Once approved and the pull request is merged, the release action will execute. This action will execute the Maven release plugin to tag the release commit, build the application artifacts, create the build image, and push the image to (currently) quay.io. If successful, the action will push the new tag to the Github repository and generate release notes listing all of the closed issues included in the milestone. Finally, the milestone will be closed.
 
 ## Logging Configuration Override
 The container image built from this repository includes support for providing an additional logging configuration at run time (without requiring a restart).

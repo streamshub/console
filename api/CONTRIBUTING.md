@@ -6,7 +6,7 @@ Please check the project's [contributing guide](../CONTRIBUTING.md) first.
 
 ## Prerequisites
 
-Ensure you have Kubernetes and Strimzi Cluster Operator installed on your system. Either [minikube](https://minikube.sigs.k8s.io/) or [OpenShifot Local](https://developers.redhat.com/products/openshift-local) are good options.
+Ensure you have Kubernetes and Strimzi Cluster Operator installed on your system. Either [minikube](https://minikube.sigs.k8s.io/) or [OpenShift Local](https://developers.redhat.com/products/openshift-local) are good options.
 One option to get started is to follow [Strimzi's Quick Starts](https://strimzi.io/quickstarts/).
 
 You will also need a working installation of:

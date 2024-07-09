@@ -7,7 +7,6 @@
         <groupId>com.github.streamshub</groupId>
         <artifactId>console</artifactId>
         <version>0.1.4-SNAPSHOT</version>
-        <relativePath>..</relativePath>
     </parent>
 
     <artifactId>console-api</artifactId>
@@ -20,51 +19,10 @@
         <docker.tag>${project.version}</docker.tag>
         <docker.push>false</docker.push>
 
-        <!-- Test Dependencies -->
-        <hamcrest.version>2.2</hamcrest.version>
-        <strimzi-test-container.version>0.106.0</strimzi-test-container.version>
         <!-- System test image dependencies -->
         <keycloak.image>quay.io/keycloak/keycloak:21.1</keycloak.image>
         <strimzi-kafka.tag>quay.io/strimzi/kafka:0.41.0-kafka-3.7.0</strimzi-kafka.tag>
     </properties>
-
-    <dependencyManagement>
-        <dependencies>
-            <!-- Manage nimbus-jose-jwt for CVE-2023-52428 -->
-            <dependency>
-                <groupId>com.nimbusds</groupId>
-                <artifactId>nimbus-jose-jwt</artifactId>
-                <version>9.40</version>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-bom</artifactId>
-                <version>${quarkus.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-            <dependency>
-                <groupId>io.strimzi</groupId>
-                <artifactId>kafka-oauth-client</artifactId>
-                <version>${strimzi-oauth.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.strimzi</groupId>
-                <artifactId>kafka-oauth-common</artifactId>
-                <version>${strimzi-oauth.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.hamcrest</groupId>
-                <artifactId>hamcrest-core</artifactId>
-                <version>${hamcrest.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.strimzi</groupId>
-                <artifactId>strimzi-test-container</artifactId>
-                <version>${strimzi-test-container.version}</version>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
 
     <dependencies>
         <dependency>
@@ -270,7 +228,7 @@
                 </executions>
             </plugin>
             <plugin>
-                <groupId>io.quarkus</groupId>
+                <groupId>${quarkus.platform.group-id}</groupId>
                 <artifactId>quarkus-maven-plugin</artifactId>
                 <executions>
                     <execution>
@@ -279,9 +237,6 @@
                         </goals>
                         <configuration>
                             <systemProperties>
-                                <quarkus.jacoco.reuse-data-file>true</quarkus.jacoco.reuse-data-file>
-                                <quarkus.jacoco.report>false</quarkus.jacoco.report>
-                                <quarkus.docker.dockerfile-jvm-path>src/main/docker/Dockerfile</quarkus.docker.dockerfile-jvm-path>
                             </systemProperties>
                         </configuration>
                     </execution>
@@ -337,42 +292,6 @@
                 </executions>
             </plugin>
             <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-checkstyle-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>validate</id>
-                        <phase>validate</phase>
-                        <configuration>
-                            <configLocation>.checkstyle/checkstyle.xml</configLocation>
-                            <headerLocation>.checkstyle/java.header</headerLocation>
-                            <suppressionsLocation>.checkstyle/suppressions.xml</suppressionsLocation>
-                            <includeTestSourceDirectory>true</includeTestSourceDirectory>
-                            <consoleOutput>true</consoleOutput>
-                            <failsOnError>true</failsOnError>
-                        </configuration>
-                        <goals>
-                            <goal>check</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>com.github.spotbugs</groupId>
-                <artifactId>spotbugs-maven-plugin</artifactId>
-                <configuration>
-                    <effort>Max</effort>
-                    <!-- Reports all bugs (other values are medium and max) -->
-                    <threshold>Low</threshold>
-                    <!-- Produces XML report -->
-                    <xmlOutput>true</xmlOutput>
-                    <!-- Configures the directory in which the XML report is created -->
-                    <spotbugsXmlOutputDirectory>${project.build.directory}/spotbugs</spotbugsXmlOutputDirectory>
-                    <!-- Configures the file for excluding warnings -->
-                    <excludeFilterFile>${project.basedir}/../.spotbugs/spotbugs-exclude.xml</excludeFilterFile>
-                </configuration>
-            </plugin>
-            <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
                 <executions>
@@ -424,6 +343,8 @@
                     <systemProperties>
                         <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
                         <maven.home>${maven.home}</maven.home>
+                        <quarkus.jacoco.reuse-data-file>true</quarkus.jacoco.reuse-data-file>
+                        <quarkus.jacoco.report>false</quarkus.jacoco.report>
                         <quarkus.test.arg-line>${argLine}</quarkus.test.arg-line>
                     </systemProperties>
                 </configuration>
@@ -444,6 +365,8 @@
                                 <strimzi-kafka.tag>${strimzi-kafka.tag}</strimzi-kafka.tag>
                                 <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
                                 <maven.home>${maven.home}</maven.home>
+                                <quarkus.jacoco.reuse-data-file>true</quarkus.jacoco.reuse-data-file>
+                                <quarkus.jacoco.report>false</quarkus.jacoco.report>
                                 <quarkus.test.arg-line>${argLine}</quarkus.test.arg-line>
                             </systemProperties>
                             <environmentVariables>
@@ -458,8 +381,9 @@
 
     <profiles>
         <profile>
-            <id>docker</id>
+            <id>container-image</id>
             <properties>
+                <quarkus.docker.dockerfile-jvm-path>src/main/docker/Dockerfile</quarkus.docker.dockerfile-jvm-path>
                 <quarkus.container-image.build>true</quarkus.container-image.build>
                 <quarkus.container-image.registry>${docker.registry}</quarkus.container-image.registry>
                 <quarkus.container-image.group>${docker.group}</quarkus.container-image.group>
