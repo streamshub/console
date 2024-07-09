@@ -67,16 +67,17 @@ jobs:
       - name: Build and Push Operator Bundle Image
         uses: docker/build-push-action@v6
         with:
-          context: operator/target/bundle/console-operator/
+          context: target/checkout/operator/target/bundle/console-operator/
           platforms: linux/amd64,linux/arm64
           provenance: false
           push: true
-          file: operator/target/bundle/console-operator/bundle.Dockerfile
+          file: target/checkout/operator/target/bundle/console-operator/bundle.Dockerfile
           tags: |
             ${{ secrets.IMAGE_REPO_HOSTNAME }}/${{ secrets.IMAGE_REPO_NAMESPACE }}/console-operator-bundle:${{steps.metadata.outputs.current-version}}
             ${{ secrets.IMAGE_REPO_HOSTNAME }}/${{ secrets.IMAGE_REPO_NAMESPACE }}/console-operator-bundle:latest
 
       - name: Build Operator Catalog
+        working-directory: target/checkout
         run: |
           curl -L -o opm https://github.com/operator-framework/operator-registry/releases/download/v1.43.1/linux-amd64-opm
           chmod +x opm
@@ -88,17 +89,17 @@ jobs:
       - name: Build and Push Operator Catalog Image
         uses: docker/build-push-action@v6
         with:
-          context: operator/target/
+          context: target/checkout/operator/target/
           platforms: linux/amd64,linux/arm64
           provenance: false
           push: true
-          file: operator/target/catalog.Dockerfile
+          file: target/checkout/operator/target/catalog.Dockerfile
           tags: |
             ${{ secrets.IMAGE_REPO_HOSTNAME }}/${{ secrets.IMAGE_REPO_NAMESPACE }}/console-operator-catalog:${{steps.metadata.outputs.current-version}}
             ${{ secrets.IMAGE_REPO_HOSTNAME }}/${{ secrets.IMAGE_REPO_NAMESPACE }}/console-operator-catalog:latest
 
       - name: Build UI
-        working-directory: ui
+        working-directory: target/checkout/ui
         run: |
           npm ci --omit=dev
           export BACKEND_URL=http://example
@@ -111,7 +112,7 @@ jobs:
       - name: Build and Push UI Image
         uses: docker/build-push-action@v6
         with:
-          context: ui/
+          context: target/checkout/ui/
           platforms: linux/amd64,linux/arm64
           provenance: false
           push: true
