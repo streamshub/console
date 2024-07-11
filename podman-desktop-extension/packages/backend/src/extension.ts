@@ -115,7 +115,7 @@ export async function activate(extensionContext: ExtensionContext): Promise<void
       // handle it after a while
       debounceTimeout = setTimeout(() => {
         void streamshubApi.containerChanges();
-      }, 1000);
+      }, 100);
     }),
   );
 }
