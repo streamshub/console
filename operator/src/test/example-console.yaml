@@ -2,11 +2,18 @@ apiVersion: console.streamshub.github.com/v1alpha1
 kind: Console
 metadata:
   name: example
-  namespace: streams-console
 spec:
   hostname: example-console.apps-crc.testing
   kafkaClusters:
-    - kafkaUserName: console-kafka-user1
+    - id: my-console
+      credentials:
+        kafkaUser:
+          name: console-kafka-user1
+          #namespace: same as kafkaCluster
       listener: secure
       name: console-kafka
       namespace: streams-console
+      properties:
+        values:
+          - name: x-some-test-property
+            value: the-value

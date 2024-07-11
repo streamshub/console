@@ -55,13 +55,7 @@ public class KafkaCluster {
 
         public static final String LIST_DEFAULT =
                 NAME + ", "
-                + NAMESPACE + ", "
-                + CREATION_TIMESTAMP + ", "
-                + LISTENERS + ", "
-                + KAFKA_VERSION + ", "
-                + STATUS + ", "
-                + CONDITIONS + ", "
-                + NODE_POOLS;
+                + NAMESPACE;
 
         public static final String DESCRIBE_DEFAULT =
                 NAME + ", "
@@ -97,6 +91,7 @@ public class KafkaCluster {
                         var rsrc = new KafkaClusterResource(entry);
                         rsrc.addMeta("page", listSupport.buildPageMeta(entry::toCursor));
                         rsrc.addMeta("configured", entry.isConfigured());
+                        rsrc.addMeta("managed", entry.isManaged());
                         return rsrc;
                     })
                     .toList());
@@ -116,6 +111,8 @@ public class KafkaCluster {
     public static final class KafkaClusterResource extends Resource<KafkaCluster> {
         public KafkaClusterResource(KafkaCluster data) {
             super(data.id, "kafkas", data);
+            addMeta("configured", data.isConfigured());
+            addMeta("managed", data.isManaged());
         }
     }
 
@@ -123,7 +120,7 @@ public class KafkaCluster {
     String namespace; // Strimzi Kafka CR only
     String creationTimestamp; // Strimzi Kafka CR only
     @JsonIgnore
-    final String id;
+    String id; // non-final, may be overridden by configuration
     final List<Node> nodes;
     final Node controller;
     final List<String> authorizedOperations;
@@ -137,6 +134,8 @@ public class KafkaCluster {
     @JsonIgnore
     boolean configured;
     List<String> nodePools;
+    @JsonIgnore
+    boolean managed;
 
     public KafkaCluster(String id, List<Node> nodes, Node controller, List<String> authorizedOperations) {
         super();
@@ -211,6 +210,10 @@ public class KafkaCluster {
         return id;
     }
 
+    public void setId(String id) {
+        this.id = id;
+    }
+
     public List<Node> getNodes() {
         return nodes;
     }
@@ -269,5 +272,13 @@ public class KafkaCluster {
 
     public void setNodePools(List<String> nodePools) {
         this.nodePools = nodePools;
+    }
+
+    public void setManaged(boolean managed) {
+        this.managed = managed;
+    }
+
+    public boolean isManaged() {
+        return managed;
     }
 }

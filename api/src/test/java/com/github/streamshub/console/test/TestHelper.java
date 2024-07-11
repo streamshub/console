@@ -20,6 +20,8 @@ import org.jboss.logging.Logger;
 import com.github.streamshub.console.api.Annotations;
 import com.github.streamshub.console.kafka.systemtest.utils.ClientsConfig;
 
+import io.fabric8.kubernetes.client.CustomResource;
+import io.fabric8.kubernetes.client.KubernetesClient;
 import io.restassured.response.Response;
 import io.restassured.response.ValidatableResponse;
 import io.restassured.specification.RequestSpecification;
@@ -117,6 +119,11 @@ public class TestHelper {
                 .endListener()
             .endStatus()
             .build();
+    }
+
+    public <S, T, C extends CustomResource<S, T>> C apply(KubernetesClient client, C resource) {
+        client.resource(resource).serverSideApply();
+        return client.resource(resource).patchStatus();
     }
 
     public String getClusterId() {

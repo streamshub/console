@@ -76,7 +76,7 @@ export async function getKafkaClusterKpis(
 ): Promise<{ cluster: ClusterDetail; kpis: ClusterKpis | null } | null> {
   try {
     const cluster = await getKafkaCluster(clusterId);
-    if (!cluster) {
+    if (!cluster?.attributes?.namespace) {
       return null;
     }
 
@@ -238,7 +238,7 @@ export async function getKafkaClusterMetrics(
 
   try {
     const cluster = await getKafkaCluster(clusterId);
-    if (!cluster || !prom) {
+    if (!cluster?.attributes?.namespace || !prom) {
       return null;
     }
 
@@ -246,7 +246,7 @@ export async function getKafkaClusterMetrics(
       await Promise.all(
         metrics.map((m) =>
           getRangeByNodeId(
-            cluster.attributes.namespace,
+            cluster.attributes.namespace!,
             cluster.attributes.name,
             cluster.attributes.nodePools?.join("|") ?? "",
             m,
@@ -303,7 +303,7 @@ export async function getKafkaTopicMetrics(
 
   try {
     const cluster = await getKafkaCluster(clusterId);
-    if (!cluster || !prom) {
+    if (!cluster?.attributes?.namespace || !prom) {
       return null;
     }
 
@@ -311,7 +311,7 @@ export async function getKafkaTopicMetrics(
       await Promise.all(
         metrics.map((m) =>
           getRangeByNodeId(
-            cluster.attributes.namespace,
+            cluster.attributes.namespace!,
             cluster.attributes.name,
             cluster.attributes.nodePools?.join("|") ?? "",
             m,

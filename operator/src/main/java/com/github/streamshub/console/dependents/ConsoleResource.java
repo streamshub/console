@@ -26,7 +26,7 @@ public interface ConsoleResource {
     static final String INSTANCE_LABEL = "app.kubernetes.io/instance";
     static final String MANAGER = "streamshub-console-operator";
 
-    static final Map<String, String> MANAGEMENT_LABEL = Map.of(MANAGED_BY_LABEL, MANAGER);
+    public static final Map<String, String> MANAGEMENT_LABEL = Map.of(MANAGED_BY_LABEL, MANAGER);
     static final String MANAGEMENT_SELECTOR = MANAGED_BY_LABEL + '=' + MANAGER;
     static final HexFormat DIGEST_FORMAT = HexFormat.of();
     static final String DEFAULT_DIGEST = "0".repeat(40);

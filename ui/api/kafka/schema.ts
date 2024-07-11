@@ -15,8 +15,8 @@ export const ClusterListSchema = z.object({
   }),
   attributes: z.object({
     name: z.string(),
-    namespace: z.string(),
-    kafkaVersion: z.string().optional(),
+    namespace: z.string().nullable().optional(),
+    kafkaVersion: z.string().nullable().optional(),
   }),
 });
 export const ClustersResponseSchema = z.object({
@@ -28,10 +28,10 @@ const ClusterDetailSchema = z.object({
   type: z.literal("kafkas"),
   attributes: z.object({
     name: z.string(),
-    namespace: z.string(),
-    creationTimestamp: z.string(),
-    status: z.string(),
-    kafkaVersion: z.string().optional(),
+    namespace: z.string().nullable().optional(),
+    creationTimestamp: z.string().nullable().optional(),
+    status: z.string().nullable().optional(),
+    kafkaVersion: z.string().nullable().optional(),
     nodes: z.array(NodeSchema),
     controller: NodeSchema,
     authorizedOperations: z.array(z.string()),
@@ -41,7 +41,7 @@ const ClusterDetailSchema = z.object({
         bootstrapServers: z.string().nullable(),
         authType: z.string().nullable(),
       }),
-    ),
+    ).nullable().optional(),
     conditions: z.array(
       z.object({
         type: z.string().optional(),
@@ -50,7 +50,7 @@ const ClusterDetailSchema = z.object({
         message: z.string().optional(),
         lastTransitionTime: z.string().optional(),
       }),
-    ),
+    ).nullable().optional(),
     nodePools: z.array(z.string()).optional().nullable(),
   }),
 });

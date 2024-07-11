@@ -49,6 +49,8 @@ import org.mockito.stubbing.Answer;
 import org.skyscreamer.jsonassert.JSONAssert;
 import org.skyscreamer.jsonassert.JSONCompareMode;
 
+import com.github.streamshub.console.api.support.Holder;
+import com.github.streamshub.console.config.ConsoleConfig;
 import com.github.streamshub.console.kafka.systemtest.TestPlainProfile;
 import com.github.streamshub.console.kafka.systemtest.deployment.DeploymentManager;
 import com.github.streamshub.console.kafka.systemtest.utils.ConsumerUtils;
@@ -58,11 +60,10 @@ import com.github.streamshub.console.test.TopicHelper;
 
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.informers.SharedIndexInformer;
-import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.common.http.TestHTTPEndpoint;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
-import io.quarkus.test.kubernetes.client.KubernetesServerTestResource;
+import io.strimzi.api.kafka.Crds;
 import io.strimzi.api.kafka.model.kafka.Kafka;
 
 import static com.github.streamshub.console.test.TestHelper.whenRequesting;
@@ -86,7 +87,6 @@ import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.Mockito.doAnswer;
 
 @QuarkusTest
-@QuarkusTestResource(KubernetesServerTestResource.class)
 @TestHTTPEndpoint(ConsumerGroupsResource.class)
 @TestProfile(TestPlainProfile.class)
 class ConsumerGroupsResourceIT {
@@ -98,7 +98,10 @@ class ConsumerGroupsResourceIT {
     KubernetesClient client;
 
     @Inject
-    SharedIndexInformer<Kafka> kafkaInformer;
+    ConsoleConfig consoleConfig;
+
+    @Inject
+    Holder<SharedIndexInformer<Kafka>> kafkaInformer;
 
     @DeploymentManager.InjectDeploymentManager
     DeploymentManager deployments;
@@ -111,6 +114,7 @@ class ConsumerGroupsResourceIT {
 
     @BeforeEach
     void setup() throws IOException {
+        client.resource(Crds.kafka()).serverSideApply();
         URI bootstrapServers = URI.create(deployments.getExternalBootstrapServers());
 
         topicUtils = new TopicHelper(bootstrapServers, config, null);
@@ -121,17 +125,15 @@ class ConsumerGroupsResourceIT {
 
         utils = new TestHelper(bootstrapServers, config, null);
 
-        clusterId1 = utils.getClusterId();
-        clusterId2 = UUID.randomUUID().toString();
-
         client.resources(Kafka.class).inAnyNamespace().delete();
-        client.resources(Kafka.class)
-            .resource(utils.buildKafkaResource("test-kafka1", clusterId1, bootstrapServers))
-            .create();
+        utils.apply(client, utils.buildKafkaResource("test-kafka1", utils.getClusterId(), bootstrapServers));
 
         // Wait for the informer cache to be populated with all Kafka CRs
         await().atMost(10, TimeUnit.SECONDS)
-            .until(() -> Objects.equals(kafkaInformer.getStore().list().size(), 1));
+            .until(() -> Objects.equals(kafkaInformer.get().getStore().list().size(), 1));
+
+        clusterId1 = consoleConfig.getKafka().getCluster("default/test-kafka1").get().getId();
+        clusterId2 = consoleConfig.getKafka().getCluster("default/test-kafka2").get().getId();
     }
 
     @Test

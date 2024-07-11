@@ -9,8 +9,10 @@ import java.util.Base64;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Random;
+import java.util.function.Function;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -22,11 +24,13 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.streamshub.console.ReconciliationException;
 import com.github.streamshub.console.api.v1alpha1.Console;
-import com.github.streamshub.console.api.v1alpha1.spec.CredentialsKafkaUser;
+import com.github.streamshub.console.api.v1alpha1.spec.ConfigVars;
+import com.github.streamshub.console.api.v1alpha1.spec.Credentials;
 import com.github.streamshub.console.api.v1alpha1.spec.KafkaCluster;
 import com.github.streamshub.console.config.ConsoleConfig;
 import com.github.streamshub.console.config.KafkaClusterConfig;
 
+import io.fabric8.kubernetes.api.model.ConfigMap;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.Secret;
 import io.fabric8.kubernetes.api.model.SecretBuilder;
@@ -108,96 +112,105 @@ public class ConsoleSecret extends CRUDKubernetesDependentResource<Secret, Conso
         ConsoleConfig config = new ConsoleConfig();
 
         for (var kafkaRef : primary.getSpec().getKafkaClusters()) {
-            addConfig(context, config, kafkaRef);
+            addConfig(primary, context, config, kafkaRef);
         }
 
         return config;
     }
 
-    private void addConfig(Context<Console> context, ConsoleConfig config, KafkaCluster kafkaRef) {
+    private void addConfig(Console primary, Context<Console> context, ConsoleConfig config, KafkaCluster kafkaRef) {
         String namespace = kafkaRef.getNamespace();
         String name = kafkaRef.getName();
         String listenerName = kafkaRef.getListener();
 
         KafkaClusterConfig kcConfig = new KafkaClusterConfig();
+        kcConfig.setId(kafkaRef.getId());
         kcConfig.setNamespace(namespace);
         kcConfig.setName(name);
         kcConfig.setListener(listenerName);
+
+        config.getKubernetes().setEnabled(Objects.nonNull(namespace));
         config.getKafka().getClusters().add(kcConfig);
 
-        // TODO: add informer for Kafka CRs
-        Kafka kafka = getResource(context, Kafka.class, namespace, name);
-
-        if (listenerName != null) {
-            GenericKafkaListener listenerSpec = kafka.getSpec()
-                    .getKafka()
-                    .getListeners()
-                    .stream()
-                    .filter(l -> l.getName().equals(listenerName))
-                    .findFirst()
-                    .orElseThrow(() -> new ReconciliationException("Listener '" + listenerName + "' not found on Kafka " + name + " in namespace " + namespace));
-
-            StringBuilder protocol = new StringBuilder();
-            String mechanism = null;
-
-            if (listenerSpec.getAuth() != null) {
-                protocol.append("SASL_");
-
-                var auth = listenerSpec.getAuth();
-                switch (auth.getType()) {
-                    case "oauth":
-                        mechanism = "OAUTHBEARER";
-                        break;
-                    case "scram-sha-512":
-                        mechanism = "SCRAM-SHA-512";
-                        break;
-                    case "tls", "custom":
-                    default:
-                        // Nothing yet
-                        break;
-                }
-            }
-
-            if (listenerSpec.isTls()) {
-                protocol.append("SSL");
-            } else {
-                protocol.append("PLAINTEXT");
-            }
-
-            var properties = kcConfig.getProperties();
-
-            properties.put(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, protocol.toString());
-
-            if (mechanism != null) {
-                properties.put(SaslConfigs.SASL_MECHANISM, mechanism);
-            }
-
-            ListenerStatus listenerStatus = Optional.ofNullable(kafka.getStatus())
-                    .map(KafkaStatus::getListeners)
-                    .orElseGet(Collections::emptyList)
-                    .stream()
-                    .filter(l -> l.getName().equals(listenerName))
-                    .findFirst()
-                    .orElse(null);
-
-            Optional.ofNullable(listenerStatus)
-                .map(ListenerStatus::getBootstrapServers)
-                .or(() -> Optional.ofNullable(listenerSpec.getConfiguration())
-                        .map(GenericKafkaListenerConfiguration::getBootstrap)
-                        .map(GenericKafkaListenerConfigurationBootstrap::getHost))
-                .ifPresent(bootstrapServers -> properties.put(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers));
-
-            Optional.ofNullable(kafkaRef.getCredentials()).ifPresent(credentials -> {
-                if (credentials.getKafkaUser() != null) {
-                    CredentialsKafkaUser user = credentials.getKafkaUser();
-                    String userNs = Optional.ofNullable(user.getNamespace()).orElse(namespace);
-                    setKafkaUserConfig(
-                            context,
-                            getResource(context, KafkaUser.class, userNs, user.getName()),
-                            properties);
-                }
-            });
+        if (namespace != null && listenerName != null) {
+            // TODO: add informer for Kafka CRs
+            Kafka kafka = getResource(context, Kafka.class, namespace, name);
+            setListenerConfig(kcConfig.getProperties(), kafka, listenerName);
         }
+
+        Optional.ofNullable(kafkaRef.getCredentials())
+            .map(Credentials::getKafkaUser)
+            .ifPresent(user -> {
+                String userNs = Optional.ofNullable(user.getNamespace()).orElse(namespace);
+                setKafkaUserConfig(
+                        context,
+                        getResource(context, KafkaUser.class, userNs, user.getName()),
+                        kcConfig.getProperties());
+            });
+
+        setConfigVars(primary, context, kcConfig.getProperties(), kafkaRef.getProperties());
+        setConfigVars(primary, context, kcConfig.getAdminProperties(), kafkaRef.getAdminProperties());
+        setConfigVars(primary, context, kcConfig.getConsumerProperties(), kafkaRef.getConsumerProperties());
+        setConfigVars(primary, context, kcConfig.getProducerProperties(), kafkaRef.getProducerProperties());
+    }
+
+    void setListenerConfig(Map<String, String> properties, Kafka kafka, String listenerName) {
+        GenericKafkaListener listenerSpec = kafka.getSpec()
+                .getKafka()
+                .getListeners()
+                .stream()
+                .filter(l -> l.getName().equals(listenerName))
+                .findFirst()
+                .orElseThrow(() -> new ReconciliationException("Listener '%s' not found on Kafka %s/%s"
+                        .formatted(listenerName, kafka.getMetadata().getNamespace(), kafka.getMetadata().getName())));
+
+        StringBuilder protocol = new StringBuilder();
+        String mechanism = null;
+
+        if (listenerSpec.getAuth() != null) {
+            protocol.append("SASL_");
+
+            var auth = listenerSpec.getAuth();
+            switch (auth.getType()) {
+                case "oauth":
+                    mechanism = "OAUTHBEARER";
+                    break;
+                case "scram-sha-512":
+                    mechanism = "SCRAM-SHA-512";
+                    break;
+                case "tls", "custom":
+                default:
+                    // Nothing yet
+                    break;
+            }
+        }
+
+        if (listenerSpec.isTls()) {
+            protocol.append("SSL");
+        } else {
+            protocol.append("PLAINTEXT");
+        }
+
+        properties.put(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, protocol.toString());
+
+        if (mechanism != null) {
+            properties.put(SaslConfigs.SASL_MECHANISM, mechanism);
+        }
+
+        ListenerStatus listenerStatus = Optional.ofNullable(kafka.getStatus())
+                .map(KafkaStatus::getListeners)
+                .orElseGet(Collections::emptyList)
+                .stream()
+                .filter(l -> l.getName().equals(listenerName))
+                .findFirst()
+                .orElse(null);
+
+        Optional.ofNullable(listenerStatus)
+            .map(ListenerStatus::getBootstrapServers)
+            .or(() -> Optional.ofNullable(listenerSpec.getConfiguration())
+                    .map(GenericKafkaListenerConfiguration::getBootstrap)
+                    .map(GenericKafkaListenerConfigurationBootstrap::getHost))
+            .ifPresent(bootstrapServers -> properties.put(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers));
     }
 
     void setKafkaUserConfig(Context<Console> context, KafkaUser user, Map<String, String> properties) {
@@ -219,8 +232,59 @@ public class ConsoleSecret extends CRUDKubernetesDependentResource<Secret, Conso
         properties.put(SaslConfigs.SASL_JAAS_CONFIG, decodeString(jaasConfig));
     }
 
+    void setConfigVars(Console primary, Context<Console> context, Map<String, String> target, ConfigVars source) {
+        String namespace = primary.getMetadata().getNamespace();
+
+        source.getValuesFrom().stream().forEach(fromSource -> {
+            String prefix = fromSource.getPrefix();
+            var configMapRef = fromSource.getConfigMapRef();
+            var secretRef = fromSource.getSecretRef();
+
+            if (configMapRef != null) {
+                copyData(context, target, ConfigMap.class, namespace, configMapRef.getName(), prefix, configMapRef.getOptional(), ConfigMap::getData);
+            }
+
+            if (secretRef != null) {
+                copyData(context, target, Secret.class, namespace, secretRef.getName(), prefix, secretRef.getOptional(), Secret::getData);
+            }
+        });
+
+        source.getValues().forEach(configVar -> target.put(configVar.getName(), configVar.getValue()));
+    }
+
+    @SuppressWarnings("java:S107") // Ignore Sonar warning for too many args
+    <S extends HasMetadata> void copyData(Context<Console> context,
+            Map<String, String> target,
+            Class<S> sourceType,
+            String namespace,
+            String name,
+            String prefix,
+            Boolean optional,
+            Function<S, Map<String, String>> dataProvider) {
+
+        S source = getResource(context, sourceType, namespace, name, Boolean.TRUE.equals(optional));
+
+        if (source != null) {
+            copyData(target, dataProvider.apply(source), prefix, Secret.class.equals(sourceType));
+        }
+    }
+
+    void copyData(Map<String, String> target, Map<String, String> source, String prefix, boolean decode) {
+        source.forEach((key, value) -> {
+            if (prefix != null) {
+                key = prefix + key;
+            }
+            target.put(key, decode ? decodeString(value) : value);
+        });
+    }
+
     static <T extends HasMetadata> T getResource(
             Context<Console> context, Class<T> resourceType, String namespace, String name) {
+        return getResource(context, resourceType, namespace, name, false);
+    }
+
+    static <T extends HasMetadata> T getResource(
+            Context<Console> context, Class<T> resourceType, String namespace, String name, boolean optional) {
 
         T resource = context.getClient()
             .resources(resourceType)
@@ -228,7 +292,7 @@ public class ConsoleSecret extends CRUDKubernetesDependentResource<Secret, Conso
             .withName(name)
             .get();
 
-        if (resource == null) {
+        if (resource == null && !optional) {
             throw new ReconciliationException("No such %s resource: %s/%s".formatted(resourceType.getSimpleName(), namespace, name));
         }
 
