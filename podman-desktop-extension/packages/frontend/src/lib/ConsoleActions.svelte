@@ -6,6 +6,7 @@
   import ListItemButtonIcon from './upstream/ListItemButtonIcon.svelte';
 
   export let object: StreamshubConsoleInfo;
+  export let showManagedActions = true;
 
   // Delete the build
   async function openEmbeddedConsole(): Promise<void> {
@@ -37,7 +38,7 @@
                     onClick="{() => openConsole()}"
                     title="Open console in an external browser"
 />
-{#if object.managed}
+{#if object.managed && showManagedActions}
   {#if object.api.status === 'running'}
     <ListItemButtonIcon icon="{faStop}" onClick="{() => stopConsole()}"
                         title="Stop console"

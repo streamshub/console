@@ -87,7 +87,15 @@ services:
       NEXTAUTH_URL: http://localhost:3000
       BACKEND_URL: http://console-api:8080/
     labels:
-      io.streamshub.console.container: ui`,
+      io.streamshub.console.container: ui
+
+  console-registry:
+    image: quay.io/apicurio/apicurio-registry-mem:2.6.1.Final
+    ports:
+      - :8080
+    labels:
+      io.streamshub.console.container: registry
+    `,
   );
 }
 

@@ -31,7 +31,7 @@ export abstract class StreamshubApi {
 
   abstract deleteConsole(projectName: string): Promise<void>;
 
-  abstract getKubernetesClusters(): Promise<{ context: string; clusters: KubernetesCluster[] }>;
+  abstract getKubernetesClusters(): Promise<{ context: string; clusters: KubernetesCluster[]; server: string }>;
 
   abstract telemetryLogUsage(eventName: string, data?: Record<string, unknown> | undefined): Promise<void>;
 

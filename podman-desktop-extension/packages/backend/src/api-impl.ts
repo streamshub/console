@@ -42,6 +42,7 @@ export class StreamshubImpl implements StreamshubApi {
   }
 
   async listConsoles(): Promise<StreamshubConsoleInfo[]> {
+    console.group('listConsoles');
     const consoles: Record<string, StreamshubConsoleInfo> = {};
     const { storagePath } = this.extensionContext;
     try {
@@ -105,11 +106,15 @@ export class StreamshubImpl implements StreamshubApi {
               };
             }
           });
-      } catch {}
+      } catch {
+        console.log('storagePath empty');
+      }
       console.log({ containers, consoleContainers, consoles });
     } catch (err) {
       await podmanDesktopApi.window.showErrorMessage(`Error listing containers: ${err}`);
       console.error('Error listing containers: ', err);
+    } finally {
+      console.groupEnd();
     }
     return Object.values(consoles);
   }
@@ -154,7 +159,7 @@ export class StreamshubImpl implements StreamshubApi {
   }
 
   async getKubernetesClusters(): Promise<{ context: string; server: string; clusters: KubernetesCluster[] }> {
-    console.log('getKubernetesClusters');
+    console.group('getKubernetesClusters');
     try {
       const { stdout: context } = await podmanDesktopApi.process.exec('kubectl', ['config', 'current-context']);
       console.log('getKubernetesClusters', { context });
@@ -218,10 +223,13 @@ export class StreamshubImpl implements StreamshubApi {
     } catch (e) {
       console.error(e);
       throw e;
+    } finally {
+      console.groupEnd();
     }
   }
 
   async containerChanges() {
+    console.log('containerChanges');
     return this.notify(Messages.MSG_CONTAINERS_UPDATE);
   }
 
@@ -254,6 +262,7 @@ async function getServerFromMinikube() {
 }
 
 async function getToken(namespace: string): Promise<string | undefined> {
+  console.group('getToken');
   try {
     const { stdout: tokenRaw } = await podmanDesktopApi.process.exec('kubectl', [
       'describe',
@@ -280,56 +289,70 @@ async function getToken(namespace: string): Promise<string | undefined> {
       `--duration=${365 * 24}h`,
     ]);
     return token;
+  } finally {
+    console.groupEnd();
   }
 }
 
 async function getNamespaceJaasConfigurations(namespace: string): Promise<Record<string, string[]>> {
-  const { stdout: usersRaw } = await podmanDesktopApi.process.exec('kubectl', [
-    'get',
-    'kafkausers',
-    '-n',
-    namespace,
-    '-o',
-    'json',
-  ]);
-  const users = JSON.parse(usersRaw) as {
-    items: {
-      metadata: {
-        labels: {
-          'strimzi.io/cluster': string;
+  console.group('getNamespaceJaasConfigurations');
+  try {
+    const { stdout: usersRaw } = await podmanDesktopApi.process.exec('kubectl', [
+      'get',
+      'kafkausers',
+      '-n',
+      namespace,
+      '-o',
+      'json',
+    ]);
+    const users = JSON.parse(usersRaw) as {
+      items: {
+        metadata: {
+          labels: {
+            'strimzi.io/cluster': string;
+          };
         };
-      };
-      status: {
-        username: string;
-        secret: string;
-      };
-    }[];
-  };
-  const usersList = users.items.map(u => u.status.username);
-  const { stdout: secretsRaw } = await podmanDesktopApi.process.exec('kubectl', [
-    'get',
-    'secrets',
-    '-n',
-    namespace,
-    '-o',
-    'json',
-    ...usersList,
-  ]);
-  const secrets = JSON.parse(secretsRaw) as {
-    items: {
+        status: {
+          username: string;
+          secret: string;
+        };
+      }[];
+    };
+    const usersList = users.items.map(u => u.status.username);
+    const { stdout: secretsRaw } = await podmanDesktopApi.process.exec('kubectl', [
+      'get',
+      'secrets',
+      '-n',
+      namespace,
+      '-o',
+      'json',
+      ...usersList,
+    ]);
+    type Secret = {
       data: {
         'sasl.jaas.config': string;
       };
       metadata: {
         name: string;
       };
-    }[];
-  };
-  const jaasConfigurations: Record<string, string[]> = Object.fromEntries(
-    users.items.map(u => [
-      u.metadata.labels['strimzi.io/cluster'],
-      secrets.items.filter(s => s.metadata.name === u.status.secret).map(s => atob(s.data['sasl.jaas.config'])),
-    ]),
-  );
-  return jaasConfigurations;
+    };
+    type Secrets = {
+      items: Secret[];
+    };
+    const secretsObj = JSON.parse(secretsRaw) as Secrets | Secret;
+    const secrets = 'items' in secretsObj ? secretsObj : { items: [secretsObj] };
+    console.log('secrets', secrets);
+    const jaasConfigurations: Record<string, string[]> = Object.fromEntries(
+      users.items.map(u => [
+        u.metadata.labels['strimzi.io/cluster'],
+        secrets.items.filter(s => s.metadata.name === u.status.secret).map(s => atob(s.data['sasl.jaas.config'])),
+      ]),
+    );
+    return jaasConfigurations;
+  } catch (e) {
+    console.error('getNamespaceJaasConfigurations', e);
+  } finally {
+    console.groupEnd();
+  }
+  return {};
 }
