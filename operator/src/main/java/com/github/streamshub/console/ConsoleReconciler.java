@@ -40,6 +40,8 @@ import io.javaoperatorsdk.operator.api.reconciler.UpdateControl;
 import io.javaoperatorsdk.operator.api.reconciler.dependent.Dependent;
 import io.javaoperatorsdk.operator.processing.event.source.EventSource;
 import io.quarkiverse.operatorsdk.annotations.CSVMetadata;
+import io.quarkiverse.operatorsdk.annotations.CSVMetadata.Annotations;
+import io.quarkiverse.operatorsdk.annotations.CSVMetadata.Annotations.Annotation;
 import io.quarkiverse.operatorsdk.annotations.CSVMetadata.InstallMode;
 import io.quarkiverse.operatorsdk.annotations.CSVMetadata.Provider;
 
@@ -117,6 +119,20 @@ import io.quarkiverse.operatorsdk.annotations.CSVMetadata.Provider;
         })
 @CSVMetadata(
         provider = @Provider(name = "StreamsHub", url = "https://github.com/streamshub"),
+        annotations = @Annotations(
+            containerImage = "placeholder",
+            repository = "https://github.com/streamshub/console",
+            capabilities = "Basic Install",
+            categories = "Streaming & Messaging",
+            certified = true,
+            skipRange = "placeholder",
+            others = {
+                @Annotation(name = "features.operators.openshift.io/fips-compliant", value = "true"),
+                @Annotation(name = "features.operators.openshift.io/disconnected", value = "true"),
+                @Annotation(name = "features.operators.openshift.io/proxy-aware", value = "true"),
+                @Annotation(name = "createdAt", value = "placeholder"),
+                @Annotation(name = "support", value = "Streamshub")
+            }),
         description = "StreamsHub console provides a user interface for managing and monitoring your streaming resources",
         installModes = {
             @InstallMode(type = "AllNamespaces", supported = true),
