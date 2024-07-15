@@ -40,6 +40,7 @@ import io.javaoperatorsdk.operator.api.reconciler.UpdateControl;
 import io.javaoperatorsdk.operator.api.reconciler.dependent.Dependent;
 import io.javaoperatorsdk.operator.processing.event.source.EventSource;
 import io.quarkiverse.operatorsdk.annotations.CSVMetadata;
+import io.quarkiverse.operatorsdk.annotations.CSVMetadata.Annotations;
 import io.quarkiverse.operatorsdk.annotations.CSVMetadata.InstallMode;
 import io.quarkiverse.operatorsdk.annotations.CSVMetadata.Provider;
 
@@ -117,6 +118,13 @@ import io.quarkiverse.operatorsdk.annotations.CSVMetadata.Provider;
         })
 @CSVMetadata(
         provider = @Provider(name = "StreamsHub", url = "https://github.com/streamshub"),
+        annotations = @Annotations(
+            containerImage = "quay.io/streamshub/console-operator",
+            repository = "https://github.com/streamshub/console",
+            capabilities = "Basic Install",
+            categories = "Streaming & Messaging",
+            certified = true,
+            skipRange = ">=1.0.0 <1.0.3"),
         description = "StreamsHub console provides a user interface for managing and monitoring your streaming resources",
         installModes = {
             @InstallMode(type = "AllNamespaces", supported = true),

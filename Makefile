@@ -16,6 +16,7 @@ CONSOLE_UI_IMAGE ?= $(IMAGE_REGISTRY)/$(IMAGE_GROUP)/console-ui:$(VERSION)
 CONSOLE_UI_NEXTAUTH_SECRET ?= $(shell openssl rand -base64 32)
 CONSOLE_METRICS_PROMETHEUS_URL ?= 
 CONTAINER_RUNTIME ?= $(shell which podman || which docker)
+BUILD_FOR_PLATFORM ?= linux/amd64
 
 container-image-api:
 	mvn package -am -pl api -Pcontainer-image -DskipTests -Dquarkus.container-image.image=$(CONSOLE_API_IMAGE)
@@ -26,8 +27,8 @@ container-image-api-push: container-image-api
 container-image-operator:
 	mvn package -am -pl operator -Pcontainer-image -DskipTests -Dquarkus.container-image.image=$(CONSOLE_OPERATOR_IMAGE)
 	operator/bin/generate-catalog.sh $(VERSION)
-	$(CONTAINER_RUNTIME) build -t $(CONSOLE_OPERATOR_BUNDLE_IMAGE) -f operator/target/bundle/console-operator/bundle.Dockerfile
-	$(CONTAINER_RUNTIME) build -t $(CONSOLE_OPERATOR_CATALOG_IMAGE) -f operator/target/catalog.Dockerfile
+	$(CONTAINER_RUNTIME) build --platform=$(BUILD_FOR_PLATFORM) -t $(CONSOLE_OPERATOR_BUNDLE_IMAGE) -f operator/target/bundle/console-operator/bundle.Dockerfile
+	$(CONTAINER_RUNTIME) build --platform=$(BUILD_FOR_PLATFORM) -t $(CONSOLE_OPERATOR_CATALOG_IMAGE) -f operator/target/catalog.Dockerfile
 
 container-image-operator-push: container-image-operator
 	$(CONTAINER_RUNTIME) push $(CONSOLE_OPERATOR_IMAGE)
