@@ -67,6 +67,7 @@ jobs:
           chmod +x opm
           sudo cp -v opm /usr/bin/
           rm -vf opm
+          docker images
           VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout | tr '[:upper:]' '[:lower:]')
           operator/bin/generate-catalog.sh VERSION=${VERSION} CONSOLE_OPERATOR_IMAGE=streamshub/console-operator:${VERSION}
 
