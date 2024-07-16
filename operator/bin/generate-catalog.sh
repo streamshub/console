@@ -34,7 +34,7 @@ function replace_placeholders() {
     echo "[DEBUG] Image original name = ${full_image}"
 
     image_name=$(echo "${full_image}" | cut -d':' -f1)
-    digest=$(${SKOPEO} inspect --override-arch ${ARCH} --format "{{ .Digest }}" "docker://${full_image}")
+    digest=$(${SKOPEO} inspect --override-arch ${ARCH} --format "{{ .Digest }}" "docker-daemon:${full_image}")
     image_with_digest="${image_name}@${digest}"
 
     echo "[DEBUG] Setting container image = ${image_with_digest}"
