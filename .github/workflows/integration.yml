@@ -68,7 +68,7 @@ jobs:
           sudo cp -v opm /usr/bin/
           rm -vf opm
           VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout | tr '[:upper:]' '[:lower:]')
-          operator/bin/generate-catalog.sh VERSION=${VERSION} CONSOLE_OPERATOR_IMAGE=streamshub/console-operator-catalog:${VERSION}
+          operator/bin/generate-catalog.sh VERSION=${VERSION} CONSOLE_OPERATOR_IMAGE=streamshub/console-operator:${VERSION}
 
       - name: Build Operator Catalog Image
         uses: docker/build-push-action@v6
