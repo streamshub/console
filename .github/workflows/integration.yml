@@ -5,6 +5,7 @@ on:
   pull_request:
     branches: [ 'main' ]
     types: [ opened, reopened, synchronize ]
+env:
 
 jobs:
   build-api:
@@ -68,7 +69,7 @@ jobs:
           sudo cp -v opm /usr/bin/
           rm -vf opm
           VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout | tr '[:upper:]' '[:lower:]')
-          operator/bin/generate-catalog.sh ${VERSION} 
+          operator/bin/generate-catalog.sh VERSION=${VERSION} CONSOLE_OPERATOR_IMAGE=streamshub/console-operator-catalog:${VERSION}
 
       - name: Build Operator Catalog Image
         uses: docker/build-push-action@v6

@@ -3,6 +3,15 @@
 SCRIPT_PATH="$(cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P)"
 source ${SCRIPT_PATH}/common.sh
 
+BUNDLE_PATH=${SCRIPT_PATH}/../target/bundle/console-operator/
+CSV_FILE_PATH=${BUNDLE_PATH}/manifests/console-operator.clusterserviceversion.yaml
+CATALOG_PATH=${SCRIPT_PATH}/../target/catalog
+
+ARCH=linux/amd64
+VERSION="latest"
+CONSOLE_OPERATOR_IMAGE="quay.io/streamshub/console-operator:${VERSION}"
+SKIP_RANGE=""
+
 for ARGUMENT in "$@"
 do
   KEY=$(echo "$ARGUMENT" | sed 's/=\(.*\)//')
@@ -16,11 +25,6 @@ do
     *)
   esac
 done
-
-BUNDLE_DIR=${SCRIPT_PATH}/../target/bundle/console-operator/
-CSV_FILE_PATH=${BUNDLE_DIR}/manifests/console-operator.clusterserviceversion.yaml
-CATALOG_PATH=${SCRIPT_PATH}/../target/catalog
-YQ_INDENT=1
 
 function replace_placeholders() {
     echo "[INFO] Replacing placeholders"
@@ -40,8 +44,10 @@ function replace_placeholders() {
     echo "[DEBUG] Setting createdAt = ${curr_time_date}"
     ${YQ} eval -o yaml -i ".metadata.annotations.createdAt = \"${curr_time_date}\"" "${CSV_FILE_PATH}"
 
-    echo "[DEBUG] Setting skipRange = \"${SKIP_RANGE}\""
-    ${YQ} eval -o yaml -i ".metadata.annotations.[\"olm.skipRange\"] = \"${SKIP_RANGE}\"" "${CSV_FILE_PATH}"
+    if [[ -n "$SKIP_RANGE" ]]; then
+        echo "[DEBUG] Setting skipRange = \"${SKIP_RANGE}\""
+        ${YQ} eval -o yaml -i ".metadata.annotations.[\"olm.skipRange\"] = \"${SKIP_RANGE}\"" "${CSV_FILE_PATH}"
+    fi
 }
 
 function build_catalog_image() {
@@ -51,7 +57,7 @@ function build_catalog_image() {
 
     opm generate dockerfile ${CATALOG_PATH}
     opm init console-operator --default-channel=alpha --output=yaml > ${CATALOG_PATH}/operator.yaml
-    opm render ${BUNDLE_DIR} --output=yaml >> ${CATALOG_PATH}/operator.yaml
+    opm render ${BUNDLE_PATH} --output=yaml >> ${CATALOG_PATH}/operator.yaml
 
 cat << EOF >> ${CATALOG_PATH}/operator.yaml
 ---
