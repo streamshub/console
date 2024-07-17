@@ -18,6 +18,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Set Image Tag Env
+        run: echo "PROJECT_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
@@ -53,11 +56,12 @@ jobs:
           #
           # See: https://quarkus.io/guides/tests-with-coverage#coverage-for-integration-tests
           #
+          export QUARKUS_CONTAINER_IMAGE_REGISTRY="localhost:5000"
+          export QUARKUS_CONTAINER_IMAGE_PUSH=true
+          export QUARKUS_CONTAINER_IMAGE_TAG="${{ env.PROJECT_VERSION }}"
           mvn verify -P container-image -B --no-transfer-progress \
             -Dquarkus.package.write-transformed-bytecode-to-build-output=true \
-            -Dquarkus.docker.buildx.platform=linux/amd64,linux/arm64 \
-            -Dquarkus.container-image.registry="localhost:5000" \
-            -Dquarkus.container-image.push=true
+            -Dquarkus.docker.buildx.platform=linux/amd64,linux/arm64
 
       - name: Modify CSV Annotation
         run: ./operator/bin/modify-bundle-metadata.sh
@@ -71,7 +75,7 @@ jobs:
           push: false
           file: operator/target/bundle/console-operator/bundle.Dockerfile
           tags: |
-            streamshub/console-operator-bundle:latest
+            streamshub/console-operator-bundle:${{ env.PROJECT_VERSION }}
 
       - name: Build Operator Catalog
         run: |
@@ -79,8 +83,7 @@ jobs:
           chmod +x opm
           sudo cp -v opm /usr/bin/
           rm -vf opm
-          VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout | tr '[:upper:]' '[:lower:]')
-          operator/bin/generate-catalog.sh ${VERSION}
+          operator/bin/generate-catalog.sh ${{ env.PROJECT_VERSION }}
 
       - name: Build Operator Catalog Image
         uses: docker/build-push-action@v6
@@ -91,7 +94,7 @@ jobs:
           push: false
           file: operator/target/catalog.Dockerfile
           tags: |
-            streamshub/console-operator-catalog:latest
+            streamshub/console-operator-catalog:${{ env.PROJECT_VERSION }}
 
       - name: Archive Results
         uses: actions/upload-artifact@v4
@@ -125,6 +128,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Set Image Tag Env
+        run: echo "PROJECT_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
@@ -150,4 +156,4 @@ jobs:
           provenance: false
           push: false
           tags: |
-            streamshub/console-ui:latest
+            streamshub/console-ui:${{ env.PROJECT_VERSION }}

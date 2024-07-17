@@ -15,6 +15,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Set Image Tag Env
+        run: |
+          echo "PROJECT_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+          echo "NEXT_VERSION=$(echo ${{steps.metadata.outputs.next-version}} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+
       - name: Retrieve Project Metadata
         uses: radcortez/project-metadata-action@603060a0627d4f04d37d20331ebd472377fd088b
         id: metadata
@@ -50,6 +55,7 @@ jobs:
           export QUARKUS_CONTAINER_IMAGE_USERNAME="${{ secrets.IMAGE_REPO_USERNAME }}"
           export QUARKUS_CONTAINER_IMAGE_PASSWORD="${{ secrets.IMAGE_REPO_PASSWORD }}"
           export QUARKUS_CONTAINER_IMAGE_PUSH="true"
+          export QUARKUS_CONTAINER_IMAGE_TAG="${{ env.PROJECT_VERSION }}"
           export QUARKUS_CONTAINER_IMAGE_ADDITIONAL_TAGS=snapshot-${{github.ref_name}}
           export GIT_REVISION=$(git rev-parse --short HEAD)
           # Build and push the snapshot images
@@ -74,7 +80,7 @@ jobs:
           push: true
           file: operator/target/bundle/console-operator/bundle.Dockerfile
           tags: |
-            ${{ secrets.IMAGE_REPO_HOSTNAME }}/${{ secrets.IMAGE_REPO_NAMESPACE }}/console-operator-bundle:${{steps.metadata.outputs.next-version}}
+            ${{ secrets.IMAGE_REPO_HOSTNAME }}/${{ secrets.IMAGE_REPO_NAMESPACE }}/console-operator-bundle:${{ env.NEXT_VERSION }}
             ${{ secrets.IMAGE_REPO_HOSTNAME }}/${{ secrets.IMAGE_REPO_NAMESPACE }}/console-operator-bundle:snapshot-${{github.ref_name}}
 
       - name: Build Operator Catalog
@@ -83,8 +89,7 @@ jobs:
           chmod +x opm
           sudo cp -v opm /usr/bin/
           rm -vf opm
-          VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout | tr '[:upper:]' '[:lower:]')
-          operator/bin/generate-catalog.sh ${VERSION}
+          operator/bin/generate-catalog.sh ${{ env.PROJECT_VERSION }}
 
       - name: Build and Push Operator Catalog Image
         uses: docker/build-push-action@v6
@@ -95,7 +100,7 @@ jobs:
           push: true
           file: operator/target/catalog.Dockerfile
           tags: |
-            ${{ secrets.IMAGE_REPO_HOSTNAME }}/${{ secrets.IMAGE_REPO_NAMESPACE }}/console-operator-catalog:${{steps.metadata.outputs.next-version}}
+            ${{ secrets.IMAGE_REPO_HOSTNAME }}/${{ secrets.IMAGE_REPO_NAMESPACE }}/console-operator-catalog:${{ env.NEXT_VERSION }}
             ${{ secrets.IMAGE_REPO_HOSTNAME }}/${{ secrets.IMAGE_REPO_NAMESPACE }}/console-operator-catalog:snapshot-${{github.ref_name}}
 
       - name: Build UI
@@ -117,5 +122,5 @@ jobs:
           provenance: false
           push: true
           tags: |
-            ${{ secrets.IMAGE_REPO_HOSTNAME }}/${{ secrets.IMAGE_REPO_NAMESPACE }}/console-ui:${{steps.metadata.outputs.next-version}}
+            ${{ secrets.IMAGE_REPO_HOSTNAME }}/${{ secrets.IMAGE_REPO_NAMESPACE }}/console-ui:${{ env.NEXT_VERSION }}
             ${{ secrets.IMAGE_REPO_HOSTNAME }}/${{ secrets.IMAGE_REPO_NAMESPACE }}/console-ui:snapshot-${{github.ref_name}}
