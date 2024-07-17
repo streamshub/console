@@ -1,9 +1,8 @@
 name: Publish Snapshot
 
 on:
-  pull_request:
+  push:
     branches: [ 'main' ]
-    types: [ closed ]
     paths-ignore:
       - '.github/project.yml'
 
@@ -11,7 +10,6 @@ jobs:
   release:
     runs-on: ubuntu-latest
     name: snapshot
-    if: ${{github.event.pull_request.merged == true}}
 
     steps:
       - name: Checkout
