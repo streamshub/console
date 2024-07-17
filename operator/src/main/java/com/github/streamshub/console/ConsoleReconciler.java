@@ -43,6 +43,7 @@ import io.quarkiverse.operatorsdk.annotations.CSVMetadata;
 import io.quarkiverse.operatorsdk.annotations.CSVMetadata.Annotations;
 import io.quarkiverse.operatorsdk.annotations.CSVMetadata.Annotations.Annotation;
 import io.quarkiverse.operatorsdk.annotations.CSVMetadata.InstallMode;
+import io.quarkiverse.operatorsdk.annotations.CSVMetadata.Link;
 import io.quarkiverse.operatorsdk.annotations.CSVMetadata.Provider;
 
 @ControllerConfiguration(
@@ -133,12 +134,35 @@ import io.quarkiverse.operatorsdk.annotations.CSVMetadata.Provider;
                 @Annotation(name = "createdAt", value = "placeholder"),
                 @Annotation(name = "support", value = "Streamshub")
             }),
-        description = "StreamsHub console provides a user interface for managing and monitoring your streaming resources",
+        description = "The Streamshub Console provides a web-based user interface tool for monitoring Apache Kafka® instances within a Kubernetes based cluster.\n\n "
+                    + "It features a user-friendly way to view Kafka topics and consumer groups, facilitating the searching and filtering of streamed messages. "
+                    + "The console also offers insights into Kafka broker disk usage, helping administrators monitor and optimize resource utilization. "
+                    + "By simplifying complex Kafka operations, the Streamshub Console enhances the efficiency and effectiveness of data streaming management within Kubernetes environments.\n\n"
+                    + "### Documentation\n"
+                    + "Documentation to the current _main_ branch as well as all releases can be found on our [Github](https://github.com/streamshub/console).\n\n"
+                    + "### Contributing\n"
+                    + "You can contribute to Console by:\n"
+                    + "* Raising any issues you find while using Console\n"
+                    + "* Fixing issues by opening Pull Requests\n"
+                    + "* Improving user documentation\n"
+                    + "* Talking about Console\n\n"
+                    + "The [Contributor Guide](https://github.com/streamshub/console/blob/main/CONTRIBUTING.md) describes how to contribute to Console.\n\n"
+                    + "### License\n"
+                    + "Console is licensed under the [Apache License, Version 2.0](https://github.com/streamshub/console?tab=Apache-2.0-1-ov-file#readme).\n"
+                    + "For more details, visit the GitHub repository.",
+        displayName = "StreamsHub Console Operator",
+        keywords = {"kafka", "messaging", "kafka-streams", "data-streaming", "data-streams", "streaming", "streams", "web", "console", "ui", "user interface"},
+        maturity = "stable",
         installModes = {
             @InstallMode(type = "AllNamespaces", supported = true),
             @InstallMode(type = "OwnNamespace", supported = true),
             @InstallMode(type = "SingleNamespace", supported = true),
             @InstallMode(type = "MultiNamespace", supported = false),
+        },
+        minKubeVersion = "1.19.0",
+        links = {
+            @Link(name = "GitHub", url = "https://github.com/streamshub/console"),
+            @Link(name = "Documentation", url = "https://github.com/streamshub/console/blob/main/README.md")
         })
 public class ConsoleReconciler
     implements EventSourceInitializer<Console>, Reconciler<Console>, Cleaner<Console>, ErrorStatusHandler<Console> {
