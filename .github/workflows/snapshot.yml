@@ -12,6 +12,11 @@ jobs:
     runs-on: ubuntu-latest
     name: snapshot
     if: ${{github.event.pull_request.merged == true}}
+    services:
+      registry:
+        image: registry:2
+        ports:
+          - 5000:5000
 
     steps:
       - name: Checkout
@@ -44,6 +49,8 @@ jobs:
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+        with:
+          driver-opts: network=host
 
       - name: Build and Push API and Operator Image
         run: |
@@ -63,6 +70,9 @@ jobs:
           registry: "${{ secrets.IMAGE_REPO_HOSTNAME }}"
           username: "${{ secrets.IMAGE_REPO_USERNAME }}"
           password: "${{ secrets.IMAGE_REPO_PASSWORD }}"
+
+      - name: Modify CSV Annotation
+        run: ./operator/bin/modify-bundle-metadata.sh
 
       - name: Build and Push Operator Bundle Image
         uses: docker/build-push-action@v6

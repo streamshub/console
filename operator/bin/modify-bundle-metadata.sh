@@ -3,7 +3,6 @@
 SCRIPT_PATH="$(cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P)"
 source ${SCRIPT_PATH}/common.sh
 
-ARCH=linux/amd64
 SKIP_RANGE=""
 OPERATOR_NAME="console-operator"
 
@@ -13,7 +12,6 @@ do
   VALUE=$(echo "$ARGUMENT" | sed 's/^[^=]*=//')
 
   case "$KEY" in
-    ARCH)     			                        ARCH=${VALUE} ;;
     SKIP_RANGE)                            SKIP_RANGE=${VALUE};;
     OPERATOR_NAME)                      OPERATOR_NAME=${VALUE};;
     *)

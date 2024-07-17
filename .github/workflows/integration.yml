@@ -60,8 +60,7 @@ jobs:
             -Dquarkus.container-image.push=true
 
       - name: Modify CSV Annotation
-        run: |
-          ./operator/bin/modify-bundle-metadata.sh
+        run: ./operator/bin/modify-bundle-metadata.sh
 
       - name: Build Operator Bundle Image
         uses: docker/build-push-action@v6
