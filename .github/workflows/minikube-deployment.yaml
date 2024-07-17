@@ -1,0 +1,155 @@
+name: Minikube Deployment
+
+on:
+  workflow_call:
+
+env:
+  TARGET_NAMESPACE: "console-namespace"
+  CI_CLUSTER: true
+  CONFIG_YAML: "./install/resources/console/console-config.yaml"
+  DEPLOYMENT_YAML: "./install/resources/console/console.deployment.yaml"
+  CLUSTER_DOMAIN: "192.168.49.2.nip.io"
+  CONSOLE_API_IMAGE: "quay.io/streamshub/console-api:latest"
+  CONSOLE_UI_IMAGE: "quay.io/streamshub/console-ui:latest"
+
+jobs:
+  setup_deployment:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.event.workflow_run.head_repository.full_name }}
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 0
+
+      - name: Install yq
+        run: |
+          curl -L https://github.com/mikefarah/yq/releases/download/v4.44.1/yq_linux_amd64 > yq && chmod +x yq
+          sudo cp -v yq /usr/bin/
+
+      - name: Start minikube
+        id: minikube
+        uses: medyagh/setup-minikube@latest
+        with:
+          cpus: 2
+          memory: 4096m
+
+      - name: Enable ingress
+        run: |
+          minikube addons enable ingress
+          minikube addons enable ingress-dns
+          kubectl patch deployment -n ingress-nginx ingress-nginx-controller --type='json' -p='[{"op": "add", "path": "/spec/template/spec/containers/0/args/-", "value":"--enable-ssl-passthrough"}]'
+
+      - name: Download Docker API Image
+        uses: actions/download-artifact@v4
+        with:
+          name: streamshub-api
+
+      - name: Download Docker UI Image
+        uses: actions/download-artifact@v4
+        with:
+          name: streamshub-ui
+
+      - name: Load Docker Images
+        run: |
+          gunzip -c streamshub-api.tar.gz | docker load
+          gunzip -c streamshub-ui.tar.gz | docker load
+
+      - name: Push Images To Minikube
+        run: |
+          eval $(minikube docker-env)
+          minikube cache list
+          minikube cache add $CONSOLE_API_IMAGE
+          minikube cache add $CONSOLE_API_IMAGE
+          minikube cache reload
+          minikube cache list
+
+      - name: Create namespace
+        run: kubectl create namespace $TARGET_NAMESPACE
+
+      - name: Install Strimzi
+        run: kubectl create -f "https://strimzi.io/install/latest?namespace=$TARGET_NAMESPACE" -n $TARGET_NAMESPACE
+
+      - name: Prometheus Operator Deployment
+        shell: bash
+        run: |
+          curl -s "https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/main/bundle.yaml" | sed "s#namespace: default#namespace: ${TARGET_NAMESPACE}#g" | kubectl create -n $TARGET_NAMESPACE -f -
+
+      - name: Prometheus Instance Deployment
+        run: ./install/001-deploy-prometheus.sh $TARGET_NAMESPACE $CLUSTER_DOMAIN
+
+      - name: Get pods
+        run: kubectl get pods -n $TARGET_NAMESPACE
+
+      - name: Wait For Strimzi
+        run: kubectl wait deployment/strimzi-cluster-operator --for=condition=available --timeout=180s -n $TARGET_NAMESPACE
+
+      - name: Kafka Cluster Deployment
+        run: ./install/002-deploy-console-kafka.sh $TARGET_NAMESPACE $CLUSTER_DOMAIN zk
+
+      - name: Get pods
+        run: kubectl get pods -n $TARGET_NAMESPACE
+
+      - name: Wait For Kafka
+        run: kubectl wait kafka/console-kafka --for=condition=Ready --timeout=300s -n $TARGET_NAMESPACE
+
+      - name: Wait For Kafka User Secret
+        run: while ! kubectl get secret console-kafka-user1 -n $TARGET_NAMESPACE; do echo "Waiting for user secret"; sleep 5; done
+
+      - name: Prepare config
+        shell: bash
+        run: |
+          USERPS=$(kubectl get secret console-kafka-user1 -n $TARGET_NAMESPACE -o yaml | yq '.data.password' - | base64 --decode)
+          sed -i -e "s#\$USER_PASSWORD#${USERPS}#g" -e "s#\$CLUSTER_DOMAIN#${CLUSTER_DOMAIN}#g" -e "s#\$NAMESPACE#${TARGET_NAMESPACE}#g" $CONFIG_YAML
+
+      - name: Switch image from remote to local only
+        shell: bash
+        run: |
+            sed -i -e "s#imagePullPolicy: Always#imagePullPolicy: Never#g" $DEPLOYMENT_YAML
+
+      - name: Deploy console
+        run: ./install/003-install-console.sh $TARGET_NAMESPACE $CLUSTER_DOMAIN $CONFIG_YAML
+
+      - name: Show pods
+        run: kubectl get pods -n $TARGET_NAMESPACE
+
+      - name: Wait For Console Deployment
+        run: kubectl wait deployment/console --for=condition=available --timeout=180s -n $TARGET_NAMESPACE
+
+      - name: Get pods
+        run: kubectl get pods -n $TARGET_NAMESPACE
+
+      - name: get services
+        run: kubectl get services -A
+
+      - name: get ingress
+        run: kubectl get ingress -A
+
+      - name: docker ps
+        run: docker ps
+
+      - name: curl
+        run: curl -L http://console-ui.192.168.49.2.nip.io
+
+      - name: curl
+        run: curl -L http://console-ui.192.168.49.2.nip.io/home
+
+      - name: curl
+        run: curl -L http://console-ui.$CLUSTER_DOMAIN/home
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: ./ui
+
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps
+        working-directory: ./ui
+
+      - name: Run Playwright tests
+        run: npx playwright test
+        working-directory: ./ui
