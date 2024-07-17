@@ -50,7 +50,7 @@ jobs:
           export QUARKUS_CONTAINER_IMAGE_USERNAME="${{ secrets.IMAGE_REPO_USERNAME }}"
           export QUARKUS_CONTAINER_IMAGE_PASSWORD="${{ secrets.IMAGE_REPO_PASSWORD }}"
           export QUARKUS_CONTAINER_IMAGE_PUSH="true"
-          export QUARKUS_CONTAINER_IMAGE_ADDITIONAL_TAGS=snapshot-${{github.base_ref}}
+          export QUARKUS_CONTAINER_IMAGE_ADDITIONAL_TAGS=snapshot-${{github.ref_name}}
           export GIT_REVISION=$(git rev-parse --short HEAD)
           # Build and push the snapshot images
           mvn -B -P container-image verify --no-transfer-progress -DskipTests -Dquarkus.docker.buildx.platform=linux/amd64,linux/arm64
@@ -75,7 +75,7 @@ jobs:
           file: operator/target/bundle/console-operator/bundle.Dockerfile
           tags: |
             ${{ secrets.IMAGE_REPO_HOSTNAME }}/${{ secrets.IMAGE_REPO_NAMESPACE }}/console-operator-bundle:${{steps.metadata.outputs.next-version}}
-            ${{ secrets.IMAGE_REPO_HOSTNAME }}/${{ secrets.IMAGE_REPO_NAMESPACE }}/console-operator-bundle:snapshot-${{github.base_ref}}
+            ${{ secrets.IMAGE_REPO_HOSTNAME }}/${{ secrets.IMAGE_REPO_NAMESPACE }}/console-operator-bundle:snapshot-${{github.ref_name}}
 
       - name: Build Operator Catalog
         run: |
@@ -96,7 +96,7 @@ jobs:
           file: operator/target/catalog.Dockerfile
           tags: |
             ${{ secrets.IMAGE_REPO_HOSTNAME }}/${{ secrets.IMAGE_REPO_NAMESPACE }}/console-operator-catalog:${{steps.metadata.outputs.next-version}}
-            ${{ secrets.IMAGE_REPO_HOSTNAME }}/${{ secrets.IMAGE_REPO_NAMESPACE }}/console-operator-catalog:snapshot-${{github.base_ref}}
+            ${{ secrets.IMAGE_REPO_HOSTNAME }}/${{ secrets.IMAGE_REPO_NAMESPACE }}/console-operator-catalog:snapshot-${{github.ref_name}}
 
       - name: Build UI
         working-directory: ui
@@ -118,4 +118,4 @@ jobs:
           push: true
           tags: |
             ${{ secrets.IMAGE_REPO_HOSTNAME }}/${{ secrets.IMAGE_REPO_NAMESPACE }}/console-ui:${{steps.metadata.outputs.next-version}}
-            ${{ secrets.IMAGE_REPO_HOSTNAME }}/${{ secrets.IMAGE_REPO_NAMESPACE }}/console-ui:snapshot-${{github.base_ref}}
+            ${{ secrets.IMAGE_REPO_HOSTNAME }}/${{ secrets.IMAGE_REPO_NAMESPACE }}/console-ui:snapshot-${{github.ref_name}}

@@ -64,6 +64,9 @@ jobs:
           username: "${{ secrets.IMAGE_REPO_USERNAME }}"
           password: "${{ secrets.IMAGE_REPO_PASSWORD }}"
 
+      - name: Modify CSV Annotation
+        run: ./operator/bin/modify-bundle-metadata.sh
+
       - name: Build and Push Operator Bundle Image
         uses: docker/build-push-action@v6
         with:
