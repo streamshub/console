@@ -20,17 +20,17 @@ jobs:
         with:
           token: ${{secrets.RELEASE_TOKEN}}
 
-      - name: Set Image Tag Env
-        run: |
-          echo "PROJECT_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
-          echo "CURRENT_VERSION=$(echo ${{steps.metadata.outputs.current-version}} | tr '[:upper:]' '[:lower:]' )" >> $GITHUB_ENV
-
       - name: Retrieve Project Metadata
         uses: radcortez/project-metadata-action@603060a0627d4f04d37d20331ebd472377fd088b
         id: metadata
         with:
           github-token: ${{secrets.GITHUB_TOKEN}}
           metadata-file-path: '.github/project.yml'
+
+      - name: Set Image Tag Env
+        run: |
+          echo "PROJECT_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+          echo "CURRENT_VERSION=$(echo ${{steps.metadata.outputs.current-version}} | tr '[:upper:]' '[:lower:]' )" >> $GITHUB_ENV
 
       - name: Setup JDK
         uses: actions/setup-java@v4
