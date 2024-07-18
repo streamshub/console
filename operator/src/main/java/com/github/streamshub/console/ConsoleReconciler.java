@@ -134,22 +134,26 @@ import io.quarkiverse.operatorsdk.annotations.CSVMetadata.Provider;
                 @Annotation(name = "createdAt", value = "placeholder"),
                 @Annotation(name = "support", value = "Streamshub")
             }),
-        description = "The Streamshub Console provides a web-based user interface tool for monitoring Apache Kafka® instances within a Kubernetes based cluster.\n\n "
-                    + "It features a user-friendly way to view Kafka topics and consumer groups, facilitating the searching and filtering of streamed messages. "
-                    + "The console also offers insights into Kafka broker disk usage, helping administrators monitor and optimize resource utilization. "
-                    + "By simplifying complex Kafka operations, the Streamshub Console enhances the efficiency and effectiveness of data streaming management within Kubernetes environments.\n\n"
-                    + "### Documentation\n"
-                    + "Documentation to the current _main_ branch as well as all releases can be found on our [Github](https://github.com/streamshub/console).\n\n"
-                    + "### Contributing\n"
-                    + "You can contribute to Console by:\n"
-                    + "* Raising any issues you find while using Console\n"
-                    + "* Fixing issues by opening Pull Requests\n"
-                    + "* Improving user documentation\n"
-                    + "* Talking about Console\n\n"
-                    + "The [Contributor Guide](https://github.com/streamshub/console/blob/main/CONTRIBUTING.md) describes how to contribute to Console.\n\n"
-                    + "### License\n"
-                    + "Console is licensed under the [Apache License, Version 2.0](https://github.com/streamshub/console?tab=Apache-2.0-1-ov-file#readme).\n"
-                    + "For more details, visit the GitHub repository.",
+        description = """
+            The Streamshub Console provides a web-based user interface tool for monitoring Apache Kafka® instances within a Kubernetes based cluster.
+            
+             It features a user-friendly way to view Kafka topics and consumer groups, facilitating the searching and filtering of streamed messages. The console also offers insights into Kafka broker disk usage, helping administrators monitor and optimize resource utilization. By simplifying complex Kafka operations, the Streamshub Console enhances the efficiency and effectiveness of data streaming management within Kubernetes environments.
+            
+            ### Documentation
+            Documentation to the current _main_ branch as well as all releases can be found on our [Github](https://github.com/streamshub/console).
+            
+            ### Contributing
+            You can contribute to Console by:
+            * Raising any issues you find while using Console
+            * Fixing issues by opening Pull Requests
+            * Improving user documentation
+            * Talking about Console
+            
+            The [Contributor Guide](https://github.com/streamshub/console/blob/main/CONTRIBUTING.md) describes how to contribute to Console.
+            
+            ### License
+            Console is licensed under the [Apache License, Version 2.0](https://github.com/streamshub/console?tab=Apache-2.0-1-ov-file#readme).
+            For more details, visit the GitHub repository.""",
         displayName = "StreamsHub Console Operator",
         keywords = {"kafka", "messaging", "kafka-streams", "data-streaming", "data-streams", "streaming", "streams", "web", "console", "ui", "user interface"},
         maturity = "stable",
