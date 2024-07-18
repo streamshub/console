@@ -1,7 +1,13 @@
 kafka:
+  kubernetes:
+    # enable/disable use of Kubernetes to obtain additional information from Strimzi
+    # Kafka and KafkaTopic custom resources. Enabled by default
+    enabled: true
+
   clusters:
     - name: my-kafka1 # name of the Strimzi Kafka CR
-      namespace: my-namespace1 # namespace of the Strimzi Kafka CR
+      namespace: my-namespace1 # namespace of the Strimzi Kafka CR (optional)
+      id: my-kafka1-id # value to be used as an identifier for the cluster. Must be specified when namespace is not.
       listener: "secure" # name of the listener to use for connections from the console
       # `properties` contains keys/values to use for any Kafka connection
       properties:

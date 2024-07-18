@@ -7,6 +7,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 
 public class KafkaClusterConfig {
 
+    private String id;
     private String name;
     private String namespace;
     private String listener;
@@ -17,7 +18,18 @@ public class KafkaClusterConfig {
 
     @JsonIgnore
     public String clusterKey() {
+        if (namespace == null || namespace.isBlank()) {
+            return name;
+        }
         return "%s/%s".formatted(namespace, name);
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
     }
 
     public String getName() {

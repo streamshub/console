@@ -31,7 +31,6 @@ import java.util.stream.StreamSupport;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
-import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.clients.admin.ListTopicsOptions;
 import org.apache.kafka.clients.admin.TopicListing;
 import org.apache.kafka.clients.consumer.Consumer;
@@ -50,6 +49,7 @@ import org.eclipse.microprofile.context.ThreadContext;
 import org.jboss.logging.Logger;
 
 import com.github.streamshub.console.api.model.KafkaRecord;
+import com.github.streamshub.console.api.support.KafkaContext;
 import com.github.streamshub.console.api.support.SizeLimitedSortedSet;
 
 import static java.util.Objects.requireNonNullElse;
@@ -64,7 +64,7 @@ public class RecordService {
     Logger logger;
 
     @Inject
-    Supplier<Admin> clientSupplier;
+    KafkaContext kafkaContext;
 
     @Inject
     Supplier<Consumer<byte[], byte[]>> consumerSupplier;
@@ -198,7 +198,7 @@ public class RecordService {
     CompletionStage<String> topicNameForId(String topicId) {
         Uuid kafkaTopicId = Uuid.fromString(topicId);
 
-        return clientSupplier.get()
+        return kafkaContext.admin()
             .listTopics(new ListTopicsOptions().listInternal(true))
             .listings()
             .toCompletionStage()

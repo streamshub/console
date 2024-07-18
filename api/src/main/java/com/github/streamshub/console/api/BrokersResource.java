@@ -1,7 +1,6 @@
 package com.github.streamshub.console.api;
 
 import java.util.concurrent.CompletionStage;
-import java.util.function.Supplier;
 
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
@@ -11,7 +10,6 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
-import org.apache.kafka.clients.admin.Admin;
 import org.eclipse.microprofile.openapi.annotations.media.Content;
 import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
@@ -23,9 +21,6 @@ import com.github.streamshub.console.api.service.BrokerService;
 @Path("/api/kafkas/{clusterId}/nodes")
 @Tag(name = "Kafka Cluster Resources")
 public class BrokersResource {
-
-    @Inject
-    Supplier<Admin> clientSupplier;
 
     @Inject
     BrokerService brokerService;

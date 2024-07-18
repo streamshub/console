@@ -1,16 +1,9 @@
 package com.github.streamshub.console.api.v1alpha1.status;
 
-import java.util.HashMap;
-import java.util.Map;
-
-import com.fasterxml.jackson.annotation.JsonAnyGetter;
-import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 
 import io.sundr.builder.annotations.Buildable;
-
-import static java.util.Collections.emptyMap;
 
 @Buildable(builderPackage = "io.fabric8.kubernetes.api.builder")
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -21,7 +14,6 @@ public class Condition {
     private String message;
     private String type;
     private String lastTransitionTime;
-    private Map<String, Object> additionalProperties;
 
     @JsonPropertyDescription("The status of the condition, either True, False or Unknown.")
     public String getStatus() {
@@ -68,18 +60,5 @@ public class Condition {
 
     public void setMessage(String message) {
         this.message = message;
-    }
-
-    @JsonAnyGetter
-    public Map<String, Object> getAdditionalProperties() {
-        return this.additionalProperties != null ? this.additionalProperties : emptyMap();
-    }
-
-    @JsonAnySetter
-    public void setAdditionalProperty(String name, Object value) {
-        if (this.additionalProperties == null) {
-            this.additionalProperties = new HashMap<>(1);
-        }
-        this.additionalProperties.put(name, value);
     }
 }

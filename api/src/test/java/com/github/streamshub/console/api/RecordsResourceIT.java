@@ -43,11 +43,9 @@ import com.github.streamshub.console.test.TestHelper;
 import com.github.streamshub.console.test.TopicHelper;
 
 import io.fabric8.kubernetes.client.KubernetesClient;
-import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.common.http.TestHTTPEndpoint;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
-import io.quarkus.test.kubernetes.client.KubernetesServerTestResource;
 import io.strimzi.api.kafka.model.kafka.Kafka;
 
 import static com.github.streamshub.console.test.TestHelper.whenRequesting;
@@ -63,7 +61,6 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 
 @QuarkusTest
-@QuarkusTestResource(KubernetesServerTestResource.class)
 @TestHTTPEndpoint(RecordsResource.class)
 @TestProfile(TestPlainProfile.class)
 class RecordsResourceIT {
@@ -100,17 +97,14 @@ class RecordsResourceIT {
         utils = new TestHelper(bootstrapServers, config, null);
         recordUtils = new RecordHelper(bootstrapServers, config, null);
 
-        clusterId1 = utils.getClusterId();
-        clusterId2 = UUID.randomUUID().toString();
-
         client.resources(Kafka.class).inAnyNamespace().delete();
-        client.resources(Kafka.class)
-            .resource(utils.buildKafkaResource("test-kafka1", clusterId1, bootstrapServers))
-            .create();
+
+        utils.apply(client, utils.buildKafkaResource("test-kafka1", utils.getClusterId(), bootstrapServers));
         // Second cluster is offline/non-existent
-        client.resources(Kafka.class)
-            .resource(utils.buildKafkaResource("test-kafka2", clusterId2, randomBootstrapServers))
-            .create();
+        utils.apply(client, utils.buildKafkaResource("test-kafka2", UUID.randomUUID().toString(), randomBootstrapServers));
+
+        clusterId1 = consoleConfig.getKafka().getCluster("default/test-kafka1").get().getId();
+        clusterId2 = consoleConfig.getKafka().getCluster("default/test-kafka2").get().getId();
     }
 
     @Test

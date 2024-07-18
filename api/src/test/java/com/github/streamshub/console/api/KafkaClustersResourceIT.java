@@ -24,7 +24,6 @@ import jakarta.json.JsonString;
 import jakarta.ws.rs.core.Response.Status;
 
 import org.apache.kafka.clients.CommonClientConfigs;
-import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.common.config.SslConfigs;
 import org.apache.kafka.common.security.auth.SecurityProtocol;
 import org.eclipse.microprofile.config.Config;
@@ -39,6 +38,8 @@ import org.mockito.Mockito;
 import com.github.streamshub.console.api.model.ListFetchParams;
 import com.github.streamshub.console.api.service.KafkaClusterService;
 import com.github.streamshub.console.api.support.ErrorCategory;
+import com.github.streamshub.console.api.support.Holder;
+import com.github.streamshub.console.api.support.KafkaContext;
 import com.github.streamshub.console.config.ConsoleConfig;
 import com.github.streamshub.console.kafka.systemtest.TestPlainProfile;
 import com.github.streamshub.console.kafka.systemtest.deployment.DeploymentManager;
@@ -48,12 +49,10 @@ import com.github.streamshub.console.test.TestHelper;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.informers.SharedIndexInformer;
 import io.fabric8.kubernetes.client.informers.cache.Cache;
-import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.common.http.TestHTTPEndpoint;
 import io.quarkus.test.junit.QuarkusMock;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
-import io.quarkus.test.kubernetes.client.KubernetesServerTestResource;
 import io.strimzi.api.kafka.model.kafka.Kafka;
 import io.strimzi.api.kafka.model.kafka.KafkaBuilder;
 import io.strimzi.api.kafka.model.kafka.listener.KafkaListenerAuthenticationCustomBuilder;
@@ -81,7 +80,6 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @QuarkusTest
-@QuarkusTestResource(KubernetesServerTestResource.class)
 @TestHTTPEndpoint(KafkaClustersResource.class)
 @TestProfile(TestPlainProfile.class)
 class KafkaClustersResourceIT {
@@ -95,10 +93,10 @@ class KafkaClustersResourceIT {
     KubernetesClient client;
 
     @Inject
-    SharedIndexInformer<Kafka> kafkaInformer;
+    Holder<SharedIndexInformer<Kafka>> kafkaInformer;
 
     @Inject
-    Map<String, Admin> configuredAdmins;
+    Map<String, KafkaContext> configuredContexts;
 
     @Inject
     KafkaClusterService kafkaClusterService;
@@ -128,43 +126,40 @@ class KafkaClustersResourceIT {
 
         utils = new TestHelper(bootstrapServers, config, null);
 
-        clusterId1 = utils.getClusterId();
-        clusterId2 = UUID.randomUUID().toString();
-
         client.resources(Kafka.class).inAnyNamespace().delete();
-        client.resources(Kafka.class)
-            .resource(new KafkaBuilder(utils.buildKafkaResource("test-kafka1", clusterId1, bootstrapServers,
+
+        utils.apply(client, new KafkaBuilder(utils.buildKafkaResource("test-kafka1", utils.getClusterId(), bootstrapServers,
                         new KafkaListenerAuthenticationCustomBuilder()
-                            .withSasl()
-                            .addToListenerConfig("sasl.enabled.mechanisms", "oauthbearer")
-                            .build()))
-                .editOrNewStatus()
-                    .addNewCondition()
-                        .withType("Ready")
-                        .withStatus("True")
-                    .endCondition()
-                    .addNewKafkaNodePool()
-                        .withName("my-node-pool")
-                    .endKafkaNodePool()
-                .endStatus()
-                .build())
-            .create();
+                        .withSasl()
+                        .addToListenerConfig("sasl.enabled.mechanisms", "oauthbearer")
+                        .build()))
+            .editOrNewStatus()
+                .addNewCondition()
+                    .withType("Ready")
+                    .withStatus("True")
+                .endCondition()
+                .addNewKafkaNodePool()
+                    .withName("my-node-pool")
+                .endKafkaNodePool()
+            .endStatus()
+            .build());
+
         // Second cluster is offline/non-existent
-        client.resources(Kafka.class)
-            .resource(new KafkaBuilder(utils.buildKafkaResource("test-kafka2", clusterId2, randomBootstrapServers))
-                    .editOrNewStatus()
-                        .addNewCondition()
-                            .withType("NotReady")
-                            .withStatus("True")
-                        .endCondition()
-                    .endStatus()
-                    .build())
-            .create();
+        utils.apply(client, new KafkaBuilder(utils.buildKafkaResource("test-kafka2", UUID.randomUUID().toString(), randomBootstrapServers))
+            .editOrNewStatus()
+                .addNewCondition()
+                    .withType("NotReady")
+                    .withStatus("True")
+                .endCondition()
+            .endStatus()
+            .build());
 
         // Wait for the informer cache to be populated with all Kafka CRs
         await().atMost(10, TimeUnit.SECONDS)
-            .until(() -> Objects.equals(kafkaInformer.getStore().list().size(), 2));
+            .until(() -> Objects.equals(kafkaInformer.get().getStore().list().size(), 2));
 
+        clusterId1 = consoleConfig.getKafka().getCluster("default/test-kafka1").get().getId();
+        clusterId2 = consoleConfig.getKafka().getCluster("default/test-kafka2").get().getId();
         kafkaClusterService.setListUnconfigured(false);
     }
 
@@ -183,7 +178,7 @@ class KafkaClustersResourceIT {
         String k1Bootstrap = bootstrapServers.getHost() + ":" + bootstrapServers.getPort();
         String k2Bootstrap = randomBootstrapServers.getHost() + ":" + randomBootstrapServers.getPort();
 
-        whenRequesting(req -> req.get())
+        whenRequesting(req -> req.queryParam("fields[kafkas]", "name,status,nodePools,listeners").get())
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
             .body("data.size()", equalTo(2))
@@ -204,7 +199,7 @@ class KafkaClustersResourceIT {
     void testListClustersWithInformerError() {
         SharedIndexInformer<Kafka> informer = Mockito.mock();
 
-        var informerType = new TypeLiteral<SharedIndexInformer<Kafka>>() {
+        var informerType = new TypeLiteral<Holder<SharedIndexInformer<Kafka>>>() {
             private static final long serialVersionUID = 1L;
         };
 
@@ -228,9 +223,9 @@ class KafkaClustersResourceIT {
             }
         });
 
-        QuarkusMock.installMockForType(informer, informerType, new NamedLiteral());
+        QuarkusMock.installMockForType(Holder.of(informer), informerType, new NamedLiteral());
 
-        whenRequesting(req -> req.get("{clusterId}", UUID.randomUUID().toString()))
+        whenRequesting(req -> req.get())
             .assertThat()
             .statusCode(is(Status.INTERNAL_SERVER_ERROR.getStatusCode()))
             .body("errors.size()", is(1))
@@ -270,13 +265,13 @@ class KafkaClustersResourceIT {
                 IntStream.range(3, 10)
                     .mapToObj(i -> "test-kafka" + i)
                     .map(name -> utils.buildKafkaResource(name, randomBootstrapServers))
-                    .map(kafka -> client.resources(Kafka.class).resource(kafka).create())
+                    .map(kafka -> utils.apply(client, kafka))
                     .map(kafka -> kafka.getMetadata().getName()))
             .toList();
 
         // Wait for the informer cache to be populated with all Kafka CRs
         await().atMost(10, TimeUnit.SECONDS)
-            .until(() -> Objects.equals(kafkaInformer.getStore().list().size(), allKafkaNames.size()));
+            .until(() -> Objects.equals(kafkaInformer.get().getStore().list().size(), allKafkaNames.size()));
 
         var fullResponse = whenRequesting(req -> req.queryParam("sort", "name").get())
             .assertThat()
@@ -327,13 +322,13 @@ class KafkaClustersResourceIT {
                 IntStream.range(3, 10)
                     .mapToObj(i -> "test-kafka" + i)
                     .map(name -> utils.buildKafkaResource(name, randomBootstrapServers))
-                    .map(kafka -> client.resources(Kafka.class).resource(kafka).create())
+                    .map(kafka -> utils.apply(client, kafka))
                     .map(kafka -> kafka.getMetadata().getName()))
             .toList();
 
         // Wait for the informer cache to be populated with all Kafka CRs
         await().atMost(10, TimeUnit.SECONDS)
-            .until(() -> Objects.equals(kafkaInformer.getStore().list().size(), allKafkaNames.size()));
+            .until(() -> Objects.equals(kafkaInformer.get().getStore().list().size(), allKafkaNames.size()));
 
         var fullResponse = whenRequesting(req -> req.queryParam("sort", "name").get())
             .assertThat()
@@ -510,7 +505,7 @@ class KafkaClustersResourceIT {
 
         // Wait for the informer cache to be populated with all Kafka CRs
         await().atMost(10, TimeUnit.SECONDS)
-            .until(() -> Objects.equals(kafkaInformer.getStore().list().size(), 3));
+            .until(() -> Objects.equals(kafkaInformer.get().getStore().list().size(), 3));
 
         whenRequesting(req -> req.get())
             .assertThat()
@@ -563,10 +558,10 @@ class KafkaClustersResourceIT {
 
         Map<String, Object> clientConfig = mockAdminClient();
 
-        client.resources(Kafka.class).resource(kafka).create();
+        utils.apply(client, kafka);
 
         await().atMost(Duration.ofSeconds(5))
-            .until(() -> configuredAdmins.containsKey(Cache.metaNamespaceKeyFunc(kafka)));
+            .until(() -> configuredContexts.containsKey(clusterId));
 
         whenRequesting(req -> req.get("{clusterId}", clusterId))
             .assertThat()
@@ -594,7 +589,7 @@ class KafkaClustersResourceIT {
         client.resources(Kafka.class).resource(kafka).create();
 
         await().atMost(Duration.ofSeconds(5))
-            .until(() -> kafkaInformer
+            .until(() -> kafkaInformer.get()
                     .getStore()
                     .list()
                     .stream()

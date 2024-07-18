@@ -3,11 +3,13 @@ package com.github.streamshub.console.api.service;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
+import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -17,6 +19,7 @@ import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.clients.admin.DescribeClusterOptions;
 import org.apache.kafka.clients.admin.DescribeClusterResult;
 import org.apache.kafka.common.KafkaFuture;
+import org.eclipse.microprofile.context.ThreadContext;
 import org.jboss.logging.Logger;
 
 import com.github.streamshub.console.api.Annotations;
@@ -24,6 +27,8 @@ import com.github.streamshub.console.api.model.Condition;
 import com.github.streamshub.console.api.model.KafkaCluster;
 import com.github.streamshub.console.api.model.KafkaListener;
 import com.github.streamshub.console.api.model.Node;
+import com.github.streamshub.console.api.support.Holder;
+import com.github.streamshub.console.api.support.KafkaContext;
 import com.github.streamshub.console.api.support.ListRequestContext;
 import com.github.streamshub.console.config.ConsoleConfig;
 
@@ -46,35 +51,80 @@ public class KafkaClusterService {
     @Inject
     Logger logger;
 
+    /**
+     * ThreadContext of the request thread. This is used to execute asynchronous
+     * tasks to allow access to request-scoped beans.
+     */
     @Inject
-    SharedIndexInformer<Kafka> kafkaInformer;
+    ThreadContext threadContext;
+
+    @Inject
+    Holder<SharedIndexInformer<Kafka>> kafkaInformer;
 
     @Inject
     ConsoleConfig consoleConfig;
 
     @Inject
-    Supplier<Admin> clientSupplier;
+    /**
+     * All Kafka contexts known to the application
+     */
+    Map<String, KafkaContext> kafkaContexts;
+
+    @Inject
+    /**
+     * Kafka context for a single-Kafka request.
+     * E.g. {@linkplain #describeCluster(List) describeCluster}.
+     */
+    KafkaContext kafkaContext;
 
     boolean listUnconfigured = false;
     Predicate<KafkaCluster> includeAll = k -> listUnconfigured;
 
     public List<KafkaCluster> listClusters(ListRequestContext<KafkaCluster> listSupport) {
-        return kafkaInformer.getStore()
-                .list()
-                .stream()
-                .filter(Predicate.not(k -> annotatedKafka(k, Annotations.CONSOLE_HIDDEN)))
+        List<KafkaCluster> kafkaResources = kafkaResources()
                 .map(this::toKafkaCluster)
-                .filter(includeAll.or(KafkaCluster::isConfigured)) // Hide unconfigured clusters for now.
+                // Hide unconfigured clusters for now.
+                .filter(includeAll.or(KafkaCluster::isConfigured))
+                .toList();
+
+        Map<String, KafkaCluster> configuredClusters = kafkaContexts
+                .entrySet()
+                .stream()
+                .map(ctx -> {
+                    String id = ctx.getKey();
+                    var config = ctx.getValue().clusterConfig();
+
+                    return kafkaResources.stream()
+                        .filter(k -> Objects.equals(k.getName(), config.getName()))
+                        .filter(k -> Objects.equals(k.getNamespace(), config.getNamespace()))
+                        .map(k -> addKafkaContextData(k, ctx.getValue()))
+                        .findFirst()
+                        .orElseGet(() -> {
+                            var k = new KafkaCluster(id, null, null, null);
+                            k.setConfigured(true);
+                            k.setName(config.getName());
+                            k.setNamespace(config.getNamespace());
+                            return k;
+                        });
+                })
+                .collect(Collectors.toMap(KafkaCluster::getId, Function.identity()));
+
+        List<KafkaCluster> otherClusters = kafkaResources.stream()
+                .filter(k -> !configuredClusters.containsKey(k.getId()))
+                .toList();
+
+        return Stream.concat(configuredClusters.values().stream(), otherClusters.stream())
                 .map(listSupport::tally)
                 .filter(listSupport::betweenCursors)
                 .sorted(listSupport.getSortComparator())
                 .dropWhile(listSupport::beforePageBegin)
                 .takeWhile(listSupport::pageCapacityAvailable)
+                .map(this::setManaged)
                 .toList();
     }
 
     public CompletionStage<KafkaCluster> describeCluster(List<String> fields) {
-        Admin adminClient = clientSupplier.get();
+        Admin adminClient = kafkaContext.admin();
         DescribeClusterOptions options = new DescribeClusterOptions()
                 .includeAuthorizedOperations(fields.contains(KafkaCluster.Fields.AUTHORIZED_OPERATIONS));
         DescribeClusterResult result = adminClient.describeCluster(options);
@@ -90,7 +140,9 @@ public class KafkaClusterService {
                         get(result::nodes).stream().map(Node::fromKafkaModel).toList(),
                         Node.fromKafkaModel(get(result::controller)),
                         enumNames(get(result::authorizedOperations))))
-            .thenApply(this::addKafkaResourceData);
+            .thenApplyAsync(this::addKafkaContextData, threadContext.currentContextExecutor())
+            .thenApply(this::addKafkaResourceData)
+            .thenApply(this::setManaged);
     }
 
     KafkaCluster toKafkaCluster(Kafka kafka) {
@@ -104,10 +156,24 @@ public class KafkaClusterService {
         return cluster;
     }
 
-    KafkaCluster addKafkaResourceData(KafkaCluster cluster) {
-        findCluster(cluster.getId())
-            .ifPresent(kafka -> setKafkaClusterProperties(cluster, kafka));
+    KafkaCluster addKafkaContextData(KafkaCluster cluster, KafkaContext kafkaContext) {
+        var config = kafkaContext.clusterConfig();
+        cluster.setConfigured(true);
+        if (config.getId() != null) {
+            // configuration has overridden the id
+            cluster.setId(config.getId());
+        }
+        cluster.setName(config.getName());
+        cluster.setNamespace(config.getNamespace());
+        return cluster;
+    }
 
+    KafkaCluster addKafkaContextData(KafkaCluster cluster) {
+        return addKafkaContextData(cluster, kafkaContext);
+    }
+
+    KafkaCluster addKafkaResourceData(KafkaCluster cluster) {
+        findCluster(cluster).ifPresent(kafka -> setKafkaClusterProperties(cluster, kafka));
         return cluster;
     }
 
@@ -116,11 +182,8 @@ public class KafkaClusterService {
         cluster.setNamespace(kafka.getMetadata().getNamespace());
         cluster.setCreationTimestamp(kafka.getMetadata().getCreationTimestamp());
 
-        @SuppressWarnings("removal")
         var comparator = Comparator
             .comparingInt((GenericKafkaListener listener) ->
-                listenerSortKey(listener, Annotations.EXPOSED_LISTENER))
-            .thenComparingInt((GenericKafkaListener listener) ->
                 listenerSortKey(listener, Annotations.CONSOLE_LISTENER))
             .thenComparingInt((GenericKafkaListener listener) -> {
                 if (KafkaListenerType.INTERNAL.equals(listener.getType())) {
@@ -166,13 +229,30 @@ public class KafkaClusterService {
             });
     }
 
-    public Optional<Kafka> findCluster(String clusterId) {
-        return kafkaInformer.getStore()
-                .list()
-                .stream()
-                .filter(k -> Objects.equals(clusterId, k.getStatus().getClusterId()))
-                .filter(Predicate.not(k -> annotatedKafka(k, Annotations.CONSOLE_HIDDEN)))
+    KafkaCluster setManaged(KafkaCluster cluster) {
+        cluster.setManaged(findCluster(cluster)
+                .map(kafkaTopic -> Boolean.TRUE)
+                .orElse(Boolean.FALSE));
+        return cluster;
+    }
+
+    private Optional<Kafka> findCluster(KafkaCluster cluster) {
+        return findCluster(Cache.namespaceKeyFunc(cluster.getNamespace(), cluster.getName()));
+    }
+
+    private Optional<Kafka> findCluster(String clusterKey) {
+        return kafkaResources()
+                .filter(k -> Objects.equals(clusterKey, Cache.metaNamespaceKeyFunc(k)))
                 .findFirst();
+    }
+
+    private Stream<Kafka> kafkaResources() {
+        return kafkaInformer.map(informer -> informer
+                    .getStore()
+                    .list()
+                    .stream()
+                    .filter(Predicate.not(k -> annotatedKafka(k, Annotations.CONSOLE_HIDDEN))))
+                .orElseGet(Stream::empty);
     }
 
     static int listenerSortKey(GenericKafkaListener listener, Annotations listenerAnnotation) {
@@ -205,16 +285,6 @@ public class KafkaClusterService {
             .orElseGet(Stream::empty)
             .filter(listenerStatus -> listenerName.equals(listenerStatus.getName()))
             .findFirst();
-    }
-
-    public static Optional<String> getAuthType(Kafka kafka, ListenerStatus listener) {
-        return kafka.getSpec()
-            .getKafka()
-            .getListeners()
-            .stream()
-            .filter(sl -> sl.getName().equals(listener.getName()))
-            .findFirst()
-            .flatMap(KafkaClusterService::getAuthType);
     }
 
     static Optional<String> getAuthType(GenericKafkaListener listener) {

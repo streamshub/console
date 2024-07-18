@@ -64,6 +64,7 @@ import org.mockito.stubbing.Answer;
 import org.skyscreamer.jsonassert.JSONAssert;
 import org.skyscreamer.jsonassert.JSONCompareMode;
 
+import com.github.streamshub.console.api.support.Holder;
 import com.github.streamshub.console.config.ConsoleConfig;
 import com.github.streamshub.console.kafka.systemtest.TestPlainProfile;
 import com.github.streamshub.console.kafka.systemtest.deployment.DeploymentManager;
@@ -75,11 +76,9 @@ import com.github.streamshub.console.test.TopicHelper;
 import io.fabric8.kubernetes.api.model.ObjectMeta;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.informers.SharedIndexInformer;
-import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.common.http.TestHTTPEndpoint;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
-import io.quarkus.test.kubernetes.client.KubernetesServerTestResource;
 import io.strimzi.api.kafka.model.kafka.Kafka;
 import io.strimzi.api.kafka.model.topic.KafkaTopic;
 import io.strimzi.api.kafka.model.topic.KafkaTopicBuilder;
@@ -111,7 +110,6 @@ import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.Mockito.doAnswer;
 
 @QuarkusTest
-@QuarkusTestResource(KubernetesServerTestResource.class)
 @TestHTTPEndpoint(TopicsResource.class)
 @TestProfile(TestPlainProfile.class)
 class TopicsResourceIT {
@@ -126,7 +124,7 @@ class TopicsResourceIT {
     KubernetesClient client;
 
     @Inject
-    SharedIndexInformer<Kafka> kafkaInformer;
+    Holder<SharedIndexInformer<Kafka>> kafkaInformer;
 
     @Inject
     @Named("KafkaTopics")
@@ -158,23 +156,19 @@ class TopicsResourceIT {
 
         utils = new TestHelper(bootstrapServers1, config, null);
 
-        clusterId1 = utils.getClusterId();
-        clusterId2 = UUID.randomUUID().toString();
-
         client.resources(Kafka.class).inAnyNamespace().delete();
         client.resources(KafkaTopic.class).inAnyNamespace().delete();
 
-        client.resources(Kafka.class)
-            .resource(utils.buildKafkaResource(clusterName1, clusterId1, bootstrapServers1))
-            .create();
+        utils.apply(client, utils.buildKafkaResource(clusterName1, utils.getClusterId(), bootstrapServers1));
         // Second cluster is offline/non-existent
-        client.resources(Kafka.class)
-            .resource(utils.buildKafkaResource("test-kafka2", clusterId2, randomBootstrapServers))
-            .create();
+        utils.apply(client, utils.buildKafkaResource("test-kafka2", UUID.randomUUID().toString(), randomBootstrapServers));
 
         // Wait for the informer cache to be populated with all Kafka CRs
         await().atMost(10, TimeUnit.SECONDS)
-            .until(() -> Objects.equals(kafkaInformer.getStore().list().size(), 2));
+            .until(() -> Objects.equals(kafkaInformer.get().getStore().list().size(), 2));
+
+        clusterId1 = consoleConfig.getKafka().getCluster("default/test-kafka1").get().getId();
+        clusterId2 = consoleConfig.getKafka().getCluster("default/test-kafka2").get().getId();
     }
 
     @Test

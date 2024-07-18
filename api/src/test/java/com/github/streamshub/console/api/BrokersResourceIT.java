@@ -9,16 +9,15 @@ import org.eclipse.microprofile.config.Config;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import com.github.streamshub.console.config.ConsoleConfig;
 import com.github.streamshub.console.kafka.systemtest.TestPlainProfile;
 import com.github.streamshub.console.kafka.systemtest.deployment.DeploymentManager;
 import com.github.streamshub.console.test.TestHelper;
 
 import io.fabric8.kubernetes.client.KubernetesClient;
-import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.common.http.TestHTTPEndpoint;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
-import io.quarkus.test.kubernetes.client.KubernetesServerTestResource;
 import io.strimzi.api.kafka.model.kafka.Kafka;
 import io.strimzi.api.kafka.model.kafka.KafkaBuilder;
 import io.strimzi.api.kafka.model.kafka.listener.KafkaListenerType;
@@ -35,7 +34,6 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 
 @QuarkusTest
-@QuarkusTestResource(KubernetesServerTestResource.class)
 @TestHTTPEndpoint(BrokersResource.class)
 @TestProfile(TestPlainProfile.class)
 class BrokersResourceIT {
@@ -45,6 +43,9 @@ class BrokersResourceIT {
 
     @Inject
     KubernetesClient client;
+
+    @Inject
+    ConsoleConfig consoleConfig;
 
     @DeploymentManager.InjectDeploymentManager
     DeploymentManager deployments;
@@ -60,10 +61,9 @@ class BrokersResourceIT {
         kafkaContainer = deployments.getKafkaContainer();
         bootstrapServers = URI.create(kafkaContainer.getBootstrapServers());
         utils = new TestHelper(bootstrapServers, config, null);
-        clusterId = utils.getClusterId();
 
         client.resources(Kafka.class).inAnyNamespace().delete();
-        client.resources(Kafka.class).resource(new KafkaBuilder()
+        utils.apply(client, new KafkaBuilder()
                 .withNewMetadata()
                     .withName("test-kafka1")
                     .withNamespace("default")
@@ -77,7 +77,7 @@ class BrokersResourceIT {
                     .endKafka()
                 .endSpec()
                 .withNewStatus()
-                    .withClusterId(clusterId)
+                    .withClusterId(utils.getClusterId())
                     .addNewListener()
                         .withName("listener0")
                         .addNewAddress()
@@ -86,8 +86,9 @@ class BrokersResourceIT {
                         .endAddress()
                     .endListener()
                 .endStatus()
-                .build())
-            .create();
+                .build());
+
+        clusterId = consoleConfig.getKafka().getCluster("default/test-kafka1").get().getId();
     }
 
     @Test

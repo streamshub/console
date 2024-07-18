@@ -53,6 +53,7 @@ import com.github.streamshub.console.api.model.PartitionInfo;
 import com.github.streamshub.console.api.model.Topic;
 import com.github.streamshub.console.api.support.ConsumerGroupValidation;
 import com.github.streamshub.console.api.support.FetchFilterPredicate;
+import com.github.streamshub.console.api.support.KafkaContext;
 import com.github.streamshub.console.api.support.KafkaOffsetSpec;
 import com.github.streamshub.console.api.support.ListRequestContext;
 import com.github.streamshub.console.api.support.UnknownTopicIdPatch;
@@ -84,7 +85,7 @@ public class ConsumerGroupService {
     ThreadContext threadContext;
 
     @Inject
-    Supplier<Admin> clientSupplier;
+    KafkaContext kafkaContext;
 
     @Inject
     TopicService topicService;
@@ -99,7 +100,7 @@ public class ConsumerGroupService {
     public CompletionStage<List<ConsumerGroup>> listConsumerGroups(String topicId, List<String> includes,
             ListRequestContext<ConsumerGroup> listSupport) {
 
-        Admin adminClient = clientSupplier.get();
+        Admin adminClient = kafkaContext.admin();
         Uuid id = Uuid.fromString(topicId);
         Executor asyncExec = threadContext.currentContextExecutor();
 
@@ -120,7 +121,7 @@ public class ConsumerGroupService {
     }
 
     CompletionStage<List<ConsumerGroup>> listConsumerGroups(List<String> groupIds, List<String> includes, ListRequestContext<ConsumerGroup> listSupport) {
-        Admin adminClient = clientSupplier.get();
+        Admin adminClient = kafkaContext.admin();
 
         Set<ConsumerGroupState> states = listSupport.filters()
             .stream()
@@ -157,7 +158,7 @@ public class ConsumerGroupService {
     }
 
     public CompletionStage<ConsumerGroup> describeConsumerGroup(String requestGroupId, List<String> includes) {
-        Admin adminClient = clientSupplier.get();
+        Admin adminClient = kafkaContext.admin();
         String groupId = preprocessGroupId(requestGroupId);
 
         return assertConsumerGroupExists(adminClient, groupId)
@@ -167,7 +168,7 @@ public class ConsumerGroupService {
     }
 
     public CompletionStage<Map<String, List<String>>> listConsumerGroupMembership(Collection<String> topicIds) {
-        Admin adminClient = clientSupplier.get();
+        Admin adminClient = kafkaContext.admin();
 
         return adminClient.listConsumerGroups(new ListConsumerGroupsOptions()
                 .inStates(Set.of(
@@ -209,7 +210,7 @@ public class ConsumerGroupService {
     }
 
     public CompletionStage<Void> patchConsumerGroup(ConsumerGroup patch) {
-        Admin adminClient = clientSupplier.get();
+        Admin adminClient = kafkaContext.admin();
         String groupId = preprocessGroupId(patch.getGroupId());
 
         return assertConsumerGroupExists(adminClient, groupId)
@@ -389,7 +390,7 @@ public class ConsumerGroupService {
     }
 
     public CompletionStage<Void> deleteConsumerGroup(String requestGroupId) {
-        Admin adminClient = clientSupplier.get();
+        Admin adminClient = kafkaContext.admin();
         String groupId = preprocessGroupId(requestGroupId);
 
         return adminClient.deleteConsumerGroups(List.of(groupId))

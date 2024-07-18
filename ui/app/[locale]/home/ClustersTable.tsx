@@ -91,9 +91,9 @@ export function ClustersTable({
               <i>{t("ClustersTable.connection_not_configured")}</i>
             );
           case "version":
-            return <Td key={key}>{row.attributes.kafkaVersion ?? "n/a"}</Td>;
+            return <Td key={key}>{row.attributes.kafkaVersion ?? "Not Available"}</Td>;
           case "namespace":
-            return <Td key={key}>{row.attributes.namespace}</Td>;
+            return <Td key={key}>{row.attributes.namespace ?? "N/A"}</Td>;
         }
       }}
       renderActions={({ ActionsColumn, row }) => (

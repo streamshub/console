@@ -9,7 +9,6 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -23,17 +22,18 @@ import org.apache.kafka.common.config.ConfigResource;
 
 import com.github.streamshub.console.api.model.ConfigEntry;
 import com.github.streamshub.console.api.model.Either;
+import com.github.streamshub.console.api.support.KafkaContext;
 
 @ApplicationScoped
 public class ConfigService {
 
     @Inject
-    Supplier<Admin> clientSupplier;
+    KafkaContext kafkaContext;
 
     public CompletionStage<Map<String, ConfigEntry>> describeConfigs(ConfigResource.Type type, String name) {
         ConfigResource nodeKey = new ConfigResource(type, name);
 
-        return describeConfigs(clientSupplier.get(), List.of(nodeKey))
+        return describeConfigs(kafkaContext.admin(), List.of(nodeKey))
             .thenApply(configs -> configs.get(name))
             .thenApply(configs -> configs.getOrThrow(CompletionException::new));
     }
@@ -52,7 +52,7 @@ public class ConfigService {
      *         complete
      */
     public CompletionStage<Void> alterConfigs(ConfigResource.Type type, String name, Map<String, ConfigEntry> alteredConfigs, boolean validateOnly) {
-        Admin adminClient = clientSupplier.get();
+        Admin adminClient = kafkaContext.admin();
         var resourceKey = new ConfigResource(type, name);
 
         return adminClient.incrementalAlterConfigs(Map.of(resourceKey, fromMap(alteredConfigs)), new AlterConfigsOptions()

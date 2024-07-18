@@ -16,8 +16,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.streamshub.console.api.v1alpha1.Console;
 import com.github.streamshub.console.api.v1alpha1.ConsoleBuilder;
 import com.github.streamshub.console.config.ConsoleConfig;
+import com.github.streamshub.console.dependents.ConsoleResource;
 import com.github.streamshub.console.dependents.ConsoleSecret;
 
+import io.fabric8.kubernetes.api.model.ConfigMap;
+import io.fabric8.kubernetes.api.model.ConfigMapBuilder;
 import io.fabric8.kubernetes.api.model.NamespaceBuilder;
 import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
 import io.fabric8.kubernetes.api.model.Secret;
@@ -64,17 +67,20 @@ class ConsoleReconcilerTest {
         var allConsoles = client.resources(Console.class).inAnyNamespace();
         var allKafkas = client.resources(Kafka.class).inAnyNamespace();
         var allKafkaUsers = client.resources(KafkaUser.class).inAnyNamespace();
-        var allSecrets = client.resources(Secret.class).inAnyNamespace();
+        var allConfigMaps = client.resources(ConfigMap.class).inAnyNamespace().withLabels(ConsoleResource.MANAGEMENT_LABEL);
+        var allSecrets = client.resources(Secret.class).inAnyNamespace().withLabels(ConsoleResource.MANAGEMENT_LABEL);
 
         allConsoles.delete();
         allKafkas.delete();
         allKafkaUsers.delete();
+        allConfigMaps.delete();
         allSecrets.delete();
 
         await().atMost(LIMIT).untilAsserted(() -> {
             assertTrue(allConsoles.list().getItems().isEmpty());
             assertTrue(allKafkas.list().getItems().isEmpty());
             assertTrue(allKafkaUsers.list().getItems().isEmpty());
+            assertTrue(allConfigMaps.list().getItems().isEmpty());
             assertTrue(allSecrets.list().getItems().isEmpty());
         });
 
@@ -362,6 +368,7 @@ class ConsoleReconcilerTest {
                 .withNewMetadata()
                     .withName("ku1")
                     .withNamespace("ns1")
+                    .addToLabels(ConsoleResource.MANAGEMENT_LABEL)
                 .endMetadata()
                 // no data map
                 .build();
@@ -431,6 +438,7 @@ class ConsoleReconcilerTest {
                 .withNewMetadata()
                     .withName("ku1")
                     .withNamespace("ns1")
+                    .addToLabels(ConsoleResource.MANAGEMENT_LABEL)
                 .endMetadata()
                 .addToData(SaslConfigs.SASL_JAAS_CONFIG, Base64.getEncoder().encodeToString("jaas-config-value".getBytes()))
                 .build();
@@ -477,6 +485,86 @@ class ConsoleReconcilerTest {
             ConsoleConfig config = new ObjectMapper().readValue(configDecoded, ConsoleConfig.class);
             assertEquals("jaas-config-value",
                     config.getKafka().getClusters().get(0).getProperties().get(SaslConfigs.SASL_JAAS_CONFIG));
+        });
+    }
+
+
+    @Test
+    void testConsoleReconciliationWithKafkaProperties() {
+        client.resource(new ConfigMapBuilder()
+                .withNewMetadata()
+                    .withName("cm-1")
+                    .withNamespace("ns2")
+                    .addToLabels(ConsoleResource.MANAGEMENT_LABEL)
+                .endMetadata()
+                .addToData("x-consumer-prop-name", "x-consumer-prop-value")
+                .build())
+            .serverSideApply();
+
+        client.resource(new SecretBuilder()
+                .withNewMetadata()
+                    .withName("scrt-1")
+                    .withNamespace("ns2")
+                    .addToLabels(ConsoleResource.MANAGEMENT_LABEL)
+                .endMetadata()
+                .addToData("x-producer-prop-name",
+                        Base64.getEncoder().encodeToString("x-producer-prop-value".getBytes()))
+                .build())
+            .serverSideApply();
+
+        Console consoleCR = new ConsoleBuilder()
+                .withMetadata(new ObjectMetaBuilder()
+                        .withName("console-1")
+                        .withNamespace("ns2")
+                        .build())
+                .withNewSpec()
+                    .withHostname("example.com")
+                    .addNewKafkaCluster()
+                        .withId("custom-id")
+                        .withName(kafkaCR.getMetadata().getName())
+                        .withNewProperties()
+                            .addNewValue()
+                                .withName("x-prop-name")
+                                .withValue("x-prop-value")
+                            .endValue()
+                        .endProperties()
+                        .withNewAdminProperties()
+                            .addNewValue()
+                                .withName("x-admin-prop-name")
+                                .withValue("x-admin-prop-value")
+                            .endValue()
+                        .endAdminProperties()
+                        .withNewConsumerProperties()
+                            .addNewValuesFrom()
+                                .withPrefix("extra-")
+                                .withNewConfigMapRef("cm-1", false)
+                            .endValuesFrom()
+                            .addNewValuesFrom()
+                                .withNewConfigMapRef("cm-2", true)
+                            .endValuesFrom()
+                        .endConsumerProperties()
+                        .withNewProducerProperties()
+                            .addNewValuesFrom()
+                                .withNewSecretRef("scrt-1", false)
+                            .endValuesFrom()
+                        .endProducerProperties()
+                    .endKafkaCluster()
+                .endSpec()
+                .build();
+
+        client.resource(consoleCR).create();
+
+        await().ignoreException(NullPointerException.class).atMost(LIMIT).untilAsserted(() -> {
+            var consoleSecret = client.secrets().inNamespace("ns2").withName("console-1-" + ConsoleSecret.NAME).get();
+            assertNotNull(consoleSecret);
+            String configEncoded = consoleSecret.getData().get("console-config.yaml");
+            byte[] configDecoded = Base64.getDecoder().decode(configEncoded);
+            ConsoleConfig config = new ObjectMapper().readValue(configDecoded, ConsoleConfig.class);
+            var kafkaConfig = config.getKafka().getClusters().get(0);
+            assertEquals("x-prop-value", kafkaConfig.getProperties().get("x-prop-name"));
+            assertEquals("x-admin-prop-value", kafkaConfig.getAdminProperties().get("x-admin-prop-name"));
+            assertEquals("x-consumer-prop-value", kafkaConfig.getConsumerProperties().get("extra-x-consumer-prop-name"));
+            assertEquals("x-producer-prop-value", kafkaConfig.getProducerProperties().get("x-producer-prop-name"));
         });
     }
 
