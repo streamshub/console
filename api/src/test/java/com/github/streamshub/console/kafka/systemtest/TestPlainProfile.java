@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.github.streamshub.console.kafka.systemtest.deployment.KafkaUnsecuredResourceManager;
+import com.github.streamshub.console.kafka.systemtest.deployment.StrimziCrdResourceManager;
 
 import io.quarkus.test.junit.QuarkusTestProfile;
 
@@ -26,7 +27,7 @@ public class TestPlainProfile implements QuarkusTestProfile {
     @Override
     public List<TestResourceEntry> testResources() {
         return List.of(
-                //new TestResourceEntry(KubernetesServerTestResource.class),
+                new TestResourceEntry(StrimziCrdResourceManager.class),
                 new TestResourceEntry(KafkaUnsecuredResourceManager.class, Map.of("profile", PROFILE)));
     }
 

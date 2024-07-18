@@ -5,6 +5,8 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Observes;
+import jakarta.enterprise.event.Startup;
 import jakarta.enterprise.inject.Disposes;
 import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Inject;
@@ -36,39 +38,34 @@ public class InformerFactory {
     @Inject
     ConsoleConfig consoleConfig;
 
-    SharedIndexInformer<KafkaTopic> topicInformer;
-
     @Produces
     @ApplicationScoped
     @Named("KafkaInformer")
-    Holder<SharedIndexInformer<Kafka>> produceKafkaInformer() {
-        if (consoleConfig.getKubernetes().isEnabled()) {
-            var kafkaResources = k8s.resources(Kafka.class).inAnyNamespace();
-
-            try {
-                return Holder.of(kafkaResources.inform());
-            } catch (KubernetesClientException e) {
-                logger.warnf("Failed to create Strimzi Kafka informer: %s", e.getMessage());
-            }
-        } else {
-            logger.warn("Kubernetes client connection is disabled. Custom resource information will not be available.");
-        }
-
-        return Holder.empty();
-    }
-
-    void disposeKafkaInformer(@Disposes @Named("KafkaInformer") Holder<SharedIndexInformer<Kafka>> informer) {
-        informer.ifPresent(SharedIndexInformer::close);
-    }
+    Holder<SharedIndexInformer<Kafka>> kafkaInformer = Holder.empty();
 
     @Produces
     @ApplicationScoped
     @Named("KafkaTopics")
     // Keys: namespace -> cluster name -> topic name
-    Map<String, Map<String, Map<String, KafkaTopic>>> produceKafkaTopics() {
-        Map<String, Map<String, Map<String, KafkaTopic>>> topics = new ConcurrentHashMap<>();
+    Map<String, Map<String, Map<String, KafkaTopic>>> topics = new ConcurrentHashMap<>();
 
+    SharedIndexInformer<KafkaTopic> topicInformer;
+
+    /**
+     * Initialize CDI beans produced by this factory. Executed on application startup.
+     *
+     * @param event CDI startup event
+     */
+    void onStartup(@Observes Startup event) {
         if (consoleConfig.getKubernetes().isEnabled()) {
+            var kafkaResources = k8s.resources(Kafka.class).inAnyNamespace();
+
+            try {
+                kafkaInformer = Holder.of(kafkaResources.inform());
+            } catch (KubernetesClientException e) {
+                logger.warnf("Failed to create Strimzi Kafka informer: %s", e.getMessage());
+            }
+
             try {
                 topicInformer = k8s.resources(KafkaTopic.class).inAnyNamespace().inform();
                 topicInformer.addEventHandler(new KafkaTopicEventHandler(topics));
@@ -78,8 +75,10 @@ public class InformerFactory {
         } else {
             logger.warn("Kubernetes client connection is disabled. Custom resource information will not be available.");
         }
+    }
 
-        return topics;
+    void disposeKafkaInformer(@Disposes @Named("KafkaInformer") Holder<SharedIndexInformer<Kafka>> informer) {
+        informer.ifPresent(SharedIndexInformer::close);
     }
 
     /**

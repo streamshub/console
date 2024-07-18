@@ -7,7 +7,6 @@ import jakarta.ws.rs.core.Response.Status;
 
 import org.eclipse.microprofile.config.Config;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 
 import com.github.streamshub.console.config.ConsoleConfig;
@@ -19,7 +18,6 @@ import io.fabric8.kubernetes.client.KubernetesClient;
 import io.quarkus.test.common.http.TestHTTPEndpoint;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
-import io.strimzi.api.kafka.Crds;
 import io.strimzi.api.kafka.model.kafka.Kafka;
 import io.strimzi.api.kafka.model.kafka.KafkaBuilder;
 import io.strimzi.api.kafka.model.kafka.listener.KafkaListenerType;
@@ -38,7 +36,6 @@ import static org.hamcrest.Matchers.not;
 @QuarkusTest
 @TestHTTPEndpoint(BrokersResource.class)
 @TestProfile(TestPlainProfile.class)
-@Order(Integer.MAX_VALUE)
 class BrokersResourceIT {
 
     @Inject
@@ -61,7 +58,6 @@ class BrokersResourceIT {
 
     @BeforeEach
     void setup() {
-        client.resource(Crds.kafka()).serverSideApply();
         kafkaContainer = deployments.getKafkaContainer();
         bootstrapServers = URI.create(kafkaContainer.getBootstrapServers());
         utils = new TestHelper(bootstrapServers, config, null);

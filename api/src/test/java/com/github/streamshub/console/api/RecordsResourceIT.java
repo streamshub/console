@@ -46,7 +46,6 @@ import io.fabric8.kubernetes.client.KubernetesClient;
 import io.quarkus.test.common.http.TestHTTPEndpoint;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
-import io.strimzi.api.kafka.Crds;
 import io.strimzi.api.kafka.model.kafka.Kafka;
 
 import static com.github.streamshub.console.test.TestHelper.whenRequesting;
@@ -86,7 +85,6 @@ class RecordsResourceIT {
 
     @BeforeEach
     void setup() throws IOException {
-        client.resource(Crds.kafka()).serverSideApply();
         URI bootstrapServers = URI.create(deployments.getExternalBootstrapServers());
         URI randomBootstrapServers = URI.create(consoleConfig.getKafka()
                 .getCluster("default/test-kafka2")

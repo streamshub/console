@@ -63,7 +63,6 @@ import io.fabric8.kubernetes.client.informers.SharedIndexInformer;
 import io.quarkus.test.common.http.TestHTTPEndpoint;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
-import io.strimzi.api.kafka.Crds;
 import io.strimzi.api.kafka.model.kafka.Kafka;
 
 import static com.github.streamshub.console.test.TestHelper.whenRequesting;
@@ -114,7 +113,6 @@ class ConsumerGroupsResourceIT {
 
     @BeforeEach
     void setup() throws IOException {
-        client.resource(Crds.kafka()).serverSideApply();
         URI bootstrapServers = URI.create(deployments.getExternalBootstrapServers());
 
         topicUtils = new TopicHelper(bootstrapServers, config, null);
