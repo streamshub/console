@@ -24,9 +24,7 @@ jobs:
           local-file: 'true'
 
       - name: Set Image Tag Env
-        run: |
-          echo "PROJECT_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
-          echo "NEXT_VERSION=$(echo ${{steps.metadata.outputs.next-version}} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+        run: echo "NEXT_VERSION=$(echo ${{steps.metadata.outputs.next-version}} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
 
       - name: Setup JDK
         uses: actions/setup-java@v4
@@ -55,7 +53,7 @@ jobs:
           export QUARKUS_CONTAINER_IMAGE_USERNAME="${{ secrets.IMAGE_REPO_USERNAME }}"
           export QUARKUS_CONTAINER_IMAGE_PASSWORD="${{ secrets.IMAGE_REPO_PASSWORD }}"
           export QUARKUS_CONTAINER_IMAGE_PUSH="true"
-          export QUARKUS_CONTAINER_IMAGE_TAG="${{ env.PROJECT_VERSION }}"
+          export QUARKUS_CONTAINER_IMAGE_TAG="${{ env.NEXT_VERSION }}"
           export QUARKUS_CONTAINER_IMAGE_ADDITIONAL_TAGS=snapshot-${{github.ref_name}}
           export GIT_REVISION=$(git rev-parse --short HEAD)
           # Build and push the snapshot images
@@ -89,7 +87,7 @@ jobs:
           chmod +x opm
           sudo cp -v opm /usr/bin/
           rm -vf opm
-          operator/bin/generate-catalog.sh ${{ env.PROJECT_VERSION }}
+          operator/bin/generate-catalog.sh ${{ env.NEXT_VERSION }}
 
       - name: Build and Push Operator Catalog Image
         uses: docker/build-push-action@v6
