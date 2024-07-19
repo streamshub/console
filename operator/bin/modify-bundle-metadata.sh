@@ -25,7 +25,7 @@ yq_image_expression=".spec.install.spec.deployments[0] | (select (.name ==\"${OP
 full_image=$(${YQ} eval "${yq_image_expression}" "${CSV_FILE_PATH}")
 echo "[DEBUG] Original image name = ${full_image}"
 
-image_name=$(echo "${full_image}" | cut -d':' -f1)
+image_name=$(echo "${full_image}" | rev | cut -d':' -f2- | rev)
 digest=$(${SKOPEO} inspect --tls-verify=false --override-os=linux --format "{{ .Digest }}" "docker://${full_image}")
 image_with_digest="${image_name}@${digest}"
 
