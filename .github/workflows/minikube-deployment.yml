@@ -147,6 +147,14 @@ jobs:
         run: npx playwright install --with-deps
         working-directory: ./ui
 
-      - name: Run Playwright tests
-        run: npx playwright test
+      - name: Run Playwright Tests
+        env:
+          BACKEND_URL: ${{ secrets.BACKEND_URL }}
+          CONSOLE_METRICS_PROMETHEUS_URL: ${{ secrets.CONSOLE_METRICS_PROMETHEUS_URL }}
+          NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
+          LOG_LEVEL: ${{ secrets.LOG_LEVEL }}
+          CONSOLE_MODE: ${{ secrets.CONSOLE_MODE }}
+          HOME: /root
+        run: |
+          npm test
         working-directory: ./ui
