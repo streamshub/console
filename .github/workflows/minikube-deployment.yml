@@ -1,7 +1,7 @@
 name: Minikube Deployment
 
 on:
-  pull_request:
+  workflow_call:
 
 env:
   TARGET_NAMESPACE: "console-namespace"
@@ -13,10 +13,17 @@ jobs:
   setup_deployment:
     runs-on: ubuntu-latest
     continue-on-error: true
+    services:
+      registry:
+        image: registry:2
+        ports:
+          - 5000:5000
     steps:
-
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Set Image Tag Env
+        run: echo "PROJECT_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
 
       - name: Install yq
         run: |
@@ -30,18 +37,29 @@ jobs:
           cpus: 2
           memory: 4096m
 
+      - name: Enable ingress
+        run: |
+          minikube addons enable ingress
+          minikube addons enable ingress-dns
+          kubectl patch deployment -n ingress-nginx ingress-nginx-controller --type='json' -p='[{"op": "add", "path": "/spec/template/spec/containers/0/args/-", "value":"--enable-ssl-passthrough"}]'
+
+      - name: Download Docker images artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: operator-images
+          path: operator-images
+
+      - name: Load Docker images from tar files
+        run: |
+          docker load -i operator-images/console-operator-${{ env.PROJECT_VERSION }}.tar
+          docker load -i operator-images/console-operator-catalog-${{ env.PROJECT_VERSION }}.tar
+
       - name: Install Operator SDK
         run: |
           curl -LO https://github.com/operator-framework/operator-sdk/releases/download/v1.35.0/operator-sdk_linux_amd64
           chmod +x operator-sdk_linux_amd64 && sudo mv operator-sdk_linux_amd64 /usr/local/bin/operator-sdk
           operator-sdk olm install 
           operator-sdk olm status 
-
-      - name: Enable ingress
-        run: |
-          minikube addons enable ingress
-          minikube addons enable ingress-dns
-          kubectl patch deployment -n ingress-nginx ingress-nginx-controller --type='json' -p='[{"op": "add", "path": "/spec/template/spec/containers/0/args/-", "value":"--enable-ssl-passthrough"}]'
 
       - name: Create namespace
         run: kubectl create namespace $TARGET_NAMESPACE
@@ -54,27 +72,17 @@ jobs:
         run: kubectl create -f "https://strimzi.io/install/latest?namespace=$TARGET_NAMESPACE" -n $TARGET_NAMESPACE
 
       - name: Prometheus Operator Deployment
-        shell: bash
         run: |
           curl -s "https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/main/bundle.yaml" | sed "s#namespace: default#namespace: ${TARGET_NAMESPACE}#g" | kubectl create -n $TARGET_NAMESPACE -f -
 
       - name: Prometheus Instance Deployment
         run: ./install/001-deploy-prometheus.sh $TARGET_NAMESPACE
 
-      - name: Get pods
-        run: kubectl get pods -n $TARGET_NAMESPACE
-
       - name: Wait For Strimzi
         run: kubectl wait deployment/strimzi-cluster-operator --for=condition=available --timeout=180s -n $TARGET_NAMESPACE
 
       - name: Kafka Cluster Deployment
         run: ./install/002-deploy-console-kafka.sh $TARGET_NAMESPACE $CLUSTER_DOMAIN zk
-
-      - name: Get pods
-        run: |
-          kubectl get pods -n $TARGET_NAMESPACE
-          sleep 20
-          kubectl get pods -n $TARGET_NAMESPACE
 
       - name: Wait For Kafka
         run: kubectl wait kafka/console-kafka --for=condition=Ready --timeout=300s -n $TARGET_NAMESPACE
@@ -85,57 +93,26 @@ jobs:
       - name: Deploy Console Operator
         run: ./install/003-install-console-operator.sh $TARGET_NAMESPACE
 
-      - name: Get pods
-        run: |
-          kubectl get pods -n $TARGET_NAMESPACE
-          sleep 20
-          kubectl get pods -n $TARGET_NAMESPACE
-
       - name: Wait For Operator Pod
         run: |
           kubectl get pods -n $TARGET_NAMESPACE -o yaml | yq '.items[].metadata.name | select(. | test("^console-operator") and select(. | test("catalog") | not)) | .' | xargs -I {} kubectl wait --for=condition=Ready pod/{} -n $TARGET_NAMESPACE --timeout=300s
 
-      - name: Get pods
-        run: |
-          kubectl get pods -n $TARGET_NAMESPACE
-          sleep 20
-          kubectl get crds | grep github
+      - name: Wait For Console Instance CRD
+        run: while ! kubectl get crd consoles.console.streamshub.github.com &> /dev/null; do echo "Waiting for Console CRD"; sleep 5; done
 
       - name: Apply Console Instance CR file
-        shell: bash
         run: |
           sed -i -e "s#\$TARGET_NAMESPACE#${TARGET_NAMESPACE}#g" -e "s#\$CLUSTER_DOMAIN#${CLUSTER_DOMAIN}#g" $CONSOLE_INSTANCE_YAML
           cat $CONSOLE_INSTANCE_YAML
           kubectl apply -f $CONSOLE_INSTANCE_YAML -n $TARGET_NAMESPACE
 
-      - name: Get pods
-        run: |
-          kubectl get pods -n $TARGET_NAMESPACE
-          sleep 20
-          kubectl get deployments -n $TARGET_NAMESPACE
-          kubectl get pods -n $TARGET_NAMESPACE
-
-      - name: Wait For Console Deployment
-        run: kubectl wait deployment/example-console-deployment --for=condition=available --timeout=180s -n $TARGET_NAMESPACE
-
-      - name: Get pods
-        run: kubectl get pods -n $TARGET_NAMESPACE
-
-      - name: get services
-        run: kubectl get services -A
-
-      - name: get ingress
-        run: kubectl get ingress -A
-
-      - name: docker ps
-        run: docker ps
-
-      - name: curl
-        run: curl -L http://example-console.192.168.49.2.nip.io
+      - name: Wait For Console Instance Deployment
+        run: kubectl wait deployment/example-console-deployment --for=condition=available --timeout=300s -n $TARGET_NAMESPACE
 
       - name: curl grep
         run: curl -L http://example-console.192.168.49.2.nip.io | grep "console-kafka"
 
+      # TODO: Figure out how to run playwright integration tests against deployment
       - name: Use Node.js
         uses: actions/setup-node@v4
 
@@ -156,5 +133,6 @@ jobs:
           CONSOLE_MODE: ${{ secrets.CONSOLE_MODE }}
           HOME: /root
         run: |
+          npm build
           npm test
         working-directory: ./ui
