@@ -88,7 +88,7 @@ jobs:
         run: kubectl wait kafka/console-kafka --for=condition=Ready --timeout=300s -n $TARGET_NAMESPACE
 
       - name: Wait For Kafka User Secret
-        run: while ! kubectl get secret console-kafka-user1 -n $TARGET_NAMESPACE; do echo "Waiting for user secret"; sleep 5; done
+        run: while ! kubectl get secret console-kafka-user1 -n $TARGET_NAMESPACE; do echo "Waiting for user secret to be present"; sleep 5; done
 
       - name: Deploy Console Operator
         run: ./install/003-install-console-operator.sh $TARGET_NAMESPACE
@@ -98,7 +98,7 @@ jobs:
           kubectl get pods -n $TARGET_NAMESPACE -o yaml | yq '.items[].metadata.name | select(. | test("^console-operator") and select(. | test("catalog") | not)) | .' | xargs -I {} kubectl wait --for=condition=Ready pod/{} -n $TARGET_NAMESPACE --timeout=300s
 
       - name: Wait For Console Instance CRD
-        run: while ! kubectl get crd consoles.console.streamshub.github.com &> /dev/null; do echo "Waiting for Console CRD"; sleep 5; done
+        run: while ! kubectl get crd consoles.console.streamshub.github.com &> /dev/null; do echo "Waiting for Console CRD to be present"; sleep 5; done
 
       - name: Apply Console Instance CR file
         run: |
@@ -107,7 +107,9 @@ jobs:
           kubectl apply -f $CONSOLE_INSTANCE_YAML -n $TARGET_NAMESPACE
 
       - name: Wait For Console Instance Deployment
-        run: kubectl wait deployment/example-console-deployment --for=condition=available --timeout=300s -n $TARGET_NAMESPACE
+        run: |
+          while ! kubectl get deployment example-console-deployment -n $TARGET_NAMESPACE &> /dev/null; do echo "Waiting for Console Instance deployment to be present"; sleep 5; done
+          kubectl wait deployment/example-console-deployment --for=condition=available --timeout=300s -n $TARGET_NAMESPACE
 
       - name: curl grep
         run: curl -L http://example-console.192.168.49.2.nip.io | grep "console-kafka"
