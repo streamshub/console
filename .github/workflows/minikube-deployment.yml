@@ -1,0 +1,152 @@
+name: Minikube Deployment
+
+on:
+  pull_request:
+
+env:
+  TARGET_NAMESPACE: "console-namespace"
+  CI_CLUSTER: true
+  CONSOLE_INSTANCE_YAML: "./install/resources/console/console.instance.yaml"
+  CLUSTER_DOMAIN: "192.168.49.2.nip.io"
+
+jobs:
+  setup_deployment:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install yq
+        run: |
+          curl -L https://github.com/mikefarah/yq/releases/download/v4.44.1/yq_linux_amd64 > yq && chmod +x yq
+          sudo cp -v yq /usr/bin/
+
+      - name: Start minikube
+        id: minikube
+        uses: medyagh/setup-minikube@latest
+        with:
+          cpus: 2
+          memory: 4096m
+
+      - name: Install Operator SDK
+        run: |
+          curl -LO https://github.com/operator-framework/operator-sdk/releases/download/v1.35.0/operator-sdk_linux_amd64
+          chmod +x operator-sdk_linux_amd64 && sudo mv operator-sdk_linux_amd64 /usr/local/bin/operator-sdk
+          operator-sdk olm install 
+          operator-sdk olm status 
+
+      - name: Enable ingress
+        run: |
+          minikube addons enable ingress
+          minikube addons enable ingress-dns
+          kubectl patch deployment -n ingress-nginx ingress-nginx-controller --type='json' -p='[{"op": "add", "path": "/spec/template/spec/containers/0/args/-", "value":"--enable-ssl-passthrough"}]'
+
+      - name: Create namespace
+        run: kubectl create namespace $TARGET_NAMESPACE
+
+      - name: Deploy OperatorGroup
+        run: |
+          yq '.spec.targetNamespaces[0] = strenv(TARGET_NAMESPACE)' ./install/resources/operators/console-operators.operatorgroup.yaml | kubectl apply -n $TARGET_NAMESPACE -f -
+
+      - name: Install Strimzi
+        run: kubectl create -f "https://strimzi.io/install/latest?namespace=$TARGET_NAMESPACE" -n $TARGET_NAMESPACE
+
+      - name: Prometheus Operator Deployment
+        shell: bash
+        run: |
+          curl -s "https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/main/bundle.yaml" | sed "s#namespace: default#namespace: ${TARGET_NAMESPACE}#g" | kubectl create -n $TARGET_NAMESPACE -f -
+
+      - name: Prometheus Instance Deployment
+        run: ./install/001-deploy-prometheus.sh $TARGET_NAMESPACE
+
+      - name: Get pods
+        run: kubectl get pods -n $TARGET_NAMESPACE
+
+      - name: Wait For Strimzi
+        run: kubectl wait deployment/strimzi-cluster-operator --for=condition=available --timeout=180s -n $TARGET_NAMESPACE
+
+      - name: Kafka Cluster Deployment
+        run: ./install/002-deploy-console-kafka.sh $TARGET_NAMESPACE $CLUSTER_DOMAIN zk
+
+      - name: Get pods
+        run: |
+          kubectl get pods -n $TARGET_NAMESPACE
+          sleep 20
+          kubectl get pods -n $TARGET_NAMESPACE
+
+      - name: Wait For Kafka
+        run: kubectl wait kafka/console-kafka --for=condition=Ready --timeout=300s -n $TARGET_NAMESPACE
+
+      - name: Wait For Kafka User Secret
+        run: while ! kubectl get secret console-kafka-user1 -n $TARGET_NAMESPACE; do echo "Waiting for user secret"; sleep 5; done
+
+      - name: Deploy Console Operator
+        run: ./install/003-install-console-operator.sh $TARGET_NAMESPACE
+
+      - name: Get pods
+        run: |
+          kubectl get pods -n $TARGET_NAMESPACE
+          sleep 20
+          kubectl get pods -n $TARGET_NAMESPACE
+
+      - name: Wait For Operator Pod
+        run: |
+          kubectl get pods -n $TARGET_NAMESPACE -o yaml | yq '.items[].metadata.name | select(. | test("^console-operator") and select(. | test("catalog") | not)) | .' | xargs -I {} kubectl wait --for=condition=Ready pod/{} -n $TARGET_NAMESPACE --timeout=300s
+
+      - name: Get pods
+        run: |
+          kubectl get pods -n $TARGET_NAMESPACE
+          sleep 20
+          kubectl get crds | grep github
+
+      - name: Apply Console Instance CR file
+        shell: bash
+        run: |
+          sed -i -e "s#\$TARGET_NAMESPACE#${TARGET_NAMESPACE}#g" -e "s#\$CLUSTER_DOMAIN#${CLUSTER_DOMAIN}#g" $CONSOLE_INSTANCE_YAML
+          cat $CONSOLE_INSTANCE_YAML
+          kubectl apply -f $CONSOLE_INSTANCE_YAML -n $TARGET_NAMESPACE
+
+      - name: Get pods
+        run: |
+          kubectl get pods -n $TARGET_NAMESPACE
+          sleep 20
+          kubectl get deployments -n $TARGET_NAMESPACE
+          kubectl get pods -n $TARGET_NAMESPACE
+
+      - name: Wait For Console Deployment
+        run: kubectl wait deployment/example-console-deployment --for=condition=available --timeout=180s -n $TARGET_NAMESPACE
+
+      - name: Get pods
+        run: kubectl get pods -n $TARGET_NAMESPACE
+
+      - name: get services
+        run: kubectl get services -A
+
+      - name: get ingress
+        run: kubectl get ingress -A
+
+      - name: docker ps
+        run: docker ps
+
+      - name: curl
+        run: curl -L http://example-console.192.168.49.2.nip.io
+
+      - name: curl grep
+        run: curl -L http://example-console.192.168.49.2.nip.io | grep "console-kafka"
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: ./ui
+
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps
+        working-directory: ./ui
+
+      - name: Run Playwright tests
+        run: npx playwright test
+        working-directory: ./ui
