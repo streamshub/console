@@ -74,10 +74,10 @@ jobs:
           context: operator/target/bundle/console-operator/
           platforms: linux/amd64,linux/arm64
           provenance: false
-          push: false
+          push: true
           file: operator/target/bundle/console-operator/bundle.Dockerfile
           tags: |
-            streamshub/console-operator-bundle:${{ env.PROJECT_VERSION }}
+            localhost:5000/streamshub/console-operator-bundle:${{ env.PROJECT_VERSION }}
 
       - name: Build Operator Catalog
         run: |
@@ -93,10 +93,10 @@ jobs:
           context: operator/target/
           platforms: linux/amd64,linux/arm64
           provenance: false
-          push: false
+          push: true
           file: operator/target/catalog.Dockerfile
           tags: |
-            streamshub/console-operator-catalog:${{ env.PROJECT_VERSION }}
+            localhost:5000/streamshub/console-operator-catalog:${{ env.PROJECT_VERSION }}
 
       - name: Attach Kubernetes Resources
         uses: actions/upload-artifact@v4
@@ -133,6 +133,21 @@ jobs:
             !**/target/failsafe-reports/**/*
             !**/target/surefire-reports/**/*
 
+      - name: Save Operator Images
+        run: |
+          docker pull localhost:5000/streamshub/console-operator:${{ env.PROJECT_VERSION }}
+          docker pull localhost:5000/streamshub/console-operator-catalog:${{ env.PROJECT_VERSION }}
+          docker save -o console-operator-${{ env.PROJECT_VERSION }}.tar localhost:5000/streamshub/console-operator:${{ env.PROJECT_VERSION }}
+          docker save -o console-operator-catalog-${{ env.PROJECT_VERSION }}.tar localhost:5000/streamshub/console-operator-catalog:${{ env.PROJECT_VERSION }}
+
+      - name: Archive Operator Images
+        uses: actions/upload-artifact@v4
+        with:
+          name: operator-images
+          path: |
+            console-operator-${{ env.PROJECT_VERSION }}.tar
+            console-operator-catalog-${{ env.PROJECT_VERSION }}.tar
+
   build-ui:
     runs-on: ubuntu-latest
     steps:
@@ -167,4 +182,10 @@ jobs:
           provenance: false
           push: false
           tags: |
-            streamshub/console-ui:${{ env.PROJECT_VERSION }}
+            localhost:5000/streamshub/console-ui:${{ env.PROJECT_VERSION }}
+
+  call-minikube-deployment:
+    uses: ./.github/workflows/minikube-deployment.yml
+    needs:
+      - build-api
+      - build-ui
