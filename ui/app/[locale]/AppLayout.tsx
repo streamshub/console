@@ -21,8 +21,7 @@ import { PropsWithChildren, Suspense } from "react";
 
 export function AppLayout({
   children,
-  showLearningLinks,
-}: PropsWithChildren<{ showLearningLinks: boolean }>) {
+}: PropsWithChildren) {
   const t = useTranslations();
   return (
     <Page
@@ -48,7 +47,7 @@ export function AppLayout({
     >
       {/*<HelpContainer>*/}
       <ClusterDrawerProvider>
-        <ClusterDrawer showLearningLinks={showLearningLinks}>
+        <ClusterDrawer>
           <Banner variant={"blue"}>
             <Split>
               <SplitItem isFilled={true}>

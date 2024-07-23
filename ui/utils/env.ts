@@ -14,4 +14,4 @@ export const isReadonly = (() => {
   return true;
 })();
 
-export const isProductizedBuild = process.env.PRODUCTIZED_BUILD === "true";
+export const isProductizedBuild = process.env.NEXT_PUBLIC_PRODUCTIZED_BUILD === "true";

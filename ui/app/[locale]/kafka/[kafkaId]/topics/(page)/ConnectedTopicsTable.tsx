@@ -7,7 +7,7 @@ import {
   TopicsTableColumns,
 } from "@/components/TopicsTable/TopicsTable";
 import { useRouter } from "@/navigation";
-import { isProductizedBuild, isReadonly } from "@/utils/env";
+import { isReadonly } from "@/utils/env";
 import { useFilterParams } from "@/utils/useFilterParams";
 import { useOptimistic, useTransition } from "react";
 
@@ -193,7 +193,6 @@ export function ConnectedTopicsTable({
       }}
       includeHidden={includeHidden}
       isReadOnly={isReadonly}
-      showLearningLinks={isProductizedBuild}
     />
   );
 }
