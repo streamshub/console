@@ -11,13 +11,13 @@ import {
 } from "@/libs/patternfly/react-core";
 import { Divider, Stack, StackItem } from "@patternfly/react-core";
 import { useTranslations } from "next-intl";
+import { isProductizedBuild } from "@/utils/env";
+
 
 export async function ClusterConnectionDetails({
   clusterId,
-  showLearningLinks,
 }: {
   clusterId: string;
-  showLearningLinks: boolean;
 }) {
   const t = useTranslations();
   const data = await getKafkaCluster(clusterId);
@@ -103,7 +103,7 @@ export async function ClusterConnectionDetails({
           </ExpandableSection>
         </TextContent>
       </StackItem>
-      {showLearningLinks && (
+      {isProductizedBuild && (
         <StackItem>
           <Divider />
           <Stack hasGutter={true} className={"pf-v5-u-p-lg"}>

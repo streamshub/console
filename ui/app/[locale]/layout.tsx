@@ -5,7 +5,6 @@ import NextIntlProvider from "@/app/[locale]/NextIntlProvider";
 import { SessionRefresher } from "@/app/[locale]/SessionRefresher";
 
 import { authOptions } from "@/utils/authOptions";
-import { isProductizedBuild } from "@/utils/env";
 import { getServerSession } from "next-auth";
 import { getTranslations } from "next-intl/server";
 import { notFound } from "next/navigation";
@@ -31,7 +30,7 @@ export default async function Layout({ children, params: { locale } }: Props) {
         <NextIntlProvider locale={locale} messages={messages}>
           <AppSessionProvider session={session}>
             <AppLayoutProvider>
-              <AppLayout showLearningLinks={isProductizedBuild}>
+              <AppLayout>
                 {children}
               </AppLayout>
             </AppLayoutProvider>

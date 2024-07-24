@@ -17,9 +17,8 @@ import { useTranslations } from "next-intl";
 import { PropsWithChildren, Suspense } from "react";
 
 export function ClusterDrawer({
-  children,
-  showLearningLinks,
-}: PropsWithChildren<{ showLearningLinks: boolean }>) {
+  children
+}: PropsWithChildren) {
   const t = useTranslations();
   const { expanded, clusterId, close } = useClusterDrawerContext();
   return (
@@ -54,7 +53,6 @@ export function ClusterDrawer({
               {clusterId && (
                 <ClusterConnectionDetails
                   clusterId={clusterId}
-                  showLearningLinks={showLearningLinks}
                 />
               )}
             </Suspense>
@@ -63,12 +61,12 @@ export function ClusterDrawer({
       >
         <DrawerContentBody
           className={"pf-v5-u-display-flex pf-v5-u-flex-direction-column"}
-          // style={{
-          //   height: "100%",
-          //   width: "100%",
-          //   overflowY: "auto",
-          //   position: "absolute",
-          // }}
+        // style={{
+        //   height: "100%",
+        //   width: "100%",
+        //   overflowY: "auto",
+        //   position: "absolute",
+        // }}
         >
           {children}
         </DrawerContentBody>

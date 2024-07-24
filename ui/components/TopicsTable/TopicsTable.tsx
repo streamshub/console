@@ -78,7 +78,6 @@ export type TopicsTableProps = {
   filterId: string | undefined;
   filterName: string | undefined;
   filterStatus: TopicStatus[] | undefined;
-  showLearningLinks: boolean;
   onEditTopic: (topic: TopicList) => void;
   onDeleteTopic: (topic: TopicList) => void;
   onCreateTopic: () => void;
@@ -112,7 +111,6 @@ export function TopicsTable({
   onFilterIdChange,
   onFilterNameChange,
   onFilterStatusChange,
-  showLearningLinks,
 }: TopicsTableProps) {
   const t = useTranslations("topics");
   return (
@@ -127,7 +125,6 @@ export function TopicsTable({
           canCreate={isReadOnly === false}
           createHref={`${baseurl}/create`}
           onShowHiddenTopics={() => onInternalTopicsChange(true)}
-          showLearningLinks={showLearningLinks}
         />
       }
       emptyStateNoResults={
@@ -301,12 +298,12 @@ export function TopicsTable({
       actions={
         isReadOnly === false
           ? [
-              {
-                label: t("create_topic"),
-                onClick: onCreateTopic,
-                isPrimary: true,
-              },
-            ]
+            {
+              label: t("create_topic"),
+              onClick: onCreateTopic,
+              isPrimary: true,
+            },
+          ]
           : undefined
       }
       tools={[

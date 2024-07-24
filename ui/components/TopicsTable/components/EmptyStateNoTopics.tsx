@@ -11,17 +11,16 @@ import {
 } from "@/libs/patternfly/react-core";
 import { PlusCircleIcon } from "@/libs/patternfly/react-icons";
 import { useTranslations } from "next-intl";
+import { isProductizedBuild } from "@/utils/env"
 
 export function EmptyStateNoTopics({
   canCreate,
   createHref,
   onShowHiddenTopics,
-  showLearningLinks,
 }: {
   canCreate: boolean;
   createHref: string;
   onShowHiddenTopics: () => void;
-  showLearningLinks: boolean;
 }) {
   const t = useTranslations();
   return (
@@ -45,7 +44,7 @@ export function EmptyStateNoTopics({
             {t("EmptyStateNoTopics.show_internal_topics")}
           </Button>
         </EmptyStateActions>
-        {showLearningLinks && (
+        {isProductizedBuild && (
           <EmptyStateActions>
             <ExternalLink
               testId={"create-topic"}
