@@ -53,13 +53,13 @@
     "react-dom": "18.3.1",
     "react-highlight-words": "^0.20.0",
     "react-json-view-lite": "^1.4.0",
-    "typescript": "5.5.3",
+    "typescript": "5.5.4",
     "use-debounce": "^10.0.1",
     "use-resize-observer": "^9.1.0",
     "zod": "^3.23.8"
   },
   "devDependencies": {
-    "@playwright/test": "^1.45.2",
+    "@playwright/test": "^1.45.3",
     "@storybook/addon-essentials": "^8.2.5",
     "@storybook/addon-interactions": "^8.2.5",
     "@storybook/addon-links": "^8.2.5",
