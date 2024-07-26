@@ -46,7 +46,7 @@
     "next-auth": "^4.24.7",
     "next-intl": "^3.17.2",
     "next-logger": "^5.0.0",
-    "pino": "^9.3.1",
+    "pino": "^9.3.2",
     "prometheus-query": "^3.4.0",
     "react": "18.3.1",
     "react-csv-downloader": "^3.1.0",
