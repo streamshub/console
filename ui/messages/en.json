@@ -59,6 +59,15 @@
   "overview": {
     "title": "Overview"
   },
+  "login-in-page": {
+     "login_sub_title": "Log in to your account",
+     "username": "Username",
+     "password": "Password",
+     "login_button": "Log in",
+     "text_content": "The {product} console delivers real-time insights for managing and optimizing your Kafka clusters. Connect and monitor your clusters effortlessly.",
+     "footer_text": "To log in, you need to enter username and password. etc",
+     "learning_resource": "Learn more about {product}"
+  },
   "nodes": {
     "kpis_offline": "Prometheus can't be reached, information on the page will be incomplete. Please check your configuration.",
     "broker_id": "Broker ID",
