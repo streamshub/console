@@ -54,7 +54,7 @@ public class OASModelFilter extends AbstractOperationFilter implements OASFilter
             .filter(example -> Objects.nonNull(example.getExternalValue()))
             .forEach(example -> {
                 try (InputStream stream = getClass().getResourceAsStream(example.getExternalValue())) {
-                    LOGGER.infof("Loading Example externalValue: %s", example.getExternalValue());
+                    LOGGER.debugf("Loading Example externalValue: %s", example.getExternalValue());
                     example.setValue(objectMapper.get().readTree(stream));
                     example.setExternalValue(null);
                 } catch (IOException e) {

@@ -28,15 +28,17 @@ public class TestPlainNoK8sProfile extends TestPlainProfile implements QuarkusTe
                 kafka:
                   clusters:
                     - name: test-kafka1
-                      namespace: default
                       id: k1-id
                       properties:
                         bootstrap.servers: ${console.test.external-bootstrap}
                     - name: test-kafka2
-                      namespace: default
                       id: k2-id
                       properties:
                         bootstrap.servers: ${console.test.random-bootstrap}
+                    - name: test-kafka3
+                      namespace: default
+                      id: k3-id
+                      listener: listener0
                 """);
 
         return Map.of(

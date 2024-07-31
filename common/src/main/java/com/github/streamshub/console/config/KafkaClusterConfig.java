@@ -3,11 +3,14 @@ package com.github.streamshub.console.config;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import jakarta.validation.constraints.NotBlank;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 public class KafkaClusterConfig {
 
     private String id;
+    @NotBlank
     private String name;
     private String namespace;
     private String listener;

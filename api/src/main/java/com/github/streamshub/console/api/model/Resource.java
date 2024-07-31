@@ -20,13 +20,13 @@ import com.github.streamshub.console.api.support.ErrorCategory;
 @JsonInclude(Include.NON_NULL)
 public abstract class Resource<T> {
 
-    private final String id;
+    protected String id;
     @NotNull(payload = ErrorCategory.InvalidResource.class)
-    private final String type;
-    private Map<String, Object> meta;
+    protected final String type;
+    protected Map<String, Object> meta;
     @Valid
     @NotNull(payload = ErrorCategory.InvalidResource.class)
-    private final T attributes;
+    protected final T attributes;
 
     protected Resource(String id, String type, T attributes) {
         this.id = id;
@@ -48,6 +48,10 @@ public abstract class Resource<T> {
 
     public Map<String, Object> getMeta() {
         return meta;
+    }
+
+    public Object getMeta(String key) {
+        return meta != null ? meta.get(key) : null;
     }
 
     public Resource<T> addMeta(String key, Object value) {
