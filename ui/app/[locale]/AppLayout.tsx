@@ -4,12 +4,12 @@ import { AppSidebar } from "@/app/[locale]/AppSidebar";
 import { ClusterDrawer } from "@/app/[locale]/ClusterDrawer";
 
 import { ClusterDrawerProvider } from "@/app/[locale]/ClusterDrawerProvider";
-import { NavExpandable } from "@/components/NavExpandable";
 import { NavItemLink } from "@/components/Navigation/NavItemLink";
 import { TechPreviewPopover } from "@/components/TechPreviewPopover";
 import {
   Banner,
   Nav,
+  NavGroup,
   NavList,
   Page,
   Split,
@@ -19,9 +19,7 @@ import { HelpIcon } from "@/libs/patternfly/react-icons";
 import { useTranslations } from "next-intl";
 import { PropsWithChildren, Suspense } from "react";
 
-export function AppLayout({
-  children,
-}: PropsWithChildren) {
+export function AppLayout({ children }: PropsWithChildren) {
   const t = useTranslations();
   return (
     <Page
@@ -29,18 +27,9 @@ export function AppLayout({
       sidebar={
         <AppSidebar>
           <Nav aria-label={t("AppLayout.main_navigation_aria_label")}>
-            <NavList>
-              <NavItemLink url={"/home"}>{t("AppLayout.home")}</NavItemLink>
-              <NavExpandable
-                title={t("AppLayout.kafka_clusters")}
-                url={"/kafka"}
-                startExpanded={true}
-              >
-                <Suspense>
-                  <Clusters />
-                </Suspense>
-              </NavExpandable>
-            </NavList>
+            <Suspense>
+              <ClusterLinks />
+            </Suspense>
           </Nav>
         </AppSidebar>
       }
@@ -68,35 +57,34 @@ export function AppLayout({
   );
 }
 
-async function Clusters() {
+async function ClusterLinks() {
   const t = useTranslations();
   const clusters = await getKafkaClusters();
-  return clusters
-    .filter((c) => c.meta.configured === true)
-    .map((s, idx) => (
-      <NavExpandable
-        key={s.id}
-        title={s.attributes.name}
-        url={`/kafka/${s.id}`}
-        startExpanded={idx === 0}
-      >
-        <NavItemLink url={`/kafka/${s.id}/overview`}>
-          {t("AppLayout.cluster_overview")}
-        </NavItemLink>
-        <NavItemLink url={`/kafka/${s.id}/topics`}>
-          {t("AppLayout.topics")}
-        </NavItemLink>
-        <NavItemLink url={`/kafka/${s.id}/nodes`}>
-          {t("AppLayout.brokers")}
-        </NavItemLink>
-        {/*
-      <NavItemLink url={`/kafka/${s.id}/service-registry`}>
+  const defaultCluster = clusters[0];
+  if (defaultCluster) {
+    return (
+      <NavList>
+        <NavGroup title={defaultCluster.attributes.name}>
+          <NavItemLink url={`/kafka/${defaultCluster.id}/overview`}>
+            {t("AppLayout.cluster_overview")}
+          </NavItemLink>
+          <NavItemLink url={`/kafka/${defaultCluster.id}/topics`}>
+            {t("AppLayout.topics")}
+          </NavItemLink>
+          <NavItemLink url={`/kafka/${defaultCluster.id}/nodes`}>
+            {t("AppLayout.brokers")}
+          </NavItemLink>
+          {/*
+      <NavItemLink url={`/kafka/${defaultCluster.id}/service-registry`}>
         Service registry
       </NavItemLink>
 */}
-        <NavItemLink url={`/kafka/${s.id}/consumer-groups`}>
-          {t("AppLayout.consumer_groups")}
-        </NavItemLink>
-      </NavExpandable>
-    ));
+          <NavItemLink url={`/kafka/${defaultCluster.id}/consumer-groups`}>
+            {t("AppLayout.consumer_groups")}
+          </NavItemLink>
+        </NavGroup>
+      </NavList>
+    );
+  }
+  return null;
 }

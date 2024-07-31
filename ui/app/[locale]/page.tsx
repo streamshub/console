@@ -1,9 +1,14 @@
-import { redirect } from "@/navigation";
+import { getKafkaClusters } from "@/api/kafka/actions";
+import { RedirectOnLoad } from "@/components/Navigation/RedirectOnLoad";
 
-export default async function resourceIndexPage({
-  params,
-}: {
-  params: { kafkaId: string };
-}) {
-  redirect("/home");
+export default function Page({}) {
+  return <DefaultCluster />;
+}
+
+async function DefaultCluster() {
+  const clusters = await getKafkaClusters();
+  const defaultCluster = clusters[0];
+  if (defaultCluster) {
+    return <RedirectOnLoad url={`/kafka/${defaultCluster.id}`} />;
+  }
 }
