@@ -37,11 +37,22 @@ export async function getKafkaClusters(): Promise<ClusterList[]> {
   const url = `${process.env.BACKEND_URL}/api/kafkas?${kafkaClustersQuery}`;
   try {
     const res = await fetch(url, {
-      headers: await getHeaders(),
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
     });
     const rawData = await res.json();
     log.trace(rawData, "getKafkaClusters response");
-    return ClustersResponseSchema.parse(rawData).data;
+    return ClustersResponseSchema.parse(rawData).data.map((c) => ({
+      ...c,
+      attributes: {
+        ...c.attributes,
+        authMethod: {
+          method: "scram-sha",
+        },
+      },
+    }));
   } catch (err) {
     log.error(err, "getKafkaClusters");
     return [];

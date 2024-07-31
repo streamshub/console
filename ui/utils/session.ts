@@ -1,6 +1,6 @@
 "use server";
 
-import { authOptions } from "@/utils/authOptions";
+import { getAuthOptions } from "@/app/api/auth/[...nextauth]/route";
 import { logger } from "@/utils/logger";
 import { sealData, unsealData } from "iron-session";
 import { getServerSession } from "next-auth";
@@ -49,6 +49,7 @@ export async function setSession<T extends Record<string, unknown>>(
 
 export async function getUser() {
   log.trace("About to getServerSession");
+  const authOptions = await getAuthOptions();
   const auth = await getServerSession(authOptions);
 
   return {
