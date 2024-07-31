@@ -3,11 +3,17 @@ import { z } from "zod";
 
 export async function getHeaders(): Promise<Record<string, string>> {
   const user = await getUser();
-  return {
+  let headers: Record<string, string> = {
     Accept: "application/json",
-    Authorization: `Bearer ${user.accessToken}`,
     "Content-Type": "application/json",
   };
+  if (user.accessToken) {
+    headers["Authorization"] = `Bearer ${user.accessToken}`;
+  }
+  if (user.basicAuth) {
+    headers["Authorization"] = `Basic ${user.basicAuth}`;
+  }
+  return headers;
 }
 
 export const ApiError = z.object({

@@ -55,5 +55,6 @@ export async function getUser() {
   return {
     username: auth?.user?.name || auth?.user?.email,
     accessToken: auth?.accessToken,
+    basicAuth: auth?.basicAuth,
   };
 }
