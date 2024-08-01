@@ -52,6 +52,9 @@ export function makeScramShaProvider(): AuthOptions {
 
   return {
     providers: [provider],
+    pages: {
+      signIn: '/auth/signIn',
+    },
     callbacks: {
       async jwt({ token, user }) {
         if (user) {
