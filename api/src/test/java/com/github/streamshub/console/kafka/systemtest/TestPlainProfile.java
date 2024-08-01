@@ -52,8 +52,6 @@ public class TestPlainProfile implements QuarkusTestProfile {
                       namespace: default
                       # listener is named and bootstrap.servers not set (will be retrieved from Kafka CR)
                       listener: listener0
-                      properties:
-                        security.protocol: SSL
                 """);
 
         return Map.of("console.config-path", configFile.getAbsolutePath());

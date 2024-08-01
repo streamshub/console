@@ -24,12 +24,13 @@ import jakarta.json.JsonString;
 import jakarta.ws.rs.core.Response.Status;
 
 import org.apache.kafka.clients.CommonClientConfigs;
+import org.apache.kafka.common.config.SaslConfigs;
 import org.apache.kafka.common.config.SslConfigs;
 import org.apache.kafka.common.security.auth.SecurityProtocol;
+import org.apache.kafka.common.security.scram.ScramLoginModule;
 import org.eclipse.microprofile.config.Config;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -56,7 +57,9 @@ import io.quarkus.test.junit.TestProfile;
 import io.strimzi.api.kafka.model.kafka.Kafka;
 import io.strimzi.api.kafka.model.kafka.KafkaBuilder;
 import io.strimzi.api.kafka.model.kafka.listener.KafkaListenerAuthenticationCustomBuilder;
+import io.strimzi.api.kafka.model.kafka.listener.KafkaListenerAuthenticationOAuthBuilder;
 import io.strimzi.api.kafka.model.kafka.listener.KafkaListenerAuthenticationScramSha512Builder;
+import io.strimzi.kafka.oauth.client.JaasClientOauthLoginCallbackHandler;
 import io.strimzi.test.container.StrimziKafkaContainer;
 
 import static com.github.streamshub.console.test.TestHelper.whenRequesting;
@@ -65,7 +68,6 @@ import static java.util.function.Predicate.not;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
-import static org.hamcrest.Matchers.anEmptyMap;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
@@ -75,6 +77,7 @@ import static org.hamcrest.Matchers.hasEntry;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -492,32 +495,6 @@ class KafkaClustersResourceIT {
     }
 
     @Test
-    @Disabled("Only configured clusters are returned at this time")
-    void testListClustersWithUnconfiguredCluster() {
-        String clusterId = UUID.randomUUID().toString();
-        String clusterName = "test-kafka-" + clusterId;
-
-        // Create a Kafka CR with SCRAM-SHA that proxies to kafka1
-        client.resources(Kafka.class)
-            .resource(utils.buildKafkaResource(clusterName, clusterId, bootstrapServers))
-            .create();
-
-        // Wait for the informer cache to be populated with all Kafka CRs
-        await().atMost(10, TimeUnit.SECONDS)
-            .until(() -> Objects.equals(kafkaInformer.get().getStore().list().size(), 3));
-
-        whenRequesting(req -> req.get())
-            .assertThat()
-            .statusCode(is(Status.OK.getStatusCode()))
-            .body("data.size()", equalTo(3))
-            .body("data.id", containsInAnyOrder(clusterId1, clusterId2, clusterId))
-            .body("data.attributes.name", containsInAnyOrder("test-kafka1", "test-kafka2", clusterName))
-            .body("data.find { it.attributes.name == 'test-kafka1'}.meta.configured", is(true))
-            .body("data.find { it.attributes.name == 'test-kafka2'}.meta.configured", is(true))
-            .body("data.find { it.attributes.name == '" + clusterName + "'}.meta.configured", is(false));
-    }
-
-    @Test
     void testDescribeClusterWithCustomAuthType() {
         mockAdminClient();
 
@@ -539,10 +516,17 @@ class KafkaClustersResourceIT {
         String clusterId = UUID.randomUUID().toString();
 
         /*
-         * Create a Kafka CR with OAuth that proxies to kafka1.
-         * test-kafka3 is predefined in KafkaUnsecuredResourceManager with SSL
+         * Create a Kafka CR that proxies to kafka1.
+         * test-kafka3 is predefined in KafkaUnsecuredResourceManager
          */
         Kafka kafka = new KafkaBuilder(utils.buildKafkaResource("test-kafka3", clusterId, bootstrapServers))
+                .editSpec()
+                    .editKafka()
+                        .editMatchingListener(l -> "listener0".equals(l.getName()))
+                            .withTls(true)
+                        .endListener()
+                    .endKafka()
+                .endSpec()
                 .editStatus()
                     .editMatchingListener(l -> "listener0".equals(l.getName()))
                         .addToCertificates("""
@@ -563,7 +547,8 @@ class KafkaClustersResourceIT {
 
         whenRequesting(req -> req.get("{clusterId}", clusterId))
             .assertThat()
-            .statusCode(is(Status.OK.getStatusCode()));
+            .statusCode(is(Status.OK.getStatusCode()))
+            .body("data.attributes.name", equalTo("test-kafka3"));
             // Ignoring response data since they are from test-kafka-1
 
         assertEquals("SSL", clientConfig.get(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG));
@@ -577,14 +562,24 @@ class KafkaClustersResourceIT {
 
         /*
          * Create a Kafka CR without certificates
-         * test-kafka3 is predefined in KafkaUnsecuredResourceManager with SSL
+         * test-kafka3 is predefined in KafkaUnsecuredResourceManager
          */
         Kafka kafka = new KafkaBuilder(utils.buildKafkaResource("test-kafka3", clusterId, bootstrapServers))
+                .editSpec()
+                    .editKafka()
+                        .editMatchingListener(l -> "listener0".equals(l.getName()))
+                            .withTls(true)
+                        .endListener()
+                    .endKafka()
+                .endSpec()
                 .build();
 
         Map<String, Object> clientConfig = mockAdminClient();
 
-        client.resources(Kafka.class).resource(kafka).create();
+        utils.apply(client, kafka);
+
+        await().atMost(Duration.ofSeconds(5))
+            .until(() -> configuredContexts.containsKey(clusterId));
 
         await().atMost(Duration.ofSeconds(5))
             .until(() -> kafkaInformer.get()
@@ -597,29 +592,13 @@ class KafkaClustersResourceIT {
 
         whenRequesting(req -> req.get("{clusterId}", clusterId))
             .assertThat()
-            .statusCode(is(Status.NOT_FOUND.getStatusCode()));
+            .statusCode(is(Status.OK.getStatusCode()))
+            .body("data.attributes.name", equalTo("test-kafka3"));
             // Ignoring response data since they are from test-kafka-1
 
-        // adminBuilder was never called to update configuration
-        assertThat(clientConfig, is(anEmptyMap()));
-    }
-
-    @Test
-    void testDescribeClusterWithScram() {
-        String clusterId = UUID.randomUUID().toString();
-
-        // Create a Kafka CR with SCRAM-SHA that proxies to kafka1
-        client.resources(Kafka.class)
-            .resource(utils.buildKafkaResource("test-kafka-" + clusterId, clusterId, bootstrapServers,
-                new KafkaListenerAuthenticationScramSha512Builder().build()))
-            .create();
-
-        whenRequesting(req -> req.get("{clusterId}", clusterId))
-            .assertThat()
-            .statusCode(is(Status.NOT_FOUND.getStatusCode()))
-            .body("errors.size()", is(1))
-            .body("errors.status", contains("404"))
-            .body("errors.code", contains("4041"));
+        assertEquals("SSL", clientConfig.get(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG));
+        assertThat(clientConfig, not(hasKey(SslConfigs.SSL_TRUSTSTORE_TYPE_CONFIG)));
+        assertThat(clientConfig, not(hasKey(SslConfigs.SSL_TRUSTSTORE_CERTIFICATES_CONFIG)));
     }
 
     @Test
@@ -627,10 +606,8 @@ class KafkaClustersResourceIT {
         String clusterId = UUID.randomUUID().toString();
 
         // Create a Kafka CR with generic custom authentication that proxies to kafka1
-        client.resources(Kafka.class)
-            .resource(utils.buildKafkaResource("test-kafka-" + clusterId, clusterId, bootstrapServers,
-                new KafkaListenerAuthenticationCustomBuilder().build()))
-            .create();
+        utils.apply(client, utils.buildKafkaResource("test-kafka-" + clusterId, clusterId, bootstrapServers,
+                new KafkaListenerAuthenticationCustomBuilder().build()));
 
         whenRequesting(req -> req.get("{clusterId}", clusterId))
             .assertThat()
@@ -658,6 +635,97 @@ class KafkaClustersResourceIT {
             .body("errors.size()", is(1))
             .body("errors.status", contains("404"))
             .body("errors.code", contains("4041"));
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        "true, SASL_SSL",
+        "false, SASL_PLAINTEXT"
+    })
+    void testDescribeClusterWithOAuthTokenUrl(boolean tls, String expectedProtocol) {
+        String clusterId = UUID.randomUUID().toString();
+
+        /*
+         * Create a Kafka CR that proxies to kafka1.
+         * test-kafka3 is predefined in KafkaUnsecuredResourceManager
+         */
+        Kafka kafka = new KafkaBuilder(utils.buildKafkaResource("test-kafka3", clusterId, bootstrapServers,
+                    new KafkaListenerAuthenticationOAuthBuilder()
+                        .withTokenEndpointUri("https://example.com/token")
+                    .build()))
+                .editSpec()
+                    .editKafka()
+                    .editMatchingListener(l -> "listener0".equals(l.getName()))
+                        .withTls(tls)
+                    .endListener()
+                .endKafka()
+                .endSpec()
+                .build();
+
+        Map<String, Object> clientConfig = mockAdminClient();
+
+        utils.apply(client, kafka);
+
+        await().atMost(Duration.ofSeconds(5))
+            .until(() -> configuredContexts.containsKey(clusterId));
+
+        whenRequesting(req -> req
+                .auth().oauth2("my-secure-token")
+                .get("{clusterId}", clusterId))
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()))
+            .body("data.attributes.name", is("test-kafka3"))
+            .body("data.meta.authentication.method", is("oauth"))
+            .body("data.meta.authentication.tokenUrl", is("https://example.com/token"));
+
+        assertEquals(expectedProtocol, clientConfig.get(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG));
+        assertEquals("OAUTHBEARER", clientConfig.get(SaslConfigs.SASL_MECHANISM));
+        assertEquals(JaasClientOauthLoginCallbackHandler.class.getName(),
+                clientConfig.get(SaslConfigs.SASL_LOGIN_CALLBACK_HANDLER_CLASS));
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        "true, SASL_SSL",
+        "false, SASL_PLAINTEXT"
+    })
+    void testDescribeClusterWithScram(boolean tls, String expectedProtocol) {
+        String clusterId = UUID.randomUUID().toString();
+
+        /*
+         * Create a Kafka CR with SCRAM-SHA that proxies to kafka1
+         * test-kafka3 is predefined in KafkaUnsecuredResourceManager
+         */
+        Kafka kafka = new KafkaBuilder(utils.buildKafkaResource("test-kafka3", clusterId, bootstrapServers,
+                    new KafkaListenerAuthenticationScramSha512Builder().build()))
+                .editSpec()
+                    .editKafka()
+                    .editMatchingListener(l -> "listener0".equals(l.getName()))
+                        .withTls(tls)
+                    .endListener()
+                .endKafka()
+                .endSpec()
+                .build();
+
+        Map<String, Object> clientConfig = mockAdminClient();
+
+        utils.apply(client, kafka);
+
+        await().atMost(Duration.ofSeconds(5))
+            .until(() -> configuredContexts.containsKey(clusterId));
+
+        whenRequesting(req -> req
+                .auth().basic("u", "p")
+                .get("{clusterId}", clusterId))
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()))
+            .body("data.attributes.name", is("test-kafka3"))
+            .body("data.meta.authentication.method", is("basic"));
+
+        assertEquals(expectedProtocol, clientConfig.get(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG));
+        assertEquals("SCRAM-SHA-512", clientConfig.get(SaslConfigs.SASL_MECHANISM));
+        assertThat(String.valueOf(clientConfig.get(SaslConfigs.SASL_JAAS_CONFIG)),
+                containsString(ScramLoginModule.class.getName()));
     }
 
     // Helper methods
