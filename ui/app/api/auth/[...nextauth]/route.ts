@@ -1,10 +1,13 @@
 import { getKafkaClusters } from "@/api/kafka/actions";
 import { ClusterList } from "@/api/kafka/schema";
+import { logger } from "@/utils/logger";
 import NextAuth, { AuthOptions } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
 import { makeAnonymous } from "./anonymous";
 import { makeOauthProvider } from "./keycloak";
 import { makeScramShaProvider } from "./scram";
+
+const log = logger.child({ module: "auth" });
 
 export async function getAuthOptions(): Promise<AuthOptions> {
   // retrieve the authentication method required by the default Kafka cluster
@@ -35,7 +38,21 @@ function makeAuthOption(cluster: ClusterList): AuthOptions {
 async function handler(req: NextRequest, res: NextResponse) {
   const authOptions = await getAuthOptions();
   // set up the auth handler, if undefined there is no authentication required for the cluster
-  const authHandler = NextAuth(authOptions);
+  const authHandler = NextAuth({
+    ...authOptions,
+    debug: process.env.NODE_ENV === "development",
+    logger: {
+      debug: (code, ...metadata) => {
+        log.debug(metadata, code);
+      },
+      warn: (code, ...metadata) => {
+        log.warn(metadata, code);
+      },
+      error: (code, ...metadata) => {
+        log.error(metadata, code);
+      },
+    },
+  });
   // handle the request
   return authHandler(req, res);
 }

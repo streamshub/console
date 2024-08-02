@@ -20,6 +20,7 @@ export function makeScramShaProvider(): AuthOptions {
     },
 
     async authorize(credentials) {
+      console.log({ credentials });
       // try the username/password combo against the getKafkaCluster API call
       // if we get a response, then we can assume the credentials are correct
       try {
@@ -53,7 +54,7 @@ export function makeScramShaProvider(): AuthOptions {
   return {
     providers: [provider],
     pages: {
-      signIn: '/auth/signIn',
+      signIn: "/auth/signIn",
     },
     callbacks: {
       async jwt({ token, user }) {

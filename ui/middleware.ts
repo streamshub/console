@@ -3,6 +3,8 @@ import withAuth from "next-auth/middleware";
 import createIntlMiddleware from "next-intl/middleware";
 import { NextRequest } from "next/server";
 
+const publicPages = ["/login"];
+
 const intlMiddleware = createIntlMiddleware({
   // A list of all locales that are supported
   locales,
@@ -24,13 +26,25 @@ const authMiddleware = withAuth(
       authorized: ({ token }) => token != null,
     },
     pages: {
-      // signIn: '/login'
+      signIn: "/login",
     },
   },
 );
 
 export default async function middleware(req: NextRequest) {
-  return (authMiddleware as any)(req);
+  const publicPathnameRegex = RegExp(
+    `^(/(${locales.join("|")}))?(${publicPages
+      .flatMap((p) => (p === "/" ? ["", "/"] : p))
+      .join("|")})/?$`,
+    "i",
+  );
+  const isPublicPage = publicPathnameRegex.test(req.nextUrl.pathname);
+
+  if (isPublicPage) {
+    return intlMiddleware(req);
+  } else {
+    return (authMiddleware as any)(req);
+  }
 }
 
 export const config = {

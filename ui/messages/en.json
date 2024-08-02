@@ -16,7 +16,7 @@
   "learning": {
     "labels": {
       "overview": "Strimzi Overview",
-      "gettingStarted":"Getting Started with StreamsHub",
+      "gettingStarted": "Getting Started with StreamsHub",
       "connecting": "Connect to a Kafka cluster from an application",
       "topicOperatorUse": "Using the Topic Operator to manage Kafka topics"
     },
@@ -26,6 +26,15 @@
       "connecting": "",
       "topicOperatorUse": "https://strimzi.io/docs/operators/latest/overview#overview-concepts-topic-operator-str"
     }
+  },
+  "login-in-page": {
+    "login_sub_title": "Log in to your account",
+    "username": "Username",
+    "password": "Password",
+    "login_button": "Log in",
+    "text_content": "The {product} console delivers real-time insights for managing and optimizing your Kafka clusters. Connect and monitor your clusters effortlessly.",
+    "footer_text": "To log in, you need to enter username and password. etc",
+    "learning_resource": "Learn more about {product}"
   },
   "RefreshButton": {
     "refresh_button_label": "Refresh",
@@ -287,10 +296,9 @@
     "memory_usage_tooltip": "Memory utilization for all brokers over a specified period. Efficient memory allocation is essential for optimal performance of Kafka."
   },
   "topicMetricsCard": {
-     "topic_metric": "Topic metrics",
-     "topics_bytes_incoming_and_outgoing": "Topics bytes incoming and outgoing",
-     "topics_bytes_incoming_and_outgoing_tooltip": "Bytes incoming and outgoing are the total bytes for all topics or total bytes for a selected topic in the Kafka cluster. This metric enables you to assess data transfer in and out of your Kafka cluster. To modify incoming and outgoing bytes, you can adjust topic message size or other topic properties as needed."
-
+    "topic_metric": "Topic metrics",
+    "topics_bytes_incoming_and_outgoing": "Topics bytes incoming and outgoing",
+    "topics_bytes_incoming_and_outgoing_tooltip": "Bytes incoming and outgoing are the total bytes for all topics or total bytes for a selected topic in the Kafka cluster. This metric enables you to assess data transfer in and out of your Kafka cluster. To modify incoming and outgoing bytes, you can adjust topic message size or other topic properties as needed."
   },
   "ClusterConnectionDetails": {
     "description": "To connect to a Kafka cluster, add a bootstrap address and the properties to establish a secure connection to the configuration of your client application.",
@@ -396,7 +404,6 @@
     "name": "Name",
     "empty": "Empty",
     "no_advanced_options_specified": "No advanced options specified."
-
   },
   "DistributionChart": {
     "partitions_distribution_of_total": "Partitions distribution (% of total)",
@@ -447,23 +454,23 @@
     "unavailable_partition": "Unavailable",
     "unavailable_partition_tooltip": "Some or all partitions are currently unavailable. This may be due to issues such as broker failures or network problems. Investigate and address the underlying issues to restore normal functionality."
   },
-    "MemberTable": {
-      "member_id": "Member ID",
-      "client_id": "Client ID",
-      "client_id_tooltip": "The unique identifier assigned to the client (consumer) within the consumer group. A client ID helps identify and manage individual consumers.",
-      "overall_lag": "Overall lag",
-      "overall_lag_tooltip": "The cumulative lag across all partitions assigned to the consumer group. Consumer lag is the difference in the rate of production and consumption of messages.Specifically, consumer lag for a given consumer in a group indicates the delay between the last message in the partition and the message being currently picked up by that consumer.",
-      "assigned_partitions": "Assigned partitions",
-      "topic": "Topic",
-      "partition": "Partition",
-      "lag": "Lag",
-      "committed_offset": "Committed offset",
-      "committed_offset_tooltip": "The offset in the Kafka topic marking the last successfully consumed message by the consumer.",
-      "end_offset": "End offset",
-      "end_offset_tooltip": "The highest offset in the Kafka topic, representing the latest available message."
-    },
-    "ConsumerGroup":{
-      "reset_offset": "Reset offset",
-      "delete": "Delete"
-    }
+  "MemberTable": {
+    "member_id": "Member ID",
+    "client_id": "Client ID",
+    "client_id_tooltip": "The unique identifier assigned to the client (consumer) within the consumer group. A client ID helps identify and manage individual consumers.",
+    "overall_lag": "Overall lag",
+    "overall_lag_tooltip": "The cumulative lag across all partitions assigned to the consumer group. Consumer lag is the difference in the rate of production and consumption of messages.Specifically, consumer lag for a given consumer in a group indicates the delay between the last message in the partition and the message being currently picked up by that consumer.",
+    "assigned_partitions": "Assigned partitions",
+    "topic": "Topic",
+    "partition": "Partition",
+    "lag": "Lag",
+    "committed_offset": "Committed offset",
+    "committed_offset_tooltip": "The offset in the Kafka topic marking the last successfully consumed message by the consumer.",
+    "end_offset": "End offset",
+    "end_offset_tooltip": "The highest offset in the Kafka topic, representing the latest available message."
+  },
+  "ConsumerGroup": {
+    "reset_offset": "Reset offset",
+    "delete": "Delete"
+  }
 }
