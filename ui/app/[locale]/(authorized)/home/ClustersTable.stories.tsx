@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { ClustersTable } from "./ClustersTable";
-import { ClusterDrawerContext } from "../../../app/[locale]/ClusterDrawerContext"
+import { ClusterDrawerContext } from "../ClusterDrawerContext";
 
 const meta: Meta<typeof ClustersTable> = {
   component: ClustersTable,
@@ -8,8 +8,8 @@ const meta: Meta<typeof ClustersTable> = {
     (Story) => (
       <ClusterDrawerContext.Provider
         value={{
-          open: () => { },
-          close: () => { },
+          open: () => {},
+          close: () => {},
           expanded: false,
           clusterId: undefined,
         }}
@@ -22,7 +22,6 @@ const meta: Meta<typeof ClustersTable> = {
     clusters: [],
   },
 } as Meta<typeof ClustersTable>;
-
 
 export default meta;
 type Story = StoryObj<typeof ClustersTable>;
@@ -68,9 +67,6 @@ const clustersData = [
 
 export const Default: Story = {
   args: {
-    clusters: clustersData
+    clusters: clustersData,
   },
 };
-
-
-

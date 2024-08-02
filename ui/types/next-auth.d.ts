@@ -11,13 +11,19 @@ declare module "next-auth" {
     user?: {
       name: string;
       email?: string | null;
+      picture?: string | null;
     } & DefaultSession["user"];
+  }
+
+  interface User {
+    basicAuth?: string;
   }
 }
 
 declare module "next-auth/jwt" {
   /** Returned by the `jwt` callback and `getToken`, when using JWT sessions */
   interface JWT {
+    accessToken?: string;
     basicAuth?: string;
   }
 }
