@@ -1,0 +1,13 @@
+apiVersion: console.streamshub.github.com/v1alpha1
+kind: Console
+metadata:
+  name: example
+spec:
+  hostname: example-console.$CLUSTER_DOMAIN
+  kafkaClusters:
+    - name: console-kafka
+      namespace: $TARGET_NAMESPACE
+      listener: secure
+      credentials:
+        kafkaUser:
+          name: console-kafka-user1
