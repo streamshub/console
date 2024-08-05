@@ -21,7 +21,7 @@
         <strimzi-oauth.version>0.15.0</strimzi-oauth.version>
 
         <!-- Test Dependencies -->
-        <hamcrest.version>2.2</hamcrest.version>
+        <hamcrest.version>3.0</hamcrest.version>
         <strimzi-test-container.version>0.107.0</strimzi-test-container.version>
 
         <!-- Plugin Versions -->
