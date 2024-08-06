@@ -59,7 +59,7 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
-    "@playwright/test": "^1.45.3",
+    "@playwright/test": "^1.46.0",
     "@storybook/addon-essentials": "^8.2.7",
     "@storybook/addon-interactions": "^8.2.7",
     "@storybook/addon-links": "^8.2.7",
