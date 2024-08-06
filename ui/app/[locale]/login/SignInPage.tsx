@@ -99,7 +99,7 @@ export function SignInPage({ callbackUrl }: { callbackUrl: string }) {
       loginTitle={t("homepage.page_header", { product: productName })}
       loginSubtitle={t("login-in-page.login_sub_title")}
       textContent={t("login-in-page.text_content", { product: productName })}
-      brandImgSrc={"/StreamsLogo.svg"}
+      brandImgSrc={"/StreamsLogo.png"}
       footerListItems={t("login-in-page.footer_text")}
       socialMediaLoginContent={learnMoreResource}
     >
