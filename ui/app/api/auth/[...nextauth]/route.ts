@@ -9,15 +9,18 @@ import { makeScramShaProvider } from "./scram";
 
 const log = logger.child({ module: "auth" });
 
-export async function getAuthOptions(): Promise<AuthOptions> {
-  // retrieve the authentication method required by the default Kafka cluster
-  const clusters = await getKafkaClusters();
-  const defaultCluster = clusters[0];
-  if (!defaultCluster) {
-    throw new Error("No cluster");
+export async function getAuthOptions(
+  kafkaId?: string,
+): Promise<AuthOptions | null> {
+  if (kafkaId) {
+    // retrieve the authentication method required by the default Kafka cluster
+    const clusters = await getKafkaClusters();
+    const cluster = clusters.find((c) => c.id === kafkaId);
+    if (cluster) {
+      return makeAuthOption(cluster);
+    }
   }
-  // build the correct auth provider
-  return makeAuthOption(defaultCluster);
+  return null;
 }
 
 function makeAuthOption(cluster: ClusterList): AuthOptions {
@@ -35,26 +38,32 @@ function makeAuthOption(cluster: ClusterList): AuthOptions {
 }
 
 // const handler = NextAuth(authOptions);
-async function handler(req: NextRequest, res: NextResponse) {
+async function handler(
+  req: NextRequest,
+  { params }: { params: { kafkaId?: string } },
+) {
   const authOptions = await getAuthOptions();
-  // set up the auth handler, if undefined there is no authentication required for the cluster
-  const authHandler = NextAuth({
-    ...authOptions,
-    debug: process.env.NODE_ENV === "development",
-    logger: {
-      debug: (code, ...metadata) => {
-        log.debug(metadata, code);
+  if (authOptions) {
+    // set up the auth handler, if undefined there is no authentication required for the cluster
+    const authHandler = NextAuth({
+      ...authOptions,
+      debug: process.env.NODE_ENV === "development",
+      logger: {
+        debug: (code, ...metadata) => {
+          log.debug(metadata, code);
+        },
+        warn: (code, ...metadata) => {
+          log.warn(metadata, code);
+        },
+        error: (code, ...metadata) => {
+          log.error(metadata, code);
+        },
       },
-      warn: (code, ...metadata) => {
-        log.warn(metadata, code);
-      },
-      error: (code, ...metadata) => {
-        log.error(metadata, code);
-      },
-    },
-  });
-  // handle the request
-  return authHandler(req, res);
+    });
+    // handle the request
+    return authHandler(req, params.kafkaId);
+  }
+  return NextResponse.redirect(new URL("/", req.url));
 }
 
 export { handler as GET, handler as POST };

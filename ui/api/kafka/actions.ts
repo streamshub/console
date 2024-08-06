@@ -44,15 +44,7 @@ export async function getKafkaClusters(): Promise<ClusterList[]> {
     });
     const rawData = await res.json();
     log.trace(rawData, "getKafkaClusters response");
-    return ClustersResponseSchema.parse(rawData).data.map((c) => ({
-      ...c,
-      attributes: {
-        ...c.attributes,
-        authMethod: {
-          method: "scram-sha",
-        },
-      },
-    }));
+    return ClustersResponseSchema.parse(rawData).data;
   } catch (err) {
     log.error(err, "getKafkaClusters");
     return [];

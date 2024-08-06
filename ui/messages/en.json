@@ -36,6 +36,9 @@
     "footer_text": "To log in, you need to enter username and password. etc",
     "learning_resource": "Learn more about {product}"
   },
+  "cluster-selector": {
+    "subtitle": "Select a cluster"
+  },
   "RefreshButton": {
     "refresh_button_label": "Refresh",
     "refresh_description": "Reload contents",
