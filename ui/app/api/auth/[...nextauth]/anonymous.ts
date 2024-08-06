@@ -1,7 +1,8 @@
 import { AuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
+import { Provider } from "next-auth/providers/index";
 
-export function makeAnonymous(): AuthOptions {
+export function makeAnonymous(): Provider {
   const provider = CredentialsProvider({
     name: "Unauthenticated",
     credentials: {},
@@ -10,8 +11,5 @@ export function makeAnonymous(): AuthOptions {
     },
   });
 
-  return {
-    providers: [provider],
-    callbacks: {},
-  };
+  return provider;
 }

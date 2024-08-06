@@ -41,6 +41,7 @@ export async function getKafkaClusters(): Promise<ClusterList[]> {
         Accept: "application/json",
         "Content-Type": "application/json",
       },
+      cache: "reload",
     });
     const rawData = await res.json();
     log.trace(rawData, "getKafkaClusters response");
@@ -63,7 +64,7 @@ export async function getKafkaCluster(
   try {
     const res = await fetch(url, {
       headers: await getHeaders(),
-      cache: "force-cache",
+      cache: "reload",
     });
     const rawData = await res.json();
     log.trace(rawData, "getKafkaCluster response");

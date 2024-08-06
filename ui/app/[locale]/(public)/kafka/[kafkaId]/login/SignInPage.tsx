@@ -1,5 +1,6 @@
 "use client";
 import { ExternalLink } from "@/components/Navigation/ExternalLink";
+import { Link } from "@/navigation";
 import {
   Alert,
   LoginForm,
@@ -40,7 +41,15 @@ const signinErrors: Record<SignInPageErrorParam | "default" | string, string> =
     SessionRequired: "Please sign in to access this page.",
   };
 
-export function SignInPage({ callbackUrl }: { callbackUrl: string }) {
+export function SignInPage({
+  provider,
+  callbackUrl,
+  hasMultipleClusters,
+}: {
+  provider: "credentials" | "oauth-token";
+  callbackUrl: string;
+  hasMultipleClusters: boolean;
+}) {
   const t = useTranslations();
   const productName = t("common.product");
 
@@ -79,19 +88,31 @@ export function SignInPage({ callbackUrl }: { callbackUrl: string }) {
     e.stopPropagation();
     setIsSubmitting(true);
     setError(undefined);
-    const res = await signIn("credentials", {
-      username,
-      password,
+    const options =
+      provider === "credentials"
+        ? { username, password }
+        : { clientId: username, secret: password };
+    const res = await signIn(provider, {
+      ...options,
       redirect: false,
     });
     if (res?.error) {
       const error = signinErrors[res.error] ?? signinErrors.default;
       setError(error);
     } else if (res?.ok) {
-      window.location.href = callbackUrl ?? "/";
+      window.location.href = callbackUrl;
     }
     setIsSubmitting(false);
   };
+
+  const usernameLabel =
+    provider === "credentials"
+      ? t("login-in-page.username")
+      : t("login-in-page.clientId");
+  const passwordLabel =
+    provider === "credentials"
+      ? t("login-in-page.password")
+      : t("login-in-page.clientSecret");
 
   return (
     <LoginPage
@@ -102,13 +123,18 @@ export function SignInPage({ callbackUrl }: { callbackUrl: string }) {
       brandImgSrc={"/StreamsLogo.png"}
       footerListItems={t("login-in-page.footer_text")}
       socialMediaLoginContent={learnMoreResource}
+      signUpForAccountMessage={
+        hasMultipleClusters && (
+          <Link href={"/"}>Log in to a different cluster</Link>
+        )
+      }
     >
       {error && isSubmitting === false && (
         <Alert variant={"danger"} isInline={true} title={error} />
       )}
       <LoginForm
-        usernameLabel={t("login-in-page.username")}
-        passwordLabel={t("login-in-page.password")}
+        usernameLabel={usernameLabel}
+        passwordLabel={passwordLabel}
         loginButtonLabel={t("login-in-page.login_button")}
         usernameValue={username}
         passwordValue={password}

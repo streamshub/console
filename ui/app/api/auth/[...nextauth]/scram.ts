@@ -1,6 +1,7 @@
 import { getKafkaClusters } from "@/api/kafka/actions";
 import { AuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
+import { Provider } from "next-auth/providers/index";
 
 function bytesToBase64(bytes: Uint8Array): string {
   const binString = Array.from(bytes, (byte) =>
@@ -9,7 +10,7 @@ function bytesToBase64(bytes: Uint8Array): string {
   return btoa(binString);
 }
 
-export function makeScramShaProvider(): AuthOptions {
+export function makeScramShaProvider(kafkaId: string): Provider {
   const provider = CredentialsProvider({
     // The name to display on the sign in form (e.g. 'Sign in with...')
     name: "Kafka SAML",
@@ -20,13 +21,10 @@ export function makeScramShaProvider(): AuthOptions {
     },
 
     async authorize(credentials) {
-      console.log({ credentials });
       // try the username/password combo against the getKafkaCluster API call
       // if we get a response, then we can assume the credentials are correct
       try {
-        const clusters = await getKafkaClusters();
-        const defaultCluster = clusters[0];
-        const url = `${process.env.BACKEND_URL}/api/kafkas/${defaultCluster.id}?$`;
+        const url = `${process.env.BACKEND_URL}/api/kafkas/${kafkaId}?$`;
         const basicAuth = bytesToBase64(
           new TextEncoder().encode(
             `${credentials?.username}:${credentials?.password}`,
@@ -42,7 +40,11 @@ export function makeScramShaProvider(): AuthOptions {
         });
 
         if (res.status === 200) {
-          return { id: "1", name: credentials!.username, basicAuth };
+          return {
+            id: "1",
+            name: credentials!.username,
+            authorization: `Basic ${basicAuth}`,
+          };
         }
       } catch {}
       // store the credentials in the session
@@ -51,25 +53,24 @@ export function makeScramShaProvider(): AuthOptions {
     },
   });
 
-  return {
-    providers: [provider],
-    pages: {
-      signIn: "/auth/signIn",
-    },
-    callbacks: {
-      async jwt({ token, user }) {
-        if (user) {
-          token.basicAuth = user.basicAuth;
-        }
-        return token;
-      },
-      async session({ session, token, user }) {
-        // Send properties to the client, like an access_token and user id from a provider.
-        session.accessToken = token.accessToken;
-        session.basicAuth = token.basicAuth;
+  return provider;
 
-        return session;
-      },
-    },
-  };
+  // return {
+  //   providers: [provider],
+  //   callbacks: {
+  //     async jwt({ token, user }) {
+  //       if (user) {
+  //         token.basicAuth = user.basicAuth;
+  //       }
+  //       return token;
+  //     },
+  //     async session({ session, token, user }) {
+  //       // Send properties to the client, like an access_token and user id from a provider.
+  //       session.accessToken = token.accessToken;
+  //       session.basicAuth = token.basicAuth;
+  //
+  //       return session;
+  //     },
+  //   },
+  // };
 }

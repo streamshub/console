@@ -1,6 +1,11 @@
 import { getKafkaCluster, getKafkaClusters } from "@/api/kafka/actions";
-import { KafkaParams } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/kafka.params";
-import { KafkaBreadcrumbItem } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/KafkaBreadcrumbItem";
+import { ClusterLinks } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/ClusterLinks";
+import { getAuthOptions } from "@/app/api/auth/[...nextauth]/route";
+import { AppLayout } from "@/components/AppLayout";
+import { AppLayoutProvider } from "@/components/AppLayoutProvider";
+import { getServerSession } from "next-auth";
+import { KafkaParams } from "./kafka.params";
+import { KafkaBreadcrumbItem } from "./KafkaBreadcrumbItem";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -11,7 +16,7 @@ import { useTranslations } from "next-intl";
 import { notFound } from "next/navigation";
 import { PropsWithChildren, ReactNode, Suspense } from "react";
 
-export default function KafkaLayout({
+export default async function AsyncLayout({
   children,
   activeBreadcrumb,
   header,
@@ -23,29 +28,56 @@ export default function KafkaLayout({
   activeBreadcrumb: ReactNode;
   modal: ReactNode;
 }>) {
+  const authOptions = await getAuthOptions();
+  const session = await getServerSession(authOptions);
+  return (
+    <Layout
+      username={(session?.user?.name || session?.user?.email) ?? "User"}
+      kafkaId={kafkaId}
+      activeBreadcrumb={activeBreadcrumb}
+      header={header}
+      modal={modal}
+    >
+      {children}
+    </Layout>
+  );
+}
+
+function Layout({
+  children,
+  activeBreadcrumb,
+  header,
+  modal,
+  kafkaId,
+  username,
+}: PropsWithChildren<{
+  kafkaId: string;
+  username: string;
+  header: ReactNode;
+  activeBreadcrumb: ReactNode;
+  modal: ReactNode;
+}>) {
   const t = useTranslations();
   return (
-    <>
-      <PageGroup stickyOnBreakpoint={{ default: "top" }}>
-        <PageBreadcrumb>
-          <Breadcrumb>
-            <BreadcrumbItem>{t("AppLayout.kafka_clusters")}</BreadcrumbItem>
-            <BreadcrumbItem>
-              <Suspense>
-                <ConnectedKafkaBreadcrumbItem
-                  kafkaId={kafkaId}
-                  isActive={activeBreadcrumb === null}
-                />
-              </Suspense>
-            </BreadcrumbItem>
-            {activeBreadcrumb}
-          </Breadcrumb>
-        </PageBreadcrumb>
-        {header}
-      </PageGroup>
-      {children}
-      {modal}
-    </>
+    <AppLayoutProvider>
+      <AppLayout
+        username={username}
+        sidebar={
+          <Suspense>
+            <ClusterLinks kafkaId={kafkaId} />
+          </Suspense>
+        }
+      >
+        <PageGroup stickyOnBreakpoint={{ default: "top" }}>
+          <PageBreadcrumb>
+            <Breadcrumb>{activeBreadcrumb}</Breadcrumb>
+          </PageBreadcrumb>
+          {header}
+        </PageGroup>
+        <Suspense>{children}</Suspense>
+        {modal}
+      </AppLayout>
+    </AppLayoutProvider>
   );
 }
 

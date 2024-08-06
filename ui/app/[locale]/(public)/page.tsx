@@ -2,12 +2,10 @@ import { getConsumerGroups } from "@/api/consumerGroups/actions";
 import { getKafkaCluster, getKafkaClusters } from "@/api/kafka/actions";
 import { ClusterList } from "@/api/kafka/schema";
 import { getViewedTopics } from "@/api/topics/actions";
-import {
-  ClustersTable,
-  EnrichedClusterList,
-} from "@/app/[locale]/(authorized)/home/ClustersTable";
-import { ExpandableCard } from "@/app/[locale]/(authorized)/home/ExpandableCard";
-import { TopicsTable } from "@/app/[locale]/(authorized)/home/TopicsTable";
+import { ClustersTable } from "./ClustersTable";
+import { ExpandableCard } from "./ExpandableCard";
+import { TopicsTable } from "./TopicsTable";
+import { AppLayout } from "@/components/AppLayout";
 import { Number } from "@/components/Format/Number";
 import { ExternalLink } from "@/components/Navigation/ExternalLink";
 import {
@@ -48,7 +46,7 @@ export default function Home() {
   const brand = t("common.brand");
 
   return (
-    <>
+    <AppLayout>
       <PageSection padding={{ default: "noPadding" }} variant={"light"}>
         <div className={styles.hero}>
           <div>
@@ -272,7 +270,7 @@ export default function Home() {
           )}
         </Stack>
       </PageSection>
-    </>
+    </AppLayout>
   );
 }
 

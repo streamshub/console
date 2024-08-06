@@ -7,11 +7,8 @@ export async function getHeaders(): Promise<Record<string, string>> {
     Accept: "application/json",
     "Content-Type": "application/json",
   };
-  if (user.accessToken) {
-    headers["Authorization"] = `Bearer ${user.accessToken}`;
-  }
-  if (user.basicAuth) {
-    headers["Authorization"] = `Basic ${user.basicAuth}`;
+  if (user.authorization) {
+    headers["Authorization"] = user.authorization;
   }
   return headers;
 }

@@ -6,8 +6,7 @@ declare module "next-auth" {
    */
   interface Session {
     error?: "RefreshAccessTokenError";
-    accessToken?: string;
-    basicAuth?: string;
+    authorization?: string;
     user?: {
       name: string;
       email?: string | null;
@@ -16,14 +15,13 @@ declare module "next-auth" {
   }
 
   interface User {
-    basicAuth?: string;
+    authorization?: string;
   }
 }
 
 declare module "next-auth/jwt" {
   /** Returned by the `jwt` callback and `getToken`, when using JWT sessions */
   interface JWT {
-    accessToken?: string;
-    basicAuth?: string;
+    authorization?: string;
   }
 }

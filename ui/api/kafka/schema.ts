@@ -12,28 +12,26 @@ export const ClusterListSchema = z.object({
   type: z.literal("kafkas"),
   meta: z.object({
     configured: z.boolean(),
-  }),
-  attributes: z.object({
-    name: z.string(),
-    namespace: z.string().nullable().optional(),
-    kafkaVersion: z.string().nullable().optional(),
-    authMethod: z
+    authentication: z
       .union([
         z.object({
           method: z.literal("anonymous"),
         }),
         z.object({
-          method: z.literal("scram-sha"),
+          method: z.literal("basic"),
         }),
         z.object({
           method: z.literal("oauth"),
-          clientId: z.string(),
-          clientSecret: z.string(),
-          issuer: z.string(),
+          tokenUrl: z.string().nullable().optional(),
         }),
       ])
       .nullable()
       .optional(),
+  }),
+  attributes: z.object({
+    name: z.string(),
+    namespace: z.string().nullable().optional(),
+    kafkaVersion: z.string().nullable().optional(),
   }),
 });
 export const ClustersResponseSchema = z.object({

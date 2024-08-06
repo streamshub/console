@@ -15,17 +15,21 @@ import {
 } from "@/libs/patternfly/react-core";
 import { BarsIcon, QuestionCircleIcon } from "@/libs/patternfly/react-icons";
 import { FeedbackModal } from "@patternfly/react-user-feedback";
-import { useSession } from "next-auth/react";
+import { User } from "next-auth";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { useState } from "react";
 import { useAppLayout } from "./AppLayoutProvider";
 import { UserDropdown } from "./UserDropdown";
 
-export function AppMasthead() {
+export function AppMasthead({
+  username,
+  showSidebarToggle,
+}: {
+  username?: string;
+  showSidebarToggle: boolean;
+}) {
   const t = useTranslations();
-  const { data } = useSession();
-  const { user } = data || {};
   const { toggleSidebar } = useAppLayout();
   const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
   const openFeedbackModal = () => {
@@ -37,15 +41,17 @@ export function AppMasthead() {
   return (
     <>
       <Masthead>
-        <MastheadToggle>
-          <PageToggleButton
-            variant="plain"
-            aria-label={t("AppMasthead.global_navigation")}
-            onClick={toggleSidebar}
-          >
-            <BarsIcon />
-          </PageToggleButton>
-        </MastheadToggle>
+        {showSidebarToggle && (
+          <MastheadToggle>
+            <PageToggleButton
+              variant="plain"
+              aria-label={t("AppMasthead.global_navigation")}
+              onClick={toggleSidebar}
+            >
+              <BarsIcon />
+            </PageToggleButton>
+          </MastheadToggle>
+        )}
         <MastheadMain>
           <Link href={"/"} className={"pf-v5-c-masthead_brand"}>
             <img
@@ -91,10 +97,9 @@ export function AppMasthead() {
                   </ToolbarItem>
                 </ToolbarGroup>
               </ToolbarGroup>
-              <UserDropdown
-                username={user?.name || user?.email}
-                picture={user?.picture}
-              />
+              {username && (
+                <UserDropdown username={username} picture={undefined} />
+              )}
             </ToolbarContent>
           </Toolbar>
         </MastheadContent>

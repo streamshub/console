@@ -2,8 +2,8 @@ import { getAuthOptions } from "@/app/api/auth/[...nextauth]/route";
 
 import { getServerSession } from "next-auth";
 import { ReactNode } from "react";
-import { AppLayout } from "./AppLayout";
-import { AppLayoutProvider } from "./AppLayoutProvider";
+import { AppLayout } from "../../../components/AppLayout";
+import { AppLayoutProvider } from "../../../components/AppLayoutProvider";
 import { AppSessionProvider } from "./AppSessionProvider";
 import { SessionRefresher } from "./SessionRefresher";
 
@@ -17,9 +17,7 @@ export default async function Layout({ children, params: { locale } }: Props) {
   const session = await getServerSession(authOptions);
   return (
     <AppSessionProvider session={session}>
-      <AppLayoutProvider>
-        <AppLayout>{children}</AppLayout>
-      </AppLayoutProvider>
+      {children}
       <SessionRefresher />
     </AppSessionProvider>
   );

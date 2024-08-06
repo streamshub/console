@@ -1,6 +1,6 @@
 "use client";
 
-import { useOpenClusterConnectionPanel } from "@/app/[locale]/(authorized)/ClusterDrawerContext";
+import { useOpenClusterConnectionPanel } from "@/components/ClusterDrawerContext";
 import { Button } from "@/libs/patternfly/react-core";
 import { useTranslations } from "next-intl";
 

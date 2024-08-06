@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { ClustersTable } from "./ClustersTable";
-import { ClusterDrawerContext } from "../ClusterDrawerContext";
+import { ClusterDrawerContext } from "../../../components/ClusterDrawerContext";
 
 const meta: Meta<typeof ClustersTable> = {
   component: ClustersTable,

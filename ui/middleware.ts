@@ -3,8 +3,8 @@ import withAuth from "next-auth/middleware";
 import createIntlMiddleware from "next-intl/middleware";
 import { NextRequest, NextResponse } from "next/server";
 
-const publicPages = ["/kafka/\\d/login", "/cluster"];
-const protectedPages = ["/kafka/\\d/.?"];
+const publicPages = ["/kafka/\\d/login", "/cluster", "/"];
+const protectedPages = ["/kafka/\\d/.*"];
 
 const intlMiddleware = createIntlMiddleware({
   // A list of all locales that are supported
@@ -15,23 +15,22 @@ const intlMiddleware = createIntlMiddleware({
   localePrefix: "never",
 });
 
-const authMiddleware = (kafkaId: string) =>
-  withAuth(
-    // Note that this callback is only invoked if
-    // the `authorized` callback has returned `true`
-    // and not for pages listed in `pages`.
-    function onSuccess(req) {
-      return intlMiddleware(req);
+const authMiddleware = withAuth(
+  // Note that this callback is only invoked if
+  // the `authorized` callback has returned `true`
+  // and not for pages listed in `pages`.
+  function onSuccess(req) {
+    return intlMiddleware(req);
+  },
+  {
+    callbacks: {
+      authorized: ({ token }) => token != null,
     },
-    {
-      callbacks: {
-        authorized: ({ token }) => token != null,
-      },
-      pages: {
-        signIn: `/kafka/${kafkaId}/login`,
-      },
+    pages: {
+      signIn: `/kafka/1/login`,
     },
-  ) as any;
+  },
+) as any;
 
 const publicPathnameRegex = RegExp(
   `^(/(${locales.join("|")}))?(${publicPages
@@ -54,9 +53,9 @@ export default async function middleware(req: NextRequest) {
   if (isPublicPage) {
     return intlMiddleware(req);
   } else if (isProtectedPage) {
-    return authMiddleware("1")(req);
+    return (authMiddleware as any)(req);
   } else {
-    return NextResponse.redirect(new URL("/cluster", req.url));
+    return NextResponse.redirect(new URL("/", req.url));
   }
 }
 
