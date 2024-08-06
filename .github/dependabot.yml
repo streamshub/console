@@ -38,3 +38,7 @@ updates:
       - "@storybook/*"
       exclude-patterns:
       - "@storybook/testing-library"
+    playwright:
+      patterns:
+      - "playwright"
+      - "@playwright/*"
