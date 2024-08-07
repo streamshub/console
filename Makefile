@@ -40,6 +40,15 @@ container-image-operator-push: container-image-operator
 	$(CONTAINER_RUNTIME) push $(CONSOLE_OPERATOR_CATALOG_IMAGE)
 
 container-image-ui:
+	cd ui && \
+	npm ci --omit=dev && \
+	export BACKEND_URL=http://example && \
+	export CONSOLE_METRICS_PROMETHEUS_URL=http://example && \
+	export NEXTAUTH_SECRET=examplesecret && \
+	export LOG_LEVEL=info && \
+	export CONSOLE_MODE=read-only && \
+	npm run build && \
+	cd $(CURDIR) && \
 	$(CONTAINER_RUNTIME) build -t $(CONSOLE_UI_IMAGE) ./ui -f ./ui/Dockerfile
 
 container-image-ui-push: container-image-ui

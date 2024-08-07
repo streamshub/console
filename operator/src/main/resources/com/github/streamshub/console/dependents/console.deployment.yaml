@@ -24,6 +24,7 @@ spec:
         image: quay.io/streamshub/console-api
         ports:
         - containerPort: 8080
+          name: http
         volumeMounts:
         - name: config
           mountPath: /deployments/console-config.yaml
@@ -31,6 +32,36 @@ spec:
         env:
         - name: CONSOLE_CONFIG_PATH
           value: /deployments/console-config.yaml
+        startupProbe:
+          httpGet:
+            path: /health/started
+            port: http
+            scheme: HTTP
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          timeoutSeconds: 10
+          successThreshold: 1
+          failureThreshold: 3
+        livenessProbe:
+          httpGet:
+            path: /health/live
+            port: http
+            scheme: HTTP
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          timeoutSeconds: 10
+          successThreshold: 1
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health/ready
+            port: http
+            scheme: HTTP
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          timeoutSeconds: 10
+          successThreshold: 1
+          failureThreshold: 3
       ### User Interface
       - name: console-ui
         image: quay.io/streamshub/console-ui
@@ -39,6 +70,7 @@ spec:
           name: cache
         ports:
         - containerPort: 3000
+          name: http
         env:
         - name: NEXTAUTH_SECRET
           valueFrom:
@@ -55,3 +87,33 @@ spec:
           value: read-only
         - name: LOG_LEVEL
           value: info
+        startupProbe:
+          httpGet:
+            path: /healthz
+            port: http
+            scheme: HTTP
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          timeoutSeconds: 10
+          successThreshold: 1
+          failureThreshold: 3
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: http
+            scheme: HTTP
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          timeoutSeconds: 10
+          successThreshold: 1
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: http
+            scheme: HTTP
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          timeoutSeconds: 10
+          successThreshold: 1
+          failureThreshold: 3
