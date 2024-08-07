@@ -8,6 +8,7 @@ import java.util.Optional;
 import jakarta.inject.Inject;
 
 import org.apache.kafka.common.config.SaslConfigs;
+import org.eclipse.microprofile.config.Config;
 import org.jboss.logging.Logger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -53,6 +54,9 @@ class ConsoleReconcilerTest {
 
     @Inject
     KubernetesClient client;
+
+    @Inject
+    Config config;
 
     @Inject
     Operator operator;
@@ -192,11 +196,18 @@ class ConsoleReconcilerTest {
             assertTrue(condition.getMessage().contains("ConsoleDeployment"));
         });
 
-        client.apps().deployments()
+        var consoleDeployment = client.apps().deployments()
                 .inNamespace(consoleCR.getMetadata().getNamespace())
                 .withName("console-1-console-deployment")
                 .editStatus(this::setReady);
         LOGGER.info("Set ready replicas for Console deployment");
+
+        // Images were not set in CR, so assert that the defaults were used
+        var consoleContainers = consoleDeployment.getSpec().getTemplate().getSpec().getContainers();
+        assertEquals(config.getValue("console.deployment.default-api-image", String.class),
+                consoleContainers.get(0).getImage());
+        assertEquals(config.getValue("console.deployment.default-ui-image", String.class),
+                consoleContainers.get(1).getImage());
 
         await().ignoreException(NullPointerException.class).atMost(LIMIT).untilAsserted(() -> {
             var console = client.resources(Console.class)
@@ -482,9 +493,9 @@ class ConsoleReconcilerTest {
             assertNotNull(consoleSecret);
             String configEncoded = consoleSecret.getData().get("console-config.yaml");
             byte[] configDecoded = Base64.getDecoder().decode(configEncoded);
-            ConsoleConfig config = new ObjectMapper().readValue(configDecoded, ConsoleConfig.class);
+            ConsoleConfig consoleConfig = new ObjectMapper().readValue(configDecoded, ConsoleConfig.class);
             assertEquals("jaas-config-value",
-                    config.getKafka().getClusters().get(0).getProperties().get(SaslConfigs.SASL_JAAS_CONFIG));
+                    consoleConfig.getKafka().getClusters().get(0).getProperties().get(SaslConfigs.SASL_JAAS_CONFIG));
         });
     }
 
@@ -559,8 +570,8 @@ class ConsoleReconcilerTest {
             assertNotNull(consoleSecret);
             String configEncoded = consoleSecret.getData().get("console-config.yaml");
             byte[] configDecoded = Base64.getDecoder().decode(configEncoded);
-            ConsoleConfig config = new ObjectMapper().readValue(configDecoded, ConsoleConfig.class);
-            var kafkaConfig = config.getKafka().getClusters().get(0);
+            ConsoleConfig consoleConfig = new ObjectMapper().readValue(configDecoded, ConsoleConfig.class);
+            var kafkaConfig = consoleConfig.getKafka().getClusters().get(0);
             assertEquals("x-prop-value", kafkaConfig.getProperties().get("x-prop-name"));
             assertEquals("x-admin-prop-value", kafkaConfig.getAdminProperties().get("x-admin-prop-name"));
             assertEquals("x-consumer-prop-value", kafkaConfig.getConsumerProperties().get("extra-x-consumer-prop-name"));

@@ -1,6 +1,5 @@
 package com.github.streamshub.console.dependents;
 
-import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 
@@ -23,8 +22,6 @@ import io.javaoperatorsdk.operator.processing.dependent.kubernetes.KubernetesDep
 public class ConsoleDeployment extends CRUDKubernetesDependentResource<Deployment, Console> implements ConsoleResource {
 
     public static final String NAME = "console-deployment";
-    private static final String DEFAULT_IMAGE_API = "quay.io/streamshub/console-api";
-    private static final String DEFAULT_IMAGE_UI = "quay.io/streamshub/console-ui";
 
     @Inject
     PrometheusService prometheusService;
@@ -36,8 +33,12 @@ public class ConsoleDeployment extends CRUDKubernetesDependentResource<Deploymen
     ConsoleSecret secret;
 
     @Inject
-    @ConfigProperty(name = "quarkus.application.version")
-    String applicationVersion;
+    @ConfigProperty(name = "console.deployment.default-api-image")
+    String defaultAPIImage;
+
+    @Inject
+    @ConfigProperty(name = "console.deployment.default-ui-image")
+    String defaultUIImage;
 
     public ConsoleDeployment() {
         super(Deployment.class);
@@ -53,11 +54,10 @@ public class ConsoleDeployment extends CRUDKubernetesDependentResource<Deploymen
         Deployment desired = load(context, "console.deployment.yaml", Deployment.class);
         String name = instanceName(primary);
         String configSecretName = secret.instanceName(primary);
-        String imageTag = applicationVersion.toLowerCase(Locale.ROOT);
-        String imageAPI = Optional.ofNullable(primary.getSpec().getImages().getApi())
-                .orElseGet(() -> DEFAULT_IMAGE_API + ":" + imageTag);
-        String imageUI = Optional.ofNullable(primary.getSpec().getImages().getUi())
-                .orElseGet(() -> DEFAULT_IMAGE_UI + ":" + imageTag);
+
+        var imagesSpec = primary.getSpec().getImages();
+        String imageAPI = Optional.ofNullable(imagesSpec.getApi()).orElse(defaultAPIImage);
+        String imageUI = Optional.ofNullable(imagesSpec.getUi()).orElse(defaultUIImage);
 
         return desired.edit()
             .editMetadata()
