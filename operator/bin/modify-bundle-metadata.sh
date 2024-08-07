@@ -38,7 +38,7 @@ echo "[DEBUG] Setting container image = ${image_with_digest}"
 ${YQ} eval -o yaml -i ".metadata.annotations.containerImage = \"${image_with_digest}\"" "${CSV_FILE_PATH}"
 
 # Add current createdAt time
-curr_time_date=$(date +'%Y-%m-%d %H:%M:%S')
+curr_time_date="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
 echo "[DEBUG] Setting createdAt = ${curr_time_date}"
 ${YQ} eval -o yaml -i ".metadata.annotations.createdAt = \"${curr_time_date}\"" "${CSV_FILE_PATH}"
 
