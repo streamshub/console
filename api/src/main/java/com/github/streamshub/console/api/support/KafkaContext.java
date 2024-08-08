@@ -96,6 +96,10 @@ public class KafkaContext implements Closeable {
         return configs(clientType).get(SaslConfigs.SASL_MECHANISM) instanceof String auth ? auth : "";
     }
 
+    public boolean hasCredentials(Class<?> clientType) {
+        return configs(clientType).get(SaslConfigs.SASL_JAAS_CONFIG) instanceof String;
+    }
+
     public Optional<String> tokenUrl() {
         return Optional.ofNullable(clusterConfig.getProperties().get(ClientConfig.OAUTH_TOKEN_ENDPOINT_URI))
             .or(() -> Optional.ofNullable(resource())

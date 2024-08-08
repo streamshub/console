@@ -50,6 +50,9 @@ import static com.github.streamshub.console.api.BlockingSupplier.get;
 @ApplicationScoped
 public class KafkaClusterService {
 
+    private static final String AUTHN_KEY = "authentication";
+    private static final String AUTHN_METHOD_KEY = "method";
+
     @Inject
     Logger logger;
 
@@ -163,18 +166,14 @@ public class KafkaClusterService {
             cluster.setId(config.getId());
         }
 
-        switch (kafkaContext.saslMechanism(Admin.class)) {
-            case ClientFactory.OAUTHBEARER:
-                Map<String, String> authMeta = new HashMap<>(2);
-                authMeta.put("method", "oauth");
-                authMeta.put("tokenUrl", kafkaContext.tokenUrl().orElse(null));
-                cluster.addMeta("authentication", authMeta);
-                break;
-            case ClientFactory.PLAIN, ClientFactory.SCRAM_SHA256, ClientFactory.SCRAM_SHA512:
-                cluster.addMeta("authentication", Map.of("method", "basic"));
-                break;
-            default:
-                break;
+        if (kafkaContext.applicationScoped()) {
+            if (kafkaContext.hasCredentials(Admin.class)) {
+                cluster.addMeta(AUTHN_KEY, Map.of(AUTHN_METHOD_KEY, "anonymous"));
+            } else {
+                addAuthenticationMethod(cluster, kafkaContext);
+            }
+        } else {
+            addAuthenticationMethod(cluster, kafkaContext);
         }
 
         return cluster;
@@ -182,6 +181,22 @@ public class KafkaClusterService {
 
     KafkaCluster addKafkaContextData(KafkaCluster cluster) {
         return addKafkaContextData(cluster, kafkaContext);
+    }
+
+    void addAuthenticationMethod(KafkaCluster cluster, KafkaContext kafkaContext) {
+        switch (kafkaContext.saslMechanism(Admin.class)) {
+            case ClientFactory.OAUTHBEARER:
+                Map<String, String> authMeta = new HashMap<>(2);
+                authMeta.put(AUTHN_METHOD_KEY, "oauth");
+                authMeta.put("tokenUrl", kafkaContext.tokenUrl().orElse(null));
+                cluster.addMeta(AUTHN_KEY, authMeta);
+                break;
+            case ClientFactory.PLAIN, ClientFactory.SCRAM_SHA256, ClientFactory.SCRAM_SHA512:
+                cluster.addMeta(AUTHN_KEY, Map.of(AUTHN_METHOD_KEY, "basic"));
+                break;
+            default:
+                break;
+        }
     }
 
     KafkaCluster addKafkaResourceData(KafkaCluster cluster) {
