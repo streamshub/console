@@ -1,4 +1,4 @@
-import { getKafkaClusterKpis } from "@/api/kafka/actions";
+import { getKafkaCluster, getKafkaClusterKpis } from "@/api/kafka/actions";
 import { KafkaParams } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/kafka.params";
 import { DistributionChart } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/nodes/DistributionChart";
 import {
@@ -28,12 +28,9 @@ export default function NodesPage({ params }: { params: KafkaParams }) {
 async function ConnectedNodes({ params }: { params: KafkaParams }) {
   const t = await getTranslations();
   const res = await getKafkaClusterKpis(params.kafkaId);
-  if (!res) {
-    return redirect("/");
-  }
-  const { cluster, kpis } = res;
+  let { cluster, kpis } = res || {};
 
-  const nodes: Node[] = cluster.attributes.nodes.map((node) => {
+  const nodes: Node[] = (cluster?.attributes.nodes || []).map((node) => {
     const status = kpis
       ? nodeMetric(kpis.broker_state, node.id) === 3
         ? "Stable"
@@ -57,7 +54,7 @@ async function ConnectedNodes({ params }: { params: KafkaParams }) {
       status,
       hostname: node.host,
       rack: node.rack,
-      isLeader: node.id === cluster.attributes.controller.id,
+      isLeader: node.id === cluster?.attributes.controller.id,
       followers,
       leaders,
       diskCapacity,

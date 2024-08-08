@@ -1,10 +1,6 @@
 import { getConsumerGroups } from "@/api/consumerGroups/actions";
 import { getKafkaCluster, getKafkaClusters } from "@/api/kafka/actions";
 import { ClusterList } from "@/api/kafka/schema";
-import { getViewedTopics } from "@/api/topics/actions";
-import { ClustersTable } from "./ClustersTable";
-import { ExpandableCard } from "./ExpandableCard";
-import { TopicsTable } from "./TopicsTable";
 import { AppLayout } from "@/components/AppLayout";
 import { Number } from "@/components/Format/Number";
 import { ExternalLink } from "@/components/Navigation/ExternalLink";
@@ -15,11 +11,6 @@ import {
   DataListItem,
   DataListItemCells,
   DataListItemRow,
-  EmptyState,
-  EmptyStateActions,
-  EmptyStateBody,
-  EmptyStateFooter,
-  EmptyStateHeader,
   Label,
   LabelGroup,
   Level,
@@ -37,6 +28,8 @@ import { HelpIcon } from "@/libs/patternfly/react-icons";
 import { isProductizedBuild } from "@/utils/env";
 import { useTranslations } from "next-intl";
 import { Suspense } from "react";
+import { ClustersTable } from "@/components/ClustersTable";
+import { ExpandableCard } from "@/components/ExpandableCard";
 import styles from "./home.module.css";
 
 export default function Home() {
@@ -88,37 +81,7 @@ export default function Home() {
               </CardBody>
             </ExpandableCard>
           </StackItem>
-          <StackItem>
-            <ExpandableCard
-              title={
-                <TextContent>
-                  <b>
-                    {t("homepage.recently_viewed_topics_header")}{" "}
-                    <Tooltip
-                      content={t(
-                        "homepage.recently_viewed_topics_header_popover",
-                        { product: productName },
-                      )}
-                    >
-                      <HelpIcon />
-                    </Tooltip>
-                  </b>
-                  <Text component={"small"}>
-                    {t("homepage.last_accessed_topics", {
-                      product: productName,
-                    })}
-                  </Text>
-                </TextContent>
-              }
-              isCompact={true}
-            >
-              <CardBody>
-                <Suspense fallback={<TopicsTable topics={undefined} />}>
-                  <RecentTopics />
-                </Suspense>
-              </CardBody>
-            </ExpandableCard>
-          </StackItem>
+          <StackItem></StackItem>
           {isProductizedBuild && (
             <StackItem>
               <ExpandableCard
@@ -288,77 +251,6 @@ async function ConnectedClustersTable({
 }: {
   clusterPromise: Promise<ClusterList[]>;
 }) {
-  const allClusters = await clusterPromise;
-  const clusters = allClusters.map<EnrichedClusterList>((c) => {
-    async function getNodesCounts() {
-      let cluster;
-
-      if (c.meta.configured === true) {
-        cluster = await getKafkaCluster(c.id);
-      } else {
-        cluster = null;
-      }
-
-      if (cluster) {
-        return {
-          count: cluster.attributes.nodes.length,
-          online: cluster.attributes.nodes.length, // TODO,
-        };
-      }
-      return {
-        count: 0,
-        online: 0,
-      };
-    }
-
-    async function getConsumerGroupsCount() {
-      let cg;
-
-      if (c.meta.configured === true) {
-        cg = await getConsumerGroups(c.id, {});
-      } else {
-        cg = null;
-      }
-
-      return cg?.meta.page.total ?? 0;
-    }
-
-    const ec: EnrichedClusterList = {
-      ...c,
-      extra: {
-        nodes: getNodesCounts(),
-        consumerGroupsCount: getConsumerGroupsCount(),
-      },
-    };
-    return ec;
-  });
+  const clusters = await clusterPromise;
   return <ClustersTable clusters={clusters} />;
-}
-
-async function RecentTopics() {
-  const t = useTranslations();
-  const productName = t("common.product");
-  const viewedTopics = await getViewedTopics();
-  return viewedTopics.length > 0 ? (
-    <TopicsTable topics={viewedTopics} />
-  ) : (
-    <EmptyState variant={"xs"}>
-      <EmptyStateHeader title={t("homepage.topics_empty_state_header")} />
-      <EmptyStateBody>
-        {t("homepage.empty_topics_description", { product: productName })}
-      </EmptyStateBody>
-      {isProductizedBuild && (
-        <EmptyStateFooter>
-          <EmptyStateActions className={"pf-v5-u-font-size-sm"}>
-            <ExternalLink
-              testId={"recent-topics-empty-state-link"}
-              href={t("learning.links.topicOperatorUse")}
-            >
-              {t("learning.labels.topicOperatorUse")}
-            </ExternalLink>
-          </EmptyStateActions>
-        </EmptyStateFooter>
-      )}
-    </EmptyState>
-  );
 }

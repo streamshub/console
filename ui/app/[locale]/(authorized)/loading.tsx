@@ -3,8 +3,8 @@ import { PageSection } from "@/libs/patternfly/react-core";
 
 export default function AppLoading() {
   return (
-    <PageSection isFilled={true}>
+    <div style={{ width: "100vw", height: "100vh" }}>
       <EmptyStateLoading />
-    </PageSection>
+    </div>
   );
 }

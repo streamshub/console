@@ -21,7 +21,7 @@ export async function getSession<T extends Record<string, unknown>>(
   }
   try {
     const rawSession = await unsealData(encryptedSession, {
-      password: process.env.SESSION_SECRET ?? "strimziconsole",
+      password: process.env.NEXTAUTH_SECRET,
     });
     return rawSession as T;
   } catch {
@@ -36,7 +36,7 @@ export async function setSession<T extends Record<string, unknown>>(
   const user = await getUser();
   const username = user.username ?? "anonymous";
   const encryptedSession = await sealData(session, {
-    password: process.env.SESSION_SECRET ?? "strimziconsole",
+    password: process.env.NEXTAUTH_SECRET,
   });
 
   cookies().set({
