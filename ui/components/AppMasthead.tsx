@@ -56,7 +56,7 @@ export function AppMasthead({
           <Link href={"/"} className={"pf-v5-c-masthead_brand"}>
             <img
               className={"pf-v5-c-brand"}
-              src={"/masthead-logo.svg"}
+              src={"/full-logo.svg"}
               alt={t("common.title")}
               style={{ height: 48 }}
             />
