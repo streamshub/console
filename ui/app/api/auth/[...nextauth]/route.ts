@@ -1,12 +1,11 @@
 import { getKafkaClusters } from "@/api/kafka/actions";
 import { ClusterList } from "@/api/kafka/schema";
-import { makeOauthTokenProvider } from "@/app/api/auth/[...nextauth]/oauth-token";
 import { logger } from "@/utils/logger";
 import NextAuth, { AuthOptions } from "next-auth";
 import { Provider } from "next-auth/providers/index";
 import { NextRequest, NextResponse } from "next/server";
 import { makeAnonymous } from "./anonymous";
-import { makeOauthProvider } from "./keycloak";
+import { makeOauthTokenProvider } from "./oauth-token";
 import { makeScramShaProvider } from "./scram";
 
 const log = logger.child({ module: "auth" });

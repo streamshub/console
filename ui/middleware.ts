@@ -3,8 +3,12 @@ import withAuth from "next-auth/middleware";
 import createIntlMiddleware from "next-intl/middleware";
 import { NextRequest, NextResponse } from "next/server";
 
-const publicPages = ["/kafka/\\d/login", "/cluster", "/"];
-const protectedPages = ["/kafka/\\d/.*"];
+import { logger } from "@/utils/logger";
+
+const log = logger.child({ module: "middleware" });
+
+const publicPages = ["/kafka/[^/]+/login", "/cluster", "/"];
+const protectedPages = ["/kafka/[^/]+/.*"];
 
 const intlMiddleware = createIntlMiddleware({
   // A list of all locales that are supported
@@ -47,14 +51,18 @@ const protectedPathnameRegex = RegExp(
 );
 
 export default async function middleware(req: NextRequest) {
-  const isPublicPage = publicPathnameRegex.test(req.nextUrl.pathname);
-  const isProtectedPage = protectedPathnameRegex.test(req.nextUrl.pathname);
+  const requestPath = req.nextUrl.pathname;
+  const isPublicPage = publicPathnameRegex.test(requestPath);
+  const isProtectedPage = protectedPathnameRegex.test(requestPath);
 
   if (isPublicPage) {
+    log.trace({ requestPath: requestPath }, "public page");
     return intlMiddleware(req);
   } else if (isProtectedPage) {
+    log.trace({ requestPath: requestPath }, "protected page");
     return (authMiddleware as any)(req);
   } else {
+    log.debug({ requestPath: requestPath, publicPathnameRegex: publicPathnameRegex, protectedPathnameRegex: protectedPathnameRegex }, "neither public nor protected!");
     return NextResponse.redirect(new URL("/", req.url));
   }
 }

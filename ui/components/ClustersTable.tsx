@@ -28,13 +28,13 @@ export function ClustersTable({
       renderHeader={({ column, Th }) => {
         switch (column) {
           case "name":
-            return <Th width={25}>{t("ClustersTable.name")}</Th>;
+            return <Th key="name_header" width={25}>{t("ClustersTable.name")}</Th>;
           case "version":
-            return <Th>{t("ClustersTable.kafka_version")}</Th>;
+            return <Th key="version_header">{t("ClustersTable.kafka_version")}</Th>;
           case "namespace":
-            return <Th>{t("ClustersTable.project")}</Th>;
+            return <Th key="namespace_header">{t("ClustersTable.project")}</Th>;
           case "login":
-            return <Th modifier={"fitContent"} />;
+            return <Th key="login_header" modifier={"fitContent"} aria-label="Login buttons" />;
         }
       }}
       renderCell={({ key, column, row, Td }) => {
