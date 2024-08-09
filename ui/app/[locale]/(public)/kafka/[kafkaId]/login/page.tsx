@@ -15,21 +15,20 @@ export default async function SignIn({
   const cluster = clusters.find((c) => c.id === params.kafkaId);
   if (cluster) {
     const authMethod = cluster.meta.authentication;
-    if (authMethod && authMethod.method !== "anonymous") {
-      return (
-        <SignInPage
-          provider={
-            authMethod?.method === "basic" ? "credentials" : "oauth-token"
-          }
-          callbackUrl={
-            searchParams?.callbackUrl ?? `/kafka/${params.kafkaId}/overview`
-          }
-          hasMultipleClusters={clusters.length > 1}
-        />
-      );
-    } else {
-      return <>TODO</>;
-    }
+    const provider = {
+      basic: "credentials" as const,
+      oauth: "oauth-token" as const,
+      anonymous: "anonymous" as const,
+    }[authMethod?.method ?? "anonymous"];
+    return (
+      <SignInPage
+        provider={provider}
+        callbackUrl={
+          searchParams?.callbackUrl ?? `/kafka/${params.kafkaId}/overview`
+        }
+        hasMultipleClusters={clusters.length > 1}
+      />
+    );
   }
   return redirect("/");
 }

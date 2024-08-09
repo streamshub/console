@@ -3,6 +3,7 @@ import { ExternalLink } from "@/components/Navigation/ExternalLink";
 import { Link } from "@/navigation";
 import {
   Alert,
+  Button,
   LoginForm,
   LoginFormProps,
   LoginMainFooterBandItem,
@@ -46,7 +47,7 @@ export function SignInPage({
   callbackUrl,
   hasMultipleClusters,
 }: {
-  provider: "credentials" | "oauth-token";
+  provider: "credentials" | "oauth-token" | "anonymous";
   callbackUrl: string;
   hasMultipleClusters: boolean;
 }) {
@@ -83,15 +84,14 @@ export function SignInPage({
     </LoginMainFooterBandItem>
   );
 
-  const onSubmit: LoginFormProps["onSubmit"] = async (e) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const doLogin = async () => {
     setIsSubmitting(true);
     setError(undefined);
-    const options =
-      provider === "credentials"
-        ? { username, password }
-        : { clientId: username, secret: password };
+    const options = {
+      credentials: { username, password },
+      "oauth-token": { clientId: username, secret: password },
+      anonymous: {},
+    }[provider];
     const res = await signIn(provider, {
       ...options,
       redirect: false,
@@ -99,10 +99,18 @@ export function SignInPage({
     if (res?.error) {
       const error = signinErrors[res.error] ?? signinErrors.default;
       setError(error);
+      setIsSubmitting(false);
     } else if (res?.ok) {
       window.location.href = callbackUrl;
+    } else {
+      setIsSubmitting(false);
     }
-    setIsSubmitting(false);
+  };
+
+  const onSubmit: LoginFormProps["onSubmit"] = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    void doLogin();
   };
 
   const usernameLabel =
@@ -132,17 +140,22 @@ export function SignInPage({
       {error && isSubmitting === false && (
         <Alert variant={"danger"} isInline={true} title={error} />
       )}
-      <LoginForm
-        usernameLabel={usernameLabel}
-        passwordLabel={passwordLabel}
-        loginButtonLabel={t("login-in-page.login_button")}
-        usernameValue={username}
-        passwordValue={password}
-        onChangeUsername={handleUsernameChange}
-        onChangePassword={handlePasswordChange}
-        onSubmit={onSubmit}
-        isLoginButtonDisabled={isSubmitting}
-      />
+
+      {provider === "anonymous" ? (
+        <Button onClick={doLogin}>Click to login anonymously</Button>
+      ) : (
+        <LoginForm
+          usernameLabel={usernameLabel}
+          passwordLabel={passwordLabel}
+          loginButtonLabel={t("login-in-page.login_button")}
+          usernameValue={username}
+          passwordValue={password}
+          onChangeUsername={handleUsernameChange}
+          onChangePassword={handlePasswordChange}
+          onSubmit={onSubmit}
+          isLoginButtonDisabled={isSubmitting}
+        />
+      )}
     </LoginPage>
   );
 }
