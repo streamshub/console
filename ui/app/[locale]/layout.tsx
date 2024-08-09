@@ -22,13 +22,9 @@ export default async function Layout({ children, params: { locale } }: Props) {
   const authOptions = await getAuthOptions();
   const session = await getServerSession(authOptions);
   return (
-    <html lang="en">
-      <body>
-        <NextIntlProvider locale={locale} messages={messages}>
-          {children}
-        </NextIntlProvider>
-      </body>
-    </html>
+    <NextIntlProvider locale={locale} messages={messages}>
+      {children}
+    </NextIntlProvider>
   );
 }
 

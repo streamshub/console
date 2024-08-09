@@ -48,7 +48,7 @@ export async function getKafkaClusters(): Promise<ClusterList[]> {
     return ClustersResponseSchema.parse(rawData).data;
   } catch (err) {
     log.error(err, "getKafkaClusters");
-    return [];
+    throw new Error("getKafkaClusters: couldn't connect with backend");
   }
 }
 

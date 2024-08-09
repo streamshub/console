@@ -374,9 +374,11 @@ export const ResponsiveTable = <TRow, TCol>({
         );
       })}
       {data?.length === 0 && (
-        <Tr>
-          <Td colSpan={columns.length}>{children}</Td>
-        </Tr>
+        <Tbody>
+          <Tr>
+            <Td colSpan={columns.length}>{children}</Td>
+          </Tr>
+        </Tbody>
       )}
     </Table>
   );

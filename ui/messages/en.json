@@ -327,7 +327,8 @@
     "connection_not_configured": "Connection not configured",
     "online": "online",
     "connection_details": "Connection details",
-    "view_openshift_console": "View in OpenShift console"
+    "view_openshift_console": "View in OpenShift console",
+    "no_data": "No clusters available."
   },
   "ColumnsModal": {
     "title": "Manage columns",
@@ -432,14 +433,6 @@
     "create_a_topic": "Create a topic",
     "show_internal_topics": "Show internal topics",
     "view_documentation": "Learn about configuring Kafka topics"
-  },
-  "ApplicationError": {
-    "body": "Try clicking the button below, or refreshing the page. If the problem persists, contact your organization administrator.",
-    "error": "Error",
-    "title": "This page is temporarily unavailable",
-    "retry": "Retry",
-    "message": "Message",
-    "error_details": "Show more"
   },
   "ClusterOverview": {
     "header": "Cluster overview",

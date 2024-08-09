@@ -1,9 +1,10 @@
-import { getConsumerGroups } from "@/api/consumerGroups/actions";
-import { getKafkaCluster, getKafkaClusters } from "@/api/kafka/actions";
-import { ClusterList } from "@/api/kafka/schema";
+import { getKafkaClusters } from "@/api/kafka/actions";
 import { AppLayout } from "@/components/AppLayout";
+import { ClustersTable } from "@/components/ClustersTable";
+import { ExpandableCard } from "@/components/ExpandableCard";
 import { Number } from "@/components/Format/Number";
 import { ExternalLink } from "@/components/Navigation/ExternalLink";
+import { RedirectOnLoad } from "@/components/Navigation/RedirectOnLoad";
 import {
   CardBody,
   DataList,
@@ -22,21 +23,22 @@ import {
   Text,
   TextContent,
   Title,
-  Tooltip,
 } from "@/libs/patternfly/react-core";
-import { HelpIcon } from "@/libs/patternfly/react-icons";
+import { redirect } from "@/navigation";
 import { isProductizedBuild } from "@/utils/env";
-import { useTranslations } from "next-intl";
+import { getTranslations } from "next-intl/server";
 import { Suspense } from "react";
-import { ClustersTable } from "@/components/ClustersTable";
-import { ExpandableCard } from "@/components/ExpandableCard";
 import styles from "./home.module.css";
 
-export default function Home() {
-  const t = useTranslations();
-  const allClusters = getKafkaClusters();
+export default async function Home() {
+  const t = await getTranslations();
+  const allClusters = await getKafkaClusters();
   const productName = t("common.product");
   const brand = t("common.brand");
+
+  if (allClusters.length === 1) {
+    return <RedirectOnLoad url={`/kafka/${allClusters[0].id}/login`} />;
+  }
 
   return (
     <AppLayout>
@@ -66,7 +68,7 @@ export default function Home() {
                   {t.rich("homepage.platform_openshift_cluster")}
                   <Text component={"small"}>
                     <Suspense fallback={<Skeleton width={"200px"} />}>
-                      <ClustersCount clusterPromise={allClusters} />
+                      <Number value={allClusters.length} />
                       &nbsp;{t("homepage.connected_kafka_clusters")}
                     </Suspense>
                   </Text>
@@ -76,7 +78,7 @@ export default function Home() {
             >
               <CardBody>
                 <Suspense fallback={<ClustersTable clusters={undefined} />}>
-                  <ConnectedClustersTable clusterPromise={allClusters} />
+                  <ClustersTable clusters={allClusters} />
                 </Suspense>
               </CardBody>
             </ExpandableCard>
@@ -235,22 +237,4 @@ export default function Home() {
       </PageSection>
     </AppLayout>
   );
-}
-
-async function ClustersCount({
-  clusterPromise,
-}: {
-  clusterPromise: Promise<ClusterList[]>;
-}) {
-  const count = (await clusterPromise).length;
-  return <Number value={count} />;
-}
-
-async function ConnectedClustersTable({
-  clusterPromise,
-}: {
-  clusterPromise: Promise<ClusterList[]>;
-}) {
-  const clusters = await clusterPromise;
-  return <ClustersTable clusters={clusters} />;
 }

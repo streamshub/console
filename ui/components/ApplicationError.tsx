@@ -26,11 +26,10 @@ export function ApplicationError({
   error: Error & { digest?: string };
   onReset: () => void;
 }) {
-  const t = useTranslations();
   return (
     <EmptyState variant={"lg"}>
       <EmptyStateHeader
-        titleText={t("ApplicationError.title")}
+        titleText={"This page is temporarily unavailable"}
         headingLevel="h1"
         icon={
           <EmptyStateIcon
@@ -41,22 +40,22 @@ export function ApplicationError({
       />
       <EmptyStateBody>
         <TextContent>
-          <Text>{t("ApplicationError.body")}</Text>
+          <Text>
+            Try clicking the button below, or refreshing the page. If the
+            problem persists, contact your organization administrator.
+          </Text>
         </TextContent>
       </EmptyStateBody>
 
       <EmptyStateFooter>
         <EmptyStateActions>
           <Button variant="primary" onClick={onReset}>
-            {t("ApplicationError.retry")}
+            Retry
           </Button>
         </EmptyStateActions>
       </EmptyStateFooter>
       <EmptyStateFooter>
-        <ExpandableSection
-          initialExpanded={false}
-          toggleText={t("ApplicationError.error_details")}
-        >
+        <ExpandableSection initialExpanded={false} toggleText={"Show more"}>
           {error.digest && (
             <Title headingLevel={"h2"} className={"pf-v5-u-mb-lg"}>
               {error.digest}
@@ -64,15 +63,11 @@ export function ApplicationError({
           )}
           <DescriptionList>
             <DescriptionListGroup>
-              <DescriptionListTerm>
-                {t("ApplicationError.error")}
-              </DescriptionListTerm>
+              <DescriptionListTerm>Error</DescriptionListTerm>
               <DescriptionListDescription>
                 {error.name}
               </DescriptionListDescription>
-              <DescriptionListTerm>
-                {t("ApplicationError.message")}
-              </DescriptionListTerm>
+              <DescriptionListTerm>Message</DescriptionListTerm>
               <DescriptionListDescription>
                 {error.message}
               </DescriptionListDescription>
