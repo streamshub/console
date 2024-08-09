@@ -24,12 +24,20 @@ const MemberDescriptionSchema = z.object({
   host: z.string(),
   assignments: z.array(PartitionKeySchema).optional(),
 });
+
+const ConsumerGroupStateSchema = z.union([
+  z.literal("STABLE"),
+  z.literal("EMPTY"),
+]);
+
+export type ConsumerGroupState = z.infer<typeof ConsumerGroupStateSchema>;
+
 export const ConsumerGroupSchema = z.object({
   id: z.string(),
   type: z.literal("consumerGroups"),
   attributes: z.object({
     simpleConsumerGroup: z.boolean().optional(),
-    state: z.string().optional(),
+    state: ConsumerGroupStateSchema,
     members: z.array(MemberDescriptionSchema).optional(),
     partitionAssignor: z.string().nullable().optional(),
     coordinator: NodeSchema.nullable().optional(),
