@@ -7,7 +7,7 @@ export async function ConnectedClusterCard({
   consumerGroups,
 }: {
   data: Promise<{ cluster: ClusterDetail; kpis: ClusterKpis | null } | null>;
-  consumerGroups: Promise<ConsumerGroupsResponse>;
+  consumerGroups: Promise<ConsumerGroupsResponse | null>;
 }) {
   const res = await data;
   if (!res?.kpis) {
@@ -25,7 +25,7 @@ export async function ConnectedClusterCard({
     );
   }
   const groupCount = await consumerGroups.then(
-    (grpResp) => grpResp.meta.page.total ?? 0,
+    (grpResp) => grpResp?.meta.page.total ?? 0,
   );
   const brokersTotal = Object.keys(res?.kpis.broker_state || {}).length;
   const brokersOnline =

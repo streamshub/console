@@ -2,8 +2,39 @@ import { ConnectButton } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/@head
 import { KafkaParams } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/kafka.params";
 import { AppHeader } from "@/components/AppHeader";
 import { useTranslations } from "next-intl";
+import { getKafkaCluster } from "@/api/kafka/actions";
+import { getTopics } from "@/api/topics/actions";
+import { Skeleton } from "@patternfly/react-core";
+import { notFound } from "next/navigation";
+import { Suspense } from "react";
 
-export default function OverviewHeader({
+export const fetchCache = "force-cache";
+
+export default function Header({
+  params: { kafkaId },
+}: {
+  params: KafkaParams;
+}) {
+  return (
+    <Suspense fallback={<OverviewHeader params={{ kafkaId }} />}>
+      <ConnectedHeader params={{ kafkaId }} />
+    </Suspense>
+  );
+}
+
+async function ConnectedHeader({
+  params: { kafkaId },
+}: {
+  params: KafkaParams;
+}) {
+  const cluster = await getKafkaCluster(kafkaId);
+  if (!cluster) {
+    notFound();
+  }
+  return <OverviewHeader params={{ kafkaId }} />;
+}
+
+export function OverviewHeader({
   params: { kafkaId },
 }: {
   params: KafkaParams;

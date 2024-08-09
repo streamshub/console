@@ -21,7 +21,7 @@ export function ConsumerGroupsTable({
   page: number;
   total: number;
   consumerGroups: ConsumerGroup[] | undefined;
-  refresh: (() => Promise<ConsumerGroup[]>) | undefined;
+  refresh: (() => Promise<ConsumerGroup[] | undefined>) | undefined;
 }) {
   const t = useTranslations();
   const [consumerGroups, setConsumerGroups] = useState(initialData);
@@ -30,7 +30,9 @@ export function ConsumerGroupsTable({
     if (refresh) {
       interval = setInterval(async () => {
         const consumerGroups = await refresh();
-        setConsumerGroups(consumerGroups);
+        if (consumerGroups) {
+          setConsumerGroups(consumerGroups);
+        }
       }, 5000);
     }
     return () => clearInterval(interval);

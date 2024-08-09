@@ -7,15 +7,15 @@ export async function ConnectedTopicChartsCard({
 }: {
   data: Promise<{
     cluster: ClusterDetail;
-    ranges: Record<TopicMetric, MetricRange>;
+    ranges: Record<TopicMetric, MetricRange> | null;
   } | null>;
 }) {
   const res = await data;
   return (
     <TopicChartsCard
       isLoading={false}
-      incoming={res?.ranges["incomingByteRate"] || {}}
-      outgoing={res?.ranges["outgoingByteRate"] || {}}
+      incoming={(res?.ranges && res.ranges["incomingByteRate"]) || {}}
+      outgoing={(res?.ranges && res.ranges["outgoingByteRate"]) || {}}
     />
   );
 }

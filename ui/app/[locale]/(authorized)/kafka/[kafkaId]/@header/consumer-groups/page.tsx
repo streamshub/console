@@ -1,4 +1,10 @@
-import { KafkaHeader } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/@header/KafkaHeader";
+import { KafkaParams } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/kafka.params";
+import { AppHeader } from "@/components/AppHeader";
 
-export { fetchCache } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/@header/KafkaHeader";
-export default KafkaHeader;
+export default function ConsumerGroupsHeader({
+  params,
+}: {
+  params: KafkaParams;
+}) {
+  return <AppHeader title={"Consumer Groups"} />;
+}

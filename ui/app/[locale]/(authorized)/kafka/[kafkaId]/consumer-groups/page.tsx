@@ -54,19 +54,16 @@ async function ConnectedConsumerGroupsTable({
   async function refresh() {
     "use server";
     const res = await getConsumerGroups(kafkaId, searchParams);
-    return res.data;
+    return res?.data;
   }
 
   const consumerGroups = await getConsumerGroups(kafkaId, searchParams);
-  if (!consumerGroups) {
-    notFound();
-  }
   return (
     <ConsumerGroupsTable
       kafkaId={kafkaId}
-      page={consumerGroups.meta.page.pageNumber || 1}
-      total={consumerGroups.meta.page.total || 0}
-      consumerGroups={consumerGroups.data}
+      page={consumerGroups?.meta.page.pageNumber || 1}
+      total={consumerGroups?.meta.page.total || 0}
+      consumerGroups={consumerGroups?.data}
       refresh={refresh}
     />
   );

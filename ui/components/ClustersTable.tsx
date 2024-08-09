@@ -7,7 +7,13 @@ import { Truncate } from "@/libs/patternfly/react-core";
 import { TableVariant } from "@/libs/patternfly/react-table";
 import { useTranslations } from "next-intl";
 
-const columns = ["name", "version", "namespace", "login"] as const;
+const columns = [
+  "name",
+  "version",
+  "namespace",
+  "authentication",
+  "login",
+] as const;
 
 export function ClustersTable({
   clusters,
@@ -21,24 +27,24 @@ export function ClustersTable({
       variant={TableVariant.compact}
       columns={columns}
       data={clusters}
-      renderHeader={({ column, Th }) => {
+      renderHeader={({ column, key, Th }) => {
         switch (column) {
           case "name":
             return (
-              <Th key="name_header" width={25}>
+              <Th key={key} width={25}>
                 {t("ClustersTable.name")}
               </Th>
             );
           case "version":
-            return (
-              <Th key="version_header">{t("ClustersTable.kafka_version")}</Th>
-            );
+            return <Th key={key}>{t("ClustersTable.kafka_version")}</Th>;
           case "namespace":
-            return <Th key="namespace_header">{t("ClustersTable.project")}</Th>;
+            return <Th key={key}>{t("ClustersTable.project")}</Th>;
+          case "authentication":
+            return <Th key={key}>{t("ClustersTable.authentication")}</Th>;
           case "login":
             return (
               <Th
-                key="login_header"
+                key={key}
                 modifier={"fitContent"}
                 aria-label="Login buttons"
               />
@@ -56,11 +62,28 @@ export function ClustersTable({
           case "version":
             return (
               <Td key={key}>
-                {row.attributes.kafkaVersion ?? "Not Available"}
+                {row.attributes.kafkaVersion ??
+                  t("ClustersTable.not_available")}
               </Td>
             );
           case "namespace":
-            return <Td key={key}>{row.attributes.namespace ?? "N/A"}</Td>;
+            return (
+              <Td key={key}>
+                {row.attributes.namespace ?? t("ClustersTable.not_available")}
+              </Td>
+            );
+          case "authentication":
+            return (
+              <Td key={key}>
+                {
+                  {
+                    basic: t("ClustersTable.authentication_basic"),
+                    oauth: t("ClustersTable.authentication_oauth"),
+                    anonymous: t("ClustersTable.authentication_anonymous"),
+                  }[row.meta.authentication?.method ?? "anonymous"]
+                }
+              </Td>
+            );
           case "login":
             return (
               <Td key={key} modifier={"fitContent"}>

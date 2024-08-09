@@ -9,6 +9,7 @@ import {
   ChartThemeColor,
   createContainer,
 } from "@/libs/patternfly/react-charts";
+import { Alert } from "@/libs/patternfly/react-core";
 import { useFormatter, useTranslations } from "next-intl";
 import { getHeight, getPadding } from "./chartConsts";
 import { useChartWidth } from "./useChartWidth";
@@ -32,7 +33,14 @@ export function ChartCpuUsage({ usages }: ChartCpuUsageProps) {
 
   const hasMetrics = Object.keys(usages).length > 0;
   if (!hasMetrics) {
-    return <div>{t("ChartCpuUsage.data_unavailable")}</div>;
+    return (
+      <Alert
+        variant="warning"
+        isInline
+        isPlain
+        title={t("ChartCpuUsage.data_unavailable")}
+      />
+    );
   }
   // const showDate = shouldShowDate(duration);
   const CursorVoronoiContainer = createContainer("voronoi", "cursor");
