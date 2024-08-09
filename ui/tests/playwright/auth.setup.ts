@@ -11,7 +11,7 @@ setup("authenticate", async ({ page }) => {
   // // Wait until the page receives the cookies.
   //
   // Sometimes login flow sets cookies in the process of several redirects.
-  await page.waitForURL("./home", { waitUntil: "commit" });
+  await page.waitForURL("./", { waitUntil: "commit" });
   await expect(
     page.getByText("Welcome to the StreamsHub console"),
   ).toBeVisible();

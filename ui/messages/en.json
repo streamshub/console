@@ -16,7 +16,7 @@
   "learning": {
     "labels": {
       "overview": "Strimzi Overview",
-      "gettingStarted":"Getting Started with StreamsHub",
+      "gettingStarted": "Getting Started with StreamsHub",
       "connecting": "Connect to a Kafka cluster from an application",
       "topicOperatorUse": "Using the Topic Operator to manage Kafka topics"
     },
@@ -26,6 +26,20 @@
       "connecting": "",
       "topicOperatorUse": "https://strimzi.io/docs/operators/latest/overview#overview-concepts-topic-operator-str"
     }
+  },
+  "login-in-page": {
+    "login_sub_title": "Enter your credentials",
+    "username": "Username",
+    "password": "Password",
+    "clientId": "Client ID",
+    "clientSecret": "Client Secret",
+    "login_button": "Log in",
+    "text_content": "The {product} console delivers real-time insights for managing and optimizing your Kafka clusters. Connect and monitor your clusters effortlessly.",
+    "footer_text": "To log in, you need to enter your credentials.",
+    "learning_resource": "Learn more about {product}"
+  },
+  "cluster-selector": {
+    "subtitle": "Select a cluster"
   },
   "RefreshButton": {
     "refresh_button_label": "Refresh",
@@ -60,7 +74,7 @@
     "title": "Overview"
   },
   "nodes": {
-    "kpis_offline": "Prometheus can't be reached, information on the page will be incomplete. Please check your configuration.",
+    "kpis_offline": "Prometheus can't be reached, or is not configured. Information on the page will be incomplete. Please check your configuration.",
     "broker_id": "Broker ID",
     "status": "Status",
     "replicas": "Total Replicas",
@@ -244,7 +258,7 @@
     "main_navigation_aria_label": "Main navigation",
     "home": "Home",
     "kafka_clusters": "Kafka clusters",
-    "tech_preview_label": "This is a Tech Preview version. You are logged in as an anonymous user with read-only access.",
+    "tech_preview_label": "This is a Tech Preview version. You are logged in with read-only access.",
     "tech_preview_tooltip_header": "Technology Preview",
     "tech_preview_tooltip_description": "Technology Preview features are not fully supported, may not be functionally complete, and are not suitable for deployment in production. However, these features are provided to the customer as a courtesy and the primary goal is for the feature to gain wider exposure with the goal of full support in the future.",
     "external_link": "Learn more",
@@ -259,16 +273,16 @@
     "help": "Help"
   },
   "ChartCpuUsage": {
-    "data_unavailable": "Data unavailable, please try again later"
+    "data_unavailable": "Prometheus can't be reached, or is not configured. Please check your configuration."
   },
   "ChartDiskUsage": {
-    "data_unavailable": "Data unavailable, please try again later"
+    "data_unavailable": "Prometheus can't be reached, or is not configured. Please check your configuration."
   },
   "ChartIncomingOutgoing": {
-    "data_unavailable": "Data unavailable, please try again later"
+    "data_unavailable": "Prometheus can't be reached, or is not configured. Please check your configuration."
   },
   "ChartMemoryUsage": {
-    "data_unavailable": "Data unavailable, please try again later"
+    "data_unavailable": "Prometheus can't be reached, or is not configured. Please check your configuration."
   },
   "ClusterCard": {
     "online_brokers": "Online brokers",
@@ -287,10 +301,9 @@
     "memory_usage_tooltip": "Memory utilization for all brokers over a specified period. Efficient memory allocation is essential for optimal performance of Kafka."
   },
   "topicMetricsCard": {
-     "topic_metric": "Topic metrics",
-     "topics_bytes_incoming_and_outgoing": "Topics bytes incoming and outgoing",
-     "topics_bytes_incoming_and_outgoing_tooltip": "Bytes incoming and outgoing are the total bytes for all topics or total bytes for a selected topic in the Kafka cluster. This metric enables you to assess data transfer in and out of your Kafka cluster. To modify incoming and outgoing bytes, you can adjust topic message size or other topic properties as needed."
-
+    "topic_metric": "Topic metrics",
+    "topics_bytes_incoming_and_outgoing": "Topics bytes incoming and outgoing",
+    "topics_bytes_incoming_and_outgoing_tooltip": "Bytes incoming and outgoing are the total bytes for all topics or total bytes for a selected topic in the Kafka cluster. This metric enables you to assess data transfer in and out of your Kafka cluster. To modify incoming and outgoing bytes, you can adjust topic message size or other topic properties as needed."
   },
   "ClusterConnectionDetails": {
     "description": "To connect to a Kafka cluster, add a bootstrap address and the properties to establish a secure connection to the configuration of your client application.",
@@ -311,10 +324,16 @@
     "consumer_groups": "Consumer groups",
     "kafka_version": "Kafka version",
     "project": "Project",
+    "authentication": "Authentication",
+    "authentication_basic": "SCRAM-SHA",
+    "authentication_oauth": "OAuth (client credentials)",
+    "authentication_anonymous": "No authentication",
     "connection_not_configured": "Connection not configured",
     "online": "online",
     "connection_details": "Connection details",
-    "view_openshift_console": "View in OpenShift console"
+    "view_openshift_console": "View in OpenShift console",
+    "no_data": "No clusters available.",
+    "not_available": "n/a"
   },
   "ColumnsModal": {
     "title": "Manage columns",
@@ -396,7 +415,6 @@
     "name": "Name",
     "empty": "Empty",
     "no_advanced_options_specified": "No advanced options specified."
-
   },
   "DistributionChart": {
     "partitions_distribution_of_total": "Partitions distribution (% of total)",
@@ -421,14 +439,6 @@
     "show_internal_topics": "Show internal topics",
     "view_documentation": "Learn about configuring Kafka topics"
   },
-  "ApplicationError": {
-    "body": "Try clicking the button below, or refreshing the page. If the problem persists, contact your organization administrator.",
-    "error": "Error",
-    "title": "This page is temporarily unavailable",
-    "retry": "Retry",
-    "message": "Message",
-    "error_details": "Show more"
-  },
   "ClusterOverview": {
     "header": "Cluster overview",
     "description": "Key performance indicators and important information regarding the Kafka cluster.",
@@ -447,23 +457,23 @@
     "unavailable_partition": "Unavailable",
     "unavailable_partition_tooltip": "Some or all partitions are currently unavailable. This may be due to issues such as broker failures or network problems. Investigate and address the underlying issues to restore normal functionality."
   },
-    "MemberTable": {
-      "member_id": "Member ID",
-      "client_id": "Client ID",
-      "client_id_tooltip": "The unique identifier assigned to the client (consumer) within the consumer group. A client ID helps identify and manage individual consumers.",
-      "overall_lag": "Overall lag",
-      "overall_lag_tooltip": "The cumulative lag across all partitions assigned to the consumer group. Consumer lag is the difference in the rate of production and consumption of messages.Specifically, consumer lag for a given consumer in a group indicates the delay between the last message in the partition and the message being currently picked up by that consumer.",
-      "assigned_partitions": "Assigned partitions",
-      "topic": "Topic",
-      "partition": "Partition",
-      "lag": "Lag",
-      "committed_offset": "Committed offset",
-      "committed_offset_tooltip": "The offset in the Kafka topic marking the last successfully consumed message by the consumer.",
-      "end_offset": "End offset",
-      "end_offset_tooltip": "The highest offset in the Kafka topic, representing the latest available message."
-    },
-    "ConsumerGroup":{
-      "reset_offset": "Reset offset",
-      "delete": "Delete"
-    }
+  "MemberTable": {
+    "member_id": "Member ID",
+    "client_id": "Client ID",
+    "client_id_tooltip": "The unique identifier assigned to the client (consumer) within the consumer group. A client ID helps identify and manage individual consumers.",
+    "overall_lag": "Overall lag",
+    "overall_lag_tooltip": "The cumulative lag across all partitions assigned to the consumer group. Consumer lag is the difference in the rate of production and consumption of messages.Specifically, consumer lag for a given consumer in a group indicates the delay between the last message in the partition and the message being currently picked up by that consumer.",
+    "assigned_partitions": "Assigned partitions",
+    "topic": "Topic",
+    "partition": "Partition",
+    "lag": "Lag",
+    "committed_offset": "Committed offset",
+    "committed_offset_tooltip": "The offset in the Kafka topic marking the last successfully consumed message by the consumer.",
+    "end_offset": "End offset",
+    "end_offset_tooltip": "The highest offset in the Kafka topic, representing the latest available message."
+  },
+  "ConsumerGroup": {
+    "reset_offset": "Reset offset",
+    "delete": "Delete"
+  }
 }

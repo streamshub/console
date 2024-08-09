@@ -1,7 +1,14 @@
 import { locales } from "@/navigation";
 import withAuth from "next-auth/middleware";
 import createIntlMiddleware from "next-intl/middleware";
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+
+import { logger } from "@/utils/logger";
+
+const log = logger.child({ module: "middleware" });
+
+const publicPages = ["/kafka/[^/]+/login", "/cluster", "/"];
+const protectedPages = ["/kafka/[^/]+/.*"];
 
 const intlMiddleware = createIntlMiddleware({
   // A list of all locales that are supported
@@ -24,15 +31,40 @@ const authMiddleware = withAuth(
       authorized: ({ token }) => token != null,
     },
     pages: {
-      // signIn: '/login'
+      signIn: `/kafka/1/login`,
     },
   },
+) as any;
+
+const publicPathnameRegex = RegExp(
+  `^(/(${locales.join("|")}))?(${publicPages
+    .flatMap((p) => (p === "/" ? ["", "/"] : p))
+    .join("|")})/?$`,
+  "i",
+);
+
+const protectedPathnameRegex = RegExp(
+  `^(/(${locales.join("|")}))?(${protectedPages
+    .flatMap((p) => (p === "/" ? ["", "/"] : p))
+    .join("|")})/?$`,
+  "i",
 );
 
 export default async function middleware(req: NextRequest) {
-  return process.env.KEYCLOAK_CLIENTID
-    ? (authMiddleware as any)(req)
-    : intlMiddleware(req);
+  const requestPath = req.nextUrl.pathname;
+  const isPublicPage = publicPathnameRegex.test(requestPath);
+  const isProtectedPage = protectedPathnameRegex.test(requestPath);
+
+  if (isPublicPage) {
+    log.trace({ requestPath: requestPath }, "public page");
+    return intlMiddleware(req);
+  } else if (isProtectedPage) {
+    log.trace({ requestPath: requestPath }, "protected page");
+    return (authMiddleware as any)(req);
+  } else {
+    log.debug({ requestPath: requestPath, publicPathnameRegex: publicPathnameRegex, protectedPathnameRegex: protectedPathnameRegex }, "neither public nor protected!");
+    return NextResponse.redirect(new URL("/", req.url));
+  }
 }
 
 export const config = {

@@ -9,7 +9,8 @@ import {
   createContainer,
 } from "@/libs/patternfly/react-charts";
 import { useFormatBytes } from "@/utils/useFormatBytes";
-import { ChartArea } from "@patternfly/react-charts";
+import { ChartArea } from "@/libs/patternfly/react-charts";
+import { Alert } from "@patternfly/react-core";
 import { useFormatter, useTranslations } from "next-intl";
 import { getHeight, getPadding } from "./chartConsts";
 import { useChartWidth } from "./useChartWidth";
@@ -41,9 +42,12 @@ export function ChartIncomingOutgoing({
     Object.keys(incoming).length > 0 && Object.keys(outgoing).length > 0;
   if (!hasMetrics) {
     return (
-      <div>
-        <i>{t("ChartIncomingOutgoing.data_unavailable")}</i>
-      </div>
+      <Alert
+        variant="warning"
+        isInline
+        isPlain
+        title={t("ChartIncomingOutgoing.data_unavailable")}
+      />
     );
   }
   // const showDate = shouldShowDate(duration);

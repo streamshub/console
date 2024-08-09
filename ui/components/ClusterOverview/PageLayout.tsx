@@ -8,6 +8,7 @@ import {
 import { ReactNode, Suspense } from "react";
 import { ClusterCard } from "./ClusterCard";
 import { ClusterChartsCard } from "./ClusterChartsCard";
+import { RecentTopicsCard } from "./RecentTopicsCard";
 import { TopicChartsCard } from "./TopicChartsCard";
 import { TopicsPartitionsCard } from "./TopicsPartitionsCard";
 
@@ -16,11 +17,13 @@ export function PageLayout({
   clusterCharts,
   topicsPartitions,
   topicCharts,
+  recentTopics,
 }: {
   clusterOverview: ReactNode;
   topicsPartitions: ReactNode;
   clusterCharts: ReactNode;
   topicCharts: ReactNode;
+  recentTopics: ReactNode;
 }) {
   return (
     <PageSection isFilled>
@@ -41,6 +44,15 @@ export function PageLayout({
         </GridItem>
         <GridItem md={5}>
           <Flex direction={{ default: "column" }}>
+            <FlexItem>
+              <Suspense
+                fallback={
+                  <RecentTopicsCard viewedTopics={[]} isLoading={true} />
+                }
+              >
+                {recentTopics}
+              </Suspense>
+            </FlexItem>
             <FlexItem>
               <Suspense fallback={<TopicsPartitionsCard isLoading={true} />}>
                 {topicsPartitions}

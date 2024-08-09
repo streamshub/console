@@ -10,6 +10,7 @@ import {
   createContainer,
 } from "@/libs/patternfly/react-charts";
 import { useFormatBytes } from "@/utils/useFormatBytes";
+import { Alert } from "@/libs/patternfly/react-core";
 import { useFormatter, useTranslations } from "next-intl";
 import { getHeight, getPadding } from "./chartConsts";
 import { useChartWidth } from "./useChartWidth";
@@ -34,7 +35,14 @@ export function ChartMemoryUsage({ usages }: ChartDiskUsageProps) {
 
   const hasMetrics = Object.keys(usages).length > 0;
   if (!hasMetrics) {
-    return <div>{t("ChartMemoryUsage.data_unavailable")}</div>;
+    return (
+      <Alert
+        variant="warning"
+        isInline
+        isPlain
+        title={t("ChartMemoryUsage.data_unavailable")}
+      />
+    );
   }
 
   const CursorVoronoiContainer = createContainer("voronoi", "cursor");

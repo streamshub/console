@@ -12,6 +12,21 @@ export const ClusterListSchema = z.object({
   type: z.literal("kafkas"),
   meta: z.object({
     configured: z.boolean(),
+    authentication: z
+      .union([
+        z.object({
+          method: z.literal("anonymous"),
+        }),
+        z.object({
+          method: z.literal("basic"),
+        }),
+        z.object({
+          method: z.literal("oauth"),
+          tokenUrl: z.string().nullable().optional(),
+        }),
+      ])
+      .nullable()
+      .optional(),
   }),
   attributes: z.object({
     name: z.string(),
@@ -35,22 +50,28 @@ const ClusterDetailSchema = z.object({
     nodes: z.array(NodeSchema),
     controller: NodeSchema,
     authorizedOperations: z.array(z.string()),
-    listeners: z.array(
-      z.object({
-        type: z.string(),
-        bootstrapServers: z.string().nullable(),
-        authType: z.string().nullable(),
-      }),
-    ).nullable().optional(),
-    conditions: z.array(
-      z.object({
-        type: z.string().optional(),
-        status: z.string().optional(),
-        reason: z.string().optional(),
-        message: z.string().optional(),
-        lastTransitionTime: z.string().optional(),
-      }),
-    ).nullable().optional(),
+    listeners: z
+      .array(
+        z.object({
+          type: z.string(),
+          bootstrapServers: z.string().nullable(),
+          authType: z.string().nullable(),
+        }),
+      )
+      .nullable()
+      .optional(),
+    conditions: z
+      .array(
+        z.object({
+          type: z.string().optional(),
+          status: z.string().optional(),
+          reason: z.string().optional(),
+          message: z.string().optional(),
+          lastTransitionTime: z.string().optional(),
+        }),
+      )
+      .nullable()
+      .optional(),
     nodePools: z.array(z.string()).optional().nullable(),
   }),
 });
@@ -64,24 +85,35 @@ export const ClusterKpisSchema = z.object({
   total_topics: z.number().optional(),
   total_partitions: z.number().optional(),
   underreplicated_topics: z.number().optional(),
-  replica_count: z.object({
-    byNode: z.record(z.number()).optional(),
-    total: z.number().optional(),
-  }).optional(),
-  leader_count: z.object({
-    byNode: z.record(z.number()).optional(),
-    total: z.number().optional(),
-  }).optional(),
-  volume_stats_capacity_bytes: z.object({
-    byNode: z.record(z.number()).optional(),
-    total: z.number().optional(),
-  }).optional(),
-  volume_stats_used_bytes: z.object({
-    byNode: z.record(z.number()).optional(),
-    total: z.number().optional(),
-  }).optional(),
+  replica_count: z
+    .object({
+      byNode: z.record(z.number()).optional(),
+      total: z.number().optional(),
+    })
+    .optional(),
+  leader_count: z
+    .object({
+      byNode: z.record(z.number()).optional(),
+      total: z.number().optional(),
+    })
+    .optional(),
+  volume_stats_capacity_bytes: z
+    .object({
+      byNode: z.record(z.number()).optional(),
+      total: z.number().optional(),
+    })
+    .optional(),
+  volume_stats_used_bytes: z
+    .object({
+      byNode: z.record(z.number()).optional(),
+      total: z.number().optional(),
+    })
+    .optional(),
 });
 export type ClusterKpis = z.infer<typeof ClusterKpisSchema>;
 
-export const MetricRangeSchema = z.record(z.string(), z.record(z.number()).optional());
+export const MetricRangeSchema = z.record(
+  z.string(),
+  z.record(z.number()).optional(),
+);
 export type MetricRange = z.infer<typeof MetricRangeSchema>;

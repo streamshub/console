@@ -37,31 +37,40 @@ export async function getConsumerGroups(
     sort?: string;
     sortDir?: string;
   },
-): Promise<ConsumerGroupsResponse> {
-  const sp = new URLSearchParams(
-    filterUndefinedFromObj({
-      "fields[consumerGroups]": params.fields ?? "state,simpleConsumerGroup,members,offsets",
-      // TODO: pass filter from UI
-      "filter[state]": "in,STABLE,PREPARING_REBALANCE,COMPLETING_REBALANCE",
-      "page[size]": params.pageSize,
-      "page[after]": params.pageCursor,
-      sort: params.sort
-        ? (params.sortDir !== "asc" ? "-" : "") + params.sort
-        : undefined,
-    }),
-  );
-  const cgQuery = sp.toString();
-  const url = `${process.env.BACKEND_URL}/api/kafkas/${kafkaId}/consumerGroups?${cgQuery}`;
-  const res = await fetch(url, {
-    headers: await getHeaders(),
-    next: {
-      tags: [`consumer-groups`],
-    },
-  });
-  log.debug({ url }, "getConsumerGroups");
-  const rawData = await res.json();
-  log.debug({ url, rawData }, "getConsumerGroups response");
-  return ConsumerGroupsResponseSchema.parse(rawData);
+): Promise<ConsumerGroupsResponse | null> {
+  try {
+    const sp = new URLSearchParams(
+      filterUndefinedFromObj({
+        "fields[consumerGroups]":
+          params.fields ?? "state,simpleConsumerGroup,members,offsets",
+        // TODO: pass filter from UI
+        "filter[state]": "in,STABLE,PREPARING_REBALANCE,COMPLETING_REBALANCE",
+        "page[size]": params.pageSize,
+        "page[after]": params.pageCursor,
+        sort: params.sort
+          ? (params.sortDir !== "asc" ? "-" : "") + params.sort
+          : undefined,
+      }),
+    );
+    const cgQuery = sp.toString();
+    const url = `${process.env.BACKEND_URL}/api/kafkas/${kafkaId}/consumerGroups?${cgQuery}`;
+    const res = await fetch(url, {
+      headers: await getHeaders(),
+      next: {
+        tags: [`consumer-groups`],
+      },
+    });
+    log.debug({ url }, "getConsumerGroups");
+    if (res.status === 200) {
+      const rawData = await res.json();
+      log.debug({ url, rawData }, "getConsumerGroups response");
+      return ConsumerGroupsResponseSchema.parse(rawData);
+    }
+  } catch (err) {
+    log.error(err, "getConsumerGroups");
+    throw new Error("getConsumerGroups: couldn't connect with backend");
+  }
+  return null;
 }
 
 export async function getTopicConsumerGroups(

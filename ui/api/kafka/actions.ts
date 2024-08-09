@@ -13,12 +13,12 @@ import {
 import { logger } from "@/utils/logger";
 import groupBy from "lodash.groupby";
 import { PrometheusDriver } from "prometheus-query";
-import * as cluster from "./cluster.promql";
+import * as clusterPromql from "./cluster.promql";
 import { values } from "./kpi.promql";
-import * as topic from "./topic.promql";
+import * as topicPromql from "./topic.promql";
 
-export type ClusterMetric = keyof typeof cluster;
-export type TopicMetric = keyof typeof topic;
+export type ClusterMetric = keyof typeof clusterPromql;
+export type TopicMetric = keyof typeof topicPromql;
 
 const prom = process.env.CONSOLE_METRICS_PROMETHEUS_URL
   ? new PrometheusDriver({
@@ -37,14 +37,20 @@ export async function getKafkaClusters(): Promise<ClusterList[]> {
   const url = `${process.env.BACKEND_URL}/api/kafkas?${kafkaClustersQuery}`;
   try {
     const res = await fetch(url, {
-      headers: await getHeaders(),
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+      next: {
+        revalidate: 30,
+      },
     });
     const rawData = await res.json();
     log.trace(rawData, "getKafkaClusters response");
     return ClustersResponseSchema.parse(rawData).data;
   } catch (err) {
     log.error(err, "getKafkaClusters");
-    return [];
+    throw new Error("getKafkaClusters: couldn't connect with backend");
   }
 }
 
@@ -60,33 +66,35 @@ export async function getKafkaCluster(
   try {
     const res = await fetch(url, {
       headers: await getHeaders(),
-      cache: "force-cache",
+      cache: "reload",
     });
-    const rawData = await res.json();
-    log.trace(rawData, "getKafkaCluster response");
-    return ClusterResponse.parse(rawData).data;
+    if (res.status === 200) {
+      const rawData = await res.json();
+      log.trace(rawData, "getKafkaCluster response");
+      return ClusterResponse.parse(rawData).data;
+    }
+    return null;
   } catch (err) {
     log.error({ err, clusterId }, "getKafkaCluster");
-    return null;
+    throw new Error("getKafkaCluster: couldn't connect with backend");
   }
 }
 
 export async function getKafkaClusterKpis(
   clusterId: string,
 ): Promise<{ cluster: ClusterDetail; kpis: ClusterKpis | null } | null> {
+  const cluster = await getKafkaCluster(clusterId);
+
+  if (!cluster) {
+    return null;
+  }
+
+  if (!prom || !cluster.attributes.namespace) {
+    log.warn({ clusterId }, "getKafkaClusterKpis Prometheus unavailable");
+    return { cluster, kpis: null };
+  }
+
   try {
-    const cluster = await getKafkaCluster(clusterId);
-    if (!cluster?.attributes?.namespace) {
-      return null;
-    }
-
-    log.debug({ cluster, prom }, "????");
-
-    if (!prom) {
-      log.debug({ clusterId }, "getKafkaClusterKpis Prometheus unavailable");
-      return { cluster, kpis: null };
-    }
-
     const valuesRes = await prom.instantQuery(
       values(
         cluster.attributes.namespace,
@@ -199,7 +207,7 @@ export async function getKafkaClusterKpis(
     };
   } catch (err) {
     log.error({ err, clusterId }, "getKafkaClusterKpis");
-    return null;
+    throw new Error("getKafkaClusterKpis: couldn't connect with Prometheus");
   }
 }
 
@@ -208,7 +216,7 @@ export async function getKafkaClusterMetrics(
   metrics: Array<ClusterMetric>,
 ): Promise<{
   cluster: ClusterDetail;
-  ranges: Record<ClusterMetric, MetricRange>;
+  ranges: Record<ClusterMetric, MetricRange> | null;
 } | null> {
   async function getRangeByNodeId(
     namespace: string,
@@ -220,7 +228,7 @@ export async function getKafkaClusterMetrics(
     const end = new Date();
     const step = 60 * 1;
     const seriesRes = await prom!.rangeQuery(
-      cluster[metric](namespace, name, nodePools),
+      clusterPromql[metric](namespace, name, nodePools),
       start,
       end,
       step,
@@ -236,12 +244,18 @@ export async function getKafkaClusterMetrics(
     return [metric, MetricRangeSchema.parse(serieByNode)];
   }
 
-  try {
-    const cluster = await getKafkaCluster(clusterId);
-    if (!cluster?.attributes?.namespace || !prom) {
-      return null;
-    }
+  const cluster = await getKafkaCluster(clusterId);
 
+  if (!cluster) {
+    return null;
+  }
+
+  if (!prom || !cluster.attributes.namespace) {
+    log.warn({ clusterId }, "getKafkaClusterKpis Prometheus unavailable");
+    return { cluster, ranges: null };
+  }
+
+  try {
     const rangesRes = Object.fromEntries(
       await Promise.all(
         metrics.map((m) =>
@@ -264,7 +278,7 @@ export async function getKafkaClusterMetrics(
     };
   } catch (err) {
     log.error({ err, clusterId, metric: metrics }, "getKafkaClusterMetric");
-    return null;
+    throw new Error("getKafkaClusterMetric: couldn't connect with Prometheus");
   }
 }
 
@@ -273,7 +287,7 @@ export async function getKafkaTopicMetrics(
   metrics: Array<TopicMetric>,
 ): Promise<{
   cluster: ClusterDetail;
-  ranges: Record<TopicMetric, MetricRange>;
+  ranges: Record<TopicMetric, MetricRange> | null;
 } | null> {
   async function getRangeByNodeId(
     namespace: string,
@@ -285,7 +299,7 @@ export async function getKafkaTopicMetrics(
     const end = new Date();
     const step = 60 * 1;
     const seriesRes = await prom!.rangeQuery(
-      topic[metric](namespace, name, nodePools),
+      topicPromql[metric](namespace, name, nodePools),
       start,
       end,
       step,
@@ -303,8 +317,14 @@ export async function getKafkaTopicMetrics(
 
   try {
     const cluster = await getKafkaCluster(clusterId);
-    if (!cluster?.attributes?.namespace || !prom) {
+
+    if (!cluster) {
       return null;
+    }
+
+    if (!prom || !cluster.attributes.namespace) {
+      log.warn({ clusterId }, "getKafkaClusterKpis Prometheus unavailable");
+      return { cluster, ranges: null };
     }
 
     const rangesRes = Object.fromEntries(
@@ -329,6 +349,6 @@ export async function getKafkaTopicMetrics(
     };
   } catch (err) {
     log.error({ err, clusterId, metric: metrics }, "getKafkaTopicMetrics");
-    return null;
+    throw new Error("getKafkaTopicMetric: couldn't connect with Prometheus");
   }
 }

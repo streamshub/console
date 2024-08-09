@@ -1,14 +1,10 @@
-import { AppLayout } from "@/app/[locale]/AppLayout";
-import { AppLayoutProvider } from "@/app/[locale]/AppLayoutProvider";
-import { AppSessionProvider } from "@/app/[locale]/AppSessionProvider";
-import NextIntlProvider from "@/app/[locale]/NextIntlProvider";
-import { SessionRefresher } from "@/app/[locale]/SessionRefresher";
+import { getAuthOptions } from "@/app/api/auth/[...nextauth]/route";
 
-import { authOptions } from "@/utils/authOptions";
 import { getServerSession } from "next-auth";
 import { getTranslations } from "next-intl/server";
 import { notFound } from "next/navigation";
 import { ReactNode } from "react";
+import NextIntlProvider from "./NextIntlProvider";
 import "../globals.css";
 
 type Props = {
@@ -23,22 +19,12 @@ export default async function Layout({ children, params: { locale } }: Props) {
   } catch (error) {
     notFound();
   }
+  const authOptions = await getAuthOptions();
   const session = await getServerSession(authOptions);
   return (
-    <html lang="en">
-      <body>
-        <NextIntlProvider locale={locale} messages={messages}>
-          <AppSessionProvider session={session}>
-            <AppLayoutProvider>
-              <AppLayout>
-                {children}
-              </AppLayout>
-            </AppLayoutProvider>
-            <SessionRefresher />
-          </AppSessionProvider>
-        </NextIntlProvider>
-      </body>
-    </html>
+    <NextIntlProvider locale={locale} messages={messages}>
+      {children}
+    </NextIntlProvider>
   );
 }
 
