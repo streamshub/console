@@ -1,20 +1,16 @@
-import { getKafkaCluster, getKafkaClusters } from "@/api/kafka/actions";
 import { ClusterLinks } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/ClusterLinks";
 import { getAuthOptions } from "@/app/api/auth/[...nextauth]/route";
 import { AppLayout } from "@/components/AppLayout";
 import { AppLayoutProvider } from "@/components/AppLayoutProvider";
-import { getServerSession } from "next-auth";
-import { KafkaParams } from "./kafka.params";
-import { KafkaBreadcrumbItem } from "./KafkaBreadcrumbItem";
 import {
   Breadcrumb,
-  BreadcrumbItem,
   PageBreadcrumb,
   PageGroup,
 } from "@/libs/patternfly/react-core";
+import { getServerSession } from "next-auth";
 import { useTranslations } from "next-intl";
-import { notFound } from "next/navigation";
 import { PropsWithChildren, ReactNode, Suspense } from "react";
+import { KafkaParams } from "./kafka.params";
 
 export default async function AsyncLayout({
   children,
@@ -62,11 +58,7 @@ function Layout({
     <AppLayoutProvider>
       <AppLayout
         username={username}
-        sidebar={
-          <Suspense>
-            <ClusterLinks kafkaId={kafkaId} />
-          </Suspense>
-        }
+        sidebar={<ClusterLinks kafkaId={kafkaId} />}
       >
         <PageGroup stickyOnBreakpoint={{ default: "top" }}>
           <PageBreadcrumb>
@@ -78,23 +70,5 @@ function Layout({
         {modal}
       </AppLayout>
     </AppLayoutProvider>
-  );
-}
-
-async function ConnectedKafkaBreadcrumbItem({
-  kafkaId,
-  isActive,
-}: KafkaParams & { isActive: boolean }) {
-  const cluster = await getKafkaCluster(kafkaId);
-  if (!cluster) {
-    notFound();
-  }
-  const clusters = await getKafkaClusters();
-  return (
-    <KafkaBreadcrumbItem
-      selected={cluster}
-      clusters={clusters}
-      isActive={isActive}
-    />
   );
 }
