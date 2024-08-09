@@ -40,10 +40,11 @@ create instances of both Prometheus and Kafka.
 
 ### Start Console API in Development Mode
 
-Start the API in development mode from the repository root directory.
+Start the API in development mode from the repository root directory. Ensure that the config-path given points to a
+valid `console-config.yaml`. See [console-config-example.yaml](../console-config-example.yaml) for an example.
 
 ```shell
-mvn -am -pl api quarkus:dev
+mvn -am -pl api quarkus:dev -Dconsole.config-path=$(pwd)/console-config.yaml
 ```
 
 ### Using the Instance API

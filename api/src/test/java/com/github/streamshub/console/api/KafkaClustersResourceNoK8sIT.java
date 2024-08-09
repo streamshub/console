@@ -62,14 +62,14 @@ class KafkaClustersResourceNoK8sIT {
         kafkaContainer = deployments.getKafkaContainer();
         bootstrapServers = URI.create(kafkaContainer.getBootstrapServers());
         randomBootstrapServers = URI.create(consoleConfig.getKafka()
-                .getCluster("default/test-kafka2")
+                .getCluster("test-kafka2")
                 .map(k -> k.getProperties().get("bootstrap.servers"))
                 .orElseThrow());
 
         utils = new TestHelper(bootstrapServers, config, null);
 
-        clusterId1 = consoleConfig.getKafka().getCluster("default/test-kafka1").get().getId();
-        clusterId2 = consoleConfig.getKafka().getCluster("default/test-kafka2").get().getId();
+        clusterId1 = consoleConfig.getKafka().getCluster("test-kafka1").get().getId();
+        clusterId2 = consoleConfig.getKafka().getCluster("test-kafka2").get().getId();
         kafkaClusterService.setListUnconfigured(false);
     }
 

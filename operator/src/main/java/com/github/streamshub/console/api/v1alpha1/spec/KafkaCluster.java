@@ -12,11 +12,6 @@ import io.sundr.builder.annotations.Buildable;
 @ValidationRule(
         // The `namespace` property must be wrapped in double underscore to escape it
         // due to it being a "reserved" word.
-        value = "has(self.id) || has(self.__namespace__)",
-        message = "One of `id` or `namespace` is required")
-@ValidationRule(
-        // The `namespace` property must be wrapped in double underscore to escape it
-        // due to it being a "reserved" word.
         value = "!has(self.listener) || has(self.__namespace__)",
         message = "Property `listener` may not be used when `namespace` is omitted")
 public class KafkaCluster {
@@ -27,10 +22,10 @@ public class KafkaCluster {
             resource may be discovered using the name and namespace properties, \
             this property is optional. Otherwise, the Kafka cluster identifier \
             published in the Kafka resource's status will be used. If namespace \
-            is not given or the console or Kubernetes is not in use, this property \
-            is required.
+            is not given or the console or Kubernetes is not in use, and this \
+            property is not provided, the ID will default to the name.
 
-            When provided, this property will override the Kafka cluster id available \
+            When provided, this property will override the Kafka cluster ID available \
             in the Kafka resource's status.""")
     private String id;
 

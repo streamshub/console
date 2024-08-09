@@ -16,15 +16,15 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 import com.fasterxml.jackson.annotation.JsonFilter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.github.streamshub.console.api.support.ComparatorBuilder;
 import com.github.streamshub.console.api.support.ListRequestContext;
 
 import static java.util.Comparator.comparing;
 import static java.util.Comparator.nullsLast;
 
-@Schema(name = "KafkaClusterAttributes")
-@JsonFilter("fieldFilter")
-public class KafkaCluster {
+@Schema(name = "KafkaCluster")
+public class KafkaCluster extends Resource<KafkaCluster.Attributes> {
 
     public static class Fields {
         public static final String NAME = "name";
@@ -46,9 +46,9 @@ public class KafkaCluster {
         static final Map<String, Map<Boolean, Comparator<KafkaCluster>>> COMPARATORS =
                 ComparatorBuilder.bidirectional(
                         Map.of("id", ID_COMPARATOR,
-                                NAME, comparing(KafkaCluster::getName),
-                                NAMESPACE, comparing(KafkaCluster::getNamespace),
-                                CREATION_TIMESTAMP, comparing(KafkaCluster::getCreationTimestamp)));
+                                NAME, comparing(KafkaCluster::name),
+                                NAMESPACE, comparing(KafkaCluster::namespace),
+                                CREATION_TIMESTAMP, comparing(KafkaCluster::creationTimestamp)));
 
         public static final ComparatorBuilder<KafkaCluster> COMPARATOR_BUILDER =
                 new ComparatorBuilder<>(KafkaCluster.Fields::comparator, KafkaCluster.Fields.defaultComparator());
@@ -84,15 +84,12 @@ public class KafkaCluster {
     }
 
     @Schema(name = "KafkaClusterListResponse")
-    public static final class ListResponse extends DataList<KafkaClusterResource> {
+    public static final class ListResponse extends DataList<KafkaCluster> {
         public ListResponse(List<KafkaCluster> data, ListRequestContext<KafkaCluster> listSupport) {
             super(data.stream()
                     .map(entry -> {
-                        var rsrc = new KafkaClusterResource(entry);
-                        rsrc.addMeta("page", listSupport.buildPageMeta(entry::toCursor));
-                        rsrc.addMeta("configured", entry.isConfigured());
-                        rsrc.addMeta("managed", entry.isManaged());
-                        return rsrc;
+                        entry.addMeta("page", listSupport.buildPageMeta(entry::toCursor));
+                        return entry;
                     })
                     .toList());
             addMeta("page", listSupport.buildPageMeta());
@@ -101,48 +98,56 @@ public class KafkaCluster {
     }
 
     @Schema(name = "KafkaClusterResponse")
-    public static final class SingleResponse extends DataSingleton<KafkaClusterResource> {
+    public static final class SingleResponse extends DataSingleton<KafkaCluster> {
         public SingleResponse(KafkaCluster data) {
-            super(new KafkaClusterResource(data));
+            super(data);
         }
     }
 
-    @Schema(name = "KafkaCluster")
-    public static final class KafkaClusterResource extends Resource<KafkaCluster> {
-        public KafkaClusterResource(KafkaCluster data) {
-            super(data.id, "kafkas", data);
-            addMeta("configured", data.isConfigured());
-            addMeta("managed", data.isManaged());
+    @JsonFilter("fieldFilter")
+    static class Attributes {
+        @JsonProperty
+        String name; // Strimzi Kafka CR only
+
+        @JsonProperty
+        String namespace; // Strimzi Kafka CR only
+
+        @JsonProperty
+        String creationTimestamp; // Strimzi Kafka CR only
+
+        @JsonProperty
+        final List<Node> nodes;
+
+        @JsonProperty
+        final Node controller;
+
+        @JsonProperty
+        final List<String> authorizedOperations;
+
+        @JsonProperty
+        List<KafkaListener> listeners; // Strimzi Kafka CR only
+
+        @JsonProperty
+        String kafkaVersion;
+
+        @JsonProperty
+        String status;
+
+        @JsonProperty
+        List<Condition> conditions;
+
+        @JsonProperty
+        List<String> nodePools;
+
+        Attributes(List<Node> nodes, Node controller, List<String> authorizedOperations) {
+            this.nodes = nodes;
+            this.controller = controller;
+            this.authorizedOperations = authorizedOperations;
         }
     }
-
-    String name; // Strimzi Kafka CR only
-    String namespace; // Strimzi Kafka CR only
-    String creationTimestamp; // Strimzi Kafka CR only
-    @JsonIgnore
-    String id; // non-final, may be overridden by configuration
-    final List<Node> nodes;
-    final Node controller;
-    final List<String> authorizedOperations;
-    List<KafkaListener> listeners; // Strimzi Kafka CR only
-    @Schema(readOnly = true, description = """
-            Contains the set of metrics optionally retrieved only in a describe operation.
-            """)
-    String kafkaVersion;
-    String status;
-    List<Condition> conditions;
-    @JsonIgnore
-    boolean configured;
-    List<String> nodePools;
-    @JsonIgnore
-    boolean managed;
 
     public KafkaCluster(String id, List<Node> nodes, Node controller, List<String> authorizedOperations) {
-        super();
-        this.id = id;
-        this.nodes = nodes;
-        this.controller = controller;
-        this.authorizedOperations = authorizedOperations;
+        super(id, "kafkas", new Attributes(nodes, controller, authorizedOperations));
     }
 
     /**
@@ -156,9 +161,9 @@ public class KafkaCluster {
 
         KafkaCluster cluster = new KafkaCluster(cursor.getString("id"), null, null, null);
         JsonObject attr = cursor.getJsonObject("attributes");
-        cluster.setName(attr.getString(Fields.NAME, null));
-        cluster.setNamespace(attr.getString(Fields.NAMESPACE, null));
-        cluster.setCreationTimestamp(attr.getString(Fields.CREATION_TIMESTAMP, null));
+        cluster.name(attr.getString(Fields.NAME, null));
+        cluster.namespace(attr.getString(Fields.NAMESPACE, null));
+        cluster.creationTimestamp(attr.getString(Fields.CREATION_TIMESTAMP, null));
 
         return cluster;
     }
@@ -168,9 +173,9 @@ public class KafkaCluster {
                 .add("id", id == null ? Json.createValue("") : Json.createValue(id));
 
         JsonObjectBuilder attrBuilder = Json.createObjectBuilder();
-        maybeAddAttribute(attrBuilder, sortFields, Fields.NAME, name);
-        maybeAddAttribute(attrBuilder, sortFields, Fields.NAMESPACE, namespace);
-        maybeAddAttribute(attrBuilder, sortFields, Fields.CREATION_TIMESTAMP, creationTimestamp);
+        maybeAddAttribute(attrBuilder, sortFields, Fields.NAME, attributes.name);
+        maybeAddAttribute(attrBuilder, sortFields, Fields.NAMESPACE, attributes.namespace);
+        maybeAddAttribute(attrBuilder, sortFields, Fields.CREATION_TIMESTAMP, attributes.creationTimestamp);
         cursor.add("attributes", attrBuilder.build());
 
         return Base64.getUrlEncoder().encodeToString(cursor.build().toString().getBytes(StandardCharsets.UTF_8));
@@ -182,103 +187,93 @@ public class KafkaCluster {
         }
     }
 
-    public String getName() {
-        return name;
+    public String name() {
+        return attributes.name;
     }
 
-    public void setName(String name) {
-        this.name = name;
+    public void name(String name) {
+        attributes.name = name;
     }
 
-    public String getNamespace() {
-        return namespace;
+    public String namespace() {
+        return attributes.namespace;
     }
 
-    public void setNamespace(String namespace) {
-        this.namespace = namespace;
+    public void namespace(String namespace) {
+        attributes.namespace = namespace;
     }
 
-    public String getCreationTimestamp() {
-        return creationTimestamp;
+    public String creationTimestamp() {
+        return attributes.creationTimestamp;
     }
 
-    public void setCreationTimestamp(String creationTimestamp) {
-        this.creationTimestamp = creationTimestamp;
-    }
-
-    public String getId() {
-        return id;
+    public void creationTimestamp(String creationTimestamp) {
+        attributes.creationTimestamp = creationTimestamp;
     }
 
     public void setId(String id) {
         this.id = id;
     }
 
-    public List<Node> getNodes() {
-        return nodes;
+    public List<Node> nodes() {
+        return attributes.nodes;
     }
 
-    public Node getController() {
-        return controller;
+    public Node controller() {
+        return attributes.controller;
     }
 
-    public List<String> getAuthorizedOperations() {
-        return authorizedOperations;
+    public List<String> authorizedOperations() {
+        return attributes.authorizedOperations;
     }
 
-    public List<KafkaListener> getListeners() {
-        return listeners;
+    public List<KafkaListener> listeners() {
+        return attributes.listeners;
     }
 
-    public void setListeners(List<KafkaListener> listeners) {
-        this.listeners = listeners;
+    public void listeners(List<KafkaListener> listeners) {
+        attributes.listeners = listeners;
     }
 
-    public String getKafkaVersion() {
-        return kafkaVersion;
+    public String kafkaVersion() {
+        return attributes.kafkaVersion;
     }
 
-    public void setKafkaVersion(String kafkaVersion) {
-        this.kafkaVersion = kafkaVersion;
+    public void kafkaVersion(String kafkaVersion) {
+        attributes.kafkaVersion = kafkaVersion;
     }
 
-    public String getStatus() {
-        return status;
+    public String status() {
+        return attributes.status;
     }
 
-    public void setStatus(String status) {
-        this.status = status;
+    public void status(String status) {
+        attributes.status = status;
     }
 
-    public List<Condition> getConditions() {
-        return conditions;
+    public List<Condition> conditions() {
+        return attributes.conditions;
     }
 
-    public void setConditions(List<Condition> conditions) {
-        this.conditions = conditions;
+    public void conditions(List<Condition> conditions) {
+        attributes.conditions = conditions;
     }
 
+    @JsonIgnore
     public boolean isConfigured() {
-        return configured;
+        return Boolean.TRUE.equals(getMeta("configured"));
     }
 
+    @JsonIgnore
     public void setConfigured(boolean configured) {
-        this.configured = configured;
+        addMeta("configured", configured);
     }
 
-    public List<String> getNodePools() {
-        return nodePools;
+    public List<String> nodePools() {
+        return attributes.nodePools;
     }
 
-    public void setNodePools(List<String> nodePools) {
-        this.nodePools = nodePools;
-    }
-
-    public void setManaged(boolean managed) {
-        this.managed = managed;
-    }
-
-    public boolean isManaged() {
-        return managed;
+    public void nodePools(List<String> nodePools) {
+        attributes.nodePools = nodePools;
     }
 }

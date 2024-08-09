@@ -3,11 +3,14 @@ package com.github.streamshub.console.config;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import jakarta.validation.constraints.NotBlank;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 public class KafkaClusterConfig {
 
     private String id;
+    @NotBlank
     private String name;
     private String namespace;
     private String listener;
@@ -18,10 +21,12 @@ public class KafkaClusterConfig {
 
     @JsonIgnore
     public String clusterKey() {
-        if (namespace == null || namespace.isBlank()) {
-            return name;
-        }
-        return "%s/%s".formatted(namespace, name);
+        return hasNamespace() ? "%s/%s".formatted(namespace, name) : name;
+    }
+
+    @JsonIgnore
+    public boolean hasNamespace() {
+        return namespace != null && !namespace.isBlank();
     }
 
     public String getId() {

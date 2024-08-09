@@ -2,6 +2,7 @@ package com.github.streamshub.console.api.service;
 
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -23,6 +24,7 @@ import org.eclipse.microprofile.context.ThreadContext;
 import org.jboss.logging.Logger;
 
 import com.github.streamshub.console.api.Annotations;
+import com.github.streamshub.console.api.ClientFactory;
 import com.github.streamshub.console.api.model.Condition;
 import com.github.streamshub.console.api.model.KafkaCluster;
 import com.github.streamshub.console.api.model.KafkaListener;
@@ -47,6 +49,9 @@ import static com.github.streamshub.console.api.BlockingSupplier.get;
 
 @ApplicationScoped
 public class KafkaClusterService {
+
+    private static final String AUTHN_KEY = "authentication";
+    private static final String AUTHN_METHOD_KEY = "method";
 
     @Inject
     Logger logger;
@@ -95,17 +100,11 @@ public class KafkaClusterService {
                     var config = ctx.getValue().clusterConfig();
 
                     return kafkaResources.stream()
-                        .filter(k -> Objects.equals(k.getName(), config.getName()))
-                        .filter(k -> Objects.equals(k.getNamespace(), config.getNamespace()))
+                        .filter(k -> Objects.equals(k.name(), config.getName()))
+                        .filter(k -> Objects.equals(k.namespace(), config.getNamespace()))
                         .map(k -> addKafkaContextData(k, ctx.getValue()))
                         .findFirst()
-                        .orElseGet(() -> {
-                            var k = new KafkaCluster(id, null, null, null);
-                            k.setConfigured(true);
-                            k.setName(config.getName());
-                            k.setNamespace(config.getNamespace());
-                            return k;
-                        });
+                        .orElseGet(() -> addKafkaContextData(new KafkaCluster(id, null, null, null), ctx.getValue()));
                 })
                 .collect(Collectors.toMap(KafkaCluster::getId, Function.identity()));
 
@@ -159,17 +158,45 @@ public class KafkaClusterService {
     KafkaCluster addKafkaContextData(KafkaCluster cluster, KafkaContext kafkaContext) {
         var config = kafkaContext.clusterConfig();
         cluster.setConfigured(true);
+        cluster.name(config.getName());
+        cluster.namespace(config.getNamespace());
+
         if (config.getId() != null) {
             // configuration has overridden the id
             cluster.setId(config.getId());
         }
-        cluster.setName(config.getName());
-        cluster.setNamespace(config.getNamespace());
+
+        if (kafkaContext.applicationScoped()) {
+            if (kafkaContext.hasCredentials(Admin.class)) {
+                cluster.addMeta(AUTHN_KEY, Map.of(AUTHN_METHOD_KEY, "anonymous"));
+            } else {
+                addAuthenticationMethod(cluster, kafkaContext);
+            }
+        } else {
+            addAuthenticationMethod(cluster, kafkaContext);
+        }
+
         return cluster;
     }
 
     KafkaCluster addKafkaContextData(KafkaCluster cluster) {
         return addKafkaContextData(cluster, kafkaContext);
+    }
+
+    void addAuthenticationMethod(KafkaCluster cluster, KafkaContext kafkaContext) {
+        switch (kafkaContext.saslMechanism(Admin.class)) {
+            case ClientFactory.OAUTHBEARER:
+                Map<String, String> authMeta = new HashMap<>(2);
+                authMeta.put(AUTHN_METHOD_KEY, "oauth");
+                authMeta.put("tokenUrl", kafkaContext.tokenUrl().orElse(null));
+                cluster.addMeta(AUTHN_KEY, authMeta);
+                break;
+            case ClientFactory.PLAIN, ClientFactory.SCRAM_SHA256, ClientFactory.SCRAM_SHA512:
+                cluster.addMeta(AUTHN_KEY, Map.of(AUTHN_METHOD_KEY, "basic"));
+                break;
+            default:
+                break;
+        }
     }
 
     KafkaCluster addKafkaResourceData(KafkaCluster cluster) {
@@ -178,9 +205,9 @@ public class KafkaClusterService {
     }
 
     void setKafkaClusterProperties(KafkaCluster cluster, Kafka kafka) {
-        cluster.setName(kafka.getMetadata().getName());
-        cluster.setNamespace(kafka.getMetadata().getNamespace());
-        cluster.setCreationTimestamp(kafka.getMetadata().getCreationTimestamp());
+        cluster.name(kafka.getMetadata().getName());
+        cluster.namespace(kafka.getMetadata().getNamespace());
+        cluster.creationTimestamp(kafka.getMetadata().getCreationTimestamp());
 
         var comparator = Comparator
             .comparingInt((GenericKafkaListener listener) ->
@@ -205,39 +232,39 @@ public class KafkaClusterService {
                         getAuthType(listener).orElse(null)))
             .toList();
 
-        cluster.setListeners(listeners);
+        cluster.listeners(listeners);
         setKafkaClusterStatus(cluster, kafka);
     }
 
     void setKafkaClusterStatus(KafkaCluster cluster, Kafka kafka) {
         Optional.ofNullable(kafka.getStatus())
             .ifPresent(status -> {
-                cluster.setKafkaVersion(status.getKafkaVersion());
+                cluster.kafkaVersion(status.getKafkaVersion());
                 Optional.ofNullable(status.getConditions())
                     .ifPresent(conditions -> {
-                        cluster.setConditions(conditions.stream().map(Condition::new).toList());
+                        cluster.conditions(conditions.stream().map(Condition::new).toList());
 
                         conditions.stream()
                             .filter(c -> "NotReady".equals(c.getType()) && "True".equals(c.getStatus()))
                             .findFirst()
                             .ifPresentOrElse(
-                                    c -> cluster.setStatus("NotReady"),
-                                    () -> cluster.setStatus("Ready"));
+                                    c -> cluster.status("NotReady"),
+                                    () -> cluster.status("Ready"));
                     });
                 Optional.ofNullable(status.getKafkaNodePools())
-                    .ifPresent(pools -> cluster.setNodePools(pools.stream().map(pool -> pool.getName()).toList()));
+                    .ifPresent(pools -> cluster.nodePools(pools.stream().map(pool -> pool.getName()).toList()));
             });
     }
 
     KafkaCluster setManaged(KafkaCluster cluster) {
-        cluster.setManaged(findCluster(cluster)
+        cluster.addMeta("managed", findCluster(cluster)
                 .map(kafkaTopic -> Boolean.TRUE)
                 .orElse(Boolean.FALSE));
         return cluster;
     }
 
     private Optional<Kafka> findCluster(KafkaCluster cluster) {
-        return findCluster(Cache.namespaceKeyFunc(cluster.getNamespace(), cluster.getName()));
+        return findCluster(Cache.namespaceKeyFunc(cluster.namespace(), cluster.name()));
     }
 
     private Optional<Kafka> findCluster(String clusterKey) {
