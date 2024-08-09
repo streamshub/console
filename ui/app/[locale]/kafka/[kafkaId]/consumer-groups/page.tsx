@@ -4,6 +4,7 @@ import { PageSection } from "@/libs/patternfly/react-core";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { ConsumerGroupsTable } from "./ConsumerGroupsTable";
+import { ConsumerGroupState } from "@/api/consumerGroups/schema";
 
 export default function ConsumerGroupsPage({
   params: { kafkaId },
@@ -26,8 +27,13 @@ export default function ConsumerGroupsPage({
             page={1}
             consumerGroups={undefined}
             refresh={undefined}
-            total={0}
-          />
+            total={0} perPage={0}
+            filterName={undefined}
+            filterState={undefined}
+            onFilterNameChange={() => { }}
+            onFilterStateChange={() => { }}
+            onResetOffset={() => { }}
+            onPageChange={() => { }} />
         }
       >
         <ConnectedConsumerGroupsTable
@@ -68,6 +74,13 @@ async function ConnectedConsumerGroupsTable({
       total={consumerGroups.meta.page.total || 0}
       consumerGroups={consumerGroups.data}
       refresh={refresh}
+      perPage={0}
+      filterName={undefined}
+      filterState={undefined}
+      onFilterNameChange={() => { }}
+      onFilterStateChange={() => { }}
+      onResetOffset={() => { }}
+      onPageChange={() => { }}
     />
   );
 }
