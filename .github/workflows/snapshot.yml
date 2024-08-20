@@ -55,6 +55,7 @@ jobs:
           export QUARKUS_CONTAINER_IMAGE_PUSH="true"
           export QUARKUS_CONTAINER_IMAGE_TAG="${{ env.NEXT_VERSION }}"
           export QUARKUS_CONTAINER_IMAGE_ADDITIONAL_TAGS=snapshot-${{github.ref_name}}
+          export QUARKUS_KUBERNETES_VERSION="${{ env.NEXT_VERSION }}"
           export GIT_REVISION=$(git rev-parse --short HEAD)
           # Build and push the snapshot images
           mvn -B -P container-image verify --no-transfer-progress -DskipTests -Dquarkus.docker.buildx.platform=linux/amd64,linux/arm64
@@ -67,7 +68,7 @@ jobs:
           password: "${{ secrets.IMAGE_REPO_PASSWORD }}"
 
       - name: Modify CSV Annotation
-        run: ./operator/bin/modify-bundle-metadata.sh
+        run: ./operator/bin/modify-bundle-metadata.sh "SKIP_RANGE=>=0.0.1 <${{ env.NEXT_VERSION }}"
 
       - name: Build and Push Operator Bundle Image
         uses: docker/build-push-action@v6

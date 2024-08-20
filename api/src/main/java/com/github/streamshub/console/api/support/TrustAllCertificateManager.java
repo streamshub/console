@@ -68,7 +68,7 @@ public class TrustAllCertificateManager implements X509TrustManager {
             certificates = new String(certificateOut.toByteArray(), StandardCharsets.UTF_8).trim();
             log.warnf("Certificate hosted at %s:%s is automatically trusted", hostport[0], hostport[1]);
         } catch (Exception e) {
-            log.infof("Exception setting up trusted certificate: %s", e.getMessage());
+            log.infof("Exception setting up trusted certificate for host %s: %s", bootstrap, e.getMessage());
         }
 
         return certificates;
