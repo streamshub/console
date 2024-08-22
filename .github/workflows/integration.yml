@@ -61,6 +61,7 @@ jobs:
           export QUARKUS_CONTAINER_IMAGE_TAG="${{ env.PROJECT_VERSION }}"
           export QUARKUS_KUBERNETES_VERSION="${{ env.PROJECT_VERSION }}"
           mvn verify -P container-image -B --no-transfer-progress \
+            -Dquarkus.kubernetes.namespace='$${NAMESPACE}' \
             -Dquarkus.package.write-transformed-bytecode-to-build-output=true \
             -Dquarkus.docker.buildx.platform=linux/amd64,linux/arm64
 
@@ -96,6 +97,15 @@ jobs:
           file: operator/target/catalog.Dockerfile
           tags: |
             streamshub/console-operator-catalog:${{ env.PROJECT_VERSION }}
+
+      - name: Attach Kubernetes Resources
+        uses: actions/upload-artifact@v4
+        with:
+          name: k8s-resources
+          path: |
+            operator/target/bundle/
+            operator/target/catalog/
+            operator/target/kubernetes/*.yml
 
       - name: Archive Results
         uses: actions/upload-artifact@v4

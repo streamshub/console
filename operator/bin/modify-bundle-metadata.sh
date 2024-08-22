@@ -20,6 +20,9 @@ done
 
 echo "[INFO] Modify values and replace placeholders in ${CSV_FILE_PATH}"
 
+# Delete any namespaces set on the CSV deployment(s), possibly added by `quarkus.kubernetes.namespace`
+${YQ} eval -o yaml -i 'del(.spec.install.spec.deployments[0].spec.template.metadata.namespace)' "${CSV_FILE_PATH}"
+
 yq_image_expression=".spec.install.spec.deployments[0] | (select (.name ==\"${OPERATOR_NAME}\")).spec.template.spec.containers[].image"
 
 full_image=$(${YQ} eval "${yq_image_expression}" "${CSV_FILE_PATH}")
