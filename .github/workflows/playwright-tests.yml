@@ -6,7 +6,6 @@ on:
 env:
   TARGET_NAMESPACE: "console-namespace"
   CI_CLUSTER: true
-  CONSOLE_INSTANCE_YAML: "./install/resources/console/console.instance.yaml"
   OLM_VERSION: "v0.28.0"
   YQ_VERSION: "v4.44.1"
 
@@ -23,7 +22,7 @@ jobs:
         uses: medyagh/setup-minikube@latest
         with:
           cpus: 2
-          memory: 4096m
+          memory: 8g
           addons: registry,ingress,ingress-dns
           insecure-registry: 'localhost:5000,10.0.0.0/24'
           start-args: '--extra-config=kubeadm.ignore-preflight-errors=SystemVerification --extra-config=apiserver.authorization-mode=RBAC,Node'
@@ -89,16 +88,9 @@ jobs:
           set -x
 
           # Create the CatalogSource with the Console operator bundle
-          echo '---
-            apiVersion: operators.coreos.com/v1alpha1
-            kind: CatalogSource
-            metadata:
-              name: console-operator-catalog
-            spec:
-              displayName: StreamsHub
-              image: localhost:5000/streamshub/console-operator-catalog:${{ env.PROJECT_VERSION }}
-              publisher: StreamsHub
-              sourceType: grpc' | kubectl apply -n olm -f -
+          yq ea '.spec.image = "localhost:5000/streamshub/console-operator-catalog:${{ env.PROJECT_VERSION }}"' \
+            ./install/operator-olm/010-CatalogSource-console-operator-catalog.yaml \
+            | kubectl apply -n olm -f -
 
           kubectl wait catalogsource/console-operator-catalog -n olm \
             --for=jsonpath='{.status.connectionState.lastObservedState}'=READY \
@@ -117,58 +109,56 @@ jobs:
               sourceNamespace: olm' | kubectl apply -n operators -f -
 
           # Install Console Operator
-          echo '---
-            apiVersion: operators.coreos.com/v1alpha1
-            kind: Subscription
-            metadata:
-              name: console-operator
-            spec:
-              channel: alpha
-              name: console-operator
-              source: console-operator-catalog
-              sourceNamespace: olm
-              config:
-                env:
-                  - name: CONSOLE_DEPLOYMENT_DEFAULT_API_IMAGE
-                    value: localhost:5000/streamshub/console-api:${{ env.PROJECT_VERSION }}
-                  - name: CONSOLE_DEPLOYMENT_DEFAULT_UI_IMAGE
-                    value: localhost:5000/streamshub/console-ui:${{ env.PROJECT_VERSION }}
-            ' | kubectl apply -n operators -f -
+          yq ea '.spec.sourceNamespace = "olm", .spec.config = {
+                "env": [{
+                  "name": "CONSOLE_DEPLOYMENT_DEFAULT_API_IMAGE",
+                  "value": "localhost:5000/streamshub/console-api:${{ env.PROJECT_VERSION }}"
+                }, {
+                  "name": "CONSOLE_DEPLOYMENT_DEFAULT_UI_IMAGE",
+                  "value": "localhost:5000/streamshub/console-ui:${{ env.PROJECT_VERSION }}"
+                }]
+              }' ./install/operator-olm/020-Subscription-console-operator.yaml \
+            | kubectl apply -n operators -f -
 
-          # Wait for Strimzi Operator
-          kubectl get deployment --selector=operators.coreos.com/strimzi-kafka-operator.operators -n operators
+          wait_operator() {
+            local OPERATOR=${1}
 
-          while [ $(kubectl get deployment --selector=operators.coreos.com/strimzi-kafka-operator.operators -n operators -o name | wc -l) -lt 1 ] ; do
-            echo "Waiting for Strimzi Deployment to be present"
-            sleep 10
-          done
+            while [ $(kubectl get deployment --selector=operators.coreos.com/${OPERATOR}.operators -n operators -o name | wc -l) -lt 1 ] ; do
+              echo "Waiting for Deployment ${OPERATOR} to be present"
+              sleep 5
+            done
 
-          STRIMZI_DEPLOYMENT=$(kubectl get deployment --selector=operators.coreos.com/strimzi-kafka-operator.operators -n operators -o name | tail -1)
-          echo "Found Strimzi Operator Deployment: ${STRIMZI_DEPLOYMENT}"
-          kubectl wait ${STRIMZI_DEPLOYMENT} --for=condition=available --timeout=180s -n operators
+            local OPERATOR_DEPLOYMENT=$(kubectl get deployment --selector=operators.coreos.com/${OPERATOR}.operators -n operators -o name | tail -1)
+            echo "Found Operator Deployment: ${OPERATOR_DEPLOYMENT}, waiting for condition 'Available'"
+            kubectl wait ${OPERATOR_DEPLOYMENT} --for=condition=available --timeout=180s -n operators
+          }
 
-          # Wait for Console Operator
-          while [ $(kubectl get deployment --selector=operators.coreos.com/console-operator.operators -n operators -o name | wc -l) -lt 1 ] ; do
-            echo "Waiting for Console Operator Deployment to be present"
-            sleep 5
-          done
-
-          CONSOLE_DEPLOYMENT=$(kubectl get deployment --selector=operators.coreos.com/strimzi-kafka-operator.operators -n operators -o name | tail -1)
-          echo "Found Console Operator Deployment: ${CONSOLE_DEPLOYMENT}"
-          kubectl wait ${CONSOLE_DEPLOYMENT} --for=condition=available --timeout=180s -n operators
+          export -f wait_operator
+          timeout 300s bash -c 'wait_operator "strimzi-kafka-operator"'
+          timeout 300s bash -c 'wait_operator "console-operator"'
 
       # replace with resources in docs PR
       - name: Deploy Kafka Cluster & Console
         run: |
           set -x
 
-          ./install/002-deploy-console-kafka.sh $TARGET_NAMESPACE $CLUSTER_DOMAIN
+          export LISTENER_TYPE=ingress
+          cat examples/kafka/*.yaml | envsubst | kubectl apply -n ${TARGET_NAMESPACE} -f -
+
           kubectl wait kafka/console-kafka --for=condition=Ready --timeout=300s -n $TARGET_NAMESPACE
           kubectl wait kafkauser/console-kafka-user1 --for=condition=Ready --timeout=60s -n $TARGET_NAMESPACE
 
-          cat $CONSOLE_INSTANCE_YAML | envsubst && echo
-          cat $CONSOLE_INSTANCE_YAML | envsubst | kubectl apply -n $TARGET_NAMESPACE -f -
+          # Display the resource
+          export KAFKA_NAMESPACE="${TARGET_NAMESPACE}"
+
+          cat examples/console/* | envsubst && echo
+
+          # Apply the resource
+          cat examples/console/* | envsubst | kubectl apply -n ${TARGET_NAMESPACE} -f -
+
           kubectl wait console/example --for=condition=Ready --timeout=300s -n $TARGET_NAMESPACE
+
+          # Sleep to ensure ingress fully available
           sleep 10
 
       - name: Console Smoke Test
