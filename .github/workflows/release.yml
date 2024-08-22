@@ -55,7 +55,9 @@ jobs:
           export QUARKUS_CONTAINER_IMAGE_ADDITIONAL_TAGS=latest
           export GIT_REVISION=$(git rev-parse --short release)
           # Build and push the release images using the commit tagged in `release:prepare`
-          mvn -B -P container-image release:perform --no-transfer-progress '-Drelease.arguments=-Dquarkus.docker.buildx.platform=linux/amd64,linux/arm64'
+          mvn -B -P container-image release:perform --no-transfer-progress \
+            -Dquarkus.kubernetes.namespace='$${NAMESPACE}' \
+            '-Drelease.arguments=-Dquarkus.docker.buildx.platform=linux/amd64,linux/arm64'
 
       - name: Login to Quay
         uses: docker/login-action@v3
@@ -135,8 +137,17 @@ jobs:
           milestone-title: ${{steps.metadata.outputs.current-version}}
           milestone-next: ${{steps.metadata.outputs.next-version}}
 
-      - name: Image Update
-        uses: renovatebot/github-action@v40.2.6
+      - name: Prepare Operator Resources
+        run: |
+          cat operator/target/kubernetes/consoles.console.streamshub.github.com-v1.yml \
+          operator/target/kubernetes/kubernetes.yml \
+          > operator/target/console-operator-${{ steps.metadata.outputs.current-version }}.yaml
+
+      - uses: meeDamian/github-release@2.0
+        name: Attach Operator Resources to Release
         with:
-          configurationFile: .github/gitops-config.json
-          token: ${{ secrets.RELEASE_TOKEN }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ steps.metadata.outputs.current-version }}
+          allow_override: true
+          gzip: false
+          files: operator/target/console-operator-${{ steps.metadata.outputs.current-version }}.yaml

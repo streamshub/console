@@ -55,9 +55,12 @@ jobs:
           export QUARKUS_CONTAINER_IMAGE_PUSH="true"
           export QUARKUS_CONTAINER_IMAGE_TAG="${{ env.NEXT_VERSION }}"
           export QUARKUS_CONTAINER_IMAGE_ADDITIONAL_TAGS=snapshot-${{github.ref_name}}
+          export QUARKUS_KUBERNETES_VERSION="${{ env.NEXT_VERSION }}"
           export GIT_REVISION=$(git rev-parse --short HEAD)
           # Build and push the snapshot images
-          mvn -B -P container-image verify --no-transfer-progress -DskipTests -Dquarkus.docker.buildx.platform=linux/amd64,linux/arm64
+          mvn -B -P container-image verify --no-transfer-progress -DskipTests \
+            -Dquarkus.kubernetes.namespace='$${NAMESPACE}' \
+            -Dquarkus.docker.buildx.platform=linux/amd64,linux/arm64
 
       - name: Login to Quay
         uses: docker/login-action@v3
@@ -67,7 +70,7 @@ jobs:
           password: "${{ secrets.IMAGE_REPO_PASSWORD }}"
 
       - name: Modify CSV Annotation
-        run: ./operator/bin/modify-bundle-metadata.sh
+        run: ./operator/bin/modify-bundle-metadata.sh "SKIP_RANGE=>=0.0.1 <${{ env.NEXT_VERSION }}"
 
       - name: Build and Push Operator Bundle Image
         uses: docker/build-push-action@v6
@@ -100,6 +103,15 @@ jobs:
           tags: |
             ${{ secrets.IMAGE_REPO_HOSTNAME }}/${{ secrets.IMAGE_REPO_NAMESPACE }}/console-operator-catalog:${{ env.NEXT_VERSION }}
             ${{ secrets.IMAGE_REPO_HOSTNAME }}/${{ secrets.IMAGE_REPO_NAMESPACE }}/console-operator-catalog:snapshot-${{github.ref_name}}
+
+      - name: Attach Kubernetes Resources
+        uses: actions/upload-artifact@v4
+        with:
+          name: k8s-resources
+          path: |
+            operator/target/bundle/
+            operator/target/catalog/
+            operator/target/kubernetes/*.yml
 
       - name: Build UI
         working-directory: ui
