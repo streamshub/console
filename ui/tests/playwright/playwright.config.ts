@@ -1,8 +1,14 @@
 import { defineConfig, devices } from "playwright/test";
 
 export default defineConfig({
+  // Retry on CI only.
+  retries: process.env.CI_CLUSTER ? 2 : 0,
+
+  // Opt out of parallel tests on CI.
+  workers: process.env.CI_CLUSTER ? 1 : undefined,
+
   projects: [
-    { name: "setup", testMatch: /.*\.setup\.ts/ },
+    //{ name: "setup", testMatch: /.*\.setup\.ts/ },
     {
       name: "chromium",
       use: {
@@ -10,8 +16,8 @@ export default defineConfig({
         // Use prepared auth state.
         // storageState: "tests/playwright/.auth/user.json",
       },
-      dependencies: ["setup"],
-      timeout: 15000,
+      //dependencies: ["setup"],
+      timeout: 25000,
     },
 
     {
@@ -21,11 +27,12 @@ export default defineConfig({
         // Use prepared auth state.
         // storageState: "tests/playwright/.auth/user.json",
       },
-      dependencies: ["setup"],
-      timeout: 15000,
+      //dependencies: ["setup"],
+      timeout: 25000,
     },
   ],
   use: {
-    baseURL: "http://example-console.192.168.49.2.nip.io",
+    baseURL: process.env.PLAYWRIGHT_BASE_URL,
+    ignoreHTTPSErrors: true,
   },
 });

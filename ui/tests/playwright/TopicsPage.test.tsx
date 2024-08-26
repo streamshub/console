@@ -2,7 +2,8 @@ import { expect, test } from "@playwright/test";
 
 test("Topics page", async ({page}) => {
   await test.step("Navigate to topics page", async () => {
-    await page.goto("./home");
+    await page.goto("./");
+    await page.click('text="Click to login anonymously"');
     await page.click('text="Topics"');
     await page.waitForSelector('text="Hide internal topics"', { timeout: 500000 });
   })

@@ -2,14 +2,15 @@ import { expect, test } from "@playwright/test";
 
 test("Partitions page", async ({page}) => {
   await test.step("Navigate to partitions page", async () => {
-    await page.goto("./home");
+    await page.goto("./");
+    await page.click('text="Click to login anonymously"');
     await page.click('text="Topics"');
     await page.waitForSelector('text="Hide internal topics"', { timeout: 500000 });
     await page.click('table[aria-label="Topics"] tbody tr:first-child td:first-child a');
-    await page.waitForSelector('text="No messages data"'||'text="messages=latest retrieve=50"', { timeout: 500000 });
+    await expect(page.getByText("Last updated").or(page.getByText("No messages data"))).toBeVisible();
     await page.click('text="Partitions"');
     await page.waitForSelector('text="Partition ID"', { timeout: 500000 });
-   
+
   })
   await test.step("Partitions page should display table", async () => {
     await page.waitForLoadState("networkidle");

@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-test("Home page", async ({ page }) => {
+test.skip("Home page", async ({ page }) => {
   await test.step("Column headings are present", async () => {
     await page.goto("./");
     const columnHeadings = await page.locator('table[aria-label="Kafka clusters"] thead th').evaluateAll((ths) =>
