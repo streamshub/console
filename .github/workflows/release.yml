@@ -53,10 +53,10 @@ jobs:
           export QUARKUS_CONTAINER_IMAGE_PASSWORD="${{ secrets.IMAGE_REPO_PASSWORD }}"
           export QUARKUS_CONTAINER_IMAGE_PUSH="true"
           export QUARKUS_CONTAINER_IMAGE_ADDITIONAL_TAGS=latest
+          export QUARKUS_KUBERNETES_NAMESPACE='$${NAMESPACE}'
           export GIT_REVISION=$(git rev-parse --short release)
           # Build and push the release images using the commit tagged in `release:prepare`
           mvn -B -P container-image release:perform --no-transfer-progress \
-            -Dquarkus.kubernetes.namespace='$${NAMESPACE}' \
             '-Drelease.arguments=-Dquarkus.docker.buildx.platform=linux/amd64,linux/arm64'
 
       - name: Login to Quay
@@ -139,9 +139,11 @@ jobs:
 
       - name: Prepare Operator Resources
         run: |
-          cat operator/target/kubernetes/consoles.console.streamshub.github.com-v1.yml \
-          operator/target/kubernetes/kubernetes.yml \
-          > operator/target/console-operator-${{ steps.metadata.outputs.current-version }}.yaml
+          RELEASE_K8S_PATH='console/target/checkout/operator/target/kubernetes'
+
+          cat ${RELEASE_K8S_PATH}/consoles.console.streamshub.github.com-v1.yml \
+              ${RELEASE_K8S_PATH}/kubernetes.yml \
+            > target/console-operator-${{ steps.metadata.outputs.current-version }}.yaml
 
       - uses: meeDamian/github-release@2.0
         name: Attach Operator Resources to Release
@@ -150,4 +152,4 @@ jobs:
           tag: ${{ steps.metadata.outputs.current-version }}
           allow_override: true
           gzip: false
-          files: operator/target/console-operator-${{ steps.metadata.outputs.current-version }}.yaml
+          files: target/console-operator-${{ steps.metadata.outputs.current-version }}.yaml
