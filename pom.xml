@@ -27,7 +27,7 @@
         <!-- Plugin Versions -->
         <maven.compiler.version>3.13.0</maven.compiler.version>
         <maven.dependency.version>3.7.1</maven.dependency.version>
-        <maven.checkstyle.version>3.4.0</maven.checkstyle.version>
+        <maven.checkstyle.version>3.5.0</maven.checkstyle.version>
         <jacoco-maven-plugin.version>0.8.12</jacoco-maven-plugin.version>
         <jandex-maven-plugin.version>3.2.2</jandex-maven-plugin.version>
         <spotbugs.version>4.8.6</spotbugs.version>
