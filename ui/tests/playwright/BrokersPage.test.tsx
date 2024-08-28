@@ -2,7 +2,8 @@ import { expect, test } from "@playwright/test";
 
 test("Brokers page", async ({page}) => {
   await test.step("Navigate to brokers page", async () => {
-    await page.goto("./home");
+    await page.goto("./");
+    await page.click('text="Click to login anonymously"');
     await page.click('text="Brokers"');
     await page.waitForSelector('text="Rack"', { timeout: 500000 });
   })
@@ -21,7 +22,7 @@ test("Brokers page", async ({page}) => {
     const dataCells = await page.locator('table[aria-label="Kafka clusters"] tbody tr td').evaluateAll((tds) =>
       tds.map((td) => td.textContent?.trim() ?? "")
     );
-    
+
     expect(dataCells.length).toBeGreaterThan(0);
   });
 });

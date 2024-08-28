@@ -1,6 +1,5 @@
 import { getKafkaClusters } from "@/api/kafka/actions";
 import { redirect } from "@/navigation";
-import { getCsrfToken, getProviders } from "next-auth/react";
 import { SignInPage } from "./SignInPage";
 
 export default async function SignIn({
@@ -10,7 +9,6 @@ export default async function SignIn({
   searchParams?: { callbackUrl?: string };
   params: { kafkaId?: string };
 }) {
-  const providers = await getProviders();
   const clusters = await getKafkaClusters();
   const cluster = clusters.find((c) => c.id === params.kafkaId);
   if (cluster) {

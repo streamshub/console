@@ -1,0 +1,270 @@
+name: Playwright Tests
+
+on:
+  workflow_call:
+
+env:
+  TARGET_NAMESPACE: "console-namespace"
+  CI_CLUSTER: true
+  CONSOLE_INSTANCE_YAML: "./install/resources/console/console.instance.yaml"
+  OLM_VERSION: "v0.28.0"
+  YQ_VERSION: "v4.44.1"
+
+jobs:
+  Test:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Start minikube
+        id: minikube
+        uses: medyagh/setup-minikube@latest
+        with:
+          cpus: 2
+          memory: 4096m
+          addons: registry,ingress,ingress-dns
+          insecure-registry: 'localhost:5000,10.0.0.0/24'
+          start-args: '--extra-config=kubeadm.ignore-preflight-errors=SystemVerification --extra-config=apiserver.authorization-mode=RBAC,Node'
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+
+      - name: Set Dynamic Environment Vars
+        run: |
+          echo "PROJECT_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+          echo "CLUSTER_DOMAIN=$(minikube ip).nip.io" >> $GITHUB_ENV
+          echo "CONSOLE_URL=https://example-console.$(minikube ip).nip.io" >> $GITHUB_ENV
+
+      - name: Download Backend Images
+        uses: actions/download-artifact@v4
+        with:
+          name: backend-images
+          path: backend-images
+
+      - name: Download Frontend Images
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-images
+          path: frontend-images
+
+      - name: Prepare minikube
+        run: |
+          set -x
+
+          sudo apt-get install -y socat
+          socat TCP-LISTEN:5000,reuseaddr,fork TCP:$(minikube ip):5000 &
+          SOCAT_PID=${!}
+
+          # Load images
+          for img in console-api console-operator console-operator-bundle console-operator-catalog ; do
+              skopeo copy --dest-tls-verify=false \
+                docker-archive:backend-images/${img}-${{ env.PROJECT_VERSION }}.tar \
+                docker://localhost:5000/streamshub/${img}:${{ env.PROJECT_VERSION }}
+          done
+
+          skopeo copy --dest-tls-verify=false \
+            docker-archive:frontend-images/console-ui-${{ env.PROJECT_VERSION }}.tar \
+            docker://localhost:5000/streamshub/console-ui:${{ env.PROJECT_VERSION }}
+
+          kill ${SOCAT_PID}
+
+          # Enable TLS/SSL passthough
+          kubectl patch deployment -n ingress-nginx ingress-nginx-controller --type='json' -p='[{"op": "add", "path": "/spec/template/spec/containers/0/args/-", "value":"--enable-ssl-passthrough"}]'
+
+          # Install yq for deployment script
+          curl -L https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64 > yq && chmod +x yq
+          sudo cp -v yq /usr/bin/
+
+          # Install OLM
+          curl -sL https://github.com/operator-framework/operator-lifecycle-manager/releases/download/${OLM_VERSION}/install.sh | bash -s "${OLM_VERSION}"
+
+          # Create the namespace for the test resources
+          kubectl create namespace $TARGET_NAMESPACE
+
+      # replace with resources in docs PR
+      - name: Install Operators
+        run: |
+          set -x
+
+          # Create the CatalogSource with the Console operator bundle
+          echo '---
+            apiVersion: operators.coreos.com/v1alpha1
+            kind: CatalogSource
+            metadata:
+              name: console-operator-catalog
+            spec:
+              displayName: StreamsHub
+              image: localhost:5000/streamshub/console-operator-catalog:${{ env.PROJECT_VERSION }}
+              publisher: StreamsHub
+              sourceType: grpc' | kubectl apply -n olm -f -
+
+          kubectl wait catalogsource/console-operator-catalog -n olm \
+            --for=jsonpath='{.status.connectionState.lastObservedState}'=READY \
+            --timeout=180s
+
+          # Install Strimzi Operator
+          echo '---
+            apiVersion: operators.coreos.com/v1alpha1
+            kind: Subscription
+            metadata:
+              name: strimzi-kafka-operator
+            spec:
+              channel: stable
+              name: strimzi-kafka-operator
+              source: operatorhubio-catalog
+              sourceNamespace: olm' | kubectl apply -n operators -f -
+
+          # Install Console Operator
+          echo '---
+            apiVersion: operators.coreos.com/v1alpha1
+            kind: Subscription
+            metadata:
+              name: console-operator
+            spec:
+              channel: alpha
+              name: console-operator
+              source: console-operator-catalog
+              sourceNamespace: olm
+              config:
+                env:
+                  - name: CONSOLE_DEPLOYMENT_DEFAULT_API_IMAGE
+                    value: localhost:5000/streamshub/console-api:${{ env.PROJECT_VERSION }}
+                  - name: CONSOLE_DEPLOYMENT_DEFAULT_UI_IMAGE
+                    value: localhost:5000/streamshub/console-ui:${{ env.PROJECT_VERSION }}
+            ' | kubectl apply -n operators -f -
+
+          # Wait for Strimzi Operator
+          kubectl get deployment --selector=operators.coreos.com/strimzi-kafka-operator.operators -n operators
+
+          while [ $(kubectl get deployment --selector=operators.coreos.com/strimzi-kafka-operator.operators -n operators -o name | wc -l) -lt 1 ] ; do
+            echo "Waiting for Strimzi Deployment to be present"
+            sleep 10
+          done
+
+          STRIMZI_DEPLOYMENT=$(kubectl get deployment --selector=operators.coreos.com/strimzi-kafka-operator.operators -n operators -o name | tail -1)
+          echo "Found Strimzi Operator Deployment: ${STRIMZI_DEPLOYMENT}"
+          kubectl wait ${STRIMZI_DEPLOYMENT} --for=condition=available --timeout=180s -n operators
+
+          # Wait for Console Operator
+          while [ $(kubectl get deployment --selector=operators.coreos.com/console-operator.operators -n operators -o name | wc -l) -lt 1 ] ; do
+            echo "Waiting for Console Operator Deployment to be present"
+            sleep 5
+          done
+
+          CONSOLE_DEPLOYMENT=$(kubectl get deployment --selector=operators.coreos.com/strimzi-kafka-operator.operators -n operators -o name | tail -1)
+          echo "Found Console Operator Deployment: ${CONSOLE_DEPLOYMENT}"
+          kubectl wait ${CONSOLE_DEPLOYMENT} --for=condition=available --timeout=180s -n operators
+
+      # replace with resources in docs PR
+      - name: Deploy Kafka Cluster & Console
+        run: |
+          set -x
+
+          ./install/002-deploy-console-kafka.sh $TARGET_NAMESPACE $CLUSTER_DOMAIN
+          kubectl wait kafka/console-kafka --for=condition=Ready --timeout=300s -n $TARGET_NAMESPACE
+          kubectl wait kafkauser/console-kafka-user1 --for=condition=Ready --timeout=60s -n $TARGET_NAMESPACE
+
+          cat $CONSOLE_INSTANCE_YAML | envsubst && echo
+          cat $CONSOLE_INSTANCE_YAML | envsubst | kubectl apply -n $TARGET_NAMESPACE -f -
+          kubectl wait console/example --for=condition=Ready --timeout=300s -n $TARGET_NAMESPACE
+          sleep 10
+
+      - name: Console Smoke Test
+        run: |
+          set -x
+          curl -kL ${CONSOLE_URL}
+          curl -kL ${CONSOLE_URL} | grep "StreamsHub console"
+
+      - name: Deploy Data Generator
+        run: |
+          echo '---
+            apiVersion: apps/v1
+            kind: Deployment
+            metadata:
+              name: console-datagen
+            spec:
+              replicas: 1
+              revisionHistoryLimit: 3
+              selector:
+                matchLabels:
+                  app: console-datagen
+              template:
+                metadata:
+                  labels:
+                    app: console-datagen
+                spec:
+                  containers:
+                  - name: console-datagen
+                    image: quay.io/streamshub/console-datagen:0.4.1
+                    ports:
+                    - containerPort: 9080
+                    livenessProbe:
+                      httpGet:
+                        path: /q/health/live
+                        port: 9080
+                        scheme: HTTP
+                      initialDelaySeconds: 10
+                      periodSeconds: 10
+                      successThreshold: 1
+                      failureThreshold: 3
+                      timeoutSeconds: 10
+                    env:
+                    - name: KAFKA_SECURITY_PROTOCOL
+                      value: SASL_SSL
+                    - name: KAFKA_SASL_MECHANISM
+                      value: SCRAM-SHA-512
+                    - name: DATAGEN_CONSUMER_GROUPS
+                      value: "1"
+                    - name: DATAGEN_TOPICS_PER_CONSUMER
+                      value: "2"
+                    - name: DATAGEN_PARTITIONS_PER_TOPIC
+                      value: "3"
+                    - name: DATAGEN_KAFKA_TEST_NAME
+                      value: "TestKafka"
+                    - name: DATAGEN_KAFKA_TEST_CONFIGS_BOOTSTRAP_SERVERS
+                      value: "bootstrap.console-kafka.${CLUSTER_DOMAIN}:443"
+                    - name: DATAGEN_KAFKA_TEST_CONFIGS_SASL_JAAS_CONFIG
+                      valueFrom:
+                        secretKeyRef:
+                          key: sasl.jaas.config
+                          name: console-kafka-user1' | \
+            envsubst | \
+            kubectl apply -n ${TARGET_NAMESPACE} -f -
+          kubectl wait deployment/console-datagen --for=condition=available --timeout=300s -n $TARGET_NAMESPACE
+
+      - name: Run Playwright Tests
+        working-directory: ./ui
+        run: |
+          set -x
+
+          npm ci
+          npm ls playwright --json=true
+
+          PLAYWRIGHT_VERSION="$(npm ls playwright --json=true | jq -r '.dependencies.playwright.version')"
+          PLAYWRIGHT_VERSION="1.46.1"
+
+          docker run --rm \
+            -v$(pwd):/app:z \
+            -ePLAYWRIGHT_BASE_URL="${CONSOLE_URL}" \
+            -eCI_CLUSTER=true \
+            --network=host \
+            mcr.microsoft.com/playwright:v${PLAYWRIGHT_VERSION} \
+            /bin/bash -c 'cd /app && npm test'
+
+      - name: Backup Resources
+        if: failure()
+        run: |
+          mkdir ./resources
+          kubectl get all,catalogsources,operatorgroups -n olm -o yaml > ./resources/olm.yaml
+          kubectl get all,subscriptions,csv,operatorgroups,installplans -n operators -o yaml > ./resources/operators.yaml
+          kubectl get all -n $TARGET_NAMESPACE -o yaml > ./resources/$TARGET_NAMESPACE.yaml
+          kubectl logs -n ${TARGET_NAMESPACE} -l app.kubernetes.io/instance=example-console-deployment --all-containers=true > ./resources/$TARGET_NAMESPACE-console-logs.txt
+
+      - name: Archive Resource Backup
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: k8s-resources-failed
+          path: ./resources

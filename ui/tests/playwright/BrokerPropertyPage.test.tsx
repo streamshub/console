@@ -2,7 +2,8 @@ import { expect, test } from "@playwright/test";
 
 test("Brokers property page", async ({page}) => {
   await test.step("Navigate to brokers property page", async () => {
-    await page.goto("./home");
+    await page.goto("./");
+    await page.click('text="Click to login anonymously"');
     await page.click('text="Brokers"');
     await page.waitForSelector('text="Broker ID"',{ timeout: 500000 });
     await page.click('table[aria-label="Kafka clusters"] tbody tr:nth-child(1) td:nth-child(2) a');
