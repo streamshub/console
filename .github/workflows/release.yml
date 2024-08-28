@@ -125,6 +125,14 @@ jobs:
             ${{ secrets.IMAGE_REPO_HOSTNAME }}/${{ secrets.IMAGE_REPO_NAMESPACE }}/console-ui:${{steps.metadata.outputs.current-version}}
             ${{ secrets.IMAGE_REPO_HOSTNAME }}/${{ secrets.IMAGE_REPO_NAMESPACE }}/console-ui:latest
 
+      - name: Prepare Operator Resources
+        run: |
+          RELEASE_K8S_PATH='target/checkout/operator/target/kubernetes'
+
+          cat ${RELEASE_K8S_PATH}/consoles.console.streamshub.github.com-v1.yml \
+              ${RELEASE_K8S_PATH}/kubernetes.yml \
+            > target/console-operator-${{ steps.metadata.outputs.current-version }}.yaml
+
       - name: Push Release Tag
         run: |
           git push
@@ -136,14 +144,6 @@ jobs:
           github-token: ${{secrets.GITHUB_TOKEN}}
           milestone-title: ${{steps.metadata.outputs.current-version}}
           milestone-next: ${{steps.metadata.outputs.next-version}}
-
-      - name: Prepare Operator Resources
-        run: |
-          RELEASE_K8S_PATH='console/target/checkout/operator/target/kubernetes'
-
-          cat ${RELEASE_K8S_PATH}/consoles.console.streamshub.github.com-v1.yml \
-              ${RELEASE_K8S_PATH}/kubernetes.yml \
-            > target/console-operator-${{ steps.metadata.outputs.current-version }}.yaml
 
       - uses: meeDamian/github-release@2.0
         name: Attach Operator Resources to Release
