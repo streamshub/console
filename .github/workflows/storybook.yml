@@ -17,26 +17,24 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Install Dependencies
-        run: npm install
-        working-directory: ./ui
-
       - name: Build Storybook
-        run: npm run build-storybook
         working-directory: ./ui
+        run: |
+          npm ci
+          npx playwright install
+          npm run build-storybook
 
       - name: Publish to Chromatic
         id: chromatic
         uses: chromaui/action@v11
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          projectToken: chpt_0314d7b0d66ad0c
+          projectToken: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
           storybookBuildDir: "storybook-static"
           workingDir: "./ui"
           exitOnceUploaded: true
 
-      - name: Test the deployed Storybook
-        run: |
-          npx playwright install
-          npm run test-storybook -- --no-index-json --url ${{ steps.chromatic.outputs.storybookUrl }}
+      - name: Test Storybook
         working-directory: ./ui
+        run: |
+          npm run test-storybook -- --no-index-json --url ${{ steps.chromatic.outputs.storybookUrl }}
