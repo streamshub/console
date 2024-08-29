@@ -207,7 +207,10 @@ export async function getKafkaClusterKpis(
     };
   } catch (err) {
     log.error({ err, clusterId }, "getKafkaClusterKpis");
-    throw new Error("getKafkaClusterKpis: couldn't connect with Prometheus");
+    return {
+      cluster,
+      kpis: null,
+    };
   }
 }
 
@@ -278,7 +281,10 @@ export async function getKafkaClusterMetrics(
     };
   } catch (err) {
     log.error({ err, clusterId, metric: metrics }, "getKafkaClusterMetric");
-    throw new Error("getKafkaClusterMetric: couldn't connect with Prometheus");
+    return {
+      cluster,
+      ranges: null,
+    };
   }
 }
 
@@ -315,13 +321,13 @@ export async function getKafkaTopicMetrics(
     return [metric, MetricRangeSchema.parse(serieByNode)];
   }
 
+  const cluster = await getKafkaCluster(clusterId);
+
+  if (!cluster) {
+    return null;
+  }
+
   try {
-    const cluster = await getKafkaCluster(clusterId);
-
-    if (!cluster) {
-      return null;
-    }
-
     if (!prom || !cluster.attributes.namespace) {
       log.warn({ clusterId }, "getKafkaClusterKpis Prometheus unavailable");
       return { cluster, ranges: null };
@@ -349,6 +355,9 @@ export async function getKafkaTopicMetrics(
     };
   } catch (err) {
     log.error({ err, clusterId, metric: metrics }, "getKafkaTopicMetrics");
-    throw new Error("getKafkaTopicMetric: couldn't connect with Prometheus");
+    return {
+      cluster,
+      ranges: null,
+    };
   }
 }
