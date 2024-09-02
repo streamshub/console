@@ -16,7 +16,7 @@
         <!-- Dependencies -->
         <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
         <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
-        <quarkus.platform.version>3.8.5</quarkus.platform.version>
+        <quarkus.platform.version>3.14.1</quarkus.platform.version>
         <strimzi-api.version>0.43.0</strimzi-api.version>
         <strimzi-oauth.version>0.15.0</strimzi-oauth.version>
 
