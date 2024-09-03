@@ -210,6 +210,26 @@ jobs:
           path: |
             console-ui-${{ env.PROJECT_VERSION }}.tar
 
+  test-storybook:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build Storybook
+        working-directory: ./ui
+        run: |
+          npm ci
+          npx playwright install
+          npm run build-storybook
+
+      - name: Test Storybook
+        working-directory: ./ui
+        run: |
+          npx --yes concurrently -k -s first -n "SB,TEST" -c "magenta,blue" \
+            "npx http-server storybook-static --port 6006 --silent" \
+            "npx wait-on tcp:127.0.0.1:6006 && npm run test-storybook"
+
   Playwright:
     if: ${{ contains(github.event.pull_request.labels.*.name, 'safe to test') || github.repository == 'streamshub/console' }}
     uses: ./.github/workflows/playwright-tests.yml
