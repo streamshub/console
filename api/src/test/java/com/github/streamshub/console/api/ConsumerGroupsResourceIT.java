@@ -70,6 +70,7 @@ import static java.util.regex.Pattern.compile;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.everyItem;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasEntry;
@@ -755,6 +756,80 @@ class ConsumerGroupsResourceIT {
         assertEquals(partitionCount, offsetAfter.size());
         offsetAfter.forEach((partition, offset) -> {
             assertEquals(afterOffset, offset.offset());
+        });
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        "false, 5, 'earliest'                 , 0",
+        "false, 5, '2023-01-01T00:00:00.000Z' , 0",
+        "true , 0, 'latest'                   , 5", // latest resets to after the last offset
+        "true , 0, 'maxTimestamp'             , 4", // maxTimestamp resets to before the offset of latest timestamp
+    })
+    void testPatchConsumerGroupToOffsetSpecWithMultiplePartitionsDryRun(
+            boolean resetEarliestBefore,
+            long beforeOffset,
+            String offsetSpec,
+            int afterOffset) {
+        final int partitionCount = 2;
+        String topic1 = "t1-" + UUID.randomUUID().toString();
+        String topic1Id = topicUtils.createTopics(clusterId1, List.of(topic1), partitionCount).get(topic1);
+        String group1 = "g1-" + UUID.randomUUID().toString();
+        String client1 = "c1-" + UUID.randomUUID().toString();
+
+        groupUtils.request()
+                .groupId(group1)
+                .topic(topic1, partitionCount)
+                .createTopic(false)
+                .clientId(client1)
+                .messagesPerTopic(10)
+                .consumeMessages(10)
+                .autoClose(true)
+                .consume();
+
+        if (resetEarliestBefore) {
+            groupUtils.alterConsumerGroupOffsets(group1, Map.ofEntries(
+                    Map.entry(new TopicPartition(topic1, 0), new OffsetAndMetadata(0)),
+                    Map.entry(new TopicPartition(topic1, 1), new OffsetAndMetadata(0))));
+        }
+
+        var offsetBefore = groupUtils.consumerGroupOffsets(group1);
+
+        assertEquals(partitionCount, offsetBefore.size());
+        offsetBefore.forEach((partition, offset) -> {
+            assertEquals(beforeOffset, offset.offset());
+        });
+
+        whenRequesting(req -> req
+                .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
+                .body(Json.createObjectBuilder()
+                        .add("meta", Json.createObjectBuilder()
+                                .add("dryRun", true))
+                        .add("data", Json.createObjectBuilder()
+                                .add("id", group1)
+                                .add("type", "consumerGroups")
+                                .add("attributes", Json.createObjectBuilder()
+                                        .add("offsets", Json.createArrayBuilder()
+                                                .add(Json.createObjectBuilder()
+                                                        .add("topicId", topic1Id)
+                                                        .add("offset", offsetSpec)))))
+                        .build()
+                        .toString())
+                .patch("{groupId}", clusterId1, group1))
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()))
+            .body("data.attributes.state", is(ConsumerGroupState.EMPTY.name()))
+            .body("data.attributes.offsets.topicId", everyItem(is(topic1Id)))
+            .body("data.attributes.offsets.topicName", everyItem(is(topic1)))
+            .body("data.attributes.offsets.partition", containsInAnyOrder(0, 1))
+            .body("data.attributes.offsets.offset", everyItem(is(afterOffset)));
+
+        var offsetAfter = groupUtils.consumerGroupOffsets(group1);
+
+        assertEquals(partitionCount, offsetAfter.size());
+        offsetAfter.forEach((partition, offset) -> {
+            // unchanged
+            assertEquals(beforeOffset, offset.offset());
         });
     }
 }

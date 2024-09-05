@@ -29,8 +29,13 @@ public class JsonProcessingExceptionMapper extends AbstractClientExceptionHandle
     @Override
     public List<Error> buildErrors(JsonProcessingException exception) {
         var errorLocation = exception.getLocation();
-        Error error = category.createError("Unable to parse JSON at line %d, column %d"
-                .formatted(errorLocation.getLineNr(), errorLocation.getColumnNr()), exception, null);
+        Error error;
+        if (errorLocation != null) {
+            error = category.createError("Unable to process JSON at line %d, column %d"
+                    .formatted(errorLocation.getLineNr(), errorLocation.getColumnNr()), exception, null);
+        } else {
+            error = category.createError("Unable to process JSON", exception, null);
+        }
         LOGGER.debugf("error=%s", error);
         return List.of(error);
     }
