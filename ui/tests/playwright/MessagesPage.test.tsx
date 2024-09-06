@@ -10,7 +10,6 @@ test("Messages page", async ({page}) => {
     await expect(page.getByText("Last updated").or(page.getByText("No messages data"))).toBeVisible();
   })
   await test.step("Messages page should display table", async () => {
-    await page.waitForLoadState("networkidle");
     if (await page.getByText("No messages data").isVisible()) {
       expect(await page.innerText("body")).toContain("Data will appear shortly after we receive produced messages.");
       return;

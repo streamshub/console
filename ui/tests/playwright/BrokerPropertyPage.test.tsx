@@ -10,7 +10,6 @@ test("Brokers property page", async ({page}) => {
     await page.waitForSelector('text="Clear all filters"',{ timeout: 500000 });
   })
   await test.step("Brokers page should display properties", async () => {
-    await page.waitForLoadState("networkidle");
     const dataRows = await page.locator('table[aria-label="Node configuration"] tbody tr').count();
     expect(dataRows).toBeGreaterThan(0);
     const dataCells = await page.locator('table[aria-label="Node configuration"] tbody tr td').evaluateAll((tds) =>
