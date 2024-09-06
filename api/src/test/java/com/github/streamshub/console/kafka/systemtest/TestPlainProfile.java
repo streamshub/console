@@ -41,6 +41,12 @@ public class TestPlainProfile implements QuarkusTestProfile {
                     - name: test-kafka1
                       namespace: default
                       id: k1-id
+                      schemaRegistry:
+                        ###
+                        # This is the property used by Dev Services for Apicurio Registry
+                        # https://quarkus.io/guides/apicurio-registry-dev-services
+                        ###
+                        url: ${mp.messaging.connector.smallrye-kafka.apicurio.registry.url}
                       properties:
                         bootstrap.servers: ${console.test.external-bootstrap}
 

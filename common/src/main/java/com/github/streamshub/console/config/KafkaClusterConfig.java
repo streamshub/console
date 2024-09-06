@@ -14,6 +14,7 @@ public class KafkaClusterConfig {
     private String name;
     private String namespace;
     private String listener;
+    private SchemaRegistryConfig schemaRegistry;
     private Map<String, String> properties = new LinkedHashMap<>();
     private Map<String, String> adminProperties = new LinkedHashMap<>();
     private Map<String, String> consumerProperties = new LinkedHashMap<>();
@@ -59,6 +60,14 @@ public class KafkaClusterConfig {
 
     public void setListener(String listener) {
         this.listener = listener;
+    }
+
+    public SchemaRegistryConfig getSchemaRegistry() {
+        return schemaRegistry;
+    }
+
+    public void setSchemaRegistry(SchemaRegistryConfig schemaRegistry) {
+        this.schemaRegistry = schemaRegistry;
     }
 
     public Map<String, String> getProperties() {
