@@ -1,12 +1,8 @@
 package com.github.streamshub.console.api.service;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.Reader;
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -23,11 +19,13 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
+import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
@@ -38,6 +36,7 @@ import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.PartitionInfo;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.Uuid;
@@ -45,20 +44,27 @@ import org.apache.kafka.common.errors.InvalidPartitionsException;
 import org.apache.kafka.common.errors.UnknownTopicIdException;
 import org.apache.kafka.common.header.Header;
 import org.apache.kafka.common.header.Headers;
+import org.apache.kafka.common.serialization.Deserializer;
+import org.apache.kafka.common.serialization.Serializer;
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.context.ThreadContext;
 import org.jboss.logging.Logger;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.streamshub.console.api.model.KafkaRecord;
 import com.github.streamshub.console.api.support.KafkaContext;
 import com.github.streamshub.console.api.support.SizeLimitedSortedSet;
+import com.github.streamshub.console.api.support.serdes.MultiformatDeserializer;
+import com.github.streamshub.console.api.support.serdes.MultiformatSerializer;
+import com.github.streamshub.console.api.support.serdes.RecordData;
+
+import io.apicurio.registry.rest.client.RegistryClient;
+import io.apicurio.registry.rest.client.RegistryClientFactory;
 
 import static java.util.Objects.requireNonNullElse;
 
 @ApplicationScoped
 public class RecordService {
-
-    public static final String BINARY_DATA_MESSAGE = "Binary or non-UTF-8 encoded data cannot be displayed";
-    static final int REPLACEMENT_CHARACTER = '\uFFFD';
 
     @Inject
     Logger logger;
@@ -67,15 +73,55 @@ public class RecordService {
     KafkaContext kafkaContext;
 
     @Inject
-    Supplier<Consumer<byte[], byte[]>> consumerSupplier;
+    BiFunction<
+        Deserializer<RecordData>,
+        Deserializer<RecordData>,
+        Consumer<RecordData, RecordData>
+        > consumerFactory;
 
     @Inject
-    Supplier<Producer<String, String>> producerSupplier;
+    BiFunction<
+        Serializer<RecordData>,
+        Serializer<RecordData>,
+        Producer<RecordData, RecordData>
+        > producerFactory;
 
     @Inject
     ThreadContext threadContext;
 
-    public List<KafkaRecord> consumeRecords(String topicId,
+    @Inject
+    ObjectMapper objectMapper;
+
+    RegistryClient registryClient;
+
+    MultiformatDeserializer keyDeserializer;
+    MultiformatDeserializer valueDeserializer;
+
+    MultiformatSerializer keySerializer;
+    MultiformatSerializer valueSerializer;
+
+    @PostConstruct
+    public void initialize() {
+        String registryUrl = ConfigProvider.getConfig().getOptionalValue("console.registry.endpoint", String.class)
+                // TODO: remove default
+                .orElse("http://localhost:9080");
+
+        registryClient = RegistryClientFactory.create(registryUrl);
+
+        keyDeserializer = new MultiformatDeserializer(registryClient);
+        keyDeserializer.configure(kafkaContext.configs(Consumer.class), true);
+
+        valueDeserializer = new MultiformatDeserializer(registryClient);
+        valueDeserializer.configure(kafkaContext.configs(Consumer.class), false);
+
+        keySerializer = new MultiformatSerializer(registryClient, objectMapper);
+        keySerializer.configure(kafkaContext.configs(Producer.class), true);
+
+        valueSerializer = new MultiformatSerializer(registryClient, objectMapper);
+        valueSerializer.configure(kafkaContext.configs(Producer.class), false);
+    }
+
+    public CompletionStage<List<KafkaRecord>> consumeRecords(String topicId,
             Integer partition,
             Long offset,
             Instant timestamp,
@@ -83,72 +129,65 @@ public class RecordService {
             List<String> include,
             Integer maxValueLength) {
 
-        List<PartitionInfo> partitions = topicNameForId(topicId)
-            .thenApplyAsync(
-                    topicName -> consumerSupplier.get().partitionsFor(topicName),
-                    threadContext.currentContextExecutor())
-            .toCompletableFuture()
-            .join();
+        return topicNameForId(topicId).thenApplyAsync(topicName -> {
+            Consumer<RecordData, RecordData> consumer = consumerFactory.apply(keyDeserializer, valueDeserializer);
+            List<PartitionInfo> partitions = consumer.partitionsFor(topicName);
+            List<TopicPartition> assignments = partitions.stream()
+                    .filter(p -> partition == null || partition.equals(p.partition()))
+                    .map(p -> new TopicPartition(p.topic(), p.partition()))
+                    .toList();
 
-        List<TopicPartition> assignments = partitions.stream()
-            .filter(p -> partition == null || partition.equals(p.partition()))
-            .map(p -> new TopicPartition(p.topic(), p.partition()))
-            .toList();
+            if (assignments.isEmpty()) {
+                return Collections.emptyList();
+            }
 
-        if (assignments.isEmpty()) {
-            return Collections.emptyList();
-        }
+            consumer.assign(assignments);
+            var endOffsets = consumer.endOffsets(assignments);
 
-        Consumer<byte[], byte[]> consumer = consumerSupplier.get();
-        consumer.assign(assignments);
-        var endOffsets = consumer.endOffsets(assignments);
+            if (timestamp != null) {
+                seekToTimestamp(consumer, assignments, timestamp);
+            } else {
+                seekToOffset(consumer, assignments, endOffsets, offset, limit);
+            }
 
-        if (timestamp != null) {
-            seekToTimestamp(consumer, assignments, timestamp);
-        } else {
-            seekToOffset(consumer, assignments, endOffsets, offset, limit);
-        }
+            Iterable<ConsumerRecords<RecordData, RecordData>> poll = () -> new ConsumerRecordsIterator<>(consumer, endOffsets, limit);
+            var limitSet = new SizeLimitedSortedSet<ConsumerRecord<RecordData, RecordData>>(buildComparator(timestamp, offset), limit);
 
-        Iterable<ConsumerRecords<byte[], byte[]>> poll = () -> new ConsumerRecordsIterator<>(consumer, endOffsets, limit);
-        var limitSet = new SizeLimitedSortedSet<ConsumerRecord<byte[], byte[]>>(buildComparator(timestamp, offset), limit);
-
-        return StreamSupport.stream(poll.spliterator(), false)
-                .flatMap(records -> StreamSupport.stream(records.spliterator(), false))
-                .collect(Collectors.toCollection(() -> limitSet))
-                .stream()
-                .map(rec -> getItems(rec, topicId, include, maxValueLength))
-                .toList();
+            return StreamSupport.stream(poll.spliterator(), false)
+                    .flatMap(records -> StreamSupport.stream(records.spliterator(), false))
+                    .collect(Collectors.toCollection(() -> limitSet))
+                    .stream()
+                    .map(rec -> getItems(rec, topicId, include, maxValueLength))
+                    .toList();
+        }, threadContext.currentContextExecutor());
     }
 
     public CompletionStage<KafkaRecord> produceRecord(String topicId, KafkaRecord input) {
         CompletableFuture<KafkaRecord> promise = new CompletableFuture<>();
         Executor asyncExec = threadContext.currentContextExecutor();
 
-        topicNameForId(topicId)
-            .thenApplyAsync(
-                    topicName -> producerSupplier.get().partitionsFor(topicName),
-                    asyncExec)
-            .thenAcceptAsync(
-                    partitions -> {
-                        Producer<String, String> producer = producerSupplier.get();
-                        String topicName = partitions.iterator().next().topic();
-                        Integer partition = input.getPartition();
+        topicNameForId(topicId).thenAcceptAsync(topicName -> {
+            Producer<RecordData, RecordData> producer = producerFactory.apply(keySerializer, valueSerializer);
+            List<PartitionInfo> partitions = producer.partitionsFor(topicName);
+            Integer partition = input.partition();
 
-                        if (partition != null && partitions.stream().noneMatch(p -> partition.equals(p.partition()))) {
-                            promise.completeExceptionally(invalidPartition(topicId, partition));
-                        } else {
-                            send(topicName, input, producer, promise);
-                        }
-                    },
-                    asyncExec);
+            if (partition != null && partitions.stream().noneMatch(p -> partition.equals(p.partition()))) {
+                promise.completeExceptionally(invalidPartition(topicId, partition));
+            } else {
+                send(topicName, (String) input.getMeta("format-value"), input, producer, promise);
+            }
+
+            promise.whenComplete((kafkaRecord, error) -> producer.close());
+        }, asyncExec).exceptionally(e -> {
+            promise.completeExceptionally(e);
+            return null;
+        });
 
         return promise;
     }
 
-    void send(String topicName, KafkaRecord input, Producer<String, String> producer, CompletableFuture<KafkaRecord> promise) {
-        String key = input.getKey();
-
-        List<Header> headers = Optional.ofNullable(input.getHeaders())
+    void send(String topicName, String format, KafkaRecord input, Producer<RecordData, RecordData> producer, CompletableFuture<KafkaRecord> promise) {
+        List<Header> headers = Optional.ofNullable(input.headers())
             .orElseGet(Collections::emptyMap)
             .entrySet()
             .stream()
@@ -164,15 +203,31 @@ public class RecordService {
                 }
             })
             .map(Header.class::cast)
-            .toList();
+            .collect(Collectors.toCollection(ArrayList::new));
 
-        Long timestamp = Optional.ofNullable(input.getTimestamp()).map(Instant::toEpochMilli).orElse(null);
+        if (format != null) {
+            headers.add(new Header() {
+                @Override
+                public String key() {
+                    return "com.github.streamshub.console.message-format-value";
+                }
 
-        ProducerRecord<String, String> request = new ProducerRecord<>(topicName,
-                input.getPartition(),
+                @Override
+                public byte[] value() {
+                    return format != null ? format.getBytes() : null;
+                }
+            });
+        }
+
+        Long timestamp = Optional.ofNullable(input.timestamp()).map(Instant::toEpochMilli).orElse(null);
+        var key = new RecordData(input.key());
+        var value = new RecordData(input.value());
+
+        ProducerRecord<RecordData, RecordData> request = new ProducerRecord<>(topicName,
+                input.partition(),
                 timestamp,
                 key,
-                input.getValue(),
+                value,
                 headers);
 
         producer.send(request, (meta, exception) -> {
@@ -180,16 +235,17 @@ public class RecordService {
                 promise.completeExceptionally(exception);
             } else {
                 KafkaRecord result = new KafkaRecord();
-                result.setPartition(meta.partition());
+                result.partition(meta.partition());
                 if (meta.hasOffset()) {
-                    result.setOffset(meta.offset());
+                    result.offset(meta.offset());
                 }
                 if (meta.hasTimestamp()) {
-                    result.setTimestamp(Instant.ofEpochMilli(meta.timestamp()));
+                    result.timestamp(Instant.ofEpochMilli(meta.timestamp()));
                 }
-                result.setKey(input.getKey());
-                result.setValue(input.getValue());
-                result.setHeaders(input.getHeaders());
+                result.key(key.dataString(null));
+                result.value(value.dataString(null));
+                result.headers(input.headers());
+                result.size(sizeOf(meta, request.headers()));
                 promise.complete(result);
             }
         });
@@ -210,7 +266,7 @@ public class RecordService {
                     .orElseThrow(() -> noSuchTopic(topicId)));
     }
 
-    void seekToTimestamp(Consumer<byte[], byte[]> consumer, List<TopicPartition> assignments, Instant timestamp) {
+    void seekToTimestamp(Consumer<RecordData, RecordData> consumer, List<TopicPartition> assignments, Instant timestamp) {
         Long tsMillis = timestamp.toEpochMilli();
         Map<TopicPartition, Long> timestampsToSearch = assignments.stream()
                 .collect(Collectors.toMap(Function.identity(), p -> tsMillis));
@@ -237,7 +293,7 @@ public class RecordService {
             });
     }
 
-    void seekToOffset(Consumer<byte[], byte[]> consumer, List<TopicPartition> assignments, Map<TopicPartition, Long> endOffsets, Long offset, int limit) {
+    void seekToOffset(Consumer<RecordData, RecordData> consumer, List<TopicPartition> assignments, Map<TopicPartition, Long> endOffsets, Long offset, int limit) {
         var beginningOffsets = consumer.beginningOffsets(assignments);
 
         assignments.forEach(p -> {
@@ -263,9 +319,9 @@ public class RecordService {
         });
     }
 
-    Comparator<ConsumerRecord<byte[], byte[]>> buildComparator(Instant timestamp, Long offset) {
-        Comparator<ConsumerRecord<byte[], byte[]>> comparator = Comparator
-                .<ConsumerRecord<byte[], byte[]>>comparingLong(ConsumerRecord::timestamp)
+    Comparator<ConsumerRecord<RecordData, RecordData>> buildComparator(Instant timestamp, Long offset) {
+        Comparator<ConsumerRecord<RecordData, RecordData>> comparator = Comparator
+                .<ConsumerRecord<RecordData, RecordData>>comparingLong(ConsumerRecord::timestamp)
                 .thenComparingInt(ConsumerRecord::partition)
                 .thenComparingLong(ConsumerRecord::offset);
 
@@ -277,64 +333,47 @@ public class RecordService {
         return comparator;
     }
 
-    KafkaRecord getItems(ConsumerRecord<byte[], byte[]> rec, String topicId, List<String> include, Integer maxValueLength) {
+    KafkaRecord getItems(ConsumerRecord<RecordData, RecordData> rec, String topicId, List<String> include, Integer maxValueLength) {
         KafkaRecord item = new KafkaRecord(topicId);
 
-        setProperty(KafkaRecord.Fields.PARTITION, include, rec::partition, item::setPartition);
-        setProperty(KafkaRecord.Fields.OFFSET, include, rec::offset, item::setOffset);
-        setProperty(KafkaRecord.Fields.TIMESTAMP, include, () -> Instant.ofEpochMilli(rec.timestamp()), item::setTimestamp);
-        setProperty(KafkaRecord.Fields.TIMESTAMP_TYPE, include, rec.timestampType()::name, item::setTimestampType);
-        setProperty(KafkaRecord.Fields.KEY, include, rec::key, k -> item.setKey(bytesToString(k, maxValueLength)));
-        setProperty(KafkaRecord.Fields.VALUE, include, rec::value, v -> item.setValue(bytesToString(v, maxValueLength)));
-        setProperty(KafkaRecord.Fields.HEADERS, include, () -> headersToMap(rec.headers(), maxValueLength), item::setHeaders);
-        setProperty(KafkaRecord.Fields.SIZE, include, () -> sizeOf(rec), item::setSize);
+        Optional.ofNullable(rec.key()).map(RecordData::type)
+                .ifPresent(fmt -> item.addMeta("key-format", fmt));
+        Optional.ofNullable(rec.value()).map(RecordData::type)
+                .ifPresent(fmt -> item.addMeta("value-format", fmt));
+
+        setProperty(KafkaRecord.Fields.PARTITION, include, rec::partition, item::partition);
+        setProperty(KafkaRecord.Fields.OFFSET, include, rec::offset, item::offset);
+        setProperty(KafkaRecord.Fields.TIMESTAMP, include, () -> Instant.ofEpochMilli(rec.timestamp()), item::timestamp);
+        setProperty(KafkaRecord.Fields.TIMESTAMP_TYPE, include, rec.timestampType()::name, item::timestampType);
+        setProperty(KafkaRecord.Fields.KEY, include, rec::key, k -> item.key(k.dataString(maxValueLength)));
+        setProperty(KafkaRecord.Fields.VALUE, include, rec::value, v -> item.value(v.dataString(maxValueLength)));
+        setProperty(KafkaRecord.Fields.HEADERS, include, () -> headersToMap(rec.headers(), maxValueLength), item::headers);
+        setProperty(KafkaRecord.Fields.SIZE, include, () -> sizeOf(rec), item::size);
 
         return item;
     }
 
     <T> void setProperty(String fieldName, List<String> include, Supplier<T> source, java.util.function.Consumer<T> target) {
         if (include.contains(fieldName)) {
-            target.accept(source.get());
-        }
-    }
-
-    String bytesToString(byte[] bytes, Integer maxValueLength) {
-        if (bytes == null) {
-            return null;
-        }
-
-        if (bytes.length == 0) {
-            return "";
-        }
-
-        int bufferSize = maxValueLength != null ? Math.min(maxValueLength, bytes.length) : bytes.length;
-        StringBuilder buffer = new StringBuilder(bufferSize);
-
-        try (Reader reader = new InputStreamReader(new ByteArrayInputStream(bytes), StandardCharsets.UTF_8)) {
-            int input;
-
-            while ((input = reader.read()) > -1) {
-                if (input == REPLACEMENT_CHARACTER || !Character.isDefined(input)) {
-                    return BINARY_DATA_MESSAGE;
-                }
-
-                buffer.append((char) input);
-
-                if (maxValueLength != null && buffer.length() == maxValueLength) {
-                    break;
-                }
+            T value = source.get();
+            if (value != null) {
+                target.accept(value);
             }
-
-            return buffer.toString();
-        } catch (IOException e) {
-            return BINARY_DATA_MESSAGE;
         }
     }
 
     Map<String, String> headersToMap(Headers headers, Integer maxValueLength) {
         Map<String, String> headerMap = new LinkedHashMap<>();
-        headers.iterator().forEachRemaining(h -> headerMap.put(h.key(), bytesToString(h.value(), maxValueLength)));
+        headers.iterator().forEachRemaining(h -> headerMap.put(h.key(), RecordData.bytesToString(h.value(), maxValueLength)));
         return headerMap;
+    }
+
+    long sizeOf(RecordMetadata meta, Headers headers) {
+        return meta.serializedKeySize() +
+                meta.serializedValueSize() +
+                Arrays.stream(headers.toArray())
+                    .mapToLong(h -> h.key().length() + h.value().length)
+                    .sum();
     }
 
     long sizeOf(ConsumerRecord<?, ?> rec) {

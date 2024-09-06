@@ -19,12 +19,18 @@ import io.xlate.validation.constraints.Expression.ExceptionalValue;
 @Expression(
     when = "self.rawTimestamp != null",
     value = "self.rawOffset == null",
-    node = "filter[offset]",
+    node = RecordFilterParams.FILTER_OFFSET,
     message = "Parameter `filter[offset]` must not be used when `filter[timestamp]` is present.",
     payload = ErrorCategory.InvalidQueryParameter.class)
 public class RecordFilterParams {
 
-    @QueryParam("filter[partition]")
+    static final String FILTER_PARTITION = "filter[partition]";
+    static final String FILTER_OFFSET = "filter[offset]";
+    static final String FILTER_TIMESTAMP = "filter[timestamp]";
+    static final String PAGE_SIZE = "page[size]";
+    static final String MAX_VALUE_LENGTH = "maxValueLength";
+
+    @QueryParam(FILTER_PARTITION)
     @Parameter(
         description = """
                 Retrieve messages only from the partition identified by this parameter.
@@ -39,23 +45,23 @@ public class RecordFilterParams {
         value = "self.operator == 'eq'",
         message = "unsupported filter operator, supported values: [ 'eq' ]",
         payload = ErrorCategory.InvalidQueryParameter.class,
-        node = "filter[partition]")
+        node = FILTER_PARTITION)
     @Expression(
         when = "self != null",
         value = "self.operands.size() == 1",
         message = "exactly 1 operand is required",
         payload = ErrorCategory.InvalidQueryParameter.class,
-        node = "filter[partition]")
+        node = FILTER_PARTITION)
     @Expression(
         when = "self != null && self.operator == 'eq' && self.operands.size() == 1",
         value = "val = Integer.parseInt(self.firstOperand); val >= 0 && val <= Integer.MAX_VALUE",
         exceptionalValue = ExceptionalValue.FALSE,
         message = "operand must be an integer between 0 and " + Integer.MAX_VALUE + ", inclusive",
         payload = ErrorCategory.InvalidQueryParameter.class,
-        node = "filter[partition]")
+        node = FILTER_PARTITION)
     FetchFilter partition;
 
-    @QueryParam("filter[offset]")
+    @QueryParam(FILTER_OFFSET)
     @Parameter(
         description = """
         Retrieve messages with an offset greater than or equal to the filter
@@ -80,23 +86,23 @@ public class RecordFilterParams {
         exceptionalValue = ExceptionalValue.FALSE,
         message = "unsupported filter operator, supported values: [ 'gte' ]",
         payload = ErrorCategory.InvalidQueryParameter.class,
-        node = "filter[offset]")
+        node = FILTER_OFFSET)
     @Expression(
         when = "self != null",
         value = "self.operands.size() == 1",
         message = "exactly 1 operand is required",
         payload = ErrorCategory.InvalidQueryParameter.class,
-        node = "filter[offset]")
+        node = FILTER_OFFSET)
     @Expression(
         when = "self != null && self.operator == 'gte'",
         value = "val = Long.parseLong(self.firstOperand); val >= 0 && val <= Long.MAX_VALUE",
         exceptionalValue = ExceptionalValue.FALSE,
         message = "operand must be an integer between 0 and " + Long.MAX_VALUE + ", inclusive",
         payload = ErrorCategory.InvalidQueryParameter.class,
-        node = "filter[offset]")
+        node = FILTER_OFFSET)
     FetchFilter offset;
 
-    @QueryParam("filter[timestamp]")
+    @QueryParam(FILTER_TIMESTAMP)
     @Parameter(
         description = """
             Retrieve messages with a timestamp greater than or equal to the filter
@@ -120,13 +126,13 @@ public class RecordFilterParams {
         value = "self.operator == 'gte'",
         message = "unsupported filter operator, supported values: [ 'gte' ]",
         payload = ErrorCategory.InvalidQueryParameter.class,
-        node = "filter[timestamp]")
+        node = FILTER_TIMESTAMP)
     @Expression(
         when = "self != null",
         value = "self.operands.size() == 1",
         message = "exactly 1 operand is required",
         payload = ErrorCategory.InvalidQueryParameter.class,
-        node = "filter[timestamp]")
+        node = FILTER_TIMESTAMP)
     @Expression(
         when = "self != null && self.operator == 'gte'",
         classImports = "java.time.Instant",
@@ -134,10 +140,10 @@ public class RecordFilterParams {
         exceptionalValue = ExceptionalValue.FALSE,
         message = "operand must be a valid RFC 3339 date-time no earlier than `1970-01-01T00:00:00Z`",
         payload = ErrorCategory.InvalidQueryParameter.class,
-        node = "filter[timestamp]")
+        node = FILTER_TIMESTAMP)
     FetchFilter timestamp;
 
-    @QueryParam("page[size]")
+    @QueryParam(PAGE_SIZE)
     @DefaultValue(ListFetchParams.PAGE_SIZE_DEFAULT + "")
     @Parameter(
         description = "Limit the number of records fetched and returned",
@@ -152,10 +158,10 @@ public class RecordFilterParams {
         exceptionalValue = ExceptionalValue.FALSE,
         message = "must be an integer between 1 and " + ListFetchParams.PAGE_SIZE_MAX + ", inclusive",
         payload = ErrorCategory.InvalidQueryParameter.class,
-        node = "page[size]")
+        node = PAGE_SIZE)
     String pageSize;
 
-    @QueryParam("maxValueLength")
+    @QueryParam(MAX_VALUE_LENGTH)
     @Parameter(
         description = """
         Maximum length of string values returned in the response.
@@ -169,7 +175,7 @@ public class RecordFilterParams {
         exceptionalValue = ExceptionalValue.FALSE,
         message = "must be an integer between 1 and " + Integer.MAX_VALUE + ", inclusive",
         payload = ErrorCategory.InvalidQueryParameter.class,
-        node = "maxValueLength")
+        node = MAX_VALUE_LENGTH)
     String maxValueLength;
 
     public String getRawOffset() {

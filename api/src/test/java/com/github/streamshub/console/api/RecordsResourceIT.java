@@ -34,7 +34,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import com.github.streamshub.console.api.service.RecordService;
+import com.github.streamshub.console.api.support.serdes.RecordData;
 import com.github.streamshub.console.config.ConsoleConfig;
 import com.github.streamshub.console.kafka.systemtest.TestPlainProfile;
 import com.github.streamshub.console.kafka.systemtest.deployment.DeploymentManager;
@@ -376,7 +376,7 @@ class RecordsResourceIT {
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
             .body("data", hasSize(1))
-            .body("data[0].attributes.value", is(equalTo(RecordService.BINARY_DATA_MESSAGE)));
+            .body("data[0].attributes.value", is(equalTo(RecordData.BINARY_DATA_MESSAGE)));
     }
 
     @ParameterizedTest
