@@ -19,10 +19,10 @@ import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.CacheControl;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response.Status;
 import jakarta.ws.rs.core.UriBuilder;
 import jakarta.ws.rs.core.UriInfo;
 import jakarta.ws.rs.ext.RuntimeDelegate;
-import jakarta.ws.rs.core.Response.Status;
 
 import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.enums.Explode;
@@ -67,12 +67,12 @@ public class RecordsResource {
         summary = "Consume records from a topic",
         description = "Consume a limited number of records from a topic, optionally specifying a partition and an absolute offset or timestamp as the starting point for message retrieval.")
     @APIResponseSchema(
-        value = KafkaRecord.ListResponse.class,
+        value = KafkaRecord.KafkaRecordDataList.class,
         responseDescription = "List of records matching the request query parameters.")
     @APIResponse(responseCode = "404", ref = "NotFound")
     @APIResponse(responseCode = "500", ref = "ServerError")
     @APIResponse(responseCode = "504", ref = "ServerTimeout")
-    public Response consumeRecords(
+    public CompletionStage<Response> consumeRecords(
             @Parameter(description = "Cluster identifier")
             @PathParam("clusterId")
             String clusterId,
@@ -98,7 +98,9 @@ public class RecordsResource {
                         KafkaRecord.Fields.HEADERS,
                         KafkaRecord.Fields.KEY,
                         KafkaRecord.Fields.VALUE,
-                        KafkaRecord.Fields.SIZE
+                        KafkaRecord.Fields.SIZE,
+                        KafkaRecord.Fields.KEY_SCHEMA,
+                        KafkaRecord.Fields.VALUE_SCHEMA,
                     },
                     payload = ErrorCategory.InvalidQueryParameter.class)
             @Parameter(
@@ -116,15 +118,27 @@ public class RecordsResource {
                                 KafkaRecord.Fields.HEADERS,
                                 KafkaRecord.Fields.KEY,
                                 KafkaRecord.Fields.VALUE,
-                                KafkaRecord.Fields.SIZE
+                                KafkaRecord.Fields.SIZE,
+                                KafkaRecord.Fields.KEY_SCHEMA,
+                                KafkaRecord.Fields.VALUE_SCHEMA,
                             }))
             List<String> fields) {
 
         requestedFields.accept(fields);
-        var result = recordService.consumeRecords(topicId, params.getPartition(), params.getOffset(), params.getTimestamp(), params.getLimit(), fields, params.getMaxValueLength());
-
         CacheControl noStore = RuntimeDelegate.getInstance().createHeaderDelegate(CacheControl.class).fromString("no-store");
-        return Response.ok(new KafkaRecord.ListResponse(result)).cacheControl(noStore).build();
+
+        return recordService.consumeRecords(
+                topicId,
+                params.getPartition(),
+                params.getOffset(),
+                params.getTimestamp(),
+                params.getLimit(),
+                fields,
+                params.getMaxValueLength())
+            .thenApply(KafkaRecord.KafkaRecordDataList::new)
+            .thenApply(Response::ok)
+            .thenApply(response -> response.cacheControl(noStore))
+            .thenApply(Response.ResponseBuilder::build);
     }
 
     @POST
@@ -135,7 +149,7 @@ public class RecordsResource {
         description = "Produce (write) a single record to a topic")
     @APIResponseSchema(
         responseCode = "201",
-        value = KafkaRecord.KafkaRecordDocument.class,
+        value = KafkaRecord.KafkaRecordData.class,
         responseDescription = "Record was successfully sent to the topic")
     @APIResponse(responseCode = "404", ref = "NotFound")
     @APIResponse(responseCode = "500", ref = "ServerError")
@@ -151,20 +165,19 @@ public class RecordsResource {
             String topicId,
 
             @Valid
-            KafkaRecord.KafkaRecordDocument message) {
+            KafkaRecord.KafkaRecordData message) {
 
         final UriBuilder location = uriInfo.getRequestUriBuilder();
         requestedFields.accept(KafkaRecord.Fields.ALL);
 
-        return recordService.produceRecord(topicId, message.getData().getAttributes())
-            .thenApply(KafkaRecord.KafkaRecordDocument::new)
+        return recordService.produceRecord(topicId, message.getData())
+            .thenApply(KafkaRecord.KafkaRecordData::new)
             .thenApply(entity -> Response.status(Status.CREATED)
                     .entity(entity)
                     .location(location
-                            .queryParam("filter[partition]", entity.getData().getAttributes().getPartition())
-                            .queryParam("filter[offset]", entity.getData().getAttributes().getOffset())
+                            .queryParam("filter[partition]", entity.getData().partition())
+                            .queryParam("filter[offset]", entity.getData().offset())
                             .build()))
             .thenApply(Response.ResponseBuilder::build);
-
     }
 }

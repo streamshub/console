@@ -1,5 +1,6 @@
 package com.github.streamshub.console.api;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.security.NoSuchAlgorithmException;
@@ -13,10 +14,12 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 
 import jakarta.inject.Inject;
 import jakarta.json.Json;
+import jakarta.json.JsonObject;
 import jakarta.json.JsonValue;
 import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MediaType;
@@ -33,8 +36,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.skyscreamer.jsonassert.JSONAssert;
 
-import com.github.streamshub.console.api.service.RecordService;
+import com.github.streamshub.console.api.support.KafkaContext;
+import com.github.streamshub.console.api.support.serdes.RecordData;
 import com.github.streamshub.console.config.ConsoleConfig;
 import com.github.streamshub.console.kafka.systemtest.TestPlainProfile;
 import com.github.streamshub.console.kafka.systemtest.deployment.DeploymentManager;
@@ -42,10 +47,13 @@ import com.github.streamshub.console.test.RecordHelper;
 import com.github.streamshub.console.test.TestHelper;
 import com.github.streamshub.console.test.TopicHelper;
 
+import io.apicurio.registry.types.ArtifactType;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.quarkus.test.common.http.TestHTTPEndpoint;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
+import io.restassured.RestAssured;
+import io.restassured.response.ExtractableResponse;
 import io.strimzi.api.kafka.model.kafka.Kafka;
 
 import static com.github.streamshub.console.test.TestHelper.whenRequesting;
@@ -59,6 +67,7 @@ import static org.hamcrest.Matchers.hasEntry;
 import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @QuarkusTest
 @TestHTTPEndpoint(RecordsResource.class)
@@ -70,6 +79,9 @@ class RecordsResourceIT {
 
     @Inject
     ConsoleConfig consoleConfig;
+
+    @Inject
+    Map<String, KafkaContext> kafkaContexts;
 
     @Inject
     KubernetesClient client;
@@ -340,7 +352,11 @@ class RecordsResourceIT {
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
             .body("data", hasSize(3))
-            .body("data", everyItem(allOf(is(aMapWithSize(2)), hasEntry("type", "records"))))
+            .body("data", everyItem(allOf(
+                    is(aMapWithSize(3)),
+                    hasEntry("type", "records"),
+                    hasKey("attributes"),
+                    hasKey("relationships"))))
             .body("data.attributes.headers", everyItem(hasKey("h1")));
     }
 
@@ -376,7 +392,7 @@ class RecordsResourceIT {
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
             .body("data", hasSize(1))
-            .body("data[0].attributes.value", is(equalTo(RecordService.BINARY_DATA_MESSAGE)));
+            .body("data[0].attributes.value", is(equalTo(RecordData.BINARY_DATA_MESSAGE)));
     }
 
     @ParameterizedTest
@@ -581,5 +597,238 @@ class RecordsResourceIT {
             .body("errors[0].status", is("400"))
             .body("errors[0].code", is("4003"))
             .body("errors[0].source.pointer", is("/data/attributes/partition"));
+    }
+
+    @Test
+    void testProduceRecordWithAvroFormat() {
+        var registryClient = kafkaContexts.get(clusterId1).schemaRegistryContext().registryClient();
+
+        final String keyArtifactId = UUID.randomUUID().toString().replace("-", "");
+        final String keySchema = """
+                {
+                "namespace": "console.avro",
+                "type": "record",
+                "name": "name_%s",
+                "fields": [
+                  {
+                    "name": "key1",
+                    "type": "string"
+                  }
+                ]
+              }
+              """
+              .formatted(keyArtifactId);
+
+        final String valueArtifactId = UUID.randomUUID().toString().replace("-", "");
+        final String valueSchema = """
+                {
+                "namespace": "console.avro",
+                "type": "record",
+                "name": "name_%s",
+                "fields": [
+                  {
+                    "name": "value1",
+                    "type": "string"
+                  }
+                ]
+              }
+              """
+              .formatted(valueArtifactId);
+
+        registryClient.createArtifact("default", keyArtifactId, ArtifactType.AVRO, new ByteArrayInputStream(keySchema
+                .getBytes()));
+
+        registryClient.createArtifact("default", valueArtifactId, ArtifactType.AVRO, new ByteArrayInputStream(valueSchema
+                .getBytes()));
+
+
+        final String topicName = UUID.randomUUID().toString();
+        var topicIds = topicUtils.createTopics(clusterId1, List.of(topicName), 1);
+        JsonObject requestBody = Json.createObjectBuilder()
+                .add("data", Json.createObjectBuilder()
+                        .add("type", "records")
+                        .add("relationships", Json.createObjectBuilder()
+                                .add("keySchema", Json.createObjectBuilder()
+                                        .add("meta", Json.createObjectBuilder()
+                                                .add("coordinates", "default:" + keyArtifactId)))
+                                .add("valueSchema", Json.createObjectBuilder()
+                                        .add("meta", Json.createObjectBuilder()
+                                                .add("coordinates", "default:" + valueArtifactId))))
+                        .add("attributes", Json.createObjectBuilder()
+                                .add("key", """
+                                        {
+                                          "key1": "value-of-key1",
+                                          "field2": "field-not-in-the-schema"
+                                        }""")
+                                .add("value", """
+                                        {
+                                          "value1": "value-of-value1",
+                                          "field2": "field-not-in-the-schema"
+                                        }""")))
+                .build();
+
+        whenRequesting(req -> req
+                .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
+                .body(requestBody.toString())
+                .post("", clusterId1, topicIds.get(topicName)))
+            .assertThat()
+            .statusCode(is(Status.CREATED.getStatusCode()))
+            .body("data.attributes.partition", is(0))
+            .body("data.attributes.offset", is(0))
+            .body("data.relationships.keySchema.meta.artifactType", is(ArtifactType.AVRO))
+            .body("data.relationships.keySchema.meta.name",
+                    // fully qualified
+                    is("console.avro.name_" + keyArtifactId))
+            .body("data.relationships.valueSchema.meta.artifactType", is(ArtifactType.AVRO))
+            .body("data.relationships.valueSchema.meta.name",
+                    // fully qualified
+                    is("console.avro.name_" + valueArtifactId));
+
+        var recordsResponse = whenRequesting(req -> req.get("", clusterId1, topicIds.get(topicName)))
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()))
+            .body("data", hasSize(1))
+            .body("data[0].attributes.partition", is(0))
+            .body("data[0].attributes.offset", is(0))
+            .body("data[0].relationships.keySchema.meta.artifactType", is(ArtifactType.AVRO))
+            .body("data[0].relationships.keySchema.meta.name",
+                    // fully qualified
+                    is("console.avro.name_" + keyArtifactId))
+            .body("data[0].relationships.valueSchema.meta.artifactType", is(ArtifactType.AVRO))
+            .body("data[0].relationships.valueSchema.meta.name",
+                    // fully qualified
+                    is("console.avro.name_" + valueArtifactId))
+            .body("data[0].attributes.key", is("""
+                    {"key1":"value-of-key1"}"""))
+            .body("data[0].attributes.value", is("""
+                    {"value1":"value-of-value1"}"""))
+            .extract();
+
+        assertSchemaContent(keySchema, valueSchema, recordsResponse, (exp, act) -> {
+            JSONAssert.assertEquals(exp, act, true);
+        });
+    }
+
+    @Test
+    void testProduceRecordWithProtobufFormat() {
+        var registryClient = kafkaContexts.get(clusterId1).schemaRegistryContext().registryClient();
+
+        final String keyArtifactId = UUID.randomUUID().toString().replace("-", "");
+        final String keySchema = """
+                message name_%s {
+                optional string key1 = 1;
+              }
+              """
+              .formatted(keyArtifactId);
+
+        final String valueArtifactId = UUID.randomUUID().toString().replace("-", "");
+        final String valueSchema = """
+                message some_other_name_%s {
+                optional string field1 = 1;
+              }
+              message name_%s {
+                optional string value1 = 1;
+              }
+              """
+              .formatted(valueArtifactId, valueArtifactId);
+
+        registryClient.createArtifact("default", keyArtifactId, ArtifactType.PROTOBUF, new ByteArrayInputStream(keySchema
+                .getBytes()));
+
+        registryClient.createArtifact("default", valueArtifactId, ArtifactType.PROTOBUF, new ByteArrayInputStream(valueSchema
+                .getBytes()));
+
+
+        final String topicName = UUID.randomUUID().toString();
+        var topicIds = topicUtils.createTopics(clusterId1, List.of(topicName), 1);
+        JsonObject requestBody = Json.createObjectBuilder()
+                .add("data", Json.createObjectBuilder()
+                        .add("type", "records")
+                        .add("relationships", Json.createObjectBuilder()
+                                .add("keySchema", Json.createObjectBuilder()
+                                        .add("meta", Json.createObjectBuilder()
+                                                // messageType omitted since there is only 1 in the key schema
+                                                .add("coordinates", "default:" + keyArtifactId)))
+                                .add("valueSchema", Json.createObjectBuilder()
+                                        .add("meta", Json.createObjectBuilder()
+                                                .add("coordinates", "default:" + valueArtifactId)
+                                                .add("messageType", "name_" + valueArtifactId))))
+                        .add("attributes", Json.createObjectBuilder()
+                                .add("key", """
+                                        {
+                                          "key1": "value-of-key1",
+                                          "field2": "field-not-in-the-schema"
+                                        }""")
+                                .add("value", """
+                                        {
+                                          "value1": "value-of-value1",
+                                          "field2": "field-not-in-the-schema"
+                                        }""")))
+                .build();
+
+        whenRequesting(req -> req
+                .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
+                .body(requestBody.toString())
+                .post("", clusterId1, topicIds.get(topicName)))
+            .assertThat()
+            .statusCode(is(Status.CREATED.getStatusCode()))
+            .body("data.attributes.partition", is(0))
+            .body("data.attributes.offset", is(0))
+            .body("data.relationships.keySchema.meta.artifactType", is(ArtifactType.PROTOBUF))
+            .body("data.relationships.keySchema.meta.name", is("name_" + keyArtifactId))
+            .body("data.relationships.valueSchema.meta.artifactType", is(ArtifactType.PROTOBUF))
+            .body("data.relationships.valueSchema.meta.name", is("name_" + valueArtifactId));
+
+        var recordsResponse = whenRequesting(req -> req.get("", clusterId1, topicIds.get(topicName)))
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()))
+            .body("data", hasSize(1))
+            .body("data[0].attributes.partition", is(0))
+            .body("data[0].attributes.offset", is(0))
+            .body("data[0].relationships.keySchema.meta.artifactType", is(ArtifactType.PROTOBUF))
+            .body("data[0].relationships.keySchema.meta.name", is("name_" + keyArtifactId))
+            .body("data[0].attributes.key", is("""
+                    {"key1":"value-of-key1"}"""))
+            .body("data[0].relationships.valueSchema.meta.artifactType", is(ArtifactType.PROTOBUF))
+            .body("data[0].relationships.valueSchema.meta.name", is("name_" + valueArtifactId))
+            .body("data[0].attributes.value", is("""
+                    {"value1":"value-of-value1"}"""))
+            .extract();
+
+        assertSchemaContent(keySchema, valueSchema, recordsResponse, (exp, act) -> {
+            assertEquals(exp, act);
+        });
+    }
+
+    private void assertSchemaContent(
+            String expectedKeySchema,
+            String expectedValueSchema,
+            ExtractableResponse<?> response,
+            BiConsumer<String, String> assertion) {
+        String keySchemaLink = response.jsonPath().getString("data[0].relationships.keySchema.links.content");
+
+        String actualKeySchema = RestAssured.given()
+            .basePath(keySchemaLink)
+            .when().get()
+            .then()
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()))
+            .extract()
+            .asString();
+
+        assertion.accept(expectedKeySchema, actualKeySchema);
+
+        String valueSchemaLink = response.jsonPath().getString("data[0].relationships.valueSchema.links.content");
+
+        String actualValueSchema = RestAssured.given()
+            .basePath(valueSchemaLink)
+            .when().get()
+            .then()
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()))
+            .extract()
+            .asString();
+
+        assertion.accept(expectedValueSchema, actualValueSchema);
     }
 }
