@@ -9,7 +9,6 @@ test("Consumer  page", async ({page}) => {
     await page.waitForSelector('text="Member ID"', { timeout: 500000 });
   })
   await test.step("Consumer  page should display table", async () => {
-    await page.waitForLoadState("networkidle");
     expect(await page.innerText("body")).toContain("Member ID");
     expect(await page.innerText("body")).toContain("Overall lag");
     expect(await page.innerText("body")).toContain("Assigned partitions");

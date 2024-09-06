@@ -8,7 +8,6 @@ test("Brokers page", async ({page}) => {
     await page.waitForSelector('text="Rack"', { timeout: 500000 });
   })
   await test.step("Brokers page should display table", async () => {
-    await page.waitForLoadState("networkidle");
     expect(await page.innerText("body")).toContain("Brokers");
     expect(await page.innerText("body")).toContain(
       "Partitions distribution (% of total)",

@@ -13,7 +13,6 @@ test("Partitions page", async ({page}) => {
 
   })
   await test.step("Partitions page should display table", async () => {
-    await page.waitForLoadState("networkidle");
     expect(await page.innerText("body")).toContain("Partition ID");
     expect(await page.innerText("body")).toContain("Status");
     expect(await page.innerText("body")).toContain("Replicas");

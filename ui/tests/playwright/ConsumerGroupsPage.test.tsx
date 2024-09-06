@@ -10,7 +10,9 @@ test("Consumer groups page", async ({ page }) => {
     });
   });
   await test.step("Consumer groups page should display table", async () => {
-    await page.waitForLoadState("networkidle");
+    await page.waitForFunction(() => {
+        return document.querySelectorAll('table[aria-label="Consumer groups"] tbody tr').length > 0;
+    });
     expect(await page.innerText("body")).toContain("Consumer group name");
     expect(await page.innerText("body")).toContain("State");
     expect(await page.innerText("body")).toContain("Overall lag");

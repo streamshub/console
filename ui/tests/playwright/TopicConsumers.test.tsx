@@ -12,7 +12,6 @@ test("Topics consumers", async ({page}) => {
     await expect(page.getByText("Consumer group name").or(page.getByText("No consumer groups"))).toBeVisible();
   })
   await test.step("Topics consumers page should display table", async () => {
-    await page.waitForLoadState("networkidle");
     expect(await page.innerText("body")).toContain("Consumer group name");
     expect(await page.innerText("body")).toContain("Overall lag");
     expect(await page.innerText("body")).toContain("State");
