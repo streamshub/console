@@ -243,7 +243,6 @@ jobs:
           npm ls playwright --json=true
 
           PLAYWRIGHT_VERSION="$(npm ls playwright --json=true | jq -r '.dependencies.playwright.version')"
-          PLAYWRIGHT_VERSION="1.46.1"
 
           docker run --rm \
             -v$(pwd):/app:z \
