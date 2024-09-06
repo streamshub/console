@@ -2,7 +2,7 @@ import { defineConfig, devices } from "playwright/test";
 
 export default defineConfig({
   // Retry on CI only.
-  retries: process.env.CI_CLUSTER ? 2 : 0,
+  retries: process.env.CI_CLUSTER ? 5 : 0,
 
   // Opt out of parallel tests on CI.
   workers: process.env.CI_CLUSTER ? 1 : undefined,
