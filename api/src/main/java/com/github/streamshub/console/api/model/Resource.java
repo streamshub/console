@@ -1,13 +1,11 @@
 package com.github.streamshub.console.api.model;
 
-import java.util.function.Supplier;
-
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.github.streamshub.console.api.support.ErrorCategory;
 
 /**
@@ -18,7 +16,7 @@ import com.github.streamshub.console.api.support.ErrorCategory;
  * @param <T> the type of the attribute model
  */
 @JsonInclude(Include.NON_NULL)
-public abstract class Resource<T> {
+public abstract class Resource<T> implements HasMeta<T> {
 
     protected String id;
 
@@ -32,26 +30,17 @@ public abstract class Resource<T> {
     @NotNull(payload = ErrorCategory.InvalidResource.class)
     protected final T attributes;
 
-    @JsonIgnore
-    private final Supplier<JsonApiMeta> metaFactory;
-
     protected Resource(String id, String type, JsonApiMeta meta, T attributes) {
         this.id = id;
         this.type = type;
         this.meta = meta;
-        this.metaFactory = JsonApiMeta::new;
-        this.attributes = attributes;
-    }
-
-    protected Resource(String id, String type, Supplier<JsonApiMeta> metaFactory, T attributes) {
-        this.id = id;
-        this.type = type;
-        this.metaFactory = metaFactory;
         this.attributes = attributes;
     }
 
     protected Resource(String id, String type, T attributes) {
-        this(id, type, JsonApiMeta::new, attributes);
+        this.id = id;
+        this.type = type;
+        this.attributes = attributes;
     }
 
     public String getId() {
@@ -66,24 +55,12 @@ public abstract class Resource<T> {
         return attributes;
     }
 
-    public JsonApiMeta getMeta() {
+    @JsonProperty
+    public JsonApiMeta meta() {
         return meta;
     }
 
-    @JsonIgnore
-    public JsonApiMeta getOrCreateMeta() {
-        if (meta == null) {
-            meta = metaFactory.get();
-        }
-        return meta;
-    }
-
-    public Object getMeta(String key) {
-        return meta != null ? meta.get(key) : null;
-    }
-
-    public Resource<T> addMeta(String key, Object value) {
-        getOrCreateMeta().put(key, value);
-        return this;
+    public void meta(JsonApiMeta meta) {
+        this.meta = meta;
     }
 }

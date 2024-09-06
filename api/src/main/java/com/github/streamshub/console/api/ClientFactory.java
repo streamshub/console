@@ -66,9 +66,13 @@ import com.github.streamshub.console.api.support.Holder;
 import com.github.streamshub.console.api.support.KafkaContext;
 import com.github.streamshub.console.api.support.TrustAllCertificateManager;
 import com.github.streamshub.console.api.support.ValidationProxy;
+import com.github.streamshub.console.api.support.serdes.RecordData;
 import com.github.streamshub.console.config.ConsoleConfig;
 import com.github.streamshub.console.config.KafkaClusterConfig;
 
+import io.apicurio.registry.rest.client.RegistryClient;
+import io.apicurio.registry.rest.client.RegistryClientFactory;
+import io.apicurio.registry.serde.SerdeConfig;
 import io.fabric8.kubernetes.client.informers.ResourceEventHandler;
 import io.fabric8.kubernetes.client.informers.SharedIndexInformer;
 import io.fabric8.kubernetes.client.informers.cache.Cache;
@@ -193,6 +197,10 @@ public class ClientFactory {
             })
             .map(consoleConfig -> {
                 consoleConfig.getKafka().getClusters().stream().forEach(cluster -> {
+                    if (cluster.getSchemaRegistry() != null) {
+                        var registryConfig = cluster.getSchemaRegistry();
+                        registryConfig.setUrl(resolveValue(registryConfig.getUrl()));
+                    }
                     resolveValues(cluster.getProperties());
                     resolveValues(cluster.getAdminProperties());
                     resolveValues(cluster.getProducerProperties());
@@ -278,7 +286,7 @@ public class ClientFactory {
                 findConfig(kafka).ifPresentOrElse(
                         clusterConfig -> {
                             String clusterKey = clusterConfig.clusterKey();
-                            String clusterId = clusterId(clusterConfig, Optional.of(kafka));
+                            String clusterId = KafkaContext.clusterId(clusterConfig, Optional.of(kafka));
                             log.infof("Removing KafkaContext for cluster %s, id=%s", clusterKey, clusterId);
                             log.debugf("Known KafkaContext identifiers: %s", contexts.keySet());
                             KafkaContext previous = contexts.remove(clusterId);
@@ -332,7 +340,7 @@ public class ClientFactory {
         clientConfigs.put(Producer.class, Collections.unmodifiableMap(producerConfigs));
 
         String clusterKey = clusterConfig.clusterKey();
-        String clusterId = clusterId(clusterConfig, kafkaResource);
+        String clusterId = KafkaContext.clusterId(clusterConfig, kafkaResource);
 
         if (contexts.containsKey(clusterId) && !allowReplacement) {
             log.warnf("""
@@ -346,7 +354,16 @@ public class ClientFactory {
                 admin = adminBuilder.apply(adminConfigs);
             }
 
+            RegistryClient schemaRegistryClient = null;
+
+            if (clusterConfig.getSchemaRegistry() != null) {
+                String registryUrl = clusterConfig.getSchemaRegistry().getUrl();
+                schemaRegistryClient = RegistryClientFactory.create(registryUrl); // NOSONAR - closed elsewhere
+            }
+
             KafkaContext ctx = new KafkaContext(clusterConfig, kafkaResource.orElse(null), clientConfigs, admin);
+            ctx.schemaRegistryClient(schemaRegistryClient);
+
             KafkaContext previous = contexts.put(clusterId, ctx);
 
             if (previous == null) {
@@ -360,12 +377,6 @@ public class ClientFactory {
 
     boolean defaultedClusterId(KafkaClusterConfig clusterConfig, Optional<Kafka> kafkaResource) {
         return clusterConfig.getId() == null && kafkaResource.map(Kafka::getStatus).map(KafkaStatus::getClusterId).isEmpty();
-    }
-
-    String clusterId(KafkaClusterConfig clusterConfig, Optional<Kafka> kafkaResource) {
-        return Optional.ofNullable(clusterConfig.getId())
-                .or(() -> kafkaResource.map(Kafka::getStatus).map(KafkaStatus::getClusterId))
-                .orElseGet(clusterConfig::getName);
     }
 
     Optional<Kafka> cachedKafkaResource(KafkaClusterConfig clusterConfig) {
@@ -438,6 +449,7 @@ public class ClientFactory {
         configs.put(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, 50_000);
         configs.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
         configs.put(ConsumerConfig.DEFAULT_API_TIMEOUT_MS_CONFIG, 5000);
+        configs.put(SerdeConfig.ENABLE_HEADERS, "true");
         return configs;
     }
 
@@ -552,26 +564,31 @@ public class ClientFactory {
 
     @Produces
     @RequestScoped
-    public Supplier<Consumer<byte[], byte[]>> consumerSupplier(ConsoleConfig consoleConfig, KafkaContext context) {
+    public Consumer<RecordData, RecordData> consumerSupplier(ConsoleConfig consoleConfig, KafkaContext context) {
         var configs = maybeAuthenticate(context, Consumer.class);
-        Consumer<byte[], byte[]> client = new KafkaConsumer<>(configs); // NOSONAR / closed in consumerDisposer
-        return () -> client;
+
+        return new KafkaConsumer<>(
+                configs,
+                context.schemaRegistryContext().keyDeserializer(),
+                context.schemaRegistryContext().valueDeserializer());
     }
 
-    public void consumerDisposer(@Disposes Supplier<Consumer<byte[], byte[]>> consumer) {
-        consumer.get().close();
+    public void disposeConsumerSupplier(@Disposes Consumer<RecordData, RecordData> consumer) {
+        consumer.close();
     }
 
     @Produces
     @RequestScoped
-    public Supplier<Producer<String, String>> producerSupplier(ConsoleConfig consoleConfig, KafkaContext context) {
+    public Producer<RecordData, RecordData> producerSupplier(ConsoleConfig consoleConfig, KafkaContext context) {
         var configs = maybeAuthenticate(context, Producer.class);
-        Producer<String, String> client = new KafkaProducer<>(configs); // NOSONAR / closed in producerDisposer
-        return () -> client;
+        return new KafkaProducer<>(
+                configs,
+                context.schemaRegistryContext().keySerializer(),
+                context.schemaRegistryContext().valueSerializer());
     }
 
-    public void producerDisposer(@Disposes Supplier<Producer<String, String>> producer) {
-        producer.get().close();
+    public void disposeProducerSupplier(@Disposes Producer<RecordData, RecordData> producer) {
+        producer.close();
     }
 
     Map<String, Object> maybeAuthenticate(KafkaContext context, Class<?> clientType) {
@@ -602,6 +619,12 @@ public class ClientFactory {
             .filter(Optional::isPresent)
             .map(Optional::get)
             .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (k1, k2) -> k1, TreeMap::new));
+
+        // Ensure no given properties are skipped. The previous stream processing allows
+        // for the standard config names to be obtained from the given maps, but also from
+        // config overrides via MicroProfile Config.
+        clientProperties.get().forEach(cfg::putIfAbsent);
+        config.getProperties().forEach(cfg::putIfAbsent);
 
         var listenerSpec = cluster.map(Kafka::getSpec)
                 .map(KafkaSpec::getKafka)
