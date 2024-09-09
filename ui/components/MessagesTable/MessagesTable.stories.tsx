@@ -7,7 +7,7 @@ import { MessagesTable, MessagesTableProps } from "./MessagesTable";
 export default {
   component: MessagesTable,
   args: {
-    lastUpdated: new Date(),
+    lastUpdated: new Date(Date.UTC(2024, 11, 31, 23, 59, 59, 999)),
     partitions: 5,
     messages: [],
     topicName: "Example",

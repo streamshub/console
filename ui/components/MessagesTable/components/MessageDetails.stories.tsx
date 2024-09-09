@@ -16,7 +16,7 @@ export default {
         partition: 4,
         offset: 16,
         size: 1234,
-        timestamp: new Date("2022-03-15T14:11:57.103Z").toISOString(),
+        timestamp: new Date(Date.UTC(2024, 11, 31, 23, 59, 59, 999)).toISOString(),
         headers: {
           "post-office-box": "string",
           "extended-address": "string",

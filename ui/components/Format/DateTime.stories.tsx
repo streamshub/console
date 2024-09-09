@@ -5,7 +5,7 @@ import { DateTime } from "./DateTime";
 const meta: Meta<typeof DateTime> = {
   component: DateTime,
   args: {
-    value: new Date(1709561281).toISOString(),
+    value: new Date(Date.UTC(2024, 11, 31, 23, 59, 59, 999)).toISOString(),
     tz: "local",
     empty: "-",
   },
