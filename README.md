@@ -10,13 +10,17 @@ It is composed of three main parts:
 
 The future goals of this project are to provide a user interface to interact with and manage additional data streaming components such as:
 - [Apicurio Registry](https://www.apicur.io/registry/) for message serialization and de-serialization + validation
-- [Kroxylicious](https://kroxylicious.io/)
-- [Apache Flink](https://flink.apache.org/)
+- [Kroxylicious](https://kroxylicious.io/) for introducing additional behaviors to Kafka-based systems 
+- [Apache Flink](https://flink.apache.org/) for processing real-time data streams and batch data sets
 
 Contributions and discussions around use cases for these (and other relevant) components are both welcome and encouraged.
 
 ## Deployment
-There are several ways to deploy the console - via the operator using the Operator Lifecycle Manager (OLM), via the operator using plain Kubernetes resources, or directly with Kubernetes resources (without the operator).
+Deploy the console using one of the following methods:
+
+- Through its dedicated operator using the Operator Lifecycle Manager (OLM)
+- Using the operator with plain Kubernetes resources
+- Directly with Kubernetes resources, without the operator
 
 Note, if you are using [minikube](https://minikube.sigs.k8s.io/) with the `ingress` addon as your Kubernetes cluster, SSL pass-through must be enabled on the nginx controller:
 ```shell
@@ -30,7 +34,7 @@ kubectl patch deployment -n ingress-nginx ingress-nginx-controller \
 #### Kafka
 The instructions below assume an existing Apache Kafka<sup>®</sup> cluster is available to use from the console. We recommend using [Strimzi](https://strimzi.io) to create and manage your Apache Kafka<sup>®</sup> clusters - plus the console provides additional features and insights for Strimzi Apache Kafka<sup>®</sup> clusters.
 
-If you already have Strimzi installed but would like to create an Apache Kafka<sup>®</sup> cluster for use with the console, example resources are available to get started.  This example will create an Apache Kafka<sup>®</sup> cluster in KRaft mode with SCRAM-SHA-512 authentication, a Strimzi `KafkaNodePool` resource to manage the cluster nodes, and a Strimzi `KafkaUser` resource that may be used to connect to the cluster.
+If you already have Strimzi installed but would like to create an Apache Kafka<sup>®</sup> cluster for use with the console, example deployment resources are available to get started.  The resources create an Apache Kafka<sup>®</sup> cluster in KRaft mode with SCRAM-SHA-512 authentication, a Strimzi `KafkaNodePool` resource to manage the cluster nodes, and a Strimzi `KafkaUser` resource that may be used to connect to the cluster.
 
 Modify the `CLUSTER_DOMAIN` to match the base domain of your Kubernetes cluster (used for ingress configuration), use either `route` (OpenShift) or `ingress` (vanilla Kubernetes) for `LISTENER_TYPE`, and set `NAMESPACE` to be the namespace where the Apache Kafka<sup>®</sup> cluster will be created.
 ```shell
@@ -40,7 +44,7 @@ export LISTENER_TYPE=route
 cat examples/kafka/*.yaml | envsubst | kubectl apply -n ${NAMESPACE} -f -
 ```
 ##### Kafka Authorization
-In order to allow the necessary access for the console to function, a minimum level of authorization must be configured for the principal in use for each Kafka cluster connection. While the definition of the permissions may vary depending on the authorization framework in use (e.g. ACLs, Keycloak Authorization, OPA, or custom) the minimum required in terms of ACL types are:
+To ensure the console has the necessary access to function, a minimum level of authorization must be configured for the principal used in each Kafka cluster connection. The specific permissions may vary based on the authorization framework in use, such as ACLs, Keycloak authorization, OPA, or a custom solution. However, the minimum ACL types required are as follows:
 1. `DESCRIBE`, `DESCRIBE_CONFIGS` for the `CLUSTER` resource
 2. `READ`, `DESCRIBE`, `DESCRIBE_CONFIGS` for all `TOPIC` resources
 3. `READ`, `DESCRIBE` for all `GROUP` resources
@@ -101,7 +105,7 @@ Running the console locally requires configuration of any Apache Kafka<sup>®</s
 
 1. Using the [console-config-example.yaml](./console-config-example.yaml) file as an example, create your own configuration
    in a file `console-config.yaml` in the repository root. The `compose.yaml` file expects this location to be used and
-   and difference in name or location requires an adjustment to the compose file.
+   any difference in name or location requires an adjustment to the compose file.
 2. Install the prerequisite software into the Kubernetes cluster.
     * Install the [Strimzi operator](https://strimzi.io/docs/operators/latest/deploying#con-strimzi-installation-methods_str)
     * Install the [Prometheus operator](https://github.com/prometheus-operator/prometheus-operator/blob/main/Documentation/user-guides/getting-started.md) and create a `Prometheus` instance (_optional_, only if you want to see metrics in the console)
