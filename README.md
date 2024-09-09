@@ -10,7 +10,7 @@ It is composed of three main parts:
 
 The future goals of this project are to provide a user interface to interact with and manage additional data streaming components such as:
 - [Apicurio Registry](https://www.apicur.io/registry/) for message serialization and de-serialization + validation
-- [Kroxylicious](https://kroxylicious.io/) for introducing additional behaviors to Kafka-based systems 
+- [Kroxylicious](https://kroxylicious.io/) for introducing additional behaviors to Kafka-based systems
 - [Apache Flink](https://flink.apache.org/) for processing real-time data streams and batch data sets
 
 Contributions and discussions around use cases for these (and other relevant) components are both welcome and encouraged.
@@ -31,7 +31,7 @@ kubectl patch deployment -n ingress-nginx ingress-nginx-controller \
 ```
 
 ### Prerequisites
-#### Kafka
+#### Apache Kafka<sup>®</sup>
 The instructions below assume an existing Apache Kafka<sup>®</sup> cluster is available to use from the console. We recommend using [Strimzi](https://strimzi.io) to create and manage your Apache Kafka<sup>®</sup> clusters - plus the console provides additional features and insights for Strimzi Apache Kafka<sup>®</sup> clusters.
 
 If you already have Strimzi installed but would like to create an Apache Kafka<sup>®</sup> cluster for use with the console, example deployment resources are available to get started.  The resources create an Apache Kafka<sup>®</sup> cluster in KRaft mode with SCRAM-SHA-512 authentication, a Strimzi `KafkaNodePool` resource to manage the cluster nodes, and a Strimzi `KafkaUser` resource that may be used to connect to the cluster.
@@ -109,7 +109,7 @@ Running the console locally requires configuration of any Apache Kafka<sup>®</s
 2. Install the prerequisite software into the Kubernetes cluster.
     * Install the [Strimzi operator](https://strimzi.io/docs/operators/latest/deploying#con-strimzi-installation-methods_str)
     * Install the [Prometheus operator](https://github.com/prometheus-operator/prometheus-operator/blob/main/Documentation/user-guides/getting-started.md) and create a `Prometheus` instance (_optional_, only if you want to see metrics in the console)
-    * Create an Apache Kafka<sup>®</sup> cluster. See the [example above](#kafka) This step is only required if you do not already have an existing cluster you would like to use with the console.
+    * Create an Apache Kafka<sup>®</sup> cluster. See the [example above](#apache-kafka) This step is only required if you do not already have an existing cluster you would like to use with the console.
 3. (_Skip this step if you are not using Kubernetes and Prometheus_) Provide the Prometheus endpoint, the API server endpoint, and the service account token that you would like to use to connect to the Kubernetes cluster. These may be placed in a `compose.env` file that will be detected when starting the console.
    ```
    CONSOLE_API_SERVICE_ACCOUNT_TOKEN=<TOKEN>
