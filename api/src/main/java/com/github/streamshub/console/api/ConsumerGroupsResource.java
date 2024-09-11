@@ -184,7 +184,12 @@ public class ConsumerGroupsResource {
     @PATCH
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    @APIResponseSchema(responseCode = "204", value = Void.class)
+    @APIResponse(responseCode = "200",
+        description = "Consumer group patch dry run successful, nothing was applied",
+        content = @Content(schema = @Schema(implementation = ConsumerGroup.ConsumerGroupDocument.class)))
+    @APIResponse(responseCode = "204",
+        description = "Consumer group patch successful, changes applied",
+        content = @Content(schema = @Schema(implementation = Void.class)))
     @Expression(
         targetName = "args",
         // Only check when the request body Id is present (separately checked for @NotNull)
@@ -218,8 +223,21 @@ public class ConsumerGroupsResource {
             )
             ConsumerGroup.ConsumerGroupDocument patch) {
 
-        return consumerGroupService.patchConsumerGroup(patch.getData().getAttributes())
-                .thenApply(nothing -> Response.noContent())
+        final boolean dryRun = Boolean.TRUE.equals(patch.meta("dryRun"));
+
+        if (dryRun) {
+            requestedFields.accept(List.of(
+                ConsumerGroup.Fields.STATE,
+                ConsumerGroup.Fields.MEMBERS,
+                ConsumerGroup.Fields.OFFSETS
+            ));
+        }
+
+        return consumerGroupService.patchConsumerGroup(patch.getData().getAttributes(), dryRun)
+                .thenApply(optionalGroup -> optionalGroup
+                        .map(ConsumerGroup.ConsumerGroupDocument::new)
+                        .map(Response::ok)
+                        .orElseGet(Response::noContent))
                 .thenApply(Response.ResponseBuilder::build);
     }
 
