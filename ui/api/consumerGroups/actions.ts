@@ -2,14 +2,18 @@
 import { getHeaders } from "@/api/api";
 import {
   ConsumerGroup,
+  ConsumerGroupDryrunResponseSchema,
   ConsumerGroupResponseSchema,
   ConsumerGroupsResponse,
   ConsumerGroupsResponseSchema,
+  ConsumerGroupState,
+  DryrunResponse,
+  UpdateConsumerGroupErrorSchema,
 } from "@/api/consumerGroups/schema";
 import { filterUndefinedFromObj } from "@/utils/filterUndefinedFromObj";
 import { logger } from "@/utils/logger";
 
-const log = logger.child({ module: "topics-api" });
+const log = logger.child({ module: "consumergroup-api" });
 
 export async function getConsumerGroup(
   kafkaId: string,
@@ -32,6 +36,8 @@ export async function getConsumerGroups(
   kafkaId: string,
   params: {
     fields?: string;
+    id?: string;
+    state?: ConsumerGroupState[];
     pageSize?: number;
     pageCursor?: string;
     sort?: string;
@@ -43,8 +49,12 @@ export async function getConsumerGroups(
       filterUndefinedFromObj({
         "fields[consumerGroups]":
           params.fields ?? "state,simpleConsumerGroup,members,offsets",
+        "filter[id]": params.id ? `eq,${params.id}` : undefined,
         // TODO: pass filter from UI
-        "filter[state]": "in,STABLE,PREPARING_REBALANCE,COMPLETING_REBALANCE",
+        "filter[state]":
+          params.state && params.state.length > 0
+            ? `in,${params.state.join(",")}`
+            : undefined,
         "page[size]": params.pageSize,
         "page[after]": params.pageCursor,
         sort: params.sort
@@ -106,4 +116,82 @@ export async function getTopicConsumerGroups(
   const rawData = await res.json();
   log.debug({ url, rawData }, "getTopicConsumerGroups response");
   return ConsumerGroupsResponseSchema.parse(rawData);
+}
+
+export async function updateConsumerGroup(
+  kafkaId: string,
+  consumerGroupId: string,
+  offsets: Array<{
+    topicId: string;
+    partition?: number;
+    offset: string | number;
+    metadata?: string;
+  }>,
+): Promise<boolean | UpdateConsumerGroupErrorSchema> {
+  const url = `${process.env.BACKEND_URL}/api/kafkas/${kafkaId}/consumerGroups/${consumerGroupId}`;
+  const body = {
+    data: {
+      type: "consumerGroups",
+      id: consumerGroupId,
+      attributes: {
+        offsets,
+      },
+    },
+  };
+
+  log.debug({ url, body }, "calling updateConsumerGroup");
+
+  try {
+    const res = await fetch(url, {
+      headers: await getHeaders(),
+      method: "PATCH",
+      body: JSON.stringify(body),
+    });
+
+    log.debug({ status: res.status }, "updateConsumerGroup response");
+
+    if (res.status === 204) {
+      return true;
+    } else {
+      const rawData = await res.json();
+      return UpdateConsumerGroupErrorSchema.parse(rawData);
+    }
+  } catch (e) {
+    log.error(e, "updateConsumerGroup unknown error");
+    console.error("Unknown error occurred:", e);
+    return false;
+  }
+}
+
+export async function getDryrunResult(
+  kafkaId: string,
+  consumerGroupId: string,
+  offsets: Array<{
+    topicId: string;
+    partition?: number;
+    offset: string | number;
+    metadata?: string;
+  }>,
+): Promise<DryrunResponse> {
+  const url = `${process.env.BACKEND_URL}/api/kafkas/${kafkaId}/consumerGroups/${consumerGroupId}`;
+  const body = {
+    meta: {
+      dryRun: true,
+    },
+    data: {
+      type: "consumerGroups",
+      id: consumerGroupId,
+      attributes: {
+        offsets,
+      },
+    },
+  };
+  const res = await fetch(url, {
+    headers: await getHeaders(),
+    method: "PATCH",
+    body: JSON.stringify(body),
+  });
+  const rawData = await res.json();
+  log.debug({ url, rawData }, "getConsumerGroup response");
+  return ConsumerGroupDryrunResponseSchema.parse(rawData).data;
 }

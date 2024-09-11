@@ -2,6 +2,11 @@ import { ApiError } from "@/api/api";
 import { NodeSchema } from "@/api/kafka/schema";
 import { z } from "zod";
 
+const ConsumerGroupStateSchema = z.union([
+  z.literal("STABLE"),
+  z.literal("EMPTY"),
+]);
+
 const OffsetAndMetadataSchema = z.object({
   topicId: z.string(),
   topicName: z.string(),
@@ -29,7 +34,7 @@ export const ConsumerGroupSchema = z.object({
   type: z.literal("consumerGroups"),
   attributes: z.object({
     simpleConsumerGroup: z.boolean().optional(),
-    state: z.string().optional(),
+    state: ConsumerGroupStateSchema,
     members: z.array(MemberDescriptionSchema).optional(),
     partitionAssignor: z.string().nullable().optional(),
     coordinator: NodeSchema.nullable().optional(),
@@ -38,7 +43,17 @@ export const ConsumerGroupSchema = z.object({
     errors: z.array(ApiError).optional(),
   }),
 });
+
+const DryrunOffsetSchema = z.object({
+  topicId: z.string(),
+  topicName: z.string(),
+  partition: z.number(),
+  offset: z.number(),
+  metadata: z.string(),
+});
+
 export type ConsumerGroup = z.infer<typeof ConsumerGroupSchema>;
+export type ConsumerGroupState = z.infer<typeof ConsumerGroupStateSchema>;
 
 export const ConsumerGroupsResponseSchema = z.object({
   meta: z.object({
@@ -55,6 +70,34 @@ export const ConsumerGroupsResponseSchema = z.object({
   }),
   data: z.array(ConsumerGroupSchema),
 });
+
+export const DryrunSchema = z.object({
+  id: z.string(),
+  type: z.literal("consumerGroups"),
+  attributes: z.object({
+    state: ConsumerGroupStateSchema,
+    members: z.array(MemberDescriptionSchema).optional(),
+    offsets: z.array(DryrunOffsetSchema).optional(),
+  }),
+});
+
+export const UpdateConsumerGroupErrorSchema = z.object({
+  errors: z.array(
+    z.object({
+      id: z.string(),
+      status: z.string(),
+      code: z.string(),
+      title: z.string(),
+      detail: z.string(),
+      source: z
+        .object({
+          pointer: z.string().optional(),
+        })
+        .optional(),
+    }),
+  ),
+});
+
 export type ConsumerGroupsResponse = z.infer<
   typeof ConsumerGroupsResponseSchema
 >;
@@ -65,3 +108,13 @@ export const ConsumerGroupResponseSchema = z.object({
 export type ConsumerGroupResponse = z.infer<
   typeof ConsumerGroupsResponseSchema
 >;
+
+export type UpdateConsumerGroupErrorSchema = z.infer<
+  typeof UpdateConsumerGroupErrorSchema
+>;
+
+export const ConsumerGroupDryrunResponseSchema = z.object({
+  data: DryrunSchema,
+});
+
+export type DryrunResponse = z.infer<typeof DryrunSchema>;

@@ -1,5 +1,5 @@
 import { getTopicConsumerGroups } from "@/api/consumerGroups/actions";
-import { ConsumerGroupsTable } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/consumer-groups/ConsumerGroupsTable";
+import { ConsumerGroupsTable } from "./ConsumerGroupsTable";
 import { KafkaTopicParams } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/topics/kafkaTopic.params";
 import { PageSection } from "@/libs/patternfly/react-core";
 import { notFound } from "next/navigation";
