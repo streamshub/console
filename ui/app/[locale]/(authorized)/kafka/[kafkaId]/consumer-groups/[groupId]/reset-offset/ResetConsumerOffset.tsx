@@ -2,7 +2,7 @@
 
 import { Divider, Panel, PanelHeader, PanelMain, PanelMainBody, TextContent, Text, TextVariants, Radio, Form, FormGroup, FormSection, Select, SelectList, SelectOption, MenuToggle, MenuToggleElement, TextInput, ActionGroup, Button, SelectProps, PageSection, Page, Bullseye, Spinner, Flex, FlexItem, Grid, GridItem, Alert } from "@/libs/patternfly/react-core";
 import { useTranslations } from "next-intl";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { DateTimeFormatSelection, OffsetValue, TopicSelection, partitionSelection } from "../types";
 import { TypeaheadSelect } from "./TypeaheadSelect";
 import { OffsetSelect } from "./OffsetSelect";
@@ -10,6 +10,7 @@ import { useRouter } from "@/navigation";
 import { getDryrunResult, updateConsumerGroup } from "@/api/consumerGroups/actions";
 import { UpdateConsumerGroupErrorSchema } from "@/api/consumerGroups/schema";
 import { Dryrun } from "./Dryrun";
+import { getKafkaCluster } from "@/api/kafka/actions";
 
 export type Offset = {
   topicId: string
@@ -60,6 +61,8 @@ export function ResetConsumerOffset({
 
   const [showDryRun, setShowDryRun] = useState(false);
 
+  const [bootstrapServer, setBootstrapServer] = useState<string | undefined>();
+
   const onTopicSelect = (value: TopicSelection) => {
     setSelectedConsumerTopic(value);
   };
@@ -71,6 +74,24 @@ export function ResetConsumerOffset({
   const onDateTimeSelect = (value: DateTimeFormatSelection) => {
     setSelectDateTimeFormat(value)
   }
+
+  useEffect(() => {
+    const fetchBootstrapServer = async () => {
+      try {
+        const data = await getKafkaCluster(kafkaId);
+        const listeners = data.attributes.listeners || [];
+        if (listeners.length > 0) {
+          setBootstrapServer(listeners[0].bootstrapServer);
+        } else {
+          throw new Error("No listeners found");
+        }
+      } catch (error) {
+        setError("Failed to fetch bootstrap server");
+      }
+    };
+
+    fetchBootstrapServer();
+  }, [kafkaId]);
 
   const handleTopicChange = (topicName: string | number) => {
     if (typeof topicName === 'string') {
@@ -104,7 +125,10 @@ export function ResetConsumerOffset({
   };
 
   const generateCliCommand = (): string => {
-    let baseCommand = `$ kafka-consumer-groups --bootstrap-server localhost:9092 --group ${consumerGroupName} --reset-offsets`;
+    if (!bootstrapServer) {
+      throw new Error("Bootstrap server is not available");
+    }
+    let baseCommand = `$ kafka-consumer-groups --bootstrap-server ${bootstrapServer} --group ${consumerGroupName} --reset-offsets`;
     const topic = selectedConsumerTopic === "allTopics" ? "--all-topics" : `--topic ${offset.topicName}`;
     baseCommand += ` ${topic}`;
     if (selectedConsumerTopic === "selectedTopic") {
