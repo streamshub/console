@@ -79,9 +79,12 @@ export function ResetConsumerOffset({
     const fetchBootstrapServer = async () => {
       try {
         const data = await getKafkaCluster(kafkaId);
+        if (!data) {
+          return null;
+        }
         const listeners = data.attributes.listeners || [];
         if (listeners.length > 0) {
-          setBootstrapServer(listeners[0].bootstrapServer);
+          setBootstrapServer(listeners[0].bootstrapServers ?? "");
         } else {
           throw new Error("No listeners found");
         }
