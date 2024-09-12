@@ -39,7 +39,7 @@ export function ConsumerGroupsTable({
     <TableView
       itemCount={consumerGroups?.length}
       page={page}
-      onPageChange={() => { }}
+      onPageChange={() => {}}
       data={consumerGroups}
       emptyStateNoData={
         <div>{t("ConsumerGroupsTable.no_consumer_groups")}</div>
@@ -140,8 +140,9 @@ export function ConsumerGroupsTable({
                       <LabelLink
                         key={idx}
                         color={"blue"}
-                        href={`/kafka/${kafkaId}/topics/${allTopics.find((t) => t.topicName === topic)!.topicId
-                          }`}
+                        href={`/kafka/${kafkaId}/topics/${
+                          allTopics.find((t) => t.topicName === topic)!.topicId
+                        }`}
                       >
                         {topic}
                       </LabelLink>

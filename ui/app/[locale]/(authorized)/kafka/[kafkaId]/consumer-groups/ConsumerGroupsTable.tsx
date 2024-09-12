@@ -29,7 +29,7 @@ export type SortableConsumerGroupTableColumns = Exclude<
 
 export const SortableColumns = ["name", "state"];
 
-const StateLabel: Record<ConsumerGroupState, ReactNode> = {
+const StateLabel: Partial<Record<ConsumerGroupState, ReactNode>> = {
   STABLE: (
     <>
       <Icon status={"success"}>

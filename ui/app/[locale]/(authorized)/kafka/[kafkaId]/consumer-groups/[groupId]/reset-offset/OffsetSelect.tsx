@@ -1,16 +1,22 @@
-import { MenuToggle, MenuToggleElement, Select, SelectList, SelectOption, SelectProps } from "@/libs/patternfly/react-core";
+import {
+  MenuToggle,
+  MenuToggleElement,
+  Select,
+  SelectList,
+  SelectOption,
+  SelectProps,
+} from "@/libs/patternfly/react-core";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { OffsetValue } from "../types";
 
 export function OffsetSelect({
   value,
-  onChange
+  onChange,
 }: {
   value: OffsetValue;
   onChange: (value: OffsetValue) => void;
 }) {
-
   const t = useTranslations("ConsumerGroupsTable");
 
   const [isOpen, setIsOpen] = useState<boolean>(false);
@@ -23,7 +29,7 @@ export function OffsetSelect({
     custom: t("offset.custom"),
     latest: t("offset.latest"),
     earliest: t("offset.earliest"),
-    specificDateTime: t("offset.specific_date_time")
+    specificDateTime: t("offset.specific_date_time"),
   };
 
   const onSelect: SelectProps["onSelect"] = (_, selection) => {
@@ -38,7 +44,7 @@ export function OffsetSelect({
       isExpanded={isOpen}
       style={
         {
-          width: '200px'
+          width: "200px",
         } as React.CSSProperties
       }
     >
@@ -63,9 +69,7 @@ export function OffsetSelect({
       onOpenChange={(isOpen) => setIsOpen(isOpen)}
       shouldFocusToggleOnSelect
     >
-      <SelectList>
-        {makeOptions()}
-      </SelectList>
+      <SelectList>{makeOptions()}</SelectList>
     </Select>
-  )
+  );
 }

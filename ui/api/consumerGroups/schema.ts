@@ -3,8 +3,14 @@ import { NodeSchema } from "@/api/kafka/schema";
 import { z } from "zod";
 
 const ConsumerGroupStateSchema = z.union([
+  z.literal("UNKNOWN"),
+  z.literal("PREPARING_REBALANCE"),
+  z.literal("COMPLETING_REBALANCE"),
   z.literal("STABLE"),
+  z.literal("DEAD"),
   z.literal("EMPTY"),
+  z.literal("ASSIGNING"),
+  z.literal("RECONCILING"),
 ]);
 
 const OffsetAndMetadataSchema = z.object({

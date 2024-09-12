@@ -1,5 +1,14 @@
 import { ExternalLink } from "@/components/Navigation/ExternalLink";
-import { Button, List, ListItem, Modal, ModalVariant, Stack, StackItem, Text } from "@/libs/patternfly/react-core";
+import {
+  Button,
+  List,
+  ListItem,
+  Modal,
+  ModalVariant,
+  Stack,
+  StackItem,
+  Text,
+} from "@/libs/patternfly/react-core";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 
@@ -8,7 +17,7 @@ export function ResetOffsetModal({
   isResetOffsetModalOpen,
   onClickClose,
   kafkaId,
-  consumerGroupName
+  consumerGroupName,
 }: {
   members: string[];
   isResetOffsetModalOpen: boolean;
@@ -16,15 +25,16 @@ export function ResetOffsetModal({
   kafkaId: string;
   consumerGroupName: string;
 }) {
-
   const t = useTranslations("ConsumerGroupsTable");
   const router = useRouter();
 
   const refresh = () => {
     if (members.length === 0) {
-      router.push(`/kafka/${kafkaId}/consumer-groups/${consumerGroupName}/reset-offset`)
+      router.push(
+        `/kafka/${kafkaId}/consumer-groups/${consumerGroupName}/reset-offset`,
+      );
     }
-  }
+  };
 
   return (
     <Modal
@@ -42,8 +52,9 @@ export function ResetOffsetModal({
         </Button>,
         <Button key="refresh" variant="link" onClick={onClickClose}>
           {t("cancel")}
-        </Button>
-      ]}>
+        </Button>,
+      ]}
+    >
       <Stack hasGutter>
         <StackItem>
           <Text>{t("member_shutdown_helper_text")}</Text>
@@ -59,14 +70,11 @@ export function ResetOffsetModal({
           <Text>{t("shutdown_active_members")}</Text>
         </StackItem>
         <StackItem>
-          <ExternalLink
-            testId={"learn_to_shutdown_members"}
-            href={""}
-          >
+          <ExternalLink testId={"learn_to_shutdown_members"} href={""}>
             {t("learn_to_shutdown_members")}
           </ExternalLink>
         </StackItem>
       </Stack>
     </Modal>
-  )
+  );
 }

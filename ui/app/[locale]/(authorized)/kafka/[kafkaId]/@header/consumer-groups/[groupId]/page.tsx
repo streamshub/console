@@ -43,11 +43,13 @@ function Header({
   return (
     <AppHeader
       title={decodeURIComponent(groupId) === "+" ? <i>Empty Name</i> : groupId}
-      actions={[<ConsumerGroupActionButton
-        key={"consumergGroupActionButton"}
-        disabled={disabled}
-        kafkaId={kafkaId}
-        consumerGroupName={groupId} />
+      actions={[
+        <ConsumerGroupActionButton
+          key={"consumergGroupActionButton"}
+          disabled={disabled}
+          kafkaId={kafkaId}
+          consumerGroupName={groupId}
+        />,
       ]}
     />
   );

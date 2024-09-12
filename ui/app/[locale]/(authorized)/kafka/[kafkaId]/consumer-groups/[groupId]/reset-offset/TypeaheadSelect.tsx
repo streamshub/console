@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   Select,
   SelectOption,
@@ -9,9 +9,9 @@ import {
   TextInputGroup,
   TextInputGroupMain,
   TextInputGroupUtilities,
-  Button
-} from '@patternfly/react-core';
-import { TimesIcon } from '@patternfly/react-icons';
+  Button,
+} from "@patternfly/react-core";
+import { TimesIcon } from "@patternfly/react-icons";
 
 export function TypeaheadSelect({
   value,
@@ -25,12 +25,12 @@ export function TypeaheadSelect({
   placeholder: string;
 }) {
   const [isOpen, setIsOpen] = useState<boolean>(false);
-  const [filterValue, setFilterValue] = useState<string>('');
+  const [filterValue, setFilterValue] = useState<string>("");
   const [focusedItemIndex, setFocusedItemIndex] = useState<number | null>(null);
   const [activeItemId, setActiveItemId] = useState<string | null>(null);
   const textInputRef = React.useRef<HTMLInputElement>(null);
 
-  const NO_RESULTS = 'no results';
+  const NO_RESULTS = "no results";
 
   const uniqueItems = Array.from(new Set(selectItems));
 
@@ -41,42 +41,45 @@ export function TypeaheadSelect({
     }
   };
 
-  const onSelect: SelectProps['onSelect'] = (_event, selection) => {
+  const onSelect: SelectProps["onSelect"] = (_event, selection) => {
     if (selection !== NO_RESULTS) {
       onChange(selection as string | number);
-      setFilterValue('');
+      setFilterValue("");
     }
     setIsOpen(false);
   };
 
   const filteredItems = filterValue
     ? uniqueItems.filter((item) =>
-      item.toString().toLowerCase().includes(filterValue.toLowerCase())
-    )
+        item.toString().toLowerCase().includes(filterValue.toLowerCase()),
+      )
     : uniqueItems;
 
   const options = filteredItems.length
     ? filteredItems.map((item) => (
-      <SelectOption key={item} value={item}>
-        {item}
-      </SelectOption>
-    ))
+        <SelectOption key={item} value={item}>
+          {item}
+        </SelectOption>
+      ))
     : [
-      <SelectOption key={NO_RESULTS} value={NO_RESULTS} isAriaDisabled>
-        {`No results found for "${filterValue}"`}
-      </SelectOption>,
-    ];
+        <SelectOption key={NO_RESULTS} value={NO_RESULTS} isAriaDisabled>
+          {`No results found for "${filterValue}"`}
+        </SelectOption>,
+      ];
 
-  const onInputChange = (_event: React.FormEvent<HTMLInputElement>, value: string) => {
+  const onInputChange = (
+    _event: React.FormEvent<HTMLInputElement>,
+    value: string,
+  ) => {
     setFilterValue(value);
     setFocusedItemIndex(null);
-    if (value === '') {
-      onChange('');
+    if (value === "") {
+      onChange("");
     }
   };
 
   const onInputKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
-    if (event.key === 'Enter' && focusedItemIndex !== null) {
+    if (event.key === "Enter" && focusedItemIndex !== null) {
       const selectedItem = filteredItems[focusedItemIndex];
       onChange(selectedItem);
       setIsOpen(false);
@@ -84,10 +87,10 @@ export function TypeaheadSelect({
   };
 
   const onClearButtonClick = () => {
-    setFilterValue('');
+    setFilterValue("");
     setFocusedItemIndex(null);
     setActiveItemId(null);
-    onChange('');
+    onChange("");
     textInputRef.current?.focus();
   };
 
@@ -110,14 +113,18 @@ export function TypeaheadSelect({
           autoComplete="off"
           ref={textInputRef}
           placeholder={placeholder}
-          {...(activeItemId && { 'aria-activedescendant': activeItemId })}
+          {...(activeItemId && { "aria-activedescendant": activeItemId })}
           role="combobox"
           isExpanded={isOpen}
           aria-controls="typeahead-select-listbox"
         />
         <TextInputGroupUtilities>
           {(filterValue || value) && (
-            <Button variant="plain" onClick={onClearButtonClick} aria-label="Clear input value">
+            <Button
+              variant="plain"
+              onClick={onClearButtonClick}
+              aria-label="Clear input value"
+            >
               <TimesIcon aria-hidden />
             </Button>
           )}

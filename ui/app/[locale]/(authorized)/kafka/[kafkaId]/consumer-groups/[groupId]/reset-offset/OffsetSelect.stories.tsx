@@ -3,7 +3,7 @@ import { OffsetSelect } from "./OffsetSelect";
 
 export default {
   component: OffsetSelect,
-  args: {}
+  args: {},
 } as Meta<typeof OffsetSelect>;
 
 type Story = StoryObj<typeof OffsetSelect>;

@@ -24,7 +24,7 @@ import {
   SidebarContent,
   SidebarPanel,
   Stack,
-  StackItem
+  StackItem,
 } from "@/libs/patternfly/react-core";
 import { TextContent, Text } from "@/libs/patternfly/react-core";
 import { useTranslations } from "next-intl";
@@ -35,19 +35,19 @@ export type NewOffset = {
   partition: number;
   offset: number | string;
   topicId: string;
-  metadata?: string
+  metadata?: string;
 };
 
 export function Dryrun({
   consumerGroupName,
   newOffset,
   onClickCloseDryrun,
-  cliCommand
+  cliCommand,
 }: {
   consumerGroupName: string;
   newOffset: NewOffset[];
   onClickCloseDryrun: () => void;
-  cliCommand: string
+  cliCommand: string;
 }) {
   const t = useTranslations("ConsumerGroupsTable");
 
@@ -69,13 +69,16 @@ export function Dryrun({
   };
 
   // Group offsets by topic
-  const groupedTopics = newOffset.reduce<Record<string, NewOffset[]>>((acc, offset) => {
-    if (!acc[offset.topicName]) {
-      acc[offset.topicName] = [];
-    }
-    acc[offset.topicName].push(offset);
-    return acc;
-  }, {});
+  const groupedTopics = newOffset.reduce<Record<string, NewOffset[]>>(
+    (acc, offset) => {
+      if (!acc[offset.topicName]) {
+        acc[offset.topicName] = [];
+      }
+      acc[offset.topicName].push(offset);
+      return acc;
+    },
+    {},
+  );
 
   return (
     <Panel>
@@ -88,7 +91,11 @@ export function Dryrun({
           </FlexItem>
           <FlexItem>
             <Button variant="link" onClick={onClickDownload}>
-              {<>{t("download_dryrun_result")} <DownloadIcon /></>}
+              {
+                <>
+                  {t("download_dryrun_result")} <DownloadIcon />
+                </>
+              }
             </Button>
           </FlexItem>
         </Flex>
@@ -110,7 +117,10 @@ export function Dryrun({
                 <SidebarPanel>
                   <JumpLinks isVertical label={t.rich("jump_to_topic")}>
                     {Object.keys(groupedTopics).map((topicName) => (
-                      <JumpLinksItem key={topicName} href={`#topic-${topicName}`}>
+                      <JumpLinksItem
+                        key={topicName}
+                        href={`#topic-${topicName}`}
+                      >
                         {topicName}
                       </JumpLinksItem>
                     ))}
@@ -118,53 +128,79 @@ export function Dryrun({
                 </SidebarPanel>
                 <SidebarContent>
                   <Stack hasGutter>
-                    {Object.entries(groupedTopics).map(([topicName, offsets]) => (
-                      <StackItem key={topicName}>
-                        <Card component="div">
-                          <DescriptionList id={`topic-${topicName}`}>
-                            <DescriptionListGroup>
-                              <DescriptionListTerm>{t("topic")}</DescriptionListTerm>
-                              <DescriptionListDescription>{topicName}</DescriptionListDescription>
-                            </DescriptionListGroup>
-                            <Flex>
-                              <FlexItem>
-                                <DescriptionListGroup>
-                                  <DescriptionListTerm>{t("partition")}</DescriptionListTerm>
-                                  <DescriptionListDescription>
-                                    <List isPlain>
-                                      {offsets.sort((a, b) => a.partition - b.partition).map(({ partition }) => (
-                                        <ListItem key={partition}>{partition}</ListItem>
-                                      ))}
-                                    </List>
-                                  </DescriptionListDescription>
-                                </DescriptionListGroup>
-                              </FlexItem>
-                              <FlexItem>
-                                <DescriptionListGroup>
-                                  <DescriptionListTerm>{t("new_offset")}</DescriptionListTerm>
-                                  <DescriptionListDescription>
-                                    <List isPlain>
-                                      {offsets.map(({ partition, offset }) => (
-                                        <ListItem key={partition}>{offset}</ListItem>
-                                      ))}
-                                    </List>
-                                  </DescriptionListDescription>
-                                </DescriptionListGroup>
-                              </FlexItem>
-                            </Flex>
-                          </DescriptionList>
-                        </Card>
-                      </StackItem>
-                    ))}
+                    {Object.entries(groupedTopics).map(
+                      ([topicName, offsets]) => (
+                        <StackItem key={topicName}>
+                          <Card component="div">
+                            <DescriptionList id={`topic-${topicName}`}>
+                              <DescriptionListGroup>
+                                <DescriptionListTerm>
+                                  {t("topic")}
+                                </DescriptionListTerm>
+                                <DescriptionListDescription>
+                                  {topicName}
+                                </DescriptionListDescription>
+                              </DescriptionListGroup>
+                              <Flex>
+                                <FlexItem>
+                                  <DescriptionListGroup>
+                                    <DescriptionListTerm>
+                                      {t("partition")}
+                                    </DescriptionListTerm>
+                                    <DescriptionListDescription>
+                                      <List isPlain>
+                                        {offsets
+                                          .sort(
+                                            (a, b) => a.partition - b.partition,
+                                          )
+                                          .map(({ partition }) => (
+                                            <ListItem key={partition}>
+                                              {partition}
+                                            </ListItem>
+                                          ))}
+                                      </List>
+                                    </DescriptionListDescription>
+                                  </DescriptionListGroup>
+                                </FlexItem>
+                                <FlexItem>
+                                  <DescriptionListGroup>
+                                    <DescriptionListTerm>
+                                      {t("new_offset")}
+                                    </DescriptionListTerm>
+                                    <DescriptionListDescription>
+                                      <List isPlain>
+                                        {offsets.map(
+                                          ({ partition, offset }) => (
+                                            <ListItem key={partition}>
+                                              {offset}
+                                            </ListItem>
+                                          ),
+                                        )}
+                                      </List>
+                                    </DescriptionListDescription>
+                                  </DescriptionListGroup>
+                                </FlexItem>
+                              </Flex>
+                            </DescriptionList>
+                          </Card>
+                        </StackItem>
+                      ),
+                    )}
                   </Stack>
                 </SidebarContent>
               </Sidebar>
             </StackItem>
             <StackItem>
-              <Alert variant="info" isInline title={t("dry_run_execution_alert")} />
+              <Alert
+                variant="info"
+                isInline
+                title={t("dry_run_execution_alert")}
+              />
             </StackItem>
             <StackItem>
-              <Button variant="secondary" onClick={onClickCloseDryrun}>{t("back_to_edit_offset")}</Button>
+              <Button variant="secondary" onClick={onClickCloseDryrun}>
+                {t("back_to_edit_offset")}
+              </Button>
             </StackItem>
           </Stack>
         </PanelMainBody>

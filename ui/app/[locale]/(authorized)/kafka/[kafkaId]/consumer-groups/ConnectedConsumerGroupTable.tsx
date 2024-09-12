@@ -4,7 +4,12 @@ import { ConsumerGroup, ConsumerGroupState } from "@/api/consumerGroups/schema";
 import { useRouter } from "@/navigation";
 import { useFilterParams } from "@/utils/useFilterParams";
 import { useOptimistic, useState, useTransition } from "react";
-import { ConsumerGroupColumn, ConsumerGroupColumns, ConsumerGroupsTable, SortableColumns } from "./ConsumerGroupsTable";
+import {
+  ConsumerGroupColumn,
+  ConsumerGroupColumns,
+  ConsumerGroupsTable,
+  SortableColumns,
+} from "./ConsumerGroupsTable";
 import { ResetOffsetModal } from "./[groupId]/ResetOffsetModal";
 
 export type ConnectedConsumerGroupTableProps = {
@@ -45,7 +50,7 @@ export function ConnectedConsumerGroupTable({
   nextPageCursor,
   prevPageCursor,
   kafkaId,
-  refresh
+  refresh,
 }: ConnectedConsumerGroupTableProps) {
   const router = useRouter();
   const _updateUrl = useFilterParams({ perPage, sort, sortDir });
@@ -84,14 +89,16 @@ export function ConnectedConsumerGroupTable({
   }
 
   const [isResetOffsetModalOpen, setResetOffsetModalOpen] = useState(false);
-  const [consumerGroupMembers, setConsumerGroupMembers] = useState<string[]>([]);
+  const [consumerGroupMembers, setConsumerGroupMembers] = useState<string[]>(
+    [],
+  );
   const [consumerGroupName, setConsumerGroupName] = useState<string>("");
 
   const closeResetOffsetModal = () => {
     setResetOffsetModalOpen(false);
     setConsumerGroupMembers([]);
     router.push(`${baseurl}`);
-  }
+  };
 
   return (
     <>
@@ -128,11 +135,12 @@ export function ConnectedConsumerGroupTable({
             columnIndex,
             onSort: () => {
               startTransition(() => {
-                const newSortDir = activeIndex === columnIndex
-                  ? state.sortDir === "asc"
-                    ? "desc"
-                    : "asc"
-                  : "asc";
+                const newSortDir =
+                  activeIndex === columnIndex
+                    ? state.sortDir === "asc"
+                      ? "desc"
+                      : "asc"
+                    : "asc";
                 updateUrl({
                   sort: col,
                   sortDir: newSortDir,
@@ -168,14 +176,17 @@ export function ConnectedConsumerGroupTable({
         onResetOffset={(row) => {
           startTransition(() => {
             if (row.attributes.state === "STABLE") {
-              setResetOffsetModalOpen(true)
-              setConsumerGroupMembers(row.attributes.members?.map((member) => member.memberId) || []);
-              setConsumerGroupName(row.id)
+              setResetOffsetModalOpen(true);
+              setConsumerGroupMembers(
+                row.attributes.members?.map((member) => member.memberId) || [],
+              );
+              setConsumerGroupName(row.id);
             } else if (row.attributes.state === "EMPTY") {
               router.push(`${baseurl}/${row.id}/reset-offset`);
             }
           });
-        }} />
+        }}
+      />
       {isResetOffsetModalOpen && (
         <ResetOffsetModal
           members={consumerGroupMembers}
@@ -183,10 +194,8 @@ export function ConnectedConsumerGroupTable({
           onClickClose={closeResetOffsetModal}
           consumerGroupName={consumerGroupName}
           kafkaId={kafkaId}
-
         />
       )}
     </>
-
   );
 }

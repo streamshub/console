@@ -14,9 +14,15 @@ export default function ResetOffsetPage({
   return (
     <PageSection>
       <Suspense
-        fallback={<ResetConsumerOffset kafkaId={kafkaId} consumerGroupName={groupId}
-          topics={[]}
-          partitions={[]} baseurl={`/kafka/${kafkaId}/consumer-groups/${groupId}`} />}
+        fallback={
+          <ResetConsumerOffset
+            kafkaId={kafkaId}
+            consumerGroupName={groupId}
+            topics={[]}
+            partitions={[]}
+            baseurl={`/kafka/${kafkaId}/consumer-groups/${groupId}`}
+          />
+        }
       >
         <ConnectedResetOffset params={{ kafkaId, groupId }} />
       </Suspense>
@@ -34,22 +40,26 @@ async function ConnectedResetOffset({
     notFound();
   }
 
-
-  const topics = consumerGroup.attributes.offsets?.map((o) => ({
-    topicId: o.topicId,
-    topicName: o.topicName,
-    partition: o.partition,
-  })) || []
+  const topics =
+    consumerGroup.attributes.offsets?.map((o) => ({
+      topicId: o.topicId,
+      topicName: o.topicName,
+      partition: o.partition,
+    })) || [];
 
   const topicDetails = topics.map((topic) => ({
     topicId: topic.topicId,
-    topicName: topic.topicName
+    topicName: topic.topicName,
   }));
-  const partitions = topics.map(t => t.partition);
+  const partitions = topics.map((t) => t.partition);
 
-
-  return <ResetConsumerOffset
-    consumerGroupName={consumerGroup.id}
-    topics={topicDetails}
-    partitions={partitions} baseurl={`/kafka/${kafkaId}/consumer-groups`} kafkaId={kafkaId} />;
+  return (
+    <ResetConsumerOffset
+      consumerGroupName={consumerGroup.id}
+      topics={topicDetails}
+      partitions={partitions}
+      baseurl={`/kafka/${kafkaId}/consumer-groups`}
+      kafkaId={kafkaId}
+    />
+  );
 }

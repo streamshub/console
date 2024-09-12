@@ -7,14 +7,20 @@ import { useRouter } from "next/navigation";
 export function ConsumerGroupActionButton({
   disabled,
   kafkaId,
-  consumerGroupName
-}: { disabled: boolean, kafkaId: string, consumerGroupName: string }) {
+  consumerGroupName,
+}: {
+  disabled: boolean;
+  kafkaId: string;
+  consumerGroupName: string;
+}) {
   const t = useTranslations();
   const router = useRouter();
 
   const onClickResetOffset = () => {
-    router.push(`/kafka/${kafkaId}/consumer-groups/${consumerGroupName}/reset-offset`);
-  }
+    router.push(
+      `/kafka/${kafkaId}/consumer-groups/${consumerGroupName}/reset-offset`,
+    );
+  };
 
   return (
     <Tooltip
@@ -23,7 +29,12 @@ export function ConsumerGroupActionButton({
         "It is possible to reset the offset only on stopped consumer groups"
       }
     >
-      <Button isDisabled={disabled} aria-disabled={disabled} id={"reset"} onClick={onClickResetOffset}>
+      <Button
+        isDisabled={disabled}
+        aria-disabled={disabled}
+        id={"reset"}
+        onClick={onClickResetOffset}
+      >
         {t("ConsumerGroup.reset_offset")}
       </Button>
     </Tooltip>
@@ -39,5 +50,5 @@ export function ConsumerGroupActionButton({
     //     {t("ConsumerGroup.delete")}
     //   </Button>
     // </Tooltip>,
-  )
+  );
 }

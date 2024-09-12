@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 import {
   Select,
   SelectOption,
@@ -9,17 +9,16 @@ import {
   TextInputGroup,
   TextInputGroupMain,
   TextInputGroupUtilities,
-  Button
-} from '@patternfly/react-core';
-import TimesIcon from '@patternfly/react-icons/dist/esm/icons/times-icon';
-
+  Button,
+} from "@patternfly/react-core";
+import TimesIcon from "@patternfly/react-icons/dist/esm/icons/times-icon";
 
 export type TypeaheadSelectProps = {
   value: string | number;
   selectItems: (string | number)[];
   onChange: (item: string | number) => void;
   placeholder: string;
-}
+};
 
 export function SelectComponent({
   value,
@@ -28,19 +27,23 @@ export function SelectComponent({
   placeholder,
 }: TypeaheadSelectProps) {
   const [isOpen, setIsOpen] = React.useState(false);
-  const [selected, setSelected] = React.useState<string>('');
-  const [inputValue, setInputValue] = React.useState<string>('');
-  const [filterValue, setFilterValue] = React.useState<string>('');
-  const [selectOptions, setSelectOptions] = React.useState<SelectOptionProps[]>([]);
-  const [focusedItemIndex, setFocusedItemIndex] = React.useState<number | null>(null);
+  const [selected, setSelected] = React.useState<string>("");
+  const [inputValue, setInputValue] = React.useState<string>("");
+  const [filterValue, setFilterValue] = React.useState<string>("");
+  const [selectOptions, setSelectOptions] = React.useState<SelectOptionProps[]>(
+    [],
+  );
+  const [focusedItemIndex, setFocusedItemIndex] = React.useState<number | null>(
+    null,
+  );
   const [activeItemId, setActiveItemId] = React.useState<string | null>(null);
   const textInputRef = React.useRef<HTMLInputElement>(null);
 
-  const NO_RESULTS = 'no results';
+  const NO_RESULTS = "no results";
 
   // Update select options based on filter value
   React.useEffect(() => {
-    const initialSelectOptions = selectItems.map(item => ({
+    const initialSelectOptions = selectItems.map((item) => ({
       value: item,
       children: String(item),
     }));
@@ -49,12 +52,18 @@ export function SelectComponent({
 
     if (filterValue) {
       newSelectOptions = initialSelectOptions.filter((option) =>
-        String(option.children).toLowerCase().includes(filterValue.toLowerCase())
+        String(option.children)
+          .toLowerCase()
+          .includes(filterValue.toLowerCase()),
       );
 
       if (!newSelectOptions.length) {
         newSelectOptions = [
-          { isAriaDisabled: true, children: `No results found for "${filterValue}"`, value: NO_RESULTS }
+          {
+            isAriaDisabled: true,
+            children: `No results found for "${filterValue}"`,
+            value: NO_RESULTS,
+          },
         ];
       }
 
@@ -66,7 +75,8 @@ export function SelectComponent({
     setSelectOptions(newSelectOptions);
   }, [filterValue, isOpen, selectItems]);
 
-  const createItemId = (value: any) => `select-typeahead-${value.toString().replace(' ', '-')}`;
+  const createItemId = (value: any) =>
+    `select-typeahead-${value.toString().replace(" ", "-")}`;
 
   const setActiveAndFocusedItem = (itemIndex: number) => {
     setFocusedItemIndex(itemIndex);
@@ -94,27 +104,35 @@ export function SelectComponent({
 
   const selectOption = (value: string | number, content: string) => {
     setInputValue(content);
-    setFilterValue('');
+    setFilterValue("");
     setSelected(value.toString());
     onChange(value);
     closeMenu();
   };
 
-  const onSelect = (_event: React.MouseEvent<Element, MouseEvent> | undefined, value: string | number | undefined) => {
+  const onSelect = (
+    _event: React.MouseEvent<Element, MouseEvent> | undefined,
+    value: string | number | undefined,
+  ) => {
     if (value && value !== NO_RESULTS) {
-      const optionText = selectOptions.find((option) => option.value === value)?.children;
+      const optionText = selectOptions.find(
+        (option) => option.value === value,
+      )?.children;
       selectOption(value, optionText as string);
     }
   };
 
-  const onTextInputChange = (_event: React.FormEvent<HTMLInputElement>, value: string) => {
+  const onTextInputChange = (
+    _event: React.FormEvent<HTMLInputElement>,
+    value: string,
+  ) => {
     setInputValue(value);
     setFilterValue(value);
 
     resetActiveAndFocusedItem();
 
     if (value !== selected) {
-      setSelected('');
+      setSelected("");
     }
   };
 
@@ -129,7 +147,7 @@ export function SelectComponent({
       return;
     }
 
-    if (key === 'ArrowUp') {
+    if (key === "ArrowUp") {
       if (focusedItemIndex === null || focusedItemIndex === 0) {
         indexToFocus = selectOptions.length - 1;
       } else {
@@ -144,8 +162,11 @@ export function SelectComponent({
       }
     }
 
-    if (key === 'ArrowDown') {
-      if (focusedItemIndex === null || focusedItemIndex === selectOptions.length - 1) {
+    if (key === "ArrowDown") {
+      if (
+        focusedItemIndex === null ||
+        focusedItemIndex === selectOptions.length - 1
+      ) {
         indexToFocus = 0;
       } else {
         indexToFocus = focusedItemIndex + 1;
@@ -163,11 +184,17 @@ export function SelectComponent({
   };
 
   const onInputKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
-    const focusedItem = focusedItemIndex !== null ? selectOptions[focusedItemIndex] : null;
+    const focusedItem =
+      focusedItemIndex !== null ? selectOptions[focusedItemIndex] : null;
 
     switch (event.key) {
-      case 'Enter':
-        if (isOpen && focusedItem && focusedItem.value !== NO_RESULTS && !focusedItem.isAriaDisabled) {
+      case "Enter":
+        if (
+          isOpen &&
+          focusedItem &&
+          focusedItem.value !== NO_RESULTS &&
+          !focusedItem.isAriaDisabled
+        ) {
           selectOption(focusedItem.value, focusedItem.children as string);
         }
 
@@ -176,8 +203,8 @@ export function SelectComponent({
         }
 
         break;
-      case 'ArrowUp':
-      case 'ArrowDown':
+      case "ArrowUp":
+      case "ArrowDown":
         event.preventDefault();
         handleMenuArrowKeys(event.key);
         break;
@@ -190,9 +217,9 @@ export function SelectComponent({
   };
 
   const onClearButtonClick = () => {
-    setSelected('');
-    setInputValue('');
-    setFilterValue('');
+    setSelected("");
+    setInputValue("");
+    setFilterValue("");
     resetActiveAndFocusedItem();
     textInputRef.current?.focus();
   };
@@ -216,14 +243,20 @@ export function SelectComponent({
           autoComplete="off"
           ref={textInputRef}
           placeholder={placeholder}
-          {...(activeItemId && { 'aria-activedescendant': activeItemId })}
+          {...(activeItemId && { "aria-activedescendant": activeItemId })}
           role="combobox"
           isExpanded={isOpen}
           aria-controls="select-typeahead-listbox"
         />
 
-        <TextInputGroupUtilities style={{ display: inputValue ? 'block' : 'none' }}>
-          <Button variant="plain" onClick={onClearButtonClick} aria-label="Clear input value">
+        <TextInputGroupUtilities
+          style={{ display: inputValue ? "block" : "none" }}
+        >
+          <Button
+            variant="plain"
+            onClick={onClearButtonClick}
+            aria-label="Clear input value"
+          >
             <TimesIcon aria-hidden />
           </Button>
         </TextInputGroupUtilities>

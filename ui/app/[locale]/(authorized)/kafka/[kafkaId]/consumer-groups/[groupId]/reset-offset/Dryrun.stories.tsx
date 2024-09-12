@@ -3,7 +3,7 @@ import { Dryrun } from "./Dryrun";
 
 export default {
   component: Dryrun,
-  args: {}
+  args: {},
 } as Meta<typeof Dryrun>;
 
 type Story = StoryObj<typeof Dryrun>;
@@ -17,7 +17,6 @@ const NewOffsetValues = [
   { topicName: "Topic C", partition: 1, offset: 221222, topicId: "xcsdwer" },
   { topicName: "Topic B", partition: 1, offset: 2341233, topicId: "weqrests" },
   { topicName: "Topic B", partition: 1, offset: 675, topicId: "weqrests" },
-
 ];
 
 export const Default: Story = {
