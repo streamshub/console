@@ -61,8 +61,6 @@ export function ResetConsumerOffset({
 
   const [showDryRun, setShowDryRun] = useState(false);
 
-  const [bootstrapServer, setBootstrapServer] = useState<string | undefined>();
-
   const onTopicSelect = (value: TopicSelection) => {
     setSelectedConsumerTopic(value);
   };
@@ -74,27 +72,6 @@ export function ResetConsumerOffset({
   const onDateTimeSelect = (value: DateTimeFormatSelection) => {
     setSelectDateTimeFormat(value)
   }
-
-  useEffect(() => {
-    const fetchBootstrapServer = async () => {
-      try {
-        const data = await getKafkaCluster(kafkaId);
-        if (!data) {
-          return null;
-        }
-        const listeners = data.attributes.listeners || [];
-        if (listeners.length > 0) {
-          setBootstrapServer(listeners[0].bootstrapServers ?? "");
-        } else {
-          throw new Error("No listeners found");
-        }
-      } catch (error) {
-        setError("Failed to fetch bootstrap server");
-      }
-    };
-
-    fetchBootstrapServer();
-  }, [kafkaId]);
 
   const handleTopicChange = (topicName: string | number) => {
     if (typeof topicName === 'string') {
@@ -128,10 +105,7 @@ export function ResetConsumerOffset({
   };
 
   const generateCliCommand = (): string => {
-    if (!bootstrapServer) {
-      throw new Error("Bootstrap server is not available");
-    }
-    let baseCommand = `$ kafka-consumer-groups --bootstrap-server ${bootstrapServer} --group ${consumerGroupName} --reset-offsets`;
+    let baseCommand = `$ kafka-consumer-groups --bootstrap-server \${bootstrap-Server} --group ${consumerGroupName} --reset-offsets`;
     const topic = selectedConsumerTopic === "allTopics" ? "--all-topics" : `--topic ${offset.topicName}`;
     baseCommand += ` ${topic}`;
     if (selectedConsumerTopic === "selectedTopic") {

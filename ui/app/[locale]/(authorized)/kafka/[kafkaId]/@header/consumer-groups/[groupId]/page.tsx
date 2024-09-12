@@ -1,9 +1,9 @@
 import { getConsumerGroup } from "@/api/consumerGroups/actions";
 import { KafkaConsumerGroupMembersParams } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/consumer-groups/[groupId]/KafkaConsumerGroupMembers.params";
 import { AppHeader } from "@/components/AppHeader";
-import { Button, Tooltip } from "@/libs/patternfly/react-core";
 import { Suspense } from "react";
 import { useTranslations } from "next-intl";
+import { ConsumerGroupActionButton } from "./ConsumerGroupActionButton";
 
 export const fetchCache = "force-cache";
 
@@ -43,29 +43,11 @@ function Header({
   return (
     <AppHeader
       title={decodeURIComponent(groupId) === "+" ? <i>Empty Name</i> : groupId}
-      actions={[
-        <Tooltip
-          key={"reset"}
-          content={
-            "It is possible to reset the offset only on stopped consumer groups"
-          }
-        >
-          <Button isDisabled={disabled} aria-disabled={disabled} id={"reset"}>
-            {t("ConsumerGroup.reset_offset")}
-          </Button>
-        </Tooltip>,
-        <Tooltip
-          key={"delete"}
-          content={"It is possible to delete only stopped consumer groups"}
-        >
-          <Button
-            variant={"danger"}
-            aria-disabled={disabled}
-            isDisabled={disabled}
-          >
-            {t("ConsumerGroup.delete")}
-          </Button>
-        </Tooltip>,
+      actions={[<ConsumerGroupActionButton
+        key={"consumergGroupActionButton"}
+        disabled={disabled}
+        kafkaId={kafkaId}
+        consumerGroupName={groupId} />
       ]}
     />
   );

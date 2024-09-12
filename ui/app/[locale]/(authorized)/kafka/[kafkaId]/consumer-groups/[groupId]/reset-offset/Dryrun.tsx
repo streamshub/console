@@ -4,6 +4,7 @@ import {
   Alert,
   Button,
   Card,
+  ClipboardCopy,
   DescriptionList,
   DescriptionListDescription,
   DescriptionListGroup,
@@ -100,9 +101,9 @@ export function Dryrun({
         <PanelMainBody>
           <Stack hasGutter>
             <StackItem>
-              <TextContent>
-                <Text>{cliCommand}</Text>
-              </TextContent>
+              <ClipboardCopy isReadOnly hoverTip="Copy" clickTip="Copied">
+                {cliCommand}
+              </ClipboardCopy>
             </StackItem>
             <StackItem>
               <Sidebar>

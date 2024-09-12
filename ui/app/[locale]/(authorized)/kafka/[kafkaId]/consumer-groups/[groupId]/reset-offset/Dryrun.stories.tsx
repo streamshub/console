@@ -23,7 +23,7 @@ const NewOffsetValues = [
 export const Default: Story = {
   args: {
     consumerGroupName: "console_datagen_002-a",
-    newOffset: NewOffsetValues
-
+    newOffset: NewOffsetValues,
+    cliCommand: `$ kafka-consumer-groups --bootstrap-server \${bootstrap-Server} --group --reset-offsets`,
   },
 };
