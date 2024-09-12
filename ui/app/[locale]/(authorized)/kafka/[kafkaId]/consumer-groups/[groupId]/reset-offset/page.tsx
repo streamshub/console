@@ -20,7 +20,7 @@ export default function ResetOffsetPage({
             consumerGroupName={groupId}
             topics={[]}
             partitions={[]}
-            baseurl={`/kafka/${kafkaId}/consumer-groups/${groupId}`}
+            baseurl={`/kafka/${kafkaId}/consumer-groups`}
           />
         }
       >

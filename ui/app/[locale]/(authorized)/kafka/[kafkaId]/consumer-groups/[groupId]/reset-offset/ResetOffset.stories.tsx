@@ -1,11 +1,11 @@
 import { Meta, StoryObj } from "@storybook/react";
-import { ResetConsumerOffset } from "./ResetConsumerOffset";
+import { ResetOffset } from "./ResetOffset";
 
 export default {
-  component: ResetConsumerOffset,
-} as Meta<typeof ResetConsumerOffset>;
+  component: ResetOffset,
+} as Meta<typeof ResetOffset>;
 
-type Story = StoryObj<typeof ResetConsumerOffset>;
+type Story = StoryObj<typeof ResetOffset>;
 
 export const Default: Story = {
   args: {
@@ -16,6 +16,9 @@ export const Default: Story = {
       { topicId: "234", topicName: "console_datagen_002-c" },
       { topicId: "431", topicName: "console_datagen_002-d" },
     ],
+    selectTopic: "allTopics",
     partitions: [1, 2, 3],
+    selectOffset: "latest",
+    isLoading: false,
   },
 };

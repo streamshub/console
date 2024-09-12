@@ -1,37 +1,5 @@
 "use client";
 
-import {
-  Divider,
-  Panel,
-  PanelHeader,
-  PanelMain,
-  PanelMainBody,
-  TextContent,
-  Text,
-  TextVariants,
-  Radio,
-  Form,
-  FormGroup,
-  FormSection,
-  Select,
-  SelectList,
-  SelectOption,
-  MenuToggle,
-  MenuToggleElement,
-  TextInput,
-  ActionGroup,
-  Button,
-  SelectProps,
-  PageSection,
-  Page,
-  Bullseye,
-  Spinner,
-  Flex,
-  FlexItem,
-  Grid,
-  GridItem,
-  Alert,
-} from "@/libs/patternfly/react-core";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import {
@@ -40,8 +8,6 @@ import {
   TopicSelection,
   partitionSelection,
 } from "../types";
-import { TypeaheadSelect } from "./TypeaheadSelect";
-import { OffsetSelect } from "./OffsetSelect";
 import { useRouter } from "@/navigation";
 import {
   getDryrunResult,
@@ -49,6 +15,9 @@ import {
 } from "@/api/consumerGroups/actions";
 import { UpdateConsumerGroupErrorSchema } from "@/api/consumerGroups/schema";
 import { Dryrun } from "./Dryrun";
+import { LoadingPage } from "./LoadingPage";
+import { ResetOffset } from "./ResetOffset";
+import { Page } from "@/libs/patternfly/react-core";
 
 export type Offset = {
   topicId: string;
@@ -71,15 +40,13 @@ export function ResetConsumerOffset({
   partitions: number[];
   baseurl: string;
 }) {
-  const t = useTranslations("ConsumerGroupsTable");
-
   const router = useRouter();
 
   const [selectedConsumerTopic, setSelectedConsumerTopic] =
-    useState<TopicSelection>();
+    useState<TopicSelection>("allTopics");
 
   const [selectedPartition, setSelectedPartition] =
-    useState<partitionSelection>();
+    useState<partitionSelection>("allPartitions");
 
   const [selectedOffset, setSelectedOffset] = useState<OffsetValue>("custom");
 
@@ -108,6 +75,8 @@ export function ResetConsumerOffset({
   const onPartitionSelect = (value: partitionSelection) => {
     setSelectedPartition(value);
   };
+
+  const onOffsetSelect = (value: OffsetValue) => setSelectedOffset(value);
 
   const onDateTimeSelect = (value: DateTimeFormatSelection) => {
     setSelectDateTimeFormat(value);
@@ -297,20 +266,7 @@ export function ResetConsumerOffset({
   return (
     <Page>
       {isLoading ? (
-        <Grid hasGutter={true}>
-          <GridItem>
-            <Bullseye>
-              <Spinner
-                size="xl"
-                aria-label={t("resetting_spinner")}
-                aria-valuetext={t("resetting_spinner")}
-              />
-            </Bullseye>
-          </GridItem>
-          <GridItem>
-            <Bullseye>{t("reseting_consumer_group_offsets_text")}</Bullseye>
-          </GridItem>
-        </Grid>
+        <LoadingPage />
       ) : showDryRun ? (
         <Dryrun
           consumerGroupName={consumerGroupName}
@@ -319,173 +275,29 @@ export function ResetConsumerOffset({
           cliCommand={generateCliCommand()}
         />
       ) : (
-        <Panel>
-          <PanelHeader>
-            <TextContent>
-              <Text component={TextVariants.h1}>
-                {t("reset_consumer_offset")}
-              </Text>
-            </TextContent>
-            <TextContent>
-              <Text>{t.rich("consumer_name", { consumerGroupName })}</Text>
-            </TextContent>
-          </PanelHeader>
-          <Divider />
-          <PanelMain>
-            <PanelMainBody>
-              {error && <Alert variant="danger" isInline title={error} />}
-              <Form>
-                <FormSection title={t("target")}>
-                  <FormGroup
-                    role="radiogroup"
-                    isInline
-                    fieldId="select-consumer"
-                    hasNoPaddingTop
-                    label={t("apply_action_on")}
-                  >
-                    <Radio
-                      name={"consumer-topic-select"}
-                      id={"all-consumer-topic"}
-                      label={t("all_consumer_topics")}
-                      isChecked={selectedConsumerTopic === "allTopics"}
-                      onChange={() => onTopicSelect("allTopics")}
-                    />
-                    <Radio
-                      name={"consumer-topic-select"}
-                      id={"selected-topic"}
-                      label={t("selected_topic")}
-                      isChecked={selectedConsumerTopic === "selectedTopic"}
-                      onChange={() => onTopicSelect("selectedTopic")}
-                    />
-                  </FormGroup>
-                  {selectedConsumerTopic === "selectedTopic" && (
-                    <TypeaheadSelect
-                      value={offset.topicName || ""}
-                      selectItems={topics.map((topic) => topic.topicName)}
-                      onChange={handleTopicChange}
-                      placeholder={"Select topic"}
-                    />
-                  )}
-                  {selectedConsumerTopic === "selectedTopic" && (
-                    <FormGroup label={t("partitions")} isInline>
-                      <Radio
-                        name={"partition-select"}
-                        id={"all-partitions"}
-                        label={t("all_partitions")}
-                        isChecked={selectedPartition === "allPartitions"}
-                        onChange={() => onPartitionSelect("allPartitions")}
-                      />
-                      <Radio
-                        name={"partition-select"}
-                        id={"selected_partition"}
-                        label={t("selected_partition")}
-                        isChecked={selectedPartition === "selectedPartition"}
-                        onChange={() => onPartitionSelect("selectedPartition")}
-                      />
-                    </FormGroup>
-                  )}
-                  {selectedConsumerTopic === "selectedTopic" &&
-                    selectedPartition === "selectedPartition" && (
-                      <TypeaheadSelect
-                        value={offset.partition}
-                        selectItems={partitions}
-                        onChange={handlePartitionChange}
-                        placeholder={"Select partition"}
-                      />
-                    )}
-                </FormSection>
-                <FormSection title={t("offset_details")}>
-                  <FormGroup label={t("new_offset")}>
-                    <OffsetSelect
-                      value={selectedOffset}
-                      onChange={setSelectedOffset}
-                    />
-                  </FormGroup>
-                  {selectedOffset === "custom" && (
-                    <FormGroup
-                      label={t("custom_offset")}
-                      fieldId="custom-offset-input"
-                    >
-                      <TextInput
-                        id="custom-offset-input"
-                        name={t("custom_offset")}
-                        value={offset.offset}
-                        onChange={(_event, value) => handleOffsetChange(value)}
-                        type="number"
-                      />
-                    </FormGroup>
-                  )}
-                  {selectedOffset === "specificDateTime" && (
-                    <>
-                      <FormGroup
-                        role="radiogroup"
-                        isInline
-                        fieldId="select-consumer"
-                        hasNoPaddingTop
-                        label={t("select_date_time")}
-                      >
-                        <Radio
-                          name={"select_time"}
-                          id={"iso_date_format"}
-                          label={t("iso_date_format")}
-                          isChecked={selectDateTimeFormat === "ISO"}
-                          onChange={() => onDateTimeSelect("ISO")}
-                        />
-                        <Radio
-                          name={"select_time"}
-                          id={"unix_date_format"}
-                          label={t("unix_date_format")}
-                          isChecked={selectDateTimeFormat === "Epoch"}
-                          onChange={() => onDateTimeSelect("Epoch")}
-                        />
-                      </FormGroup>
-                      <FormGroup>
-                        <TextInput
-                          id="date-input"
-                          name={"date-input"}
-                          type={
-                            selectDateTimeFormat === "ISO" ? "text" : "number"
-                          }
-                          placeholder={
-                            selectDateTimeFormat === "ISO"
-                              ? "yyyy-MM-dd'T'HH:mm:ss.SSS"
-                              : "specify epoch timestamp"
-                          }
-                          onChange={(_event, value) =>
-                            handleDateTimeChange(value)
-                          }
-                        />
-                      </FormGroup>
-                    </>
-                  )}
-                </FormSection>
-                <ActionGroup>
-                  <Button
-                    variant="primary"
-                    onClick={handleSave}
-                    isDisabled={isLoading || isDryRunDisable}
-                  >
-                    {t("save")}
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    onClick={openDryrun}
-                    isDisabled={isLoading || isDryRunDisable}
-                  >
-                    {t("dry_run")}
-                  </Button>
-                  <Button
-                    variant="link"
-                    onClick={closeResetOffset}
-                    isDisabled={isLoading}
-                  >
-                    {t("cancel")}
-                  </Button>
-                </ActionGroup>
-              </Form>
-            </PanelMainBody>
-          </PanelMain>
-        </Panel>
+        <ResetOffset
+          consumerGroupName={consumerGroupName}
+          topics={topics}
+          partitions={partitions}
+          selectTopic={selectedConsumerTopic}
+          selectPartition={selectedPartition}
+          selectOffset={selectedOffset}
+          error={error}
+          onTopicSelect={onTopicSelect}
+          onPartitionSelect={onPartitionSelect}
+          onOffsetSelect={onOffsetSelect}
+          offset={offset}
+          isLoading={isLoading}
+          selectDateTimeFormat={selectDateTimeFormat}
+          onDateTimeSelect={onDateTimeSelect}
+          handleTopichange={handleTopicChange}
+          handlePartitionChange={handlePartitionChange}
+          handleOffsetChange={handleOffsetChange}
+          closeResetOffset={closeResetOffset}
+          openDryrun={openDryrun}
+          handleDateTimeChange={handleDateTimeChange}
+          handleSave={handleSave}
+        />
       )}
     </Page>
   );
