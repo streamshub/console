@@ -1,83 +1,28 @@
-import { ConsumerGroup, ConsumerGroupState } from "@/api/consumerGroups/schema";
+"use client";
+
+import { ConsumerGroup } from "@/api/consumerGroups/schema";
 import { Number } from "@/components/Format/Number";
 import { LabelLink } from "@/components/Navigation/LabelLink";
-import { TableView, TableViewProps } from "@/components/Table";
-import { Icon, LabelGroup, Tooltip } from "@/libs/patternfly/react-core";
-import {
-  CheckCircleIcon,
-  HelpIcon,
-  InfoCircleIcon,
-} from "@/libs/patternfly/react-icons";
+import { TableView } from "@/components/Table";
+import { LabelGroup, Tooltip } from "@/libs/patternfly/react-core";
+import { HelpIcon } from "@/libs/patternfly/react-icons";
 import { Link } from "@/navigation";
 import { useTranslations } from "next-intl";
-import { ReactNode, useEffect, useState } from "react";
-
-export const ConsumerGroupColumns = [
-  "name",
-  "state",
-  "lag",
-  "members",
-  "topics",
-] as const;
-
-export type ConsumerGroupColumn = (typeof ConsumerGroupColumns)[number];
-
-export type SortableConsumerGroupTableColumns = Exclude<
-  ConsumerGroupColumn,
-  "lag" | "members" | "topics"
->;
-
-export const SortableColumns = ["name", "state"];
-
-const StateLabel: Partial<Record<ConsumerGroupState, ReactNode>> = {
-  STABLE: (
-    <>
-      <Icon status={"success"}>
-        <CheckCircleIcon />
-      </Icon>
-      &nbsp;STABLE
-    </>
-  ),
-  EMPTY: (
-    <>
-      <Icon status={"info"}>
-        <InfoCircleIcon />
-      </Icon>
-      &nbsp;EMPTY
-    </>
-  ),
-};
+import { useEffect, useState } from "react";
 
 export function ConsumerGroupsTable({
   kafkaId,
   page,
-  perPage,
   total,
   consumerGroups: initialData,
   refresh,
-  isColumnSortable,
-  filterName,
-  filterState,
-  onFilterNameChange,
-  onFilterStateChange,
-  onPageChange,
-  onResetOffset,
 }: {
   kafkaId: string;
   page: number;
-  perPage: number;
   total: number;
-  filterName: string | undefined;
-  filterState: ConsumerGroupState[] | undefined;
   consumerGroups: ConsumerGroup[] | undefined;
   refresh: (() => Promise<ConsumerGroup[]>) | undefined;
-  onFilterNameChange: (name: string | undefined) => void;
-  onFilterStateChange: (status: ConsumerGroupState[] | undefined) => void;
-  onResetOffset: (consumerGroup: ConsumerGroup) => void;
-} & Pick<
-  TableViewProps<ConsumerGroup, (typeof ConsumerGroupColumns)[number]>,
-  "isColumnSortable" | "onPageChange" | "onClearAllFilters"
->) {
+}) {
   const t = useTranslations();
   const [consumerGroups, setConsumerGroups] = useState(initialData);
   useEffect(() => {
@@ -85,9 +30,7 @@ export function ConsumerGroupsTable({
     if (refresh) {
       interval = setInterval(async () => {
         const consumerGroups = await refresh();
-        if (consumerGroups) {
-          setConsumerGroups(consumerGroups);
-        }
+        setConsumerGroups(consumerGroups);
       }, 5000);
     }
     return () => clearInterval(interval);
@@ -96,8 +39,7 @@ export function ConsumerGroupsTable({
     <TableView
       itemCount={consumerGroups?.length}
       page={page}
-      perPage={perPage}
-      onPageChange={onPageChange}
+      onPageChange={() => {}}
       data={consumerGroups}
       emptyStateNoData={
         <div>{t("ConsumerGroupsTable.no_consumer_groups")}</div>
@@ -106,9 +48,7 @@ export function ConsumerGroupsTable({
         <div>{t("ConsumerGroupsTable.no_consumer_groups")}</div>
       }
       ariaLabel={t("ConsumerGroupsTable.title")}
-      isFiltered={filterName !== undefined || filterState?.length !== 0}
-      columns={ConsumerGroupColumns}
-      isColumnSortable={isColumnSortable}
+      columns={["name", "state", "lag", "members", "topics"] as const}
       renderHeader={({ column, key, Th }) => {
         switch (column) {
           case "name":
@@ -175,7 +115,7 @@ export function ConsumerGroupsTable({
           case "state":
             return (
               <Td key={key} dataLabel={t("ConsumerGroupsTable.state")}>
-                {StateLabel[row.attributes.state]}
+                {row.attributes.state}
               </Td>
             );
           case "lag":
@@ -190,15 +130,8 @@ export function ConsumerGroupsTable({
               </Td>
             );
           case "topics":
-            const allTopics: { topicId: string; topicName: string }[] = [];
-            row.attributes.members
-              ?.flatMap((m) => m.assignments ?? [])
-              .forEach((a) =>
-                allTopics.push({ topicId: a.topicId, topicName: a.topicName }),
-              );
-            row.attributes.offsets?.forEach((a) =>
-              allTopics.push({ topicId: a.topicId, topicName: a.topicName }),
-            );
+            const allTopics =
+              row.attributes.members?.flatMap((m) => m.assignments ?? []) ?? [];
             return (
               <Td key={key} dataLabel={t("ConsumerGroupsTable.topics")}>
                 <LabelGroup>
@@ -225,50 +158,6 @@ export function ConsumerGroupsTable({
               </Td>
             );
         }
-      }}
-      renderActions={({ row, ActionsColumn }) => (
-        <ActionsColumn
-          items={[
-            {
-              title: t("ConsumerGroupsTable.reset_offset"),
-              description: t("ConsumerGroupsTable.reset_offset_description"),
-              onClick: () => onResetOffset(row),
-            },
-          ]}
-        />
-      )}
-      filters={{
-        Name: {
-          type: "search",
-          chips: filterName ? [filterName] : [],
-          onSearch: onFilterNameChange,
-          onRemoveChip: () => {
-            onFilterNameChange(undefined);
-          },
-          onRemoveGroup: () => {
-            onFilterNameChange(undefined);
-          },
-          validate: () => true,
-          errorMessage: "",
-        },
-        State: {
-          type: "checkbox",
-          chips: filterState || [],
-          onToggle: (state) => {
-            const newState = filterState?.includes(state)
-              ? filterState.filter((s) => s !== state)
-              : [...filterState!, state];
-            onFilterStateChange(newState);
-          },
-          onRemoveChip: (state) => {
-            const newStatus = (filterState || []).filter((s) => s !== state);
-            onFilterStateChange(newStatus);
-          },
-          onRemoveGroup: () => {
-            onFilterStateChange(undefined);
-          },
-          options: StateLabel,
-        },
       }}
     />
   );

@@ -19,11 +19,14 @@ export const ConsumerGroups: Story = {
         id: "console-datagen-group-0",
         attributes: {
           state: "STABLE",
-          offsets: [{
-            lag: 200
-          }, {
-            lag: 1000
-          }],
+          offsets: [
+            {
+              lag: 200,
+            },
+            {
+              lag: 1000,
+            },
+          ],
           members: [
             {
               host: "localhost",
@@ -47,12 +50,15 @@ export const ConsumerGroups: Story = {
       {
         id: "console-datagen-group-1",
         attributes: {
-          state: "STABLE",
-          offsets: [{
-            lag: 400
-          }, {
-            lag: 240
-          }],
+          state: "EMPTY",
+          offsets: [
+            {
+              lag: 400,
+            },
+            {
+              lag: 240,
+            },
+          ],
           members: [
             {
               host: "localhost",
@@ -76,14 +82,18 @@ export const ConsumerGroups: Story = {
       {
         id: "console-datagen-group-2",
         attributes: {
-          state: "STABLE",
-          offsets: [{
-            lag: 200
-          }, {
-            lag: 400
-          }, {
-            lag: 400
-          }],
+          state: "EMPTY",
+          offsets: [
+            {
+              lag: 200,
+            },
+            {
+              lag: 400,
+            },
+            {
+              lag: 400,
+            },
+          ],
           members: [
             {
               host: "localhost",
@@ -104,6 +114,1651 @@ export const ConsumerGroups: Story = {
           ],
         },
       },
-    ]
-  }
+      {
+        id: "console-datagen-group-2",
+        attributes: {
+          state: "STABLE",
+          offsets: [
+            {
+              lag: 200,
+            },
+            {
+              lag: 400,
+            },
+            {
+              lag: 400,
+            },
+          ],
+          members: [
+            {
+              host: "localhost",
+              memberId: "member-1",
+              clientId: "client-1",
+              groupInstanceId: "instance-1",
+              assignments: [
+                {
+                  topicName: "console_datagen_002-a",
+                  topicId: "1",
+                },
+                {
+                  topicName: "console_datagen_002-b",
+                  topicId: "2",
+                },
+              ],
+            },
+          ],
+        },
+      },
+      {
+        id: "console-datagen-group-2",
+        attributes: {
+          state: "STABLE",
+          offsets: [
+            {
+              lag: 200,
+            },
+            {
+              lag: 400,
+            },
+            {
+              lag: 400,
+            },
+          ],
+          members: [
+            {
+              host: "localhost",
+              memberId: "member-1",
+              clientId: "client-1",
+              groupInstanceId: "instance-1",
+              assignments: [
+                {
+                  topicName: "console_datagen_002-a",
+                  topicId: "1",
+                },
+                {
+                  topicName: "console_datagen_002-b",
+                  topicId: "2",
+                },
+              ],
+            },
+          ],
+        },
+      },
+      {
+        id: "console-datagen-group-2",
+        attributes: {
+          state: "STABLE",
+          offsets: [
+            {
+              lag: 200,
+            },
+            {
+              lag: 400,
+            },
+            {
+              lag: 400,
+            },
+          ],
+          members: [
+            {
+              host: "localhost",
+              memberId: "member-1",
+              clientId: "client-1",
+              groupInstanceId: "instance-1",
+              assignments: [
+                {
+                  topicName: "console_datagen_002-a",
+                  topicId: "1",
+                },
+                {
+                  topicName: "console_datagen_002-b",
+                  topicId: "2",
+                },
+              ],
+            },
+          ],
+        },
+      },
+      {
+        id: "console-datagen-group-2",
+        attributes: {
+          state: "STABLE",
+          offsets: [
+            {
+              lag: 200,
+            },
+            {
+              lag: 400,
+            },
+            {
+              lag: 400,
+            },
+          ],
+          members: [
+            {
+              host: "localhost",
+              memberId: "member-1",
+              clientId: "client-1",
+              groupInstanceId: "instance-1",
+              assignments: [
+                {
+                  topicName: "console_datagen_002-a",
+                  topicId: "1",
+                },
+                {
+                  topicName: "console_datagen_002-b",
+                  topicId: "2",
+                },
+              ],
+            },
+          ],
+        },
+      },
+      {
+        id: "console-datagen-group-2",
+        attributes: {
+          state: "STABLE",
+          offsets: [
+            {
+              lag: 200,
+            },
+            {
+              lag: 400,
+            },
+            {
+              lag: 400,
+            },
+          ],
+          members: [
+            {
+              host: "localhost",
+              memberId: "member-1",
+              clientId: "client-1",
+              groupInstanceId: "instance-1",
+              assignments: [
+                {
+                  topicName: "console_datagen_002-a",
+                  topicId: "1",
+                },
+                {
+                  topicName: "console_datagen_002-b",
+                  topicId: "2",
+                },
+              ],
+            },
+          ],
+        },
+      },
+      {
+        id: "console-datagen-group-2",
+        attributes: {
+          state: "STABLE",
+          offsets: [
+            {
+              lag: 200,
+            },
+            {
+              lag: 400,
+            },
+            {
+              lag: 400,
+            },
+          ],
+          members: [
+            {
+              host: "localhost",
+              memberId: "member-1",
+              clientId: "client-1",
+              groupInstanceId: "instance-1",
+              assignments: [
+                {
+                  topicName: "console_datagen_002-a",
+                  topicId: "1",
+                },
+                {
+                  topicName: "console_datagen_002-b",
+                  topicId: "2",
+                },
+              ],
+            },
+          ],
+        },
+      },
+      {
+        id: "console-datagen-group-2",
+        attributes: {
+          state: "STABLE",
+          offsets: [
+            {
+              lag: 200,
+            },
+            {
+              lag: 400,
+            },
+            {
+              lag: 400,
+            },
+          ],
+          members: [
+            {
+              host: "localhost",
+              memberId: "member-1",
+              clientId: "client-1",
+              groupInstanceId: "instance-1",
+              assignments: [
+                {
+                  topicName: "console_datagen_002-a",
+                  topicId: "1",
+                },
+                {
+                  topicName: "console_datagen_002-b",
+                  topicId: "2",
+                },
+              ],
+            },
+          ],
+        },
+      },
+      {
+        id: "console-datagen-group-2",
+        attributes: {
+          state: "STABLE",
+          offsets: [
+            {
+              lag: 200,
+            },
+            {
+              lag: 400,
+            },
+            {
+              lag: 400,
+            },
+          ],
+          members: [
+            {
+              host: "localhost",
+              memberId: "member-1",
+              clientId: "client-1",
+              groupInstanceId: "instance-1",
+              assignments: [
+                {
+                  topicName: "console_datagen_002-a",
+                  topicId: "1",
+                },
+                {
+                  topicName: "console_datagen_002-b",
+                  topicId: "2",
+                },
+              ],
+            },
+          ],
+        },
+      },
+      {
+        id: "console-datagen-group-2",
+        attributes: {
+          state: "STABLE",
+          offsets: [
+            {
+              lag: 200,
+            },
+            {
+              lag: 400,
+            },
+            {
+              lag: 400,
+            },
+          ],
+          members: [
+            {
+              host: "localhost",
+              memberId: "member-1",
+              clientId: "client-1",
+              groupInstanceId: "instance-1",
+              assignments: [
+                {
+                  topicName: "console_datagen_002-a",
+                  topicId: "1",
+                },
+                {
+                  topicName: "console_datagen_002-b",
+                  topicId: "2",
+                },
+              ],
+            },
+          ],
+        },
+      },
+      {
+        id: "console-datagen-group-2",
+        attributes: {
+          state: "STABLE",
+          offsets: [
+            {
+              lag: 200,
+            },
+            {
+              lag: 400,
+            },
+            {
+              lag: 400,
+            },
+          ],
+          members: [
+            {
+              host: "localhost",
+              memberId: "member-1",
+              clientId: "client-1",
+              groupInstanceId: "instance-1",
+              assignments: [
+                {
+                  topicName: "console_datagen_002-a",
+                  topicId: "1",
+                },
+                {
+                  topicName: "console_datagen_002-b",
+                  topicId: "2",
+                },
+              ],
+            },
+          ],
+        },
+      },
+      {
+        id: "console-datagen-group-2",
+        attributes: {
+          state: "STABLE",
+          offsets: [
+            {
+              lag: 200,
+            },
+            {
+              lag: 400,
+            },
+            {
+              lag: 400,
+            },
+          ],
+          members: [
+            {
+              host: "localhost",
+              memberId: "member-1",
+              clientId: "client-1",
+              groupInstanceId: "instance-1",
+              assignments: [
+                {
+                  topicName: "console_datagen_002-a",
+                  topicId: "1",
+                },
+                {
+                  topicName: "console_datagen_002-b",
+                  topicId: "2",
+                },
+              ],
+            },
+          ],
+        },
+      },
+      {
+        id: "console-datagen-group-2",
+        attributes: {
+          state: "STABLE",
+          offsets: [
+            {
+              lag: 200,
+            },
+            {
+              lag: 400,
+            },
+            {
+              lag: 400,
+            },
+          ],
+          members: [
+            {
+              host: "localhost",
+              memberId: "member-1",
+              clientId: "client-1",
+              groupInstanceId: "instance-1",
+              assignments: [
+                {
+                  topicName: "console_datagen_002-a",
+                  topicId: "1",
+                },
+                {
+                  topicName: "console_datagen_002-b",
+                  topicId: "2",
+                },
+              ],
+            },
+          ],
+        },
+      },
+      {
+        id: "console-datagen-group-2",
+        attributes: {
+          state: "STABLE",
+          offsets: [
+            {
+              lag: 200,
+            },
+            {
+              lag: 400,
+            },
+            {
+              lag: 400,
+            },
+          ],
+          members: [
+            {
+              host: "localhost",
+              memberId: "member-1",
+              clientId: "client-1",
+              groupInstanceId: "instance-1",
+              assignments: [
+                {
+                  topicName: "console_datagen_002-a",
+                  topicId: "1",
+                },
+                {
+                  topicName: "console_datagen_002-b",
+                  topicId: "2",
+                },
+              ],
+            },
+          ],
+        },
+      },
+      {
+        id: "console-datagen-group-2",
+        attributes: {
+          state: "STABLE",
+          offsets: [
+            {
+              lag: 200,
+            },
+            {
+              lag: 400,
+            },
+            {
+              lag: 400,
+            },
+          ],
+          members: [
+            {
+              host: "localhost",
+              memberId: "member-1",
+              clientId: "client-1",
+              groupInstanceId: "instance-1",
+              assignments: [
+                {
+                  topicName: "console_datagen_002-a",
+                  topicId: "1",
+                },
+                {
+                  topicName: "console_datagen_002-b",
+                  topicId: "2",
+                },
+              ],
+            },
+          ],
+        },
+      },
+      {
+        id: "console-datagen-group-2",
+        attributes: {
+          state: "STABLE",
+          offsets: [
+            {
+              lag: 200,
+            },
+            {
+              lag: 400,
+            },
+            {
+              lag: 400,
+            },
+          ],
+          members: [
+            {
+              host: "localhost",
+              memberId: "member-1",
+              clientId: "client-1",
+              groupInstanceId: "instance-1",
+              assignments: [
+                {
+                  topicName: "console_datagen_002-a",
+                  topicId: "1",
+                },
+                {
+                  topicName: "console_datagen_002-b",
+                  topicId: "2",
+                },
+              ],
+            },
+          ],
+        },
+      },
+      {
+        id: "console-datagen-group-2",
+        attributes: {
+          state: "STABLE",
+          offsets: [
+            {
+              lag: 200,
+            },
+            {
+              lag: 400,
+            },
+            {
+              lag: 400,
+            },
+          ],
+          members: [
+            {
+              host: "localhost",
+              memberId: "member-1",
+              clientId: "client-1",
+              groupInstanceId: "instance-1",
+              assignments: [
+                {
+                  topicName: "console_datagen_002-a",
+                  topicId: "1",
+                },
+                {
+                  topicName: "console_datagen_002-b",
+                  topicId: "2",
+                },
+              ],
+            },
+          ],
+        },
+      },
+      {
+        id: "console-datagen-group-2",
+        attributes: {
+          state: "STABLE",
+          offsets: [
+            {
+              lag: 200,
+            },
+            {
+              lag: 400,
+            },
+            {
+              lag: 400,
+            },
+          ],
+          members: [
+            {
+              host: "localhost",
+              memberId: "member-1",
+              clientId: "client-1",
+              groupInstanceId: "instance-1",
+              assignments: [
+                {
+                  topicName: "console_datagen_002-a",
+                  topicId: "1",
+                },
+                {
+                  topicName: "console_datagen_002-b",
+                  topicId: "2",
+                },
+              ],
+            },
+          ],
+        },
+      },
+      {
+        id: "console-datagen-group-2",
+        attributes: {
+          state: "STABLE",
+          offsets: [
+            {
+              lag: 200,
+            },
+            {
+              lag: 400,
+            },
+            {
+              lag: 400,
+            },
+          ],
+          members: [
+            {
+              host: "localhost",
+              memberId: "member-1",
+              clientId: "client-1",
+              groupInstanceId: "instance-1",
+              assignments: [
+                {
+                  topicName: "console_datagen_002-a",
+                  topicId: "1",
+                },
+                {
+                  topicName: "console_datagen_002-b",
+                  topicId: "2",
+                },
+              ],
+            },
+          ],
+        },
+      },
+      {
+        id: "console-datagen-group-2",
+        attributes: {
+          state: "STABLE",
+          offsets: [
+            {
+              lag: 200,
+            },
+            {
+              lag: 400,
+            },
+            {
+              lag: 400,
+            },
+          ],
+          members: [
+            {
+              host: "localhost",
+              memberId: "member-1",
+              clientId: "client-1",
+              groupInstanceId: "instance-1",
+              assignments: [
+                {
+                  topicName: "console_datagen_002-a",
+                  topicId: "1",
+                },
+                {
+                  topicName: "console_datagen_002-b",
+                  topicId: "2",
+                },
+              ],
+            },
+          ],
+        },
+      },
+      {
+        id: "console-datagen-group-2",
+        attributes: {
+          state: "STABLE",
+          offsets: [
+            {
+              lag: 200,
+            },
+            {
+              lag: 400,
+            },
+            {
+              lag: 400,
+            },
+          ],
+          members: [
+            {
+              host: "localhost",
+              memberId: "member-1",
+              clientId: "client-1",
+              groupInstanceId: "instance-1",
+              assignments: [
+                {
+                  topicName: "console_datagen_002-a",
+                  topicId: "1",
+                },
+                {
+                  topicName: "console_datagen_002-b",
+                  topicId: "2",
+                },
+              ],
+            },
+          ],
+        },
+      },
+      {
+        id: "console-datagen-group-2",
+        attributes: {
+          state: "STABLE",
+          offsets: [
+            {
+              lag: 200,
+            },
+            {
+              lag: 400,
+            },
+            {
+              lag: 400,
+            },
+          ],
+          members: [
+            {
+              host: "localhost",
+              memberId: "member-1",
+              clientId: "client-1",
+              groupInstanceId: "instance-1",
+              assignments: [
+                {
+                  topicName: "console_datagen_002-a",
+                  topicId: "1",
+                },
+                {
+                  topicName: "console_datagen_002-b",
+                  topicId: "2",
+                },
+              ],
+            },
+          ],
+        },
+      },
+      {
+        id: "console-datagen-group-2",
+        attributes: {
+          state: "STABLE",
+          offsets: [
+            {
+              lag: 200,
+            },
+            {
+              lag: 400,
+            },
+            {
+              lag: 400,
+            },
+          ],
+          members: [
+            {
+              host: "localhost",
+              memberId: "member-1",
+              clientId: "client-1",
+              groupInstanceId: "instance-1",
+              assignments: [
+                {
+                  topicName: "console_datagen_002-a",
+                  topicId: "1",
+                },
+                {
+                  topicName: "console_datagen_002-b",
+                  topicId: "2",
+                },
+              ],
+            },
+          ],
+        },
+      },
+      {
+        id: "console-datagen-group-2",
+        attributes: {
+          state: "STABLE",
+          offsets: [
+            {
+              lag: 200,
+            },
+            {
+              lag: 400,
+            },
+            {
+              lag: 400,
+            },
+          ],
+          members: [
+            {
+              host: "localhost",
+              memberId: "member-1",
+              clientId: "client-1",
+              groupInstanceId: "instance-1",
+              assignments: [
+                {
+                  topicName: "console_datagen_002-a",
+                  topicId: "1",
+                },
+                {
+                  topicName: "console_datagen_002-b",
+                  topicId: "2",
+                },
+              ],
+            },
+          ],
+        },
+      },
+      {
+        id: "console-datagen-group-2",
+        attributes: {
+          state: "STABLE",
+          offsets: [
+            {
+              lag: 200,
+            },
+            {
+              lag: 400,
+            },
+            {
+              lag: 400,
+            },
+          ],
+          members: [
+            {
+              host: "localhost",
+              memberId: "member-1",
+              clientId: "client-1",
+              groupInstanceId: "instance-1",
+              assignments: [
+                {
+                  topicName: "console_datagen_002-a",
+                  topicId: "1",
+                },
+                {
+                  topicName: "console_datagen_002-b",
+                  topicId: "2",
+                },
+              ],
+            },
+          ],
+        },
+      },
+      {
+        id: "console-datagen-group-2",
+        attributes: {
+          state: "STABLE",
+          offsets: [
+            {
+              lag: 200,
+            },
+            {
+              lag: 400,
+            },
+            {
+              lag: 400,
+            },
+          ],
+          members: [
+            {
+              host: "localhost",
+              memberId: "member-1",
+              clientId: "client-1",
+              groupInstanceId: "instance-1",
+              assignments: [
+                {
+                  topicName: "console_datagen_002-a",
+                  topicId: "1",
+                },
+                {
+                  topicName: "console_datagen_002-b",
+                  topicId: "2",
+                },
+              ],
+            },
+          ],
+        },
+      },
+      {
+        id: "console-datagen-group-2",
+        attributes: {
+          state: "STABLE",
+          offsets: [
+            {
+              lag: 200,
+            },
+            {
+              lag: 400,
+            },
+            {
+              lag: 400,
+            },
+          ],
+          members: [
+            {
+              host: "localhost",
+              memberId: "member-1",
+              clientId: "client-1",
+              groupInstanceId: "instance-1",
+              assignments: [
+                {
+                  topicName: "console_datagen_002-a",
+                  topicId: "1",
+                },
+                {
+                  topicName: "console_datagen_002-b",
+                  topicId: "2",
+                },
+              ],
+            },
+          ],
+        },
+      },
+      {
+        id: "console-datagen-group-2",
+        attributes: {
+          state: "STABLE",
+          offsets: [
+            {
+              lag: 200,
+            },
+            {
+              lag: 400,
+            },
+            {
+              lag: 400,
+            },
+          ],
+          members: [
+            {
+              host: "localhost",
+              memberId: "member-1",
+              clientId: "client-1",
+              groupInstanceId: "instance-1",
+              assignments: [
+                {
+                  topicName: "console_datagen_002-a",
+                  topicId: "1",
+                },
+                {
+                  topicName: "console_datagen_002-b",
+                  topicId: "2",
+                },
+              ],
+            },
+          ],
+        },
+      },
+      {
+        id: "console-datagen-group-2",
+        attributes: {
+          state: "STABLE",
+          offsets: [
+            {
+              lag: 200,
+            },
+            {
+              lag: 400,
+            },
+            {
+              lag: 400,
+            },
+          ],
+          members: [
+            {
+              host: "localhost",
+              memberId: "member-1",
+              clientId: "client-1",
+              groupInstanceId: "instance-1",
+              assignments: [
+                {
+                  topicName: "console_datagen_002-a",
+                  topicId: "1",
+                },
+                {
+                  topicName: "console_datagen_002-b",
+                  topicId: "2",
+                },
+              ],
+            },
+          ],
+        },
+      },
+      {
+        id: "console-datagen-group-2",
+        attributes: {
+          state: "STABLE",
+          offsets: [
+            {
+              lag: 200,
+            },
+            {
+              lag: 400,
+            },
+            {
+              lag: 400,
+            },
+          ],
+          members: [
+            {
+              host: "localhost",
+              memberId: "member-1",
+              clientId: "client-1",
+              groupInstanceId: "instance-1",
+              assignments: [
+                {
+                  topicName: "console_datagen_002-a",
+                  topicId: "1",
+                },
+                {
+                  topicName: "console_datagen_002-b",
+                  topicId: "2",
+                },
+              ],
+            },
+          ],
+        },
+      },
+      {
+        id: "console-datagen-group-2",
+        attributes: {
+          state: "STABLE",
+          offsets: [
+            {
+              lag: 200,
+            },
+            {
+              lag: 400,
+            },
+            {
+              lag: 400,
+            },
+          ],
+          members: [
+            {
+              host: "localhost",
+              memberId: "member-1",
+              clientId: "client-1",
+              groupInstanceId: "instance-1",
+              assignments: [
+                {
+                  topicName: "console_datagen_002-a",
+                  topicId: "1",
+                },
+                {
+                  topicName: "console_datagen_002-b",
+                  topicId: "2",
+                },
+              ],
+            },
+          ],
+        },
+      },
+      {
+        id: "console-datagen-group-2",
+        attributes: {
+          state: "STABLE",
+          offsets: [
+            {
+              lag: 200,
+            },
+            {
+              lag: 400,
+            },
+            {
+              lag: 400,
+            },
+          ],
+          members: [
+            {
+              host: "localhost",
+              memberId: "member-1",
+              clientId: "client-1",
+              groupInstanceId: "instance-1",
+              assignments: [
+                {
+                  topicName: "console_datagen_002-a",
+                  topicId: "1",
+                },
+                {
+                  topicName: "console_datagen_002-b",
+                  topicId: "2",
+                },
+              ],
+            },
+          ],
+        },
+      },
+      {
+        id: "console-datagen-group-2",
+        attributes: {
+          state: "STABLE",
+          offsets: [
+            {
+              lag: 200,
+            },
+            {
+              lag: 400,
+            },
+            {
+              lag: 400,
+            },
+          ],
+          members: [
+            {
+              host: "localhost",
+              memberId: "member-1",
+              clientId: "client-1",
+              groupInstanceId: "instance-1",
+              assignments: [
+                {
+                  topicName: "console_datagen_002-a",
+                  topicId: "1",
+                },
+                {
+                  topicName: "console_datagen_002-b",
+                  topicId: "2",
+                },
+              ],
+            },
+          ],
+        },
+      },
+      {
+        id: "console-datagen-group-2",
+        attributes: {
+          state: "STABLE",
+          offsets: [
+            {
+              lag: 200,
+            },
+            {
+              lag: 400,
+            },
+            {
+              lag: 400,
+            },
+          ],
+          members: [
+            {
+              host: "localhost",
+              memberId: "member-1",
+              clientId: "client-1",
+              groupInstanceId: "instance-1",
+              assignments: [
+                {
+                  topicName: "console_datagen_002-a",
+                  topicId: "1",
+                },
+                {
+                  topicName: "console_datagen_002-b",
+                  topicId: "2",
+                },
+              ],
+            },
+          ],
+        },
+      },
+      {
+        id: "console-datagen-group-2",
+        attributes: {
+          state: "STABLE",
+          offsets: [
+            {
+              lag: 200,
+            },
+            {
+              lag: 400,
+            },
+            {
+              lag: 400,
+            },
+          ],
+          members: [
+            {
+              host: "localhost",
+              memberId: "member-1",
+              clientId: "client-1",
+              groupInstanceId: "instance-1",
+              assignments: [
+                {
+                  topicName: "console_datagen_002-a",
+                  topicId: "1",
+                },
+                {
+                  topicName: "console_datagen_002-b",
+                  topicId: "2",
+                },
+              ],
+            },
+          ],
+        },
+      },
+      {
+        id: "console-datagen-group-2",
+        attributes: {
+          state: "STABLE",
+          offsets: [
+            {
+              lag: 200,
+            },
+            {
+              lag: 400,
+            },
+            {
+              lag: 400,
+            },
+          ],
+          members: [
+            {
+              host: "localhost",
+              memberId: "member-1",
+              clientId: "client-1",
+              groupInstanceId: "instance-1",
+              assignments: [
+                {
+                  topicName: "console_datagen_002-a",
+                  topicId: "1",
+                },
+                {
+                  topicName: "console_datagen_002-b",
+                  topicId: "2",
+                },
+              ],
+            },
+          ],
+        },
+      },
+      {
+        id: "console-datagen-group-2",
+        attributes: {
+          state: "STABLE",
+          offsets: [
+            {
+              lag: 200,
+            },
+            {
+              lag: 400,
+            },
+            {
+              lag: 400,
+            },
+          ],
+          members: [
+            {
+              host: "localhost",
+              memberId: "member-1",
+              clientId: "client-1",
+              groupInstanceId: "instance-1",
+              assignments: [
+                {
+                  topicName: "console_datagen_002-a",
+                  topicId: "1",
+                },
+                {
+                  topicName: "console_datagen_002-b",
+                  topicId: "2",
+                },
+              ],
+            },
+          ],
+        },
+      },
+      {
+        id: "console-datagen-group-2",
+        attributes: {
+          state: "STABLE",
+          offsets: [
+            {
+              lag: 200,
+            },
+            {
+              lag: 400,
+            },
+            {
+              lag: 400,
+            },
+          ],
+          members: [
+            {
+              host: "localhost",
+              memberId: "member-1",
+              clientId: "client-1",
+              groupInstanceId: "instance-1",
+              assignments: [
+                {
+                  topicName: "console_datagen_002-a",
+                  topicId: "1",
+                },
+                {
+                  topicName: "console_datagen_002-b",
+                  topicId: "2",
+                },
+              ],
+            },
+          ],
+        },
+      },
+      {
+        id: "console-datagen-group-2",
+        attributes: {
+          state: "STABLE",
+          offsets: [
+            {
+              lag: 200,
+            },
+            {
+              lag: 400,
+            },
+            {
+              lag: 400,
+            },
+          ],
+          members: [
+            {
+              host: "localhost",
+              memberId: "member-1",
+              clientId: "client-1",
+              groupInstanceId: "instance-1",
+              assignments: [
+                {
+                  topicName: "console_datagen_002-a",
+                  topicId: "1",
+                },
+                {
+                  topicName: "console_datagen_002-b",
+                  topicId: "2",
+                },
+              ],
+            },
+          ],
+        },
+      },
+      {
+        id: "console-datagen-group-2",
+        attributes: {
+          state: "STABLE",
+          offsets: [
+            {
+              lag: 200,
+            },
+            {
+              lag: 400,
+            },
+            {
+              lag: 400,
+            },
+          ],
+          members: [
+            {
+              host: "localhost",
+              memberId: "member-1",
+              clientId: "client-1",
+              groupInstanceId: "instance-1",
+              assignments: [
+                {
+                  topicName: "console_datagen_002-a",
+                  topicId: "1",
+                },
+                {
+                  topicName: "console_datagen_002-b",
+                  topicId: "2",
+                },
+              ],
+            },
+          ],
+        },
+      },
+      {
+        id: "console-datagen-group-2",
+        attributes: {
+          state: "STABLE",
+          offsets: [
+            {
+              lag: 200,
+            },
+            {
+              lag: 400,
+            },
+            {
+              lag: 400,
+            },
+          ],
+          members: [
+            {
+              host: "localhost",
+              memberId: "member-1",
+              clientId: "client-1",
+              groupInstanceId: "instance-1",
+              assignments: [
+                {
+                  topicName: "console_datagen_002-a",
+                  topicId: "1",
+                },
+                {
+                  topicName: "console_datagen_002-b",
+                  topicId: "2",
+                },
+              ],
+            },
+          ],
+        },
+      },
+      {
+        id: "console-datagen-group-2",
+        attributes: {
+          state: "STABLE",
+          offsets: [
+            {
+              lag: 200,
+            },
+            {
+              lag: 400,
+            },
+            {
+              lag: 400,
+            },
+          ],
+          members: [
+            {
+              host: "localhost",
+              memberId: "member-1",
+              clientId: "client-1",
+              groupInstanceId: "instance-1",
+              assignments: [
+                {
+                  topicName: "console_datagen_002-a",
+                  topicId: "1",
+                },
+                {
+                  topicName: "console_datagen_002-b",
+                  topicId: "2",
+                },
+              ],
+            },
+          ],
+        },
+      },
+      {
+        id: "console-datagen-group-2",
+        attributes: {
+          state: "STABLE",
+          offsets: [
+            {
+              lag: 200,
+            },
+            {
+              lag: 400,
+            },
+            {
+              lag: 400,
+            },
+          ],
+          members: [
+            {
+              host: "localhost",
+              memberId: "member-1",
+              clientId: "client-1",
+              groupInstanceId: "instance-1",
+              assignments: [
+                {
+                  topicName: "console_datagen_002-a",
+                  topicId: "1",
+                },
+                {
+                  topicName: "console_datagen_002-b",
+                  topicId: "2",
+                },
+              ],
+            },
+          ],
+        },
+      },
+      {
+        id: "console-datagen-group-2",
+        attributes: {
+          state: "STABLE",
+          offsets: [
+            {
+              lag: 200,
+            },
+            {
+              lag: 400,
+            },
+            {
+              lag: 400,
+            },
+          ],
+          members: [
+            {
+              host: "localhost",
+              memberId: "member-1",
+              clientId: "client-1",
+              groupInstanceId: "instance-1",
+              assignments: [
+                {
+                  topicName: "console_datagen_002-a",
+                  topicId: "1",
+                },
+                {
+                  topicName: "console_datagen_002-b",
+                  topicId: "2",
+                },
+              ],
+            },
+          ],
+        },
+      },
+      {
+        id: "console-datagen-group-2",
+        attributes: {
+          state: "STABLE",
+          offsets: [
+            {
+              lag: 200,
+            },
+            {
+              lag: 400,
+            },
+            {
+              lag: 400,
+            },
+          ],
+          members: [
+            {
+              host: "localhost",
+              memberId: "member-1",
+              clientId: "client-1",
+              groupInstanceId: "instance-1",
+              assignments: [
+                {
+                  topicName: "console_datagen_002-a",
+                  topicId: "1",
+                },
+                {
+                  topicName: "console_datagen_002-b",
+                  topicId: "2",
+                },
+              ],
+            },
+          ],
+        },
+      },
+      {
+        id: "console-datagen-group-2",
+        attributes: {
+          state: "STABLE",
+          offsets: [
+            {
+              lag: 200,
+            },
+            {
+              lag: 400,
+            },
+            {
+              lag: 400,
+            },
+          ],
+          members: [
+            {
+              host: "localhost",
+              memberId: "member-1",
+              clientId: "client-1",
+              groupInstanceId: "instance-1",
+              assignments: [
+                {
+                  topicName: "console_datagen_002-a",
+                  topicId: "1",
+                },
+                {
+                  topicName: "console_datagen_002-b",
+                  topicId: "2",
+                },
+              ],
+            },
+          ],
+        },
+      },
+      {
+        id: "console-datagen-group-2",
+        attributes: {
+          state: "STABLE",
+          offsets: [
+            {
+              lag: 200,
+            },
+            {
+              lag: 400,
+            },
+            {
+              lag: 400,
+            },
+          ],
+          members: [
+            {
+              host: "localhost",
+              memberId: "member-1",
+              clientId: "client-1",
+              groupInstanceId: "instance-1",
+              assignments: [
+                {
+                  topicName: "console_datagen_002-a",
+                  topicId: "1",
+                },
+                {
+                  topicName: "console_datagen_002-b",
+                  topicId: "2",
+                },
+              ],
+            },
+          ],
+        },
+      },
+      {
+        id: "console-datagen-group-2",
+        attributes: {
+          state: "EMPTY",
+          offsets: [
+            {
+              lag: 200,
+            },
+            {
+              lag: 400,
+            },
+            {
+              lag: 400,
+            },
+          ],
+          members: [
+            {
+              host: "localhost",
+              memberId: "member-1",
+              clientId: "client-1",
+              groupInstanceId: "instance-1",
+              assignments: [
+                {
+                  topicName: "console_datagen_002-a",
+                  topicId: "1",
+                },
+                {
+                  topicName: "console_datagen_002-b",
+                  topicId: "2",
+                },
+              ],
+            },
+          ],
+        },
+      },
+    ],
+  },
 };
