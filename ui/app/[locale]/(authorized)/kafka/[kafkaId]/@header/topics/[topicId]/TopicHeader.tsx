@@ -16,8 +16,6 @@ import { Skeleton } from "@patternfly/react-core";
 import { notFound } from "next/navigation";
 import { ReactNode, Suspense } from "react";
 
-export const fetchCache = "force-cache";
-
 export function TopicHeader({
   params: { kafkaId, topicId },
 }: {

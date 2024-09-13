@@ -6,8 +6,6 @@ import { Skeleton } from "@patternfly/react-core";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
-export const fetchCache = "force-cache";
-
 export async function NodeBreadcrumb({
   params: { kafkaId, nodeId },
 }: {

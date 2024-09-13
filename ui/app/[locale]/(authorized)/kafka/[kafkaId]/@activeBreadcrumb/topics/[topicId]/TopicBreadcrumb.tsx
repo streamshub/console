@@ -3,8 +3,6 @@ import { KafkaTopicParams } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/to
 import { BreadcrumbLink } from "@/components/Navigation/BreadcrumbLink";
 import { BreadcrumbItem } from "@/libs/patternfly/react-core";
 
-export const fetchCache = "force-cache";
-
 export async function TopicBreadcrumb({
   params: { kafkaId, topicId },
 }: {

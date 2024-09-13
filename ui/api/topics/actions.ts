@@ -17,7 +17,6 @@ import {
 import { filterUndefinedFromObj } from "@/utils/filterUndefinedFromObj";
 import { logger } from "@/utils/logger";
 import { getSession, setSession } from "@/utils/session";
-import { revalidateTag } from "next/cache";
 
 const log = logger.child({ module: "topics-api" });
 
@@ -121,9 +120,6 @@ export async function createTopic(
   log.debug({ url, rawData }, "createTopic response");
   const response = TopicCreateResponseSchema.parse(rawData);
   log.debug(response, "createTopic response parsed");
-  if (validateOnly === false) {
-    revalidateTag("topics");
-  }
   return response;
 }
 
@@ -155,7 +151,6 @@ export async function updateTopic(
   log.debug({ status: res.status }, "updateTopic response");
   try {
     if (res.status === 204) {
-      revalidateTag(`topic-${topicId}`);
       return true;
     } else {
       const rawData = await res.json();
@@ -181,7 +176,6 @@ export async function deleteTopic(
     const success = res.status === 204;
     if (success) {
       log.debug({ url }, "deleteTopic success");
-      revalidateTag("topics");
     }
     return success;
   } catch (e) {
