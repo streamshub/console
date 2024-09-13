@@ -75,7 +75,6 @@ export async function getTopicMessages(
   );
   const res = await fetch(url, {
     headers: await getHeaders(),
-    cache: "no-store",
     next: { tags: [`messages-${topicId}`] },
   });
   const rawData = await res.json();
