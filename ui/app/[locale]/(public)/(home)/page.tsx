@@ -6,7 +6,9 @@ import { Number } from "@/components/Format/Number";
 import { ExternalLink } from "@/components/Navigation/ExternalLink";
 import { RedirectOnLoad } from "@/components/Navigation/RedirectOnLoad";
 import {
+  Card,
   CardBody,
+  CardTitle,
   DataList,
   DataListCell,
   DataListItem,
@@ -62,8 +64,9 @@ export default async function Home() {
       <PageSection>
         <Stack hasGutter={true}>
           <StackItem>
-            <ExpandableCard
-              title={
+            <Card
+              isCompact={true} >
+              <CardTitle>
                 <TextContent>
                   {t.rich("homepage.platform_openshift_cluster")}
                   <Text component={"small"}>
@@ -73,15 +76,13 @@ export default async function Home() {
                     </Suspense>
                   </Text>
                 </TextContent>
-              }
-              isCompact={true}
-            >
+              </CardTitle>
               <CardBody>
                 <Suspense fallback={<ClustersTable clusters={undefined} />}>
                   <ClustersTable clusters={allClusters} />
                 </Suspense>
               </CardBody>
-            </ExpandableCard>
+            </Card>
           </StackItem>
           <StackItem></StackItem>
           {isProductizedBuild && (
