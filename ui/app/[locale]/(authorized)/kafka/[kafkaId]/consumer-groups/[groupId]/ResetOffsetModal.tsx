@@ -9,6 +9,7 @@ import {
   StackItem,
   Text,
 } from "@/libs/patternfly/react-core";
+import { isProductizedBuild } from "@/utils/env";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 
@@ -69,11 +70,13 @@ export function ResetOffsetModal({
         <StackItem>
           <Text>{t("shutdown_active_members")}</Text>
         </StackItem>
-        <StackItem>
-          <ExternalLink testId={"learn_to_shutdown_members"} href={""}>
-            {t("learn_to_shutdown_members")}
-          </ExternalLink>
-        </StackItem>
+        {isProductizedBuild && (
+          <StackItem>
+            <ExternalLink testId={"learn_to_shutdown_members"} href={"https://docs.redhat.com/en/documentation/red_hat_streams_for_apache_kafka/2.7/html-single/kafka_configuration_tuning/index#managing_offset_policy"}>
+              {t("learn_to_shutdown_members")}
+            </ExternalLink>
+          </StackItem>
+        )}
       </Stack>
     </Modal>
   );
