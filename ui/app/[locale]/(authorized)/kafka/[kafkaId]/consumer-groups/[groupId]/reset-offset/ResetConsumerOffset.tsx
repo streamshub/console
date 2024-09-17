@@ -1,6 +1,5 @@
 "use client";
 
-import { useTranslations } from "next-intl";
 import { useState } from "react";
 import {
   DateTimeFormatSelection,
@@ -202,8 +201,6 @@ export function ResetConsumerOffset({
     );
   };
 
-  const isDryRunDisable = !selectedConsumerTopic || !selectedOffset;
-
   const openDryrun = async () => {
     const uniqueOffsets = generateOffsets();
     const res = await getDryrunResult(
@@ -297,6 +294,7 @@ export function ResetConsumerOffset({
           openDryrun={openDryrun}
           handleDateTimeChange={handleDateTimeChange}
           handleSave={handleSave}
+          cliCommand={generateCliCommand()}
         />
       )}
     </Page>

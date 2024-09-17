@@ -25,6 +25,7 @@ import {
 } from "../types";
 import { TypeaheadSelect } from "./TypeaheadSelect";
 import { OffsetSelect } from "./OffsetSelect";
+import { DryrunSelect } from "./DryrunSelect";
 
 export type Offset = {
   topicId: string;
@@ -35,6 +36,7 @@ export type Offset = {
 };
 
 export function ResetOffset({
+  cliCommand,
   consumerGroupName,
   topics,
   partitions,
@@ -57,6 +59,7 @@ export function ResetOffset({
   onDateTimeSelect,
   onOffsetSelect,
 }: {
+  cliCommand: string;
   consumerGroupName: string;
   topics: { topicId: string; topicName: string }[];
   partitions: number[];
@@ -220,13 +223,7 @@ export function ResetOffset({
               >
                 {t("save")}
               </Button>
-              <Button
-                variant="secondary"
-                onClick={openDryrun}
-                isDisabled={isLoading}
-              >
-                {t("dry_run")}
-              </Button>
+              <DryrunSelect openDryrun={openDryrun} cliCommand={cliCommand} />
               <Button
                 variant="link"
                 onClick={closeResetOffset}
