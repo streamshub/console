@@ -20,5 +20,7 @@ export const Default: Story = {
     partitions: [1, 2, 3],
     selectOffset: "latest",
     isLoading: false,
+    cliCommand:
+      "$ kafka-consumer-groups --bootstrap-server localhost:9092 --group my-consumer-group --reset-offsets --topic mytopic --to-earliest --dry-run",
   },
 };

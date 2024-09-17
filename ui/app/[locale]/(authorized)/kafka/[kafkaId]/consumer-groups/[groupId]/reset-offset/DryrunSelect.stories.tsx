@@ -9,5 +9,8 @@ export default {
 type Story = StoryObj<typeof DryrunSelect>;
 
 export const Default: Story = {
-  args: { cliCommand: "something" },
+  args: {
+    cliCommand:
+      "$kafka-consumer-groups --bootstrap-server localhost:9092 --group my-consumer-group --reset-offsets --topic mytopic --to-earliest --dry-run",
+  },
 };

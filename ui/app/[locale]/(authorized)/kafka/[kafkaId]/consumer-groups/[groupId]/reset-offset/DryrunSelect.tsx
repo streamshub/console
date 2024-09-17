@@ -5,9 +5,11 @@ import {
   MenuToggle,
   MenuToggleAction,
   MenuToggleElement,
+  Tooltip,
 } from "@/libs/patternfly/react-core";
 import { CopyIcon, PlayIcon } from "@patternfly/react-icons";
 import { useTranslations } from "next-intl";
+import React from "react";
 import { useState } from "react";
 
 export function DryrunSelect({
@@ -19,7 +21,10 @@ export function DryrunSelect({
 }) {
   const t = useTranslations("ConsumerGroupsTable");
 
+  const tooltipRef = React.useRef<HTMLButtonElement>(null);
+
   const [isOpen, setIsOpen] = useState(false);
+  const [isCopied, setIsCopied] = useState(false);
 
   const onToggleClick = () => {
     setIsOpen((prevIsOpen) => !prevIsOpen);
@@ -56,16 +61,29 @@ export function DryrunSelect({
           onClick={openDryrun}
         >
           <PlayIcon /> {t("run_and_show_result")}
-          {cliCommand}
         </DropdownItem>
         <DropdownItem
           value={1}
           key={t("copy_dry_run_command")}
           onClick={() => {
             navigator.clipboard.writeText(cliCommand);
+            setIsCopied(true);
           }}
+          aria-describedby="tooltip-ref1"
+          ref={tooltipRef}
         >
           <CopyIcon /> {t("copy_dry_run_command")}
+          {isCopied && (
+            <Tooltip
+              id="tooltip-ref1"
+              isVisible={isCopied}
+              content={<div>cli command copied</div>}
+              triggerRef={tooltipRef}
+              flipBehavior={"flip"}
+              position="right"
+              onTooltipHidden={() => setIsCopied(false)}
+            />
+          )}
         </DropdownItem>
       </DropdownList>
     </Dropdown>
