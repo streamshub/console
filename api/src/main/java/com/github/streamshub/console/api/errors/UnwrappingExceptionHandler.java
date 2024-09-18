@@ -3,6 +3,7 @@ package com.github.streamshub.console.api.errors;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
@@ -35,7 +36,7 @@ abstract class UnwrappingExceptionHandler<T extends Throwable> implements Except
 
     @Override
     public Response toResponse(T exception) {
-        Throwable cause = exception.getCause();
+        Throwable cause = Optional.ofNullable(exception.getCause()).orElse(exception);
         List<Throwable> suppressed = Arrays.asList(exception.getSuppressed());
 
         if (suppressed.isEmpty()) {

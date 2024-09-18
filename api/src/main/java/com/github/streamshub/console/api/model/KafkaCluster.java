@@ -39,6 +39,7 @@ public class KafkaCluster extends Resource<KafkaCluster.Attributes> {
         public static final String STATUS = "status";
         public static final String CONDITIONS = "conditions";
         public static final String NODE_POOLS = "nodePools";
+        public static final String CRUISE_CONTROL_ENABLED = "cruiseControlEnabled";
 
         static final Comparator<KafkaCluster> ID_COMPARATOR =
                 comparing(KafkaCluster::getId, nullsLast(String::compareTo));
@@ -138,6 +139,9 @@ public class KafkaCluster extends Resource<KafkaCluster.Attributes> {
 
         @JsonProperty
         List<String> nodePools;
+
+        @JsonProperty
+        boolean cruiseControlEnabled;
 
         Attributes(List<Node> nodes, Node controller, List<String> authorizedOperations) {
             this.nodes = nodes;
@@ -275,5 +279,13 @@ public class KafkaCluster extends Resource<KafkaCluster.Attributes> {
 
     public void nodePools(List<String> nodePools) {
         attributes.nodePools = nodePools;
+    }
+
+    public boolean cruiseControlEnabled() {
+        return attributes.cruiseControlEnabled;
+    }
+
+    public void cruiseControlEnabled(boolean cruiseControlEnabled) {
+        attributes.cruiseControlEnabled = cruiseControlEnabled;
     }
 }
