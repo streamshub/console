@@ -14,10 +14,13 @@ import jakarta.json.JsonObjectBuilder;
 import jakarta.json.JsonValue;
 
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
+import org.eclipse.microprofile.openapi.annotations.media.SchemaProperty;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonFilter;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.github.streamshub.console.api.support.ComparatorBuilder;
 import com.github.streamshub.console.api.support.ErrorCategory;
 import com.github.streamshub.console.api.support.ListRequestContext;
@@ -28,7 +31,12 @@ import io.xlate.validation.constraints.Expression;
 import static java.util.Comparator.comparing;
 import static java.util.Comparator.nullsLast;
 
-@Schema(name = "KafkaRebalance")
+@Schema(
+    name = "KafkaRebalance",
+    properties = {
+        @SchemaProperty(name = "type", enumeration = KafkaRebalance.TYPE),
+        @SchemaProperty(name = "meta", implementation = KafkaRebalance.Meta.class)
+    })
 @Expression(
     value = "self.id != null",
     message = "resource ID is required",
@@ -62,6 +70,7 @@ public class KafkaRebalance extends Resource<KafkaRebalance.Attributes> {
         public static final String REPLICATION_THROTTLE = "replicationThrottle";
         public static final String REPLICA_MOVEMENT_STRATEGIES = "replicaMovementStrategies";
         public static final String OPTIMIZATION_RESULT = "optimizationResult";
+        public static final String CONDITIONS = "conditions";
 
         static final Comparator<KafkaRebalance> ID_COMPARATOR =
                 comparing(KafkaRebalance::getId, nullsLast(String::compareTo));
@@ -105,9 +114,9 @@ public class KafkaRebalance extends Resource<KafkaRebalance.Attributes> {
         }
     }
 
-    @Schema(name = "KafkaRebalanceListResponse")
-    public static final class ListResponse extends DataList<KafkaRebalance> {
-        public ListResponse(List<KafkaRebalance> data, ListRequestContext<KafkaRebalance> listSupport) {
+    @Schema(name = "KafkaRebalanceDataList")
+    public static final class RebalanceDataList extends DataList<KafkaRebalance> {
+        public RebalanceDataList(List<KafkaRebalance> data, ListRequestContext<KafkaRebalance> listSupport) {
             super(data.stream()
                     .map(entry -> {
                         entry.addMeta("page", listSupport.buildPageMeta(entry::toCursor));
@@ -119,15 +128,47 @@ public class KafkaRebalance extends Resource<KafkaRebalance.Attributes> {
         }
     }
 
-    @Schema(name = "KafkaRebalanceSingleton")
-    public static final class Singleton extends DataSingleton<KafkaRebalance> {
+    @Schema(name = "KafkaRebalanceData")
+    public static final class RebalanceData extends DataSingleton<KafkaRebalance> {
         @JsonCreator
-        public Singleton(@JsonProperty("data") KafkaRebalance data) {
+        public RebalanceData(@JsonProperty("data") KafkaRebalance data) {
             super(data);
         }
     }
 
+    @Schema(name = "KafkaRebalanceMeta", additionalProperties = Object.class)
+    @JsonInclude(value = Include.NON_NULL)
+    static final class Meta extends JsonApiMeta {
+        @JsonProperty
+        @Schema(
+            description = """
+                Action to be taken against the Kafka Rebalance resource. \
+                Depends on the current resource state.
+                """,
+            enumeration = { "approve", "refresh", "stop" },
+            writeOnly = true,
+            nullable = true)
+        @StringEnumeration(
+            allowedValues = { "approve", "refresh", "stop" },
+            payload = ErrorCategory.InvalidResource.class,
+            message = "invalid rebalance action"
+        )
+        /**
+         * @see io.strimzi.api.kafka.model.rebalance.KafkaRebalanceAnnotation
+         */
+        String action;
+
+        public String action() {
+            return action;
+        }
+
+        public void action(String action) {
+            this.action = action;
+        }
+    }
+
     @JsonFilter("fieldFilter")
+    @Schema(name = "KafkaRebalanceAttributes")
     static class Attributes {
         @JsonProperty
         @Schema(readOnly = true)
@@ -194,43 +235,34 @@ public class KafkaRebalance extends Resource<KafkaRebalance.Attributes> {
         Map<String, Object> optimizationResult = new HashMap<>(0);
 
         @JsonProperty
-        @Schema(writeOnly = true, nullable = true)
-        @StringEnumeration(
-                allowedValues = { "approve", "refresh", "stop" },
-                payload = ErrorCategory.InvalidResource.class,
-                message = "invalid rebalance action"
-        )
-        /**
-         * @see io.strimzi.api.kafka.model.rebalance.KafkaRebalanceAnnotation
-         */
-        String action;
+        List<Condition> conditions;
     }
 
     public KafkaRebalance(String id) {
-        super(id, TYPE, new Attributes());
+        super(id, TYPE, Meta::new, new Attributes());
     }
 
     @JsonCreator
-    public KafkaRebalance(String id, String type, KafkaRebalance.Attributes attributes) {
-        super(id, type, attributes);
+    public KafkaRebalance(String id, String type, KafkaRebalance.Attributes attributes, Meta meta) {
+        super(id, type, meta, attributes);
     }
 
     /**
-     * Constructs a "cursor" Topic from the encoded string representation of the subset
-     * of Topic fields used to compare entities for pagination/sorting.
+     * Constructs a "cursor" KafkaRebalance from the encoded string representation of the subset
+     * of KafkaRebalance fields used to compare entities for pagination/sorting.
      */
     public static KafkaRebalance fromCursor(JsonObject cursor) {
         if (cursor == null) {
             return null;
         }
 
-        KafkaRebalance cluster = new KafkaRebalance(cursor.getString("id"));
+        KafkaRebalance rebalance = new KafkaRebalance(cursor.getString("id"));
         JsonObject attr = cursor.getJsonObject("attributes");
-        cluster.name(attr.getString(Fields.NAME, null));
-        cluster.namespace(attr.getString(Fields.NAMESPACE, null));
-        cluster.creationTimestamp(attr.getString(Fields.CREATION_TIMESTAMP, null));
+        rebalance.name(attr.getString(Fields.NAME, null));
+        rebalance.namespace(attr.getString(Fields.NAMESPACE, null));
+        rebalance.creationTimestamp(attr.getString(Fields.CREATION_TIMESTAMP, null));
 
-        return cluster;
+        return rebalance;
     }
 
     public String toCursor(List<String> sortFields) {
@@ -250,6 +282,10 @@ public class KafkaRebalance extends Resource<KafkaRebalance.Attributes> {
         if (sortFields.contains(key)) {
             attrBuilder.add(key, value != null ? Json.createValue(value) : JsonValue.NULL);
         }
+    }
+
+    public String action() {
+        return ((Meta) super.getMeta()).action();
     }
 
     public String name() {
@@ -380,11 +416,11 @@ public class KafkaRebalance extends Resource<KafkaRebalance.Attributes> {
         return attributes.optimizationResult;
     }
 
-    public String action() {
-        return attributes.action;
+    public List<Condition> conditions() {
+        return attributes.conditions;
     }
 
-    public void action(String action) {
-        attributes.action = action;
+    public void conditions(List<Condition> conditions) {
+        attributes.conditions = conditions;
     }
 }

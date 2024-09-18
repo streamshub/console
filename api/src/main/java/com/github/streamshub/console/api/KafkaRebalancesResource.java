@@ -22,10 +22,8 @@ import jakarta.ws.rs.core.UriInfo;
 
 import org.eclipse.microprofile.openapi.annotations.enums.Explode;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
-import org.eclipse.microprofile.openapi.annotations.media.Content;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
-import org.eclipse.microprofile.openapi.annotations.parameters.RequestBody;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponseSchema;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
@@ -61,7 +59,7 @@ public class KafkaRebalancesResource {
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    @APIResponseSchema(KafkaRebalance.ListResponse.class)
+    @APIResponseSchema(KafkaRebalance.RebalanceDataList.class)
     @APIResponse(responseCode = "500", ref = "ServerError")
     @APIResponse(responseCode = "504", ref = "ServerTimeout")
     public Response listRebalances(
@@ -90,6 +88,7 @@ public class KafkaRebalancesResource {
                         KafkaRebalance.Fields.REPLICATION_THROTTLE,
                         KafkaRebalance.Fields.REPLICA_MOVEMENT_STRATEGIES,
                         KafkaRebalance.Fields.OPTIMIZATION_RESULT,
+                        KafkaRebalance.Fields.CONDITIONS,
                     },
                     payload = ErrorCategory.InvalidQueryParameter.class)
             @Parameter(
@@ -115,6 +114,7 @@ public class KafkaRebalancesResource {
                                 KafkaRebalance.Fields.REPLICATION_THROTTLE,
                                 KafkaRebalance.Fields.REPLICA_MOVEMENT_STRATEGIES,
                                 KafkaRebalance.Fields.OPTIMIZATION_RESULT,
+                                KafkaRebalance.Fields.CONDITIONS,
                             }))
             List<String> fields,
 
@@ -136,7 +136,7 @@ public class KafkaRebalancesResource {
                 KafkaRebalance::fromCursor);
 
         var rebalanceList = rebalanceService.listRebalances(listSupport);
-        var responseEntity = new KafkaRebalance.ListResponse(rebalanceList, listSupport);
+        var responseEntity = new KafkaRebalance.RebalanceDataList(rebalanceList, listSupport);
 
         return Response.ok(responseEntity).build();
     }
@@ -145,7 +145,7 @@ public class KafkaRebalancesResource {
     @PATCH
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    @APIResponseSchema(responseCode = "200", value = KafkaRebalance.Singleton.class)
+    @APIResponseSchema(responseCode = "200", value = KafkaRebalance.RebalanceData.class)
     @Expression(
         targetName = "args",
         // Only check when the request body Id is present (separately checked for @NotNull)
@@ -166,10 +166,7 @@ public class KafkaRebalancesResource {
             String rebalanceId,
 
             @Valid
-            @RequestBody(content = @Content(
-                    schema = @Schema(implementation = KafkaRebalance.Singleton.class))
-            )
-            KafkaRebalance.Singleton rebalance) {
+            KafkaRebalance.RebalanceData rebalance) {
 
         requestedFields.accept(List.of(
                 KafkaRebalance.Fields.NAME,
@@ -190,7 +187,7 @@ public class KafkaRebalancesResource {
                 KafkaRebalance.Fields.OPTIMIZATION_RESULT));
 
         var result = rebalanceService.patchRebalance(rebalanceId, rebalance.getData());
-        var responseEntity = new KafkaRebalance.Singleton(result);
+        var responseEntity = new KafkaRebalance.RebalanceData(result);
 
         return Response.ok(responseEntity).build();
     }

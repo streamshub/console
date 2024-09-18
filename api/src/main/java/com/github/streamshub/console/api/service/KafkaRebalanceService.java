@@ -18,6 +18,7 @@ import jakarta.ws.rs.NotFoundException;
 import org.eclipse.microprofile.context.ThreadContext;
 import org.jboss.logging.Logger;
 
+import com.github.streamshub.console.api.model.Condition;
 import com.github.streamshub.console.api.model.KafkaRebalance;
 import com.github.streamshub.console.api.support.KafkaContext;
 import com.github.streamshub.console.api.support.ListRequestContext;
@@ -121,6 +122,13 @@ public class KafkaRebalanceService {
         rebalance.replicaMovementStrategies(rebalanceSpec.getReplicaMovementStrategies());
         rebalanceStatus.map(KafkaRebalanceStatus::getOptimizationResult)
                 .ifPresent(rebalance.optimizationResult()::putAll);
+
+        rebalanceStatus.map(KafkaRebalanceStatus::getConditions).ifPresent(conditions -> {
+            rebalance.conditions(conditions.stream()
+                    .filter(c -> Arrays.stream(KafkaRebalanceState.values())
+                            .noneMatch(stateValue -> stateValue.toString().equals(c.getType())))
+                    .map(Condition::new).toList());
+        });
 
         rebalance.addMeta("allowedActions", state
                 .map(KafkaRebalanceState::getValidAnnotations)

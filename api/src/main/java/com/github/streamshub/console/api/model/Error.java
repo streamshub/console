@@ -12,8 +12,10 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 @JsonInclude(value = Include.NON_NULL)
 public class Error {
 
-    @Schema(description = "A meta object containing non-standard meta-information about the error")
-    Map<String, Object> meta;
+    @Schema(
+            description = "A meta object containing non-standard meta-information about the error",
+            implementation = JsonApiMeta.class)
+    JsonApiMeta meta;
 
     @Schema(description = """
             a links object that MAY contain the following members:
@@ -58,15 +60,12 @@ public class Error {
         this.cause = cause;
     }
 
-    public Map<String, Object> getMeta() {
+    public JsonApiMeta getMeta() {
         return meta;
     }
 
     public Error addMeta(String key, Object value) {
-        if (meta == null) {
-            meta = new LinkedHashMap<>();
-        }
-        meta.put(key, value);
+        meta = JsonApiMeta.put(meta, key, value);
         return this;
     }
 

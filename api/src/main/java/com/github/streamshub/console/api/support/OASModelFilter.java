@@ -76,6 +76,7 @@ public class OASModelFilter extends AbstractOperationFilter implements OASFilter
             schema.setEnumeration(null);
         }
 
+        maybeSaveReference(schema, "meta");
         maybeSaveReference(schema, "attributes");
         maybeSaveReference(schema, "relationships");
 
