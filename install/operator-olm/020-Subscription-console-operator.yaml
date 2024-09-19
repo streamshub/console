@@ -1,0 +1,10 @@
+---
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: console-operator
+spec:
+  name: console-operator
+  channel: alpha
+  source: console-operator-catalog
+  sourceNamespace: ${NAMESPACE}

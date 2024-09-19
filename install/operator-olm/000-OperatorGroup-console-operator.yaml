@@ -1,8 +1,8 @@
+---
 apiVersion: operators.coreos.com/v1
 kind: OperatorGroup
 metadata:
-  name: console-operators
+  name: console-operator
 spec:
-  targetNamespaces:
-    - ${NAMESPACE}
+  targetNamespaces: []
   upgradeStrategy: Default

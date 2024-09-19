@@ -1,0 +1,10 @@
+---
+apiVersion: operators.coreos.com/v1alpha1
+kind: CatalogSource
+metadata:
+  name: console-operator-catalog
+spec:
+  displayName: StreamsHub
+  image: quay.io/streamshub/console-operator-catalog:latest
+  publisher: StreamsHub
+  sourceType: grpc
