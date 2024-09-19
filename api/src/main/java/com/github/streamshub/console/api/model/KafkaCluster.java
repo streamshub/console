@@ -56,7 +56,13 @@ public class KafkaCluster extends Resource<KafkaCluster.Attributes> {
 
         public static final String LIST_DEFAULT =
                 NAME + ", "
-                + NAMESPACE;
+                + NAMESPACE + ", "
+                + CREATION_TIMESTAMP + ", "
+                + KAFKA_VERSION + ", "
+                + STATUS + ", "
+                + CONDITIONS + ", "
+                + NODE_POOLS + ", "
+                + CRUISE_CONTROL_ENABLED;
 
         public static final String DESCRIBE_DEFAULT =
                 NAME + ", "
@@ -69,7 +75,8 @@ public class KafkaCluster extends Resource<KafkaCluster.Attributes> {
                 + KAFKA_VERSION + ", "
                 + STATUS + ", "
                 + CONDITIONS + ", "
-                + NODE_POOLS;
+                + NODE_POOLS + ", "
+                + CRUISE_CONTROL_ENABLED;
 
         private Fields() {
             // Prevent instances
@@ -279,10 +286,6 @@ public class KafkaCluster extends Resource<KafkaCluster.Attributes> {
 
     public void nodePools(List<String> nodePools) {
         attributes.nodePools = nodePools;
-    }
-
-    public boolean cruiseControlEnabled() {
-        return attributes.cruiseControlEnabled;
     }
 
     public void cruiseControlEnabled(boolean cruiseControlEnabled) {

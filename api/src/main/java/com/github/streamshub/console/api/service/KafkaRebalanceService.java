@@ -26,6 +26,7 @@ import com.github.streamshub.console.config.ConsoleConfig;
 
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.informers.cache.Cache;
+import io.strimzi.api.ResourceLabels;
 import io.strimzi.api.kafka.model.kafka.Kafka;
 import io.strimzi.api.kafka.model.rebalance.KafkaRebalanceMode;
 import io.strimzi.api.kafka.model.rebalance.KafkaRebalanceSpec;
@@ -95,13 +96,12 @@ public class KafkaRebalanceService {
         Optional<KafkaRebalanceStatus> rebalanceStatus = Optional.ofNullable(resource.getStatus());
         Optional<KafkaRebalanceState> state = rebalanceStatus
                 .map(KafkaRebalanceStatus::getConditions)
-                .flatMap(conditions -> conditions.stream()
-                        .filter(c -> Objects.nonNull(c.getType()))
-                        .filter(c -> Arrays.stream(KafkaRebalanceState.values())
-                                .anyMatch(stateValue -> stateValue.toString().equals(c.getType())))
-                        .findFirst())
+                .map(java.util.Collection::stream)
+                .orElseGet(Stream::empty)
                 .map(io.strimzi.api.kafka.model.common.Condition::getType)
-                .map(KafkaRebalanceState::valueOf);
+                .filter(Arrays.stream(KafkaRebalanceState.values()).map(Enum::name).toList()::contains)
+                .map(KafkaRebalanceState::valueOf)
+                .findFirst();
 
         String id = Base64.getUrlEncoder().encodeToString(Cache.metaNamespaceKeyFunc(resource).getBytes(StandardCharsets.UTF_8));
         KafkaRebalance rebalance = new KafkaRebalance(id);
@@ -123,12 +123,11 @@ public class KafkaRebalanceService {
         rebalanceStatus.map(KafkaRebalanceStatus::getOptimizationResult)
                 .ifPresent(rebalance.optimizationResult()::putAll);
 
-        rebalanceStatus.map(KafkaRebalanceStatus::getConditions).ifPresent(conditions -> {
+        rebalanceStatus.map(KafkaRebalanceStatus::getConditions).ifPresent(conditions ->
             rebalance.conditions(conditions.stream()
                     .filter(c -> Arrays.stream(KafkaRebalanceState.values())
                             .noneMatch(stateValue -> stateValue.toString().equals(c.getType())))
-                    .map(Condition::new).toList());
-        });
+                    .map(Condition::new).toList()));
 
         rebalance.addMeta("allowedActions", state
                 .map(KafkaRebalanceState::getValidAnnotations)
@@ -166,7 +165,7 @@ public class KafkaRebalanceService {
             return Optional.empty();
         }
 
-        String ownedByCluster = resource.getMetadata().getLabels().get("strimzi.io/cluster");
+        String ownedByCluster = resource.getMetadata().getLabels().get(ResourceLabels.STRIMZI_CLUSTER_LABEL);
 
         if (Objects.equals(ownedByCluster, owner.getMetadata().getName())) {
             return Optional.of(resource);
@@ -184,7 +183,7 @@ public class KafkaRebalanceService {
 
         return client.resources(io.strimzi.api.kafka.model.rebalance.KafkaRebalance.class)
                 .inNamespace(owner.getMetadata().getNamespace())
-                .withLabel("strimzi.io/cluster", owner.getMetadata().getName())
+                .withLabel(ResourceLabels.STRIMZI_CLUSTER_LABEL, owner.getMetadata().getName())
                 .list()
                 .getItems()
                 .stream();

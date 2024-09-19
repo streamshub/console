@@ -166,9 +166,7 @@ public class DeploymentManager {
             throw new UncheckedIOException(e);
         }
 
-        String imageTag = System.getProperty("strimzi-kafka.tag");
-
-        var container = (KafkaContainer) new KeycloakSecuredKafkaContainer(imageTag)
+        var container = (KafkaContainer) new KeycloakSecuredKafkaContainer()
                 .withLabels(TEST_CONTAINER_LABELS)
                 .withLogConsumer(new Slf4jLogConsumer(LoggerFactory.getLogger("systemtests.oauth-kafka"), true))
                 .withCreateContainerCmdModifier(cmd -> cmd.withName(name("oauth-kafka")))
@@ -186,9 +184,8 @@ public class DeploymentManager {
 
     private KafkaContainer deployStrimziKafka() {
         LOGGER.info("Deploying Strimzi Kafka container");
-        String imageTag = System.getProperty("strimzi-kafka.tag");
 
-        var container = (KafkaContainer) new KafkaContainer(imageTag)
+        var container = (KafkaContainer) new KafkaContainer()
                 .withLabels(TEST_CONTAINER_LABELS)
                 .withLogConsumer(new Slf4jLogConsumer(LoggerFactory.getLogger("systemtests.plain-kafka"), true))
                 .withCreateContainerCmdModifier(cmd -> cmd.withName(name("plain-kafka")))

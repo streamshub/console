@@ -34,7 +34,7 @@ import static java.util.Comparator.nullsLast;
 @Schema(
     name = "KafkaRebalance",
     properties = {
-        @SchemaProperty(name = "type", enumeration = KafkaRebalance.TYPE),
+        @SchemaProperty(name = "type", enumeration = KafkaRebalance.API_TYPE),
         @SchemaProperty(name = "meta", implementation = KafkaRebalance.Meta.class)
     })
 @Expression(
@@ -44,14 +44,14 @@ import static java.util.Comparator.nullsLast;
     payload = ErrorCategory.InvalidResource.class)
 @Expression(
     when = "self.type != null",
-    value = "self.type == '" + KafkaRebalance.TYPE + "'",
+    value = "self.type == '" + KafkaRebalance.API_TYPE + "'",
     message = "resource type conflicts with operation",
     node = "type",
     payload = ErrorCategory.ResourceConflict.class)
 public class KafkaRebalance extends Resource<KafkaRebalance.Attributes> {
 
-    public static final String TYPE = "kafkaRebalances";
-    public static final String FIELDS_PARAM = "fields[" + TYPE + "]";
+    public static final String API_TYPE = "kafkaRebalances";
+    public static final String FIELDS_PARAM = "fields[" + API_TYPE + "]";
 
     public static class Fields {
         public static final String NAME = "name";
@@ -81,7 +81,8 @@ public class KafkaRebalance extends Resource<KafkaRebalance.Attributes> {
                                 NAME, comparing(KafkaRebalance::name),
                                 NAMESPACE, comparing(KafkaRebalance::namespace),
                                 CREATION_TIMESTAMP, comparing(KafkaRebalance::creationTimestamp),
-                                STATUS, comparing(KafkaRebalance::namespace, nullsLast(String::compareTo))));
+                                MODE, comparing(KafkaRebalance::mode, nullsLast(String::compareTo)),
+                                STATUS, comparing(KafkaRebalance::status, nullsLast(String::compareTo))));
 
         public static final ComparatorBuilder<KafkaRebalance> COMPARATOR_BUILDER =
                 new ComparatorBuilder<>(KafkaRebalance.Fields::comparator, KafkaRebalance.Fields.defaultComparator());
@@ -239,7 +240,7 @@ public class KafkaRebalance extends Resource<KafkaRebalance.Attributes> {
     }
 
     public KafkaRebalance(String id) {
-        super(id, TYPE, Meta::new, new Attributes());
+        super(id, API_TYPE, Meta::new, new Attributes());
     }
 
     @JsonCreator
