@@ -1,16 +1,11 @@
 package com.github.streamshub.console.api.model;
 
-import java.nio.charset.StandardCharsets;
-import java.util.Base64;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
-import jakarta.json.Json;
 import jakarta.json.JsonObject;
-import jakarta.json.JsonObjectBuilder;
-import jakarta.json.JsonValue;
 
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
@@ -24,7 +19,7 @@ import static java.util.Comparator.comparing;
 import static java.util.Comparator.nullsLast;
 
 @Schema(name = "KafkaCluster")
-public class KafkaCluster extends Resource<KafkaCluster.Attributes> {
+public class KafkaCluster extends Resource<KafkaCluster.Attributes> implements PaginatedKubeResource {
 
     public static class Fields {
         public static final String NAME = "name";
@@ -166,58 +161,35 @@ public class KafkaCluster extends Resource<KafkaCluster.Attributes> {
      * of Topic fields used to compare entities for pagination/sorting.
      */
     public static KafkaCluster fromCursor(JsonObject cursor) {
-        if (cursor == null) {
-            return null;
-        }
-
-        KafkaCluster cluster = new KafkaCluster(cursor.getString("id"), null, null, null);
-        JsonObject attr = cursor.getJsonObject("attributes");
-        cluster.name(attr.getString(Fields.NAME, null));
-        cluster.namespace(attr.getString(Fields.NAMESPACE, null));
-        cluster.creationTimestamp(attr.getString(Fields.CREATION_TIMESTAMP, null));
-
-        return cluster;
+        return PaginatedKubeResource.fromCursor(cursor, id -> new KafkaCluster(id, null, null, null));
     }
 
-    public String toCursor(List<String> sortFields) {
-        JsonObjectBuilder cursor = Json.createObjectBuilder()
-                .add("id", id == null ? Json.createValue("") : Json.createValue(id));
-
-        JsonObjectBuilder attrBuilder = Json.createObjectBuilder();
-        maybeAddAttribute(attrBuilder, sortFields, Fields.NAME, attributes.name);
-        maybeAddAttribute(attrBuilder, sortFields, Fields.NAMESPACE, attributes.namespace);
-        maybeAddAttribute(attrBuilder, sortFields, Fields.CREATION_TIMESTAMP, attributes.creationTimestamp);
-        cursor.add("attributes", attrBuilder.build());
-
-        return Base64.getUrlEncoder().encodeToString(cursor.build().toString().getBytes(StandardCharsets.UTF_8));
-    }
-
-    static void maybeAddAttribute(JsonObjectBuilder attrBuilder, List<String> sortFields, String key, String value) {
-        if (sortFields.contains(key)) {
-            attrBuilder.add(key, value != null ? Json.createValue(value) : JsonValue.NULL);
-        }
-    }
-
+    @Override
     public String name() {
         return attributes.name;
     }
 
+    @Override
     public void name(String name) {
         attributes.name = name;
     }
 
+    @Override
     public String namespace() {
         return attributes.namespace;
     }
 
+    @Override
     public void namespace(String namespace) {
         attributes.namespace = namespace;
     }
 
+    @Override
     public String creationTimestamp() {
         return attributes.creationTimestamp;
     }
 
+    @Override
     public void creationTimestamp(String creationTimestamp) {
         attributes.creationTimestamp = creationTimestamp;
     }

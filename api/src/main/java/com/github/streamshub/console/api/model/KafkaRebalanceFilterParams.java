@@ -17,25 +17,6 @@ import io.xlate.validation.constraints.Expression;
 
 public class KafkaRebalanceFilterParams {
 
-    @QueryParam("filter[id]")
-    @Parameter(
-        description = "Retrieve only rebalances with an ID matching this parameter",
-        schema = @Schema(implementation = String[].class, minItems = 2),
-        explode = Explode.FALSE)
-    @Expression(
-        when = "self != null",
-        value = "self.operator == 'eq' || self.operator == 'in'",
-        message = "unsupported filter operator, supported values: [ 'eq', 'in' ]",
-        payload = ErrorCategory.InvalidQueryParameter.class,
-        node = "filter[id]")
-    @Expression(
-        when = "self != null",
-        value = "self.operands.size() >= 1",
-        message = "at least 1 operand is required",
-        payload = ErrorCategory.InvalidQueryParameter.class,
-        node = "filter[id]")
-    FetchFilter idFilter;
-
     @QueryParam("filter[name]")
     @Parameter(
         description = "Retrieve only rebalances with a name matching this parameter",
@@ -98,10 +79,6 @@ public class KafkaRebalanceFilterParams {
 
         if (nameFilter != null) {
             predicates.add(new FetchFilterPredicate<>(nameFilter, KafkaRebalance::name));
-        }
-
-        if (idFilter != null) {
-            predicates.add(new FetchFilterPredicate<>(idFilter, KafkaRebalance::getId));
         }
 
         if (statusFilter != null) {

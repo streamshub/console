@@ -220,6 +220,7 @@ class KafkaRebalancesResourceIT {
         String rebalanceId = whenRequesting(req -> req
                 .param("filter[mode]", KafkaRebalanceMode.FULL.toValue())
                 .param("filter[status]", KafkaRebalanceState.ProposalReady.name())
+                .param("filter[name]", "like,rebalance-*")
                 .get("", clusterId1))
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))

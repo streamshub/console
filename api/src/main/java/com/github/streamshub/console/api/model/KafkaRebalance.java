@@ -1,17 +1,12 @@
 package com.github.streamshub.console.api.model;
 
-import java.nio.charset.StandardCharsets;
-import java.util.Base64;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import jakarta.json.Json;
 import jakarta.json.JsonObject;
-import jakarta.json.JsonObjectBuilder;
-import jakarta.json.JsonValue;
 
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.media.SchemaProperty;
@@ -19,8 +14,8 @@ import org.eclipse.microprofile.openapi.annotations.media.SchemaProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonFilter;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.github.streamshub.console.api.support.ComparatorBuilder;
 import com.github.streamshub.console.api.support.ErrorCategory;
 import com.github.streamshub.console.api.support.ListRequestContext;
@@ -48,7 +43,7 @@ import static java.util.Comparator.nullsLast;
     message = "resource type conflicts with operation",
     node = "type",
     payload = ErrorCategory.ResourceConflict.class)
-public class KafkaRebalance extends Resource<KafkaRebalance.Attributes> {
+public class KafkaRebalance extends Resource<KafkaRebalance.Attributes> implements PaginatedKubeResource {
 
     public static final String API_TYPE = "kafkaRebalances";
     public static final String FIELDS_PARAM = "fields[" + API_TYPE + "]";
@@ -253,62 +248,39 @@ public class KafkaRebalance extends Resource<KafkaRebalance.Attributes> {
      * of KafkaRebalance fields used to compare entities for pagination/sorting.
      */
     public static KafkaRebalance fromCursor(JsonObject cursor) {
-        if (cursor == null) {
-            return null;
-        }
-
-        KafkaRebalance rebalance = new KafkaRebalance(cursor.getString("id"));
-        JsonObject attr = cursor.getJsonObject("attributes");
-        rebalance.name(attr.getString(Fields.NAME, null));
-        rebalance.namespace(attr.getString(Fields.NAMESPACE, null));
-        rebalance.creationTimestamp(attr.getString(Fields.CREATION_TIMESTAMP, null));
-
-        return rebalance;
-    }
-
-    public String toCursor(List<String> sortFields) {
-        JsonObjectBuilder cursor = Json.createObjectBuilder()
-                .add("id", id == null ? Json.createValue("") : Json.createValue(id));
-
-        JsonObjectBuilder attrBuilder = Json.createObjectBuilder();
-        maybeAddAttribute(attrBuilder, sortFields, Fields.NAME, attributes.name);
-        maybeAddAttribute(attrBuilder, sortFields, Fields.NAMESPACE, attributes.namespace);
-        maybeAddAttribute(attrBuilder, sortFields, Fields.CREATION_TIMESTAMP, attributes.creationTimestamp);
-        cursor.add("attributes", attrBuilder.build());
-
-        return Base64.getUrlEncoder().encodeToString(cursor.build().toString().getBytes(StandardCharsets.UTF_8));
-    }
-
-    static void maybeAddAttribute(JsonObjectBuilder attrBuilder, List<String> sortFields, String key, String value) {
-        if (sortFields.contains(key)) {
-            attrBuilder.add(key, value != null ? Json.createValue(value) : JsonValue.NULL);
-        }
+        return PaginatedKubeResource.fromCursor(cursor, KafkaRebalance::new);
     }
 
     public String action() {
         return ((Meta) super.getMeta()).action();
     }
 
+    @Override
     public String name() {
         return attributes.name;
     }
 
+    @Override
     public void name(String name) {
         attributes.name = name;
     }
 
+    @Override
     public String namespace() {
         return attributes.namespace;
     }
 
+    @Override
     public void namespace(String namespace) {
         attributes.namespace = namespace;
     }
 
+    @Override
     public String creationTimestamp() {
         return attributes.creationTimestamp;
     }
 
+    @Override
     public void creationTimestamp(String creationTimestamp) {
         attributes.creationTimestamp = creationTimestamp;
     }
@@ -333,80 +305,40 @@ public class KafkaRebalance extends Resource<KafkaRebalance.Attributes> {
         attributes.mode = mode;
     }
 
-    public List<Integer> brokers() {
-        return attributes.brokers;
-    }
-
     public void brokers(List<Integer> brokers) {
         attributes.brokers = brokers;
-    }
-
-    public List<String> goals() {
-        return attributes.goals;
     }
 
     public void goals(List<String> goals) {
         attributes.goals = goals;
     }
 
-    public boolean skipHardGoalCheck() {
-        return attributes.skipHardGoalCheck;
-    }
-
     public void skipHardGoalCheck(boolean skipHardGoalCheck) {
         attributes.skipHardGoalCheck = skipHardGoalCheck;
-    }
-
-    public boolean rebalanceDisk() {
-        return attributes.rebalanceDisk;
     }
 
     public void rebalanceDisk(boolean rebalanceDisk) {
         attributes.rebalanceDisk = rebalanceDisk;
     }
 
-    public String excludedTopics() {
-        return attributes.excludedTopics;
-    }
-
     public void excludedTopics(String excludedTopics) {
         attributes.excludedTopics = excludedTopics;
-    }
-
-    public int concurrentPartitionMovementsPerBroker() {
-        return attributes.concurrentPartitionMovementsPerBroker;
     }
 
     public void concurrentPartitionMovementsPerBroker(int concurrentPartitionMovementsPerBroker) {
         attributes.concurrentPartitionMovementsPerBroker = concurrentPartitionMovementsPerBroker;
     }
 
-    public int concurrentIntraBrokerPartitionMovements() {
-        return attributes.concurrentIntraBrokerPartitionMovements;
-    }
-
     public void concurrentIntraBrokerPartitionMovements(int concurrentIntraBrokerPartitionMovements) {
         attributes.concurrentIntraBrokerPartitionMovements = concurrentIntraBrokerPartitionMovements;
-    }
-
-    public int concurrentLeaderMovements() {
-        return attributes.concurrentLeaderMovements;
     }
 
     public void concurrentLeaderMovements(int concurrentLeaderMovements) {
         attributes.concurrentLeaderMovements = concurrentLeaderMovements;
     }
 
-    public long replicationThrottle() {
-        return attributes.replicationThrottle;
-    }
-
     public void replicationThrottle(long replicationThrottle) {
         attributes.replicationThrottle = replicationThrottle;
-    }
-
-    public List<String> replicaMovementStrategies() {
-        return attributes.replicaMovementStrategies;
     }
 
     public void replicaMovementStrategies(List<String> replicaMovementStrategies) {
@@ -415,10 +347,6 @@ public class KafkaRebalance extends Resource<KafkaRebalance.Attributes> {
 
     public Map<String, Object> optimizationResult() {
         return attributes.optimizationResult;
-    }
-
-    public List<Condition> conditions() {
-        return attributes.conditions;
     }
 
     public void conditions(List<Condition> conditions) {
