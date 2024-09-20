@@ -1,6 +1,6 @@
 "use client";
 import { EmptyStateLoading } from "@/components/EmptyStateLoading";
-import { useRouter } from "@/navigation";
+import { useRouter } from "@/i18n/routing";
 import { useEffect } from "react";
 
 export function RedirectOnLoad({ url }: { url: string }) {

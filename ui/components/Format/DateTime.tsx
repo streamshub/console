@@ -23,9 +23,14 @@ export function DateTime({
   if (!isDate(maybeDate)) {
     return empty;
   }
-  return format.dateTime(maybeDate, {
+  const formattedDt = format.dateTime(maybeDate, {
     dateStyle,
     timeStyle,
     timeZone: tz === "local" ? undefined : "UTC",
   });
+  return (
+    <time dateTime={maybeDate.toISOString()} suppressHydrationWarning={true}>
+      {formattedDt}
+    </time>
+  );
 }

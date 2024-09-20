@@ -1,6 +1,6 @@
 "use client";
 import { BreadcrumbItem } from "@/libs/patternfly/react-core";
-import { Link } from "@/navigation";
+import { Link } from "@/i18n/routing";
 import { BreadcrumbItemProps } from "@patternfly/react-core";
 import { Route } from "next";
 

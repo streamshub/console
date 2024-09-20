@@ -75,7 +75,7 @@ export function SearchInput({
         trigger="manual"
         isVisible={showErrorFeedback}
         content={errorMessage}
-        ref={inputRef}
+        triggerRef={inputRef}
       />
     </InputGroup>
   );

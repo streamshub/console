@@ -1,6 +1,6 @@
 import { getTopic } from "@/api/topics/actions";
 import { KafkaTopicParams } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/topics/kafkaTopic.params";
-import { redirect } from "@/navigation";
+import { redirect } from "@/i18n/routing";
 import { Suspense } from "react";
 import { PartitionsTable } from "./PartitionsTable";
 

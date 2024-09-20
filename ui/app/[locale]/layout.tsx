@@ -1,8 +1,5 @@
-import { getAuthOptions } from "@/app/api/auth/[...nextauth]/route";
-
-import { getServerSession } from "next-auth";
-import { getTranslations } from "next-intl/server";
-import { notFound } from "next/navigation";
+import { getMessages, getTranslations } from "next-intl/server";
+import { useNow, useTimeZone } from "next-intl";
 import { ReactNode } from "react";
 import NextIntlProvider from "./NextIntlProvider";
 import "../globals.css";
@@ -13,14 +10,7 @@ type Props = {
 };
 
 export default async function Layout({ children, params: { locale } }: Props) {
-  let messages;
-  try {
-    messages = (await import(`../../messages/${locale}.json`)).default;
-  } catch (error) {
-    notFound();
-  }
-  const authOptions = await getAuthOptions();
-  const session = await getServerSession(authOptions);
+  const messages = await getMessages();
   return (
     <NextIntlProvider locale={locale} messages={messages}>
       {children}

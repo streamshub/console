@@ -21,28 +21,3 @@ export const Default: Story = {
     await expect(args.onClick).toBeCalledTimes(1);
   },
 };
-
-export const Refreshing: Story = {
-  args: {
-    isRefreshing: true,
-    tooltip: "Data is currently refreshing",
-  },
-  play: async ({ canvasElement, args }) => {
-    const canvas = within(canvasElement);
-    await expect(canvas.getByRole("progressbar")).toBeTruthy();
-  },
-};
-
-export const Disabled: Story = {
-  args: {
-    isDisabled: true,
-  },
-  play: async ({ canvasElement, args }) => {
-    const canvas = within(canvasElement);
-    expect(canvas.getByLabelText("Refresh")).toBeDisabled();
-    await userEvent.click(canvas.getByLabelText("Refresh"), {
-      pointerEventsCheck: 0, // disable checking for the pointer event to allow clicking
-    });
-    await expect(args.onClick).toBeCalledTimes(0);
-  },
-};

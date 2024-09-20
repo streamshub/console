@@ -1,7 +1,7 @@
 "use client";
 import { KafkaParams } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/kafka.params";
 import { DeleteModal } from "@/components/DeleteModal";
-import { useRouter } from "@/navigation";
+import { useRouter } from "@/i18n/routing";
 import { useTranslations } from "next-intl";
 import { useParams } from "next/navigation";
 import { useState, useTransition } from "react";

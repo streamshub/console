@@ -1,4 +1,4 @@
-import { locales } from "@/navigation";
+import { locales, routing } from "@/i18n/routing";
 import withAuth from "next-auth/middleware";
 import createIntlMiddleware from "next-intl/middleware";
 import { NextRequest, NextResponse } from "next/server";
@@ -10,14 +10,7 @@ const log = logger.child({ module: "middleware" });
 const publicPages = ["/kafka/[^/]+/login", "/cluster", "/"];
 const protectedPages = ["/kafka/[^/]+/.*"];
 
-const intlMiddleware = createIntlMiddleware({
-  // A list of all locales that are supported
-  locales,
-
-  // If this locale is matched, pathnames work without a prefix (e.g. `/about`)
-  defaultLocale: "en",
-  localePrefix: "never",
-});
+const intlMiddleware = createIntlMiddleware(routing);
 
 const authMiddleware = withAuth(
   // Note that this callback is only invoked if
@@ -62,7 +55,14 @@ export default async function middleware(req: NextRequest) {
     log.trace({ requestPath: requestPath }, "protected page");
     return (authMiddleware as any)(req);
   } else {
-    log.debug({ requestPath: requestPath, publicPathnameRegex: publicPathnameRegex, protectedPathnameRegex: protectedPathnameRegex }, "neither public nor protected!");
+    log.debug(
+      {
+        requestPath: requestPath,
+        publicPathnameRegex: publicPathnameRegex,
+        protectedPathnameRegex: protectedPathnameRegex,
+      },
+      "neither public nor protected!",
+    );
     return NextResponse.redirect(new URL("/", req.url));
   }
 }

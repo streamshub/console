@@ -1,7 +1,7 @@
 import { getTopicMessage } from "@/api/messages/actions";
 import { getTopic } from "@/api/topics/actions";
 import { KafkaTopicParams } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/topics/kafkaTopic.params";
-import { redirect } from "@/navigation";
+import { redirect } from "@/i18n/routing";
 import { ConnectedMessagesTable } from "./ConnectedMessagesTable";
 import { MessagesSearchParams, parseSearchParams } from "./parseSearchParams";
 

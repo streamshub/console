@@ -8,7 +8,7 @@ import {
 import { StepDetails } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/topics/create/StepDetails";
 import { StepOptions } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/topics/create/StepOptions";
 import { StepReview } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/topics/create/StepReview";
-import { useRouter } from "@/navigation";
+import { useRouter } from "@/i18n/routing";
 import {
   Button,
   PageSection,

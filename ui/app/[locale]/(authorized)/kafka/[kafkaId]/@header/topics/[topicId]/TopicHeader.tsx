@@ -16,17 +16,22 @@ import { Skeleton } from "@patternfly/react-core";
 import { notFound } from "next/navigation";
 import { ReactNode, Suspense } from "react";
 
+export type TopicHeaderProps = {
+  params: KafkaTopicParams;
+  showRefresh?: boolean;
+};
+
 export function TopicHeader({
   params: { kafkaId, topicId },
-}: {
-  params: KafkaTopicParams;
-}) {
+  showRefresh,
+}: TopicHeaderProps) {
   const portal = <div key={"topic-header-portal"} id={"topic-header-portal"} />;
   return (
     <Suspense
       fallback={
         <AppHeader
           title={<Skeleton width="35%" />}
+          showRefresh={showRefresh}
           navigation={
             <PageNavigation>
               <Nav aria-label="Group section navigation" variant="tertiary">
@@ -75,16 +80,22 @@ export function TopicHeader({
         />
       }
     >
-      <ConnectedTopicHeader params={{ kafkaId, topicId }} portal={portal} />
+      <ConnectedTopicHeader
+        params={{ kafkaId, topicId }}
+        portal={portal}
+        showRefresh={showRefresh}
+      />
     </Suspense>
   );
 }
 
 async function ConnectedTopicHeader({
   params: { kafkaId, topicId },
+  showRefresh,
   portal,
 }: {
   params: KafkaTopicParams;
+  showRefresh?: boolean;
   portal: ReactNode;
 }) {
   const cluster = await getKafkaCluster(kafkaId);
@@ -100,6 +111,7 @@ async function ConnectedTopicHeader({
           {topic?.meta?.managed === true && <ManagedTopicLabel />}
         </>
       }
+      showRefresh={showRefresh}
       navigation={
         <PageNavigation>
           <Nav aria-label="Group section navigation" variant="tertiary">

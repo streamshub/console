@@ -4,7 +4,7 @@ import { Error } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/topics/create
 import { topicMutateErrorToFieldError } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/topics/create/topicMutateErrorToFieldError";
 import { Number } from "@/components/Format/Number";
 import { ResponsiveTableProps, TableView } from "@/components/Table";
-import { usePathname, useRouter } from "@/navigation";
+import { usePathname, useRouter } from "@/i18n/routing";
 import { isReadonly } from "@/utils/env";
 import {
   Button,

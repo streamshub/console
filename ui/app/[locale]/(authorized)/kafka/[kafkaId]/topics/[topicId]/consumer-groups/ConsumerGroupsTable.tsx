@@ -6,7 +6,7 @@ import { LabelLink } from "@/components/Navigation/LabelLink";
 import { TableView } from "@/components/Table";
 import { LabelGroup, Tooltip } from "@/libs/patternfly/react-core";
 import { HelpIcon } from "@/libs/patternfly/react-icons";
-import { Link } from "@/navigation";
+import { Link } from "@/i18n/routing";
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 

@@ -1,6 +1,6 @@
 "use client";
 import { Label, LabelProps } from "@/libs/patternfly/react-core";
-import { Link } from "@/navigation";
+import { Link } from "@/i18n/routing";
 import { Route } from "next";
 
 export function LabelLink<T extends string>({

@@ -1,7 +1,8 @@
 "use client";
 import { Button, Spinner, Tooltip } from "@/libs/patternfly/react-core";
 import { SyncAltIcon } from "@/libs/patternfly/react-icons";
-import { useRouter } from "@/navigation";
+import { useRouter } from "@/i18n/routing";
+import { ButtonProps } from "@/libs/patternfly/react-core";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 
@@ -21,9 +22,10 @@ export function RefreshButton({
   const t = useTranslations();
   const router = useRouter();
   const [refreshTs, setRefreshTs] = useState<Date | undefined>();
-  const handleClick =
+  const handleClick: ButtonProps["onClick"] =
     onClick ??
-    (() => {
+    ((e) => {
+      e.preventDefault();
       setRefreshTs(new Date());
       router.refresh();
     });

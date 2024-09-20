@@ -1,6 +1,6 @@
 "use client";
 import { ExternalLink } from "@/components/Navigation/ExternalLink";
-import { Link } from "@/navigation";
+import { Link } from "@/i18n/routing";
 import {
   Alert,
   Button,

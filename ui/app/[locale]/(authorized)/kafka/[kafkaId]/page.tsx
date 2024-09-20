@@ -1,5 +1,5 @@
 import { KafkaParams } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/kafka.params";
-import { redirect } from "@/navigation";
+import { redirect } from "@/i18n/routing";
 
 export const dynamic = "force-dynamic";
 

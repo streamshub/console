@@ -6,7 +6,7 @@ import {
   GridItem,
   PageSection,
 } from "@/libs/patternfly/react-core";
-import { Link } from "@/navigation";
+import { Link } from "@/i18n/routing";
 import { ReactNode, Suspense } from "react";
 import { ClusterCard } from "./ClusterCard";
 import { ClusterChartsCard } from "./ClusterChartsCard";
