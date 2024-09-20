@@ -1,3 +1,6 @@
+"use client";
+import { DateTime } from "@/components/Format/DateTime";
+import { RefreshButton } from "@/components/RefreshButton";
 import {
   Divider,
   Flex,
@@ -6,6 +9,7 @@ import {
   Title,
 } from "@/libs/patternfly/react-core";
 import { ReactNode } from "react";
+import { useNow } from "use-intl";
 
 export function AppHeader({
   title,
@@ -18,6 +22,7 @@ export function AppHeader({
   actions?: ReactNode[];
   navigation?: ReactNode;
 }) {
+  const lastRefresh = useNow();
   return (
     <>
       <PageSection
@@ -33,19 +38,28 @@ export function AppHeader({
             </FlexItem>
             {subTitle && <FlexItem>{subTitle}</FlexItem>}
           </Flex>
-          {actions && (
-            <Flex
-              direction={{ default: "column" }}
-              align={{ default: "alignRight" }}
-              alignSelf={{ default: "alignSelfFlexEnd" }}
-            >
-              <Flex>
+          <Flex
+            direction={{ default: "column" }}
+            align={{ default: "alignRight" }}
+          >
+            <Flex className={"pf-v5-u-font-size-sm"}>
+              Last updated{" "}
+              <DateTime
+                value={lastRefresh}
+                dateStyle={"short"}
+                timeStyle={"medium"}
+                tz={"local"}
+              />
+              <RefreshButton lastRefresh={lastRefresh} />
+            </Flex>
+            {actions && (
+              <Flex alignSelf={{ default: "alignSelfFlexEnd" }}>
                 {actions.map((a, idx) => (
                   <FlexItem key={idx}>{a}</FlexItem>
                 ))}
               </Flex>
-            </Flex>
-          )}
+            )}
+          </Flex>
         </Flex>
       </PageSection>
       {navigation}

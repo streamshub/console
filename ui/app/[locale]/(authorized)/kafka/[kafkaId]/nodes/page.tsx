@@ -71,7 +71,7 @@ async function ConnectedNodes({ params }: { params: KafkaParams }) {
   return (
     <>
       {!kpis && (
-        <PageSection>
+        <PageSection isFilled={true}>
           <Alert title={t("nodes.kpis_offline")} variant={"warning"} />
         </PageSection>
       )}
