@@ -72,8 +72,8 @@ export function ResetOffsetModal({
         </StackItem>
         {isProductizedBuild && (
           <StackItem>
-            <ExternalLink testId={"learn_to_shutdown_members"} href={"https://docs.redhat.com/en/documentation/red_hat_streams_for_apache_kafka/2.7/html-single/kafka_configuration_tuning/index#managing_offset_policy"}>
-              {t("learn_to_shutdown_members")}
+            <ExternalLink testId={"learn_to_shutdown_consumers"} href={"learn_to_shutdown_consumers_link"}>
+              {t("learn_to_shutdown_consumers")}
             </ExternalLink>
           </StackItem>
         )}

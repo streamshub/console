@@ -228,6 +228,32 @@ export default async function Home() {
                         />
                       </DataListItemRow>
                     </DataListItem>
+                    <DataListItem aria-labelledby="gs-5-1">
+                      <DataListItemRow>
+                        <DataListItemCells
+                          dataListCells={[
+                            <DataListCell key="gs-5-1" width={2}>
+                              <span id="gs-5-1">
+                                {t("learning.labels.shut_down_consumers")}
+                              </span>
+                            </DataListCell>,
+                            <DataListCell key="gs-5-2">
+                              <Label isCompact={true} color={"orange"}>
+                                {t("homepage.documentation")}
+                              </Label>
+                            </DataListCell>,
+                            <DataListCell key="gs-5-3">
+                              <ExternalLink
+                                testId={"gs-5-3"}
+                                href={t("learning.links.shut_down_consumers")}
+                              >
+                                {t("homepage.view_documentation")}
+                              </ExternalLink>
+                            </DataListCell>,
+                          ]}
+                        />
+                      </DataListItemRow>
+                    </DataListItem>
                   </DataList>
                 </CardBody>
               </ExpandableCard>
