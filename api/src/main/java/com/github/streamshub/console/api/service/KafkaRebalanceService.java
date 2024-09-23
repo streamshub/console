@@ -124,10 +124,7 @@ public class KafkaRebalanceService {
                 .ifPresent(rebalance.optimizationResult()::putAll);
 
         rebalanceStatus.map(KafkaRebalanceStatus::getConditions).ifPresent(conditions ->
-            rebalance.conditions(conditions.stream()
-                    .filter(c -> Arrays.stream(KafkaRebalanceState.values())
-                            .noneMatch(stateValue -> stateValue.toString().equals(c.getType())))
-                    .map(Condition::new).toList()));
+            rebalance.conditions(conditions.stream().map(Condition::new).toList()));
 
         rebalance.addMeta("allowedActions", state
                 .map(KafkaRebalanceState::getValidAnnotations)
