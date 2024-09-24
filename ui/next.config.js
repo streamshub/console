@@ -30,7 +30,7 @@ const nextConfig = {
             hmrRefreshes: true,
           },
         }
-      : false,
+      : undefined,
 };
 
 module.exports = withNextIntl(nextConfig);
