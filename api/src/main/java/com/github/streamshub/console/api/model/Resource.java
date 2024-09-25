@@ -70,15 +70,20 @@ public abstract class Resource<T> {
         return meta;
     }
 
+    @JsonIgnore
+    public JsonApiMeta getOrCreateMeta() {
+        if (meta == null) {
+            meta = metaFactory.get();
+        }
+        return meta;
+    }
+
     public Object getMeta(String key) {
         return meta != null ? meta.get(key) : null;
     }
 
     public Resource<T> addMeta(String key, Object value) {
-        if (meta == null) {
-            meta = metaFactory.get();
-        }
-        meta.put(key, value);
+        getOrCreateMeta().put(key, value);
         return this;
     }
 }

@@ -3,7 +3,6 @@ package com.github.streamshub.console.api.service;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Base64;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -15,7 +14,6 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.NotFoundException;
 
-import org.eclipse.microprofile.context.ThreadContext;
 import org.jboss.logging.Logger;
 
 import com.github.streamshub.console.api.model.Condition;
@@ -26,6 +24,7 @@ import com.github.streamshub.console.config.ConsoleConfig;
 
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.informers.cache.Cache;
+import io.strimzi.api.ResourceAnnotations;
 import io.strimzi.api.ResourceLabels;
 import io.strimzi.api.kafka.model.kafka.Kafka;
 import io.strimzi.api.kafka.model.rebalance.KafkaRebalanceMode;
@@ -36,17 +35,8 @@ import io.strimzi.api.kafka.model.rebalance.KafkaRebalanceStatus;
 @ApplicationScoped
 public class KafkaRebalanceService {
 
-    private static final String REBALANCE_ANNOTATION = "strimzi.io/rebalance";
-
     @Inject
     Logger logger;
-
-    /**
-     * ThreadContext of the request thread. This is used to execute asynchronous
-     * tasks to allow access to request-scoped beans.
-     */
-    @Inject
-    ThreadContext threadContext;
 
     @Inject
     KubernetesClient client;
@@ -80,9 +70,9 @@ public class KafkaRebalanceService {
                 String action = rebalance.action();
 
                 if (action != null) {
-                    annotations.put(REBALANCE_ANNOTATION, action);
+                    annotations.put(ResourceAnnotations.ANNO_STRIMZI_IO_REBALANCE, action);
                 } else {
-                    annotations.remove(REBALANCE_ANNOTATION);
+                    annotations.remove(ResourceAnnotations.ANNO_STRIMZI_IO_REBALANCE);
                 }
 
                 return client.resource(resource).patch();
@@ -120,16 +110,22 @@ public class KafkaRebalanceService {
         rebalance.concurrentLeaderMovements(rebalanceSpec.getConcurrentLeaderMovements());
         rebalance.replicationThrottle(rebalanceSpec.getReplicationThrottle());
         rebalance.replicaMovementStrategies(rebalanceSpec.getReplicaMovementStrategies());
+
+        rebalanceStatus.map(KafkaRebalanceStatus::getSessionId)
+                .ifPresent(rebalance::sessionId);
         rebalanceStatus.map(KafkaRebalanceStatus::getOptimizationResult)
                 .ifPresent(rebalance.optimizationResult()::putAll);
+        rebalanceStatus.map(KafkaRebalanceStatus::getConditions)
+                .map(conditions -> conditions.stream().map(Condition::new).toList())
+                .ifPresent(rebalance::conditions);
 
-        rebalanceStatus.map(KafkaRebalanceStatus::getConditions).ifPresent(conditions ->
-            rebalance.conditions(conditions.stream().map(Condition::new).toList()));
+        var annotations = resource.getMetadata().getAnnotations();
+        var autoApproval = Boolean.parseBoolean(annotations.get(ResourceAnnotations.ANNO_STRIMZI_IO_REBALANCE_AUTOAPPROVAL));
+        rebalance.autoApproval(autoApproval);
 
-        rebalance.addMeta("allowedActions", state
-                .map(KafkaRebalanceState::getValidAnnotations)
+        state.map(KafkaRebalanceState::getValidAnnotations)
                 .map(allowed -> allowed.stream().map(Enum::name).toList())
-                .orElseGet(Collections::emptyList));
+                .ifPresent(rebalance.allowedActions()::addAll);
 
         return rebalance;
     }

@@ -87,6 +87,7 @@ public class KafkaRebalancesResource {
                         KafkaRebalance.Fields.CONCURRENT_LEADER_MOVEMENTS,
                         KafkaRebalance.Fields.REPLICATION_THROTTLE,
                         KafkaRebalance.Fields.REPLICA_MOVEMENT_STRATEGIES,
+                        KafkaRebalance.Fields.SESSION_ID,
                         KafkaRebalance.Fields.OPTIMIZATION_RESULT,
                         KafkaRebalance.Fields.CONDITIONS,
                     },
@@ -113,6 +114,7 @@ public class KafkaRebalancesResource {
                                 KafkaRebalance.Fields.CONCURRENT_LEADER_MOVEMENTS,
                                 KafkaRebalance.Fields.REPLICATION_THROTTLE,
                                 KafkaRebalance.Fields.REPLICA_MOVEMENT_STRATEGIES,
+                                KafkaRebalance.Fields.SESSION_ID,
                                 KafkaRebalance.Fields.OPTIMIZATION_RESULT,
                                 KafkaRebalance.Fields.CONDITIONS,
                             }))
@@ -184,6 +186,7 @@ public class KafkaRebalancesResource {
                 KafkaRebalance.Fields.CONCURRENT_LEADER_MOVEMENTS,
                 KafkaRebalance.Fields.REPLICATION_THROTTLE,
                 KafkaRebalance.Fields.REPLICA_MOVEMENT_STRATEGIES,
+                KafkaRebalance.Fields.SESSION_ID,
                 KafkaRebalance.Fields.OPTIMIZATION_RESULT));
 
         var result = rebalanceService.patchRebalance(rebalanceId, rebalance.getData());

@@ -1,10 +1,12 @@
 package com.github.streamshub.console.api.model;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import jakarta.json.JsonObject;
 
@@ -64,6 +66,7 @@ public class KafkaRebalance extends Resource<KafkaRebalance.Attributes> implemen
         public static final String CONCURRENT_LEADER_MOVEMENTS = "concurrentLeaderMovements";
         public static final String REPLICATION_THROTTLE = "replicationThrottle";
         public static final String REPLICA_MOVEMENT_STRATEGIES = "replicaMovementStrategies";
+        public static final String SESSION_ID = "sessionId";
         public static final String OPTIMIZATION_RESULT = "optimizationResult";
         public static final String CONDITIONS = "conditions";
 
@@ -135,6 +138,25 @@ public class KafkaRebalance extends Resource<KafkaRebalance.Attributes> implemen
     @Schema(name = "KafkaRebalanceMeta", additionalProperties = Object.class)
     @JsonInclude(value = Include.NON_NULL)
     static final class Meta extends JsonApiMeta {
+
+        @JsonProperty
+        @Schema(
+                description = """
+                    Valid values allowed for the meta.action property for this resource, \
+                    given its current status.
+                    """,
+                readOnly = true)
+        List<String> allowedActions = new ArrayList<>(3);
+
+        @JsonProperty
+        @Schema(
+                description = """
+                    Optimization proposal will be auto-approved without the \
+                    need for manual approval.
+                    """,
+                readOnly = true)
+        boolean autoApproval;
+
         @JsonProperty
         @Schema(
             description = """
@@ -153,14 +175,6 @@ public class KafkaRebalance extends Resource<KafkaRebalance.Attributes> implemen
          * @see io.strimzi.api.kafka.model.rebalance.KafkaRebalanceAnnotation
          */
         String action;
-
-        public String action() {
-            return action;
-        }
-
-        public void action(String action) {
-            this.action = action;
-        }
     }
 
     @JsonFilter("fieldFilter")
@@ -227,10 +241,15 @@ public class KafkaRebalance extends Resource<KafkaRebalance.Attributes> implemen
         List<String> replicaMovementStrategies;
 
         @JsonProperty
+        @Schema(readOnly = true, nullable = true)
+        String sessionId;
+
+        @JsonProperty
         @Schema(readOnly = true)
         Map<String, Object> optimizationResult = new HashMap<>(0);
 
         @JsonProperty
+        @Schema(readOnly = true)
         List<Condition> conditions;
     }
 
@@ -251,8 +270,19 @@ public class KafkaRebalance extends Resource<KafkaRebalance.Attributes> implemen
         return PaginatedKubeResource.fromCursor(cursor, KafkaRebalance::new);
     }
 
+    public List<String> allowedActions() {
+        return ((Meta) getOrCreateMeta()).allowedActions;
+    }
+
+    public void autoApproval(boolean autoApproval) {
+        ((Meta) getOrCreateMeta()).autoApproval = autoApproval;
+    }
+
     public String action() {
-        return ((Meta) super.getMeta()).action();
+        return Optional.ofNullable(getMeta())
+                .map(Meta.class::cast)
+                .map(meta -> meta.action)
+                .orElse(null);
     }
 
     @Override
@@ -343,6 +373,10 @@ public class KafkaRebalance extends Resource<KafkaRebalance.Attributes> implemen
 
     public void replicaMovementStrategies(List<String> replicaMovementStrategies) {
         attributes.replicaMovementStrategies = replicaMovementStrategies;
+    }
+
+    public void sessionId(String sessionId) {
+        attributes.sessionId = sessionId;
     }
 
     public Map<String, Object> optimizationResult() {

@@ -40,6 +40,7 @@ import io.strimzi.test.container.StrimziKafkaContainer;
 
 import static com.github.streamshub.console.test.TestHelper.whenRequesting;
 import static java.util.Comparator.nullsLast;
+import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.emptyArray;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.everyItem;
@@ -170,7 +171,9 @@ class KafkaRebalancesResourceIT {
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
             .body("data", not(emptyArray()))
-            .body("data.findAll { it }.collect { it.meta }", everyItem(hasKey("allowedActions")));
+            .body("data.findAll { it }.collect { it.meta }", everyItem(allOf(
+                    hasKey("allowedActions"),
+                    hasKey("autoApproval"))));
     }
 
     @Test
