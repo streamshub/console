@@ -5,8 +5,6 @@ import { Suspense } from "react";
 import { useTranslations } from "next-intl";
 import { ConsumerGroupActionButton } from "./ConsumerGroupActionButton";
 
-export const fetchCache = "force-cache";
-
 export default function Page({
   params: { kafkaId, groupId },
 }: {

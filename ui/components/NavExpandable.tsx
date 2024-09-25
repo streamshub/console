@@ -1,5 +1,5 @@
 "use client";
-import { usePathname } from "@/navigation";
+import { usePathname } from "@/i18n/routing";
 import {
   NavExpandable as PFNavExpendable,
   NavExpandableProps,

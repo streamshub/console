@@ -3,7 +3,7 @@ import { createTopic } from "@/api/topics/actions";
 import { NewConfigMap } from "@/api/topics/schema";
 import { KafkaParams } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/kafka.params";
 import { CreateTopic } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/topics/create/CreateTopic";
-import { redirect } from "@/navigation";
+import { redirect } from "@/i18n/routing";
 import { isReadonly } from "@/utils/env";
 import { notFound } from "next/navigation";
 

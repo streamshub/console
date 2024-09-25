@@ -3,7 +3,7 @@
 import { NodeConfig } from "@/api/nodes/schema";
 import { Number } from "@/components/Format/Number";
 import { TableView } from "@/components/Table";
-import { usePathname, useRouter } from "@/navigation";
+import { usePathname, useRouter } from "@/i18n/routing";
 import { Label, LabelGroup, List, ListItem } from "@patternfly/react-core";
 import { TableVariant } from "@patternfly/react-table";
 import { useTranslations } from "next-intl";

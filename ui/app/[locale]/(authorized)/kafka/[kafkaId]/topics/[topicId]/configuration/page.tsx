@@ -1,7 +1,7 @@
 import { getTopic, updateTopic } from "@/api/topics/actions";
 import { KafkaTopicParams } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/topics/kafkaTopic.params";
 import { PageSection } from "@/libs/patternfly/react-core";
-import { redirect } from "@/navigation";
+import { redirect } from "@/i18n/routing";
 import { isReadonly } from "@/utils/env";
 import { Suspense } from "react";
 import { ConfigTable } from "./ConfigTable";

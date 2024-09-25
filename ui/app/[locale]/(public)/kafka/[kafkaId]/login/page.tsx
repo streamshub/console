@@ -1,5 +1,5 @@
 import { getKafkaClusters } from "@/api/kafka/actions";
-import { redirect } from "@/navigation";
+import { redirect } from "@/i18n/routing";
 import { SignInPage } from "./SignInPage";
 
 export default async function SignIn({

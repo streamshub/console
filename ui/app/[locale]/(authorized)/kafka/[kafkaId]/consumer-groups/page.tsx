@@ -40,7 +40,7 @@ export default function ConsumerGroupsPage({
     | ConsumerGroupState[]
     | undefined;
   return (
-    <PageSection>
+    <PageSection isFilled={true}>
       <Suspense
         fallback={
           <ConnectedConsumerGroupTable

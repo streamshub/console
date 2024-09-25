@@ -1,7 +1,7 @@
 "use client";
 
 import { ConsumerGroup, ConsumerGroupState } from "@/api/consumerGroups/schema";
-import { useRouter } from "@/navigation";
+import { useRouter } from "@/i18n/routing";
 import { useFilterParams } from "@/utils/useFilterParams";
 import { useOptimistic, useState, useTransition } from "react";
 import {

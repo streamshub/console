@@ -1,6 +1,6 @@
 "use client";
 import { NavItem } from "@/libs/patternfly/react-core";
-import { Link, usePathname } from "@/navigation";
+import { Link, usePathname } from "@/i18n/routing";
 import { Route } from "next";
 import { PropsWithChildren } from "react";
 

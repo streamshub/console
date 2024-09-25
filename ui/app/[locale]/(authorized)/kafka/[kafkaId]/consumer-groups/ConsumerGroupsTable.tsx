@@ -8,7 +8,7 @@ import {
   HelpIcon,
   InfoCircleIcon,
 } from "@/libs/patternfly/react-icons";
-import { Link } from "@/navigation";
+import { Link } from "@/i18n/routing";
 import { useTranslations } from "next-intl";
 import { ReactNode, useEffect, useState } from "react";
 

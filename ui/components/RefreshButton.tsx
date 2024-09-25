@@ -1,23 +1,36 @@
-import { Button, Spinner, Tooltip } from "@patternfly/react-core";
-import { SyncAltIcon } from "@patternfly/react-icons";
+"use client";
+import { Button, Spinner, Tooltip } from "@/libs/patternfly/react-core";
+import { SyncAltIcon } from "@/libs/patternfly/react-icons";
+import { useRouter } from "@/i18n/routing";
+import { ButtonProps } from "@/libs/patternfly/react-core";
 import { useTranslations } from "next-intl";
+import { useState } from "react";
 
 export type RefreshButtonProps = {
-  isDisabled?: boolean;
+  lastRefresh: Date;
   tooltip?: string;
-  isRefreshing: boolean;
   ariaLabel?: string;
-  onClick: () => void;
+  onClick?: () => void;
 };
 
 export function RefreshButton({
+  lastRefresh,
   ariaLabel,
   onClick,
-  isDisabled,
   tooltip,
-  isRefreshing,
 }: RefreshButtonProps) {
   const t = useTranslations();
+  const router = useRouter();
+  const [refreshTs, setRefreshTs] = useState<Date | undefined>();
+  const handleClick: ButtonProps["onClick"] =
+    onClick ??
+    ((e) => {
+      e.preventDefault();
+      setRefreshTs(new Date());
+      router.refresh();
+    });
+
+  const isRefreshing = refreshTs !== undefined && refreshTs >= lastRefresh;
 
   const defaultTooltip = isRefreshing
     ? t("RefreshButton.refreshing_tooltip")
@@ -28,8 +41,8 @@ export function RefreshButton({
         className="pf-m-hoverable"
         variant="plain"
         aria-label={ariaLabel || t("RefreshButton.refresh_button_label")}
-        isDisabled={isDisabled}
-        onClick={isDisabled === true ? undefined : onClick}
+        isDisabled={isRefreshing}
+        onClick={isRefreshing === true ? undefined : handleClick}
         icon={
           isRefreshing === false ? <SyncAltIcon /> : <Spinner size={"md"} />
         }

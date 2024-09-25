@@ -22,6 +22,15 @@ const nextConfig = {
     "@patternfly/react-tokens",
     "@patternfly/react-icons",
   ],
+  logging:
+    process.env.NODE_ENV === "development"
+      ? {
+          fetches: {
+            fullUrl: true,
+            hmrRefreshes: true,
+          },
+        }
+      : undefined,
 };
 
 module.exports = withNextIntl(nextConfig);

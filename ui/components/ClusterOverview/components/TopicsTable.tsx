@@ -1,7 +1,7 @@
 "use client";
 import { ViewedTopic } from "@/api/topics/actions";
 import { ResponsiveTable } from "@/components/Table";
-import { Link } from "@/navigation";
+import { Link } from "@/i18n/routing";
 import { Truncate } from "@patternfly/react-core";
 import { TableVariant } from "@patternfly/react-table";
 import { useTranslations } from "next-intl";

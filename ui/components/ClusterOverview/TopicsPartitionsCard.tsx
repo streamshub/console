@@ -19,7 +19,7 @@ import {
   ExclamationTriangleIcon,
   HelpIcon,
 } from "@/libs/patternfly/react-icons";
-import { Link } from "@/navigation";
+import { Link } from "@/i18n/routing";
 import { useTranslations } from "next-intl";
 
 type TopicsPartitionsCardProps = {
@@ -38,15 +38,18 @@ export function TopicsPartitionsCard({
 }:
   | ({ isLoading: false } & TopicsPartitionsCardProps)
   | ({
-    isLoading: true;
-  } & Partial<{ [key in keyof TopicsPartitionsCardProps]?: undefined }>)) {
-
+      isLoading: true;
+    } & Partial<{ [key in keyof TopicsPartitionsCardProps]?: undefined }>)) {
   const t = useTranslations();
   return (
     <Card component={"div"}>
       <CardHeader
         actions={{
-          actions: <Link href={"./topics"}>{t("ClusterOverview.view_all_topics")}</Link>,
+          actions: (
+            <Link href={"./topics"}>
+              {t("ClusterOverview.view_all_topics")}
+            </Link>
+          ),
         }}
       >
         <CardTitle>{t("ClusterOverview.topic_header")}</CardTitle>
@@ -67,7 +70,8 @@ export function TopicsPartitionsCard({
                     <TextContent>
                       <Text component={"small"}>
                         <Link href={"./topics"}>
-                          <Number value={topicsTotal} /> {t("ClusterOverview.total_topics")}
+                          <Number value={topicsTotal} />{" "}
+                          {t("ClusterOverview.total_topics")}
                         </Link>
                       </Text>
                     </TextContent>
@@ -111,7 +115,11 @@ export function TopicsPartitionsCard({
                     <CheckCircleIcon />
                   </Icon>
                   &nbsp;{t("ClusterOverview.fully_replicated_partition")}&nbsp;
-                  <Tooltip content={t("ClusterOverview.fully_replicated_partition_tooltip")}>
+                  <Tooltip
+                    content={t(
+                      "ClusterOverview.fully_replicated_partition_tooltip",
+                    )}
+                  >
                     <HelpIcon />
                   </Tooltip>
                 </Text>
@@ -135,7 +143,11 @@ export function TopicsPartitionsCard({
                     <ExclamationTriangleIcon />
                   </Icon>
                   &nbsp;{t("ClusterOverview.under_replicated_partition")}&nbsp;
-                  <Tooltip content={t("ClusterOverview.under_replicated_partition_tooltip")}>
+                  <Tooltip
+                    content={t(
+                      "ClusterOverview.under_replicated_partition_tooltip",
+                    )}
+                  >
                     <HelpIcon />
                   </Tooltip>
                 </Text>
@@ -163,7 +175,9 @@ export function TopicsPartitionsCard({
                     <ExclamationCircleIcon />
                   </Icon>
                   &nbsp;{t("ClusterOverview.unavailable_partition")}&nbsp;
-                  <Tooltip content={t("ClusterOverview.unavailable_partition_tooltip")}>
+                  <Tooltip
+                    content={t("ClusterOverview.unavailable_partition_tooltip")}
+                  >
                     <HelpIcon />
                   </Tooltip>
                 </Text>

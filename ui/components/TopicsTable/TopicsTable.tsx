@@ -13,7 +13,7 @@ import {
   HelpIcon,
 } from "@/libs/patternfly/react-icons";
 import { TableVariant } from "@/libs/patternfly/react-table";
-import { Link } from "@/navigation";
+import { Link } from "@/i18n/routing";
 import { Truncate } from "@patternfly/react-core";
 import { useTranslations } from "next-intl";
 import { ReactNode } from "react";
@@ -298,12 +298,12 @@ export function TopicsTable({
       actions={
         isReadOnly === false
           ? [
-            {
-              label: t("create_topic"),
-              onClick: onCreateTopic,
-              isPrimary: true,
-            },
-          ]
+              {
+                label: t("create_topic"),
+                onClick: onCreateTopic,
+                isPrimary: true,
+              },
+            ]
           : undefined
       }
       tools={[

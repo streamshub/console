@@ -1,3 +1,5 @@
+import { DateTime } from "@/components/Format/DateTime";
+import { RefreshButton } from "@/components/RefreshButton";
 import {
   Divider,
   Flex,
@@ -6,18 +8,22 @@ import {
   Title,
 } from "@/libs/patternfly/react-core";
 import { ReactNode } from "react";
+import { useNow } from "next-intl";
 
 export function AppHeader({
   title,
   subTitle,
   actions,
   navigation,
+  showRefresh = true,
 }: {
   title: ReactNode;
   subTitle?: ReactNode;
   actions?: ReactNode[];
   navigation?: ReactNode;
+  showRefresh?: boolean;
 }) {
+  const lastRefresh = useNow();
   return (
     <>
       <PageSection
@@ -26,26 +32,43 @@ export function AppHeader({
         className={navigation ? "pf-v5-u-px-lg pf-v5-u-pt-sm" : undefined}
         hasShadowBottom={!navigation}
       >
-        <Flex>
-          <Flex direction={{ default: "column" }}>
-            <FlexItem>
+        <Flex direction={{ default: "column" }}>
+          <Flex>
+            <FlexItem flex={{ default: "flex_1" }}>
               <Title headingLevel={"h1"}>{title}</Title>
             </FlexItem>
-            {subTitle && <FlexItem>{subTitle}</FlexItem>}
+
+            {showRefresh && (
+              <FlexItem
+                alignSelf={{ default: "alignSelfFlexEnd" }}
+                className={"pf-v5-u-font-size-sm"}
+              >
+                Last updated{" "}
+                <DateTime
+                  value={lastRefresh}
+                  dateStyle={"short"}
+                  timeStyle={"medium"}
+                  tz={"local"}
+                />
+                <RefreshButton lastRefresh={lastRefresh} />
+              </FlexItem>
+            )}
           </Flex>
-          {actions && (
-            <Flex
-              direction={{ default: "column" }}
-              align={{ default: "alignRight" }}
-              alignSelf={{ default: "alignSelfFlexEnd" }}
-            >
-              <Flex>
-                {actions.map((a, idx) => (
-                  <FlexItem key={idx}>{a}</FlexItem>
-                ))}
+          <Flex>
+            {subTitle && <FlexItem>{subTitle}</FlexItem>}
+            {actions && (
+              <Flex
+                direction={{ default: "column" }}
+                align={{ default: "alignRight" }}
+              >
+                <Flex alignSelf={{ default: "alignSelfFlexEnd" }}>
+                  {actions.map((a, idx) => (
+                    <FlexItem key={idx}>{a}</FlexItem>
+                  ))}
+                </Flex>
               </Flex>
-            </Flex>
-          )}
+            )}
+          </Flex>
         </Flex>
       </PageSection>
       {navigation}

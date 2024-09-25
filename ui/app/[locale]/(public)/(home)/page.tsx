@@ -26,7 +26,6 @@ import {
   TextContent,
   Title,
 } from "@/libs/patternfly/react-core";
-import { redirect } from "@/navigation";
 import { isProductizedBuild } from "@/utils/env";
 import { getTranslations } from "next-intl/server";
 import { Suspense } from "react";
@@ -64,8 +63,7 @@ export default async function Home() {
       <PageSection>
         <Stack hasGutter={true}>
           <StackItem>
-            <Card
-              isCompact={true} >
+            <Card isCompact={true}>
               <CardTitle>
                 <TextContent>
                   {t.rich("homepage.platform_openshift_cluster")}

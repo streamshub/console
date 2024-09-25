@@ -6,7 +6,7 @@ import {
   NodesTable,
 } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/nodes/NodesTable";
 import { Alert, PageSection } from "@/libs/patternfly/react-core";
-import { redirect } from "@/navigation";
+import { redirect } from "@/i18n/routing";
 import { getTranslations } from "next-intl/server";
 import { Suspense } from "react";
 
@@ -71,7 +71,7 @@ async function ConnectedNodes({ params }: { params: KafkaParams }) {
   return (
     <>
       {!kpis && (
-        <PageSection>
+        <PageSection isFilled={true}>
           <Alert title={t("nodes.kpis_offline")} variant={"warning"} />
         </PageSection>
       )}

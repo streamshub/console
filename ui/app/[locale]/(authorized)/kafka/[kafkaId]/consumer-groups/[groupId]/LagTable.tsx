@@ -3,7 +3,7 @@ import { Number } from "@/components/Format/Number";
 import { ResponsiveTable } from "@/components/Table";
 import { Tooltip } from "@/libs/patternfly/react-core";
 import { HelpIcon } from "@/libs/patternfly/react-icons";
-import { Link } from "@/navigation";
+import { Link } from "@/i18n/routing";
 import { TableVariant } from "@patternfly/react-table";
 import { useTranslations } from "next-intl";
 
@@ -40,9 +40,7 @@ export function LagTable({
             return (
               <Th key={key}>
                 {t("committed_offset")}{" "}
-                <Tooltip
-                  content={t("committed_offset_tooltip")}
-                >
+                <Tooltip content={t("committed_offset_tooltip")}>
                   <HelpIcon />
                 </Tooltip>
               </Th>
@@ -51,9 +49,7 @@ export function LagTable({
             return (
               <Th key={key}>
                 {t("end_offset")}{" "}
-                <Tooltip
-                  content={t("end_offset_tooltip")}
-                >
+                <Tooltip content={t("end_offset_tooltip")}>
                   <HelpIcon />
                 </Tooltip>
               </Th>

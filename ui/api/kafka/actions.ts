@@ -66,7 +66,6 @@ export async function getKafkaCluster(
   try {
     const res = await fetch(url, {
       headers: await getHeaders(),
-      cache: "reload",
     });
     if (res.status === 200) {
       const rawData = await res.json();

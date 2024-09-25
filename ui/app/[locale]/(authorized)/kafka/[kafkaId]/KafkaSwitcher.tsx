@@ -8,7 +8,7 @@ import {
   MenuToggle,
   SearchInput,
 } from "@/libs/patternfly/react-core";
-import { Link, useRouter } from "@/navigation";
+import { Link, useRouter } from "@/i18n/routing";
 import { Route } from "next";
 import { CSSProperties, useState } from "react";
 
@@ -49,9 +49,7 @@ export function KafkaSwitcher<T extends string>({
     .filter(
       (b) =>
         searchText === "" ||
-        b.attributes.name
-          .toLowerCase()
-          .includes(searchText.toLowerCase()),
+        b.attributes.name.toLowerCase().includes(searchText.toLowerCase()),
     )
     .map(clusterToDropdownItem);
   return (

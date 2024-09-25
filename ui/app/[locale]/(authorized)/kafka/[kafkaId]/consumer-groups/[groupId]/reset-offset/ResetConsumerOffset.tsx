@@ -7,7 +7,7 @@ import {
   TopicSelection,
   partitionSelection,
 } from "../types";
-import { useRouter } from "@/navigation";
+import { useRouter } from "@/i18n/routing";
 import {
   getDryrunResult,
   updateConsumerGroup,
