@@ -1,12 +1,17 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./authenticated-test";
+
+test.beforeEach(async ({ authenticatedPage }) => {
+  await authenticatedPage.goToClusterOverview();
+});
 
 test("Cluster Overview page", async ({ page }) => {
   await test.step("Navigate to cluster overview page", async () => {
-    await page.goto("./");
-    await page.click('text="Click to login anonymously"');
     await page.click('text="Cluster overview"');
-    await page.waitForSelector('text="Key performance indicators and important information regarding the Kafka cluster."', { timeout: 500000 });
-  })
+    await page.waitForSelector(
+      'text="Key performance indicators and important information regarding the Kafka cluster."',
+      { timeout: 500000 },
+    );
+  });
   await test.step("Cluster overview page should display correctly", async () => {
     const newPage = page.mainFrame();
     expect(await newPage.innerText("body")).toContain("Cluster overview");

@@ -1,35 +1,11 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./authenticated-test";
 
-test("Messages page", async ({ page }) => {
-  await test.step("Navigate to topics messages page", async () => {
-    await page.goto("./");
-    await page.click('text="Click to login anonymously"');
-    await page.waitForURL(page.url().replace("login", "overview"));
-    const topicsLink = page.locator("a").locator('text="Topics"');
-    await topicsLink.click();
-    await page.waitForURL(await topicsLink.getAttribute("href"));
-    await page.waitForSelector('text="Loading data"', {
-      state: "hidden",
-    });
-    const link = page
-      .locator('table[aria-label="Topics"]')
-      .locator("tbody")
-      .locator("tr")
-      .first()
-      .locator("td")
-      .first()
-      .locator("a");
+test.beforeEach(async ({ authenticatedPage }) => {
+  await authenticatedPage.goToFirstTopic();
+});
 
-    await link.click();
-    await page.waitForURL(await link.getAttribute("href"));
-    await page.waitForSelector('text="Loading data"', {
-      state: "hidden",
-    });
-    await expect(
-      page.getByText("Last updated").or(page.getByText("No messages data")),
-    ).toBeVisible();
-  });
-  await test.step("Messages page should display table", async () => {
+test("Messages page", async ({ page, authenticatedPage }) => {
+  await test.step("Messages page should display table, or an empty state", async () => {
     if (await page.getByText("No messages data").isVisible()) {
       expect(await page.innerText("body")).toContain(
         "Data will appear shortly after we receive produced messages.",

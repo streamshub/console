@@ -1,10 +1,11 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./authenticated-test";
+
+test.beforeEach(async ({ authenticatedPage }) => {
+  await authenticatedPage.goToClusterOverview();
+});
 
 test.describe("Create Topic", () => {
   test.skip("Create Topic form should appear", async ({ page }) => {
-    await page.goto("./");
-    await page.click('text="Click to login anonymously"');
-
     await page.goto(`./kafka/j7W3TRG7SsWCBXHjz2hfrg/topics/create`);
     await page.waitForLoadState("networkidle", { timeout: 10000 });
     const screenshot = await page.screenshot();
