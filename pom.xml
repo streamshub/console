@@ -69,6 +69,7 @@
         <module>common</module>
         <module>api</module>
         <module>operator</module>
+        <module>ui</module>
     </modules>
 
     <dependencyManagement>
@@ -240,7 +241,9 @@
                 <configuration>
                     <autoVersionSubmodules>true</autoVersionSubmodules>
                     <tagNameFormat>@{project.version}</tagNameFormat>
+                    <preparationProfiles>release-preparation</preparationProfiles>
                     <preparationGoals>verify</preparationGoals>
+                    <completionGoals>process-resources -pl ui</completionGoals>
                     <pushChanges>false</pushChanges>
                     <localCheckout>true</localCheckout>
                     <remoteTagging>false</remoteTagging>
@@ -250,4 +253,10 @@
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <id>release-preparation</id>
+        </profile>
+    </profiles>
 </project>
