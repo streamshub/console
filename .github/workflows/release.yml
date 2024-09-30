@@ -139,7 +139,7 @@ jobs:
           git push --tags
 
       - name: Create GitHub Release
-        uses: radcortez/milestone-release-action@89b8ddd2e11a5dad6f9b66bea5435724b00de0f6
+        uses: radcortez/milestone-release-action@2acb408c26989c8a6db893eb3a3dea9cd1f4d875
         with:
           github-token: ${{secrets.GITHUB_TOKEN}}
           milestone-title: ${{steps.metadata.outputs.current-version}}
