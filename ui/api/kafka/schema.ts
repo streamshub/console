@@ -50,6 +50,7 @@ const ClusterDetailSchema = z.object({
     nodes: z.array(NodeSchema),
     controller: NodeSchema,
     authorizedOperations: z.array(z.string()),
+    cruiseControlEnabled: z.boolean().optional(),
     listeners: z
       .array(
         z.object({
