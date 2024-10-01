@@ -15,7 +15,7 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 @JsonInclude(value = Include.NON_NULL)
 public abstract class JsonApiDocument {
 
-    private Map<String, Object> meta;
+    private JsonApiMeta meta;
     private Map<String, String> links;
 
     static <K, V> Map<K, V> addEntry(Map<K, V> map, K key, V value) {
@@ -27,7 +27,7 @@ public abstract class JsonApiDocument {
     }
 
     @JsonProperty
-    public Map<String, Object> meta() {
+    public JsonApiMeta meta() {
         return meta;
     }
 
@@ -36,7 +36,7 @@ public abstract class JsonApiDocument {
     }
 
     public JsonApiDocument addMeta(String key, Object value) {
-        meta = addEntry(meta, key, value);
+        meta = JsonApiMeta.put(meta, key, value);
         return this;
     }
 

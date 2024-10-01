@@ -53,8 +53,8 @@ class KeycloakSecuredKafkaContainer extends KafkaContainer {
     byte[] keystore;
     byte[] truststore;
 
-    KeycloakSecuredKafkaContainer(String imageName) {
-        super(imageName);
+    KeycloakSecuredKafkaContainer() {
+        super();
         withExposedPorts(KAFKA_PORT);
     }
 

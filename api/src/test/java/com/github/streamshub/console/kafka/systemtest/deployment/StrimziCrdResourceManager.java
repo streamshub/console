@@ -88,6 +88,7 @@ public class StrimziCrdResourceManager implements QuarkusTestResourceLifecycleMa
             .build();
 
         k8s.resource(Crds.kafka()).serverSideApply();
+        k8s.resource(Crds.kafkaRebalance()).serverSideApply();
         k8s.resource(Crds.kafkaTopic()).serverSideApply();
 
         return Collections.emptyMap();

@@ -20,7 +20,10 @@ import jakarta.validation.Payload;
 
 @Target({ElementType.FIELD, ElementType.METHOD, ElementType.PARAMETER, ElementType.ANNOTATION_TYPE})
 @Retention(RetentionPolicy.RUNTIME)
-@Constraint(validatedBy = StringEnumeration.Validator.class)
+@Constraint(validatedBy = {
+    StringEnumeration.StringValidator.class,
+    StringEnumeration.StringListValidator.class
+})
 @Documented
 public @interface StringEnumeration {
     String message() default "list contains an invalid value";
@@ -33,21 +36,32 @@ public @interface StringEnumeration {
 
     String source() default "";
 
-    static class Validator implements ConstraintValidator<StringEnumeration, List<String>> {
-
+    abstract static class Validator<T> implements ConstraintValidator<StringEnumeration, T> {
         final Set<String> allowedValues = new HashSet<>();
 
         @Override
         public void initialize(StringEnumeration annotation) {
             allowedValues.addAll(Arrays.asList(annotation.allowedValues()));
         }
+    }
 
+    static class StringListValidator extends Validator<List<String>> {
         @Override
         public boolean isValid(List<String> value, ConstraintValidatorContext context) {
             return Optional.ofNullable(value)
                 .map(Collection::stream)
                 .orElseGet(Stream::empty)
                 .allMatch(allowedValues::contains);
+        }
+    }
+
+    static class StringValidator extends Validator<String> {
+        @Override
+        public boolean isValid(String value, ConstraintValidatorContext context) {
+            return Optional.ofNullable(value)
+                .map(allowedValues::contains)
+                // Nulls are valid
+                .orElse(Boolean.TRUE);
         }
     }
 }

@@ -233,6 +233,7 @@ public class KafkaClusterService {
             .toList();
 
         cluster.listeners(listeners);
+        cluster.cruiseControlEnabled(Objects.nonNull(kafka.getSpec().getCruiseControl()));
         setKafkaClusterStatus(cluster, kafka);
     }
 

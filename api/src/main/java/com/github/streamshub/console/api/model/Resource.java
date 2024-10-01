@@ -1,11 +1,11 @@
 package com.github.streamshub.console.api.model;
 
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.function.Supplier;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.github.streamshub.console.api.support.ErrorCategory;
@@ -21,17 +21,37 @@ import com.github.streamshub.console.api.support.ErrorCategory;
 public abstract class Resource<T> {
 
     protected String id;
+
     @NotNull(payload = ErrorCategory.InvalidResource.class)
     protected final String type;
-    protected Map<String, Object> meta;
+
+    @Valid
+    protected JsonApiMeta meta;
+
     @Valid
     @NotNull(payload = ErrorCategory.InvalidResource.class)
     protected final T attributes;
 
-    protected Resource(String id, String type, T attributes) {
+    @JsonIgnore
+    private final Supplier<JsonApiMeta> metaFactory;
+
+    protected Resource(String id, String type, JsonApiMeta meta, T attributes) {
         this.id = id;
         this.type = type;
+        this.meta = meta;
+        this.metaFactory = JsonApiMeta::new;
         this.attributes = attributes;
+    }
+
+    protected Resource(String id, String type, Supplier<JsonApiMeta> metaFactory, T attributes) {
+        this.id = id;
+        this.type = type;
+        this.metaFactory = metaFactory;
+        this.attributes = attributes;
+    }
+
+    protected Resource(String id, String type, T attributes) {
+        this(id, type, JsonApiMeta::new, attributes);
     }
 
     public String getId() {
@@ -46,7 +66,15 @@ public abstract class Resource<T> {
         return attributes;
     }
 
-    public Map<String, Object> getMeta() {
+    public JsonApiMeta getMeta() {
+        return meta;
+    }
+
+    @JsonIgnore
+    public JsonApiMeta getOrCreateMeta() {
+        if (meta == null) {
+            meta = metaFactory.get();
+        }
         return meta;
     }
 
@@ -55,10 +83,7 @@ public abstract class Resource<T> {
     }
 
     public Resource<T> addMeta(String key, Object value) {
-        if (meta == null) {
-            meta = new LinkedHashMap<>();
-        }
-        meta.put(key, value);
+        getOrCreateMeta().put(key, value);
         return this;
     }
 }

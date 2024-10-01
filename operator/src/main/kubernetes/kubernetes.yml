@@ -58,6 +58,16 @@ rules:
       - kafkas
       - kafkatopics
       - kafkausers
+
+  # Granted to Console instances
+  - verbs:
+      - get
+      - list
+      - patch
+    apiGroups:
+      - kafka.strimzi.io
+    resources:
+      - kafkarebalances
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding

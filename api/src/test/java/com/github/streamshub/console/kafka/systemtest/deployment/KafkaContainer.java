@@ -4,8 +4,8 @@ import io.strimzi.test.container.StrimziKafkaContainer;
 
 class KafkaContainer extends StrimziKafkaContainer {
 
-    KafkaContainer(String imageReference) {
-        super(imageReference);
+    KafkaContainer() {
+        super();
     }
 
     String getCACertificate() {
