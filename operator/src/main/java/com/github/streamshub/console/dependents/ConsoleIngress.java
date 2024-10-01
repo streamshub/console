@@ -6,6 +6,7 @@ import jakarta.inject.Inject;
 import com.github.streamshub.console.api.v1alpha1.Console;
 
 import io.fabric8.kubernetes.api.model.networking.v1.Ingress;
+import io.fabric8.openshift.api.model.Route;
 import io.javaoperatorsdk.operator.api.reconciler.Context;
 import io.javaoperatorsdk.operator.processing.dependent.kubernetes.CRUDKubernetesDependentResource;
 import io.javaoperatorsdk.operator.processing.dependent.kubernetes.KubernetesDependent;
@@ -41,6 +42,7 @@ public class ConsoleIngress extends CRUDKubernetesDependentResource<Ingress, Con
                 .withLabels(commonLabels("console"))
             .endMetadata()
             .editSpec()
+                .withIngressClassName(getIngressClassName(context))
                 .editDefaultBackend()
                     .editService()
                         .withName(service.instanceName(primary))
@@ -60,5 +62,13 @@ public class ConsoleIngress extends CRUDKubernetesDependentResource<Ingress, Con
                 .endRule()
             .endSpec()
             .build();
+    }
+
+    /**
+     * The class name is not required for functionality on OCP. However, monitoring
+     * will issue an alert if it is not present.
+     */
+    private String getIngressClassName(Context<Console> context) {
+        return context.getClient().supports(Route.class) ? "openshift-default" : null;
     }
 }
