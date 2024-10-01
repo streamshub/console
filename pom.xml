@@ -16,7 +16,7 @@
         <!-- Dependencies -->
         <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
         <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
-        <quarkus.platform.version>3.8.6</quarkus.platform.version>
+        <quarkus.platform.version>3.15.1</quarkus.platform.version>
         <strimzi-api.version>0.43.0</strimzi-api.version>
         <strimzi-oauth.version>0.15.0</strimzi-oauth.version>
 
@@ -74,14 +74,6 @@
 
     <dependencyManagement>
         <dependencies>
-            <!-- fabric8 to align with version used by JOSDK -->
-            <dependency>
-                <groupId>io.fabric8</groupId>
-                <artifactId>kubernetes-client-bom</artifactId>
-                <version>6.11.0</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
             <!-- Manage nimbus-jose-jwt for CVE-2023-52428 -->
             <dependency>
                 <groupId>com.nimbusds</groupId>
@@ -116,9 +108,16 @@
                 <scope>import</scope>
             </dependency>
             <dependency>
-                <groupId>${quarkus.platform.group-id}</groupId>
+                <!--
+                    When bumping quarkus-platform next, check that QOSDK
+                    6.8.1 or above and change back to using properties:
+
+                      groupId = ${quarkus.platform.group-id}
+                      version = ${quarkus.platform.version}
+                -->
+                <groupId>io.quarkiverse.operatorsdk</groupId>
                 <artifactId>quarkus-operator-sdk-bom</artifactId>
-                <version>${quarkus.platform.version}</version>
+                <version>6.8.1</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
