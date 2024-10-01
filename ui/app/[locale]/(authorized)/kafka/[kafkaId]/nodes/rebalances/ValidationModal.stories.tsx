@@ -20,3 +20,10 @@ export const ApproveRebalance: Story = {
     status: "approve",
   },
 };
+
+export const RefreshRebalance: Story = {
+  args: {
+    isModalOpen: true,
+    status: "approve",
+  },
+};

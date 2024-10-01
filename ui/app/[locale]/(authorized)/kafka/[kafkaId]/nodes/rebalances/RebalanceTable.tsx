@@ -18,8 +18,8 @@ import {
   PendingIcon,
   ResourcesFullIcon,
 } from "@/libs/patternfly/react-icons";
-import { ReactNode } from "react";
 import Link from "next/link";
+import React, { ReactNode } from "react";
 
 export const RebalanceTableColumns = ["name", "status", "createdAt"] as const;
 
@@ -100,6 +100,7 @@ export type RebalanceTabelProps = {
   perPage: number;
   onApprove: (rebalanceName: RebalanceList) => void;
   onStop: (rebalanceName: RebalanceList) => void;
+  onRefresh: (rebalanceName: RebalanceList) => void;
   filterName: string | undefined;
   filterStatus: RebalanceStatus[] | undefined;
   filterMode: string | undefined;
@@ -126,6 +127,7 @@ export function RebalanceTable({
   page,
   perPage,
   onPageChange,
+  onRefresh,
 }: RebalanceTabelProps) {
   const t = useTranslations("Rebalancing");
   return (
@@ -197,7 +199,7 @@ export function RebalanceTable({
             },
             {
               title: t("refresh"),
-              onClick: () => {},
+              onClick: () => onRefresh(row),
             },
             {
               title: t("stop"),

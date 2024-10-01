@@ -68,7 +68,9 @@ export function ConnectedReabalancesTable({
 
   const [isModalOpen, setModalOpen] = useState(false);
 
-  const [approvalStatus, setApprovalStatus] = useState<"approve" | "stop">("approve");
+  const [approvalStatus, setApprovalStatus] = useState<
+    "approve" | "stop" | "refresh"
+  >("approve");
 
   const [RebalanceId, setRebalanceId] = useState<string>("");
 
@@ -240,6 +242,11 @@ export function ConnectedReabalancesTable({
               onApprove={(row) => {
                 setModalOpen(true);
                 setApprovalStatus("approve");
+                setRebalanceId(row.id);
+              }}
+              onRefresh={(row) => {
+                setModalOpen(true);
+                setApprovalStatus("refresh");
                 setRebalanceId(row.id);
               }}
               onStop={(row) => {

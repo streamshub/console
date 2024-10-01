@@ -524,6 +524,8 @@
   "Rebalancing": {
     "approve_rebalance_proposal": "Approve Rebalance Proposal?",
     "stop_rebalance": "Stop Rebalance",
+    "refresh_rebalance": "Refresh Rebalance",
+    "refresh_rebalance_description": "Refresh the optimization proposal to the latest cluster metrics",
     "approve_rebalance_description": "This will apply the optimization changes, Are you sure you want to proceed",
     "stop_rebalance_description": "Stopping will halt the current rebalancing process. You can start a new rebalance later. Are you sure you want to proceed?",
     "confirm": "Confirm",

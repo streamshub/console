@@ -13,7 +13,7 @@ export function ValidationModal({
   onCancel,
   isModalOpen,
 }: {
-  status: "approve" | "stop";
+  status: "approve" | "stop" | "refresh";
   isModalOpen: boolean;
   onConfirm: () => void;
   onCancel: () => void;
@@ -27,15 +27,19 @@ export function ValidationModal({
       title={
         status === "approve"
           ? t("approve_rebalance_proposal")
-          : t("stop_rebalance")
+          : status === "stop"
+            ? t("stop_rebalance")
+            : t("refresh_rebalance")
       }
       help={
         <Popover
           headerContent={
             status === "approve" ? (
               <div>{t("approve")}</div>
-            ) : (
+            ) : status === "stop" ? (
               <div>{t("stop")}</div>
+            ) : (
+              <div>{t("refresh")}</div>
             )
           }
           bodyContent={undefined}
@@ -56,7 +60,9 @@ export function ValidationModal({
     >
       {status === "approve"
         ? t("approve_rebalance_description")
-        : t("stop_rebalance_description")}
+        : status === "stop"
+          ? t("stop_rebalance_description")
+          : t("refresh_rebalance_description")}
     </Modal>
   );
 }
