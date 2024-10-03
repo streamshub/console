@@ -7,8 +7,8 @@ import {
   DescriptionListGroup,
   DescriptionListTerm,
   Divider,
-  Level,
-  LevelItem,
+  Flex,
+  FlexItem,
 } from "@/libs/patternfly/react-core";
 import { useTranslations } from "next-intl";
 
@@ -30,8 +30,8 @@ export function RebalancesCountCard({
     <Card>
       <CardBody>
         <DescriptionList>
-          <Level hasGutter>
-            <LevelItem>
+          <Flex justifyContent={{ default: "justifyContentSpaceEvenly" }}>
+            <FlexItem>
               <DescriptionListGroup>
                 <DescriptionListTerm>
                   {t("total_rebalances")}
@@ -40,60 +40,73 @@ export function RebalancesCountCard({
                   <Bullseye>{TotalRebalancing}</Bullseye>
                 </DescriptionListDescription>
               </DescriptionListGroup>
-            </LevelItem>
+            </FlexItem>
             <Divider
               orientation={{
                 default: "vertical",
               }}
             />
-            <LevelItem>
-              <DescriptionListGroup>
-                <DescriptionListTerm>{t("proposal_ready")}</DescriptionListTerm>
-                <DescriptionListDescription>
-                  <Bullseye>{proposalReady}</Bullseye>
-                </DescriptionListDescription>
-              </DescriptionListGroup>
-            </LevelItem>
+            <FlexItem>
+              <Bullseye>
+                <DescriptionListGroup>
+                  <DescriptionListTerm>
+                    {t("proposal_ready")}
+                  </DescriptionListTerm>
+                  <DescriptionListDescription>
+                    <Bullseye>{proposalReady}</Bullseye>
+                  </DescriptionListDescription>
+                </DescriptionListGroup>
+              </Bullseye>
+            </FlexItem>
             <Divider
               orientation={{
                 default: "vertical",
               }}
             />
-            <LevelItem>
-              <DescriptionListGroup>
-                <DescriptionListTerm>{t("rebalancing")}</DescriptionListTerm>
-                <DescriptionListDescription>
-                  <Bullseye>{rebalancing}</Bullseye>
-                </DescriptionListDescription>
-              </DescriptionListGroup>
-            </LevelItem>
+            <FlexItem>
+              <Bullseye>
+                <DescriptionListGroup>
+                  <DescriptionListTerm>{t("rebalancing")}</DescriptionListTerm>
+                  <DescriptionListDescription>
+                    <Bullseye>{rebalancing}</Bullseye>
+                  </DescriptionListDescription>
+                </DescriptionListGroup>
+              </Bullseye>
+            </FlexItem>
             <Divider
               orientation={{
                 default: "vertical",
               }}
             />
-            <LevelItem>
-              <DescriptionListGroup>
-                <DescriptionListTerm>{t("ready")}</DescriptionListTerm>
-                <DescriptionListDescription>
-                  <Bullseye>{ready}</Bullseye>
-                </DescriptionListDescription>
-              </DescriptionListGroup>
-            </LevelItem>
+            <FlexItem>
+              <Bullseye>
+                <DescriptionListGroup>
+                  <DescriptionListTerm>{t("ready")}</DescriptionListTerm>
+                  <DescriptionListDescription>
+                    <Bullseye>{ready}</Bullseye>
+                  </DescriptionListDescription>
+                </DescriptionListGroup>
+              </Bullseye>
+            </FlexItem>
             <Divider
               orientation={{
                 default: "vertical",
               }}
             />
-            <LevelItem>
-              <DescriptionListGroup>
-                <DescriptionListTerm>{t("stopped")}</DescriptionListTerm>
-                <DescriptionListDescription>
-                  <Bullseye>{stopped}</Bullseye>
-                </DescriptionListDescription>
-              </DescriptionListGroup>
-            </LevelItem>
-          </Level>
+            <FlexItem>
+              <Bullseye>
+                <DescriptionListGroup>
+                  <DescriptionListTerm>
+                    {" "}
+                    <Bullseye>{t("stopped")}</Bullseye>
+                  </DescriptionListTerm>
+                  <DescriptionListDescription>
+                    <Bullseye>{stopped}</Bullseye>
+                  </DescriptionListDescription>
+                </DescriptionListGroup>
+              </Bullseye>
+            </FlexItem>
+          </Flex>
         </DescriptionList>
       </CardBody>
     </Card>

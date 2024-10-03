@@ -28,20 +28,20 @@ export function OptimizationProposal({
   sessionId,
   baseurl,
 }: {
-  numIntraBrokerReplicaMovements: number;
-  numReplicaMovements: number;
-  onDemandBalancednessScoreAfter: number;
-  intraBrokerDataToMoveMB: number;
-  monitoredPartitionsPercentage: number;
+  numIntraBrokerReplicaMovements: number | undefined;
+  numReplicaMovements: number | undefined;
+  onDemandBalancednessScoreAfter: number | undefined;
+  intraBrokerDataToMoveMB: number | undefined;
+  monitoredPartitionsPercentage: number | undefined;
   excludedBrokersForReplicaMove: string[] | null | undefined;
   excludedBrokersForLeadership: string[] | null | undefined;
-  onDemandBalancednessScoreBefore: number;
-  recentWindows: number;
-  dataToMoveMB: number;
+  onDemandBalancednessScoreBefore: number | undefined;
+  recentWindows: number | undefined;
+  dataToMoveMB: number | undefined;
   excludedTopics: string[] | null | undefined;
-  numLeaderMovements: number;
-    isModalOpen: boolean;
-    sessionId: string | null | undefined;
+  numLeaderMovements: number | undefined;
+  isModalOpen: boolean;
+  sessionId: string | null | undefined;
   baseurl: string;
 }) {
   const t = useTranslations("Rebalancing");
@@ -79,7 +79,7 @@ export function OptimizationProposal({
         <DescriptionListGroup>
           <DescriptionListTerm>{t("data_to_move")}</DescriptionListTerm>
           <DescriptionListDescription>
-            {dataToMoveMB}
+            {dataToMoveMB || 0}
             {" MB"}
           </DescriptionListDescription>
         </DescriptionListGroup>
@@ -88,7 +88,10 @@ export function OptimizationProposal({
             {t("excluded_brokers_for_leadership")}
           </DescriptionListTerm>
           <DescriptionListDescription>
-            {excludedBrokersForLeadership}
+            {excludedBrokersForLeadership &&
+            excludedBrokersForLeadership.length > 0
+              ? excludedBrokersForLeadership.join(", ")
+              : "-"}
           </DescriptionListDescription>
         </DescriptionListGroup>
         <DescriptionListGroup>
@@ -96,13 +99,18 @@ export function OptimizationProposal({
             {t("excluded_brokers_for_replica_move")}
           </DescriptionListTerm>
           <DescriptionListDescription>
-            {excludedBrokersForReplicaMove}
+            {excludedBrokersForReplicaMove &&
+            excludedBrokersForReplicaMove.length > 0
+              ? excludedBrokersForReplicaMove.join(", ")
+              : "-"}
           </DescriptionListDescription>
         </DescriptionListGroup>
         <DescriptionListGroup>
           <DescriptionListTerm>{t("excluded_topics")}</DescriptionListTerm>
           <DescriptionListDescription>
-            {excludedTopics}
+            {excludedTopics && excludedTopics.length > 0
+              ? excludedTopics.join(", ")
+              : "-"}
           </DescriptionListDescription>
         </DescriptionListGroup>
         <DescriptionListGroup>
@@ -110,7 +118,7 @@ export function OptimizationProposal({
             {t("intra_broker_data_to_move")}
           </DescriptionListTerm>
           <DescriptionListDescription>
-            {intraBrokerDataToMoveMB}
+            {intraBrokerDataToMoveMB || 0}
           </DescriptionListDescription>
         </DescriptionListGroup>
         <DescriptionListGroup>
@@ -118,7 +126,7 @@ export function OptimizationProposal({
             {t("monitored_partitions_percentage")}
           </DescriptionListTerm>
           <DescriptionListDescription>
-            {monitoredPartitionsPercentage}
+            {monitoredPartitionsPercentage || 0}
           </DescriptionListDescription>
         </DescriptionListGroup>
         <DescriptionListGroup>
@@ -126,13 +134,13 @@ export function OptimizationProposal({
             {t("num_intra_broker_replica_movements")}
           </DescriptionListTerm>
           <DescriptionListDescription>
-            {numIntraBrokerReplicaMovements}
+            {numIntraBrokerReplicaMovements || 0}
           </DescriptionListDescription>
         </DescriptionListGroup>
         <DescriptionListGroup>
           <DescriptionListTerm>{t("num_leader_movements")}</DescriptionListTerm>
           <DescriptionListDescription>
-            {numLeaderMovements}
+            {numLeaderMovements || 0}
           </DescriptionListDescription>
         </DescriptionListGroup>
         <DescriptionListGroup>
@@ -140,7 +148,7 @@ export function OptimizationProposal({
             {t("num_replica_movements")}
           </DescriptionListTerm>
           <DescriptionListDescription>
-            {numReplicaMovements}
+            {numReplicaMovements || 0}
           </DescriptionListDescription>
         </DescriptionListGroup>
         <DescriptionListGroup>
@@ -148,7 +156,7 @@ export function OptimizationProposal({
             {t("on_demand_balancedness_score_after")}
           </DescriptionListTerm>
           <DescriptionListDescription>
-            {onDemandBalancednessScoreAfter}
+            {onDemandBalancednessScoreAfter || 0}
           </DescriptionListDescription>
         </DescriptionListGroup>
         <DescriptionListGroup>
@@ -156,18 +164,20 @@ export function OptimizationProposal({
             {t("on_demand_balancedness_Score_before")}
           </DescriptionListTerm>
           <DescriptionListDescription>
-            {onDemandBalancednessScoreBefore}
+            {onDemandBalancednessScoreBefore || 0}
           </DescriptionListDescription>
         </DescriptionListGroup>
         <DescriptionListGroup>
           <DescriptionListTerm>{t("recent_windows")}</DescriptionListTerm>
           <DescriptionListDescription>
-            {recentWindows}
+            {recentWindows || 0}
           </DescriptionListDescription>
         </DescriptionListGroup>
         <DescriptionListGroup>
           <DescriptionListTerm>{t("session_id")}</DescriptionListTerm>
-          <DescriptionListDescription>{sessionId}</DescriptionListDescription>
+          <DescriptionListDescription>
+            {sessionId ?? "-"}
+          </DescriptionListDescription>
         </DescriptionListGroup>
       </DescriptionList>
     </Modal>

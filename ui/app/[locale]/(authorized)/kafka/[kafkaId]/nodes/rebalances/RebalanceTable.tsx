@@ -1,6 +1,10 @@
 import { TableView, TableViewProps } from "@/components/Table";
 import { useTranslations } from "next-intl";
-import { RebalanceList, RebalanceStatus } from "@/api/rebalance/schema";
+import {
+  RebalanceList,
+  RebalanceMode,
+  RebalanceStatus,
+} from "@/api/rebalance/schema";
 import {
   Flex,
   FlexItem,
@@ -20,6 +24,8 @@ import {
 } from "@/libs/patternfly/react-icons";
 import Link from "next/link";
 import React, { ReactNode } from "react";
+import { EmptyStateNoMatchFound } from "@/components/Table/EmptyStateNoMatchFound";
+import { EmptyStateNoKafkaRebalance } from "./EmptyStateNoKafkaRebalance";
 
 export const RebalanceTableColumns = ["name", "status", "createdAt"] as const;
 
@@ -92,6 +98,12 @@ const StatusLabel: Record<RebalanceStatus, ReactNode> = {
   ),
 };
 
+const ModeLabel: Record<RebalanceMode, ReactNode> = {
+  full: <>full</>,
+  "add-brokers": <>add-brokers</>,
+  "remove-brokers": <>remove-brokers</>,
+};
+
 export type RebalanceTabelProps = {
   baseurl: string;
   rebalanceList: RebalanceList[] | undefined;
@@ -103,9 +115,9 @@ export type RebalanceTabelProps = {
   onRefresh: (rebalanceName: RebalanceList) => void;
   filterName: string | undefined;
   filterStatus: RebalanceStatus[] | undefined;
-  filterMode: string | undefined;
+  filterMode: RebalanceMode[] | undefined;
   onFilterNameChange: (name: string | undefined) => void;
-  onFilterModeChange: (mode: string | undefined) => void;
+  onFilterModeChange: (mode: RebalanceMode[] | undefined) => void;
   onFilterStatusChange: (status: RebalanceStatus[] | undefined) => void;
 } & Pick<
   TableViewProps<RebalanceList, (typeof RebalanceTableColumns)[number]>,
@@ -128,6 +140,7 @@ export function RebalanceTable({
   perPage,
   onPageChange,
   onRefresh,
+  onClearAllFilters,
 }: RebalanceTabelProps) {
   const t = useTranslations("Rebalancing");
   return (
@@ -140,8 +153,11 @@ export function RebalanceTable({
       columns={RebalanceTableColumns}
       isColumnSortable={isColumnSortable}
       data={rebalanceList}
-      emptyStateNoData={<></>}
-      emptyStateNoResults={<></>}
+      emptyStateNoData={<EmptyStateNoKafkaRebalance />}
+      emptyStateNoResults={
+        <EmptyStateNoMatchFound onClear={onClearAllFilters!} />
+      }
+      onClearAllFilters={onClearAllFilters}
       ariaLabel={"Rebalance brokers"}
       renderHeader={({ Th, column, key }) => {
         switch (column) {
@@ -209,19 +225,28 @@ export function RebalanceTable({
           ]}
         />
       )}
+      isFiltered={
+        filterName !== undefined ||
+        filterStatus?.length !== 0 ||
+        filterMode?.length !== 0
+      }
       getExpandedRow={({ row }) => {
         return (
-          <Flex className={"pf-v5-u-pl-xl"}>
-            <DescriptionList columnModifier={{ lg: "3Col" }}>
-              <FlexItem>
+          <DescriptionList>
+            <Flex justifyContent={{ default: "justifyContentSpaceEvenly" }}>
+              <FlexItem
+                style={{
+                  width: "15%",
+                }}
+              >
                 <DescriptionListGroup>
                   <DescriptionListTerm>{t("mode")}</DescriptionListTerm>
                   <DescriptionListDescription>
-                    {row.attributes.mode}
+                    {ModeLabel[row.attributes.mode]}
                   </DescriptionListDescription>
                 </DescriptionListGroup>
               </FlexItem>
-              <FlexItem className={"pf-v5-u-ml-auto-on-xl"}>
+              <FlexItem style={{ width: "25%", paddingLeft: "5rem" }}>
                 <DescriptionListGroup>
                   <DescriptionListTerm>
                     {t("auto_approval_enabled")}
@@ -231,16 +256,19 @@ export function RebalanceTable({
                   </DescriptionListDescription>
                 </DescriptionListGroup>
               </FlexItem>
-              <FlexItem className={"pf-v5-u-ml-auto-on-xl"}>
+              <FlexItem style={{ width: "27%", paddingRight: "5rem" }}>
                 <DescriptionListGroup>
                   <DescriptionListTerm>{t("brokers")}</DescriptionListTerm>
                   <DescriptionListDescription>
-                    {row.attributes.brokers?.join(",")}
+                    {!row.attributes.brokers ||
+                      row.attributes.brokers.length === 0
+                      ? "N/A"
+                      : row.attributes.brokers.join(",")}
                   </DescriptionListDescription>
                 </DescriptionListGroup>
               </FlexItem>
-            </DescriptionList>
-          </Flex>
+            </Flex>
+          </DescriptionList>
         );
       }}
       filters={{
@@ -276,17 +304,22 @@ export function RebalanceTable({
           options: StatusLabel,
         },
         mode: {
-          type: "search",
-          chips: filterMode ? [filterMode] : [],
-          onSearch: onFilterModeChange,
-          onRemoveChip: () => {
-            onFilterModeChange(undefined);
+          type: "checkbox",
+          chips: filterMode || [],
+          onToggle: (mode) => {
+            const newMode = filterMode?.includes(mode)
+              ? filterMode.filter((m) => m !== mode)
+              : [...filterMode!, mode];
+            onFilterModeChange(newMode);
+          },
+          onRemoveChip: (mode) => {
+            const newMode = (filterMode || []).filter((m) => m !== mode);
+            onFilterModeChange(newMode);
           },
           onRemoveGroup: () => {
             onFilterModeChange(undefined);
           },
-          validate: (value) => true,
-          errorMessage: "At least 3 characters",
+          options: ModeLabel,
         },
       }}
     />

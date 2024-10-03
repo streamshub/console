@@ -11,22 +11,28 @@ const RebalanceStatusSchema = z.union([
   z.literal("ReconciliationPaused"),
 ]);
 
+const ModeSchema = z.union([
+  z.literal("full"),
+  z.literal("add-brokers"),
+  z.literal("remove-brokers"),
+]);
+
 const OptimizationResultSchema = z.object({
-  numIntraBrokerReplicaMovements: z.number(),
-  numReplicaMovements: z.number(),
-  onDemandBalancednessScoreAfter: z.number(),
-  afterBeforeLoadConfigMap: z.string(),
-  intraBrokerDataToMoveMB: z.number(),
-  monitoredPartitionsPercentage: z.number(),
-  provisionRecommendation: z.string(),
-  excludedBrokersForReplicaMove: z.array(z.string()).nullable(),
-  excludedBrokersForLeadership: z.array(z.string()).nullable(),
-  provisionStatus: z.string(),
-  onDemandBalancednessScoreBefore: z.number(),
-  recentWindows: z.number(),
-  dataToMoveMB: z.number(),
-  excludedTopics: z.array(z.string()).nullable(),
-  numLeaderMovements: z.number(),
+  numIntraBrokerReplicaMovements: z.number().optional(),
+  numReplicaMovements: z.number().optional(),
+  onDemandBalancednessScoreAfter: z.number().optional(),
+  afterBeforeLoadConfigMap: z.string().optional(),
+  intraBrokerDataToMoveMB: z.number().optional(),
+  monitoredPartitionsPercentage: z.number().optional(),
+  provisionRecommendation: z.string().optional(),
+  excludedBrokersForReplicaMove: z.array(z.string()).nullable().optional(),
+  excludedBrokersForLeadership: z.array(z.string()).nullable().optional(),
+  provisionStatus: z.string().optional(),
+  onDemandBalancednessScoreBefore: z.number().optional(),
+  recentWindows: z.number().optional(),
+  dataToMoveMB: z.number().optional(),
+  excludedTopics: z.array(z.string()).nullable().optional(),
+  numLeaderMovements: z.number().optional(),
 });
 
 export const RebalanceSchema = z.object({
@@ -43,7 +49,7 @@ export const RebalanceSchema = z.object({
     namespace: z.string(),
     creationTimestamp: z.string(),
     status: RebalanceStatusSchema,
-    mode: z.string().optional(),
+    mode: ModeSchema,
     brokers: z.array(z.number()).nullable(),
     sessionId: z.string().nullable(),
     optimizationResult: OptimizationResultSchema,
@@ -67,6 +73,7 @@ const RebalancesListSchema = z.object({
     creationTimestamp: true,
     mode: true,
     brokers: true,
+    optimizationResult: true
   }),
 });
 
@@ -91,3 +98,5 @@ export type RebalancesResponse = z.infer<typeof RebalanceResponseSchema>;
 export type RebalanceResponse = z.infer<typeof RebalanceSchema>;
 
 export type RebalanceStatus = z.infer<typeof RebalanceStatusSchema>;
+
+export type RebalanceMode = z.infer<typeof ModeSchema>;
