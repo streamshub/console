@@ -303,7 +303,7 @@ export function RebalanceTable({
           },
           options: StatusLabel,
         },
-        mode: {
+        Mode: {
           type: "checkbox",
           chips: filterMode || [],
           onToggle: (mode) => {
