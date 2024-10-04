@@ -211,16 +211,17 @@ export function RebalanceTable({
             {
               title: t("approve"),
               onClick: () => onApprove(row),
-              isDisabled: row.meta?.allowedActions.includes("approve"),
+              isDisabled: !row.meta?.allowedActions.includes("approve"),
             },
             {
               title: t("refresh"),
               onClick: () => onRefresh(row),
+              isDisabled: !row.meta?.allowedActions.includes("refresh")
             },
             {
               title: t("stop"),
               onClick: () => onStop(row),
-              isDisabled: !row.meta?.allowedActions.includes("approve"),
+              isDisabled: !row.meta?.allowedActions.includes("stop"),
             },
           ]}
         />
