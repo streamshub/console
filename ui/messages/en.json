@@ -18,13 +18,15 @@
       "overview": "Strimzi Overview",
       "gettingStarted": "Getting Started with StreamsHub",
       "connecting": "Connect to a Kafka cluster from an application",
-      "topicOperatorUse": "Using the Topic Operator to manage Kafka topics"
+      "topicOperatorUse": "Using the Topic Operator to manage Kafka topics",
+      "shut_down_consumers": "Learn how to stop consumers"
     },
     "links": {
       "overview": "https://strimzi.io/docs/operators/latest/overview",
       "gettingStarted": "",
       "connecting": "",
-      "topicOperatorUse": "https://strimzi.io/docs/operators/latest/overview#overview-concepts-topic-operator-str"
+      "topicOperatorUse": "https://strimzi.io/docs/operators/latest/overview#overview-concepts-topic-operator-str",
+      "shut_down_consumers": "https://docs.redhat.com/en/documentation/red_hat_streams_for_apache_kafka/2.7/html-single/kafka_configuration_tuning/index#managing_offset_policy"
     }
   },
   "login-in-page": {
@@ -390,7 +392,8 @@
     "reset_offset_description": "Consumer group must be empty to reset offsets.",
     "member_shutdown_helper_text": "To reset the consumer group offsets, all the active members must be shut down.",
     "shutdown_active_members": "Shut down active members before proceeding",
-    "learn_to_shutdown_members": "Learn how to shut down members",
+    "learn_to_shutdown_consumers": "Learn how to shut down consumers",
+    "learn_to_shutdown_consumers_link": "https://docs.redhat.com/en/documentation/red_hat_streams_for_apache_kafka/2.7/html-single/kafka_configuration_tuning/index#managing_offset_policy",
     "reset_consumer_offset": "Reset consumer offset",
     "consumer_name": "Consumer group: <b>{consumerGroupName}</b>",
     "target": "Target",
