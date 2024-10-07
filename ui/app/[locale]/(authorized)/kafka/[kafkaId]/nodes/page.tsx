@@ -28,6 +28,7 @@ export default function NodesPage({ params }: { params: KafkaParams }) {
 async function ConnectedNodes({ params }: { params: KafkaParams }) {
   const t = await getTranslations();
   const res = await getKafkaClusterKpis(params.kafkaId);
+
   let { cluster, kpis } = res || {};
 
   const nodes: Node[] = (cluster?.attributes.nodes || []).map((node) => {

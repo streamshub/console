@@ -59,7 +59,7 @@ export async function getKafkaCluster(
 ): Promise<ClusterDetail | null> {
   const sp = new URLSearchParams({
     "fields[kafkas]":
-      "name,namespace,creationTimestamp,status,kafkaVersion,nodes,controller,authorizedOperations,listeners,conditions,nodePools",
+      "name,namespace,creationTimestamp,status,kafkaVersion,nodes,controller,authorizedOperations,listeners,conditions,nodePools,cruiseControlEnabled",
   });
   const kafkaClusterQuery = sp.toString();
   const url = `${process.env.BACKEND_URL}/api/kafkas/${clusterId}?${kafkaClusterQuery}`;
