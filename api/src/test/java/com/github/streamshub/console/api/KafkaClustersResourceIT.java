@@ -21,6 +21,8 @@ import jakarta.inject.Inject;
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonString;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response.Status;
 
 import org.apache.kafka.clients.CommonClientConfigs;
@@ -54,6 +56,7 @@ import io.quarkus.test.common.http.TestHTTPEndpoint;
 import io.quarkus.test.junit.QuarkusMock;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
+import io.strimzi.api.ResourceAnnotations;
 import io.strimzi.api.kafka.model.kafka.Kafka;
 import io.strimzi.api.kafka.model.kafka.KafkaBuilder;
 import io.strimzi.api.kafka.model.kafka.listener.KafkaListenerAuthenticationCustomBuilder;
@@ -79,6 +82,7 @@ import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
+import static org.junit.Assert.assertNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @QuarkusTest
@@ -726,6 +730,64 @@ class KafkaClustersResourceIT {
         assertEquals("SCRAM-SHA-512", clientConfig.get(SaslConfigs.SASL_MECHANISM));
         assertThat(String.valueOf(clientConfig.get(SaslConfigs.SASL_JAAS_CONFIG)),
                 containsString(ScramLoginModule.class.getName()));
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        "true",
+        "false"
+    })
+    void testPatchClusterReconciliationPaused(Boolean paused) {
+        whenRequesting(req -> req.get("{clusterId}", clusterId1))
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()))
+            .body("data.attributes.name", is("test-kafka1"))
+            .body("data.meta", not(hasKey("reconciliationPaused")));
+
+        whenRequesting(req -> req
+                .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
+                .body(Json.createObjectBuilder()
+                        .add("data", Json.createObjectBuilder()
+                                .add("id", clusterId1)
+                                .add("type", com.github.streamshub.console.api.model.KafkaCluster.API_TYPE)
+                                .add("meta", Json.createObjectBuilder()
+                                        .add("reconciliationPaused", paused))
+                                .add("attributes", Json.createObjectBuilder()))
+                        .build()
+                        .toString())
+                .patch("{clusterId1}", clusterId1))
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()))
+            .body("data.meta.reconciliationPaused", is(paused));
+
+        Kafka kafkaCR = client.resources(Kafka.class)
+            .inNamespace("default")
+            .withName("test-kafka1")
+            .get();
+
+        assertEquals(paused.toString(), kafkaCR.getMetadata().getAnnotations().get(ResourceAnnotations.ANNO_STRIMZI_IO_PAUSE_RECONCILIATION));
+
+        whenRequesting(req -> req
+                .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
+                .body(Json.createObjectBuilder()
+                        .add("data", Json.createObjectBuilder()
+                                .add("id", clusterId1)
+                                .add("type", com.github.streamshub.console.api.model.KafkaCluster.API_TYPE)
+                                .add("meta", Json.createObjectBuilder()) // reconciliationPaused is omitted
+                                .add("attributes", Json.createObjectBuilder()))
+                        .build()
+                        .toString())
+                .patch("{clusterId1}", clusterId1))
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()))
+            .body("data.meta", not(hasKey("reconciliationPaused")));
+
+        kafkaCR = client.resources(Kafka.class)
+                .inNamespace("default")
+                .withName("test-kafka1")
+                .get();
+
+        assertNull(kafkaCR.getMetadata().getAnnotations().get(ResourceAnnotations.ANNO_STRIMZI_IO_PAUSE_RECONCILIATION));
     }
 
     // Helper methods

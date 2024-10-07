@@ -1,15 +1,19 @@
 package com.github.streamshub.console.api;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
 
 import jakarta.inject.Inject;
 import jakarta.inject.Named;
+import jakarta.validation.ConstraintTarget;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.BeanParam;
+import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
+import jakarta.ws.rs.PATCH;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
@@ -34,11 +38,11 @@ import com.github.streamshub.console.api.support.FieldFilter;
 import com.github.streamshub.console.api.support.ListRequestContext;
 import com.github.streamshub.console.api.support.StringEnumeration;
 
+import io.xlate.validation.constraints.Expression;
+
 @Path("/api/kafkas")
 @Tag(name = "Kafka Cluster Resources")
 public class KafkaClustersResource {
-
-    static final String FIELDS_PARAM = "fields[kafkas]";
 
     @Inject
     UriInfo uriInfo;
@@ -56,14 +60,14 @@ public class KafkaClustersResource {
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    @APIResponseSchema(KafkaCluster.ListResponse.class)
+    @APIResponseSchema(KafkaCluster.KafkaClusterDataList.class)
     @APIResponse(responseCode = "500", ref = "ServerError")
     @APIResponse(responseCode = "504", ref = "ServerTimeout")
     public Response listClusters(
-            @QueryParam(FIELDS_PARAM)
+            @QueryParam(KafkaCluster.FIELDS_PARAM)
             @DefaultValue(KafkaCluster.Fields.LIST_DEFAULT)
             @StringEnumeration(
-                    source = FIELDS_PARAM,
+                    source = KafkaCluster.FIELDS_PARAM,
                     allowedValues = {
                         KafkaCluster.Fields.NAME,
                         KafkaCluster.Fields.NAMESPACE,
@@ -105,7 +109,7 @@ public class KafkaClustersResource {
 
         ListRequestContext<KafkaCluster> listSupport = new ListRequestContext<>(KafkaCluster.Fields.COMPARATOR_BUILDER, uriInfo.getRequestUri(), listParams, KafkaCluster::fromCursor);
         var clusterList = clusterService.listClusters(listSupport);
-        var responseEntity = new KafkaCluster.ListResponse(clusterList, listSupport);
+        var responseEntity = new KafkaCluster.KafkaClusterDataList(clusterList, listSupport);
 
         return Response.ok(responseEntity).build();
     }
@@ -113,7 +117,7 @@ public class KafkaClustersResource {
     @GET
     @Path("{clusterId}")
     @Produces(MediaType.APPLICATION_JSON)
-    @APIResponseSchema(KafkaCluster.SingleResponse.class)
+    @APIResponseSchema(KafkaCluster.KafkaClusterData.class)
     @APIResponse(responseCode = "404", ref = "NotFound")
     @APIResponse(responseCode = "500", ref = "ServerError")
     @APIResponse(responseCode = "504", ref = "ServerTimeout")
@@ -122,10 +126,10 @@ public class KafkaClustersResource {
             @PathParam("clusterId")
             String clusterId,
 
-            @QueryParam(FIELDS_PARAM)
+            @QueryParam(KafkaCluster.FIELDS_PARAM)
             @DefaultValue(KafkaCluster.Fields.DESCRIBE_DEFAULT)
             @StringEnumeration(
-                    source = FIELDS_PARAM,
+                    source = KafkaCluster.FIELDS_PARAM,
                     allowedValues = {
                         KafkaCluster.Fields.NAME,
                         KafkaCluster.Fields.NAMESPACE,
@@ -169,9 +173,41 @@ public class KafkaClustersResource {
         requestedFields.accept(fields);
 
         return clusterService.describeCluster(fields)
-            .thenApply(KafkaCluster.SingleResponse::new)
+            .thenApply(KafkaCluster.KafkaClusterData::new)
             .thenApply(Response::ok)
             .thenApply(Response.ResponseBuilder::build);
     }
 
+
+    @Path("{clusterId}")
+    @PATCH
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    @APIResponseSchema(responseCode = "200", value = KafkaCluster.KafkaClusterData.class)
+    @Expression(
+        targetName = "args",
+        // Only check when the request body Id is present (separately checked for @NotNull)
+        when = "args[2].data.id != null",
+        // Verify the Id in the request body matches the Id in the URL
+        value = "args[1].equals(args[2].data.id)",
+        message = "resource ID conflicts with operation URL",
+        node = { "data", "id" },
+        payload = ErrorCategory.InvalidResource.class,
+        validationAppliesTo = ConstraintTarget.PARAMETERS)
+    public Response patchCluster(
+            @Parameter(description = "Cluster identifier")
+            @PathParam("clusterId")
+            String clusterId,
+
+            @Valid
+            KafkaCluster.KafkaClusterData clusterData) {
+
+        // Return all fields
+        requestedFields.accept(Arrays.asList(KafkaCluster.Fields.DESCRIBE_DEFAULT.split(",\\s*")));
+
+        var result = clusterService.patchCluster(clusterId, clusterData.getData());
+        var responseEntity = new KafkaCluster.KafkaClusterData(result);
+
+        return Response.ok(responseEntity).build();
+    }
 }
