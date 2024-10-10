@@ -2,6 +2,7 @@
 import { DateTime } from "@/components/Format/DateTime";
 import { Number } from "@/components/Format/Number";
 import {
+  Button,
   Card,
   CardBody,
   DataList,
@@ -37,6 +38,7 @@ type ClusterCardProps = {
   brokersTotal?: number;
   consumerGroups?: number;
   kafkaVersion: string;
+  reconciliationPuased?: boolean;
   messages: Array<{
     variant: "danger" | "warning";
     subject: { type: "cluster" | "broker" | "topic"; name: string; id: string };
@@ -54,6 +56,7 @@ export function ClusterCard({
   consumerGroups,
   kafkaVersion,
   messages,
+  reconciliationPuased,
 }:
   | ({
       isLoading: false;
@@ -203,7 +206,7 @@ export function ClusterCard({
                   ))
                 ) : (
                   <>
-                    {messages.length === 0 && (
+                    {!reconciliationPuased && messages.length === 0 && (
                       <DataListItem aria-labelledby={`no-messages`}>
                         <DataListItemRow>
                           <DataListItemCells
@@ -212,6 +215,65 @@ export function ClusterCard({
                                 <span id={"no-messages"}>
                                   {t("ClusterCard.no_messages")}
                                 </span>
+                              </DataListCell>,
+                            ]}
+                          />
+                        </DataListItemRow>
+                      </DataListItem>
+                    )}
+                    {reconciliationPuased && (
+                      <DataListItem aria-labelledby={`reconciliation-warning`}>
+                        <DataListItemRow>
+                          <DataListItemCells
+                            dataListCells={[
+                              <DataListCell
+                                key="warning-message"
+                                className={"pf-v5-u-text-nowrap"}
+                                width={2}
+                              >
+                                <Icon status={"warning"}>
+                                  <ExclamationTriangleIcon />
+                                </Icon>
+                                &nbsp;
+                                <Truncate
+                                  content={t(
+                                    "reconciliation.reconciliation_paused",
+                                  )}
+                                />
+                              </DataListCell>,
+                              <DataListCell key="message" width={3}>
+                                <div
+                                  className={
+                                    "pf-v5-u-display-none pf-v5-u-display-block-on-md"
+                                  }
+                                >
+                                  <Truncate
+                                    content={t(
+                                      "reconciliation.reconciliation_paused_warning",
+                                    )}
+                                  />
+                                </div>
+                              </DataListCell>,
+                              <DataListCell
+                                key="button"
+                                width={1}
+                                className={"pf-v5-u-text-nowrap"}
+                              >
+                                <Button variant="link" isInline>
+                                  {t("reconciliation.resume")}
+                                </Button>
+                              </DataListCell>,
+                              <DataListCell
+                                key="date"
+                                width={1}
+                                className={"pf-v5-u-text-nowrap"}
+                              >
+                                <DateTime
+                                  value={new Date(Date.now())}
+                                  tz={"UTC"}
+                                  dateStyle={"short"}
+                                  timeStyle={"short"}
+                                />
                               </DataListCell>,
                             ]}
                           />
