@@ -12,6 +12,7 @@ type Story = StoryObj<typeof ClusterCard>;
 export const WithData: Story = {
   args: {
     isLoading: false,
+    reconciliationPuased: true,
     name: "my-kafka-cluster",
     status: "ready",
     brokersTotal: 9999,
@@ -71,6 +72,7 @@ export const NoMessages: Story = {
     brokersOnline: 9999,
     consumerGroups: 9999,
     kafkaVersion: "3.5.6",
+    reconciliationPuased: false,
     messages: [],
   },
 };

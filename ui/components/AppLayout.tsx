@@ -1,4 +1,12 @@
-import { Nav, Page } from "@/libs/patternfly/react-core";
+import {
+  Banner,
+  Bullseye,
+  Button,
+  Flex,
+  FlexItem,
+  Nav,
+  Page,
+} from "@/libs/patternfly/react-core";
 import { useTranslations } from "next-intl";
 import { PropsWithChildren, ReactNode } from "react";
 import { AppMasthead } from "./AppMasthead";
@@ -11,7 +19,12 @@ export function AppLayout({
   username,
   sidebar,
   children,
-}: PropsWithChildren<{ username?: string; sidebar?: ReactNode }>) {
+  reconciliationPaused,
+}: PropsWithChildren<{
+  username?: string;
+  sidebar?: ReactNode;
+  reconciliationPaused?: boolean;
+}>) {
   const t = useTranslations();
   return (
     <Page
@@ -28,7 +41,23 @@ export function AppLayout({
     >
       {/*<HelpContainer>*/}
       <ClusterDrawerProvider>
-        <ClusterDrawer>{children}</ClusterDrawer>
+        <ClusterDrawer>
+          <Banner variant="gold">
+            <Bullseye>
+              <Flex>
+                <FlexItem spacer={{ default: "spacerNone" }}>
+                  {t("reconciliation.reconciliation_paused_warning")}
+                </FlexItem>
+                <FlexItem spacer={{ default: "spacerLg" }}>
+                  <Button variant="link" isInline>
+                    {t("reconciliation.resume")}
+                  </Button>
+                </FlexItem>
+              </Flex>
+            </Bullseye>
+          </Banner>
+          {children}
+        </ClusterDrawer>
       </ClusterDrawerProvider>
       {/*</HelpContainer>*/}
     </Page>
