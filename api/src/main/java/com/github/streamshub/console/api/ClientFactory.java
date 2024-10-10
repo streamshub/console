@@ -16,6 +16,7 @@ import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -53,6 +54,8 @@ import org.apache.kafka.common.security.oauthbearer.OAuthBearerLoginModule;
 import org.apache.kafka.common.security.plain.PlainLoginModule;
 import org.apache.kafka.common.security.scram.ScramLoginModule;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
+import org.apache.kafka.common.serialization.Deserializer;
+import org.apache.kafka.common.serialization.Serializer;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
@@ -65,9 +68,11 @@ import com.github.streamshub.console.api.support.Holder;
 import com.github.streamshub.console.api.support.KafkaContext;
 import com.github.streamshub.console.api.support.TrustAllCertificateManager;
 import com.github.streamshub.console.api.support.ValidationProxy;
+import com.github.streamshub.console.api.support.serdes.RecordData;
 import com.github.streamshub.console.config.ConsoleConfig;
 import com.github.streamshub.console.config.KafkaClusterConfig;
 
+import io.apicurio.registry.serde.SerdeConfig;
 import io.fabric8.kubernetes.client.informers.ResourceEventHandler;
 import io.fabric8.kubernetes.client.informers.SharedIndexInformer;
 import io.fabric8.kubernetes.client.informers.cache.Cache;
@@ -420,6 +425,7 @@ public class ClientFactory {
         configs.put(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, 50_000);
         configs.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
         configs.put(ConsumerConfig.DEFAULT_API_TIMEOUT_MS_CONFIG, 5000);
+        configs.put(SerdeConfig.ENABLE_HEADERS, "true");
         return configs;
     }
 
@@ -520,26 +526,16 @@ public class ClientFactory {
 
     @Produces
     @RequestScoped
-    public Supplier<Consumer<byte[], byte[]>> consumerSupplier(ConsoleConfig consoleConfig, KafkaContext context) {
+    public BiFunction<Deserializer<RecordData>, Deserializer<RecordData>, Consumer<RecordData, RecordData>> consumerSupplier(ConsoleConfig consoleConfig, KafkaContext context) {
         var configs = maybeAuthenticate(context, Consumer.class);
-        Consumer<byte[], byte[]> client = new KafkaConsumer<>(configs); // NOSONAR / closed in consumerDisposer
-        return () -> client;
-    }
-
-    public void consumerDisposer(@Disposes Supplier<Consumer<byte[], byte[]>> consumer) {
-        consumer.get().close();
+        return (keyDeser, valueDeser) -> new KafkaConsumer<>(configs, keyDeser, valueDeser); // NOSONAR / closed in consumerDisposer
     }
 
     @Produces
     @RequestScoped
-    public Supplier<Producer<String, String>> producerSupplier(ConsoleConfig consoleConfig, KafkaContext context) {
+    public BiFunction<Serializer<RecordData>, Serializer<RecordData>, Producer<RecordData, RecordData>> producerSupplier(ConsoleConfig consoleConfig, KafkaContext context) {
         var configs = maybeAuthenticate(context, Producer.class);
-        Producer<String, String> client = new KafkaProducer<>(configs); // NOSONAR / closed in producerDisposer
-        return () -> client;
-    }
-
-    public void producerDisposer(@Disposes Supplier<Producer<String, String>> producer) {
-        producer.get().close();
+        return (keySer, valueSer) -> new KafkaProducer<>(configs, keySer, valueSer); // NOSONAR / closed by service code
     }
 
     Map<String, Object> maybeAuthenticate(KafkaContext context, Class<?> clientType) {
@@ -570,6 +566,12 @@ public class ClientFactory {
             .filter(Optional::isPresent)
             .map(Optional::get)
             .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (k1, k2) -> k1, TreeMap::new));
+
+        // Ensure no given properties are skipped. The previous stream processing allows
+        // for the standard config names to be obtained from the given maps, but also from
+        // config overrides via MicroProfile Config.
+        clientProperties.get().forEach(cfg::putIfAbsent);
+        config.getProperties().forEach(cfg::putIfAbsent);
 
         var listenerSpec = cluster.map(Kafka::getSpec)
                 .map(KafkaSpec::getKafka)
