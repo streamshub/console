@@ -263,6 +263,7 @@ export function MessagesTable({
                         return (
                           <Cell>
                             {row.attributes.key ? (
+                              <>
                               <UnknownValuePreview
                                 value={row.attributes.key}
                                 highlight={filterQuery}
@@ -271,6 +272,14 @@ export function MessagesTable({
                                   onSelectMessage(row);
                                 }}
                               />
+                              {row.relationships.keySchema?.meta?.artifactType && (
+                                <TextContent>
+                                  <Text component={"small"}>
+                                    {row.relationships.keySchema?.meta?.artifactType}
+                                  </Text>
+                                </TextContent>
+                              )}
+                              </>
                             ) : (
                               empty
                             )}
@@ -299,6 +308,7 @@ export function MessagesTable({
                         return (
                           <Cell>
                             {row.attributes.value ? (
+                              <>
                               <UnknownValuePreview
                                 value={row.attributes.value}
                                 highlight={filterQuery}
@@ -307,6 +317,14 @@ export function MessagesTable({
                                   onSelectMessage(row);
                                 }}
                               />
+                              {row.relationships.valueSchema?.meta?.artifactType && (
+                                <TextContent>
+                                  <Text component={"small"}>
+                                    {row.relationships.valueSchema?.meta?.artifactType}
+                                  </Text>
+                                </TextContent>
+                              )}
+                              </>
                             ) : (
                               empty
                             )}

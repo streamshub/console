@@ -56,7 +56,7 @@ export async function getTopicMessages(
   const sp = new URLSearchParams(
     filterUndefinedFromObj({
       "fields[records]":
-        "partition,offset,timestamp,timestampType,headers,key,value,size",
+        "partition,offset,timestamp,timestampType,headers,key,keySchema,value,valueSchema,size",
       "filter[partition]": params.partition,
       "filter[offset]":
         params.filter?.type === "offset"
