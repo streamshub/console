@@ -41,6 +41,7 @@ import io.fabric8.kubernetes.client.informers.SharedIndexInformer;
 import io.fabric8.kubernetes.client.informers.cache.Cache;
 import io.strimzi.api.ResourceAnnotations;
 import io.strimzi.api.kafka.model.kafka.Kafka;
+import io.strimzi.api.kafka.model.kafka.KafkaBuilder;
 import io.strimzi.api.kafka.model.kafka.KafkaStatus;
 import io.strimzi.api.kafka.model.kafka.listener.GenericKafkaListener;
 import io.strimzi.api.kafka.model.kafka.listener.GenericKafkaListenerConfiguration;
@@ -154,16 +155,30 @@ public class KafkaClusterService {
         Kafka resource = kafkaContext.resource();
 
         if (resource != null) {
-            var annotations = resource.getMetadata().getAnnotations();
-            var paused = cluster.reconciliationPaused();
+            var paused = Optional.ofNullable(cluster.reconciliationPaused())
+                    .map(Object::toString)
+                    .orElse(null);
+
+            var patch = new KafkaBuilder()
+                    .withNewMetadata()
+                        .withNamespace(resource.getMetadata().getNamespace())
+                        .withName(resource.getMetadata().getName())
+                        .withAnnotations(resource.getMetadata().getAnnotations())
+                    .endMetadata()
+                    .withSpec(resource.getSpec());
 
             if (paused != null) {
-                annotations.put(ResourceAnnotations.ANNO_STRIMZI_IO_PAUSE_RECONCILIATION, paused.toString());
+                patch.editMetadata()
+                    .addToAnnotations(ResourceAnnotations.ANNO_STRIMZI_IO_PAUSE_RECONCILIATION, paused)
+                    .endMetadata();
             } else {
-                annotations.remove(ResourceAnnotations.ANNO_STRIMZI_IO_PAUSE_RECONCILIATION);
+                patch.editMetadata()
+                    .removeFromAnnotations(ResourceAnnotations.ANNO_STRIMZI_IO_PAUSE_RECONCILIATION)
+                    .endMetadata();
             }
 
-            resource = client.resource(resource).patch();
+            resource = client.resource(patch.build()).forceConflicts().serverSideApply();
+
             return toKafkaCluster(resource);
         } else {
             throw new BadRequestException("Kafka cluster is not associated with a Strimzi Kafka resource");

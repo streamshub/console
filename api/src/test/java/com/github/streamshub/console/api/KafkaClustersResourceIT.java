@@ -766,6 +766,8 @@ class KafkaClustersResourceIT {
             .get();
 
         assertEquals(paused.toString(), kafkaCR.getMetadata().getAnnotations().get(ResourceAnnotations.ANNO_STRIMZI_IO_PAUSE_RECONCILIATION));
+        // Test custom annotation was untouched
+        assertEquals("value-1", kafkaCR.getMetadata().getAnnotations().get("x-custom-annotation"));
 
         whenRequesting(req -> req
                 .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
@@ -788,6 +790,8 @@ class KafkaClustersResourceIT {
                 .get();
 
         assertNull(kafkaCR.getMetadata().getAnnotations().get(ResourceAnnotations.ANNO_STRIMZI_IO_PAUSE_RECONCILIATION));
+        // Test custom annotation was untouched
+        assertEquals("value-1", kafkaCR.getMetadata().getAnnotations().get("x-custom-annotation"));
     }
 
     // Helper methods
