@@ -32,6 +32,7 @@ import com.github.streamshub.console.api.v1alpha1.spec.Credentials;
 import com.github.streamshub.console.api.v1alpha1.spec.KafkaCluster;
 import com.github.streamshub.console.config.ConsoleConfig;
 import com.github.streamshub.console.config.KafkaClusterConfig;
+import com.github.streamshub.console.config.SchemaRegistryConfig;
 
 import io.fabric8.kubernetes.api.model.ConfigMap;
 import io.fabric8.kubernetes.api.model.HasMetadata;
@@ -131,6 +132,12 @@ public class ConsoleSecret extends CRUDKubernetesDependentResource<Secret, Conso
         kcConfig.setNamespace(namespace);
         kcConfig.setName(name);
         kcConfig.setListener(listenerName);
+
+        if (kafkaRef.getSchemaRegistry() != null) {
+            SchemaRegistryConfig registry = new SchemaRegistryConfig();
+            registry.setUrl(kafkaRef.getSchemaRegistry().getUrl());
+            kcConfig.setSchemaRegistry(registry);
+        }
 
         config.getKubernetes().setEnabled(Objects.nonNull(namespace));
         config.getKafka().getClusters().add(kcConfig);
