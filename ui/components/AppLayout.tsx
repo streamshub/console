@@ -25,6 +25,7 @@ export function AppLayout({
   sidebar?: ReactNode;
   reconciliationPaused?: boolean;
 }>) {
+  console.log("reconciliationPaused", reconciliationPaused);
   const t = useTranslations();
   return (
     <Page
@@ -42,20 +43,22 @@ export function AppLayout({
       {/*<HelpContainer>*/}
       <ClusterDrawerProvider>
         <ClusterDrawer>
-          <Banner variant="gold">
-            <Bullseye>
-              <Flex>
-                <FlexItem spacer={{ default: "spacerNone" }}>
-                  {t("reconciliation.reconciliation_paused_warning")}
-                </FlexItem>
-                <FlexItem spacer={{ default: "spacerLg" }}>
-                  <Button variant="link" isInline>
-                    {t("reconciliation.resume")}
-                  </Button>
-                </FlexItem>
-              </Flex>
-            </Bullseye>
-          </Banner>
+          {reconciliationPaused && (
+            <Banner variant="gold">
+              <Bullseye>
+                <Flex>
+                  <FlexItem spacer={{ default: "spacerNone" }}>
+                    {t("reconciliation.reconciliation_paused_warning")}
+                  </FlexItem>
+                  <FlexItem spacer={{ default: "spacerLg" }}>
+                    <Button variant="link" isInline>
+                      {t("reconciliation.resume")}
+                    </Button>
+                  </FlexItem>
+                </Flex>
+              </Bullseye>
+            </Banner>
+          )}
           {children}
         </ClusterDrawer>
       </ClusterDrawerProvider>

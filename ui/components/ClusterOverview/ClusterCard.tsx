@@ -30,6 +30,7 @@ import {
 import { Link } from "@/i18n/routing";
 import { useTranslations } from "next-intl";
 import { ErrorsAndWarnings } from "./components/ErrorsAndWarnings";
+import { updateKafkaCluster } from "@/api/kafka/actions";
 
 type ClusterCardProps = {
   name: string;
@@ -38,7 +39,7 @@ type ClusterCardProps = {
   brokersTotal?: number;
   consumerGroups?: number;
   kafkaVersion: string;
-  reconciliationPuased?: boolean;
+  reconciliationPaused?: boolean;
   messages: Array<{
     variant: "danger" | "warning";
     subject: { type: "cluster" | "broker" | "topic"; name: string; id: string };
@@ -56,15 +57,18 @@ export function ClusterCard({
   consumerGroups,
   kafkaVersion,
   messages,
-  reconciliationPuased,
+  reconciliationPaused,
 }:
   | ({
       isLoading: false;
     } & ClusterCardProps)
   | ({ isLoading: true } & { [K in keyof ClusterCardProps]?: undefined })) {
   const t = useTranslations();
-  const warnings = messages?.filter((m) => m.variant === "warning").length || 0;
+  const warnings =
+    messages?.filter((m) => m.variant === "warning").length ||
+    0 + (reconciliationPaused ? 1 : 0);
   const dangers = messages?.filter((m) => m.variant === "danger").length || 0;
+
   return (
     <Card component={"div"}>
       <CardBody>
@@ -206,7 +210,7 @@ export function ClusterCard({
                   ))
                 ) : (
                   <>
-                    {!reconciliationPuased && messages.length === 0 && (
+                    {!reconciliationPaused && messages.length === 0 && (
                       <DataListItem aria-labelledby={`no-messages`}>
                         <DataListItemRow>
                           <DataListItemCells
@@ -221,7 +225,7 @@ export function ClusterCard({
                         </DataListItemRow>
                       </DataListItem>
                     )}
-                    {reconciliationPuased && (
+                    {reconciliationPaused && (
                       <DataListItem aria-labelledby={`reconciliation-warning`}>
                         <DataListItemRow>
                           <DataListItemCells
@@ -259,7 +263,7 @@ export function ClusterCard({
                                 width={1}
                                 className={"pf-v5-u-text-nowrap"}
                               >
-                                <Button variant="link" isInline>
+                                <Button variant="link" isInline on>
                                   {t("reconciliation.resume")}
                                 </Button>
                               </DataListCell>,
