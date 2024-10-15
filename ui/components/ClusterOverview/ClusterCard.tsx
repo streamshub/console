@@ -263,7 +263,7 @@ export function ClusterCard({
                                 width={1}
                                 className={"pf-v5-u-text-nowrap"}
                               >
-                                <Button variant="link" isInline on>
+                                <Button variant="link" isInline>
                                   {t("reconciliation.resume")}
                                 </Button>
                               </DataListCell>,
