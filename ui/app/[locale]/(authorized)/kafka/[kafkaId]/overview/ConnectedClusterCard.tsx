@@ -21,7 +21,7 @@ export async function ConnectedClusterCard({
         brokersOnline={undefined}
         brokersTotal={undefined}
         kafkaVersion={res?.cluster.attributes.kafkaVersion || "n/a"}
-        reconciliationPuased={res?.cluster.meta?.reconciliationPaused}
+        reconciliationPaused={res?.cluster.meta?.reconciliationPaused}
       />
     );
   }
@@ -56,7 +56,7 @@ export async function ConnectedClusterCard({
       brokersOnline={brokersOnline}
       brokersTotal={brokersTotal}
       kafkaVersion={res?.cluster.attributes.kafkaVersion || "n/a"}
-      reconciliationPuased={res?.cluster.meta?.reconciliationPaused}
+      reconciliationPaused={res?.cluster.meta?.reconciliationPaused}
     />
   );
 }

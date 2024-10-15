@@ -3,13 +3,7 @@
 import { updateKafkaCluster } from "@/api/kafka/actions";
 import { useOpenClusterConnectionPanel } from "@/components/ClusterDrawerContext";
 import { ReconciliationModal } from "@/components/ClusterOverview/ReconciliationModal";
-import {
-  Button,
-  Flex,
-  FlexItem,
-  Grid,
-  GridItem,
-} from "@/libs/patternfly/react-core";
+import { Button, Flex, FlexItem } from "@/libs/patternfly/react-core";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 
@@ -19,14 +13,19 @@ export function ConnectButton({ clusterId }: { clusterId: string }) {
 
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
 
-  const handleSave = async () => {
-    try {
-      const success = await updateKafkaCluster(clusterId, true);
-      if (success) {
-        setIsModalOpen(false);
-      }
-    } catch (e: unknown) {
-      console.log("Unknown error occurred");
+  const [isReconciliationPaused, setIsReconciliationPaused] =
+    useState<boolean>(false);
+
+  const updateReconciliation = async (reconciliationPaused: boolean) => {
+    const success = await updateKafkaCluster(clusterId, reconciliationPaused);
+
+    console.log("hello", success);
+    if (success) {
+      setIsModalOpen(false);
+      setIsReconciliationPaused(true);
+    } else {
+      alert("update failed");
+      setIsModalOpen(false);
     }
   };
 
@@ -34,8 +33,17 @@ export function ConnectButton({ clusterId }: { clusterId: string }) {
     <>
       <Flex>
         <FlexItem>
-          <Button variant="secondary" onClick={() => setIsModalOpen(true)}>
-            {t("reconciliation.pause_reconciliation_button")}
+          <Button
+            variant="secondary"
+            onClick={
+              isReconciliationPaused
+                ? () => setIsModalOpen(true)
+                : () => updateReconciliation(false)
+            }
+          >
+            {isReconciliationPaused
+              ? t("reconciliation.reconciliation_paused")
+              : t("reconciliation.pause_reconciliation_button")}
           </Button>
         </FlexItem>
         <FlexItem>
@@ -48,7 +56,7 @@ export function ConnectButton({ clusterId }: { clusterId: string }) {
         <ReconciliationModal
           isModalOpen={isModalOpen}
           onClickClose={() => setIsModalOpen(false)}
-          onClickPauseReconciliation={handleSave}
+          onClickPauseReconciliation={() => updateReconciliation(true)}
         />
       )}
     </>
