@@ -12,7 +12,7 @@ import {
   TextContent,
   Tooltip,
 } from "@/libs/patternfly/react-core";
-import { HelpIcon } from "@/libs/patternfly/react-icons";
+import { ExclamationTriangleIcon, HelpIcon } from "@/libs/patternfly/react-icons";
 import {
   BaseCellProps,
   InnerScrollContainer,
@@ -272,10 +272,19 @@ export function MessagesTable({
                                   onSelectMessage(row);
                                 }}
                               />
-                              {row.relationships.keySchema?.meta?.artifactType && (
+                              {row.relationships.keySchema && (
                                 <TextContent>
                                   <Text component={"small"}>
-                                    {row.relationships.keySchema?.meta?.artifactType}
+                                    {row.relationships.keySchema?.meta?.artifactType && (
+                                        <>
+                                        {row.relationships.keySchema?.meta?.artifactType}
+                                        </>
+                                    )}
+                                    {row.relationships.keySchema?.meta?.errors && (
+                                        <>
+                                        <ExclamationTriangleIcon /> { row.relationships.keySchema?.meta?.errors[0].detail }
+                                        </>
+                                    )}
                                   </Text>
                                 </TextContent>
                               )}
@@ -317,10 +326,19 @@ export function MessagesTable({
                                   onSelectMessage(row);
                                 }}
                               />
-                              {row.relationships.valueSchema?.meta?.artifactType && (
+                              {row.relationships.valueSchema && (
                                 <TextContent>
                                   <Text component={"small"}>
-                                    {row.relationships.valueSchema?.meta?.artifactType}
+                                    {row.relationships.valueSchema?.meta?.artifactType && (
+                                      <>
+                                      {row.relationships.valueSchema?.meta?.artifactType}
+                                      </>
+                                    )}
+                                    {row.relationships.valueSchema?.meta?.errors && (
+                                      <>
+                                      <ExclamationTriangleIcon /> { row.relationships.valueSchema?.meta?.errors[0].detail }
+                                      </>
+                                    )}
                                   </Text>
                                 </TextContent>
                               )}
