@@ -3,11 +3,11 @@ package com.github.streamshub.console.api.support.serdes;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 
 import org.apache.avro.Schema;
 import org.apache.kafka.common.header.Headers;
+import org.jboss.logging.Logger;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.protobuf.DynamicMessage;
@@ -29,7 +29,11 @@ import io.apicurio.registry.utils.protobuf.schema.ProtobufSchema;
 
 public class MultiformatDeserializer extends AbstractKafkaDeserializer<Object, RecordData> implements ForceCloseable {
 
-    private static final SchemaLookupResult<Object> EMPTY_RESULT = SchemaLookupResult.builder().build();
+    private static final Logger LOG = Logger.getLogger(MultiformatDeserializer.class);
+
+    private static final SchemaLookupResult<Object> NO_SCHEMA_ID = SchemaLookupResult.builder().build();
+    private static final SchemaLookupResult<Object> RESOLVER_MISSING = SchemaLookupResult.builder().build();
+    private static final SchemaLookupResult<Object> LOOKUP_FAILURE = SchemaLookupResult.builder().build();
 
     private final ObjectMapper objectMapper;
     AvroDeserializer avroDeserializer;
@@ -56,7 +60,8 @@ public class MultiformatDeserializer extends AbstractKafkaDeserializer<Object, R
     @Override
     public void configure(Map<String, ?> configs, boolean isKey) {
         if (getSchemaResolver() == null) {
-            // Do not attempt to configure anything if we will not be making remote calls to registry
+            super.key = isKey;
+            // Do not attempt to configure anything more if we will not be making remote calls to registry
             return;
         }
 
@@ -92,9 +97,6 @@ public class MultiformatDeserializer extends AbstractKafkaDeserializer<Object, R
     }
 
     protected RecordData readData(Headers headers, SchemaLookupResult<Object> schemaResult, ByteBuffer buffer, int start, int length) {
-        ParsedSchema<Object> schema = Optional.ofNullable(schemaResult)
-                .map(s -> s.getParsedSchema())
-                .orElse(null);
         Object parsedSchema = null;
 
         if (schemaResult != null && schemaResult.getParsedSchema() != null) {
@@ -103,45 +105,84 @@ public class MultiformatDeserializer extends AbstractKafkaDeserializer<Object, R
 
         RecordData result;
 
-        if (parsedSchema instanceof Schema avroSchema) {
-            try {
-                if (headers != null) {
-                    result = avroDeserializer.readData(headers, cast(schema), buffer, start, length);
-                } else {
-                    result = avroDeserializer.readData(cast(schema), buffer, start, length);
-                }
-                result.schema = schema;
-                result.meta.put("schema-type", ArtifactType.AVRO);
-                result.meta.put("schema-id", ArtifactReferences.toSchemaId(schemaResult.toArtifactReference(), objectMapper));
-                result.meta.put("schema-name", avroSchema.getFullName());
-            } catch (Exception e) {
-                result = new RecordData(null, schema);
-                result.meta.put("error", e.getMessage());
-            }
+        if (parsedSchema instanceof Schema) {
+            result = readAvroData(headers, schemaResult, buffer, start, length);
         } else if (parsedSchema instanceof ProtobufSchema) {
-            try {
-                Message msg;
-                if (headers != null) {
-                    msg = protobufDeserializer.readData(headers, cast(schema), buffer, start, length);
-                } else {
-                    msg = protobufDeserializer.readData(cast(schema), buffer, start, length);
-                }
-                byte[] data = com.google.protobuf.util.JsonFormat.printer()
-                        .omittingInsignificantWhitespace()
-                        .print(msg)
-                        .getBytes();
-                result = new RecordData(data, schema);
-                result.meta.put("schema-type", ArtifactType.PROTOBUF);
-                result.meta.put("schema-id", ArtifactReferences.toSchemaId(schemaResult.toArtifactReference(), objectMapper));
-                result.meta.put("schema-name", msg.getDescriptorForType().getFullName());
-            } catch (Exception e) {
-                result = new RecordData(null, schema);
-                result.meta.put("error", e.getMessage());
-            }
+            result = readProtobufData(headers, schemaResult, buffer, start, length);
         } else {
-            byte[] bytes = new byte[length];
-            System.arraycopy(buffer.array(), start, bytes, 0, length);
-            result = new RecordData(bytes, null);
+            result = readRawData(schemaResult, buffer, start, length);
+        }
+
+        return result;
+    }
+
+    private RecordData readAvroData(Headers headers, SchemaLookupResult<Object> schemaResult, ByteBuffer buffer, int start, int length) {
+        ParsedSchema<Object> schema = schemaResult.getParsedSchema();
+        Schema avroSchema = (Schema) schema.getParsedSchema();
+        RecordData result;
+
+        try {
+            if (headers != null) {
+                result = avroDeserializer.readData(headers, cast(schema), buffer, start, length);
+            } else {
+                result = avroDeserializer.readData(cast(schema), buffer, start, length);
+            }
+            result.schema = schema;
+            result.meta.put("schema-type", ArtifactType.AVRO);
+            result.meta.put("schema-id", ArtifactReferences.toSchemaId(schemaResult.toArtifactReference(), objectMapper));
+            result.meta.put("schema-name", avroSchema.getFullName());
+        } catch (Exception e) {
+            result = new RecordData(null, schema);
+            result.error = com.github.streamshub.console.api.model.Error.forThrowable(e, "Error deserializing Avro data");
+        }
+
+        return result;
+    }
+
+    private RecordData readProtobufData(Headers headers, SchemaLookupResult<Object> schemaResult, ByteBuffer buffer, int start, int length) {
+        ParsedSchema<Object> schema = schemaResult.getParsedSchema();
+        RecordData result;
+
+        try {
+            Message msg;
+            if (headers != null) {
+                msg = protobufDeserializer.readData(headers, cast(schema), buffer, start, length);
+            } else {
+                msg = protobufDeserializer.readData(cast(schema), buffer, start, length);
+            }
+            byte[] data = com.google.protobuf.util.JsonFormat.printer()
+                    .omittingInsignificantWhitespace()
+                    .print(msg)
+                    .getBytes();
+            result = new RecordData(data, schema);
+            result.meta.put("schema-type", ArtifactType.PROTOBUF);
+            result.meta.put("schema-id", ArtifactReferences.toSchemaId(schemaResult.toArtifactReference(), objectMapper));
+            result.meta.put("schema-name", msg.getDescriptorForType().getFullName());
+        } catch (Exception e) {
+            result = new RecordData(null, schema);
+            result.error = com.github.streamshub.console.api.model.Error.forThrowable(e, "Error deserializing Protobuf data");
+        }
+
+        return result;
+    }
+
+    private RecordData readRawData(SchemaLookupResult<Object> schemaResult, ByteBuffer buffer, int start, int length) {
+        byte[] bytes = new byte[length];
+        System.arraycopy(buffer.array(), start, bytes, 0, length);
+        RecordData result = new RecordData(bytes, null);
+
+        if (schemaResult == RESOLVER_MISSING) {
+            result.error = new com.github.streamshub.console.api.model.Error(
+                    "Schema resolution error",
+                    "%s encoded, but no schema registry is configured"
+                        .formatted(isKey() ? "Key" : "Value"),
+                    null);
+        } else if (schemaResult == LOOKUP_FAILURE) {
+            result.error = new com.github.streamshub.console.api.model.Error(
+                    "Schema resolution error",
+                    "Schema could not be retrieved from registry to decode %s"
+                        .formatted(isKey() ? "Key" : "Value"),
+                    null);
         }
 
         return result;
@@ -170,7 +211,7 @@ public class MultiformatDeserializer extends AbstractKafkaDeserializer<Object, R
         } else {
             buffer = ByteBuffer.wrap(data);
             // Empty schema
-            schema = EMPTY_RESULT;
+            schema = NO_SCHEMA_ID;
             length = buffer.limit() - 1;
         }
 
@@ -212,18 +253,33 @@ public class MultiformatDeserializer extends AbstractKafkaDeserializer<Object, R
     }
 
     private SchemaLookupResult<Object> resolve(ArtifactReference artifactReference) {
+        if (!artifactReference.hasValue()) {
+            return NO_SCHEMA_ID;
+        }
+
         var schemaResolver = getSchemaResolver();
 
         if (schemaResolver == null) {
-            // Empty result
-            return EMPTY_RESULT;
+            return RESOLVER_MISSING;
         }
 
         try {
             return getSchemaResolver().resolveSchemaByArtifactReference(artifactReference);
+        } catch (io.apicurio.registry.rest.client.exception.NotFoundException e) {
+            LOG.infof("Schema could not be resolved: %s", artifactReference);
+            return LOOKUP_FAILURE;
         } catch (RuntimeException e) {
-            // Empty result
-            return EMPTY_RESULT;
+            if (LOG.isDebugEnabled()) {
+                /*
+                 * Only log the stack trace at debug level. Schema resolution will be attempted
+                 * for every message consumed and will lead to excessive logging in case of a
+                 * problem.
+                 */
+                LOG.debugf(e, "Exception resolving schema reference: %s", artifactReference);
+            } else {
+                LOG.warnf("Exception resolving schema reference: %s ; %s", artifactReference, e.getMessage());
+            }
+            return LOOKUP_FAILURE;
         }
     }
 
