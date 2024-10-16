@@ -64,6 +64,7 @@ public class TestHelper {
             .withNewMetadata()
                 .withNamespace("default")
                 .withName(name)
+                .addToAnnotations("x-custom-annotation", "value-1")
             .endMetadata()
             .withNewSpec()
                 .withNewKafka()

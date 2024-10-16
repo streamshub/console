@@ -29,6 +29,7 @@ import io.fabric8.kubernetes.client.KubernetesClient;
 import io.quarkus.test.common.http.TestHTTPEndpoint;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
+import io.strimzi.api.ResourceAnnotations;
 import io.strimzi.api.ResourceLabels;
 import io.strimzi.api.kafka.model.kafka.Kafka;
 import io.strimzi.api.kafka.model.kafka.KafkaBuilder;
@@ -254,7 +255,7 @@ class KafkaRebalancesResourceIT {
             .withName(name)
             .get();
 
-        assertEquals("refresh", rebalanceCR.getMetadata().getAnnotations().get("strimzi.io/rebalance"));
+        assertEquals("refresh", rebalanceCR.getMetadata().getAnnotations().get(ResourceAnnotations.ANNO_STRIMZI_IO_REBALANCE));
 
         whenRequesting(req -> req
                 .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
@@ -277,7 +278,7 @@ class KafkaRebalancesResourceIT {
                 .withName(name)
                 .get();
 
-        assertNull(rebalanceCR.getMetadata().getAnnotations().get("strimzi.io/rebalance"));
+        assertNull(rebalanceCR.getMetadata().getAnnotations().get(ResourceAnnotations.ANNO_STRIMZI_IO_REBALANCE));
     }
 
     @ParameterizedTest

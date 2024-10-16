@@ -43,15 +43,33 @@ public class TestPlainProfile implements QuarkusTestProfile {
                       id: k1-id
                       properties:
                         bootstrap.servers: ${console.test.external-bootstrap}
+
                     - name: test-kafka2
                       namespace: default
                       id: k2-id
                       properties:
                         bootstrap.servers: ${console.test.random-bootstrap}
+
                     - name: test-kafka3
                       namespace: default
                       # listener is named and bootstrap.servers not set (will be retrieved from Kafka CR)
                       listener: listener0
+
+                    # missing required bootstrap.servers and sasl.mechanism
+                    - name: test-kafkaX
+                      properties:
+                        sasl.jaas.config: something
+
+                    - name: test-kafkaY
+                      properties:
+                        bootstrap.servers: ${console.test.external-bootstrap}
+
+                    # duplicate test-kafkaY that will be ignored
+                    - name: test-kafkaY
+                      properties:
+                        bootstrap.servers: ${console.test.external-bootstrap}
+                        sasl.mechanism: SCRAM-SHA-512
+                        sasl.jaas.config: something
                 """);
 
         return Map.of("console.config-path", configFile.getAbsolutePath());

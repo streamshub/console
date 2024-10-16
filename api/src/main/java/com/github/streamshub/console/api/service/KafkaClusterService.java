@@ -15,6 +15,7 @@ import java.util.stream.Stream;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.ws.rs.BadRequestException;
 
 import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.clients.admin.DescribeClusterOptions;
@@ -35,9 +36,12 @@ import com.github.streamshub.console.api.support.ListRequestContext;
 import com.github.streamshub.console.config.ConsoleConfig;
 
 import io.fabric8.kubernetes.api.model.ObjectMeta;
+import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.informers.SharedIndexInformer;
 import io.fabric8.kubernetes.client.informers.cache.Cache;
+import io.strimzi.api.ResourceAnnotations;
 import io.strimzi.api.kafka.model.kafka.Kafka;
+import io.strimzi.api.kafka.model.kafka.KafkaBuilder;
 import io.strimzi.api.kafka.model.kafka.KafkaStatus;
 import io.strimzi.api.kafka.model.kafka.listener.GenericKafkaListener;
 import io.strimzi.api.kafka.model.kafka.listener.GenericKafkaListenerConfiguration;
@@ -55,6 +59,9 @@ public class KafkaClusterService {
 
     @Inject
     Logger logger;
+
+    @Inject
+    KubernetesClient client;
 
     /**
      * ThreadContext of the request thread. This is used to execute asynchronous
@@ -104,7 +111,7 @@ public class KafkaClusterService {
                         .filter(k -> Objects.equals(k.namespace(), config.getNamespace()))
                         .map(k -> addKafkaContextData(k, ctx.getValue()))
                         .findFirst()
-                        .orElseGet(() -> addKafkaContextData(new KafkaCluster(id, null, null, null), ctx.getValue()));
+                        .orElseGet(() -> addKafkaContextData(KafkaCluster.fromId(id), ctx.getValue()));
                 })
                 .collect(Collectors.toMap(KafkaCluster::getId, Function.identity()));
 
@@ -144,8 +151,42 @@ public class KafkaClusterService {
             .thenApply(this::setManaged);
     }
 
+    public KafkaCluster patchCluster(String id, KafkaCluster cluster) {
+        Kafka resource = kafkaContext.resource();
+
+        if (resource != null) {
+            var paused = Optional.ofNullable(cluster.reconciliationPaused())
+                    .map(Object::toString)
+                    .orElse(null);
+
+            var patch = new KafkaBuilder()
+                    .withNewMetadata()
+                        .withNamespace(resource.getMetadata().getNamespace())
+                        .withName(resource.getMetadata().getName())
+                        .withAnnotations(resource.getMetadata().getAnnotations())
+                    .endMetadata()
+                    .withSpec(resource.getSpec());
+
+            if (paused != null) {
+                patch.editMetadata()
+                    .addToAnnotations(ResourceAnnotations.ANNO_STRIMZI_IO_PAUSE_RECONCILIATION, paused)
+                    .endMetadata();
+            } else {
+                patch.editMetadata()
+                    .removeFromAnnotations(ResourceAnnotations.ANNO_STRIMZI_IO_PAUSE_RECONCILIATION)
+                    .endMetadata();
+            }
+
+            resource = client.resource(patch.build()).forceConflicts().serverSideApply();
+
+            return toKafkaCluster(resource);
+        } else {
+            throw new BadRequestException("Kafka cluster is not associated with a Strimzi Kafka resource");
+        }
+    }
+
     KafkaCluster toKafkaCluster(Kafka kafka) {
-        KafkaCluster cluster = new KafkaCluster(kafka.getStatus().getClusterId(), null, null, null);
+        KafkaCluster cluster = KafkaCluster.fromId(kafka.getStatus().getClusterId());
         setKafkaClusterProperties(cluster, kafka);
 
         // Identify that the cluster is configured with connection information
@@ -205,9 +246,17 @@ public class KafkaClusterService {
     }
 
     void setKafkaClusterProperties(KafkaCluster cluster, Kafka kafka) {
-        cluster.name(kafka.getMetadata().getName());
-        cluster.namespace(kafka.getMetadata().getNamespace());
-        cluster.creationTimestamp(kafka.getMetadata().getCreationTimestamp());
+        ObjectMeta kafkaMeta = kafka.getMetadata();
+        cluster.name(kafkaMeta.getName());
+        cluster.namespace(kafkaMeta.getNamespace());
+        cluster.creationTimestamp(kafkaMeta.getCreationTimestamp());
+        Optional.ofNullable(kafkaMeta.getAnnotations()).ifPresent(annotations -> {
+            String paused = annotations.get(ResourceAnnotations.ANNO_STRIMZI_IO_PAUSE_RECONCILIATION);
+
+            if (paused != null) {
+                cluster.reconciliationPaused(Boolean.parseBoolean(paused));
+            }
+        });
 
         var comparator = Comparator
             .comparingInt((GenericKafkaListener listener) ->

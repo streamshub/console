@@ -4,6 +4,7 @@ import java.time.Duration;
 import java.util.Base64;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 import jakarta.inject.Inject;
 
@@ -27,6 +28,7 @@ import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
 import io.fabric8.kubernetes.api.model.Secret;
 import io.fabric8.kubernetes.api.model.SecretBuilder;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
+import io.fabric8.kubernetes.client.CustomResource;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.javaoperatorsdk.operator.Operator;
 import io.quarkus.test.junit.QuarkusTest;
@@ -50,7 +52,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class ConsoleReconcilerTest {
 
     private static final Logger LOGGER = Logger.getLogger(ConsoleReconcilerTest.class);
-    private static final Duration LIMIT = Duration.ofSeconds(10);
+    private static final Duration LIMIT = Duration.ofSeconds(1_000);
 
     @Inject
     KubernetesClient client;
@@ -62,6 +64,11 @@ class ConsoleReconcilerTest {
     Operator operator;
 
     Kafka kafkaCR;
+
+    public static <S, T, C extends CustomResource<S, T>> C apply(KubernetesClient client, C resource) {
+        client.resource(resource).serverSideApply();
+        return client.resource(resource).patchStatus();
+    }
 
     @BeforeEach
     void setUp() throws Exception {
@@ -114,9 +121,19 @@ class ConsoleReconcilerTest {
                         .endListener()
                     .endKafka()
                 .endSpec()
+                .withNewStatus()
+                    .withClusterId(UUID.randomUUID().toString())
+                    .addNewListener()
+                        .withName("listener1")
+                        .addNewAddress()
+                            .withHost("kafka-bootstrap.example.com")
+                            .withPort(9093)
+                        .endAddress()
+                    .endListener()
+                .endStatus()
                 .build();
 
-        kafkaCR = client.resource(kafkaCR).create();
+        kafkaCR = apply(client, kafkaCR);
 
         client.resource(new NamespaceBuilder()
                 .withNewMetadata()

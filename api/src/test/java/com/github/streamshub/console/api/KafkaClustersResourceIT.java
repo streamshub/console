@@ -2,7 +2,6 @@ package com.github.streamshub.console.api;
 
 import java.io.IOException;
 import java.net.URI;
-import java.time.Duration;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
@@ -15,12 +14,14 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import jakarta.enterprise.util.AnnotationLiteral;
+import jakarta.enterprise.inject.literal.NamedLiteral;
 import jakarta.enterprise.util.TypeLiteral;
 import jakarta.inject.Inject;
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonString;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response.Status;
 
 import org.apache.kafka.clients.CommonClientConfigs;
@@ -42,6 +43,7 @@ import com.github.streamshub.console.api.support.ErrorCategory;
 import com.github.streamshub.console.api.support.Holder;
 import com.github.streamshub.console.api.support.KafkaContext;
 import com.github.streamshub.console.config.ConsoleConfig;
+import com.github.streamshub.console.config.KafkaClusterConfig;
 import com.github.streamshub.console.kafka.systemtest.TestPlainProfile;
 import com.github.streamshub.console.kafka.systemtest.deployment.DeploymentManager;
 import com.github.streamshub.console.test.AdminClientSpy;
@@ -54,6 +56,7 @@ import io.quarkus.test.common.http.TestHTTPEndpoint;
 import io.quarkus.test.junit.QuarkusMock;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
+import io.strimzi.api.ResourceAnnotations;
 import io.strimzi.api.kafka.model.kafka.Kafka;
 import io.strimzi.api.kafka.model.kafka.KafkaBuilder;
 import io.strimzi.api.kafka.model.kafka.listener.KafkaListenerAuthenticationCustomBuilder;
@@ -79,6 +82,7 @@ import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
+import static org.junit.Assert.assertNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @QuarkusTest
@@ -86,7 +90,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 @TestProfile(TestPlainProfile.class)
 class KafkaClustersResourceIT {
 
-    private static final List<String> STATIC_KAFKAS = List.of("test-kafka1", "test-kafka2");
+    /**
+     * List of Kafka clusters that are always created. test-kafkaY is configured in {@link TestPlainProfile}
+     * but has no associated Strimzi Kafka CR.
+     */
+    private static final List<String> STATIC_KAFKAS = List.of("test-kafka1", "test-kafka2", "test-kafkaY");
 
     @Inject
     Config config;
@@ -156,9 +164,8 @@ class KafkaClustersResourceIT {
             .endStatus()
             .build());
 
-        // Wait for the informer cache to be populated with all Kafka CRs
-        await().atMost(10, TimeUnit.SECONDS)
-            .until(() -> Objects.equals(kafkaInformer.get().getStore().list().size(), 2));
+        // Wait for the context map to be populated with all Kafka configurations
+        await().atMost(10, TimeUnit.SECONDS).until(() -> configuredContexts.size() == STATIC_KAFKAS.size());
 
         clusterId1 = consoleConfig.getKafka().getCluster("default/test-kafka1").get().getId();
         clusterId2 = consoleConfig.getKafka().getCluster("default/test-kafka2").get().getId();
@@ -183,9 +190,9 @@ class KafkaClustersResourceIT {
         whenRequesting(req -> req.queryParam("fields[kafkas]", "name,status,nodePools,listeners").get())
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
-            .body("data.size()", equalTo(2))
-            .body("data.id", containsInAnyOrder(clusterId1, clusterId2))
-            .body("data.attributes.name", containsInAnyOrder("test-kafka1", "test-kafka2"))
+            .body("data.size()", equalTo(STATIC_KAFKAS.size()))
+            .body("data.id", containsInAnyOrder(clusterId1, clusterId2, "test-kafkaY"))
+            .body("data.attributes.name", containsInAnyOrder("test-kafka1", "test-kafka2", "test-kafkaY"))
             .body("data.find { it.attributes.name == 'test-kafka1'}.attributes.status", is("Ready"))
             .body("data.find { it.attributes.name == 'test-kafka1'}.attributes.nodePools", contains("my-node-pool"))
             .body("data.find { it.attributes.name == 'test-kafka1'}.attributes.listeners", hasItem(allOf(
@@ -194,7 +201,9 @@ class KafkaClustersResourceIT {
             .body("data.find { it.attributes.name == 'test-kafka2'}.attributes.status", is("NotReady"))
             .body("data.find { it.attributes.name == 'test-kafka2'}.attributes.listeners", hasItem(allOf(
                     hasEntry(equalTo("bootstrapServers"), equalTo(k2Bootstrap)),
-                    hasEntry(equalTo("authType"), nullValue(String.class)))));
+                    hasEntry(equalTo("authType"), nullValue(String.class)))))
+            .body("data.find { it.attributes.name == 'test-kafkaY'}.attributes.status", is(nullValue()))
+            .body("data.find { it.attributes.name == 'test-kafkaY'}.attributes.listeners", is(nullValue()));
     }
 
     @Test
@@ -204,16 +213,6 @@ class KafkaClustersResourceIT {
         var informerType = new TypeLiteral<Holder<SharedIndexInformer<Kafka>>>() {
             private static final long serialVersionUID = 1L;
         };
-
-        @SuppressWarnings("all")
-        class NamedLiteral extends AnnotationLiteral<jakarta.inject.Named> implements jakarta.inject.Named {
-            private static final long serialVersionUID = 1L;
-
-            @Override
-            public String value() {
-                return "KafkaInformer";
-            }
-        }
 
         // Force an unhandled exception
         Mockito.when(informer.getStore()).thenThrow(new RuntimeException("EXPECTED TEST EXCEPTION") {
@@ -225,7 +224,7 @@ class KafkaClustersResourceIT {
             }
         });
 
-        QuarkusMock.installMockForType(Holder.of(informer), informerType, new NamedLiteral());
+        QuarkusMock.installMockForType(Holder.of(informer), informerType, NamedLiteral.of("KafkaInformer"));
 
         whenRequesting(req -> req.get())
             .assertThat()
@@ -237,14 +236,14 @@ class KafkaClustersResourceIT {
 
     @ParameterizedTest
     @CsvSource({
-        "'name' , 'test-kafka1,test-kafka2'",
-        "'-name', 'test-kafka2,test-kafka1'"
+        "'name' , 'test-kafka1,test-kafka2,test-kafkaY'",
+        "'-name', 'test-kafkaY,test-kafka2,test-kafka1'"
     })
     void testListClustersSortedByName(String sortParam, String expectedNameList) {
         whenRequesting(req -> req.queryParam("sort", sortParam).get())
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
-            .body("data.size()", is(2))
+            .body("data.size()", is(STATIC_KAFKAS.size()))
             .body("data.attributes.name", contains(expectedNameList.split(",")));
     }
 
@@ -253,8 +252,8 @@ class KafkaClustersResourceIT {
         whenRequesting(req -> req.get())
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
-            .body("meta.page.total", is(2))
-            .body("data.size()", is(2))
+            .body("meta.page.total", is(STATIC_KAFKAS.size()))
+            .body("data.size()", is(STATIC_KAFKAS.size()))
             .body("data.meta.page", everyItem(hasKey(equalTo("cursor"))));
     }
 
@@ -271,15 +270,15 @@ class KafkaClustersResourceIT {
                     .map(kafka -> kafka.getMetadata().getName()))
             .toList();
 
-        // Wait for the informer cache to be populated with all Kafka CRs
+        // Wait for the informer cache to be populated with all Kafka CRs (subtract 1 to account for kafkaY w/o CR)
         await().atMost(10, TimeUnit.SECONDS)
-            .until(() -> Objects.equals(kafkaInformer.get().getStore().list().size(), allKafkaNames.size()));
+            .until(() -> Objects.equals(kafkaInformer.get().getStore().list().size(), allKafkaNames.size() - 1));
 
         var fullResponse = whenRequesting(req -> req.queryParam("sort", "name").get())
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
-            .body("meta.page.total", is(9))
-            .body("data.size()", is(9))
+            .body("meta.page.total", is(allKafkaNames.size()))
+            .body("data.size()", is(allKafkaNames.size()))
             .body("data.meta.page", everyItem(hasKey(equalTo("cursor"))))
             .extract()
             .asInputStream();
@@ -302,7 +301,7 @@ class KafkaClustersResourceIT {
                 .get())
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
-            .body("meta.page.total", is(9)) // total is the count for the full/unpaged result set
+            .body("meta.page.total", is(allKafkaNames.size())) // total is the count for the full/unpaged result set
             // requested range has 7 recs, but truncated to 6 to satisfy page[size]
             .body("meta.page.rangeTruncated", is(true))
             .body("data.size()", is(6))
@@ -312,7 +311,7 @@ class KafkaClustersResourceIT {
     @ParameterizedTest
     @CsvSource({
         "1, 8,   , 6", // skip first two and last one (6 remain)
-        "1,  , 10, 7", // skip first two (7 remain)
+        "1,  , 10, 8", // skip first two (8 remain)
         " , 8,   , 8", // skip last one (8 remain)
         " , 8,  5, 5", // skip last one (8 remain), limit to 5 on page
     })
@@ -326,17 +325,18 @@ class KafkaClustersResourceIT {
                     .map(name -> utils.buildKafkaResource(name, randomBootstrapServers))
                     .map(kafka -> utils.apply(client, kafka))
                     .map(kafka -> kafka.getMetadata().getName()))
-            .toList();
+                .sorted()
+                .toList();
 
-        // Wait for the informer cache to be populated with all Kafka CRs
+        // Wait for the informer cache to be populated with all Kafka CRs (subtract 1 to account for kafkaY w/o CR)
         await().atMost(10, TimeUnit.SECONDS)
-            .until(() -> Objects.equals(kafkaInformer.get().getStore().list().size(), allKafkaNames.size()));
+            .until(() -> Objects.equals(kafkaInformer.get().getStore().list().size(), allKafkaNames.size() - 1));
 
         var fullResponse = whenRequesting(req -> req.queryParam("sort", "name").get())
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
-            .body("meta.page.total", is(9))
-            .body("data.size()", is(9))
+            .body("meta.page.total", is(allKafkaNames.size()))
+            .body("data.size()", is(allKafkaNames.size()))
             .body("data.meta.page", everyItem(hasKey(equalTo("cursor"))))
             .extract()
             .asInputStream();
@@ -363,7 +363,7 @@ class KafkaClustersResourceIT {
                 .get())
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
-            .body("meta.page.total", is(9)) // total is the count for the full/unpaged result set
+            .body("meta.page.total", is(allKafkaNames.size())) // total is the count for the full/unpaged result set
             .body("data.size()", is(expectedResultCount))
             .body("data.meta.page", everyItem(hasKey(equalTo("cursor"))))
             .extract()
@@ -542,8 +542,13 @@ class KafkaClustersResourceIT {
 
         utils.apply(client, kafka);
 
-        await().atMost(Duration.ofSeconds(5))
-            .until(() -> configuredContexts.containsKey(clusterId));
+        // Wait for the added cluster to be configured in the context map
+        await().atMost(10, TimeUnit.SECONDS)
+            .until(() -> configuredContexts.values()
+                    .stream()
+                    .map(KafkaContext::clusterConfig)
+                    .map(KafkaClusterConfig::clusterKey)
+                    .anyMatch(Cache.metaNamespaceKeyFunc(kafka)::equals));
 
         whenRequesting(req -> req.get("{clusterId}", clusterId))
             .assertThat()
@@ -578,17 +583,13 @@ class KafkaClustersResourceIT {
 
         utils.apply(client, kafka);
 
-        await().atMost(Duration.ofSeconds(5))
-            .until(() -> configuredContexts.containsKey(clusterId));
-
-        await().atMost(Duration.ofSeconds(5))
-            .until(() -> kafkaInformer.get()
-                    .getStore()
-                    .list()
+        // Wait for the added cluster to be configured in the context map
+        await().atMost(10, TimeUnit.SECONDS)
+            .until(() -> configuredContexts.values()
                     .stream()
-                    .anyMatch(k -> Objects.equals(
-                            Cache.metaNamespaceKeyFunc(kafka),
-                            Cache.metaNamespaceKeyFunc(k))));
+                    .map(KafkaContext::clusterConfig)
+                    .map(KafkaClusterConfig::clusterKey)
+                    .anyMatch(Cache.metaNamespaceKeyFunc(kafka)::equals));
 
         whenRequesting(req -> req.get("{clusterId}", clusterId))
             .assertThat()
@@ -666,8 +667,13 @@ class KafkaClustersResourceIT {
 
         utils.apply(client, kafka);
 
-        await().atMost(Duration.ofSeconds(5))
-            .until(() -> configuredContexts.containsKey(clusterId));
+        // Wait for the added cluster to be configured in the context map
+        await().atMost(10, TimeUnit.SECONDS)
+            .until(() -> configuredContexts.values()
+                    .stream()
+                    .map(KafkaContext::clusterConfig)
+                    .map(KafkaClusterConfig::clusterKey)
+                    .anyMatch(Cache.metaNamespaceKeyFunc(kafka)::equals));
 
         whenRequesting(req -> req
                 .auth().oauth2("my-secure-token")
@@ -711,8 +717,13 @@ class KafkaClustersResourceIT {
 
         utils.apply(client, kafka);
 
-        await().atMost(Duration.ofSeconds(5))
-            .until(() -> configuredContexts.containsKey(clusterId));
+        // Wait for the added cluster to be configured in the context map
+        await().atMost(10, TimeUnit.SECONDS)
+            .until(() -> configuredContexts.values()
+                    .stream()
+                    .map(KafkaContext::clusterConfig)
+                    .map(KafkaClusterConfig::clusterKey)
+                    .anyMatch(Cache.metaNamespaceKeyFunc(kafka)::equals));
 
         whenRequesting(req -> req
                 .auth().basic("u", "p")
@@ -726,6 +737,68 @@ class KafkaClustersResourceIT {
         assertEquals("SCRAM-SHA-512", clientConfig.get(SaslConfigs.SASL_MECHANISM));
         assertThat(String.valueOf(clientConfig.get(SaslConfigs.SASL_JAAS_CONFIG)),
                 containsString(ScramLoginModule.class.getName()));
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        "true",
+        "false"
+    })
+    void testPatchClusterReconciliationPaused(Boolean paused) {
+        whenRequesting(req -> req.get("{clusterId}", clusterId1))
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()))
+            .body("data.attributes.name", is("test-kafka1"))
+            .body("data.meta", not(hasKey("reconciliationPaused")));
+
+        whenRequesting(req -> req
+                .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
+                .body(Json.createObjectBuilder()
+                        .add("data", Json.createObjectBuilder()
+                                .add("id", clusterId1)
+                                .add("type", com.github.streamshub.console.api.model.KafkaCluster.API_TYPE)
+                                .add("meta", Json.createObjectBuilder()
+                                        .add("reconciliationPaused", paused))
+                                .add("attributes", Json.createObjectBuilder()))
+                        .build()
+                        .toString())
+                .patch("{clusterId1}", clusterId1))
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()))
+            .body("data.meta.reconciliationPaused", is(paused));
+
+        Kafka kafkaCR = client.resources(Kafka.class)
+            .inNamespace("default")
+            .withName("test-kafka1")
+            .get();
+
+        assertEquals(paused.toString(), kafkaCR.getMetadata().getAnnotations().get(ResourceAnnotations.ANNO_STRIMZI_IO_PAUSE_RECONCILIATION));
+        // Test custom annotation was untouched
+        assertEquals("value-1", kafkaCR.getMetadata().getAnnotations().get("x-custom-annotation"));
+
+        whenRequesting(req -> req
+                .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
+                .body(Json.createObjectBuilder()
+                        .add("data", Json.createObjectBuilder()
+                                .add("id", clusterId1)
+                                .add("type", com.github.streamshub.console.api.model.KafkaCluster.API_TYPE)
+                                .add("meta", Json.createObjectBuilder()) // reconciliationPaused is omitted
+                                .add("attributes", Json.createObjectBuilder()))
+                        .build()
+                        .toString())
+                .patch("{clusterId1}", clusterId1))
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()))
+            .body("data.meta", not(hasKey("reconciliationPaused")));
+
+        kafkaCR = client.resources(Kafka.class)
+                .inNamespace("default")
+                .withName("test-kafka1")
+                .get();
+
+        assertNull(kafkaCR.getMetadata().getAnnotations().get(ResourceAnnotations.ANNO_STRIMZI_IO_PAUSE_RECONCILIATION));
+        // Test custom annotation was untouched
+        assertEquals("value-1", kafkaCR.getMetadata().getAnnotations().get("x-custom-annotation"));
     }
 
     // Helper methods

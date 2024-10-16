@@ -4,22 +4,49 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import jakarta.json.JsonObject;
 
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
+import org.eclipse.microprofile.openapi.annotations.media.SchemaProperty;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonFilter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.github.streamshub.console.api.support.ComparatorBuilder;
+import com.github.streamshub.console.api.support.ErrorCategory;
 import com.github.streamshub.console.api.support.ListRequestContext;
+
+import io.xlate.validation.constraints.Expression;
 
 import static java.util.Comparator.comparing;
 import static java.util.Comparator.nullsLast;
 
-@Schema(name = "KafkaCluster")
+@Schema(
+    name = "KafkaCluster",
+    properties = {
+        @SchemaProperty(name = "type", enumeration = KafkaCluster.API_TYPE),
+        @SchemaProperty(name = "meta", implementation = KafkaCluster.Meta.class)
+    })
+@Expression(
+    value = "self.id != null",
+    message = "resource ID is required",
+    node = "id",
+    payload = ErrorCategory.InvalidResource.class)
+@Expression(
+    when = "self.type != null",
+    value = "self.type == '" + KafkaCluster.API_TYPE + "'",
+    message = "resource type conflicts with operation",
+    node = "type",
+    payload = ErrorCategory.ResourceConflict.class)
 public class KafkaCluster extends Resource<KafkaCluster.Attributes> implements PaginatedKubeResource {
+
+    public static final String API_TYPE = "kafkas";
+    public static final String FIELDS_PARAM = "fields[" + API_TYPE + "]";
 
     public static class Fields {
         public static final String NAME = "name";
@@ -86,9 +113,9 @@ public class KafkaCluster extends Resource<KafkaCluster.Attributes> implements P
         }
     }
 
-    @Schema(name = "KafkaClusterListResponse")
-    public static final class ListResponse extends DataList<KafkaCluster> {
-        public ListResponse(List<KafkaCluster> data, ListRequestContext<KafkaCluster> listSupport) {
+    @Schema(name = "KafkaClusterDataList")
+    public static final class KafkaClusterDataList extends DataList<KafkaCluster> {
+        public KafkaClusterDataList(List<KafkaCluster> data, ListRequestContext<KafkaCluster> listSupport) {
             super(data.stream()
                     .map(entry -> {
                         entry.addMeta("page", listSupport.buildPageMeta(entry::toCursor));
@@ -100,11 +127,24 @@ public class KafkaCluster extends Resource<KafkaCluster.Attributes> implements P
         }
     }
 
-    @Schema(name = "KafkaClusterResponse")
-    public static final class SingleResponse extends DataSingleton<KafkaCluster> {
-        public SingleResponse(KafkaCluster data) {
+    @Schema(name = "KafkaClusterData")
+    public static final class KafkaClusterData extends DataSingleton<KafkaCluster> {
+        @JsonCreator
+        public KafkaClusterData(@JsonProperty("data") KafkaCluster data) {
             super(data);
         }
+    }
+
+    @Schema(name = "KafkaClusterMeta", additionalProperties = Object.class)
+    @JsonInclude(value = Include.NON_NULL)
+    static final class Meta extends JsonApiMeta {
+        @JsonProperty
+        @Schema(description = """
+                    Indicates whether reconciliation is paused for the associated Kafka \
+                    custom resource. This value is optional and will not be present when \
+                    the Kafka cluster is not (known) to be managed by Strimzi.
+                    """)
+        Boolean reconciliationPaused;
     }
 
     @JsonFilter("fieldFilter")
@@ -153,7 +193,16 @@ public class KafkaCluster extends Resource<KafkaCluster.Attributes> implements P
     }
 
     public KafkaCluster(String id, List<Node> nodes, Node controller, List<String> authorizedOperations) {
-        super(id, "kafkas", new Attributes(nodes, controller, authorizedOperations));
+        super(id, API_TYPE, Meta::new, new Attributes(nodes, controller, authorizedOperations));
+    }
+
+    @JsonCreator
+    public KafkaCluster(String id, String type, Attributes attributes, Meta meta) {
+        super(id, type, meta, attributes);
+    }
+
+    public static KafkaCluster fromId(String id) {
+        return new KafkaCluster(id, (List<Node>) null, (Node) null, (List<String>) null);
     }
 
     /**
@@ -161,7 +210,18 @@ public class KafkaCluster extends Resource<KafkaCluster.Attributes> implements P
      * of Topic fields used to compare entities for pagination/sorting.
      */
     public static KafkaCluster fromCursor(JsonObject cursor) {
-        return PaginatedKubeResource.fromCursor(cursor, id -> new KafkaCluster(id, null, null, null));
+        return PaginatedKubeResource.fromCursor(cursor, KafkaCluster::fromId);
+    }
+
+    public void reconciliationPaused(Boolean reconciliationPaused) {
+        ((Meta) getOrCreateMeta()).reconciliationPaused = reconciliationPaused;
+    }
+
+    public Boolean reconciliationPaused() {
+        return Optional.ofNullable(getMeta())
+                .map(Meta.class::cast)
+                .map(meta -> meta.reconciliationPaused)
+                .orElse(null);
     }
 
     @Override

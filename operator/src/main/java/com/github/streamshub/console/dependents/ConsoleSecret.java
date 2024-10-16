@@ -6,6 +6,7 @@ import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.security.SecureRandom;
 import java.util.Base64;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -13,12 +14,14 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Random;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
 import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.common.config.SaslConfigs;
+import org.apache.kafka.common.config.SslConfigs;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -132,26 +135,28 @@ public class ConsoleSecret extends CRUDKubernetesDependentResource<Secret, Conso
         config.getKubernetes().setEnabled(Objects.nonNull(namespace));
         config.getKafka().getClusters().add(kcConfig);
 
-        if (namespace != null && listenerName != null) {
-            // TODO: add informer for Kafka CRs
-            Kafka kafka = getResource(context, Kafka.class, namespace, name);
-            setListenerConfig(kcConfig.getProperties(), kafka, listenerName);
-        }
-
-        Optional.ofNullable(kafkaRef.getCredentials())
-            .map(Credentials::getKafkaUser)
-            .ifPresent(user -> {
-                String userNs = Optional.ofNullable(user.getNamespace()).orElse(namespace);
-                setKafkaUserConfig(
-                        context,
-                        getResource(context, KafkaUser.class, userNs, user.getName()),
-                        kcConfig.getProperties());
-            });
-
         setConfigVars(primary, context, kcConfig.getProperties(), kafkaRef.getProperties());
         setConfigVars(primary, context, kcConfig.getAdminProperties(), kafkaRef.getAdminProperties());
         setConfigVars(primary, context, kcConfig.getConsumerProperties(), kafkaRef.getConsumerProperties());
         setConfigVars(primary, context, kcConfig.getProducerProperties(), kafkaRef.getProducerProperties());
+
+        if (namespace != null && listenerName != null) {
+            // Changes in the Kafka resource picked up during periodic reconciliation
+            Kafka kafka = getResource(context, Kafka.class, namespace, name);
+            setListenerConfig(kcConfig.getProperties(), kafka, listenerName);
+        }
+
+        if (!kcConfig.getProperties().containsKey(SaslConfigs.SASL_JAAS_CONFIG)) {
+            Optional.ofNullable(kafkaRef.getCredentials())
+                .map(Credentials::getKafkaUser)
+                .ifPresent(user -> {
+                    String userNs = Optional.ofNullable(user.getNamespace()).orElse(namespace);
+                    setKafkaUserConfig(
+                            context,
+                            getResource(context, KafkaUser.class, userNs, user.getName()),
+                            kcConfig.getProperties());
+                });
+        }
     }
 
     void setListenerConfig(Map<String, String> properties, Kafka kafka, String listenerName) {
@@ -191,30 +196,45 @@ public class ConsoleSecret extends CRUDKubernetesDependentResource<Secret, Conso
             protocol.append("PLAINTEXT");
         }
 
-        properties.put(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, protocol.toString());
+        properties.putIfAbsent(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, protocol.toString());
 
         if (mechanism != null) {
-            properties.put(SaslConfigs.SASL_MECHANISM, mechanism);
+            properties.putIfAbsent(SaslConfigs.SASL_MECHANISM, mechanism);
         }
 
-        ListenerStatus listenerStatus = Optional.ofNullable(kafka.getStatus())
+        Optional<ListenerStatus> listenerStatus = Optional.ofNullable(kafka.getStatus())
                 .map(KafkaStatus::getListeners)
                 .orElseGet(Collections::emptyList)
                 .stream()
                 .filter(l -> l.getName().equals(listenerName))
-                .findFirst()
-                .orElse(null);
+                .findFirst();
 
-        Optional.ofNullable(listenerStatus)
-            .map(ListenerStatus::getBootstrapServers)
-            .or(() -> Optional.ofNullable(listenerSpec.getConfiguration())
-                    .map(GenericKafkaListenerConfiguration::getBootstrap)
-                    .map(GenericKafkaListenerConfigurationBootstrap::getHost))
-            .ifPresent(bootstrapServers -> properties.put(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers));
+        properties.computeIfAbsent(
+                CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG,
+                key -> listenerStatus.map(ListenerStatus::getBootstrapServers)
+                    .or(() -> Optional.ofNullable(listenerSpec.getConfiguration())
+                            .map(GenericKafkaListenerConfiguration::getBootstrap)
+                            .map(GenericKafkaListenerConfigurationBootstrap::getHost))
+                    .orElseThrow(() -> new ReconciliationException("""
+                            Bootstrap servers could not be found for listener '%s' on Kafka %s/%s \
+                            and no configuration was given in the Console resource"""
+                            .formatted(listenerName, kafka.getMetadata().getNamespace(), kafka.getMetadata().getName()))));
+
+        if (!properties.containsKey(SslConfigs.SSL_TRUSTSTORE_TYPE_CONFIG)
+                && !properties.containsKey(SslConfigs.SSL_TRUSTSTORE_CERTIFICATES_CONFIG)) {
+            listenerStatus.map(ListenerStatus::getCertificates)
+                    .filter(Objects::nonNull)
+                    .filter(Predicate.not(Collection::isEmpty))
+                    .map(certificates -> String.join("\n", certificates).trim())
+                    .ifPresent(certificates -> {
+                        properties.put(SslConfigs.SSL_TRUSTSTORE_TYPE_CONFIG, "PEM");
+                        properties.put(SslConfigs.SSL_TRUSTSTORE_CERTIFICATES_CONFIG, certificates);
+                    });
+        }
     }
 
     void setKafkaUserConfig(Context<Console> context, KafkaUser user, Map<String, String> properties) {
-        // TODO: add informer for KafkaUser CRs and the referenced Secret
+        // Changes in the KafkaUser resource and referenced Secret picked up during periodic reconciliation
         var secretName = Optional.ofNullable(user.getStatus())
                 .map(KafkaUserStatus::getSecret)
                 .orElseThrow(() -> new ReconciliationException("KafkaUser %s/%s missing .status.secret"
