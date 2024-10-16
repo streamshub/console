@@ -31,6 +31,7 @@ import { Link } from "@/i18n/routing";
 import { useTranslations } from "next-intl";
 import { ErrorsAndWarnings } from "./components/ErrorsAndWarnings";
 import { updateKafkaCluster } from "@/api/kafka/actions";
+import { useReconciliationContext } from "../ReconciliationContext";
 
 type ClusterCardProps = {
   name: string;
@@ -39,7 +40,7 @@ type ClusterCardProps = {
   brokersTotal?: number;
   consumerGroups?: number;
   kafkaVersion: string;
-  reconciliationPaused?: boolean;
+  kafkaId: string | undefined;
   messages: Array<{
     variant: "danger" | "warning";
     subject: { type: "cluster" | "broker" | "topic"; name: string; id: string };
@@ -57,16 +58,37 @@ export function ClusterCard({
   consumerGroups,
   kafkaVersion,
   messages,
-  reconciliationPaused,
+  kafkaId,
 }:
   | ({
       isLoading: false;
     } & ClusterCardProps)
   | ({ isLoading: true } & { [K in keyof ClusterCardProps]?: undefined })) {
   const t = useTranslations();
+
+  const { isReconciliationPaused, setReconciliationPaused } =
+    useReconciliationContext();
+
+  const resumeReconciliation = async () => {
+    if (!kafkaId) {
+      console.log("kafkaId is undefined");
+      return;
+    }
+
+    try {
+      const success = await updateKafkaCluster(kafkaId, false);
+
+      if (success) {
+        setReconciliationPaused(false);
+      }
+    } catch (e: unknown) {
+      console.log("Unknown error occurred");
+    }
+  };
+
   const warnings =
     messages?.filter((m) => m.variant === "warning").length ||
-    0 + (reconciliationPaused ? 1 : 0);
+    0 + (isReconciliationPaused ? 1 : 0);
   const dangers = messages?.filter((m) => m.variant === "danger").length || 0;
 
   return (
@@ -210,7 +232,7 @@ export function ClusterCard({
                   ))
                 ) : (
                   <>
-                    {!reconciliationPaused && messages.length === 0 && (
+                    {!isReconciliationPaused && messages.length === 0 && (
                       <DataListItem aria-labelledby={`no-messages`}>
                         <DataListItemRow>
                           <DataListItemCells
@@ -225,7 +247,7 @@ export function ClusterCard({
                         </DataListItemRow>
                       </DataListItem>
                     )}
-                    {reconciliationPaused && (
+                    {isReconciliationPaused && (
                       <DataListItem aria-labelledby={`reconciliation-warning`}>
                         <DataListItemRow>
                           <DataListItemCells
@@ -263,7 +285,11 @@ export function ClusterCard({
                                 width={1}
                                 className={"pf-v5-u-text-nowrap"}
                               >
-                                <Button variant="link" isInline>
+                                <Button
+                                  variant="link"
+                                  isInline
+                                  onClick={resumeReconciliation}
+                                >
                                   {t("reconciliation.resume")}
                                 </Button>
                               </DataListCell>,
