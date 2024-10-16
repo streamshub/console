@@ -15,7 +15,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -201,8 +200,9 @@ public class RecordService {
                                 (map, hdr) -> map.put(hdr.key(), headerValue(hdr, null)),
                                 HashMap::putAll));
                 result.size(sizeOf(meta, request.headers()));
-                maybeRelate(key).ifPresent(result::keySchema);
-                maybeRelate(value).ifPresent(result::valueSchema);
+
+                schemaRelationship(key).ifPresent(result::keySchema);
+                schemaRelationship(value).ifPresent(result::valueSchema);
 
                 return result;
             })
@@ -321,13 +321,13 @@ public class RecordService {
         setProperty(KafkaRecord.Fields.HEADERS, include, () -> headersToMap(rec.headers(), maxValueLength), item::headers);
         setProperty(KafkaRecord.Fields.SIZE, include, () -> sizeOf(rec), item::size);
 
-        maybeRelate(rec.key()).ifPresent(item::keySchema);
-        maybeRelate(rec.value()).ifPresent(item::valueSchema);
+        schemaRelationship(rec.key()).ifPresent(item::keySchema);
+        schemaRelationship(rec.value()).ifPresent(item::valueSchema);
 
         return item;
     }
 
-    Optional<JsonApiRelationship> maybeRelate(RecordData data) {
+    Optional<JsonApiRelationship> schemaRelationship(RecordData data) {
         return Optional.ofNullable(data)
                 .map(d -> d.meta)
                 .filter(recordMeta -> recordMeta.containsKey("schema-id"))
@@ -343,9 +343,19 @@ public class RecordService {
                     relationship.data(new Identifier("schemas", schemaId));
                     relationship.addLink("content", "/api/schemas/" + schemaId);
 
+                    schemaError(data).ifPresent(error -> relationship.addMeta("errors", List.of(error)));
+
                     return relationship;
                 })
-                .filter(Objects::nonNull);
+                .or(() -> schemaError(data).map(error -> {
+                    var relationship = new JsonApiRelationship();
+                    relationship.addMeta("errors", List.of(error));
+                    return relationship;
+                }));
+    }
+
+    Optional<com.github.streamshub.console.api.model.Error> schemaError(RecordData data) {
+        return Optional.ofNullable(data).map(RecordData::error);
     }
 
     <T> void setProperty(String fieldName, List<String> include, Supplier<T> source, java.util.function.Consumer<T> target) {

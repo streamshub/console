@@ -67,7 +67,8 @@ public class MultiformatSerializer extends AbstractKafkaSerializer<Object, Recor
     @Override
     public void configure(Map<String, ?> configs, boolean isKey) {
         if (getSchemaResolver() == null) {
-            // Do not attempt to configure anything if we will not be making remote calls to registry
+            key = isKey;
+            // Do not attempt to configure anything more if we will not be making remote calls to registry
             return;
         }
 

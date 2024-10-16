@@ -99,9 +99,9 @@ export async function getTopicMessages(
     } else {
       return { messages: messages, ts: new Date() };
     }
-  } catch {
+  } catch (e) {
     log.error(
-      { status: res.status, message: rawData, url },
+      { error: e, status: res.status, message: rawData, url },
       "Error fetching message",
     );
     if (res.status === 404) {

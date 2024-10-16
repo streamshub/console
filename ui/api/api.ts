@@ -14,7 +14,7 @@ export async function getHeaders(): Promise<Record<string, string>> {
 }
 
 export const ApiError = z.object({
-  meta: z.object({ type: z.string() }), // z.map(z.string(), z.string()),
+  meta: z.object({ type: z.string() }).optional(), // z.map(z.string(), z.string()),
   id: z.string().optional(),
   status: z.string().optional(),
   code: z.string().optional(),

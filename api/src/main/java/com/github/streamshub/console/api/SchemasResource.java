@@ -48,7 +48,7 @@ public class SchemasResource {
     @APIResponse(responseCode = "404", ref = "NotFound")
     @APIResponse(responseCode = "500", ref = "ServerError")
     @APIResponse(responseCode = "504", ref = "ServerTimeout")
-    public Response describeConfigs(
+    public Response getSchemaContent(
             @Parameter(description = "Schema identifier")
             @PathParam("schemaId")
             String schemaId) {

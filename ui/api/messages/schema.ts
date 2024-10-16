@@ -1,9 +1,11 @@
 import { z } from "zod";
+import { ApiError } from "@/api/api";
 
 const RelatedSchema = z.object({
   meta: z.object({
     artifactType: z.string().optional(),
     name: z.string().optional(),
+    errors: z.array(ApiError).optional(),
   }).nullable().optional(),
   links: z.object({
     content: z.string(),
@@ -11,7 +13,7 @@ const RelatedSchema = z.object({
   data: z.object({
     type: z.literal("schemas"),
     id: z.string(),
-  }),
+  }).optional(),
 });
 
 export const MessageSchema = z.object({
