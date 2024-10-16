@@ -5,9 +5,8 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
 
-import jakarta.enterprise.util.AnnotationLiteral;
+import jakarta.enterprise.inject.literal.NamedLiteral;
 import jakarta.enterprise.util.TypeLiteral;
-import jakarta.inject.Named;
 
 import org.apache.kafka.clients.admin.Admin;
 import org.mockito.Mockito;
@@ -34,22 +33,6 @@ public final class AdminClientSpy {
                 private static final long serialVersionUID = 1L;
             };
 
-    @SuppressWarnings("all")
-    static class NamedLiteral extends AnnotationLiteral<Named> implements Named {
-        private static final long serialVersionUID = 1L;
-
-        final String value;
-
-        public NamedLiteral(String value) {
-            this.value = value;
-        }
-
-        @Override
-        public String value() {
-            return value;
-        }
-    }
-
     static final String KAFKA_ADMIN_BUILDER = "kafkaAdminBuilder";
     static final String KAFKA_ADMIN_FILTER = "kafkaAdminFilter";
 
@@ -66,7 +49,7 @@ public final class AdminClientSpy {
             return client;
         };
 
-        QuarkusMock.installMockForType(filter, CLIENT_FILTER_TYPE_LITERAL, new NamedLiteral(KAFKA_ADMIN_FILTER));
+        QuarkusMock.installMockForType(filter, CLIENT_FILTER_TYPE_LITERAL, NamedLiteral.of(KAFKA_ADMIN_FILTER));
     }
 
     /**
@@ -83,7 +66,7 @@ public final class AdminClientSpy {
             return client;
         };
 
-        QuarkusMock.installMockForType(builder, CLIENT_BUILDER_TYPE_LITERAL, new NamedLiteral(KAFKA_ADMIN_BUILDER));
+        QuarkusMock.installMockForType(builder, CLIENT_BUILDER_TYPE_LITERAL, NamedLiteral.of(KAFKA_ADMIN_BUILDER));
     }
 
     private AdminClientSpy() {

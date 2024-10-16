@@ -8,6 +8,7 @@ import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -297,7 +298,7 @@ public class ClientFactory {
             KafkaClusterConfig clusterConfig,
             Optional<Kafka> kafkaResource,
             Function<Map<String, Object>, Admin> adminBuilder,
-            boolean replace) {
+            boolean allowReplacement) {
 
         var adminConfigs = buildConfig(AdminClientConfig.configNames(),
                 clusterConfig,
@@ -330,38 +331,29 @@ public class ClientFactory {
         clientConfigs.put(Consumer.class, Collections.unmodifiableMap(consumerConfigs));
         clientConfigs.put(Producer.class, Collections.unmodifiableMap(producerConfigs));
 
-        Admin admin = null;
-
-        if (establishGlobalConnection(adminConfigs)) {
-            admin = adminBuilder.apply(adminConfigs);
-        }
-
         String clusterKey = clusterConfig.clusterKey();
         String clusterId = clusterId(clusterConfig, kafkaResource);
 
-        if (!replace && contexts.containsKey(clusterId)) {
+        if (contexts.containsKey(clusterId) && !allowReplacement) {
             log.warnf("""
                     Ignoring duplicate Kafka cluster id: %s for cluster %s. Cluster id values in \
                     configuration must be unique and may not match id values of \
                     clusters discovered using Strimzi Kafka Kubernetes API resources.""", clusterId, clusterKey);
-        } else {
-            boolean truststoreNowRequired = truststoreRequired(adminConfigs);
+        } else if (validConfigs(kafkaResource, clusterConfig, clientConfigs)) {
+            Admin admin = null;
 
-            if (resourceStatusDroppedCertificates(contexts.get(clusterId), kafkaResource, truststoreNowRequired)) {
-                log.warnf("""
-                        Ignoring update to Kafka custom resource %s. Connection requires \
-                        trusted certificate which is no longer available.""", clusterKey);
+            if (establishGlobalConnection(adminConfigs)) {
+                admin = adminBuilder.apply(adminConfigs);
+            }
+
+            KafkaContext ctx = new KafkaContext(clusterConfig, kafkaResource.orElse(null), clientConfigs, admin);
+            KafkaContext previous = contexts.put(clusterId, ctx);
+
+            if (previous == null) {
+                log.infof("Added KafkaContext for cluster %s, id=%s", clusterKey, clusterId);
             } else {
-                if (truststoreNowRequired && kafkaResource.isPresent()) {
-                    log.warnf("""
-                            Connection requires trusted certificate(s) which are not present \
-                            in the Kafka CR status of resource %s.""", clusterKey);
-                }
-
-                KafkaContext ctx = new KafkaContext(clusterConfig, kafkaResource.orElse(null), clientConfigs, admin);
-                log.infof("%s KafkaContext for cluster %s, id=%s", replace ? "Replacing" : "Adding", clusterKey, clusterId);
-                KafkaContext previous = contexts.put(clusterId, ctx);
-                Optional.ofNullable(previous).ifPresent(KafkaContext::close);
+                log.infof("Replaced KafkaContext for cluster %s, id=%s", clusterKey, clusterId);
+                previous.close();
             }
         }
     }
@@ -374,19 +366,6 @@ public class ClientFactory {
         return Optional.ofNullable(clusterConfig.getId())
                 .or(() -> kafkaResource.map(Kafka::getStatus).map(KafkaStatus::getClusterId))
                 .orElseGet(clusterConfig::getName);
-    }
-
-    /**
-     * Checks whether the previous KafkaContext contained TLS trusted certificates, but due to them being
-     * removed from the Strimzi Kafka CR being in a transient state, they are no longer present. We will ignore
-     * this update and keep the old KafkaContext.
-     */
-    boolean resourceStatusDroppedCertificates(KafkaContext context, Optional<Kafka> kafkaResource, boolean truststoreNowRequired) {
-        if (!truststoreNowRequired || context == null || kafkaResource.isEmpty()) {
-            return false;
-        }
-
-        return !truststoreRequired(context.configs(Admin.class));
     }
 
     Optional<Kafka> cachedKafkaResource(KafkaClusterConfig clusterConfig) {
@@ -403,6 +382,45 @@ public class ClientFactory {
 
                     return Optional.empty();
                 }) : Optional.empty();
+    }
+
+    boolean validConfigs(Optional<Kafka> kafkaResource, KafkaClusterConfig clusterConfig, Map<Class<?>, Map<String, Object>> clientConfigs) {
+        boolean createContext = true;
+        boolean missingListenerStatus = kafkaResource.isPresent()
+                && getListenerStatus(kafkaResource, clusterConfig.getListener()).isEmpty();
+        StringBuilder clientsMessage = new StringBuilder();
+
+        if (missingListenerStatus) {
+            clientsMessage.append("; Kafka resource has no status for listener '%s', bootstrap servers and trusted certificates could not be derived"
+                    .formatted(clusterConfig.getListener()));
+        }
+
+        for (Map.Entry<Class<?>, Map<String, Object>> client : clientConfigs.entrySet()) {
+            Class<?> clientType = client.getKey();
+            Set<String> missing = findMissingRequiredConfigs(client.getValue());
+
+            if (!missing.isEmpty()) {
+                clientsMessage.append("; %s client is missing required properties: %s"
+                        .formatted(clientType.getSimpleName(), missing));
+                createContext = false;
+            }
+
+            if (truststoreRequired(client.getValue())) {
+                clientsMessage.append("""
+                        ; %s client is a secure/SSL connection, but no truststore configuration is available. \
+                        The connection may fail if the Kafka cluster is using an untrusted certificate""".formatted(clientType.getSimpleName()));
+            }
+        }
+
+        if (createContext) {
+            clientsMessage.insert(0, "Some configuration may be missing for connection to cluster %s, connection attempts may fail".formatted(clusterConfig.clusterKey()));
+            log.warn(clientsMessage.toString().trim());
+        } else {
+            clientsMessage.insert(0, "Missing configuration detected for connection to cluster %s, no connection will be setup".formatted(clusterConfig.clusterKey()));
+            log.error(clientsMessage.toString().trim());
+        }
+
+        return createContext;
     }
 
     Map<String, Object> requiredAdminConfig() {
@@ -448,6 +466,20 @@ public class ClientFactory {
         }
 
         return false;
+    }
+
+    static Set<String> findMissingRequiredConfigs(Map<String, Object> configs) {
+        Set<String> missing = new LinkedHashSet<>();
+
+        if (!configs.containsKey(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG)) {
+            missing.add(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG);
+        }
+
+        if (configs.containsKey(SaslConfigs.SASL_JAAS_CONFIG) && !configs.containsKey(SaslConfigs.SASL_MECHANISM)) {
+            missing.add(SaslConfigs.SASL_MECHANISM);
+        }
+
+        return missing;
     }
 
     void disposeKafkaContexts(@Disposes Map<String, KafkaContext> contexts) {
@@ -579,12 +611,7 @@ public class ClientFactory {
                 .filter(listener -> listener.getName().equals(config.getListener()))
                 .findFirst();
 
-        var listenerStatus = cluster.map(Kafka::getStatus)
-                .map(KafkaStatus::getListeners)
-                .map(Collection::stream)
-                .orElseGet(Stream::empty)
-                .filter(listener -> listener.getName().equals(config.getListener()))
-                .findFirst();
+        var listenerStatus = getListenerStatus(cluster, config.getListener());
 
         listenerSpec.ifPresent(listener -> applyListenerConfiguration(cfg, listener));
 
@@ -600,15 +627,10 @@ public class ClientFactory {
                 cfg.putIfAbsent(SslConfigs.SSL_TRUSTSTORE_CERTIFICATES_CONFIG, certificates);
             });
 
-        if (truststoreRequired(cfg)) {
-            if (cfg.containsKey(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG) && trustManager.isResolvable()) {
-                trustManager.get().trustClusterCertificate(cfg);
-            } else {
-                log.warnf("""
-                        Failed to set configuration for %s client to Kafka cluster %s. Connection \
-                        requires truststore which could not be obtained from the Kafka resource status."""
-                        .formatted(clientType, config.clusterKey()));
-            }
+        if (truststoreRequired(cfg) && trustManager.isResolvable()
+                && cfg.containsKey(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG)) {
+            // trustManager is only resolvable in 'dev' mode
+            trustManager.get().trustClusterCertificate(cfg);
         }
 
         cfg.putAll(overrideProperties);
@@ -620,6 +642,15 @@ public class ClientFactory {
                 cfg);
 
         return cfg;
+    }
+
+    Optional<ListenerStatus> getListenerStatus(Optional<Kafka> cluster, String listenerName) {
+        return cluster.map(Kafka::getStatus)
+                .map(KafkaStatus::getListeners)
+                .map(Collection::stream)
+                .orElseGet(Stream::empty)
+                .filter(listener -> listener.getName().equals(listenerName))
+                .findFirst();
     }
 
     private void applyListenerConfiguration(Map<String, Object> cfg, GenericKafkaListener listener) {
