@@ -32,6 +32,11 @@ public class AvroDatumProvider extends DefaultAvroDatumProvider<RecordData> {
                 final Object datum = reader.read(null, jsonDecoder);
                 writer.write(datum, out);
 
+                /*
+                 * Replace input data with the re-seralized record so response contains
+                 * the data as it was sent to Kafka (but in JSON format). For example,
+                 * unknown fields will have been dropped.
+                 */
                 final ByteArrayOutputStream buffer = new ByteArrayOutputStream();
                 final Encoder jsonEncoder = EncoderFactory.get().jsonEncoder(schema, buffer);
                 writer.write(datum, jsonEncoder);

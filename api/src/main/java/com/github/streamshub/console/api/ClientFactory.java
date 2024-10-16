@@ -424,8 +424,10 @@ public class ClientFactory {
         }
 
         if (createContext) {
-            clientsMessage.insert(0, "Some configuration may be missing for connection to cluster %s, connection attempts may fail".formatted(clusterConfig.clusterKey()));
-            log.warn(clientsMessage.toString().trim());
+            if (clientsMessage.length() > 0) {
+                clientsMessage.insert(0, "Some configuration may be missing for connection to cluster %s, connection attempts may fail".formatted(clusterConfig.clusterKey()));
+                log.warn(clientsMessage.toString().trim());
+            }
         } else {
             clientsMessage.insert(0, "Missing configuration detected for connection to cluster %s, no connection will be setup".formatted(clusterConfig.clusterKey()));
             log.error(clientsMessage.toString().trim());

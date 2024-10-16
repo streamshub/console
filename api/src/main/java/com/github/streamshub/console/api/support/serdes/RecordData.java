@@ -18,6 +18,7 @@ public class RecordData {
     public final Map<String, String> meta = new LinkedHashMap<>(1);
     byte[] data;
     ParsedSchema<?> schema;
+    com.github.streamshub.console.api.model.Error error;
 
     public RecordData(byte[] data, ParsedSchema<?> schema) {
         super();
@@ -37,6 +38,10 @@ public class RecordData {
 
     public ParsedSchema<?> schema() {
         return schema;
+    }
+
+    public com.github.streamshub.console.api.model.Error error() {
+        return error;
     }
 
     public String dataString(Integer maxValueLength) {
