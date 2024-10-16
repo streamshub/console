@@ -3,6 +3,7 @@
 import { updateKafkaCluster } from "@/api/kafka/actions";
 import { useOpenClusterConnectionPanel } from "@/components/ClusterDrawerContext";
 import { ReconciliationModal } from "@/components/ClusterOverview/ReconciliationModal";
+import { useReconciliationContext } from "@/components/ReconciliationContext";
 import { Button, Flex, FlexItem } from "@/libs/patternfly/react-core";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
@@ -13,19 +14,19 @@ export function ConnectButton({ clusterId }: { clusterId: string }) {
 
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
 
-  const [isReconciliationPaused, setIsReconciliationPaused] =
-    useState<boolean>(false);
+  const { isReconciliationPaused, setReconciliationPaused } =
+    useReconciliationContext();
 
   const updateReconciliation = async (reconciliationPaused: boolean) => {
-    const success = await updateKafkaCluster(clusterId, reconciliationPaused);
+    try {
+      const success = await updateKafkaCluster(clusterId, reconciliationPaused);
 
-    console.log("hello", success);
-    if (success) {
-      setIsModalOpen(false);
-      setIsReconciliationPaused(true);
-    } else {
-      alert("update failed");
-      setIsModalOpen(false);
+      if (success) {
+        setIsModalOpen(false);
+        setReconciliationPaused(reconciliationPaused);
+      }
+    } catch (e: unknown) {
+      console.log("Unknown error occurred");
     }
   };
 
@@ -37,12 +38,12 @@ export function ConnectButton({ clusterId }: { clusterId: string }) {
             variant="secondary"
             onClick={
               isReconciliationPaused
-                ? () => setIsModalOpen(true)
-                : () => updateReconciliation(false)
+                ? () => updateReconciliation(false)
+                : () => setIsModalOpen(true)
             }
           >
             {isReconciliationPaused
-              ? t("reconciliation.reconciliation_paused")
+              ? t("reconciliation.resume_reconciliation")
               : t("reconciliation.pause_reconciliation_button")}
           </Button>
         </FlexItem>
