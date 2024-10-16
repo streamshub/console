@@ -389,7 +389,7 @@ export async function updateKafkaCluster(
       body: JSON.stringify(body),
     });
 
-    if (res.status === 204) {
+    if (res.status === 200) {
       return true;
     } else {
       return false;

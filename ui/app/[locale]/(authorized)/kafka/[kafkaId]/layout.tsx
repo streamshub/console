@@ -11,7 +11,6 @@ import { getServerSession } from "next-auth";
 import { useTranslations } from "next-intl";
 import { PropsWithChildren, ReactNode, Suspense } from "react";
 import { KafkaParams } from "./kafka.params";
-import { getKafkaCluster } from "@/api/kafka/actions";
 
 export default async function AsyncLayout({
   children,
@@ -28,12 +27,6 @@ export default async function AsyncLayout({
   const authOptions = await getAuthOptions();
   const session = await getServerSession(authOptions);
 
-  const data = await getKafkaCluster(kafkaId);
-  if (!data) {
-    return null;
-  }
-  const reconciliationPaused = data.meta?.reconciliationPaused;
-
   return (
     <Layout
       username={(session?.user?.name || session?.user?.email) ?? "User"}
@@ -41,7 +34,6 @@ export default async function AsyncLayout({
       activeBreadcrumb={activeBreadcrumb}
       header={header}
       modal={modal}
-      reconciliationPaused={reconciliationPaused && reconciliationPaused}
     >
       {children}
     </Layout>
@@ -55,14 +47,12 @@ function Layout({
   modal,
   kafkaId,
   username,
-  reconciliationPaused,
 }: PropsWithChildren<{
   kafkaId: string;
   username: string;
   header: ReactNode;
   activeBreadcrumb: ReactNode;
   modal: ReactNode;
-  reconciliationPaused?: boolean;
 }>) {
   const t = useTranslations();
   return (
@@ -70,7 +60,7 @@ function Layout({
       <AppLayout
         username={username}
         sidebar={<ClusterLinks kafkaId={kafkaId} />}
-        reconciliationPaused={reconciliationPaused}
+        kafkaId={kafkaId}
       >
         <PageGroup stickyOnBreakpoint={{ default: "top" }}>
           <PageBreadcrumb>
