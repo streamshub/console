@@ -213,6 +213,11 @@ public class KafkaCluster extends Resource<KafkaCluster.Attributes> implements P
         return PaginatedKubeResource.fromCursor(cursor, KafkaCluster::fromId);
     }
 
+    @Override
+    public JsonApiMeta metaFactory() {
+        return new Meta();
+    }
+
     public void reconciliationPaused(Boolean reconciliationPaused) {
         ((Meta) getOrCreateMeta()).reconciliationPaused = reconciliationPaused;
     }
