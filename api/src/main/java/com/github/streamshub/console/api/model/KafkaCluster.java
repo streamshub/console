@@ -193,7 +193,7 @@ public class KafkaCluster extends Resource<KafkaCluster.Attributes> implements P
     }
 
     public KafkaCluster(String id, List<Node> nodes, Node controller, List<String> authorizedOperations) {
-        super(id, API_TYPE, Meta::new, new Attributes(nodes, controller, authorizedOperations));
+        super(id, API_TYPE, new Attributes(nodes, controller, authorizedOperations));
     }
 
     @JsonCreator
@@ -213,12 +213,17 @@ public class KafkaCluster extends Resource<KafkaCluster.Attributes> implements P
         return PaginatedKubeResource.fromCursor(cursor, KafkaCluster::fromId);
     }
 
+    @Override
+    public JsonApiMeta metaFactory() {
+        return new Meta();
+    }
+
     public void reconciliationPaused(Boolean reconciliationPaused) {
         ((Meta) getOrCreateMeta()).reconciliationPaused = reconciliationPaused;
     }
 
     public Boolean reconciliationPaused() {
-        return Optional.ofNullable(getMeta())
+        return Optional.ofNullable(meta())
                 .map(Meta.class::cast)
                 .map(meta -> meta.reconciliationPaused)
                 .orElse(null);
@@ -304,7 +309,7 @@ public class KafkaCluster extends Resource<KafkaCluster.Attributes> implements P
 
     @JsonIgnore
     public boolean isConfigured() {
-        return Boolean.TRUE.equals(getMeta("configured"));
+        return Boolean.TRUE.equals(meta("configured"));
     }
 
     @JsonIgnore

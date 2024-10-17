@@ -12,7 +12,7 @@ import {
   TextContent,
   Tooltip,
 } from "@/libs/patternfly/react-core";
-import { HelpIcon } from "@/libs/patternfly/react-icons";
+import { ExclamationTriangleIcon, HelpIcon } from "@/libs/patternfly/react-icons";
 import {
   BaseCellProps,
   InnerScrollContainer,
@@ -263,6 +263,7 @@ export function MessagesTable({
                         return (
                           <Cell>
                             {row.attributes.key ? (
+                              <>
                               <UnknownValuePreview
                                 value={row.attributes.key}
                                 highlight={filterQuery}
@@ -271,6 +272,23 @@ export function MessagesTable({
                                   onSelectMessage(row);
                                 }}
                               />
+                              {row.relationships.keySchema && (
+                                <TextContent>
+                                  <Text component={"small"}>
+                                    {row.relationships.keySchema?.meta?.artifactType && (
+                                        <>
+                                        {row.relationships.keySchema?.meta?.artifactType}
+                                        </>
+                                    )}
+                                    {row.relationships.keySchema?.meta?.errors && (
+                                        <>
+                                        <ExclamationTriangleIcon /> { row.relationships.keySchema?.meta?.errors[0].detail }
+                                        </>
+                                    )}
+                                  </Text>
+                                </TextContent>
+                              )}
+                              </>
                             ) : (
                               empty
                             )}
@@ -299,6 +317,7 @@ export function MessagesTable({
                         return (
                           <Cell>
                             {row.attributes.value ? (
+                              <>
                               <UnknownValuePreview
                                 value={row.attributes.value}
                                 highlight={filterQuery}
@@ -307,6 +326,23 @@ export function MessagesTable({
                                   onSelectMessage(row);
                                 }}
                               />
+                              {row.relationships.valueSchema && (
+                                <TextContent>
+                                  <Text component={"small"}>
+                                    {row.relationships.valueSchema?.meta?.artifactType && (
+                                      <>
+                                      {row.relationships.valueSchema?.meta?.artifactType}
+                                      </>
+                                    )}
+                                    {row.relationships.valueSchema?.meta?.errors && (
+                                      <>
+                                      <ExclamationTriangleIcon /> { row.relationships.valueSchema?.meta?.errors[0].detail }
+                                      </>
+                                    )}
+                                  </Text>
+                                </TextContent>
+                              )}
+                              </>
                             ) : (
                               empty
                             )}
