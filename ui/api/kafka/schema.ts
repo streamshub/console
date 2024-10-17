@@ -43,7 +43,7 @@ const ClusterDetailSchema = z.object({
   type: z.literal("kafkas"),
   meta: z
     .object({
-      reconciliationPaused: z.boolean(),
+      reconciliationPaused: z.boolean().optional(),
     })
     .optional(),
   attributes: z.object({

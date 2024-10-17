@@ -1,3 +1,5 @@
+import { notFound } from "next/navigation";
+import { getKafkaCluster } from "@/api/kafka/actions";
 import { ClusterLinks } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/ClusterLinks";
 import { getAuthOptions } from "@/app/api/auth/[...nextauth]/route";
 import { AppLayout } from "@/components/AppLayout";
@@ -8,9 +10,9 @@ import {
   PageGroup,
 } from "@/libs/patternfly/react-core";
 import { getServerSession } from "next-auth";
-import { useTranslations } from "next-intl";
 import { PropsWithChildren, ReactNode, Suspense } from "react";
 import { KafkaParams } from "./kafka.params";
+import { ClusterDetail } from "@/api/kafka/schema";
 
 export default async function AsyncLayout({
   children,
@@ -26,11 +28,16 @@ export default async function AsyncLayout({
 }>) {
   const authOptions = await getAuthOptions();
   const session = await getServerSession(authOptions);
+  const cluster = await getKafkaCluster(kafkaId);
+
+  if (!cluster) {
+    notFound();
+  }
 
   return (
     <Layout
-      username={(session?.user?.name || session?.user?.email) ?? "User"}
-      kafkaId={kafkaId}
+      username={(session?.user?.name ?? session?.user?.email) ?? "User"}
+      kafkaCluster={cluster}
       activeBreadcrumb={activeBreadcrumb}
       header={header}
       modal={modal}
@@ -45,22 +52,21 @@ function Layout({
   activeBreadcrumb,
   header,
   modal,
-  kafkaId,
+  kafkaCluster,
   username,
 }: PropsWithChildren<{
-  kafkaId: string;
+  kafkaCluster: ClusterDetail;
   username: string;
   header: ReactNode;
   activeBreadcrumb: ReactNode;
   modal: ReactNode;
 }>) {
-  const t = useTranslations();
   return (
     <AppLayoutProvider>
       <AppLayout
         username={username}
-        sidebar={<ClusterLinks kafkaId={kafkaId} />}
-        kafkaId={kafkaId}
+        sidebar={<ClusterLinks kafkaCluster={kafkaCluster} />}
+        kafkaCluster={kafkaCluster}
       >
         <PageGroup stickyOnBreakpoint={{ default: "top" }}>
           <PageBreadcrumb>
