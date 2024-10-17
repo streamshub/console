@@ -5,20 +5,23 @@ import { Banner, Bullseye, Button, FlexItem, Flex } from "@/libs/patternfly/reac
 import { useTranslations } from "next-intl";
 import { useReconciliationContext } from "./ReconciliationContext";
 import { updateKafkaCluster } from "@/api/kafka/actions";
+import { ClusterDetail } from "@/api/kafka/schema";
 
-export function ReconciliationPausedBanner({ kafkaId }: { kafkaId: string | undefined }) {
+export function ReconciliationPausedBanner({ kafkaCluster }: { kafkaCluster: ClusterDetail; }) {
   const t = useTranslations();
 
   const { isReconciliationPaused, setReconciliationPaused } = useReconciliationContext();
 
+  setReconciliationPaused(kafkaCluster.meta?.reconciliationPaused ?? false);
+
   const resumeReconciliation = async () => {
-    if (!kafkaId) {
-      console.log("kafkaId is undefined");
+    if (!kafkaCluster) {
+      console.log("kafkaCluster is undefined");
       return;
     }
 
     try {
-      const success = await updateKafkaCluster(kafkaId, false);
+      const success = await updateKafkaCluster(kafkaCluster.id, false);
 
       if (success) {
         setReconciliationPaused(false);
@@ -36,6 +39,7 @@ export function ReconciliationPausedBanner({ kafkaId }: { kafkaId: string | unde
             <FlexItem spacer={{ default: "spacerNone" }}>
               {t("reconciliation.reconciliation_paused_warning")}
             </FlexItem>
+            &nbsp;
             <FlexItem spacer={{ default: "spacerLg" }}>
               <Button variant="link" isInline onClick={resumeReconciliation}>
                 {t("reconciliation.resume")}
