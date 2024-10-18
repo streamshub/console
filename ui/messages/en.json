@@ -494,6 +494,7 @@
     "topic_header": "Topics",
     "total_topics": "total topics",
     "partition": "Partition",
+    "total_partitions": "total partitions",
     "view_all_topics": "View all",
     "fully_replicated_partition": "Fully replicated",
     "fully_replicated_partition_tooltip": "All partitions are fully replicated. A partition is fully-replicated when its replicas (followers) are 'in sync' with the designated partition leader. Replicas are 'in sync' if they have fetched records up to the log end offset of the leader partition within an allowable lag time, as determined by replica.lag.time.max.ms.",

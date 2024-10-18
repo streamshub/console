@@ -127,7 +127,7 @@ public class Topic extends RelatableResource<Topic.Attributes, Topic.Relationshi
     }
 
     @JsonFilter("fieldFilter")
-    static class Attributes {
+    public static class Attributes {
         @JsonProperty
         String name;
 

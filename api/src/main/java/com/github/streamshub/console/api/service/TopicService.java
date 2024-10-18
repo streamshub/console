@@ -14,6 +14,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
@@ -163,7 +164,11 @@ public class TopicService {
 
         Admin adminClient = kafkaContext.admin();
         final Map<String, Integer> statuses = new HashMap<>();
-        listSupport.meta().put("summary", Map.of("statuses", statuses));
+        final AtomicInteger partitionCount = new AtomicInteger(0);
+
+        listSupport.meta().put("summary", Map.of(
+                "statuses", statuses,
+                "totalPartitions", partitionCount));
 
         return listTopics(adminClient, true)
             .thenApply(list -> list.stream().map(Topic::fromTopicListing).toList())
@@ -172,7 +177,7 @@ public class TopicService {
                     threadContext.currentContextExecutor())
             .thenApply(list -> list.stream()
                     .filter(listSupport)
-                    .map(topic -> tallyStatus(statuses, topic))
+                    .map(topic -> tallySummary(statuses, partitionCount, topic))
                     .map(listSupport::tally)
                     .filter(listSupport::betweenCursors)
                     .sorted(listSupport.getSortComparator())
@@ -183,8 +188,9 @@ public class TopicService {
                     threadContext.currentContextExecutor());
     }
 
-    Topic tallyStatus(Map<String, Integer> statuses, Topic topic) {
+    Topic tallySummary(Map<String, Integer> statuses, AtomicInteger partitionCount, Topic topic) {
         statuses.compute(topic.status(), (k, v) -> v == null ? 1 : v + 1);
+        partitionCount.addAndGet(topic.getAttributes().numPartitions());
         return topic;
     }
 

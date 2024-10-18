@@ -74,9 +74,9 @@ const TopicSchema = z.object({
     managed: z.boolean().optional(),
   }).optional(),
   attributes: z.object({
-    name: z.string(),
-    status: TopicStatusSchema,
-    visibility: z.string(),
+    name: z.string().optional(),
+    status: TopicStatusSchema.optional(),
+    visibility: z.string().optional(),
     partitions: z.array(PartitionSchema).optional(),
     numPartitions: z.number().optional(),
     authorizedOperations: z.array(z.string()),
@@ -86,7 +86,7 @@ const TopicSchema = z.object({
   relationships: z.object({
     consumerGroups: z.object({
       data: z.array(z.any()),
-    }),
+    }).optional(),
   }),
 });
 export const TopicResponse = z.object({
@@ -109,10 +109,8 @@ const TopicListSchema = z.object({
     numPartitions: true,
     totalLeaderLogBytes: true,
   }),
-  relationships: z.object({
-    consumerGroups: z.object({
-      data: z.array(z.any()),
-    }),
+  relationships: TopicSchema.shape.relationships.pick({
+    consumerGroups: true
   }),
 });
 export type TopicList = z.infer<typeof TopicListSchema>;
@@ -129,6 +127,7 @@ export const TopicsResponseSchema = z.object({
         PartiallyOffline: z.number().optional(),
         Offline: z.number().optional(),
       }),
+      totalPartitions: z.number(),
     }),
   }),
   links: z.object({
