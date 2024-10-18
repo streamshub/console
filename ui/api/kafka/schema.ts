@@ -41,6 +41,11 @@ export type ClusterList = z.infer<typeof ClusterListSchema>;
 const ClusterDetailSchema = z.object({
   id: z.string(),
   type: z.literal("kafkas"),
+  meta: z
+    .object({
+      reconciliationPaused: z.boolean().optional(),
+    })
+    .optional(),
   attributes: z.object({
     name: z.string(),
     namespace: z.string().nullable().optional(),
