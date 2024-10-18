@@ -12,3 +12,11 @@ rules:
     resources:
       - kafkas
       - kafkatopics
+  - verbs:
+      - get
+      - list
+      - patch
+    apiGroups:
+      - kafka.strimzi.io
+    resources:
+      - kafkarebalances
