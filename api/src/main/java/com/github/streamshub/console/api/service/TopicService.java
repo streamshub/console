@@ -190,7 +190,13 @@ public class TopicService {
 
     Topic tallySummary(Map<String, Integer> statuses, AtomicInteger partitionCount, Topic topic) {
         statuses.compute(topic.status(), (k, v) -> v == null ? 1 : v + 1);
-        partitionCount.addAndGet(topic.getAttributes().numPartitions());
+
+        Integer numPartitions = topic.getAttributes().numPartitions();
+        //numPartitions may be null if it was not included in the requested fields
+        if (numPartitions != null) {
+            partitionCount.addAndGet(numPartitions);
+        }
+
         return topic;
     }
 
