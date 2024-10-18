@@ -184,7 +184,7 @@ export function TopicsTable({
             return (
               <Td key={key} dataLabel={"Topic"} width={10}>
                 <Link href={`${baseurl}/${row.id}/messages`}>
-                  <Truncate content={row.attributes.name} />
+                  <Truncate content={row.attributes.name!} />
                 </Link>
                 {row.meta?.managed === true && <ManagedTopicLabel />}
               </Td>
@@ -192,7 +192,7 @@ export function TopicsTable({
           case "status":
             return (
               <Td key={key} dataLabel={"Status"}>
-                {StatusLabel[row.attributes.status]}
+                {StatusLabel[row.attributes.status!]}
               </Td>
             );
           case "consumerGroups":
@@ -203,7 +203,7 @@ export function TopicsTable({
                   href={`${baseurl}/${row.id}/consumer-groups`}
                 >
                   <Number
-                    value={row.relationships.consumerGroups.data.length}
+                    value={row.relationships.consumerGroups?.data.length ?? 0}
                   />
                 </ButtonLink>
               </Td>

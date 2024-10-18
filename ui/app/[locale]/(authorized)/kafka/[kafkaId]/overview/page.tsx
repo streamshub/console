@@ -4,7 +4,7 @@ import {
   getKafkaClusterMetrics,
   getKafkaTopicMetrics,
 } from "@/api/kafka/actions";
-import { getViewedTopics } from "@/api/topics/actions";
+import { getTopics, getViewedTopics } from "@/api/topics/actions";
 import { KafkaParams } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/kafka.params";
 import { ConnectedClusterCard } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/overview/ConnectedClusterCard";
 import { ConnectedClusterChartsCard } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/overview/ConnectedClusterChartsCard";
@@ -25,6 +25,7 @@ export default function OverviewPage({ params }: { params: KafkaParams }) {
     "outgoingByteRate",
     "incomingByteRate",
   ]);
+  const topics = getTopics(params.kafkaId, { fields: "status", pageSize: 1 });
   const consumerGroups = getConsumerGroups(params.kafkaId, { fields: "state" });
   const viewedTopics = getViewedTopics().then((topics) =>
     topics.filter((t) => t.kafkaId === params.kafkaId),
@@ -34,7 +35,7 @@ export default function OverviewPage({ params }: { params: KafkaParams }) {
       clusterOverview={
         <ConnectedClusterCard data={kpi} consumerGroups={consumerGroups} />
       }
-      topicsPartitions={<ConnectedTopicsPartitionsCard data={kpi} />}
+      topicsPartitions={<ConnectedTopicsPartitionsCard data={topics} />}
       clusterCharts={<ConnectedClusterChartsCard data={cluster} />}
       topicCharts={<ConnectedTopicChartsCard data={topic} />}
       recentTopics={<ConnectedRecentTopics data={viewedTopics} />}

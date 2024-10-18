@@ -127,7 +127,7 @@ public class Topic extends RelatableResource<Topic.Attributes, Topic.Relationshi
     }
 
     @JsonFilter("fieldFilter")
-    static class Attributes {
+    public static class Attributes {
         @JsonProperty
         String name;
 
@@ -193,6 +193,10 @@ public class Topic extends RelatableResource<Topic.Attributes, Topic.Relationshi
         @JsonProperty
         @Schema(readOnly = true, description = "The number of partitions in this topic")
         public Integer numPartitions() {
+            if (partitions == null) {
+                return null;
+            }
+
             return partitions.getOptionalPrimary().map(Collection::size).orElse(0);
         }
 

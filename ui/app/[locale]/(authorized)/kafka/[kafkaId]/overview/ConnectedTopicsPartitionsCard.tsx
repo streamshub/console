@@ -1,24 +1,29 @@
-import { ClusterDetail, ClusterKpis } from "@/api/kafka/schema";
+import { TopicsResponse } from "@/api/topics/schema";
 import { TopicsPartitionsCard } from "@/components/ClusterOverview/TopicsPartitionsCard";
 
 export async function ConnectedTopicsPartitionsCard({
   data,
 }: {
-  data: Promise<{ cluster: ClusterDetail; kpis: ClusterKpis | null } | null>;
+  data: Promise<TopicsResponse>;
 }) {
-  const res = await data;
-  if (!res?.kpis) {
+  const summary = (await data).meta.summary;
+
+  if (!summary) {
     return null;
   }
-  const topicsTotal = res?.kpis.total_topics || 0;
-  const topicsUnderreplicated = res?.kpis.underreplicated_topics || 0;
+
+  const totalPartitions = summary.totalPartitions;
+  const totalReplicated = summary.statuses.FullyReplicated ?? 0;
+  const totalUnderReplicated = (summary.statuses.UnderReplicated ?? 0) + (summary.statuses.PartiallyOffline ?? 0);
+  const totalOffline = summary.statuses.Offline ?? 0;
+
   return (
     <TopicsPartitionsCard
       isLoading={false}
-      partitions={Math.max(0, res?.kpis.total_partitions || 0)}
-      topicsReplicated={Math.max(0, topicsTotal - topicsUnderreplicated)}
-      topicsTotal={Math.max(0, topicsTotal)}
-      topicsUnderReplicated={Math.max(0, topicsUnderreplicated)}
+      partitions={totalPartitions}
+      topicsReplicated={totalReplicated}
+      topicsUnderReplicated={totalUnderReplicated}
+      topicsOffline={totalOffline}
     />
   );
 }

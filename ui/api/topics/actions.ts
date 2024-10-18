@@ -25,6 +25,7 @@ export async function getTopics(
   params: {
     name?: string;
     id?: string;
+    fields?: string;
     status?: TopicStatus[];
     pageSize?: number;
     pageCursor?: string;
@@ -36,7 +37,7 @@ export async function getTopics(
   const sp = new URLSearchParams(
     filterUndefinedFromObj({
       "fields[topics]":
-        "name,status,visibility,numPartitions,totalLeaderLogBytes,consumerGroups",
+        params.fields ?? "name,status,visibility,numPartitions,totalLeaderLogBytes,consumerGroups",
       "filter[id]": params.id ? `eq,${params.id}` : undefined,
       "filter[name]": params.name ? `like,*${params.name}*` : undefined,
       "filter[status]":
@@ -210,7 +211,8 @@ export async function setTopicAsViewed(kafkaId: string, topicId: string) {
       kafkaId,
       kafkaName: cluster.attributes.name,
       topicId,
-      topicName: topic.attributes.name,
+      // name is included in the `fields[topics]` param list so we are sure it is present
+      topicName: topic.attributes.name!,
     };
     if (viewedTopics.find((t) => t.topicId === viewedTopic.topicId)) {
       log.trace(

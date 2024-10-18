@@ -89,7 +89,10 @@ export async function getKafkaClusterKpis(
   }
 
   if (!prom || !cluster.attributes.namespace) {
-    log.warn({ clusterId }, "getKafkaClusterKpis Prometheus unavailable");
+    log.warn({ clusterId }, "getKafkaClusterKpis: " +
+        (!cluster.attributes.namespace
+            ? "Kafka cluster namespace not available"
+            : "Prometheus not configured or client error"));
     return { cluster, kpis: null };
   }
 
@@ -98,7 +101,6 @@ export async function getKafkaClusterKpis(
       values(
         cluster.attributes.namespace,
         cluster.attributes.name,
-        cluster.attributes.controller.id,
         cluster.attributes.nodePools?.join("|") ?? "",
       ),
     );
@@ -155,9 +157,6 @@ export async function getKafkaClusterKpis(
         "1": 3,
         "2": 3
       },
-      "total_topics": 5,
-      "total_partitions": 55,
-      "underreplicated_topics": 0,
       "replica_count": {
         "byNode": {
           "0": 57,
@@ -253,7 +252,10 @@ export async function getKafkaClusterMetrics(
   }
 
   if (!prom || !cluster.attributes.namespace) {
-    log.warn({ clusterId }, "getKafkaClusterKpis Prometheus unavailable");
+    log.warn({ clusterId }, "getKafkaClusterMetrics: " +
+        (!cluster.attributes.namespace
+            ? "Kafka cluster namespace not available"
+            : "Prometheus not configured or client error"));
     return { cluster, ranges: null };
   }
 
@@ -328,7 +330,10 @@ export async function getKafkaTopicMetrics(
 
   try {
     if (!prom || !cluster.attributes.namespace) {
-      log.warn({ clusterId }, "getKafkaClusterKpis Prometheus unavailable");
+        log.warn({ clusterId }, "getKafkaTopicMetrics: " +
+            (!cluster.attributes.namespace
+                ? "Kafka cluster namespace not available"
+                : "Prometheus not configured or client error"));
       return { cluster, ranges: null };
     }
 

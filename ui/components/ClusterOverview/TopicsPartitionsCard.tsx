@@ -23,17 +23,17 @@ import { Link } from "@/i18n/routing";
 import { useTranslations } from "next-intl";
 
 type TopicsPartitionsCardProps = {
-  topicsTotal: number;
   topicsReplicated: number;
   topicsUnderReplicated: number;
+  topicsOffline: number;
   partitions: number;
 };
 
 export function TopicsPartitionsCard({
   isLoading,
-  topicsTotal,
   topicsReplicated,
   topicsUnderReplicated,
+  topicsOffline,
   partitions,
 }:
   | ({ isLoading: false } & TopicsPartitionsCardProps)
@@ -70,7 +70,7 @@ export function TopicsPartitionsCard({
                     <TextContent>
                       <Text component={"small"}>
                         <Link href={"./topics"}>
-                          <Number value={topicsTotal} />{" "}
+                          <Number value={topicsReplicated + topicsUnderReplicated + topicsOffline} />{" "}
                           {t("ClusterOverview.total_topics")}
                         </Link>
                       </Text>
@@ -81,7 +81,7 @@ export function TopicsPartitionsCard({
                     <TextContent>
                       <Text component={"small"}>
                         <Number value={partitions} />
-                        &nbsp; {t("ClusterOverview.partition")}
+                        &nbsp; {t("ClusterOverview.total_partitions")}
                       </Text>
                     </TextContent>
                   </FlexItem>
@@ -163,9 +163,7 @@ export function TopicsPartitionsCard({
                   />
                 ) : (
                   <Number
-                    value={
-                      topicsTotal - topicsReplicated - topicsUnderReplicated
-                    }
+                    value={topicsOffline}
                   />
                 )}
               </Link>
