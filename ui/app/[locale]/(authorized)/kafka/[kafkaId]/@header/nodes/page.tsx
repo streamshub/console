@@ -70,7 +70,7 @@ function Header({
         <PageNavigation>
           <Nav aria-label="Node navigation" variant="tertiary">
             <NavList>
-              <NavItemLink url={`/kafka/${kafkaId}/nodes`}>
+              <NavItemLink url={`/kafka/${kafkaId}/nodes`} exact={true}>
                 Overview
               </NavItemLink>
               {cruiseControlEnable && (
