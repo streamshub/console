@@ -10,9 +10,17 @@ import com.google.protobuf.Message;
 
 import io.apicurio.registry.resolver.SchemaLookupResult;
 import io.apicurio.registry.resolver.SchemaResolver;
+import io.apicurio.registry.serde.AbstractKafkaSerializer;
 import io.apicurio.registry.serde.protobuf.ProtobufKafkaSerializer;
 import io.apicurio.registry.utils.protobuf.schema.ProtobufSchema;
 
+/**
+ * This serializer is required to provide a {@code serialize} method to be used
+ * instead of {@link AbstractKafkaSerializer#serialize(String, Headers, Object)}
+ * where the schema is provided, rather than resolved. We have already resolved
+ * the schema when this serializer is invoked in order to determine that the
+ * message type should be Protobuf.
+ */
 class ProtobufSerializer extends ProtobufKafkaSerializer<Message> {
     ProtobufSerializer(SchemaResolver<ProtobufSchema, Message> schemaResolver) {
         super();

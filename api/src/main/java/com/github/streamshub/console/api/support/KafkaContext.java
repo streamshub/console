@@ -85,6 +85,11 @@ public class KafkaContext implements Closeable {
         if (admin != null) {
             admin.close();
         }
+        /*
+         * Do not close the registry context when the KafkaContext has client-provided
+         * credentials. I.e., only close when the context is global (with configured
+         * credentials).
+         */
         if (applicationScoped && schemaRegistryContext != null) {
             try {
                 schemaRegistryContext.close();
@@ -154,6 +159,13 @@ public class KafkaContext implements Closeable {
                     .map(KafkaListenerAuthenticationOAuth::getTokenEndpointUri));
     }
 
+    /**
+     * The SchemaRegistryContext contains a per-Kafka registry client
+     * and key/value SerDes classes to be used to handle message browsing.
+     *
+     * The client and SerDes instances will be kept open and reused until
+     * the parent KafkaContext is disposed of at application shutdown.
+     */
     public class SchemaRegistryContext implements Closeable {
         private final RegistryClient registryClient;
         private final MultiformatDeserializer keyDeserializer;

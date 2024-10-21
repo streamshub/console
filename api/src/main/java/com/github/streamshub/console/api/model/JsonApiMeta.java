@@ -9,6 +9,11 @@ import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
+/**
+ * Base class for JSON API meta data attached to the document root, resources, or relationships.
+ *
+ * @see <a href="https://jsonapi.org/format/#document-meta">JSON API Document Structure, 7.5 Meta Information</a>
+ */
 @Schema(additionalProperties = Object.class)
 public class JsonApiMeta {
 

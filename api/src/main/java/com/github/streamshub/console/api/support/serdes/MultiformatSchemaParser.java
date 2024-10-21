@@ -15,6 +15,14 @@ import io.apicurio.registry.resolver.SchemaParser;
 import io.apicurio.registry.resolver.data.Record;
 import io.apicurio.registry.types.ArtifactType;
 
+/**
+ * Schema parser that delegates to either the Avro or Protobuf schema parser.
+ * This class attempts to sniff the schema's type using a primitive check for a
+ * Protobuf message header.
+ *
+ * This class can likely be improved with more a advanced/accurate detection
+ * process.
+ */
 public class MultiformatSchemaParser<D> implements SchemaParser<Object, D> {
 
     private static final int CACHE_LIMIT = 20;

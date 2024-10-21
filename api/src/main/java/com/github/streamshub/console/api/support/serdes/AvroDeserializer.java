@@ -9,6 +9,10 @@ import io.apicurio.registry.resolver.ParsedSchema;
 import io.apicurio.registry.resolver.SchemaResolver;
 import io.apicurio.registry.serde.avro.AvroKafkaDeserializer;
 
+/**
+ * Simple subclass of {@link AvroKafkaDeserializer} to make the {@code readData}
+ * methods public.
+ */
 class AvroDeserializer extends AvroKafkaDeserializer<RecordData> {
     AvroDeserializer(SchemaResolver<Schema, RecordData> schemaResolver) {
         super();
