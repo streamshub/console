@@ -27,6 +27,20 @@ import io.apicurio.registry.serde.config.BaseKafkaSerDeConfig;
 import io.apicurio.registry.types.ArtifactType;
 import io.apicurio.registry.utils.protobuf.schema.ProtobufSchema;
 
+/**
+ * Deserializer that supports reading Avro, Protobuf, and raw bytes.
+ *
+ * If an Apicurio Registry client is provided, the deserializer attempts to find
+ * a schema using an identifier found in the message or its headers. If an
+ * identifier is found and a schema is also found, either Avro or Protobuf
+ * deserialization will take place by delegating to the Apicurio deserializer
+ * for each type.
+ *
+ * Otherwise, the data will be returned as-is to the client of the Consumer
+ * using this deserializer. Warning information will be provided for the reason
+ * a raw message is returned if the deserializer detects the presence of a
+ * schema identifier.
+ */
 public class MultiformatDeserializer extends AbstractKafkaDeserializer<Object, RecordData> implements ForceCloseable {
 
     private static final Logger LOG = Logger.getLogger(MultiformatDeserializer.class);
@@ -127,12 +141,11 @@ public class MultiformatDeserializer extends AbstractKafkaDeserializer<Object, R
             } else {
                 result = avroDeserializer.readData(cast(schema), buffer, start, length);
             }
-            result.schema = schema;
             result.meta.put("schema-type", ArtifactType.AVRO);
             result.meta.put("schema-id", ArtifactReferences.toSchemaId(schemaResult.toArtifactReference(), objectMapper));
             result.meta.put("schema-name", avroSchema.getFullName());
         } catch (Exception e) {
-            result = new RecordData(null, schema);
+            result = new RecordData((byte[]) null);
             result.error = com.github.streamshub.console.api.model.Error.forThrowable(e, "Error deserializing Avro data");
         }
 
@@ -154,12 +167,12 @@ public class MultiformatDeserializer extends AbstractKafkaDeserializer<Object, R
                     .omittingInsignificantWhitespace()
                     .print(msg)
                     .getBytes();
-            result = new RecordData(data, schema);
+            result = new RecordData(data);
             result.meta.put("schema-type", ArtifactType.PROTOBUF);
             result.meta.put("schema-id", ArtifactReferences.toSchemaId(schemaResult.toArtifactReference(), objectMapper));
             result.meta.put("schema-name", msg.getDescriptorForType().getFullName());
         } catch (Exception e) {
-            result = new RecordData(null, schema);
+            result = new RecordData((byte[]) null);
             result.error = com.github.streamshub.console.api.model.Error.forThrowable(e, "Error deserializing Protobuf data");
         }
 
@@ -169,7 +182,7 @@ public class MultiformatDeserializer extends AbstractKafkaDeserializer<Object, R
     private RecordData readRawData(SchemaLookupResult<Object> schemaResult, ByteBuffer buffer, int start, int length) {
         byte[] bytes = new byte[length];
         System.arraycopy(buffer.array(), start, bytes, 0, length);
-        RecordData result = new RecordData(bytes, null);
+        RecordData result = new RecordData(bytes);
 
         if (schemaResult == RESOLVER_MISSING) {
             result.error = new com.github.streamshub.console.api.model.Error(

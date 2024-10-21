@@ -17,6 +17,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.apicurio.registry.resolver.strategy.ArtifactReference;
 
+/**
+ * Support methods to serialize and deserialize instances of {@link ArtifactReference}
+ * to a string suitable for use as a referencing in a URL.
+ */
 public class ArtifactReferences {
 
     private static final Logger LOGGER = Logger.getLogger(ArtifactReferences.class);

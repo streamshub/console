@@ -8,8 +8,14 @@ import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import io.apicurio.registry.resolver.ParsedSchema;
-
+/**
+ * The multi-format de-/serializer uses this type as both the key and value in
+ * order to provide a bi-directional flow of information. Meta information about
+ * the associated schema is passed between clients of Producer/Consumer and the
+ * serializer/de-serializer, and error information may also be conveyed back to
+ * the client without throwing an exception and disrupting the processing of the
+ * topic.
+ */
 public class RecordData {
 
     public static final String BINARY_DATA_MESSAGE = "Binary or non-UTF-8 encoded data cannot be displayed";
@@ -17,27 +23,15 @@ public class RecordData {
 
     public final Map<String, String> meta = new LinkedHashMap<>(1);
     byte[] data;
-    ParsedSchema<?> schema;
     com.github.streamshub.console.api.model.Error error;
-
-    public RecordData(byte[] data, ParsedSchema<?> schema) {
-        super();
-        this.data = data;
-        this.schema = schema;
-    }
 
     public RecordData(byte[] data) {
         super();
         this.data = data;
-        this.schema = null;
     }
 
     public RecordData(String data) {
         this(data != null ? data.getBytes(StandardCharsets.UTF_8) : null);
-    }
-
-    public ParsedSchema<?> schema() {
-        return schema;
     }
 
     public com.github.streamshub.console.api.model.Error error() {

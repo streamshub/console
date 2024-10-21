@@ -11,6 +11,10 @@ import io.apicurio.registry.resolver.SchemaResolver;
 import io.apicurio.registry.serde.protobuf.ProtobufKafkaDeserializer;
 import io.apicurio.registry.utils.protobuf.schema.ProtobufSchema;
 
+/**
+ * Simple subclass of {@link ProtobufKafkaDeserializer} to make the
+ * {@code readData} methods public.
+ */
 class ProtobufDeserializer extends ProtobufKafkaDeserializer<Message> {
     ProtobufDeserializer(SchemaResolver<ProtobufSchema, Message> schemaResolver) {
         super();

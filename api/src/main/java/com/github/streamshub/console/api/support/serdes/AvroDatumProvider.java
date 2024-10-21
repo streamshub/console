@@ -18,6 +18,10 @@ import org.apache.avro.io.EncoderFactory;
 
 import io.apicurio.registry.serde.avro.DefaultAvroDatumProvider;
 
+/**
+ * Provides a reader and writer to convert JSON to and from Avro format using a provided
+ * Avro schema.
+ */
 public class AvroDatumProvider extends DefaultAvroDatumProvider<RecordData> {
     @Override
     public DatumWriter<RecordData> createDatumWriter(RecordData data, Schema schema) {
@@ -65,7 +69,7 @@ public class AvroDatumProvider extends DefaultAvroDatumProvider<RecordData> {
                 writer.write(datum, jsonEncoder);
                 jsonEncoder.flush();
 
-                return new RecordData(buffer.toByteArray(), null);
+                return new RecordData(buffer.toByteArray());
             }
 
             @Override

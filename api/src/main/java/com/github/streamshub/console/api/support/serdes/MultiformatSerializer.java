@@ -37,6 +37,15 @@ import io.apicurio.registry.serde.data.KafkaSerdeRecord;
 import io.apicurio.registry.types.ArtifactType;
 import io.apicurio.registry.utils.protobuf.schema.ProtobufSchema;
 
+/**
+ * Serializer that supports writing Avro, Protobuf, and raw bytes.
+ *
+ * This serializer requires that the input data has provided a GAV
+ * (groupId/artifactId/version) for the target schema, otherwise it will pass
+ * through the input untouched. If the provided GAV can be found in the Apicurio
+ * Registry, the schema will be used to serialize to either Avro or Protobuf
+ * depending on the schema type.
+ */
 public class MultiformatSerializer extends AbstractKafkaSerializer<Object, RecordData> implements ArtifactReferenceResolverStrategy<Object, RecordData>, ForceCloseable {
 
     private static final SchemaLookupResult<Object> EMPTY_RESULT = SchemaLookupResult.builder().build();
