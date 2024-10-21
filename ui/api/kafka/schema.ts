@@ -83,9 +83,6 @@ export type ClusterDetail = z.infer<typeof ClusterDetailSchema>;
 
 export const ClusterKpisSchema = z.object({
   broker_state: z.record(z.number()).optional(),
-  total_topics: z.number().optional(),
-  total_partitions: z.number().optional(),
-  underreplicated_topics: z.number().optional(),
   replica_count: z
     .object({
       byNode: z.record(z.number()).optional(),
