@@ -575,7 +575,7 @@ public class ClientFactory {
                 context.schemaRegistryContext().valueDeserializer());
     }
 
-    public void disposeConsumerSupplier(@Disposes Consumer<RecordData, RecordData> consumer) {
+    public void disposeConsumer(@Disposes Consumer<RecordData, RecordData> consumer) {
         consumer.close();
     }
 
@@ -589,7 +589,7 @@ public class ClientFactory {
                 context.schemaRegistryContext().valueSerializer());
     }
 
-    public void disposeProducerSupplier(@Disposes Producer<RecordData, RecordData> producer) {
+    public void disposeProducer(@Disposes Producer<RecordData, RecordData> producer) {
         producer.close();
     }
 
