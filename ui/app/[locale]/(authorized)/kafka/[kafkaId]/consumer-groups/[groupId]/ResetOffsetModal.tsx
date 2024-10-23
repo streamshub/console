@@ -9,6 +9,7 @@ import {
   StackItem,
   Text,
 } from "@/libs/patternfly/react-core";
+import { isProductizedBuild } from "@/utils/env";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 
@@ -69,11 +70,13 @@ export function ResetOffsetModal({
         <StackItem>
           <Text>{t("shutdown_active_members")}</Text>
         </StackItem>
-        <StackItem>
-          <ExternalLink testId={"learn_to_shutdown_members"} href={""}>
-            {t("learn_to_shutdown_members")}
-          </ExternalLink>
-        </StackItem>
+        {isProductizedBuild && (
+          <StackItem>
+            <ExternalLink testId={"learn_to_shutdown_consumers"} href={"learn_to_shutdown_consumers_link"}>
+              {t("learn_to_shutdown_consumers")}
+            </ExternalLink>
+          </StackItem>
+        )}
       </Stack>
     </Modal>
   );
