@@ -14,8 +14,9 @@ export function NavItemLink<T extends string>({
 }>) {
   const pathname = usePathname();
   const isActive = exact
-    ? url === pathname
-    : pathname.startsWith(url.toString());
+    ? pathname === url.toString()
+    : pathname.startsWith(url.toString()) && pathname === url.toString();
+
   return (
     <NavItem isActive={isActive}>
       <Link href={url}>{children}</Link>
