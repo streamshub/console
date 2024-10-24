@@ -58,15 +58,15 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-reactive</artifactId>
+            <artifactId>quarkus-rest</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-reactive-jackson</artifactId>
+            <artifactId>quarkus-rest-jackson</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-rest-client-reactive</artifactId>
+            <artifactId>quarkus-rest-client</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -83,6 +83,10 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-kubernetes-client</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-apicurio-registry-avro</artifactId>
         </dependency>
         <dependency>
             <groupId>io.smallrye.common</groupId>
@@ -110,13 +114,26 @@
         </dependency>
 
         <dependency>
+            <groupId>io.apicurio</groupId>
+            <artifactId>apicurio-registry-serdes-avro-serde</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.apicurio</groupId>
+            <artifactId>apicurio-registry-serdes-protobuf-serde</artifactId>
+            <version>${apicurio-registry.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.google.protobuf</groupId>
+            <artifactId>protobuf-java-util</artifactId>
+        </dependency>
+
+        <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-annotations</artifactId>
         </dependency>
         <dependency>
             <groupId>io.xlate</groupId>
             <artifactId>validators</artifactId>
-            <version>1.4.2</version>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
@@ -358,6 +375,7 @@
                             <systemProperties>
                                 <keycloak.image>${keycloak.image}</keycloak.image>
                                 <strimzi.test-container.kafka.custom.image>${strimzi-kafka.tag}</strimzi.test-container.kafka.custom.image>
+                                <apicurio-registry.version>${apicurio-registry.version}</apicurio-registry.version>
                                 <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
                                 <maven.home>${maven.home}</maven.home>
                                 <quarkus.jacoco.reuse-data-file>true</quarkus.jacoco.reuse-data-file>

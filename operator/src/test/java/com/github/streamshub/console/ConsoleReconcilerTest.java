@@ -78,12 +78,14 @@ class ConsoleReconcilerTest {
         var allConsoles = client.resources(Console.class).inAnyNamespace();
         var allKafkas = client.resources(Kafka.class).inAnyNamespace();
         var allKafkaUsers = client.resources(KafkaUser.class).inAnyNamespace();
+        var allDeployments = client.resources(Deployment.class).inAnyNamespace().withLabels(ConsoleResource.MANAGEMENT_LABEL);
         var allConfigMaps = client.resources(ConfigMap.class).inAnyNamespace().withLabels(ConsoleResource.MANAGEMENT_LABEL);
         var allSecrets = client.resources(Secret.class).inAnyNamespace().withLabels(ConsoleResource.MANAGEMENT_LABEL);
 
         allConsoles.delete();
         allKafkas.delete();
         allKafkaUsers.delete();
+        allDeployments.delete();
         allConfigMaps.delete();
         allSecrets.delete();
 
@@ -91,6 +93,7 @@ class ConsoleReconcilerTest {
             assertTrue(allConsoles.list().getItems().isEmpty());
             assertTrue(allKafkas.list().getItems().isEmpty());
             assertTrue(allKafkaUsers.list().getItems().isEmpty());
+            assertTrue(allDeployments.list().getItems().isEmpty());
             assertTrue(allConfigMaps.list().getItems().isEmpty());
             assertTrue(allSecrets.list().getItems().isEmpty());
         });
@@ -516,7 +519,6 @@ class ConsoleReconcilerTest {
         });
     }
 
-
     @Test
     void testConsoleReconciliationWithKafkaProperties() {
         client.resource(new ConfigMapBuilder()
@@ -593,6 +595,58 @@ class ConsoleReconcilerTest {
             assertEquals("x-admin-prop-value", kafkaConfig.getAdminProperties().get("x-admin-prop-name"));
             assertEquals("x-consumer-prop-value", kafkaConfig.getConsumerProperties().get("extra-x-consumer-prop-name"));
             assertEquals("x-producer-prop-value", kafkaConfig.getProducerProperties().get("x-producer-prop-name"));
+        });
+    }
+
+    @Test
+    void testConsoleReconciliationWithSchemaRegistryUrl() {
+        Console consoleCR = new ConsoleBuilder()
+                .withMetadata(new ObjectMetaBuilder()
+                        .withName("console-1")
+                        .withNamespace("ns2")
+                        .build())
+                .withNewSpec()
+                    .withHostname("example.com")
+                    .addNewSchemaRegistry()
+                        .withName("example-registry")
+                        .withUrl("http://example.com/apis/registry/v2")
+                    .endSchemaRegistry()
+                    .addNewKafkaCluster()
+                        .withName(kafkaCR.getMetadata().getName())
+                        .withNamespace(kafkaCR.getMetadata().getNamespace())
+                        .withListener(kafkaCR.getSpec().getKafka().getListeners().get(0).getName())
+                        .withSchemaRegistry("example-registry")
+                    .endKafkaCluster()
+                .endSpec()
+                .build();
+
+        client.resource(consoleCR).create();
+
+        await().ignoreException(NullPointerException.class).atMost(LIMIT).untilAsserted(() -> {
+            var console = client.resources(Console.class)
+                    .inNamespace(consoleCR.getMetadata().getNamespace())
+                    .withName(consoleCR.getMetadata().getName())
+                    .get();
+            assertEquals(1, console.getStatus().getConditions().size());
+            var ready = console.getStatus().getConditions().get(0);
+            assertEquals("Ready", ready.getType());
+            assertEquals("False", ready.getStatus());
+            assertEquals("DependentsNotReady", ready.getReason());
+
+            var consoleSecret = client.secrets().inNamespace("ns2").withName("console-1-" + ConsoleSecret.NAME).get();
+            assertNotNull(consoleSecret);
+            String configEncoded = consoleSecret.getData().get("console-config.yaml");
+            byte[] configDecoded = Base64.getDecoder().decode(configEncoded);
+            Logger.getLogger(getClass()).infof("config YAML: %s", new String(configDecoded));
+            ConsoleConfig consoleConfig = new ObjectMapper().readValue(configDecoded, ConsoleConfig.class);
+
+            String registryName = consoleConfig.getSchemaRegistries().get(0).getName();
+            assertEquals("example-registry", registryName);
+            String registryUrl = consoleConfig.getSchemaRegistries().get(0).getUrl();
+            assertEquals("http://example.com/apis/registry/v2", registryUrl);
+
+            String registryNameRef = consoleConfig.getKafka().getClusters().get(0).getSchemaRegistry();
+            assertEquals("example-registry", registryNameRef);
         });
     }
 

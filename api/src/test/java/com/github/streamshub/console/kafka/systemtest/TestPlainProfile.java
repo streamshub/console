@@ -36,11 +36,21 @@ public class TestPlainProfile implements QuarkusTestProfile {
         var configFile = writeConfiguration("""
                 kubernetes:
                   enabled: true
+
+                schemaRegistries:
+                  - name: test-registry
+                    ###
+                    # This is the property used by Dev Services for Apicurio Registry
+                    # https://quarkus.io/guides/apicurio-registry-dev-services
+                    ###
+                    url: ${mp.messaging.connector.smallrye-kafka.apicurio.registry.url}
+
                 kafka:
                   clusters:
                     - name: test-kafka1
                       namespace: default
                       id: k1-id
+                      schemaRegistry: test-registry
                       properties:
                         bootstrap.servers: ${console.test.external-bootstrap}
 

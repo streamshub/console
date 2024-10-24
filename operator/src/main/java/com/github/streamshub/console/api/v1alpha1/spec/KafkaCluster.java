@@ -51,6 +51,12 @@ public class KafkaCluster {
 
     private Credentials credentials;
 
+    @JsonPropertyDescription("""
+            Name of a configured Apicurio Registry instance to use for serializing \
+            and de-serializing records written to or read from this Kafka cluster.
+            """)
+    private String schemaRegistry;
+
     private ConfigVars properties = new ConfigVars();
 
     private ConfigVars adminProperties = new ConfigVars();
@@ -97,6 +103,14 @@ public class KafkaCluster {
 
     public void setCredentials(Credentials credentials) {
         this.credentials = credentials;
+    }
+
+    public String getSchemaRegistry() {
+        return schemaRegistry;
+    }
+
+    public void setSchemaRegistry(String schemaRegistry) {
+        this.schemaRegistry = schemaRegistry;
     }
 
     public ConfigVars getProperties() {

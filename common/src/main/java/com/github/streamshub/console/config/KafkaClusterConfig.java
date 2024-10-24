@@ -10,10 +10,15 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 public class KafkaClusterConfig {
 
     private String id;
-    @NotBlank
+    @NotBlank(message = "Kafka cluster `name` is required")
     private String name;
     private String namespace;
     private String listener;
+    /**
+     * Name of a configured schema registry that will be used to ser/des configurations
+     * with this Kafka cluster.
+     */
+    private String schemaRegistry;
     private Map<String, String> properties = new LinkedHashMap<>();
     private Map<String, String> adminProperties = new LinkedHashMap<>();
     private Map<String, String> consumerProperties = new LinkedHashMap<>();
@@ -59,6 +64,14 @@ public class KafkaClusterConfig {
 
     public void setListener(String listener) {
         this.listener = listener;
+    }
+
+    public String getSchemaRegistry() {
+        return schemaRegistry;
+    }
+
+    public void setSchemaRegistry(String schemaRegistry) {
+        this.schemaRegistry = schemaRegistry;
     }
 
     public Map<String, String> getProperties() {
