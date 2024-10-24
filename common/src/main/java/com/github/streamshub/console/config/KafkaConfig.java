@@ -4,12 +4,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.AssertTrue;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 public class KafkaConfig {
 
+    @Valid
     List<KafkaClusterConfig> clusters = new ArrayList<>();
 
     @JsonIgnore
