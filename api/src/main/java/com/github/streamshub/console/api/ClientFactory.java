@@ -1,9 +1,5 @@
 package com.github.streamshub.console.api;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.UncheckedIOException;
-import java.nio.file.Path;
 import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
@@ -55,21 +51,17 @@ import org.apache.kafka.common.security.scram.ScramLoginModule;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.github.streamshub.console.api.support.Holder;
 import com.github.streamshub.console.api.support.KafkaContext;
 import com.github.streamshub.console.api.support.TrustAllCertificateManager;
-import com.github.streamshub.console.api.support.ValidationProxy;
 import com.github.streamshub.console.api.support.serdes.RecordData;
 import com.github.streamshub.console.config.ConsoleConfig;
 import com.github.streamshub.console.config.KafkaClusterConfig;
+import com.github.streamshub.console.config.SchemaRegistryConfig;
 
-import io.apicurio.registry.rest.client.RegistryClient;
-import io.apicurio.registry.rest.client.RegistryClientFactory;
 import io.apicurio.registry.serde.SerdeConfig;
 import io.fabric8.kubernetes.client.informers.ResourceEventHandler;
 import io.fabric8.kubernetes.client.informers.SharedIndexInformer;
@@ -128,14 +120,10 @@ public class ClientFactory {
     ObjectMapper mapper;
 
     @Inject
-    @ConfigProperty(name = "console.config-path")
-    Optional<String> configPath;
+    ConsoleConfig consoleConfig;
 
     @Inject
     Holder<SharedIndexInformer<Kafka>> kafkaInformer;
-
-    @Inject
-    ValidationProxy validationService;
 
     @Inject
     Instance<TrustAllCertificateManager> trustManager;
@@ -168,57 +156,12 @@ public class ClientFactory {
 
     @Produces
     @ApplicationScoped
-    public ConsoleConfig produceConsoleConfig() {
-        return configPath.map(Path::of)
-            .map(Path::toUri)
-            .map(uri -> {
-                try {
-                    return uri.toURL();
-                } catch (IOException e) {
-                    throw new UncheckedIOException(e);
-                }
-            })
-            .filter(Objects::nonNull)
-            .map(url -> {
-                log.infof("Loading console configuration from %s", url);
-                ObjectMapper yamlMapper = mapper.copyWith(new YAMLFactory());
-
-                try (InputStream stream = url.openStream()) {
-                    return yamlMapper.readValue(stream, ConsoleConfig.class);
-                } catch (IOException e) {
-                    throw new UncheckedIOException(e);
-                }
-            })
-            .map(consoleConfig -> {
-                consoleConfig.getKafka().getClusters().stream().forEach(cluster -> {
-                    if (cluster.getSchemaRegistry() != null) {
-                        var registryConfig = cluster.getSchemaRegistry();
-                        registryConfig.setUrl(resolveValue(registryConfig.getUrl()));
-                    }
-                    resolveValues(cluster.getProperties());
-                    resolveValues(cluster.getAdminProperties());
-                    resolveValues(cluster.getProducerProperties());
-                    resolveValues(cluster.getConsumerProperties());
-                });
-
-                return consoleConfig;
-            })
-            .map(validationService::validate)
-            .orElseGet(() -> {
-                log.warn("Console configuration has not been specified using `console.config-path` property");
-                return new ConsoleConfig();
-            });
-    }
-
-    @Produces
-    @ApplicationScoped
-    Map<String, KafkaContext> produceKafkaContexts(ConsoleConfig consoleConfig,
-            Function<Map<String, Object>, Admin> adminBuilder) {
+    Map<String, KafkaContext> produceKafkaContexts(Function<Map<String, Object>, Admin> adminBuilder) {
 
         final Map<String, KafkaContext> contexts = new ConcurrentHashMap<>();
 
         if (kafkaInformer.isPresent()) {
-            addKafkaEventHandler(contexts, consoleConfig, adminBuilder);
+            addKafkaEventHandler(contexts, adminBuilder);
         }
 
         // Configure clusters that will not be configured by events
@@ -236,7 +179,6 @@ public class ClientFactory {
     }
 
     void addKafkaEventHandler(Map<String, KafkaContext> contexts,
-            ConsoleConfig consoleConfig,
             Function<Map<String, Object>, Admin> adminBuilder) {
 
         kafkaInformer.get().addEventHandlerWithResyncPeriod(new ResourceEventHandler<Kafka>() {
@@ -348,15 +290,18 @@ public class ClientFactory {
                 admin = adminBuilder.apply(adminConfigs);
             }
 
-            RegistryClient schemaRegistryClient = null;
+            SchemaRegistryConfig registryConfig = null;
 
             if (clusterConfig.getSchemaRegistry() != null) {
-                String registryUrl = clusterConfig.getSchemaRegistry().getUrl();
-                schemaRegistryClient = RegistryClientFactory.create(registryUrl); // NOSONAR - closed elsewhere
+                registryConfig = consoleConfig.getSchemaRegistries()
+                        .stream()
+                        .filter(registry -> registry.getName().equals(clusterConfig.getSchemaRegistry()))
+                        .findFirst()
+                        .orElseThrow();
             }
 
             KafkaContext ctx = new KafkaContext(clusterConfig, kafkaResource.orElse(null), clientConfigs, admin);
-            ctx.schemaRegistryClient(schemaRegistryClient, mapper);
+            ctx.schemaRegistryClient(registryConfig, mapper);
 
             KafkaContext previous = contexts.put(clusterId, ctx);
 
@@ -560,7 +505,7 @@ public class ClientFactory {
 
     @Produces
     @RequestScoped
-    public Consumer<RecordData, RecordData> consumerSupplier(ConsoleConfig consoleConfig, KafkaContext context) {
+    public Consumer<RecordData, RecordData> consumerSupplier(KafkaContext context) {
         var configs = maybeAuthenticate(context, Consumer.class);
 
         return new KafkaConsumer<>(
@@ -575,7 +520,7 @@ public class ClientFactory {
 
     @Produces
     @RequestScoped
-    public Producer<RecordData, RecordData> producerSupplier(ConsoleConfig consoleConfig, KafkaContext context) {
+    public Producer<RecordData, RecordData> producerSupplier(KafkaContext context) {
         var configs = maybeAuthenticate(context, Producer.class);
         return new KafkaProducer<>(
                 configs,
@@ -706,29 +651,6 @@ public class ClientFactory {
         }
 
         cfg.putIfAbsent(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, protocol.toString());
-    }
-
-    private void resolveValues(Map<String, String> properties) {
-        properties.entrySet().forEach(entry ->
-            entry.setValue(resolveValue(entry.getValue())));
-    }
-
-    /**
-     * If the given value is an expression referencing a configuration value,
-     * replace it with the target property value.
-     *
-     * @param value configuration value that may be a reference to another
-     *              configuration property
-     * @return replacement property or the same value if the given string is not a
-     *         reference.
-     */
-    private String resolveValue(String value) {
-        if (value.startsWith("${") && value.endsWith("}")) {
-            String replacement = value.substring(2, value.length() - 1);
-            return config.getOptionalValue(replacement, String.class).orElse(value);
-        }
-
-        return value;
     }
 
     Optional<String> getDefaultConfig(String clientType, String configName) {

@@ -9,12 +9,14 @@ import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Random;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -30,6 +32,7 @@ import com.github.streamshub.console.api.v1alpha1.Console;
 import com.github.streamshub.console.api.v1alpha1.spec.ConfigVars;
 import com.github.streamshub.console.api.v1alpha1.spec.Credentials;
 import com.github.streamshub.console.api.v1alpha1.spec.KafkaCluster;
+import com.github.streamshub.console.api.v1alpha1.spec.SchemaRegistry;
 import com.github.streamshub.console.config.ConsoleConfig;
 import com.github.streamshub.console.config.KafkaClusterConfig;
 import com.github.streamshub.console.config.SchemaRegistryConfig;
@@ -112,8 +115,19 @@ public class ConsoleSecret extends CRUDKubernetesDependentResource<Secret, Conso
         return new String(buffer.toByteArray()).substring(0, length);
     }
 
+    private static <T> List<T> coalesce(List<T> value, Supplier<List<T>> defaultValue) {
+        return value != null ? value : defaultValue.get();
+    }
+
     private ConsoleConfig buildConfig(Console primary, Context<Console> context) {
         ConsoleConfig config = new ConsoleConfig();
+
+        for (SchemaRegistry registry : coalesce(primary.getSpec().getSchemaRegistries(), Collections::emptyList)) {
+            var registryConfig = new SchemaRegistryConfig();
+            registryConfig.setName(registry.getName());
+            registryConfig.setUrl(registry.getUrl());
+            config.getSchemaRegistries().add(registryConfig);
+        }
 
         for (var kafkaRef : primary.getSpec().getKafkaClusters()) {
             addConfig(primary, context, config, kafkaRef);
@@ -132,12 +146,7 @@ public class ConsoleSecret extends CRUDKubernetesDependentResource<Secret, Conso
         kcConfig.setNamespace(namespace);
         kcConfig.setName(name);
         kcConfig.setListener(listenerName);
-
-        if (kafkaRef.getSchemaRegistry() != null) {
-            SchemaRegistryConfig registry = new SchemaRegistryConfig();
-            registry.setUrl(kafkaRef.getSchemaRegistry().getUrl());
-            kcConfig.setSchemaRegistry(registry);
-        }
+        kcConfig.setSchemaRegistry(kafkaRef.getSchemaRegistry());
 
         config.getKubernetes().setEnabled(Objects.nonNull(namespace));
         config.getKafka().getClusters().add(kcConfig);

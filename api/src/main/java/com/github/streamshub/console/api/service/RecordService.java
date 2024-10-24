@@ -4,7 +4,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -333,15 +332,16 @@ public class RecordService {
                 .filter(recordMeta -> recordMeta.containsKey("schema-id"))
                 .map(recordMeta -> {
                     String artifactType = recordMeta.get("schema-type");
-                    String clusterIdEnc = Base64.getUrlEncoder().encodeToString(kafkaContext.clusterId().getBytes());
-                    String schemaId = clusterIdEnc + '.' + recordMeta.get("schema-id");
+                    // schema-id is present, it is null-safe to retrieve the name from configuration
+                    String registryId = kafkaContext.schemaRegistryContext().getConfig().getName();
+                    String schemaId = recordMeta.get("schema-id");
                     String name = recordMeta.get("schema-name");
 
                     var relationship = new JsonApiRelationship();
                     relationship.addMeta("artifactType", artifactType);
                     relationship.addMeta("name", name);
                     relationship.data(new Identifier("schemas", schemaId));
-                    relationship.addLink("content", "/api/schemas/" + schemaId);
+                    relationship.addLink("content", "/api/registries/%s/schemas/%s".formatted(registryId, schemaId));
 
                     schemaError(data).ifPresent(error -> relationship.addMeta("errors", List.of(error)));
 
