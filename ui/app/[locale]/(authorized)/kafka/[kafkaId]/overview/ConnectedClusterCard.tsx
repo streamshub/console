@@ -42,7 +42,7 @@ export async function ConnectedClusterCard({
       variant:
         c.type === "Error" ? "danger" : ("warning" as "danger" | "warning"),
       subject: {
-        type: c.type!,
+        type: "cluster" as "cluster" | "broker" | "topic",
         name: res?.cluster.attributes.name ?? "",
         id: res?.cluster.id ?? "",
       },
