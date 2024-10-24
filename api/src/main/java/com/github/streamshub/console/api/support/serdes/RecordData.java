@@ -38,10 +38,28 @@ public class RecordData {
         return error;
     }
 
+    /**
+     * Convert this instance's {@link RecordData#data data} bytes to a string
+     * Optionally, the length of the string will be limited to maxValueLength. When
+     * invalid characters are detected, the result is replaced with the value of
+     * {@link #BINARY_DATA_MESSAGE}.
+     *
+     * @param maxValueLength maximum length of the result string
+     * @return the record's data bytes as a string
+     */
     public String dataString(Integer maxValueLength) {
         return bytesToString(data, maxValueLength);
     }
 
+    /**
+     * Convert the given bytes to a string Optionally, the length of the string will
+     * be limited to maxValueLength. When invalid characters are detected, the
+     * result is replaced with the value of {@link #BINARY_DATA_MESSAGE}.
+     *
+     * @param bytes          byte array to be converted to a string
+     * @param maxValueLength maximum length of the result string
+     * @return the record's data bytes as a string
+     */
     public static String bytesToString(byte[] bytes, Integer maxValueLength) {
         if (bytes == null) {
             return null;

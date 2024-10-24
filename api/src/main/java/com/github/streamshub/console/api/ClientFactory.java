@@ -15,7 +15,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -61,7 +60,6 @@ import org.jboss.logging.Logger;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import com.github.streamshub.console.api.service.KafkaClusterService;
 import com.github.streamshub.console.api.support.Holder;
 import com.github.streamshub.console.api.support.KafkaContext;
 import com.github.streamshub.console.api.support.TrustAllCertificateManager;
@@ -127,7 +125,7 @@ public class ClientFactory {
     Config config;
 
     @Inject
-    ScheduledExecutorService scheduler;
+    ObjectMapper mapper;
 
     @Inject
     @ConfigProperty(name = "console.config-path")
@@ -135,9 +133,6 @@ public class ClientFactory {
 
     @Inject
     Holder<SharedIndexInformer<Kafka>> kafkaInformer;
-
-    @Inject
-    KafkaClusterService kafkaClusterService;
 
     @Inject
     ValidationProxy validationService;
@@ -186,11 +181,10 @@ public class ClientFactory {
             .filter(Objects::nonNull)
             .map(url -> {
                 log.infof("Loading console configuration from %s", url);
-
-                ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
+                ObjectMapper yamlMapper = mapper.copyWith(new YAMLFactory());
 
                 try (InputStream stream = url.openStream()) {
-                    return mapper.readValue(stream, ConsoleConfig.class);
+                    return yamlMapper.readValue(stream, ConsoleConfig.class);
                 } catch (IOException e) {
                     throw new UncheckedIOException(e);
                 }
@@ -362,7 +356,7 @@ public class ClientFactory {
             }
 
             KafkaContext ctx = new KafkaContext(clusterConfig, kafkaResource.orElse(null), clientConfigs, admin);
-            ctx.schemaRegistryClient(schemaRegistryClient);
+            ctx.schemaRegistryClient(schemaRegistryClient, mapper);
 
             KafkaContext previous = contexts.put(clusterId, ctx);
 
