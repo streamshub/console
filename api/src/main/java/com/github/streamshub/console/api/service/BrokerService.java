@@ -26,8 +26,8 @@ public class BrokerService {
     @Inject
     ThreadContext threadContext;
 
-    public CompletionStage<Map<String, ConfigEntry>> describeConfigs(String nodeId) {
-        return clusterService.describeCluster(Collections.emptyList())
+    public CompletionStage<Map<String, ConfigEntry>> describeConfigs(String clusterId, String nodeId) {
+        return clusterService.describeCluster(clusterId, Collections.emptyList())
             .thenApply(cluster -> {
                 if (cluster.nodes().stream().mapToInt(Node::id).mapToObj(String::valueOf).noneMatch(nodeId::equals)) {
                     throw new NotFoundException("No such node: " + nodeId);

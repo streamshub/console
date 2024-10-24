@@ -3,6 +3,7 @@ import withAuth from "next-auth/middleware";
 import createIntlMiddleware from "next-intl/middleware";
 import { NextRequest, NextResponse } from "next/server";
 
+import consoleConfig from '@/app/api/config';
 import { logger } from "@/utils/logger";
 
 const log = logger.child({ module: "middleware" });
@@ -24,7 +25,7 @@ const authMiddleware = withAuth(
       authorized: ({ token }) => token != null,
     },
     pages: {
-      signIn: `/kafka/1/login`,
+      //signIn: `/kafka/1/login`,
     },
   },
 ) as any;
@@ -44,16 +45,20 @@ const protectedPathnameRegex = RegExp(
 );
 
 export default async function middleware(req: NextRequest) {
+  let cfg = await consoleConfig();
+  let oidcCfg = cfg?.['security']?.['oidc'];
+  let oidcEnabled = oidcCfg ? true : false;
+
   const requestPath = req.nextUrl.pathname;
-  const isPublicPage = publicPathnameRegex.test(requestPath);
-  const isProtectedPage = protectedPathnameRegex.test(requestPath);
+  const isPublicPage = !oidcEnabled && publicPathnameRegex.test(requestPath);
+  const isProtectedPage = oidcEnabled || protectedPathnameRegex.test(requestPath);
 
   if (isPublicPage) {
     log.trace({ requestPath: requestPath }, "public page");
     return intlMiddleware(req);
   } else if (isProtectedPage) {
     log.trace({ requestPath: requestPath }, "protected page");
-    return (authMiddleware as any)(req);
+    return (authMiddleware)(req);
   } else {
     log.debug(
       {

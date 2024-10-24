@@ -28,3 +28,8 @@ export const ApiError = z.object({
     })
     .optional(),
 });
+
+export const ApiErrorResponse = z.object({
+  meta: z.object({}).nullable().optional(),
+  errors: z.array(ApiError),
+});

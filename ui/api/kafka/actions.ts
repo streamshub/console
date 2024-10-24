@@ -16,6 +16,7 @@ import { PrometheusDriver } from "prometheus-query";
 import * as clusterPromql from "./cluster.promql";
 import { values } from "./kpi.promql";
 import * as topicPromql from "./topic.promql";
+import { ApiErrorResponse } from '@/api/api';
 
 export type ClusterMetric = keyof typeof clusterPromql;
 export type TopicMetric = keyof typeof topicPromql;
@@ -37,17 +38,19 @@ export async function getKafkaClusters(): Promise<ClusterList[]> {
   const url = `${process.env.BACKEND_URL}/api/kafkas?${kafkaClustersQuery}`;
   try {
     const res = await fetch(url, {
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-      },
+      headers: await getHeaders(),
       next: {
         revalidate: 30,
       },
     });
     const rawData = await res.json();
-    log.trace(rawData, "getKafkaClusters response");
-    return ClustersResponseSchema.parse(rawData).data;
+    if (res.status != 200) {
+      log.info(rawData, "getKafkaClusters response");
+      throw new Error(ApiErrorResponse.parse(rawData).errors[0].detail);
+    } else {
+      log.trace(rawData, "getKafkaClusters response");
+      return ClustersResponseSchema.parse(rawData).data;
+    }
   } catch (err) {
     log.error(err, "getKafkaClusters");
     throw new Error("getKafkaClusters: couldn't connect with backend");
