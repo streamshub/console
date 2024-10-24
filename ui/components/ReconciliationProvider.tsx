@@ -31,7 +31,7 @@ export function ReconciliationProvider({
     };
 
     fetchReconciliationState();
-    const intervalId = setInterval(fetchReconciliationState, 30000);
+    const intervalId = setInterval(fetchReconciliationState, 10000);
     return () => clearInterval(intervalId);
   }, [kafkaId]);
 
