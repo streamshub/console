@@ -43,7 +43,7 @@ type ClusterCardProps = {
   kafkaId: string | undefined;
   messages: Array<{
     variant: "danger" | "warning";
-    subject: { type: string; name: string; id: string };
+    subject: { type: "cluster" | "broker" | "topic"; name: string; id: string };
     message: string;
     date: string;
   }>;
@@ -232,7 +232,7 @@ export function ClusterCard({
                   ))
                 ) : (
                   <>
-                    {isReconciliationPaused && messages.length === 0 && (
+                    {!isReconciliationPaused && messages.length === 0 && (
                       <DataListItem aria-labelledby={`no-messages`}>
                         <DataListItemRow>
                           <DataListItemCells
@@ -241,6 +241,69 @@ export function ClusterCard({
                                 <span id={"no-messages"}>
                                   {t("ClusterCard.no_messages")}
                                 </span>
+                              </DataListCell>,
+                            ]}
+                          />
+                        </DataListItemRow>
+                      </DataListItem>
+                    )}
+                    {isReconciliationPaused && (
+                      <DataListItem aria-labelledby={`reconciliation-warning`}>
+                        <DataListItemRow>
+                          <DataListItemCells
+                            dataListCells={[
+                              <DataListCell
+                                key="warning-message"
+                                className={"pf-v5-u-text-nowrap"}
+                                width={2}
+                              >
+                                <Icon status={"warning"}>
+                                  <ExclamationTriangleIcon />
+                                </Icon>
+                                &nbsp;
+                                <Truncate
+                                  content={t(
+                                    "reconciliation.reconciliation_paused",
+                                  )}
+                                />
+                              </DataListCell>,
+                              <DataListCell key="message" width={3}>
+                                <div
+                                  className={
+                                    "pf-v5-u-display-none pf-v5-u-display-block-on-md"
+                                  }
+                                >
+                                  <Truncate
+                                    content={t(
+                                      "reconciliation.reconciliation_paused_warning",
+                                    )}
+                                  />
+                                </div>
+                              </DataListCell>,
+                              <DataListCell
+                                key="button"
+                                width={1}
+                                className={"pf-v5-u-text-nowrap"}
+                              >
+                                <Button
+                                  variant="link"
+                                  isInline
+                                  onClick={resumeReconciliation}
+                                >
+                                  {t("reconciliation.resume")}
+                                </Button>
+                              </DataListCell>,
+                              <DataListCell
+                                key="date"
+                                width={1}
+                                className={"pf-v5-u-text-nowrap"}
+                              >
+                                <DateTime
+                                  value={new Date(Date.now())}
+                                  tz={"UTC"}
+                                  dateStyle={"short"}
+                                  timeStyle={"short"}
+                                />
                               </DataListCell>,
                             ]}
                           />
@@ -258,7 +321,7 @@ export function ClusterCard({
                                 <DataListCell
                                   key="name"
                                   className={"pf-v5-u-text-nowrap"}
-                                  width={1}
+                                  width={2}
                                 >
                                   <Icon status={m.variant}>
                                     {m.variant === "danger" && (
@@ -269,37 +332,17 @@ export function ClusterCard({
                                     )}
                                   </Icon>
                                   &nbsp;
-                                  {m.subject.type}
+                                  <Link href={""} id={`message-${i}`}>
+                                    <Truncate content={m.subject.name} />
+                                  </Link>
                                 </DataListCell>,
-                                <DataListCell key="message" width={5}>
+                                <DataListCell key="message" width={4}>
                                   <div
                                     className={
                                       "pf-v5-u-display-none pf-v5-u-display-block-on-md"
                                     }
                                   >
-                                    <Truncate
-                                      content={
-                                        m.subject.type ===
-                                        "ReconciliationPaused"
-                                          ? t(
-                                              "reconciliation.reconciliation_paused_warning",
-                                            )
-                                          : m.message
-                                      }
-                                    />
-                                    {m.subject.type ===
-                                      "ReconciliationPaused" && (
-                                      <>
-                                        &nbsp;
-                                        <Button
-                                          variant="link"
-                                          isInline
-                                          onClick={resumeReconciliation}
-                                        >
-                                          {t("reconciliation.resume")}
-                                        </Button>
-                                      </>
-                                    )}
+                                    <Truncate content={m.message} />
                                   </div>
                                   <div
                                     className={

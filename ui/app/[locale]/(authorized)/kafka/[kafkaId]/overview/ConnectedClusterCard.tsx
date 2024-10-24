@@ -25,9 +25,13 @@ export async function ConnectedClusterCard({
       />
     );
   }
+
+  console.log("response data", res)
   const groupCount = await consumerGroups.then(
     (grpResp) => grpResp?.meta.page.total ?? 0,
   );
+
+  console.log("group count", groupCount)
   const brokersTotal = Object.keys(res?.kpis.broker_state ?? {}).length;
   const brokersOnline =
     Object.values(res?.kpis.broker_state ?? {}).filter((s) => s === 3).length ||
