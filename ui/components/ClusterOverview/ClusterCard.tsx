@@ -2,6 +2,7 @@
 import { DateTime } from "@/components/Format/DateTime";
 import { Number } from "@/components/Format/Number";
 import {
+  Button,
   Card,
   CardBody,
   DataList,
@@ -29,6 +30,8 @@ import {
 import { Link } from "@/i18n/routing";
 import { useTranslations } from "next-intl";
 import { ErrorsAndWarnings } from "./components/ErrorsAndWarnings";
+import { updateKafkaCluster } from "@/api/kafka/actions";
+import { useReconciliationContext } from "../ReconciliationContext";
 
 type ClusterCardProps = {
   name: string;
@@ -37,6 +40,7 @@ type ClusterCardProps = {
   brokersTotal?: number;
   consumerGroups?: number;
   kafkaVersion: string;
+  kafkaId: string | undefined;
   messages: Array<{
     variant: "danger" | "warning";
     subject: { type: "cluster" | "broker" | "topic"; name: string; id: string };
@@ -54,14 +58,39 @@ export function ClusterCard({
   consumerGroups,
   kafkaVersion,
   messages,
+  kafkaId,
 }:
   | ({
       isLoading: false;
     } & ClusterCardProps)
   | ({ isLoading: true } & { [K in keyof ClusterCardProps]?: undefined })) {
   const t = useTranslations();
-  const warnings = messages?.filter((m) => m.variant === "warning").length || 0;
+
+  const { isReconciliationPaused, setReconciliationPaused } =
+    useReconciliationContext();
+
+  const resumeReconciliation = async () => {
+    if (!kafkaId) {
+      console.log("kafkaId is undefined");
+      return;
+    }
+
+    try {
+      const success = await updateKafkaCluster(kafkaId, false);
+
+      if (success) {
+        setReconciliationPaused(false);
+      }
+    } catch (e: unknown) {
+      console.log("Unknown error occurred");
+    }
+  };
+
+  const warnings =
+    messages?.filter((m) => m.variant === "warning").length ||
+    0 + (isReconciliationPaused ? 1 : 0);
   const dangers = messages?.filter((m) => m.variant === "danger").length || 0;
+
   return (
     <Card component={"div"}>
       <CardBody>
@@ -203,7 +232,7 @@ export function ClusterCard({
                   ))
                 ) : (
                   <>
-                    {messages.length === 0 && (
+                    {!isReconciliationPaused && messages.length === 0 && (
                       <DataListItem aria-labelledby={`no-messages`}>
                         <DataListItemRow>
                           <DataListItemCells
@@ -212,6 +241,69 @@ export function ClusterCard({
                                 <span id={"no-messages"}>
                                   {t("ClusterCard.no_messages")}
                                 </span>
+                              </DataListCell>,
+                            ]}
+                          />
+                        </DataListItemRow>
+                      </DataListItem>
+                    )}
+                    {isReconciliationPaused && (
+                      <DataListItem aria-labelledby={`reconciliation-warning`}>
+                        <DataListItemRow>
+                          <DataListItemCells
+                            dataListCells={[
+                              <DataListCell
+                                key="warning-message"
+                                className={"pf-v5-u-text-nowrap"}
+                                width={2}
+                              >
+                                <Icon status={"warning"}>
+                                  <ExclamationTriangleIcon />
+                                </Icon>
+                                &nbsp;
+                                <Truncate
+                                  content={t(
+                                    "reconciliation.reconciliation_paused",
+                                  )}
+                                />
+                              </DataListCell>,
+                              <DataListCell key="message" width={3}>
+                                <div
+                                  className={
+                                    "pf-v5-u-display-none pf-v5-u-display-block-on-md"
+                                  }
+                                >
+                                  <Truncate
+                                    content={t(
+                                      "reconciliation.reconciliation_paused_warning",
+                                    )}
+                                  />
+                                </div>
+                              </DataListCell>,
+                              <DataListCell
+                                key="button"
+                                width={1}
+                                className={"pf-v5-u-text-nowrap"}
+                              >
+                                <Button
+                                  variant="link"
+                                  isInline
+                                  onClick={resumeReconciliation}
+                                >
+                                  {t("reconciliation.resume")}
+                                </Button>
+                              </DataListCell>,
+                              <DataListCell
+                                key="date"
+                                width={1}
+                                className={"pf-v5-u-text-nowrap"}
+                              >
+                                <DateTime
+                                  value={new Date(Date.now())}
+                                  tz={"UTC"}
+                                  dateStyle={"short"}
+                                  timeStyle={"short"}
+                                />
                               </DataListCell>,
                             ]}
                           />

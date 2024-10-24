@@ -29,6 +29,7 @@ async function ConnectedHeader({
   if (!cluster) {
     notFound();
   }
+
   return <OverviewHeader params={{ kafkaId }} />;
 }
 
