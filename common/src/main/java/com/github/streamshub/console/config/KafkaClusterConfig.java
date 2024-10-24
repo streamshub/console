@@ -14,7 +14,11 @@ public class KafkaClusterConfig {
     private String name;
     private String namespace;
     private String listener;
-    private SchemaRegistryConfig schemaRegistry;
+    /**
+     * Name of a configured schema registry that will be used to ser/des configurations
+     * with this Kafka cluster.
+     */
+    private String schemaRegistry;
     private Map<String, String> properties = new LinkedHashMap<>();
     private Map<String, String> adminProperties = new LinkedHashMap<>();
     private Map<String, String> consumerProperties = new LinkedHashMap<>();
@@ -62,11 +66,11 @@ public class KafkaClusterConfig {
         this.listener = listener;
     }
 
-    public SchemaRegistryConfig getSchemaRegistry() {
+    public String getSchemaRegistry() {
         return schemaRegistry;
     }
 
-    public void setSchemaRegistry(SchemaRegistryConfig schemaRegistry) {
+    public void setSchemaRegistry(String schemaRegistry) {
         this.schemaRegistry = schemaRegistry;
     }
 

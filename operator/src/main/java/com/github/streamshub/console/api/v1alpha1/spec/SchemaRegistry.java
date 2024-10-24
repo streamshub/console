@@ -11,8 +11,24 @@ import io.sundr.builder.annotations.Buildable;
 public class SchemaRegistry {
 
     @Required
+    @JsonPropertyDescription("""
+            Name of the Apicurio Registry. The name may be referenced by Kafka clusters \
+            configured in the console to indicate that a particular registry is to be \
+            used for message deserialization when browsing topics within that cluster.
+            """)
+    private String name;
+
+    @Required
     @JsonPropertyDescription("URL of the Apicurio Registry server API.")
     private String url;
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
 
     public String getUrl() {
         return url;

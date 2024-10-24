@@ -607,13 +607,15 @@ class ConsoleReconcilerTest {
                         .build())
                 .withNewSpec()
                     .withHostname("example.com")
+                    .addNewSchemaRegistry()
+                        .withName("example-registry")
+                        .withUrl("http://example.com/apis/registry/v2")
+                    .endSchemaRegistry()
                     .addNewKafkaCluster()
                         .withName(kafkaCR.getMetadata().getName())
                         .withNamespace(kafkaCR.getMetadata().getNamespace())
                         .withListener(kafkaCR.getSpec().getKafka().getListeners().get(0).getName())
-                        .withNewSchemaRegistry()
-                            .withUrl("http://example.com/apis/registry/v2")
-                        .endSchemaRegistry()
+                        .withSchemaRegistry("example-registry")
                     .endKafkaCluster()
                 .endSpec()
                 .build();
@@ -635,10 +637,16 @@ class ConsoleReconcilerTest {
             assertNotNull(consoleSecret);
             String configEncoded = consoleSecret.getData().get("console-config.yaml");
             byte[] configDecoded = Base64.getDecoder().decode(configEncoded);
-            ConsoleConfig consoleConfig = new ObjectMapper().readValue(configDecoded, ConsoleConfig.class);
-            String registryUrl = consoleConfig.getKafka().getClusters().get(0).getSchemaRegistry().getUrl();
             Logger.getLogger(getClass()).infof("config YAML: %s", new String(configDecoded));
+            ConsoleConfig consoleConfig = new ObjectMapper().readValue(configDecoded, ConsoleConfig.class);
+
+            String registryName = consoleConfig.getSchemaRegistries().get(0).getName();
+            assertEquals("example-registry", registryName);
+            String registryUrl = consoleConfig.getSchemaRegistries().get(0).getUrl();
             assertEquals("http://example.com/apis/registry/v2", registryUrl);
+
+            String registryNameRef = consoleConfig.getKafka().getClusters().get(0).getSchemaRegistry();
+            assertEquals("example-registry", registryNameRef);
         });
     }
 

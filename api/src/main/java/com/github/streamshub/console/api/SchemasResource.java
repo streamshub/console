@@ -1,8 +1,6 @@
 package com.github.streamshub.console.api;
 
-import java.util.Base64;
 import java.util.Collections;
-import java.util.Map;
 import java.util.Optional;
 
 import jakarta.inject.Inject;
@@ -21,15 +19,17 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import org.jboss.logging.Logger;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.streamshub.console.api.support.KafkaContext;
 import com.github.streamshub.console.api.support.serdes.ArtifactReferences;
 import com.github.streamshub.console.api.support.serdes.MultiformatSchemaParser;
+import com.github.streamshub.console.config.ConsoleConfig;
+import com.github.streamshub.console.config.SchemaRegistryConfig;
 
 import io.apicurio.registry.resolver.DefaultSchemaResolver;
 import io.apicurio.registry.resolver.SchemaResolver;
 import io.apicurio.registry.rest.client.RegistryClient;
+import io.apicurio.registry.rest.client.RegistryClientFactory;
 
-@Path("/api/schemas/{schemaId}")
+@Path("/api/registries/{registryId}/schemas/{schemaId}")
 @Tag(name = "Schema Registry Resources")
 public class SchemasResource {
 
@@ -40,8 +40,16 @@ public class SchemasResource {
     ObjectMapper objectMapper;
 
     @Inject
-    Map<String, KafkaContext> kafkaContexts;
+    ConsoleConfig consoleConfig;
 
+    /**
+     * Retrieve the schema content from the identified/named registry.
+     *
+     * <p>
+     * Although opaque to the client, the schemaId is a base-64 encoded, JSON-ified
+     * {@link io.apicurio.registry.resolver.strategy.ArtifactReference ArtifactReference}
+     * which will be parsed with {@link ArtifactReferences#fromSchemaId}.
+     */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @APIResponse(responseCode = "200", ref = "Configurations", content = @Content())
@@ -49,34 +57,26 @@ public class SchemasResource {
     @APIResponse(responseCode = "500", ref = "ServerError")
     @APIResponse(responseCode = "504", ref = "ServerTimeout")
     public Response getSchemaContent(
+            @Parameter(description = "Schema registry identifier (name)")
+            @PathParam("registryId")
+            String registryId,
+
             @Parameter(description = "Schema identifier")
             @PathParam("schemaId")
             String schemaId) {
 
-        int clusterTerm = schemaId.indexOf('.');
+        SchemaRegistryConfig registryConfig = consoleConfig.getSchemaRegistries()
+                .stream()
+                .filter(config -> config.getName().equals(registryId))
+                .findFirst()
+                .orElseThrow(() -> new NotFoundException("Unknown registry"));
 
-        if (clusterTerm < 0) {
-            throw new NotFoundException("No such schema");
-        }
-
-        String clusterId = new String(Base64.getUrlDecoder().decode(schemaId.substring(0, clusterTerm)));
-
-        if (!kafkaContexts.containsKey(clusterId)) {
-            throw new NotFoundException("No such schema");
-        }
-
-        RegistryClient registryClient = kafkaContexts.get(clusterId).schemaRegistryContext().registryClient();
-
-        if (registryClient == null) {
-            throw new NotFoundException("Schema not found, no registry is configured");
-        }
+        RegistryClient registryClient = RegistryClientFactory.create(registryConfig.getUrl());
 
         @SuppressWarnings("resource")
         SchemaResolver<Object, ?> schemaResolver = new DefaultSchemaResolver<>();
         schemaResolver.setClient(registryClient);
         schemaResolver.configure(Collections.emptyMap(), new MultiformatSchemaParser<>(Collections.emptySet()));
-
-        schemaId = schemaId.substring(clusterTerm + 1);
 
         var reference = ArtifactReferences.fromSchemaId(schemaId, objectMapper);
         var schema = schemaResolver.resolveSchemaByArtifactReference(reference);

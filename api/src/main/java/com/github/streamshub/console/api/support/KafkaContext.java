@@ -20,8 +20,10 @@ import com.github.streamshub.console.api.support.serdes.ForceCloseable;
 import com.github.streamshub.console.api.support.serdes.MultiformatDeserializer;
 import com.github.streamshub.console.api.support.serdes.MultiformatSerializer;
 import com.github.streamshub.console.config.KafkaClusterConfig;
+import com.github.streamshub.console.config.SchemaRegistryConfig;
 
 import io.apicurio.registry.rest.client.RegistryClient;
+import io.apicurio.registry.rest.client.RegistryClientFactory;
 import io.strimzi.api.kafka.model.kafka.Kafka;
 import io.strimzi.api.kafka.model.kafka.KafkaClusterSpec;
 import io.strimzi.api.kafka.model.kafka.KafkaSpec;
@@ -127,8 +129,8 @@ public class KafkaContext implements Closeable {
         return applicationScoped;
     }
 
-    public void schemaRegistryClient(RegistryClient schemaRegistryClient, ObjectMapper objectMapper) {
-        schemaRegistryContext = new SchemaRegistryContext(schemaRegistryClient, objectMapper);
+    public void schemaRegistryClient(SchemaRegistryConfig config, ObjectMapper objectMapper) {
+        schemaRegistryContext = new SchemaRegistryContext(config, objectMapper);
     }
 
     public SchemaRegistryContext schemaRegistryContext() {
@@ -167,14 +169,21 @@ public class KafkaContext implements Closeable {
      * the parent KafkaContext is disposed of at application shutdown.
      */
     public class SchemaRegistryContext implements Closeable {
+        private final SchemaRegistryConfig config;
         private final RegistryClient registryClient;
         private final MultiformatDeserializer keyDeserializer;
         private final MultiformatDeserializer valueDeserializer;
         private final MultiformatSerializer keySerializer;
         private final MultiformatSerializer valueSerializer;
 
-        SchemaRegistryContext(RegistryClient schemaRegistryClient, ObjectMapper objectMapper) {
-            this.registryClient = schemaRegistryClient;
+        SchemaRegistryContext(SchemaRegistryConfig config, ObjectMapper objectMapper) {
+            this.config = config;
+
+            if (config != null) {
+                registryClient = RegistryClientFactory.create(config.getUrl());
+            } else {
+                registryClient = null;
+            }
 
             keyDeserializer = new MultiformatDeserializer(registryClient, objectMapper);
             keyDeserializer.configure(configs(Consumer.class), true);
@@ -187,6 +196,10 @@ public class KafkaContext implements Closeable {
 
             valueSerializer = new MultiformatSerializer(registryClient, objectMapper);
             valueSerializer.configure(configs(Producer.class), false);
+        }
+
+        public SchemaRegistryConfig getConfig() {
+            return config;
         }
 
         public RegistryClient registryClient() {

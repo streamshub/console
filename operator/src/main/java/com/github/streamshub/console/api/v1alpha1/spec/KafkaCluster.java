@@ -52,11 +52,10 @@ public class KafkaCluster {
     private Credentials credentials;
 
     @JsonPropertyDescription("""
-            Configuration for a connection to an Apicurio Registry instance \
-            to use for serializing and de-serializing records written to or read \
-            from this Kafka cluster.
+            Name of a configured Apicurio Registry instance to use for serializing \
+            and de-serializing records written to or read from this Kafka cluster.
             """)
-    private SchemaRegistry schemaRegistry;
+    private String schemaRegistry;
 
     private ConfigVars properties = new ConfigVars();
 
@@ -106,11 +105,11 @@ public class KafkaCluster {
         this.credentials = credentials;
     }
 
-    public SchemaRegistry getSchemaRegistry() {
+    public String getSchemaRegistry() {
         return schemaRegistry;
     }
 
-    public void setSchemaRegistry(SchemaRegistry schemaRegistry) {
+    public void setSchemaRegistry(String schemaRegistry) {
         this.schemaRegistry = schemaRegistry;
     }
 
