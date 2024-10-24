@@ -10,7 +10,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 public class KafkaClusterConfig {
 
     private String id;
-    @NotBlank
+    @NotBlank(message = "Kafka cluster `name` is required")
     private String name;
     private String namespace;
     private String listener;
