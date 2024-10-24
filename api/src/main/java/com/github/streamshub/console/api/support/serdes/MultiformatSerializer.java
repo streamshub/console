@@ -95,8 +95,8 @@ public class MultiformatSerializer extends AbstractKafkaSerializer<Object, Recor
         protobufSerializer.configure(protobufConfigs, isKey);
 
         parser = new MultiformatSchemaParser<>(Set.of(
-            avroSerializer.schemaParser(),
-            protobufSerializer.schemaParser()
+            cast(avroSerializer.schemaParser()),
+            cast(protobufSerializer.schemaParser())
         ));
 
         super.configure(new BaseKafkaSerDeConfig(serConfigs), isKey);

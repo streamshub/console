@@ -127,8 +127,8 @@ public class KafkaContext implements Closeable {
         return applicationScoped;
     }
 
-    public void schemaRegistryClient(RegistryClient schemaRegistryClient) {
-        schemaRegistryContext = new SchemaRegistryContext(schemaRegistryClient);
+    public void schemaRegistryClient(RegistryClient schemaRegistryClient, ObjectMapper objectMapper) {
+        schemaRegistryContext = new SchemaRegistryContext(schemaRegistryClient, objectMapper);
     }
 
     public SchemaRegistryContext schemaRegistryContext() {
@@ -173,10 +173,8 @@ public class KafkaContext implements Closeable {
         private final MultiformatSerializer keySerializer;
         private final MultiformatSerializer valueSerializer;
 
-        SchemaRegistryContext(RegistryClient schemaRegistryClient) {
+        SchemaRegistryContext(RegistryClient schemaRegistryClient, ObjectMapper objectMapper) {
             this.registryClient = schemaRegistryClient;
-
-            ObjectMapper objectMapper = new ObjectMapper();
 
             keyDeserializer = new MultiformatDeserializer(registryClient, objectMapper);
             keyDeserializer.configure(configs(Consumer.class), true);

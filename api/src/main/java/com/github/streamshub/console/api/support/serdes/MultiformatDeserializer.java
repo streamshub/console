@@ -89,8 +89,8 @@ public class MultiformatDeserializer extends AbstractKafkaDeserializer<Object, R
         protobufDeserializer.configure(protobufConfigs, isKey);
 
         parser = new MultiformatSchemaParser<>(Set.of(
-            avroDeserializer.schemaParser(),
-            protobufDeserializer.schemaParser()
+            cast(avroDeserializer.schemaParser()),
+            cast(protobufDeserializer.schemaParser())
         ));
 
         super.configure(new BaseKafkaSerDeConfig(configs), isKey);
