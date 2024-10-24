@@ -1,5 +1,3 @@
-import { notFound } from "next/navigation";
-import { getKafkaCluster } from "@/api/kafka/actions";
 import { ClusterLinks } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/ClusterLinks";
 import { getAuthOptions } from "@/app/api/auth/[...nextauth]/route";
 import { AppLayout } from "@/components/AppLayout";
@@ -10,9 +8,11 @@ import {
   PageGroup,
 } from "@/libs/patternfly/react-core";
 import { getServerSession } from "next-auth";
+import { useTranslations } from "next-intl";
 import { PropsWithChildren, ReactNode, Suspense } from "react";
 import { KafkaParams } from "./kafka.params";
-import { ClusterDetail } from "@/api/kafka/schema";
+import { notFound } from "next/navigation";
+import { getKafkaCluster } from "@/api/kafka/actions";
 
 export default async function AsyncLayout({
   children,
@@ -28,6 +28,7 @@ export default async function AsyncLayout({
 }>) {
   const authOptions = await getAuthOptions();
   const session = await getServerSession(authOptions);
+
   const cluster = await getKafkaCluster(kafkaId);
 
   if (!cluster) {
@@ -36,8 +37,8 @@ export default async function AsyncLayout({
 
   return (
     <Layout
-      username={(session?.user?.name ?? session?.user?.email) ?? "User"}
-      kafkaCluster={cluster}
+      username={(session?.user?.name || session?.user?.email) ?? "User"}
+      kafkaId={kafkaId}
       activeBreadcrumb={activeBreadcrumb}
       header={header}
       modal={modal}
@@ -52,21 +53,22 @@ function Layout({
   activeBreadcrumb,
   header,
   modal,
-  kafkaCluster,
+  kafkaId,
   username,
 }: PropsWithChildren<{
-  kafkaCluster: ClusterDetail;
+  kafkaId: string;
   username: string;
   header: ReactNode;
   activeBreadcrumb: ReactNode;
   modal: ReactNode;
 }>) {
+  const t = useTranslations();
   return (
     <AppLayoutProvider>
       <AppLayout
         username={username}
-        sidebar={<ClusterLinks kafkaCluster={kafkaCluster} />}
-        kafkaCluster={kafkaCluster}
+        kafkaId={kafkaId}
+        sidebar={<ClusterLinks kafkaId={kafkaId} />}
       >
         <PageGroup stickyOnBreakpoint={{ default: "top" }}>
           <PageBreadcrumb>

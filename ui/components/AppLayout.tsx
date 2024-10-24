@@ -3,7 +3,6 @@ import { useTranslations } from "next-intl";
 import { PropsWithChildren, ReactNode } from "react";
 import { AppMasthead } from "./AppMasthead";
 import { AppSidebar } from "./AppSidebar";
-import { ClusterDetail } from "@/api/kafka/schema";
 import { ClusterDrawer } from "./ClusterDrawer";
 
 import { ClusterDrawerProvider } from "./ClusterDrawerProvider";
@@ -13,15 +12,14 @@ import { ReconciliationPausedBanner } from "./ReconciliationPausedBanner";
 export function AppLayout({
   username,
   sidebar,
-  kafkaCluster,
   children,
+  kafkaId,
 }: PropsWithChildren<{
   username?: string;
   sidebar?: ReactNode;
-  kafkaCluster?: ClusterDetail;
+  kafkaId?: string;
 }>) {
   const t = useTranslations();
-
   return (
     <Page
       header={<AppMasthead username={username} showSidebarToggle={!!sidebar} />}
@@ -37,10 +35,8 @@ export function AppLayout({
     >
       {/*<HelpContainer>*/}
       <ClusterDrawerProvider>
-        <ReconciliationProvider>
-          {kafkaCluster && (
-            <ReconciliationPausedBanner kafkaCluster={kafkaCluster} />
-          )}
+        <ReconciliationProvider kafkaId={kafkaId || ""}>
+          <ReconciliationPausedBanner kafkaId={kafkaId || ""} />
           <ClusterDrawer>{children}</ClusterDrawer>
         </ReconciliationProvider>
       </ClusterDrawerProvider>
