@@ -41,7 +41,6 @@ type ClusterCardProps = {
   consumerGroups?: number;
   kafkaVersion: string;
   kafkaId: string | undefined;
-  reconciliationPaused: boolean;
   messages: Array<{
     variant: "danger" | "warning";
     subject: { type: string; name: string; id: string };
@@ -60,7 +59,6 @@ export function ClusterCard({
   kafkaVersion,
   messages,
   kafkaId,
-  reconciliationPaused,
 }:
   | ({
       isLoading: false;
@@ -70,8 +68,6 @@ export function ClusterCard({
 
   const { isReconciliationPaused, setReconciliationPaused } =
     useReconciliationContext();
-
-  setReconciliationPaused(reconciliationPaused as boolean);
 
   const resumeReconciliation = async () => {
     if (!kafkaId) {
@@ -236,7 +232,7 @@ export function ClusterCard({
                   ))
                 ) : (
                   <>
-                    {messages.length === 0 && (
+                    {isReconciliationPaused && messages.length === 0 && (
                       <DataListItem aria-labelledby={`no-messages`}>
                         <DataListItemRow>
                           <DataListItemCells
@@ -281,14 +277,25 @@ export function ClusterCard({
                                       "pf-v5-u-display-none pf-v5-u-display-block-on-md"
                                     }
                                   >
-                                    <Truncate content={ m.subject.type === 'ReconciliationPaused'
-                                        ? t("reconciliation.reconciliation_paused_warning",)
-                                        : m.message}
+                                    <Truncate
+                                      content={
+                                        m.subject.type ===
+                                        "ReconciliationPaused"
+                                          ? t(
+                                              "reconciliation.reconciliation_paused_warning",
+                                            )
+                                          : m.message
+                                      }
                                     />
-                                    {m.subject.type === 'ReconciliationPaused' && (
+                                    {m.subject.type ===
+                                      "ReconciliationPaused" && (
                                       <>
                                         &nbsp;
-                                        <Button variant="link" isInline onClick={resumeReconciliation}>
+                                        <Button
+                                          variant="link"
+                                          isInline
+                                          onClick={resumeReconciliation}
+                                        >
                                           {t("reconciliation.resume")}
                                         </Button>
                                       </>

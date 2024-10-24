@@ -17,13 +17,13 @@ export function ConnectButton({ clusterId }: { clusterId: string }) {
   const { isReconciliationPaused, setReconciliationPaused } =
     useReconciliationContext();
 
-  const updateReconciliation = async (reconciliationPaused: boolean) => {
+  const onClickUpdate = async (pausedState: boolean) => {
     try {
-      const success = await updateKafkaCluster(clusterId, reconciliationPaused);
+      const success = await updateKafkaCluster(clusterId, pausedState);
 
       if (success) {
+        setReconciliationPaused(pausedState);
         setIsModalOpen(false);
-        setReconciliationPaused(reconciliationPaused);
       }
     } catch (e: unknown) {
       console.log("Unknown error occurred");
@@ -38,7 +38,7 @@ export function ConnectButton({ clusterId }: { clusterId: string }) {
             variant="secondary"
             onClick={
               isReconciliationPaused
-                ? () => updateReconciliation(false)
+                ? () => onClickUpdate(false)
                 : () => setIsModalOpen(true)
             }
           >
@@ -57,7 +57,7 @@ export function ConnectButton({ clusterId }: { clusterId: string }) {
         <ReconciliationModal
           isModalOpen={isModalOpen}
           onClickClose={() => setIsModalOpen(false)}
-          onClickPauseReconciliation={() => updateReconciliation(true)}
+          onClickPauseReconciliation={() => onClickUpdate(true)}
         />
       )}
     </>
