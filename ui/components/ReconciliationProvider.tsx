@@ -19,6 +19,10 @@ export function ReconciliationProvider({
   };
 
   useEffect(() => {
+    if (!kafkaId) {
+      return;
+    }
+
     const fetchReconciliationState = async () => {
       try {
         const cluster = await getKafkaCluster(kafkaId);

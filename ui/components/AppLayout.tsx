@@ -20,6 +20,8 @@ export function AppLayout({
   kafkaId?: string;
 }>) {
   const t = useTranslations();
+
+  const isValidKafkaId = !!kafkaId;
   return (
     <Page
       header={<AppMasthead username={username} showSidebarToggle={!!sidebar} />}
@@ -35,10 +37,14 @@ export function AppLayout({
     >
       {/*<HelpContainer>*/}
       <ClusterDrawerProvider>
-        <ReconciliationProvider kafkaId={kafkaId || ""}>
-          <ReconciliationPausedBanner kafkaId={kafkaId || ""} />
-          <ClusterDrawer>{children}</ClusterDrawer>
-        </ReconciliationProvider>
+        {isValidKafkaId ? (
+          <ReconciliationProvider kafkaId={kafkaId}>
+            <ReconciliationPausedBanner kafkaId={kafkaId} />
+            <ClusterDrawer>{children}</ClusterDrawer>
+          </ReconciliationProvider>
+        ) : (
+          <></>
+        )}
       </ClusterDrawerProvider>
       {/*</HelpContainer>*/}
     </Page>
