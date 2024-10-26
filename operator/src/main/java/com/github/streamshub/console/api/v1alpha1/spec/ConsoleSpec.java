@@ -11,19 +11,29 @@ import io.sundr.builder.annotations.Buildable;
 
 @Buildable(builderPackage = "io.fabric8.kubernetes.api.builder")
 @JsonInclude(JsonInclude.Include.NON_NULL)
+// Enable validation rules for unique names when array maxItems and string maxLength can be specified
+// to influence Kubernetes's estimated rule cost.
+// https://github.com/fabric8io/kubernetes-client/pull/6447
+//
+// @ValidationRule(value = """
+//         !has(self.metricsSources) ||
+//           self.metricsSources.all(s1, self.metricsSources.exists_one(s2, s2.name == s1.name))
+//         """,
+//         message = "Metrics source names must be unique")
 public class ConsoleSpec {
 
     @Required
     String hostname;
 
-    Images images = new Images();
+    Images images;
+
+    List<Prometheus> metricsSources;
 
     List<SchemaRegistry> schemaRegistries;
 
     List<KafkaCluster> kafkaClusters = new ArrayList<>();
 
-    // TODO: copy EnvVar into console's API to avoid unexpected changes
-    List<EnvVar> env = new ArrayList<>();
+    List<EnvVar> env;
 
     public String getHostname() {
         return hostname;
@@ -39,6 +49,14 @@ public class ConsoleSpec {
 
     public void setImages(Images images) {
         this.images = images;
+    }
+
+    public List<Prometheus> getMetricsSources() {
+        return metricsSources;
+    }
+
+    public void setMetricsSources(List<Prometheus> metricsSources) {
+        this.metricsSources = metricsSources;
     }
 
     public List<SchemaRegistry> getSchemaRegistries() {

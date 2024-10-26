@@ -16,7 +16,7 @@ import { getHeight, getPadding } from "./chartConsts";
 import { useChartWidth } from "./useChartWidth";
 
 type ChartDiskUsageProps = {
-  usages: TimeSeriesMetrics[];
+  usages: Record<string, TimeSeriesMetrics>;
 };
 
 type Datum = {
@@ -46,11 +46,12 @@ export function ChartMemoryUsage({ usages }: ChartDiskUsageProps) {
   }
 
   const CursorVoronoiContainer = createContainer("voronoi", "cursor");
-  const legendData = usages.map((_, idx) => ({
-    name: `Node ${idx}`,
-    childName: `node ${idx}`,
+  const legendData = Object.keys(usages).map((nodeId) => ({
+    name: `Node ${nodeId}`,
+    childName: `node ${nodeId}`,
   }));
   const padding = getPadding(legendData.length / itemsPerRow);
+
   return (
     <div ref={containerRef}>
       <Chart
@@ -110,21 +111,22 @@ export function ChartMemoryUsage({ usages }: ChartDiskUsageProps) {
           dependentAxis
           showGrid={true}
           tickFormat={(d) => {
-            return formatBytes(d, { maximumFractionDigits: 0 });
+            return formatBytes(d);
           }}
         />
         <ChartStack>
-          {usages.map((usage, idx) => {
-            const usageArray = Object.entries(usage);
+          {Object.entries(usages).map(([nodeId, series]) => {
             return (
               <ChartArea
-                key={`memory-usage-${idx}`}
-                data={usageArray.map(([x, y]) => ({
-                  name: `Node ${idx + 1}`,
-                  x,
-                  y,
-                }))}
-                name={`node ${idx}`}
+                key={ `memory-usage-${nodeId}` }
+                data={ Object.entries(series).map(([k, v]) => {
+                    return ({
+                      name: `Node ${nodeId}`,
+                      x: Date.parse(k),
+                      y: v,
+                    })
+                })}
+                name={ `node ${nodeId}` }
               />
             );
           })}

@@ -399,10 +399,10 @@
                 <quarkus.profile>build</quarkus.profile>
                 <quarkus.docker.dockerfile-jvm-path>src/main/docker/Dockerfile</quarkus.docker.dockerfile-jvm-path>
                 <quarkus.container-image.build>true</quarkus.container-image.build>
-                <quarkus.container-image.registry>${docker.registry}</quarkus.container-image.registry>
-                <quarkus.container-image.group>${docker.group}</quarkus.container-image.group>
-                <quarkus.container-image.tag>${docker.tag}</quarkus.container-image.tag>
-                <quarkus.container-image.push>${docker.push}</quarkus.container-image.push>
+                <quarkus.container-image.registry>${container-image.registry}</quarkus.container-image.registry>
+                <quarkus.container-image.group>${container-image.group}</quarkus.container-image.group>
+                <quarkus.container-image.tag>${container-image.tag}</quarkus.container-image.tag>
+                <quarkus.container-image.push>${container-image.push}</quarkus.container-image.push>
             </properties>
             <dependencies>
                 <dependency>

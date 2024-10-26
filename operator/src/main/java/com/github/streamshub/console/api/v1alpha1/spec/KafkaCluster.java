@@ -2,6 +2,7 @@ package com.github.streamshub.console.api.v1alpha1.spec;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import com.github.streamshub.console.config.Named;
 
 import io.fabric8.generator.annotation.Required;
 import io.fabric8.generator.annotation.ValidationRule;
@@ -14,7 +15,7 @@ import io.sundr.builder.annotations.Buildable;
         // due to it being a "reserved" word.
         value = "!has(self.listener) || has(self.__namespace__)",
         message = "Property `listener` may not be used when `namespace` is omitted")
-public class KafkaCluster {
+public class KafkaCluster implements Named {
 
     @JsonPropertyDescription("""
             Identifier to be used for this Kafka cluster in the console. When \
@@ -52,6 +53,12 @@ public class KafkaCluster {
     private Credentials credentials;
 
     @JsonPropertyDescription("""
+            Name of a configured Prometheus metrics source to use for this Kafka \
+            cluster to display resource utilization charts in the console.
+            """)
+    private String metricsSource;
+
+    @JsonPropertyDescription("""
             Name of a configured Apicurio Registry instance to use for serializing \
             and de-serializing records written to or read from this Kafka cluster.
             """)
@@ -73,6 +80,7 @@ public class KafkaCluster {
         this.id = id;
     }
 
+    @Override
     public String getName() {
         return name;
     }
@@ -103,6 +111,14 @@ public class KafkaCluster {
 
     public void setCredentials(Credentials credentials) {
         this.credentials = credentials;
+    }
+
+    public String getMetricsSource() {
+        return metricsSource;
+    }
+
+    public void setMetricsSource(String metricsSource) {
+        this.metricsSource = metricsSource;
     }
 
     public String getSchemaRegistry() {

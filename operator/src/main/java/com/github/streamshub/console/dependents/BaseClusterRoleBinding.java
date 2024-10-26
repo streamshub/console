@@ -43,7 +43,7 @@ abstract class BaseClusterRoleBinding extends KubernetesDependentResource<Cluste
             .edit()
             .editMetadata()
                 .withName(instanceName(primary))
-                .withLabels(commonLabels(appName))
+                .withLabels(commonLabels(appName, resourceName))
             .endMetadata()
             .editRoleRef()
                 .withName(roleName(primary))

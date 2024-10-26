@@ -80,44 +80,28 @@ const ClusterDetailSchema = z.object({
       .nullable()
       .optional(),
     nodePools: z.array(z.string()).optional().nullable(),
+    metrics: z
+      .object({
+        values: z.record(
+          z.array(z.object({
+            value: z.string(),
+            nodeId: z.string(),
+          })),
+        ),
+        ranges: z.record(
+          z.array(z.object({
+            range: z.array(z.array(
+              z.string(),
+              z.string(),
+            )),
+            nodeId: z.string().optional(),
+          })),
+        ),
+      })
+      .optional(),
   }),
 });
 export const ClusterResponse = z.object({
   data: ClusterDetailSchema,
 });
 export type ClusterDetail = z.infer<typeof ClusterDetailSchema>;
-
-export const ClusterKpisSchema = z.object({
-  broker_state: z.record(z.number()).optional(),
-  replica_count: z
-    .object({
-      byNode: z.record(z.number()).optional(),
-      total: z.number().optional(),
-    })
-    .optional(),
-  leader_count: z
-    .object({
-      byNode: z.record(z.number()).optional(),
-      total: z.number().optional(),
-    })
-    .optional(),
-  volume_stats_capacity_bytes: z
-    .object({
-      byNode: z.record(z.number()).optional(),
-      total: z.number().optional(),
-    })
-    .optional(),
-  volume_stats_used_bytes: z
-    .object({
-      byNode: z.record(z.number()).optional(),
-      total: z.number().optional(),
-    })
-    .optional(),
-});
-export type ClusterKpis = z.infer<typeof ClusterKpisSchema>;
-
-export const MetricRangeSchema = z.record(
-  z.string(),
-  z.record(z.number()).optional(),
-);
-export type MetricRange = z.infer<typeof MetricRangeSchema>;

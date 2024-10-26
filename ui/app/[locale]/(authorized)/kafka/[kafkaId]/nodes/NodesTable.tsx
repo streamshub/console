@@ -100,7 +100,7 @@ export function NodesTable({ nodes }: { nodes: Node[] }) {
               </Td>
             );
           case "status":
-            const isStable = row.status == "Stable";
+            const isStable = row.status == "Running";
             return (
               <Td key={key} dataLabel={"Status"}>
                 <Icon status={isStable ? "success" : "warning"}>

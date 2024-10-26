@@ -17,10 +17,10 @@ import { HelpIcon } from "@/libs/patternfly/react-icons";
 import { useTranslations } from "next-intl";
 
 type ClusterChartsCardProps = {
-  usedDiskSpace: TimeSeriesMetrics[];
-  availableDiskSpace: TimeSeriesMetrics[];
-  memoryUsage: TimeSeriesMetrics[];
-  cpuUsage: TimeSeriesMetrics[];
+  usedDiskSpace: Record<string, TimeSeriesMetrics>;
+  availableDiskSpace: Record<string, TimeSeriesMetrics>;
+  memoryUsage: Record<string, TimeSeriesMetrics>;
+  cpuUsage: Record<string, TimeSeriesMetrics>;
 };
 
 export function ClusterChartsCard({

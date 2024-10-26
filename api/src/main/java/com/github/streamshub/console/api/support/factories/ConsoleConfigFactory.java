@@ -3,8 +3,8 @@ package com.github.streamshub.console.api.support.factories;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
+import java.net.URL;
 import java.nio.file.Path;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -17,7 +17,10 @@ import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.github.streamshub.console.api.support.ValidationProxy;
 import com.github.streamshub.console.config.ConsoleConfig;
@@ -54,30 +57,7 @@ public class ConsoleConfigFactory {
                 }
             })
             .filter(Objects::nonNull)
-            .map(url -> {
-                log.infof("Loading console configuration from %s", url);
-                ObjectMapper yamlMapper = mapper.copyWith(new YAMLFactory());
-
-                try (InputStream stream = url.openStream()) {
-                    return yamlMapper.readValue(stream, ConsoleConfig.class);
-                } catch (IOException e) {
-                    throw new UncheckedIOException(e);
-                }
-            })
-            .map(consoleConfig -> {
-                consoleConfig.getSchemaRegistries().forEach(registry -> {
-                    registry.setUrl(resolveValue(registry.getUrl()));
-                });
-
-                consoleConfig.getKafka().getClusters().forEach(cluster -> {
-                    resolveValues(cluster.getProperties());
-                    resolveValues(cluster.getAdminProperties());
-                    resolveValues(cluster.getProducerProperties());
-                    resolveValues(cluster.getConsumerProperties());
-                });
-
-                return consoleConfig;
-            })
+            .map(this::loadConfiguration)
             .map(validationService::validate)
             .orElseGet(() -> {
                 log.warn("Console configuration has not been specified using `console.config-path` property");
@@ -85,9 +65,58 @@ public class ConsoleConfigFactory {
             });
     }
 
-    private void resolveValues(Map<String, String> properties) {
-        properties.entrySet().forEach(entry ->
-            entry.setValue(resolveValue(entry.getValue())));
+    private ConsoleConfig loadConfiguration(URL url) {
+        log.infof("Loading console configuration from %s", url);
+        ObjectMapper yamlMapper = mapper.copyWith(new YAMLFactory());
+        JsonNode tree;
+
+        try (InputStream stream = url.openStream()) {
+            tree = yamlMapper.readTree(stream);
+        } catch (IOException e) {
+            throw new UncheckedIOException("Failed to read configuration YAML", e);
+        }
+
+        processNode(tree);
+
+        try {
+            return mapper.treeToValue(tree, ConsoleConfig.class);
+        } catch (IOException e) {
+            throw new UncheckedIOException("Failed to load configuration model", e);
+        }
+    }
+
+    private void processNode(JsonNode node) {
+        if (node.isArray()) {
+            int i = 0;
+            for (JsonNode entry : node) {
+                processNode((ArrayNode) node, i++, entry);
+            }
+        } else if (node.isObject()) {
+            for (var cursor = node.fields(); cursor.hasNext();) {
+                var field = cursor.next();
+                processNode((ObjectNode) node, field.getKey(), field.getValue());
+            }
+        }
+    }
+
+    private void processNode(ObjectNode parent, String key, JsonNode node) {
+        if (node.isValueNode()) {
+            if (node.isTextual()) {
+                parent.put(key, resolveValue(node.asText()));
+            }
+        } else {
+            processNode(node);
+        }
+    }
+
+    private void processNode(ArrayNode parent, int position, JsonNode node) {
+        if (node.isValueNode()) {
+            if (node.isTextual()) {
+                parent.set(position, resolveValue(node.asText()));
+            }
+        } else {
+            processNode(node);
+        }
     }
 
     /**

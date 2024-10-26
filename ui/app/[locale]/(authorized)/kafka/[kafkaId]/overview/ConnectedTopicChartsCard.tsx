@@ -1,21 +1,33 @@
-import { TopicMetric } from "@/api/kafka/actions";
-import { ClusterDetail, MetricRange } from "@/api/kafka/schema";
+import { ClusterDetail } from "@/api/kafka/schema";
 import { TopicChartsCard } from "@/components/ClusterOverview/TopicChartsCard";
 
+function timeSeriesMetrics(
+  ranges: Record<string, { range: string[][]; nodeId?: string; }[]> | undefined,
+  rangeName: string,
+): TimeSeriesMetrics {
+  let series: TimeSeriesMetrics = {};
+
+  if (ranges) {
+    Object.values(ranges[rangeName] ?? {}).forEach((r) => {
+      series = r.range.reduce((a, v) => ({ ...a, [v[0]]: parseFloat(v[1]) }), series);
+    });
+  }
+
+  return series;
+}
+
 export async function ConnectedTopicChartsCard({
-  data,
+  cluster,
 }: {
-  data: Promise<{
-    cluster: ClusterDetail;
-    ranges: Record<TopicMetric, MetricRange> | null;
-  } | null>;
+  cluster: Promise<ClusterDetail | null>;
 }) {
-  const res = await data;
+  const res = await cluster;
+
   return (
     <TopicChartsCard
       isLoading={false}
-      incoming={(res?.ranges && res.ranges["incomingByteRate"]) || {}}
-      outgoing={(res?.ranges && res.ranges["outgoingByteRate"]) || {}}
+      incoming={timeSeriesMetrics(res?.attributes.metrics?.ranges, "incoming_byte_rate")}
+      outgoing={timeSeriesMetrics(res?.attributes.metrics?.ranges, "outgoing_byte_rate")}
     />
   );
 }

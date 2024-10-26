@@ -1,4 +1,4 @@
-import { getKafkaCluster, getKafkaClusterKpis } from "@/api/kafka/actions";
+import { getKafkaCluster } from "@/api/kafka/actions";
 import { KafkaParams } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/kafka.params";
 import { DistributionChart } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/nodes/DistributionChart";
 import {
@@ -6,16 +6,24 @@ import {
   NodesTable,
 } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/nodes/NodesTable";
 import { Alert, PageSection } from "@/libs/patternfly/react-core";
-import { redirect } from "@/i18n/routing";
 import { getTranslations } from "next-intl/server";
 import { Suspense } from "react";
 
 function nodeMetric(
-  metrics: Record<string, number> | undefined,
+  metrics: { value: string, nodeId: string }[] | undefined,
   nodeId: number,
 ): number {
-  return metrics ? (metrics[nodeId.toString()] ?? 0) : 0;
+  return parseFloat(metrics?.find(e => e.nodeId == nodeId.toString())?.value ?? "0");
 }
+
+function nodeRangeMetric(
+  metrics: { range: string[][], nodeId?: string }[] | undefined,
+  nodeId: number,
+): number {
+  let range = metrics?.find(e => e.nodeId == nodeId.toString())?.range;
+  return parseFloat(range?.[range?.length - 1]?.[1] ?? "0");
+}
+
 
 export default function NodesPage({ params }: { params: KafkaParams }) {
   return (
@@ -27,29 +35,60 @@ export default function NodesPage({ params }: { params: KafkaParams }) {
 
 async function ConnectedNodes({ params }: { params: KafkaParams }) {
   const t = await getTranslations();
-  const res = await getKafkaClusterKpis(params.kafkaId);
+  const cluster = await getKafkaCluster(params.kafkaId, {
+    fields: 'name,namespace,creationTimestamp,status,kafkaVersion,nodes,controller,authorizedOperations,listeners,conditions,metrics'
+  });
+  const metrics = cluster?.attributes.metrics;
 
-  let { cluster, kpis } = res || {};
+  const nodes: Node[] = (cluster?.attributes.nodes ?? []).map((node) => {
+    let brokerState = metrics && nodeMetric(metrics.values?.["broker_state"], node.id);
+    let status;
 
-  const nodes: Node[] = (cluster?.attributes.nodes || []).map((node) => {
-    const status = kpis
-      ? nodeMetric(kpis.broker_state, node.id) === 3
-        ? "Stable"
-        : "Unstable"
-      : "Unknown";
-    const leaders = kpis
-      ? nodeMetric(kpis.leader_count?.byNode, node.id)
+    /*
+     * https://github.com/apache/kafka/blob/3.8.0/metadata/src/main/java/org/apache/kafka/metadata/BrokerState.java
+     */
+    switch (brokerState ?? 127) {
+      case 0:
+        status = "Not Running";
+        break;
+      case 1:
+        status = "Starting";
+        break;
+      case 2:
+        status = "Recovery";
+        break;
+      case 3:
+        status = "Running";
+        break;
+      case 6:
+        status = "Pending Controlled Shutdown";
+        break;
+      case 7:
+        status = "Shutting Down";
+        break;
+      case 127:
+      default:
+        status = "Unknown";
+        break;
+    }
+
+    const leaders = metrics
+      ? nodeMetric(metrics.values?.["leader_count"], node.id)
       : undefined;
+
     const followers =
-      kpis && leaders
-        ? nodeMetric(kpis.replica_count?.byNode, node.id) - leaders
+      metrics && leaders
+        ? nodeMetric(metrics.values?.["replica_count"], node.id) - leaders
         : undefined;
-    const diskCapacity = kpis
-      ? nodeMetric(kpis.volume_stats_capacity_bytes?.byNode, node.id)
+
+    const diskCapacity = metrics
+      ? nodeRangeMetric(metrics.ranges?.["volume_stats_capacity_bytes"], node.id)
       : undefined;
-    const diskUsage = kpis
-      ? nodeMetric(kpis.volume_stats_used_bytes?.byNode, node.id)
+
+    const diskUsage = metrics
+      ? nodeRangeMetric(metrics.ranges?.["volume_stats_used_bytes"], node.id)
       : undefined;
+
     return {
       id: node.id,
       status,
@@ -71,7 +110,7 @@ async function ConnectedNodes({ params }: { params: KafkaParams }) {
 
   return (
     <>
-      {!kpis && (
+      {!metrics && (
         <PageSection isFilled={true}>
           <Alert title={t("nodes.kpis_offline")} variant={"warning"} />
         </PageSection>

@@ -1,7 +1,7 @@
   sum by (nodeId, __console_metric_name__) (
     label_replace(
       label_replace(
-        rate(container_cpu_usage_seconds_total{namespace="%1$s",pod=~"%2$s-.+-\\d+"}[1m]),
+        rate(container_cpu_usage_seconds_total{namespace="%1$s",pod=~"%2$s-.+-\\d+"}[5m]),
         "nodeId",
         "$1",
         "pod",

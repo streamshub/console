@@ -9,14 +9,12 @@ import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Random;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -27,20 +25,27 @@ import org.apache.kafka.common.config.SslConfigs;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.github.streamshub.console.ReconciliationException;
 import com.github.streamshub.console.api.v1alpha1.Console;
 import com.github.streamshub.console.api.v1alpha1.spec.ConfigVars;
 import com.github.streamshub.console.api.v1alpha1.spec.Credentials;
 import com.github.streamshub.console.api.v1alpha1.spec.KafkaCluster;
+import com.github.streamshub.console.api.v1alpha1.spec.Prometheus;
+import com.github.streamshub.console.api.v1alpha1.spec.Prometheus.Type;
 import com.github.streamshub.console.api.v1alpha1.spec.SchemaRegistry;
 import com.github.streamshub.console.config.ConsoleConfig;
 import com.github.streamshub.console.config.KafkaClusterConfig;
+import com.github.streamshub.console.config.PrometheusConfig;
 import com.github.streamshub.console.config.SchemaRegistryConfig;
 
 import io.fabric8.kubernetes.api.model.ConfigMap;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.Secret;
 import io.fabric8.kubernetes.api.model.SecretBuilder;
+import io.fabric8.kubernetes.client.KubernetesClientException;
+import io.fabric8.openshift.api.model.Route;
+import io.fabric8.openshift.api.model.RouteIngress;
 import io.javaoperatorsdk.operator.api.reconciler.Context;
 import io.javaoperatorsdk.operator.processing.dependent.kubernetes.CRUDKubernetesDependentResource;
 import io.javaoperatorsdk.operator.processing.dependent.kubernetes.KubernetesDependent;
@@ -63,6 +68,9 @@ public class ConsoleSecret extends CRUDKubernetesDependentResource<Secret, Conso
     @Inject
     ObjectMapper objectMapper;
 
+    @Inject
+    PrometheusService prometheusService;
+
     public ConsoleSecret() {
         super(Secret.class);
     }
@@ -83,7 +91,8 @@ public class ConsoleSecret extends CRUDKubernetesDependentResource<Secret, Conso
         var consoleConfig = buildConfig(primary, context);
 
         try {
-            data.put("console-config.yaml", encodeString(objectMapper.writeValueAsString(consoleConfig)));
+            var yaml = objectMapper.copyWith(new YAMLFactory());
+            data.put("console-config.yaml", encodeString(yaml.writeValueAsString(consoleConfig)));
         } catch (JsonProcessingException e) {
             throw new UncheckedIOException(e);
         }
@@ -115,25 +124,85 @@ public class ConsoleSecret extends CRUDKubernetesDependentResource<Secret, Conso
         return new String(buffer.toByteArray()).substring(0, length);
     }
 
-    private static <T> List<T> coalesce(List<T> value, Supplier<List<T>> defaultValue) {
-        return value != null ? value : defaultValue.get();
-    }
-
     private ConsoleConfig buildConfig(Console primary, Context<Console> context) {
         ConsoleConfig config = new ConsoleConfig();
 
-        for (SchemaRegistry registry : coalesce(primary.getSpec().getSchemaRegistries(), Collections::emptyList)) {
-            var registryConfig = new SchemaRegistryConfig();
-            registryConfig.setName(registry.getName());
-            registryConfig.setUrl(registry.getUrl());
-            config.getSchemaRegistries().add(registryConfig);
-        }
+        addMetricsSources(primary, config, context);
+        addSchemaRegistries(primary, config);
 
         for (var kafkaRef : primary.getSpec().getKafkaClusters()) {
             addConfig(primary, context, config, kafkaRef);
         }
 
         return config;
+    }
+
+    private void addMetricsSources(Console primary, ConsoleConfig config, Context<Console> context) {
+        var metricsSources = coalesce(primary.getSpec().getMetricsSources(), Collections::emptyList);
+
+        for (Prometheus prometheus : metricsSources) {
+            var prometheusConfig = new PrometheusConfig();
+            prometheusConfig.setName(prometheus.getName());
+
+            if (prometheus.getType() == Type.OPENSHIFT_MONITORING) {
+                prometheusConfig.setType(PrometheusConfig.Type.OPENSHIFT_MONITORING);
+                prometheusConfig.setUrl(getOpenShiftMonitoringUrl(context));
+            } else {
+                // embedded Prometheus used like standalone by console
+                prometheusConfig.setType(PrometheusConfig.Type.STANDALONE);
+
+                if (prometheus.getType() == Type.EMBEDDED) {
+                    prometheusConfig.setUrl(prometheusService.getUrl(primary, context));
+                } else {
+                    prometheusConfig.setUrl(prometheus.getUrl());
+                }
+            }
+
+            var prometheusAuthn = prometheus.getAuthentication();
+
+            if (prometheusAuthn instanceof Prometheus.Basic basic) {
+                var basicConfig = new PrometheusConfig.Basic();
+                basicConfig.setUsername(basic.getUsername());
+                basicConfig.setPassword(basic.getPassword());
+                prometheusConfig.setAuthentication(basicConfig);
+            } else if (prometheusAuthn instanceof Prometheus.Bearer bearer) {
+                var bearerConfig = new PrometheusConfig.Bearer();
+                bearerConfig.setToken(bearer.getToken());
+                prometheusConfig.setAuthentication(bearerConfig);
+            }
+
+            config.getMetricsSources().add(prometheusConfig);
+        }
+
+        if (metricsSources.isEmpty()) {
+            var prometheusConfig = new PrometheusConfig();
+            prometheusConfig.setName("embedded-prometheus");
+            prometheusConfig.setUrl(prometheusService.getUrl(primary, context));
+            config.getMetricsSources().add(prometheusConfig);
+        }
+    }
+
+    private String getOpenShiftMonitoringUrl(Context<Console> context) {
+        Route thanosQuerier = getResource(context, Route.class, "openshift-monitoring", "thanos-querier");
+
+        String host = thanosQuerier.getStatus()
+                .getIngress()
+                .stream()
+                .map(RouteIngress::getHost)
+                .findFirst()
+                .orElseThrow(() -> new ReconciliationException(
+                        "Ingress host not found on openshift-monitoring/thanos-querier route"));
+
+        return "https://" + host;
+    }
+
+    private void addSchemaRegistries(Console primary, ConsoleConfig config) {
+        for (SchemaRegistry registry : coalesce(primary.getSpec().getSchemaRegistries(), Collections::emptyList)) {
+            var registryConfig = new SchemaRegistryConfig();
+            registryConfig.setName(registry.getName());
+            registryConfig.setUrl(registry.getUrl());
+            config.getSchemaRegistries().add(registryConfig);
+        }
     }
 
     private void addConfig(Console primary, Context<Console> context, ConsoleConfig config, KafkaCluster kafkaRef) {
@@ -147,6 +216,14 @@ public class ConsoleSecret extends CRUDKubernetesDependentResource<Secret, Conso
         kcConfig.setName(name);
         kcConfig.setListener(listenerName);
         kcConfig.setSchemaRegistry(kafkaRef.getSchemaRegistry());
+
+        if (kafkaRef.getMetricsSource() == null) {
+            if (config.getMetricsSources().stream().anyMatch(src -> src.getName().equals("embedded-prometheus"))) {
+                kcConfig.setMetricsSource("embedded-prometheus");
+            }
+        } else {
+            kcConfig.setMetricsSource(kafkaRef.getMetricsSource());
+        }
 
         config.getKubernetes().setEnabled(Objects.nonNull(namespace));
         config.getKafka().getClusters().add(kcConfig);
@@ -322,11 +399,18 @@ public class ConsoleSecret extends CRUDKubernetesDependentResource<Secret, Conso
     static <T extends HasMetadata> T getResource(
             Context<Console> context, Class<T> resourceType, String namespace, String name, boolean optional) {
 
-        T resource = context.getClient()
-            .resources(resourceType)
-            .inNamespace(namespace)
-            .withName(name)
-            .get();
+        T resource;
+
+        try {
+            resource = context.getClient()
+                .resources(resourceType)
+                .inNamespace(namespace)
+                .withName(name)
+                .get();
+        } catch (KubernetesClientException e) {
+            throw new ReconciliationException("Failed to retrieve %s resource: %s/%s. Message: %s"
+                    .formatted(resourceType.getSimpleName(), namespace, name, e.getMessage()));
+        }
 
         if (resource == null && !optional) {
             throw new ReconciliationException("No such %s resource: %s/%s".formatted(resourceType.getSimpleName(), namespace, name));

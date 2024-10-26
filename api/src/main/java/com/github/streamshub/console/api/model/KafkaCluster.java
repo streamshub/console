@@ -185,6 +185,9 @@ public class KafkaCluster extends Resource<KafkaCluster.Attributes> implements P
         @JsonProperty
         boolean cruiseControlEnabled;
 
+        @JsonProperty
+        Metrics metrics = new Metrics();
+
         Attributes(List<Node> nodes, Node controller, List<String> authorizedOperations) {
             this.nodes = nodes;
             this.controller = controller;
@@ -327,5 +330,9 @@ public class KafkaCluster extends Resource<KafkaCluster.Attributes> implements P
 
     public void cruiseControlEnabled(boolean cruiseControlEnabled) {
         attributes.cruiseControlEnabled = cruiseControlEnabled;
+    }
+
+    public Metrics metrics() {
+        return attributes.metrics;
     }
 }

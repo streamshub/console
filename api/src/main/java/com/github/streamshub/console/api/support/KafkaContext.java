@@ -43,6 +43,7 @@ public class KafkaContext implements Closeable {
     final Admin admin;
     boolean applicationScoped;
     SchemaRegistryContext schemaRegistryContext;
+    PrometheusAPI prometheus;
 
     public KafkaContext(KafkaClusterConfig clusterConfig, Kafka resource, Map<Class<?>, Map<String, Object>> configs, Admin admin) {
         this.clusterConfig = clusterConfig;
@@ -56,6 +57,7 @@ public class KafkaContext implements Closeable {
         this(other.clusterConfig, other.resource, other.configs, admin);
         this.applicationScoped = false;
         this.schemaRegistryContext = other.schemaRegistryContext;
+        this.prometheus = other.prometheus;
     }
 
     public static String clusterId(KafkaClusterConfig clusterConfig, Optional<Kafka> kafkaResource) {
@@ -135,6 +137,14 @@ public class KafkaContext implements Closeable {
 
     public SchemaRegistryContext schemaRegistryContext() {
         return schemaRegistryContext;
+    }
+
+    public void prometheus(PrometheusAPI prometheus) {
+        this.prometheus = prometheus;
+    }
+
+    public PrometheusAPI prometheus() {
+        return prometheus;
     }
 
     public String saslMechanism(Class<?> clientType) {

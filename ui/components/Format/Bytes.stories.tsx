@@ -26,7 +26,7 @@ type Story = StoryObj<typeof Bytes>;
 export const Default: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await waitFor(() => expect(canvas.getByText("1 KiB")).toBeInTheDocument());
+    await waitFor(() => expect(canvas.getByText("1.00 KiB")).toBeInTheDocument());
   },
 };
 
@@ -47,7 +47,7 @@ export const KilobytesWithDecimal: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await waitFor(() =>
-      expect(canvas.getByText("1.5 KiB")).toBeInTheDocument(),
+      expect(canvas.getByText("1.50 KiB")).toBeInTheDocument(),
     );
   },
 };
@@ -59,7 +59,7 @@ export const MegabytesWithDecimal: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await waitFor(() =>
-      expect(canvas.getByText("1.5 MiB")).toBeInTheDocument(),
+      expect(canvas.getByText("1.50 MiB")).toBeInTheDocument(),
     );
   },
 };
@@ -71,7 +71,7 @@ export const GigabytesWithDecimal: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await waitFor(() =>
-      expect(canvas.getByText("1.5 GiB")).toBeInTheDocument(),
+      expect(canvas.getByText("1.50 GiB")).toBeInTheDocument(),
     );
   },
 };
@@ -83,7 +83,7 @@ export const TerabytesWithDecimal: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await waitFor(() =>
-      expect(canvas.getByText("1.5 TiB")).toBeInTheDocument(),
+      expect(canvas.getByText("1.50 TiB")).toBeInTheDocument(),
     );
   },
 };

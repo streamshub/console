@@ -1,46 +1,49 @@
 import { ConsumerGroupsResponse } from "@/api/consumerGroups/schema";
-import { ClusterDetail, ClusterKpis } from "@/api/kafka/schema";
+import { ClusterDetail } from "@/api/kafka/schema";
 import { ClusterCard } from "@/components/ClusterOverview/ClusterCard";
 
 export async function ConnectedClusterCard({
-  data,
+  cluster,
   consumerGroups,
 }: {
-  data: Promise<{ cluster: ClusterDetail; kpis: ClusterKpis | null } | null>;
+  cluster: Promise<ClusterDetail | null>;
   consumerGroups: Promise<ConsumerGroupsResponse | null>;
 }) {
-  const res = await data;
-  if (!res?.kpis) {
+  const res = await cluster;
+
+  if (!res?.attributes?.metrics) {
     return (
       <ClusterCard
         isLoading={false}
-        status={res?.cluster.attributes.status ?? "n/a"}
+        status={res?.attributes.status ?? "n/a"}
         messages={[]}
-        name={res?.cluster.attributes.name ?? "n/a"}
+        name={res?.attributes.name ?? "n/a"}
         consumerGroups={undefined}
         brokersOnline={undefined}
         brokersTotal={undefined}
-        kafkaVersion={res?.cluster.attributes.kafkaVersion ?? "n/a"}
-        kafkaId={res?.cluster.id}
+        kafkaVersion={res?.attributes.kafkaVersion ?? "n/a"}
+        kafkaId={res?.id}
       />
     );
   }
   const groupCount = await consumerGroups.then(
     (grpResp) => grpResp?.meta.page.total ?? 0,
   );
-  const brokersTotal = Object.keys(res?.kpis.broker_state ?? {}).length;
-  const brokersOnline =
-    Object.values(res?.kpis.broker_state ?? {}).filter((s) => s === 3).length ||
-    0;
-  const messages = res?.cluster.attributes.conditions
+
+  const brokersTotal = res?.attributes.metrics?.values?.["broker_state"]?.length ?? 0;
+  const brokersOnline = (res?.attributes.metrics?.values?.["broker_state"] ?? [])
+    .filter((s) => s.value === "3")
+    .length;
+
+  const messages = res?.attributes.conditions
     ?.filter((c) => "Ready" !== c.type)
     .map((c) => ({
       variant:
         c.type === "Error" ? "danger" : ("warning" as "danger" | "warning"),
       subject: {
         type: c.type!,
-        name: res?.cluster.attributes.name ?? "",
-        id: res?.cluster.id ?? "",
+        name: res?.attributes.name ?? "",
+        id: res?.id ?? "",
       },
       message: c.message ?? "",
       date: c.lastTransitionTime ?? "",
@@ -49,14 +52,14 @@ export async function ConnectedClusterCard({
   return (
     <ClusterCard
       isLoading={false}
-      status={res?.cluster.attributes.status ?? "n/a"}
+      status={res?.attributes.status ?? "n/a"}
       messages={messages ?? []}
-      name={res?.cluster.attributes.name || "n/a"}
+      name={res?.attributes.name || "n/a"}
       consumerGroups={groupCount}
       brokersOnline={brokersOnline}
       brokersTotal={brokersTotal}
-      kafkaVersion={res?.cluster.attributes.kafkaVersion ?? "n/a"}
-      kafkaId={res.cluster.id}
+      kafkaVersion={res?.attributes.kafkaVersion ?? "n/a"}
+      kafkaId={res.id}
     />
   );
 }

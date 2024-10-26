@@ -12,6 +12,7 @@ import com.github.streamshub.console.dependents.ConsoleClusterRole;
 import com.github.streamshub.console.dependents.ConsoleClusterRoleBinding;
 import com.github.streamshub.console.dependents.ConsoleDeployment;
 import com.github.streamshub.console.dependents.ConsoleIngress;
+import com.github.streamshub.console.dependents.ConsoleMonitoringClusterRoleBinding;
 import com.github.streamshub.console.dependents.ConsoleResource;
 import com.github.streamshub.console.dependents.ConsoleSecret;
 import com.github.streamshub.console.dependents.ConsoleService;
@@ -22,6 +23,7 @@ import com.github.streamshub.console.dependents.PrometheusClusterRole;
 import com.github.streamshub.console.dependents.PrometheusClusterRoleBinding;
 import com.github.streamshub.console.dependents.PrometheusConfigMap;
 import com.github.streamshub.console.dependents.PrometheusDeployment;
+import com.github.streamshub.console.dependents.PrometheusPrecondition;
 import com.github.streamshub.console.dependents.PrometheusService;
 import com.github.streamshub.console.dependents.PrometheusServiceAccount;
 
@@ -53,23 +55,28 @@ import io.quarkiverse.operatorsdk.annotations.CSVMetadata.Provider;
         dependents = {
             @Dependent(
                     name = PrometheusClusterRole.NAME,
-                    type = PrometheusClusterRole.class),
+                    type = PrometheusClusterRole.class,
+                    reconcilePrecondition = PrometheusPrecondition.class),
             @Dependent(
                     name = PrometheusServiceAccount.NAME,
-                    type = PrometheusServiceAccount.class),
+                    type = PrometheusServiceAccount.class,
+                    reconcilePrecondition = PrometheusPrecondition.class),
             @Dependent(
                     name = PrometheusClusterRoleBinding.NAME,
                     type = PrometheusClusterRoleBinding.class,
+                    reconcilePrecondition = PrometheusPrecondition.class,
                     dependsOn = {
                         PrometheusClusterRole.NAME,
                         PrometheusServiceAccount.NAME
                     }),
             @Dependent(
                     name = PrometheusConfigMap.NAME,
-                    type = PrometheusConfigMap.class),
+                    type = PrometheusConfigMap.class,
+                    reconcilePrecondition = PrometheusPrecondition.class),
             @Dependent(
                     name = PrometheusDeployment.NAME,
                     type = PrometheusDeployment.class,
+                    reconcilePrecondition = PrometheusPrecondition.class,
                     dependsOn = {
                         PrometheusClusterRoleBinding.NAME,
                         PrometheusConfigMap.NAME
@@ -78,6 +85,7 @@ import io.quarkiverse.operatorsdk.annotations.CSVMetadata.Provider;
             @Dependent(
                     name = PrometheusService.NAME,
                     type = PrometheusService.class,
+                    reconcilePrecondition = PrometheusPrecondition.class,
                     dependsOn = {
                         PrometheusDeployment.NAME
                     }),
@@ -92,6 +100,13 @@ import io.quarkiverse.operatorsdk.annotations.CSVMetadata.Provider;
                     type = ConsoleClusterRoleBinding.class,
                     dependsOn = {
                         ConsoleClusterRole.NAME,
+                        ConsoleServiceAccount.NAME
+                    }),
+            @Dependent(
+                    name = ConsoleMonitoringClusterRoleBinding.NAME,
+                    type = ConsoleMonitoringClusterRoleBinding.class,
+                    reconcilePrecondition = ConsoleMonitoringClusterRoleBinding.Precondition.class,
+                    dependsOn = {
                         ConsoleServiceAccount.NAME
                     }),
             @Dependent(
@@ -113,8 +128,7 @@ import io.quarkiverse.operatorsdk.annotations.CSVMetadata.Provider;
                     dependsOn = {
                         ConsoleClusterRoleBinding.NAME,
                         ConsoleSecret.NAME,
-                        ConsoleIngress.NAME,
-                        PrometheusService.NAME
+                        ConsoleIngress.NAME
                     },
                     readyPostcondition = DeploymentReadyCondition.class),
         })
@@ -136,21 +150,21 @@ import io.quarkiverse.operatorsdk.annotations.CSVMetadata.Provider;
             }),
         description = """
             The Streamshub Console provides a web-based user interface tool for monitoring Apache Kafka® instances within a Kubernetes based cluster.
-            
-             It features a user-friendly way to view Kafka topics and consumer groups, facilitating the searching and filtering of streamed messages. The console also offers insights into Kafka broker disk usage, helping administrators monitor and optimize resource utilization. By simplifying complex Kafka operations, the Streamshub Console enhances the efficiency and effectiveness of data streaming management within Kubernetes environments.
-            
+
+            It features a user-friendly way to view Kafka topics and consumer groups, facilitating the searching and filtering of streamed messages. The console also offers insights into Kafka broker disk usage, helping administrators monitor and optimize resource utilization. By simplifying complex Kafka operations, the Streamshub Console enhances the efficiency and effectiveness of data streaming management within Kubernetes environments.
+
             ### Documentation
             Documentation to the current _main_ branch as well as all releases can be found on our [Github](https://github.com/streamshub/console).
-            
+
             ### Contributing
             You can contribute to Console by:
             * Raising any issues you find while using Console
             * Fixing issues by opening Pull Requests
             * Improving user documentation
             * Talking about Console
-            
+
             The [Contributor Guide](https://github.com/streamshub/console/blob/main/CONTRIBUTING.md) describes how to contribute to Console.
-            
+
             ### License
             Console is licensed under the [Apache License, Version 2.0](https://github.com/streamshub/console?tab=Apache-2.0-1-ov-file#readme).
             For more details, visit the GitHub repository.""",

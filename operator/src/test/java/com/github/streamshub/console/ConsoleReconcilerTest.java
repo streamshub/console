@@ -15,6 +15,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.github.streamshub.console.api.v1alpha1.Console;
 import com.github.streamshub.console.api.v1alpha1.ConsoleBuilder;
 import com.github.streamshub.console.config.ConsoleConfig;
@@ -53,6 +54,7 @@ class ConsoleReconcilerTest {
 
     private static final Logger LOGGER = Logger.getLogger(ConsoleReconcilerTest.class);
     private static final Duration LIMIT = Duration.ofSeconds(1_000);
+    private static final ObjectMapper YAML = new ObjectMapper(new YAMLFactory());
 
     @Inject
     KubernetesClient client;
@@ -513,7 +515,7 @@ class ConsoleReconcilerTest {
             assertNotNull(consoleSecret);
             String configEncoded = consoleSecret.getData().get("console-config.yaml");
             byte[] configDecoded = Base64.getDecoder().decode(configEncoded);
-            ConsoleConfig consoleConfig = new ObjectMapper().readValue(configDecoded, ConsoleConfig.class);
+            ConsoleConfig consoleConfig = YAML.readValue(configDecoded, ConsoleConfig.class);
             assertEquals("jaas-config-value",
                     consoleConfig.getKafka().getClusters().get(0).getProperties().get(SaslConfigs.SASL_JAAS_CONFIG));
         });
@@ -589,7 +591,7 @@ class ConsoleReconcilerTest {
             assertNotNull(consoleSecret);
             String configEncoded = consoleSecret.getData().get("console-config.yaml");
             byte[] configDecoded = Base64.getDecoder().decode(configEncoded);
-            ConsoleConfig consoleConfig = new ObjectMapper().readValue(configDecoded, ConsoleConfig.class);
+            ConsoleConfig consoleConfig = YAML.readValue(configDecoded, ConsoleConfig.class);
             var kafkaConfig = consoleConfig.getKafka().getClusters().get(0);
             assertEquals("x-prop-value", kafkaConfig.getProperties().get("x-prop-name"));
             assertEquals("x-admin-prop-value", kafkaConfig.getAdminProperties().get("x-admin-prop-name"));
@@ -638,7 +640,7 @@ class ConsoleReconcilerTest {
             String configEncoded = consoleSecret.getData().get("console-config.yaml");
             byte[] configDecoded = Base64.getDecoder().decode(configEncoded);
             Logger.getLogger(getClass()).infof("config YAML: %s", new String(configDecoded));
-            ConsoleConfig consoleConfig = new ObjectMapper().readValue(configDecoded, ConsoleConfig.class);
+            ConsoleConfig consoleConfig = YAML.readValue(configDecoded, ConsoleConfig.class);
 
             String registryName = consoleConfig.getSchemaRegistries().get(0).getName();
             assertEquals("example-registry", registryName);

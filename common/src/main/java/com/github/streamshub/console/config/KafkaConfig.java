@@ -8,7 +8,10 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.AssertTrue;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 
+@JsonInclude(Include.NON_NULL)
 public class KafkaConfig {
 
     @Valid
@@ -17,7 +20,7 @@ public class KafkaConfig {
     @JsonIgnore
     @AssertTrue(message = "Kafka cluster names must be unique")
     public boolean hasUniqueClusterNames() {
-        return clusters.stream().map(KafkaClusterConfig::getName).distinct().count() == clusters.size();
+        return Named.uniqueNames(clusters);
     }
 
     @JsonIgnore

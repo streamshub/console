@@ -6,14 +6,21 @@ import java.util.Map;
 import jakarta.validation.constraints.NotBlank;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 
-public class KafkaClusterConfig {
+@JsonInclude(Include.NON_NULL)
+public class KafkaClusterConfig implements Named {
 
     private String id;
     @NotBlank(message = "Kafka cluster `name` is required")
     private String name;
     private String namespace;
     private String listener;
+    /**
+     * Name of a configured metrics source used by this Kafka cluster
+     */
+    private String metricsSource;
     /**
      * Name of a configured schema registry that will be used to ser/des configurations
      * with this Kafka cluster.
@@ -42,6 +49,7 @@ public class KafkaClusterConfig {
         this.id = id;
     }
 
+    @Override
     public String getName() {
         return name;
     }
@@ -64,6 +72,14 @@ public class KafkaClusterConfig {
 
     public void setListener(String listener) {
         this.listener = listener;
+    }
+
+    public String getMetricsSource() {
+        return metricsSource;
+    }
+
+    public void setMetricsSource(String metricsSource) {
+        this.metricsSource = metricsSource;
     }
 
     public String getSchemaRegistry() {

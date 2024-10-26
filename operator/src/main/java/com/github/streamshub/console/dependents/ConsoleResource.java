@@ -10,9 +10,11 @@ import java.util.Base64;
 import java.util.Comparator;
 import java.util.HexFormat;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.function.Supplier;
 
 import com.github.streamshub.console.api.v1alpha1.Console;
 
@@ -23,6 +25,7 @@ public interface ConsoleResource {
 
     static final String MANAGED_BY_LABEL = "app.kubernetes.io/managed-by";
     static final String NAME_LABEL = "app.kubernetes.io/name";
+    static final String COMPONENT_LABEL = "app.kubernetes.io/component";
     static final String INSTANCE_LABEL = "app.kubernetes.io/instance";
     static final String MANAGER = "streamshub-console-operator";
 
@@ -59,9 +62,16 @@ public interface ConsoleResource {
     }
 
     default Map<String, String> commonLabels(String appName) {
+        return commonLabels(appName, null);
+    }
+
+    default Map<String, String> commonLabels(String appName, String componentName) {
         Map<String, String> labels = new LinkedHashMap<>();
         labels.putAll(MANAGEMENT_LABEL);
         labels.put(NAME_LABEL, appName);
+        if (componentName != null) {
+            labels.put(COMPONENT_LABEL, componentName);
+        }
         return labels;
     }
 
@@ -101,4 +111,10 @@ public interface ConsoleResource {
     default String decodeString(String encodedValue) {
         return new String(Base64.getDecoder().decode(encodedValue), StandardCharsets.UTF_8);
     }
+
+    default <T> List<T> coalesce(List<T> value, Supplier<List<T>> defaultValue) {
+        return value != null ? value : defaultValue.get();
+    }
+
+
 }

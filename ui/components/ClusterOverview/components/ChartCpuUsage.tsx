@@ -15,7 +15,7 @@ import { getHeight, getPadding } from "./chartConsts";
 import { useChartWidth } from "./useChartWidth";
 
 type ChartCpuUsageProps = {
-  usages: TimeSeriesMetrics[];
+  usages: Record<string, TimeSeriesMetrics>;
 };
 
 type Datum = {
@@ -29,7 +29,15 @@ export function ChartCpuUsage({ usages }: ChartCpuUsageProps) {
   const format = useFormatter();
   const [containerRef, width] = useChartWidth();
 
-  const itemsPerRow = width > 650 ? 6 : width > 300 ? 3 : 1;
+  let itemsPerRow;
+
+  if (width > 650) {
+    itemsPerRow = 6;
+  } else if (width > 300) {
+    itemsPerRow = 3;
+  } else {
+    itemsPerRow = 1;
+  }
 
   const hasMetrics = Object.keys(usages).length > 0;
   if (!hasMetrics) {
@@ -42,11 +50,11 @@ export function ChartCpuUsage({ usages }: ChartCpuUsageProps) {
       />
     );
   }
-  // const showDate = shouldShowDate(duration);
+
   const CursorVoronoiContainer = createContainer("voronoi", "cursor");
-  const legendData = usages.map((_, idx) => ({
-    name: `Node ${idx}`,
-    childName: `node ${idx}`,
+  const legendData = Object.keys(usages).map((nodeId) => ({
+    name: `Node ${nodeId}`,
+    childName: `node ${nodeId}`,
   }));
   const padding = getPadding(legendData.length / itemsPerRow);
   return (
@@ -112,17 +120,18 @@ export function ChartCpuUsage({ usages }: ChartCpuUsageProps) {
           }}
         />
         <ChartStack>
-          {usages.map((usage, idx) => {
-            const usageArray = Object.entries(usage);
+          {Object.entries(usages).map(([nodeId, series]) => {
             return (
               <ChartArea
-                key={`cpu-usage-${idx}}`}
-                data={usageArray.map(([x, y]) => ({
-                  name: `Node ${idx + 1}`,
-                  x,
-                  y,
-                }))}
-                name={`node ${idx}`}
+                key={ `cpu-usage-${nodeId}` }
+                data={ Object.entries(series).map(([k, v]) => {
+                    return ({
+                      name: `Node ${nodeId}`,
+                      x: Date.parse(k),
+                      y: v,
+                    })
+                })}
+                name={ `node ${nodeId}` }
               />
             );
           })}
