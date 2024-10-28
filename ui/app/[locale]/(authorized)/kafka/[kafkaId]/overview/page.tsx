@@ -30,6 +30,7 @@ export default function OverviewPage({ params }: { params: KafkaParams }) {
   const viewedTopics = getViewedTopics().then((topics) =>
     topics.filter((t) => t.kafkaId === params.kafkaId),
   );
+
   return (
     <PageLayout
       clusterOverview={

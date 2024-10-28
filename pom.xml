@@ -23,14 +23,14 @@
 
         <!-- Test Dependencies -->
         <hamcrest.version>3.0</hamcrest.version>
-        <strimzi-test-container.version>0.107.0</strimzi-test-container.version>
+        <strimzi-test-container.version>0.108.0</strimzi-test-container.version>
 
         <!-- Plugin Versions -->
         <maven.compiler.version>3.13.0</maven.compiler.version>
-        <maven.dependency.version>3.8.0</maven.dependency.version>
-        <maven.checkstyle.version>3.5.0</maven.checkstyle.version>
+        <maven.dependency.version>3.8.1</maven.dependency.version>
+        <maven.checkstyle.version>3.6.0</maven.checkstyle.version>
         <jacoco-maven-plugin.version>0.8.12</jacoco-maven-plugin.version>
-        <jandex-maven-plugin.version>3.2.2</jandex-maven-plugin.version>
+        <jandex-maven-plugin.version>3.2.3</jandex-maven-plugin.version>
         <spotbugs.version>4.8.6</spotbugs.version>
         <surefire-plugin.version>3.5.1</surefire-plugin.version>
 
@@ -169,14 +169,14 @@
                         <dependency>
                             <groupId>com.puppycrawl.tools</groupId>
                             <artifactId>checkstyle</artifactId>
-                            <version>10.18.2</version>
+                            <version>10.19.0</version>
                         </dependency>
                     </dependencies>
                 </plugin>
                 <plugin>
                     <groupId>com.github.spotbugs</groupId>
                     <artifactId>spotbugs-maven-plugin</artifactId>
-                    <version>4.8.6.4</version>
+                    <version>4.8.6.5</version>
                     <dependencies>
                         <!-- overwrite dependency on spotbugs if you want to specify the version of spotbugs -->
                         <dependency>

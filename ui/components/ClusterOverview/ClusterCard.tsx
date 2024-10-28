@@ -2,6 +2,7 @@
 import { DateTime } from "@/components/Format/DateTime";
 import { Number } from "@/components/Format/Number";
 import {
+  Button,
   Card,
   CardBody,
   DataList,
@@ -29,6 +30,8 @@ import {
 import { Link } from "@/i18n/routing";
 import { useTranslations } from "next-intl";
 import { ErrorsAndWarnings } from "./components/ErrorsAndWarnings";
+import { updateKafkaCluster } from "@/api/kafka/actions";
+import { useReconciliationContext } from "../ReconciliationContext";
 
 type ClusterCardProps = {
   name: string;
@@ -37,9 +40,10 @@ type ClusterCardProps = {
   brokersTotal?: number;
   consumerGroups?: number;
   kafkaVersion: string;
+  kafkaId: string | undefined;
   messages: Array<{
     variant: "danger" | "warning";
-    subject: { type: "cluster" | "broker" | "topic"; name: string; id: string };
+    subject: { type: string; name: string; id: string };
     message: string;
     date: string;
   }>;
@@ -54,14 +58,39 @@ export function ClusterCard({
   consumerGroups,
   kafkaVersion,
   messages,
+  kafkaId,
 }:
   | ({
       isLoading: false;
     } & ClusterCardProps)
   | ({ isLoading: true } & { [K in keyof ClusterCardProps]?: undefined })) {
   const t = useTranslations();
-  const warnings = messages?.filter((m) => m.variant === "warning").length || 0;
+
+  const { isReconciliationPaused, setReconciliationPaused } =
+    useReconciliationContext();
+
+  const resumeReconciliation = async () => {
+    if (!kafkaId) {
+      console.log("kafkaId is undefined");
+      return;
+    }
+
+    try {
+      const success = await updateKafkaCluster(kafkaId, false);
+
+      if (success) {
+        setReconciliationPaused(false);
+      }
+    } catch (e: unknown) {
+      console.log("Unknown error occurred");
+    }
+  };
+
+  const warnings =
+    messages?.filter((m) => m.variant === "warning").length ||
+    0 + (isReconciliationPaused ? 1 : 0);
   const dangers = messages?.filter((m) => m.variant === "danger").length || 0;
+
   return (
     <Card component={"div"}>
       <CardBody>
@@ -229,7 +258,7 @@ export function ClusterCard({
                                 <DataListCell
                                   key="name"
                                   className={"pf-v5-u-text-nowrap"}
-                                  width={2}
+                                  width={1}
                                 >
                                   <Icon status={m.variant}>
                                     {m.variant === "danger" && (
@@ -240,17 +269,37 @@ export function ClusterCard({
                                     )}
                                   </Icon>
                                   &nbsp;
-                                  <Link href={""} id={`message-${i}`}>
-                                    <Truncate content={m.subject.name} />
-                                  </Link>
+                                  {m.subject.type}
                                 </DataListCell>,
-                                <DataListCell key="message" width={4}>
+                                <DataListCell key="message" width={5}>
                                   <div
                                     className={
                                       "pf-v5-u-display-none pf-v5-u-display-block-on-md"
                                     }
                                   >
-                                    <Truncate content={m.message} />
+                                    <Truncate
+                                      content={
+                                        m.subject.type ===
+                                        "ReconciliationPaused"
+                                          ? t(
+                                              "reconciliation.reconciliation_paused_warning",
+                                            )
+                                          : m.message
+                                      }
+                                    />
+                                    {m.subject.type ===
+                                      "ReconciliationPaused" && (
+                                      <>
+                                        &nbsp;
+                                        <Button
+                                          variant="link"
+                                          isInline
+                                          onClick={resumeReconciliation}
+                                        >
+                                          {t("reconciliation.resume")}
+                                        </Button>
+                                      </>
+                                    )}
                                   </div>
                                   <div
                                     className={

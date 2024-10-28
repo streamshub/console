@@ -6,13 +6,22 @@ import { AppSidebar } from "./AppSidebar";
 import { ClusterDrawer } from "./ClusterDrawer";
 
 import { ClusterDrawerProvider } from "./ClusterDrawerProvider";
+import { ReconciliationProvider } from "./ReconciliationProvider";
+import { ReconciliationPausedBanner } from "./ReconciliationPausedBanner";
 
 export function AppLayout({
   username,
   sidebar,
   children,
-}: PropsWithChildren<{ username?: string; sidebar?: ReactNode }>) {
+  kafkaId,
+}: PropsWithChildren<{
+  username?: string;
+  sidebar?: ReactNode;
+  kafkaId?: string;
+}>) {
   const t = useTranslations();
+
+  const isValidKafkaId = !!kafkaId;
   return (
     <Page
       header={<AppMasthead username={username} showSidebarToggle={!!sidebar} />}
@@ -28,7 +37,12 @@ export function AppLayout({
     >
       {/*<HelpContainer>*/}
       <ClusterDrawerProvider>
-        <ClusterDrawer>{children}</ClusterDrawer>
+      <ReconciliationProvider kafkaId={kafkaId ?? ""}>
+          {isValidKafkaId && (
+            <ReconciliationPausedBanner kafkaId={kafkaId} />
+          )}
+          <ClusterDrawer>{children}</ClusterDrawer>
+        </ReconciliationProvider>
       </ClusterDrawerProvider>
       {/*</HelpContainer>*/}
     </Page>

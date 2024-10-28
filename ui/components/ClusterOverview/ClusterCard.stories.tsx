@@ -1,9 +1,22 @@
 import type { Meta, StoryObj } from "@storybook/react";
 
 import { ClusterCard } from "./ClusterCard";
+import { ReconciliationContext } from "../ReconciliationContext";
 
 const meta: Meta<typeof ClusterCard> = {
   component: ClusterCard,
+  decorators: [
+    (Story) => (
+      <ReconciliationContext.Provider
+        value={{
+          isReconciliationPaused: true,
+          setReconciliationPaused: () => { }
+        }}
+      >
+        <Story />
+      </ReconciliationContext.Provider>
+    )
+  ]
 };
 
 export default meta;
