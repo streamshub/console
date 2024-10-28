@@ -3,8 +3,6 @@ import { KafkaParams } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/kafka.p
 import { AppHeader } from "@/components/AppHeader";
 import { useTranslations } from "next-intl";
 import { getKafkaCluster } from "@/api/kafka/actions";
-import { getTopics } from "@/api/topics/actions";
-import { Skeleton } from "@patternfly/react-core";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
@@ -14,7 +12,9 @@ export default function Header({
   params: KafkaParams;
 }) {
   return (
-    <Suspense fallback={<OverviewHeader params={{ kafkaId }} />}>
+    <Suspense
+      fallback={<OverviewHeader params={{ kafkaId }} managed={false} />}
+    >
       <ConnectedHeader params={{ kafkaId }} />
     </Suspense>
   );
@@ -30,20 +30,29 @@ async function ConnectedHeader({
     notFound();
   }
 
-  return <OverviewHeader params={{ kafkaId }} />;
+  return (
+    <OverviewHeader
+      params={{ kafkaId }}
+      managed={cluster.meta?.managed ?? false}
+    />
+  );
 }
 
 export function OverviewHeader({
   params: { kafkaId },
+  managed,
 }: {
   params: KafkaParams;
+  managed: boolean;
 }) {
   const t = useTranslations();
   return (
     <AppHeader
       title={t("ClusterOverview.header")}
       subTitle={t("ClusterOverview.description")}
-      actions={[<ConnectButton key={"cd"} clusterId={kafkaId} />]}
+      actions={[
+        <ConnectButton key={"cd"} clusterId={kafkaId} managed={managed} />,
+      ]}
     />
   );
 }

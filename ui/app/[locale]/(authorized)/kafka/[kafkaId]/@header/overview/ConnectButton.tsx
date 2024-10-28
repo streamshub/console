@@ -8,7 +8,13 @@ import { Button, Flex, FlexItem } from "@/libs/patternfly/react-core";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 
-export function ConnectButton({ clusterId }: { clusterId: string }) {
+export function ConnectButton({
+  clusterId,
+  managed,
+}: {
+  clusterId: string;
+  managed: boolean;
+}) {
   const t = useTranslations();
   const open = useOpenClusterConnectionPanel();
 
@@ -33,20 +39,22 @@ export function ConnectButton({ clusterId }: { clusterId: string }) {
   return (
     <>
       <Flex>
-        <FlexItem>
-          <Button
-            variant="secondary"
-            onClick={
-              isReconciliationPaused
-                ? () => onClickUpdate(false)
-                : () => setIsModalOpen(true)
-            }
-          >
-            {isReconciliationPaused
-              ? t("reconciliation.resume_reconciliation")
-              : t("reconciliation.pause_reconciliation_button")}
-          </Button>
-        </FlexItem>
+        {managed && (
+          <FlexItem>
+            <Button
+              variant="secondary"
+              onClick={
+                isReconciliationPaused
+                  ? () => onClickUpdate(false)
+                  : () => setIsModalOpen(true)
+              }
+            >
+              {isReconciliationPaused
+                ? t("reconciliation.resume_reconciliation")
+                : t("reconciliation.pause_reconciliation_button")}
+            </Button>
+          </FlexItem>
+        )}
         <FlexItem>
           <Button onClick={() => open(clusterId)}>
             {t("ConnectButton.cluster_connection_details")}
