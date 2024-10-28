@@ -365,3 +365,36 @@ export async function getKafkaTopicMetrics(
     };
   }
 }
+
+export async function updateKafkaCluster(
+  clusterId: string,
+  reconciliationPaused?: boolean,
+): Promise<boolean> {
+  const url = `${process.env.BACKEND_URL}/api/kafkas/${clusterId}`;
+  const body = {
+    data: {
+      type: "kafkas",
+      id: clusterId,
+      meta: {
+        reconciliationPaused: reconciliationPaused,
+      },
+      attributes: {},
+    },
+  };
+
+  try {
+    const res = await fetch(url, {
+      headers: await getHeaders(),
+      method: "PATCH",
+      body: JSON.stringify(body),
+    });
+
+    if (res.status === 200) {
+      return true;
+    } else {
+      return false;
+    }
+  } catch (e) {
+    return false;
+  }
+}

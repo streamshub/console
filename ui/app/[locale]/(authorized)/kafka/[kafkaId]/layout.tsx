@@ -11,6 +11,8 @@ import { getServerSession } from "next-auth";
 import { useTranslations } from "next-intl";
 import { PropsWithChildren, ReactNode, Suspense } from "react";
 import { KafkaParams } from "./kafka.params";
+import { notFound } from "next/navigation";
+import { getKafkaCluster } from "@/api/kafka/actions";
 
 export default async function AsyncLayout({
   children,
@@ -26,6 +28,13 @@ export default async function AsyncLayout({
 }>) {
   const authOptions = await getAuthOptions();
   const session = await getServerSession(authOptions);
+
+  const cluster = await getKafkaCluster(kafkaId);
+
+  if (!cluster) {
+    notFound();
+  }
+
   return (
     <Layout
       username={(session?.user?.name || session?.user?.email) ?? "User"}
@@ -58,6 +67,7 @@ function Layout({
     <AppLayoutProvider>
       <AppLayout
         username={username}
+        kafkaId={kafkaId}
         sidebar={<ClusterLinks kafkaId={kafkaId} />}
       >
         <PageGroup stickyOnBreakpoint={{ default: "top" }}>

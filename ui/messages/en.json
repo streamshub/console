@@ -359,6 +359,17 @@
   "ConnectButton": {
     "cluster_connection_details": "Cluster connection details"
   },
+  "reconciliation": {
+    "pause_reconciliation_button": "Pause Reconciliation",
+    "pause_reconciliation": "Pause cluster reconciliation?",
+    "pause_reconciliation_description": "While paused, any changes to the cluster configuration will be ignored until reconciliation is resumed",
+    "confirm": "Confirm",
+    "cancel": "Cancel",
+    "reconciliation_paused_warning": "Reconciliation paused. Make sure to fetch the last transition time.",
+    "resume": "Resume",
+    "reconciliation_paused": "Reconciliation paused",
+    "resume_reconciliation": "Resume Reconciliation"
+  },
   "AlertTopicGone": {
     "topic_not_found": "Topic not found",
     "go_back_to_the_list_of_topics": "Go back to the list of topics",
