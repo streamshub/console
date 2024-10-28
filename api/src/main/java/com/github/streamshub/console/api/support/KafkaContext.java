@@ -1,6 +1,7 @@
 package com.github.streamshub.console.api.support;
 
 import java.io.Closeable;
+import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
@@ -9,13 +10,24 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 import org.apache.kafka.clients.admin.Admin;
+import org.apache.kafka.clients.consumer.Consumer;
+import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.common.config.SaslConfigs;
+import org.jboss.logging.Logger;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.streamshub.console.api.support.serdes.ForceCloseable;
+import com.github.streamshub.console.api.support.serdes.MultiformatDeserializer;
+import com.github.streamshub.console.api.support.serdes.MultiformatSerializer;
 import com.github.streamshub.console.config.KafkaClusterConfig;
+import com.github.streamshub.console.config.SchemaRegistryConfig;
 
+import io.apicurio.registry.rest.client.RegistryClient;
+import io.apicurio.registry.rest.client.RegistryClientFactory;
 import io.strimzi.api.kafka.model.kafka.Kafka;
 import io.strimzi.api.kafka.model.kafka.KafkaClusterSpec;
 import io.strimzi.api.kafka.model.kafka.KafkaSpec;
+import io.strimzi.api.kafka.model.kafka.KafkaStatus;
 import io.strimzi.api.kafka.model.kafka.listener.GenericKafkaListener;
 import io.strimzi.api.kafka.model.kafka.listener.KafkaListenerAuthenticationOAuth;
 import io.strimzi.kafka.oauth.client.ClientConfig;
@@ -23,12 +35,14 @@ import io.strimzi.kafka.oauth.client.ClientConfig;
 public class KafkaContext implements Closeable {
 
     public static final KafkaContext EMPTY = new KafkaContext(null, null, Collections.emptyMap(), null);
+    private static final Logger LOGGER = Logger.getLogger(KafkaContext.class);
 
     final KafkaClusterConfig clusterConfig;
     final Kafka resource;
     final Map<Class<?>, Map<String, Object>> configs;
     final Admin admin;
     boolean applicationScoped;
+    SchemaRegistryContext schemaRegistryContext;
 
     public KafkaContext(KafkaClusterConfig clusterConfig, Kafka resource, Map<Class<?>, Map<String, Object>> configs, Admin admin) {
         this.clusterConfig = clusterConfig;
@@ -41,6 +55,13 @@ public class KafkaContext implements Closeable {
     public KafkaContext(KafkaContext other, Admin admin) {
         this(other.clusterConfig, other.resource, other.configs, admin);
         this.applicationScoped = false;
+        this.schemaRegistryContext = other.schemaRegistryContext;
+    }
+
+    public static String clusterId(KafkaClusterConfig clusterConfig, Optional<Kafka> kafkaResource) {
+        return Optional.ofNullable(clusterConfig.getId())
+                .or(() -> kafkaResource.map(Kafka::getStatus).map(KafkaStatus::getClusterId))
+                .orElseGet(clusterConfig::getName);
     }
 
     @Override
@@ -66,6 +87,22 @@ public class KafkaContext implements Closeable {
         if (admin != null) {
             admin.close();
         }
+        /*
+         * Do not close the registry context when the KafkaContext has client-provided
+         * credentials. I.e., only close when the context is global (with configured
+         * credentials).
+         */
+        if (applicationScoped && schemaRegistryContext != null) {
+            try {
+                schemaRegistryContext.close();
+            } catch (IOException e) {
+                LOGGER.warnf("Exception closing schema registry context: %s", e.getMessage());
+            }
+        }
+    }
+
+    public String clusterId() {
+        return clusterId(clusterConfig, Optional.ofNullable(resource));
     }
 
     public KafkaClusterConfig clusterConfig() {
@@ -92,6 +129,14 @@ public class KafkaContext implements Closeable {
         return applicationScoped;
     }
 
+    public void schemaRegistryClient(SchemaRegistryConfig config, ObjectMapper objectMapper) {
+        schemaRegistryContext = new SchemaRegistryContext(config, objectMapper);
+    }
+
+    public SchemaRegistryContext schemaRegistryContext() {
+        return schemaRegistryContext;
+    }
+
     public String saslMechanism(Class<?> clientType) {
         return configs(clientType).get(SaslConfigs.SASL_MECHANISM) instanceof String auth ? auth : "";
     }
@@ -114,5 +159,88 @@ public class KafkaContext implements Closeable {
                     .filter(KafkaListenerAuthenticationOAuth.class::isInstance)
                     .map(KafkaListenerAuthenticationOAuth.class::cast)
                     .map(KafkaListenerAuthenticationOAuth::getTokenEndpointUri));
+    }
+
+    /**
+     * The SchemaRegistryContext contains a per-Kafka registry client
+     * and key/value SerDes classes to be used to handle message browsing.
+     *
+     * The client and SerDes instances will be kept open and reused until
+     * the parent KafkaContext is disposed of at application shutdown.
+     */
+    public class SchemaRegistryContext implements Closeable {
+        private final SchemaRegistryConfig config;
+        private final RegistryClient registryClient;
+        private final MultiformatDeserializer keyDeserializer;
+        private final MultiformatDeserializer valueDeserializer;
+        private final MultiformatSerializer keySerializer;
+        private final MultiformatSerializer valueSerializer;
+
+        SchemaRegistryContext(SchemaRegistryConfig config, ObjectMapper objectMapper) {
+            this.config = config;
+
+            if (config != null) {
+                registryClient = RegistryClientFactory.create(config.getUrl());
+            } else {
+                registryClient = null;
+            }
+
+            keyDeserializer = new MultiformatDeserializer(registryClient, objectMapper);
+            keyDeserializer.configure(configs(Consumer.class), true);
+
+            valueDeserializer = new MultiformatDeserializer(registryClient, objectMapper);
+            valueDeserializer.configure(configs(Consumer.class), false);
+
+            keySerializer = new MultiformatSerializer(registryClient, objectMapper);
+            keySerializer.configure(configs(Producer.class), true);
+
+            valueSerializer = new MultiformatSerializer(registryClient, objectMapper);
+            valueSerializer.configure(configs(Producer.class), false);
+        }
+
+        public SchemaRegistryConfig getConfig() {
+            return config;
+        }
+
+        public RegistryClient registryClient() {
+            return registryClient;
+        }
+
+        public MultiformatDeserializer keyDeserializer() {
+            return keyDeserializer;
+        }
+
+        public MultiformatDeserializer valueDeserializer() {
+            return valueDeserializer;
+        }
+
+        public MultiformatSerializer keySerializer() {
+            return keySerializer;
+        }
+
+        public MultiformatSerializer valueSerializer() {
+            return valueSerializer;
+        }
+
+        @Override
+        public void close() throws IOException {
+            if (registryClient != null) {
+                // nothing to close otherwise
+                closeOptionally("key deserializer", keyDeserializer);
+                closeOptionally("value deserializer", valueDeserializer);
+                closeOptionally("key serializer", keySerializer);
+                closeOptionally("value serializer", valueSerializer);
+            }
+        }
+
+        private void closeOptionally(String name, ForceCloseable closeable) {
+            if (closeable != null) {
+                try {
+                    closeable.forceClose();
+                } catch (Exception e) {
+                    LOGGER.infof("Exception closing resource %s: %s", name, e.getMessage());
+                }
+            }
+        }
     }
 }

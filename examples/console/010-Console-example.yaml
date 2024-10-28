@@ -13,6 +13,8 @@ spec:
     - name: console-kafka             # Name of the `Kafka` CR representing the cluster
       namespace: ${KAFKA_NAMESPACE}   # Namespace of the `Kafka` CR representing the cluster
       listener: secure                # Listener on the `Kafka` CR to connect from the console
+      schemaRegistry: null            # Configuration for a connection to an Apicurio Registry instance
+                                      # E.g. : { "url": "http://example.com/apis/registry/v2" }
       properties:
         values: []                    # Array of name/value for properties to be used for connections
                                       # made to this cluster

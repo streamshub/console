@@ -7,14 +7,16 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * Base class for all JSON API request and response bodies.
+ * Representation of a JSON API resource relationship linking a resource to another or
+ * providing meta information about the relationship.
  *
- * @see <a href="https://jsonapi.org/format/#document-structure">JSON API Document Structure, 7.1 Top Level</a>
+ * @see <a href="https://jsonapi.org/format/#document-resource-object-relationships">JSON API Document Structure, 7.2.2.2 Relationships</a>
  */
 @JsonInclude(value = Include.NON_NULL)
-public abstract class JsonApiDocument implements HasLinks<JsonApiDocument>, HasMeta<JsonApiDocument> {
+public class JsonApiRelationship implements HasLinks<JsonApiRelationship>, HasMeta<JsonApiRelationship> {
 
     private JsonApiMeta meta;
+    private Identifier data;
     private Map<String, String> links;
 
     @JsonProperty
@@ -34,4 +36,14 @@ public abstract class JsonApiDocument implements HasLinks<JsonApiDocument>, HasM
     public void links(Map<String, String> links) {
         this.links = links;
     }
+
+    @JsonProperty
+    public Identifier data() {
+        return data;
+    }
+
+    public void data(Identifier data) {
+        this.data = data;
+    }
+
 }

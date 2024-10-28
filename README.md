@@ -31,7 +31,7 @@ kubectl patch deployment -n ingress-nginx ingress-nginx-controller \
 ```
 
 ### Prerequisites
-#### Apache Kafka<sup>®</sup>
+#### Apache Kafka®
 The instructions below assume an existing Apache Kafka<sup>®</sup> cluster is available to use from the console. We recommend using [Strimzi](https://strimzi.io) to create and manage your Apache Kafka<sup>®</sup> clusters - plus the console provides additional features and insights for Strimzi Apache Kafka<sup>®</sup> clusters.
 
 If you already have Strimzi installed but would like to create an Apache Kafka<sup>®</sup> cluster for use with the console, example deployment resources are available to get started.  The resources create an Apache Kafka<sup>®</sup> cluster in KRaft mode with SCRAM-SHA-512 authentication, a Strimzi `KafkaNodePool` resource to manage the cluster nodes, and a Strimzi `KafkaUser` resource that may be used to connect to the cluster.

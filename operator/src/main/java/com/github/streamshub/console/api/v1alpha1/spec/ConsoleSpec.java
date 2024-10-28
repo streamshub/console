@@ -18,6 +18,8 @@ public class ConsoleSpec {
 
     Images images = new Images();
 
+    List<SchemaRegistry> schemaRegistries;
+
     List<KafkaCluster> kafkaClusters = new ArrayList<>();
 
     // TODO: copy EnvVar into console's API to avoid unexpected changes
@@ -37,6 +39,14 @@ public class ConsoleSpec {
 
     public void setImages(Images images) {
         this.images = images;
+    }
+
+    public List<SchemaRegistry> getSchemaRegistries() {
+        return schemaRegistries;
+    }
+
+    public void setSchemaRegistries(List<SchemaRegistry> schemaRegistries) {
+        this.schemaRegistries = schemaRegistries;
     }
 
     public List<KafkaCluster> getKafkaClusters() {

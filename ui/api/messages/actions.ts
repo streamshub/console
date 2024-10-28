@@ -56,7 +56,7 @@ export async function getTopicMessages(
   const sp = new URLSearchParams(
     filterUndefinedFromObj({
       "fields[records]":
-        "partition,offset,timestamp,timestampType,headers,key,value,size",
+        "partition,offset,timestamp,timestampType,headers,key,keySchema,value,valueSchema,size",
       "filter[partition]": params.partition,
       "filter[offset]":
         params.filter?.type === "offset"
@@ -99,9 +99,9 @@ export async function getTopicMessages(
     } else {
       return { messages: messages, ts: new Date() };
     }
-  } catch {
+  } catch (e) {
     log.error(
-      { status: res.status, message: rawData, url },
+      { error: e, status: res.status, message: rawData, url },
       "Error fetching message",
     );
     if (res.status === 404) {

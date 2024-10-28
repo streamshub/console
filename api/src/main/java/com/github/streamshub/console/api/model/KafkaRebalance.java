@@ -254,7 +254,7 @@ public class KafkaRebalance extends Resource<KafkaRebalance.Attributes> implemen
     }
 
     public KafkaRebalance(String id) {
-        super(id, API_TYPE, Meta::new, new Attributes());
+        super(id, API_TYPE, new Attributes());
     }
 
     @JsonCreator
@@ -270,6 +270,11 @@ public class KafkaRebalance extends Resource<KafkaRebalance.Attributes> implemen
         return PaginatedKubeResource.fromCursor(cursor, KafkaRebalance::new);
     }
 
+    @Override
+    public JsonApiMeta metaFactory() {
+        return new Meta();
+    }
+
     public List<String> allowedActions() {
         return ((Meta) getOrCreateMeta()).allowedActions;
     }
@@ -279,7 +284,7 @@ public class KafkaRebalance extends Resource<KafkaRebalance.Attributes> implemen
     }
 
     public String action() {
-        return Optional.ofNullable(getMeta())
+        return Optional.ofNullable(meta())
                 .map(Meta.class::cast)
                 .map(meta -> meta.action)
                 .orElse(null);

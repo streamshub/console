@@ -119,6 +119,13 @@ function sampleData({
           '{"order":{"address":{"street":"123 any st","city":"Austin","state":"TX","zip":"78626"},"contact":{"firstName":"james","lastName":"smith","phone":"512-123-1234"},"orderId":"123","customerName":""},"primitives":{"stringPrimitive":"some value","booleanPrimitive":true,"numberPrimitive":24},"addressList":[{"street":"123 any st","city":"Austin","state":"TX","zip":"78626"},{"street":"123 any st","city":"Austin","state":"TX","zip":"78626"},{"street":"123 any st","city":"Austin","state":"TX","zip":"78626"},{"street":"123 any st","city":"Austin","state":"TX","zip":"78626"}]}',
         size: 1234,
       },
+      relationships: {
+        valueSchema: {
+          meta: {
+            artifactType: "AVRO"
+          }
+        }
+      },
     },
     {
       attributes: {
@@ -139,6 +146,13 @@ function sampleData({
           '{"order":{"address":{"street":"123 any st","city":"Austin","state":"TX","zip":"78626"},"contact":{"firstName":"james","lastName":"smith","phone":"512-123-1234"},"orderId":"123"},"primitives":{"stringPrimitive":"some value","booleanPrimitive":true,"numberPrimitive":24},"addressList":[{"street":"123 any st","city":"Austin","state":"TX","zip":"78626"},{"street":"123 any st","city":"Austin","state":"TX","zip":"78626"},{"street":"123 any st","city":"Austin","state":"TX","zip":"78626"},{"street":"123 any st","city":"Austin","state":"TX","zip":"78626"}]}',
         size: 1234,
       },
+      relationships: {
+        keySchema: {
+          meta: {
+            artifactType: "PROTOBUF"
+          }
+        }
+      },
     },
     {
       attributes: {
@@ -151,6 +165,7 @@ function sampleData({
         value: '{"foo": "bar", "baz": "???"}',
         size: 432,
       },
+      relationships: {},
     },
     {
       attributes: {
@@ -161,6 +176,7 @@ function sampleData({
         value: "random string",
         size: 532,
       },
+      relationships: {},
     },
     {
       attributes: {
@@ -171,6 +187,7 @@ function sampleData({
         value: "",
         size: 0,
       },
+      relationships: {},
     },
   ];
   const numberOfMessages =
@@ -186,6 +203,9 @@ function sampleData({
             offset:
               (filterOffset ?? 0) + numberOfMessages - messages.length * i - j,
             partition: filterPartition || m.attributes.partition,
+          },
+          relationships: {
+            ...m.relationships,
           },
         }))
         .filter((m) => {
