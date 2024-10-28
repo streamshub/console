@@ -37,14 +37,12 @@ export function AppLayout({
     >
       {/*<HelpContainer>*/}
       <ClusterDrawerProvider>
-        {isValidKafkaId ? (
-          <ReconciliationProvider kafkaId={kafkaId}>
+      <ReconciliationProvider kafkaId={kafkaId ?? ""}>
+          {isValidKafkaId && (
             <ReconciliationPausedBanner kafkaId={kafkaId} />
-            <ClusterDrawer>{children}</ClusterDrawer>
-          </ReconciliationProvider>
-        ) : (
-          <></>
-        )}
+          )}
+          <ClusterDrawer>{children}</ClusterDrawer>
+        </ReconciliationProvider>
       </ClusterDrawerProvider>
       {/*</HelpContainer>*/}
     </Page>
