@@ -93,14 +93,20 @@ class ConsoleConfigTest {
     }
 
     @Test
-    void testRegistryNamePassesValidation() {
+    void testKnownReferenceNamesPassValidation() {
         SchemaRegistryConfig registry = new SchemaRegistryConfig();
         registry.setName("known-registry");
         registry.setUrl("http://example.com");
         config.getSchemaRegistries().add(registry);
 
+        PrometheusConfig metrics = new PrometheusConfig();
+        metrics.setName("known-prometheus");
+        metrics.setUrl("http://example.com");
+        config.getMetricsSources().add(metrics);
+
         KafkaClusterConfig cluster = new KafkaClusterConfig();
         cluster.setName("name1");
+        cluster.setMetricsSource("known-prometheus");
         cluster.setSchemaRegistry("known-registry");
         config.getKafka().getClusters().add(cluster);
 
@@ -110,15 +116,47 @@ class ConsoleConfigTest {
     }
 
     @Test
-    void testUnknownRegistryNameFailsValidation() {
+    void testUnknownReferenceNamesFailValidation() {
         KafkaClusterConfig cluster = new KafkaClusterConfig();
         cluster.setName("name1");
+        cluster.setMetricsSource("unknown-prometheus");
         cluster.setSchemaRegistry("unknown-registry");
         config.getKafka().getClusters().add(cluster);
 
         var violations = validator.validate(config);
 
+        assertEquals(2, violations.size());
+        List<String> messages = violations.stream().map(ConstraintViolation::getMessage).toList();
+        assertTrue(messages.contains("Kafka cluster references an unknown metrics source"));
+        assertTrue(messages.contains("Kafka cluster references an unknown schema registry"));
+    }
+
+    @Test
+    void testMetricsSourceNamesNotUniqueFailsValidation() {
+        for (String name : List.of("name1", "name2", "name1")) {
+            PrometheusConfig metrics = new PrometheusConfig();
+            metrics.setName(name);
+            metrics.setUrl("http://example.com");
+            config.getMetricsSources().add(metrics);
+        }
+
+        var violations = validator.validate(config);
+
         assertEquals(1, violations.size());
-        assertEquals("Kafka cluster references an unknown schema registry", violations.iterator().next().getMessage());
+        assertEquals("Metrics source names must be unique", violations.iterator().next().getMessage());
+    }
+
+    @Test
+    void testMetricsSourceNamesUniquePassesValidation() {
+        for (String name : List.of("name1", "name2", "name3")) {
+            PrometheusConfig metrics = new PrometheusConfig();
+            metrics.setName(name);
+            metrics.setUrl("http://example.com");
+            config.getMetricsSources().add(metrics);
+        }
+
+        var violations = validator.validate(config);
+
+        assertTrue(violations.isEmpty());
     }
 }

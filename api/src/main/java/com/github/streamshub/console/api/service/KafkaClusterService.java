@@ -329,6 +329,7 @@ public class KafkaClusterService {
 
         if (kafkaContext.prometheus() == null) {
             logger.warnf("Kafka cluster metrics were requested, but Prometheus URL is not configured");
+            cluster.metrics(null);
             return CompletableFuture.completedStage(cluster);
         }
 

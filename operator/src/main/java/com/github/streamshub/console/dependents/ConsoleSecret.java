@@ -63,6 +63,7 @@ import io.strimzi.api.kafka.model.user.KafkaUserStatus;
 public class ConsoleSecret extends CRUDKubernetesDependentResource<Secret, Console> implements ConsoleResource {
 
     public static final String NAME = "console-secret";
+    private static final String EMBEDDED_METRICS_NAME = "streamshub.console.embedded-prometheus";
     private static final Random RANDOM = new SecureRandom();
 
     @Inject
@@ -140,6 +141,14 @@ public class ConsoleSecret extends CRUDKubernetesDependentResource<Secret, Conso
     private void addMetricsSources(Console primary, ConsoleConfig config, Context<Console> context) {
         var metricsSources = coalesce(primary.getSpec().getMetricsSources(), Collections::emptyList);
 
+        if (metricsSources.isEmpty()) {
+            var prometheusConfig = new PrometheusConfig();
+            prometheusConfig.setName(EMBEDDED_METRICS_NAME);
+            prometheusConfig.setUrl(prometheusService.getUrl(primary, context));
+            config.getMetricsSources().add(prometheusConfig);
+            return;
+        }
+
         for (Prometheus prometheus : metricsSources) {
             var prometheusConfig = new PrometheusConfig();
             prometheusConfig.setName(prometheus.getName());
@@ -171,13 +180,6 @@ public class ConsoleSecret extends CRUDKubernetesDependentResource<Secret, Conso
                 prometheusConfig.setAuthentication(bearerConfig);
             }
 
-            config.getMetricsSources().add(prometheusConfig);
-        }
-
-        if (metricsSources.isEmpty()) {
-            var prometheusConfig = new PrometheusConfig();
-            prometheusConfig.setName("embedded-prometheus");
-            prometheusConfig.setUrl(prometheusService.getUrl(primary, context));
             config.getMetricsSources().add(prometheusConfig);
         }
     }
@@ -218,8 +220,8 @@ public class ConsoleSecret extends CRUDKubernetesDependentResource<Secret, Conso
         kcConfig.setSchemaRegistry(kafkaRef.getSchemaRegistry());
 
         if (kafkaRef.getMetricsSource() == null) {
-            if (config.getMetricsSources().stream().anyMatch(src -> src.getName().equals("embedded-prometheus"))) {
-                kcConfig.setMetricsSource("embedded-prometheus");
+            if (config.getMetricsSources().stream().anyMatch(src -> src.getName().equals(EMBEDDED_METRICS_NAME))) {
+                kcConfig.setMetricsSource(EMBEDDED_METRICS_NAME);
             }
         } else {
             kcConfig.setMetricsSource(kafkaRef.getMetricsSource());

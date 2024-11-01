@@ -8,6 +8,7 @@ import java.util.Base64;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.BiFunction;
@@ -61,6 +62,12 @@ public class MetricsService {
     @Inject
     KafkaContext kafkaContext;
 
+    Optional<ClientRequestFilter> additionalFilter = Optional.empty();
+
+    public /* test */ void setAdditionalFilter(Optional<ClientRequestFilter> additionalFilter) {
+        this.additionalFilter = additionalFilter;
+    }
+
     ClientRequestFilter createAuthenticationFilter(PrometheusConfig config) {
         return new ClientRequestFilter() {
             @Override
@@ -99,11 +106,14 @@ public class MetricsService {
 
             var trustStore = certificates.getDefault().map(TlsConfiguration::getTrustStore).orElse(null);
 
-            return RestClientBuilder.newBuilder()
+            RestClientBuilder builder = RestClientBuilder.newBuilder()
                     .baseUri(URI.create(prometheusConfig.getUrl()))
                     .trustStore(trustStore)
-                    .register(createAuthenticationFilter(prometheusConfig))
-                    .build(PrometheusAPI.class);
+                    .register(createAuthenticationFilter(prometheusConfig));
+
+            additionalFilter.ifPresent(builder::register);
+
+            return builder.build(PrometheusAPI.class);
         }
 
         return null;

@@ -335,4 +335,8 @@ public class KafkaCluster extends Resource<KafkaCluster.Attributes> implements P
     public Metrics metrics() {
         return attributes.metrics;
     }
+
+    public void metrics(Metrics metrics) {
+        attributes.metrics = metrics;
+    }
 }

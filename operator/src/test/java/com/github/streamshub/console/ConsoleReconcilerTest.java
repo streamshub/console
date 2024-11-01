@@ -5,6 +5,7 @@ import java.util.Base64;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Consumer;
 
 import jakarta.inject.Inject;
 
@@ -18,19 +19,23 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.github.streamshub.console.api.v1alpha1.Console;
 import com.github.streamshub.console.api.v1alpha1.ConsoleBuilder;
+import com.github.streamshub.console.api.v1alpha1.spec.Prometheus.Type;
 import com.github.streamshub.console.config.ConsoleConfig;
 import com.github.streamshub.console.dependents.ConsoleResource;
 import com.github.streamshub.console.dependents.ConsoleSecret;
 
 import io.fabric8.kubernetes.api.model.ConfigMap;
 import io.fabric8.kubernetes.api.model.ConfigMapBuilder;
+import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.NamespaceBuilder;
 import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
 import io.fabric8.kubernetes.api.model.Secret;
 import io.fabric8.kubernetes.api.model.SecretBuilder;
+import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinitionBuilder;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
-import io.fabric8.kubernetes.client.CustomResource;
 import io.fabric8.kubernetes.client.KubernetesClient;
+import io.fabric8.openshift.api.model.Route;
+import io.fabric8.openshift.api.model.RouteBuilder;
 import io.javaoperatorsdk.operator.Operator;
 import io.quarkus.test.junit.QuarkusTest;
 import io.strimzi.api.kafka.Crds;
@@ -67,7 +72,7 @@ class ConsoleReconcilerTest {
 
     Kafka kafkaCR;
 
-    public static <S, T, C extends CustomResource<S, T>> C apply(KubernetesClient client, C resource) {
+    public static <T extends HasMetadata> T apply(KubernetesClient client, T resource) {
         client.resource(resource).serverSideApply();
         return client.resource(resource).patchStatus();
     }
@@ -76,6 +81,36 @@ class ConsoleReconcilerTest {
     void setUp() throws Exception {
         client.resource(Crds.kafka()).serverSideApply();
         client.resource(Crds.kafkaUser()).serverSideApply();
+        client.resource(new CustomResourceDefinitionBuilder()
+                .withNewMetadata()
+                .withName("routes.route.openshift.io")
+            .endMetadata()
+            .withNewSpec()
+                .withScope("Namespaced")
+                .withGroup("route.openshift.io")
+                .addNewVersion()
+                    .withName("v1")
+                    .withNewSubresources()
+                        .withNewStatus()
+                        .endStatus()
+                    .endSubresources()
+                    .withNewSchema()
+                        .withNewOpenAPIV3Schema()
+                            .withType("object")
+                            .withXKubernetesPreserveUnknownFields(true)
+                        .endOpenAPIV3Schema()
+                    .endSchema()
+                    .withStorage(true)
+                    .withServed(true)
+                .endVersion()
+                .withNewNames()
+                    .withSingular("route")
+                    .withPlural("routes")
+                    .withKind("Route")
+                .endNames()
+            .endSpec()
+            .build())
+            .serverSideApply();
 
         var allConsoles = client.resources(Console.class).inAnyNamespace();
         var allKafkas = client.resources(Kafka.class).inAnyNamespace();
@@ -624,24 +659,7 @@ class ConsoleReconcilerTest {
 
         client.resource(consoleCR).create();
 
-        await().ignoreException(NullPointerException.class).atMost(LIMIT).untilAsserted(() -> {
-            var console = client.resources(Console.class)
-                    .inNamespace(consoleCR.getMetadata().getNamespace())
-                    .withName(consoleCR.getMetadata().getName())
-                    .get();
-            assertEquals(1, console.getStatus().getConditions().size());
-            var ready = console.getStatus().getConditions().get(0);
-            assertEquals("Ready", ready.getType());
-            assertEquals("False", ready.getStatus());
-            assertEquals("DependentsNotReady", ready.getReason());
-
-            var consoleSecret = client.secrets().inNamespace("ns2").withName("console-1-" + ConsoleSecret.NAME).get();
-            assertNotNull(consoleSecret);
-            String configEncoded = consoleSecret.getData().get("console-config.yaml");
-            byte[] configDecoded = Base64.getDecoder().decode(configEncoded);
-            Logger.getLogger(getClass()).infof("config YAML: %s", new String(configDecoded));
-            ConsoleConfig consoleConfig = YAML.readValue(configDecoded, ConsoleConfig.class);
-
+        assertConsoleConfig(consoleCR, consoleConfig -> {
             String registryName = consoleConfig.getSchemaRegistries().get(0).getName();
             assertEquals("example-registry", registryName);
             String registryUrl = consoleConfig.getSchemaRegistries().get(0).getUrl();
@@ -652,7 +670,79 @@ class ConsoleReconcilerTest {
         });
     }
 
+    @Test
+    void testConsoleReconciliationWithOpenShiftMonitoring() {
+        String thanosQueryHost = "thanos.example.com";
+
+        client.resource(new NamespaceBuilder()
+                .withNewMetadata()
+                    .withName("openshift-monitoring")
+                .endMetadata()
+                .build())
+            .serverSideApply();
+
+        Route thanosQuerier = new RouteBuilder()
+                .withNewMetadata()
+                    .withNamespace("openshift-monitoring")
+                    .withName("thanos-querier")
+                .endMetadata()
+                .withNewSpec()
+                .endSpec()
+                .withNewStatus()
+                    .addNewIngress()
+                        .withHost(thanosQueryHost)
+                    .endIngress()
+                .endStatus()
+                .build();
+
+        apply(client, thanosQuerier);
+
+        Console consoleCR = new ConsoleBuilder()
+                .withMetadata(new ObjectMetaBuilder()
+                        .withName("console-1")
+                        .withNamespace("ns2")
+                        .build())
+                .withNewSpec()
+                    .withHostname("example.com")
+                    .addNewMetricsSource()
+                        .withName("ocp-platform-monitoring")
+                        .withType(Type.OPENSHIFT_MONITORING)
+                    .endMetricsSource()
+                    .addNewKafkaCluster()
+                        .withName(kafkaCR.getMetadata().getName())
+                        .withNamespace(kafkaCR.getMetadata().getNamespace())
+                        .withListener(kafkaCR.getSpec().getKafka().getListeners().get(0).getName())
+                        .withMetricsSource("ocp-platform-monitoring")
+                    .endKafkaCluster()
+                .endSpec()
+                .build();
+
+        client.resource(consoleCR).create();
+
+        assertConsoleConfig(consoleCR, consoleConfig -> {
+            String metricsName = consoleConfig.getMetricsSources().get(0).getName();
+            assertEquals("ocp-platform-monitoring", metricsName);
+            String metricsUrl = consoleConfig.getMetricsSources().get(0).getUrl();
+            assertEquals("https://" + thanosQueryHost, metricsUrl);
+
+            String metricsRef = consoleConfig.getKafka().getClusters().get(0).getMetricsSource();
+            assertEquals("ocp-platform-monitoring", metricsRef);
+        });
+    }
+
     // Utility
+
+    private void assertConsoleConfig(Console targetResource, Consumer<ConsoleConfig> assertion) {
+        await().ignoreException(NullPointerException.class).atMost(LIMIT).untilAsserted(() -> {
+            var consoleSecret = client.secrets().inNamespace("ns2").withName("console-1-" + ConsoleSecret.NAME).get();
+            assertNotNull(consoleSecret);
+            String configEncoded = consoleSecret.getData().get("console-config.yaml");
+            byte[] configDecoded = Base64.getDecoder().decode(configEncoded);
+            Logger.getLogger(getClass()).infof("config YAML: %s", new String(configDecoded));
+            ConsoleConfig consoleConfig = YAML.readValue(configDecoded, ConsoleConfig.class);
+            assertion.accept(consoleConfig);
+        });
+    }
 
     private Deployment setReady(Deployment deployment) {
         int desiredReplicas = Optional.ofNullable(deployment.getSpec().getReplicas()).orElse(1);

@@ -14,9 +14,10 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 @JsonInclude(Include.NON_NULL)
 public class PrometheusConfig implements Named {
 
-    @NotBlank
+    @NotBlank(message = "Metrics source `name` is required")
     private String name;
     private Type type;
+    @NotBlank(message = "Metrics source `url` is required")
     private String url;
     @Valid
     private Authentication authentication;
