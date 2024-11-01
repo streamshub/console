@@ -52,13 +52,13 @@ export async function ConnectedClusterCard({
   return (
     <ClusterCard
       isLoading={false}
-      status={res?.attributes.status ?? "n/a"}
+      status={res?.attributes.status ?? (brokersOnline == brokersTotal ? "Ready" : "Not Available")}
       messages={messages ?? []}
-      name={res?.attributes.name || "n/a"}
+      name={res?.attributes.name ?? "n/a"}
       consumerGroups={groupCount}
       brokersOnline={brokersOnline}
       brokersTotal={brokersTotal}
-      kafkaVersion={res?.attributes.kafkaVersion ?? "n/a"}
+      kafkaVersion={res?.attributes.kafkaVersion ?? "Not Available"}
       kafkaId={res.id}
     />
   );

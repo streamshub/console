@@ -1,3 +1,15 @@
+"use client";
+
+import {
+  Alert,
+  Card,
+  CardBody,
+  CardHeader,
+  CardTitle,
+  Title,
+} from "@/libs/patternfly/react-core";
+
+import { useTranslations } from "next-intl";
 import { ClusterDetail } from "@/api/kafka/schema";
 import { ClusterChartsCard } from "@/components/ClusterOverview/ClusterChartsCard";
 
@@ -21,7 +33,34 @@ export async function ConnectedClusterChartsCard({
 }: {
   cluster: Promise<ClusterDetail | null>;
 }) {
+  const t = useTranslations();
   const res = await cluster;
+
+  if (res?.attributes.metrics === null) {
+    /*
+     * metrics being null (rather than undefined or empty) is how the server
+     * indicates that metrics are not configured for this cluster.
+     */
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>
+            <Title headingLevel={"h2"} size={"lg"}>
+              {t("ClusterChartsCard.cluster_metrics")}
+            </Title>
+          </CardTitle>
+        </CardHeader>
+        <CardBody>
+          <Alert
+            variant="warning"
+            isInline
+            isPlain
+            title={t("ClusterChartsCard.data_unavailable")}
+          />
+        </CardBody>
+      </Card>
+    );
+  }
 
   return (
     <ClusterChartsCard

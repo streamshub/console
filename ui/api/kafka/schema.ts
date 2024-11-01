@@ -98,7 +98,8 @@ const ClusterDetailSchema = z.object({
           })),
         ),
       })
-      .optional(),
+      .optional()
+      .nullable(),
   }),
 });
 export const ClusterResponse = z.object({

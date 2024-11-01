@@ -279,7 +279,7 @@
     "data_unavailable": "Prometheus can't be reached, or is not configured. Please check your configuration."
   },
   "ChartIncomingOutgoing": {
-    "data_unavailable": "Prometheus can't be reached, or is not configured. Please check your configuration."
+    "data_unavailable": "Topic metrics are not available for this cluster or no topic activity found. Please check your configuration."
   },
   "ChartMemoryUsage": {
     "data_unavailable": "Prometheus can't be reached, or is not configured. Please check your configuration."
@@ -292,6 +292,7 @@
     "no_messages": "No messages"
   },
   "ClusterChartsCard": {
+    "data_unavailable": "Cluster metrics are not available for this cluster. Please check your configuration.",
     "cluster_metrics": "Cluster metrics",
     "used_disk_space": "Used disk space",
     "used_disk_space_tooltip": "Used and available disk capacity for all brokers over a specified period. Make sure there's enough space for everyday operations.",
