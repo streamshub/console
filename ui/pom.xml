@@ -116,7 +116,7 @@
                                 </goals>
                                 <phase>process-resources</phase>
                                 <configuration>
-                                    <arguments>--no-git-tag-version version ${project.version}</arguments>
+                                    <arguments>--allow-same-version --no-git-tag-version version ${project.version}</arguments>
                                 </configuration>
                             </execution>
                         </executions>
