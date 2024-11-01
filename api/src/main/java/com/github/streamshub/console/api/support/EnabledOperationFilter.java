@@ -1,6 +1,5 @@
 package com.github.streamshub.console.api.support;
 
-import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Optional;
@@ -28,7 +27,7 @@ public class EnabledOperationFilter extends AbstractOperationFilter implements C
     ResourceInfo resource;
 
     @Override
-    public void filter(ContainerRequestContext requestContext) throws IOException {
+    public void filter(ContainerRequestContext requestContext) {
         if (disabled(requestContext.getMethod(), operationId())) {
             rejectRequest(requestContext);
         }

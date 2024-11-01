@@ -121,7 +121,7 @@
                             <goal>prepare-agent</goal>
                         </goals>
                         <configuration>
-                            <exclClassLoaders>*QuarkusClassLoader</exclClassLoaders>
+                            <!--<exclClassLoaders>*QuarkusClassLoader</exclClassLoaders>-->
                             <destFile>${project.build.directory}/jacoco-quarkus.exec</destFile>
                             <append>true</append>
                         </configuration>
@@ -132,7 +132,7 @@
                             <goal>prepare-agent-integration</goal>
                         </goals>
                         <configuration>
-                            <exclClassLoaders>*QuarkusClassLoader</exclClassLoaders>
+                            <!--<exclClassLoaders>*QuarkusClassLoader</exclClassLoaders>-->
                             <destFile>${project.build.directory}/jacoco-quarkus.exec</destFile>
                             <append>true</append>
                         </configuration>

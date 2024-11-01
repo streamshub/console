@@ -7,6 +7,7 @@ import java.net.URL;
 import java.nio.file.Path;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Supplier;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Produces;
@@ -44,18 +45,26 @@ public class ConsoleConfigFactory {
     @Inject
     ValidationProxy validationService;
 
+    // Note: extract this class and use generally where IOExceptions are simply re-thrown
+    interface UncheckedIO<R> {
+        R call() throws IOException;
+
+        static <R> R call(UncheckedIO<R> io, Supplier<String> exceptionMessage) {
+            try {
+                return io.call();
+            } catch (IOException e) {
+                throw new UncheckedIOException(exceptionMessage.get(), e);
+            }
+        }
+    }
+
     @Produces
     @ApplicationScoped
     public ConsoleConfig produceConsoleConfig() {
         return configPath.map(Path::of)
             .map(Path::toUri)
-            .map(uri -> {
-                try {
-                    return uri.toURL();
-                } catch (IOException e) {
-                    throw new UncheckedIOException(e);
-                }
-            })
+            .map(uri -> UncheckedIO.call(uri::toURL,
+                    () -> "Unable to convert %s to URL".formatted(uri)))
             .filter(Objects::nonNull)
             .map(this::loadConfiguration)
             .map(validationService::validate)
@@ -68,21 +77,19 @@ public class ConsoleConfigFactory {
     private ConsoleConfig loadConfiguration(URL url) {
         log.infof("Loading console configuration from %s", url);
         ObjectMapper yamlMapper = mapper.copyWith(new YAMLFactory());
-        JsonNode tree;
 
-        try (InputStream stream = url.openStream()) {
-            tree = yamlMapper.readTree(stream);
-        } catch (IOException e) {
-            throw new UncheckedIOException("Failed to read configuration YAML", e);
-        }
+        JsonNode tree = UncheckedIO.call(() -> {
+            try (InputStream stream = url.openStream()) {
+                return yamlMapper.readTree(stream);
+            }
+        }, () -> "Failed to read configuration YAML");
 
+        // Replace properties specified within string values in the configuration model
         processNode(tree);
 
-        try {
-            return mapper.treeToValue(tree, ConsoleConfig.class);
-        } catch (IOException e) {
-            throw new UncheckedIOException("Failed to load configuration model", e);
-        }
+        return UncheckedIO.call(
+                () -> mapper.treeToValue(tree, ConsoleConfig.class),
+                () -> "Failed to load configuration model");
     }
 
     private void processNode(JsonNode node) {

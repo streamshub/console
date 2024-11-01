@@ -1,6 +1,5 @@
 package com.github.streamshub.console.api.service;
 
-import java.io.IOException;
 import java.net.URI;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -71,7 +70,7 @@ public class MetricsService {
     ClientRequestFilter createAuthenticationFilter(PrometheusConfig config) {
         return new ClientRequestFilter() {
             @Override
-            public void filter(ClientRequestContext requestContext) throws IOException {
+            public void filter(ClientRequestContext requestContext) {
                 var authConfig = config.getAuthentication();
                 String authHeader = null;
 
