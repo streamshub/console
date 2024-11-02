@@ -31,9 +31,9 @@ import com.github.streamshub.console.api.v1alpha1.Console;
 import com.github.streamshub.console.api.v1alpha1.spec.ConfigVars;
 import com.github.streamshub.console.api.v1alpha1.spec.Credentials;
 import com.github.streamshub.console.api.v1alpha1.spec.KafkaCluster;
-import com.github.streamshub.console.api.v1alpha1.spec.Prometheus;
-import com.github.streamshub.console.api.v1alpha1.spec.Prometheus.Type;
 import com.github.streamshub.console.api.v1alpha1.spec.SchemaRegistry;
+import com.github.streamshub.console.api.v1alpha1.spec.metrics.MetricsSource;
+import com.github.streamshub.console.api.v1alpha1.spec.metrics.MetricsSource.Type;
 import com.github.streamshub.console.config.ConsoleConfig;
 import com.github.streamshub.console.config.KafkaClusterConfig;
 import com.github.streamshub.console.config.PrometheusConfig;
@@ -149,35 +149,37 @@ public class ConsoleSecret extends CRUDKubernetesDependentResource<Secret, Conso
             return;
         }
 
-        for (Prometheus prometheus : metricsSources) {
+        for (MetricsSource metricsSource : metricsSources) {
             var prometheusConfig = new PrometheusConfig();
-            prometheusConfig.setName(prometheus.getName());
+            prometheusConfig.setName(metricsSource.getName());
 
-            if (prometheus.getType() == Type.OPENSHIFT_MONITORING) {
+            if (metricsSource.getType() == Type.OPENSHIFT_MONITORING) {
                 prometheusConfig.setType(PrometheusConfig.Type.OPENSHIFT_MONITORING);
                 prometheusConfig.setUrl(getOpenShiftMonitoringUrl(context));
             } else {
                 // embedded Prometheus used like standalone by console
                 prometheusConfig.setType(PrometheusConfig.Type.STANDALONE);
 
-                if (prometheus.getType() == Type.EMBEDDED) {
+                if (metricsSource.getType() == Type.EMBEDDED) {
                     prometheusConfig.setUrl(prometheusService.getUrl(primary, context));
                 } else {
-                    prometheusConfig.setUrl(prometheus.getUrl());
+                    prometheusConfig.setUrl(metricsSource.getUrl());
                 }
             }
 
-            var prometheusAuthn = prometheus.getAuthentication();
+            var metricsAuthn = metricsSource.getAuthentication();
 
-            if (prometheusAuthn instanceof Prometheus.Basic basic) {
-                var basicConfig = new PrometheusConfig.Basic();
-                basicConfig.setUsername(basic.getUsername());
-                basicConfig.setPassword(basic.getPassword());
-                prometheusConfig.setAuthentication(basicConfig);
-            } else if (prometheusAuthn instanceof Prometheus.Bearer bearer) {
-                var bearerConfig = new PrometheusConfig.Bearer();
-                bearerConfig.setToken(bearer.getToken());
-                prometheusConfig.setAuthentication(bearerConfig);
+            if (metricsAuthn != null) {
+                if (metricsAuthn.getToken() == null) {
+                    var basicConfig = new PrometheusConfig.Basic();
+                    basicConfig.setUsername(metricsAuthn.getUsername());
+                    basicConfig.setPassword(metricsAuthn.getPassword());
+                    prometheusConfig.setAuthentication(basicConfig);
+                } else {
+                    var bearerConfig = new PrometheusConfig.Bearer();
+                    bearerConfig.setToken(metricsAuthn.getToken());
+                    prometheusConfig.setAuthentication(bearerConfig);
+                }
             }
 
             config.getMetricsSources().add(prometheusConfig);

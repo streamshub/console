@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.github.streamshub.console.api.v1alpha1.spec.metrics.MetricsSource;
 
 import io.fabric8.generator.annotation.Required;
 import io.fabric8.kubernetes.api.model.EnvVar;
@@ -27,7 +28,7 @@ public class ConsoleSpec {
 
     Images images;
 
-    List<Prometheus> metricsSources;
+    List<MetricsSource> metricsSources;
 
     List<SchemaRegistry> schemaRegistries;
 
@@ -51,11 +52,11 @@ public class ConsoleSpec {
         this.images = images;
     }
 
-    public List<Prometheus> getMetricsSources() {
+    public List<MetricsSource> getMetricsSources() {
         return metricsSources;
     }
 
-    public void setMetricsSources(List<Prometheus> metricsSources) {
+    public void setMetricsSources(List<MetricsSource> metricsSources) {
         this.metricsSources = metricsSources;
     }
 

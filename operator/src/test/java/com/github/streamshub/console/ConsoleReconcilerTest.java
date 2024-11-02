@@ -19,8 +19,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.github.streamshub.console.api.v1alpha1.Console;
 import com.github.streamshub.console.api.v1alpha1.ConsoleBuilder;
-import com.github.streamshub.console.api.v1alpha1.spec.Prometheus.Type;
+import com.github.streamshub.console.api.v1alpha1.spec.metrics.MetricsSource.Type;
 import com.github.streamshub.console.config.ConsoleConfig;
+import com.github.streamshub.console.config.PrometheusConfig;
 import com.github.streamshub.console.dependents.ConsoleResource;
 import com.github.streamshub.console.dependents.ConsoleSecret;
 
@@ -34,6 +35,7 @@ import io.fabric8.kubernetes.api.model.SecretBuilder;
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinitionBuilder;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.kubernetes.client.KubernetesClient;
+import io.fabric8.kubernetes.client.KubernetesClientException;
 import io.fabric8.openshift.api.model.Route;
 import io.fabric8.openshift.api.model.RouteBuilder;
 import io.javaoperatorsdk.operator.Operator;
@@ -51,6 +53,7 @@ import static org.awaitility.Awaitility.await;
 import static org.junit.Assert.assertNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 //@QuarkusTestResource(KubernetesServerTestResource.class)
@@ -58,7 +61,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class ConsoleReconcilerTest {
 
     private static final Logger LOGGER = Logger.getLogger(ConsoleReconcilerTest.class);
-    private static final Duration LIMIT = Duration.ofSeconds(1_000);
+    private static final Duration LIMIT = Duration.ofSeconds(10);
     private static final ObjectMapper YAML = new ObjectMapper(new YAMLFactory());
 
     @Inject
@@ -706,7 +709,7 @@ class ConsoleReconcilerTest {
                     .withHostname("example.com")
                     .addNewMetricsSource()
                         .withName("ocp-platform-monitoring")
-                        .withType(Type.OPENSHIFT_MONITORING)
+                        .withType(Type.fromValue("openshift-monitoring"))
                     .endMetricsSource()
                     .addNewKafkaCluster()
                         .withName(kafkaCR.getMetadata().getName())
@@ -728,6 +731,122 @@ class ConsoleReconcilerTest {
             String metricsRef = consoleConfig.getKafka().getClusters().get(0).getMetricsSource();
             assertEquals("ocp-platform-monitoring", metricsRef);
         });
+    }
+
+    @Test
+    void testConsoleReconciliationWithPrometheusBasicAuthN() {
+        Console consoleCR = new ConsoleBuilder()
+                .withMetadata(new ObjectMetaBuilder()
+                        .withName("console-1")
+                        .withNamespace("ns2")
+                        .build())
+                .withNewSpec()
+                    .withHostname("example.com")
+                    .addNewMetricsSource()
+                        .withName("some-prometheus")
+                        .withType(Type.fromValue("standalone"))
+                        .withUrl("https://prometheus.example.com")
+                        .withNewAuthentication()
+                            .withUsername("pr0m3th3u5")
+                            .withPassword("password42")
+                        .endAuthentication()
+                    .endMetricsSource()
+                    .addNewKafkaCluster()
+                        .withName(kafkaCR.getMetadata().getName())
+                        .withNamespace(kafkaCR.getMetadata().getNamespace())
+                        .withListener(kafkaCR.getSpec().getKafka().getListeners().get(0).getName())
+                        .withMetricsSource("some-prometheus")
+                    .endKafkaCluster()
+                .endSpec()
+                .build();
+
+        client.resource(consoleCR).create();
+
+        assertConsoleConfig(consoleCR, consoleConfig -> {
+            var prometheusConfig = consoleConfig.getMetricsSources().get(0);
+            assertEquals("some-prometheus", prometheusConfig.getName());
+            assertEquals("https://prometheus.example.com", prometheusConfig.getUrl());
+            assertEquals(PrometheusConfig.Type.STANDALONE, prometheusConfig.getType());
+            var prometheusAuthN = (PrometheusConfig.Basic) prometheusConfig.getAuthentication();
+            assertEquals("pr0m3th3u5", prometheusAuthN.getUsername());
+            assertEquals("password42", prometheusAuthN.getPassword());
+
+            String metricsRef = consoleConfig.getKafka().getClusters().get(0).getMetricsSource();
+            assertEquals("some-prometheus", metricsRef);
+        });
+    }
+
+    @Test
+    void testConsoleReconciliationWithPrometheusBearerAuthN() {
+        String token = UUID.randomUUID().toString();
+        Console consoleCR = new ConsoleBuilder()
+                .withMetadata(new ObjectMetaBuilder()
+                        .withName("console-1")
+                        .withNamespace("ns2")
+                        .build())
+                .withNewSpec()
+                    .withHostname("example.com")
+                    .addNewMetricsSource()
+                        .withName("some-prometheus")
+                        .withType(Type.fromValue("standalone"))
+                        .withUrl("https://prometheus.example.com")
+                        .withNewAuthentication()
+                            .withToken(token)
+                        .endAuthentication()
+                    .endMetricsSource()
+                    .addNewKafkaCluster()
+                        .withName(kafkaCR.getMetadata().getName())
+                        .withNamespace(kafkaCR.getMetadata().getNamespace())
+                        .withListener(kafkaCR.getSpec().getKafka().getListeners().get(0).getName())
+                        .withMetricsSource("some-prometheus")
+                    .endKafkaCluster()
+                .endSpec()
+                .build();
+
+        client.resource(consoleCR).create();
+
+        assertConsoleConfig(consoleCR, consoleConfig -> {
+            var prometheusConfig = consoleConfig.getMetricsSources().get(0);
+            assertEquals("some-prometheus", prometheusConfig.getName());
+            assertEquals("https://prometheus.example.com", prometheusConfig.getUrl());
+            assertEquals(PrometheusConfig.Type.STANDALONE, prometheusConfig.getType());
+            var prometheusAuthN = (PrometheusConfig.Bearer) prometheusConfig.getAuthentication();
+            assertEquals(token, prometheusAuthN.getToken());
+
+            String metricsRef = consoleConfig.getKafka().getClusters().get(0).getMetricsSource();
+            assertEquals("some-prometheus", metricsRef);
+        });
+    }
+
+
+    @Test
+    void testConsoleReconciliationWithPrometheusEmptyAuthN() {
+        Console consoleCR = new ConsoleBuilder()
+                .withMetadata(new ObjectMetaBuilder()
+                        .withName("console-1")
+                        .withNamespace("ns2")
+                        .build())
+                .withNewSpec()
+                    .withHostname("example.com")
+                    .addNewMetricsSource()
+                        .withName("some-prometheus")
+                        .withType(Type.fromValue("standalone"))
+                        .withUrl("https://prometheus.example.com")
+                        .withNewAuthentication()
+                        .endAuthentication()
+                    .endMetricsSource()
+                    .addNewKafkaCluster()
+                        .withName(kafkaCR.getMetadata().getName())
+                        .withNamespace(kafkaCR.getMetadata().getNamespace())
+                        .withListener(kafkaCR.getSpec().getKafka().getListeners().get(0).getName())
+                        .withMetricsSource("some-prometheus")
+                    .endKafkaCluster()
+                .endSpec()
+                .build();
+
+        var resourceClient = client.resource(consoleCR);
+        // Fails K8s resource validation due to empty `spec.metricsSources[0].authentication object
+        assertThrows(KubernetesClientException.class, resourceClient::create);
     }
 
     // Utility

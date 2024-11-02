@@ -8,7 +8,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
 import com.github.streamshub.console.api.v1alpha1.Console;
-import com.github.streamshub.console.api.v1alpha1.spec.Prometheus.Type;
+import com.github.streamshub.console.api.v1alpha1.spec.metrics.MetricsSource.Type;
 
 import io.fabric8.kubernetes.api.model.rbac.ClusterRoleBinding;
 import io.javaoperatorsdk.operator.api.reconciler.Constants;

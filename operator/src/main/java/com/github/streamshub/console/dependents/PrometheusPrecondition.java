@@ -4,7 +4,7 @@ import java.util.Collections;
 import java.util.Optional;
 
 import com.github.streamshub.console.api.v1alpha1.Console;
-import com.github.streamshub.console.api.v1alpha1.spec.Prometheus.Type;
+import com.github.streamshub.console.api.v1alpha1.spec.metrics.MetricsSource.Type;
 
 import io.javaoperatorsdk.operator.api.reconciler.Context;
 import io.javaoperatorsdk.operator.api.reconciler.dependent.DependentResource;
