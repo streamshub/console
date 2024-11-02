@@ -163,14 +163,11 @@ class KafkaClustersResourceMetricsIT implements ClientRequestFilter {
                     .map(KafkaClusterConfig::clusterKey)
                     .anyMatch(Cache.metaNamespaceKeyFunc(kafka1)::equals));
 
-        // Wait for the context map to be populated with all Kafka configurations
-        //await().atMost(10, TimeUnit.SECONDS).until(() -> configuredContexts.size() == STATIC_KAFKAS.size());
-
         clusterId1 = consoleConfig.getKafka().getCluster("default/test-kafka1").get().getId();
     }
 
     @AfterEach
-    void teardown() throws IOException {
+    void teardown() {
         client.resources(Kafka.class).inAnyNamespace().delete();
     }
 

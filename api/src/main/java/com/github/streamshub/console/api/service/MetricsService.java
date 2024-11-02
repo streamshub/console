@@ -19,7 +19,6 @@ import jakarta.inject.Inject;
 import jakarta.json.JsonArray;
 import jakarta.json.JsonObject;
 import jakarta.ws.rs.WebApplicationException;
-import jakarta.ws.rs.client.ClientRequestContext;
 import jakarta.ws.rs.client.ClientRequestFilter;
 import jakarta.ws.rs.core.HttpHeaders;
 
@@ -68,27 +67,24 @@ public class MetricsService {
     }
 
     ClientRequestFilter createAuthenticationFilter(PrometheusConfig config) {
-        return new ClientRequestFilter() {
-            @Override
-            public void filter(ClientRequestContext requestContext) {
-                var authConfig = config.getAuthentication();
-                String authHeader = null;
+        return requestContext -> {
+            var authConfig = config.getAuthentication();
+            String authHeader = null;
 
-                if (authConfig instanceof PrometheusConfig.Basic basic) {
-                    authHeader = "Basic " + Base64.getEncoder().encodeToString("%s:%s".formatted(
-                            basic.getUsername(),
-                            basic.getPassword())
-                            .getBytes());
-                } else if (authConfig instanceof PrometheusConfig.Bearer bearer) {
-                    authHeader = "Bearer " + bearer.getToken();
-                } else if (config.getType() == Type.OPENSHIFT_MONITORING) {
-                    // ServiceAccount needs cluster role `cluster-monitoring-view`
-                    authHeader = "Bearer " + k8s.getConfiguration().getAutoOAuthToken();
-                }
+            if (authConfig instanceof PrometheusConfig.Basic basic) {
+                authHeader = "Basic " + Base64.getEncoder().encodeToString("%s:%s".formatted(
+                        basic.getUsername(),
+                        basic.getPassword())
+                        .getBytes());
+            } else if (authConfig instanceof PrometheusConfig.Bearer bearer) {
+                authHeader = "Bearer " + bearer.getToken();
+            } else if (config.getType() == Type.OPENSHIFT_MONITORING) {
+                // ServiceAccount needs cluster role `cluster-monitoring-view`
+                authHeader = "Bearer " + k8s.getConfiguration().getAutoOAuthToken();
+            }
 
-                if (authHeader != null) {
-                    requestContext.getHeaders().add(HttpHeaders.AUTHORIZATION, authHeader);
-                }
+            if (authHeader != null) {
+                requestContext.getHeaders().add(HttpHeaders.AUTHORIZATION, authHeader);
             }
         };
     }

@@ -56,7 +56,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-//@QuarkusTestResource(KubernetesServerTestResource.class)
 @QuarkusTest
 class ConsoleReconcilerTest {
 
@@ -662,7 +661,7 @@ class ConsoleReconcilerTest {
 
         client.resource(consoleCR).create();
 
-        assertConsoleConfig(consoleCR, consoleConfig -> {
+        assertConsoleConfig(consoleConfig -> {
             String registryName = consoleConfig.getSchemaRegistries().get(0).getName();
             assertEquals("example-registry", registryName);
             String registryUrl = consoleConfig.getSchemaRegistries().get(0).getUrl();
@@ -722,7 +721,7 @@ class ConsoleReconcilerTest {
 
         client.resource(consoleCR).create();
 
-        assertConsoleConfig(consoleCR, consoleConfig -> {
+        assertConsoleConfig(consoleConfig -> {
             String metricsName = consoleConfig.getMetricsSources().get(0).getName();
             assertEquals("ocp-platform-monitoring", metricsName);
             String metricsUrl = consoleConfig.getMetricsSources().get(0).getUrl();
@@ -762,7 +761,7 @@ class ConsoleReconcilerTest {
 
         client.resource(consoleCR).create();
 
-        assertConsoleConfig(consoleCR, consoleConfig -> {
+        assertConsoleConfig(consoleConfig -> {
             var prometheusConfig = consoleConfig.getMetricsSources().get(0);
             assertEquals("some-prometheus", prometheusConfig.getName());
             assertEquals("https://prometheus.example.com", prometheusConfig.getUrl());
@@ -805,7 +804,7 @@ class ConsoleReconcilerTest {
 
         client.resource(consoleCR).create();
 
-        assertConsoleConfig(consoleCR, consoleConfig -> {
+        assertConsoleConfig(consoleConfig -> {
             var prometheusConfig = consoleConfig.getMetricsSources().get(0);
             assertEquals("some-prometheus", prometheusConfig.getName());
             assertEquals("https://prometheus.example.com", prometheusConfig.getUrl());
@@ -851,7 +850,7 @@ class ConsoleReconcilerTest {
 
     // Utility
 
-    private void assertConsoleConfig(Console targetResource, Consumer<ConsoleConfig> assertion) {
+    private void assertConsoleConfig(Consumer<ConsoleConfig> assertion) {
         await().ignoreException(NullPointerException.class).atMost(LIMIT).untilAsserted(() -> {
             var consoleSecret = client.secrets().inNamespace("ns2").withName("console-1-" + ConsoleSecret.NAME).get();
             assertNotNull(consoleSecret);
