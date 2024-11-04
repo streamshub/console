@@ -19,7 +19,6 @@ ARCH ?= linux/amd64
 SKIP_RANGE ?= ">=1.0.0 <1.0.3"
 
 CONSOLE_UI_NEXTAUTH_SECRET ?= $(shell openssl rand -base64 32)
-CONSOLE_METRICS_PROMETHEUS_URL ?= 
 
 container-image-api:
 	mvn package -am -pl api -Pcontainer-image -DskipTests -Dquarkus.container-image.image=$(CONSOLE_API_IMAGE)
@@ -43,7 +42,6 @@ container-image-ui:
 	cd ui && \
 	npm ci --omit=dev && \
 	export BACKEND_URL=http://example && \
-	export CONSOLE_METRICS_PROMETHEUS_URL=http://example && \
 	export NEXTAUTH_SECRET=examplesecret && \
 	export LOG_LEVEL=info && \
 	export CONSOLE_MODE=read-only && \
@@ -65,7 +63,6 @@ compose-up:
 	echo "CONSOLE_API_KUBERNETES_API_SERVER_URL=$(CONSOLE_API_KUBERNETES_API_SERVER_URL)" >> compose-runtime.env 
 	echo "CONSOLE_UI_IMAGE=$(CONSOLE_UI_IMAGE)" >> compose-runtime.env
 	echo "CONSOLE_UI_NEXTAUTH_SECRET=$(CONSOLE_UI_NEXTAUTH_SECRET)" >> compose-runtime.env
-	echo "CONSOLE_METRICS_PROMETHEUS_URL=$(CONSOLE_METRICS_PROMETHEUS_URL)" >> compose-runtime.env
 	$(CONTAINER_RUNTIME) compose --env-file compose-runtime.env up -d
 
 compose-down:

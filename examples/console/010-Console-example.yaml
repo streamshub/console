@@ -5,6 +5,13 @@ metadata:
   name: example
 spec:
   hostname: example-console.${CLUSTER_DOMAIN}
+  metricsSources: [
+    # array of connected metrics sources (Prometheus servers) with
+    # name, type, url, and authentication
+  ]
+  schemaRegistries: [
+    # array of connected registries with name and url.
+  ]
   kafkaClusters:
     #
     # The values below make use of the example Kafka cluster from examples/kafka.
@@ -13,8 +20,8 @@ spec:
     - name: console-kafka             # Name of the `Kafka` CR representing the cluster
       namespace: ${KAFKA_NAMESPACE}   # Namespace of the `Kafka` CR representing the cluster
       listener: secure                # Listener on the `Kafka` CR to connect from the console
-      schemaRegistry: null            # Configuration for a connection to an Apicurio Registry instance
-                                      # E.g. : { "url": "http://example.com/apis/registry/v2" }
+      metricsSource: null             # Name of the configured metrics source from the `metricsSources` section
+      schemaRegistry: null            # Name of the configured Apicurio Registry from the `schemaRegistries` section
       properties:
         values: []                    # Array of name/value for properties to be used for connections
                                       # made to this cluster

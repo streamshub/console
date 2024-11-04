@@ -120,7 +120,6 @@ jobs:
         run: |
           npm ci --omit=dev
           export BACKEND_URL=http://example
-          export CONSOLE_METRICS_PROMETHEUS_URL=http://example
           export NEXTAUTH_SECRET=examplesecret
           export LOG_LEVEL=info
           export CONSOLE_MODE=read-only

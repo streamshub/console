@@ -21,7 +21,6 @@ services:
     environment:
       HOSTNAME: localhost
       PORT: 3005
-      CONSOLE_METRICS_PROMETHEUS_URL: ${CONSOLE_METRICS_PROMETHEUS_URL}
       NEXTAUTH_SECRET: ${CONSOLE_UI_NEXTAUTH_SECRET}
       NEXTAUTH_URL: http://localhost:3005
       BACKEND_URL: http://localhost:8080/

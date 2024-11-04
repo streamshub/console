@@ -20,7 +20,6 @@ Create a `.env` file containing the details about where to find the API server, 
 ```.dotenv
 # the actual URLs will depend on how you installed the console
 BACKEND_URL=http://api.my-cluster
-CONSOLE_METRICS_PROMETHEUS_URL=http://prometheus.my-cluster
 LOG_LEVEL=info
 ```
 
