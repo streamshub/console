@@ -23,7 +23,7 @@ import {
 } from "@/api/rebalance/schema";
 import { ValidationModal } from "./ValidationModal";
 import { getRebalanceDetails } from "@/api/rebalance/actions";
-import { EmptyStateNoKafkaRebalance } from "./EmptyStateNoKafkaRebalance";
+import { useAlert } from "@/components/AlertContext";
 
 export type ConnectedReabalancesTableProps = {
   rebalances: RebalanceList[] | undefined;
@@ -67,6 +67,8 @@ export function ConnectedReabalancesTable({
   kafkaId,
 }: ConnectedReabalancesTableProps) {
   const t = useTranslations("Rebalancing");
+
+  const { addAlert } = useAlert();
 
   const [isAlertVisible, setAlertVisible] = useState(true);
 
@@ -131,9 +133,20 @@ export function ConnectedReabalancesTable({
     { proposalReady: 0, rebalancing: 0, ready: 0, stopped: 0 },
   ) || { proposalReady: 0, rebalancing: 0, ready: 0, stopped: 0 };
 
+  const alertMessage =
+    approvalStatus === "approve"
+      ? t("approved_alert")
+      : approvalStatus === "stop"
+        ? t("stopped_alert")
+        : t("refresh_alert");
+
   const onConfirm = async () => {
     await getRebalanceDetails(kafkaId, RebalanceId, approvalStatus);
     setModalOpen(false);
+    addAlert({
+      title: alertMessage,
+      variant: "success",
+    });
   };
 
   return (

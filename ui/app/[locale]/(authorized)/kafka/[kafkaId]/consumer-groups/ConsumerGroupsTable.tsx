@@ -11,6 +11,7 @@ import {
 import { Link } from "@/i18n/routing";
 import { useTranslations } from "next-intl";
 import { ReactNode, useEffect, useState } from "react";
+import { EmptyStateNoMatchFound } from "@/components/Table/EmptyStateNoMatchFound";
 
 export const ConsumerGroupColumns = [
   "name",
@@ -62,6 +63,7 @@ export function ConsumerGroupsTable({
   onFilterStateChange,
   onPageChange,
   onResetOffset,
+  onClearAllFilters,
 }: {
   kafkaId: string;
   page: number;
@@ -103,8 +105,9 @@ export function ConsumerGroupsTable({
         <div>{t("ConsumerGroupsTable.no_consumer_groups")}</div>
       }
       emptyStateNoResults={
-        <div>{t("ConsumerGroupsTable.no_consumer_groups")}</div>
+        <EmptyStateNoMatchFound onClear={onClearAllFilters!} />
       }
+      onClearAllFilters={onClearAllFilters}
       ariaLabel={t("ConsumerGroupsTable.title")}
       isFiltered={filterName !== undefined || filterState?.length !== 0}
       columns={ConsumerGroupColumns}

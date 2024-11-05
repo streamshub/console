@@ -436,7 +436,8 @@
     "resetting_spinner": "Resetting consumer group offsets.",
     "reseting_consumer_group_offsets_text": "Resetting consumer group offsets. This might take a few moments",
     "run_and_show_result": "Run and show result in console",
-    "copy_dry_run_command": "Copy Dry Run command to clipboard"
+    "copy_dry_run_command": "Copy Dry Run command to clipboard",
+    "reset_offset_submitted_successfully": "Reset {consumerGroupName} offsets completed successfully"
   },
   "CreateTopic": {
     "title": "Topic creation wizard",
@@ -575,6 +576,9 @@
     "mode": "Mode",
     "auto_approval_enabled": "Auto-approval enabled",
     "brokers": "Brokers",
-    "cr_badge": "CR"
+    "cr_badge": "CR",
+    "approved_alert": "KafkaRebalance approved!",
+    "stopped_alert": "KafkaRebalance has stopped!",
+    "refresh_alert": "KafkaRebalance has been refreshed!"
   }
 }

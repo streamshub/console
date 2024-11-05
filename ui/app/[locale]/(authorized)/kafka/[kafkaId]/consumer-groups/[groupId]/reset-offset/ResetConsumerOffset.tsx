@@ -17,6 +17,8 @@ import { Dryrun } from "./Dryrun";
 import { LoadingPage } from "./LoadingPage";
 import { ResetOffset } from "./ResetOffset";
 import { Page } from "@/libs/patternfly/react-core";
+import { useTranslations } from "next-intl";
+import { useAlert } from "@/components/AlertContext";
 
 export type Offset = {
   topicId: string;
@@ -40,6 +42,9 @@ export function ResetConsumerOffset({
   baseurl: string;
 }) {
   const router = useRouter();
+  const t = useTranslations();
+
+  const { addAlert } = useAlert();
 
   const [selectedConsumerTopic, setSelectedConsumerTopic] =
     useState<TopicSelection>("allTopics");
@@ -242,6 +247,12 @@ export function ResetConsumerOffset({
       );
       if (success === true) {
         closeResetOffset();
+        addAlert({
+          title: t("ConsumerGroupsTable.reset_offset_submitted_successfully", {
+            consumerGroupName,
+          }),
+          variant: "success",
+        });
       } else {
         const errorMessages =
           (success as UpdateConsumerGroupErrorSchema)?.errors.map(
