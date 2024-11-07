@@ -8,6 +8,7 @@ import { ClusterDrawer } from "./ClusterDrawer";
 import { ClusterDrawerProvider } from "./ClusterDrawerProvider";
 import { ReconciliationProvider } from "./ReconciliationProvider";
 import { ReconciliationPausedBanner } from "./ReconciliationPausedBanner";
+import { AlertProvider } from "./AlertProvider";
 
 export function AppLayout({
   username,
@@ -37,12 +38,12 @@ export function AppLayout({
     >
       {/*<HelpContainer>*/}
       <ClusterDrawerProvider>
-      <ReconciliationProvider kafkaId={kafkaId ?? ""}>
-          {isValidKafkaId && (
-            <ReconciliationPausedBanner kafkaId={kafkaId} />
-          )}
-          <ClusterDrawer>{children}</ClusterDrawer>
-        </ReconciliationProvider>
+        <AlertProvider>
+          <ReconciliationProvider kafkaId={kafkaId ?? ""}>
+            {isValidKafkaId && <ReconciliationPausedBanner kafkaId={kafkaId} />}
+            <ClusterDrawer>{children}</ClusterDrawer>
+          </ReconciliationProvider>
+        </AlertProvider>
       </ClusterDrawerProvider>
       {/*</HelpContainer>*/}
     </Page>
