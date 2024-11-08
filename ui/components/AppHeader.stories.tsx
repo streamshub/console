@@ -7,6 +7,8 @@ import {
 import type { Meta, StoryObj } from "@storybook/react";
 import { AppHeader } from "./AppHeader";
 
+const fixedDate = new Date(Date.UTC(2024, 11, 31, 23, 59, 59, 999));
+
 const meta: Meta<typeof AppHeader> = {
   component: AppHeader,
   args: {
@@ -24,10 +26,15 @@ const meta: Meta<typeof AppHeader> = {
 export default meta;
 type Story = StoryObj<typeof AppHeader>;
 
-export const Default: Story = {};
+export const Default: Story = {
+  args: {
+    staticRefresh: fixedDate
+  }
+};
 
 export const WithActions: Story = {
   args: {
+    staticRefresh: fixedDate,
     actions: [
       <Button key="action1">Action 1</Button>,
       <Button key="action2">Action 2</Button>,
@@ -37,6 +44,7 @@ export const WithActions: Story = {
 
 export const WithNavigation: Story = {
   args: {
+    staticRefresh: fixedDate,
     navigation: (
       <PageNavigation>
         <Breadcrumb>
@@ -53,6 +61,7 @@ export const WithNavigation: Story = {
 
 export const FullFeatured: Story = {
   args: {
+    staticRefresh: fixedDate,
     actions: [
       <Button key="action1">Action 1</Button>,
       <Button key="action2">Action 2</Button>,
