@@ -8,6 +8,8 @@ const meta: Meta<typeof RebalanceTable> = {
 export default meta;
 type Story = StoryObj<typeof RebalanceTable>;
 
+const fixedDate = new Date(Date.UTC(2024, 11, 31, 23, 59, 59, 999)).toISOString();
+
 export const RebalanceList: Story = {
   args: {
     rebalanceList: [
@@ -19,7 +21,7 @@ export const RebalanceList: Story = {
         attributes: {
           name: "kafak-rebalance-test1",
           status: "Ready",
-          creationTimestamp: Date.now(),
+          creationTimestamp: fixedDate,
           mode: "add-bokers",
           brokers: [1, 2, 3],
         },
@@ -32,7 +34,7 @@ export const RebalanceList: Story = {
         attributes: {
           name: "kafak-rebalance-test2",
           status: "Stopped",
-          creationTimestamp: Date.now(),
+          creationTimestamp: fixedDate,
           brokers: [0, 1],
         },
       },
@@ -44,7 +46,7 @@ export const RebalanceList: Story = {
         attributes: {
           name: "kafak-rebalance-test3",
           status: "New",
-          creationTimestamp: Date.now(),
+          creationTimestamp: fixedDate,
           brokers: [],
         },
       },
@@ -56,7 +58,7 @@ export const RebalanceList: Story = {
         attributes: {
           name: "kafak-rebalance-test4",
           status: "PendingProposal",
-          creationTimestamp: Date.now(),
+          creationTimestamp: fixedDate,
         },
       },
       {
@@ -64,7 +66,7 @@ export const RebalanceList: Story = {
         attributes: {
           name: "kafak-rebalance-test5",
           status: "ProposalReady",
-          creationTimestamp: Date.now(),
+          creationTimestamp: fixedDate,
         },
       },
       {
@@ -75,7 +77,7 @@ export const RebalanceList: Story = {
         attributes: {
           name: "kafak-rebalance-test6",
           status: "ReconciliationPaused",
-          creationTimestamp: Date.now(),
+          creationTimestamp: fixedDate,
         },
       },
       {
@@ -86,7 +88,7 @@ export const RebalanceList: Story = {
         attributes: {
           name: "kafak-rebalance-test7",
           status: "NotReady",
-          creationTimestamp: Date.now(),
+          creationTimestamp: fixedDate,
         },
       },
       {
@@ -97,7 +99,7 @@ export const RebalanceList: Story = {
         attributes: {
           name: "kafak-rebalance-test7",
           status: "Rebalancing",
-          creationTimestamp: Date.now(),
+          creationTimestamp: fixedDate,
         },
       },
     ],

@@ -16,14 +16,17 @@ export function AppHeader({
   actions,
   navigation,
   showRefresh = true,
+  staticRefresh,
 }: {
   title: ReactNode;
   subTitle?: ReactNode;
   actions?: ReactNode[];
   navigation?: ReactNode;
   showRefresh?: boolean;
+  staticRefresh?: Date; // allows fixed value to be provided for storybook testing
 }) {
-  const lastRefresh = useNow();
+  const now = useNow();
+  const lastRefresh = staticRefresh ?? now;
   return (
     <>
       <PageSection
