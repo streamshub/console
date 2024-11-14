@@ -189,7 +189,10 @@ public class DeploymentManager {
                 .withLabels(TEST_CONTAINER_LABELS)
                 .withLogConsumer(new Slf4jLogConsumer(LoggerFactory.getLogger("systemtests.plain-kafka"), true))
                 .withCreateContainerCmdModifier(cmd -> cmd.withName(name("plain-kafka")))
-                .withKafkaConfigurationMap(Map.of("auto.create.topics.enable", "false"))
+                .withKafkaConfigurationMap(Map.of(
+                    "auto.create.topics.enable", "false",
+                    "group.initial.rebalance.delay.ms", "0"
+                ))
                 .withNetwork(testNetwork);
 
         container.start();
