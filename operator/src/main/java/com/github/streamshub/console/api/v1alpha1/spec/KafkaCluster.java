@@ -2,7 +2,6 @@ package com.github.streamshub.console.api.v1alpha1.spec;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import com.github.streamshub.console.config.Named;
 
 import io.fabric8.generator.annotation.Required;
 import io.fabric8.generator.annotation.ValidationRule;
@@ -15,7 +14,7 @@ import io.sundr.builder.annotations.Buildable;
         // due to it being a "reserved" word.
         value = "!has(self.listener) || has(self.__namespace__)",
         message = "Property `listener` may not be used when `namespace` is omitted")
-public class KafkaCluster implements Named {
+public class KafkaCluster {
 
     @JsonPropertyDescription("""
             Identifier to be used for this Kafka cluster in the console. When \
@@ -80,7 +79,6 @@ public class KafkaCluster implements Named {
         this.id = id;
     }
 
-    @Override
     public String getName() {
         return name;
     }

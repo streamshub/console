@@ -4,11 +4,11 @@ import java.util.Collection;
 
 public interface Named {
 
-    static boolean uniqueNames(Collection<? extends Named> configs) {
-        if (configs == null) {
+    static boolean uniqueNames(Collection<? extends Named> items) {
+        if (items == null) {
             return true;
         }
-        return configs.stream().map(Named::getName).distinct().count() == configs.size();
+        return items.stream().map(Named::getName).distinct().count() == items.size();
     }
 
     String getName();

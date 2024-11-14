@@ -2,14 +2,13 @@ package com.github.streamshub.console.api.v1alpha1.spec;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import com.github.streamshub.console.config.Named;
 
 import io.fabric8.generator.annotation.Required;
 import io.sundr.builder.annotations.Buildable;
 
 @Buildable(builderPackage = "io.fabric8.kubernetes.api.builder")
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class SchemaRegistry implements Named {
+public class SchemaRegistry {
 
     @Required
     @JsonPropertyDescription("""
@@ -23,7 +22,6 @@ public class SchemaRegistry implements Named {
     @JsonPropertyDescription("URL of the Apicurio Registry server API.")
     private String url;
 
-    @Override
     public String getName() {
         return name;
     }

@@ -3,14 +3,13 @@ package com.github.streamshub.console.api.v1alpha1.spec.metrics;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.github.streamshub.console.config.Named;
 
 import io.fabric8.generator.annotation.Required;
 import io.sundr.builder.annotations.Buildable;
 
 @Buildable(builderPackage = "io.fabric8.kubernetes.api.builder")
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class MetricsSource implements Named {
+public class MetricsSource {
 
     @Required
     private String name;
@@ -19,7 +18,6 @@ public class MetricsSource implements Named {
     private String url;
     private MetricsSourceAuthentication authentication;
 
-    @Override
     public String getName() {
         return name;
     }
