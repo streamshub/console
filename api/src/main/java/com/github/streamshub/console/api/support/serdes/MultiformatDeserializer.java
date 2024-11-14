@@ -266,7 +266,7 @@ public class MultiformatDeserializer extends AbstractKafkaDeserializer<Object, R
     }
 
     private SchemaLookupResult<Object> resolve(ArtifactReference artifactReference) {
-        if (!artifactReference.hasValue()) {
+        if (artifactReference == null || !artifactReference.hasValue()) {
             return NO_SCHEMA_ID;
         }
 
