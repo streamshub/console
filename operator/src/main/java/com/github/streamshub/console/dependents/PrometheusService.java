@@ -29,15 +29,12 @@ public class PrometheusService extends BaseService {
         return deployment.instanceName(primary);
     }
 
-    @Override
-    protected Service desired(Console primary, Context<Console> context) {
+    String getUrl(Console primary, Context<Console> context) {
         Service desired = super.desired(primary, context);
 
-        setAttribute(context, NAME + ".url", "http://%s.%s.svc.cluster.local:%d".formatted(
+        return "http://%s.%s.svc.cluster.local:%d".formatted(
                 desired.getMetadata().getName(),
                 desired.getMetadata().getNamespace(),
-                desired.getSpec().getPorts().get(0).getPort()));
-
-        return desired;
+                desired.getSpec().getPorts().get(0).getPort());
     }
 }

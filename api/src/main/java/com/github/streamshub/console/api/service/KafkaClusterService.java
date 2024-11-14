@@ -1,5 +1,8 @@
 package com.github.streamshub.console.api.service;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -7,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -75,6 +79,9 @@ public class KafkaClusterService {
 
     @Inject
     ConsoleConfig consoleConfig;
+
+    @Inject
+    MetricsService metricsService;
 
     @Inject
     /**
@@ -148,6 +155,7 @@ public class KafkaClusterService {
                         enumNames(get(result::authorizedOperations))))
             .thenApplyAsync(this::addKafkaContextData, threadContext.currentContextExecutor())
             .thenApply(this::addKafkaResourceData)
+            .thenCompose(cluster -> addMetrics(cluster, fields))
             .thenApply(this::setManaged);
     }
 
@@ -311,6 +319,42 @@ public class KafkaClusterService {
                 .map(kafkaTopic -> Boolean.TRUE)
                 .orElse(Boolean.FALSE));
         return cluster;
+    }
+
+
+    CompletionStage<KafkaCluster> addMetrics(KafkaCluster cluster, List<String> fields) {
+        if (!fields.contains(KafkaCluster.Fields.METRICS)) {
+            return CompletableFuture.completedStage(cluster);
+        }
+
+        if (kafkaContext.prometheus() == null) {
+            logger.warnf("Kafka cluster metrics were requested, but Prometheus URL is not configured");
+            cluster.metrics(null);
+            return CompletableFuture.completedStage(cluster);
+        }
+
+        String namespace = cluster.namespace();
+        String name = cluster.name();
+        String rangeQuery;
+        String valueQuery;
+
+        try (var rangesStream = getClass().getResourceAsStream("/metrics/queries/kafkaCluster_ranges.promql");
+             var valuesStream = getClass().getResourceAsStream("/metrics/queries/kafkaCluster_values.promql")) {
+            rangeQuery = new String(rangesStream.readAllBytes(), StandardCharsets.UTF_8)
+                    .formatted(namespace, name);
+            valueQuery = new String(valuesStream.readAllBytes(), StandardCharsets.UTF_8)
+                    .formatted(namespace, name);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+
+        var rangeResults = metricsService.queryRanges(rangeQuery).toCompletableFuture();
+        var valueResults = metricsService.queryValues(valueQuery).toCompletableFuture();
+
+        return CompletableFuture.allOf(
+                rangeResults.thenAccept(cluster.metrics().ranges()::putAll),
+                valueResults.thenAccept(cluster.metrics().values()::putAll))
+            .thenApply(nothing -> cluster);
     }
 
     private Optional<Kafka> findCluster(KafkaCluster cluster) {

@@ -52,6 +52,12 @@ public class KafkaCluster {
     private Credentials credentials;
 
     @JsonPropertyDescription("""
+            Name of a configured Prometheus metrics source to use for this Kafka \
+            cluster to display resource utilization charts in the console.
+            """)
+    private String metricsSource;
+
+    @JsonPropertyDescription("""
             Name of a configured Apicurio Registry instance to use for serializing \
             and de-serializing records written to or read from this Kafka cluster.
             """)
@@ -103,6 +109,14 @@ public class KafkaCluster {
 
     public void setCredentials(Credentials credentials) {
         this.credentials = credentials;
+    }
+
+    public String getMetricsSource() {
+        return metricsSource;
+    }
+
+    public void setMetricsSource(String metricsSource) {
+        this.metricsSource = metricsSource;
     }
 
     public String getSchemaRegistry() {

@@ -1,5 +1,5 @@
 import { ClusterLinks } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/ClusterLinks";
-import { getAuthOptions } from "@/app/api/auth/[...nextauth]/route";
+import { getAuthOptions } from "@/app/api/auth/[...nextauth]/auth-options";
 import { AppLayout } from "@/components/AppLayout";
 import { AppLayoutProvider } from "@/components/AppLayoutProvider";
 import {

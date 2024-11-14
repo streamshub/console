@@ -1,6 +1,6 @@
 "use server";
 
-import { getAuthOptions } from "@/app/api/auth/[...nextauth]/route";
+import { getAuthOptions } from "@/app/api/auth/[...nextauth]/auth-options";
 import { logger } from "@/utils/logger";
 import { sealData, unsealData } from "iron-session";
 import { getServerSession } from "next-auth";

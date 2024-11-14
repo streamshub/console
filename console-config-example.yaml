@@ -3,6 +3,17 @@ kubernetes:
   # Kafka and KafkaTopic custom resources. Enabled by default
   enabled: true
 
+metricsSources:
+  # Array of Prometheus API servers that my be referenced by Kafka cluster configurations
+  # for metrics retrieval to render graphs in the UI and provide other information based
+  # on the cluster metrics
+  - name: cluster-monitoring
+    type: openshift-monitoring
+    url: https://thanos-querier-openshift-monitoring.cloud.example.com
+  - name: my-custom-prometheus
+    type: standalone
+    url: http://my-custom-prometheus.cloud2.example.com
+
 schemaRegistries:
   # Array of Apicurio Registries that my be referenced by Kafka cluster configurations
   # to resolve Avro or Protobuf schemas for topic message browsing
@@ -15,6 +26,7 @@ kafka:
       namespace: my-namespace1 # namespace of the Strimzi Kafka CR (optional)
       id: my-kafka1-id # value to be used as an identifier for the cluster. Must be specified when namespace is not.
       listener: "secure" # name of the listener to use for connections from the console
+      metricsSource: cluster-monitoring
       schemaRegistry: "my-apicurio-registry" # name of the schema registry to use with this Kafka (optional)
       # `properties` contains keys/values to use for any Kafka connection
       properties:
@@ -35,6 +47,7 @@ kafka:
     - name: my-kafka2
       namespace: my-namespace2
       listener: "secure"
+      metricsSource: my-custom-prometheus
       properties:
         security.protocol: SASL_SSL
         sasl.mechanism: SCRAM-SHA-512

@@ -250,7 +250,7 @@ jobs:
           kubectl get all,subscriptions,csv,operatorgroups,installplans -n operators -o yaml > ./resources/operators.yaml
           kubectl logs -n operators -l app.kubernetes.io/name=console-operator --all-containers=true --tail -1 > ./resources/console-operator-logs.txt
           kubectl get all -n $TARGET_NAMESPACE -o yaml > ./resources/$TARGET_NAMESPACE.yaml
-          kubectl logs -n ${TARGET_NAMESPACE} -l app.kubernetes.io/instance=example-console-deployment --all-containers=true > ./resources/$TARGET_NAMESPACE-console-logs.txt
+          kubectl logs -n ${TARGET_NAMESPACE} -l app.kubernetes.io/instance=example-console-deployment --all-containers=true --tail -1 > ./resources/$TARGET_NAMESPACE-console-logs.txt
 
       - name: Archive Resource Backup
         uses: actions/upload-artifact@v4

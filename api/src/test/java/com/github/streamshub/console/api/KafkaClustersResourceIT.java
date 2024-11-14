@@ -37,6 +37,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.Mockito;
 
+import com.github.streamshub.console.api.model.KafkaCluster;
 import com.github.streamshub.console.api.model.ListFetchParams;
 import com.github.streamshub.console.api.service.KafkaClusterService;
 import com.github.streamshub.console.api.support.ErrorCategory;
@@ -737,6 +738,20 @@ class KafkaClustersResourceIT {
         assertEquals("SCRAM-SHA-512", clientConfig.get(SaslConfigs.SASL_MECHANISM));
         assertThat(String.valueOf(clientConfig.get(SaslConfigs.SASL_JAAS_CONFIG)),
                 containsString(ScramLoginModule.class.getName()));
+    }
+
+    @Test
+    /*
+     * Tests with metrics enabled are in KafkaClustersResourceMetricsIT
+     */
+    void testDescribeClusterWithMetricsNotEnabled() {
+        whenRequesting(req -> req
+                .param("fields[" + KafkaCluster.API_TYPE + "]", "name,metrics")
+                .get("{clusterId}", clusterId1))
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()))
+            .body("data.attributes.name", equalTo("test-kafka1"))
+            .body("data.attributes", hasEntry(is("metrics"), nullValue()));
     }
 
     @ParameterizedTest

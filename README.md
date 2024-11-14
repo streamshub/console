@@ -50,7 +50,11 @@ To ensure the console has the necessary access to function, a minimum level of a
 3. `READ`, `DESCRIBE` for all `GROUP` resources
 
 #### Prometheus
-Prometheus is an optional dependency of the console if cluster metrics are to be displayed. The operator currently installs a private Prometheus instance for each `Console` instance. However, when installing a single console deployment, Prometheus must be either installed separately or provided via a URL reference. This will be addressed below in the section dealing with creating a console via a `Deployment`.
+Prometheus is an optional dependency of the console if cluster metrics are to be displayed. The console supports gathering metrics in several ways.
+
+- OpenShift-managed Prometheus instances. Monitoring of user-defined projects must be enabled in OpenShift.
+- User-supplied Prometheus instances
+- Private Prometheus instance for each `Console`. The operator creates a managed Prometheus deployment for use only by the console.
 
 ### Deploy the operator with OLM
 The preferred way to deploy the console is using the Operator Lifecycle Manager, or OLM. The sample install files in `install/operator-olm` will install the operator with cluster-wide scope. This means that `Console` instances may be created in any namespace. If you wish to limit the scope of the operator, the `OperatorGroup` resource may be modified to specify only the namespace that should be watched by the operator.
@@ -68,11 +72,18 @@ kind: Console
 metadata:
   name: example
 spec:
-  hostname: example-console.apps-crc.testing # Hostname where the console will be accessed via HTTPS
+  hostname: example-console.cloud.example.com # Hostname where the console will be accessed via HTTPS
+  metricsSources:
+    # A `standalone` Prometheus instance must already exist and be accessible from the console Pod
+    - name: custom-prometheus
+      type: standalone
+      url: https://custom-prometheus.cloud.example.com
+      # Prometheus API authentication may also be provided
   kafkaClusters:
     - name: console-kafka             # Name of the `Kafka` CR representing the cluster
       namespace: kafka                # Namespace of the `Kafka` CR representing the cluster
       listener: secure                # Listener on the `Kafka` CR to connect from the console
+      metricsSource: custom-prometheus
       properties:
         values: []                    # Array of name/value for properties to be used for connections
                                       # made to this cluster
@@ -114,7 +125,6 @@ Running the console locally requires configuration of any Apache Kafka<sup>®</s
    ```
    CONSOLE_API_SERVICE_ACCOUNT_TOKEN=<TOKEN>
    CONSOLE_API_KUBERNETES_API_SERVER_URL=https://my-kubernetes-api.example.com:6443
-   CONSOLE_METRICS_PROMETHEUS_URL=http://console-prometheus.<your cluster base domain>
    ```
    The service account token may be obtained using the `kubectl create token` command. For example, to create a service account named "console-server" with the correct permissions and a token that expires in 1 year ([yq](https://github.com/mikefarah/yq/releases) required):
    ```shell

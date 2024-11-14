@@ -12,14 +12,6 @@
     <artifactId>console-operator</artifactId>
     <packaging>jar</packaging>
 
-    <properties>
-        <!-- Container image properties for systemtests -->
-        <container-image.registry>localhost</container-image.registry>
-        <container-image.group>streamshub</container-image.group>
-        <container-image.tag>${project.version}</container-image.tag>
-        <container-image.push>false</container-image.push>
-    </properties>
-
     <dependencies>
         <dependency>
             <groupId>com.github.streamshub</groupId>

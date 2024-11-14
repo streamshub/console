@@ -1,5 +1,4 @@
 "use client";
-import { MetricRange } from "@/api/kafka/schema";
 import {
   Card,
   CardBody,
@@ -15,8 +14,8 @@ import { ChartSkeletonLoader } from "./components/ChartSkeletonLoader";
 import { useTranslations } from "next-intl";
 
 type TopicChartsCardProps = {
-  incoming: MetricRange;
-  outgoing: MetricRange;
+  incoming: TimeSeriesMetrics;
+  outgoing: TimeSeriesMetrics;
 };
 
 export function TopicChartsCard({

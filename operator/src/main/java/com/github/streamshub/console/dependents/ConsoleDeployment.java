@@ -1,5 +1,6 @@
 package com.github.streamshub.console.dependents;
 
+import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 
@@ -9,6 +10,7 @@ import jakarta.inject.Inject;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import com.github.streamshub.console.api.v1alpha1.Console;
+import com.github.streamshub.console.api.v1alpha1.spec.Images;
 
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.javaoperatorsdk.operator.api.reconciler.Context;
@@ -22,9 +24,6 @@ import io.javaoperatorsdk.operator.processing.dependent.kubernetes.KubernetesDep
 public class ConsoleDeployment extends CRUDKubernetesDependentResource<Deployment, Console> implements ConsoleResource {
 
     public static final String NAME = "console-deployment";
-
-    @Inject
-    PrometheusService prometheusService;
 
     @Inject
     ConsoleServiceAccount serviceAccount;
@@ -55,9 +54,9 @@ public class ConsoleDeployment extends CRUDKubernetesDependentResource<Deploymen
         String name = instanceName(primary);
         String configSecretName = secret.instanceName(primary);
 
-        var imagesSpec = primary.getSpec().getImages();
-        String imageAPI = Optional.ofNullable(imagesSpec.getApi()).orElse(defaultAPIImage);
-        String imageUI = Optional.ofNullable(imagesSpec.getUi()).orElse(defaultUIImage);
+        var imagesSpec = Optional.ofNullable(primary.getSpec().getImages());
+        String imageAPI = imagesSpec.map(Images::getApi).orElse(defaultAPIImage);
+        String imageUI = imagesSpec.map(Images::getUi).orElse(defaultUIImage);
 
         return desired.edit()
             .editMetadata()
@@ -85,13 +84,10 @@ public class ConsoleDeployment extends CRUDKubernetesDependentResource<Deploymen
                         .endVolume()
                         .editMatchingContainer(c -> "console-api".equals(c.getName()))
                             .withImage(imageAPI)
-                            .addAllToEnv(primary.getSpec().getEnv())
+                            .addAllToEnv(coalesce(primary.getSpec().getEnv(), Collections::emptyList))
                         .endContainer()
                         .editMatchingContainer(c -> "console-ui".equals(c.getName()))
                             .withImage(imageUI)
-                            .editMatchingEnv(env -> "CONSOLE_METRICS_PROMETHEUS_URL".equals(env.getName()))
-                                .withValue(getAttribute(context, PrometheusService.NAME + ".url", String.class))
-                            .endEnv()
                             .editMatchingEnv(env -> "NEXTAUTH_URL".equals(env.getName()))
                                 .withValue(getAttribute(context, ConsoleIngress.NAME + ".url", String.class))
                             .endEnv()

@@ -2,7 +2,11 @@ package com.github.streamshub.console.config;
 
 import jakarta.validation.constraints.NotBlank;
 
-public class SchemaRegistryConfig {
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+
+@JsonInclude(Include.NON_NULL)
+public class SchemaRegistryConfig implements Named {
 
     @NotBlank(message = "Schema registry `name` is required")
     String name;
@@ -10,6 +14,7 @@ public class SchemaRegistryConfig {
     @NotBlank(message = "Schema registry `url` is required")
     String url;
 
+    @Override
     public String getName() {
         return name;
     }

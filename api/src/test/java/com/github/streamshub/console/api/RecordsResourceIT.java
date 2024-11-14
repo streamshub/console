@@ -605,7 +605,7 @@ class RecordsResourceIT {
 
         final String keyArtifactId = UUID.randomUUID().toString().replace("-", "");
         final String keySchema = """
-                {
+              {
                 "namespace": "console.avro",
                 "type": "record",
                 "name": "name_%s",
@@ -621,7 +621,7 @@ class RecordsResourceIT {
 
         final String valueArtifactId = UUID.randomUUID().toString().replace("-", "");
         final String valueSchema = """
-                {
+              {
                 "namespace": "console.avro",
                 "type": "record",
                 "name": "name_%s",

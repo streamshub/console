@@ -30,6 +30,16 @@ rules:
       # temporary until available: https://github.com/operator-framework/java-operator-sdk/pull/2456
       - create
 
+  # Used by operator to discover the OpenShift Monitoring query endpoint
+  - apiGroups:
+      - route.openshift.io
+    resources:
+      - routes
+    resourceNames:
+      - thanos-querier
+    verbs:
+      - get
+
   # Granted to Prometheus instances
   - apiGroups: [ '' ]
     resources:
@@ -77,6 +87,19 @@ roleRef:
   kind: ClusterRole
   apiGroup: rbac.authorization.k8s.io
   name: consolereconciler-additional-cluster-role
+subjects:
+  - kind: ServiceAccount
+    name: console-operator
+---
+# Required in order to grant to console instances with OpenShift Cluster Monitoring integration
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: consolereconciler-cluster-monitoring-view
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-monitoring-view
 subjects:
   - kind: ServiceAccount
     name: console-operator

@@ -50,6 +50,12 @@
         <!-- Ignore rule java:S110 about inheritance tree depth for operator dependent resources -->
         <sonar.issue.ignore.multicriteria.e2.ruleKey>java:S110</sonar.issue.ignore.multicriteria.e2.ruleKey>
         <sonar.issue.ignore.multicriteria.e2.resourceKey>**/dependents/*.java</sonar.issue.ignore.multicriteria.e2.resourceKey>
+
+        <!-- Container image properties for systemtests -->
+        <container-image.registry>localhost</container-image.registry>
+        <container-image.group>streamshub</container-image.group>
+        <container-image.tag>${project.version}</container-image.tag>
+        <container-image.push>false</container-image.push>
     </properties>
 
     <scm>

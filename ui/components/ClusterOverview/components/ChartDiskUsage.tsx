@@ -17,8 +17,8 @@ import { getHeight, getPadding } from "./chartConsts";
 import { useChartWidth } from "./useChartWidth";
 
 type ChartDiskUsageProps = {
-  usages: TimeSeriesMetrics[];
-  available: TimeSeriesMetrics[];
+  usages: Record<string, TimeSeriesMetrics>;
+  available: Record<string, TimeSeriesMetrics>;
 };
 type Datum = {
   x: number;
@@ -46,17 +46,23 @@ export function ChartDiskUsage({ usages, available }: ChartDiskUsageProps) {
     );
   }
   const CursorVoronoiContainer = createContainer("voronoi", "cursor");
-  const legendData = [
-    ...usages.map((_, idx) => ({
-      name: `Node ${idx}`,
-      childName: `node ${idx}`,
-    })),
-    ...usages.map((_, idx) => ({
-      name: `Available storage threshold (node ${idx})`,
-      childName: `threshold ${idx}`,
+  const legendData: { name: string, childName: string, symbol?: { type: string } }[] = [];
+
+  Object.entries(usages).forEach(([nodeId, _]) => {
+    legendData.push({
+      name: `Node ${nodeId}`,
+      childName: `node ${nodeId}`,
+    });
+  });
+
+  Object.entries(usages).forEach(([nodeId, _]) => {
+    legendData.push({
+      name: `Available storage threshold (node ${nodeId})`,
+      childName: `threshold ${nodeId}`,
       symbol: { type: "threshold" },
-    })),
-  ];
+    });
+  });
+
   const padding = getPadding(legendData.length / itemsPerRow);
   return (
     <div ref={containerRef}>
@@ -117,36 +123,38 @@ export function ChartDiskUsage({ usages, available }: ChartDiskUsageProps) {
           dependentAxis
           showGrid={true}
           tickFormat={(d) => {
-            return formatBytes(d, { maximumFractionDigits: 0 });
+            return formatBytes(d);
           }}
         />
         <ChartGroup>
-          {usages.map((usage, idx) => {
-            const usageArray = Object.entries(usage);
+          {Object.entries(usages).map(([nodeId, series]) => {
             return (
               <ChartArea
-                key={`usage-area-${idx}`}
-                data={usageArray.map(([x, y]) => ({
-                  name: `Node ${idx + 1}`,
-                  x,
-                  y,
-                }))}
-                name={`node ${idx}`}
+                key={ `usage-area-${nodeId}` }
+                data={ Object.entries(series).map(([k, v]) => {
+                    return ({
+                      name: `Node ${nodeId}`,
+                      x: Date.parse(k),
+                      y: v,
+                    })
+                })}
+                name={ `node ${nodeId}` }
               />
             );
           })}
-          {usages.map((usage, idx) => {
-            const usageArray = Object.entries(usage);
-            const data = Object.entries(available[idx]);
+
+          {Object.entries(usages).map(([nodeId, _]) => {
+            const availableSeries = available[nodeId];
+
             return (
               <ChartThreshold
-                key={`chart-softlimit-${idx}}`}
-                data={data.map(([_, y], x) => ({
-                  name: `Available storage threshold (node ${idx + 1})`,
-                  x: usageArray[x][0],
-                  y,
+                key={ `chart-softlimit-${nodeId}` }
+                data={ Object.entries(availableSeries).map(([k, v]) => ({
+                  name: `Available storage threshold (node ${nodeId})`,
+                  x: Date.parse(k),
+                  y: v,
                 }))}
-                name={`threshold ${idx}`}
+                name={`threshold ${nodeId}`}
               />
             );
           })}

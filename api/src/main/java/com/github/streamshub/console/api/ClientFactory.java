@@ -54,6 +54,7 @@ import org.eclipse.microprofile.config.Config;
 import org.jboss.logging.Logger;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.streamshub.console.api.service.MetricsService;
 import com.github.streamshub.console.api.support.Holder;
 import com.github.streamshub.console.api.support.KafkaContext;
 import com.github.streamshub.console.api.support.TrustAllCertificateManager;
@@ -154,6 +155,9 @@ public class ClientFactory {
     @Named("kafkaAdminFilter")
     UnaryOperator<Admin> kafkaAdminFilter = UnaryOperator.identity();
 
+    @Inject
+    MetricsService metricsService;
+
     @Produces
     @ApplicationScoped
     Map<String, KafkaContext> produceKafkaContexts(Function<Map<String, Object>, Admin> adminBuilder) {
@@ -168,7 +172,6 @@ public class ClientFactory {
         consoleConfig.getKafka().getClusters()
             .stream()
             .filter(c -> cachedKafkaResource(c).isEmpty())
-            .filter(Predicate.not(KafkaClusterConfig::hasNamespace))
             .forEach(clusterConfig -> putKafkaContext(contexts,
                         clusterConfig,
                         Optional.empty(),
@@ -303,6 +306,12 @@ public class ClientFactory {
             KafkaContext ctx = new KafkaContext(clusterConfig, kafkaResource.orElse(null), clientConfigs, admin);
             ctx.schemaRegistryClient(registryConfig, mapper);
 
+            if (clusterConfig.hasNamespace()) {
+                ctx.prometheus(metricsService.createClient(consoleConfig, clusterConfig));
+            } else if (clusterConfig.getMetricsSource() != null) {
+                log.infof("Skipping setup of metrics client for cluster %s. Reason: namespace is required for metrics retrieval but none was provided", clusterKey);
+            }
+
             KafkaContext previous = contexts.put(clusterId, ctx);
 
             if (previous == null) {
@@ -325,7 +334,7 @@ public class ClientFactory {
                     String key = clusterConfig.clusterKey();
 
                     if (kafkaInformer.isPresent()) {
-                        log.warnf("Configuration references Kubernetes Kafka resource %s, but it was not found", key);
+                        log.infof("Kafka resource %s not found in Kubernetes cluster", key);
                     } else {
                         log.warnf("Configuration references Kubernetes Kafka resource %s, but Kubernetes access is disabled", key);
                     }
