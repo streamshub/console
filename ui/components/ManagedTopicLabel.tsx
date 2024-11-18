@@ -11,7 +11,7 @@ export function ManagedTopicLabel() {
         isCompact={true}
         color={"yellow"}
         icon={<ServicesIcon />}
-        className={"pf-v5-u-ml-sm"}
+        className={"pf-v6-u-ml-sm"}
       >
         {t("ManagedTopicLabel.label")}
       </Label>

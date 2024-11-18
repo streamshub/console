@@ -67,7 +67,7 @@ export function DistributionChart({
   };
 
   return allCount > 0 ? (
-    <Card className={"pf-v5-u-mb-lg"}>
+    <Card className={"pf-v6-u-mb-lg"}>
       <CardHeader>
         <CardTitle>
           {t("DistributionChart.partitions_distribution_of_total")}{" "}

@@ -122,7 +122,7 @@ export function NodesTable({ nodes }: { nodes: Node[] }) {
       isRowExpandable={() => true}
       getExpandedRow={({ row }) => {
         return (
-          <Flex gap={{ default: "gap4xl" }} className={"pf-v5-u-p-xl"}>
+          <Flex gap={{ default: "gap4xl" }} className={"pf-v6-u-p-xl"}>
             <FlexItem flex={{ default: "flex_1" }} style={{ maxWidth: "50%" }}>
               <Content>
                 <Content>{t.rich("nodes.broker_host_name")}</Content>

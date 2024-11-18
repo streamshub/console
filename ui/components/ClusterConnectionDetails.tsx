@@ -29,7 +29,7 @@ export async function ClusterConnectionDetails({
   return (
     <Stack>
       <StackItem isFilled={true}>
-        <Content className={"pf-v5-u-p-lg"}>
+        <Content className={"pf-v6-u-p-lg"}>
           <Content>{t("ClusterConnectionDetails.description")}</Content>
 
           <ExpandableSection
@@ -49,7 +49,7 @@ export async function ClusterConnectionDetails({
             </Content>
             <List isPlain={true}>
               {external.map((l, idx) => (
-                <ListItem key={idx} className={"pf-v5-u-py-sm"}>
+                <ListItem key={idx} className={"pf-v6-u-py-sm"}>
                   <ClipboardCopy isReadOnly={true}>
                     {l.bootstrapServers ?? ""}
                   </ClipboardCopy>
@@ -73,7 +73,7 @@ export async function ClusterConnectionDetails({
                 <Badge isRead={true}>{internal.length}</Badge>
               </div>
             }
-            className={"pf-v5-u-mt-lg"}
+            className={"pf-v6-u-mt-lg"}
           >
             <Content>
               {t(
@@ -82,7 +82,7 @@ export async function ClusterConnectionDetails({
             </Content>
             <List isPlain={true}>
               {internal.map((l, idx) => (
-                <ListItem key={idx} className={"pf-v5-u-py-sm"}>
+                <ListItem key={idx} className={"pf-v6-u-py-sm"}>
                   <ClipboardCopy isReadOnly={true}>
                     {l.bootstrapServers ?? ""}
                   </ClipboardCopy>
@@ -105,7 +105,7 @@ export async function ClusterConnectionDetails({
       {isProductizedBuild && (
         <StackItem>
           <Divider />
-          <Stack hasGutter={true} className={"pf-v5-u-p-lg"}>
+          <Stack hasGutter={true} className={"pf-v6-u-p-lg"}>
             {t("learning.links.connecting") && (
               <StackItem>
                 <ExternalLink

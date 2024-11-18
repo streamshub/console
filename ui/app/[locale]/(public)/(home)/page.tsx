@@ -49,7 +49,7 @@ export default async function Home() {
               <Title headingLevel={"h1"} size={"2xl"}>
                 {t.rich("homepage.page_header", { product: productName })}
               </Title>
-              <Content className={"pf-v5-u-color-200"}>
+              <Content className={"pf-v6-u-color-200"}>
                 {t("homepage.page_subtitle", {
                   brand: brand,
                   product: productName,

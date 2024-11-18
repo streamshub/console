@@ -48,7 +48,7 @@ export function ApplicationError({
       <EmptyStateFooter>
         <ExpandableSection initialExpanded={false} toggleText={"Show more"}>
           {error.digest && (
-            <Title headingLevel={"h2"} className={"pf-v5-u-mb-lg"}>
+            <Title headingLevel={"h2"} className={"pf-v6-u-mb-lg"}>
               {error.digest}
             </Title>
           )}

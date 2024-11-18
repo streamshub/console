@@ -6,7 +6,7 @@ import {
   Button,
   LoginForm,
   LoginFormProps,
-  LoginMainFooterBandItem,
+  LoginMainFooterLinksItem,
   LoginPage,
 } from "@patternfly/react-core";
 import { signIn } from "next-auth/react";
@@ -74,14 +74,14 @@ export function SignInPage({
   };
 
   const learnMoreResource = (
-    <LoginMainFooterBandItem>
+    <LoginMainFooterLinksItem>
       <ExternalLink
         href={"https://redhat.com"}
         testId={"learn-more-about-streams-kafka"}
       >
         {t("login-in-page.learning_resource", { product: productName })}
       </ExternalLink>
-    </LoginMainFooterBandItem>
+    </LoginMainFooterLinksItem>
   );
 
   const doLogin = async () => {

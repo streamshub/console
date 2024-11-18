@@ -105,7 +105,7 @@ export function ClusterCard({
               alignSelf={{ default: "alignSelfCenter" }}
               style={{ minWidth: "200px" }}
             >
-              <FlexItem className={"pf-v5-u-py-md"}>
+              <FlexItem className={"pf-v6-u-py-md"}>
                 {isLoading ? (
                   <>
                     <Icon status={"success"}>
@@ -147,7 +147,7 @@ export function ClusterCard({
             >
               <Grid>
                 <GridItem span={12} xl={4}>
-                  <Link className="pf-v5-u-font-size-xl" href={"./nodes"}>
+                  <Link className="pf-v6-u-font-size-xl" href={"./nodes"}>
                     {isLoading ? (
                       <Skeleton
                         shape={"circle"}
@@ -170,7 +170,7 @@ export function ClusterCard({
                 </GridItem>
                 <GridItem span={12} xl={4}>
                   <Link
-                    className="pf-v5-u-font-size-xl"
+                    className="pf-v6-u-font-size-xl"
                     href={"./consumer-groups"}
                   >
                     {isLoading ? (
@@ -190,7 +190,7 @@ export function ClusterCard({
                   </Content>
                 </GridItem>
                 <GridItem span={12} xl={4}>
-                  <div className="pf-v5-u-font-size-xl">
+                  <div className="pf-v6-u-font-size-xl">
                     {isLoading ? <Skeleton /> : kafkaVersion}
                   </div>
                   <Content>
@@ -256,7 +256,7 @@ export function ClusterCard({
                               dataListCells={[
                                 <DataListCell
                                   key="name"
-                                  className={"pf-v5-u-text-nowrap"}
+                                  className={"pf-v6-u-text-nowrap"}
                                   width={1}
                                 >
                                   <Icon status={m.variant}>
@@ -273,7 +273,7 @@ export function ClusterCard({
                                 <DataListCell key="message" width={5}>
                                   <div
                                     className={
-                                      "pf-v5-u-display-none pf-v5-u-display-block-on-md"
+                                      "pf-v6-u-display-none pf-v6-u-display-block-on-md"
                                     }
                                   >
                                     <Truncate
@@ -302,7 +302,7 @@ export function ClusterCard({
                                   </div>
                                   <div
                                     className={
-                                      "pf-v5-u-display-block pf-v5-u-display-none-on-md"
+                                      "pf-v6-u-display-block pf-v6-u-display-none-on-md"
                                     }
                                   >
                                     {m.message}
@@ -311,7 +311,7 @@ export function ClusterCard({
                                 <DataListCell
                                   key="date"
                                   width={1}
-                                  className={"pf-v5-u-text-nowrap"}
+                                  className={"pf-v6-u-text-nowrap"}
                                 >
                                   <DateTime
                                     value={m.date}

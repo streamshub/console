@@ -402,7 +402,7 @@ export function MessagesTable({
           <Content>
             <Content
               component={"small"}
-              className={"pf-v5-u-px-md pf-v5-u-py-sm"}
+              className={"pf-v6-u-px-md pf-v6-u-py-sm"}
             >
               Last updated:{" "}
               <DateTime

@@ -62,7 +62,7 @@ export function RecentTopicsCard({
             </EmptyStateBody>
             {isProductizedBuild && (
               <EmptyStateFooter>
-                <EmptyStateActions className={"pf-v5-u-font-size-sm"}>
+                <EmptyStateActions className={"pf-v6-u-font-size-sm"}>
                   <ExternalLink
                     testId={"recent-topics-empty-state-link"}
                     href={t("learning.links.topicOperatorUse")}

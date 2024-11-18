@@ -114,7 +114,7 @@ export function TopicsPartitionsCard({
                   <Number value={topicsReplicated} />
                 )}
               </Link>
-              <Content className={"pf-v5-u-text-nowrap"}>
+              <Content className={"pf-v6-u-text-nowrap"}>
                 <Content component={"small"}>
                   <Icon status={"success"}>
                     <CheckCircleIcon />
@@ -142,7 +142,7 @@ export function TopicsPartitionsCard({
                   <Number value={topicsUnderReplicated} />
                 )}
               </Link>
-              <Content className={"pf-v5-u-text-nowrap"}>
+              <Content className={"pf-v6-u-text-nowrap"}>
                 <Content component={"small"}>
                   <Icon status={"warning"}>
                     <ExclamationTriangleIcon />
@@ -170,7 +170,7 @@ export function TopicsPartitionsCard({
                   <Number value={topicsOffline} />
                 )}
               </Link>
-              <Content className={"pf-v5-u-text-nowrap"}>
+              <Content className={"pf-v6-u-text-nowrap"}>
                 <Content component={"small"}>
                   <Icon status={"danger"}>
                     <ExclamationCircleIcon />
