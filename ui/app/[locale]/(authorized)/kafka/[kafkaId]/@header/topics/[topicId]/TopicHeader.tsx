@@ -5,8 +5,14 @@ import { AppHeader } from "@/components/AppHeader";
 import { Number } from "@/components/Format/Number";
 import { ManagedTopicLabel } from "@/components/ManagedTopicLabel";
 import { NavItemLink } from "@/components/Navigation/NavItemLink";
-import { Label, Nav, NavList, Spinner } from "@/libs/patternfly/react-core";
-import { Skeleton } from "@patternfly/react-core";
+import {
+  Label,
+  Nav,
+  NavList,
+  PageSection,
+  Skeleton,
+  Spinner,
+} from "@/libs/patternfly/react-core";
 import { notFound } from "next/navigation";
 import { ReactNode, Suspense } from "react";
 
@@ -27,46 +33,48 @@ export function TopicHeader({
           title={<Skeleton width="35%" />}
           showRefresh={showRefresh}
           navigation={
-            <Nav aria-label="Group section navigation" variant="horizontal">
-              <NavList>
-                <NavItemLink
-                  url={`/kafka/${kafkaId}/topics/${topicId}/messages`}
-                >
-                  Messages&nbsp;
-                  <Label isCompact={true}>
-                    <Spinner size="sm" />
-                  </Label>
-                </NavItemLink>
-                <NavItemLink
-                  url={`/kafka/${kafkaId}/topics/${topicId}/partitions`}
-                >
-                  Partitions&nbsp;
-                  <Label isCompact={true}>
-                    <Spinner size="sm" />
-                  </Label>
-                </NavItemLink>
-                <NavItemLink
-                  url={`/kafka/${kafkaId}/topics/${topicId}/consumer-groups`}
-                >
-                  Consumer groups&nbsp;
-                  <Label isCompact={true}>
-                    <Spinner size="sm" />
-                  </Label>
-                </NavItemLink>
-                {/*
+            <PageSection className="pf-v6-u-px-sm" type="subnav">
+              <Nav aria-label="Group section navigation" variant="horizontal">
+                <NavList>
+                  <NavItemLink
+                    url={`/kafka/${kafkaId}/topics/${topicId}/messages`}
+                  >
+                    Messages&nbsp;
+                    <Label isCompact={true}>
+                      <Spinner size="sm" />
+                    </Label>
+                  </NavItemLink>
+                  <NavItemLink
+                    url={`/kafka/${kafkaId}/topics/${topicId}/partitions`}
+                  >
+                    Partitions&nbsp;
+                    <Label isCompact={true}>
+                      <Spinner size="sm" />
+                    </Label>
+                  </NavItemLink>
+                  <NavItemLink
+                    url={`/kafka/${kafkaId}/topics/${topicId}/consumer-groups`}
+                  >
+                    Consumer groups&nbsp;
+                    <Label isCompact={true}>
+                      <Spinner size="sm" />
+                    </Label>
+                  </NavItemLink>
+                  {/*
                   <NavItemLink
                     url={`/kafka/${kafkaId}/topics/${topicId}/schema-registry`}
                   >
                     Schema
                   </NavItemLink>
 */}
-                <NavItemLink
-                  url={`/kafka/${kafkaId}/topics/${topicId}/configuration`}
-                >
-                  Configuration
-                </NavItemLink>
-              </NavList>
-            </Nav>
+                  <NavItemLink
+                    url={`/kafka/${kafkaId}/topics/${topicId}/configuration`}
+                  >
+                    Configuration
+                  </NavItemLink>
+                </NavList>
+              </Nav>
+            </PageSection>
           }
           actions={[portal]}
         />
@@ -105,43 +113,49 @@ async function ConnectedTopicHeader({
       }
       showRefresh={showRefresh}
       navigation={
-        <Nav aria-label="Group section navigation" variant="horizontal">
-          <NavList>
-            <NavItemLink url={`/kafka/${kafkaId}/topics/${topicId}/messages`}>
-              Messages&nbsp;
-            </NavItemLink>
-            <NavItemLink url={`/kafka/${kafkaId}/topics/${topicId}/partitions`}>
-              Partitions&nbsp;
-              <Label isCompact={true}>
-                <Suspense fallback={<Spinner size="sm" />}>
-                  <Number value={topic?.attributes.numPartitions} />
-                </Suspense>
-              </Label>
-            </NavItemLink>
-            <NavItemLink
-              url={`/kafka/${kafkaId}/topics/${topicId}/consumer-groups`}
-            >
-              Consumer groups&nbsp;
-              <Label isCompact={true}>
-                <Number
-                  value={topic?.relationships.consumerGroups?.data.length ?? 0}
-                />
-              </Label>
-            </NavItemLink>
-            {/*
+        <PageSection className="pf-v6-u-px-sm" type="subnav">
+          <Nav aria-label="Group section navigation" variant="horizontal">
+            <NavList>
+              <NavItemLink url={`/kafka/${kafkaId}/topics/${topicId}/messages`}>
+                Messages&nbsp;
+              </NavItemLink>
+              <NavItemLink
+                url={`/kafka/${kafkaId}/topics/${topicId}/partitions`}
+              >
+                Partitions&nbsp;
+                <Label isCompact={true}>
+                  <Suspense fallback={<Spinner size="sm" />}>
+                    <Number value={topic?.attributes.numPartitions} />
+                  </Suspense>
+                </Label>
+              </NavItemLink>
+              <NavItemLink
+                url={`/kafka/${kafkaId}/topics/${topicId}/consumer-groups`}
+              >
+                Consumer groups&nbsp;
+                <Label isCompact={true}>
+                  <Number
+                    value={
+                      topic?.relationships.consumerGroups?.data.length ?? 0
+                    }
+                  />
+                </Label>
+              </NavItemLink>
+              {/*
               <NavItemLink
                 url={`/kafka/${kafkaId}/topics/${topicId}/schema-registry`}
               >
                 Schema
               </NavItemLink>
               */}
-            <NavItemLink
-              url={`/kafka/${kafkaId}/topics/${topicId}/configuration`}
-            >
-              Configuration
-            </NavItemLink>
-          </NavList>
-        </Nav>
+              <NavItemLink
+                url={`/kafka/${kafkaId}/topics/${topicId}/configuration`}
+              >
+                Configuration
+              </NavItemLink>
+            </NavList>
+          </Nav>
+        </PageSection>
       }
       actions={[portal]}
     />

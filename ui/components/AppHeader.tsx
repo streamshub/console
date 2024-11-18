@@ -31,7 +31,7 @@ export function AppHeader({
     <>
       <PageSection
         padding={{ default: navigation ? "noPadding" : "padding" }}
-        className={navigation ? "pf-v6-u-px-lg pf-v6-u-pt-sm" : undefined}
+        className={navigation ? "pf-v6-u-px-md pf-v6-u-pt-sm" : undefined}
         hasShadowBottom={!navigation}
       >
         <Flex direction={{ default: "column" }}>
