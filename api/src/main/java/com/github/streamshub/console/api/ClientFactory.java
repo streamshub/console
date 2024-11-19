@@ -175,8 +175,7 @@ public class ClientFactory {
             .forEach(clusterConfig -> putKafkaContext(contexts,
                         clusterConfig,
                         Optional.empty(),
-                        adminBuilder,
-                        false));
+                        adminBuilder));
 
         return Collections.unmodifiableMap(contexts);
     }
@@ -198,8 +197,7 @@ public class ClientFactory {
                                 putKafkaContext(contexts,
                                         clusterConfig,
                                         Optional.of(kafka),
-                                        adminBuilder,
-                                        false);
+                                        adminBuilder);
                             }
                         },
                         () -> log.debugf("Ignoring added Kafka resource %s, not found in configuration", Cache.metaNamespaceKeyFunc(kafka)));
@@ -213,8 +211,7 @@ public class ClientFactory {
                         clusterConfig -> putKafkaContext(contexts,
                             clusterConfig,
                             Optional.of(newKafka),
-                            adminBuilder,
-                            true),
+                            adminBuilder),
                         () -> log.debugf("Ignoring updated Kafka resource %s, not found in configuration", Cache.metaNamespaceKeyFunc(newKafka)));
             }
 
@@ -244,8 +241,7 @@ public class ClientFactory {
     void putKafkaContext(Map<String, KafkaContext> contexts,
             KafkaClusterConfig clusterConfig,
             Optional<Kafka> kafkaResource,
-            Function<Map<String, Object>, Admin> adminBuilder,
-            boolean allowReplacement) {
+            Function<Map<String, Object>, Admin> adminBuilder) {
 
         var adminConfigs = buildConfig(AdminClientConfig.configNames(),
                 clusterConfig,
@@ -281,12 +277,7 @@ public class ClientFactory {
         String clusterKey = clusterConfig.clusterKey();
         String clusterId = KafkaContext.clusterId(clusterConfig, kafkaResource);
 
-        if (contexts.containsKey(clusterId) && !allowReplacement) {
-            log.warnf("""
-                    Ignoring duplicate Kafka cluster id: %s for cluster %s. Cluster id values in \
-                    configuration must be unique and may not match id values of \
-                    clusters discovered using Strimzi Kafka Kubernetes API resources.""", clusterId, clusterKey);
-        } else if (validConfigs(kafkaResource, clusterConfig, clientConfigs)) {
+        if (validConfigs(kafkaResource, clusterConfig, clientConfigs)) {
             Admin admin = null;
 
             if (establishGlobalConnection(adminConfigs)) {
