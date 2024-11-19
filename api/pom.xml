@@ -330,7 +330,6 @@
                             <excludes>
                                 <exclude>com/github/streamshub/console/api/support/TrustAllCertificateManager.class</exclude>
                             </excludes>
-                            <exclClassLoaders>*QuarkusClassLoader</exclClassLoaders>
                             <destFile>${project.build.directory}/jacoco-quarkus.exec</destFile>
                             <append>true</append>
                         </configuration>
