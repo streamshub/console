@@ -38,7 +38,7 @@ export function ErrorsAndWarnings({
             <Label color={"red"} isCompact={true}>
               <ExclamationCircleIcon /> {dangers}
             </Label>
-            <Label color={"gold"} isCompact={true}>
+            <Label color={"yellow"} isCompact={true}>
               <ExclamationTriangleIcon /> {warnings}
             </Label>
           </LabelGroup>

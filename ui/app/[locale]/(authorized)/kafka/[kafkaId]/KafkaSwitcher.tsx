@@ -69,7 +69,7 @@ export function KafkaSwitcher<T extends string>({
             {
               "--pf-v5-c-menu-toggle__toggle-icon--MarginRight": 0,
               "--pf-v5-c-menu-toggle__controls--PaddingLeft":
-                "var(--pf-v5-global--spacer--sm)",
+                "var(--pf-t--global--spacer--sm)",
             } as CSSProperties
           }
         >

@@ -5,6 +5,7 @@ import {
   Button,
   Card,
   CardBody,
+  Content,
   DataList,
   DataListCell,
   DataListItem,
@@ -17,8 +18,6 @@ import {
   GridItem,
   Icon,
   Skeleton,
-  Text,
-  TextContent,
   Title,
   Truncate,
 } from "@/libs/patternfly/react-core";
@@ -132,9 +131,9 @@ export function ClusterCard({
 
                     <Title headingLevel={"h2"}>{name}</Title>
 
-                    <TextContent>
-                      <Text component={"small"}>{status}</Text>
-                    </TextContent>
+                    <Content>
+                      <Content component={"small"}>{status}</Content>
+                    </Content>
                   </>
                 )}
               </FlexItem>
@@ -163,11 +162,11 @@ export function ClusterCard({
                       </>
                     )}
                   </Link>
-                  <TextContent>
-                    <Text component={"small"}>
+                  <Content>
+                    <Content component={"small"}>
                       {t("ClusterCard.online_brokers")}
-                    </Text>
-                  </TextContent>
+                    </Content>
+                  </Content>
                 </GridItem>
                 <GridItem span={12} xl={4}>
                   <Link
@@ -184,21 +183,21 @@ export function ClusterCard({
                       <Number value={consumerGroups} />
                     )}
                   </Link>
-                  <TextContent>
-                    <Text component={"small"}>
+                  <Content>
+                    <Content component={"small"}>
                       {t("ClusterCard.consumer_groups")}
-                    </Text>
-                  </TextContent>
+                    </Content>
+                  </Content>
                 </GridItem>
                 <GridItem span={12} xl={4}>
                   <div className="pf-v5-u-font-size-xl">
                     {isLoading ? <Skeleton /> : kafkaVersion}
                   </div>
-                  <TextContent>
-                    <Text component={"small"}>
+                  <Content>
+                    <Content component={"small"}>
                       {t("ClusterCard.kafka_version")}
-                    </Text>
-                  </TextContent>
+                    </Content>
+                  </Content>
                 </GridItem>
               </Grid>
             </Flex>

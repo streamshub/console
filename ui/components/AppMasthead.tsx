@@ -1,10 +1,13 @@
 "use client";
 import { TechPreviewPopover } from "@/components/TechPreviewPopover";
 import {
+  Brand,
   Button,
   Label,
   Masthead,
+  MastheadBrand,
   MastheadContent,
+  MastheadLogo,
   MastheadMain,
   MastheadToggle,
   PageToggleButton,
@@ -15,9 +18,7 @@ import {
 } from "@/libs/patternfly/react-core";
 import { BarsIcon, QuestionCircleIcon } from "@/libs/patternfly/react-icons";
 import { FeedbackModal } from "@patternfly/react-user-feedback";
-import { User } from "next-auth";
 import { useTranslations } from "next-intl";
-import Link from "next/link";
 import { useState } from "react";
 import { useAppLayout } from "./AppLayoutProvider";
 import { UserDropdown } from "./UserDropdown";
@@ -41,6 +42,7 @@ export function AppMasthead({
   return (
     <>
       <Masthead>
+      <MastheadMain>
         {showSidebarToggle && (
           <MastheadToggle>
             <PageToggleButton
@@ -52,15 +54,15 @@ export function AppMasthead({
             </PageToggleButton>
           </MastheadToggle>
         )}
-        <MastheadMain>
-          <Link href={"/"} className={"pf-v5-c-masthead_brand"}>
-            <img
-              className={"pf-v5-c-brand"}
+        <MastheadBrand>
+        <MastheadLogo href="/" target="_blank">
+            <Brand
               src={"/full-logo.svg"}
               alt={t("common.title")}
-              style={{ height: 48 }}
+              heights={{ default: '56px' }}
             />
-          </Link>
+          </MastheadLogo>
+        </MastheadBrand>
         </MastheadMain>
         <MastheadContent>
           <Toolbar
@@ -71,12 +73,11 @@ export function AppMasthead({
           >
             <ToolbarContent id={"masthead-toolbar"}>
               <ToolbarGroup
-                variant="icon-button-group"
-                align={{ default: "alignRight" }}
-                spacer={{ default: "spacerNone", md: "spacerMd" }}
+                variant="action-group"
+                align={{ default: "alignEnd" }}
               >
                 <ToolbarGroup
-                  variant="icon-button-group"
+                  variant="action-group"
                   visibility={{ default: "hidden", lg: "visible" }}
                 >
                   <ToolbarItem>

@@ -9,7 +9,7 @@ export function ManagedTopicLabel() {
     <Tooltip content={t("ManagedTopicLabel.tooltip")}>
       <Label
         isCompact={true}
-        color={"gold"}
+        color={"yellow"}
         icon={<ServicesIcon />}
         className={"pf-v5-u-ml-sm"}
       >
