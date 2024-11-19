@@ -2,17 +2,16 @@ import { getKafkaCluster } from "@/api/kafka/actions";
 import { KafkaParams } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/kafka.params";
 import { AppHeader } from "@/components/AppHeader";
 import { Number } from "@/components/Format/Number";
-import { NavItemLink } from "@/components/Navigation/NavItemLink";
+import { NavTabLink } from "@/components/Navigation/NavTabLink";
 import {
   Label,
-  Nav,
-  NavList,
   PageSection,
   Spinner,
   Split,
   SplitItem,
 } from "@/libs/patternfly/react-core";
 import { CheckCircleIcon } from "@/libs/patternfly/react-icons";
+import { useTranslations } from "next-intl";
 import { Suspense } from "react";
 
 export default function NodesHeader({ params }: { params: KafkaParams }) {
@@ -45,11 +44,26 @@ function Header({
   kafkaId: string | undefined;
   cruiseControlEnable: boolean;
 }) {
+  const t = useTranslations("node-header");
+
+  const tabs = [
+    { key: 0, title: t("overveiw"), url: `/kafka/${kafkaId}/nodes` },
+    ...(cruiseControlEnable
+      ? [
+          {
+            key: 1,
+            title: t("rebalance"),
+            url: `/kafka/${kafkaId}/nodes/rebalances`,
+          },
+        ]
+      : []),
+  ];
+
   return (
     <AppHeader
       title={
         <Split hasGutter={true}>
-          <SplitItem>Brokers</SplitItem>
+          <SplitItem>{t("brokers")}</SplitItem>
           <SplitItem>
             <Label
               color={"green"}
@@ -68,18 +82,7 @@ function Header({
       }
       navigation={
         <PageSection className={"pf-v6-u-px-sm"} type="subnav">
-          <Nav aria-label="Node navigation" variant="horizontal">
-            <NavList>
-              <NavItemLink url={`/kafka/${kafkaId}/nodes`} exact={true}>
-                Overview
-              </NavItemLink>
-              {cruiseControlEnable && (
-                <NavItemLink url={`/kafka/${kafkaId}/nodes/rebalances`}>
-                  Rebalance
-                </NavItemLink>
-              )}
-            </NavList>
-          </Nav>
+          <NavTabLink tabs={tabs} />
         </PageSection>
       }
     />
