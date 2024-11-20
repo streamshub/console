@@ -34,6 +34,15 @@ spec:
         env:
         - name: CONSOLE_CONFIG_PATH
           value: /deployments/console-config.yaml
+        securityContext:
+          readOnlyRootFilesystem: true
+          allowPrivilegeEscalation: false
+          seccompProfile:
+            type: RuntimeDefault
+          runAsNonRoot: true
+          capabilities:
+            drop:
+            - ALL
       ### User Interface
       - name: console-ui
         image: quay.io/streamshub/console-ui:latest
@@ -53,3 +62,12 @@ spec:
           value: 'https://${CONSOLE_HOSTNAME}'
         - name: BACKEND_URL
           value: 'http://127.0.0.1:8080'
+        securityContext:
+          readOnlyRootFilesystem: true
+          allowPrivilegeEscalation: false
+          seccompProfile:
+            type: RuntimeDefault
+          runAsNonRoot: true
+          capabilities:
+            drop:
+            - ALL

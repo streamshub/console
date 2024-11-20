@@ -13,7 +13,7 @@ spec:
     spec:
       containers:
         - name: prometheus
-          image: quay.io/prometheus/prometheus
+          image: quay.io/prometheus/prometheus:v2.55.1
           ports:
             - containerPort: 9090
           volumeMounts:
@@ -25,6 +25,14 @@ spec:
             - '--storage.tsdb.retention.time=24h'
             - '--config.file=/etc/prometheus/prometheus.yml'
             - '--storage.tsdb.path=/prometheus'
+          securityContext:
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            seccompProfile:
+              type: RuntimeDefault
+            capabilities:
+              drop:
+              - ALL
       volumes:
         - name: config-volume
           configMap:

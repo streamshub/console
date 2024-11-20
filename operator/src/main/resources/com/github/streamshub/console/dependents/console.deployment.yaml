@@ -74,6 +74,15 @@ spec:
           timeoutSeconds: 10
           successThreshold: 1
           failureThreshold: 3
+        securityContext:
+          readOnlyRootFilesystem: true
+          allowPrivilegeEscalation: false
+          seccompProfile:
+            type: RuntimeDefault
+          runAsNonRoot: true
+          capabilities:
+            drop:
+            - ALL
       ### User Interface
       - name: console-ui
         image: quay.io/streamshub/console-ui
@@ -127,3 +136,12 @@ spec:
           timeoutSeconds: 10
           successThreshold: 1
           failureThreshold: 3
+        securityContext:
+          readOnlyRootFilesystem: true
+          allowPrivilegeEscalation: false
+          seccompProfile:
+            type: RuntimeDefault
+          runAsNonRoot: true
+          capabilities:
+            drop:
+            - ALL
