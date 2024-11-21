@@ -73,13 +73,6 @@ public class TestPlainProfile implements QuarkusTestProfile {
                     - name: test-kafkaY
                       properties:
                         bootstrap.servers: ${console.test.external-bootstrap}
-
-                    # duplicate test-kafkaY that will be ignored
-                    - name: test-kafkaY
-                      properties:
-                        bootstrap.servers: ${console.test.external-bootstrap}
-                        sasl.mechanism: SCRAM-SHA-512
-                        sasl.jaas.config: something
                 """);
 
         return Map.of("console.config-path", configFile.getAbsolutePath());
