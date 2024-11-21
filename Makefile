@@ -29,7 +29,7 @@ container-image-api-push: container-image-api
 container-image-operator:
 	mvn package -am -pl operator -Pcontainer-image -DskipTests -Dquarkus.container-image.image=$(CONSOLE_OPERATOR_IMAGE)
 	operator/bin/modify-bundle-metadata.sh
-	operator/bin/generate-catalog.sh $(VERSION)``
+	operator/bin/generate-catalog.sh $(VERSION)
 	$(CONTAINER_RUNTIME) build --platform=$(ARCH) -t $(CONSOLE_OPERATOR_BUNDLE_IMAGE) -f operator/target/bundle/console-operator/bundle.Dockerfile
 	$(CONTAINER_RUNTIME) build --platform=$(ARCH) -t $(CONSOLE_OPERATOR_CATALOG_IMAGE) -f operator/target/catalog.Dockerfile
 

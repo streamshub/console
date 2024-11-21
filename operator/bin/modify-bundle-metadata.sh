@@ -44,7 +44,7 @@ curr_time_date="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
 echo "[DEBUG] Setting createdAt = ${curr_time_date}"
 ${YQ} eval -o yaml -i ".metadata.annotations.createdAt = \"${curr_time_date}\"" "${CSV_FILE_PATH}"
 
-# Change operator deployment name
+# Change operator name
 echo "[DEBUG] Renaming operator to ${OPERATOR_INSTANCE_NAME}"
 ${YQ} eval -o yaml -i ".metadata.name = \"${OPERATOR_CSV_NAME}\" | .metadata.name style=\"\"" "${CSV_FILE_PATH}"
 ${YQ} eval -o yaml -i ".spec.install.spec.deployments[0].name = \"${OPERATOR_INSTANCE_NAME}\"" "${CSV_FILE_PATH}"
@@ -52,8 +52,9 @@ ${YQ} eval -o yaml -i ".spec.install.spec.deployments[0].spec.selector.matchLabe
 ${YQ} eval -o yaml -i ".spec.install.spec.deployments[0].spec.template.metadata.labels[\"app.kubernetes.io/instance\"] = \"${OPERATOR_INSTANCE_NAME}\"" "${CSV_FILE_PATH}"
 ${YQ} eval -o yaml -i ".spec.install.spec.deployments[0].spec.template.metadata.labels[\"app.kubernetes.io/name\"] = \"${OPERATOR_INSTANCE_NAME}\"" "${CSV_FILE_PATH}"
 ${YQ} eval -o yaml -i ".spec.install.spec.deployments[0].spec.template.spec.containers[0].name = \"${OPERATOR_NAME}\"" "${CSV_FILE_PATH}"
-${YQ} eval -o yaml -i ".spec.install.spec.clusterPermissions.[].serviceAccountName = \"${OPERATOR_NAME}\"" "${CSV_FILE_PATH}"
+# Change serviceAccountName as well
 ${YQ} eval -o yaml -i ".spec.install.spec.deployments[0].spec.template.spec.serviceAccountName = \"${OPERATOR_NAME}\"" "${CSV_FILE_PATH}"
+${YQ} eval -o yaml -i ".spec.install.spec.clusterPermissions.[].serviceAccountName = \"${OPERATOR_NAME}\"" "${CSV_FILE_PATH}"
 
 # Add skipRange if present
 if [[ -n "$SKIP_RANGE" ]]; then
