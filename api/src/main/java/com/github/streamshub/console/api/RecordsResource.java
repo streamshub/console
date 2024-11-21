@@ -1,7 +1,6 @@
 package com.github.streamshub.console.api;
 
 import java.util.List;
-import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
 
 import jakarta.inject.Inject;
@@ -72,7 +71,7 @@ public class RecordsResource {
     @APIResponse(responseCode = "404", ref = "NotFound")
     @APIResponse(responseCode = "500", ref = "ServerError")
     @APIResponse(responseCode = "504", ref = "ServerTimeout")
-    public CompletionStage<Response> consumeRecords(
+    public Response consumeRecords(
             @Parameter(description = "Cluster identifier")
             @PathParam("clusterId")
             String clusterId,
@@ -126,19 +125,18 @@ public class RecordsResource {
 
         requestedFields.accept(fields);
         CacheControl noStore = RuntimeDelegate.getInstance().createHeaderDelegate(CacheControl.class).fromString("no-store");
-
-        return recordService.consumeRecords(
+        var records = recordService.consumeRecords(
                 topicId,
                 params.getPartition(),
                 params.getOffset(),
                 params.getTimestamp(),
                 params.getLimit(),
                 fields,
-                params.getMaxValueLength())
-            .thenApply(KafkaRecord.KafkaRecordDataList::new)
-            .thenApply(Response::ok)
-            .thenApply(response -> response.cacheControl(noStore))
-            .thenApply(Response.ResponseBuilder::build);
+                params.getMaxValueLength());
+
+        return Response.ok(new KafkaRecord.KafkaRecordDataList(records))
+                .cacheControl(noStore)
+                .build();
     }
 
     @POST
@@ -154,7 +152,7 @@ public class RecordsResource {
     @APIResponse(responseCode = "404", ref = "NotFound")
     @APIResponse(responseCode = "500", ref = "ServerError")
     @APIResponse(responseCode = "504", ref = "ServerTimeout")
-    public CompletionStage<Response> produceRecord(
+    public Response produceRecord(
             @Parameter(description = "Cluster identifier")
             @PathParam("clusterId")
             String clusterId,
@@ -169,15 +167,14 @@ public class RecordsResource {
 
         final UriBuilder location = uriInfo.getRequestUriBuilder();
         requestedFields.accept(KafkaRecord.Fields.ALL);
+        var entity = new KafkaRecord.KafkaRecordData(recordService.produceRecord(topicId, message.getData()));
 
-        return recordService.produceRecord(topicId, message.getData())
-            .thenApply(KafkaRecord.KafkaRecordData::new)
-            .thenApply(entity -> Response.status(Status.CREATED)
-                    .entity(entity)
-                    .location(location
-                            .queryParam("filter[partition]", entity.getData().partition())
-                            .queryParam("filter[offset]", entity.getData().offset())
-                            .build()))
-            .thenApply(Response.ResponseBuilder::build);
+        return Response.status(Status.CREATED)
+                .entity(entity)
+                .location(location
+                        .queryParam("filter[partition]", entity.getData().partition())
+                        .queryParam("filter[offset]", entity.getData().offset())
+                        .build())
+                .build();
     }
 }
