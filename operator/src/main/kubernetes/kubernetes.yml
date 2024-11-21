@@ -19,7 +19,7 @@ rules:
       # The cluster operator needs to access and manage leases for leader election
       - leases
     resourceNames:
-      - console-operator-lease
+      - streamshub-operator-lease
     verbs:
       - get
       - list
@@ -89,7 +89,7 @@ roleRef:
   name: consolereconciler-additional-cluster-role
 subjects:
   - kind: ServiceAccount
-    name: console-operator
+    name: streamshub-operator
 ---
 # Required in order to grant to console instances with OpenShift Cluster Monitoring integration
 kind: ClusterRoleBinding
@@ -102,4 +102,4 @@ roleRef:
   name: cluster-monitoring-view
 subjects:
   - kind: ServiceAccount
-    name: console-operator
+    name: streamshub-operator
