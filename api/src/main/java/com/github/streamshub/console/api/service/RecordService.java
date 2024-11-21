@@ -16,9 +16,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
-import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -77,7 +75,7 @@ public class RecordService {
     @Inject
     ThreadContext threadContext;
 
-    public CompletionStage<List<KafkaRecord>> consumeRecords(String topicId,
+    public List<KafkaRecord> consumeRecords(String topicId,
             Integer partition,
             Long offset,
             Instant timestamp,
@@ -85,79 +83,68 @@ public class RecordService {
             List<String> include,
             Integer maxValueLength) {
 
-        return topicNameForId(topicId).thenApplyAsync(topicName -> {
-            List<PartitionInfo> partitions = consumer.partitionsFor(topicName);
-            List<TopicPartition> assignments = partitions.stream()
-                    .filter(p -> partition == null || partition.equals(p.partition()))
-                    .map(p -> new TopicPartition(p.topic(), p.partition()))
-                    .collect(Collectors.toCollection(ArrayList::new));
+        String topicName = topicNameForId(topicId);
+        List<PartitionInfo> partitions = consumer.partitionsFor(topicName);
+        List<TopicPartition> assignments = partitions.stream()
+                .filter(p -> partition == null || partition.equals(p.partition()))
+                .map(p -> new TopicPartition(p.topic(), p.partition()))
+                .collect(Collectors.toCollection(ArrayList::new));
 
-            if (assignments.isEmpty()) {
-                return Collections.emptyList();
-            }
+        if (assignments.isEmpty()) {
+            return Collections.emptyList();
+        }
 
-            var endOffsets = consumer.endOffsets(assignments);
-            // End offset of zero means the partition has not been written to - don't bother reading them
-            assignments.removeIf(assignment -> endOffsets.get(assignment) == 0);
+        var endOffsets = consumer.endOffsets(assignments);
+        // End offset of zero means the partition has not been written to - don't bother reading them
+        assignments.removeIf(assignment -> endOffsets.get(assignment) == 0);
 
-            if (assignments.isEmpty()) {
-                return Collections.emptyList();
-            }
+        if (assignments.isEmpty()) {
+            return Collections.emptyList();
+        }
 
-            consumer.assign(assignments);
+        consumer.assign(assignments);
 
-            if (timestamp != null) {
-                seekToTimestamp(consumer, assignments, timestamp);
-            } else {
-                seekToOffset(consumer, assignments, endOffsets, offset, limit);
-            }
+        if (timestamp != null) {
+            seekToTimestamp(consumer, assignments, timestamp);
+        } else {
+            seekToOffset(consumer, assignments, endOffsets, offset, limit);
+        }
 
-            if (assignments.isEmpty()) {
-                return Collections.emptyList();
-            }
+        if (assignments.isEmpty()) {
+            return Collections.emptyList();
+        }
 
-            /*
-             * Re-assign, seek operations may have removed assignments for requests beyond
-             * the end of the partition.
-             */
-            consumer.assign(assignments);
+        /*
+         * Re-assign, seek operations may have removed assignments for requests beyond
+         * the end of the partition.
+         */
+        consumer.assign(assignments);
 
-            Iterable<ConsumerRecords<RecordData, RecordData>> poll =
-                    () -> new ConsumerRecordsIterator<>(consumer, endOffsets, limit, Instant.now().plus(pollTimeout));
-            var limitSet = new SizeLimitedSortedSet<ConsumerRecord<RecordData, RecordData>>(buildComparator(timestamp, offset), limit);
+        Iterable<ConsumerRecords<RecordData, RecordData>> poll =
+                () -> new ConsumerRecordsIterator<>(consumer, endOffsets, limit, Instant.now().plus(pollTimeout));
+        var limitSet = new SizeLimitedSortedSet<ConsumerRecord<RecordData, RecordData>>(buildComparator(timestamp, offset), limit);
 
-            return StreamSupport.stream(poll.spliterator(), false)
-                    .flatMap(records -> StreamSupport.stream(records.spliterator(), false))
-                    .collect(Collectors.toCollection(() -> limitSet))
-                    .stream()
-                    .map(rec -> getItems(rec, topicId, include, maxValueLength))
-                    .toList();
-        }, threadContext.currentContextExecutor());
+        return StreamSupport.stream(poll.spliterator(), false)
+                .flatMap(records -> StreamSupport.stream(records.spliterator(), false))
+                .collect(Collectors.toCollection(() -> limitSet))
+                .stream()
+                .map(rec -> getItems(rec, topicId, include, maxValueLength))
+                .toList();    }
+
+    public KafkaRecord produceRecord(String topicId, KafkaRecord input) {
+        String topicName = topicNameForId(topicId);
+
+        List<PartitionInfo> partitions = producer.partitionsFor(topicName);
+        Integer partition = input.partition();
+
+        if (partition != null && partitions.stream().noneMatch(p -> partition.equals(p.partition()))) {
+            throw invalidPartition(topicId, partition);
+        }
+
+        return send(topicName, input, producer);
     }
 
-    public CompletionStage<KafkaRecord> produceRecord(String topicId, KafkaRecord input) {
-        CompletableFuture<KafkaRecord> promise = new CompletableFuture<>();
-
-        topicNameForId(topicId).thenAcceptAsync(topicName -> {
-            List<PartitionInfo> partitions = producer.partitionsFor(topicName);
-            Integer partition = input.partition();
-
-            if (partition != null && partitions.stream().noneMatch(p -> partition.equals(p.partition()))) {
-                promise.completeExceptionally(invalidPartition(topicId, partition));
-            } else {
-                send(topicName, input, producer, promise);
-            }
-
-            promise.whenComplete((kafkaRecord, error) -> producer.close());
-        }, threadContext.currentContextExecutor()).exceptionally(e -> {
-            promise.completeExceptionally(e);
-            return null;
-        });
-
-        return promise;
-    }
-
-    void send(String topicName, KafkaRecord input, Producer<RecordData, RecordData> producer, CompletableFuture<KafkaRecord> promise) {
+    KafkaRecord send(String topicName, KafkaRecord input, Producer<RecordData, RecordData> producer) {
         List<Header> headers = Optional.ofNullable(input.headers())
             .orElseGet(Collections::emptyMap)
             .entrySet()
@@ -190,49 +177,42 @@ public class RecordService {
                 value,
                 headers);
 
-        CompletableFuture.completedFuture(null)
-            .thenApplyAsync(nothing -> {
-                try {
-                    return producer.send(request).get();
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    throw new CompletionException("Error occurred while sending record to Kafka cluster", e);
-                } catch (Exception e) {
-                    throw new CompletionException("Error occurred while sending record to Kafka cluster", e);
-                }
-            }, threadContext.currentContextExecutor())
-            .thenApply(meta -> {
-                KafkaRecord result = new KafkaRecord();
-                result.partition(meta.partition());
+        RecordMetadata meta;
 
-                if (meta.hasOffset()) {
-                    result.offset(meta.offset());
-                }
+        try {
+            meta = producer.send(request).get();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new CompletionException("Error occurred while sending record to Kafka cluster", e);
+        } catch (Exception e) {
+            throw new CompletionException("Error occurred while sending record to Kafka cluster", e);
+        }
 
-                if (meta.hasTimestamp()) {
-                    result.timestamp(Instant.ofEpochMilli(meta.timestamp()));
-                }
+        KafkaRecord result = new KafkaRecord();
+        result.partition(meta.partition());
 
-                result.key(key.dataString(null));
-                result.value(value.dataString(null));
-                result.headers(Arrays.stream(request.headers().toArray())
-                        .collect(
-                                // Duplicate headers will be overwritten
-                                LinkedHashMap::new,
-                                (map, hdr) -> map.put(hdr.key(), headerValue(hdr, null)),
-                                HashMap::putAll));
-                result.size(sizeOf(meta, request.headers()));
+        if (meta.hasOffset()) {
+            result.offset(meta.offset());
+        }
 
-                schemaRelationship(key).ifPresent(result::keySchema);
-                schemaRelationship(value).ifPresent(result::valueSchema);
+        if (meta.hasTimestamp()) {
+            result.timestamp(Instant.ofEpochMilli(meta.timestamp()));
+        }
 
-                return result;
-            })
-            .thenAccept(promise::complete)
-            .exceptionally(exception -> {
-                promise.completeExceptionally(exception);
-                return null;
-            });
+        result.key(key.dataString(null));
+        result.value(value.dataString(null));
+        result.headers(Arrays.stream(request.headers().toArray())
+                .collect(
+                        // Duplicate headers will be overwritten
+                        LinkedHashMap::new,
+                        (map, hdr) -> map.put(hdr.key(), headerValue(hdr, null)),
+                        HashMap::putAll));
+        result.size(sizeOf(meta, request.headers()));
+
+        schemaRelationship(key).ifPresent(result::keySchema);
+        schemaRelationship(value).ifPresent(result::valueSchema);
+
+        return result;
     }
 
     void setSchemaMeta(JsonApiRelationship schemaRelationship, RecordData data) {
@@ -249,7 +229,7 @@ public class RecordService {
                 });
     }
 
-    CompletionStage<String> topicNameForId(String topicId) {
+    String topicNameForId(String topicId) {
         Uuid kafkaTopicId = Uuid.fromString(topicId);
 
         return kafkaContext.admin()
@@ -261,7 +241,9 @@ public class RecordService {
                     .filter(topic -> kafkaTopicId.equals(topic.topicId()))
                     .findFirst()
                     .map(TopicListing::name)
-                    .orElseThrow(() -> noSuchTopic(topicId)));
+                    .orElseThrow(() -> noSuchTopic(topicId)))
+            .toCompletableFuture()
+            .join();
     }
 
     void seekToTimestamp(Consumer<RecordData, RecordData> consumer, List<TopicPartition> assignments, Instant timestamp) {
