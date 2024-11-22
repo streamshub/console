@@ -135,7 +135,7 @@ jobs:
 
           export -f wait_operator
           timeout 300s bash -c 'wait_operator "strimzi-kafka-operator"'
-          timeout 300s bash -c 'wait_operator "console-operator"'
+          timeout 300s bash -c 'wait_operator "streamshub-console-operator"'
 
       # replace with resources in docs PR
       - name: Deploy Kafka Cluster & Console
@@ -248,7 +248,7 @@ jobs:
           mkdir ./resources
           kubectl get all,catalogsources,operatorgroups -n olm -o yaml > ./resources/olm.yaml
           kubectl get all,subscriptions,csv,operatorgroups,installplans -n operators -o yaml > ./resources/operators.yaml
-          kubectl logs -n operators -l app.kubernetes.io/name=console-operator --all-containers=true --tail -1 > ./resources/console-operator-logs.txt
+          kubectl logs -n operators -l app.kubernetes.io/name=streamshub-console-operator --all-containers=true --tail -1 > ./resources/streamshub-console-operator-logs.txt
           kubectl get all -n $TARGET_NAMESPACE -o yaml > ./resources/$TARGET_NAMESPACE.yaml
           kubectl logs -n ${TARGET_NAMESPACE} -l app.kubernetes.io/instance=example-console-deployment --all-containers=true --tail -1 > ./resources/$TARGET_NAMESPACE-console-logs.txt
 

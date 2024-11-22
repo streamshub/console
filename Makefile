@@ -20,6 +20,11 @@ SKIP_RANGE ?= ">=1.0.0 <1.0.3"
 
 CONSOLE_UI_NEXTAUTH_SECRET ?= $(shell openssl rand -base64 32)
 
+# This helps to build CSV using Quarkus with correct image tags in lowercase "-snapshot" instead of "-SNAPSHOT" (default project pom value)
+# Without this export, UI and API images could not be pulled from registry during the deployment of Console instance
+export QUARKUS_CONTAINER_IMAGE_TAG=${VERSION}
+export QUARKUS_KUBERNETES_VERSION=${VERSION}
+
 container-image-api:
 	mvn package -am -pl api -Pcontainer-image -DskipTests -Dquarkus.container-image.image=$(CONSOLE_API_IMAGE)
 

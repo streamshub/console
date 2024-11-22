@@ -2,9 +2,9 @@
 apiVersion: operators.coreos.com/v1alpha1
 kind: Subscription
 metadata:
-  name: console-operator
+  name: streamshub-console-sub
 spec:
-  name: console-operator
+  name: streamshub-console-operator
   channel: alpha
-  source: console-operator-catalog
+  source: streamshub-console-catalog
   sourceNamespace: ${NAMESPACE}

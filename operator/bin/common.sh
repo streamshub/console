@@ -7,7 +7,7 @@ CSV_FILE_PATH=${BUNDLE_PATH}/manifests/console-operator.clusterserviceversion.ya
 CATALOG_PATH=${SCRIPT_PATH}/../target/catalog
 # Operator naming
 ORIGINAL_OPERATOR_NAME="console-operator"
-OPERATOR_NAME="streamshub-operator"
+OPERATOR_NAME="streamshub-console-operator"
 OPERATOR_INSTANCE_NAME="${OPERATOR_NAME}-v${VERSION}"
 OPERATOR_CSV_NAME="${OPERATOR_NAME}.v${VERSION}"
 

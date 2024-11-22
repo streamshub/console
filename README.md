@@ -96,7 +96,7 @@ spec:
 ```
 
 ### Deploy the operator directly
-Deploying the operator without the use of OLM requires applying the component Kubernetes resources for the operator directly. These resources are bundled and attached to each StreamsHub Console release. The latest release can be found [here](https://github.com/streamshub/console/releases/latest). The resource file is named `console-operator-x.y.z.yaml` where `x.y.z` is the released version.
+Deploying the operator without the use of OLM requires applying the component Kubernetes resources for the operator directly. These resources are bundled and attached to each StreamsHub Console release. The latest release can be found [here](https://github.com/streamshub/console/releases/latest). The resource file is named `streamshub-console-operator-x.y.z.yaml` where `x.y.z` is the released version.
 
 This example will create the operator's resources in the `default` namespace. Modify the `NAMESPACE` variable according to your needs and set `VERSION` to the [latest release](https://github.com/streamshub/console/releases/latest).
 ```
