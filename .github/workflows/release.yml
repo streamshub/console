@@ -130,7 +130,7 @@ jobs:
 
           cat ${RELEASE_K8S_PATH}/consoles.console.streamshub.github.com-v1.yml \
               ${RELEASE_K8S_PATH}/kubernetes.yml \
-            > target/console-operator-${{ steps.metadata.outputs.current-version }}.yaml
+            > target/streamshub-console-operator.yaml
 
       - name: Push Release Tag
         run: |
@@ -151,4 +151,4 @@ jobs:
           tag: ${{ steps.metadata.outputs.current-version }}
           allow_override: true
           gzip: false
-          files: target/console-operator-${{ steps.metadata.outputs.current-version }}.yaml
+          files: target/streamshub-console-operator.yaml
