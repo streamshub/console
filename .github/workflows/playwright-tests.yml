@@ -92,7 +92,7 @@ jobs:
             ./install/operator-olm/010-CatalogSource-console-operator-catalog.yaml \
             | kubectl apply -n olm -f -
 
-          kubectl wait catalogsource/console-operator-catalog -n olm \
+          kubectl wait catalogsource/streamshub-console-catalog -n olm \
             --for=jsonpath='{.status.connectionState.lastObservedState}'=READY \
             --timeout=180s
 
