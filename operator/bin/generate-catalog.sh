@@ -10,16 +10,22 @@ rm -rvf ${CATALOG_PATH} ${CATALOG_PATH}.Dockerfile
 mkdir -p ${CATALOG_PATH}
 
 opm generate dockerfile ${CATALOG_PATH}
-opm init console-operator --default-channel=alpha --output=yaml > ${CATALOG_PATH}/operator.yaml
+opm init ${OPERATOR_NAME} --default-channel=alpha --output=yaml > ${CATALOG_PATH}/operator.yaml
 opm render ${BUNDLE_PATH} --output=yaml >> ${CATALOG_PATH}/operator.yaml
 
 cat << EOF >> ${CATALOG_PATH}/operator.yaml
 ---
 schema: olm.channel
-package: console-operator
+package: ${OPERATOR_NAME}
 name: alpha
 entries:
-  - name: console-operator.v${VERSION}
+  - name: ${OPERATOR_CSV_NAME}
 EOF
 
+# Rename package names
+${YQ} eval -o yaml -i ". |= select(.package == \"${ORIGINAL_OPERATOR_NAME}\").package = \"${OPERATOR_NAME}\"" "${CATALOG_PATH}/operator.yaml"
+${YQ} eval -o yaml -i "(.properties[] | select(.value.packageName == \"${ORIGINAL_OPERATOR_NAME}\") | .value.packageName) = \"${OPERATOR_NAME}\"" "${CATALOG_PATH}/operator.yaml"
+
 opm validate ${CATALOG_PATH}
+
+echo "[DEBUG] Catalog generated"
