@@ -103,3 +103,29 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: streamshub-console-operator
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: console-operator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: console-operator
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: console-operator
+    spec:
+      containers:
+        - name: console-operator
+          securityContext:
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            seccompProfile:
+              type: RuntimeDefault
+            runAsNonRoot: true
+            capabilities:
+              drop:
+              - ALL
