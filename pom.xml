@@ -115,16 +115,9 @@
                 <scope>import</scope>
             </dependency>
             <dependency>
-                <!--
-                    When bumping quarkus-platform next, check that QOSDK
-                    6.8.4 or above and change back to using properties:
-
-                      groupId = ${quarkus.platform.group-id}
-                      version = ${quarkus.platform.version}
-                -->
-                <groupId>io.quarkiverse.operatorsdk</groupId>
+                <groupId>${quarkus.platform.group-id}</groupId>
                 <artifactId>quarkus-operator-sdk-bom</artifactId>
-                <version>6.8.4</version>
+                <version>${quarkus.platform.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
