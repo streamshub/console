@@ -16,7 +16,7 @@
         <!-- Dependencies -->
         <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
         <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
-        <quarkus.platform.version>3.15.1</quarkus.platform.version>
+        <quarkus.platform.version>3.15.2</quarkus.platform.version>
         <strimzi-api.version>0.44.0</strimzi-api.version>
         <strimzi-oauth.version>0.15.0</strimzi-oauth.version>
         <apicurio-registry.version>2.6.5.Final</apicurio-registry.version>
@@ -115,16 +115,9 @@
                 <scope>import</scope>
             </dependency>
             <dependency>
-                <!--
-                    When bumping quarkus-platform next, check that QOSDK
-                    6.8.4 or above and change back to using properties:
-
-                      groupId = ${quarkus.platform.group-id}
-                      version = ${quarkus.platform.version}
-                -->
-                <groupId>io.quarkiverse.operatorsdk</groupId>
+                <groupId>${quarkus.platform.group-id}</groupId>
                 <artifactId>quarkus-operator-sdk-bom</artifactId>
-                <version>6.8.4</version>
+                <version>${quarkus.platform.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
