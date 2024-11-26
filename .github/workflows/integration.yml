@@ -185,12 +185,25 @@ jobs:
 
   modify-bundle-metadata:
     runs-on: ubuntu-latest
+    services:
+      registry:
+        image: registry:2
+        ports:
+          - 5000:5000
     needs:
       - build-api
       - build-ui
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver-opts: network=host
 
       - name: Download API and UI Images
         uses: actions/download-artifact@v4
