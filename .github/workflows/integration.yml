@@ -222,6 +222,11 @@ jobs:
         with:
           driver-opts: network=host
 
+      - name: Download API and UI Images
+        uses: actions/download-artifact@v4
+        with:
+          name: target
+
       - name: Build and Test Operator
         run: |
           export QUARKUS_CONTAINER_IMAGE_REGISTRY="localhost:5000"
@@ -233,10 +238,26 @@ jobs:
             -Dquarkus.package.write-transformed-bytecode-to-build-output=true \
             -Dquarkus.docker.buildx.platform=linux/amd64,linux/arm64
 
-      - name: Download API and UI Images
+      - name: Download API Image
         uses: actions/download-artifact@v4
         with:
-          name: target
+          name: backend-images
+          path: |
+            console-api-${{ env.PROJECT_VERSION }}.tar
+
+      - name: Download UI Image
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-images
+          path: |
+            console-ui-${{ env.PROJECT_VERSION }}.tar
+
+      - name: Load API and UI Images
+        run: |
+          ls
+          docker load -i console-api-${{ env.PROJECT_VERSION }}.tar
+          docker load -i console-ui-${{ env.PROJECT_VERSION }}.tar
+          docker images
 
       - name: Modify CSV Annotation
         run: ./operator/bin/modify-bundle-metadata.sh "SKIP_RANGE=>=0.0.1 <${{ env.PROJECT_VERSION }}"
