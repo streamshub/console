@@ -32,8 +32,8 @@ operator_image_with_tag=$(${YQ} eval "${yq_image_expression}" "${CSV_FILE_PATH}"
 echo "[DEBUG] Original operator image name with tag = ${operator_image_with_tag}"
 
 # Derive Registry and Tag for UI and API images
-image_registry=$(echo "${operator_image_with_tag}" | rev | cut -d':' -f2- | rev | sed "s|\/${operator_name}||")
-image_tag=$(echo "${operator_image_with_tag}" | cut -d':' -f2- )
+image_registry=$(echo "${operator_image_with_tag}" | cut -d'/' -f1)
+image_tag=$(echo "${operator_image_with_tag}" | rev | cut -d':' -f1 | rev)
 echo "[DEBUG] Image registry = ${image_registry}"
 echo "[DEBUG] Image tag = ${image_tag}"
 
