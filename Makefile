@@ -5,7 +5,7 @@ include *compose.env
 
 IMAGE_REGISTRY ?= quay.io
 IMAGE_GROUP ?= streamshub
-VERSION = $(shell mvn help:evaluate -Dexpression=project.version -q -DforceStdout | tr '[:upper:]' '[:lower:]')
+VERSION ?= $(shell mvn help:evaluate -Dexpression=project.version -q -DforceStdout | tr '[:upper:]' '[:lower:]')
 
 CONSOLE_API_IMAGE ?= $(IMAGE_REGISTRY)/$(IMAGE_GROUP)/console-api:$(VERSION)
 CONSOLE_UI_IMAGE ?= $(IMAGE_REGISTRY)/$(IMAGE_GROUP)/console-ui:$(VERSION)
@@ -52,7 +52,7 @@ container-image-ui:
 	export CONSOLE_MODE=read-only && \
 	npm run build && \
 	cd $(CURDIR) && \
-	$(CONTAINER_RUNTIME) build -t $(CONSOLE_UI_IMAGE) ./ui -f ./ui/Dockerfile
+	$(CONTAINER_RUNTIME) build --platform=$(ARCH) -t $(CONSOLE_UI_IMAGE) ./ui -f ./ui/Dockerfile
 
 container-image-ui-push: container-image-ui
 	$(CONTAINER_RUNTIME) push $(CONSOLE_UI_IMAGE)

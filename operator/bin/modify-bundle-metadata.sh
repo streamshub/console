@@ -17,27 +17,37 @@ do
   esac
 done
 
+api_name="console-api"
+ui_name="console-ui"
+operator_name="console-operator"
+
 echo "[INFO] Modify values and replace placeholders in ${CSV_FILE_PATH}"
 
 # Delete any namespaces set on the CSV deployment(s), possibly added by `quarkus.kubernetes.namespace`
 ${YQ} eval -o yaml -i 'del(.spec.install.spec.deployments[0].spec.template.metadata.namespace)' "${CSV_FILE_PATH}"
 
+# Get operator image name with tag
 yq_image_expression=".spec.install.spec.deployments[0] | (select (.name ==\"${ORIGINAL_OPERATOR_NAME}\")).spec.template.spec.containers[].image"
+operator_image_with_tag=$(${YQ} eval "${yq_image_expression}" "${CSV_FILE_PATH}")
+echo "[DEBUG] Original operator image name with tag = ${operator_image_with_tag}"
 
-full_image=$(${YQ} eval "${yq_image_expression}" "${CSV_FILE_PATH}")
-echo "[DEBUG] Original image name = ${full_image}"
+# Derive Registry and Tag for UI and API images
+image_registry=$(echo "${operator_image_with_tag}" | rev | cut -d':' -f2- | rev | sed "s|\/${operator_name}||")
+image_tag=$(echo "${operator_image_with_tag}" | cut -d':' -f2- )
+echo "[DEBUG] Image registry = ${image_registry}"
+echo "[DEBUG] Image tag = ${image_tag}"
 
-image_name=$(echo "${full_image}" | rev | cut -d':' -f2- | rev)
-digest=$(${SKOPEO} inspect --tls-verify=false --override-os=linux --format "{{ .Digest }}" "docker://${full_image}")
-image_with_digest="${image_name}@${digest}"
+# Get operator image digest
+operator_image_digest=$(${SKOPEO} inspect --tls-verify=false --override-os=linux --format "{{ .Digest }}" "docker://${operator_image_with_tag}")
+operator_image_with_digest="${image_registry}/${operator_name}@${operator_image_digest}"
 
 # Create relatedImages section
 ${YQ} eval -o yaml -i ".spec.relatedImages = null" "${CSV_FILE_PATH}"
 
-# Add operator image
-${YQ} eval -o yaml -i ".spec.relatedImages += [{\"name\": \"${OPERATOR_NAME}\", \"image\": \"${image_with_digest}\"}]" "${CSV_FILE_PATH}";
-echo "[DEBUG] Setting container image = ${image_with_digest}"
-${YQ} eval -o yaml -i ".metadata.annotations.containerImage = \"${image_with_digest}\"" "${CSV_FILE_PATH}"
+# Add operator image with digest to related images + replace operator image tag to digest
+echo "[DEBUG] Setting container image = ${operator_image_with_digest}"
+${YQ} eval -o yaml -i ".spec.relatedImages += [{\"name\": \"${OPERATOR_NAME}\", \"image\": \"${operator_image_with_digest}\"}]" "${CSV_FILE_PATH}";
+${YQ} eval -o yaml -i ".metadata.annotations.containerImage = \"${operator_image_with_digest}\"" "${CSV_FILE_PATH}"
 
 # Add current createdAt time
 curr_time_date="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
@@ -55,6 +65,22 @@ ${YQ} eval -o yaml -i ".spec.install.spec.deployments[0].spec.template.spec.cont
 # Change serviceAccountName as well
 ${YQ} eval -o yaml -i ".spec.install.spec.deployments[0].spec.template.spec.serviceAccountName = \"${OPERATOR_NAME}\"" "${CSV_FILE_PATH}"
 ${YQ} eval -o yaml -i ".spec.install.spec.clusterPermissions.[].serviceAccountName = \"${OPERATOR_NAME}\"" "${CSV_FILE_PATH}"
+
+# Add Env for operator deployment that references API and UI images with digest instead of tag
+echo "[DEBUG] Add UI and API images to CSV"
+
+ui_image_with_tag=${image_registry}/${ui_name}:${image_tag}
+ui_image_digest=$(${SKOPEO} inspect --tls-verify=false --override-os=linux --format "{{ .Digest }}" "docker://${ui_image_with_tag}")
+ui_image_with_digest="${image_registry}/${ui_name}@${ui_image_digest}"
+echo "[DEBUG] Using UI image: ${ui_image_with_digest}"
+
+api_image_with_tag=${image_registry}/${api_name}:${image_tag}
+api_image_digest=$(${SKOPEO} inspect --tls-verify=false --override-os=linux --format "{{ .Digest }}" "docker://${api_image_with_tag}")
+api_image_with_digest="${image_registry}/${api_name}@${api_image_digest}"
+echo "[DEBUG] Using API image: ${api_image_with_digest}"
+
+${YQ} eval -o yaml -i ".spec.install.spec.deployments[0].spec.template.spec.containers[0].env += [{\"name\": \"CONSOLE_DEPLOYMENT_DEFAULT_UI_IMAGE\", \"value\": \"${ui_image_with_digest}\"}]" "${CSV_FILE_PATH}";
+${YQ} eval -o yaml -i ".spec.install.spec.deployments[0].spec.template.spec.containers[0].env += [{\"name\": \"CONSOLE_DEPLOYMENT_DEFAULT_API_IMAGE\", \"value\": \"${api_image_with_digest}\"}]" "${CSV_FILE_PATH}";
 
 # Add skipRange if present
 if [[ -n "$SKIP_RANGE" ]]; then
