@@ -47,7 +47,7 @@ jobs:
         with:
           driver-opts: network=host
 
-      - name: Build and Test
+      - name: Build and Test API
         env:
           GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
           SONAR_ORG: ${{secrets.SONAR_ORG}}
@@ -64,7 +64,7 @@ jobs:
           export QUARKUS_CONTAINER_IMAGE_PUSH=true
           export QUARKUS_CONTAINER_IMAGE_TAG="${{ env.PROJECT_VERSION }}"
           export QUARKUS_KUBERNETES_VERSION="${{ env.PROJECT_VERSION }}"
-          mvn verify -P container-image -B --no-transfer-progress \
+          mvn verify --pl api -P container-image -B --no-transfer-progress \
             -Dquarkus.kubernetes.namespace='$${NAMESPACE}' \
             -Dquarkus.package.write-transformed-bytecode-to-build-output=true \
             -Dquarkus.docker.buildx.platform=linux/amd64,linux/arm64
@@ -183,7 +183,7 @@ jobs:
             "npx http-server storybook-static --port 6006 --silent" \
             "npx wait-on tcp:127.0.0.1:6006 && npm run test-storybook"
 
-  modify-bundle-metadata:
+  build-operator:
     runs-on: ubuntu-latest
     services:
       registry:
@@ -204,6 +204,17 @@ jobs:
         uses: docker/setup-buildx-action@v3
         with:
           driver-opts: network=host
+
+      - name: Build and Test Operator
+        run: |
+          export QUARKUS_CONTAINER_IMAGE_REGISTRY="localhost:5000"
+          export QUARKUS_CONTAINER_IMAGE_PUSH=true
+          export QUARKUS_CONTAINER_IMAGE_TAG="${{ env.PROJECT_VERSION }}"
+          export QUARKUS_KUBERNETES_VERSION="${{ env.PROJECT_VERSION }}"
+          mvn verify --pl operator -P container-image -B --no-transfer-progress \
+            -Dquarkus.kubernetes.namespace='$${NAMESPACE}' \
+            -Dquarkus.package.write-transformed-bytecode-to-build-output=true \
+            -Dquarkus.docker.buildx.platform=linux/amd64,linux/arm64
 
       - name: Download API and UI Images
         uses: actions/download-artifact@v4
@@ -226,6 +237,7 @@ jobs:
           file: operator/target/bundle/console-operator/bundle.Dockerfile
           tags: |
             localhost:5000/streamshub/console-operator-bundle:${{ env.PROJECT_VERSION }}`
+
       - name: Save Operator and Catalog Images
         run: |
           docker pull localhost:5000/streamshub/console-operator:${{ env.PROJECT_VERSION }}
