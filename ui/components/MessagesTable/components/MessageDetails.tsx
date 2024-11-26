@@ -143,6 +143,18 @@ export function MessageDetailsBody({
               )}
             </DescriptionListDescription>
           </DescriptionListGroup>
+          <DescriptionListGroup>
+            <DescriptionListTerm>{t("field.key-format")}</DescriptionListTerm>
+            <DescriptionListDescription>
+              {message.relationships.keySchema?.meta?.artifactType}
+            </DescriptionListDescription>
+          </DescriptionListGroup>
+          <DescriptionListGroup>
+            <DescriptionListTerm>{t("field.value-format")}</DescriptionListTerm>
+            <DescriptionListDescription>
+              {message.relationships.valueSchema?.meta?.artifactType}
+            </DescriptionListDescription>
+          </DescriptionListGroup>
         </DescriptionList>
       </FlexItem>
       <FlexItem>

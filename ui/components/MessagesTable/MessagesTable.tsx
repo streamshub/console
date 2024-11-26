@@ -36,6 +36,7 @@ import { NoData } from "./components/NoData";
 import { NoResultsEmptyState } from "./components/NoResultsEmptyState";
 import { UnknownValuePreview } from "./components/UnknownValuePreview";
 import { beautifyUnknownValue, isSameMessage } from "./components/utils";
+import { ExternalLink } from "../Navigation/ExternalLink";
 
 const columnWidths: Record<Column, BaseCellProps["width"]> = {
   "offset-partition": 10,
@@ -48,10 +49,12 @@ const columnWidths: Record<Column, BaseCellProps["width"]> = {
 };
 
 const defaultColumns: Column[] = [
-  "timestampUTC",
   "offset-partition",
+  "timestampUTC",
   "key",
+  "headers",
   "value",
+  "size"
 ];
 
 export type MessagesTableProps = {
@@ -181,7 +184,7 @@ export function MessagesTable({
                     <Th
                       key={key}
                       width={columnWidths[column]}
-                      modifier={"nowrap"}
+                      modifier={"fitContent"}
                       sort={
                         column === "timestamp" ||
                         column === "timestampUTC" ||
@@ -212,7 +215,6 @@ export function MessagesTable({
                         <Td
                           key={key}
                           dataLabel={columnLabels[column]}
-                          modifier={"nowrap"}
                         >
                           {children}
                         </Td>
@@ -275,10 +277,10 @@ export function MessagesTable({
                               {row.relationships.keySchema && (
                                 <TextContent>
                                   <Text component={"small"}>
-                                    {row.relationships.keySchema?.meta?.artifactType && (
-                                        <>
-                                        {row.relationships.keySchema?.meta?.artifactType}
-                                        </>
+                                    {row.relationships.keySchema?.meta?.name && (
+                                        <ExternalLink testId={"key-schema"} href={""}>
+                                        {row.relationships.keySchema?.meta?.name}
+                                        </ExternalLink>
                                     )}
                                     {row.relationships.keySchema?.meta?.errors && (
                                         <>
@@ -294,25 +296,25 @@ export function MessagesTable({
                             )}
                           </Cell>
                         );
-                      case "headers":
-                        return (
-                          <Cell>
-                            {Object.keys(row.attributes.headers).length > 0 ? (
-                              <UnknownValuePreview
-                                value={beautifyUnknownValue(
-                                  JSON.stringify(row.attributes.headers),
-                                )}
-                                highlight={filterQuery}
-                                onClick={() => {
-                                  setDefaultTab("headers");
-                                  onSelectMessage(row);
-                                }}
-                              />
-                            ) : (
-                              empty
-                            )}
-                          </Cell>
-                        );
+                        case "headers":
+                          return (
+                            <Cell>
+                              {Object.keys(row.attributes.headers).length > 0 ? (
+                                <UnknownValuePreview
+                                  value={beautifyUnknownValue(
+                                    JSON.stringify(row.attributes.headers),
+                                  )}
+                                  highlight={filterQuery}
+                                  onClick={() => {
+                                    setDefaultTab("headers");
+                                    onSelectMessage(row);
+                                  }}
+                                />
+                              ) : (
+                                empty
+                              )}
+                            </Cell>
+                          );
                       case "value":
                         return (
                           <Cell>
@@ -329,10 +331,10 @@ export function MessagesTable({
                               {row.relationships.valueSchema && (
                                 <TextContent>
                                   <Text component={"small"}>
-                                    {row.relationships.valueSchema?.meta?.artifactType && (
-                                      <>
-                                      {row.relationships.valueSchema?.meta?.artifactType}
-                                      </>
+                                    {row.relationships.valueSchema?.meta?.name && (
+                                      <ExternalLink testId={"value-schema"} href={""}>
+                                      {row.relationships.valueSchema?.meta?.name}
+                                      </ExternalLink>
                                     )}
                                     {row.relationships.valueSchema?.meta?.errors && (
                                       <>
