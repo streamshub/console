@@ -265,7 +265,7 @@ export function TopicsTable({
         "Topic ID": {
           type: "search",
           chips: filterId ? [filterId] : [],
-          onSearch: (id) => onFilterIdChange,
+          onSearch: onFilterIdChange,
           onRemoveChip: () => {
             onFilterIdChange(undefined);
           },
