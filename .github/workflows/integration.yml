@@ -69,49 +69,8 @@ jobs:
             -Dquarkus.package.write-transformed-bytecode-to-build-output=true \
             -Dquarkus.docker.buildx.platform=linux/amd64,linux/arm64
 
-      - name: Modify CSV Annotation
-        run: ./operator/bin/modify-bundle-metadata.sh "SKIP_RANGE=>=0.0.1 <${{ env.PROJECT_VERSION }}"
 
-      - name: Build Operator Bundle Image
-        uses: docker/build-push-action@v6
-        with:
-          context: operator/target/bundle/console-operator/
-          platforms: linux/amd64,linux/arm64
-          provenance: false
-          push: true
-          file: operator/target/bundle/console-operator/bundle.Dockerfile
-          tags: |
-            localhost:5000/streamshub/console-operator-bundle:${{ env.PROJECT_VERSION }}
-
-      - name: Build Operator Catalog
-        run: |
-          curl -L -o opm https://github.com/operator-framework/operator-registry/releases/download/v1.43.1/linux-amd64-opm
-          chmod +x opm
-          sudo cp -v opm /usr/bin/
-          rm -vf opm
-          operator/bin/generate-catalog.sh ${{ env.PROJECT_VERSION }}
-
-      - name: Build Operator Catalog Image
-        uses: docker/build-push-action@v6
-        with:
-          context: operator/target/
-          platforms: linux/amd64,linux/arm64
-          provenance: false
-          push: true
-          file: operator/target/catalog.Dockerfile
-          tags: |
-            localhost:5000/streamshub/console-operator-catalog:${{ env.PROJECT_VERSION }}
-
-      - name: Attach Kubernetes Resources
-        uses: actions/upload-artifact@v4
-        with:
-          name: k8s-resources
-          path: |
-            operator/target/bundle/
-            operator/target/catalog/
-            operator/target/kubernetes/*.yml
-
-      - name: Archive Results
+      - name: Archive API Test Results
         uses: actions/upload-artifact@v4
         if: failure()
         with:
@@ -137,17 +96,10 @@ jobs:
             !**/target/failsafe-reports/**/*
             !**/target/surefire-reports/**/*
 
-      - name: Save Images
+      - name: Save API Image
         run: |
           docker pull localhost:5000/streamshub/console-api:${{ env.PROJECT_VERSION }}
-          docker pull localhost:5000/streamshub/console-operator:${{ env.PROJECT_VERSION }}
-          docker pull localhost:5000/streamshub/console-operator-bundle:${{ env.PROJECT_VERSION }}
-          docker pull localhost:5000/streamshub/console-operator-catalog:${{ env.PROJECT_VERSION }}
-
           docker save -o console-api-${{ env.PROJECT_VERSION }}.tar localhost:5000/streamshub/console-api:${{ env.PROJECT_VERSION }}
-          docker save -o console-operator-${{ env.PROJECT_VERSION }}.tar localhost:5000/streamshub/console-operator:${{ env.PROJECT_VERSION }}
-          docker save -o console-operator-bundle-${{ env.PROJECT_VERSION }}.tar localhost:5000/streamshub/console-operator-bundle:${{ env.PROJECT_VERSION }}
-          docker save -o console-operator-catalog-${{ env.PROJECT_VERSION }}.tar localhost:5000/streamshub/console-operator-catalog:${{ env.PROJECT_VERSION }}
 
       - name: Archive Images
         uses: actions/upload-artifact@v4
@@ -155,9 +107,6 @@ jobs:
           name: backend-images
           path: |
             console-api-${{ env.PROJECT_VERSION }}.tar
-            console-operator-${{ env.PROJECT_VERSION }}.tar
-            console-operator-bundle-${{ env.PROJECT_VERSION }}.tar
-            console-operator-catalog-${{ env.PROJECT_VERSION }}.tar
 
   build-ui:
     runs-on: ubuntu-latest
@@ -202,7 +151,7 @@ jobs:
           tags: |
             localhost:5000/streamshub/console-ui:${{ env.PROJECT_VERSION }}
 
-      - name: Save Image
+      - name: Save UI Image
         run: |
           docker pull localhost:5000/streamshub/console-ui:${{ env.PROJECT_VERSION }}
           docker save -o console-ui-${{ env.PROJECT_VERSION }}.tar localhost:5000/streamshub/console-ui:${{ env.PROJECT_VERSION }}
@@ -233,6 +182,47 @@ jobs:
           npx --yes concurrently -k -s first -n "SB,TEST" -c "magenta,blue" \
             "npx http-server storybook-static --port 6006 --silent" \
             "npx wait-on tcp:127.0.0.1:6006 && npm run test-storybook"
+
+  modify-metadata:
+    runs-on: ubuntu-latest
+    needs:
+      - build-api
+      - build-ui
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Modify CSV Annotation
+        run: ./operator/bin/modify-bundle-metadata.sh "SKIP_RANGE=>=0.0.1 <${{ env.PROJECT_VERSION }}"
+
+      - name: Build Operator Bundle Image
+        uses: docker/build-push-action@v6
+        with:
+          context: operator/target/bundle/console-operator/
+          platforms: linux/amd64,linux/arm64
+          provenance: false
+          push: true
+          file: operator/target/bundle/console-operator/bundle.Dockerfile
+          tags: |
+            localhost:5000/streamshub/console-operator-bundle:${{ env.PROJECT_VERSION }}`
+      - name: Save Operator and Catalog Images
+        run: |
+          docker pull localhost:5000/streamshub/console-operator:${{ env.PROJECT_VERSION }}
+          docker pull localhost:5000/streamshub/console-operator-bundle:${{ env.PROJECT_VERSION }}
+          docker pull localhost:5000/streamshub/console-operator-catalog:${{ env.PROJECT_VERSION }}
+
+          docker save -o console-operator-${{ env.PROJECT_VERSION }}.tar localhost:5000/streamshub/console-operator:${{ env.PROJECT_VERSION }}
+          docker save -o console-operator-bundle-${{ env.PROJECT_VERSION }}.tar localhost:5000/streamshub/console-operator-bundle:${{ env.PROJECT_VERSION }}
+          docker save -o console-operator-catalog-${{ env.PROJECT_VERSION }}.tar localhost:5000/streamshub/console-operator-catalog:${{ env.PROJECT_VERSION }}
+
+      - name: Archive Images
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-images
+          path: |
+            console-operator-${{ env.PROJECT_VERSION }}.tar
+            console-operator-bundle-${{ env.PROJECT_VERSION }}.tar
+            console-operator-catalog-${{ env.PROJECT_VERSION }}.tar
 
   Playwright:
     if: ${{ contains(github.event.pull_request.labels.*.name, 'safe to test') || github.repository == 'streamshub/console' }}
