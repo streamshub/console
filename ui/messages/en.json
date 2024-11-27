@@ -187,7 +187,9 @@
       "size": "Size",
       "timestamp": "Timestamp (local)",
       "timestamp--utc": "Timestamp (UTC)",
-      "value": "Value"
+      "value": "Value",
+      "key-format": "Key format",
+      "value-format": "Value format"
     },
     "filter": {
       "epoch": "From Unix timestamp",

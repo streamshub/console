@@ -12,7 +12,10 @@ import {
   TextContent,
   Tooltip,
 } from "@/libs/patternfly/react-core";
-import { ExclamationTriangleIcon, HelpIcon } from "@/libs/patternfly/react-icons";
+import {
+  ExclamationTriangleIcon,
+  HelpIcon,
+} from "@/libs/patternfly/react-icons";
 import {
   BaseCellProps,
   InnerScrollContainer,
@@ -54,7 +57,7 @@ const defaultColumns: Column[] = [
   "key",
   "headers",
   "value",
-  "size"
+  "size",
 ];
 
 export type MessagesTableProps = {
@@ -212,10 +215,7 @@ export function MessagesTable({
 
                     function Cell({ children }: PropsWithChildren) {
                       return (
-                        <Td
-                          key={key}
-                          dataLabel={columnLabels[column]}
-                        >
+                        <Td key={key} dataLabel={columnLabels[column]}>
                           {children}
                         </Td>
                       );
@@ -266,84 +266,108 @@ export function MessagesTable({
                           <Cell>
                             {row.attributes.key ? (
                               <>
-                              <UnknownValuePreview
-                                value={row.attributes.key}
-                                highlight={filterQuery}
-                                onClick={() => {
-                                  setDefaultTab("key");
-                                  onSelectMessage(row);
-                                }}
-                              />
-                              {row.relationships.keySchema && (
-                                <TextContent>
-                                  <Text component={"small"}>
-                                    {row.relationships.keySchema?.meta?.name && (
-                                        <ExternalLink testId={"key-schema"} href={""}>
-                                        {row.relationships.keySchema?.meta?.name}
+                                <UnknownValuePreview
+                                  value={row.attributes.key}
+                                  highlight={filterQuery}
+                                  onClick={() => {
+                                    setDefaultTab("key");
+                                    onSelectMessage(row);
+                                  }}
+                                />
+                                {row.relationships.keySchema && (
+                                  <TextContent>
+                                    <Text component={"small"}>
+                                      {row.relationships.keySchema?.meta
+                                        ?.name && (
+                                        <ExternalLink
+                                          testId={"key-schema"}
+                                          href={`${row.relationships.keySchema?.links?.content}`}
+                                        >
+                                          {
+                                            row.relationships.keySchema?.meta
+                                              ?.name
+                                          }
                                         </ExternalLink>
-                                    )}
-                                    {row.relationships.keySchema?.meta?.errors && (
+                                      )}
+                                      {row.relationships.keySchema?.meta
+                                        ?.errors && (
                                         <>
-                                        <ExclamationTriangleIcon /> { row.relationships.keySchema?.meta?.errors[0].detail }
+                                          <ExclamationTriangleIcon />{" "}
+                                          {
+                                            row.relationships.keySchema?.meta
+                                              ?.errors[0].detail
+                                          }
                                         </>
-                                    )}
-                                  </Text>
-                                </TextContent>
-                              )}
+                                      )}
+                                    </Text>
+                                  </TextContent>
+                                )}
                               </>
                             ) : (
                               empty
                             )}
                           </Cell>
                         );
-                        case "headers":
-                          return (
-                            <Cell>
-                              {Object.keys(row.attributes.headers).length > 0 ? (
-                                <UnknownValuePreview
-                                  value={beautifyUnknownValue(
-                                    JSON.stringify(row.attributes.headers),
-                                  )}
-                                  highlight={filterQuery}
-                                  onClick={() => {
-                                    setDefaultTab("headers");
-                                    onSelectMessage(row);
-                                  }}
-                                />
-                              ) : (
-                                empty
-                              )}
-                            </Cell>
-                          );
+                      case "headers":
+                        return (
+                          <Cell>
+                            {Object.keys(row.attributes.headers).length > 0 ? (
+                              <UnknownValuePreview
+                                value={beautifyUnknownValue(
+                                  JSON.stringify(row.attributes.headers),
+                                )}
+                                highlight={filterQuery}
+                                onClick={() => {
+                                  setDefaultTab("headers");
+                                  onSelectMessage(row);
+                                }}
+                              />
+                            ) : (
+                              empty
+                            )}
+                          </Cell>
+                        );
                       case "value":
                         return (
                           <Cell>
                             {row.attributes.value ? (
                               <>
-                              <UnknownValuePreview
-                                value={row.attributes.value}
-                                highlight={filterQuery}
-                                onClick={() => {
-                                  setDefaultTab("value");
-                                  onSelectMessage(row);
-                                }}
-                              />
-                              {row.relationships.valueSchema && (
-                                <TextContent>
-                                  <Text component={"small"}>
-                                    {row.relationships.valueSchema?.meta?.name && (
-                                      <ExternalLink testId={"value-schema"} href={""}>
-                                      {row.relationships.valueSchema?.meta?.name}
-                                      </ExternalLink>
-                                    )}
-                                    {row.relationships.valueSchema?.meta?.errors && (
-                                      <>
-                                      <ExclamationTriangleIcon /> { row.relationships.valueSchema?.meta?.errors[0].detail }
-                                      </>
-                                    )}
-                                  </Text>
-                                </TextContent>
-                              )}
+                                <UnknownValuePreview
+                                  value={row.attributes.value}
+                                  highlight={filterQuery}
+                                  onClick={() => {
+                                    setDefaultTab("value");
+                                    onSelectMessage(row);
+                                  }}
+                                />
+                                {row.relationships.valueSchema && (
+                                  <TextContent>
+                                    <Text component={"small"}>
+                                      {row.relationships.valueSchema?.meta
+                                        ?.name && (
+                                        <ExternalLink
+                                          testId={"value-schema"}
+                                          href={`${row.relationships.valueSchema.links?.content}`}
+                                        >
+                                          {
+                                            row.relationships.valueSchema?.meta
+                                              ?.name
+                                          }
+                                        </ExternalLink>
+                                      )}
+                                      {row.relationships.valueSchema?.meta
+                                        ?.errors && (
+                                        <>
+                                          <ExclamationTriangleIcon />{" "}
+                                          {
+                                            row.relationships.valueSchema?.meta
+                                              ?.errors[0].detail
+                                          }
+                                        </>
+                                      )}
+                                    </Text>
+                                  </TextContent>
+                                )}
                               </>
                             ) : (
                               empty
