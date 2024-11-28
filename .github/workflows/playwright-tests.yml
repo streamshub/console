@@ -36,17 +36,11 @@ jobs:
           echo "CLUSTER_DOMAIN=$(minikube ip).nip.io" >> $GITHUB_ENV
           echo "CONSOLE_URL=https://example-console.$(minikube ip).nip.io" >> $GITHUB_ENV
 
-      - name: Download Backend Images
+      - name: Download Images
         uses: actions/download-artifact@v4
         with:
-          name: backend-images
-          path: backend-images
-
-      - name: Download Frontend Images
-        uses: actions/download-artifact@v4
-        with:
-          name: frontend-images
-          path: frontend-images
+          name: streamshub-images
+          path: streamshub-images
 
       - name: Prepare minikube
         run: |
@@ -57,15 +51,11 @@ jobs:
           SOCAT_PID=${!}
 
           # Load images
-          for img in console-api console-operator console-operator-bundle console-operator-catalog ; do
+          for img in console-api console-ui console-operator console-operator-bundle console-operator-catalog ; do
               skopeo copy --dest-tls-verify=false \
-                docker-archive:backend-images/${img}-${{ env.PROJECT_VERSION }}.tar \
+                docker-archive:streamshub/${img}-${{ env.PROJECT_VERSION }}.tar \
                 docker://localhost:5000/streamshub/${img}:${{ env.PROJECT_VERSION }}
           done
-
-          skopeo copy --dest-tls-verify=false \
-            docker-archive:frontend-images/console-ui-${{ env.PROJECT_VERSION }}.tar \
-            docker://localhost:5000/streamshub/console-ui:${{ env.PROJECT_VERSION }}
 
           kill ${SOCAT_PID}
 
