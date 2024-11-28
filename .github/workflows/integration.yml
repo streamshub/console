@@ -213,5 +213,4 @@ jobs:
     if: ${{ contains(github.event.pull_request.labels.*.name, 'safe to test') || github.repository == 'streamshub/console' }}
     uses: ./.github/workflows/playwright-tests.yml
     needs:
-      - build-api
-      - build-ui
+      - build-images
