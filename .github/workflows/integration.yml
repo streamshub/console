@@ -18,6 +18,9 @@ jobs:
         image: registry:2
         ports:
           - 5000:5000
+    env:
+      PLATFORMS: linux/amd64,linux/arm64
+
     steps:
       # ==================== Setup ====================
       - name: Checkout
@@ -64,7 +67,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: ui/
-          platforms: linux/amd64,linux/arm64
+          platforms: ${{ env.PLATFORMS }}
           provenance: false
           push: true
           tags: |
@@ -91,7 +94,7 @@ jobs:
           mvn verify -P container-image -B --no-transfer-progress \
             -Dquarkus.kubernetes.namespace='$${NAMESPACE}' \
             -Dquarkus.package.write-transformed-bytecode-to-build-output=true \
-            -Dquarkus.docker.buildx.platform=linux/amd64,linux/arm64
+            -Dquarkus.docker.buildx.platform=${{ env.PLATFORMS }}
 
       # ==================== Operator-Bundle ====================
       - name: Modify Bundle CSV Metadata
@@ -101,7 +104,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: operator/target/bundle/console-operator/
-          platforms: linux/amd64,linux/arm64
+          platforms: ${{ env.PLATFORMS }}
           provenance: false
           push: true
           file: operator/target/bundle/console-operator/bundle.Dockerfile
@@ -121,7 +124,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: operator/target/
-          platforms: linux/amd64,linux/arm64
+          platforms: ${{ env.PLATFORMS }}
           provenance: false
           push: true
           file: operator/target/catalog.Dockerfile
