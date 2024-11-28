@@ -138,7 +138,7 @@ jobs:
             operator/target/catalog/
             operator/target/kubernetes/*.yml
 
-      - name: Archive Test Results
+      - name: Archive Failed Tests Results
         uses: actions/upload-artifact@v4
         if: failure()
         with:

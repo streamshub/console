@@ -51,9 +51,9 @@ jobs:
           SOCAT_PID=${!}
 
           # Load images
-          for img in console-api console-ui console-operator console-operator-bundle console-operator-catalog ; do
+          for img in console-ui console-api console-operator console-operator-bundle console-operator-catalog ; do
               skopeo copy --dest-tls-verify=false \
-                docker-archive:streamshub/${img}-${{ env.PROJECT_VERSION }}.tar \
+                docker-archive:streamshub-images/${img}-${{ env.PROJECT_VERSION }}.tar \
                 docker://localhost:5000/streamshub/${img}:${{ env.PROJECT_VERSION }}
           done
 
