@@ -19,7 +19,7 @@ jobs:
         ports:
           - 5000:5000
     steps:
-      # ==================== SETUP ====================
+      # ==================== Setup ====================
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -71,7 +71,7 @@ jobs:
             localhost:5000/streamshub/console-ui:${{ env.PROJECT_VERSION }}
 
       # ==================== API & Operator ====================
-      - name: Test Projects And Build API And Operator Images
+      - name: Test Projects and Build API and Operator Images
         env:
           GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
           SONAR_ORG: ${{secrets.SONAR_ORG}}
