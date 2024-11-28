@@ -1,12 +1,12 @@
 import { Meta, StoryObj } from "@storybook/react";
-import { schemaValue } from "./SchemaValue";
+import { SchemaValue } from "./SchemaValue";
 
 export default {
-  component: schemaValue,
+  component: SchemaValue,
   args: {},
-} as Meta<typeof schemaValue>;
+} as Meta<typeof SchemaValue>;
 
-type Story = StoryObj<typeof schemaValue>;
+type Story = StoryObj<typeof SchemaValue>;
 
 export const Default: Story = {
   args: {
