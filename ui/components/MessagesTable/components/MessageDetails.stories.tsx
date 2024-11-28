@@ -16,7 +16,9 @@ export default {
         partition: 4,
         offset: 16,
         size: 1234,
-        timestamp: new Date(Date.UTC(2024, 11, 31, 23, 59, 59, 999)).toISOString(),
+        timestamp: new Date(
+          Date.UTC(2024, 11, 31, 23, 59, 59, 999),
+        ).toISOString(),
         headers: {
           "post-office-box": "string",
           "extended-address": "string",
@@ -28,6 +30,23 @@ export default {
         },
         value:
           '{"order":{"address":{"street":"123 any st","city":"Austin","state":"TX","zip":"78626"},"contact":{"firstName":"james","lastName":"smith","phone":"512-123-1234"},"orderId":"123"},"primitives":{"stringPrimitive":"some value","booleanPrimitive":true,"numberPrimitive":24},"addressList":[{"street":"123 any st","city":"Austin","state":"TX","zip":"78626"},{"street":"123 any st","city":"Austin","state":"TX","zip":"78626"},{"street":"123 any st","city":"Austin","state":"TX","zip":"78626"},{"street":"123 any st","city":"Austin","state":"TX","zip":"78626"}]}',
+      },
+      relationships: {
+        keySchema: null,
+        valueSchema: {
+          meta: {
+            artifactType: "AVRO",
+            name: "com.example.price",
+          },
+          data: {
+            type: "schemas",
+            id: "eyJnbG9iYWxJZCI6MX0=",
+          },
+          links: {
+            content:
+              "/api/registries/my-apicurio-registry/schemas/eyJnbG9iYWxJZCI6MX0=",
+          },
+        },
       },
     },
     defaultTab: "value",

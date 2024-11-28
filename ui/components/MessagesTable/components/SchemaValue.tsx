@@ -6,6 +6,8 @@ import {
 } from "@/libs/patternfly/react-core";
 import { DownloadIcon } from "@patternfly/react-icons";
 import { useState } from "react";
+import { maybeJson } from "./utils";
+import { allExpanded, defaultStyles, JsonView } from "react-json-view-lite";
 
 export function SchemaValue({
   schema,
@@ -15,6 +17,8 @@ export function SchemaValue({
   name: string;
 }) {
   const [copyStatus, setCopyStatus] = useState<string>("Copy schema");
+
+  const [key, isKeyJson] = maybeJson(schema || "{}");
 
   const copyToClipboard = () => {
     navigator.clipboard
@@ -58,7 +62,13 @@ export function SchemaValue({
   );
   return (
     <CodeBlock actions={actions}>
-      <CodeBlock>{schema}</CodeBlock>
+      {isKeyJson && (
+        <JsonView
+          data={key}
+          shouldExpandNode={allExpanded}
+          style={defaultStyles}
+        />
+      )}
     </CodeBlock>
   );
 }
