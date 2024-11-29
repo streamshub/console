@@ -8,6 +8,12 @@ export default async function ConnectedSchemaPage({
 }) {
   const fullPath = params.content.join("/");
   const content = await getSchema(fullPath);
-
-  return <ConnectedSchema content={content} name={""} />;
+  const { namespace, name } = content;
+  const schemaName = `${namespace}.${name}`;
+  return (
+    <ConnectedSchema
+      content={JSON.stringify(content, null, 2)}
+      name={schemaName}
+    />
+  );
 }

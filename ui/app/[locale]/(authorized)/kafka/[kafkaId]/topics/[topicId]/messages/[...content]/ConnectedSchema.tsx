@@ -1,7 +1,7 @@
 "use client";
 
 import { SchemaValue } from "@/components/MessagesTable/components/SchemaValue";
-import { PageSection } from "@patternfly/react-core";
+import { PageSection, Title } from "@patternfly/react-core";
 
 export function ConnectedSchema({
   content,
@@ -12,7 +12,8 @@ export function ConnectedSchema({
 }) {
   return (
     <PageSection variant="light">
-      <SchemaValue schema={JSON.stringify(content, null, 2)} name={name} />
+      <Title headingLevel={"h4"}>{name}</Title>
+      <SchemaValue schema={content} name={name} />
     </PageSection>
   );
 }
