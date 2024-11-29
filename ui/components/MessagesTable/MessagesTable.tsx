@@ -77,6 +77,7 @@ export type MessagesTableProps = {
   onSelectMessage: (message: Message) => void;
   onDeselectMessage: () => void;
   onReset: () => void;
+  baseurl: string;
 };
 
 export function MessagesTable({
@@ -97,6 +98,7 @@ export function MessagesTable({
   onDeselectMessage,
   onReset,
   children,
+  baseurl,
 }: PropsWithChildren<MessagesTableProps>) {
   const t = useTranslations("message-browser");
   const columnLabels = useColumnLabels();
@@ -281,7 +283,7 @@ export function MessagesTable({
                                         ?.name && (
                                         <ExternalLink
                                           testId={"key-schema"}
-                                          href={`${row.relationships.keySchema?.links?.content}`}
+                                          href={`${baseurl}/${row.relationships.keySchema?.links?.content}`}
                                         >
                                           {
                                             row.relationships.keySchema?.meta
@@ -346,8 +348,8 @@ export function MessagesTable({
                                       {row.relationships.valueSchema?.meta
                                         ?.name && (
                                         <ExternalLink
-                                          testId={"value-schema"}
-                                          href={`${row.relationships.valueSchema.links?.content}`}
+                                          testId="schema-value"
+                                          href={`${baseurl}/${row.relationships.valueSchema.links?.content}`}
                                         >
                                           {
                                             row.relationships.valueSchema?.meta
