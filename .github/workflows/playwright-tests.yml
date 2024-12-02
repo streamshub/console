@@ -11,11 +11,16 @@ env:
 
 jobs:
   Test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     continue-on-error: true
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Download Images
+        uses: actions/download-artifact@v4
+        with:
+          name: streamshub-images
 
       - name: Start minikube
         id: minikube
@@ -36,18 +41,6 @@ jobs:
           echo "CLUSTER_DOMAIN=$(minikube ip).nip.io" >> $GITHUB_ENV
           echo "CONSOLE_URL=https://example-console.$(minikube ip).nip.io" >> $GITHUB_ENV
 
-      - name: Download Backend Images
-        uses: actions/download-artifact@v4
-        with:
-          name: backend-images
-          path: backend-images
-
-      - name: Download Frontend Images
-        uses: actions/download-artifact@v4
-        with:
-          name: frontend-images
-          path: frontend-images
-
       - name: Prepare minikube
         run: |
           set -x
@@ -56,16 +49,13 @@ jobs:
           socat TCP-LISTEN:5000,reuseaddr,fork TCP:$(minikube ip):5000 &
           SOCAT_PID=${!}
 
-          # Load images
-          for img in console-api console-operator console-operator-bundle console-operator-catalog ; do
-              skopeo copy --dest-tls-verify=false \
-                docker-archive:backend-images/${img}-${{ env.PROJECT_VERSION }}.tar \
-                docker://localhost:5000/streamshub/${img}:${{ env.PROJECT_VERSION }}
-          done
+          mkdir streamshub-images
+          tar -xzf streamshub-images.tgz -C streamshub-images
 
-          skopeo copy --dest-tls-verify=false \
-            docker-archive:frontend-images/console-ui-${{ env.PROJECT_VERSION }}.tar \
-            docker://localhost:5000/streamshub/console-ui:${{ env.PROJECT_VERSION }}
+          # Load images
+          skopeo sync --all --scoped --src dir --dest docker --dest-tls-verify=false \
+            streamshub-images/localhost:5000/streamshub \
+            localhost:5000/streamshub
 
           kill ${SOCAT_PID}
 
@@ -109,15 +99,7 @@ jobs:
               sourceNamespace: olm' | kubectl apply -n operators -f -
 
           # Install Console Operator
-          yq ea '.spec.sourceNamespace = "olm", .spec.config = {
-                "env": [{
-                  "name": "CONSOLE_DEPLOYMENT_DEFAULT_API_IMAGE",
-                  "value": "localhost:5000/streamshub/console-api:${{ env.PROJECT_VERSION }}"
-                }, {
-                  "name": "CONSOLE_DEPLOYMENT_DEFAULT_UI_IMAGE",
-                  "value": "localhost:5000/streamshub/console-ui:${{ env.PROJECT_VERSION }}"
-                }]
-              }' ./install/operator-olm/020-Subscription-console-operator.yaml \
+          yq ea '.spec.sourceNamespace = "olm"' ./install/operator-olm/020-Subscription-console-operator.yaml \
             | kubectl apply -n operators -f -
 
           wait_operator() {
