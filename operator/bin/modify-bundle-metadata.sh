@@ -48,6 +48,7 @@ ${YQ} eval -o yaml -i ".spec.relatedImages = null" "${CSV_FILE_PATH}"
 echo "[DEBUG] Setting container image = ${operator_image_with_digest}"
 ${YQ} eval -o yaml -i ".spec.relatedImages += [{\"name\": \"${OPERATOR_NAME}\", \"image\": \"${operator_image_with_digest}\"}]" "${CSV_FILE_PATH}";
 ${YQ} eval -o yaml -i ".metadata.annotations.containerImage = \"${operator_image_with_digest}\"" "${CSV_FILE_PATH}"
+${YQ} eval -o yaml -i ".spec.install.spec.deployments[0].spec.template.spec.containers[0].image = \"${operator_image_with_digest}\"" "${CSV_FILE_PATH}"
 
 # Add current createdAt time
 curr_time_date="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
