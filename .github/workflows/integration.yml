@@ -12,7 +12,7 @@ on:
 
 jobs:
   build-images:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     services:
       registry:
         image: registry:2
@@ -169,31 +169,24 @@ jobs:
 
       - name: Save [UI, API, Operator, Operator-Bundle, Operator-Catalog] Images To Files
         run: |
-          docker pull localhost:5000/streamshub/console-ui:${{ env.PROJECT_VERSION }}
-          docker pull localhost:5000/streamshub/console-api:${{ env.PROJECT_VERSION }}
-          docker pull localhost:5000/streamshub/console-operator:${{ env.PROJECT_VERSION }}
-          docker pull localhost:5000/streamshub/console-operator-bundle:${{ env.PROJECT_VERSION }}
-          docker pull localhost:5000/streamshub/console-operator-catalog:${{ env.PROJECT_VERSION }}
-         
-          docker save -o console-ui-${{ env.PROJECT_VERSION }}.tar localhost:5000/streamshub/console-ui:${{ env.PROJECT_VERSION }}
-          docker save -o console-api-${{ env.PROJECT_VERSION }}.tar localhost:5000/streamshub/console-api:${{ env.PROJECT_VERSION }}
-          docker save -o console-operator-${{ env.PROJECT_VERSION }}.tar localhost:5000/streamshub/console-operator:${{ env.PROJECT_VERSION }}
-          docker save -o console-operator-bundle-${{ env.PROJECT_VERSION }}.tar localhost:5000/streamshub/console-operator-bundle:${{ env.PROJECT_VERSION }}
-          docker save -o console-operator-catalog-${{ env.PROJECT_VERSION }}.tar localhost:5000/streamshub/console-operator-catalog:${{ env.PROJECT_VERSION }}
+          mkdir streamshub-images
+
+          for img in console-ui console-api console-operator console-operator-bundle console-operator-catalog ; do
+              skopeo sync --all --scoped --src docker --src-tls-verify=false --dest dir \
+                localhost:5000/streamshub/${img}:${{ env.PROJECT_VERSION }} \
+                $(pwd)/streamshub-images
+          done
+
+          tar -czf streamshub-images.tgz -C streamshub-images .
 
       - name: Archive [UI, API, Operator-Bundle, Operator, Operator-Catalog] Image Files
         uses: actions/upload-artifact@v4
         with:
           name: streamshub-images
-          path: |
-            console-ui-${{ env.PROJECT_VERSION }}.tar
-            console-api-${{ env.PROJECT_VERSION }}.tar
-            console-operator-${{ env.PROJECT_VERSION }}.tar
-            console-operator-bundle-${{ env.PROJECT_VERSION }}.tar
-            console-operator-catalog-${{ env.PROJECT_VERSION }}.tar
+          path: streamshub-images.tgz
 
   test-storybook:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout
         uses: actions/checkout@v4
