@@ -4,7 +4,7 @@ const sampleNodesData = [
   {
     id: 0,
     isLeader: true,
-    status: 'Stable',
+    status: 'Running',
     followers: 10,
     leaders: 1,
     rack: 'us-east-1',
@@ -15,7 +15,7 @@ const sampleNodesData = [
   {
     id: 1,
     isLeader: true,
-    status: 'Stable',
+    status: 'Running',
     followers: 10,
     leaders: 1,
     rack: 'us-east-2',
