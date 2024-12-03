@@ -123,6 +123,7 @@ jobs:
         with:
           context: target/checkout/operator/target/
           platforms: ${{ env.PLATFORMS }}
+          network: none
           provenance: false
           push: true
           file: target/checkout/operator/target/catalog.Dockerfile
