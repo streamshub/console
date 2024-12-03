@@ -3,8 +3,6 @@ import { SelectList } from "@patternfly/react-core";
 import { useTranslations } from "next-intl";
 import { useCallback, useMemo, useState } from "react";
 
-const MAX_OPTIONS = 20;
-
 export type PartitionSelectorProps = {
   value: number | undefined;
   partitions: number | undefined;
@@ -40,7 +38,7 @@ export function PartitionSelector({
 
   const makeOptions = useCallback(
     (values: number[]) => {
-      const options = values.slice(0, MAX_OPTIONS).map((v) => (
+      const options = values.map((v) => (
         <SelectOption
           key={v}
           value={v}
@@ -86,6 +84,7 @@ export function PartitionSelector({
     <Select
       onSelect={(_, value) => handleChange(value as string)}
       onOpenChange={setIsOpen}
+      isScrollable={true}
       isOpen={isOpen}
       id={titleId}
       data-testid={"partition-selector"}
