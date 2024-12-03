@@ -125,6 +125,7 @@ jobs:
         with:
           context: operator/target/
           platforms: ${{ env.PLATFORMS }}
+          network: none
           provenance: false
           push: true
           file: operator/target/catalog.Dockerfile
