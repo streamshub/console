@@ -3,6 +3,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: console-server-monitoring
 roleRef:
+  # This role is pre-existing in an OpenShift cluster
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
   name: cluster-monitoring-view

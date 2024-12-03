@@ -40,7 +40,7 @@ rules:
     verbs:
       - get
 
-  # Granted to Prometheus instances
+  # Granted to Prometheus instances (when using embedded instance)
   - apiGroups: [ '' ]
     resources:
       - nodes
@@ -66,18 +66,39 @@ rules:
       - kafka.strimzi.io
     resources:
       - kafkas
+      - kafkarebalances
       - kafkatopics
       - kafkausers
 
   # Granted to Console instances
   - verbs:
-      - get
-      - list
       - patch
     apiGroups:
       - kafka.strimzi.io
     resources:
+      - kafkas
       - kafkarebalances
+
+  # Granted to Console instances when using OpenShift Monitoring. These rules
+  # match the rules declared by ClusterRule `cluster-monitoring-view`, which is the role
+  # actually bound to the console instance's service account in the ClusterRoleBinding
+  # `console-server-monitoring`.
+  - verbs:
+      - get
+    apiGroups:
+      - ''
+    resources:
+      - namespaces
+  - verbs:
+      - get
+      - create
+      - update
+    apiGroups:
+      - monitoring.coreos.com
+    resources:
+      - prometheuses/api
+    resourceNames:
+      - k8s
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
