@@ -549,12 +549,34 @@ class TopicsResourceIT {
             .extract()
             .asString();
 
-        // Return to page 1 using the `first` link provided by the last page, 11
+        // Jump to previous page 10 using `prev` link from page 3
         JsonObject links3 = linkExtract.apply(response3);
-        URI request4 = URI.create(links3.getString("first"));
+        URI request4 = URI.create(links3.getString("prev"));
         String response4 = whenRequesting(req -> req
                 .urlEncodingEnabled(false)
                 .get(request4))
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()))
+            .body("links.size()", is(4))
+            .body("links", allOf(
+                    hasEntry(is("first"), is(links1First)),
+                    hasEntry(is("prev"), notNullValue()),
+                    hasEntry(is("next"), is(links1Last)),
+                    hasEntry(is("last"), is(links1Last))))
+            .body("meta.page.total", is(102))
+            .body("meta.page.pageNumber", is(10))
+            .body("data.size()", is(10))
+            .body("data[0].attributes.name", startsWith("011-"))
+            .body("data[9].attributes.name", startsWith("002-"))
+            .extract()
+            .asString();
+
+        // Return to page 1 using the `first` link provided by page 10
+        JsonObject links4 = linkExtract.apply(response4);
+        URI request5 = URI.create(links4.getString("first"));
+        String response5 = whenRequesting(req -> req
+                .urlEncodingEnabled(false)
+                .get(request5))
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
             .body("links.size()", is(4))
@@ -571,7 +593,7 @@ class TopicsResourceIT {
             .extract()
             .asString();
 
-        assertEquals(response1, response4);
+        assertEquals(response1, response5);
     }
 
     @Test
