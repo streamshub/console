@@ -90,10 +90,8 @@ export function MessageDetailsBody({
   const [key, isKeyJson] = maybeJson(message.attributes.key || "{}");
   const [value, isValueJson] = maybeJson(message.attributes.value || "{}");
 
-  const [keySchemaContent, setKeySchemaContent] = useState<string | null>(null);
-  const [valueSchemaContent, setValueSchemaContent] = useState<string | null>(
-    null,
-  );
+  const [keySchemaContent, setKeySchemaContent] = useState<string>();
+  const [valueSchemaContent, setValueSchemaContent] = useState<string>();
 
   useEffect(() => {
     async function fetchSchemas() {
@@ -102,7 +100,7 @@ export function MessageDetailsBody({
         if (message?.relationships.keySchema?.links?.content) {
           const keySchemaLink = message.relationships.keySchema.links.content;
           const keySchema = await getSchema(keySchemaLink);
-          setKeySchemaContent(JSON.stringify(keySchema, null, 2));
+          setKeySchemaContent(keySchema);
         } else {
           console.log("No URL found for key schema.");
         }
@@ -112,7 +110,7 @@ export function MessageDetailsBody({
           const valueSchemaLink =
             message.relationships.valueSchema.links.content;
           const valueSchema = await getSchema(valueSchemaLink);
-          setValueSchemaContent(JSON.stringify(valueSchema, null, 2));
+          setValueSchemaContent(valueSchema);
         } else {
           console.log("No URL found for value schema.");
         }
@@ -186,13 +184,13 @@ export function MessageDetailsBody({
           <DescriptionListGroup>
             <DescriptionListTerm>{t("field.key-format")}</DescriptionListTerm>
             <DescriptionListDescription>
-              {message.relationships.keySchema?.meta?.artifactType}
+              {message.relationships.keySchema?.meta?.artifactType ?? "Plain"}
             </DescriptionListDescription>
           </DescriptionListGroup>
           <DescriptionListGroup>
             <DescriptionListTerm>{t("field.value-format")}</DescriptionListTerm>
             <DescriptionListDescription>
-              {message.relationships.valueSchema?.meta?.artifactType}
+              {message.relationships.valueSchema?.meta?.artifactType ?? "Plain"}
             </DescriptionListDescription>
           </DescriptionListGroup>
         </DescriptionList>

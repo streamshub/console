@@ -7,6 +7,6 @@ export async function getSchema(contentLink: string) {
   const res = await fetch(url, {
     headers: await getHeaders(),
   });
-  const rawData = await res.json();
+  const rawData = await res.text();
   return rawData;
 }

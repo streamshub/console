@@ -189,7 +189,7 @@ export function MessagesTable({
                     <Th
                       key={key}
                       width={columnWidths[column]}
-                      modifier={"fitContent"}
+                      modifier={"nowrap"}
                       sort={
                         column === "timestamp" ||
                         column === "timestampUTC" ||
@@ -217,7 +217,11 @@ export function MessagesTable({
 
                     function Cell({ children }: PropsWithChildren) {
                       return (
-                        <Td key={key} dataLabel={columnLabels[column]}>
+                        <Td
+                          key={key}
+                          dataLabel={columnLabels[column]}
+                          modifier={"truncate"}
+                        >
                           {children}
                         </Td>
                       );
@@ -280,16 +284,23 @@ export function MessagesTable({
                                   <TextContent>
                                     <Text component={"small"}>
                                       {row.relationships.keySchema?.meta
-                                        ?.name && (
+                                        ?.name &&
+                                      row.relationships.keySchema?.links
+                                        ?.content ? (
                                         <ExternalLink
                                           testId={"key-schema"}
-                                          href={`${baseurl}/${row.relationships.keySchema?.links?.content}`}
+                                          href={`${baseurl}/schema/content=${encodeURIComponent(row.relationships.keySchema?.links?.content)}&schemaname=${encodeURIComponent(
+                                            row.relationships.keySchema?.meta
+                                              ?.name,
+                                          )}`}
                                         >
                                           {
                                             row.relationships.keySchema?.meta
                                               ?.name
                                           }
                                         </ExternalLink>
+                                      ) : (
+                                        row.relationships.keySchema?.meta?.name
                                       )}
                                       {row.relationships.keySchema?.meta
                                         ?.errors && (
@@ -346,16 +357,21 @@ export function MessagesTable({
                                   <TextContent>
                                     <Text component={"small"}>
                                       {row.relationships.valueSchema?.meta
-                                        ?.name && (
+                                        ?.name &&
+                                      row.relationships.valueSchema?.links
+                                        ?.content ? (
                                         <ExternalLink
                                           testId="schema-value"
-                                          href={`${baseurl}/${row.relationships.valueSchema.links?.content}`}
+                                          href={`${baseurl}/schema?content=${encodeURIComponent(row.relationships.valueSchema.links.content)}&schemaname=${encodeURIComponent(row.relationships.valueSchema.meta.name)}`}
                                         >
                                           {
-                                            row.relationships.valueSchema?.meta
-                                              ?.name
+                                            row.relationships.valueSchema.meta
+                                              .name
                                           }
                                         </ExternalLink>
+                                      ) : (
+                                        row.relationships.valueSchema?.meta
+                                          ?.name
                                       )}
                                       {row.relationships.valueSchema?.meta
                                         ?.errors && (

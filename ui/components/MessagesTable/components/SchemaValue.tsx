@@ -1,15 +1,14 @@
-"use client"
+"use client";
 
 import {
   Button,
   ClipboardCopyButton,
   CodeBlock,
   CodeBlockAction,
+  CodeBlockCode,
 } from "@/libs/patternfly/react-core";
 import { DownloadIcon } from "@patternfly/react-icons";
 import { useState } from "react";
-import { maybeJson } from "./utils";
-import { allExpanded, defaultStyles, JsonView } from "react-json-view-lite";
 
 export function SchemaValue({
   schema,
@@ -19,8 +18,6 @@ export function SchemaValue({
   name: string;
 }) {
   const [copyStatus, setCopyStatus] = useState<string>("Copy schema");
-
-  const [key, isKeyJson] = maybeJson(schema || "{}");
 
   const copyToClipboard = () => {
     navigator.clipboard
@@ -39,7 +36,7 @@ export function SchemaValue({
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${name}.json`;
+    a.download = `${name}.text`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -64,13 +61,7 @@ export function SchemaValue({
   );
   return (
     <CodeBlock actions={actions}>
-      {isKeyJson && (
-        <JsonView
-          data={key}
-          shouldExpandNode={allExpanded}
-          style={defaultStyles}
-        />
-      )}
+      <CodeBlockCode>{schema}</CodeBlockCode>
     </CodeBlock>
   );
 }
