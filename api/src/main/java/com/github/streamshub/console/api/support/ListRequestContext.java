@@ -157,6 +157,7 @@ public class ListRequestContext<T> implements Predicate<T> {
     public boolean beforePageBegin(T item) {
         if (pageBackRequest && candidateRecords > pageSize) {
             candidateRecords--;
+            recordsBeforePage++;
             return true;
         }
 

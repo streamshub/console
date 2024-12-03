@@ -113,14 +113,14 @@ async function AsyncTopicsTable({
     status,
   });
 
-  const nextPageQuery = topics.links.next
-    ? new URLSearchParams(topics.links.next)
+  const nextPageCursor = topics.links.next
+    ? `after:${new URLSearchParams(topics.links.next).get("page[after]")}`
     : undefined;
-  const nextPageCursor = nextPageQuery?.get("page[after]");
-  const prevPageQuery = topics.links.prev
-    ? new URLSearchParams(topics.links.prev)
+
+  const prevPageCursor = topics.links.prev
+    ? `before:${new URLSearchParams(topics.links.prev).get("page[before]")}`
     : undefined;
-  const prevPageCursor = prevPageQuery?.get("page[after]");
+
   return (
     <ConnectedTopicsTable
       topics={topics.data}

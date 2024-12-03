@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     name: snapshot
     env:
-      PLATFORMS: linux/amd64,linux/arm64
+      PLATFORMS: linux/amd64,linux/arm64,linux/ppc64le
     steps:
       # ==================== Setup ====================
       - name: Checkout
@@ -126,6 +126,7 @@ jobs:
         with:
           context: operator/target/
           platforms: ${{ env.PLATFORMS }}
+          network: none
           provenance: false
           push: true
           file: operator/target/catalog.Dockerfile
@@ -142,5 +143,3 @@ jobs:
             operator/target/bundle/
             operator/target/catalog/
             operator/target/kubernetes/*.yml
-
-      
