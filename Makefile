@@ -15,6 +15,7 @@ CONSOLE_OPERATOR_BUNDLE_IMAGE ?= $(IMAGE_REGISTRY)/$(IMAGE_GROUP)/console-operat
 CONSOLE_OPERATOR_CATALOG_IMAGE ?= $(IMAGE_REGISTRY)/$(IMAGE_GROUP)/console-operator-catalog:$(VERSION)
 
 CONTAINER_RUNTIME ?= $(shell which podman || which docker)
+SKOPEO_TRANSPORT ?= $(shell which podman >/dev/null && echo "containers-storage:" || echo "docker-daemon:")
 ARCH ?= linux/amd64
 SKIP_RANGE ?= ">=1.0.0 <1.0.3"
 
@@ -29,19 +30,19 @@ container-image-api:
 	mvn package -am -pl api -Pcontainer-image -DskipTests -Dquarkus.container-image.image=$(CONSOLE_API_IMAGE)
 
 container-image-api-push: container-image-api
-	$(CONTAINER_RUNTIME) push $(CONSOLE_API_IMAGE)
+	skopeo copy --preserve-digests $(SKOPEO_TRANSPORT)$(CONSOLE_API_IMAGE) docker://$(CONSOLE_API_IMAGE)
 
 container-image-operator:
 	mvn package -am -pl operator -Pcontainer-image -DskipTests -Dquarkus.container-image.image=$(CONSOLE_OPERATOR_IMAGE)
-	operator/bin/modify-bundle-metadata.sh
+	operator/bin/modify-bundle-metadata.sh SKOPEO_TRANSPORT=$(SKOPEO_TRANSPORT)
 	operator/bin/generate-catalog.sh $(VERSION)
 	$(CONTAINER_RUNTIME) build --platform=$(ARCH) -t $(CONSOLE_OPERATOR_BUNDLE_IMAGE) -f operator/target/bundle/console-operator/bundle.Dockerfile
 	$(CONTAINER_RUNTIME) build --platform=$(ARCH) -t $(CONSOLE_OPERATOR_CATALOG_IMAGE) -f operator/target/catalog.Dockerfile
 
 container-image-operator-push: container-image-operator
-	$(CONTAINER_RUNTIME) push $(CONSOLE_OPERATOR_IMAGE)
-	$(CONTAINER_RUNTIME) push $(CONSOLE_OPERATOR_BUNDLE_IMAGE)
-	$(CONTAINER_RUNTIME) push $(CONSOLE_OPERATOR_CATALOG_IMAGE)
+	skopeo copy --preserve-digests $(SKOPEO_TRANSPORT)$(CONSOLE_OPERATOR_IMAGE) docker://$(CONSOLE_OPERATOR_IMAGE)
+	skopeo copy --preserve-digests $(SKOPEO_TRANSPORT)$(CONSOLE_OPERATOR_BUNDLE_IMAGE) docker://$(CONSOLE_OPERATOR_BUNDLE_IMAGE)
+	skopeo copy --preserve-digests $(SKOPEO_TRANSPORT)$(CONSOLE_OPERATOR_CATALOG_IMAGE) docker://$(CONSOLE_OPERATOR_CATALOG_IMAGE)
 
 container-image-ui:
 	cd ui && \
@@ -55,7 +56,7 @@ container-image-ui:
 	$(CONTAINER_RUNTIME) build --platform=$(ARCH) -t $(CONSOLE_UI_IMAGE) ./ui -f ./ui/Dockerfile
 
 container-image-ui-push: container-image-ui
-	$(CONTAINER_RUNTIME) push $(CONSOLE_UI_IMAGE)
+	skopeo copy --preserve-digests $(SKOPEO_TRANSPORT)$(CONSOLE_UI_IMAGE) docker://$(CONSOLE_UI_IMAGE)
 
 container-images: container-image-api container-image-ui container-image-operator
 
