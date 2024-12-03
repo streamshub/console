@@ -13,7 +13,7 @@ jobs:
     if: ${{github.event.pull_request.merged == true}}
     env:
       GITHUB_TOKEN: ${{secrets.RELEASE_TOKEN}}
-      PLATFORMS: linux/amd64,linux/arm64
+      PLATFORMS: linux/amd64,linux/arm64,linux/ppc64le
 
     steps:
       # ==================== Setup ====================

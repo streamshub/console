@@ -19,7 +19,7 @@ jobs:
         ports:
           - 5000:5000
     env:
-      PLATFORMS: linux/amd64,linux/arm64
+      PLATFORMS: linux/amd64,linux/arm64,linux/ppc64le
 
     steps:
       # ==================== Setup ====================
