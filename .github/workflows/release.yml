@@ -13,8 +13,10 @@ jobs:
     if: ${{github.event.pull_request.merged == true}}
     env:
       GITHUB_TOKEN: ${{secrets.RELEASE_TOKEN}}
+      PLATFORMS: linux/amd64,linux/arm64,linux/ppc64le
 
     steps:
+      # ==================== Setup ====================
       - name: Checkout
         uses: actions/checkout@v4
         with:
@@ -39,6 +41,36 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      - name: Login to Quay
+        uses: docker/login-action@v3
+        with:
+          registry: "${{ secrets.IMAGE_REPO_HOSTNAME }}"
+          username: "${{ secrets.IMAGE_REPO_USERNAME }}"
+          password: "${{ secrets.IMAGE_REPO_PASSWORD }}"
+
+      # ==================== UI ====================
+      - name: Build UI
+        working-directory: target/checkout/ui
+        run: |
+          npm ci --omit=dev
+          export BACKEND_URL=http://example
+          export NEXTAUTH_SECRET=examplesecret
+          export LOG_LEVEL=info
+          export CONSOLE_MODE=read-only
+          npm run build
+
+      - name: Build and Push UI Image
+        uses: docker/build-push-action@v6
+        with:
+          context: target/checkout/ui/
+          platforms: ${{ env.PLATFORMS }}
+          provenance: false
+          push: true
+          tags: |
+            ${{ secrets.IMAGE_REPO_HOSTNAME }}/${{ secrets.IMAGE_REPO_NAMESPACE }}/console-ui:${{steps.metadata.outputs.current-version}}
+            ${{ secrets.IMAGE_REPO_HOSTNAME }}/${{ secrets.IMAGE_REPO_NAMESPACE }}/console-ui:latest
+
+      # ==================== API & Operator ====================
       - name: Build and Push API and Operator Image
         run: |
           git config --global user.name "github-actions[bot]"
@@ -57,23 +89,17 @@ jobs:
           export GIT_REVISION=$(git rev-parse --short release)
           # Build and push the release images using the commit tagged in `release:prepare`
           mvn -B -P container-image release:perform --no-transfer-progress \
-            '-Drelease.arguments=-Dquarkus.docker.buildx.platform=linux/amd64,linux/arm64,linux/ppc64le'
+            '-Drelease.arguments=-Dquarkus.docker.buildx.platform=${{ env.PLATFORMS }}'
 
-      - name: Login to Quay
-        uses: docker/login-action@v3
-        with:
-          registry: "${{ secrets.IMAGE_REPO_HOSTNAME }}"
-          username: "${{ secrets.IMAGE_REPO_USERNAME }}"
-          password: "${{ secrets.IMAGE_REPO_PASSWORD }}"
-
-      - name: Modify CSV Annotation
+      # ==================== Operator-Bundle ====================
+      - name: Modify Bundle CSV Metadata
         run: ./operator/bin/modify-bundle-metadata.sh
 
       - name: Build and Push Operator Bundle Image
         uses: docker/build-push-action@v6
         with:
           context: target/checkout/operator/target/bundle/console-operator/
-          platforms: linux/amd64,linux/arm64,linux/ppc64le
+          platforms: ${{ env.PLATFORMS }}
           provenance: false
           push: true
           file: target/checkout/operator/target/bundle/console-operator/bundle.Dockerfile
@@ -81,7 +107,8 @@ jobs:
             ${{ secrets.IMAGE_REPO_HOSTNAME }}/${{ secrets.IMAGE_REPO_NAMESPACE }}/console-operator-bundle:${{steps.metadata.outputs.current-version}}
             ${{ secrets.IMAGE_REPO_HOSTNAME }}/${{ secrets.IMAGE_REPO_NAMESPACE }}/console-operator-bundle:latest
 
-      - name: Build Operator Catalog
+      # ==================== Operator-Catalog ====================
+      - name: Generate Operator Catalog Config
         working-directory: target/checkout
         run: |
           curl -L -o opm https://github.com/operator-framework/operator-registry/releases/download/v1.43.1/linux-amd64-opm
@@ -95,7 +122,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: target/checkout/operator/target/
-          platforms: linux/amd64,linux/arm64,linux/ppc64le
+          platforms: ${{ env.PLATFORMS }}
           provenance: false
           push: true
           file: target/checkout/operator/target/catalog.Dockerfile
@@ -103,27 +130,7 @@ jobs:
             ${{ secrets.IMAGE_REPO_HOSTNAME }}/${{ secrets.IMAGE_REPO_NAMESPACE }}/console-operator-catalog:${{steps.metadata.outputs.current-version}}
             ${{ secrets.IMAGE_REPO_HOSTNAME }}/${{ secrets.IMAGE_REPO_NAMESPACE }}/console-operator-catalog:latest
 
-      - name: Build UI
-        working-directory: target/checkout/ui
-        run: |
-          npm ci --omit=dev
-          export BACKEND_URL=http://example
-          export NEXTAUTH_SECRET=examplesecret
-          export LOG_LEVEL=info
-          export CONSOLE_MODE=read-only
-          npm run build
-
-      - name: Build and Push UI Image
-        uses: docker/build-push-action@v6
-        with:
-          context: target/checkout/ui/
-          platforms: linux/amd64,linux/arm64,linux/ppc64le
-          provenance: false
-          push: true
-          tags: |
-            ${{ secrets.IMAGE_REPO_HOSTNAME }}/${{ secrets.IMAGE_REPO_NAMESPACE }}/console-ui:${{steps.metadata.outputs.current-version}}
-            ${{ secrets.IMAGE_REPO_HOSTNAME }}/${{ secrets.IMAGE_REPO_NAMESPACE }}/console-ui:latest
-
+      # ==================== GitHub Release ====================
       - name: Prepare Operator Resources
         run: |
           RELEASE_K8S_PATH='target/checkout/operator/target/kubernetes'

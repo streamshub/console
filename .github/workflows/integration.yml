@@ -11,21 +11,25 @@ on:
     types: [ opened, reopened, synchronize ]
 
 jobs:
-  build-api:
-    runs-on: ubuntu-latest
+  build-images:
+    runs-on: ubuntu-24.04
     services:
       registry:
         image: registry:2
         ports:
           - 5000:5000
+    env:
+      PLATFORMS: linux/amd64,linux/arm64,linux/ppc64le
+
     steps:
+      # ==================== Setup ====================
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Set Image Tag Env
         run: echo "PROJECT_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
 
-      - name: Set up JDK 17
+      - name: Set Up JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
@@ -39,15 +43,38 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-maven-
 
-      - name: Set up QEMU
+      - name: Set Up QEMU
         uses: docker/setup-qemu-action@v3
 
-      - name: Set up Docker Buildx
+      - name: Set Up Docker Buildx
         uses: docker/setup-buildx-action@v3
         with:
           driver-opts: network=host
 
-      - name: Build and Test
+      # ==================== UI ====================
+      - name: Build UI Project
+        working-directory: ui
+        run: |
+          npm ci --omit=dev
+          export BACKEND_URL=http://example
+          export CONSOLE_METRICS_PROMETHEUS_URL=http://example
+          export NEXTAUTH_SECRET=examplesecret
+          export LOG_LEVEL=info
+          export CONSOLE_MODE=read-only
+          npm run build
+
+      - name: Build UI Image
+        uses: docker/build-push-action@v6
+        with:
+          context: ui/
+          platforms: ${{ env.PLATFORMS }}
+          provenance: false
+          push: true
+          tags: |
+            localhost:5000/streamshub/console-ui:${{ env.PROJECT_VERSION }}
+
+      # ==================== API & Operator ====================
+      - name: Test Projects and Build API and Operator Images
         env:
           GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
           SONAR_ORG: ${{secrets.SONAR_ORG}}
@@ -67,23 +94,25 @@ jobs:
           mvn verify -P container-image -B --no-transfer-progress \
             -Dquarkus.kubernetes.namespace='$${NAMESPACE}' \
             -Dquarkus.package.write-transformed-bytecode-to-build-output=true \
-            -Dquarkus.docker.buildx.platform=linux/amd64,linux/arm64,linux/ppc64le
+            -Dquarkus.docker.buildx.platform=${{ env.PLATFORMS }}
 
-      - name: Modify CSV Annotation
+      # ==================== Operator-Bundle ====================
+      - name: Modify Bundle CSV Metadata
         run: ./operator/bin/modify-bundle-metadata.sh "SKIP_RANGE=>=0.0.1 <${{ env.PROJECT_VERSION }}"
 
       - name: Build Operator Bundle Image
         uses: docker/build-push-action@v6
         with:
           context: operator/target/bundle/console-operator/
-          platforms: linux/amd64,linux/arm64,linux/ppc64le
+          platforms: ${{ env.PLATFORMS }}
           provenance: false
           push: true
           file: operator/target/bundle/console-operator/bundle.Dockerfile
           tags: |
             localhost:5000/streamshub/console-operator-bundle:${{ env.PROJECT_VERSION }}
 
-      - name: Build Operator Catalog
+      # ==================== Operator-Catalog ====================
+      - name: Generate Operator Catalog Config
         run: |
           curl -L -o opm https://github.com/operator-framework/operator-registry/releases/download/v1.43.1/linux-amd64-opm
           chmod +x opm
@@ -95,14 +124,15 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: operator/target/
-          platforms: linux/amd64,linux/arm64,linux/ppc64le
+          platforms: ${{ env.PLATFORMS }}
           provenance: false
           push: true
           file: operator/target/catalog.Dockerfile
           tags: |
             localhost:5000/streamshub/console-operator-catalog:${{ env.PROJECT_VERSION }}
 
-      - name: Attach Kubernetes Resources
+      # ==================== Archive artifacts ====================
+      - name: Archive Operator Kubernetes Resources
         uses: actions/upload-artifact@v4
         with:
           name: k8s-resources
@@ -111,7 +141,7 @@ jobs:
             operator/target/catalog/
             operator/target/kubernetes/*.yml
 
-      - name: Archive Results
+      - name: Archive Failed Tests Results
         uses: actions/upload-artifact@v4
         if: failure()
         with:
@@ -127,7 +157,7 @@ jobs:
           GITHUB_CONTEXT: ${{ toJson(github) }}
 
       ## Attach the target directory for use in Sonar analysis
-      - name: Attach Build Output
+      - name: Archive Build Output
         uses: actions/upload-artifact@v4
         with:
           name: target
@@ -137,85 +167,26 @@ jobs:
             !**/target/failsafe-reports/**/*
             !**/target/surefire-reports/**/*
 
-      - name: Save Images
+      - name: Save [UI, API, Operator, Operator-Bundle, Operator-Catalog] Images To Files
         run: |
-          docker pull localhost:5000/streamshub/console-api:${{ env.PROJECT_VERSION }}
-          docker pull localhost:5000/streamshub/console-operator:${{ env.PROJECT_VERSION }}
-          docker pull localhost:5000/streamshub/console-operator-bundle:${{ env.PROJECT_VERSION }}
-          docker pull localhost:5000/streamshub/console-operator-catalog:${{ env.PROJECT_VERSION }}
+          mkdir streamshub-images
 
-          docker save -o console-api-${{ env.PROJECT_VERSION }}.tar localhost:5000/streamshub/console-api:${{ env.PROJECT_VERSION }}
-          docker save -o console-operator-${{ env.PROJECT_VERSION }}.tar localhost:5000/streamshub/console-operator:${{ env.PROJECT_VERSION }}
-          docker save -o console-operator-bundle-${{ env.PROJECT_VERSION }}.tar localhost:5000/streamshub/console-operator-bundle:${{ env.PROJECT_VERSION }}
-          docker save -o console-operator-catalog-${{ env.PROJECT_VERSION }}.tar localhost:5000/streamshub/console-operator-catalog:${{ env.PROJECT_VERSION }}
+          for img in console-ui console-api console-operator console-operator-bundle console-operator-catalog ; do
+              skopeo sync --all --scoped --src docker --src-tls-verify=false --dest dir \
+                localhost:5000/streamshub/${img}:${{ env.PROJECT_VERSION }} \
+                $(pwd)/streamshub-images
+          done
 
-      - name: Archive Images
+          tar -czf streamshub-images.tgz -C streamshub-images .
+
+      - name: Archive [UI, API, Operator-Bundle, Operator, Operator-Catalog] Image Files
         uses: actions/upload-artifact@v4
         with:
-          name: backend-images
-          path: |
-            console-api-${{ env.PROJECT_VERSION }}.tar
-            console-operator-${{ env.PROJECT_VERSION }}.tar
-            console-operator-bundle-${{ env.PROJECT_VERSION }}.tar
-            console-operator-catalog-${{ env.PROJECT_VERSION }}.tar
-
-  build-ui:
-    runs-on: ubuntu-latest
-    services:
-      registry:
-        image: registry:2
-        ports:
-          - 5000:5000
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set Image Tag Env
-        run: echo "PROJECT_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-        with:
-          driver-opts: network=host
-
-      - name: Build UI
-        working-directory: ui
-        run: |
-          npm ci --omit=dev
-          export BACKEND_URL=http://example
-          export CONSOLE_METRICS_PROMETHEUS_URL=http://example
-          export NEXTAUTH_SECRET=examplesecret
-          export LOG_LEVEL=info
-          export CONSOLE_MODE=read-only
-          npm run build
-
-      - name: Build UI Image
-        uses: docker/build-push-action@v6
-        with:
-          context: ui/
-          platforms: linux/amd64,linux/arm64,linux/ppc64le
-          provenance: false
-          push: true
-          tags: |
-            localhost:5000/streamshub/console-ui:${{ env.PROJECT_VERSION }}
-
-      - name: Save Image
-        run: |
-          docker pull localhost:5000/streamshub/console-ui:${{ env.PROJECT_VERSION }}
-          docker save -o console-ui-${{ env.PROJECT_VERSION }}.tar localhost:5000/streamshub/console-ui:${{ env.PROJECT_VERSION }}
-
-      - name: Archive Image
-        uses: actions/upload-artifact@v4
-        with:
-          name: frontend-images
-          path: |
-            console-ui-${{ env.PROJECT_VERSION }}.tar
+          name: streamshub-images
+          path: streamshub-images.tgz
 
   test-storybook:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -238,5 +209,4 @@ jobs:
     if: ${{ contains(github.event.pull_request.labels.*.name, 'safe to test') || github.repository == 'streamshub/console' }}
     uses: ./.github/workflows/playwright-tests.yml
     needs:
-      - build-api
-      - build-ui
+      - build-images

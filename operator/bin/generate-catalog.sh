@@ -10,10 +10,10 @@ rm -rvf ${CATALOG_PATH} ${CATALOG_PATH}.Dockerfile
 mkdir -p ${CATALOG_PATH}
 
 opm generate dockerfile ${CATALOG_PATH}
-opm init ${OPERATOR_NAME} --default-channel=alpha --output=yaml > ${CATALOG_PATH}/operator.yaml
-opm render ${BUNDLE_PATH} --output=yaml >> ${CATALOG_PATH}/operator.yaml
+opm init ${OPERATOR_NAME} --default-channel=alpha --output=yaml > ${OPERATOR_CATALOG_CONFIG_YAML_PATH}
+opm render ${BUNDLE_PATH} --output=yaml >> ${OPERATOR_CATALOG_CONFIG_YAML_PATH}
 
-cat << EOF >> ${CATALOG_PATH}/operator.yaml
+cat << EOF >> ${OPERATOR_CATALOG_CONFIG_YAML_PATH}
 ---
 schema: olm.channel
 package: ${OPERATOR_NAME}
@@ -23,8 +23,8 @@ entries:
 EOF
 
 # Rename package names
-${YQ} eval -o yaml -i ". |= select(.package == \"${ORIGINAL_OPERATOR_NAME}\").package = \"${OPERATOR_NAME}\"" "${CATALOG_PATH}/operator.yaml"
-${YQ} eval -o yaml -i "(.properties[] | select(.value.packageName == \"${ORIGINAL_OPERATOR_NAME}\") | .value.packageName) = \"${OPERATOR_NAME}\"" "${CATALOG_PATH}/operator.yaml"
+${YQ} eval -o yaml -i ". |= select(.package == \"${ORIGINAL_OPERATOR_NAME}\").package = \"${OPERATOR_NAME}\"" "${OPERATOR_CATALOG_CONFIG_YAML_PATH}"
+${YQ} eval -o yaml -i "(.properties[] | select(.value.packageName == \"${ORIGINAL_OPERATOR_NAME}\") | .value.packageName) = \"${OPERATOR_NAME}\"" "${OPERATOR_CATALOG_CONFIG_YAML_PATH}"
 
 opm validate ${CATALOG_PATH}
 
