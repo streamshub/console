@@ -37,7 +37,8 @@ export async function getTopics(
   const sp = new URLSearchParams(
     filterUndefinedFromObj({
       "fields[topics]":
-        params.fields ?? "name,status,visibility,numPartitions,totalLeaderLogBytes,consumerGroups",
+        params.fields ??
+        "name,status,visibility,numPartitions,totalLeaderLogBytes,consumerGroups",
       "filter[id]": params.id ? `eq,${params.id}` : undefined,
       "filter[name]": params.name ? `like,*${params.name}*` : undefined,
       "filter[status]":
@@ -48,7 +49,12 @@ export async function getTopics(
         ? "in,external,internal"
         : "eq,external",
       "page[size]": params.pageSize,
-      "page[after]": params.pageCursor,
+      "page[after]": params.pageCursor?.startsWith("after:")
+        ? params.pageCursor.slice(6)
+        : undefined,
+      "page[before]": params.pageCursor?.startsWith("before:")
+        ? params.pageCursor.slice(7)
+        : undefined,
       sort: params.sort
         ? (params.sortDir !== "asc" ? "-" : "") + params.sort
         : undefined,
