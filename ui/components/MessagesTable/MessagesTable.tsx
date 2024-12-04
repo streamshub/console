@@ -189,7 +189,7 @@ export function MessagesTable({
                     <Th
                       key={key}
                       width={columnWidths[column]}
-                      modifier={"nowrap"}
+                      modifier={"fitContent"}
                       sort={
                         column === "timestamp" ||
                         column === "timestampUTC" ||
@@ -217,11 +217,7 @@ export function MessagesTable({
 
                     function Cell({ children }: PropsWithChildren) {
                       return (
-                        <Td
-                          key={key}
-                          dataLabel={columnLabels[column]}
-                          modifier={"truncate"}
-                        >
+                        <Td key={key} dataLabel={columnLabels[column]}>
                           {children}
                         </Td>
                       );
@@ -289,7 +285,7 @@ export function MessagesTable({
                                         ?.content ? (
                                         <ExternalLink
                                           testId={"key-schema"}
-                                          href={`${baseurl}/schema/content=${encodeURIComponent(row.relationships.keySchema?.links?.content)}&schemaname=${encodeURIComponent(
+                                          href={`${baseurl}/schema?content=${encodeURIComponent(row.relationships.keySchema?.links?.content)}&schemaname=${encodeURIComponent(
                                             row.relationships.keySchema?.meta
                                               ?.name,
                                           )}`}
