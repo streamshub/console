@@ -12,7 +12,10 @@ import {
   TextContent,
   Tooltip,
 } from "@/libs/patternfly/react-core";
-import { ExclamationTriangleIcon, HelpIcon } from "@/libs/patternfly/react-icons";
+import {
+  ExclamationTriangleIcon,
+  HelpIcon,
+} from "@/libs/patternfly/react-icons";
 import {
   BaseCellProps,
   InnerScrollContainer,
@@ -36,6 +39,7 @@ import { NoData } from "./components/NoData";
 import { NoResultsEmptyState } from "./components/NoResultsEmptyState";
 import { UnknownValuePreview } from "./components/UnknownValuePreview";
 import { beautifyUnknownValue, isSameMessage } from "./components/utils";
+import { ExternalLink } from "../Navigation/ExternalLink";
 
 const columnWidths: Record<Column, BaseCellProps["width"]> = {
   "offset-partition": 10,
@@ -48,10 +52,12 @@ const columnWidths: Record<Column, BaseCellProps["width"]> = {
 };
 
 const defaultColumns: Column[] = [
-  "timestampUTC",
   "offset-partition",
+  "timestampUTC",
   "key",
+  "headers",
   "value",
+  "size",
 ];
 
 export type MessagesTableProps = {
@@ -71,6 +77,7 @@ export type MessagesTableProps = {
   onSelectMessage: (message: Message) => void;
   onDeselectMessage: () => void;
   onReset: () => void;
+  baseurl: string;
 };
 
 export function MessagesTable({
@@ -91,6 +98,7 @@ export function MessagesTable({
   onDeselectMessage,
   onReset,
   children,
+  baseurl,
 }: PropsWithChildren<MessagesTableProps>) {
   const t = useTranslations("message-browser");
   const columnLabels = useColumnLabels();
@@ -181,7 +189,7 @@ export function MessagesTable({
                     <Th
                       key={key}
                       width={columnWidths[column]}
-                      modifier={"nowrap"}
+                      modifier={"fitContent"}
                       sort={
                         column === "timestamp" ||
                         column === "timestampUTC" ||
@@ -209,11 +217,7 @@ export function MessagesTable({
 
                     function Cell({ children }: PropsWithChildren) {
                       return (
-                        <Td
-                          key={key}
-                          dataLabel={columnLabels[column]}
-                          modifier={"nowrap"}
-                        >
+                        <Td key={key} dataLabel={columnLabels[column]}>
                           {children}
                         </Td>
                       );
@@ -264,30 +268,49 @@ export function MessagesTable({
                           <Cell>
                             {row.attributes.key ? (
                               <>
-                              <UnknownValuePreview
-                                value={row.attributes.key}
-                                highlight={filterQuery}
-                                onClick={() => {
-                                  setDefaultTab("key");
-                                  onSelectMessage(row);
-                                }}
-                              />
-                              {row.relationships.keySchema && (
-                                <TextContent>
-                                  <Text component={"small"}>
-                                    {row.relationships.keySchema?.meta?.artifactType && (
+                                <UnknownValuePreview
+                                  value={row.attributes.key}
+                                  highlight={filterQuery}
+                                  onClick={() => {
+                                    setDefaultTab("key");
+                                    onSelectMessage(row);
+                                  }}
+                                />
+                                {row.relationships.keySchema && (
+                                  <TextContent>
+                                    <Text component={"small"}>
+                                      {row.relationships.keySchema?.meta
+                                        ?.name &&
+                                      row.relationships.keySchema?.links
+                                        ?.content ? (
+                                        <ExternalLink
+                                          testId={"key-schema"}
+                                          href={`${baseurl}/schema?content=${encodeURIComponent(row.relationships.keySchema?.links?.content)}&schemaname=${encodeURIComponent(
+                                            row.relationships.keySchema?.meta
+                                              ?.name,
+                                          )}`}
+                                        >
+                                          {
+                                            row.relationships.keySchema?.meta
+                                              ?.name
+                                          }
+                                        </ExternalLink>
+                                      ) : (
+                                        row.relationships.keySchema?.meta?.name
+                                      )}
+                                      {row.relationships.keySchema?.meta
+                                        ?.errors && (
                                         <>
-                                        {row.relationships.keySchema?.meta?.artifactType}
+                                          <ExclamationTriangleIcon />{" "}
+                                          {
+                                            row.relationships.keySchema?.meta
+                                              ?.errors[0].detail
+                                          }
                                         </>
-                                    )}
-                                    {row.relationships.keySchema?.meta?.errors && (
-                                        <>
-                                        <ExclamationTriangleIcon /> { row.relationships.keySchema?.meta?.errors[0].detail }
-                                        </>
-                                    )}
-                                  </Text>
-                                </TextContent>
-                              )}
+                                      )}
+                                    </Text>
+                                  </TextContent>
+                                )}
                               </>
                             ) : (
                               empty
@@ -318,30 +341,47 @@ export function MessagesTable({
                           <Cell>
                             {row.attributes.value ? (
                               <>
-                              <UnknownValuePreview
-                                value={row.attributes.value}
-                                highlight={filterQuery}
-                                onClick={() => {
-                                  setDefaultTab("value");
-                                  onSelectMessage(row);
-                                }}
-                              />
-                              {row.relationships.valueSchema && (
-                                <TextContent>
-                                  <Text component={"small"}>
-                                    {row.relationships.valueSchema?.meta?.artifactType && (
-                                      <>
-                                      {row.relationships.valueSchema?.meta?.artifactType}
-                                      </>
-                                    )}
-                                    {row.relationships.valueSchema?.meta?.errors && (
-                                      <>
-                                      <ExclamationTriangleIcon /> { row.relationships.valueSchema?.meta?.errors[0].detail }
-                                      </>
-                                    )}
-                                  </Text>
-                                </TextContent>
-                              )}
+                                <UnknownValuePreview
+                                  value={row.attributes.value}
+                                  highlight={filterQuery}
+                                  onClick={() => {
+                                    setDefaultTab("value");
+                                    onSelectMessage(row);
+                                  }}
+                                />
+                                {row.relationships.valueSchema && (
+                                  <TextContent>
+                                    <Text component={"small"}>
+                                      {row.relationships.valueSchema?.meta
+                                        ?.name &&
+                                      row.relationships.valueSchema?.links
+                                        ?.content ? (
+                                        <ExternalLink
+                                          testId="schema-value"
+                                          href={`${baseurl}/schema?content=${encodeURIComponent(row.relationships.valueSchema.links.content)}&schemaname=${encodeURIComponent(row.relationships.valueSchema.meta.name)}`}
+                                        >
+                                          {
+                                            row.relationships.valueSchema.meta
+                                              .name
+                                          }
+                                        </ExternalLink>
+                                      ) : (
+                                        row.relationships.valueSchema?.meta
+                                          ?.name
+                                      )}
+                                      {row.relationships.valueSchema?.meta
+                                        ?.errors && (
+                                        <>
+                                          <ExclamationTriangleIcon />{" "}
+                                          {
+                                            row.relationships.valueSchema?.meta
+                                              ?.errors[0].detail
+                                          }
+                                        </>
+                                      )}
+                                    </Text>
+                                  </TextContent>
+                                )}
                               </>
                             ) : (
                               empty

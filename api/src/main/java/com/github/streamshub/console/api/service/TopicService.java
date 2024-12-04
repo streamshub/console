@@ -448,6 +448,8 @@ public class TopicService {
             .flatMap(kafkaMeta -> Optional.ofNullable(managedTopics.get(kafkaMeta.getNamespace()))
                     .map(clustersInNamespace -> clustersInNamespace.get(kafkaMeta.getName()))
                     .map(topicsInCluster -> topicsInCluster.get(topicName))
+                    // Do not consider topics without a status set by Strimzi as managed
+                    .filter(topic -> Objects.nonNull(topic.getStatus()))
                     .filter(this::isManaged));
     }
 

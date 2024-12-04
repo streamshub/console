@@ -37,6 +37,7 @@ export default async function ConnectedMessagesPage({
       topicName={topic.attributes.name!}
       selectedMessage={selectedMessage}
       partitions={topic.attributes.numPartitions ?? 0}
+      baseurl={`/kafka/${kafkaId}/topics/${topicId}/messages`}
     />
   );
 }
