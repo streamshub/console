@@ -30,12 +30,14 @@ export function ConnectedMessagesTable({
   topicName,
   selectedMessage: serverSelectedMessage,
   partitions,
+  baseurl
 }: {
   kafkaId: string;
   topicId: string;
   topicName: string;
   selectedMessage: Message | undefined;
   partitions: number;
+  baseurl: string;
 }) {
   const [params, sp] = useParseSearchParams();
   const updateUrl = useFilterParams(sp);
@@ -208,6 +210,7 @@ export function ConnectedMessagesTable({
             onSelectMessage={setSelected}
             onDeselectMessage={deselectMessage}
             onReset={onReset}
+            baseurl={baseurl}
           >
             {limit === "continuously" && (
               <Refresher

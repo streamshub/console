@@ -23,12 +23,20 @@ import {
   Tooltip,
 } from "@/libs/patternfly/react-core";
 import { HelpIcon } from "@/libs/patternfly/react-icons";
-import { ClipboardCopy } from "@patternfly/react-core";
+import {
+  ClipboardCopy,
+  Stack,
+  StackItem,
+  TabContent,
+  Title,
+} from "@patternfly/react-core";
 import { useTranslations } from "next-intl";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { allExpanded, defaultStyles, JsonView } from "react-json-view-lite";
 import { NoData } from "./NoData";
 import { maybeJson } from "./utils";
+import { getSchema } from "@/api/schema/action";
+import { SchemaValue } from "./SchemaValue";
 
 export type MessageDetailsProps = {
   onClose: () => void;
@@ -42,7 +50,6 @@ export function MessageDetails({
   message,
 }: MessageDetailsProps) {
   const t = useTranslations("message-browser");
-
   const body = useMemo(() => {
     return (
       message && (
@@ -82,6 +89,37 @@ export function MessageDetailsBody({
   const t = useTranslations("message-browser");
   const [key, isKeyJson] = maybeJson(message.attributes.key || "{}");
   const [value, isValueJson] = maybeJson(message.attributes.value || "{}");
+
+  const [keySchemaContent, setKeySchemaContent] = useState<string>();
+  const [valueSchemaContent, setValueSchemaContent] = useState<string>();
+
+  useEffect(() => {
+    async function fetchSchemas() {
+      try {
+        // Fetch Key Schema
+        if (message?.relationships.keySchema?.links?.content) {
+          const keySchemaLink = message.relationships.keySchema.links.content;
+          const keySchema = await getSchema(keySchemaLink);
+          setKeySchemaContent(keySchema);
+        } else {
+          console.log("No URL found for key schema.");
+        }
+
+        // Fetch Value Schema
+        if (message?.relationships.valueSchema?.links?.content) {
+          const valueSchemaLink =
+            message.relationships.valueSchema.links.content;
+          const valueSchema = await getSchema(valueSchemaLink);
+          setValueSchemaContent(valueSchema);
+        } else {
+          console.log("No URL found for value schema.");
+        }
+      } catch (error) {
+        console.error("Error fetching schemas:", error);
+      }
+    }
+    fetchSchemas();
+  }, [message]);
 
   return (
     <Flex direction={{ default: "column" }} data-testid={"message-details"}>
@@ -143,6 +181,18 @@ export function MessageDetailsBody({
               )}
             </DescriptionListDescription>
           </DescriptionListGroup>
+          <DescriptionListGroup>
+            <DescriptionListTerm>{t("field.key-format")}</DescriptionListTerm>
+            <DescriptionListDescription>
+              {message.relationships.keySchema?.meta?.artifactType ?? "Plain"}
+            </DescriptionListDescription>
+          </DescriptionListGroup>
+          <DescriptionListGroup>
+            <DescriptionListTerm>{t("field.value-format")}</DescriptionListTerm>
+            <DescriptionListDescription>
+              {message.relationships.valueSchema?.meta?.artifactType ?? "Plain"}
+            </DescriptionListDescription>
+          </DescriptionListGroup>
         </DescriptionList>
       </FlexItem>
       <FlexItem>
@@ -152,45 +202,75 @@ export function MessageDetailsBody({
             eventKey={"value"}
             title={<TabTitleText>{t("field.value")}</TabTitleText>}
           >
-            <ClipboardCopy
-              isCode
-              isReadOnly
-              hoverTip="Copy"
-              clickTip="Copied"
-              variant={isValueJson ? "inline" : "expansion"}
-              isExpanded={!isValueJson}
-            >
-              {message.attributes.value ?? "-"}
-            </ClipboardCopy>
-            {isValueJson && (
-              <JsonView
-                data={value}
-                shouldExpandNode={allExpanded}
-                style={defaultStyles}
-              />
-            )}
+            <Stack hasGutter>
+              <StackItem>
+                <ClipboardCopy
+                  isCode
+                  isReadOnly
+                  hoverTip="Copy"
+                  clickTip="Copied"
+                  variant={isValueJson ? "inline" : "expansion"}
+                  isExpanded={!isValueJson}
+                >
+                  {message.attributes.value ?? "-"}
+                </ClipboardCopy>
+                {isValueJson && (
+                  <JsonView
+                    data={value}
+                    shouldExpandNode={allExpanded}
+                    style={defaultStyles}
+                  />
+                )}
+              </StackItem>
+              {valueSchemaContent && (
+                <StackItem>
+                  <Title headingLevel={"h4"}>
+                    {message.relationships.valueSchema?.meta?.name}
+                  </Title>
+                  <SchemaValue
+                    schema={valueSchemaContent}
+                    name={message.relationships.valueSchema?.meta?.name ?? ""}
+                  />
+                </StackItem>
+              )}
+            </Stack>
           </Tab>
           <Tab
             eventKey={"key"}
             title={<TabTitleText>{t("field.key")}</TabTitleText>}
           >
-            <ClipboardCopy
-              isCode
-              isReadOnly
-              hoverTip="Copy"
-              clickTip="Copied"
-              variant={isKeyJson ? "inline" : "expansion"}
-              isExpanded={!isKeyJson}
-            >
-              {message.attributes.key ?? "-"}
-            </ClipboardCopy>
-            {isKeyJson && (
-              <JsonView
-                data={key}
-                shouldExpandNode={allExpanded}
-                style={defaultStyles}
-              />
-            )}
+            <Stack hasGutter>
+              <StackItem>
+                <ClipboardCopy
+                  isCode
+                  isReadOnly
+                  hoverTip="Copy"
+                  clickTip="Copied"
+                  variant={isKeyJson ? "inline" : "expansion"}
+                  isExpanded={!isKeyJson}
+                >
+                  {message.attributes.key ?? "-"}
+                </ClipboardCopy>
+                {isKeyJson && (
+                  <JsonView
+                    data={key}
+                    shouldExpandNode={allExpanded}
+                    style={defaultStyles}
+                  />
+                )}
+              </StackItem>
+              {keySchemaContent && (
+                <StackItem>
+                  <Title headingLevel={"h4"}>
+                    {message.relationships.keySchema?.meta?.name}
+                  </Title>
+                  <SchemaValue
+                    schema={keySchemaContent}
+                    name={message.relationships.keySchema?.meta?.name ?? ""}
+                  />
+                </StackItem>
+              )}
+            </Stack>
           </Tab>
           <Tab
             eventKey={"headers"}
