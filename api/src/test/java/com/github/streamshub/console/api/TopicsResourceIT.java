@@ -730,35 +730,53 @@ class TopicsResourceIT {
         String topic1 = "t1-" + UUID.randomUUID().toString();
         String topic2 = "t2-" + UUID.randomUUID().toString();
         String topic3 = "t3-" + UUID.randomUUID().toString();
-        topicUtils.createTopics(clusterId1, List.of(topic1), 1);
-        topicUtils.createTopics(clusterId1, List.of(topic2), 1);
-        topicUtils.createTopics(clusterId1, List.of(topic3), 1);
+        String topic4 = "t4-" + UUID.randomUUID().toString();
+        Map<String, String> topics = topicUtils.createTopics(clusterId1, List.of(topic1, topic2, topic3, topic4), 1);
 
-        client.resource(new KafkaTopicBuilder()
-                    .withNewMetadata()
-                        .withName(topic1)
-                        .withNamespace("default")
-                        .withLabels(Map.of("strimzi.io/cluster", clusterName1))
-                    .endMetadata()
-                    .withNewSpec()
-                        .withTopicName(topic1)
-                        .withPartitions(1)
-                    .endSpec()
-                .build())
-            .create();
+        utils.apply(client, new KafkaTopicBuilder()
+                .withNewMetadata()
+                    .withName(topic1)
+                    .withNamespace("default")
+                    .withLabels(Map.of("strimzi.io/cluster", clusterName1))
+                .endMetadata()
+                .withNewSpec()
+                    .withTopicName(topic1)
+                    .withPartitions(1)
+                .endSpec()
+                .withNewStatus()
+                    .withTopicName(topic1)
+                    .withTopicId(topics.get(topic1))
+                .endStatus()
+            .build());
 
-        client.resource(new KafkaTopicBuilder()
-                    .withNewMetadata()
-                        .withName(topic3)
-                        .withNamespace("default")
-                        .withLabels(Map.of("strimzi.io/cluster", clusterName1))
-                    .endMetadata()
-                    .withNewSpec()
-                        // topicName (optional) is not set
-                        .withPartitions(1)
-                    .endSpec()
-                .build())
-            .create();
+        utils.apply(client, new KafkaTopicBuilder()
+                .withNewMetadata()
+                    .withName(topic3)
+                    .withNamespace("default")
+                    .withLabels(Map.of("strimzi.io/cluster", clusterName1))
+                .endMetadata()
+                .withNewSpec()
+                    // topicName (optional) is not set
+                    .withPartitions(1)
+                .endSpec()
+                .withNewStatus()
+                    .withTopicName(topic3)
+                    .withTopicId(topics.get(topic3))
+                .endStatus()
+            .build());
+
+        utils.apply(client, new KafkaTopicBuilder()
+                .withNewMetadata()
+                    .withName(topic4)
+                    .withNamespace("default")
+                    .withLabels(Map.of("strimzi.io/cluster", clusterName1))
+                .endMetadata()
+                .withNewSpec()
+                    .withTopicName(topic4)
+                    .withPartitions(1)
+                .endSpec()
+                // No status
+            .build());
 
         // Wait for the managed topic list to include the topic
         await().atMost(10, TimeUnit.SECONDS)
@@ -770,21 +788,21 @@ class TopicsResourceIT {
         whenRequesting(req -> req.get("", clusterId1))
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
-            .body("data.size()", is(3))
+            .body("data.size()", is(4))
             .body("data.find { it.attributes.name == '%s' }.meta.managed".formatted(topic1), is(true))
             .body("data.find { it.attributes.name == '%s' }.meta.managed".formatted(topic2), is(false))
-            .body("data.find { it.attributes.name == '%s' }.meta.managed".formatted(topic3), is(true));
+            .body("data.find { it.attributes.name == '%s' }.meta.managed".formatted(topic3), is(true))
+            .body("data.find { it.attributes.name == '%s' }.meta.managed".formatted(topic4), is(false));
     }
 
     @Test
     void testListTopicsWithManagedTopicMissingCluster() {
         String topic1 = "t1-" + UUID.randomUUID().toString();
         String topic2 = "t2-" + UUID.randomUUID().toString();
-        topicUtils.createTopics(clusterId1, List.of(topic1), 1);
-        topicUtils.createTopics(clusterId1, List.of(topic2), 1);
+        Map<String, String> topics = topicUtils.createTopics(clusterId1, List.of(topic1, topic2), 1);
 
-        KafkaTopic topicCR = new KafkaTopicBuilder()
-                    .withNewMetadata()
+        KafkaTopic topicCR = utils.apply(client, new KafkaTopicBuilder()
+                .withNewMetadata()
                     .withName(topic1)
                     .withNamespace("default")
                     .withLabels(Map.of("strimzi.io/cluster", clusterName1))
@@ -793,9 +811,11 @@ class TopicsResourceIT {
                     .withTopicName(topic1)
                     .withPartitions(1)
                 .endSpec()
-            .build();
-
-        client.resource(topicCR).create();
+                .withNewStatus()
+                    .withTopicName(topic1)
+                    .withTopicId(topics.get(topic1))
+                .endStatus()
+            .build());
 
         // Wait for the managed topic list to include the topic
         await().atMost(10, TimeUnit.SECONDS)
@@ -838,11 +858,10 @@ class TopicsResourceIT {
     void testListTopicsWithManagedTopicBecomingUnmanaged() {
         String topic1 = "t1-" + UUID.randomUUID().toString();
         String topic2 = "t2-" + UUID.randomUUID().toString();
-        topicUtils.createTopics(clusterId1, List.of(topic1), 1);
-        topicUtils.createTopics(clusterId1, List.of(topic2), 1);
+        Map<String, String> topics = topicUtils.createTopics(clusterId1, List.of(topic1, topic2), 1);
 
-        KafkaTopic topicCR = new KafkaTopicBuilder()
-                    .withNewMetadata()
+        KafkaTopic topicCR = utils.apply(client, new KafkaTopicBuilder()
+                .withNewMetadata()
                     .withName(topic1)
                     .withNamespace("default")
                     .withLabels(Map.of("strimzi.io/cluster", clusterName1))
@@ -851,9 +870,11 @@ class TopicsResourceIT {
                     .withTopicName(topic1)
                     .withPartitions(1)
                 .endSpec()
-            .build();
-
-        client.resource(topicCR).create();
+                .withNewStatus()
+                    .withTopicName(topic1)
+                    .withTopicId(topics.get(topic1))
+                .endStatus()
+            .build());
 
         // Wait for the managed topic list to include the topic
         await().atMost(10, TimeUnit.SECONDS)
