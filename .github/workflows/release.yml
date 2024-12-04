@@ -48,6 +48,27 @@ jobs:
           username: "${{ secrets.IMAGE_REPO_USERNAME }}"
           password: "${{ secrets.IMAGE_REPO_PASSWORD }}"
 
+      # ==================== API & Operator ====================
+      - name: Build and Push API and Operator Image
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b release
+          mvn -B release:prepare -DreleaseVersion=${{steps.metadata.outputs.current-version}} -DdevelopmentVersion=${{steps.metadata.outputs.next-version}}
+          git checkout ${{github.base_ref}}
+          git rebase release
+          export QUARKUS_CONTAINER_IMAGE_REGISTRY="${{ secrets.IMAGE_REPO_HOSTNAME }}"
+          export QUARKUS_CONTAINER_IMAGE_GROUP="${{ secrets.IMAGE_REPO_NAMESPACE }}"
+          export QUARKUS_CONTAINER_IMAGE_USERNAME="${{ secrets.IMAGE_REPO_USERNAME }}"
+          export QUARKUS_CONTAINER_IMAGE_PASSWORD="${{ secrets.IMAGE_REPO_PASSWORD }}"
+          export QUARKUS_CONTAINER_IMAGE_PUSH="true"
+          export QUARKUS_CONTAINER_IMAGE_ADDITIONAL_TAGS=latest
+          export QUARKUS_KUBERNETES_NAMESPACE='$${NAMESPACE}'
+          export GIT_REVISION=$(git rev-parse --short release)
+          # Build and push the release images using the commit tagged in `release:prepare`
+          mvn -B -P container-image release:perform --no-transfer-progress \
+            '-Drelease.arguments=-Dquarkus.docker.buildx.platform=${{ env.PLATFORMS }}'
+
       # ==================== UI ====================
       - name: Build UI
         working-directory: target/checkout/ui
@@ -69,27 +90,6 @@ jobs:
           tags: |
             ${{ secrets.IMAGE_REPO_HOSTNAME }}/${{ secrets.IMAGE_REPO_NAMESPACE }}/console-ui:${{steps.metadata.outputs.current-version}}
             ${{ secrets.IMAGE_REPO_HOSTNAME }}/${{ secrets.IMAGE_REPO_NAMESPACE }}/console-ui:latest
-
-      # ==================== API & Operator ====================
-      - name: Build and Push API and Operator Image
-        run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git checkout -b release
-          mvn -B release:prepare -DreleaseVersion=${{steps.metadata.outputs.current-version}} -DdevelopmentVersion=${{steps.metadata.outputs.next-version}}
-          git checkout ${{github.base_ref}}
-          git rebase release
-          export QUARKUS_CONTAINER_IMAGE_REGISTRY="${{ secrets.IMAGE_REPO_HOSTNAME }}"
-          export QUARKUS_CONTAINER_IMAGE_GROUP="${{ secrets.IMAGE_REPO_NAMESPACE }}"
-          export QUARKUS_CONTAINER_IMAGE_USERNAME="${{ secrets.IMAGE_REPO_USERNAME }}"
-          export QUARKUS_CONTAINER_IMAGE_PASSWORD="${{ secrets.IMAGE_REPO_PASSWORD }}"
-          export QUARKUS_CONTAINER_IMAGE_PUSH="true"
-          export QUARKUS_CONTAINER_IMAGE_ADDITIONAL_TAGS=latest
-          export QUARKUS_KUBERNETES_NAMESPACE='$${NAMESPACE}'
-          export GIT_REVISION=$(git rev-parse --short release)
-          # Build and push the release images using the commit tagged in `release:prepare`
-          mvn -B -P container-image release:perform --no-transfer-progress \
-            '-Drelease.arguments=-Dquarkus.docker.buildx.platform=${{ env.PLATFORMS }}'
 
       # ==================== Operator-Bundle ====================
       - name: Modify Bundle CSV Metadata
