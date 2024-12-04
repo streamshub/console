@@ -11,6 +11,8 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import com.github.streamshub.console.api.v1alpha1.Console;
 import com.github.streamshub.console.api.v1alpha1.spec.Images;
+import com.github.streamshub.console.api.v1alpha1.spec.containers.ContainerTemplate;
+import com.github.streamshub.console.api.v1alpha1.spec.containers.Containers;
 
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.javaoperatorsdk.operator.api.reconciler.Context;
@@ -54,9 +56,12 @@ public class ConsoleDeployment extends CRUDKubernetesDependentResource<Deploymen
         String name = instanceName(primary);
         String configSecretName = secret.instanceName(primary);
 
-        var imagesSpec = Optional.ofNullable(primary.getSpec().getImages());
-        String imageAPI = imagesSpec.map(Images::getApi).orElse(defaultAPIImage);
-        String imageUI = imagesSpec.map(Images::getUi).orElse(defaultUIImage);
+        var containers = Optional.ofNullable(primary.getSpec().getContainers());
+        var templateAPI = containers.map(Containers::getApi);
+        var templateUI = containers.map(Containers::getUi);
+
+        // deprecated
+        var images = Optional.ofNullable(primary.getSpec().getImages());
 
         return desired.edit()
             .editMetadata()
@@ -82,12 +87,22 @@ public class ConsoleDeployment extends CRUDKubernetesDependentResource<Deploymen
                                 .withSecretName(configSecretName)
                             .endSecret()
                         .endVolume()
+                        // Set API container image options
                         .editMatchingContainer(c -> "console-api".equals(c.getName()))
-                            .withImage(imageAPI)
+                            .withImage(templateAPI.map(ContainerTemplate::getImage)
+                                    .or(() -> images.map(Images::getApi))
+                                    .orElse(defaultAPIImage))
+                            // deprecated env list
                             .addAllToEnv(coalesce(primary.getSpec().getEnv(), Collections::emptyList))
+                            // Env from template
+                            .addAllToEnv(templateAPI.map(ContainerTemplate::getEnv).orElseGet(Collections::emptyList))
+                            .withResources(templateAPI.map(ContainerTemplate::getResources).orElse(null))
                         .endContainer()
+                        // Set UI container image options
                         .editMatchingContainer(c -> "console-ui".equals(c.getName()))
-                            .withImage(imageUI)
+                            .withImage(templateUI.map(ContainerTemplate::getImage)
+                                    .or(() -> images.map(Images::getUi))
+                                    .orElse(defaultUIImage))
                             .editMatchingEnv(env -> "NEXTAUTH_URL".equals(env.getName()))
                                 .withValue(getAttribute(context, ConsoleIngress.NAME + ".url", String.class))
                             .endEnv()
@@ -98,6 +113,8 @@ public class ConsoleDeployment extends CRUDKubernetesDependentResource<Deploymen
                                     .endSecretKeyRef()
                                 .endValueFrom()
                             .endEnv()
+                            .addAllToEnv(templateUI.map(ContainerTemplate::getEnv).orElseGet(Collections::emptyList))
+                            .withResources(templateUI.map(ContainerTemplate::getResources).orElse(null))
                         .endContainer()
                     .endSpec()
                 .endTemplate()
