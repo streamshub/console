@@ -4,6 +4,7 @@ SCRIPT_PATH="$(cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P)"
 source ${SCRIPT_PATH}/common.sh
 
 SKIP_RANGE=""
+SKOPEO_TRANSPORT="docker://"
 
 for ARGUMENT in "$@"
 do
@@ -12,7 +13,8 @@ do
 
   case "$KEY" in
     SKIP_RANGE)                            SKIP_RANGE=${VALUE};;
-    ORIGINAL_OPERATOR_NAME)                      ORIGINAL_OPERATOR_NAME=${VALUE};;
+    ORIGINAL_OPERATOR_NAME)                ORIGINAL_OPERATOR_NAME=${VALUE};;
+    SKOPEO_TRANSPORT)                      SKOPEO_TRANSPORT=${VALUE};;
     *)
   esac
 done
@@ -38,7 +40,7 @@ echo "[DEBUG] Image registry = ${image_registry}"
 echo "[DEBUG] Image tag = ${image_tag}"
 
 # Get operator image digest
-operator_image_digest=$(${SKOPEO} inspect --tls-verify=false --override-os=linux --format "{{ .Digest }}" "docker://${operator_image_with_tag}")
+operator_image_digest=$(${SKOPEO} inspect --tls-verify=false --override-os=linux --format "{{ .Digest }}" "${SKOPEO_TRANSPORT}${operator_image_with_tag}")
 operator_image_with_digest="${image_registry}/${operator_name}@${operator_image_digest}"
 
 # Create relatedImages section
@@ -71,12 +73,12 @@ ${YQ} eval -o yaml -i ".spec.install.spec.clusterPermissions.[].serviceAccountNa
 echo "[DEBUG] Add UI and API images to CSV"
 
 ui_image_with_tag=${image_registry}/${ui_name}:${image_tag}
-ui_image_digest=$(${SKOPEO} inspect --tls-verify=false --override-os=linux --format "{{ .Digest }}" "docker://${ui_image_with_tag}")
+ui_image_digest=$(${SKOPEO} inspect --tls-verify=false --override-os=linux --format "{{ .Digest }}" "${SKOPEO_TRANSPORT}${ui_image_with_tag}")
 ui_image_with_digest="${image_registry}/${ui_name}@${ui_image_digest}"
 echo "[DEBUG] Using UI image: ${ui_image_with_digest}"
 
 api_image_with_tag=${image_registry}/${api_name}:${image_tag}
-api_image_digest=$(${SKOPEO} inspect --tls-verify=false --override-os=linux --format "{{ .Digest }}" "docker://${api_image_with_tag}")
+api_image_digest=$(${SKOPEO} inspect --tls-verify=false --override-os=linux --format "{{ .Digest }}" "${SKOPEO_TRANSPORT}${api_image_with_tag}")
 api_image_with_digest="${image_registry}/${api_name}@${api_image_digest}"
 echo "[DEBUG] Using API image: ${api_image_with_digest}"
 
