@@ -35,7 +35,7 @@
     "date-fns": "^4.1.0",
     "date-fns-tz": "^3.2.0",
     "eslint": "8.57.1",
-    "eslint-config-next": "14.2.18",
+    "eslint-config-next": "14.2.19",
     "eslint-config-prettier": "^9.1.0",
     "eslint-import-resolver-typescript": "^3.6.3",
     "eslint-plugin-storybook": "^0.11.1",
