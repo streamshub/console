@@ -6,6 +6,7 @@ include *compose.env
 IMAGE_REGISTRY ?= quay.io
 IMAGE_GROUP ?= streamshub
 VERSION ?= $(shell mvn help:evaluate -Dexpression=project.version -q -DforceStdout | tr '[:upper:]' '[:lower:]')
+CSV_VERSION ?= $(VERSION)
 
 CONSOLE_API_IMAGE ?= $(IMAGE_REGISTRY)/$(IMAGE_GROUP)/console-api:$(VERSION)
 CONSOLE_UI_IMAGE ?= $(IMAGE_REGISTRY)/$(IMAGE_GROUP)/console-ui:$(VERSION)
@@ -34,8 +35,8 @@ container-image-api-push: container-image-api
 
 container-image-operator:
 	mvn package -am -pl operator -Pcontainer-image -DskipTests -Dquarkus.container-image.image=$(CONSOLE_OPERATOR_IMAGE)
-	operator/bin/modify-bundle-metadata.sh SKOPEO_TRANSPORT=$(SKOPEO_TRANSPORT)
-	operator/bin/generate-catalog.sh $(VERSION)
+	operator/bin/modify-bundle-metadata.sh "VERSION=$(CSV_VERSION)" "SKIP_RANGE=$(SKIP_RANGE)" "SKOPEO_TRANSPORT=$(SKOPEO_TRANSPORT)"
+	operator/bin/generate-catalog.sh $(CSV_VERSION)
 	$(CONTAINER_RUNTIME) build --platform=$(ARCH) -t $(CONSOLE_OPERATOR_BUNDLE_IMAGE) -f operator/target/bundle/console-operator/bundle.Dockerfile
 	$(CONTAINER_RUNTIME) build --platform=$(ARCH) -t $(CONSOLE_OPERATOR_CATALOG_IMAGE) -f operator/target/catalog.Dockerfile
 

@@ -93,7 +93,8 @@ jobs:
 
       # ==================== Operator-Bundle ====================
       - name: Modify Bundle CSV Metadata
-        run: ./operator/bin/modify-bundle-metadata.sh
+        working-directory: target/checkout
+        run: ./operator/bin/modify-bundle-metadata.sh "VERSION=${{steps.metadata.outputs.current-version}}" "SKIP_RANGE=>=0.0.1 <${{steps.metadata.outputs.current-version}}"
 
       - name: Build and Push Operator Bundle Image
         uses: docker/build-push-action@v6
@@ -115,8 +116,7 @@ jobs:
           chmod +x opm
           sudo cp -v opm /usr/bin/
           rm -vf opm
-          VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout | tr '[:upper:]' '[:lower:]')
-          operator/bin/generate-catalog.sh ${VERSION}
+          operator/bin/generate-catalog.sh ${{steps.metadata.outputs.current-version}}
 
       - name: Build and Push Operator Catalog Image
         uses: docker/build-push-action@v6
