@@ -174,6 +174,7 @@ public class ConsoleSecret extends CRUDKubernetesDependentResource<Secret, Conso
         String secretName = instanceName(primary);
         String typeCode = truststore.getType().toString();
         String volumeName = replaceNonAlphanumeric(sourcePrefix + sourceName, '-');
+        String fileName = sourcePrefix + sourceName + "." + typeCode;
 
         @SuppressWarnings("unchecked")
         List<Volume> volumes = (List<Volume>) deploymentResources.computeIfAbsent(Volume.class, k -> new ArrayList<>());
@@ -184,7 +185,7 @@ public class ConsoleSecret extends CRUDKubernetesDependentResource<Secret, Conso
                     .withSecretName(secretName)
                     .addNewItem()
                         .withKey(sourcePrefix + sourceName + ".content")
-                        .withPath(sourcePrefix + sourceName + "." + typeCode)
+                        .withPath(fileName)
                     .endItem()
                     .withDefaultMode(420)
                 .endSecret()
@@ -195,8 +196,8 @@ public class ConsoleSecret extends CRUDKubernetesDependentResource<Secret, Conso
 
         mounts.add(new VolumeMountBuilder()
                 .withName(volumeName)
-                .withMountPath("/etc/ssl/" + sourcePrefix + sourceName + "." + typeCode)
-                .withSubPath(sourcePrefix + sourceName + "." + typeCode)
+                .withMountPath("/etc/ssl/" + fileName)
+                .withSubPath(fileName)
                 .build());
 
         String configTemplate = "quarkus.tls.\"" + bucketPrefix + "-%s\".trust-store.%s.%s";
@@ -212,7 +213,7 @@ public class ConsoleSecret extends CRUDKubernetesDependentResource<Secret, Conso
 
             vars.add(new EnvVarBuilder()
                     .withName(toEnv(configTemplate.formatted(sourceName, typeCode, pathKey)))
-                    .withValue("/etc/ssl/" + sourcePrefix + sourceName + "." + typeCode)
+                    .withValue("/etc/ssl/" + fileName)
                     .build());
         }
 
@@ -225,7 +226,7 @@ public class ConsoleSecret extends CRUDKubernetesDependentResource<Secret, Conso
                     .build());
         }
 
-        if (putMetricsTrustStoreValue(data, sourceName, "alias", truststore.getAlias())) {
+        if (putMetricsTrustStoreValue(data, sourceName, "alias", getValue(context, namespace, Value.of(truststore.getAlias())))) {
             vars.add(new EnvVarBuilder()
                     .withName(toEnv(configTemplate.formatted(sourceName, typeCode, "alias")))
                     .withNewValueFrom()
@@ -541,16 +542,17 @@ public class ConsoleSecret extends CRUDKubernetesDependentResource<Secret, Conso
                 .map(this::encodeString)
             .or(() -> Optional.ofNullable(valueSpec.getValueFrom())
                     .map(ValueReference::getConfigMapKeyRef)
-                    .map(ref -> getValue(context, ConfigMap.class, namespace, ref.getName(), ref.getKey(), ref.getOptional(), ConfigMap::getData))
-                    .map(this::encodeString))
+                    .flatMap(ref -> getValue(context, ConfigMap.class, namespace, ref.getName(), ref.getKey(), ref.getOptional(), ConfigMap::getData)
+                            .map(this::encodeString)
+                        .or(() -> getValue(context, ConfigMap.class, namespace, ref.getName(), ref.getKey(), ref.getOptional(), ConfigMap::getBinaryData))))
             .or(() -> Optional.ofNullable(valueSpec.getValueFrom())
                     .map(ValueReference::getSecretKeyRef)
-                    .map(ref -> getValue(context, Secret.class, namespace, ref.getName(), ref.getKey(), ref.getOptional(), Secret::getData))
+                    .flatMap(ref -> getValue(context, Secret.class, namespace, ref.getName(), ref.getKey(), ref.getOptional(), Secret::getData))
                     /* No need to call encodeString, the value is already encoded from Secret */)
             .orElse(null);
     }
 
-    <S extends HasMetadata> String getValue(Context<Console> context,
+    <S extends HasMetadata> Optional<String> getValue(Context<Console> context,
             Class<S> sourceType,
             String namespace,
             String name,
@@ -561,10 +563,10 @@ public class ConsoleSecret extends CRUDKubernetesDependentResource<Secret, Conso
         S source = getResource(context, sourceType, namespace, name, Boolean.TRUE.equals(optional));
 
         if (source != null) {
-            return dataProvider.apply(source).get(key);
+            return Optional.ofNullable(dataProvider.apply(source).get(key));
         }
 
-        return null;
+        return Optional.empty();
     }
 
     static <T extends HasMetadata> T getResource(
