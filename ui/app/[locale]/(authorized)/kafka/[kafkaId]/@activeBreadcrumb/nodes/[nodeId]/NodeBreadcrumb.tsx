@@ -3,7 +3,6 @@ import { KafkaNodeParams } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/nod
 import { BreadcrumbLink } from "@/components/Navigation/BreadcrumbLink";
 import { BreadcrumbItem } from "@/libs/patternfly/react-core";
 import { Skeleton } from "@patternfly/react-core";
-import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
 export async function NodeBreadcrumb({
@@ -33,13 +32,10 @@ async function ConnectedNodeBreadcrumb({
 }: {
   params: KafkaNodeParams;
 }) {
-  const cluster = await getKafkaCluster(kafkaId);
-  if (!cluster) {
-    notFound();
-  }
-  const node = cluster.attributes.nodes.find((n) => `${n.id}` === nodeId);
-  if (!node) {
-    notFound();
-  }
-  return node.id;
+  return (await getKafkaCluster(kafkaId))?.
+    payload?.
+    attributes.
+    nodes.
+    find((n) => `${n.id}` === nodeId)?.
+    id ?? "-";
 }

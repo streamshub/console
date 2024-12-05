@@ -4,7 +4,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -25,8 +24,6 @@ import java.util.stream.StreamSupport;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
-import org.apache.kafka.clients.admin.ListTopicsOptions;
-import org.apache.kafka.clients.admin.TopicListing;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -35,7 +32,6 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.PartitionInfo;
 import org.apache.kafka.common.TopicPartition;
-import org.apache.kafka.common.Uuid;
 import org.apache.kafka.common.errors.InvalidPartitionsException;
 import org.apache.kafka.common.errors.UnknownTopicIdException;
 import org.apache.kafka.common.header.Header;
@@ -75,6 +71,9 @@ public class RecordService {
     @Inject
     ThreadContext threadContext;
 
+    @Inject
+    TopicDescribeService topicService;
+
     public List<KafkaRecord> consumeRecords(String topicId,
             Integer partition,
             Long offset,
@@ -94,9 +93,19 @@ public class RecordService {
             return Collections.emptyList();
         }
 
+        var beginningOffsets = consumer.beginningOffsets(assignments);
         var endOffsets = consumer.endOffsets(assignments);
         // End offset of zero means the partition has not been written to - don't bother reading them
-        assignments.removeIf(assignment -> endOffsets.get(assignment) == 0);
+        assignments.removeIf(assignment -> {
+            long endOffset = endOffsets.get(assignment);
+
+            if (endOffset == 0) {
+                return true;
+            }
+
+            long beginningOffset = beginningOffsets.get(assignment);
+            return endOffset - beginningOffset == 0;
+        });
 
         if (assignments.isEmpty()) {
             return Collections.emptyList();
@@ -107,7 +116,7 @@ public class RecordService {
         if (timestamp != null) {
             seekToTimestamp(consumer, assignments, timestamp);
         } else {
-            seekToOffset(consumer, assignments, endOffsets, offset, limit);
+            seekToOffset(consumer, assignments, beginningOffsets, endOffsets, offset, limit);
         }
 
         if (assignments.isEmpty()) {
@@ -230,18 +239,8 @@ public class RecordService {
     }
 
     String topicNameForId(String topicId) {
-        Uuid kafkaTopicId = Uuid.fromString(topicId);
-
-        return kafkaContext.admin()
-            .listTopics(new ListTopicsOptions().listInternal(true))
-            .listings()
-            .toCompletionStage()
-            .thenApply(Collection::stream)
-            .thenApply(listings -> listings
-                    .filter(topic -> kafkaTopicId.equals(topic.topicId()))
-                    .findFirst()
-                    .map(TopicListing::name)
-                    .orElseThrow(() -> noSuchTopic(topicId)))
+        return topicService.topicNameForId(topicId)
+            .thenApply(topic -> topic.orElseThrow(() -> noSuchTopic(topicId)))
             .toCompletableFuture()
             .join();
     }
@@ -274,8 +273,11 @@ public class RecordService {
             });
     }
 
-    void seekToOffset(Consumer<RecordData, RecordData> consumer, List<TopicPartition> assignments, Map<TopicPartition, Long> endOffsets, Long offset, int limit) {
-        var beginningOffsets = consumer.beginningOffsets(assignments);
+    void seekToOffset(Consumer<RecordData, RecordData> consumer, List<TopicPartition> assignments,
+            Map<TopicPartition, Long> beginningOffsets,
+            Map<TopicPartition, Long> endOffsets,
+            Long offset, int limit) {
+
         Iterator<TopicPartition> cursor = assignments.iterator();
 
         while (cursor.hasNext()) {
@@ -474,12 +476,14 @@ public class RecordService {
 
                 if (total >= limit) {
                     // Consumed `limit` records for this partition
+                    LOGGER.tracef("Consumed %d records (more than limit %d) from partition %s", total, limit, partition);
                     assignments.remove(partition);
                 } else if (consumed > 0) {
                     long maxOffset = partitionRecords.stream().mapToLong(ConsumerRecord::offset).max().getAsLong() + 1;
 
                     if (maxOffset >= endOffsets.get(partition)) {
                         // Reached the end of the partition
+                        LOGGER.tracef("Reached end of partition %s at offset %s", partition, maxOffset);
                         assignments.remove(partition);
                     }
                 }

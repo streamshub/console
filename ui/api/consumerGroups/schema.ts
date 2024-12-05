@@ -1,4 +1,4 @@
-import { ApiError } from "@/api/api";
+import { ApiErrorSchema } from "@/api/api";
 import { NodeSchema } from "@/api/kafka/schema";
 import { z } from "zod";
 
@@ -14,7 +14,7 @@ const ConsumerGroupStateSchema = z.union([
 ]);
 
 const OffsetAndMetadataSchema = z.object({
-  topicId: z.string(),
+  topicId: z.string().optional(),
   topicName: z.string(),
   partition: z.number(),
   offset: z.number(),
@@ -23,11 +23,14 @@ const OffsetAndMetadataSchema = z.object({
   metadata: z.string(),
   leaderEpoch: z.number().optional(),
 });
+export type OffsetAndMetadata = z.infer<typeof OffsetAndMetadataSchema>;
+
 const PartitionKeySchema = z.object({
-  topicId: z.string(),
+  topicId: z.string().optional(),
   topicName: z.string(),
   partition: z.number(),
 });
+
 const MemberDescriptionSchema = z.object({
   memberId: z.string(),
   groupInstanceId: z.string().nullable().optional(),
@@ -35,27 +38,21 @@ const MemberDescriptionSchema = z.object({
   host: z.string(),
   assignments: z.array(PartitionKeySchema).optional(),
 });
+export type MemberDescription = z.infer<typeof MemberDescriptionSchema>;
+
 export const ConsumerGroupSchema = z.object({
   id: z.string(),
   type: z.literal("consumerGroups"),
   attributes: z.object({
     simpleConsumerGroup: z.boolean().optional(),
     state: ConsumerGroupStateSchema,
-    members: z.array(MemberDescriptionSchema).optional(),
+    members: z.array(MemberDescriptionSchema).nullable().optional(),
     partitionAssignor: z.string().nullable().optional(),
     coordinator: NodeSchema.nullable().optional(),
-    authorizedOperations: z.array(z.string()).nullable().optional(),
-    offsets: z.array(OffsetAndMetadataSchema).optional(),
-    errors: z.array(ApiError).optional(),
+    authorizedOperations: z.array(z.string()).nullable().nullable().optional(),
+    offsets: z.array(OffsetAndMetadataSchema).nullable().optional(),
+    errors: z.array(ApiErrorSchema).optional(),
   }),
-});
-
-const DryrunOffsetSchema = z.object({
-  topicId: z.string(),
-  topicName: z.string(),
-  partition: z.number(),
-  offset: z.number(),
-  metadata: z.string(),
 });
 
 export type ConsumerGroup = z.infer<typeof ConsumerGroupSchema>;
@@ -77,33 +74,6 @@ export const ConsumerGroupsResponseSchema = z.object({
   data: z.array(ConsumerGroupSchema),
 });
 
-export const DryrunSchema = z.object({
-  id: z.string(),
-  type: z.literal("consumerGroups"),
-  attributes: z.object({
-    state: ConsumerGroupStateSchema,
-    members: z.array(MemberDescriptionSchema).optional(),
-    offsets: z.array(DryrunOffsetSchema).optional(),
-  }),
-});
-
-export const UpdateConsumerGroupErrorSchema = z.object({
-  errors: z.array(
-    z.object({
-      id: z.string(),
-      status: z.string(),
-      code: z.string(),
-      title: z.string(),
-      detail: z.string(),
-      source: z
-        .object({
-          pointer: z.string().optional(),
-        })
-        .optional(),
-    }),
-  ),
-});
-
 export type ConsumerGroupsResponse = z.infer<
   typeof ConsumerGroupsResponseSchema
 >;
@@ -114,13 +84,3 @@ export const ConsumerGroupResponseSchema = z.object({
 export type ConsumerGroupResponse = z.infer<
   typeof ConsumerGroupsResponseSchema
 >;
-
-export type UpdateConsumerGroupErrorSchema = z.infer<
-  typeof UpdateConsumerGroupErrorSchema
->;
-
-export const ConsumerGroupDryrunResponseSchema = z.object({
-  data: DryrunSchema,
-});
-
-export type DryrunResponse = z.infer<typeof DryrunSchema>;

@@ -36,7 +36,7 @@ public class JsonProcessingExceptionMapper extends AbstractClientExceptionHandle
         } else {
             error = category.createError("Unable to process JSON", exception, null);
         }
-        LOGGER.debugf("error=%s", error);
+        LOGGER.debugf("error=%s, exception=%s", error, exception.getMessage());
         return List.of(error);
     }
 

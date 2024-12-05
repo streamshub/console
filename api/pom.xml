@@ -89,6 +89,10 @@
             <artifactId>quarkus-apicurio-registry-avro</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-oidc</artifactId>
+        </dependency>
+        <dependency>
             <groupId>io.smallrye.common</groupId>
             <artifactId>smallrye-common-annotation</artifactId>
         </dependency>
@@ -335,13 +339,19 @@
                         </configuration>
                     </execution>
                     <execution>
-                        <id>default-report-integration</id>
+                        <id>report-aggregate</id>
                         <goals>
-                            <goal>report-integration</goal>
+                            <goal>report-aggregate</goal>
                         </goals>
+                        <phase>verify</phase>
                         <configuration>
-                            <dataFile>${project.build.directory}/jacoco-quarkus.exec</dataFile>
-                            <formats>XML</formats>
+                            <includeCurrentProject>true</includeCurrentProject>
+                            <excludes>
+                                <exclude>com/github/streamshub/console/config/**/*Builder.class</exclude>
+                                <exclude>com/github/streamshub/console/config/**/*Fluent.class</exclude>
+                                <exclude>com/github/streamshub/console/config/**/*Nested.class</exclude>
+                            </excludes>
+                            <outputDirectory>${project.reporting.outputDirectory}/jacoco</outputDirectory>
                         </configuration>
                     </execution>
                 </executions>

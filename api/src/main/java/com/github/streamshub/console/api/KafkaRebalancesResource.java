@@ -31,11 +31,14 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import com.github.streamshub.console.api.model.KafkaRebalance;
 import com.github.streamshub.console.api.model.KafkaRebalanceFilterParams;
 import com.github.streamshub.console.api.model.ListFetchParams;
+import com.github.streamshub.console.api.security.Authorized;
+import com.github.streamshub.console.api.security.ResourcePrivilege;
 import com.github.streamshub.console.api.service.KafkaRebalanceService;
 import com.github.streamshub.console.api.support.ErrorCategory;
 import com.github.streamshub.console.api.support.FieldFilter;
 import com.github.streamshub.console.api.support.ListRequestContext;
 import com.github.streamshub.console.api.support.StringEnumeration;
+import com.github.streamshub.console.config.security.Privilege;
 
 import io.xlate.validation.constraints.Expression;
 
@@ -62,6 +65,8 @@ public class KafkaRebalancesResource {
     @APIResponseSchema(KafkaRebalance.RebalanceDataList.class)
     @APIResponse(responseCode = "500", ref = "ServerError")
     @APIResponse(responseCode = "504", ref = "ServerTimeout")
+    @Authorized
+    @ResourcePrivilege(Privilege.LIST)
     public Response listRebalances(
             @Parameter(description = "Cluster identifier")
             @PathParam("clusterId")
@@ -144,6 +149,84 @@ public class KafkaRebalancesResource {
     }
 
     @Path("{rebalanceId}")
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    @APIResponseSchema(KafkaRebalance.RebalanceData.class)
+    @APIResponse(responseCode = "500", ref = "ServerError")
+    @APIResponse(responseCode = "504", ref = "ServerTimeout")
+    @Authorized
+    @ResourcePrivilege(Privilege.GET)
+    public Response getRebalance(
+            @Parameter(description = "Cluster identifier")
+            @PathParam("clusterId")
+            String clusterId,
+
+            @PathParam("rebalanceId")
+            @Parameter(description = "Rebalance identifier")
+            String rebalanceId,
+
+            @QueryParam(KafkaRebalance.FIELDS_PARAM)
+            @DefaultValue(KafkaRebalance.Fields.DESCRIBE_DEFAULT)
+            @StringEnumeration(
+                    source = KafkaRebalance.FIELDS_PARAM,
+                    allowedValues = {
+                        KafkaRebalance.Fields.NAME,
+                        KafkaRebalance.Fields.NAMESPACE,
+                        KafkaRebalance.Fields.CREATION_TIMESTAMP,
+                        KafkaRebalance.Fields.STATUS,
+                        KafkaRebalance.Fields.MODE,
+                        KafkaRebalance.Fields.BROKERS,
+                        KafkaRebalance.Fields.GOALS,
+                        KafkaRebalance.Fields.SKIP_HARD_GOAL_CHECK,
+                        KafkaRebalance.Fields.REBALANCE_DISK,
+                        KafkaRebalance.Fields.EXCLUDED_TOPICS,
+                        KafkaRebalance.Fields.CONCURRENT_PARTITION_MOVEMENTS_PER_BROKER,
+                        KafkaRebalance.Fields.CONCURRENT_INTRABROKER_PARTITION_MOVEMENTS,
+                        KafkaRebalance.Fields.CONCURRENT_LEADER_MOVEMENTS,
+                        KafkaRebalance.Fields.REPLICATION_THROTTLE,
+                        KafkaRebalance.Fields.REPLICA_MOVEMENT_STRATEGIES,
+                        KafkaRebalance.Fields.SESSION_ID,
+                        KafkaRebalance.Fields.OPTIMIZATION_RESULT,
+                        KafkaRebalance.Fields.CONDITIONS,
+                    },
+                    payload = ErrorCategory.InvalidQueryParameter.class)
+            @Parameter(
+                    description = FieldFilter.FIELDS_DESCR,
+                    explode = Explode.FALSE,
+                    schema = @Schema(
+                            type = SchemaType.ARRAY,
+                            implementation = String.class,
+                            enumeration = {
+                                KafkaRebalance.Fields.NAME,
+                                KafkaRebalance.Fields.NAMESPACE,
+                                KafkaRebalance.Fields.CREATION_TIMESTAMP,
+                                KafkaRebalance.Fields.STATUS,
+                                KafkaRebalance.Fields.MODE,
+                                KafkaRebalance.Fields.BROKERS,
+                                KafkaRebalance.Fields.GOALS,
+                                KafkaRebalance.Fields.SKIP_HARD_GOAL_CHECK,
+                                KafkaRebalance.Fields.REBALANCE_DISK,
+                                KafkaRebalance.Fields.EXCLUDED_TOPICS,
+                                KafkaRebalance.Fields.CONCURRENT_PARTITION_MOVEMENTS_PER_BROKER,
+                                KafkaRebalance.Fields.CONCURRENT_INTRABROKER_PARTITION_MOVEMENTS,
+                                KafkaRebalance.Fields.CONCURRENT_LEADER_MOVEMENTS,
+                                KafkaRebalance.Fields.REPLICATION_THROTTLE,
+                                KafkaRebalance.Fields.REPLICA_MOVEMENT_STRATEGIES,
+                                KafkaRebalance.Fields.SESSION_ID,
+                                KafkaRebalance.Fields.OPTIMIZATION_RESULT,
+                                KafkaRebalance.Fields.CONDITIONS,
+                            }))
+            List<String> fields) {
+
+        requestedFields.accept(fields);
+
+        var result = rebalanceService.getRebalance(rebalanceId);
+        var responseEntity = new KafkaRebalance.RebalanceData(result);
+
+        return Response.ok(responseEntity).build();
+    }
+
+    @Path("{rebalanceId}")
     @PATCH
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
@@ -158,6 +241,8 @@ public class KafkaRebalancesResource {
         node = { "data", "id" },
         payload = ErrorCategory.InvalidResource.class,
         validationAppliesTo = ConstraintTarget.PARAMETERS)
+    @Authorized
+    @ResourcePrivilege(Privilege.UPDATE)
     public Response patchRebalance(
             @Parameter(description = "Cluster identifier")
             @PathParam("clusterId")

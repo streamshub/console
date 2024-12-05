@@ -16,7 +16,10 @@ import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 import com.github.streamshub.console.api.model.ConfigEntry;
+import com.github.streamshub.console.api.security.Authorized;
+import com.github.streamshub.console.api.security.ResourcePrivilege;
 import com.github.streamshub.console.api.service.BrokerService;
+import com.github.streamshub.console.config.security.Privilege;
 
 @Path("/api/kafkas/{clusterId}/nodes")
 @Tag(name = "Kafka Cluster Resources")
@@ -32,6 +35,8 @@ public class BrokersResource {
     @APIResponse(responseCode = "404", ref = "NotFound")
     @APIResponse(responseCode = "500", ref = "ServerError")
     @APIResponse(responseCode = "504", ref = "ServerTimeout")
+    @Authorized
+    @ResourcePrivilege(Privilege.GET)
     public CompletionStage<Response> describeConfigs(
             @Parameter(description = "Cluster identifier")
             @PathParam("clusterId")

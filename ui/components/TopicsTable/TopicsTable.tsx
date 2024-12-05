@@ -57,6 +57,14 @@ const StatusLabel: Record<TopicStatus, ReactNode> = {
       &nbsp;Partially offline
     </>
   ),
+  Unknown: (
+    <>
+      <Icon status={"warning"}>
+        <ExclamationTriangleIcon />
+      </Icon>
+      &nbsp;Unknown
+    </>
+  ),
   Offline: (
     <>
       <Icon status={"danger"}>
@@ -198,25 +206,25 @@ export function TopicsTable({
           case "consumerGroups":
             return (
               <Td key={key} dataLabel={"Consumer groups"}>
-                <ButtonLink
-                  variant={"link"}
-                  href={`${baseurl}/${row.id}/consumer-groups`}
-                >
-                  <Number
-                    value={row.relationships.consumerGroups?.data.length ?? 0}
-                  />
-                </ButtonLink>
+                {row.relationships.consumerGroups?.meta?.count !== undefined ? (
+                  <Link href={`${baseurl}/${row.id}/consumer-groups`}>
+                    <Number value={row.relationships.consumerGroups?.meta?.count} />
+                  </Link>
+                ) : (
+                  <Number value={row.relationships.consumerGroups?.meta?.count} />
+                )}
               </Td>
             );
           case "partitions":
             return (
               <Td key={key} dataLabel={"Partitions"}>
-                <ButtonLink
-                  variant={"link"}
-                  href={`${baseurl}/${row.id}/partitions`}
-                >
+                {row.attributes.numPartitions !== null ? (
+                  <Link href={`${baseurl}/${row.id}/partitions`}>
+                    <Number value={row.attributes.numPartitions} />
+                  </Link>
+                ) : (
                   <Number value={row.attributes.numPartitions} />
-                </ButtonLink>
+                )}
               </Td>
             );
           case "storage":
