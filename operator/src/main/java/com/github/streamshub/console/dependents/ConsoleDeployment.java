@@ -1,6 +1,8 @@
 package com.github.streamshub.console.dependents;
 
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -12,6 +14,10 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import com.github.streamshub.console.api.v1alpha1.Console;
 import com.github.streamshub.console.api.v1alpha1.spec.Images;
 
+import io.fabric8.kubernetes.api.model.EnvVar;
+import io.fabric8.kubernetes.api.model.KubernetesResource;
+import io.fabric8.kubernetes.api.model.Volume;
+import io.fabric8.kubernetes.api.model.VolumeMount;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.javaoperatorsdk.operator.api.reconciler.Context;
 import io.javaoperatorsdk.operator.processing.dependent.kubernetes.CRUDKubernetesDependentResource;
@@ -58,6 +64,11 @@ public class ConsoleDeployment extends CRUDKubernetesDependentResource<Deploymen
         String imageAPI = imagesSpec.map(Images::getApi).orElse(defaultAPIImage);
         String imageUI = imagesSpec.map(Images::getUi).orElse(defaultUIImage);
 
+        var envVars = new ArrayList<>(coalesce(primary.getSpec().getEnv(), Collections::emptyList));
+
+        var trustResources = getTrustResources(context);
+        envVars.addAll(getResourcesByType(trustResources, EnvVar.class));
+
         return desired.edit()
             .editMetadata()
                 .withName(name)
@@ -82,9 +93,13 @@ public class ConsoleDeployment extends CRUDKubernetesDependentResource<Deploymen
                                 .withSecretName(configSecretName)
                             .endSecret()
                         .endVolume()
+                        .addAllToVolumes(getResourcesByType(trustResources, Volume.class))
                         .editMatchingContainer(c -> "console-api".equals(c.getName()))
                             .withImage(imageAPI)
-                            .addAllToEnv(coalesce(primary.getSpec().getEnv(), Collections::emptyList))
+                            .addAllToVolumeMounts(getResourcesByType(trustResources, VolumeMount.class))
+                            // Remove first to avoid duplicates
+                            .removeMatchingFromEnv(env -> envVars.stream().anyMatch(e -> env.getName().equals(e.getName())))
+                            .addAllToEnv(envVars)
                         .endContainer()
                         .editMatchingContainer(c -> "console-ui".equals(c.getName()))
                             .withImage(imageUI)
@@ -103,5 +118,17 @@ public class ConsoleDeployment extends CRUDKubernetesDependentResource<Deploymen
                 .endTemplate()
             .endSpec()
             .build();
+    }
+
+    @SuppressWarnings("unchecked")
+    <R extends KubernetesResource> Map<Class<R>, List<R>> getTrustResources(Context<Console> context) {
+        return context.managedDependentResourceContext().getMandatory("TrustStoreResources", Map.class);
+    }
+
+    @SuppressWarnings("unchecked")
+    <R extends KubernetesResource> List<R> getResourcesByType(
+            Map<Class<KubernetesResource>, List<KubernetesResource>> resources,
+            Class<R> key) {
+        return (List<R>) resources.getOrDefault(key, Collections.emptyList());
     }
 }

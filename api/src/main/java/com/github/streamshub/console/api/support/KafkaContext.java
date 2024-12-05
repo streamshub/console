@@ -16,6 +16,7 @@ import org.apache.kafka.common.config.SaslConfigs;
 import org.jboss.logging.Logger;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.streamshub.console.api.support.serdes.ApicurioClient;
 import com.github.streamshub.console.api.support.serdes.ForceCloseable;
 import com.github.streamshub.console.api.support.serdes.MultiformatDeserializer;
 import com.github.streamshub.console.api.support.serdes.MultiformatSerializer;
@@ -190,7 +191,7 @@ public class KafkaContext implements Closeable {
             this.config = config;
 
             if (config != null) {
-                registryClient = RegistryClientFactory.create(config.getUrl());
+                registryClient = RegistryClientFactory.create(new ApicurioClient(config));
             } else {
                 registryClient = null;
             }
