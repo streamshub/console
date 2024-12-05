@@ -97,8 +97,6 @@ public class ConsoleDeployment extends CRUDKubernetesDependentResource<Deploymen
                         .editMatchingContainer(c -> "console-api".equals(c.getName()))
                             .withImage(imageAPI)
                             .addAllToVolumeMounts(getResourcesByType(trustResources, VolumeMount.class))
-                            // Remove first to avoid duplicates
-                            .removeMatchingFromEnv(env -> envVars.stream().anyMatch(e -> env.getName().equals(e.getName())))
                             .addAllToEnv(envVars)
                         .endContainer()
                         .editMatchingContainer(c -> "console-ui".equals(c.getName()))

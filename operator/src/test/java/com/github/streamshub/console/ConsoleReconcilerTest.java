@@ -6,6 +6,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import jakarta.inject.Inject;
 
@@ -19,6 +21,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.github.streamshub.console.api.v1alpha1.Console;
 import com.github.streamshub.console.api.v1alpha1.ConsoleBuilder;
+import com.github.streamshub.console.api.v1alpha1.spec.TrustStore;
+import com.github.streamshub.console.api.v1alpha1.spec.metrics.MetricsSource;
 import com.github.streamshub.console.api.v1alpha1.spec.metrics.MetricsSource.Type;
 import com.github.streamshub.console.config.ConsoleConfig;
 import com.github.streamshub.console.config.PrometheusConfig;
@@ -27,13 +31,17 @@ import com.github.streamshub.console.dependents.ConsoleSecret;
 
 import io.fabric8.kubernetes.api.model.ConfigMap;
 import io.fabric8.kubernetes.api.model.ConfigMapBuilder;
+import io.fabric8.kubernetes.api.model.EnvVar;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.NamespaceBuilder;
 import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
 import io.fabric8.kubernetes.api.model.Secret;
 import io.fabric8.kubernetes.api.model.SecretBuilder;
+import io.fabric8.kubernetes.api.model.Volume;
+import io.fabric8.kubernetes.api.model.VolumeMount;
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinitionBuilder;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
+import io.fabric8.kubernetes.api.model.networking.v1.Ingress;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
 import io.fabric8.openshift.api.model.Route;
@@ -120,6 +128,7 @@ class ConsoleReconcilerTest {
         var allDeployments = client.resources(Deployment.class).inAnyNamespace().withLabels(ConsoleResource.MANAGEMENT_LABEL);
         var allConfigMaps = client.resources(ConfigMap.class).inAnyNamespace().withLabels(ConsoleResource.MANAGEMENT_LABEL);
         var allSecrets = client.resources(Secret.class).inAnyNamespace().withLabels(ConsoleResource.MANAGEMENT_LABEL);
+        var allIngresses = client.resources(Ingress.class).inAnyNamespace().withLabels(ConsoleResource.MANAGEMENT_LABEL);
 
         allConsoles.delete();
         allKafkas.delete();
@@ -127,6 +136,7 @@ class ConsoleReconcilerTest {
         allDeployments.delete();
         allConfigMaps.delete();
         allSecrets.delete();
+        allIngresses.delete();
 
         await().atMost(LIMIT).untilAsserted(() -> {
             assertTrue(allConsoles.list().getItems().isEmpty());
@@ -135,6 +145,7 @@ class ConsoleReconcilerTest {
             assertTrue(allDeployments.list().getItems().isEmpty());
             assertTrue(allConfigMaps.list().getItems().isEmpty());
             assertTrue(allSecrets.list().getItems().isEmpty());
+            assertTrue(allIngresses.list().getItems().isEmpty());
         });
 
         operator.start();
@@ -831,6 +842,153 @@ class ConsoleReconcilerTest {
         var resourceClient = client.resource(consoleCR);
         // Fails K8s resource validation due to empty `spec.metricsSources[0].authentication object
         assertThrows(KubernetesClientException.class, resourceClient::create);
+    }
+
+    @Test
+    void testConsoleReconciliationWithTrustStores() {
+        Secret passwordSecret = new SecretBuilder()
+                .withNewMetadata()
+                    .withName("my-secret")
+                    .withNamespace("ns2")
+                    .addToLabels(ConsoleResource.MANAGEMENT_LABEL)
+                .endMetadata()
+                .addToData("pass", Base64.getEncoder().encodeToString("0p3n535@m3".getBytes()))
+                .build();
+        ConfigMap contentConfigMap = new ConfigMapBuilder()
+                .withNewMetadata()
+                    .withName("my-configmap")
+                    .withNamespace("ns2")
+                    .addToLabels(ConsoleResource.MANAGEMENT_LABEL)
+                .endMetadata()
+                .addToData("truststore", "dummy-keystore")
+                .build();
+
+        client.resource(passwordSecret).create();
+        client.resource(contentConfigMap).create();
+
+        Console consoleCR = new ConsoleBuilder()
+                .withMetadata(new ObjectMetaBuilder()
+                        .withName("console-1")
+                        .withNamespace("ns2")
+                        .build())
+                .withNewSpec()
+                    .withHostname("example.com")
+                    .addNewMetricsSource()
+                        .withName("example-prometheus")
+                        .withType(MetricsSource.Type.STANDALONE)
+                        .withUrl("https://prometheus.example.com")
+                        .withNewTrustStore()
+                            .withType(TrustStore.Type.JKS)
+                            .withNewPassword()
+                                .withNewValueFrom()
+                                    .withNewSecretKeyRef("pass", "my-secret", Boolean.FALSE)
+                                .endValueFrom()
+                            .endPassword()
+                            .withNewContent()
+                                .withNewValueFrom()
+                                    .withNewConfigMapKeyRef("truststore", "my-configmap", Boolean.FALSE)
+                                .endValueFrom()
+                            .endContent()
+                            .withAlias("cert-ca")
+                        .endTrustStore()
+                    .endMetricsSource()
+                    .addNewSchemaRegistry()
+                        .withName("example-registry")
+                        .withUrl("https://example.com/apis/registry/v2")
+                        .withNewTrustStore()
+                            .withType(TrustStore.Type.PEM)
+                            .withNewContent()
+                                .withValue("---CERT---")
+                            .endContent()
+                        .endTrustStore()
+                    .endSchemaRegistry()
+                    .addNewKafkaCluster()
+                        .withName(kafkaCR.getMetadata().getName())
+                        .withNamespace(kafkaCR.getMetadata().getNamespace())
+                        .withListener(kafkaCR.getSpec().getKafka().getListeners().get(0).getName())
+                        .withSchemaRegistry("example-registry")
+                    .endKafkaCluster()
+                .endSpec()
+                .build();
+
+        client.resource(consoleCR).create();
+
+        await().ignoreException(NullPointerException.class).atMost(LIMIT).untilAsserted(() -> {
+            var console = client.resources(Console.class)
+                    .inNamespace(consoleCR.getMetadata().getNamespace())
+                    .withName(consoleCR.getMetadata().getName())
+                    .get();
+            assertEquals(1, console.getStatus().getConditions().size());
+            var condition = console.getStatus().getConditions().get(0);
+            assertEquals("Ready", condition.getType());
+            assertEquals("False", condition.getStatus());
+            assertEquals("DependentsNotReady", condition.getReason());
+            assertTrue(condition.getMessage().contains("ConsoleIngress"));
+        });
+
+        setConsoleIngressReady(consoleCR);
+
+        await().ignoreException(NullPointerException.class).atMost(LIMIT).untilAsserted(() -> {
+            var console = client.resources(Console.class)
+                    .inNamespace(consoleCR.getMetadata().getNamespace())
+                    .withName(consoleCR.getMetadata().getName())
+                    .get();
+            assertEquals(1, console.getStatus().getConditions().size());
+            var condition = console.getStatus().getConditions().get(0);
+            assertEquals("Ready", condition.getType());
+            assertEquals("False", condition.getStatus());
+            assertEquals("DependentsNotReady", condition.getReason());
+            assertTrue(condition.getMessage().contains("ConsoleDeployment"));
+        });
+
+        var consoleDeployment = client.apps().deployments()
+                .inNamespace(consoleCR.getMetadata().getNamespace())
+                .withName("console-1-console-deployment")
+                .get();
+
+        var podSpec = consoleDeployment.getSpec().getTemplate().getSpec();
+        var containerSpecAPI = podSpec.getContainers().get(0);
+
+        var volumes = podSpec.getVolumes().stream().collect(Collectors.toMap(Volume::getName, Function.identity()));
+        assertEquals(4, volumes.size()); // cache, config + 2 volumes for truststores
+
+        var metricsVolName = "metrics-source-truststore-example-prometheus";
+        var registryVolName = "schema-registry-truststore-example-registry";
+
+        var metricsVolume = volumes.get(metricsVolName);
+        assertEquals("metrics-source-truststore.example-prometheus.content", metricsVolume.getSecret().getItems().get(0).getKey());
+        assertEquals("metrics-source-truststore.example-prometheus.jks", metricsVolume.getSecret().getItems().get(0).getPath());
+
+        var registryVolume = volumes.get(registryVolName);
+        assertEquals("schema-registry-truststore.example-registry.content", registryVolume.getSecret().getItems().get(0).getKey());
+        assertEquals("schema-registry-truststore.example-registry.pem", registryVolume.getSecret().getItems().get(0).getPath());
+
+        var mounts = containerSpecAPI.getVolumeMounts().stream().collect(Collectors.toMap(VolumeMount::getName, Function.identity()));
+        assertEquals(3, mounts.size());
+
+        var metricsMount = mounts.get(metricsVolName);
+        var metricsMountPath = "/etc/ssl/metrics-source-truststore.example-prometheus.jks";
+        assertEquals(metricsMountPath, metricsMount.getMountPath());
+        assertEquals("metrics-source-truststore.example-prometheus.jks", metricsMount.getSubPath());
+
+        var registryMount = mounts.get(registryVolName);
+        var registryMountPath = "/etc/ssl/schema-registry-truststore.example-registry.pem";
+        assertEquals(registryMountPath, registryMount.getMountPath());
+        assertEquals("schema-registry-truststore.example-registry.pem", registryMount.getSubPath());
+
+        var envVars = containerSpecAPI.getEnv().stream().collect(Collectors.toMap(EnvVar::getName, Function.identity()));
+
+        var metricsTrustPath = envVars.get("QUARKUS_TLS__METRICS_SOURCE_EXAMPLE_PROMETHEUS__TRUST_STORE_JKS_PATH");
+        assertEquals(metricsMountPath, metricsTrustPath.getValue());
+        var metricsAliasSource = envVars.get("QUARKUS_TLS__METRICS_SOURCE_EXAMPLE_PROMETHEUS__TRUST_STORE_JKS_ALIAS");
+        assertEquals("console-1-console-secret", metricsAliasSource.getValueFrom().getSecretKeyRef().getName());
+        assertEquals("metrics-source-truststore.example-prometheus.alias", metricsAliasSource.getValueFrom().getSecretKeyRef().getKey());
+        var metricsPasswordSource = envVars.get("QUARKUS_TLS__METRICS_SOURCE_EXAMPLE_PROMETHEUS__TRUST_STORE_JKS_PASSWORD");
+        assertEquals("console-1-console-secret", metricsPasswordSource.getValueFrom().getSecretKeyRef().getName());
+        assertEquals("metrics-source-truststore.example-prometheus.password", metricsPasswordSource.getValueFrom().getSecretKeyRef().getKey());
+
+        var registryTrustPath = envVars.get("QUARKUS_TLS__SCHEMA_REGISTRY_EXAMPLE_REGISTRY__TRUST_STORE_PEM_CERTS");
+        assertEquals(registryMountPath, registryTrustPath.getValue());
     }
 
     // Utility
