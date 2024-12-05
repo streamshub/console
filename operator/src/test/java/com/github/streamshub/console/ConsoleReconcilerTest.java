@@ -225,22 +225,7 @@ class ConsoleReconcilerTest {
             .editStatus(this::setReady);
         LOGGER.info("Set ready replicas for Prometheus deployment");
 
-        var consoleIngress = client.network().v1().ingresses()
-            .inNamespace(consoleCR.getMetadata().getNamespace())
-            .withName("console-1-console-ingress")
-            .get();
-
-        consoleIngress = consoleIngress.edit()
-                    .editOrNewStatus()
-                        .withNewLoadBalancer()
-                            .addNewIngress()
-                                .withHostname("ingress.example.com")
-                            .endIngress()
-                        .endLoadBalancer()
-                    .endStatus()
-                    .build();
-        client.resource(consoleIngress).patchStatus();
-        LOGGER.info("Set ingress status for Console ingress");
+        setConsoleIngressReady(consoleCR);
 
         await().ignoreException(NullPointerException.class).atMost(LIMIT).untilAsserted(() -> {
             var console = client.resources(Console.class)
@@ -860,6 +845,25 @@ class ConsoleReconcilerTest {
             ConsoleConfig consoleConfig = YAML.readValue(configDecoded, ConsoleConfig.class);
             assertion.accept(consoleConfig);
         });
+    }
+
+    private void setConsoleIngressReady(Console consoleCR) {
+        var consoleIngress = client.network().v1().ingresses()
+                .inNamespace(consoleCR.getMetadata().getNamespace())
+                .withName("console-1-console-ingress")
+                .get();
+
+        consoleIngress = consoleIngress.edit()
+                    .editOrNewStatus()
+                        .withNewLoadBalancer()
+                            .addNewIngress()
+                                .withHostname("ingress.example.com")
+                            .endIngress()
+                        .endLoadBalancer()
+                    .endStatus()
+                    .build();
+        client.resource(consoleIngress).patchStatus();
+        LOGGER.info("Set ingress status for Console ingress");
     }
 
     private Deployment setReady(Deployment deployment) {
