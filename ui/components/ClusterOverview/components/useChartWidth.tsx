@@ -1,29 +1,39 @@
-import type { RefObject } from "react";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  RefObject,
+} from "react";
 
 export function useChartWidth(): [RefObject<HTMLDivElement>, number] {
   const containerRef = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState<number>(0);
 
-  const handleResize = () =>
-    containerRef.current && setWidth(containerRef.current.clientWidth);
+  const handleResize = useCallback(() => {
+    if (containerRef.current) {
+      setWidth(containerRef.current.clientWidth);
+    }
+  }, []);
 
   useLayoutEffect(() => {
     handleResize();
-  }, []);
+  }, [handleResize]);
 
   useEffect(() => {
     window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
+    return () => {
+      window.removeEventListener("resize", handleResize);
+    };
+  }, [handleResize]);
 
   const requestRef = useRef<number>();
 
-  const checkSize = () => {
-    // The 'state' will always be the initial value here
+  const checkSize = useCallback(() => {
     requestRef.current = requestAnimationFrame(checkSize);
     handleResize();
-  };
+  }, [handleResize]);
 
   useEffect(() => {
     requestRef.current = requestAnimationFrame(checkSize);
@@ -32,7 +42,7 @@ export function useChartWidth(): [RefObject<HTMLDivElement>, number] {
         cancelAnimationFrame(requestRef.current);
       }
     };
-  }, []); // Make sure the effect runs only once
+  }, [checkSize]);
 
   return [containerRef, width];
 }
