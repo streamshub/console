@@ -15,12 +15,12 @@ import {
 } from "@/libs/patternfly/react-core";
 import { BarsIcon, QuestionCircleIcon } from "@/libs/patternfly/react-icons";
 import { FeedbackModal } from "@patternfly/react-user-feedback";
-import { User } from "next-auth";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { useState } from "react";
 import { useAppLayout } from "./AppLayoutProvider";
 import { UserDropdown } from "./UserDropdown";
+import Image from "next/image";
 
 export function AppMasthead({
   username,
@@ -54,11 +54,11 @@ export function AppMasthead({
         )}
         <MastheadMain>
           <Link href={"/"} className={"pf-v5-c-masthead_brand"}>
-            <img
-              className={"pf-v5-c-brand"}
+            <Image
               src={"/full-logo.svg"}
               alt={t("common.title")}
-              style={{ height: 48 }}
+              width={300}
+              height={150}
             />
           </Link>
         </MastheadMain>
