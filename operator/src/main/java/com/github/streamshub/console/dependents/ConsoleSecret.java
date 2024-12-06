@@ -5,10 +5,13 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.security.SecureRandom;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -32,6 +35,9 @@ import com.github.streamshub.console.api.v1alpha1.spec.ConfigVars;
 import com.github.streamshub.console.api.v1alpha1.spec.Credentials;
 import com.github.streamshub.console.api.v1alpha1.spec.KafkaCluster;
 import com.github.streamshub.console.api.v1alpha1.spec.SchemaRegistry;
+import com.github.streamshub.console.api.v1alpha1.spec.TrustStore;
+import com.github.streamshub.console.api.v1alpha1.spec.Value;
+import com.github.streamshub.console.api.v1alpha1.spec.ValueReference;
 import com.github.streamshub.console.api.v1alpha1.spec.metrics.MetricsSource;
 import com.github.streamshub.console.api.v1alpha1.spec.metrics.MetricsSource.Type;
 import com.github.streamshub.console.config.ConsoleConfig;
@@ -40,9 +46,15 @@ import com.github.streamshub.console.config.PrometheusConfig;
 import com.github.streamshub.console.config.SchemaRegistryConfig;
 
 import io.fabric8.kubernetes.api.model.ConfigMap;
+import io.fabric8.kubernetes.api.model.EnvVar;
+import io.fabric8.kubernetes.api.model.EnvVarBuilder;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.Secret;
 import io.fabric8.kubernetes.api.model.SecretBuilder;
+import io.fabric8.kubernetes.api.model.Volume;
+import io.fabric8.kubernetes.api.model.VolumeBuilder;
+import io.fabric8.kubernetes.api.model.VolumeMount;
+import io.fabric8.kubernetes.api.model.VolumeMountBuilder;
 import io.fabric8.kubernetes.client.KubernetesClientException;
 import io.fabric8.openshift.api.model.Route;
 import io.fabric8.openshift.api.model.RouteIngress;
@@ -58,12 +70,18 @@ import io.strimzi.api.kafka.model.kafka.listener.ListenerStatus;
 import io.strimzi.api.kafka.model.user.KafkaUser;
 import io.strimzi.api.kafka.model.user.KafkaUserStatus;
 
+import static com.github.streamshub.console.support.StringSupport.replaceNonAlphanumeric;
+import static com.github.streamshub.console.support.StringSupport.toEnv;
+
 @ApplicationScoped
 @KubernetesDependent(labelSelector = ConsoleResource.MANAGEMENT_SELECTOR)
 public class ConsoleSecret extends CRUDKubernetesDependentResource<Secret, Console> implements ConsoleResource {
 
     public static final String NAME = "console-secret";
+
     private static final String EMBEDDED_METRICS_NAME = "streamshub.console.embedded-prometheus";
+    private static final String METRICS_TRUST_PREFIX = "metrics-source-truststore.";
+    private static final String REGISTRY_TRUST_PREFIX = "schema-registry-truststore.";
     private static final Random RANDOM = new SecureRandom();
 
     @Inject
@@ -98,6 +116,8 @@ public class ConsoleSecret extends CRUDKubernetesDependentResource<Secret, Conso
             throw new UncheckedIOException(e);
         }
 
+        buildTrustStores(primary, context, data);
+
         updateDigest(context, "console-digest", data);
 
         return new SecretBuilder()
@@ -108,6 +128,120 @@ public class ConsoleSecret extends CRUDKubernetesDependentResource<Secret, Conso
                 .endMetadata()
                 .withData(data)
                 .build();
+    }
+
+    /**
+     * Generate additional entries in the secret for metric source trust stores. Also, this
+     * method will add to the context the resources to be added to the console deployment to
+     * access the secret entries.
+     */
+    private void buildTrustStores(Console primary, Context<Console> context, Map<String, String> data) {
+        Map<Class<?>, List<?>> deploymentResources = new HashMap<>();
+
+        for (var metricsSource : Optional.ofNullable(primary.getSpec().getMetricsSources())
+                .orElse(Collections.emptyList())) {
+            var truststore = metricsSource.getTrustStore();
+
+            if (truststore != null) {
+                reconcileTrustStore(primary, context, data, metricsSource.getName(), METRICS_TRUST_PREFIX, truststore, "metrics-source", deploymentResources);
+            }
+        }
+
+        for (var registry : Optional.ofNullable(primary.getSpec().getSchemaRegistries())
+                .orElse(Collections.emptyList())) {
+            var truststore = registry.getTrustStore();
+
+            if (truststore != null) {
+                reconcileTrustStore(primary, context, data, registry.getName(), REGISTRY_TRUST_PREFIX, truststore, "schema-registry", deploymentResources);
+            }
+        }
+
+        context.managedDependentResourceContext().put("TrustStoreResources", deploymentResources);
+    }
+
+    @SuppressWarnings("java:S107") // Ignore Sonar warning for too many args
+    private void reconcileTrustStore(
+            Console primary,
+            Context<Console> context,
+            Map<String, String> data,
+            String sourceName,
+            String sourcePrefix,
+            TrustStore truststore,
+            String bucketPrefix,
+            Map<Class<?>, List<?>> deploymentResources) {
+
+        String namespace = primary.getMetadata().getNamespace();
+        String secretName = instanceName(primary);
+        String typeCode = truststore.getType().toString();
+        String volumeName = replaceNonAlphanumeric(sourcePrefix + sourceName, '-');
+        String fileName = sourcePrefix + sourceName + "." + typeCode;
+
+        @SuppressWarnings("unchecked")
+        List<Volume> volumes = (List<Volume>) deploymentResources.computeIfAbsent(Volume.class, k -> new ArrayList<>());
+
+        volumes.add(new VolumeBuilder()
+                .withName(volumeName)
+                .withNewSecret()
+                    .withSecretName(secretName)
+                    .addNewItem()
+                        .withKey(sourcePrefix + sourceName + ".content")
+                        .withPath(fileName)
+                    .endItem()
+                    .withDefaultMode(420)
+                .endSecret()
+                .build());
+
+        @SuppressWarnings("unchecked")
+        List<VolumeMount> mounts = (List<VolumeMount>) deploymentResources.computeIfAbsent(VolumeMount.class, k -> new ArrayList<>());
+
+        mounts.add(new VolumeMountBuilder()
+                .withName(volumeName)
+                .withMountPath("/etc/ssl/" + fileName)
+                .withSubPath(fileName)
+                .build());
+
+        String configTemplate = "quarkus.tls.\"" + bucketPrefix + "-%s\".trust-store.%s.%s";
+
+        @SuppressWarnings("unchecked")
+        List<EnvVar> vars = (List<EnvVar>) deploymentResources.computeIfAbsent(EnvVar.class, k -> new ArrayList<>());
+
+        if (putMetricsTrustStoreValue(data, sourceName, "content", getValue(context, namespace, truststore.getContent()))) {
+            String pathKey = switch (truststore.getType()) {
+                case JKS, PKCS12 -> "path";
+                case PEM -> "certs";
+            };
+
+            vars.add(new EnvVarBuilder()
+                    .withName(toEnv(configTemplate.formatted(sourceName, typeCode, pathKey)))
+                    .withValue("/etc/ssl/" + fileName)
+                    .build());
+        }
+
+        if (putMetricsTrustStoreValue(data, sourceName, "password", getValue(context, namespace, truststore.getPassword()))) {
+            vars.add(new EnvVarBuilder()
+                    .withName(toEnv(configTemplate.formatted(sourceName, typeCode, "password")))
+                    .withNewValueFrom()
+                        .withNewSecretKeyRef(sourcePrefix + sourceName + ".password", secretName, false)
+                    .endValueFrom()
+                    .build());
+        }
+
+        if (putMetricsTrustStoreValue(data, sourceName, "alias", getValue(context, namespace, Value.of(truststore.getAlias())))) {
+            vars.add(new EnvVarBuilder()
+                    .withName(toEnv(configTemplate.formatted(sourceName, typeCode, "alias")))
+                    .withNewValueFrom()
+                        .withNewSecretKeyRef(sourcePrefix + sourceName + ".alias", secretName, false)
+                    .endValueFrom()
+                    .build());
+        }
+    }
+
+    private boolean putMetricsTrustStoreValue(Map<String, String> data, String sourceName, String key, String value) {
+        if (value != null) {
+            data.put(METRICS_TRUST_PREFIX + sourceName + "." + key, value);
+            return true;
+        }
+        return false;
     }
 
     private static String base64String(int length) {
@@ -393,6 +527,46 @@ public class ConsoleSecret extends CRUDKubernetesDependentResource<Secret, Conso
             }
             target.put(key, decode ? decodeString(value) : value);
         });
+    }
+
+    /**
+     * Fetch the string value from the given valueSpec. The return string
+     * will be encoded for use in the Console secret data map.
+     */
+    String getValue(Context<Console> context, String namespace, Value valueSpec) {
+        if (valueSpec == null) {
+            return null;
+        }
+
+        return Optional.ofNullable(valueSpec.getValue())
+                .map(this::encodeString)
+            .or(() -> Optional.ofNullable(valueSpec.getValueFrom())
+                    .map(ValueReference::getConfigMapKeyRef)
+                    .flatMap(ref -> getValue(context, ConfigMap.class, namespace, ref.getName(), ref.getKey(), ref.getOptional(), ConfigMap::getData)
+                            .map(this::encodeString)
+                        .or(() -> getValue(context, ConfigMap.class, namespace, ref.getName(), ref.getKey(), ref.getOptional(), ConfigMap::getBinaryData))))
+            .or(() -> Optional.ofNullable(valueSpec.getValueFrom())
+                    .map(ValueReference::getSecretKeyRef)
+                    .flatMap(ref -> getValue(context, Secret.class, namespace, ref.getName(), ref.getKey(), ref.getOptional(), Secret::getData))
+                    /* No need to call encodeString, the value is already encoded from Secret */)
+            .orElse(null);
+    }
+
+    <S extends HasMetadata> Optional<String> getValue(Context<Console> context,
+            Class<S> sourceType,
+            String namespace,
+            String name,
+            String key,
+            Boolean optional,
+            Function<S, Map<String, String>> dataProvider) {
+
+        S source = getResource(context, sourceType, namespace, name, Boolean.TRUE.equals(optional));
+
+        if (source != null) {
+            return Optional.ofNullable(dataProvider.apply(source).get(key));
+        }
+
+        return Optional.empty();
     }
 
     static <T extends HasMetadata> T getResource(
