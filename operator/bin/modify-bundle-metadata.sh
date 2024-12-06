@@ -1,8 +1,8 @@
 #!/bin/bash
 
 SCRIPT_PATH="$(cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P)"
-source ${SCRIPT_PATH}/common.sh
 
+VERSION=""
 SKIP_RANGE=""
 SKOPEO_TRANSPORT="docker://"
 
@@ -12,18 +12,26 @@ do
   VALUE=$(echo "$ARGUMENT" | sed 's/^[^=]*=//')
 
   case "$KEY" in
-    SKIP_RANGE)                            SKIP_RANGE=${VALUE};;
-    ORIGINAL_OPERATOR_NAME)                ORIGINAL_OPERATOR_NAME=${VALUE};;
-    SKOPEO_TRANSPORT)                      SKOPEO_TRANSPORT=${VALUE};;
+    VERSION)                            VERSION=${VALUE};;
+    SKIP_RANGE)                         SKIP_RANGE=${VALUE};;
+    ORIGINAL_OPERATOR_NAME)             ORIGINAL_OPERATOR_NAME=${VALUE};;
+    SKOPEO_TRANSPORT)                   SKOPEO_TRANSPORT=${VALUE};;
     *)
   esac
 done
+
+source ${SCRIPT_PATH}/common.sh
 
 api_name="console-api"
 ui_name="console-ui"
 operator_name="console-operator"
 
 echo "[INFO] Modify values and replace placeholders in ${CSV_FILE_PATH}"
+
+if [[ -n "$VERSION" ]]; then
+    echo "[DEBUG] Setting version = \"${VERSION}\""
+    ${YQ} eval -o yaml -i ".spec.version = \"${VERSION}\"" "${CSV_FILE_PATH}"
+fi
 
 # Delete any namespaces set on the CSV deployment(s), possibly added by `quarkus.kubernetes.namespace`
 ${YQ} eval -o yaml -i 'del(.spec.install.spec.deployments[0].spec.template.metadata.namespace)' "${CSV_FILE_PATH}"
@@ -68,6 +76,10 @@ ${YQ} eval -o yaml -i ".spec.install.spec.deployments[0].spec.template.spec.cont
 # Change serviceAccountName as well
 ${YQ} eval -o yaml -i ".spec.install.spec.deployments[0].spec.template.spec.serviceAccountName = \"${OPERATOR_NAME}\"" "${CSV_FILE_PATH}"
 ${YQ} eval -o yaml -i ".spec.install.spec.clusterPermissions.[].serviceAccountName = \"${OPERATOR_NAME}\"" "${CSV_FILE_PATH}"
+
+echo "[DEBUG] Updating package name annotation and image label to ${OPERATOR_NAME}"
+${YQ} eval -o yaml -i ".annotations.[\"operators.operatorframework.io.bundle.package.v1\"] = \"${OPERATOR_NAME}\"" "${BUNDLE_PATH}/metadata/annotations.yaml"
+sed -i 's/'${ORIGINAL_OPERATOR_NAME}'/'${OPERATOR_NAME}'/' "${BUNDLE_PATH}/bundle.Dockerfile"
 
 # Add Env for operator deployment that references API and UI images with digest instead of tag
 echo "[DEBUG] Add UI and API images to CSV"

@@ -1,8 +1,10 @@
 #!/bin/bash
 
 SCRIPT_PATH="$(cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P)"
-source ${SCRIPT_PATH}/common.sh
+
 export VERSION="${1}"
+
+source ${SCRIPT_PATH}/common.sh
 
 echo "[INFO] Generate catalog"
 
