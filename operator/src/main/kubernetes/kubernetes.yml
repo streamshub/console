@@ -2,7 +2,137 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: consolereconciler-additional-cluster-role
+  name: streamshub-consolereconciler-cluster-role
+rules:
+  - apiGroups:
+      - console.streamshub.github.com
+    resources:
+      - consoles
+      - consoles/status
+      - consoles/finalizers
+    verbs:
+      - get
+      - list
+      - watch
+      - patch
+      - update
+      - create
+      - delete
+  - apiGroups:
+      - rbac.authorization.k8s.io
+    resources:
+      - clusterrolebindings
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - ""
+    resources:
+      - serviceaccounts
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - apps
+    resources:
+      - deployments
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - ""
+    resources:
+      - services
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - networking.k8s.io
+    resources:
+      - ingresses
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - ""
+    resources:
+      - configmaps
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - rbac.authorization.k8s.io
+    resources:
+      - clusterroles
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - ""
+    resources:
+      - secrets
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: streamshub-console-crd-validating-cluster-role
+rules:
+  # Used by operator framework to validate CRDs
+  - apiGroups:
+      - apiextensions.k8s.io
+    resources:
+      - customresourcedefinitions
+    verbs:
+      - get
+      - list
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: streamshub-consolereconciler-additional-cluster-role
 rules:
   - apiGroups:
       - coordination.k8s.io
@@ -103,11 +233,35 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: consolereconciler-additional-cluster-role-binding
+  name: streamshub-consolereconciler-cluster-role-binding
 roleRef:
   kind: ClusterRole
   apiGroup: rbac.authorization.k8s.io
-  name: consolereconciler-additional-cluster-role
+  name: streamshub-consolereconciler-cluster-role
+subjects:
+  - kind: ServiceAccount
+    name: streamshub-console-operator
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: streamshub-consolereconciler-crd-validating-role-binding
+roleRef:
+  kind: ClusterRole
+  apiGroup: rbac.authorization.k8s.io
+  name: streamshub-console-crd-validating-cluster-role
+subjects:
+  - kind: ServiceAccount
+    name: streamshub-console-operator
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: streamshub-consolereconciler-additional-cluster-role-binding
+roleRef:
+  kind: ClusterRole
+  apiGroup: rbac.authorization.k8s.io
+  name: streamshub-consolereconciler-additional-cluster-role
 subjects:
   - kind: ServiceAccount
     name: streamshub-console-operator
@@ -116,7 +270,7 @@ subjects:
 kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: consolereconciler-cluster-monitoring-view
+  name: streamshub-consolereconciler-cluster-monitoring-view
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -128,19 +282,19 @@ subjects:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: console-operator
+  name: streamshub-console-operator
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app.kubernetes.io/name: console-operator
+      app.kubernetes.io/name: streamshub-console-operator
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: console-operator
+        app.kubernetes.io/name: streamshub-console-operator
     spec:
       containers:
-        - name: console-operator
+        - name: streamshub-console-operator
           securityContext:
             readOnlyRootFilesystem: true
             allowPrivilegeEscalation: false
