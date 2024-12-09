@@ -22,6 +22,12 @@ public class SchemaRegistry {
     @JsonPropertyDescription("URL of the Apicurio Registry server API.")
     private String url;
 
+    @JsonPropertyDescription("""
+            Trust store configuration for when the schema registry uses \
+            TLS certificates signed by an unknown CA.
+            """)
+    private TrustStore trustStore;
+
     public String getName() {
         return name;
     }
@@ -36,5 +42,13 @@ public class SchemaRegistry {
 
     public void setUrl(String url) {
         this.url = url;
+    }
+
+    public TrustStore getTrustStore() {
+        return trustStore;
+    }
+
+    public void setTrustStore(TrustStore trustStore) {
+        this.trustStore = trustStore;
     }
 }
