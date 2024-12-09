@@ -103,11 +103,11 @@ jobs:
       - name: Build and Push Operator Bundle Image
         uses: docker/build-push-action@v6
         with:
-          context: operator/target/bundle/console-operator/
+          context: operator/target/bundle/streamshub-console-operator/
           platforms: ${{ env.PLATFORMS }}
           provenance: false
           push: true
-          file: operator/target/bundle/console-operator/bundle.Dockerfile
+          file: operator/target/bundle/streamshub-console-operator/bundle.Dockerfile
           tags: |
             ${{ secrets.IMAGE_REPO_HOSTNAME }}/${{ secrets.IMAGE_REPO_NAMESPACE }}/console-operator-bundle:${{ env.NEXT_VERSION }}
             ${{ secrets.IMAGE_REPO_HOSTNAME }}/${{ secrets.IMAGE_REPO_NAMESPACE }}/console-operator-bundle:snapshot-${{github.ref_name}}
