@@ -37,7 +37,7 @@ fi
 ${YQ} eval -o yaml -i 'del(.spec.install.spec.deployments[0].spec.template.metadata.namespace)' "${CSV_FILE_PATH}"
 
 # Get operator image name with tag
-yq_image_expression=".spec.install.spec.deployments[0] | (select (.name ==\"${ORIGINAL_OPERATOR_NAME}\")).spec.template.spec.containers[].image"
+yq_image_expression=".spec.install.spec.deployments[0].spec.template.spec.containers[0].image"
 operator_image_with_tag=$(${YQ} eval "${yq_image_expression}" "${CSV_FILE_PATH}")
 echo "[DEBUG] Original operator image name with tag = ${operator_image_with_tag}"
 
@@ -54,9 +54,8 @@ operator_image_with_digest="${image_registry}/${operator_name}@${operator_image_
 # Create relatedImages section
 ${YQ} eval -o yaml -i ".spec.relatedImages = null" "${CSV_FILE_PATH}"
 
-# Add operator image with digest to related images + replace operator image tag to digest
+# Replace operator image tag to digest
 echo "[DEBUG] Setting container image = ${operator_image_with_digest}"
-${YQ} eval -o yaml -i ".spec.relatedImages += [{\"name\": \"${OPERATOR_NAME}\", \"image\": \"${operator_image_with_digest}\"}]" "${CSV_FILE_PATH}";
 ${YQ} eval -o yaml -i ".metadata.annotations.containerImage = \"${operator_image_with_digest}\"" "${CSV_FILE_PATH}"
 ${YQ} eval -o yaml -i ".spec.install.spec.deployments[0].spec.template.spec.containers[0].image = \"${operator_image_with_digest}\"" "${CSV_FILE_PATH}"
 
@@ -72,14 +71,6 @@ ${YQ} eval -o yaml -i ".spec.install.spec.deployments[0].name = \"${OPERATOR_INS
 ${YQ} eval -o yaml -i ".spec.install.spec.deployments[0].spec.selector.matchLabels[\"app.kubernetes.io/name\"] = \"${OPERATOR_INSTANCE_NAME}\"" "${CSV_FILE_PATH}"
 ${YQ} eval -o yaml -i ".spec.install.spec.deployments[0].spec.template.metadata.labels[\"app.kubernetes.io/instance\"] = \"${OPERATOR_INSTANCE_NAME}\"" "${CSV_FILE_PATH}"
 ${YQ} eval -o yaml -i ".spec.install.spec.deployments[0].spec.template.metadata.labels[\"app.kubernetes.io/name\"] = \"${OPERATOR_INSTANCE_NAME}\"" "${CSV_FILE_PATH}"
-${YQ} eval -o yaml -i ".spec.install.spec.deployments[0].spec.template.spec.containers[0].name = \"${OPERATOR_NAME}\"" "${CSV_FILE_PATH}"
-# Change serviceAccountName as well
-${YQ} eval -o yaml -i ".spec.install.spec.deployments[0].spec.template.spec.serviceAccountName = \"${OPERATOR_NAME}\"" "${CSV_FILE_PATH}"
-${YQ} eval -o yaml -i ".spec.install.spec.clusterPermissions.[].serviceAccountName = \"${OPERATOR_NAME}\"" "${CSV_FILE_PATH}"
-
-echo "[DEBUG] Updating package name annotation and image label to ${OPERATOR_NAME}"
-${YQ} eval -o yaml -i ".annotations.[\"operators.operatorframework.io.bundle.package.v1\"] = \"${OPERATOR_NAME}\"" "${BUNDLE_PATH}/metadata/annotations.yaml"
-sed -i 's/'${ORIGINAL_OPERATOR_NAME}'/'${OPERATOR_NAME}'/' "${BUNDLE_PATH}/bundle.Dockerfile"
 
 # Add Env for operator deployment that references API and UI images with digest instead of tag
 echo "[DEBUG] Add UI and API images to CSV"
@@ -94,8 +85,20 @@ api_image_digest=$(${SKOPEO} inspect --tls-verify=false --override-os=linux --fo
 api_image_with_digest="${image_registry}/${api_name}@${api_image_digest}"
 echo "[DEBUG] Using API image: ${api_image_with_digest}"
 
-${YQ} eval -o yaml -i ".spec.install.spec.deployments[0].spec.template.spec.containers[0].env += [{\"name\": \"CONSOLE_DEPLOYMENT_DEFAULT_UI_IMAGE\", \"value\": \"${ui_image_with_digest}\"}]" "${CSV_FILE_PATH}";
-${YQ} eval -o yaml -i ".spec.install.spec.deployments[0].spec.template.spec.containers[0].env += [{\"name\": \"CONSOLE_DEPLOYMENT_DEFAULT_API_IMAGE\", \"value\": \"${api_image_with_digest}\"}]" "${CSV_FILE_PATH}";
+${YQ} eval -o yaml -i ".spec.install.spec.deployments[0].spec.template.spec.containers[0].env += [{\"name\": \"CONSOLE_DEPLOYMENT_DEFAULT_UI_IMAGE\", \"value\": \"${ui_image_with_digest}\"}]" "${CSV_FILE_PATH}"
+${YQ} eval -o yaml -i ".spec.install.spec.deployments[0].spec.template.spec.containers[0].env += [{\"name\": \"CONSOLE_DEPLOYMENT_DEFAULT_API_IMAGE\", \"value\": \"${api_image_with_digest}\"}]" "${CSV_FILE_PATH}"
+
+# Add operator and operatnd images with digests to related images
+${YQ} eval -o yaml -i '.spec.relatedImages += [{
+  "name": "'${OPERATOR_NAME}'",
+  "image": "'${operator_image_with_digest}'"
+}, {
+  "name": "streamshub-console-api",
+  "image": "'${api_image_with_digest}'"
+}, {
+  "name": "streamshub-console-ui",
+  "image": "'${ui_image_with_digest}'"
+}]' "${CSV_FILE_PATH}"
 
 # Add skipRange if present
 if [[ -n "$SKIP_RANGE" ]]; then

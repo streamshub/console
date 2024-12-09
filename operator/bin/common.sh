@@ -2,8 +2,8 @@
 
 SCRIPT_PATH="$(cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P)"
 
-BUNDLE_PATH=${SCRIPT_PATH}/../target/bundle/console-operator/
-CSV_FILE_PATH=${BUNDLE_PATH}/manifests/console-operator.clusterserviceversion.yaml
+BUNDLE_PATH=${SCRIPT_PATH}/../target/bundle/streamshub-console-operator/
+CSV_FILE_PATH=${BUNDLE_PATH}/manifests/streamshub-console-operator.clusterserviceversion.yaml
 CATALOG_PATH=${SCRIPT_PATH}/../target/catalog
 OPERATOR_CATALOG_CONFIG_YAML_PATH=${CATALOG_PATH}/operator.yaml
 # Operator naming
