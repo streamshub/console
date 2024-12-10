@@ -1,9 +1,9 @@
-import { TopicMutateError } from "@/api/topics/schema";
+import { ApiError } from "@/api/api";
 import { Alert, Text, TextContent } from "@patternfly/react-core";
 
-export function Error({ error }: { error: TopicMutateError | "unknown" }) {
-  return error !== "unknown" ? (
-    error.errors.map((e, idx) => (
+export function Errors({ errors }: { errors: ApiError[] | undefined }) {
+  return errors !== undefined ? (
+    errors.map((e, idx) => (
       <Alert key={idx} title={e.title} variant={"danger"}>
         <TextContent>
           <Text>{e.detail}</Text>

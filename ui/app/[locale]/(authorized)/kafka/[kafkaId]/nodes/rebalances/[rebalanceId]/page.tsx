@@ -3,7 +3,7 @@ import { PageSection } from "@/libs/patternfly/react-core";
 import { Suspense } from "react";
 import { KafkaRebalanceParams } from "./KafkaRebalance.params";
 import { OptimizationProposal } from "./OptimizationProposal";
-import { getRebalanceDetails } from "@/api/rebalance/actions";
+import { getRebalance } from "@/api/rebalance/actions";
 
 export default function OptimizationProposalPage({
   params,
@@ -44,9 +44,10 @@ async function ConnectedOptimizationProposal({
 }: {
   params: KafkaParams & { rebalanceId: string };
 }) {
-  const rebalanceDetails = await getRebalanceDetails(kafkaId, rebalanceId);
+  const response = await getRebalance(kafkaId, rebalanceId);
 
-  if (rebalanceDetails && typeof rebalanceDetails !== "boolean") {
+  if (response.payload) {
+    const rebalanceDetails = response.payload;
     const { optimizationResult, sessionId } = rebalanceDetails.attributes;
 
     return (

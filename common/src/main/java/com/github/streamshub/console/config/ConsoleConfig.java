@@ -9,7 +9,12 @@ import jakarta.validation.constraints.AssertTrue;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.github.streamshub.console.config.security.GlobalSecurityConfig;
+import com.github.streamshub.console.config.security.ResourceTypes;
+import com.github.streamshub.console.config.security.ResourceTypes.ValidResourceTypes;
+import com.github.streamshub.console.config.security.SecurityConfig;
 
+import io.sundr.builder.annotations.Buildable;
 import io.xlate.validation.constraints.Expression;
 
 @Expression(
@@ -35,9 +40,14 @@ import io.xlate.validation.constraints.Expression;
             .allMatch(registry -> registryNames.contains(registry))
         """)
 @JsonInclude(Include.NON_NULL)
+@Buildable(editableEnabled = false)
 public class ConsoleConfig {
 
     KubernetesConfig kubernetes = new KubernetesConfig();
+
+    @Valid
+    @ValidResourceTypes(type = ResourceTypes.Global.class)
+    GlobalSecurityConfig security = new GlobalSecurityConfig();
 
     @Valid
     List<PrometheusConfig> metricsSources = new ArrayList<>();
@@ -60,12 +70,41 @@ public class ConsoleConfig {
         return Named.uniqueNames(schemaRegistries);
     }
 
+    /**
+     * Specifying security subjects local to a Kafka cluster is not allowed when global OIDC
+     * security is enabled.
+     */
+    @JsonIgnore
+    @AssertTrue(message = "Security subjects must not be specified for Kafka clusters when OIDC security is used")
+    public boolean isWithoutOidcOrKafkaClusterSubjectsEmpty() {
+        if (security.getOidc() == null) {
+            return true;
+        }
+
+        return kafka.getClusters().stream().allMatch(k -> k.getSecurity().getSubjects().isEmpty());
+    }
+
+    // testing
+    @JsonIgnore
+    public void clearSecurity() {
+        security = new GlobalSecurityConfig();
+        kafka.getClusters().forEach(k -> k.setSecurity(new SecurityConfig()));
+    }
+
     public KubernetesConfig getKubernetes() {
         return kubernetes;
     }
 
     public void setKubernetes(KubernetesConfig kubernetes) {
         this.kubernetes = kubernetes;
+    }
+
+    public GlobalSecurityConfig getSecurity() {
+        return security;
+    }
+
+    public void setSecurity(GlobalSecurityConfig security) {
+        this.security = security;
     }
 
     public List<PrometheusConfig> getMetricsSources() {

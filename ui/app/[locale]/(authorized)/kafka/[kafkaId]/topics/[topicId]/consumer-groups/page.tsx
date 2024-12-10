@@ -2,8 +2,8 @@ import { getTopicConsumerGroups } from "@/api/consumerGroups/actions";
 import { ConsumerGroupsTable } from "./ConsumerGroupsTable";
 import { KafkaTopicParams } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/topics/kafkaTopic.params";
 import { PageSection } from "@/libs/patternfly/react-core";
-import { notFound } from "next/navigation";
 import { Suspense } from "react";
+import { NoDataErrorState } from "@/components/NoDataErrorState";
 
 export default function ConsumerGroupsPage({
   params: { kafkaId, topicId },
@@ -25,8 +25,6 @@ export default function ConsumerGroupsPage({
             kafkaId={kafkaId}
             page={1}
             total={0}
-            consumerGroups={undefined}
-            refresh={undefined}
           />
         }
       >
@@ -54,17 +52,21 @@ async function ConnectedConsumerGroupsPage({
   async function refresh() {
     "use server";
     const res = await getTopicConsumerGroups(kafkaId, topicId, searchParams);
-    return res.data;
+    return res.payload?.data ?? null;
   }
 
-  const consumerGroups = await getTopicConsumerGroups(
+  const response = await getTopicConsumerGroups(
     kafkaId,
     topicId,
     searchParams,
   );
-  if (!consumerGroups) {
-    notFound();
+
+  if (response.errors) {
+    return <NoDataErrorState errors={response.errors} />;
   }
+
+  const consumerGroups = response.payload!;
+
   return (
     <ConsumerGroupsTable
       kafkaId={kafkaId}

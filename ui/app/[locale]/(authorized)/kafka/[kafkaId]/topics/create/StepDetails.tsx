@@ -1,4 +1,4 @@
-import { TopicMutateError } from "@/api/topics/schema";
+import { ApiError } from "@/api/api";
 import { FieldName } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/topics/create/FieldName";
 import { FieldPartitions } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/topics/create/FieldPartitions";
 import { FieldReplicas } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/topics/create/FieldReplicas";
@@ -15,7 +15,7 @@ export function StepDetails({
   onNameChange,
   onPartitionsChange,
   onReplicasChange,
-  error,
+  errors,
 }: {
   name: string;
   partitions: number;
@@ -24,7 +24,7 @@ export function StepDetails({
   onNameChange: (name: string) => void;
   onPartitionsChange: (name: number) => void;
   onReplicasChange: (name: number) => void;
-  error: TopicMutateError | "unknown" | undefined;
+  errors: ApiError[] | undefined;
 }) {
   const nameInvalid = {
     length: name.trim().length < 3,
@@ -33,7 +33,7 @@ export function StepDetails({
   };
   const partitionsInvalid = partitions <= 0;
   const replicasInvalid = replicas <= 0 || replicas > maxReplicas;
-  const fieldError = topicMutateErrorToFieldError(error, false, [
+  const fieldError = topicMutateErrorToFieldError(errors, false, [
     "name",
     "numPartitions",
     "replicationFactor",

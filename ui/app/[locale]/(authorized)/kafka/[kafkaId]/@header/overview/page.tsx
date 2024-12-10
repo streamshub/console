@@ -3,7 +3,6 @@ import { KafkaParams } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/kafka.p
 import { AppHeader } from "@/components/AppHeader";
 import { useTranslations } from "next-intl";
 import { getKafkaCluster } from "@/api/kafka/actions";
-import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
 export default function Header({
@@ -25,15 +24,12 @@ async function ConnectedHeader({
 }: {
   params: KafkaParams;
 }) {
-  const cluster = await getKafkaCluster(kafkaId);
-  if (!cluster) {
-    notFound();
-  }
-
+  const cluster = (await getKafkaCluster(kafkaId))?.payload;
+  
   return (
     <OverviewHeader
       params={{ kafkaId }}
-      managed={cluster.meta?.managed ?? false}
+      managed={cluster?.meta?.managed ?? false}
     />
   );
 }

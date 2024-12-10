@@ -1,8 +1,8 @@
 import { getTopic } from "@/api/topics/actions";
 import { KafkaTopicParams } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/topics/kafkaTopic.params";
-import { redirect } from "@/i18n/routing";
 import { Suspense } from "react";
 import { PartitionsTable } from "./PartitionsTable";
+import { NoDataErrorState } from "@/components/NoDataErrorState";
 
 export default function PartitionsPage({
   params: { kafkaId, topicId },
@@ -19,10 +19,12 @@ export default function PartitionsPage({
 }
 
 async function ConnectedPartitions({ kafkaId, topicId }: KafkaTopicParams) {
-  const topic = await getTopic(kafkaId, topicId);
-  if (!topic) {
-    redirect(`/kafka/${kafkaId}`);
-    return null;
+  const response = await getTopic(kafkaId, topicId);
+
+  if (response.errors) {
+    return <NoDataErrorState errors={response.errors} />;
   }
+
+  const topic = response.payload!;
   return <PartitionsTable kafkaId={kafkaId} topic={topic} />;
 }

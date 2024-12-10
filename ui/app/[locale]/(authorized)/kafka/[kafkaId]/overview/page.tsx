@@ -9,10 +9,11 @@ import { ConnectedTopicsPartitionsCard } from "@/app/[locale]/(authorized)/kafka
 import { PageLayout } from "@/components/ClusterOverview/PageLayout";
 import { ConnectedRecentTopics } from "./ConnectedRecentTopics";
 
-export default function OverviewPage({ params }: { params: KafkaParams }) {
+export default async function OverviewPage({ params }: { params: KafkaParams }) {
   const kafkaCluster = getKafkaCluster(params.kafkaId, {
     fields: 'name,namespace,creationTimestamp,status,kafkaVersion,nodes,controller,authorizedOperations,listeners,conditions,metrics'
-  });
+  }).then(r => r.payload ?? null);
+
   const topics = getTopics(params.kafkaId, { fields: "status", pageSize: 1 });
   const consumerGroups = getConsumerGroups(params.kafkaId, { fields: "state" });
   const viewedTopics = getViewedTopics().then((topics) =>

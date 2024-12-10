@@ -1,9 +1,7 @@
 import { getKafkaCluster } from "@/api/kafka/actions";
-import { getTopics } from "@/api/topics/actions";
 import { KafkaParams } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/kafka.params";
 import { AppHeader } from "@/components/AppHeader";
 import { Skeleton } from "@patternfly/react-core";
-import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
 export function KafkaHeader({ params: { kafkaId } }: { params: KafkaParams }) {
@@ -19,10 +17,11 @@ async function ConnectedKafkaHeader({
 }: {
   params: KafkaParams;
 }) {
-  const cluster = await getKafkaCluster(kafkaId);
-  if (!cluster) {
-    notFound();
+  const cluster = (await getKafkaCluster(kafkaId))?.payload;
+
+  if (cluster) {
+    return <AppHeader title={cluster.attributes.name} />;
   }
-  const topics = await getTopics(kafkaId, { pageSize: 1 });
-  return <AppHeader title={cluster.attributes.name} />;
+
+  return <AppHeader title={"-"} />;
 }

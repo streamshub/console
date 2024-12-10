@@ -1,5 +1,5 @@
 "use client";
-import { ConsumerGroup } from "@/api/consumerGroups/schema";
+import { ConsumerGroup, MemberDescription, OffsetAndMetadata } from "@/api/consumerGroups/schema";
 import { LagTable } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/consumer-groups/[groupId]/LagTable";
 import { Number } from "@/components/Format/Number";
 import { ResponsiveTable } from "@/components/Table";
@@ -16,7 +16,7 @@ export function MembersTable({
 }: {
   kafkaId: string;
   consumerGroup?: ConsumerGroup;
-  refresh?: () => Promise<ConsumerGroup>;
+  refresh?: () => Promise<ConsumerGroup | null>;
 }) {
   const t = useTranslations("MemberTable");
   const [consumerGroup, setConsumerGroup] = useState(initialData);
@@ -25,12 +25,14 @@ export function MembersTable({
     if (refresh) {
       interval = setInterval(async () => {
         const cg = await refresh();
-        setConsumerGroup(cg);
+        if (cg != null) {
+          setConsumerGroup(cg);
+        }
       }, 5000);
     }
     return () => clearInterval(interval);
   }, [refresh]);
-  let members: ConsumerGroup["attributes"]["members"] | undefined = undefined;
+  let members: MemberDescription[] | undefined = undefined;
 
   if (consumerGroup) {
     if (consumerGroup.attributes.members?.length === 0) {
@@ -47,7 +49,7 @@ export function MembersTable({
         },
       ];
     } else {
-      members = consumerGroup.attributes.members;
+      members = consumerGroup.attributes.members ?? [];
     }
   }
   return (
@@ -130,7 +132,7 @@ export function MembersTable({
         return true;
       }}
       getExpandedRow={({ row }) => {
-        const offsets: ConsumerGroup["attributes"]["offsets"] =
+        const offsets: OffsetAndMetadata[] | undefined =
           row.assignments?.map((a) => ({
             ...a,
             ...consumerGroup!.attributes.offsets?.find(

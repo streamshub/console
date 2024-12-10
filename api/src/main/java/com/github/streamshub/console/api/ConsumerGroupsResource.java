@@ -36,11 +36,14 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import com.github.streamshub.console.api.model.ConsumerGroup;
 import com.github.streamshub.console.api.model.ConsumerGroupFilterParams;
 import com.github.streamshub.console.api.model.ListFetchParams;
+import com.github.streamshub.console.api.security.Authorized;
+import com.github.streamshub.console.api.security.ResourcePrivilege;
 import com.github.streamshub.console.api.service.ConsumerGroupService;
 import com.github.streamshub.console.api.support.ErrorCategory;
 import com.github.streamshub.console.api.support.FieldFilter;
 import com.github.streamshub.console.api.support.ListRequestContext;
 import com.github.streamshub.console.api.support.StringEnumeration;
+import com.github.streamshub.console.config.security.Privilege;
 
 import io.xlate.validation.constraints.Expression;
 
@@ -67,6 +70,8 @@ public class ConsumerGroupsResource {
     @APIResponseSchema(ConsumerGroup.ListResponse.class)
     @APIResponse(responseCode = "500", ref = "ServerError")
     @APIResponse(responseCode = "504", ref = "ServerTimeout")
+    @Authorized
+    @ResourcePrivilege(Privilege.LIST)
     public CompletionStage<Response> listConsumerGroups(
             @Parameter(description = "Cluster identifier")
             @PathParam("clusterId")
@@ -132,6 +137,8 @@ public class ConsumerGroupsResource {
     @APIResponse(responseCode = "404", ref = "NotFound")
     @APIResponse(responseCode = "500", ref = "ServerError")
     @APIResponse(responseCode = "504", ref = "ServerTimeout")
+    @Authorized
+    @ResourcePrivilege(Privilege.GET)
     public CompletionStage<Response> describeConsumerGroup(
             @Parameter(description = "Cluster identifier")
             @PathParam("clusterId")
@@ -200,6 +207,8 @@ public class ConsumerGroupsResource {
         node = { "data", "id" },
         payload = ErrorCategory.InvalidResource.class,
         validationAppliesTo = ConstraintTarget.PARAMETERS)
+    @Authorized
+    @ResourcePrivilege(Privilege.UPDATE)
     public CompletionStage<Response> patchConsumerGroup(
             @Parameter(description = "Cluster identifier")
             @PathParam("clusterId")
@@ -244,6 +253,8 @@ public class ConsumerGroupsResource {
     @Path("{groupId}")
     @DELETE
     @APIResponseSchema(responseCode = "204", value = Void.class)
+    @Authorized
+    @ResourcePrivilege(Privilege.DELETE)
     public CompletionStage<Response> deleteConsumerGroup(
             @Parameter(description = "Cluster identifier")
             @PathParam("clusterId")

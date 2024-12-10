@@ -11,8 +11,8 @@ import { getServerSession } from "next-auth";
 import { useTranslations } from "next-intl";
 import { PropsWithChildren, ReactNode, Suspense } from "react";
 import { KafkaParams } from "./kafka.params";
-import { notFound } from "next/navigation";
 import { getKafkaCluster } from "@/api/kafka/actions";
+import { NoDataErrorState } from "@/components/NoDataErrorState";
 
 export default async function AsyncLayout({
   children,
@@ -28,12 +28,13 @@ export default async function AsyncLayout({
 }>) {
   const authOptions = await getAuthOptions();
   const session = await getServerSession(authOptions);
+  const response = await getKafkaCluster(kafkaId);
 
-  const cluster = await getKafkaCluster(kafkaId);
-
-  if (!cluster) {
-    notFound();
+  if (response.errors) {
+    return <NoDataErrorState errors={response.errors} />;
   }
+
+  const cluster = response.payload;
 
   return (
     <Layout

@@ -1,6 +1,7 @@
-import { ConfigMap, NewConfigMap, TopicMutateError } from "@/api/topics/schema";
+import { ApiError } from "@/api/api";
+import { ConfigMap, NewConfigMap } from "@/api/topics/schema";
 import { ConfigTable } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/topics/create/ConfigTable";
-import { Error } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/topics/create/Errors";
+import { Errors } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/topics/create/Errors";
 import { topicMutateErrorToFieldError } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/topics/create/topicMutateErrorToFieldError";
 import { Text, TextContent, Title } from "@patternfly/react-core";
 import { useTranslations } from "next-intl";
@@ -9,22 +10,22 @@ export function StepOptions({
   options,
   initialOptions,
   onChange,
-  error,
+  errors,
 }: {
   options: NewConfigMap;
   initialOptions: Readonly<ConfigMap>;
   onChange: (options: NewConfigMap) => void;
-  error: TopicMutateError | "unknown" | undefined;
+  errors: ApiError[] | undefined;
 }) {
   const t = useTranslations();
   const fieldError = topicMutateErrorToFieldError(
-    error,
+    errors,
     true,
     Object.keys(initialOptions),
   );
   return (
     <>
-      {error && !fieldError && <Error error={error} />}
+      {errors && !fieldError && <Errors errors={errors} />}
       <TextContent>
         <Title headingLevel={"h2"}>{t("CreateTopic.step_option_title")}</Title>
         <Text>{t("CreateTopic.step_option_description")}</Text>

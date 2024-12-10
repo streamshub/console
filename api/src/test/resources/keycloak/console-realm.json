@@ -1,0 +1,131 @@
+{
+  "realm": "console-authz",
+  "accessTokenLifespan": 60,
+  "ssoSessionIdleTimeout": 864000,
+  "ssoSessionMaxLifespan": 864000,
+  "enabled": true,
+  "sslRequired": "external",
+  "roles": {
+    "realm": [
+      {
+        "name": "Dev Team A",
+        "description": "Developer on Dev Team A"
+      },
+      {
+        "name": "Dev Team B",
+        "description": "Developer on Dev Team B"
+      },
+      {
+        "name": "Ops Team",
+        "description": "Operations team member"
+      }
+    ],
+    "client": {
+      "console-client": []
+    }
+  },
+  "groups" : [
+    {
+      "name" : "team-a",
+      "path" : "/team-a"
+    }, {
+      "name" : "team-b",
+      "path" : "/team-b"
+    }, {
+      "name" : "team-c",
+      "path" : "/team-c"
+    }
+  ],
+  "users": [
+    {
+      "username" : "alice",
+      "createdTimestamp": 1,
+      "enabled" : true,
+      "totp" : false,
+      "emailVerified" : true,
+      "firstName" : "Alice",
+      "lastName" : "User",
+      "email" : "alice@streamshub.io",
+      "credentials" : [ {
+        "type" : "password",
+        "secretData" : "{\"value\":\"KqABIiReBuRWbP4pBct3W067pNvYzeN7ILBV+8vT8nuF5cgYs2fdl2QikJT/7bGTW/PBXg6CYLwJQFYrBK9MWg==\",\"salt\":\"EPgscX9CQz7UnuZDNZxtMw==\"}",
+        "credentialData" : "{\"hashIterations\":27500,\"algorithm\":\"pbkdf2-sha256\"}"
+      } ],
+      "disableableCredentialTypes" : [ ],
+      "realmRoles" : [ "offline_access", "uma_authorization" ],
+      "clientRoles" : {
+        "account" : [ "view-profile", "manage-account" ]
+      },
+      "groups" : [ "/team-a", "/team-c" ]
+    }, {
+      "username" : "susan",
+      "createdTimestamp": 1,
+      "enabled" : true,
+      "totp" : false,
+      "emailVerified" : true,
+      "firstName" : "Susan",
+      "lastName" : "User",
+      "email" : "susan@streamshub.io",
+      "credentials" : [ {
+        "type" : "password",
+        "value" : "susan-password"
+      } ],
+      "disableableCredentialTypes" : [ ],
+      "requiredActions" : [ ],
+      "realmRoles" : [ "offline_access", "uma_authorization" ],
+      "clientRoles" : {
+        "account" : [ "view-profile", "manage-account" ]
+      },
+      "groups" : [ "/team-b" ]
+    }, {
+      "username" : "bob",
+      "createdTimestamp": 1,
+      "enabled" : true,
+      "totp" : false,
+      "emailVerified" : true,
+      "firstName" : "Bob",
+      "lastName" : "User",
+      "email" : "bob@streamshub.io",
+      "credentials" : [ {
+        "type" : "password",
+        "secretData" : "{\"value\":\"QhK0uLsKuBDrMm9Z9XHvq4EungecFRnktPgutfjKtgVv2OTPd8D390RXFvJ8KGvqIF8pdoNxHYQyvDNNwMORpg==\",\"salt\":\"yxkgwEyTnCGLn42Yr9GxBQ==\"}",
+        "credentialData" : "{\"hashIterations\":27500,\"algorithm\":\"pbkdf2-sha256\"}"
+      } ],
+      "disableableCredentialTypes" : [ ],
+      "requiredActions" : [ ],
+      "realmRoles" : [ "offline_access", "uma_authorization" ],
+      "clientRoles" : {
+        "account" : [ "view-profile", "manage-account" ]
+      },
+      "groups" : [ "/team-a", "/team-b" ]
+    }
+  ],
+  "clients": [
+    {
+      "clientId": "console-client",
+      "enabled": true,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "console-client-secret",
+      "bearerOnly": false,
+      "consentRequired": false,
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": false,
+      "publicClient": true,
+      "fullScopeAllowed": true,
+      "protocolMappers": [{
+        "name": "Groups Mapper",
+        "protocol": "openid-connect",
+        "protocolMapper": "oidc-group-membership-mapper",
+        "consentRequired": false,
+        "config": {
+          "userinfo.token.claim": "true",
+          "id.token.claim": "true",
+          "access.token.claim": "true",
+          "claim.name": "groups"
+        }
+      }]
+    }
+  ]
+}

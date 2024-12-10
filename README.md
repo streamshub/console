@@ -56,14 +56,19 @@ Prometheus is an optional dependency of the console if cluster metrics are to be
 - User-supplied Prometheus instances
 - Private Prometheus instance for each `Console`. The operator creates a managed Prometheus deployment for use only by the console.
 
+#### OIDC Provider
+The console may be configured to use an OpenID Connect (OIDC) provider for user authentication. An example using [dex](https://dexidp.io/) for OIDC with an OpenShift identity provider is available in [examples/dex-openshift](./examples/dex-openshift).
+
 ### Deploy the operator with OLM
 The preferred way to deploy the console is using the Operator Lifecycle Manager, or OLM. The sample install files in `install/operator-olm` will install the operator with cluster-wide scope. This means that `Console` instances may be created in any namespace. If you wish to limit the scope of the operator, the `OperatorGroup` resource may be modified to specify only the namespace that should be watched by the operator.
 
 This example will create the operator's OLM resources in the `default` namespace. Modify the `NAMESPACE` variable according to your needs.
+
 ```shell
 export NAMESPACE=default
 cat install/operator-olm/*.yaml | envsubst | kubectl apply -n ${NAMESPACE} -f -
 ```
+
 #### Console Custom Resource Example
 Once the operator is ready, you may then create a `Console` resource in the namespace where the console should be deployed. This example `Console` is based on the example Apache Kafka<sup>®</sup> cluster deployed above in the [prerequisites section](#prerequisites). Also see [examples/console/010-Console-example.yaml](examples/console/010-Console-example.yaml).
 ```yaml

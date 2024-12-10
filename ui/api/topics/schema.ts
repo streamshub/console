@@ -1,4 +1,4 @@
-import { ApiError } from "@/api/api";
+import { ApiErrorSchema } from "@/api/api";
 import { z } from "zod";
 
 export const describeTopicsQuery = encodeURI(
@@ -24,7 +24,7 @@ const PartitionSchema = z.object({
       nodeId: z.number(),
       nodeRack: z.string().optional(),
       inSync: z.boolean(),
-      localStorage: ApiError.or(
+      localStorage: ApiErrorSchema.or(
         z.object({
           size: z.number(),
           offsetLag: z.number(),
@@ -65,6 +65,7 @@ const TopicStatusSchema = z.union([
   z.literal("UnderReplicated"),
   z.literal("PartiallyOffline"),
   z.literal("Offline"),
+  z.literal("Unknown"),
 ]);
 export type TopicStatus = z.infer<typeof TopicStatusSchema>;
 const TopicSchema = z.object({
@@ -78,15 +79,16 @@ const TopicSchema = z.object({
     status: TopicStatusSchema.optional(),
     visibility: z.string().optional(),
     partitions: z.array(PartitionSchema).optional(),
-    numPartitions: z.number().optional(),
+    numPartitions: z.number().optional().nullable(),
     authorizedOperations: z.array(z.string()),
     configs: ConfigMapSchema,
     totalLeaderLogBytes: z.number().optional().nullable(),
   }),
   relationships: z.object({
     consumerGroups: z.object({
+      meta: z.record(z.any()).optional(),
       data: z.array(z.any()),
-    }).optional(),
+    }).optional().nullable(),
   }),
 });
 export const TopicResponse = z.object({
@@ -126,6 +128,7 @@ export const TopicsResponseSchema = z.object({
         UnderReplicated: z.number().optional(),
         PartiallyOffline: z.number().optional(),
         Offline: z.number().optional(),
+        Unknown: z.number().optional(),
       }),
       totalPartitions: z.number(),
     }),
@@ -139,30 +142,11 @@ export const TopicsResponseSchema = z.object({
   data: z.array(TopicListSchema),
 });
 export type TopicsResponse = z.infer<typeof TopicsResponseSchema>;
-const TopicCreateResponseSuccessSchema = z.object({
+
+export const TopicCreateResponseSchema = z.object({
   data: z.object({
     id: z.string(),
   }),
 });
-export const TopicMutateResponseErrorSchema = z.object({
-  errors: z.array(
-    z.object({
-      id: z.string(),
-      status: z.string(),
-      code: z.string(),
-      title: z.string(),
-      detail: z.string(),
-      source: z
-        .object({
-          pointer: z.string().optional(),
-        })
-        .optional(),
-    }),
-  ),
-});
-export const TopicCreateResponseSchema = z.union([
-  TopicCreateResponseSuccessSchema,
-  TopicMutateResponseErrorSchema,
-]);
-export type TopicMutateError = z.infer<typeof TopicMutateResponseErrorSchema>;
+
 export type TopicCreateResponse = z.infer<typeof TopicCreateResponseSchema>;

@@ -5,7 +5,7 @@ import { KafkaParams } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/kafka.p
 import { CreateTopic } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/topics/create/CreateTopic";
 import { redirect } from "@/i18n/routing";
 import { isReadonly } from "@/utils/env";
-import { notFound } from "next/navigation";
+import { NoDataErrorState } from "@/components/NoDataErrorState";
 
 export default async function CreateTopicPage({
   params: { kafkaId },
@@ -13,13 +13,17 @@ export default async function CreateTopicPage({
   params: KafkaParams;
 }) {
   if (isReadonly) {
-    redirect(`/kafka/${kafkaId}`);
+    redirect(`/kafka/${kafkaId}/topics`);
     return;
   }
-  const cluster = await getKafkaCluster(kafkaId);
-  if (!cluster) {
-    return notFound();
+
+  const response = (await getKafkaCluster(kafkaId));
+
+  if (response.errors) {
+    return <NoDataErrorState errors={response.errors} />;
   }
+
+  const cluster = response.payload!;
 
   async function onSave(
     name: string,

@@ -19,9 +19,11 @@ export function ReconciliationPausedBanner({ kafkaId }: { kafkaId: string }) {
 
   const resumeReconciliation = async () => {
     try {
-      const success = await updateKafkaCluster(kafkaId, false);
+      const response = await updateKafkaCluster(kafkaId, false);
 
-      if (success) {
+      if (response.errors) {
+        console.log("Unknown error occurred", response.errors);
+      } else {
         setReconciliationPaused(false);
       }
     } catch (e: unknown) {
