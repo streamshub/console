@@ -1,3 +1,4 @@
+import { getTranslations } from "next-intl/server";
 import { getTopicMessage } from "@/api/messages/actions";
 import { getTopic } from "@/api/topics/actions";
 import { KafkaTopicParams } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/topics/kafkaTopic.params";
@@ -7,6 +8,14 @@ import { MessagesSearchParams, parseSearchParams } from "./parseSearchParams";
 
 export const revalidate = 0;
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata() {
+  const t = await getTranslations();
+
+  return {
+    title: `${t("message-browser.title")} | ${t("common.title")}`,
+  };
+}
 
 export default async function ConnectedMessagesPage({
   params: { kafkaId, topicId },

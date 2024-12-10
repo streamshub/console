@@ -1,3 +1,4 @@
+import { getTranslations } from "next-intl/server";
 import { KafkaParams } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/kafka.params";
 import { RebalanceTableColumn, RebalanceTableColumns } from "./RebalanceTable";
 import { PageSection } from "@/libs/patternfly/react-core";
@@ -7,6 +8,14 @@ import { ConnectedReabalancesTable } from "./ConnectedRebalancesTable";
 import { getRebalancesList } from "@/api/rebalance/actions";
 import { RebalanceMode, RebalanceStatus } from "@/api/rebalance/schema";
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata() {
+  const t = await getTranslations();
+
+  return {
+    title: `${t("Rebalancing.title")} | ${t("common.title")}`,
+  };
+}
 
 const sortMap: Record<(typeof RebalanceTableColumns)[number], string> = {
   name: "name",
