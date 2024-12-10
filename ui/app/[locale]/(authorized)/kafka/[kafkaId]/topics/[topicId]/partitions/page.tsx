@@ -1,8 +1,17 @@
+import { getTranslations } from "next-intl/server";
 import { getTopic } from "@/api/topics/actions";
 import { KafkaTopicParams } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/topics/kafkaTopic.params";
 import { redirect } from "@/i18n/routing";
 import { Suspense } from "react";
 import { PartitionsTable } from "./PartitionsTable";
+
+export async function generateMetadata() {
+  const t = await getTranslations();
+
+  return {
+    title: `Partitions | ${t("common.title")}`,
+  };
+}
 
 export default function PartitionsPage({
   params: { kafkaId, topicId },

@@ -9,6 +9,14 @@ import { Alert, PageSection } from "@/libs/patternfly/react-core";
 import { getTranslations } from "next-intl/server";
 import { Suspense } from "react";
 
+export async function generateMetadata() {
+  const t = await getTranslations();
+
+  return {
+    title: `${t("nodes.title")} | ${t("common.title")}`,
+  };
+}
+
 function nodeMetric(
   metrics: { value: string, nodeId: string }[] | undefined,
   nodeId: number,

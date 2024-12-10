@@ -1,3 +1,4 @@
+import { getTranslations } from "next-intl/server";
 import { getConsumerGroups } from "@/api/consumerGroups/actions";
 import { KafkaParams } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/kafka.params";
 import { PageSection } from "@/libs/patternfly/react-core";
@@ -10,6 +11,14 @@ import { ConsumerGroupState } from "@/api/consumerGroups/schema";
 import { ConnectedConsumerGroupTable } from "./ConnectedConsumerGroupTable";
 import { stringToInt } from "@/utils/stringToInt";
 import { notFound } from "next/navigation";
+
+export async function generateMetadata() {
+  const t = await getTranslations();
+
+  return {
+    title: `${t("ConsumerGroups.title")} | ${t("common.title")}`,
+  };
+}
 
 const sortMap: Record<(typeof SortableColumns)[number], string> = {
   name: "name",

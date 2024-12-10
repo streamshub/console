@@ -1,3 +1,4 @@
+import { getTranslations } from "next-intl/server";
 import { getConsumerGroup } from "@/api/consumerGroups/actions";
 import { KafkaConsumerGroupMembersParams } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/consumer-groups/[groupId]/KafkaConsumerGroupMembers.params";
 import { MembersTable } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/consumer-groups/[groupId]/MembersTable";
@@ -5,6 +6,14 @@ import { KafkaParams } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/kafka.p
 import { PageSection } from "@/libs/patternfly/react-core";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
+
+export async function generateMetadata(props: { params: { kafkaId: string, groupId: string} }) {
+  const t = await getTranslations();
+
+  return {
+    title: `${t("ConsumerGroup.title")} ${props.params.groupId} | ${t("common.title")}`,
+  };
+}
 
 export default function ConsumerGroupMembersPage({
   params: { kafkaId, groupId },

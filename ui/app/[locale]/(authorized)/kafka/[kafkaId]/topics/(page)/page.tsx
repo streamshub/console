@@ -1,3 +1,4 @@
+import { getTranslations } from "next-intl/server";
 import { getTopics } from "@/api/topics/actions";
 import { TopicStatus } from "@/api/topics/schema";
 import { KafkaParams } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/kafka.params";
@@ -11,6 +12,14 @@ import { Suspense } from "react";
 import { ConnectedTopicsTable } from "./ConnectedTopicsTable";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata() {
+  const t = await getTranslations();
+
+  return {
+    title: `${t("topics.title")} | ${t("common.title")}`,
+  };
+}
 
 const sortMap: Record<(typeof SortableColumns)[number], string> = {
   name: "name",

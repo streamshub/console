@@ -1,6 +1,15 @@
 import { getKafkaClusters } from "@/api/kafka/actions";
 import { redirect } from "@/i18n/routing";
 import { SignInPage } from "./SignInPage";
+import { getTranslations } from "next-intl/server";;
+
+export async function generateMetadata() {
+  const t = await getTranslations();
+
+  return {
+    title: `${t("login-in-page.title")} | ${t("common.title")}`,
+  };
+}
 
 export default async function SignIn({
   searchParams,

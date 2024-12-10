@@ -1,5 +1,4 @@
 import { getMessages, getTranslations } from "next-intl/server";
-import { useNow, useTimeZone } from "next-intl";
 import { ReactNode } from "react";
 import NextIntlProvider from "./NextIntlProvider";
 import "../globals.css";

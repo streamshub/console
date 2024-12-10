@@ -31,6 +31,14 @@ import { getTranslations } from "next-intl/server";
 import { Suspense } from "react";
 import styles from "./home.module.css";
 
+export async function generateMetadata() {
+  const t = await getTranslations();
+
+  return {
+    title: `${t("homepage.title")} | ${t("common.title")}`,
+  };
+}
+
 export default async function Home() {
   const t = await getTranslations();
   const allClusters = await getKafkaClusters();

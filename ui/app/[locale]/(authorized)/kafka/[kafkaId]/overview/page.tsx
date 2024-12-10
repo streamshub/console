@@ -1,3 +1,4 @@
+import { getTranslations } from "next-intl/server";
 import { getConsumerGroups } from "@/api/consumerGroups/actions";
 import { getKafkaCluster } from "@/api/kafka/actions";
 import { getTopics, getViewedTopics } from "@/api/topics/actions";
@@ -8,6 +9,14 @@ import { ConnectedTopicChartsCard } from "@/app/[locale]/(authorized)/kafka/[kaf
 import { ConnectedTopicsPartitionsCard } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/overview/ConnectedTopicsPartitionsCard";
 import { PageLayout } from "@/components/ClusterOverview/PageLayout";
 import { ConnectedRecentTopics } from "./ConnectedRecentTopics";
+
+export async function generateMetadata() {
+  const t = await getTranslations();
+
+  return {
+    title: `${t("overview.title")} | ${t("common.title")}`,
+  };
+}
 
 export default function OverviewPage({ params }: { params: KafkaParams }) {
   const kafkaCluster = getKafkaCluster(params.kafkaId, {
