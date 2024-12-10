@@ -38,6 +38,7 @@ import io.fabric8.kubernetes.client.KubernetesClient;
 import io.quarkus.tls.TlsConfiguration;
 import io.quarkus.tls.TlsConfigurationRegistry;
 
+import static com.github.streamshub.console.support.StringSupport.replaceNonAlphanumeric;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.mapping;
 import static java.util.stream.Collectors.toList;
@@ -52,7 +53,7 @@ public class MetricsService {
     Logger logger;
 
     @Inject
-    TlsConfigurationRegistry certificates;
+    TlsConfigurationRegistry tlsRegistry;
 
     @Inject
     KubernetesClient k8s;
@@ -91,15 +92,18 @@ public class MetricsService {
 
     public PrometheusAPI createClient(ConsoleConfig consoleConfig, KafkaClusterConfig clusterConfig) {
         PrometheusConfig prometheusConfig;
+        String sourceName = clusterConfig.getMetricsSource();
 
-        if (clusterConfig.getMetricsSource() != null) {
+        if (sourceName != null) {
             prometheusConfig = consoleConfig.getMetricsSources()
                     .stream()
-                    .filter(source -> source.getName().equals(clusterConfig.getMetricsSource()))
+                    .filter(source -> source.getName().equals(sourceName))
                     .findFirst()
                     .orElseThrow();
 
-            var trustStore = certificates.getDefault().map(TlsConfiguration::getTrustStore).orElse(null);
+            var trustStore = getTlsConfiguration(sourceName)
+                    .map(TlsConfiguration::getTrustStore)
+                    .orElse(null);
 
             RestClientBuilder builder = RestClientBuilder.newBuilder()
                     .baseUri(URI.create(prometheusConfig.getUrl()))
@@ -112,6 +116,12 @@ public class MetricsService {
         }
 
         return null;
+    }
+
+    Optional<TlsConfiguration> getTlsConfiguration(String sourceName) {
+        String dotSeparatedSource = "metrics.source." + replaceNonAlphanumeric(sourceName, '.');
+        String dashSeparatedSource = "metrics-source-" + replaceNonAlphanumeric(sourceName, '-');
+        return tlsRegistry.get(dotSeparatedSource).or(() -> tlsRegistry.get(dashSeparatedSource));
     }
 
     CompletionStage<Map<String, List<Metrics.ValueMetric>>> queryValues(String query) {
