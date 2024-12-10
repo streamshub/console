@@ -27,13 +27,18 @@ import com.github.streamshub.console.dependents.ConsoleSecret;
 
 import io.fabric8.kubernetes.api.model.ConfigMap;
 import io.fabric8.kubernetes.api.model.ConfigMapBuilder;
+import io.fabric8.kubernetes.api.model.EnvVar;
+import io.fabric8.kubernetes.api.model.EnvVarBuilder;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.NamespaceBuilder;
 import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
+import io.fabric8.kubernetes.api.model.Quantity;
+import io.fabric8.kubernetes.api.model.ResourceRequirementsBuilder;
 import io.fabric8.kubernetes.api.model.Secret;
 import io.fabric8.kubernetes.api.model.SecretBuilder;
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinitionBuilder;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
+import io.fabric8.kubernetes.api.model.networking.v1.Ingress;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
 import io.fabric8.openshift.api.model.Route;
@@ -120,6 +125,7 @@ class ConsoleReconcilerTest {
         var allDeployments = client.resources(Deployment.class).inAnyNamespace().withLabels(ConsoleResource.MANAGEMENT_LABEL);
         var allConfigMaps = client.resources(ConfigMap.class).inAnyNamespace().withLabels(ConsoleResource.MANAGEMENT_LABEL);
         var allSecrets = client.resources(Secret.class).inAnyNamespace().withLabels(ConsoleResource.MANAGEMENT_LABEL);
+        var allIngresses = client.resources(Ingress.class).inAnyNamespace().withLabels(ConsoleResource.MANAGEMENT_LABEL);
 
         allConsoles.delete();
         allKafkas.delete();
@@ -127,6 +133,7 @@ class ConsoleReconcilerTest {
         allDeployments.delete();
         allConfigMaps.delete();
         allSecrets.delete();
+        allIngresses.delete();
 
         await().atMost(LIMIT).untilAsserted(() -> {
             assertTrue(allConsoles.list().getItems().isEmpty());
@@ -135,6 +142,7 @@ class ConsoleReconcilerTest {
             assertTrue(allDeployments.list().getItems().isEmpty());
             assertTrue(allConfigMaps.list().getItems().isEmpty());
             assertTrue(allSecrets.list().getItems().isEmpty());
+            assertTrue(allIngresses.list().getItems().isEmpty());
         });
 
         operator.start();
@@ -280,6 +288,136 @@ class ConsoleReconcilerTest {
             assertNull(condition.getReason());
             assertEquals("All resources ready", condition.getMessage());
         });
+    }
+
+    @Test
+    void testConsoleReconciliationWithContainerOverrides() {
+        Console consoleCR = new ConsoleBuilder()
+                .withMetadata(new ObjectMetaBuilder()
+                        .withName("console-1")
+                        .withNamespace("ns2")
+                        .build())
+                .withNewSpec()
+                    .withHostname("console.example.com")
+                    .addNewMetricsSource()
+                        .withName("metrics")
+                        .withType(Type.STANDALONE)
+                        .withUrl("http://prometheus.example.com")
+                    .endMetricsSource()
+                    .withNewImages()
+                        .withApi("deprecated-api-image")
+                        .withUi("deprecated-ui-image")
+                    .endImages()
+                    .addToEnv(new EnvVarBuilder()
+                            .withName("DEPRECATED_API_VAR")
+                            .withValue("value0")
+                            .build())
+                    .withNewContainers()
+                        .withNewApi()
+                            .withImage("custom-api-image")
+                            .withResources(new ResourceRequirementsBuilder()
+                                    .withRequests(Map.of("cpu", Quantity.parse("250m")))
+                                    .withLimits(Map.of("cpu", Quantity.parse("500m")))
+                                    .build())
+                            .addToEnv(new EnvVarBuilder()
+                                    .withName("CUSTOM_API_VAR")
+                                    .withValue("value1")
+                                    .build())
+                        .endApi()
+                        .withNewUi()
+                            .withImage("custom-ui-image")
+                            .withResources(new ResourceRequirementsBuilder()
+                                    .withRequests(Map.of("cpu", Quantity.parse("100m")))
+                                    .withLimits(Map.of("cpu", Quantity.parse("200m")))
+                                    .build())
+                            .addToEnv(new EnvVarBuilder()
+                                    .withName("CUSTOM_UI_VAR")
+                                    .withValue("value2")
+                                    .build())
+                        .endUi()
+                    .endContainers()
+                    .addNewKafkaCluster()
+                        .withName(kafkaCR.getMetadata().getName())
+                        .withNamespace(kafkaCR.getMetadata().getNamespace())
+                        .withListener(kafkaCR.getSpec().getKafka().getListeners().get(0).getName())
+                        .withMetricsSource("metrics")
+                    .endKafkaCluster()
+                .endSpec()
+                .build();
+
+        client.resource(consoleCR).create();
+
+        await().ignoreException(NullPointerException.class).atMost(LIMIT).untilAsserted(() -> {
+            var console = client.resources(Console.class)
+                    .inNamespace(consoleCR.getMetadata().getNamespace())
+                    .withName(consoleCR.getMetadata().getName())
+                    .get();
+            assertEquals(1, console.getStatus().getConditions().size());
+            var condition = console.getStatus().getConditions().get(0);
+            assertEquals("Ready", condition.getType());
+            assertEquals("False", condition.getStatus());
+            assertEquals("DependentsNotReady", condition.getReason());
+            assertTrue(condition.getMessage().contains("ConsoleIngress"), condition::getMessage);
+        });
+
+        var consoleIngress = client.network().v1().ingresses()
+            .inNamespace(consoleCR.getMetadata().getNamespace())
+            .withName("console-1-console-ingress")
+            .get();
+
+        consoleIngress = consoleIngress.edit()
+                    .editOrNewStatus()
+                        .withNewLoadBalancer()
+                            .addNewIngress()
+                                .withHostname("ingress.example.com")
+                            .endIngress()
+                        .endLoadBalancer()
+                    .endStatus()
+                    .build();
+        client.resource(consoleIngress).patchStatus();
+        LOGGER.info("Set ingress status for Console ingress");
+
+        await().ignoreException(NullPointerException.class).atMost(LIMIT).untilAsserted(() -> {
+            var console = client.resources(Console.class)
+                    .inNamespace(consoleCR.getMetadata().getNamespace())
+                    .withName(consoleCR.getMetadata().getName())
+                    .get();
+            assertEquals(1, console.getStatus().getConditions().size());
+            var condition = console.getStatus().getConditions().get(0);
+            assertEquals("Ready", condition.getType());
+            assertEquals("False", condition.getStatus());
+            assertEquals("DependentsNotReady", condition.getReason());
+            assertTrue(condition.getMessage().contains("ConsoleDeployment"));
+        });
+
+        var consoleDeployment = client.apps().deployments()
+                .inNamespace(consoleCR.getMetadata().getNamespace())
+                .withName("console-1-console-deployment")
+                .get();
+
+        var consoleContainers = consoleDeployment.getSpec().getTemplate().getSpec().getContainers();
+        var apiContainer = consoleContainers.get(0);
+
+        assertEquals("custom-api-image", apiContainer.getImage());
+        assertEquals(new ResourceRequirementsBuilder()
+                .withRequests(Map.of("cpu", Quantity.parse("250m")))
+                .withLimits(Map.of("cpu", Quantity.parse("500m")))
+                .build(), apiContainer.getResources());
+        assertEquals(4, apiContainer.getEnv().size()); // 2 overrides + 2 from YAML template
+        assertEquals("value0", apiContainer.getEnv().stream()
+                .filter(e -> e.getName().equals("DEPRECATED_API_VAR")).map(EnvVar::getValue).findFirst().orElseThrow());
+        assertEquals("value1", apiContainer.getEnv().stream()
+                .filter(e -> e.getName().equals("CUSTOM_API_VAR")).map(EnvVar::getValue).findFirst().orElseThrow());
+
+        var uiContainer = consoleContainers.get(1);
+        assertEquals("custom-ui-image", uiContainer.getImage());
+        assertEquals(new ResourceRequirementsBuilder()
+                .withRequests(Map.of("cpu", Quantity.parse("100m")))
+                .withLimits(Map.of("cpu", Quantity.parse("200m")))
+                .build(), uiContainer.getResources());
+        assertEquals(6, uiContainer.getEnv().size()); // 1 override + 5 from YAML template
+        assertEquals("value2", uiContainer.getEnv().stream()
+                .filter(e -> e.getName().equals("CUSTOM_UI_VAR")).map(EnvVar::getValue).findFirst().orElseThrow());
     }
 
     @Test
