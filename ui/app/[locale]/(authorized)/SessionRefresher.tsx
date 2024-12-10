@@ -25,7 +25,8 @@ export function SessionRefresher() {
   // immediately trigger a check to deal with expired sessions when opening the app after a long time
   useLayoutEffect(() => {
     void doRefresh();
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Make sure the effect runs only once
 
   return null;
 }
