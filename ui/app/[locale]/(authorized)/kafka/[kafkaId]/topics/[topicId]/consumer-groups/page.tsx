@@ -1,9 +1,18 @@
+import { getTranslations } from "next-intl/server";
 import { getTopicConsumerGroups } from "@/api/consumerGroups/actions";
 import { ConsumerGroupsTable } from "./ConsumerGroupsTable";
 import { KafkaTopicParams } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/topics/kafkaTopic.params";
 import { PageSection } from "@/libs/patternfly/react-core";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
+
+export async function generateMetadata() {
+  const t = await getTranslations();
+
+  return {
+    title: `Topic Consumer Groups | ${t("common.title")}`,
+  };
+}
 
 export default function ConsumerGroupsPage({
   params: { kafkaId, topicId },

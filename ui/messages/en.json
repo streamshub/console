@@ -28,6 +28,7 @@
     }
   },
   "login-in-page": {
+    "title": "Login",
     "login_sub_title": "Enter your credentials",
     "username": "Username",
     "password": "Password",
@@ -55,7 +56,7 @@
     }
   },
   "homepage": {
-    "title": "Integration Developer Hub",
+    "title": "Home",
     "connected_kafka_clusters": "Connected Kafka clusters",
     "page_header": "Welcome to the {product} console",
     "page_subtitle": "The {brand} {product} console provides a user interface for managing and monitoring your streaming resources",
@@ -74,6 +75,7 @@
     "title": "Overview"
   },
   "nodes": {
+    "title": "Brokers",
     "kpis_offline": "Prometheus can't be reached, or is not configured. Information on the page will be incomplete. Please check your configuration.",
     "broker_id": "Broker ID",
     "status": "Status",
@@ -533,11 +535,16 @@
     "end_offset": "End offset",
     "end_offset_tooltip": "The highest offset in the Kafka topic, representing the latest available message."
   },
+  "ConsumerGroups": {
+    "title": "Consumer Groups"
+  },
   "ConsumerGroup": {
+    "title": "Consumer Group",
     "reset_offset": "Reset offset",
     "delete": "Delete"
   },
   "Rebalancing": {
+    "title": "Rebalance",
     "approve_rebalance_proposal": "Approve Rebalance Proposal?",
     "stop_rebalance": "Stop Rebalance",
     "refresh_rebalance": "Refresh Rebalance",
