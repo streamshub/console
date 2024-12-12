@@ -24,6 +24,7 @@ import {
 } from "@patternfly/react-icons";
 import { ReactNode, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
+import { usePagination } from "@/utils/usePagination";
 
 const Columns = [
   "id",
@@ -76,6 +77,8 @@ export function PartitionsTable({
 }) {
   const t = useTranslations("topics");
 
+  const { page, perPage, setPagination } = usePagination();
+
   const [topic, setTopic] = useState(initialData);
   const [filter, setFilter] = useState<"all" | PartitionStatus>("all");
   const [sort, setSort] = useState<{
@@ -114,13 +117,17 @@ export function PartitionsTable({
     });
   const sortedData =
     sort.dir === "asc" ? filteredData : filteredData?.reverse();
+
+  const startIndex = (page - 1) * perPage;
+  const paginatedData = sortedData?.slice(startIndex, startIndex + perPage);
   return (
     <PageSection isFilled>
       <TableView
-        itemCount={sortedData?.length}
-        page={1}
-        onPageChange={() => {}}
-        data={sortedData}
+        itemCount={sortedData?.length || 0}
+        page={page}
+        perPage={perPage}
+        onPageChange={(newPage, newPerPage) => setPagination(newPage, newPerPage)}
+        data={paginatedData}
         emptyStateNoData={<div>{t("partition_table.no_partition")}</div>}
         emptyStateNoResults={
           <NoResultsEmptyState onReset={() => setFilter("all")} />
