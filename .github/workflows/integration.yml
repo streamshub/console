@@ -118,17 +118,17 @@ jobs:
           chmod +x opm
           sudo cp -v opm /usr/bin/
           rm -vf opm
-          operator/bin/generate-catalog.sh ${{ env.PROJECT_VERSION }}
+          operator/bin/generate-catalog.sh ${{ env.PROJECT_VERSION }} localhost:5000/streamshub/console-operator-bundle
 
       - name: Build Operator Catalog Image
         uses: docker/build-push-action@v6
         with:
-          context: operator/target/
+          context: operator/
           platforms: ${{ env.PLATFORMS }}
           network: none
           provenance: false
           push: true
-          file: operator/target/catalog.Dockerfile
+          file: operator/src/main/olm/catalog.Dockerfile
           tags: |
             localhost:5000/streamshub/console-operator-catalog:${{ env.PROJECT_VERSION }}
 
