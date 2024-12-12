@@ -118,7 +118,7 @@ jobs:
           chmod +x opm
           sudo cp -v opm /usr/bin/
           rm -vf opm
-          operator/bin/generate-catalog.sh localhost:5000/streamshub/console-operator-bundle
+          operator/bin/generate-catalog.sh localhost:5000/streamshub/console-operator-bundle true
 
       - name: Build Operator Catalog Image
         uses: docker/build-push-action@v6
