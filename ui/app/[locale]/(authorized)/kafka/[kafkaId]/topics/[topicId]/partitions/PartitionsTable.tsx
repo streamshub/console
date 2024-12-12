@@ -126,7 +126,7 @@ export function PartitionsTable({
         itemCount={sortedData?.length || 0}
         page={page}
         perPage={perPage}
-        onPageChange={(newPage) => setPagination(newPage, perPage)}
+        onPageChange={(newPage, newPerPage) => setPagination(newPage, newPerPage)}
         data={paginatedData}
         emptyStateNoData={<div>{t("partition_table.no_partition")}</div>}
         emptyStateNoResults={
