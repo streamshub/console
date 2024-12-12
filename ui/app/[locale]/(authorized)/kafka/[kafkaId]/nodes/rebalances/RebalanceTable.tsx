@@ -20,12 +20,13 @@ import {
   ExclamationCircleIcon,
   PauseCircleIcon,
   PendingIcon,
-  ResourcesFullIcon,
+  OutlinedClockIcon,
 } from "@/libs/patternfly/react-icons";
 import Link from "next/link";
 import React, { ReactNode } from "react";
 import { EmptyStateNoMatchFound } from "@/components/Table/EmptyStateNoMatchFound";
 import { EmptyStateNoKafkaRebalance } from "./EmptyStateNoKafkaRebalance";
+import Image from "next/image";
 
 export const RebalanceTableColumns = ["name", "status", "createdAt"] as const;
 
@@ -59,7 +60,12 @@ const StatusLabel: Record<RebalanceStatus, ReactNode> = {
   Stopped: (
     <>
       <Icon>
-        <ResourcesFullIcon />
+        <Image
+          src={"/stop-icon.svg"}
+          alt="stop icon"
+          width={100}
+          height={100}
+        />
       </Icon>
       &nbsp;Stopped
     </>
@@ -75,7 +81,7 @@ const StatusLabel: Record<RebalanceStatus, ReactNode> = {
   NotReady: (
     <>
       <Icon>
-        <PendingIcon />
+        <OutlinedClockIcon />
       </Icon>
       &nbsp;NotReady
     </>
@@ -216,7 +222,7 @@ export function RebalanceTable({
             {
               title: t("refresh"),
               onClick: () => onRefresh(row),
-              isDisabled: !row.meta?.allowedActions.includes("refresh")
+              isDisabled: !row.meta?.allowedActions.includes("refresh"),
             },
             {
               title: t("stop"),
@@ -262,7 +268,7 @@ export function RebalanceTable({
                   <DescriptionListTerm>{t("brokers")}</DescriptionListTerm>
                   <DescriptionListDescription>
                     {!row.attributes.brokers ||
-                      row.attributes.brokers.length === 0
+                    row.attributes.brokers.length === 0
                       ? "N/A"
                       : row.attributes.brokers.join(",")}
                   </DescriptionListDescription>
