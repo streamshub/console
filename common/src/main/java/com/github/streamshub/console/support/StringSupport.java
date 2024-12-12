@@ -2,7 +2,11 @@ package com.github.streamshub.console.support;
 
 import java.util.Locale;
 
-public class StringSupport {
+public final class StringSupport {
+
+    private StringSupport() {
+        // No instances
+    }
 
     public static boolean isAsciiLetterOrDigit(char c) {
         return 'a' <= c && c <= 'z' ||
