@@ -5,6 +5,7 @@ set -xEeuo pipefail
 SCRIPT_PATH="$(cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P)"
 
 export CONSOLE_OPERATOR_BUNDLE_IMAGE="${1:-}"
+export USE_HTTP="${2:-false}"
 
 source ${SCRIPT_PATH}/common.sh
 OPERATOR_PATH="$(cd -- "${SCRIPT_PATH}/.." >/dev/null 2>&1 ; pwd -P)"
@@ -22,7 +23,13 @@ for CSV_NAME in $(${YQ} '.entries[].name' ${CATALOG_PATH}/channel.alpha.yaml | s
         BUNDLE_IMAGE=${CONSOLE_OPERATOR_BUNDLE_IMAGE}:$(echo "${CSV_NAME}" | grep -Eo '[0-9]+\.[0-9]+\.[0-9]+(-snapshot)?$')
     fi
 
-    opm render ${BUNDLE_IMAGE} --output=yaml > ${CATALOG_PATH}/${CSV_NAME}.yaml
+    RENDER_FLAGS='--output=yaml'
+
+    if [ "${USE_HTTP}" == "true" ] ; then
+        RENDER_FLAGS="--use-http ${RENDER_FLAGS}"
+    fi
+
+    opm render ${BUNDLE_IMAGE} ${RENDER_FLAGS} > ${CATALOG_PATH}/${CSV_NAME}.yaml
 done
 
 opm validate ${CATALOG_PATH}
