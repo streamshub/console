@@ -2,7 +2,9 @@ package com.github.streamshub.console.api.v1alpha1.spec.metrics;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.github.streamshub.console.api.v1alpha1.spec.TrustStore;
 
 import io.fabric8.generator.annotation.Required;
 import io.sundr.builder.annotations.Buildable;
@@ -16,6 +18,13 @@ public class MetricsSource {
     @Required
     private Type type;
     private String url;
+
+    @JsonPropertyDescription("""
+            Trust store configuration for when the metrics source uses \
+            TLS certificates signed by an unknown CA.
+            """)
+    private TrustStore trustStore;
+
     private MetricsSourceAuthentication authentication;
 
     public String getName() {
@@ -40,6 +49,14 @@ public class MetricsSource {
 
     public void setUrl(String url) {
         this.url = url;
+    }
+
+    public TrustStore getTrustStore() {
+        return trustStore;
+    }
+
+    public void setTrustStore(TrustStore trustStore) {
+        this.trustStore = trustStore;
     }
 
     public MetricsSourceAuthentication getAuthentication() {
