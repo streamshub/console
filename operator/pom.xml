@@ -144,5 +144,38 @@
                 </dependency>
             </dependencies>
         </profile>
+        <profile>
+            <id>release-preparation</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <version>3.3.0</version>
+                        <executions>
+                            <execution>
+                                <id>olm-channel-update</id>
+                                <phase>process-resources</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <executable>bin/release-prepare.sh</executable>
+                                    <arguments>
+                                        <argument>${prereleaseVersion}</argument>
+                                        <argument>${releaseVersion}</argument>
+                                        <argument>${developmentVersion}</argument>
+                                        <argument>${project.version}</argument>
+                                        <argument>${container-image.registry}/${container-image.group}/console-operator-bundle</argument>
+                                        <!-- stage to git index -->
+                                        <argument>true</argument>
+                                    </arguments>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
     </profiles>
 </project>
