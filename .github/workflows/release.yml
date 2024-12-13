@@ -127,7 +127,7 @@ jobs:
           network: none
           provenance: false
           push: true
-          file: target/checkout/operator/src/main/olm/catalog.Dockerfile
+          file: target/checkout/operator/src/main/docker/catalog.Dockerfile
           tags: |
             ${{ secrets.IMAGE_REPO_HOSTNAME }}/${{ secrets.IMAGE_REPO_NAMESPACE }}/console-operator-catalog:${{steps.metadata.outputs.current-version}}
             ${{ secrets.IMAGE_REPO_HOSTNAME }}/${{ secrets.IMAGE_REPO_NAMESPACE }}/console-operator-catalog:latest

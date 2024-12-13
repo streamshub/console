@@ -36,9 +36,9 @@ container-image-api-push: container-image-api
 container-image-operator:
 	mvn package -am -pl operator -Pcontainer-image -DskipTests -Dquarkus.kubernetes.namespace='$${NAMESPACE}' -Dquarkus.container-image.image=$(CONSOLE_OPERATOR_IMAGE)
 	operator/bin/modify-bundle-metadata.sh "VERSION=$(CSV_VERSION)" "SKIP_RANGE=$(SKIP_RANGE)" "SKOPEO_TRANSPORT=$(SKOPEO_TRANSPORT)"
-	operator/bin/generate-catalog.sh $(CSV_VERSION)
+	operator/bin/generate-catalog.sh operator/target/bundle/streamshub-console-operator
 	$(CONTAINER_RUNTIME) build --platform=$(ARCH) -t $(CONSOLE_OPERATOR_BUNDLE_IMAGE) -f operator/target/bundle/streamshub-console-operator/bundle.Dockerfile
-	$(CONTAINER_RUNTIME) build --platform=$(ARCH) -t $(CONSOLE_OPERATOR_CATALOG_IMAGE) -f operator/target/catalog.Dockerfile
+	$(CONTAINER_RUNTIME) build --platform=$(ARCH) -t $(CONSOLE_OPERATOR_CATALOG_IMAGE) -f operator/src/main/docker/catalog.Dockerfile
 
 container-image-operator-push: container-image-operator
 	skopeo copy --preserve-digests $(SKOPEO_TRANSPORT)$(CONSOLE_OPERATOR_IMAGE) docker://$(CONSOLE_OPERATOR_IMAGE)

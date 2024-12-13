@@ -4,7 +4,7 @@ set -xEeuo pipefail
 
 SCRIPT_PATH="$(cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P)"
 
-export CONSOLE_OPERATOR_BUNDLE_IMAGE="${1:-}"
+export CONSOLE_OPERATOR_BUNDLE="${1:-}"
 export USE_HTTP="${2:-false}"
 
 source ${SCRIPT_PATH}/common.sh
@@ -19,8 +19,10 @@ cp -v ${OPERATOR_PATH}/src/main/olm/*.yaml ${CATALOG_PATH}/
 for CSV_NAME in $(${YQ} '.entries[].name' ${CATALOG_PATH}/channel.alpha.yaml | sort -V) ; do
     if [ -f ${OPERATOR_PATH}/src/main/olm/bundles/${CSV_NAME}.yaml ] ; then
         BUNDLE_IMAGE=$(${YQ} '.image' ${OPERATOR_PATH}/src/main/olm/bundles/${CSV_NAME}.yaml)
+    elif [ -d ${CONSOLE_OPERATOR_BUNDLE} ] ; then
+        BUNDLE_IMAGE=${CONSOLE_OPERATOR_BUNDLE}
     else
-        BUNDLE_IMAGE=${CONSOLE_OPERATOR_BUNDLE_IMAGE}:$(echo "${CSV_NAME}" | grep -Eo '[0-9]+\.[0-9]+\.[0-9]+(-snapshot)?$')
+        BUNDLE_IMAGE=${CONSOLE_OPERATOR_BUNDLE}:$(echo "${CSV_NAME}" | grep -Eo '[0-9]+\.[0-9]+\.[0-9]+(-snapshot)?$')
     fi
 
     RENDER_FLAGS='--output=yaml'
