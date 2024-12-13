@@ -18,7 +18,7 @@ CONSOLE_OPERATOR_CATALOG_IMAGE ?= $(IMAGE_REGISTRY)/$(IMAGE_GROUP)/console-opera
 CONTAINER_RUNTIME ?= $(shell which podman || which docker)
 SKOPEO_TRANSPORT ?= $(shell which podman >/dev/null && echo "containers-storage:" || echo "docker-daemon:")
 ARCH ?= linux/amd64
-SKIP_RANGE ?= ">=1.0.0 <1.0.3"
+SKIP_RANGE ?= ""
 
 CONSOLE_UI_NEXTAUTH_SECRET ?= $(shell openssl rand -base64 32)
 
@@ -38,7 +38,7 @@ container-image-operator:
 	operator/bin/modify-bundle-metadata.sh "VERSION=$(CSV_VERSION)" "SKIP_RANGE=$(SKIP_RANGE)" "SKOPEO_TRANSPORT=$(SKOPEO_TRANSPORT)"
 	operator/bin/generate-catalog.sh operator/target/bundle/streamshub-console-operator
 	$(CONTAINER_RUNTIME) build --platform=$(ARCH) -t $(CONSOLE_OPERATOR_BUNDLE_IMAGE) -f operator/target/bundle/streamshub-console-operator/bundle.Dockerfile
-	$(CONTAINER_RUNTIME) build --platform=$(ARCH) -t $(CONSOLE_OPERATOR_CATALOG_IMAGE) -f operator/src/main/docker/catalog.Dockerfile
+	$(CONTAINER_RUNTIME) build --platform=$(ARCH) -t $(CONSOLE_OPERATOR_CATALOG_IMAGE) -f operator/src/main/docker/catalog.Dockerfile operator
 
 container-image-operator-push: container-image-operator
 	skopeo copy --preserve-digests $(SKOPEO_TRANSPORT)$(CONSOLE_OPERATOR_IMAGE) docker://$(CONSOLE_OPERATOR_IMAGE)
