@@ -27,6 +27,9 @@ fi
 
 source ${SCRIPT_PATH}/common.sh
 
+OPERATOR_INSTANCE_NAME="${OPERATOR_NAME}-v${VERSION}"
+OPERATOR_CSV_NAME="${OPERATOR_NAME}.v${VERSION}"
+
 BUNDLE_PATH=${SCRIPT_PATH}/../target/bundle/streamshub-console-operator/
 CSV_FILE_PATH=${BUNDLE_PATH}/manifests/streamshub-console-operator.clusterserviceversion.yaml
 
