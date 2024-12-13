@@ -47,6 +47,9 @@ import io.quarkiverse.operatorsdk.annotations.CSVMetadata.Annotations.Annotation
 import io.quarkiverse.operatorsdk.annotations.CSVMetadata.InstallMode;
 import io.quarkiverse.operatorsdk.annotations.CSVMetadata.Link;
 import io.quarkiverse.operatorsdk.annotations.CSVMetadata.Provider;
+import io.quarkiverse.operatorsdk.annotations.CSVMetadata.RequiredCRD;
+import io.strimzi.api.kafka.model.kafka.Kafka;
+import io.strimzi.api.kafka.model.user.KafkaUser;
 
 @ControllerConfiguration(
         maxReconciliationInterval = @MaxReconciliationInterval(
@@ -171,13 +174,17 @@ import io.quarkiverse.operatorsdk.annotations.CSVMetadata.Provider;
         displayName = "StreamsHub Console Operator",
         keywords = {"kafka", "messaging", "kafka-streams", "data-streaming", "data-streams", "streaming", "streams", "web", "console", "ui", "user interface"},
         maturity = "stable",
+        requiredCRDs = {
+            @RequiredCRD(kind = Kafka.RESOURCE_KIND, name = Kafka.CRD_NAME, version = Kafka.V1BETA2),
+            @RequiredCRD(kind = KafkaUser.RESOURCE_KIND, name = KafkaUser.CRD_NAME, version = KafkaUser.V1BETA2),
+        },
         installModes = {
             @InstallMode(type = "AllNamespaces", supported = true),
-            @InstallMode(type = "OwnNamespace", supported = true),
-            @InstallMode(type = "SingleNamespace", supported = true),
+            @InstallMode(type = "OwnNamespace", supported = false),
+            @InstallMode(type = "SingleNamespace", supported = false),
             @InstallMode(type = "MultiNamespace", supported = false),
         },
-        minKubeVersion = "1.19.0",
+        minKubeVersion = "1.25.0", // Corresponds to OpenShift 4.12
         links = {
             @Link(name = "GitHub", url = "https://github.com/streamshub/console"),
             @Link(name = "Documentation", url = "https://github.com/streamshub/console/blob/main/README.md")
