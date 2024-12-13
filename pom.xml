@@ -266,6 +266,12 @@
     <profiles>
         <profile>
             <id>release-preparation</id>
+            <properties>
+                <!-- Used for operator bundle during preparation/completion of release:prepare goal -->
+                <prereleaseVersion></prereleaseVersion>
+                <releaseVersion></releaseVersion>
+                <developmentVersion></developmentVersion>
+            </properties>
         </profile>
     </profiles>
 </project>

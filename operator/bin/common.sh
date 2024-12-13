@@ -1,5 +1,10 @@
 #!/bin/bash
 
+# Operator naming
+OPERATOR_NAME="streamshub-console-operator"
+OPERATOR_INSTANCE_NAME="${OPERATOR_NAME}-v${VERSION}"
+OPERATOR_CSV_NAME="${OPERATOR_NAME}.v${VERSION}"
+
 YQ="$(which yq 2>/dev/null)" || :
 
 if [ "${YQ}" == "" ] ; then
