@@ -8,6 +8,7 @@ OPERATOR_PATH="$(cd -- "${SCRIPT_PATH}/.." >/dev/null 2>&1 ; pwd -P)"
 VERSION="${1?version is required}"
 
 source ${SCRIPT_PATH}/common.sh
+OPERATOR_CSV_NAME="${OPERATOR_NAME}.v${VERSION}"
 ALPHA_CHANNEL=${OPERATOR_PATH}/src/main/olm/channel.alpha.yaml
 
 if [ "$(${YQ} '(.entries[].name | select(. == "'${OPERATOR_CSV_NAME}'"))' ${ALPHA_CHANNEL})" != "" ] ; then
