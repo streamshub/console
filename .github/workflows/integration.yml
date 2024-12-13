@@ -98,7 +98,7 @@ jobs:
 
       # ==================== Operator-Bundle ====================
       - name: Modify Bundle CSV Metadata
-        run: ./operator/bin/modify-bundle-metadata.sh "VERSION=${{ env.PROJECT_VERSION }}" "SKIP_RANGE=>=0.0.1 <${{ env.PROJECT_VERSION }}"
+        run: ./operator/bin/modify-bundle-metadata.sh "VERSION=${{ env.PROJECT_VERSION }}"
 
       - name: Build Operator Bundle Image
         uses: docker/build-push-action@v6
