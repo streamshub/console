@@ -128,7 +128,7 @@ jobs:
           network: none
           provenance: false
           push: true
-          file: operator/src/main/olm/catalog.Dockerfile
+          file: operator/src/main/docker/catalog.Dockerfile
           tags: |
             localhost:5000/streamshub/console-operator-catalog:${{ env.PROJECT_VERSION }}
 
