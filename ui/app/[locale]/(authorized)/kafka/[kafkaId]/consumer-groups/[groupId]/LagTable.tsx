@@ -1,4 +1,4 @@
-import { ConsumerGroup } from "@/api/consumerGroups/schema";
+import { OffsetAndMetadata } from "@/api/consumerGroups/schema";
 import { Number } from "@/components/Format/Number";
 import { ResponsiveTable } from "@/components/Table";
 import { Tooltip } from "@/libs/patternfly/react-core";
@@ -12,7 +12,7 @@ export function LagTable({
   offsets,
 }: {
   kafkaId: string;
-  offsets: ConsumerGroup["attributes"]["offsets"];
+  offsets: OffsetAndMetadata[] | undefined;
 }) {
   const t = useTranslations("MemberTable");
 

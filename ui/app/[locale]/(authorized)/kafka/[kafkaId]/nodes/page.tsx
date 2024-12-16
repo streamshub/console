@@ -32,7 +32,6 @@ function nodeRangeMetric(
   return parseFloat(range?.[range?.length - 1]?.[1] ?? "0");
 }
 
-
 export default function NodesPage({ params }: { params: KafkaParams }) {
   return (
     <Suspense fallback={null}>
@@ -43,9 +42,9 @@ export default function NodesPage({ params }: { params: KafkaParams }) {
 
 async function ConnectedNodes({ params }: { params: KafkaParams }) {
   const t = await getTranslations();
-  const cluster = await getKafkaCluster(params.kafkaId, {
+  const cluster = (await getKafkaCluster(params.kafkaId, {
     fields: 'name,namespace,creationTimestamp,status,kafkaVersion,nodes,controller,authorizedOperations,listeners,conditions,metrics'
-  });
+  })).payload;
   const metrics = cluster?.attributes.metrics;
 
   const nodes: Node[] = (cluster?.attributes.nodes ?? []).map((node) => {

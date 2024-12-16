@@ -4,8 +4,8 @@ import { KafkaConsumerGroupMembersParams } from "@/app/[locale]/(authorized)/kaf
 import { MembersTable } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/consumer-groups/[groupId]/MembersTable";
 import { KafkaParams } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/kafka.params";
 import { PageSection } from "@/libs/patternfly/react-core";
-import { notFound } from "next/navigation";
 import { Suspense } from "react";
+import { NoDataErrorState } from "@/components/NoDataErrorState";
 
 export async function generateMetadata(props: { params: { kafkaId: string, groupId: string} }) {
   const t = await getTranslations();
@@ -36,15 +36,18 @@ async function ConnectedMembersTable({
 }: {
   params: KafkaParams & { groupId: string };
 }) {
+  const response = await getConsumerGroup(kafkaId, groupId);
+
+  if (response.errors) {
+    return <NoDataErrorState errors={response.errors} />;
+  }
+
   async function refresh() {
     "use server";
     const res = await getConsumerGroup(kafkaId, groupId);
-    return res;
+    return res?.payload ?? null;
   }
 
-  const consumerGroup = await getConsumerGroup(kafkaId, groupId);
-  if (!consumerGroup) {
-    notFound();
-  }
-  return <MembersTable kafkaId={kafkaId} consumerGroup={consumerGroup} />;
+  const consumerGroup = response.payload!;
+  return <MembersTable kafkaId={kafkaId} consumerGroup={consumerGroup} refresh={refresh}/>;
 }

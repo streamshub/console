@@ -25,9 +25,11 @@ export function ConnectButton({
 
   const onClickUpdate = async (pausedState: boolean) => {
     try {
-      const success = await updateKafkaCluster(clusterId, pausedState);
+      const response = await updateKafkaCluster(clusterId, pausedState);
 
-      if (success) {
+      if (response.errors) {
+        console.log("Unknown error occurred", response.errors);
+      } else {
         setReconciliationPaused(pausedState);
         setIsModalOpen(false);
       }

@@ -1,5 +1,6 @@
 import { ConsumerGroupsResponse } from "@/api/consumerGroups/schema";
 import { ClusterDetail } from "@/api/kafka/schema";
+import { ApiResponse } from "@/api/api";
 import { ClusterCard } from "@/components/ClusterOverview/ClusterCard";
 
 export async function ConnectedClusterCard({
@@ -7,7 +8,7 @@ export async function ConnectedClusterCard({
   consumerGroups,
 }: {
   cluster: Promise<ClusterDetail | null>;
-  consumerGroups: Promise<ConsumerGroupsResponse | null>;
+  consumerGroups: Promise<ApiResponse<ConsumerGroupsResponse>>;
 }) {
   const res = await cluster;
 
@@ -27,7 +28,7 @@ export async function ConnectedClusterCard({
     );
   }
   const groupCount = await consumerGroups.then(
-    (grpResp) => grpResp?.meta.page.total ?? 0,
+    (grpResp) => grpResp.errors ? undefined : grpResp.payload?.meta.page.total ?? 0,
   );
 
   const brokersTotal = res?.attributes.metrics?.values?.["broker_state"]?.length ?? 0;

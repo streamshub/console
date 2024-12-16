@@ -20,8 +20,8 @@ export function ConsumerGroupsTable({
   kafkaId: string;
   page: number;
   total: number;
-  consumerGroups: ConsumerGroup[] | undefined;
-  refresh: (() => Promise<ConsumerGroup[]>) | undefined;
+  consumerGroups?: ConsumerGroup[];
+  refresh?: (() => Promise<ConsumerGroup[] | null>);
 }) {
   const t = useTranslations();
   const [consumerGroups, setConsumerGroups] = useState(initialData);
@@ -30,7 +30,9 @@ export function ConsumerGroupsTable({
     if (refresh) {
       interval = setInterval(async () => {
         const consumerGroups = await refresh();
-        setConsumerGroups(consumerGroups);
+        if (consumerGroups != null) {
+          setConsumerGroups(consumerGroups);
+        }
       }, 5000);
     }
     return () => clearInterval(interval);

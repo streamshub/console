@@ -1,91 +1,51 @@
 package com.github.streamshub.console.api.service;
 
-import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import jakarta.inject.Named;
 
 import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.clients.admin.CreatePartitionsOptions;
 import org.apache.kafka.clients.admin.CreateTopicsOptions;
 import org.apache.kafka.clients.admin.CreateTopicsResult;
-import org.apache.kafka.clients.admin.DescribeLogDirsOptions;
-import org.apache.kafka.clients.admin.DescribeTopicsOptions;
-import org.apache.kafka.clients.admin.ListOffsetsOptions;
-import org.apache.kafka.clients.admin.ListOffsetsResult.ListOffsetsResultInfo;
-import org.apache.kafka.clients.admin.ListTopicsOptions;
 import org.apache.kafka.clients.admin.NewPartitionReassignment;
-import org.apache.kafka.clients.admin.OffsetSpec;
-import org.apache.kafka.clients.admin.TopicListing;
 import org.apache.kafka.common.TopicCollection;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.Uuid;
 import org.apache.kafka.common.config.ConfigResource;
+import org.apache.kafka.common.errors.UnknownTopicIdException;
 import org.eclipse.microprofile.context.ThreadContext;
 import org.jboss.logging.Logger;
 
-import com.github.streamshub.console.api.model.Either;
-import com.github.streamshub.console.api.model.Identifier;
 import com.github.streamshub.console.api.model.NewTopic;
-import com.github.streamshub.console.api.model.OffsetInfo;
-import com.github.streamshub.console.api.model.PartitionId;
-import com.github.streamshub.console.api.model.PartitionInfo;
-import com.github.streamshub.console.api.model.ReplicaLocalStorage;
 import com.github.streamshub.console.api.model.Topic;
 import com.github.streamshub.console.api.model.TopicPatch;
+import com.github.streamshub.console.api.security.PermissionService;
 import com.github.streamshub.console.api.support.KafkaContext;
 import com.github.streamshub.console.api.support.KafkaOffsetSpec;
 import com.github.streamshub.console.api.support.ListRequestContext;
 import com.github.streamshub.console.api.support.TopicValidation;
-import com.github.streamshub.console.api.support.UnknownTopicIdPatch;
 import com.github.streamshub.console.api.support.ValidationProxy;
+import com.github.streamshub.console.config.security.Privilege;
 
-import io.fabric8.kubernetes.api.model.ObjectMeta;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.strimzi.api.kafka.model.kafka.Kafka;
-import io.strimzi.api.kafka.model.topic.KafkaTopic;
 
 import static org.apache.kafka.clients.admin.NewPartitions.increaseTo;
 
 @ApplicationScoped
 public class TopicService {
-
-    private static final List<OffsetSpec> DEFAULT_OFFSET_SPECS =
-            List.of(OffsetSpec.earliest(), OffsetSpec.latest(), OffsetSpec.maxTimestamp());
-    private static final Predicate<String> CONFIG_SORT =
-            Pattern.compile("^-?configs\\..+$").asMatchPredicate();
-    private static final Set<String> REQUIRE_DESCRIBE = Set.of(
-            Topic.Fields.PARTITIONS,
-            Topic.Fields.NUM_PARTITIONS,
-            Topic.Fields.AUTHORIZED_OPERATIONS,
-            Topic.Fields.TOTAL_LEADER_LOG_BYTES,
-            Topic.Fields.STATUS);
-    private static final Set<String> REQUIRE_PARTITIONS = Set.of(
-            Topic.Fields.PARTITIONS,
-            Topic.Fields.NUM_PARTITIONS,
-            Topic.Fields.TOTAL_LEADER_LOG_BYTES,
-            Topic.Fields.STATUS);
 
     @Inject
     Logger logger;
@@ -105,19 +65,19 @@ public class TopicService {
     KafkaContext kafkaContext;
 
     @Inject
-    @Named("KafkaTopics")
-    Map<String, Map<String, Map<String, KafkaTopic>>> managedTopics;
+    KubernetesClient k8s;
 
     @Inject
-    KubernetesClient k8s;
+    PermissionService permissionService;
 
     @Inject
     ConfigService configService;
 
     @Inject
-    ConsumerGroupService consumerGroupService;
+    TopicDescribeService topicDescribe;
 
-    public CompletionStage<NewTopic> createTopic(NewTopic topic, boolean validateOnly) {
+    public NewTopic createTopic(NewTopic topic, boolean validateOnly) {
+        permissionService.assertPermitted(Topic.API_TYPE, Privilege.CREATE, topic.name());
         Kafka kafka = kafkaContext.resource();
         Admin adminClient = kafkaContext.admin();
 
@@ -152,81 +112,17 @@ public class TopicService {
 
         return result.all()
                 .thenApply(nothing -> NewTopic.fromKafkaModel(topicName, result))
-                .toCompletionStage();
+                .toCompletionStage()
+                .toCompletableFuture()
+                .join();
     }
 
     public CompletionStage<List<Topic>> listTopics(List<String> fields, String offsetSpec, ListRequestContext<Topic> listSupport) {
-        List<String> fetchList = new ArrayList<>(fields);
-
-        if (listSupport.getSortEntries().stream().anyMatch(CONFIG_SORT)) {
-            fetchList.add(Topic.Fields.CONFIGS);
-        }
-
-        Admin adminClient = kafkaContext.admin();
-        final Map<String, Integer> statuses = new HashMap<>();
-        final AtomicInteger partitionCount = new AtomicInteger(0);
-
-        listSupport.meta().put("summary", Map.of(
-                "statuses", statuses,
-                "totalPartitions", partitionCount));
-
-        return listTopics(adminClient, true)
-            .thenApply(list -> list.stream().map(Topic::fromTopicListing).toList())
-            .thenComposeAsync(
-                    list -> augmentList(adminClient, list, fetchList, offsetSpec),
-                    threadContext.currentContextExecutor())
-            .thenApply(list -> list.stream()
-                    .filter(listSupport)
-                    .map(topic -> tallySummary(statuses, partitionCount, topic))
-                    .map(listSupport::tally)
-                    .filter(listSupport::betweenCursors)
-                    .sorted(listSupport.getSortComparator())
-                    .dropWhile(listSupport::beforePageBegin)
-                    .takeWhile(listSupport::pageCapacityAvailable))
-            .thenApplyAsync(
-                    topics -> topics.map(this::setManaged).toList(),
-                    threadContext.currentContextExecutor());
-    }
-
-    Topic tallySummary(Map<String, Integer> statuses, AtomicInteger partitionCount, Topic topic) {
-        statuses.compute(topic.status(), (k, v) -> v == null ? 1 : v + 1);
-
-        Integer numPartitions = topic.getAttributes().numPartitions();
-        //numPartitions may be null if it was not included in the requested fields
-        if (numPartitions != null) {
-            partitionCount.addAndGet(numPartitions);
-        }
-
-        return topic;
-    }
-
-    CompletableFuture<List<TopicListing>> listTopics(Admin adminClient, boolean listInternal) {
-        return adminClient
-            .listTopics(new ListTopicsOptions().listInternal(listInternal))
-            .listings()
-            .thenApply(topics -> topics.stream().toList())
-            .toCompletionStage()
-            .toCompletableFuture();
+        return topicDescribe.listTopics(fields, offsetSpec, listSupport);
     }
 
     public CompletionStage<Topic> describeTopic(String topicId, List<String> fields, String offsetSpec) {
-        Admin adminClient = kafkaContext.admin();
-        Uuid id = Uuid.fromString(topicId);
-
-        CompletableFuture<Topic> describePromise = describeTopics(adminClient, List.of(id), fields, offsetSpec)
-            .thenApply(result -> result.get(id))
-            .thenApply(result -> result.getOrThrow(CompletionException::new))
-            .thenApplyAsync(this::setManaged, threadContext.currentContextExecutor())
-            .toCompletableFuture();
-
-        return describePromise.thenComposeAsync(topic -> {
-            var topics = Map.of(id, topic);
-
-            return CompletableFuture.allOf(
-                    maybeDescribeConfigs(adminClient, topics, fields),
-                    maybeFetchConsumerGroups(topics, fields))
-                .thenApply(nothing -> topic);
-        }, threadContext.currentContextExecutor());
+        return topicDescribe.describeTopic(topicId, fields, offsetSpec);
     }
 
     /**
@@ -246,14 +142,30 @@ public class TopicService {
         return describeTopic(topicId, List.of(Topic.Fields.CONFIGS), KafkaOffsetSpec.LATEST)
             .thenApply(topic -> validationService.validate(new TopicValidation.TopicPatchInputs(kafka, topic, patch)))
             .thenApply(TopicValidation.TopicPatchInputs::topic)
-            .thenComposeAsync(topic -> getManagedTopic(topic.name())
+            .thenComposeAsync(topic -> topicDescribe.getManagedTopic(topic.name())
                     .map(kafkaTopic -> patchManagedTopic())
                     .orElseGet(() -> patchUnmanagedTopic(topic, patch, validateOnly)),
-                    threadContext.currentContextExecutor());
+                threadContext.currentContextExecutor());
+    }
+
+    public CompletionStage<Void> deleteTopic(String topicId) {
+        Admin adminClient = kafkaContext.admin();
+        Uuid id = Uuid.fromString(topicId);
+
+        return topicDescribe.topicNameForId(topicId).thenComposeAsync(topicName -> {
+            if (topicName.isPresent()) {
+                return adminClient.deleteTopics(TopicCollection.ofTopicIds(List.of(id)))
+                        .topicIdValues()
+                        .get(id)
+                        .toCompletionStage();
+            }
+
+            throw new UnknownTopicIdException("No such topic: " + topicId);
+        }, threadContext.currentContextExecutor());
     }
 
     // Modifications disabled for now
-    CompletionStage<Void> patchManagedTopic(/*KafkaTopic topic, TopicPatch patch, boolean validateOnly*/) {
+    private CompletionStage<Void> patchManagedTopic(/*KafkaTopic topic, TopicPatch patch, boolean validateOnly*/) {
         return CompletableFuture.completedStage(null);
 //        if (validateOnly) { // NOSONAR
 //            return CompletableFuture.completedStage(null);
@@ -282,7 +194,7 @@ public class TopicService {
 //        return CompletableFuture.runAsync(() -> k8s.resource(modifiedTopic).serverSideApply());
     }
 
-    CompletionStage<Void> patchUnmanagedTopic(Topic topic, TopicPatch patch, boolean validateOnly) {
+    private CompletionStage<Void> patchUnmanagedTopic(Topic topic, TopicPatch patch, boolean validateOnly) {
         List<CompletableFuture<Void>> pending = new ArrayList<>();
 
         pending.add(maybeCreatePartitions(topic, patch, validateOnly));
@@ -309,7 +221,7 @@ public class TopicService {
             });
     }
 
-    CompletableFuture<Void> maybeCreatePartitions(Topic topic, TopicPatch topicPatch, boolean validateOnly) {
+    private CompletableFuture<Void> maybeCreatePartitions(Topic topic, TopicPatch topicPatch, boolean validateOnly) {
         int currentNumPartitions = topic.partitions().getPrimary().size();
         int newNumPartitions = Optional.ofNullable(topicPatch.numPartitions()).orElse(currentNumPartitions);
 
@@ -326,7 +238,7 @@ public class TopicService {
         return CompletableFuture.completedFuture(null);
     }
 
-    CompletionStage<Void> createPartitions(String topicName, int totalCount, List<List<Integer>> newAssignments, boolean validateOnly) {
+    private CompletionStage<Void> createPartitions(String topicName, int totalCount, List<List<Integer>> newAssignments, boolean validateOnly) {
         Admin adminClient = kafkaContext.admin();
 
         org.apache.kafka.clients.admin.NewPartitions newPartitions;
@@ -345,7 +257,7 @@ public class TopicService {
                 .toCompletionStage();
     }
 
-    List<CompletableFuture<Void>> maybeAlterPartitionAssignments(Topic topic, TopicPatch topicPatch) {
+    private List<CompletableFuture<Void>> maybeAlterPartitionAssignments(Topic topic, TopicPatch topicPatch) {
         int currentNumPartitions = topic.partitions().getPrimary().size();
 
         var alteredAssignments = IntStream.range(0, currentNumPartitions)
@@ -381,7 +293,7 @@ public class TopicService {
                 .toList();
     }
 
-    void logPartitionReassignments(Topic topic,
+    private void logPartitionReassignments(Topic topic,
             Map<org.apache.kafka.common.TopicPartition, Optional<NewPartitionReassignment>> alteredAssignments) {
 
         StringBuilder changes = new StringBuilder();
@@ -417,331 +329,11 @@ public class TopicService {
                 changes);
     }
 
-    CompletableFuture<Void> maybeAlterConfigs(Topic topic, TopicPatch topicPatch, boolean validateOnly) {
+    private CompletableFuture<Void> maybeAlterConfigs(Topic topic, TopicPatch topicPatch, boolean validateOnly) {
         return Optional.ofNullable(topicPatch.configs())
             .filter(Predicate.not(Map::isEmpty))
             .map(configs -> configService.alterConfigs(ConfigResource.Type.TOPIC, topic.name(), configs, validateOnly)
                 .toCompletableFuture())
             .orElseGet(() -> CompletableFuture.completedFuture(null));
-    }
-
-    public CompletionStage<Void> deleteTopic(String topicId) {
-        Admin adminClient = kafkaContext.admin();
-        Uuid id = Uuid.fromString(topicId);
-
-        return adminClient.deleteTopics(TopicCollection.ofTopicIds(List.of(id)))
-                .topicIdValues()
-                .get(id)
-                .toCompletionStage();
-    }
-
-    Topic setManaged(Topic topic) {
-        topic.addMeta("managed", getManagedTopic(topic.name())
-                .map(kafkaTopic -> Boolean.TRUE)
-                .orElse(Boolean.FALSE));
-        return topic;
-    }
-
-    Optional<KafkaTopic> getManagedTopic(String topicName) {
-        return Optional.ofNullable(kafkaContext.resource())
-            .map(Kafka::getMetadata)
-            .flatMap(kafkaMeta -> Optional.ofNullable(managedTopics.get(kafkaMeta.getNamespace()))
-                    .map(clustersInNamespace -> clustersInNamespace.get(kafkaMeta.getName()))
-                    .map(topicsInCluster -> topicsInCluster.get(topicName))
-                    // Do not consider topics without a status set by Strimzi as managed
-                    .filter(topic -> Objects.nonNull(topic.getStatus()))
-                    .filter(this::isManaged));
-    }
-
-    boolean isManaged(KafkaTopic topic) {
-        return Optional.of(topic)
-            .map(KafkaTopic::getMetadata)
-            .map(ObjectMeta::getAnnotations)
-            .map(annotations -> annotations.getOrDefault("strimzi.io/managed", "true"))
-            .map(managed -> !"false".equals(managed))
-            .orElse(true);
-    }
-
-    CompletionStage<List<Topic>> augmentList(Admin adminClient, List<Topic> list, List<String> fields, String offsetSpec) {
-        Map<Uuid, Topic> topics = list.stream().collect(Collectors.toMap(t -> Uuid.fromString(t.getId()), Function.identity()));
-        CompletableFuture<Void> configPromise = maybeDescribeConfigs(adminClient, topics, fields);
-        CompletableFuture<Void> describePromise = maybeDescribeTopics(adminClient, topics, fields, offsetSpec);
-        CompletableFuture<Void> consumerGroupPromise = maybeFetchConsumerGroups(topics, fields);
-
-        return CompletableFuture.allOf(configPromise, describePromise, consumerGroupPromise)
-                .thenApply(nothing -> list);
-    }
-
-    CompletableFuture<Void> maybeDescribeConfigs(Admin adminClient, Map<Uuid, Topic> topics, List<String> fields) {
-        if (fields.contains(Topic.Fields.CONFIGS)) {
-            Map<String, Uuid> topicIds = new HashMap<>();
-            List<ConfigResource> keys = topics.values().stream()
-                    .map(topic -> {
-                        topicIds.put(topic.name(), Uuid.fromString(topic.getId()));
-                        return topic.name();
-                    })
-                    .map(name -> new ConfigResource(ConfigResource.Type.TOPIC, name))
-                    .toList();
-
-            return configService.describeConfigs(adminClient, keys)
-                .thenAccept(configs ->
-                    configs.forEach((name, either) -> topics.get(topicIds.get(name)).addConfigs(either)))
-                .toCompletableFuture();
-        }
-
-        return CompletableFuture.completedFuture(null);
-    }
-
-    CompletableFuture<Void> maybeDescribeTopics(Admin adminClient, Map<Uuid, Topic> topics, List<String> fields, String offsetSpec) {
-        if (REQUIRE_DESCRIBE.stream().anyMatch(fields::contains)) {
-            return describeTopics(adminClient, topics.keySet(), fields, offsetSpec)
-                .<Void>thenApply(descriptions -> {
-                    descriptions.forEach((id, either) -> {
-                        if (REQUIRE_PARTITIONS.stream().anyMatch(fields::contains)) {
-                            topics.get(id).addPartitions(either);
-                        }
-                        if (fields.contains(Topic.Fields.AUTHORIZED_OPERATIONS)) {
-                            topics.get(id).addAuthorizedOperations(either);
-                        }
-                    });
-
-                    return null;
-                })
-                .toCompletableFuture();
-        }
-
-        return CompletableFuture.completedFuture(null);
-    }
-
-    CompletableFuture<Void> maybeFetchConsumerGroups(Map<Uuid, Topic> topics, List<String> fields) {
-        CompletionStage<Map<String, List<String>>> pendingConsumerGroups;
-
-        if (fields.contains(Topic.Fields.CONSUMER_GROUPS)) {
-            var topicIds = topics.keySet().stream().map(Uuid::toString).toList();
-            pendingConsumerGroups = consumerGroupService.listConsumerGroupMembership(topicIds);
-        } else {
-            pendingConsumerGroups = CompletableFuture.completedStage(Collections.emptyMap());
-        }
-
-        return pendingConsumerGroups.thenAccept(consumerGroups ->
-                    consumerGroups.entrySet()
-                        .stream()
-                        .forEach(e -> {
-                            Topic topic = topics.get(Uuid.fromString(e.getKey()));
-                            var identifiers = e.getValue().stream().map(g -> new Identifier("consumerGroups", g)).toList();
-                            topic.consumerGroups().data().addAll(identifiers);
-                            topic.consumerGroups().addMeta("count", identifiers.size());
-                        }))
-                .toCompletableFuture();
-    }
-
-    CompletionStage<Map<Uuid, Either<Topic, Throwable>>> describeTopics(
-            Admin adminClient,
-            Collection<Uuid> topicIds,
-            List<String> fields,
-            String offsetSpec) {
-
-        Map<Uuid, Either<Topic, Throwable>> result = new LinkedHashMap<>(topicIds.size());
-        TopicCollection request = TopicCollection.ofTopicIds(topicIds);
-        DescribeTopicsOptions options = new DescribeTopicsOptions()
-                .includeAuthorizedOperations(fields.contains(Topic.Fields.AUTHORIZED_OPERATIONS));
-
-        var pendingDescribes = adminClient.describeTopics(request, options)
-                .topicIdValues()
-                .entrySet()
-                .stream()
-                .map(entry ->
-                    entry.getValue().toCompletionStage().<Void>handle((description, error) -> {
-                        error = UnknownTopicIdPatch.apply(error, Function.identity());
-
-                        result.put(
-                                entry.getKey(),
-                                Either.of(description, error, Topic::fromTopicDescription));
-                        return null;
-                    }))
-                .map(CompletionStage::toCompletableFuture)
-                .toArray(CompletableFuture[]::new);
-
-        return CompletableFuture.allOf(pendingDescribes)
-                .thenCompose(nothing -> CompletableFuture.allOf(
-                        listOffsets(adminClient, result, offsetSpec).toCompletableFuture(),
-                        describeLogDirs(adminClient, result).toCompletableFuture()
-                ))
-                .thenApply(nothing -> result);
-    }
-
-    CompletionStage<Void> listOffsets(Admin adminClient, Map<Uuid, Either<Topic, Throwable>> topics, String offsetSpec) {
-        Map<String, Uuid> topicIds = new HashMap<>(topics.size());
-        var onlineTopics = topics.entrySet()
-                .stream()
-                .filter(topic -> topic.getValue()
-                        .getOptionalPrimary()
-                        .map(Topic::partitionsOnline)
-                        .orElse(false))
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-
-        var pendingOffsets = getRequestOffsetSpecs(offsetSpec)
-            .stream()
-            .map(reqOffsetSpec -> topicPartitionLeaders(onlineTopics, topicIds)
-                .keySet()
-                .stream()
-                .collect(Collectors.toMap(Function.identity(), ignored -> reqOffsetSpec)))
-            .flatMap(request -> listOffsets(adminClient, onlineTopics, topicIds, request))
-            .map(CompletionStage::toCompletableFuture)
-            .toArray(CompletableFuture[]::new);
-
-        return CompletableFuture.allOf(pendingOffsets);
-    }
-
-    List<OffsetSpec> getRequestOffsetSpecs(String offsetSpec) {
-        List<OffsetSpec> specs = new ArrayList<>(DEFAULT_OFFSET_SPECS);
-
-        // Never null, defaults to latest
-        switch (offsetSpec) { // NOSONAR
-            case KafkaOffsetSpec.EARLIEST, KafkaOffsetSpec.LATEST, KafkaOffsetSpec.MAX_TIMESTAMP:
-                break;
-            default:
-                specs.add(OffsetSpec.forTimestamp(Instant.parse(offsetSpec).toEpochMilli()));
-                break;
-        }
-
-        return specs;
-    }
-
-    /**
-     * Build of map of {@linkplain PartitionId}s to the partition leader node ID.
-     * Concurrently, a map of topic names to topic identifiers is constructed to
-     * support cross referencing the {@linkplain PartitionId} keys (via
-     * {@linkplain PartitionId#topicId()}) back to the topic's {@linkplain Uuid}.
-     * This allows easy access of the topics located in the topics map provided to
-     * this method and is particularly useful for Kafka operations that still
-     * require topic name.
-     *
-     * @param topics   map of topics (keyed by Id)
-     * @param topicIds map of topic names to topic Ids, modified by this method
-     * @return map of {@linkplain PartitionId}s to the partition leader node ID
-     */
-    Map<PartitionId, Integer> topicPartitionLeaders(Map<Uuid, Either<Topic, Throwable>> topics, Map<String, Uuid> topicIds) {
-        return topics.entrySet()
-                .stream()
-                .filter(entry -> entry.getValue().isPrimaryPresent())
-                .map(entry -> {
-                    var topic = entry.getValue().getPrimary();
-                    topicIds.put(topic.name(), entry.getKey());
-                    return topic;
-                })
-                .filter(topic -> topic.partitions().isPrimaryPresent())
-                .flatMap(topic -> topic.partitions().getPrimary()
-                        .stream()
-                        .filter(PartitionInfo::online)
-                        .map(partition -> {
-                            var key = new PartitionId(topic.getId(), topic.name(), partition.getPartition());
-                            return Map.entry(key, partition.getLeaderId());
-                        }))
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-    }
-
-    String getOffsetKey(OffsetSpec spec) {
-        if (spec instanceof OffsetSpec.EarliestSpec) {
-            return KafkaOffsetSpec.EARLIEST;
-        }
-        if (spec instanceof OffsetSpec.LatestSpec) {
-            return KafkaOffsetSpec.LATEST;
-        }
-        if (spec instanceof OffsetSpec.MaxTimestampSpec) {
-            return KafkaOffsetSpec.MAX_TIMESTAMP;
-        }
-        return "timestamp";
-    }
-
-    Stream<CompletionStage<Void>> listOffsets(
-            Admin adminClient,
-            Map<Uuid, Either<Topic, Throwable>> topics,
-            Map<String, Uuid> topicIds,
-            Map<PartitionId, OffsetSpec> request) {
-
-        var kafkaRequest = request.entrySet()
-                .stream()
-                .map(e -> Map.entry(e.getKey().toKafkaModel(), e.getValue()))
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-        var result = adminClient.listOffsets(kafkaRequest, new ListOffsetsOptions()
-                .timeoutMs(5000));
-
-        return kafkaRequest.entrySet()
-                .stream()
-                .map(entry -> result.partitionResult(entry.getKey())
-                        .toCompletionStage()
-                        .<Void>handle((offsetResult, error) -> {
-                            addOffset(topics.get(topicIds.get(entry.getKey().topic())).getPrimary(),
-                                        entry.getKey().partition(),
-                                        getOffsetKey(entry.getValue()),
-                                        offsetResult,
-                                        error);
-                            return null;
-                        }));
-
-    }
-
-    void addOffset(Topic topic, int partitionNo, String key, ListOffsetsResultInfo result, Throwable error) {
-        topic.partitions()
-            .getPrimary()
-            .stream()
-            .filter(partition -> partition.getPartition() == partitionNo)
-            .findFirst()
-            .ifPresent(partition -> partition.addOffset(key, either(result, error)));
-    }
-
-    Either<OffsetInfo, Throwable> either(ListOffsetsResultInfo result, Throwable error) {
-        Function<ListOffsetsResultInfo, OffsetInfo> transformer = offsetInfo -> {
-            Instant timestamp = offsetInfo.timestamp() != -1 ? Instant.ofEpochMilli(offsetInfo.timestamp()) : null;
-            return new OffsetInfo(offsetInfo.offset(), timestamp, offsetInfo.leaderEpoch().orElse(null));
-        };
-
-        return Either.of(result, error, transformer);
-    }
-
-    CompletionStage<Void> describeLogDirs(Admin adminClient, Map<Uuid, Either<Topic, Throwable>> topics) {
-        Map<String, Uuid> topicIds = new HashMap<>(topics.size());
-
-        var topicPartitionReplicas = topicPartitionLeaders(topics, topicIds);
-        var nodeIds = topicPartitionReplicas.values().stream().distinct().toList();
-        var logDirs = adminClient.describeLogDirs(nodeIds, new DescribeLogDirsOptions()
-                .timeoutMs(5000))
-                .descriptions();
-
-        var pendingInfo = topicPartitionReplicas.entrySet()
-            .stream()
-            .map(e -> {
-                var topicPartition = e.getKey().toKafkaModel();
-                int nodeId = e.getValue();
-                var partitionInfo = topics.get(topicIds.get(topicPartition.topic()))
-                        .getPrimary()
-                        .partitions()
-                        .getPrimary()
-                        .stream()
-                        .filter(p -> p.getPartition() == topicPartition.partition())
-                        .findFirst();
-
-                return logDirs.get(nodeId).toCompletionStage().<Void>handle((nodeLogDirs, error) -> {
-                    if (error != null) {
-                        partitionInfo.ifPresent(p -> p.setReplicaLocalStorage(nodeId, Either.ofAlternate(error)));
-                    } else {
-                        nodeLogDirs.values()
-                            .stream()
-                            .map(dir -> dir.replicaInfos())
-                            .map(replicas -> replicas.get(topicPartition))
-                            .filter(Objects::nonNull)
-                            .map(org.apache.kafka.clients.admin.ReplicaInfo.class::cast)
-                            .map(ReplicaLocalStorage::fromKafkaModel)
-                            .forEach(replicaInfo -> partitionInfo.ifPresent(p -> p.setReplicaLocalStorage(nodeId, Either.of(replicaInfo))));
-                    }
-
-                    return null;
-                });
-            })
-            .map(CompletionStage::toCompletableFuture)
-            .toArray(CompletableFuture[]::new);
-
-        return CompletableFuture.allOf(pendingInfo);
     }
 }

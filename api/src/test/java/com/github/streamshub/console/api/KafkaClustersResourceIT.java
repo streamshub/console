@@ -2,13 +2,13 @@ package com.github.streamshub.console.api;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
@@ -30,7 +30,6 @@ import org.apache.kafka.common.config.SslConfigs;
 import org.apache.kafka.common.security.auth.SecurityProtocol;
 import org.apache.kafka.common.security.scram.ScramLoginModule;
 import org.eclipse.microprofile.config.Config;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -45,6 +44,8 @@ import com.github.streamshub.console.api.support.Holder;
 import com.github.streamshub.console.api.support.KafkaContext;
 import com.github.streamshub.console.config.ConsoleConfig;
 import com.github.streamshub.console.config.KafkaClusterConfig;
+import com.github.streamshub.console.config.security.GlobalSecurityConfigBuilder;
+import com.github.streamshub.console.config.security.Privilege;
 import com.github.streamshub.console.kafka.systemtest.TestPlainProfile;
 import com.github.streamshub.console.kafka.systemtest.deployment.DeploymentManager;
 import com.github.streamshub.console.test.AdminClientSpy;
@@ -68,7 +69,6 @@ import io.strimzi.test.container.StrimziKafkaContainer;
 
 import static com.github.streamshub.console.test.TestHelper.whenRequesting;
 import static java.util.Objects.isNull;
-import static java.util.function.Predicate.not;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
@@ -95,7 +95,7 @@ class KafkaClustersResourceIT {
      * List of Kafka clusters that are always created. test-kafkaY is configured in {@link TestPlainProfile}
      * but has no associated Strimzi Kafka CR.
      */
-    private static final List<String> STATIC_KAFKAS = List.of("test-kafka1", "test-kafka2", "test-kafkaY");
+    static final List<String> STATIC_KAFKAS = List.of("test-kafka1", "test-kafka2", "test-kafkaY");
 
     @Inject
     Config config;
@@ -138,6 +138,7 @@ class KafkaClustersResourceIT {
         utils = new TestHelper(bootstrapServers, config, null);
 
         client.resources(Kafka.class).inAnyNamespace().delete();
+        consoleConfig.clearSecurity();
 
         utils.apply(client, new KafkaBuilder(utils.buildKafkaResource("test-kafka1", utils.getClusterId(), bootstrapServers,
                         new KafkaListenerAuthenticationCustomBuilder()
@@ -173,16 +174,6 @@ class KafkaClustersResourceIT {
         kafkaClusterService.setListUnconfigured(false);
     }
 
-    @AfterEach
-    void teardown() throws IOException {
-        client.resources(Kafka.class).inAnyNamespace()
-            .list()
-            .getItems()
-            .stream()
-            .filter(not(k -> Set.of("test-kafka1", "test-kafka2").contains(k.getMetadata().getName())))
-            .forEach(k -> client.resource(k).delete());
-    }
-
     @Test
     void testListClusters() {
         String k1Bootstrap = bootstrapServers.getHost() + ":" + bootstrapServers.getPort();
@@ -205,6 +196,34 @@ class KafkaClustersResourceIT {
                     hasEntry(equalTo("authType"), nullValue(String.class)))))
             .body("data.find { it.attributes.name == 'test-kafkaY'}.attributes.status", is(nullValue()))
             .body("data.find { it.attributes.name == 'test-kafkaY'}.attributes.listeners", is(nullValue()));
+    }
+
+    @Test
+    void testListClustersWithAnonymousLimited() {
+        List<String> visibleClusters = Arrays.asList("test-kafka1", "test-kafkaY");
+
+        consoleConfig.setSecurity(new GlobalSecurityConfigBuilder()
+                .addNewRole()
+                    .withName("unauthenticated")
+                    .addNewRule()
+                        .withResources("kafkas")
+                        .withPrivileges(Privilege.LIST)
+                        .withResourceNames(visibleClusters)
+                    .endRule()
+                .endRole()
+                .addNewSubject()
+                    // ANONYMOUS is a special subject name for unauthenticated requests
+                    .withInclude("ANONYMOUS")
+                    .withRoleNames("unauthenticated")
+                .endSubject()
+            .build());
+
+        whenRequesting(req -> req.param("fields[" + KafkaCluster.API_TYPE + "]", "name")
+                .get())
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()))
+            .body("data.size()", equalTo(visibleClusters.size()))
+            .body("data.attributes.name", containsInAnyOrder(visibleClusters.toArray(String[]::new)));
     }
 
     @Test

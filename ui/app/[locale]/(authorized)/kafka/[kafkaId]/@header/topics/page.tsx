@@ -25,15 +25,22 @@ export default function TopicsHeader({ params }: { params: KafkaParams }) {
 }
 
 async function ConnectedHeader({ params }: { params: KafkaParams }) {
-  const topics = await getTopics(params.kafkaId, {});
+  const response = await getTopics(params.kafkaId, {});
+
+  if (response.errors) {
+    return <Header />;
+  }
+
+  const topics = response.payload!;
+
   return (
     <Header
       total={topics.meta.page.total}
-      ok={topics.meta.summary.statuses.FullyReplicated || 0}
-      warning={topics.meta.summary.statuses.UnderReplicated || 0}
+      ok={topics.meta.summary.statuses.FullyReplicated ?? 0}
+      warning={topics.meta.summary.statuses.UnderReplicated ?? 0}
       error={
-        (topics.meta.summary.statuses.PartiallyOffline || 0) +
-        (topics.meta.summary.statuses.Offline || 0)
+        (topics.meta.summary.statuses.PartiallyOffline ?? 0) +
+        (topics.meta.summary.statuses.Offline ?? 0)
       }
     />
   );

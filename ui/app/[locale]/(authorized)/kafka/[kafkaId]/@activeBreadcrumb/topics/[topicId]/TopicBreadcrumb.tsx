@@ -16,7 +16,7 @@ async function ConnectedTopicBreadcrumb({
 }: {
   params: KafkaTopicParams;
 }) {
-  const topic = await getTopic(kafkaId, topicId);
+  const response = await getTopic(kafkaId, topicId);
   return [
     <BreadcrumbLink
       key={"topics"}
@@ -26,7 +26,7 @@ async function ConnectedTopicBreadcrumb({
       Topics
     </BreadcrumbLink>,
     <BreadcrumbItem key={"current-topic"} showDivider={true}>
-      {topic?.attributes.name}
+      { response.payload?.attributes.name ?? topicId }
     </BreadcrumbItem>,
   ];
 }

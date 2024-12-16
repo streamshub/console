@@ -18,7 +18,8 @@ export default async function SignIn({
   searchParams?: { callbackUrl?: string };
   params: { kafkaId?: string };
 }) {
-  const clusters = await getKafkaClusters();
+  const clusters = (await getKafkaClusters())?.payload ?? [];
+
   const cluster = clusters.find((c) => c.id === params.kafkaId);
   if (cluster) {
     const authMethod = cluster.meta.authentication;

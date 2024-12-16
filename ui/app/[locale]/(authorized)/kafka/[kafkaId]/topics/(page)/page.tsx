@@ -10,8 +10,9 @@ import { PageSection } from "@/libs/patternfly/react-core";
 import { stringToInt } from "@/utils/stringToInt";
 import { Suspense } from "react";
 import { ConnectedTopicsTable } from "./ConnectedTopicsTable";
+import { NoDataErrorState } from "@/components/NoDataErrorState";
 
-export const dynamic = "force-dynamic";
+//export const dynamic = "force-dynamic";
 
 export async function generateMetadata() {
   const t = await getTranslations();
@@ -111,7 +112,7 @@ async function AsyncTopicsTable({
   includeHidden: boolean;
   status: TopicStatus[] | undefined;
 } & KafkaParams) {
-  const topics = await getTopics(kafkaId, {
+  const response = await getTopics(kafkaId, {
     id,
     name,
     sort: sortMap[sort],
@@ -122,6 +123,11 @@ async function AsyncTopicsTable({
     status,
   });
 
+  if (response.errors) {
+    return <NoDataErrorState errors={response.errors} />;
+  }
+
+  const topics = response.payload!;
   const nextPageCursor = topics.links.next
     ? `after:${new URLSearchParams(topics.links.next).get("page[after]")}`
     : undefined;

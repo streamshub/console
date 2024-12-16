@@ -7,7 +7,9 @@ import { Suspense } from "react";
 import { ConnectedReabalancesTable } from "./ConnectedRebalancesTable";
 import { getRebalancesList } from "@/api/rebalance/actions";
 import { RebalanceMode, RebalanceStatus } from "@/api/rebalance/schema";
-export const dynamic = "force-dynamic";
+import { NoDataErrorState } from "@/components/NoDataErrorState";
+
+//export const dynamic = "force-dynamic";
 
 export async function generateMetadata() {
   const t = await getTranslations();
@@ -103,7 +105,7 @@ async function AsyncReabalanceTable({
   status: RebalanceStatus[] | undefined;
     mode: RebalanceMode[] | undefined;
 } & KafkaParams) {
-  const rebalance = await getRebalancesList(kafkaId, {
+  const response = await getRebalancesList(kafkaId, {
     name,
     sort: sortMap[sort],
     sortDir,
@@ -112,6 +114,12 @@ async function AsyncReabalanceTable({
     status,
     mode,
   });
+
+  if (response.errors) {
+    return <NoDataErrorState errors={response.errors!} />;
+  }
+
+  const rebalance = response.payload!;
 
   const nextPageQuery = rebalance.links.next
     ? new URLSearchParams(rebalance.links.next)

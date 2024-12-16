@@ -5,7 +5,10 @@ import jakarta.validation.constraints.NotBlank;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 
+import io.sundr.builder.annotations.Buildable;
+
 @JsonInclude(Include.NON_NULL)
+@Buildable(editableEnabled = false)
 public class SchemaRegistryConfig implements Named {
 
     @NotBlank(message = "Schema registry `name` is required")

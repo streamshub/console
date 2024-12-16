@@ -1,11 +1,13 @@
 import { getKafkaClusters } from "@/api/kafka/actions";
 import { ClusterList } from "@/api/kafka/schema";
 import { logger } from "@/utils/logger";
-import { AuthOptions } from "next-auth";
+import { AuthOptions, Session } from "next-auth";
+import { JWT } from "next-auth/jwt";
 import { Provider } from "next-auth/providers/index";
 import { makeAnonymous } from "./anonymous";
 import { makeOauthTokenProvider } from "./oauth-token";
 import { makeScramShaProvider } from "./scram";
+import oidcSource from "./oidc";
 
 const log = logger.child({ module: "auth" });
 
@@ -24,25 +26,49 @@ function makeAuthOption(cluster: ClusterList): Provider {
 }
 
 export async function getAuthOptions(): Promise<AuthOptions> {
-  // retrieve the authentication method required by the default Kafka cluster
-  const clusters = await getKafkaClusters();
-  const providers = clusters.map(makeAuthOption);
-  log.trace({ providers }, "getAuthOptions");
-  return {
-    providers,
-    callbacks: {
-      async jwt({ token, user }) {
-        if (user) {
-          token.authorization = user.authorization;
-        }
-        return token;
-      },
-      async session({ session, token, user }) {
-        // Send properties to the client, like an access_token and user id from a provider.
-        session.authorization = token.authorization;
+  let providers: Provider[];
+  log.trace("fetching the oidcSource");
+  let oidc = await oidcSource();
 
-        return session;
+  if (oidc.isEnabled()) {
+    log.debug("OIDC is enabled");
+    providers = [ oidc.provider! ];
+    return {
+      providers,
+      pages: {
+        signIn: "/api/auth/oidc/signin",
       },
-    },
-  };
+      callbacks: {
+        async jwt({ token, account }: { token: JWT, account: any }) {
+            return oidc.jwt({ token, account });
+        },
+        async session({ session, token }: { session: Session, token: JWT }) {
+            return oidc.session({ session, token });
+        }
+      }
+    }
+  } else {
+    log.debug("OIDC is disabled");
+    // retrieve the authentication method required by the default Kafka cluster
+    const clusters = (await getKafkaClusters(true))?.payload ?? [];
+    providers = clusters.map(makeAuthOption);
+    log.trace({ providers }, "getAuthOptions");
+    return {
+      providers,
+      callbacks: {
+        async jwt({ token, user }) {
+          if (user) {
+            token.authorization = user.authorization;
+          }
+          return token;
+        },
+        async session({ session, token, user }) {
+          // Send properties to the client, like an access_token and user id from a provider.
+          session.authorization = token.authorization;
+
+          return session;
+        },
+      },
+    };
+  }
 }

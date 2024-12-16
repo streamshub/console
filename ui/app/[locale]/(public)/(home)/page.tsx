@@ -30,6 +30,12 @@ import { isProductizedBuild } from "@/utils/env";
 import { getTranslations } from "next-intl/server";
 import { Suspense } from "react";
 import styles from "./home.module.css";
+import config from '@/utils/config';
+import { logger } from "@/utils/logger";
+import { getAuthOptions } from "@/app/api/auth/[...nextauth]/auth-options";
+import { getServerSession } from "next-auth";
+
+const log = logger.child({ module: "home" });
 
 export async function generateMetadata() {
   const t = await getTranslations();
@@ -41,16 +47,30 @@ export async function generateMetadata() {
 
 export default async function Home() {
   const t = await getTranslations();
-  const allClusters = await getKafkaClusters();
+  log.trace("fetching known Kafka clusters...")
+  const allClusters = (await getKafkaClusters())?.payload ?? [];
+  log.trace(`fetched ${allClusters.length ?? 0} Kafka clusters`)
   const productName = t("common.product");
   const brand = t("common.brand");
+  log.trace("fetching configuration")
+  let cfg = await config();
+  log.trace(`fetched configuration: ${cfg ? 'yes' : 'no'}`);
+  let oidcCfg = cfg?.security?.oidc ?? null;
+  let oidcEnabled = !!oidcCfg;
+  let username: string | undefined;
 
-  if (allClusters.length === 1) {
+  if (oidcEnabled) {
+    const authOptions = await getAuthOptions();
+    const session = await getServerSession(authOptions);
+    username = (session?.user?.name ?? session?.user?.email) ?? undefined;
+  }
+
+  if (allClusters.length === 1 && !oidcEnabled) {
     return <RedirectOnLoad url={`/kafka/${allClusters[0].id}/login`} />;
   }
 
   return (
-    <AppLayout>
+    <AppLayout username={username}>
       <PageSection padding={{ default: "noPadding" }} variant={"light"}>
         <div className={styles.hero}>
           <div>
@@ -84,8 +104,8 @@ export default async function Home() {
                 </TextContent>
               </CardTitle>
               <CardBody>
-                <Suspense fallback={<ClustersTable clusters={undefined} />}>
-                  <ClustersTable clusters={allClusters} />
+                <Suspense fallback={<ClustersTable clusters={undefined} authenticated={oidcEnabled} />}>
+                  <ClustersTable clusters={allClusters} authenticated={oidcEnabled} />
                 </Suspense>
               </CardBody>
             </Card>

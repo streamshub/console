@@ -18,9 +18,12 @@ import org.jboss.logging.Logger;
 
 import com.github.streamshub.console.api.model.Condition;
 import com.github.streamshub.console.api.model.KafkaRebalance;
+import com.github.streamshub.console.api.security.PermissionService;
 import com.github.streamshub.console.api.support.KafkaContext;
 import com.github.streamshub.console.api.support.ListRequestContext;
 import com.github.streamshub.console.config.ConsoleConfig;
+import com.github.streamshub.console.config.security.Privilege;
+import com.github.streamshub.console.config.security.ResourceTypes;
 
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.informers.cache.Cache;
@@ -47,11 +50,18 @@ public class KafkaRebalanceService {
     @Inject
     KafkaContext kafkaContext;
 
+    @Inject
+    PermissionService permissionService;
+
     public List<KafkaRebalance> listRebalances(ListRequestContext<KafkaRebalance> listSupport) {
         final Map<String, Integer> statuses = new HashMap<>();
         listSupport.meta().put("summary", Map.of("statuses", statuses));
 
         return rebalanceResources()
+                .filter(permissionService.permitted(
+                        ResourceTypes.Kafka.REBALANCES.value(),
+                        Privilege.LIST,
+                        r -> r.getMetadata().getName()))
                 .map(this::toKafkaRebalance)
                 .map(rebalance -> tallyStatus(statuses, rebalance))
                 .filter(listSupport)
@@ -61,6 +71,12 @@ public class KafkaRebalanceService {
                 .dropWhile(listSupport::beforePageBegin)
                 .takeWhile(listSupport::pageCapacityAvailable)
                 .toList();
+    }
+
+    public KafkaRebalance getRebalance(String id) {
+        return findRebalance(id)
+            .map(this::toKafkaRebalance)
+            .orElseThrow(() -> new NotFoundException("No such Kafka rebalance resource"));
     }
 
     public KafkaRebalance patchRebalance(String id, KafkaRebalance rebalance) {
