@@ -1,7 +1,9 @@
 package com.github.streamshub.console;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Base64;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -24,6 +26,7 @@ import com.github.streamshub.console.api.v1alpha1.ConsoleBuilder;
 import com.github.streamshub.console.api.v1alpha1.spec.TrustStore;
 import com.github.streamshub.console.api.v1alpha1.spec.metrics.MetricsSource;
 import com.github.streamshub.console.api.v1alpha1.spec.metrics.MetricsSource.Type;
+import com.github.streamshub.console.api.v1alpha1.status.Condition;
 import com.github.streamshub.console.config.ConsoleConfig;
 import com.github.streamshub.console.config.PrometheusConfig;
 import com.github.streamshub.console.dependents.ConsoleResource;
@@ -222,8 +225,8 @@ class ConsoleReconcilerTest {
                     .withName(consoleCR.getMetadata().getName())
                     .get();
             assertEquals(1, console.getStatus().getConditions().size());
-            var condition = console.getStatus().getConditions().get(0);
-            assertEquals("Ready", condition.getType());
+            var condition = console.getStatus().getConditions().iterator().next();
+            assertEquals(Condition.Types.READY, condition.getType(), () -> condition.toString());
             assertEquals("False", condition.getStatus());
             assertEquals("DependentsNotReady", condition.getReason());
             assertTrue(condition.getMessage().contains("ConsoleIngress"));
@@ -243,9 +246,9 @@ class ConsoleReconcilerTest {
                     .inNamespace(consoleCR.getMetadata().getNamespace())
                     .withName(consoleCR.getMetadata().getName())
                     .get();
-            assertEquals(1, console.getStatus().getConditions().size());
-            var condition = console.getStatus().getConditions().get(0);
-            assertEquals("Ready", condition.getType());
+            assertEquals(1, console.getStatus().getConditions().size(), () -> console.getStatus().getConditions().toString());
+            var condition = console.getStatus().getConditions().iterator().next();
+            assertEquals(Condition.Types.READY, condition.getType());
             assertEquals("False", condition.getStatus());
             assertEquals("DependentsNotReady", condition.getReason());
             assertTrue(condition.getMessage().contains("ConsoleDeployment"));
@@ -270,8 +273,8 @@ class ConsoleReconcilerTest {
                     .withName(consoleCR.getMetadata().getName())
                     .get();
             assertEquals(1, console.getStatus().getConditions().size());
-            var condition = console.getStatus().getConditions().get(0);
-            assertEquals("Ready", condition.getType());
+            var condition = console.getStatus().getConditions().iterator().next();
+            assertEquals(Condition.Types.READY, condition.getType());
             assertEquals("True", condition.getStatus());
             assertNull(condition.getReason());
             assertEquals("All resources ready", condition.getMessage());
@@ -302,15 +305,16 @@ class ConsoleReconcilerTest {
                     .inNamespace(consoleCR.getMetadata().getNamespace())
                     .withName(consoleCR.getMetadata().getName())
                     .get();
-            assertEquals(2, console.getStatus().getConditions().size());
-            var ready = console.getStatus().getConditions().get(0);
-            assertEquals("Ready", ready.getType());
+            List<Condition> conditions = new ArrayList<>(console.getStatus().getConditions());
+            assertEquals(2, conditions.size());
+            var ready = conditions.get(0);
+            assertEquals(Condition.Types.READY, ready.getType());
             assertEquals("False", ready.getStatus());
-            assertEquals("DependentsNotReady", ready.getReason());
-            var warning = console.getStatus().getConditions().get(1);
-            assertEquals("Warning", warning.getType());
+            assertEquals(Condition.Reasons.INVALID_CONFIGURATION, ready.getReason());
+            var warning = conditions.get(1);
+            assertEquals(Condition.Types.ERROR, warning.getType());
             assertEquals("True", warning.getStatus());
-            assertEquals("ReconcileException", warning.getReason());
+            assertEquals(Condition.Reasons.RECONCILIATION_EXCEPTION, warning.getReason());
         });
     }
 
@@ -343,15 +347,16 @@ class ConsoleReconcilerTest {
                     .inNamespace(consoleCR.getMetadata().getNamespace())
                     .withName(consoleCR.getMetadata().getName())
                     .get();
-            assertEquals(2, console.getStatus().getConditions().size());
-            var ready = console.getStatus().getConditions().get(0);
-            assertEquals("Ready", ready.getType());
+            List<Condition> conditions = new ArrayList<>(console.getStatus().getConditions());
+            assertEquals(2, conditions.size());
+            var ready = conditions.get(0);
+            assertEquals(Condition.Types.READY, ready.getType());
             assertEquals("False", ready.getStatus());
-            assertEquals("DependentsNotReady", ready.getReason());
-            var warning = console.getStatus().getConditions().get(1);
-            assertEquals("Warning", warning.getType());
+            assertEquals(Condition.Reasons.INVALID_CONFIGURATION, ready.getReason());
+            var warning = conditions.get(1);
+            assertEquals(Condition.Types.ERROR, warning.getType());
             assertEquals("True", warning.getStatus());
-            assertEquals("ReconcileException", warning.getReason());
+            assertEquals(Condition.Reasons.RECONCILIATION_EXCEPTION, warning.getReason());
             assertEquals("No such KafkaUser resource: ns1/invalid", warning.getMessage());
         });
     }
@@ -398,15 +403,16 @@ class ConsoleReconcilerTest {
                     .inNamespace(consoleCR.getMetadata().getNamespace())
                     .withName(consoleCR.getMetadata().getName())
                     .get();
-            assertEquals(2, console.getStatus().getConditions().size());
-            var ready = console.getStatus().getConditions().get(0);
-            assertEquals("Ready", ready.getType());
+            List<Condition> conditions = new ArrayList<>(console.getStatus().getConditions());
+            assertEquals(2, conditions.size());
+            var ready = conditions.get(0);
+            assertEquals(Condition.Types.READY, ready.getType());
             assertEquals("False", ready.getStatus());
-            assertEquals("DependentsNotReady", ready.getReason());
-            var warning = console.getStatus().getConditions().get(1);
-            assertEquals("Warning", warning.getType());
+            assertEquals(Condition.Reasons.INVALID_CONFIGURATION, ready.getReason());
+            var warning = conditions.get(1);
+            assertEquals(Condition.Types.ERROR, warning.getType());
             assertEquals("True", warning.getStatus());
-            assertEquals("ReconcileException", warning.getReason());
+            assertEquals(Condition.Reasons.RECONCILIATION_EXCEPTION, warning.getReason());
             assertEquals("KafkaUser ns1/ku1 missing .status.secret", warning.getMessage());
         });
     }
@@ -468,15 +474,16 @@ class ConsoleReconcilerTest {
                     .inNamespace(consoleCR.getMetadata().getNamespace())
                     .withName(consoleCR.getMetadata().getName())
                     .get();
-            assertEquals(2, console.getStatus().getConditions().size());
-            var ready = console.getStatus().getConditions().get(0);
-            assertEquals("Ready", ready.getType());
+            List<Condition> conditions = new ArrayList<>(console.getStatus().getConditions());
+            assertEquals(2, conditions.size());
+            var ready = conditions.get(0);
+            assertEquals(Condition.Types.READY, ready.getType());
             assertEquals("False", ready.getStatus());
-            assertEquals("DependentsNotReady", ready.getReason());
-            var warning = console.getStatus().getConditions().get(1);
-            assertEquals("Warning", warning.getType());
+            assertEquals(Condition.Reasons.INVALID_CONFIGURATION, ready.getReason());
+            var warning = conditions.get(1);
+            assertEquals(Condition.Types.ERROR, warning.getType());
             assertEquals("True", warning.getStatus());
-            assertEquals("ReconcileException", warning.getReason());
+            assertEquals(Condition.Reasons.RECONCILIATION_EXCEPTION, warning.getReason());
             assertEquals("Secret ns1/ku1 missing key 'sasl.jaas.config'", warning.getMessage());
         });
     }
@@ -539,8 +546,8 @@ class ConsoleReconcilerTest {
                     .withName(consoleCR.getMetadata().getName())
                     .get();
             assertEquals(1, console.getStatus().getConditions().size());
-            var ready = console.getStatus().getConditions().get(0);
-            assertEquals("Ready", ready.getType());
+            var ready = console.getStatus().getConditions().iterator().next();
+            assertEquals(Condition.Types.READY, ready.getType(), () -> ready.toString());
             assertEquals("False", ready.getStatus());
             assertEquals("DependentsNotReady", ready.getReason());
 
@@ -919,8 +926,8 @@ class ConsoleReconcilerTest {
                     .withName(consoleCR.getMetadata().getName())
                     .get();
             assertEquals(1, console.getStatus().getConditions().size());
-            var condition = console.getStatus().getConditions().get(0);
-            assertEquals("Ready", condition.getType());
+            var condition = console.getStatus().getConditions().iterator().next();
+            assertEquals(Condition.Types.READY, condition.getType());
             assertEquals("False", condition.getStatus());
             assertEquals("DependentsNotReady", condition.getReason());
             assertTrue(condition.getMessage().contains("ConsoleIngress"));
@@ -933,9 +940,9 @@ class ConsoleReconcilerTest {
                     .inNamespace(consoleCR.getMetadata().getNamespace())
                     .withName(consoleCR.getMetadata().getName())
                     .get();
-            assertEquals(1, console.getStatus().getConditions().size());
-            var condition = console.getStatus().getConditions().get(0);
-            assertEquals("Ready", condition.getType());
+            assertEquals(1, console.getStatus().getConditions().size(), () -> console.getStatus().getConditions().toString());
+            var condition = console.getStatus().getConditions().iterator().next();
+            assertEquals(Condition.Types.READY, condition.getType());
             assertEquals("False", condition.getStatus());
             assertEquals("DependentsNotReady", condition.getReason());
             assertTrue(condition.getMessage().contains("ConsoleDeployment"));

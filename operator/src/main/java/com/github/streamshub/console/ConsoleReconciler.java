@@ -5,9 +5,12 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import com.github.streamshub.console.api.v1alpha1.Console;
+import com.github.streamshub.console.api.v1alpha1.status.Condition;
+import com.github.streamshub.console.api.v1alpha1.status.ConditionBuilder;
 import com.github.streamshub.console.dependents.ConsoleClusterRole;
 import com.github.streamshub.console.dependents.ConsoleClusterRoleBinding;
 import com.github.streamshub.console.dependents.ConsoleDeployment;
@@ -23,6 +26,7 @@ import com.github.streamshub.console.dependents.PrometheusConfigMap;
 import com.github.streamshub.console.dependents.PrometheusDeployment;
 import com.github.streamshub.console.dependents.PrometheusService;
 import com.github.streamshub.console.dependents.PrometheusServiceAccount;
+import com.github.streamshub.console.dependents.ValidationGate;
 import com.github.streamshub.console.dependents.conditions.DeploymentReadyCondition;
 import com.github.streamshub.console.dependents.conditions.IngressReadyCondition;
 import com.github.streamshub.console.dependents.conditions.PrometheusPrecondition;
@@ -57,24 +61,32 @@ import io.strimzi.api.kafka.model.user.KafkaUser;
                 timeUnit = TimeUnit.SECONDS),
         dependents = {
             @Dependent(
+                    name = ValidationGate.NAME,
+                    type = ValidationGate.class,
+                    readyPostcondition = ValidationGate.Postcondition.class),
+            @Dependent(
                     name = PrometheusClusterRole.NAME,
                     type = PrometheusClusterRole.class,
+                    dependsOn = ValidationGate.NAME,
                     reconcilePrecondition = PrometheusPrecondition.class),
             @Dependent(
                     name = PrometheusServiceAccount.NAME,
                     type = PrometheusServiceAccount.class,
+                    dependsOn = ValidationGate.NAME,
                     reconcilePrecondition = PrometheusPrecondition.class),
             @Dependent(
                     name = PrometheusClusterRoleBinding.NAME,
                     type = PrometheusClusterRoleBinding.class,
                     reconcilePrecondition = PrometheusPrecondition.class,
                     dependsOn = {
+                        ValidationGate.NAME,
                         PrometheusClusterRole.NAME,
                         PrometheusServiceAccount.NAME
                     }),
             @Dependent(
                     name = PrometheusConfigMap.NAME,
                     type = PrometheusConfigMap.class,
+                    dependsOn = ValidationGate.NAME,
                     reconcilePrecondition = PrometheusPrecondition.class),
             @Dependent(
                     name = PrometheusDeployment.NAME,
@@ -94,10 +106,12 @@ import io.strimzi.api.kafka.model.user.KafkaUser;
                     }),
             @Dependent(
                     name = ConsoleClusterRole.NAME,
-                    type = ConsoleClusterRole.class),
+                    type = ConsoleClusterRole.class,
+                    dependsOn = ValidationGate.NAME),
             @Dependent(
                     name = ConsoleServiceAccount.NAME,
-                    type = ConsoleServiceAccount.class),
+                    type = ConsoleServiceAccount.class,
+                    dependsOn = ValidationGate.NAME),
             @Dependent(
                     name = ConsoleClusterRoleBinding.NAME,
                     type = ConsoleClusterRoleBinding.class,
@@ -114,10 +128,12 @@ import io.strimzi.api.kafka.model.user.KafkaUser;
                     }),
             @Dependent(
                     name = ConsoleSecret.NAME,
-                    type = ConsoleSecret.class),
+                    type = ConsoleSecret.class,
+                    dependsOn = ValidationGate.NAME),
             @Dependent(
                     name = ConsoleService.NAME,
-                    type = ConsoleService.class),
+                    type = ConsoleService.class,
+                    dependsOn = ValidationGate.NAME),
             @Dependent(
                     name = ConsoleIngress.NAME,
                     type = ConsoleIngress.class,
@@ -207,12 +223,7 @@ public class ConsoleReconciler
             Context<Console> context,
             Exception e) {
 
-        determineReadyCondition(resource, context);
-
         var status = resource.getOrCreateStatus();
-        var warning = status.getCondition("Warning");
-        warning.setStatus("True");
-        warning.setReason("ReconcileException");
 
         Throwable rootCause = e;
 
@@ -230,7 +241,15 @@ public class ConsoleReconciler
             message = rootCause.getMessage();
         }
 
-        warning.setMessage(message);
+        status.clearConditions(Condition.Types.ERROR);
+        status.updateCondition(new ConditionBuilder()
+                .withType(Condition.Types.ERROR)
+                .withStatus("True")
+                .withLastTransitionTime(Instant.now().toString())
+                .withReason(Condition.Reasons.RECONCILIATION_EXCEPTION)
+                .withMessage(message)
+                .build());
+        determineReadyCondition(resource, context);
         return ErrorStatusUpdateControl.patchStatus(resource);
     }
 
@@ -243,9 +262,8 @@ public class ConsoleReconciler
         var result = context.managedDependentResourceContext().getWorkflowReconcileResult();
         var status = resource.getOrCreateStatus();
         var readyCondition = status.getCondition("Ready");
-        var notReady = result.map(r -> r.getNotReadyDependents());
-        boolean isReady = notReady.filter(Collection::isEmpty).map(r -> Boolean.TRUE)
-                .orElse(Boolean.FALSE);
+        var notReady = result.map(r -> r.getNotReadyDependents()).filter(Predicate.not(Collection::isEmpty));
+        boolean isReady = notReady.isEmpty();
 
         String readyStatus = isReady ? "True" : "False";
 
@@ -257,15 +275,20 @@ public class ConsoleReconciler
         if (isReady) {
             readyCondition.setReason(null);
             readyCondition.setMessage("All resources ready");
-            status.clearCondition("Warning");
         } else {
-            readyCondition.setReason("DependentsNotReady");
-            readyCondition.setMessage(notReady.map(Collection::stream)
-                    .map(deps -> "Resources not ready: %s"
-                        .formatted(deps.map(ConsoleResource.class::cast)
+            var notReadyResources = notReady.get();
+
+            if (notReadyResources.stream().anyMatch(r -> ValidationGate.class.equals(r.getClass()))) {
+                readyCondition.setReason(Condition.Reasons.INVALID_CONFIGURATION);
+                readyCondition.setMessage("Console resource configuration is invalid");
+            } else {
+                readyCondition.setReason(Condition.Reasons.DEPENDENTS_NOT_READY);
+                readyCondition.setMessage("Resources not ready: %s"
+                        .formatted(notReadyResources.stream()
+                                .map(ConsoleResource.class::cast)
                                 .map(r -> "%s[%s]".formatted(r.getClass().getSimpleName(), r.instanceName(resource)))
-                                .collect(Collectors.joining("; "))))
-                    .orElse(""));
+                                .collect(Collectors.joining("; "))));
+            }
         }
     }
 }
