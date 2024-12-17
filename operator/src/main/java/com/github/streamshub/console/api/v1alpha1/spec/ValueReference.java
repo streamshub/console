@@ -8,7 +8,7 @@ import io.fabric8.kubernetes.api.model.ConfigMapKeySelector;
 import io.fabric8.kubernetes.api.model.SecretKeySelector;
 import io.sundr.builder.annotations.Buildable;
 
-@Buildable(builderPackage = "io.fabric8.kubernetes.api.builder")
+@Buildable
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ValueReference {
 

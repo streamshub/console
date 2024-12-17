@@ -1,4 +1,6 @@
-package com.github.streamshub.console.dependents;
+package com.github.streamshub.console.dependents.discriminators;
+
+import com.github.streamshub.console.dependents.ConsoleResource;
 
 import io.fabric8.kubernetes.api.model.rbac.ClusterRole;
 

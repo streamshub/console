@@ -1,4 +1,4 @@
-package com.github.streamshub.console.dependents;
+package com.github.streamshub.console.dependents.discriminators;
 
 import java.util.Map;
 import java.util.Optional;

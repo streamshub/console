@@ -17,15 +17,15 @@ import com.github.streamshub.console.dependents.ConsoleResource;
 import com.github.streamshub.console.dependents.ConsoleSecret;
 import com.github.streamshub.console.dependents.ConsoleService;
 import com.github.streamshub.console.dependents.ConsoleServiceAccount;
-import com.github.streamshub.console.dependents.DeploymentReadyCondition;
-import com.github.streamshub.console.dependents.IngressReadyCondition;
 import com.github.streamshub.console.dependents.PrometheusClusterRole;
 import com.github.streamshub.console.dependents.PrometheusClusterRoleBinding;
 import com.github.streamshub.console.dependents.PrometheusConfigMap;
 import com.github.streamshub.console.dependents.PrometheusDeployment;
-import com.github.streamshub.console.dependents.PrometheusPrecondition;
 import com.github.streamshub.console.dependents.PrometheusService;
 import com.github.streamshub.console.dependents.PrometheusServiceAccount;
+import com.github.streamshub.console.dependents.conditions.DeploymentReadyCondition;
+import com.github.streamshub.console.dependents.conditions.IngressReadyCondition;
+import com.github.streamshub.console.dependents.conditions.PrometheusPrecondition;
 
 import io.javaoperatorsdk.operator.AggregatedOperatorException;
 import io.javaoperatorsdk.operator.api.reconciler.Cleaner;

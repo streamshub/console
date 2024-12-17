@@ -1,8 +1,10 @@
-package com.github.streamshub.console.dependents;
+package com.github.streamshub.console.dependents.discriminators;
 
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import com.github.streamshub.console.dependents.ConsoleResource;
 
 import io.fabric8.kubernetes.api.model.rbac.ClusterRole;
 

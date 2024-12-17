@@ -10,7 +10,7 @@ import io.fabric8.generator.annotation.Required;
 import io.fabric8.kubernetes.api.model.EnvVar;
 import io.sundr.builder.annotations.Buildable;
 
-@Buildable(builderPackage = "io.fabric8.kubernetes.api.builder")
+@Buildable
 @JsonInclude(JsonInclude.Include.NON_NULL)
 // Enable validation rules for unique names when array maxItems and string maxLength can be specified
 // to influence Kubernetes's estimated rule cost.
