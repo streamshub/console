@@ -2,6 +2,7 @@ package com.github.streamshub.console.api.v1alpha1.spec;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import com.github.streamshub.console.api.v1alpha1.spec.security.KafkaSecurity;
 
 import io.fabric8.generator.annotation.Required;
 import io.fabric8.generator.annotation.ValidationRule;
@@ -50,6 +51,14 @@ public class KafkaCluster {
     private String listener;
 
     private Credentials credentials;
+
+    @JsonPropertyDescription("""
+            Security configuration to be applied only to this Kafka cluster. This \
+            includes the configuration of subjects (e.g. non-OIDC Kafka users), role \
+            policies for this cluster's resources, and audit rules for access to \
+            cluster's resources.
+            """)
+    private KafkaSecurity security;
 
     @JsonPropertyDescription("""
             Name of a configured Prometheus metrics source to use for this Kafka \
@@ -109,6 +118,14 @@ public class KafkaCluster {
 
     public void setCredentials(Credentials credentials) {
         this.credentials = credentials;
+    }
+
+    public KafkaSecurity getSecurity() {
+        return security;
+    }
+
+    public void setSecurity(KafkaSecurity security) {
+        this.security = security;
     }
 
     public String getMetricsSource() {

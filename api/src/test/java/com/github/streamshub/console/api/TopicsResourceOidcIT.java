@@ -28,9 +28,9 @@ import com.github.streamshub.console.api.support.KafkaContext;
 import com.github.streamshub.console.config.ConsoleConfig;
 import com.github.streamshub.console.config.KafkaClusterConfig;
 import com.github.streamshub.console.config.security.Audit;
+import com.github.streamshub.console.config.security.KafkaSecurityConfigBuilder;
 import com.github.streamshub.console.config.security.Privilege;
 import com.github.streamshub.console.config.security.ResourceTypes;
-import com.github.streamshub.console.config.security.SecurityConfigBuilder;
 import com.github.streamshub.console.kafka.systemtest.TestPlainProfile;
 import com.github.streamshub.console.kafka.systemtest.deployment.DeploymentManager;
 import com.github.streamshub.console.kafka.systemtest.utils.ConsumerUtils;
@@ -174,7 +174,7 @@ class TopicsResourceOidcIT {
          * and may only list/get their own groups.
          */
         consoleConfig.getKafka().getClusterById(clusterId1).ifPresent(cfg -> {
-            cfg.setSecurity(new SecurityConfigBuilder()
+            cfg.setSecurity(new KafkaSecurityConfigBuilder()
                     .addNewRole()
                         .withName("dev-a")
                         .addNewRule()
@@ -293,7 +293,7 @@ class TopicsResourceOidcIT {
             .build());
 
         consoleConfig.getKafka().getClusterById(clusterId1).ifPresent(clusterConfig -> {
-            clusterConfig.setSecurity(new SecurityConfigBuilder()
+            clusterConfig.setSecurity(new KafkaSecurityConfigBuilder()
                     .addNewAudit()
                         .withDecision(Audit.ALL)
                         .withResources(ResourceTypes.Kafka.TOPICS.value())
@@ -359,7 +359,7 @@ class TopicsResourceOidcIT {
          * Both teams may only describe their own topics.
          */
         consoleConfig.getKafka().getClusterById(clusterId1).ifPresent(cfg -> {
-            cfg.setSecurity(new SecurityConfigBuilder()
+            cfg.setSecurity(new KafkaSecurityConfigBuilder()
                     .addNewRole()
                         .withName("dev-a")
                         .addNewRule()
@@ -432,7 +432,7 @@ class TopicsResourceOidcIT {
 
         // alice's team may only create topics starting with `a-`
         consoleConfig.getKafka().getClusterById(clusterId1).ifPresent(cfg -> {
-            cfg.setSecurity(new SecurityConfigBuilder()
+            cfg.setSecurity(new KafkaSecurityConfigBuilder()
                     .addNewRole()
                         .withName("dev-a")
                         .addNewRule()
@@ -480,7 +480,7 @@ class TopicsResourceOidcIT {
 
         // alice's team may only delete topics starting with `a-`
         consoleConfig.getKafka().getClusterById(clusterId1).ifPresent(cfg -> {
-            cfg.setSecurity(new SecurityConfigBuilder()
+            cfg.setSecurity(new KafkaSecurityConfigBuilder()
                     .addNewRole()
                         .withName("dev-a")
                         .addNewRule()
@@ -520,7 +520,7 @@ class TopicsResourceOidcIT {
         // alice's team may only update topics starting with `a-`
         // UPDATE requires GET: old version of topic required for validations
         consoleConfig.getKafka().getClusterById(clusterId1).ifPresent(cfg -> {
-            cfg.setSecurity(new SecurityConfigBuilder()
+            cfg.setSecurity(new KafkaSecurityConfigBuilder()
                     .addNewRole()
                         .withName("dev-a")
                         .addNewRule()
