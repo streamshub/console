@@ -39,7 +39,7 @@ import com.github.streamshub.console.api.model.ErrorResponse;
 import com.github.streamshub.console.api.support.ErrorCategory;
 import com.github.streamshub.console.api.support.KafkaContext;
 import com.github.streamshub.console.config.ConsoleConfig;
-import com.github.streamshub.console.config.security.Audit;
+import com.github.streamshub.console.config.security.Decision;
 import com.github.streamshub.console.config.security.AuditConfig;
 import com.github.streamshub.console.config.security.Privilege;
 import com.github.streamshub.console.config.security.SecurityConfig;
@@ -358,7 +358,7 @@ public class ConsoleAuthenticationMechanism implements HttpAuthenticationMechani
         });
     }
 
-    private void auditLog(Principal principal, Permission required, boolean allowed, Audit audit) {
+    private void auditLog(Principal principal, Permission required, boolean allowed, Decision audit) {
         if (audit != null && audit.logResult(allowed)) {
             log.infof("%s %s %s", principal.getName(), allowed ? "allowed" : "denied", required);
         } else {
@@ -419,14 +419,14 @@ public class ConsoleAuthenticationMechanism implements HttpAuthenticationMechani
                 });
     }
 
-    private Map<Permission, Audit> mergeAuditRules(Map<Permission, Audit> global, Map<Permission, Audit> cluster) {
+    private Map<Permission, Decision> mergeAuditRules(Map<Permission, Decision> global, Map<Permission, Decision> cluster) {
         return Stream.concat(global.entrySet().stream(), cluster.entrySet().stream())
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
-    private Map<Permission, Audit> getAuditRules(List<AuditConfig> audits, String resourcePrefix) {
+    private Map<Permission, Decision> getAuditRules(List<AuditConfig> audits, String resourcePrefix) {
         return audits.stream().flatMap(rule -> {
-            Map<ConsolePermission, Audit> auditRules = new HashMap<>();
+            Map<ConsolePermission, Decision> auditRules = new HashMap<>();
             Set<Privilege> actions = rule.getPrivileges().stream().flatMap(p -> p.expand().stream()).collect(Collectors.toSet());
 
             for (var action : actions) {
