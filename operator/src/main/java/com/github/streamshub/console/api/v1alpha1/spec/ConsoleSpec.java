@@ -55,6 +55,14 @@ public class ConsoleSpec {
         this.images = images;
     }
 
+    public GlobalSecurity getSecurity() {
+        return security;
+    }
+
+    public void setSecurity(GlobalSecurity security) {
+        this.security = security;
+    }
+
     public List<MetricsSource> getMetricsSources() {
         return metricsSources;
     }
