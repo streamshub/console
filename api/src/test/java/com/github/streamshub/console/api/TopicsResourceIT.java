@@ -71,7 +71,7 @@ import org.skyscreamer.jsonassert.JSONCompareMode;
 import com.github.streamshub.console.api.security.ConsoleAuthenticationMechanism;
 import com.github.streamshub.console.api.support.Holder;
 import com.github.streamshub.console.config.ConsoleConfig;
-import com.github.streamshub.console.config.security.Audit;
+import com.github.streamshub.console.config.security.Decision;
 import com.github.streamshub.console.config.security.KafkaSecurityConfigBuilder;
 import com.github.streamshub.console.config.security.Privilege;
 import com.github.streamshub.console.config.security.ResourceTypes;
@@ -772,7 +772,7 @@ class TopicsResourceIT {
         consoleConfig.getKafka().getClusterById(clusterId1).ifPresent(clusterConfig -> {
             clusterConfig.setSecurity(new KafkaSecurityConfigBuilder()
                     .addNewAudit()
-                        .withDecision(Audit.ALL)
+                        .withDecision(Decision.ALL)
                         .withResources(ResourceTypes.Kafka.TOPICS.value())
                         .withPrivileges(privilegesAudited)
                     .endAudit()
