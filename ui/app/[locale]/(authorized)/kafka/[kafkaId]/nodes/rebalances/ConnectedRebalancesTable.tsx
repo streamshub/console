@@ -158,7 +158,6 @@ export function ConnectedReabalancesTable({
               variant="info"
               isInline
               title={t("cruisecontrol_enable")}
-              actionClose={<AlertActionCloseButton onClose={handleClose} />}
               actionLinks={
                 <AlertActionLink component="a" href="#">
                   {t("learn_more_about_cruisecontrol_enablement")}
