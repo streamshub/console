@@ -2,6 +2,8 @@ package com.github.streamshub.console.dependents;
 
 import jakarta.enterprise.context.ApplicationScoped;
 
+import com.github.streamshub.console.dependents.discriminators.PrometheusLabelDiscriminator;
+
 import io.javaoperatorsdk.operator.processing.dependent.kubernetes.KubernetesDependent;
 
 @ApplicationScoped

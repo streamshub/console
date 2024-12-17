@@ -4,6 +4,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
 import com.github.streamshub.console.api.v1alpha1.Console;
+import com.github.streamshub.console.dependents.discriminators.PrometheusLabelDiscriminator;
 
 import io.fabric8.kubernetes.api.model.Service;
 import io.javaoperatorsdk.operator.api.reconciler.Context;

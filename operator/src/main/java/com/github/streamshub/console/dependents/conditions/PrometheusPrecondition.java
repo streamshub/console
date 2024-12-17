@@ -1,4 +1,4 @@
-package com.github.streamshub.console.dependents;
+package com.github.streamshub.console.dependents.conditions;
 
 import java.util.Collections;
 import java.util.Optional;

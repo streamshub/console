@@ -14,7 +14,7 @@ import io.sundr.builder.annotations.Buildable;
 
 @Version("v1alpha1")
 @Group("console.streamshub.github.com")
-@Buildable(editableEnabled = false, builderPackage = "io.fabric8.kubernetes.api.builder")
+@Buildable(editableEnabled = false)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @CSVMetadata(
     displayName = "Console Instance",
