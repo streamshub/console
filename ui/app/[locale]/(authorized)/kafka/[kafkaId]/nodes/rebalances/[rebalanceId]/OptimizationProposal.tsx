@@ -57,11 +57,8 @@ export function OptimizationProposal({
       isOpen={true}
       onClose={onClickClose}
       actions={[
-        <Button key="done" variant="primary" onClick={onClickClose}>
-          {t("done")}
-        </Button>,
-        <Button key="cancel" variant="link" onClick={onClickClose}>
-          {t("cancel")}
+        <Button key="close" variant="primary" onClick={onClickClose}>
+          {t("close")}
         </Button>,
       ]}
     >

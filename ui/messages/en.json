@@ -582,7 +582,7 @@
     "on_demand_balancedness_Score_before": "On Demand Balancedness Score Before",
     "recent_windows": "Recent Windows",
     "session_id": "Session Id",
-    "done": "Done",
+    "close": "Close",
     "mode": "Mode",
     "auto_approval_enabled": "Auto-approval enabled",
     "brokers": "Brokers",
