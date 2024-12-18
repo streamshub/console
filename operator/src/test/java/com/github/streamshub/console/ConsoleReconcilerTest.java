@@ -344,9 +344,9 @@ class ConsoleReconcilerTest extends ConsoleReconcilerTestBase {
                     .get();
             assertEquals(1, console.getStatus().getConditions().size());
             var ready = console.getStatus().getConditions().iterator().next();
-            assertEquals(Condition.Types.READY, ready.getType(), () -> ready.toString());
-            assertEquals("False", ready.getStatus());
-            assertEquals("DependentsNotReady", ready.getReason());
+            assertEquals(Condition.Types.READY, ready.getType(), ready::toString);
+            assertEquals("False", ready.getStatus(), ready::toString);
+            assertEquals("DependentsNotReady", ready.getReason(), ready::toString);
 
             var consoleSecret = client.secrets().inNamespace("ns2").withName("console-1-" + ConsoleSecret.NAME).get();
             assertNotNull(consoleSecret);
