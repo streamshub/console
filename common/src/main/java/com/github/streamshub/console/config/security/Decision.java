@@ -4,7 +4,7 @@ import java.util.Locale;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 
-public enum Audit {
+public enum Decision {
 
     ALLOWED {
         @Override
@@ -30,7 +30,7 @@ public enum Audit {
     public abstract boolean logResult(boolean allowed);
 
     @JsonCreator
-    public static Audit forValue(String value) {
+    public static Decision forValue(String value) {
         if ("*".equals(value)) {
             return ALL;
         }

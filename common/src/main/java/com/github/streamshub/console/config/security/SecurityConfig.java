@@ -8,7 +8,7 @@ import jakarta.validation.Valid;
 import io.sundr.builder.annotations.Buildable;
 
 @Buildable(editableEnabled = false)
-public class SecurityConfig {
+public abstract class SecurityConfig {
 
     @Valid
     private List<SubjectConfig> subjects = new ArrayList<>();
