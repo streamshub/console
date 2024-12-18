@@ -4,10 +4,10 @@ import java.time.Instant;
 import java.util.Comparator;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.function.Predicate;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.github.streamshub.console.api.v1alpha1.status.Condition.Types;
 
 import io.javaoperatorsdk.operator.api.ObservedGenerationAwareStatus;
 import io.sundr.builder.annotations.Buildable;
@@ -49,24 +49,18 @@ public class ConsoleStatus extends ObservedGenerationAwareStatus {
 
     @JsonIgnore
     public void updateCondition(Condition condition) {
-        condition.setLastUpdatedTime(Instant.now());
+        condition.setActive(true);
 
         conditions.stream()
             .filter(condition::equals)
             .findFirst()
             .ifPresentOrElse(
-                    c -> c.setLastUpdatedTime(condition.getLastUpdatedTime()),
+                    c -> c.setActive(true),
                     () -> conditions.add(condition));
     }
 
     @JsonIgnore
-    public void clearConditions(String type) {
-        conditions.removeIf(c -> type.equals(c.getType()));
-    }
-
-    @JsonIgnore
-    public void clearErrorsBefore(Instant minLastUpdated) {
-        conditions.removeIf(c -> Types.ERROR.equals(c.getType())
-                && minLastUpdated.isAfter(c.getLastUpdatedTime()));
+    public void clearStaleConditions() {
+        conditions.removeIf(Predicate.not(Condition::isActive));
     }
 }

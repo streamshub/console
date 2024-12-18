@@ -86,11 +86,11 @@ import static com.github.streamshub.console.support.StringSupport.replaceNonAlph
 import static com.github.streamshub.console.support.StringSupport.toEnv;
 
 @ApplicationScoped
-public class ValidationGate implements DependentResource<HasMetadata, Console>, ConsoleResource {
+public class ConfigurationProcessor implements DependentResource<HasMetadata, Console>, ConsoleResource {
 
-    public static final String NAME = "validationGate";
+    public static final String NAME = "ConfigurationProcessor";
 
-    private static final Logger LOGGER = Logger.getLogger(ValidationGate.class);
+    private static final Logger LOGGER = Logger.getLogger(ConfigurationProcessor.class);
     private static final String EMBEDDED_METRICS_NAME = "streamshub.console.embedded-prometheus";
     private static final String METRICS_TRUST_PREFIX = "metrics-source-truststore.";
     private static final String REGISTRY_TRUST_PREFIX = "schema-registry-truststore.";
@@ -142,7 +142,6 @@ public class ValidationGate implements DependentResource<HasMetadata, Console>, 
     }
 
     private boolean buildSecretData(Console primary, Context<Console> context) {
-        Instant validationTime = Instant.now();
         ConsoleStatus status = primary.getOrCreateStatus();
         Map<String, String> data = new LinkedHashMap<>(2);
 
@@ -163,7 +162,6 @@ public class ValidationGate implements DependentResource<HasMetadata, Console>, 
                     .build());
         }
 
-        status.clearErrorsBefore(validationTime);
         context.managedDependentResourceContext().put("ConsoleSecretData", data);
         return !status.hasCondition(Types.ERROR);
     }
@@ -382,8 +380,9 @@ public class ValidationGate implements DependentResource<HasMetadata, Console>, 
         for (var role : roles) {
             target.getRoles().add(new RoleConfigBuilder()
                     .withName(role.getName())
-                    .withRules(role.getRules().stream().map(rule ->
-                        new RuleConfigBuilder()
+                    .withRules(coalesce(role.getRules(), Collections::emptyList)
+                            .stream()
+                            .map(rule -> new RuleConfigBuilder()
                                 .withResources(rule.getResources())
                                 .withResourceNames(rule.getResourceNames())
                                 .withPrivileges(rule.getPrivileges()
@@ -391,8 +390,8 @@ public class ValidationGate implements DependentResource<HasMetadata, Console>, 
                                         .map(Enum::name)
                                         .map(Privilege::valueOf)
                                         .toList())
-                                .build()
-                    ).toList())
+                                .build())
+                            .toList())
                     .build());
         }
 

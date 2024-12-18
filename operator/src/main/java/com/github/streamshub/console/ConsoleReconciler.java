@@ -26,7 +26,7 @@ import com.github.streamshub.console.dependents.PrometheusConfigMap;
 import com.github.streamshub.console.dependents.PrometheusDeployment;
 import com.github.streamshub.console.dependents.PrometheusService;
 import com.github.streamshub.console.dependents.PrometheusServiceAccount;
-import com.github.streamshub.console.dependents.ValidationGate;
+import com.github.streamshub.console.dependents.ConfigurationProcessor;
 import com.github.streamshub.console.dependents.conditions.DeploymentReadyCondition;
 import com.github.streamshub.console.dependents.conditions.IngressReadyCondition;
 import com.github.streamshub.console.dependents.conditions.PrometheusPrecondition;
@@ -61,32 +61,32 @@ import io.strimzi.api.kafka.model.user.KafkaUser;
                 timeUnit = TimeUnit.SECONDS),
         dependents = {
             @Dependent(
-                    name = ValidationGate.NAME,
-                    type = ValidationGate.class,
-                    readyPostcondition = ValidationGate.Postcondition.class),
+                    name = ConfigurationProcessor.NAME,
+                    type = ConfigurationProcessor.class,
+                    readyPostcondition = ConfigurationProcessor.Postcondition.class),
             @Dependent(
                     name = PrometheusClusterRole.NAME,
                     type = PrometheusClusterRole.class,
-                    dependsOn = ValidationGate.NAME,
+                    dependsOn = ConfigurationProcessor.NAME,
                     reconcilePrecondition = PrometheusPrecondition.class),
             @Dependent(
                     name = PrometheusServiceAccount.NAME,
                     type = PrometheusServiceAccount.class,
-                    dependsOn = ValidationGate.NAME,
+                    dependsOn = ConfigurationProcessor.NAME,
                     reconcilePrecondition = PrometheusPrecondition.class),
             @Dependent(
                     name = PrometheusClusterRoleBinding.NAME,
                     type = PrometheusClusterRoleBinding.class,
                     reconcilePrecondition = PrometheusPrecondition.class,
                     dependsOn = {
-                        ValidationGate.NAME,
+                        ConfigurationProcessor.NAME,
                         PrometheusClusterRole.NAME,
                         PrometheusServiceAccount.NAME
                     }),
             @Dependent(
                     name = PrometheusConfigMap.NAME,
                     type = PrometheusConfigMap.class,
-                    dependsOn = ValidationGate.NAME,
+                    dependsOn = ConfigurationProcessor.NAME,
                     reconcilePrecondition = PrometheusPrecondition.class),
             @Dependent(
                     name = PrometheusDeployment.NAME,
@@ -107,11 +107,11 @@ import io.strimzi.api.kafka.model.user.KafkaUser;
             @Dependent(
                     name = ConsoleClusterRole.NAME,
                     type = ConsoleClusterRole.class,
-                    dependsOn = ValidationGate.NAME),
+                    dependsOn = ConfigurationProcessor.NAME),
             @Dependent(
                     name = ConsoleServiceAccount.NAME,
                     type = ConsoleServiceAccount.class,
-                    dependsOn = ValidationGate.NAME),
+                    dependsOn = ConfigurationProcessor.NAME),
             @Dependent(
                     name = ConsoleClusterRoleBinding.NAME,
                     type = ConsoleClusterRoleBinding.class,
@@ -129,11 +129,11 @@ import io.strimzi.api.kafka.model.user.KafkaUser;
             @Dependent(
                     name = ConsoleSecret.NAME,
                     type = ConsoleSecret.class,
-                    dependsOn = ValidationGate.NAME),
+                    dependsOn = ConfigurationProcessor.NAME),
             @Dependent(
                     name = ConsoleService.NAME,
                     type = ConsoleService.class,
-                    dependsOn = ValidationGate.NAME),
+                    dependsOn = ConfigurationProcessor.NAME),
             @Dependent(
                     name = ConsoleIngress.NAME,
                     type = ConsoleIngress.class,
@@ -215,6 +215,7 @@ public class ConsoleReconciler
     @Override
     public UpdateControl<Console> reconcile(Console resource, Context<Console> context) {
         determineReadyCondition(resource, context);
+        resource.getStatus().clearStaleConditions();
         return UpdateControl.patchStatus(resource);
     }
 
@@ -223,7 +224,7 @@ public class ConsoleReconciler
             Context<Console> context,
             Exception e) {
 
-        var status = resource.getOrCreateStatus();
+        determineReadyCondition(resource, context);
 
         Throwable rootCause = e;
 
@@ -241,7 +242,8 @@ public class ConsoleReconciler
             message = rootCause.getMessage();
         }
 
-        status.clearConditions(Condition.Types.ERROR);
+        var status = resource.getStatus();
+
         status.updateCondition(new ConditionBuilder()
                 .withType(Condition.Types.ERROR)
                 .withStatus("True")
@@ -249,7 +251,9 @@ public class ConsoleReconciler
                 .withReason(Condition.Reasons.RECONCILIATION_EXCEPTION)
                 .withMessage(message)
                 .build());
-        determineReadyCondition(resource, context);
+
+        status.clearStaleConditions();
+
         return ErrorStatusUpdateControl.patchStatus(resource);
     }
 
@@ -266,6 +270,7 @@ public class ConsoleReconciler
         boolean isReady = notReady.isEmpty();
 
         String readyStatus = isReady ? "True" : "False";
+        readyCondition.setActive(true);
 
         if (!readyStatus.equals(readyCondition.getStatus())) {
             readyCondition.setStatus(readyStatus);
@@ -278,7 +283,7 @@ public class ConsoleReconciler
         } else {
             var notReadyResources = notReady.get();
 
-            if (notReadyResources.stream().anyMatch(r -> ValidationGate.class.equals(r.getClass()))) {
+            if (notReadyResources.stream().anyMatch(ConfigurationProcessor.class::isInstance)) {
                 readyCondition.setReason(Condition.Reasons.INVALID_CONFIGURATION);
                 readyCondition.setMessage("Console resource configuration is invalid");
             } else {
