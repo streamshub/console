@@ -1,6 +1,5 @@
 package com.github.streamshub.console.api.v1alpha1.status;
 
-import java.time.Instant;
 import java.util.Objects;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -13,30 +12,14 @@ import io.sundr.builder.annotations.Buildable;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class Condition {
 
-    public static final class Types {
-        private Types() {
-        }
-
-        public static final String READY = "Ready";
-        public static final String ERROR = "Error";
-    }
-
-    public static final class Reasons {
-        private Reasons() {
-        }
-
-        public static final String DEPENDENTS_NOT_READY = "DependentsNotReady";
-        public static final String INVALID_CONFIGURATION = "InvalidConfiguration";
-        public static final String RECONCILIATION_EXCEPTION = "ReconciliationException";
-    }
-
     private String status;
     private String reason;
     private String message;
     private String type;
     private String lastTransitionTime;
+
     @JsonIgnore
-    private Instant lastUpdatedTime = Instant.MIN;
+    private boolean active = false;
 
     @JsonPropertyDescription("The status of the condition, either True, False or Unknown.")
     public String getStatus() {
@@ -85,12 +68,12 @@ public class Condition {
         this.message = message;
     }
 
-    public Instant getLastUpdatedTime() {
-        return lastUpdatedTime;
+    public boolean isActive() {
+        return active;
     }
 
-    public void setLastUpdatedTime(Instant lastUpdatedTime) {
-        this.lastUpdatedTime = lastUpdatedTime;
+    public void setActive(boolean active) {
+        this.active = active;
     }
 
     @Override
@@ -98,6 +81,9 @@ public class Condition {
         return Objects.hash(message, reason, status, type);
     }
 
+    /**
+     * For the purposes of equality, we do not consider the lastTransitionTime.
+     */
     @Override
     public boolean equals(Object obj) {
         if (this == obj)
@@ -123,5 +109,28 @@ public class Condition {
                 message = "%s", \
                 lastTransitionTime = "%s" \
                 }""".formatted(type, status, reason, message, lastTransitionTime);
+    }
+
+    /**
+     * Constant values for the types used for conditions
+     */
+    public static final class Types {
+        private Types() {
+        }
+
+        public static final String READY = "Ready";
+        public static final String ERROR = "Error";
+    }
+
+    /**
+     * Constant values for the reasons used for conditions
+     */
+    public static final class Reasons {
+        private Reasons() {
+        }
+
+        public static final String DEPENDENTS_NOT_READY = "DependentsNotReady";
+        public static final String INVALID_CONFIGURATION = "InvalidConfiguration";
+        public static final String RECONCILIATION_EXCEPTION = "ReconciliationException";
     }
 }
