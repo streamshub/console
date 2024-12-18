@@ -76,7 +76,7 @@ abstract class ConsoleReconcilerTestBase {
     }
 
     @BeforeEach
-    void setUp() throws Exception {
+    void setUp() {
         client.resource(Crds.kafka()).serverSideApply();
         client.resource(Crds.kafkaUser()).serverSideApply();
         client.resource(new CustomResourceDefinitionBuilder()
@@ -206,10 +206,10 @@ abstract class ConsoleReconcilerTestBase {
             assertEquals(1, console.getStatus().getConditions().size());
             var condition = console.getStatus().getConditions().iterator().next();
 
-            assertEquals(Condition.Types.READY, condition.getType());
-            assertEquals("True", condition.getStatus());
+            assertEquals(Condition.Types.READY, condition.getType(), condition::toString);
+            assertEquals("True", condition.getStatus(), condition::toString);
             assertNull(condition.getReason());
-            assertEquals("All resources ready", condition.getMessage());
+            assertEquals("All resources ready", condition.getMessage(), condition::toString);
         });
     }
 
@@ -223,9 +223,9 @@ abstract class ConsoleReconcilerTestBase {
             assertEquals(1, console.getStatus().getConditions().size());
             var condition = console.getStatus().getConditions().iterator().next();
 
-            assertEquals(Condition.Types.READY, condition.getType(), () -> condition.toString());
-            assertEquals("False", condition.getStatus());
-            assertEquals(Condition.Reasons.DEPENDENTS_NOT_READY, condition.getReason());
+            assertEquals(Condition.Types.READY, condition.getType(), condition::toString);
+            assertEquals("False", condition.getStatus(), condition::toString);
+            assertEquals(Condition.Reasons.DEPENDENTS_NOT_READY, condition.getReason(), condition::toString);
 
             for (String dependent : dependents) {
                 assertTrue(condition.getMessage().contains(dependent));
@@ -244,9 +244,9 @@ abstract class ConsoleReconcilerTestBase {
             assertTrue(conditions.size() > 1);
 
             var readyCondition = conditions.iterator().next();
-            assertEquals(Condition.Types.READY, readyCondition.getType(), () -> readyCondition.toString());
-            assertEquals("False", readyCondition.getStatus());
-            assertEquals(Condition.Reasons.INVALID_CONFIGURATION, readyCondition.getReason());
+            assertEquals(Condition.Types.READY, readyCondition.getType(), readyCondition::toString);
+            assertEquals("False", readyCondition.getStatus(), readyCondition::toString);
+            assertEquals(Condition.Reasons.INVALID_CONFIGURATION, readyCondition.getReason(), readyCondition::toString);
 
             // Ready is always sorted as the first condition for ease of reference
             List<Condition> errors = List.copyOf(conditions).subList(1, conditions.size());

@@ -190,7 +190,7 @@ class ConsoleReconcilerSecurityTest extends ConsoleReconcilerTestBase {
         assertInvalidConfiguration(consoleCR, errorConditions -> {
             assertEquals(1, errorConditions.size());
             var errorCondition = errorConditions.get(0);
-            Supplier<String> errorString = () -> errorCondition.toString();
+            Supplier<String> errorString = errorCondition::toString;
 
             assertEquals(Condition.Types.ERROR, errorCondition.getType(), errorString);
             assertEquals("True", errorCondition.getStatus(), errorString);
