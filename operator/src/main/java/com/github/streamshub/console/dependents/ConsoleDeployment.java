@@ -1,6 +1,5 @@
 package com.github.streamshub.console.dependents;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -13,6 +12,8 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import com.github.streamshub.console.api.v1alpha1.Console;
 import com.github.streamshub.console.api.v1alpha1.spec.Images;
+import com.github.streamshub.console.api.v1alpha1.spec.containers.ContainerTemplate;
+import com.github.streamshub.console.api.v1alpha1.spec.containers.Containers;
 import com.github.streamshub.console.dependents.discriminators.ConsoleLabelDiscriminator;
 
 import io.fabric8.kubernetes.api.model.EnvVar;
@@ -61,14 +62,13 @@ public class ConsoleDeployment extends CRUDKubernetesDependentResource<Deploymen
         String name = instanceName(primary);
         String configSecretName = secret.instanceName(primary);
 
-        var imagesSpec = Optional.ofNullable(primary.getSpec().getImages());
-        String imageAPI = imagesSpec.map(Images::getApi).orElse(defaultAPIImage);
-        String imageUI = imagesSpec.map(Images::getUi).orElse(defaultUIImage);
-
-        var envVars = new ArrayList<>(coalesce(primary.getSpec().getEnv(), Collections::emptyList));
-
+        var containers = Optional.ofNullable(primary.getSpec().getContainers());
+        var templateAPI = containers.map(Containers::getApi);
+        var templateUI = containers.map(Containers::getUi);
         var trustResources = getTrustResources(context);
-        envVars.addAll(getResourcesByType(trustResources, EnvVar.class));
+
+        // deprecated
+        var images = Optional.ofNullable(primary.getSpec().getImages());
 
         return desired.edit()
             .editMetadata()
@@ -95,13 +95,26 @@ public class ConsoleDeployment extends CRUDKubernetesDependentResource<Deploymen
                             .endSecret()
                         .endVolume()
                         .addAllToVolumes(getResourcesByType(trustResources, Volume.class))
+                        // Set API container image options
                         .editMatchingContainer(c -> "console-api".equals(c.getName()))
-                            .withImage(imageAPI)
+                            .withImage(templateAPI.map(ContainerTemplate::getImage)
+                                    .or(() -> images.map(Images::getApi))
+                                    .orElse(defaultAPIImage))
+                            .withResources(templateAPI.map(ContainerTemplate::getResources).orElse(null))
                             .addAllToVolumeMounts(getResourcesByType(trustResources, VolumeMount.class))
-                            .addAllToEnv(envVars)
+                            // deprecated env list
+                            .addAllToEnv(coalesce(primary.getSpec().getEnv(), Collections::emptyList))
+                            // Env from template
+                            .addAllToEnv(templateAPI.map(ContainerTemplate::getEnv).orElseGet(Collections::emptyList))
+                            // Env for truststores
+                            .addAllToEnv(getResourcesByType(trustResources, EnvVar.class))
                         .endContainer()
+                        // Set UI container image options
                         .editMatchingContainer(c -> "console-ui".equals(c.getName()))
-                            .withImage(imageUI)
+                            .withImage(templateUI.map(ContainerTemplate::getImage)
+                                    .or(() -> images.map(Images::getUi))
+                                    .orElse(defaultUIImage))
+                            .withResources(templateUI.map(ContainerTemplate::getResources).orElse(null))
                             .editMatchingEnv(env -> "NEXTAUTH_URL".equals(env.getName()))
                                 .withValue(getAttribute(context, ConsoleIngress.NAME + ".url", String.class))
                             .endEnv()
@@ -112,6 +125,7 @@ public class ConsoleDeployment extends CRUDKubernetesDependentResource<Deploymen
                                     .endSecretKeyRef()
                                 .endValueFrom()
                             .endEnv()
+                            .addAllToEnv(templateUI.map(ContainerTemplate::getEnv).orElseGet(Collections::emptyList))
                         .endContainer()
                     .endSpec()
                 .endTemplate()
