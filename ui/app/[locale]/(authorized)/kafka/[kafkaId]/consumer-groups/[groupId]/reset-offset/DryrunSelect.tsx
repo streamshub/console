@@ -44,6 +44,7 @@ export function DryrunSelect({
                 id="split-button-action-secondary-with-toggle-button"
                 key="split-action-secondary"
                 aria-label={t("dry_run")}
+                onClick={openDryrun}
               >
                 {t("dry_run")}
               </MenuToggleAction>,
