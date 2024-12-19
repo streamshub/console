@@ -15,8 +15,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
 import com.github.streamshub.console.config.ConsoleConfig;
+import com.github.streamshub.console.config.security.KafkaSecurityConfigBuilder;
 import com.github.streamshub.console.config.security.Privilege;
-import com.github.streamshub.console.config.security.SecurityConfigBuilder;
 import com.github.streamshub.console.kafka.systemtest.TestPlainProfile;
 import com.github.streamshub.console.kafka.systemtest.deployment.DeploymentManager;
 import com.github.streamshub.console.kafka.systemtest.utils.TokenUtils;
@@ -173,7 +173,7 @@ class KafkaRebalancesResourceOidcIT {
             .build());
 
         consoleConfig.getKafka().getClusterById(clusterId1).ifPresent(cfg -> {
-            cfg.setSecurity(new SecurityConfigBuilder()
+            cfg.setSecurity(new KafkaSecurityConfigBuilder()
                     .addNewRole()
                         .withName("dev-a")
                         .addNewRule()
@@ -185,7 +185,7 @@ class KafkaRebalancesResourceOidcIT {
         });
 
         consoleConfig.getKafka().getClusterById(clusterId2).ifPresent(cfg -> {
-            cfg.setSecurity(new SecurityConfigBuilder()
+            cfg.setSecurity(new KafkaSecurityConfigBuilder()
                     .addNewRole()
                         .withName("dev-b")
                         .addNewRule()
@@ -228,7 +228,7 @@ class KafkaRebalancesResourceOidcIT {
             .build());
 
         consoleConfig.getKafka().getClusterById(clusterId1).ifPresent(cfg -> {
-            cfg.setSecurity(new SecurityConfigBuilder()
+            cfg.setSecurity(new KafkaSecurityConfigBuilder()
                     .addNewRole()
                         .withName("developer")
                         .addNewRule()
@@ -259,7 +259,7 @@ class KafkaRebalancesResourceOidcIT {
             .build());
 
         consoleConfig.getKafka().getClusterById(clusterId1).ifPresent(cfg -> {
-            cfg.setSecurity(new SecurityConfigBuilder()
+            cfg.setSecurity(new KafkaSecurityConfigBuilder()
                     .addNewRole()
                         .withName("developer")
                         .addNewRule()

@@ -5,6 +5,7 @@ import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.github.streamshub.console.api.v1alpha1.spec.metrics.MetricsSource;
+import com.github.streamshub.console.api.v1alpha1.spec.security.GlobalSecurity;
 
 import io.fabric8.generator.annotation.Required;
 import io.fabric8.kubernetes.api.model.EnvVar;
@@ -28,6 +29,8 @@ public class ConsoleSpec {
 
     Images images;
 
+    GlobalSecurity security;
+
     List<MetricsSource> metricsSources;
 
     List<SchemaRegistry> schemaRegistries;
@@ -50,6 +53,14 @@ public class ConsoleSpec {
 
     public void setImages(Images images) {
         this.images = images;
+    }
+
+    public GlobalSecurity getSecurity() {
+        return security;
+    }
+
+    public void setSecurity(GlobalSecurity security) {
+        this.security = security;
     }
 
     public List<MetricsSource> getMetricsSources() {

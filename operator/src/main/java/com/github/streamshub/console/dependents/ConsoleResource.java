@@ -6,7 +6,6 @@ import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.Base64;
 import java.util.Comparator;
 import java.util.HexFormat;
 import java.util.LinkedHashMap;
@@ -17,6 +16,7 @@ import java.util.Optional;
 import java.util.function.Supplier;
 
 import com.github.streamshub.console.api.v1alpha1.Console;
+import com.github.streamshub.console.dependents.support.ConfigSupport;
 
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.javaoperatorsdk.operator.api.reconciler.Context;
@@ -105,16 +105,14 @@ public interface ConsoleResource {
     }
 
     default String encodeString(String value) {
-        return Base64.getEncoder().encodeToString(value.getBytes(StandardCharsets.UTF_8));
+        return ConfigSupport.encodeString(value);
     }
 
     default String decodeString(String encodedValue) {
-        return new String(Base64.getDecoder().decode(encodedValue), StandardCharsets.UTF_8);
+        return ConfigSupport.decodeString(encodedValue);
     }
 
     default <T> List<T> coalesce(List<T> value, Supplier<List<T>> defaultValue) {
         return value != null ? value : defaultValue.get();
     }
-
-
 }
