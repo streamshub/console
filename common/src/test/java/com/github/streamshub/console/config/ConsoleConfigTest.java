@@ -10,7 +10,7 @@ import jakarta.validation.Validator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.github.streamshub.console.config.security.Audit;
+import com.github.streamshub.console.config.security.Decision;
 import com.github.streamshub.console.config.security.GlobalSecurityConfigBuilder;
 import com.github.streamshub.console.config.security.Privilege;
 import com.github.streamshub.console.config.security.ResourceTypes;
@@ -174,7 +174,7 @@ class ConsoleConfigTest {
     void testKnownResourceTypesPassValidation() {
         config.setSecurity(new GlobalSecurityConfigBuilder()
                 .addNewAudit()
-                    .withDecision(Audit.ALLOWED)
+                    .withDecision(Decision.ALLOWED)
                     .withResources(ResourceTypes.Global.KAFKAS.value())
                     .withPrivileges(Privilege.forValue("*"))
                 .endAudit()
@@ -191,7 +191,7 @@ class ConsoleConfigTest {
                 .withName("kafka1")
                 .withNewSecurity()
                     .addNewAudit()
-                        .withDecision(Audit.ALLOWED)
+                        .withDecision(Decision.ALLOWED)
                         .withResources(ResourceTypes.Kafka.ALL.value())
                         .withPrivileges(Privilege.forValue("*"))
                     .endAudit()
@@ -215,7 +215,7 @@ class ConsoleConfigTest {
 
         config.setSecurity(new GlobalSecurityConfigBuilder()
                 .addNewAudit()
-                    .withDecision(Audit.ALLOWED)
+                    .withDecision(Decision.ALLOWED)
                     .withResources(
                             ResourceTypes.Global.KAFKAS.value(),
                             unknownResource)
@@ -240,17 +240,17 @@ class ConsoleConfigTest {
                 .withName("kafka1")
                 .withNewSecurity()
                     .addNewAudit()
-                        .withDecision(Audit.ALLOWED)
+                        .withDecision(Decision.ALLOWED)
                         .withResources(ResourceTypes.Kafka.ALL.value())
                         .withPrivileges(Privilege.forValue("CREATE"))
                     .endAudit()
                     .addNewAudit()
-                        .withDecision(Audit.DENIED)
+                        .withDecision(Decision.DENIED)
                         .withResources(unknownResource)
                         .withPrivileges(Privilege.forValue("DELETE"))
                     .endAudit()
                     .addNewAudit()
-                        .withDecision(Audit.ALL)
+                        .withDecision(Decision.ALL)
                         .withResources(ResourceTypes.Kafka.CONSUMER_GROUPS.value(), unknownResource)
                         .withPrivileges(Privilege.forValue("UPDATE"))
                     .endAudit()

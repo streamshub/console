@@ -71,10 +71,10 @@ import org.skyscreamer.jsonassert.JSONCompareMode;
 import com.github.streamshub.console.api.security.ConsoleAuthenticationMechanism;
 import com.github.streamshub.console.api.support.Holder;
 import com.github.streamshub.console.config.ConsoleConfig;
-import com.github.streamshub.console.config.security.Audit;
+import com.github.streamshub.console.config.security.Decision;
+import com.github.streamshub.console.config.security.KafkaSecurityConfigBuilder;
 import com.github.streamshub.console.config.security.Privilege;
 import com.github.streamshub.console.config.security.ResourceTypes;
-import com.github.streamshub.console.config.security.SecurityConfigBuilder;
 import com.github.streamshub.console.kafka.systemtest.TestPlainProfile;
 import com.github.streamshub.console.kafka.systemtest.deployment.DeploymentManager;
 import com.github.streamshub.console.kafka.systemtest.utils.ConsumerUtils;
@@ -770,9 +770,9 @@ class TopicsResourceIT {
         topicUtils.createTopics(clusterId1, List.of(topicName), 1);
 
         consoleConfig.getKafka().getClusterById(clusterId1).ifPresent(clusterConfig -> {
-            clusterConfig.setSecurity(new SecurityConfigBuilder()
+            clusterConfig.setSecurity(new KafkaSecurityConfigBuilder()
                     .addNewAudit()
-                        .withDecision(Audit.ALL)
+                        .withDecision(Decision.ALL)
                         .withResources(ResourceTypes.Kafka.TOPICS.value())
                         .withPrivileges(privilegesAudited)
                     .endAudit()
