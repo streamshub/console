@@ -9,8 +9,8 @@ import jakarta.validation.constraints.NotBlank;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.github.streamshub.console.config.security.KafkaSecurityConfig;
 import com.github.streamshub.console.config.security.ResourceTypes;
-import com.github.streamshub.console.config.security.SecurityConfig;
 import com.github.streamshub.console.config.security.ResourceTypes.ValidResourceTypes;
 
 import io.sundr.builder.annotations.Buildable;
@@ -26,7 +26,7 @@ public class KafkaClusterConfig implements Named {
     private String listener;
     @Valid
     @ValidResourceTypes(type = ResourceTypes.Kafka.class)
-    private SecurityConfig security = new SecurityConfig();
+    private KafkaSecurityConfig security = new KafkaSecurityConfig();
     /**
      * Name of a configured metrics source used by this Kafka cluster
      */
@@ -76,11 +76,11 @@ public class KafkaClusterConfig implements Named {
         this.namespace = namespace;
     }
 
-    public SecurityConfig getSecurity() {
+    public KafkaSecurityConfig getSecurity() {
         return security;
     }
 
-    public void setSecurity(SecurityConfig security) {
+    public void setSecurity(KafkaSecurityConfig security) {
         this.security = security;
     }
 

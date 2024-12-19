@@ -10,9 +10,9 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.github.streamshub.console.config.security.GlobalSecurityConfig;
+import com.github.streamshub.console.config.security.KafkaSecurityConfig;
 import com.github.streamshub.console.config.security.ResourceTypes;
 import com.github.streamshub.console.config.security.ResourceTypes.ValidResourceTypes;
-import com.github.streamshub.console.config.security.SecurityConfig;
 
 import io.sundr.builder.annotations.Buildable;
 import io.xlate.validation.constraints.Expression;
@@ -88,7 +88,7 @@ public class ConsoleConfig {
     @JsonIgnore
     public void clearSecurity() {
         security = new GlobalSecurityConfig();
-        kafka.getClusters().forEach(k -> k.setSecurity(new SecurityConfig()));
+        kafka.getClusters().forEach(k -> k.setSecurity(new KafkaSecurityConfig()));
     }
 
     public KubernetesConfig getKubernetes() {
