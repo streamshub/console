@@ -5,13 +5,13 @@ import io.sundr.builder.annotations.Buildable;
 @Buildable(editableEnabled = false)
 public class AuditConfig extends RuleConfig {
 
-    Audit decision;
+    Decision decision;
 
-    public Audit getDecision() {
+    public Decision getDecision() {
         return decision;
     }
 
-    public void setDecision(Audit decision) {
+    public void setDecision(Decision decision) {
         this.decision = decision;
     }
 }
