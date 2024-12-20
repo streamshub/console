@@ -170,8 +170,13 @@ export function ResetOffset({
                     id="custom-offset-input"
                     name={t("custom_offset")}
                     value={offset.offset}
-                    onChange={(_event, value) => handleOffsetChange(value)}
+                    onChange={(_event, value) => {
+                      if (/^\d*$/.test(value)) {
+                        handleOffsetChange(value);
+                      }
+                    }}
                     type="number"
+                    min={0}
                   />
                 </FormGroup>
               )}
@@ -223,7 +228,17 @@ export function ResetOffset({
               >
                 {t("save")}
               </Button>
-              <DryrunSelect openDryrun={openDryrun} cliCommand={cliCommand} />
+              <DryrunSelect
+                openDryrun={openDryrun}
+                cliCommand={cliCommand}
+                isDisabled={
+                  selectOffset === "custom"
+                    ? !offset.offset
+                    : selectOffset === "specificDateTime"
+                      ? !offset.offset
+                      : selectOffset !== "latest" && selectOffset !== "earliest"
+                }
+              />
               <Button
                 variant="link"
                 onClick={closeResetOffset}
