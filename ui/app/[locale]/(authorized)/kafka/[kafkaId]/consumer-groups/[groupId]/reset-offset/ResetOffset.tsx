@@ -83,6 +83,20 @@ export function ResetOffset({
   onOffsetSelect: (value: OffsetValue) => void;
 }) {
   const t = useTranslations("ConsumerGroupsTable");
+
+  const isDisabled =
+    (selectTopic === "allTopics" ||
+      (selectTopic === "selectedTopic" &&
+        offset.topicName &&
+        (selectPartition === "allPartitions" ||
+          (selectPartition === "selectedPartition" &&
+            offset.partition !== undefined)))) &&
+    (selectOffset === "custom"
+      ? offset.offset
+      : selectOffset === "specificDateTime"
+        ? offset.offset
+        : selectOffset === "latest" || selectOffset === "earliest");
+
   return (
     <Panel>
       <PanelHeader>
@@ -224,20 +238,14 @@ export function ResetOffset({
               <Button
                 variant="primary"
                 onClick={handleSave}
-                isDisabled={isLoading}
+                isDisabled={isLoading || !isDisabled}
               >
                 {t("save")}
               </Button>
               <DryrunSelect
                 openDryrun={openDryrun}
                 cliCommand={cliCommand}
-                isDisabled={
-                  selectOffset === "custom"
-                    ? !offset.offset
-                    : selectOffset === "specificDateTime"
-                      ? !offset.offset
-                      : selectOffset !== "latest" && selectOffset !== "earliest"
-                }
+                isDisabled={!isDisabled}
               />
               <Button
                 variant="link"
