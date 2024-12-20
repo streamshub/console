@@ -12,7 +12,7 @@ import { updateConsumerGroup } from "@/api/consumerGroups/actions";
 import { Dryrun } from "./Dryrun";
 import { LoadingPage } from "./LoadingPage";
 import { ResetOffset } from "./ResetOffset";
-import { Page } from "@/libs/patternfly/react-core";
+import { Page, PageSection } from "@/libs/patternfly/react-core";
 import { useTranslations } from "next-intl";
 import { useAlert } from "@/components/AlertContext";
 
@@ -208,19 +208,21 @@ export function ResetConsumerOffset({
       kafkaId,
       consumerGroupName,
       uniqueOffsets,
-      true // dryRun
+      true, // dryRun
     );
 
     if (response.payload) {
       const res = response.payload;
-      const offsets: Offset[] = Array.from(res.attributes?.offsets ?? []).map(o => {
-        return {
+      const offsets: Offset[] = Array.from(res.attributes?.offsets ?? []).map(
+        (o) => {
+          return {
             topicId: o.topicId!,
             topicName: o.topicName,
             partition: o.partition,
             offset: o.offset,
-        }
-      });
+          };
+        },
+      );
 
       setNewOffsetData(offsets);
       setShowDryRun(true);
@@ -280,7 +282,7 @@ export function ResetConsumerOffset({
   };
 
   return (
-    <Page>
+    <PageSection isFilled={true} hasOverflowScroll={true}>
       {isLoading ? (
         <LoadingPage />
       ) : showDryRun ? (
@@ -316,6 +318,6 @@ export function ResetConsumerOffset({
           cliCommand={generateCliCommand()}
         />
       )}
-    </Page>
+    </PageSection>
   );
 }
