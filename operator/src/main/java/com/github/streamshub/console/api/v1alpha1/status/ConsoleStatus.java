@@ -1,8 +1,10 @@
 package com.github.streamshub.console.api.v1alpha1.status;
 
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Comparator;
+import java.util.Set;
+import java.util.TreeSet;
+import java.util.function.Predicate;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -14,14 +16,20 @@ import io.sundr.builder.annotations.Buildable;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ConsoleStatus extends ObservedGenerationAwareStatus {
 
-    private List<Condition> conditions = new ArrayList<>();
+    private final Set<Condition> conditions = new TreeSet<>(Comparator
+            .comparing(Condition::getType).reversed()
+            .thenComparing(Condition::getLastTransitionTime)
+            .thenComparing(Condition::getStatus, Comparator.nullsLast(String::compareTo))
+            .thenComparing(Condition::getReason, Comparator.nullsLast(String::compareTo))
+            .thenComparing(Condition::getMessage, Comparator.nullsLast(String::compareTo)));
 
-    public List<Condition> getConditions() {
+    public Set<Condition> getConditions() {
         return conditions;
     }
 
-    public void setConditions(List<Condition> conditions) {
-        this.conditions = conditions;
+    @JsonIgnore
+    public boolean hasCondition(String type) {
+        return conditions.stream().anyMatch(c -> type.equals(c.getType()));
     }
 
     @JsonIgnore
@@ -40,7 +48,19 @@ public class ConsoleStatus extends ObservedGenerationAwareStatus {
     }
 
     @JsonIgnore
-    public void clearCondition(String type) {
-        conditions.removeIf(c -> type.equals(c.getType()));
+    public void updateCondition(Condition condition) {
+        condition.setActive(true);
+
+        conditions.stream()
+            .filter(condition::equals)
+            .findFirst()
+            .ifPresentOrElse(
+                    c -> c.setActive(true),
+                    () -> conditions.add(condition));
+    }
+
+    @JsonIgnore
+    public void clearStaleConditions() {
+        conditions.removeIf(Predicate.not(Condition::isActive));
     }
 }
