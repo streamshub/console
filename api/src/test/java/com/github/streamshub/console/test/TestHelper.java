@@ -30,7 +30,6 @@ import io.strimzi.api.kafka.model.kafka.Kafka;
 import io.strimzi.api.kafka.model.kafka.KafkaBuilder;
 import io.strimzi.api.kafka.model.kafka.listener.KafkaListenerAuthentication;
 import io.strimzi.api.kafka.model.kafka.listener.KafkaListenerType;
-import io.strimzi.api.kafka.model.topic.KafkaTopic;
 
 import static io.restassured.RestAssured.given;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -125,14 +124,7 @@ public class TestHelper {
     }
 
     public <S, T, C extends CustomResource<S, T>> C apply(KubernetesClient client, C resource) {
-        C response = client.resource(resource).serverSideApply();
-        /*
-         * Skip status patch for KafkaTopic before Strimzi 0.45.
-         * https://github.com/strimzi/strimzi-kafka-operator/issues/10905
-         */
-        if (response instanceof KafkaTopic) {
-            return response;
-        }
+        client.resource(resource).serverSideApply();
         return client.resource(resource).patchStatus();
     }
 
