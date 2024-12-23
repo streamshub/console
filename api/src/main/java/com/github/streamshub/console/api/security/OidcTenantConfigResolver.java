@@ -1,16 +1,25 @@
 package com.github.streamshub.console.api.security;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.OutputStream;
 import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import com.github.streamshub.console.config.ConsoleConfig;
 
 import io.quarkus.oidc.OidcRequestContext;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.TenantConfigResolver;
+import io.quarkus.tls.TlsConfiguration;
+import io.quarkus.tls.TlsConfigurationRegistry;
 import io.smallrye.mutiny.Uni;
 import io.vertx.ext.web.RoutingContext;
 
@@ -21,6 +30,13 @@ import io.vertx.ext.web.RoutingContext;
  */
 @ApplicationScoped
 public class OidcTenantConfigResolver implements TenantConfigResolver {
+
+    @Inject
+    @ConfigProperty(name = "console.work-path", defaultValue = "${java.io.tmpdir}")
+    String workPath;
+
+    @Inject
+    TlsConfigurationRegistry tlsRegistry;
 
     @Inject
     ConsoleConfig consoleConfig;
@@ -40,6 +56,26 @@ public class OidcTenantConfigResolver implements TenantConfigResolver {
         if (oidc.getIssuer() != null) {
             oidcConfig.getToken().setIssuer(oidc.getIssuer());
         }
+
+        getTlsConfiguration().map(TlsConfiguration::getTrustStore).ifPresent(truststore -> {
+            File file = new File(workPath + "/" + UUID.randomUUID().toString() + "-truststore." + truststore.getType());
+            String secret = UUID.randomUUID().toString();
+
+            try (OutputStream out = new FileOutputStream(file)) {
+                truststore.store(out, secret.toCharArray());
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+
+            oidcConfig.tls.setTrustStoreFile(file.toPath());
+            oidcConfig.tls.setTrustStorePassword(secret);
+        });
+    }
+
+    Optional<TlsConfiguration> getTlsConfiguration() {
+        String dotSeparatedSource = "oidc.provider.trust";
+        String dashSeparatedSource = "oidc-provider-trust";
+        return tlsRegistry.get(dotSeparatedSource).or(() -> tlsRegistry.get(dashSeparatedSource));
     }
 
     @Override

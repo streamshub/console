@@ -10,6 +10,7 @@ export interface OidcConfig {
     authServerUrl: string | null;
     clientId: string | null;
     clientSecret: string | null;
+    truststore: string | null;
 }
 
 export interface GlobalSecurityConfig {
@@ -37,6 +38,7 @@ async function getOrLoadConfig(): Promise<ConsoleConfig> {
                         authServerUrl: cfg.security?.oidc?.authServerUrl ?? null,
                         clientId: cfg.security?.oidc?.clientId ?? null,
                         clientSecret: cfg.security?.oidc?.clientSecret ?? null,
+                        truststore: process.env.CONSOLE_SECURITY_OIDC_TRUSTSTORE ?? null,
                     }
                 }
             };

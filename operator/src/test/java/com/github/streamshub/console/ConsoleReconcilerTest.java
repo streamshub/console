@@ -722,7 +722,7 @@ class ConsoleReconcilerTest extends ConsoleReconcilerTestBase {
                     .inNamespace(consoleCR.getMetadata().getNamespace())
                     .withName(consoleCR.getMetadata().getName())
                     .get();
-            assertEquals(1, console.getStatus().getConditions().size());
+            assertEquals(1, console.getStatus().getConditions().size(), () -> console.getStatus().getConditions().toString());
             var condition = console.getStatus().getConditions().iterator().next();
             assertEquals(Condition.Types.READY, condition.getType());
             assertEquals("False", condition.getStatus());
@@ -737,7 +737,7 @@ class ConsoleReconcilerTest extends ConsoleReconcilerTestBase {
                     .inNamespace(consoleCR.getMetadata().getNamespace())
                     .withName(consoleCR.getMetadata().getName())
                     .get();
-            assertEquals(1, console.getStatus().getConditions().size(), () -> console.getStatus().getConditions().toString());
+            assertEquals(1, console.getStatus().getConditions().size(), console.getStatus().getConditions()::toString);
             var condition = console.getStatus().getConditions().iterator().next();
             assertEquals(Condition.Types.READY, condition.getType());
             assertEquals("False", condition.getStatus());
@@ -768,7 +768,7 @@ class ConsoleReconcilerTest extends ConsoleReconcilerTestBase {
         assertEquals("schema-registry-truststore.example-registry.pem", registryVolume.getSecret().getItems().get(0).getPath());
 
         var mounts = containerSpecAPI.getVolumeMounts().stream().collect(Collectors.toMap(VolumeMount::getName, Function.identity()));
-        assertEquals(3, mounts.size());
+        assertEquals(4, mounts.size(), mounts::toString);
 
         var metricsMount = mounts.get(metricsVolName);
         var metricsMountPath = "/etc/ssl/metrics-source-truststore.example-prometheus.jks";
