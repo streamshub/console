@@ -1,26 +1,37 @@
 #!/bin/bash
 
+set -xEeuo pipefail
+
 SCRIPT_PATH="$(cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P)"
 
 VERSION=""
 SKIP_RANGE=""
 SKOPEO_TRANSPORT="docker://"
 
-for ARGUMENT in "$@"
-do
+for ARGUMENT in "$@" ; do
   KEY=$(echo "$ARGUMENT" | sed 's/=\(.*\)//')
   VALUE=$(echo "$ARGUMENT" | sed 's/^[^=]*=//')
 
   case "$KEY" in
     VERSION)                            VERSION=${VALUE};;
     SKIP_RANGE)                         SKIP_RANGE=${VALUE};;
-    ORIGINAL_OPERATOR_NAME)             ORIGINAL_OPERATOR_NAME=${VALUE};;
     SKOPEO_TRANSPORT)                   SKOPEO_TRANSPORT=${VALUE};;
     *)
   esac
 done
 
+if [ -z "${VERSION}" ] ; then
+    echo "[ERROR] VERSION required"
+    exit 1
+fi
+
 source ${SCRIPT_PATH}/common.sh
+
+OPERATOR_INSTANCE_NAME="${OPERATOR_NAME}-v${VERSION}"
+OPERATOR_CSV_NAME="${OPERATOR_NAME}.v${VERSION}"
+
+BUNDLE_PATH=${SCRIPT_PATH}/../target/bundle/streamshub-console-operator/
+CSV_FILE_PATH=${BUNDLE_PATH}/manifests/streamshub-console-operator.clusterserviceversion.yaml
 
 api_name="console-api"
 ui_name="console-ui"
