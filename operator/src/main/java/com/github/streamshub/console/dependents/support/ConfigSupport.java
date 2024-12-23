@@ -13,8 +13,10 @@ import com.github.streamshub.console.api.v1alpha1.spec.Value;
 import com.github.streamshub.console.api.v1alpha1.spec.ValueReference;
 
 import io.fabric8.kubernetes.api.model.ConfigMap;
+import io.fabric8.kubernetes.api.model.ConfigMapKeySelector;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.Secret;
+import io.fabric8.kubernetes.api.model.SecretKeySelector;
 import io.fabric8.kubernetes.client.KubernetesClientException;
 import io.javaoperatorsdk.operator.api.reconciler.Context;
 
@@ -24,11 +26,19 @@ public class ConfigSupport {
     }
 
     public static String encodeString(String value) {
-        return Base64.getEncoder().encodeToString(value.getBytes(StandardCharsets.UTF_8));
+        return encodeBytes(value.getBytes(StandardCharsets.UTF_8));
+    }
+
+    public static String encodeBytes(byte[] value) {
+        return Base64.getEncoder().encodeToString(value);
     }
 
     public static String decodeString(String encodedValue) {
-        return new String(Base64.getDecoder().decode(encodedValue), StandardCharsets.UTF_8);
+        return new String(decodeBytes(encodedValue), StandardCharsets.UTF_8);
+    }
+
+    public static byte[] decodeBytes(String encodedValue) {
+        return Base64.getDecoder().decode(encodedValue);
     }
 
     public static void setConfigVars(Console primary, Context<Console> context, Map<String, String> target, ConfigVars source) {
@@ -78,40 +88,57 @@ public class ConfigSupport {
     }
 
     /**
-     * Fetch the string value from the given valueSpec. The return string
-     * will be encoded for use in the Console secret data map.
+     * Fetch the value from the given valueSpec. The return value
+     * will be the decoded raw bytes from the data source.
      */
-    public static String getValue(Context<Console> context, String namespace, Value valueSpec) {
+    public static byte[] getValue(Context<Console> context, String namespace, Value valueSpec) {
         if (valueSpec == null) {
             return null;
         }
 
         return Optional.ofNullable(valueSpec.getValue())
-                .map(ConfigSupport::encodeString)
+                .map(ConfigSupport::toBytes)
             .or(() -> Optional.ofNullable(valueSpec.getValueFrom())
                     .map(ValueReference::getConfigMapKeyRef)
-                    .flatMap(ref -> getValue(context, ConfigMap.class, namespace, ref.getName(), ref.getKey(), ref.getOptional(), ConfigMap::getData)
-                            .map(ConfigSupport::encodeString)
-                        .or(() -> getValue(context, ConfigMap.class, namespace, ref.getName(), ref.getKey(), ref.getOptional(), ConfigMap::getBinaryData))))
+                    .flatMap(ref -> getValue(context, namespace, ref)))
             .or(() -> Optional.ofNullable(valueSpec.getValueFrom())
                     .map(ValueReference::getSecretKeyRef)
-                    .flatMap(ref -> getValue(context, Secret.class, namespace, ref.getName(), ref.getKey(), ref.getOptional(), Secret::getData))
-                    /* No need to call encodeString, the value is already encoded from Secret */)
+                    .flatMap(ref -> getValue(context, namespace, ref)))
             .orElse(null);
     }
 
-    public static <S extends HasMetadata> Optional<String> getValue(Context<Console> context,
-            Class<S> sourceType,
-            String namespace,
-            String name,
-            String key,
-            Boolean optional,
-            Function<S, Map<String, String>> dataProvider) {
+    private static byte[] toBytes(String value) {
+        return value.getBytes(StandardCharsets.UTF_8);
+    }
 
-        S source = getResource(context, sourceType, namespace, name, Boolean.TRUE.equals(optional));
+    private static Optional<byte[]> getValue(Context<Console> context,
+            String namespace,
+            ConfigMapKeySelector ref) {
+
+        ConfigMap source = getResource(context, ConfigMap.class, namespace, ref.getName(), Boolean.TRUE.equals(ref.getOptional()));
 
         if (source != null) {
-            return Optional.ofNullable(dataProvider.apply(source).get(key));
+            return Optional.ofNullable(source.getData())
+                    .map(data -> data.get(ref.getKey()))
+                    .map(ConfigSupport::toBytes)
+                .or(() -> Optional.ofNullable(source.getBinaryData())
+                    .map(data -> data.get(ref.getKey()))
+                    .map(ConfigSupport::decodeBytes));
+        }
+
+        return Optional.empty();
+    }
+
+    private static Optional<byte[]> getValue(Context<Console> context,
+            String namespace,
+            SecretKeySelector ref) {
+
+        Secret source = getResource(context, Secret.class, namespace, ref.getName(), Boolean.TRUE.equals(ref.getOptional()));
+
+        if (source != null) {
+            return Optional.ofNullable(source.getData())
+                    .map(data -> data.get(ref.getKey()))
+                    .map(ConfigSupport::decodeBytes);
         }
 
         return Optional.empty();
