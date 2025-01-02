@@ -1,5 +1,5 @@
 import { defineRouting } from "next-intl/routing";
-import { createSharedPathnamesNavigation } from "next-intl/navigation";
+import { createNavigation } from "next-intl/navigation";
 
 export const locales = ["en"] as const;
 
@@ -14,5 +14,13 @@ export const routing = defineRouting({
 
 // Lightweight wrappers around Next.js' navigation APIs
 // that will consider the routing configuration
-export const { Link, redirect, usePathname, useRouter } =
-  createSharedPathnamesNavigation(routing);
+let nav = createNavigation(routing);
+
+export const { Link, redirect, usePathname, useRouter } = {
+    Link: nav.Link,
+    redirect: (path: string) => {
+        nav.redirect({ href: path, locale: "en" });
+    },
+    usePathname: nav.usePathname,
+    useRouter: nav.useRouter,
+};
