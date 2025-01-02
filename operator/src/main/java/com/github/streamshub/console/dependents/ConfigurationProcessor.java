@@ -220,6 +220,7 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
         final String namespace;
         final String secretName;
         final Map<Class<?>, List<?>> deploymentResources = new HashMap<>();
+        final Map<Class<?>, List<?>> deploymentResourcesUI = new HashMap<>();
 
         TrustStoreProcessor(Console primary, Context<Console> context, Map<String, String> data) {
             this.primary = primary;
@@ -258,9 +259,10 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
             }
 
             context.managedDependentResourceContext().put("TrustStoreResources", deploymentResources);
+            context.managedDependentResourceContext().put("TrustStoreResourcesUI", deploymentResourcesUI);
         }
 
-        private void reconcileTrustStore(String sourceName, String sourcePrefix, TrustStore truststore, String bucketPrefix, boolean pemRequired) {
+        private void reconcileTrustStore(String sourceName, String sourcePrefix, TrustStore truststore, String bucketPrefix, boolean uiServer) {
             String typeCode = truststore.getType().toString();
             String volumeName = replaceNonAlphanumeric(sourcePrefix + sourceName, '-');
             String fileName = sourcePrefix + sourceName + "." + typeCode;
@@ -294,21 +296,25 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
             @SuppressWarnings("unchecked")
             List<EnvVar> vars = (List<EnvVar>) deploymentResources.computeIfAbsent(EnvVar.class, k -> new ArrayList<>());
 
+            @SuppressWarnings("unchecked")
+            List<EnvVar> varsUI = (List<EnvVar>) deploymentResourcesUI.computeIfAbsent(EnvVar.class, k -> new ArrayList<>());
+
             byte[] content = getValue(context, namespace, truststore.getContent());
             byte[] password = getValue(context, namespace, truststore.getPassword());
             String alias = truststore.getAlias();
 
-            if (putTrustStoreValue(data, sourcePrefix + sourceName, "content", content)) {
-                String pathKey = switch (truststore.getType()) {
-                    case JKS, PKCS12 -> "path";
-                    case PEM -> "certs";
-                };
+            // `content` is required by the CRD so we don't need to test that it was put in the data map
+            putTrustStoreValue(data, sourcePrefix + sourceName, "content", content);
 
-                vars.add(new EnvVarBuilder()
-                        .withName(toEnv(configTemplate.formatted(sourceName, typeCode, pathKey)))
-                        .withValue("/etc/ssl/" + fileName)
-                        .build());
-            }
+            String pathKey = switch (truststore.getType()) {
+                case JKS, PKCS12 -> "path";
+                case PEM -> "certs";
+            };
+
+            vars.add(new EnvVarBuilder()
+                .withName(toEnv(configTemplate.formatted(sourceName, typeCode, pathKey)))
+                .withValue("/etc/ssl/" + fileName)
+                .build());
 
             if (putTrustStoreValue(data, sourcePrefix + sourceName, "password", password)) {
                 vars.add(new EnvVarBuilder()
@@ -329,7 +335,7 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
                         .build());
             }
 
-            if (pemRequired && truststore.getType() != TrustStore.Type.PEM) {
+            if (uiServer && truststore.getType() != TrustStore.Type.PEM) {
                 KeyStore keystore;
 
                 try (InputStream in = new ByteArrayInputStream(content)) {
@@ -365,6 +371,20 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
                 }
 
                 putTrustStoreValue(data, sourcePrefix + sourceName, "content.pem", buffer.toByteArray());
+
+                varsUI.add(new EnvVarBuilder()
+                        .withName("CONSOLE_SECURITY_OIDC_TRUSTSTORE")
+                        .withNewValueFrom()
+                            .withNewSecretKeyRef(sourcePrefix + sourceName + ".content.pem", secretName, false)
+                        .endValueFrom()
+                        .build());
+            } else if (uiServer) {
+                varsUI.add(new EnvVarBuilder()
+                        .withName("CONSOLE_SECURITY_OIDC_TRUSTSTORE")
+                        .withNewValueFrom()
+                            .withNewSecretKeyRef(sourcePrefix + sourceName + ".content", secretName, false)
+                        .endValueFrom()
+                        .build());
             }
         }
 
@@ -463,20 +483,22 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
         var roles = coalesce(source.getRoles(), Collections::emptyList);
 
         for (var role : roles) {
+            var rules = coalesce(role.getRules(), Collections::emptyList)
+                    .stream()
+                    .map(rule -> new RuleConfigBuilder()
+                        .withResources(rule.getResources())
+                        .withResourceNames(rule.getResourceNames())
+                        .withPrivileges(rule.getPrivileges()
+                                .stream()
+                                .map(Enum::name)
+                                .map(Privilege::valueOf)
+                                .toList())
+                        .build())
+                    .toList();
+
             target.getRoles().add(new RoleConfigBuilder()
                     .withName(role.getName())
-                    .withRules(coalesce(role.getRules(), Collections::emptyList)
-                            .stream()
-                            .map(rule -> new RuleConfigBuilder()
-                                .withResources(rule.getResources())
-                                .withResourceNames(rule.getResourceNames())
-                                .withPrivileges(rule.getPrivileges()
-                                        .stream()
-                                        .map(Enum::name)
-                                        .map(Privilege::valueOf)
-                                        .toList())
-                                .build())
-                            .toList())
+                    .withRules(rules)
                     .build());
         }
 

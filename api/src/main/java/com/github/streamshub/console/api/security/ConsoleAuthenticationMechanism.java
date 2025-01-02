@@ -102,6 +102,10 @@ public class ConsoleAuthenticationMechanism implements HttpAuthenticationMechani
 
     @Override
     public Uni<SecurityIdentity> authenticate(RoutingContext context, IdentityProviderManager identityProviderManager) {
+        if (!context.normalizedPath().startsWith("/api")) {
+            return Uni.createFrom().nullItem();
+        }
+
         if (oidcEnabled()) {
             return oidc.authenticate(context, identityProviderManager)
                     .map(identity -> augmentIdentity(context, identity))
@@ -171,7 +175,15 @@ public class ConsoleAuthenticationMechanism implements HttpAuthenticationMechani
                         var category = ErrorCategory.get(ErrorCategory.NotAuthenticated.class);
                         Error error = category.createError("Authentication credentials missing or invalid", null, null);
                         var responseBody = new ErrorResponse(List.of(error));
-                        return new PayloadChallengeData(data, responseBody);
+                        ChallengeData challenge = new PayloadChallengeData(data, responseBody);
+                        return challenge;
+                    })
+                    .onFailure().recoverWithItem(t -> {
+                        var category = ErrorCategory.get(ErrorCategory.ServerError.class);
+                        Error error = category.createError("Authentication failed due to internal server error", null, null);
+                        var responseBody = new ErrorResponse(List.of(error));
+                        ChallengeData challenge = new PayloadChallengeData(500, null, null, responseBody);
+                        return challenge;
                     });
         }
 

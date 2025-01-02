@@ -1,5 +1,7 @@
 package com.github.streamshub.console.dependents.conditions;
 
+import java.util.Optional;
+
 import org.jboss.logging.Logger;
 
 import com.github.streamshub.console.api.v1alpha1.Console;
@@ -18,10 +20,47 @@ public class DeploymentReadyCondition implements Condition<Deployment, Console> 
         return dependentResource.getSecondaryResource(primary, context).map(this::isReady).orElse(false);
     }
 
+    /**
+     * Check the deployment's status in a similar way to kubectl.
+     *
+     * @see https://github.com/kubernetes/kubectl/blob/24d21a0ee42ecb5e5bed731f36b2d2c9c0244c35/pkg/polymorphichelpers/rollout_status.go#L76-L89
+     */
     private boolean isReady(Deployment deployment) {
-        var readyReplicas = deployment.getStatus().getReadyReplicas();
-        var ready = deployment.getSpec().getReplicas().equals(readyReplicas);
-        LOGGER.debugf("Deployment %s ready: %s", deployment.getMetadata().getName(), ready);
-        return ready;
+        String deploymentName = deployment.getMetadata().getName();
+        var status = deployment.getStatus();
+        var deploymentTimedOut = status.getConditions().stream()
+            .filter(c -> "Progressing".equals(c.getType()))
+            .findFirst()
+            .map(c -> "ProgressDeadlineExceeded".equals(c.getReason()))
+            .orElse(false)
+            .booleanValue();
+
+        if (deploymentTimedOut) {
+            LOGGER.warnf("Deployment %s has timed out", deployment.getMetadata().getName());
+            return false;
+        }
+
+        var desiredReplicas = deployment.getSpec().getReplicas();
+        var replicas = status.getReplicas();
+        var updatedReplicas = Optional.ofNullable(status.getUpdatedReplicas()).orElse(-1).intValue();
+        var availableReplicas = status.getAvailableReplicas();
+
+        if (desiredReplicas != null && updatedReplicas < desiredReplicas) {
+            LOGGER.debugf("Waiting for deployment %s rollout to finish: %d out of %d new replicas have been updated...", deploymentName, updatedReplicas, desiredReplicas);
+            return false;
+        }
+
+        if (replicas > updatedReplicas) {
+            LOGGER.debugf("Waiting for deployment %s rollout to finish: %d old replicas are pending termination...", deploymentName, replicas - updatedReplicas);
+            return false;
+        }
+
+        if (availableReplicas < updatedReplicas) {
+            LOGGER.debugf("Waiting for deployment %s rollout to finish: %d of %d updated replicas are available...", deploymentName, availableReplicas, updatedReplicas);
+            return false;
+        }
+
+        LOGGER.debugf("Deployment %s ready", deployment.getMetadata().getName());
+        return true;
     }
 }
