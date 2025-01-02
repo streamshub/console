@@ -308,6 +308,8 @@ abstract class ConsoleReconcilerTestBase {
         return deployment.edit()
             .editOrNewStatus()
                 .withReplicas(desiredReplicas)
+                .withUpdatedReplicas(desiredReplicas)
+                .withAvailableReplicas(desiredReplicas)
                 .withReadyReplicas(desiredReplicas)
             .endStatus()
             .build();
