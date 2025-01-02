@@ -1,6 +1,6 @@
 package com.github.streamshub.console.dependents.conditions;
 
-import java.util.Optional;
+import java.util.Objects;
 
 import org.jboss.logging.Logger;
 
@@ -41,9 +41,9 @@ public class DeploymentReadyCondition implements Condition<Deployment, Console> 
         }
 
         var desiredReplicas = deployment.getSpec().getReplicas();
-        var replicas = status.getReplicas();
-        var updatedReplicas = Optional.ofNullable(status.getUpdatedReplicas()).orElse(-1).intValue();
-        var availableReplicas = status.getAvailableReplicas();
+        var replicas = Objects.requireNonNullElse(status.getReplicas(), 0);
+        var updatedReplicas = Objects.requireNonNullElse(status.getUpdatedReplicas(), 0);
+        var availableReplicas = Objects.requireNonNullElse(status.getAvailableReplicas(), 0);
 
         if (desiredReplicas != null && updatedReplicas < desiredReplicas) {
             LOGGER.debugf("Waiting for deployment %s rollout to finish: %d out of %d new replicas have been updated...", deploymentName, updatedReplicas, desiredReplicas);
