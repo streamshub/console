@@ -35,7 +35,7 @@ spec:
         - name: CONSOLE_CONFIG_PATH
           value: /deployments/console-config.yaml
         - name: CONSOLE_WORK_PATH
-          value: /deployments/WORK
+          value: /deployments/work
         startupProbe:
           httpGet:
             path: /health/started

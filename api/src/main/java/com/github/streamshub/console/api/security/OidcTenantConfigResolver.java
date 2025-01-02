@@ -3,6 +3,7 @@ package com.github.streamshub.console.api.security;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.OutputStream;
+import java.security.KeyStore;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -12,6 +13,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.jboss.logging.Logger;
 
 import com.github.streamshub.console.config.ConsoleConfig;
 
@@ -30,6 +32,9 @@ import io.vertx.ext.web.RoutingContext;
  */
 @ApplicationScoped
 public class OidcTenantConfigResolver implements TenantConfigResolver {
+
+    @Inject
+    Logger logger;
 
     @Inject
     @ConfigProperty(name = "console.work-path", defaultValue = "${java.io.tmpdir}")
@@ -57,25 +62,40 @@ public class OidcTenantConfigResolver implements TenantConfigResolver {
             oidcConfig.getToken().setIssuer(oidc.getIssuer());
         }
 
-        getTlsConfiguration().map(TlsConfiguration::getTrustStore).ifPresent(truststore -> {
-            File file = new File(workPath + "/" + UUID.randomUUID().toString() + "-truststore." + truststore.getType());
-            String secret = UUID.randomUUID().toString();
-
-            try (OutputStream out = new FileOutputStream(file)) {
-                truststore.store(out, secret.toCharArray());
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-
-            oidcConfig.tls.setTrustStoreFile(file.toPath());
-            oidcConfig.tls.setTrustStorePassword(secret);
-        });
+        getTlsConfiguration().map(TlsConfiguration::getTrustStore).ifPresentOrElse(
+            this::configureTruststore,
+            () -> logger.infof("No truststore configured for OIDC provider")
+        );
     }
 
     Optional<TlsConfiguration> getTlsConfiguration() {
         String dotSeparatedSource = "oidc.provider.trust";
         String dashSeparatedSource = "oidc-provider-trust";
         return tlsRegistry.get(dotSeparatedSource).or(() -> tlsRegistry.get(dashSeparatedSource));
+    }
+
+    void configureTruststore(KeyStore truststore) {
+        String filename = "%s%s%s-truststore.%s".formatted(
+                workPath,
+                File.separator,
+                UUID.randomUUID().toString(),
+                truststore.getType()
+        );
+        File file = new File(filename);
+        String secret = UUID.randomUUID().toString();
+
+        try (OutputStream out = new FileOutputStream(file)) {
+            truststore.store(out, secret.toCharArray());
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+        // No default provided, set to empty to avoid NPE
+        oidcConfig.tls.trustStoreProvider = Optional.empty();
+        oidcConfig.tls.setTrustStoreFile(file.toPath());
+        oidcConfig.tls.setTrustStorePassword(secret);
+        // Future: map the certificate alias if provided
+        // oidcConfig.tls.setTrustStoreCertAlias(null);
     }
 
     @Override

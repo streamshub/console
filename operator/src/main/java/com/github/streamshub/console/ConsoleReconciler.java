@@ -216,7 +216,7 @@ public class ConsoleReconciler
     public UpdateControl<Console> reconcile(Console resource, Context<Console> context) {
         determineReadyCondition(resource, context);
         resource.getStatus().clearStaleConditions();
-        return UpdateControl.patchStatus(resource);
+        return UpdateControl.updateStatus(resource);
     }
 
     @Override
@@ -254,7 +254,7 @@ public class ConsoleReconciler
 
         status.clearStaleConditions();
 
-        return ErrorStatusUpdateControl.patchStatus(resource);
+        return ErrorStatusUpdateControl.updateStatus(resource);
     }
 
     @Override
