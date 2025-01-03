@@ -196,26 +196,24 @@ export function ConsumerGroupsTable({
             const allTopics: Record<string, string | undefined> = {};
             row.attributes.members
               ?.flatMap((m) => m.assignments ?? [])
-              .forEach((a) =>
-                allTopics[a.topicName] = a.topicId,
-              );
-            row.attributes.offsets?.forEach((a) =>
-              allTopics[a.topicName] = a.topicId,
+              .forEach((a) => (allTopics[a.topicName] = a.topicId));
+            row.attributes.offsets?.forEach(
+              (a) => (allTopics[a.topicName] = a.topicId),
             );
             return (
               <Td key={key} dataLabel={t("ConsumerGroupsTable.topics")}>
                 <LabelGroup>
-                  {Object.entries(allTopics).map(
-                    ([topicName, topicId]) => (
-                      <LabelLink
-                        key={topicName}
-                        color={"blue"}
-                        href={topicId ? `/kafka/${kafkaId}/topics/${topicId}` : "#"}
-                      >
-                        {topicName}
-                      </LabelLink>
-                    )
-                  )}
+                  {Object.entries(allTopics).map(([topicName, topicId]) => (
+                    <LabelLink
+                      key={topicName}
+                      color={"blue"}
+                      href={
+                        topicId ? `/kafka/${kafkaId}/topics/${topicId}` : "#"
+                      }
+                    >
+                      {topicName}
+                    </LabelLink>
+                  ))}
                 </LabelGroup>
               </Td>
             );
@@ -232,7 +230,10 @@ export function ConsumerGroupsTable({
           items={[
             {
               title: t("ConsumerGroupsTable.reset_offset"),
-              description: t("ConsumerGroupsTable.reset_offset_description"),
+              description:
+                row.attributes.state === "EMPTY"
+                  ? null
+                  : t("ConsumerGroupsTable.reset_offset_description"),
               onClick: () => onResetOffset(row),
             },
           ]}
