@@ -143,7 +143,6 @@ import io.strimzi.api.kafka.model.user.KafkaUser;
             capabilities = "Basic Install",
             categories = "Streaming & Messaging",
             certified = true,
-            skipRange = "placeholder",
             others = {
                 @Annotation(name = "features.operators.openshift.io/fips-compliant", value = "true"),
                 @Annotation(name = "features.operators.openshift.io/disconnected", value = "true"),

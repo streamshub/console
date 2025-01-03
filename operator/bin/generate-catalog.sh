@@ -1,32 +1,38 @@
 #!/bin/bash
 
+set -xEeuo pipefail
+
 SCRIPT_PATH="$(cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P)"
 
-export VERSION="${1}"
+export CONSOLE_OPERATOR_BUNDLE="${1:-}"
+export USE_HTTP="${2:-false}"
 
 source ${SCRIPT_PATH}/common.sh
+OPERATOR_PATH="$(cd -- "${SCRIPT_PATH}/.." >/dev/null 2>&1 ; pwd -P)"
+CATALOG_PATH=${OPERATOR_PATH}/target/catalog
 
-echo "[INFO] Generate catalog"
-
-rm -rvf ${CATALOG_PATH} ${CATALOG_PATH}.Dockerfile
+echo "[INFO] Generate catalog in ${CATALOG_PATH}"
+rm -rvf ${CATALOG_PATH}
 mkdir -p ${CATALOG_PATH}
+cp -v ${OPERATOR_PATH}/src/main/olm/*.yaml ${CATALOG_PATH}/
 
-opm generate dockerfile ${CATALOG_PATH}
-opm init ${OPERATOR_NAME} --default-channel=alpha --output=yaml > ${OPERATOR_CATALOG_CONFIG_YAML_PATH}
-opm render ${BUNDLE_PATH} --output=yaml >> ${OPERATOR_CATALOG_CONFIG_YAML_PATH}
+for CSV_NAME in $(${YQ} '.entries[].name' ${CATALOG_PATH}/channel.alpha.yaml | sort -V) ; do
+    if [ -f ${OPERATOR_PATH}/src/main/olm/bundles/${CSV_NAME}.yaml ] ; then
+        BUNDLE_IMAGE=$(${YQ} '.image' ${OPERATOR_PATH}/src/main/olm/bundles/${CSV_NAME}.yaml)
+    elif [ -d ${CONSOLE_OPERATOR_BUNDLE} ] ; then
+        BUNDLE_IMAGE=${CONSOLE_OPERATOR_BUNDLE}
+    else
+        BUNDLE_IMAGE=${CONSOLE_OPERATOR_BUNDLE}:$(echo "${CSV_NAME}" | grep -Eo '[0-9]+\.[0-9]+\.[0-9]+(-snapshot)?$')
+    fi
 
-cat << EOF >> ${OPERATOR_CATALOG_CONFIG_YAML_PATH}
----
-schema: olm.channel
-package: ${OPERATOR_NAME}
-name: alpha
-entries:
-  - name: ${OPERATOR_CSV_NAME}
-EOF
+    RENDER_FLAGS='--output=yaml'
 
-# Rename package names
-${YQ} eval -o yaml -i ". |= select(.package == \"${ORIGINAL_OPERATOR_NAME}\").package = \"${OPERATOR_NAME}\"" "${OPERATOR_CATALOG_CONFIG_YAML_PATH}"
-${YQ} eval -o yaml -i "(.properties[] | select(.value.packageName == \"${ORIGINAL_OPERATOR_NAME}\") | .value.packageName) = \"${OPERATOR_NAME}\"" "${OPERATOR_CATALOG_CONFIG_YAML_PATH}"
+    if [ "${USE_HTTP}" == "true" ] ; then
+        RENDER_FLAGS="--use-http ${RENDER_FLAGS}"
+    fi
+
+    opm render ${BUNDLE_IMAGE} ${RENDER_FLAGS} > ${CATALOG_PATH}/${CSV_NAME}.yaml
+done
 
 opm validate ${CATALOG_PATH}
 

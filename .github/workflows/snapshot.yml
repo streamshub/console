@@ -98,7 +98,7 @@ jobs:
 
       # ==================== Operator-Bundle ====================
       - name: Modify Bundle CSV Metadata
-        run: ./operator/bin/modify-bundle-metadata.sh "VERSION=${{ env.NEXT_VERSION }}" "SKIP_RANGE=>=0.0.1 <${{ env.NEXT_VERSION }}"
+        run: ./operator/bin/modify-bundle-metadata.sh "VERSION=${{ env.NEXT_VERSION }}"
 
       - name: Build and Push Operator Bundle Image
         uses: docker/build-push-action@v6
@@ -119,17 +119,18 @@ jobs:
           chmod +x opm
           sudo cp -v opm /usr/bin/
           rm -vf opm
-          operator/bin/generate-catalog.sh ${{ env.NEXT_VERSION }}
+          operator/bin/generate-catalog.sh \
+            ${{ secrets.IMAGE_REPO_HOSTNAME }}/${{ secrets.IMAGE_REPO_NAMESPACE }}/console-operator-bundle
 
       - name: Build and Push Operator Catalog Image
         uses: docker/build-push-action@v6
         with:
-          context: operator/target/
+          context: operator/
           platforms: ${{ env.PLATFORMS }}
           network: none
           provenance: false
           push: true
-          file: operator/target/catalog.Dockerfile
+          file: operator/src/main/docker/catalog.Dockerfile
           tags: |
             ${{ secrets.IMAGE_REPO_HOSTNAME }}/${{ secrets.IMAGE_REPO_NAMESPACE }}/console-operator-catalog:${{ env.NEXT_VERSION }}
             ${{ secrets.IMAGE_REPO_HOSTNAME }}/${{ secrets.IMAGE_REPO_NAMESPACE }}/console-operator-catalog:snapshot-${{github.ref_name}}
