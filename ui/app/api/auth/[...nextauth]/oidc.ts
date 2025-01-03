@@ -3,7 +3,6 @@ import { Session, TokenSet } from "next-auth";
 import { JWT } from "next-auth/jwt";
 import { OAuthConfig } from "next-auth/providers/index";
 import config from '@/utils/config';
-import { redirect } from 'next/navigation'
 
 const log = logger.child({ module: "oidc" });
 
@@ -14,7 +13,8 @@ class OpenIdConnect {
   constructor(
     authServerUrl: string | null,
     clientId: string | null,
-    clientSecret: string | null
+    clientSecret: string | null,
+    truststore: string | null,
   ) {
     if (clientId && clientSecret && authServerUrl) {
       this.provider = {
@@ -34,6 +34,9 @@ class OpenIdConnect {
             image: profile.image,
           }
         },
+        httpOptions: {
+          ca: truststore ?? undefined
+        }
       }
     } else {
       this.provider = null;
@@ -51,7 +54,7 @@ class OpenIdConnect {
     log.trace(`wellKnown endpoint: ${discoveryEndpoint}`);
     const response = await fetch(discoveryEndpoint);
     const discovery = await response.json();
-    
+
     _tokenEndpoint = discovery.token_endpoint;
     log.trace(`token endpoint: ${_tokenEndpoint}`);
 
@@ -190,6 +193,7 @@ export default async function oidcSource() {
     return new OpenIdConnect(
       oidcConfig?.authServerUrl ?? null,
       oidcConfig?.clientId ?? null,
-      oidcConfig?.clientSecret ?? null
+      oidcConfig?.clientSecret ?? null,
+      oidcConfig?.truststore ?? null,
     );
 };
