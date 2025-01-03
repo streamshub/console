@@ -399,7 +399,7 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
         private void encodeCertificate(OutputStream buffer, Certificate certificate) throws IOException, CertificateEncodingException {
             buffer.write("-----BEGIN CERTIFICATE-----\n".getBytes(StandardCharsets.UTF_8));
             buffer.write(Base64.getMimeEncoder(80, new byte[] {'\n'}).encode(certificate.getEncoded()));
-            buffer.write("-----END CERTIFICATE-----\n".getBytes(StandardCharsets.UTF_8));
+            buffer.write("\n-----END CERTIFICATE-----\n".getBytes(StandardCharsets.UTF_8));
         }
     }
 
