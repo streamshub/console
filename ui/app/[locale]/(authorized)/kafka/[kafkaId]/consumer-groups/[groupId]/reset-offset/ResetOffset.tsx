@@ -84,7 +84,7 @@ export function ResetOffset({
 }) {
   const t = useTranslations("ConsumerGroupsTable");
 
-  const isDisabled =
+  const isEnabled =
     (selectTopic === "allTopics" ||
       (selectTopic === "selectedTopic" &&
         offset.topicName &&
@@ -238,14 +238,14 @@ export function ResetOffset({
               <Button
                 variant="primary"
                 onClick={handleSave}
-                isDisabled={isLoading || !isDisabled}
+                isDisabled={isLoading || !isEnabled}
               >
                 {t("save")}
               </Button>
               <DryrunSelect
                 openDryrun={openDryrun}
                 cliCommand={cliCommand}
-                isDisabled={!isDisabled}
+                isDisabled={!isEnabled}
               />
               <Button
                 variant="link"
