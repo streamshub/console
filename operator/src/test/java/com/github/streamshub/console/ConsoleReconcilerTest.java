@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -795,4 +796,55 @@ class ConsoleReconcilerTest extends ConsoleReconcilerTestBase {
         assertEquals(registryMountPath, registryTrustPath.getValue());
     }
 
+    @Test
+    void testConsoleReconciliationWithInvalidConfigError() {
+        Console consoleCR = new ConsoleBuilder()
+                .withMetadata(new ObjectMetaBuilder()
+                        .withName(CONSOLE_NAME)
+                        .withNamespace(CONSOLE_NS)
+                        .build())
+                .withNewSpec()
+                    .withHostname("example.com")
+                    .addNewKafkaCluster()
+                        .withName(kafkaCR.getMetadata().getName())
+                        .withNamespace(kafkaCR.getMetadata().getNamespace())
+                        .withListener(kafkaCR.getSpec().getKafka().getListeners().get(0).getName())
+                        .withMetricsSource("does-not-exist")
+                    .endKafkaCluster()
+                .endSpec()
+                .build();
+
+        client.resource(consoleCR).create();
+
+        AtomicReference<Condition> initialError = new AtomicReference<>();
+
+        assertInvalidConfiguration(consoleCR, conditions -> {
+            var errorCondition = conditions.get(0);
+            assertEquals(Condition.Types.ERROR, errorCondition.getType(), errorCondition::toString);
+            assertEquals("True", errorCondition.getStatus(), errorCondition::toString);
+            assertEquals(Condition.Reasons.INVALID_CONFIGURATION, errorCondition.getReason(), errorCondition::toString);
+            assertEquals("Kafka cluster references an unknown metrics source", errorCondition.getMessage(), errorCondition::toString);
+            initialError.set(errorCondition);
+        });
+
+        var updatedConsoleCR = client.resource(consoleCR)
+            .edit(console -> new ConsoleBuilder(console)
+                    .editSpec()
+                        .withHostname("console.example.com")
+                    .endSpec()
+                    .build());
+        var lastGeneration = updatedConsoleCR.getStatus().getObservedGeneration();
+
+        await().atMost(LIMIT).untilAsserted(() -> {
+            var generation = client.resource(updatedConsoleCR).get().getStatus().getObservedGeneration();
+            assertTrue(generation > lastGeneration);
+        });
+
+        assertInvalidConfiguration(consoleCR, conditions -> {
+            var errorCondition = conditions.get(0);
+            // the condition should not have changed
+            assertEquals(initialError.get(), errorCondition);
+            assertEquals(initialError.get().getLastTransitionTime(), errorCondition.getLastTransitionTime());
+        });
+    }
 }

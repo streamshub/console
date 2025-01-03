@@ -22,29 +22,9 @@ public class Audit extends Rule {
     }
 
     public enum Decision {
-
-        ALLOWED {
-            @Override
-            public boolean logResult(boolean allowed) {
-                return allowed;
-            }
-        },
-
-        DENIED {
-            @Override
-            public boolean logResult(boolean allowed) {
-                return !allowed;
-            }
-        },
-
-        ALL {
-            @Override
-            public boolean logResult(boolean allowed) {
-                return true;
-            }
-        };
-
-        public abstract boolean logResult(boolean allowed);
+        ALLOWED,
+        DENIED,
+        ALL;
 
         @JsonCreator
         public static Decision forValue(String value) {
