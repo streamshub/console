@@ -2,7 +2,9 @@ package com.github.streamshub.console.api.security;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.OutputStream;
+import java.io.UncheckedIOException;
 import java.security.KeyStore;
 import java.util.List;
 import java.util.Optional;
@@ -37,7 +39,7 @@ public class OidcTenantConfigResolver implements TenantConfigResolver {
     Logger logger;
 
     @Inject
-    @ConfigProperty(name = "console.work-path", defaultValue = "${java.io.tmpdir}")
+    @ConfigProperty(name = "console.work-path")
     String workPath;
 
     @Inject
@@ -75,16 +77,19 @@ public class OidcTenantConfigResolver implements TenantConfigResolver {
     }
 
     void configureTruststore(KeyStore truststore) {
-        String filename = "%s%s%s-truststore.%s".formatted(
-                workPath,
-                File.separator,
-                UUID.randomUUID().toString(),
-                truststore.getType()
-        );
-        File file = new File(filename);
+        File workDir = new File(workPath);
+        File truststoreFile;
+
+        try {
+            truststoreFile = File.createTempFile("oidc-provider-trust", "." + truststore.getType(), workDir);
+            truststoreFile.deleteOnExit();
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+
         String secret = UUID.randomUUID().toString();
 
-        try (OutputStream out = new FileOutputStream(file)) {
+        try (OutputStream out = new FileOutputStream(truststoreFile)) {
             truststore.store(out, secret.toCharArray());
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -92,7 +97,7 @@ public class OidcTenantConfigResolver implements TenantConfigResolver {
 
         // No default provided, set to empty to avoid NPE
         oidcConfig.tls.trustStoreProvider = Optional.empty();
-        oidcConfig.tls.setTrustStoreFile(file.toPath());
+        oidcConfig.tls.setTrustStoreFile(truststoreFile.toPath());
         oidcConfig.tls.setTrustStorePassword(secret);
         // Future: map the certificate alias if provided
         // oidcConfig.tls.setTrustStoreCertAlias(null);
