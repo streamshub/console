@@ -116,6 +116,9 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
     private static final Random RANDOM = new SecureRandom();
 
     @Inject
+    Logger logger;
+
+    @Inject
     Validator validator;
 
     @Inject
@@ -172,6 +175,9 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
             buildConsoleConfig(primary, context, data);
             buildTrustStores(primary, context, data);
         } catch (Exception e) {
+            if (!(e instanceof ReconciliationException)) {
+                logger.warnf(e, "Exception processing console configuration from %s/%s", primary.getMetadata().getNamespace(), primary.getMetadata().getName());
+            }
             status.updateCondition(new ConditionBuilder()
                     .withType(Types.ERROR)
                     .withStatus("True")
@@ -193,12 +199,19 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
 
         if (!violations.isEmpty()) {
             for (var violation : violations) {
+                StringBuilder message = new StringBuilder();
+                if (!violation.getPropertyPath().toString().isBlank()) {
+                    message.append(violation.getPropertyPath().toString());
+                    message.append(' ');
+                }
+                message.append(violation.getMessage());
+
                 primary.getStatus().updateCondition(new ConditionBuilder()
                         .withType(Types.ERROR)
                         .withStatus("True")
                         .withLastTransitionTime(Instant.now().toString())
                         .withReason(Reasons.INVALID_CONFIGURATION)
-                        .withMessage("%s %s".formatted(violation.getPropertyPath().toString(), violation.getMessage()))
+                        .withMessage(message.toString())
                         .build());
             }
 

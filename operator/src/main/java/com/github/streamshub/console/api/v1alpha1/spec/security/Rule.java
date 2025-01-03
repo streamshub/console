@@ -1,12 +1,7 @@
 package com.github.streamshub.console.api.v1alpha1.spec.security;
 
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
-import java.util.Set;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 
@@ -58,22 +53,12 @@ public class Rule {
     }
 
     public enum Privilege {
-
         CREATE,
         DELETE,
         GET,
         LIST,
         UPDATE,
-        ALL {
-            @Override
-            public Set<Privilege> expand() {
-                return ALL_EXPANDED;
-            }
-        };
-
-        private static final Set<Privilege> ALL_EXPANDED = Arrays.stream(Privilege.values())
-                .filter(Predicate.not(ALL::equals))
-                .collect(Collectors.toSet());
+        ALL;
 
         @JsonCreator
         public static Privilege forValue(String value) {
@@ -81,10 +66,6 @@ public class Rule {
                 return ALL;
             }
             return valueOf(value.toUpperCase(Locale.ROOT));
-        }
-
-        public Set<Privilege> expand() {
-            return Collections.singleton(this);
         }
     }
 

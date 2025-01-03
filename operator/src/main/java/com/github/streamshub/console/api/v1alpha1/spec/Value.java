@@ -1,6 +1,5 @@
 package com.github.streamshub.console.api.v1alpha1.spec;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
@@ -20,15 +19,6 @@ public class Value {
     private ValueReference valueFrom;
 
     public Value() {
-    }
-
-    private Value(String value) {
-        this.value = value;
-    }
-
-    @JsonIgnore
-    public static Value of(String value) {
-        return value != null ? new Value(value) : null;
     }
 
     public String getValue() {
