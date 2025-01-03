@@ -15,9 +15,11 @@ import { useState } from "react";
 export function DryrunSelect({
   openDryrun,
   cliCommand,
+  isDisabled,
 }: {
   openDryrun: () => void;
   cliCommand: string;
+  isDisabled: boolean;
 }) {
   const t = useTranslations("ConsumerGroupsTable");
 
@@ -44,6 +46,8 @@ export function DryrunSelect({
                 id="split-button-action-secondary-with-toggle-button"
                 key="split-action-secondary"
                 aria-label={t("dry_run")}
+                onClick={openDryrun}
+                isDisabled={isDisabled}
               >
                 {t("dry_run")}
               </MenuToggleAction>,
@@ -59,6 +63,7 @@ export function DryrunSelect({
           value={0}
           key={t("run_and_show_result")}
           onClick={openDryrun}
+          isDisabled={isDisabled}
         >
           <PlayIcon /> {t("run_and_show_result")}
         </DropdownItem>
@@ -71,6 +76,7 @@ export function DryrunSelect({
           }}
           aria-describedby="tooltip-ref1"
           ref={tooltipRef}
+          isDisabled={isDisabled}
         >
           <CopyIcon /> {t("copy_dry_run_command")}
           {isCopied && (

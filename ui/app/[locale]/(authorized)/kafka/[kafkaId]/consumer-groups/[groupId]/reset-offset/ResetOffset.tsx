@@ -83,6 +83,20 @@ export function ResetOffset({
   onOffsetSelect: (value: OffsetValue) => void;
 }) {
   const t = useTranslations("ConsumerGroupsTable");
+
+  const isEnabled =
+    (selectTopic === "allTopics" ||
+      (selectTopic === "selectedTopic" &&
+        offset.topicName &&
+        (selectPartition === "allPartitions" ||
+          (selectPartition === "selectedPartition" &&
+            offset.partition !== undefined)))) &&
+    (selectOffset === "custom"
+      ? offset.offset
+      : selectOffset === "specificDateTime"
+        ? offset.offset
+        : selectOffset === "latest" || selectOffset === "earliest");
+
   return (
     <Panel>
       <PanelHeader>
@@ -170,8 +184,13 @@ export function ResetOffset({
                     id="custom-offset-input"
                     name={t("custom_offset")}
                     value={offset.offset}
-                    onChange={(_event, value) => handleOffsetChange(value)}
+                    onChange={(_event, value) => {
+                      if (/^\d*$/.test(value)) {
+                        handleOffsetChange(value);
+                      }
+                    }}
                     type="number"
+                    min={0}
                   />
                 </FormGroup>
               )}
@@ -219,11 +238,15 @@ export function ResetOffset({
               <Button
                 variant="primary"
                 onClick={handleSave}
-                isDisabled={isLoading}
+                isDisabled={isLoading || !isEnabled}
               >
                 {t("save")}
               </Button>
-              <DryrunSelect openDryrun={openDryrun} cliCommand={cliCommand} />
+              <DryrunSelect
+                openDryrun={openDryrun}
+                cliCommand={cliCommand}
+                isDisabled={!isEnabled}
+              />
               <Button
                 variant="link"
                 onClick={closeResetOffset}
