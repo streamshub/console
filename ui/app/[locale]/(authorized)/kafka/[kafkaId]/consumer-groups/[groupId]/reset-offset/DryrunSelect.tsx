@@ -55,6 +55,7 @@ export function DryrunSelect({
           }}
           aria-label="dryrun toggle button"
           onClick={onToggleClick}
+          isDisabled={isDisabled}
         />
       )}
     >
