@@ -29,6 +29,9 @@ jobs:
       - name: Set Image Tag Env
         run: echo "PROJECT_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
 
+      - name: Operator Version Check
+        run: ./operator/bin/version-check.sh "${{ env.PROJECT_VERSION }}"
+
       - name: Set Up JDK 17
         uses: actions/setup-java@v4
         with:
@@ -98,7 +101,7 @@ jobs:
 
       # ==================== Operator-Bundle ====================
       - name: Modify Bundle CSV Metadata
-        run: ./operator/bin/modify-bundle-metadata.sh "VERSION=${{ env.PROJECT_VERSION }}" "SKIP_RANGE=>=0.0.1 <${{ env.PROJECT_VERSION }}"
+        run: ./operator/bin/modify-bundle-metadata.sh "VERSION=${{ env.PROJECT_VERSION }}"
 
       - name: Build Operator Bundle Image
         uses: docker/build-push-action@v6
@@ -118,17 +121,17 @@ jobs:
           chmod +x opm
           sudo cp -v opm /usr/bin/
           rm -vf opm
-          operator/bin/generate-catalog.sh ${{ env.PROJECT_VERSION }}
+          operator/bin/generate-catalog.sh localhost:5000/streamshub/console-operator-bundle true
 
       - name: Build Operator Catalog Image
         uses: docker/build-push-action@v6
         with:
-          context: operator/target/
+          context: operator/
           platforms: ${{ env.PLATFORMS }}
           network: none
           provenance: false
           push: true
-          file: operator/target/catalog.Dockerfile
+          file: operator/src/main/docker/catalog.Dockerfile
           tags: |
             localhost:5000/streamshub/console-operator-catalog:${{ env.PROJECT_VERSION }}
 

@@ -54,9 +54,8 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git checkout -b release
-          mvn -B release:prepare -DreleaseVersion=${{steps.metadata.outputs.current-version}} -DdevelopmentVersion=${{steps.metadata.outputs.next-version}}
-          git checkout ${{github.base_ref}}
-          git rebase release
+
+          PRERELEASE_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout | tr '[:upper:]' '[:lower:]')
           export QUARKUS_CONTAINER_IMAGE_REGISTRY="${{ secrets.IMAGE_REPO_HOSTNAME }}"
           export QUARKUS_CONTAINER_IMAGE_GROUP="${{ secrets.IMAGE_REPO_NAMESPACE }}"
           export QUARKUS_CONTAINER_IMAGE_USERNAME="${{ secrets.IMAGE_REPO_USERNAME }}"
@@ -64,7 +63,18 @@ jobs:
           export QUARKUS_CONTAINER_IMAGE_PUSH="true"
           export QUARKUS_CONTAINER_IMAGE_ADDITIONAL_TAGS=latest
           export QUARKUS_KUBERNETES_NAMESPACE='$${NAMESPACE}'
+
+          mvn -B release:prepare \
+            -DprereleaseVersion=${PRERELEASE_VERSION} \
+            -DreleaseVersion=${{ steps.metadata.outputs.current-version }} \
+            -DdevelopmentVersion=${{ steps.metadata.outputs.next-version }} \
+            -Dcontainer-image.registry=${{ secrets.IMAGE_REPO_HOSTNAME }}
+
+          git checkout ${{github.base_ref}}
+          git rebase release
+
           export GIT_REVISION=$(git rev-parse --short release)
+
           # Build and push the release images using the commit tagged in `release:prepare`
           mvn -B -P container-image release:perform --no-transfer-progress \
             '-Drelease.arguments=-Dquarkus.docker.buildx.platform=${{ env.PLATFORMS }}'
@@ -94,7 +104,7 @@ jobs:
       # ==================== Operator-Bundle ====================
       - name: Modify Bundle CSV Metadata
         working-directory: target/checkout
-        run: ./operator/bin/modify-bundle-metadata.sh "VERSION=${{steps.metadata.outputs.current-version}}" "SKIP_RANGE=>=0.0.1 <${{steps.metadata.outputs.current-version}}"
+        run: ./operator/bin/modify-bundle-metadata.sh "VERSION=${{steps.metadata.outputs.current-version}}"
 
       - name: Build and Push Operator Bundle Image
         uses: docker/build-push-action@v6
@@ -116,17 +126,18 @@ jobs:
           chmod +x opm
           sudo cp -v opm /usr/bin/
           rm -vf opm
-          operator/bin/generate-catalog.sh ${{steps.metadata.outputs.current-version}}
+          operator/bin/generate-catalog.sh \
+            ${{ secrets.IMAGE_REPO_HOSTNAME }}/${{ secrets.IMAGE_REPO_NAMESPACE }}/console-operator-bundle
 
       - name: Build and Push Operator Catalog Image
         uses: docker/build-push-action@v6
         with:
-          context: target/checkout/operator/target/
+          context: target/checkout/operator/
           platforms: ${{ env.PLATFORMS }}
           network: none
           provenance: false
           push: true
-          file: target/checkout/operator/target/catalog.Dockerfile
+          file: target/checkout/operator/src/main/docker/catalog.Dockerfile
           tags: |
             ${{ secrets.IMAGE_REPO_HOSTNAME }}/${{ secrets.IMAGE_REPO_NAMESPACE }}/console-operator-catalog:${{steps.metadata.outputs.current-version}}
             ${{ secrets.IMAGE_REPO_HOSTNAME }}/${{ secrets.IMAGE_REPO_NAMESPACE }}/console-operator-catalog:latest
