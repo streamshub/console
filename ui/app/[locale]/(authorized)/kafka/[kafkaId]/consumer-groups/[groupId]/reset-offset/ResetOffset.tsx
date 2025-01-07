@@ -240,7 +240,7 @@ export function ResetOffset({
                 onClick={handleSave}
                 isDisabled={isLoading || !isEnabled}
               >
-                {t("save")}
+                {t("reset")}
               </Button>
               <DryrunSelect
                 openDryrun={openDryrun}
