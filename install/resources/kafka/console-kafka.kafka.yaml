@@ -44,4 +44,4 @@ spec:
         configMapKeyRef:
           name: console-kafka-metrics
           key: kafka-metrics-config.yml
-    version: 3.7.0
+    version: 3.9.0
