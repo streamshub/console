@@ -5,6 +5,9 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.security.KeyStore;
 import java.util.List;
 import java.util.Optional;
@@ -76,12 +79,24 @@ public class OidcTenantConfigResolver implements TenantConfigResolver {
         return tlsRegistry.get(dotSeparatedSource).or(() -> tlsRegistry.get(dashSeparatedSource));
     }
 
+    /**
+     * The OIDC subsystem takes the path to a truststore, so we need to write the
+     * one from the TLS registry to a working file to provide to OIDC. This should
+     * no longer be necessary in the next Quarkus LTS where OIDC is aware of the TLS
+     * registry.
+     */
     void configureTruststore(KeyStore truststore) {
         File workDir = new File(workPath);
+        Path truststorePath;
         File truststoreFile;
 
         try {
-            truststoreFile = File.createTempFile("oidc-provider-trust", "." + truststore.getType(), workDir);
+            truststorePath = Files.createTempFile(
+                    workDir.toPath(),
+                    "oidc-provider-trust",
+                    "." + truststore.getType(),
+                    PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rw-------")));
+            truststoreFile = truststorePath.toFile();
             truststoreFile.deleteOnExit();
         } catch (IOException e) {
             throw new UncheckedIOException(e);
@@ -97,7 +112,7 @@ public class OidcTenantConfigResolver implements TenantConfigResolver {
 
         // No default provided, set to empty to avoid NPE
         oidcConfig.tls.trustStoreProvider = Optional.empty();
-        oidcConfig.tls.setTrustStoreFile(truststoreFile.toPath());
+        oidcConfig.tls.setTrustStoreFile(truststorePath);
         oidcConfig.tls.setTrustStorePassword(secret);
         // Future: map the certificate alias if provided
         // oidcConfig.tls.setTrustStoreCertAlias(null);
