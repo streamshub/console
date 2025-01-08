@@ -81,6 +81,8 @@ public class ConsoleAuthenticationMechanism implements HttpAuthenticationMechani
             .setPrincipal(new QuarkusPrincipal("ANONYMOUS"))
             .build();
 
+    private static final Set<String> UNAUTHENTICATED_PATHS = Set.of("/health", "/metrics", "/openapi", "/swagger-ui");
+
     @Inject
     Logger log;
 
@@ -102,7 +104,9 @@ public class ConsoleAuthenticationMechanism implements HttpAuthenticationMechani
 
     @Override
     public Uni<SecurityIdentity> authenticate(RoutingContext context, IdentityProviderManager identityProviderManager) {
-        if (!context.normalizedPath().startsWith("/api")) {
+        final String requestPath = context.normalizedPath();
+
+        if (UNAUTHENTICATED_PATHS.stream().anyMatch(unauthn -> requestPath.startsWith(unauthn))) {
             return Uni.createFrom().nullItem();
         }
 
