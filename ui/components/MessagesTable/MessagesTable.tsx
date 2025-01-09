@@ -48,7 +48,7 @@ const columnWidths: Record<Column, BaseCellProps["width"]> = {
   timestamp: 15,
   timestampUTC: 15,
   headers: 20,
-  value: undefined,
+  value: 15,
 };
 
 const defaultColumns: Column[] = [
@@ -189,7 +189,7 @@ export function MessagesTable({
                     <Th
                       key={key}
                       width={columnWidths[column]}
-                      modifier={"fitContent"}
+                      modifier={"truncate"}
                       sort={
                         column === "timestamp" ||
                         column === "timestampUTC" ||
@@ -217,7 +217,11 @@ export function MessagesTable({
 
                     function Cell({ children }: PropsWithChildren) {
                       return (
-                        <Td key={key} dataLabel={columnLabels[column]}>
+                        <Td
+                          key={key}
+                          dataLabel={columnLabels[column]}
+                          modifier="truncate"
+                        >
                           {children}
                         </Td>
                       );
