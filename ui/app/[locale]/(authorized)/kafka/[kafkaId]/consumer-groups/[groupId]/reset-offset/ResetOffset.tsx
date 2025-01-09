@@ -24,8 +24,8 @@ import {
   partitionSelection,
 } from "../types";
 import { TypeaheadSelect } from "./TypeaheadSelect";
-import { OffsetSelect } from "./OffsetSelect";
 import { DryrunSelect } from "./DryrunSelect";
+import { SelectComponent } from "./SelectComponent";
 
 export type Offset = {
   topicId: string;
@@ -73,7 +73,7 @@ export function ResetOffset({
   isLoading: boolean;
   selectDateTimeFormat: DateTimeFormatSelection;
   handleTopichange: (topicName: string | number) => void;
-  handlePartitionChange: (partition: number | string) => void;
+  handlePartitionChange: (partition: number) => void;
   handleOffsetChange: (value: string) => void;
   closeResetOffset: () => void;
   openDryrun: () => void;
@@ -163,17 +163,35 @@ export function ResetOffset({
               )}
               {selectTopic === "selectedTopic" &&
                 selectPartition === "selectedPartition" && (
-                  <TypeaheadSelect
+                  <SelectComponent<number>
+                    options={Array.from(new Set(partitions))
+                      .sort((a, b) => a - b)
+                      .map((partition) => ({
+                        value: partition,
+                        label: `${partition}`,
+                      }))}
                     value={offset.partition}
-                    selectItems={partitions}
-                    onChange={handlePartitionChange}
                     placeholder={"Select partition"}
+                    onChange={handlePartitionChange}
                   />
                 )}
             </FormSection>
             <FormSection title={t("offset_details")}>
               <FormGroup label={t("new_offset")}>
-                <OffsetSelect value={selectOffset} onChange={onOffsetSelect} />
+                <SelectComponent<OffsetValue>
+                  options={[
+                    { value: "custom", label: t("offset.custom") },
+                    { value: "latest", label: t("offset.latest") },
+                    { value: "earliest", label: t("offset.earliest") },
+                    {
+                      value: "specificDateTime",
+                      label: t("offset.specific_date_time"),
+                    },
+                  ]}
+                  value={selectOffset}
+                  onChange={onOffsetSelect}
+                  placeholder="Select an offset"
+                />
               </FormGroup>
               {selectOffset === "custom" && (
                 <FormGroup
