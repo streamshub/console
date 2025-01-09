@@ -9,7 +9,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import com.github.streamshub.console.kafka.systemtest.deployment.KafkaUnsecuredResourceManager;
+import com.github.streamshub.console.kafka.systemtest.deployment.KafkaResourceManager;
 import com.github.streamshub.console.kafka.systemtest.deployment.KeycloakResourceManager;
 import com.github.streamshub.console.kafka.systemtest.deployment.StrimziCrdResourceManager;
 
@@ -39,7 +39,7 @@ public class TestPlainProfile implements QuarkusTestProfile {
         return List.of(
                 new TestResourceEntry(StrimziCrdResourceManager.class, Collections.emptyMap(), true),
                 new TestResourceEntry(KeycloakResourceManager.class, Collections.emptyMap(), true),
-                new TestResourceEntry(KafkaUnsecuredResourceManager.class, Map.of("profile", PROFILE), true));
+                new TestResourceEntry(KafkaResourceManager.class, Map.of("profile", PROFILE), true));
     }
 
     @Override
