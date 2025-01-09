@@ -9,7 +9,7 @@ public abstract class Security {
 
     private List<Subject> subjects;
     private List<Role> roles;
-    private List<Audit> audit;
+    private List<AuditRule> audit;
 
     public List<Subject> getSubjects() {
         return subjects;
@@ -27,11 +27,11 @@ public abstract class Security {
         this.roles = roles;
     }
 
-    public List<Audit> getAudit() {
+    public List<AuditRule> getAudit() {
         return audit;
     }
 
-    public void setAudit(List<Audit> audit) {
+    public void setAudit(List<AuditRule> audit) {
         this.audit = audit;
     }
 

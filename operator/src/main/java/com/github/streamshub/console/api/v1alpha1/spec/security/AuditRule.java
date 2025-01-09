@@ -8,7 +8,7 @@ import io.fabric8.generator.annotation.Required;
 import io.sundr.builder.annotations.Buildable;
 
 @Buildable(editableEnabled = false)
-public class Audit extends Rule {
+public class AuditRule extends Rule {
 
     @Required
     Decision decision;

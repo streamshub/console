@@ -116,9 +116,6 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
     private static final Random RANDOM = new SecureRandom();
 
     @Inject
-    Logger logger;
-
-    @Inject
     Validator validator;
 
     @Inject
@@ -168,7 +165,7 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
         Map<String, String> data = new LinkedHashMap<>();
 
         var nextAuth = context.getSecondaryResource(Secret.class).map(s -> s.getData().get("NEXTAUTH_SECRET"));
-        var nextAuthSecret = nextAuth.orElseGet(() -> encodeString(base64String(32)));
+        var nextAuthSecret = nextAuth.orElseGet(() -> encodeString(generateRandomBase64EncodedSecret(32)));
         data.put("NEXTAUTH_SECRET", nextAuthSecret);
 
         try {
@@ -176,7 +173,7 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
             buildTrustStores(primary, context, data);
         } catch (Exception e) {
             if (!(e instanceof ReconciliationException)) {
-                logger.warnf(e, "Exception processing console configuration from %s/%s", primary.getMetadata().getNamespace(), primary.getMetadata().getName());
+                LOGGER.warnf(e, "Exception processing console configuration from %s/%s", primary.getMetadata().getNamespace(), primary.getMetadata().getName());
             }
             status.updateCondition(new ConditionBuilder()
                     .withType(Types.ERROR)
@@ -426,12 +423,11 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
         processor.process();
     }
 
-    private static String base64String(int length) {
+    private static String generateRandomBase64EncodedSecret(int length) {
         ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-        OutputStream out = Base64.getEncoder().wrap(buffer);
 
         RANDOM.ints().limit(length).forEach(value -> {
-            try {
+            try (OutputStream out = Base64.getEncoder().wrap(buffer)) {
                 out.write(value);
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
@@ -444,7 +440,7 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
     private ConsoleConfig buildConfig(Console primary, Context<Console> context) {
         ConsoleConfig config = new ConsoleConfig();
 
-        addSecurity(primary, config);
+        addSecurity(primary, config, context);
         addMetricsSources(primary, config, context);
         addSchemaRegistries(primary, config);
 
@@ -456,7 +452,7 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
         return config;
     }
 
-    private void addSecurity(Console primary, ConsoleConfig config) {
+    private void addSecurity(Console primary, ConsoleConfig config, Context<Console> context) {
         var security = primary.getSpec().getSecurity();
 
         if (security == null) {
@@ -467,11 +463,16 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
         var oidc = security.getOidc();
 
         if (oidc != null) {
+            String clientSecret = Optional
+                    .ofNullable(getValue(context, primary.getMetadata().getNamespace(), oidc.getClientSecret()))
+                    .map(String::new)
+                    .orElse(null);
+
             securityConfig.setOidc(new OidcConfigBuilder()
                     .withAuthServerUrl(oidc.getAuthServerUrl())
                     .withIssuer(oidc.getIssuer())
                     .withClientId(oidc.getClientId())
-                    .withClientSecret(oidc.getClientSecret())
+                    .withClientSecret(clientSecret)
                     .build());
         }
 

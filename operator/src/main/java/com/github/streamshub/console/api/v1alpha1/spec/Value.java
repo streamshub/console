@@ -18,9 +18,6 @@ public class Value {
     @JsonPropertyDescription("Reference to an external source to use for this value")
     private ValueReference valueFrom;
 
-    public Value() {
-    }
-
     public String getValue() {
         return value;
     }

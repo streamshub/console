@@ -93,7 +93,7 @@ public class ConfigSupport {
      */
     public static byte[] getValue(Context<Console> context, String namespace, Value valueSpec) {
         if (valueSpec == null) {
-            return null;
+            return null; // NOSONAR : empty array is not wanted when the valueSpec is null
         }
 
         return Optional.ofNullable(valueSpec.getValue())

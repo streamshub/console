@@ -66,8 +66,8 @@ public class KeycloakResourceManager implements QuarkusTestResourceLifecycleMana
 
         try {
             truststoreFile = File.createTempFile("oidc-provider-trust", "." + tls.getTrustStore().getType());
-            //truststoreFile.deleteOnExit();
             Files.write(truststoreFile.toPath(), tls.getTrustStoreBytes());
+            truststoreFile.deleteOnExit();
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }

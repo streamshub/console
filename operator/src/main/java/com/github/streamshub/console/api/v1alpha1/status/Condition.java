@@ -82,7 +82,10 @@ public class Condition {
     }
 
     /**
-     * For the purposes of equality, we do not consider the lastTransitionTime.
+     * For the purposes of equality, we do not consider the
+     * {@link lastTransitionTime} or {@link active}. The {@link active} flag is only
+     * used within a single reconcile cycle and determines which conditions should
+     * be set in the CR status and which are no longer relevant and may be removed.
      */
     @Override
     public boolean equals(Object obj) {

@@ -16,7 +16,7 @@ import org.junit.jupiter.api.Test;
 import com.github.streamshub.console.api.v1alpha1.Console;
 import com.github.streamshub.console.api.v1alpha1.ConsoleBuilder;
 import com.github.streamshub.console.api.v1alpha1.spec.TrustStore;
-import com.github.streamshub.console.api.v1alpha1.spec.security.Audit.Decision;
+import com.github.streamshub.console.api.v1alpha1.spec.security.AuditRule.Decision;
 import com.github.streamshub.console.api.v1alpha1.spec.security.Rule;
 import com.github.streamshub.console.api.v1alpha1.status.Condition;
 import com.github.streamshub.console.config.security.Privilege;
@@ -49,7 +49,9 @@ class ConsoleReconcilerSecurityTest extends ConsoleReconcilerTestBase {
                             .withAuthServerUrl("https://example.com/.well-known/openid-connect")
                             .withIssuer("https://example.com")
                             .withClientId("client-id")
-                            .withClientSecret("client-secret")
+                            .withNewClientSecret()
+                                .withValue("client-secret")
+                            .endClientSecret()
                         .endOidc()
                         .addNewSubject()
                             .addToInclude("user-1")
@@ -259,7 +261,9 @@ class ConsoleReconcilerSecurityTest extends ConsoleReconcilerTestBase {
                             .withAuthServerUrl("https://example.com/.well-known/openid-connect")
                             .withIssuer("https://example.com")
                             .withClientId("client-id")
-                            .withClientSecret("client-secret")
+                            .withNewClientSecret()
+                                .withValue("client-secret")
+                            .endClientSecret()
                             .withNewTrustStore()
                                 .withType(TrustStore.Type.JKS)
                                 .withNewPassword()

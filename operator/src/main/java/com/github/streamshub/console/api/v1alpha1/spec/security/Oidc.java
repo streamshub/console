@@ -2,6 +2,7 @@ package com.github.streamshub.console.api.v1alpha1.spec.security;
 
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.github.streamshub.console.api.v1alpha1.spec.TrustStore;
+import com.github.streamshub.console.api.v1alpha1.spec.Value;
 
 import io.fabric8.generator.annotation.Required;
 import io.sundr.builder.annotations.Buildable;
@@ -15,7 +16,7 @@ public class Oidc {
     @Required
     private String clientId;
     @Required
-    private String clientSecret;
+    private Value clientSecret;
 
     @JsonPropertyDescription("""
             Trust store configuration for when the OIDC provider uses \
@@ -47,11 +48,11 @@ public class Oidc {
         this.clientId = clientId;
     }
 
-    public String getClientSecret() {
+    public Value getClientSecret() {
         return clientSecret;
     }
 
-    public void setClientSecret(String clientSecret) {
+    public void setClientSecret(Value clientSecret) {
         this.clientSecret = clientSecret;
     }
 
