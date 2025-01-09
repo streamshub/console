@@ -13,7 +13,7 @@ spec:
     spec:
       serviceAccountName: placeholder
       volumes:
-      - name: cache
+      - name: work
         emptyDir: {}
       - name: config
         secret:
@@ -29,9 +29,13 @@ spec:
         - name: config
           mountPath: /deployments/console-config.yaml
           subPath: console-config.yaml
+        - name: work
+          mountPath: /deployments/work
         env:
         - name: CONSOLE_CONFIG_PATH
           value: /deployments/console-config.yaml
+        - name: CONSOLE_WORK_PATH
+          value: /deployments/work
         startupProbe:
           httpGet:
             path: /health/started
@@ -75,11 +79,11 @@ spec:
       - name: console-ui
         image: quay.io/streamshub/console-ui
         volumeMounts:
-        - name: cache
-          mountPath: /app/.next/cache
         - name: config
           mountPath: /app/console-config.yaml
           subPath: console-config.yaml
+        - name: work
+          mountPath: /app/.next/cache
         ports:
         - containerPort: 3000
           name: http

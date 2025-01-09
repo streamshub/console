@@ -4,10 +4,14 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.net.URI;
 import java.net.http.HttpClient;
+import java.net.http.HttpClient.Version;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.UUID;
 
+import javax.net.ssl.SSLContext;
+
+import jakarta.enterprise.inject.spi.CDI;
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonReader;
@@ -15,14 +19,26 @@ import jakarta.ws.rs.core.HttpHeaders;
 
 import org.eclipse.microprofile.config.Config;
 
+import io.quarkus.tls.TlsConfigurationRegistry;
 import io.restassured.http.Header;
 
 public class TokenUtils {
 
     final String tokenEndpoint;
+    final String tokenEndpointHost;
+    final SSLContext tls;
 
     public TokenUtils(Config config) {
         this.tokenEndpoint = config.getValue("console.test.oidc-url", String.class) + "/protocol/openid-connect/token";
+        this.tokenEndpointHost = config.getValue("console.test.oidc-host", String.class);
+
+        var tlsRegistry = CDI.current().select(TlsConfigurationRegistry.class).get();
+
+        try {
+            tls = tlsRegistry.get("oidc-provider-trust").get().createSSLContext();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public Header authorizationHeader(String username) {
@@ -47,11 +63,14 @@ public class TokenUtils {
                 + "password=%1$s-password&"
                 + "client_id=console-client", username);
 
-        HttpClient client = HttpClient.newBuilder().build();
+        HttpClient client = HttpClient.newBuilder()
+                .sslContext(tls)
+                .version(Version.HTTP_1_1)
+                .build();
 
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(tokenEndpoint))
-                .header("Host", "localhost:8080")
+                .header("Host", tokenEndpointHost)
                 .header("Content-Type", "application/x-www-form-urlencoded")
                 .POST(HttpRequest.BodyPublishers.ofString(form))
                 .build();

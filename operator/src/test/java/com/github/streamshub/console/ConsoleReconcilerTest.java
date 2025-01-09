@@ -1,209 +1,58 @@
 package com.github.streamshub.console;
 
-import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Base64;
-import java.util.Map;
-import java.util.Optional;
+import java.util.List;
 import java.util.UUID;
-import java.util.function.Consumer;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import jakarta.inject.Inject;
-
 import org.apache.kafka.common.config.SaslConfigs;
-import org.eclipse.microprofile.config.Config;
-import org.jboss.logging.Logger;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.github.streamshub.console.api.v1alpha1.Console;
 import com.github.streamshub.console.api.v1alpha1.ConsoleBuilder;
 import com.github.streamshub.console.api.v1alpha1.spec.TrustStore;
 import com.github.streamshub.console.api.v1alpha1.spec.metrics.MetricsSource;
 import com.github.streamshub.console.api.v1alpha1.spec.metrics.MetricsSource.Type;
+import com.github.streamshub.console.api.v1alpha1.status.Condition;
 import com.github.streamshub.console.config.ConsoleConfig;
 import com.github.streamshub.console.config.PrometheusConfig;
+import com.github.streamshub.console.dependents.ConsoleDeployment;
 import com.github.streamshub.console.dependents.ConsoleResource;
 import com.github.streamshub.console.dependents.ConsoleSecret;
+import com.github.streamshub.console.dependents.PrometheusDeployment;
 
 import io.fabric8.kubernetes.api.model.ConfigMap;
 import io.fabric8.kubernetes.api.model.ConfigMapBuilder;
 import io.fabric8.kubernetes.api.model.EnvVar;
-import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.NamespaceBuilder;
 import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
 import io.fabric8.kubernetes.api.model.Secret;
 import io.fabric8.kubernetes.api.model.SecretBuilder;
 import io.fabric8.kubernetes.api.model.Volume;
 import io.fabric8.kubernetes.api.model.VolumeMount;
-import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinitionBuilder;
-import io.fabric8.kubernetes.api.model.apps.Deployment;
-import io.fabric8.kubernetes.api.model.networking.v1.Ingress;
-import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
 import io.fabric8.openshift.api.model.Route;
 import io.fabric8.openshift.api.model.RouteBuilder;
-import io.javaoperatorsdk.operator.Operator;
 import io.quarkus.test.junit.QuarkusTest;
-import io.strimzi.api.kafka.Crds;
-import io.strimzi.api.kafka.model.kafka.Kafka;
-import io.strimzi.api.kafka.model.kafka.KafkaBuilder;
-import io.strimzi.api.kafka.model.kafka.listener.KafkaListenerAuthenticationScramSha512;
-import io.strimzi.api.kafka.model.kafka.listener.KafkaListenerType;
 import io.strimzi.api.kafka.model.user.KafkaUser;
 import io.strimzi.api.kafka.model.user.KafkaUserBuilder;
 import io.strimzi.api.kafka.model.user.KafkaUserScramSha512ClientAuthentication;
 
 import static org.awaitility.Awaitility.await;
-import static org.junit.Assert.assertNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @QuarkusTest
-class ConsoleReconcilerTest {
-
-    private static final Logger LOGGER = Logger.getLogger(ConsoleReconcilerTest.class);
-    private static final Duration LIMIT = Duration.ofSeconds(10);
-    private static final ObjectMapper YAML = new ObjectMapper(new YAMLFactory());
-
-    @Inject
-    KubernetesClient client;
-
-    @Inject
-    Config config;
-
-    @Inject
-    Operator operator;
-
-    Kafka kafkaCR;
-
-    public static <T extends HasMetadata> T apply(KubernetesClient client, T resource) {
-        client.resource(resource).serverSideApply();
-        return client.resource(resource).patchStatus();
-    }
-
-    @BeforeEach
-    void setUp() throws Exception {
-        client.resource(Crds.kafka()).serverSideApply();
-        client.resource(Crds.kafkaUser()).serverSideApply();
-        client.resource(new CustomResourceDefinitionBuilder()
-                .withNewMetadata()
-                .withName("routes.route.openshift.io")
-            .endMetadata()
-            .withNewSpec()
-                .withScope("Namespaced")
-                .withGroup("route.openshift.io")
-                .addNewVersion()
-                    .withName("v1")
-                    .withNewSubresources()
-                        .withNewStatus()
-                        .endStatus()
-                    .endSubresources()
-                    .withNewSchema()
-                        .withNewOpenAPIV3Schema()
-                            .withType("object")
-                            .withXKubernetesPreserveUnknownFields(true)
-                        .endOpenAPIV3Schema()
-                    .endSchema()
-                    .withStorage(true)
-                    .withServed(true)
-                .endVersion()
-                .withNewNames()
-                    .withSingular("route")
-                    .withPlural("routes")
-                    .withKind("Route")
-                .endNames()
-            .endSpec()
-            .build())
-            .serverSideApply();
-
-        var allConsoles = client.resources(Console.class).inAnyNamespace();
-        var allKafkas = client.resources(Kafka.class).inAnyNamespace();
-        var allKafkaUsers = client.resources(KafkaUser.class).inAnyNamespace();
-        var allDeployments = client.resources(Deployment.class).inAnyNamespace().withLabels(ConsoleResource.MANAGEMENT_LABEL);
-        var allConfigMaps = client.resources(ConfigMap.class).inAnyNamespace().withLabels(ConsoleResource.MANAGEMENT_LABEL);
-        var allSecrets = client.resources(Secret.class).inAnyNamespace().withLabels(ConsoleResource.MANAGEMENT_LABEL);
-        var allIngresses = client.resources(Ingress.class).inAnyNamespace().withLabels(ConsoleResource.MANAGEMENT_LABEL);
-
-        allConsoles.delete();
-        allKafkas.delete();
-        allKafkaUsers.delete();
-        allDeployments.delete();
-        allConfigMaps.delete();
-        allSecrets.delete();
-        allIngresses.delete();
-
-        await().atMost(LIMIT).untilAsserted(() -> {
-            assertTrue(allConsoles.list().getItems().isEmpty());
-            assertTrue(allKafkas.list().getItems().isEmpty());
-            assertTrue(allKafkaUsers.list().getItems().isEmpty());
-            assertTrue(allDeployments.list().getItems().isEmpty());
-            assertTrue(allConfigMaps.list().getItems().isEmpty());
-            assertTrue(allSecrets.list().getItems().isEmpty());
-            assertTrue(allIngresses.list().getItems().isEmpty());
-        });
-
-        operator.start();
-
-        client.resource(new NamespaceBuilder()
-                .withNewMetadata()
-                    .withName("ns1")
-                    .withLabels(Map.of("streamshub-operator/test", "true"))
-                .endMetadata()
-                .build())
-            .serverSideApply();
-
-        kafkaCR = new KafkaBuilder()
-                .withNewMetadata()
-                    .withName("kafka-1")
-                    .withNamespace("ns1")
-                .endMetadata()
-                .withNewSpec()
-                    .withNewKafka()
-                        .addNewListener()
-                            .withName("listener1")
-                            .withType(KafkaListenerType.INGRESS)
-                            .withPort(9093)
-                            .withTls(true)
-                            .withAuth(new KafkaListenerAuthenticationScramSha512())
-                        .endListener()
-                    .endKafka()
-                .endSpec()
-                .withNewStatus()
-                    .withClusterId(UUID.randomUUID().toString())
-                    .addNewListener()
-                        .withName("listener1")
-                        .addNewAddress()
-                            .withHost("kafka-bootstrap.example.com")
-                            .withPort(9093)
-                        .endAddress()
-                    .endListener()
-                .endStatus()
-                .build();
-
-        kafkaCR = apply(client, kafkaCR);
-
-        client.resource(new NamespaceBuilder()
-                .withNewMetadata()
-                    .withName("ns2")
-                    .withLabels(Map.of("streamshub-operator/test", "true"))
-                .endMetadata()
-                .build())
-            .serverSideApply();
-    }
+class ConsoleReconcilerTest extends ConsoleReconcilerTestBase {
 
     @Test
     void testBasicConsoleReconciliation() {
-        Console consoleCR = new ConsoleBuilder()
-                .withMetadata(new ObjectMetaBuilder()
-                        .withName("console-1")
-                        .withNamespace("ns2")
-                        .build())
+        Console consoleCR = createConsole(new ConsoleBuilder()
                 .withNewSpec()
                     .withHostname("example.com")
                     .addNewKafkaCluster()
@@ -211,71 +60,23 @@ class ConsoleReconcilerTest {
                         .withNamespace(kafkaCR.getMetadata().getNamespace())
                         .withListener(kafkaCR.getSpec().getKafka().getListeners().get(0).getName())
                     .endKafkaCluster()
-                .endSpec()
-                .build();
+                .endSpec());
 
-        client.resource(consoleCR).create();
-
-        await().ignoreException(NullPointerException.class).atMost(LIMIT).untilAsserted(() -> {
-            var console = client.resources(Console.class)
-                    .inNamespace(consoleCR.getMetadata().getNamespace())
-                    .withName(consoleCR.getMetadata().getName())
-                    .get();
-            assertEquals(1, console.getStatus().getConditions().size());
-            var condition = console.getStatus().getConditions().get(0);
-            assertEquals("Ready", condition.getType());
-            assertEquals("False", condition.getStatus());
-            assertEquals("DependentsNotReady", condition.getReason());
-            assertTrue(condition.getMessage().contains("ConsoleIngress"));
-            assertTrue(condition.getMessage().contains("PrometheusDeployment"));
-        });
-
-        client.apps().deployments()
-            .inNamespace(consoleCR.getMetadata().getNamespace())
-            .withName("console-1-prometheus-deployment")
-            .editStatus(this::setReady);
-        LOGGER.info("Set ready replicas for Prometheus deployment");
-
+        awaitDependentsNotReady(consoleCR, "ConsoleIngress", "PrometheusDeployment");
         setConsoleIngressReady(consoleCR);
+        setDeploymentReady(consoleCR, PrometheusDeployment.NAME);
+        awaitDependentsNotReady(consoleCR, "ConsoleDeployment");
 
-        await().ignoreException(NullPointerException.class).atMost(LIMIT).untilAsserted(() -> {
-            var console = client.resources(Console.class)
-                    .inNamespace(consoleCR.getMetadata().getNamespace())
-                    .withName(consoleCR.getMetadata().getName())
-                    .get();
-            assertEquals(1, console.getStatus().getConditions().size());
-            var condition = console.getStatus().getConditions().get(0);
-            assertEquals("Ready", condition.getType());
-            assertEquals("False", condition.getStatus());
-            assertEquals("DependentsNotReady", condition.getReason());
-            assertTrue(condition.getMessage().contains("ConsoleDeployment"));
-        });
-
-        var consoleDeployment = client.apps().deployments()
-                .inNamespace(consoleCR.getMetadata().getNamespace())
-                .withName("console-1-console-deployment")
-                .editStatus(this::setReady);
-        LOGGER.info("Set ready replicas for Console deployment");
-
+        var consoleDeployment = setDeploymentReady(consoleCR, ConsoleDeployment.NAME);
         // Images were not set in CR, so assert that the defaults were used
         var consoleContainers = consoleDeployment.getSpec().getTemplate().getSpec().getContainers();
+
         assertEquals(config.getValue("console.deployment.default-api-image", String.class),
                 consoleContainers.get(0).getImage());
         assertEquals(config.getValue("console.deployment.default-ui-image", String.class),
                 consoleContainers.get(1).getImage());
 
-        await().ignoreException(NullPointerException.class).atMost(LIMIT).untilAsserted(() -> {
-            var console = client.resources(Console.class)
-                    .inNamespace(consoleCR.getMetadata().getNamespace())
-                    .withName(consoleCR.getMetadata().getName())
-                    .get();
-            assertEquals(1, console.getStatus().getConditions().size());
-            var condition = console.getStatus().getConditions().get(0);
-            assertEquals("Ready", condition.getType());
-            assertEquals("True", condition.getStatus());
-            assertNull(condition.getReason());
-            assertEquals("All resources ready", condition.getMessage());
-        });
+        awaitReady(consoleCR);
     }
 
     @Test
@@ -302,15 +103,16 @@ class ConsoleReconcilerTest {
                     .inNamespace(consoleCR.getMetadata().getNamespace())
                     .withName(consoleCR.getMetadata().getName())
                     .get();
-            assertEquals(2, console.getStatus().getConditions().size());
-            var ready = console.getStatus().getConditions().get(0);
-            assertEquals("Ready", ready.getType());
+            List<Condition> conditions = new ArrayList<>(console.getStatus().getConditions());
+            assertEquals(2, conditions.size());
+            var ready = conditions.get(0);
+            assertEquals(Condition.Types.READY, ready.getType());
             assertEquals("False", ready.getStatus());
-            assertEquals("DependentsNotReady", ready.getReason());
-            var warning = console.getStatus().getConditions().get(1);
-            assertEquals("Warning", warning.getType());
+            assertEquals(Condition.Reasons.INVALID_CONFIGURATION, ready.getReason());
+            var warning = conditions.get(1);
+            assertEquals(Condition.Types.ERROR, warning.getType());
             assertEquals("True", warning.getStatus());
-            assertEquals("ReconcileException", warning.getReason());
+            assertEquals(Condition.Reasons.RECONCILIATION_EXCEPTION, warning.getReason());
         });
     }
 
@@ -343,15 +145,16 @@ class ConsoleReconcilerTest {
                     .inNamespace(consoleCR.getMetadata().getNamespace())
                     .withName(consoleCR.getMetadata().getName())
                     .get();
-            assertEquals(2, console.getStatus().getConditions().size());
-            var ready = console.getStatus().getConditions().get(0);
-            assertEquals("Ready", ready.getType());
+            List<Condition> conditions = new ArrayList<>(console.getStatus().getConditions());
+            assertEquals(2, conditions.size());
+            var ready = conditions.get(0);
+            assertEquals(Condition.Types.READY, ready.getType());
             assertEquals("False", ready.getStatus());
-            assertEquals("DependentsNotReady", ready.getReason());
-            var warning = console.getStatus().getConditions().get(1);
-            assertEquals("Warning", warning.getType());
+            assertEquals(Condition.Reasons.INVALID_CONFIGURATION, ready.getReason());
+            var warning = conditions.get(1);
+            assertEquals(Condition.Types.ERROR, warning.getType());
             assertEquals("True", warning.getStatus());
-            assertEquals("ReconcileException", warning.getReason());
+            assertEquals(Condition.Reasons.RECONCILIATION_EXCEPTION, warning.getReason());
             assertEquals("No such KafkaUser resource: ns1/invalid", warning.getMessage());
         });
     }
@@ -398,15 +201,16 @@ class ConsoleReconcilerTest {
                     .inNamespace(consoleCR.getMetadata().getNamespace())
                     .withName(consoleCR.getMetadata().getName())
                     .get();
-            assertEquals(2, console.getStatus().getConditions().size());
-            var ready = console.getStatus().getConditions().get(0);
-            assertEquals("Ready", ready.getType());
+            List<Condition> conditions = new ArrayList<>(console.getStatus().getConditions());
+            assertEquals(2, conditions.size());
+            var ready = conditions.get(0);
+            assertEquals(Condition.Types.READY, ready.getType());
             assertEquals("False", ready.getStatus());
-            assertEquals("DependentsNotReady", ready.getReason());
-            var warning = console.getStatus().getConditions().get(1);
-            assertEquals("Warning", warning.getType());
+            assertEquals(Condition.Reasons.INVALID_CONFIGURATION, ready.getReason());
+            var warning = conditions.get(1);
+            assertEquals(Condition.Types.ERROR, warning.getType());
             assertEquals("True", warning.getStatus());
-            assertEquals("ReconcileException", warning.getReason());
+            assertEquals(Condition.Reasons.RECONCILIATION_EXCEPTION, warning.getReason());
             assertEquals("KafkaUser ns1/ku1 missing .status.secret", warning.getMessage());
         });
     }
@@ -468,15 +272,16 @@ class ConsoleReconcilerTest {
                     .inNamespace(consoleCR.getMetadata().getNamespace())
                     .withName(consoleCR.getMetadata().getName())
                     .get();
-            assertEquals(2, console.getStatus().getConditions().size());
-            var ready = console.getStatus().getConditions().get(0);
-            assertEquals("Ready", ready.getType());
+            List<Condition> conditions = new ArrayList<>(console.getStatus().getConditions());
+            assertEquals(2, conditions.size());
+            var ready = conditions.get(0);
+            assertEquals(Condition.Types.READY, ready.getType());
             assertEquals("False", ready.getStatus());
-            assertEquals("DependentsNotReady", ready.getReason());
-            var warning = console.getStatus().getConditions().get(1);
-            assertEquals("Warning", warning.getType());
+            assertEquals(Condition.Reasons.INVALID_CONFIGURATION, ready.getReason());
+            var warning = conditions.get(1);
+            assertEquals(Condition.Types.ERROR, warning.getType());
             assertEquals("True", warning.getStatus());
-            assertEquals("ReconcileException", warning.getReason());
+            assertEquals(Condition.Reasons.RECONCILIATION_EXCEPTION, warning.getReason());
             assertEquals("Secret ns1/ku1 missing key 'sasl.jaas.config'", warning.getMessage());
         });
     }
@@ -539,10 +344,10 @@ class ConsoleReconcilerTest {
                     .withName(consoleCR.getMetadata().getName())
                     .get();
             assertEquals(1, console.getStatus().getConditions().size());
-            var ready = console.getStatus().getConditions().get(0);
-            assertEquals("Ready", ready.getType());
-            assertEquals("False", ready.getStatus());
-            assertEquals("DependentsNotReady", ready.getReason());
+            var ready = console.getStatus().getConditions().iterator().next();
+            assertEquals(Condition.Types.READY, ready.getType(), ready::toString);
+            assertEquals("False", ready.getStatus(), ready::toString);
+            assertEquals("DependentsNotReady", ready.getReason(), ready::toString);
 
             var consoleSecret = client.secrets().inNamespace("ns2").withName("console-1-" + ConsoleSecret.NAME).get();
             assertNotNull(consoleSecret);
@@ -918,9 +723,9 @@ class ConsoleReconcilerTest {
                     .inNamespace(consoleCR.getMetadata().getNamespace())
                     .withName(consoleCR.getMetadata().getName())
                     .get();
-            assertEquals(1, console.getStatus().getConditions().size());
-            var condition = console.getStatus().getConditions().get(0);
-            assertEquals("Ready", condition.getType());
+            assertEquals(1, console.getStatus().getConditions().size(), () -> console.getStatus().getConditions().toString());
+            var condition = console.getStatus().getConditions().iterator().next();
+            assertEquals(Condition.Types.READY, condition.getType());
             assertEquals("False", condition.getStatus());
             assertEquals("DependentsNotReady", condition.getReason());
             assertTrue(condition.getMessage().contains("ConsoleIngress"));
@@ -933,9 +738,9 @@ class ConsoleReconcilerTest {
                     .inNamespace(consoleCR.getMetadata().getNamespace())
                     .withName(consoleCR.getMetadata().getName())
                     .get();
-            assertEquals(1, console.getStatus().getConditions().size());
-            var condition = console.getStatus().getConditions().get(0);
-            assertEquals("Ready", condition.getType());
+            assertEquals(1, console.getStatus().getConditions().size(), console.getStatus().getConditions()::toString);
+            var condition = console.getStatus().getConditions().iterator().next();
+            assertEquals(Condition.Types.READY, condition.getType());
             assertEquals("False", condition.getStatus());
             assertEquals("DependentsNotReady", condition.getReason());
             assertTrue(condition.getMessage().contains("ConsoleDeployment"));
@@ -964,7 +769,7 @@ class ConsoleReconcilerTest {
         assertEquals("schema-registry-truststore.example-registry.pem", registryVolume.getSecret().getItems().get(0).getPath());
 
         var mounts = containerSpecAPI.getVolumeMounts().stream().collect(Collectors.toMap(VolumeMount::getName, Function.identity()));
-        assertEquals(3, mounts.size());
+        assertEquals(4, mounts.size(), mounts::toString);
 
         var metricsMount = mounts.get(metricsVolName);
         var metricsMountPath = "/etc/ssl/metrics-source-truststore.example-prometheus.jks";
@@ -991,47 +796,55 @@ class ConsoleReconcilerTest {
         assertEquals(registryMountPath, registryTrustPath.getValue());
     }
 
-    // Utility
+    @Test
+    void testConsoleReconciliationWithInvalidConfigError() {
+        Console consoleCR = new ConsoleBuilder()
+                .withMetadata(new ObjectMetaBuilder()
+                        .withName(CONSOLE_NAME)
+                        .withNamespace(CONSOLE_NS)
+                        .build())
+                .withNewSpec()
+                    .withHostname("example.com")
+                    .addNewKafkaCluster()
+                        .withName(kafkaCR.getMetadata().getName())
+                        .withNamespace(kafkaCR.getMetadata().getNamespace())
+                        .withListener(kafkaCR.getSpec().getKafka().getListeners().get(0).getName())
+                        .withMetricsSource("does-not-exist")
+                    .endKafkaCluster()
+                .endSpec()
+                .build();
 
-    private void assertConsoleConfig(Consumer<ConsoleConfig> assertion) {
-        await().ignoreException(NullPointerException.class).atMost(LIMIT).untilAsserted(() -> {
-            var consoleSecret = client.secrets().inNamespace("ns2").withName("console-1-" + ConsoleSecret.NAME).get();
-            assertNotNull(consoleSecret);
-            String configEncoded = consoleSecret.getData().get("console-config.yaml");
-            byte[] configDecoded = Base64.getDecoder().decode(configEncoded);
-            Logger.getLogger(getClass()).infof("config YAML: %s", new String(configDecoded));
-            ConsoleConfig consoleConfig = YAML.readValue(configDecoded, ConsoleConfig.class);
-            assertion.accept(consoleConfig);
+        client.resource(consoleCR).create();
+
+        AtomicReference<Condition> initialError = new AtomicReference<>();
+
+        assertInvalidConfiguration(consoleCR, conditions -> {
+            var errorCondition = conditions.get(0);
+            assertEquals(Condition.Types.ERROR, errorCondition.getType(), errorCondition::toString);
+            assertEquals("True", errorCondition.getStatus(), errorCondition::toString);
+            assertEquals(Condition.Reasons.INVALID_CONFIGURATION, errorCondition.getReason(), errorCondition::toString);
+            assertEquals("Kafka cluster references an unknown metrics source", errorCondition.getMessage(), errorCondition::toString);
+            initialError.set(errorCondition);
         });
-    }
 
-    private void setConsoleIngressReady(Console consoleCR) {
-        var consoleIngress = client.network().v1().ingresses()
-                .inNamespace(consoleCR.getMetadata().getNamespace())
-                .withName("console-1-console-ingress")
-                .get();
+        var updatedConsoleCR = client.resource(consoleCR)
+            .edit(console -> new ConsoleBuilder(console)
+                    .editSpec()
+                        .withHostname("console.example.com")
+                    .endSpec()
+                    .build());
+        var lastGeneration = updatedConsoleCR.getStatus().getObservedGeneration();
 
-        consoleIngress = consoleIngress.edit()
-                    .editOrNewStatus()
-                        .withNewLoadBalancer()
-                            .addNewIngress()
-                                .withHostname("ingress.example.com")
-                            .endIngress()
-                        .endLoadBalancer()
-                    .endStatus()
-                    .build();
-        client.resource(consoleIngress).patchStatus();
-        LOGGER.info("Set ingress status for Console ingress");
-    }
+        await().atMost(LIMIT).untilAsserted(() -> {
+            var generation = client.resource(updatedConsoleCR).get().getStatus().getObservedGeneration();
+            assertTrue(generation > lastGeneration);
+        });
 
-    private Deployment setReady(Deployment deployment) {
-        int desiredReplicas = Optional.ofNullable(deployment.getSpec().getReplicas()).orElse(1);
-
-        return deployment.edit()
-            .editOrNewStatus()
-                .withReplicas(desiredReplicas)
-                .withReadyReplicas(desiredReplicas)
-            .endStatus()
-            .build();
+        assertInvalidConfiguration(consoleCR, conditions -> {
+            var errorCondition = conditions.get(0);
+            // the condition should not have changed
+            assertEquals(initialError.get(), errorCondition);
+            assertEquals(initialError.get().getLastTransitionTime(), errorCondition.getLastTransitionTime());
+        });
     }
 }

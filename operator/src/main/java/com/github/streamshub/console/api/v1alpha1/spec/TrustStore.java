@@ -4,15 +4,18 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 
+import io.fabric8.generator.annotation.Required;
 import io.sundr.builder.annotations.Buildable;
 
 @Buildable
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class TrustStore {
 
+    @Required
     @JsonProperty("type")
     private Type type; // NOSONAR
 
+    @Required
     @JsonProperty("content")
     @JsonPropertyDescription("Content of the trust store")
     private Value content;

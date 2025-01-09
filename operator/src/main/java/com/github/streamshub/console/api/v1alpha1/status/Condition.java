@@ -1,5 +1,8 @@
 package com.github.streamshub.console.api.v1alpha1.status;
 
+import java.util.Objects;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 
@@ -14,6 +17,9 @@ public class Condition {
     private String message;
     private String type;
     private String lastTransitionTime;
+
+    @JsonIgnore
+    private boolean active = false;
 
     @JsonPropertyDescription("The status of the condition, either True, False or Unknown.")
     public String getStatus() {
@@ -60,5 +66,74 @@ public class Condition {
 
     public void setMessage(String message) {
         this.message = message;
+    }
+
+    public boolean isActive() {
+        return active;
+    }
+
+    public void setActive(boolean active) {
+        this.active = active;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(message, reason, status, type);
+    }
+
+    /**
+     * For the purposes of equality, we do not consider the
+     * {@link lastTransitionTime} or {@link active}. The {@link active} flag is only
+     * used within a single reconcile cycle and determines which conditions should
+     * be set in the CR status and which are no longer relevant and may be removed.
+     */
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (!(obj instanceof Condition))
+            return false;
+        Condition other = (Condition) obj;
+        return Objects.equals(message, other.message)
+                && Objects.equals(reason, other.reason)
+                && Objects.equals(status, other.status)
+                && Objects.equals(type, other.type);
+    }
+
+    @Override
+    public String toString() {
+        return """
+                { \
+                type = "%s", \
+                status = "%s", \
+                reason = "%s", \
+                message = "%s", \
+                lastTransitionTime = "%s" \
+                }""".formatted(type, status, reason, message, lastTransitionTime);
+    }
+
+    /**
+     * Constant values for the types used for conditions
+     */
+    public static final class Types {
+        private Types() {
+        }
+
+        public static final String READY = "Ready";
+        public static final String ERROR = "Error";
+    }
+
+    /**
+     * Constant values for the reasons used for conditions
+     */
+    public static final class Reasons {
+        private Reasons() {
+        }
+
+        public static final String DEPENDENTS_NOT_READY = "DependentsNotReady";
+        public static final String INVALID_CONFIGURATION = "InvalidConfiguration";
+        public static final String RECONCILIATION_EXCEPTION = "ReconciliationException";
     }
 }
