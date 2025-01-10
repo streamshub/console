@@ -179,21 +179,32 @@ export function ResetOffset({
             <FormSection title={t("offset_details")}>
               <FormGroup label={t("new_offset")}>
                 <SelectComponent<OffsetValue>
-                  options={[
-                    { value: "custom", label: t("offset.custom") },
-                    { value: "latest", label: t("offset.latest") },
-                    { value: "earliest", label: t("offset.earliest") },
-                    {
-                      value: "specificDateTime",
-                      label: t("offset.specific_date_time"),
-                    },
-                  ]}
+                  options={
+                    selectTopic === "allTopics"
+                      ? [
+                          {
+                            value: "specificDateTime",
+                            label: t("offset.specific_date_time"),
+                          },
+                          { value: "latest", label: t("offset.latest") },
+                          { value: "earliest", label: t("offset.earliest") },
+                        ]
+                      : [
+                          { value: "custom", label: t("offset.custom") },
+                          { value: "latest", label: t("offset.latest") },
+                          { value: "earliest", label: t("offset.earliest") },
+                          {
+                            value: "specificDateTime",
+                            label: t("offset.specific_date_time"),
+                          },
+                        ]
+                  }
                   value={selectOffset}
                   onChange={onOffsetSelect}
                   placeholder="Select an offset"
                 />
               </FormGroup>
-              {selectOffset === "custom" && (
+              {selectOffset === "custom" && selectTopic !== "allTopics" && (
                 <FormGroup
                   label={t("custom_offset")}
                   fieldId="custom-offset-input"
