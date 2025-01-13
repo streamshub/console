@@ -126,7 +126,7 @@ abstract class ConsoleReconcilerTestBase {
         allSecrets.delete();
         allIngresses.delete();
 
-        await().atMost(LIMIT).untilAsserted(() -> {
+        await().atMost(Duration.ofSeconds(20)).untilAsserted(() -> {
             assertTrue(allConsoles.list().getItems().isEmpty());
             assertTrue(allKafkas.list().getItems().isEmpty());
             assertTrue(allKafkaUsers.list().getItems().isEmpty());
