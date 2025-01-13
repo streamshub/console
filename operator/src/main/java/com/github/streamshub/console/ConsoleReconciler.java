@@ -11,6 +11,7 @@ import java.util.stream.Collectors;
 import com.github.streamshub.console.api.v1alpha1.Console;
 import com.github.streamshub.console.api.v1alpha1.status.Condition;
 import com.github.streamshub.console.api.v1alpha1.status.ConditionBuilder;
+import com.github.streamshub.console.dependents.ConfigurationProcessor;
 import com.github.streamshub.console.dependents.ConsoleClusterRole;
 import com.github.streamshub.console.dependents.ConsoleClusterRoleBinding;
 import com.github.streamshub.console.dependents.ConsoleDeployment;
@@ -26,7 +27,6 @@ import com.github.streamshub.console.dependents.PrometheusConfigMap;
 import com.github.streamshub.console.dependents.PrometheusDeployment;
 import com.github.streamshub.console.dependents.PrometheusService;
 import com.github.streamshub.console.dependents.PrometheusServiceAccount;
-import com.github.streamshub.console.dependents.ConfigurationProcessor;
 import com.github.streamshub.console.dependents.conditions.DeploymentReadyCondition;
 import com.github.streamshub.console.dependents.conditions.IngressReadyCondition;
 import com.github.streamshub.console.dependents.conditions.PrometheusPrecondition;
@@ -51,9 +51,6 @@ import io.quarkiverse.operatorsdk.annotations.CSVMetadata.Annotations.Annotation
 import io.quarkiverse.operatorsdk.annotations.CSVMetadata.InstallMode;
 import io.quarkiverse.operatorsdk.annotations.CSVMetadata.Link;
 import io.quarkiverse.operatorsdk.annotations.CSVMetadata.Provider;
-import io.quarkiverse.operatorsdk.annotations.CSVMetadata.RequiredCRD;
-import io.strimzi.api.kafka.model.kafka.Kafka;
-import io.strimzi.api.kafka.model.user.KafkaUser;
 
 @ControllerConfiguration(
         maxReconciliationInterval = @MaxReconciliationInterval(
