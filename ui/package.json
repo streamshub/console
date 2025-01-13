@@ -51,7 +51,7 @@
     "react-csv-downloader": "^3.3.0",
     "react-dom": "18.3.1",
     "react-highlight-words": "^0.21.0",
-    "react-json-view-lite": "^2.1.0",
+    "react-json-view-lite": "^2.3.0",
     "typescript": "5.7.3",
     "use-debounce": "^10.0.4",
     "use-resize-observer": "^9.1.0",
