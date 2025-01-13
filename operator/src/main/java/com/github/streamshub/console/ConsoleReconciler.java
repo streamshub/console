@@ -189,10 +189,6 @@ import io.strimzi.api.kafka.model.user.KafkaUser;
         displayName = "StreamsHub Console Operator",
         keywords = {"kafka", "messaging", "kafka-streams", "data-streaming", "data-streams", "streaming", "streams", "web", "console", "ui", "user interface"},
         maturity = "stable",
-        requiredCRDs = {
-            @RequiredCRD(kind = Kafka.RESOURCE_KIND, name = Kafka.CRD_NAME, version = Kafka.V1BETA2),
-            @RequiredCRD(kind = KafkaUser.RESOURCE_KIND, name = KafkaUser.CRD_NAME, version = KafkaUser.V1BETA2),
-        },
         installModes = {
             @InstallMode(type = "AllNamespaces", supported = true),
             @InstallMode(type = "OwnNamespace", supported = false),
