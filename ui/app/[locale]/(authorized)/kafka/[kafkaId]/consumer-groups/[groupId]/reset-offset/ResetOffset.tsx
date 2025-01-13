@@ -92,7 +92,7 @@ export function ResetOffset({
           (selectPartition === "selectedPartition" &&
             offset.partition !== undefined)))) &&
     (selectOffset === "custom"
-      ? offset.offset
+      ? offset.offset !== undefined && offset.offset !== ""
       : selectOffset === "specificDateTime"
         ? offset.offset
         : selectOffset === "latest" || selectOffset === "earliest");
@@ -180,7 +180,8 @@ export function ResetOffset({
               <FormGroup label={t("new_offset")}>
                 <SelectComponent<OffsetValue>
                   options={
-                    selectTopic === "allTopics"
+                    selectTopic === "allTopics" ||
+                    selectPartition === "allPartitions"
                       ? [
                           {
                             value: "specificDateTime",
