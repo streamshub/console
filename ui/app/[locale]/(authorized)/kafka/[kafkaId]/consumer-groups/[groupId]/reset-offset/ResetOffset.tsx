@@ -205,25 +205,27 @@ export function ResetOffset({
                   placeholder="Select an offset"
                 />
               </FormGroup>
-              {selectOffset === "custom" && selectTopic !== "allTopics" && (
-                <FormGroup
-                  label={t("custom_offset")}
-                  fieldId="custom-offset-input"
-                >
-                  <TextInput
-                    id="custom-offset-input"
-                    name={t("custom_offset")}
-                    value={offset.offset}
-                    onChange={(_event, value) => {
-                      if (/^\d*$/.test(value)) {
-                        handleOffsetChange(value);
-                      }
-                    }}
-                    type="number"
-                    min={0}
-                  />
-                </FormGroup>
-              )}
+              {selectOffset === "custom" &&
+                selectTopic !== "allTopics" &&
+                selectPartition !== "allPartitions" && (
+                  <FormGroup
+                    label={t("custom_offset")}
+                    fieldId="custom-offset-input"
+                  >
+                    <TextInput
+                      id="custom-offset-input"
+                      name={t("custom_offset")}
+                      value={offset.offset}
+                      onChange={(_event, value) => {
+                        if (/^\d*$/.test(value)) {
+                          handleOffsetChange(value);
+                        }
+                      }}
+                      type="number"
+                      min={0}
+                    />
+                  </FormGroup>
+                )}
               {selectOffset === "specificDateTime" && (
                 <>
                   <FormGroup
