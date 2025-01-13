@@ -81,6 +81,8 @@ public class ConsoleAuthenticationMechanism implements HttpAuthenticationMechani
             .setPrincipal(new QuarkusPrincipal("ANONYMOUS"))
             .build();
 
+    private static final Set<String> UNAUTHENTICATED_PATHS = Set.of("/health", "/metrics", "/openapi", "/swagger-ui");
+
     @Inject
     Logger log;
 
@@ -102,6 +104,12 @@ public class ConsoleAuthenticationMechanism implements HttpAuthenticationMechani
 
     @Override
     public Uni<SecurityIdentity> authenticate(RoutingContext context, IdentityProviderManager identityProviderManager) {
+        final String requestPath = context.normalizedPath();
+
+        if (UNAUTHENTICATED_PATHS.stream().anyMatch(requestPath::startsWith)) {
+            return Uni.createFrom().nullItem();
+        }
+
         if (oidcEnabled()) {
             return oidc.authenticate(context, identityProviderManager)
                     .map(identity -> augmentIdentity(context, identity))
@@ -171,7 +179,13 @@ public class ConsoleAuthenticationMechanism implements HttpAuthenticationMechani
                         var category = ErrorCategory.get(ErrorCategory.NotAuthenticated.class);
                         Error error = category.createError("Authentication credentials missing or invalid", null, null);
                         var responseBody = new ErrorResponse(List.of(error));
-                        return new PayloadChallengeData(data, responseBody);
+                        return (ChallengeData) new PayloadChallengeData(data, responseBody);
+                    })
+                    .onFailure().recoverWithItem(t -> {
+                        var category = ErrorCategory.get(ErrorCategory.ServerError.class);
+                        Error error = category.createError("Authentication failed due to internal server error", null, null);
+                        var responseBody = new ErrorResponse(List.of(error));
+                        return new PayloadChallengeData(500, null, null, responseBody);
                     });
         }
 

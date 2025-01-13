@@ -67,8 +67,11 @@ public class ConsoleDeployment extends CRUDKubernetesDependentResource<Deploymen
 
         var envVars = new ArrayList<>(coalesce(primary.getSpec().getEnv(), Collections::emptyList));
 
-        var trustResources = getTrustResources(context);
+        var trustResources = getTrustResources("TrustStoreResources", context);
         envVars.addAll(getResourcesByType(trustResources, EnvVar.class));
+
+        var trustResourcesUI = getTrustResources("TrustStoreResourcesUI", context);
+        var envVarsUI = getResourcesByType(trustResourcesUI, EnvVar.class);
 
         return desired.edit()
             .editMetadata()
@@ -97,11 +100,13 @@ public class ConsoleDeployment extends CRUDKubernetesDependentResource<Deploymen
                         .addAllToVolumes(getResourcesByType(trustResources, Volume.class))
                         .editMatchingContainer(c -> "console-api".equals(c.getName()))
                             .withImage(imageAPI)
+                            .withImagePullPolicy(pullPolicy(imageAPI))
                             .addAllToVolumeMounts(getResourcesByType(trustResources, VolumeMount.class))
                             .addAllToEnv(envVars)
                         .endContainer()
                         .editMatchingContainer(c -> "console-ui".equals(c.getName()))
                             .withImage(imageUI)
+                            .withImagePullPolicy(pullPolicy(imageUI))
                             .editMatchingEnv(env -> "NEXTAUTH_URL".equals(env.getName()))
                                 .withValue(getAttribute(context, ConsoleIngress.NAME + ".url", String.class))
                             .endEnv()
@@ -112,6 +117,7 @@ public class ConsoleDeployment extends CRUDKubernetesDependentResource<Deploymen
                                     .endSecretKeyRef()
                                 .endValueFrom()
                             .endEnv()
+                            .addAllToEnv(envVarsUI)
                         .endContainer()
                     .endSpec()
                 .endTemplate()
@@ -120,8 +126,8 @@ public class ConsoleDeployment extends CRUDKubernetesDependentResource<Deploymen
     }
 
     @SuppressWarnings("unchecked")
-    <R extends KubernetesResource> Map<Class<R>, List<R>> getTrustResources(Context<Console> context) {
-        return context.managedDependentResourceContext().getMandatory("TrustStoreResources", Map.class);
+    <R extends KubernetesResource> Map<Class<R>, List<R>> getTrustResources(String key, Context<Console> context) {
+        return context.managedDependentResourceContext().getMandatory(key, Map.class);
     }
 
     @SuppressWarnings("unchecked")
@@ -129,5 +135,9 @@ public class ConsoleDeployment extends CRUDKubernetesDependentResource<Deploymen
             Map<Class<KubernetesResource>, List<KubernetesResource>> resources,
             Class<R> key) {
         return (List<R>) resources.getOrDefault(key, Collections.emptyList());
+    }
+
+    private String pullPolicy(String image) {
+        return image.contains("sha256:") ? "IfNotPresent" : "Always";
     }
 }
