@@ -92,7 +92,7 @@ export function ResetOffset({
           (selectPartition === "selectedPartition" &&
             offset.partition !== undefined)))) &&
     (selectOffset === "custom"
-      ? offset.offset
+      ? offset.offset !== undefined && offset.offset !== ""
       : selectOffset === "specificDateTime"
         ? offset.offset
         : selectOffset === "latest" || selectOffset === "earliest");
@@ -179,39 +179,53 @@ export function ResetOffset({
             <FormSection title={t("offset_details")}>
               <FormGroup label={t("new_offset")}>
                 <SelectComponent<OffsetValue>
-                  options={[
-                    { value: "custom", label: t("offset.custom") },
-                    { value: "latest", label: t("offset.latest") },
-                    { value: "earliest", label: t("offset.earliest") },
-                    {
-                      value: "specificDateTime",
-                      label: t("offset.specific_date_time"),
-                    },
-                  ]}
+                  options={
+                    selectTopic === "allTopics" ||
+                    selectPartition === "allPartitions"
+                      ? [
+                          {
+                            value: "specificDateTime",
+                            label: t("offset.specific_date_time"),
+                          },
+                          { value: "latest", label: t("offset.latest") },
+                          { value: "earliest", label: t("offset.earliest") },
+                        ]
+                      : [
+                          { value: "custom", label: t("offset.custom") },
+                          { value: "latest", label: t("offset.latest") },
+                          { value: "earliest", label: t("offset.earliest") },
+                          {
+                            value: "specificDateTime",
+                            label: t("offset.specific_date_time"),
+                          },
+                        ]
+                  }
                   value={selectOffset}
                   onChange={onOffsetSelect}
                   placeholder="Select an offset"
                 />
               </FormGroup>
-              {selectOffset === "custom" && (
-                <FormGroup
-                  label={t("custom_offset")}
-                  fieldId="custom-offset-input"
-                >
-                  <TextInput
-                    id="custom-offset-input"
-                    name={t("custom_offset")}
-                    value={offset.offset}
-                    onChange={(_event, value) => {
-                      if (/^\d*$/.test(value)) {
-                        handleOffsetChange(value);
-                      }
-                    }}
-                    type="number"
-                    min={0}
-                  />
-                </FormGroup>
-              )}
+              {selectOffset === "custom" &&
+                selectTopic !== "allTopics" &&
+                selectPartition !== "allPartitions" && (
+                  <FormGroup
+                    label={t("custom_offset")}
+                    fieldId="custom-offset-input"
+                  >
+                    <TextInput
+                      id="custom-offset-input"
+                      name={t("custom_offset")}
+                      value={offset.offset}
+                      onChange={(_event, value) => {
+                        if (/^\d*$/.test(value)) {
+                          handleOffsetChange(value);
+                        }
+                      }}
+                      type="number"
+                      min={0}
+                    />
+                  </FormGroup>
+                )}
               {selectOffset === "specificDateTime" && (
                 <>
                   <FormGroup
