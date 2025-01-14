@@ -152,7 +152,7 @@ class ConsoleReconcilerTest extends ConsoleReconcilerTestBase {
                 .withRequests(Map.of("cpu", Quantity.parse("250m")))
                 .withLimits(Map.of("cpu", Quantity.parse("500m")))
                 .build(), apiContainer.getResources());
-        assertEquals(4, apiContainer.getEnv().size()); // 2 overrides + 2 from YAML template
+        assertEquals(3, apiContainer.getEnv().size()); // 2 overrides + 1 from YAML template
         assertEquals("value0", apiContainer.getEnv().stream()
                 .filter(e -> e.getName().equals("DEPRECATED_API_VAR")).map(EnvVar::getValue).findFirst().orElseThrow());
         assertEquals("value1", apiContainer.getEnv().stream()
