@@ -1,11 +1,11 @@
 package com.github.streamshub.console.kafka.systemtest;
 
-import io.quarkus.test.junit.QuarkusTestProfile;
-
 import java.util.List;
 import java.util.Map;
 
-import com.github.streamshub.console.kafka.systemtest.deployment.KafkaUnsecuredResourceManager;
+import com.github.streamshub.console.kafka.systemtest.deployment.KafkaResourceManager;
+
+import io.quarkus.test.junit.QuarkusTestProfile;
 
 /**
  * Same as profile {@linkplain TestPlainProfile}, but disables Kubernetes use by setting
@@ -17,7 +17,7 @@ public class TestPlainNoK8sProfile extends TestPlainProfile implements QuarkusTe
 
     @Override
     public List<TestResourceEntry> testResources() {
-        return List.of(new TestResourceEntry(KafkaUnsecuredResourceManager.class, Map.of("profile", PROFILE)));
+        return List.of(new TestResourceEntry(KafkaResourceManager.class, Map.of("profile", PROFILE)));
     }
 
     @Override

@@ -18,10 +18,6 @@
         <docker.group>streamshub</docker.group>
         <docker.tag>${project.version}</docker.tag>
         <docker.push>false</docker.push>
-
-        <!-- System test image dependencies -->
-        <keycloak.image>quay.io/keycloak/keycloak:21.1</keycloak.image>
-        <strimzi-kafka.tag>quay.io/strimzi/kafka:0.43.0-kafka-3.8.0</strimzi-kafka.tag>
     </properties>
 
     <dependencies>
@@ -382,9 +378,6 @@
                         <configuration>
                             <redirectTestOutputToFile>true</redirectTestOutputToFile>
                             <systemProperties>
-                                <keycloak.image>${keycloak.image}</keycloak.image>
-                                <strimzi.test-container.kafka.custom.image>${strimzi-kafka.tag}</strimzi.test-container.kafka.custom.image>
-                                <apicurio-registry.version>${apicurio-registry.version}</apicurio-registry.version>
                                 <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
                                 <maven.home>${maven.home}</maven.home>
                                 <quarkus.jacoco.reuse-data-file>true</quarkus.jacoco.reuse-data-file>

@@ -1,8 +1,10 @@
 package com.github.streamshub.console.kafka.systemtest.deployment;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.time.Duration;
@@ -36,8 +38,16 @@ public class KeycloakResourceManager implements QuarkusTestResourceLifecycleMana
         int port = 8443;
         TlsHelper tls = TlsHelper.newInstance();
         String keystorePath = "/opt/keycloak/keystore.p12";
+        String keycloakImage;
 
-        keycloak = new GenericContainer<>("quay.io/keycloak/keycloak:26.0")
+        try (InputStream in = getClass().getResourceAsStream("/Dockerfile.keycloak");
+             BufferedReader reader = new BufferedReader(new InputStreamReader(in))) {
+            keycloakImage = reader.readLine().substring("FROM ".length());
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+
+        keycloak = new GenericContainer<>(keycloakImage)
                 .withLogConsumer(new Slf4jLogConsumer(LoggerFactory.getLogger("systemtests.keycloak"), true))
                 .withExposedPorts(port)
                 .withEnv(Map.of(
