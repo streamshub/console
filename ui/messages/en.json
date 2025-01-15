@@ -585,10 +585,16 @@
     "close": "Close",
     "mode": "Mode",
     "auto_approval_enabled": "Auto-approval enabled",
-    "brokers": "Brokers",
+    "rebalance_mode": "Rebalance mode",
     "cr_badge": "CR",
     "approved_alert": "KafkaRebalance approved!",
     "stopped_alert": "KafkaRebalance has stopped!",
-    "refresh_alert": "KafkaRebalance has been refreshed!"
+    "refresh_alert": "KafkaRebalance has been refreshed!",
+    "full_mode": "<b>Full mode:</b>",
+    "full_mode_description": "Moves replicas across all brokers. This is the default mode",
+    "add_brokers_mode_description": "Moves replicas to newly added brokers. Brokers must be specified",
+    "add_brokers_mode": "<b>Add-brokers mode:</b>",
+    "remove_brokers_mode": "<b>Remove-brokers mode:</b>",
+    "remove_brokers_mode_description": "Moves replicas off brokers to be removed. Brokers must be specified"
   }
 }
