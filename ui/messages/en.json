@@ -595,6 +595,7 @@
     "add_brokers_mode_description": "Moves replicas to newly added brokers. Brokers must be specified",
     "add_brokers_mode": "<b>Add-brokers mode:</b>",
     "remove_brokers_mode": "<b>Remove-brokers mode:</b>",
-    "remove_brokers_mode_description": "Moves replicas off brokers to be removed. Brokers must be specified"
+    "remove_brokers_mode_description": "Moves replicas off brokers to be removed. Brokers must be specified",
+    "broker": "broker {b}"
   }
 }

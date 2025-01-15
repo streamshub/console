@@ -288,15 +288,17 @@ export function RebalanceTable({
                         <div>
                           <List>
                             <ListItem>
-                              {t.rich("full_mode")}
+                              {t.rich("full_mode")}&nbsp;
                               {t("full_mode_description")}
                             </ListItem>
                             <ListItem>
                               {t.rich("add_brokers_mode")}
+                              &nbsp;
                               {t("add_brokers_mode_description")}
                             </ListItem>
                             <ListItem>
                               {t.rich("remove_brokers_mode")}
+                              &nbsp;
                               {t("remove_brokers_mode_description")}
                             </ListItem>
                           </List>
@@ -307,7 +309,7 @@ export function RebalanceTable({
                     </Popover>
                   </DescriptionListTerm>
                   <DescriptionListDescription>
-                    {row.attributes.mode === "full" ? (
+                    {row.attributes.mode !== "full" ? (
                       ModeLabel[row.attributes.mode]
                     ) : (
                       <>
@@ -315,7 +317,9 @@ export function RebalanceTable({
                         {row.attributes.brokers?.length
                           ? row.attributes.brokers.map((b, index) => (
                               <>
-                                <Link href={`${baseurl}/${b}`}>{b}</Link>
+                                <Link href={`${baseurl}/${b}`}>
+                                  {t("broker", { b })}
+                                </Link>
                                 {index <
                                   (row.attributes.brokers?.length || 0) - 1 &&
                                   ", "}
