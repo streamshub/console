@@ -113,7 +113,8 @@ function sampleData({
         offset: 0,
         timestamp: "2022-03-15T14:10:57.105Z",
         headers: {
-          random: `${Math.random()}`,
+          "key.globalId": "\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0002",
+          "key.encoding": "BINARY",
         },
         value:
           '{"order":{"address":{"street":"123 any st","city":"Austin","state":"TX","zip":"78626"},"contact":{"firstName":"james","lastName":"smith","phone":"512-123-1234"},"orderId":"123","customerName":""},"primitives":{"stringPrimitive":"some value","booleanPrimitive":true,"numberPrimitive":24},"addressList":[{"street":"123 any st","city":"Austin","state":"TX","zip":"78626"},{"street":"123 any st","city":"Austin","state":"TX","zip":"78626"},{"street":"123 any st","city":"Austin","state":"TX","zip":"78626"},{"street":"123 any st","city":"Austin","state":"TX","zip":"78626"}]}',
@@ -122,9 +123,9 @@ function sampleData({
       relationships: {
         valueSchema: {
           meta: {
-            artifactType: "AVRO"
-          }
-        }
+            artifactType: "AVRO",
+          },
+        },
       },
     },
     {
@@ -149,9 +150,9 @@ function sampleData({
       relationships: {
         keySchema: {
           meta: {
-            artifactType: "PROTOBUF"
-          }
-        }
+            artifactType: "PROTOBUF",
+          },
+        },
       },
     },
     {
@@ -191,7 +192,7 @@ function sampleData({
     },
   ];
   const numberOfMessages =
-    filterLimit === "continuously" ? 50 : filterLimit ?? 50;
+    filterLimit === "continuously" ? 50 : (filterLimit ?? 50);
   return new Array(Math.ceil(numberOfMessages / messages.length))
     .fill(0)
     .flatMap((_, i) =>
