@@ -11,25 +11,25 @@ public class Containers {
 
     @JsonPropertyDescription("Template for the Console API server container. " +
             "The template allows users to specify how the Kubernetes resources are generated.")
-    ContainerTemplate api;
+    ContainerTemplateSpec api;
 
     @JsonPropertyDescription("Template for the Console UI server container. " +
             "The template allows users to specify how the Kubernetes resources are generated.")
-    ContainerTemplate ui;
+    ContainerTemplateSpec ui;
 
-    public ContainerTemplate getApi() {
+    public ContainerTemplateSpec getApi() {
         return api;
     }
 
-    public void setApi(ContainerTemplate api) {
+    public void setApi(ContainerTemplateSpec api) {
         this.api = api;
     }
 
-    public ContainerTemplate getUi() {
+    public ContainerTemplateSpec getUi() {
         return ui;
     }
 
-    public void setUi(ContainerTemplate ui) {
+    public void setUi(ContainerTemplateSpec ui) {
         this.ui = ui;
     }
 }

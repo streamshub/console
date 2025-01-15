@@ -11,7 +11,7 @@ import io.sundr.builder.annotations.Buildable;
 
 @Buildable
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class ContainerTemplate {
+public class ContainerSpec {
 
     @JsonPropertyDescription("Container image to be used for the container")
     private String image;
