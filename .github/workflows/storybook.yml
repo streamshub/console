@@ -4,6 +4,10 @@ on:
   push:
     branches:
       - main
+    paths:
+      - 'ui/**'
+      - '!ui/package.json'
+      - '!ui/package-lock.json'
 
 jobs:
   build_and_deploy:
