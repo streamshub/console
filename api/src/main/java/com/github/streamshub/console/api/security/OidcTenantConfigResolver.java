@@ -17,7 +17,6 @@ import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
-import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
 import com.github.streamshub.console.config.ConsoleConfig;
@@ -40,10 +39,6 @@ public class OidcTenantConfigResolver implements TenantConfigResolver {
 
     @Inject
     Logger logger;
-
-    @Inject
-    @ConfigProperty(name = "console.work-path")
-    String workPath;
 
     @Inject
     TlsConfigurationRegistry tlsRegistry;
@@ -86,13 +81,11 @@ public class OidcTenantConfigResolver implements TenantConfigResolver {
      * registry.
      */
     void configureTruststore(KeyStore truststore) {
-        File workDir = new File(workPath);
         Path truststorePath;
         File truststoreFile;
 
         try {
             truststorePath = Files.createTempFile(
-                    workDir.toPath(),
                     "oidc-provider-trust",
                     "." + truststore.getType(),
                     PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rw-------")));
