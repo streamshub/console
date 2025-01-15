@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import com.github.streamshub.console.api.v1alpha1.spec.containers.Containers;
 import com.github.streamshub.console.api.v1alpha1.spec.metrics.MetricsSource;
 import com.github.streamshub.console.api.v1alpha1.spec.security.GlobalSecurity;
 
@@ -27,6 +29,16 @@ public class ConsoleSpec {
     @Required
     String hostname;
 
+    @JsonPropertyDescription("""
+            Templates for Console instance containers. The templates allow \
+            users to specify how the Kubernetes resources are generated.
+            """)
+    Containers containers;
+
+    @JsonPropertyDescription("""
+            DEPRECATED: Image overrides to be used for the API and UI servers. \
+            Use `containers` property instead.
+            """)
     Images images;
 
     GlobalSecurity security;
@@ -37,6 +49,10 @@ public class ConsoleSpec {
 
     List<KafkaCluster> kafkaClusters = new ArrayList<>();
 
+    @JsonPropertyDescription("""
+            DEPRECATED: Environment variables which should be applied to the API container. \
+            Use `containers` property instead.
+            """)
     List<EnvVar> env;
 
     public String getHostname() {
@@ -45,6 +61,14 @@ public class ConsoleSpec {
 
     public void setHostname(String hostname) {
         this.hostname = hostname;
+    }
+
+    public Containers getContainers() {
+        return containers;
+    }
+
+    public void setContainers(Containers containers) {
+        this.containers = containers;
     }
 
     public Images getImages() {

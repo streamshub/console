@@ -3,6 +3,7 @@ package com.github.streamshub.console;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
@@ -27,8 +28,11 @@ import com.github.streamshub.console.dependents.PrometheusDeployment;
 import io.fabric8.kubernetes.api.model.ConfigMap;
 import io.fabric8.kubernetes.api.model.ConfigMapBuilder;
 import io.fabric8.kubernetes.api.model.EnvVar;
+import io.fabric8.kubernetes.api.model.EnvVarBuilder;
 import io.fabric8.kubernetes.api.model.NamespaceBuilder;
 import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
+import io.fabric8.kubernetes.api.model.Quantity;
+import io.fabric8.kubernetes.api.model.ResourceRequirementsBuilder;
 import io.fabric8.kubernetes.api.model.Secret;
 import io.fabric8.kubernetes.api.model.SecretBuilder;
 import io.fabric8.kubernetes.api.model.Volume;
@@ -77,6 +81,96 @@ class ConsoleReconcilerTest extends ConsoleReconcilerTestBase {
                 consoleContainers.get(1).getImage());
 
         awaitReady(consoleCR);
+    }
+
+    @Test
+    void testConsoleReconciliationWithContainerOverrides() {
+        Console consoleCR = new ConsoleBuilder()
+                .withMetadata(new ObjectMetaBuilder()
+                        .withName("console-1")
+                        .withNamespace("ns2")
+                        .build())
+                .withNewSpec()
+                    .withHostname("console.example.com")
+                    .addNewMetricsSource()
+                        .withName("metrics")
+                        .withType(Type.STANDALONE)
+                        .withUrl("http://prometheus.example.com")
+                    .endMetricsSource()
+                    .withNewImages()
+                        .withApi("deprecated-api-image")
+                        .withUi("deprecated-ui-image")
+                    .endImages()
+                    .addToEnv(new EnvVarBuilder()
+                            .withName("DEPRECATED_API_VAR")
+                            .withValue("value0")
+                            .build())
+                    .withNewContainers()
+                        .withNewApi()
+                            .withNewSpec()
+                                .withImage("custom-api-image")
+                                .withResources(new ResourceRequirementsBuilder()
+                                        .withRequests(Map.of("cpu", Quantity.parse("250m")))
+                                        .withLimits(Map.of("cpu", Quantity.parse("500m")))
+                                        .build())
+                                .addToEnv(new EnvVarBuilder()
+                                        .withName("CUSTOM_API_VAR")
+                                        .withValue("value1")
+                                        .build())
+                            .endSpec()
+                        .endApi()
+                        .withNewUi()
+                            .withNewSpec()
+                                .withImage("custom-ui-image")
+                                .withResources(new ResourceRequirementsBuilder()
+                                        .withRequests(Map.of("cpu", Quantity.parse("100m")))
+                                        .withLimits(Map.of("cpu", Quantity.parse("200m")))
+                                        .build())
+                                .addToEnv(new EnvVarBuilder()
+                                        .withName("CUSTOM_UI_VAR")
+                                        .withValue("value2")
+                                        .build())
+                            .endSpec()
+                        .endUi()
+                    .endContainers()
+                    .addNewKafkaCluster()
+                        .withName(kafkaCR.getMetadata().getName())
+                        .withNamespace(kafkaCR.getMetadata().getNamespace())
+                        .withListener(kafkaCR.getSpec().getKafka().getListeners().get(0).getName())
+                        .withMetricsSource("metrics")
+                    .endKafkaCluster()
+                .endSpec()
+                .build();
+
+        client.resource(consoleCR).create();
+
+        awaitDependentsNotReady(consoleCR, "ConsoleIngress");
+        setConsoleIngressReady(consoleCR);
+        awaitDependentsNotReady(consoleCR, "ConsoleDeployment");
+        var consoleDeployment = setDeploymentReady(consoleCR, ConsoleDeployment.NAME);
+        var consoleContainers = consoleDeployment.getSpec().getTemplate().getSpec().getContainers();
+        var apiContainer = consoleContainers.get(0);
+
+        assertEquals("custom-api-image", apiContainer.getImage());
+        assertEquals(new ResourceRequirementsBuilder()
+                .withRequests(Map.of("cpu", Quantity.parse("250m")))
+                .withLimits(Map.of("cpu", Quantity.parse("500m")))
+                .build(), apiContainer.getResources());
+        assertEquals(3, apiContainer.getEnv().size()); // 2 overrides + 1 from YAML template
+        assertEquals("value0", apiContainer.getEnv().stream()
+                .filter(e -> e.getName().equals("DEPRECATED_API_VAR")).map(EnvVar::getValue).findFirst().orElseThrow());
+        assertEquals("value1", apiContainer.getEnv().stream()
+                .filter(e -> e.getName().equals("CUSTOM_API_VAR")).map(EnvVar::getValue).findFirst().orElseThrow());
+
+        var uiContainer = consoleContainers.get(1);
+        assertEquals("custom-ui-image", uiContainer.getImage());
+        assertEquals(new ResourceRequirementsBuilder()
+                .withRequests(Map.of("cpu", Quantity.parse("100m")))
+                .withLimits(Map.of("cpu", Quantity.parse("200m")))
+                .build(), uiContainer.getResources());
+        assertEquals(7, uiContainer.getEnv().size()); // 1 override + 6 from YAML template
+        assertEquals("value2", uiContainer.getEnv().stream()
+                .filter(e -> e.getName().equals("CUSTOM_UI_VAR")).map(EnvVar::getValue).findFirst().orElseThrow());
     }
 
     @Test
@@ -757,31 +851,22 @@ class ConsoleReconcilerTest extends ConsoleReconcilerTestBase {
         var volumes = podSpec.getVolumes().stream().collect(Collectors.toMap(Volume::getName, Function.identity()));
         assertEquals(4, volumes.size()); // cache, config + 2 volumes for truststores
 
-        var metricsVolName = "metrics-source-truststore-example-prometheus";
-        var registryVolName = "schema-registry-truststore-example-registry";
-
-        var metricsVolume = volumes.get(metricsVolName);
-        assertEquals("metrics-source-truststore.example-prometheus.content", metricsVolume.getSecret().getItems().get(0).getKey());
-        assertEquals("metrics-source-truststore.example-prometheus.jks", metricsVolume.getSecret().getItems().get(0).getPath());
-
-        var registryVolume = volumes.get(registryVolName);
-        assertEquals("schema-registry-truststore.example-registry.content", registryVolume.getSecret().getItems().get(0).getKey());
-        assertEquals("schema-registry-truststore.example-registry.pem", registryVolume.getSecret().getItems().get(0).getPath());
-
         var mounts = containerSpecAPI.getVolumeMounts().stream().collect(Collectors.toMap(VolumeMount::getName, Function.identity()));
         assertEquals(4, mounts.size(), mounts::toString);
 
-        var metricsMount = mounts.get(metricsVolName);
-        var metricsMountPath = "/etc/ssl/metrics-source-truststore.example-prometheus.jks";
-        assertEquals(metricsMountPath, metricsMount.getMountPath());
-        assertEquals("metrics-source-truststore.example-prometheus.jks", metricsMount.getSubPath());
-
-        var registryMount = mounts.get(registryVolName);
-        var registryMountPath = "/etc/ssl/schema-registry-truststore.example-registry.pem";
-        assertEquals(registryMountPath, registryMount.getMountPath());
-        assertEquals("schema-registry-truststore.example-registry.pem", registryMount.getSubPath());
-
         var envVars = containerSpecAPI.getEnv().stream().collect(Collectors.toMap(EnvVar::getName, Function.identity()));
+
+        var metricsVolName = "metrics-source-truststore-example-prometheus";
+        var metricsMountPath = "/etc/ssl/metrics-source-truststore.example-prometheus.jks";
+
+        assertKeyToPath(
+                "metrics-source-truststore.example-prometheus.content",
+                "metrics-source-truststore.example-prometheus.jks",
+                volumes.get(metricsVolName).getSecret().getItems().get(0));
+        assertMounthPaths(
+                metricsMountPath,
+                "metrics-source-truststore.example-prometheus.jks",
+                mounts.get(metricsVolName));
 
         var metricsTrustPath = envVars.get("QUARKUS_TLS__METRICS_SOURCE_EXAMPLE_PROMETHEUS__TRUST_STORE_JKS_PATH");
         assertEquals(metricsMountPath, metricsTrustPath.getValue());
@@ -791,6 +876,19 @@ class ConsoleReconcilerTest extends ConsoleReconcilerTestBase {
         var metricsPasswordSource = envVars.get("QUARKUS_TLS__METRICS_SOURCE_EXAMPLE_PROMETHEUS__TRUST_STORE_JKS_PASSWORD");
         assertEquals("console-1-console-secret", metricsPasswordSource.getValueFrom().getSecretKeyRef().getName());
         assertEquals("metrics-source-truststore.example-prometheus.password", metricsPasswordSource.getValueFrom().getSecretKeyRef().getKey());
+
+        var registryVolName = "schema-registry-truststore-example-registry";
+        var registryMountPath = "/etc/ssl/schema-registry-truststore.example-registry.pem";
+
+        assertKeyToPath(
+                "schema-registry-truststore.example-registry.content",
+                "schema-registry-truststore.example-registry.pem",
+                volumes.get(registryVolName).getSecret().getItems().get(0));
+
+        assertMounthPaths(
+                registryMountPath,
+                "schema-registry-truststore.example-registry.pem",
+                mounts.get(registryVolName));
 
         var registryTrustPath = envVars.get("QUARKUS_TLS__SCHEMA_REGISTRY_EXAMPLE_REGISTRY__TRUST_STORE_PEM_CERTS");
         assertEquals(registryMountPath, registryTrustPath.getValue());

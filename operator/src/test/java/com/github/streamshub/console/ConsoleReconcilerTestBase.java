@@ -25,9 +25,11 @@ import com.github.streamshub.console.dependents.ConsoleSecret;
 
 import io.fabric8.kubernetes.api.model.ConfigMap;
 import io.fabric8.kubernetes.api.model.HasMetadata;
+import io.fabric8.kubernetes.api.model.KeyToPath;
 import io.fabric8.kubernetes.api.model.NamespaceBuilder;
 import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
 import io.fabric8.kubernetes.api.model.Secret;
+import io.fabric8.kubernetes.api.model.VolumeMount;
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinitionBuilder;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.kubernetes.api.model.networking.v1.Ingress;
@@ -126,7 +128,7 @@ abstract class ConsoleReconcilerTestBase {
         allSecrets.delete();
         allIngresses.delete();
 
-        await().atMost(Duration.ofSeconds(20)).untilAsserted(() -> {
+        await().atMost(Duration.ofSeconds(30)).untilAsserted(() -> {
             assertTrue(allConsoles.list().getItems().isEmpty());
             assertTrue(allKafkas.list().getItems().isEmpty());
             assertTrue(allKafkaUsers.list().getItems().isEmpty());
@@ -314,4 +316,15 @@ abstract class ConsoleReconcilerTestBase {
             .endStatus()
             .build();
     }
+
+    void assertKeyToPath(String expectedKey, String expectedPath, KeyToPath keyPath) {
+        assertEquals(expectedKey, keyPath.getKey());
+        assertEquals(expectedPath, keyPath.getPath());
+    }
+
+    void assertMounthPaths(String expectedPath, String expectedSubpath, VolumeMount mount) {
+        assertEquals(expectedPath, mount.getMountPath());
+        assertEquals(expectedSubpath, mount.getSubPath());
+    }
+
 }
