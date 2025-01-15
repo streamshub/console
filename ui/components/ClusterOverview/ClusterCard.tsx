@@ -32,6 +32,7 @@ import { useTranslations } from "next-intl";
 import { ErrorsAndWarnings } from "./components/ErrorsAndWarnings";
 import { updateKafkaCluster } from "@/api/kafka/actions";
 import { useReconciliationContext } from "../ReconciliationContext";
+import { ReconciliationPauseButton } from "./ReconciliationPauseButton";
 
 type ClusterCardProps = {
   name: string;
@@ -47,6 +48,7 @@ type ClusterCardProps = {
     message: string;
     date: string;
   }>;
+  managed: boolean;
 };
 
 export function ClusterCard({
@@ -59,6 +61,7 @@ export function ClusterCard({
   kafkaVersion,
   messages,
   kafkaId,
+  managed,
 }:
   | ({
       isLoading: false;
@@ -96,6 +99,19 @@ export function ClusterCard({
   return (
     <Card component={"div"}>
       <CardBody>
+        <Flex>
+          <FlexItem>
+            <Title headingLevel={"h2"}>
+              {t("ClusterCard.Kafka_cluster_details")}
+            </Title>
+          </FlexItem>
+          <FlexItem align={{ default: "alignRight" }}>
+            <ReconciliationPauseButton
+              clusterId={kafkaId || ""}
+              managed={managed || false}
+            />
+          </FlexItem>
+        </Flex>
         <Flex direction={{ default: "column" }} gap={{ default: "gap" }}>
           <Flex
             flexWrap={{ default: "wrap", sm: "nowrap" }}
