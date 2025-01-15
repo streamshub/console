@@ -11,9 +11,7 @@ export default function Header({
   params: KafkaParams;
 }) {
   return (
-    <Suspense
-      fallback={<OverviewHeader params={{ kafkaId }} managed={false} />}
-    >
+    <Suspense fallback={<OverviewHeader params={{ kafkaId }} />}>
       <ConnectedHeader params={{ kafkaId }} />
     </Suspense>
   );
@@ -25,30 +23,21 @@ async function ConnectedHeader({
   params: KafkaParams;
 }) {
   const cluster = (await getKafkaCluster(kafkaId))?.payload;
-  
-  return (
-    <OverviewHeader
-      params={{ kafkaId }}
-      managed={cluster?.meta?.managed ?? false}
-    />
-  );
+
+  return <OverviewHeader params={{ kafkaId }} />;
 }
 
 export function OverviewHeader({
   params: { kafkaId },
-  managed,
 }: {
   params: KafkaParams;
-  managed: boolean;
 }) {
   const t = useTranslations();
   return (
     <AppHeader
       title={t("ClusterOverview.header")}
       subTitle={t("ClusterOverview.description")}
-      actions={[
-        <ConnectButton key={"cd"} clusterId={kafkaId} managed={managed} />,
-      ]}
+      actions={[<ConnectButton key={"cd"} clusterId={kafkaId} />]}
     />
   );
 }
