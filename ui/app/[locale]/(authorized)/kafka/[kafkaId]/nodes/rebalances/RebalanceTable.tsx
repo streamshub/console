@@ -309,7 +309,7 @@ export function RebalanceTable({
                     </Popover>
                   </DescriptionListTerm>
                   <DescriptionListDescription>
-                    {row.attributes.mode !== "full" ? (
+                    {row.attributes.mode === "full" ? (
                       ModeLabel[row.attributes.mode]
                     ) : (
                       <>
