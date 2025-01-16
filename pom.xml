@@ -81,6 +81,12 @@
 
     <dependencyManagement>
         <dependencies>
+            <!-- Manage kafka-clients for CVE-2024-56128 -->
+            <dependency>
+                <groupId>org.apache.kafka</groupId>
+                <artifactId>kafka-clients</artifactId>
+                <version>3.9.0</version>
+            </dependency>
             <!-- Manage nimbus-jose-jwt for CVE-2023-52428 -->
             <dependency>
                 <groupId>com.nimbusds</groupId>
