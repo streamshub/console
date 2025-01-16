@@ -42,9 +42,9 @@ export default function RebalancesPage({
   };
 }) {
   const name = searchParams["name"];
-  const mode = (searchParams["mode"] || "")
-    .split(",")
-    .filter((v) => !!v) as RebalanceMode[] | undefined;;
+  const mode = (searchParams["mode"] || "").split(",").filter((v) => !!v) as
+    | RebalanceMode[]
+    | undefined;
   const pageSize = stringToInt(searchParams.perPage) || 20;
   const sort = (searchParams["sort"] || "name") as RebalanceTableColumn;
   const sortDir = (searchParams["sortDir"] || "asc") as "asc" | "desc";
@@ -69,7 +69,9 @@ export default function RebalancesPage({
             nextPageCursor={undefined}
             prevPageCursor={undefined}
             mode={mode}
-            baseurl={`/kafka/${params.kafkaId}/nodes`} kafkaId={params.kafkaId} />
+            baseurl={`/kafka/${params.kafkaId}/nodes`}
+            kafkaId={params.kafkaId}
+          />
         }
       >
         <AsyncReabalanceTable
@@ -103,7 +105,7 @@ async function AsyncReabalanceTable({
   pageSize: number;
   pageCursor: string | undefined;
   status: RebalanceStatus[] | undefined;
-    mode: RebalanceMode[] | undefined;
+  mode: RebalanceMode[] | undefined;
 } & KafkaParams) {
   const response = await getRebalancesList(kafkaId, {
     name,
@@ -136,7 +138,7 @@ async function AsyncReabalanceTable({
       sort={sort}
       sortDir={sortDir}
       status={status}
-      baseurl={`/kafka/${kafkaId}/nodes/rebalances`}
+      baseurl={`/kafka/${kafkaId}/nodes`}
       page={rebalance.meta.page.pageNumber || 1}
       nextPageCursor={nextPageCursor}
       prevPageCursor={prevPageCursor}

@@ -14,6 +14,10 @@ import {
   DescriptionListTerm,
   DescriptionListDescription,
   Badge,
+  Popover,
+  List,
+  ListItem,
+  Tooltip,
 } from "@/libs/patternfly/react-core";
 import {
   CheckIcon,
@@ -21,6 +25,7 @@ import {
   PauseCircleIcon,
   PendingIcon,
   OutlinedClockIcon,
+  HelpIcon,
 } from "@/libs/patternfly/react-icons";
 import Link from "next/link";
 import React, { ReactNode } from "react";
@@ -34,80 +39,96 @@ export type RebalanceTableColumn = (typeof RebalanceTableColumns)[number];
 
 const StatusLabel: Record<RebalanceStatus, ReactNode> = {
   New: (
-    <>
-      <Icon>
-        <ExclamationCircleIcon />
-      </Icon>
-      &nbsp; New
-    </>
+    <Tooltip content="New rebalance initiated">
+      <span>
+        <Icon>
+          <ExclamationCircleIcon />
+        </Icon>
+        &nbsp; New
+      </span>
+    </Tooltip>
   ),
   PendingProposal: (
-    <>
-      <Icon>
-        <PendingIcon />
-      </Icon>
-      &nbsp;PendingProposal
-    </>
+    <Tooltip content="Optimization proposal not generated">
+      <span>
+        <Icon>
+          <PendingIcon />
+        </Icon>
+        &nbsp;PendingProposal
+      </span>
+    </Tooltip>
   ),
   ProposalReady: (
-    <>
-      <Icon>
-        <CheckIcon />
-      </Icon>
-      &nbsp;ProposalReady
-    </>
+    <Tooltip content="Optimization proposal is ready for approval">
+      <span>
+        <Icon>
+          <CheckIcon />
+        </Icon>
+        &nbsp;ProposalReady
+      </span>
+    </Tooltip>
   ),
   Stopped: (
-    <>
-      <Icon>
-        <Image
-          src={"/stop-icon.svg"}
-          alt="stop icon"
-          width={100}
-          height={100}
-        />
-      </Icon>
-      &nbsp;Stopped
-    </>
+    <Tooltip content="Rebalance stopped">
+      <span>
+        <Icon>
+          <Image
+            src={"/stop-icon.svg"}
+            alt="stop icon"
+            width={100}
+            height={100}
+          />
+        </Icon>
+        &nbsp;Stopped
+      </span>
+    </Tooltip>
   ),
   Rebalancing: (
-    <>
-      <Icon>
-        <PendingIcon />
-      </Icon>
-      &nbsp;Rebalancing
-    </>
+    <Tooltip content="Rebalance in progress">
+      <span>
+        <Icon>
+          <PendingIcon />
+        </Icon>
+        &nbsp;Rebalancing
+      </span>
+    </Tooltip>
   ),
   NotReady: (
-    <>
-      <Icon>
-        <OutlinedClockIcon />
-      </Icon>
-      &nbsp;NotReady
-    </>
+    <Tooltip content="Error occurred with the rebalance">
+      <span>
+        <Icon>
+          <OutlinedClockIcon />
+        </Icon>
+        &nbsp;NotReady
+      </span>
+    </Tooltip>
   ),
   Ready: (
-    <>
-      <Icon>
-        <CheckIcon />
-      </Icon>
-      &nbsp;Ready
-    </>
+    <Tooltip content="Rebalance complete">
+      <span>
+        <Icon>
+          <CheckIcon />
+        </Icon>
+        &nbsp;Ready
+      </span>
+    </Tooltip>
   ),
   ReconciliationPaused: (
-    <>
-      <Icon>
-        <PauseCircleIcon />
-      </Icon>
-      &nbsp;ReconciliationPaused
-    </>
+    <Tooltip content="Rebalance is paused">
+      <span>
+        <Icon>
+          <PauseCircleIcon />
+        </Icon>
+        &nbsp;ReconciliationPaused
+      </span>
+    </Tooltip>
   ),
 };
 
 const ModeLabel: Record<RebalanceMode, ReactNode> = {
-  full: <>full</>,
-  "add-brokers": <>add-brokers</>,
-  "remove-brokers": <>remove-brokers</>,
+  full: <>Full</>,
+  "add-brokers": <>Add</>,
+  "remove-brokers": <>Remove</>,
 };
 
 export type RebalanceTabelProps = {
@@ -192,7 +213,7 @@ export function RebalanceTable({
           case "name":
             return (
               <Td key={key} dataLabel={"Rebalance Name"} width={10}>
-                <Link href={`${baseurl}/${row.id}`}>
+                <Link href={`${baseurl}/rebalances/${row.id}`}>
                   <Badge key={key}>{t("cr_badge")}</Badge> {row.attributes.name}
                 </Link>
               </Td>
@@ -239,21 +260,13 @@ export function RebalanceTable({
       }
       getExpandedRow={({ row }) => {
         return (
-          <DescriptionList>
+          <DescriptionList className="pf-v5-u-mb-lg">
             <Flex justifyContent={{ default: "justifyContentSpaceEvenly" }}>
               <FlexItem
                 style={{
-                  width: "15%",
+                  width: "25%",
                 }}
               >
-                <DescriptionListGroup>
-                  <DescriptionListTerm>{t("mode")}</DescriptionListTerm>
-                  <DescriptionListDescription>
-                    {ModeLabel[row.attributes.mode]}
-                  </DescriptionListDescription>
-                </DescriptionListGroup>
-              </FlexItem>
-              <FlexItem style={{ width: "25%", paddingLeft: "5rem" }}>
                 <DescriptionListGroup>
                   <DescriptionListTerm>
                     {t("auto_approval_enabled")}
@@ -263,14 +276,58 @@ export function RebalanceTable({
                   </DescriptionListDescription>
                 </DescriptionListGroup>
               </FlexItem>
-              <FlexItem style={{ width: "27%", paddingRight: "5rem" }}>
+              <FlexItem style={{ width: "50%", paddingRight: "5rem" }}>
                 <DescriptionListGroup>
-                  <DescriptionListTerm>{t("brokers")}</DescriptionListTerm>
+                  <DescriptionListTerm>
+                    {t("mode")}
+                    {"  "}
+                    <Popover
+                      aria-label={t("mode")}
+                      headerContent={<div>{t("rebalance_mode")}</div>}
+                      bodyContent={
+                        <div>
+                          <List>
+                            <ListItem>
+                              {t.rich("full_mode")}&nbsp;
+                              {t("full_mode_description")}
+                            </ListItem>
+                            <ListItem>
+                              {t.rich("add_brokers_mode")}
+                              &nbsp;
+                              {t("add_brokers_mode_description")}
+                            </ListItem>
+                            <ListItem>
+                              {t.rich("remove_brokers_mode")}
+                              &nbsp;
+                              {t("remove_brokers_mode_description")}
+                            </ListItem>
+                          </List>
+                        </div>
+                      }
+                    >
+                      <HelpIcon />
+                    </Popover>
+                  </DescriptionListTerm>
                   <DescriptionListDescription>
-                    {!row.attributes.brokers ||
-                    row.attributes.brokers.length === 0
-                      ? "N/A"
-                      : row.attributes.brokers.join(",")}
+                    {row.attributes.mode === "full" ? (
+                      ModeLabel[row.attributes.mode]
+                    ) : (
+                      <>
+                        {ModeLabel[row.attributes.mode]}{" "}
+                        {row.attributes.brokers?.length
+                          ? row.attributes.brokers.map((b, index) => (
+                              <>
+                                <Link href={`${baseurl}/${b}`}>
+                                  {t("broker", { b })}
+                                </Link>
+                                {index <
+                                  (row.attributes.brokers?.length || 0) - 1 &&
+                                  ", "}
+                              </>
+                            ))
+                          : ""}
+                      </>
+                    )}
                   </DescriptionListDescription>
                 </DescriptionListGroup>
               </FlexItem>
