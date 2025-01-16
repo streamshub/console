@@ -63,7 +63,7 @@ export function parseSearchInput({ value }: { value: string }): SearchParams {
         sp.limit = "continuously";
       } else {
         const number = parseInt(limit, 10);
-        if (Number.isSafeInteger(number)) {
+        if (Number.isSafeInteger(number) && number >= 0) {
           sp.limit = number;
         }
       }
