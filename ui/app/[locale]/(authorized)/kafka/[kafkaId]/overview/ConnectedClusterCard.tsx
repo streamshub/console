@@ -24,17 +24,19 @@ export async function ConnectedClusterCard({
         brokersTotal={undefined}
         kafkaVersion={res?.attributes.kafkaVersion ?? "n/a"}
         kafkaId={res?.id}
+        managed={res?.meta?.managed || false}
       />
     );
   }
-  const groupCount = await consumerGroups.then(
-    (grpResp) => grpResp.errors ? undefined : grpResp.payload?.meta.page.total ?? 0,
+  const groupCount = await consumerGroups.then((grpResp) =>
+    grpResp.errors ? undefined : (grpResp.payload?.meta.page.total ?? 0),
   );
 
-  const brokersTotal = res?.attributes.metrics?.values?.["broker_state"]?.length ?? 0;
-  const brokersOnline = (res?.attributes.metrics?.values?.["broker_state"] ?? [])
-    .filter((s) => s.value === "3")
-    .length;
+  const brokersTotal =
+    res?.attributes.metrics?.values?.["broker_state"]?.length ?? 0;
+  const brokersOnline = (
+    res?.attributes.metrics?.values?.["broker_state"] ?? []
+  ).filter((s) => s.value === "3").length;
 
   const messages = res?.attributes.conditions
     ?.filter((c) => "Ready" !== c.type)
@@ -53,7 +55,10 @@ export async function ConnectedClusterCard({
   return (
     <ClusterCard
       isLoading={false}
-      status={res?.attributes.status ?? (brokersOnline == brokersTotal ? "Ready" : "Not Available")}
+      status={
+        res?.attributes.status ??
+        (brokersOnline == brokersTotal ? "Ready" : "Not Available")
+      }
       messages={messages ?? []}
       name={res?.attributes.name ?? "n/a"}
       consumerGroups={groupCount}
@@ -61,6 +66,7 @@ export async function ConnectedClusterCard({
       brokersTotal={brokersTotal}
       kafkaVersion={res?.attributes.kafkaVersion ?? "Not Available"}
       kafkaId={res.id}
+      managed={res.meta?.managed || false}
     />
   );
 }
