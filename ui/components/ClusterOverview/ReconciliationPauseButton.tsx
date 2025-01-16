@@ -1,10 +1,9 @@
 "use client";
 
 import { updateKafkaCluster } from "@/api/kafka/actions";
-import { useOpenClusterConnectionPanel } from "@/components/ClusterDrawerContext";
 import { ReconciliationModal } from "@/components/ClusterOverview/ReconciliationModal";
 import { useReconciliationContext } from "@/components/ReconciliationContext";
-import { Button, Flex, FlexItem } from "@/libs/patternfly/react-core";
+import { Button } from "@/libs/patternfly/react-core";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { PauseCircleIcon, PlayIcon } from "@/libs/patternfly/react-icons";
@@ -17,8 +16,6 @@ export function ReconciliationPauseButton({
   managed: boolean;
 }) {
   const t = useTranslations();
-  const open = useOpenClusterConnectionPanel();
-
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
 
   const { isReconciliationPaused, setReconciliationPaused } =
