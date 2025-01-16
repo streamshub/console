@@ -9,14 +9,14 @@ const meta: Meta<typeof ClusterCard> = {
     (Story) => (
       <ReconciliationContext.Provider
         value={{
-          isReconciliationPaused: true,
-          setReconciliationPaused: () => { }
+          isReconciliationPaused: false,
+          setReconciliationPaused: () => {},
         }}
       >
         <Story />
       </ReconciliationContext.Provider>
-    )
-  ]
+    ),
+  ],
 };
 
 export default meta;

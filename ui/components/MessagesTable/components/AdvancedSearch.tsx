@@ -263,9 +263,11 @@ export function AdvancedSearch({
                     <FormGroup label={"Retrieve"}>
                       <UntilGroup
                         limit={limit ?? 50}
-                        onLimitChange={(limit) => {
-                          setLimit(limit);
+                        onLimitChange={(newLimit) => {
+                          const validatedLimit = newLimit !== undefined && newLimit >= 0 ? newLimit : limit;
+                          setLimit(validatedLimit);
                         }}
+                        
                         onLive={() => {
                           setLimit("continuously");
                         }}

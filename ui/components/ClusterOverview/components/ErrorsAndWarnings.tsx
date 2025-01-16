@@ -35,12 +35,16 @@ export function ErrorsAndWarnings({
             <HelpIcon />
           </Tooltip>{" "}
           <LabelGroup>
-            <Label color={"red"} isCompact={true}>
-              <ExclamationCircleIcon /> {dangers}
-            </Label>
-            <Label color={"gold"} isCompact={true}>
-              <ExclamationTriangleIcon /> {warnings}
-            </Label>
+            {dangers > 0 && (
+              <Label color={"red"} isCompact={true}>
+                <ExclamationCircleIcon /> {dangers}
+              </Label>
+            )}
+            {warnings > 0 && (
+              <Label color={"gold"} isCompact={true}>
+                <ExclamationTriangleIcon /> {warnings}
+              </Label>
+            )}
           </LabelGroup>
         </Title>
       }
