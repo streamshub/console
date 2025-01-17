@@ -1,0 +1,42 @@
+---
+apiVersion: console.streamshub.github.com/v1alpha1
+kind: Console
+metadata:
+  name: example
+spec:
+  hostname: example-console.${CLUSTER_DOMAIN}
+
+  metricsSources:
+    # type=standalone when providing your own existing prometheus instance
+    - name: my-custom-prometheus
+      type: standalone
+      url: http://my-custom-prometheus.cloud2.example.com
+      authentication: # optional
+        # Either username + password or token
+        username: my-user
+        password: my-password
+        #token: my-token
+      trustStore: # optional
+        type: JKS
+        content:
+          valueFrom:
+            configMapKeyRef: # or secretKeyRef
+              name: my-prometheus-configmap
+              key: ca.jks
+        password:
+          # value may be directly given (not for production!) or via `valueFrom` as above
+          value: changeit
+
+  kafkaClusters:
+    #
+    # The values below make use of the example Kafka cluster from examples/kafka.
+    # Adjust according to your environment.
+    #
+    - name: console-kafka             # Name of the `Kafka` CR representing the cluster
+      namespace: ${KAFKA_NAMESPACE}   # Namespace of the `Kafka` CR representing the cluster
+      listener: secure                # Listener on the `Kafka` CR to connect from the console
+      metricsSource: null             # Name of the configured metrics source from the `metricsSources` section
+      credentials:
+        kafkaUser:
+          name: console-kafka-user1   # Name of the `KafkaUser` resource used to connect to Kafka
+                                      # This is optional if properties are used to configure the user
