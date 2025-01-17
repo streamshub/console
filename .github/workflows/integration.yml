@@ -46,6 +46,18 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-maven-
 
+      - name: Cache Next.js UI Build
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.npm
+            ${{ github.workspace }}/.next/cache
+          # Generate a new cache whenever packages or source files change.
+          key: ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}-${{ hashFiles('**/*.js', '**/*.jsx', '**/*.ts', '**/*.tsx') }}
+          # If source files changed but packages didn't, rebuild from a prior cache.
+          restore-keys: |
+            ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}-
+
       - name: Set Up QEMU
         uses: docker/setup-qemu-action@v3
 
@@ -60,7 +72,6 @@ jobs:
         run: |
           npm ci --omit=dev
           export BACKEND_URL=http://example
-          export CONSOLE_METRICS_PROMETHEUS_URL=http://example
           export NEXTAUTH_SECRET=examplesecret
           export LOG_LEVEL=info
           export CONSOLE_MODE=read-only
@@ -77,26 +88,15 @@ jobs:
             localhost:5000/streamshub/console-ui:${{ env.PROJECT_VERSION }}
 
       # ==================== API & Operator ====================
-      - name: Test Projects and Build API and Operator Images
-        env:
-          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
-          SONAR_ORG: ${{secrets.SONAR_ORG}}
-          SONAR_PROJECT: ${{secrets.SONAR_PROJECT}}
-          SONAR_TOKEN: ${{secrets.SONAR_TOKEN}}
+      - name: Build API and Operator Images
         run: |
-          #
-          # Set write-transformed-bytecode-to-build-output for IT coverage. Do NOT use the container image
-          # created by this step.
-          #
-          # See: https://quarkus.io/guides/tests-with-coverage#coverage-for-integration-tests
-          #
           export QUARKUS_CONTAINER_IMAGE_REGISTRY="localhost:5000"
           export QUARKUS_CONTAINER_IMAGE_PUSH=true
           export QUARKUS_CONTAINER_IMAGE_TAG="${{ env.PROJECT_VERSION }}"
           export QUARKUS_KUBERNETES_VERSION="${{ env.PROJECT_VERSION }}"
-          mvn verify -P container-image -B --no-transfer-progress \
+
+          mvn verify -P container-image -B --no-transfer-progress -DskipTests \
             -Dquarkus.kubernetes.namespace='$${NAMESPACE}' \
-            -Dquarkus.package.write-transformed-bytecode-to-build-output=true \
             -Dquarkus.docker.buildx.platform=${{ env.PLATFORMS }}
 
       # ==================== Operator-Bundle ====================
@@ -145,12 +145,63 @@ jobs:
             operator/target/catalog/
             operator/target/kubernetes/*.yml
 
+      - name: Save [UI, API, Operator, Operator-Bundle, Operator-Catalog] Images To Files
+        run: |
+          mkdir streamshub-images
+
+          for img in console-ui console-api console-operator console-operator-bundle console-operator-catalog ; do
+              skopeo sync --all --scoped --src docker --src-tls-verify=false --dest dir \
+                localhost:5000/streamshub/${img}:${{ env.PROJECT_VERSION }} \
+                $(pwd)/streamshub-images
+          done
+
+          tar -czf streamshub-images.tgz -C streamshub-images .
+
+      - name: Archive [UI, API, Operator-Bundle, Operator, Operator-Catalog] Image Files
+        uses: actions/upload-artifact@v4
+        with:
+          name: streamshub-images
+          path: streamshub-images.tgz
+
+  test-java:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set Up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'adopt'
+
+      - name: Cache Maven Packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+
+      - name: Test API and Operator
+        run: |
+          #
+          # Set write-transformed-bytecode-to-build-output for IT coverage. Do NOT use the container image
+          # created by this step.
+          #
+          # See: https://quarkus.io/guides/tests-with-coverage#coverage-for-integration-tests
+          #
+          mvn verify -B --no-transfer-progress \
+            -Dquarkus.package.write-transformed-bytecode-to-build-output=true
+
       - name: Archive Failed Tests Results
         uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: artifacts
-          path: api/target/failsafe-reports/
+          path: |
+            **/target/failsafe-reports/
+            **/target/surefire-reports/
 
       ## Save the context information for use in Sonar analysis
       - name: Save Build Context
@@ -170,24 +221,6 @@ jobs:
             !**/target/**/*.jar
             !**/target/failsafe-reports/**/*
             !**/target/surefire-reports/**/*
-
-      - name: Save [UI, API, Operator, Operator-Bundle, Operator-Catalog] Images To Files
-        run: |
-          mkdir streamshub-images
-
-          for img in console-ui console-api console-operator console-operator-bundle console-operator-catalog ; do
-              skopeo sync --all --scoped --src docker --src-tls-verify=false --dest dir \
-                localhost:5000/streamshub/${img}:${{ env.PROJECT_VERSION }} \
-                $(pwd)/streamshub-images
-          done
-
-          tar -czf streamshub-images.tgz -C streamshub-images .
-
-      - name: Archive [UI, API, Operator-Bundle, Operator, Operator-Catalog] Image Files
-        uses: actions/upload-artifact@v4
-        with:
-          name: streamshub-images
-          path: streamshub-images.tgz
 
   test-storybook:
     runs-on: ubuntu-24.04
