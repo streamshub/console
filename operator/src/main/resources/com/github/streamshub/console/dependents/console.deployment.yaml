@@ -30,7 +30,7 @@ spec:
           mountPath: /deployments/console-config.yaml
           subPath: console-config.yaml
         - name: work
-          mountPath: /deployments/work
+          mountPath: /tmp
         env:
         - name: CONSOLE_CONFIG_PATH
           value: /deployments/console-config.yaml
