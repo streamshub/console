@@ -22,6 +22,9 @@ jobs:
         with:
           token: ${{secrets.RELEASE_TOKEN}}
 
+      - name: Set prerelease version
+        run: echo "PRERELEASE_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+
       - name: Retrieve Project Metadata
         uses: radcortez/project-metadata-action@603060a0627d4f04d37d20331ebd472377fd088b
         id: metadata
@@ -55,7 +58,6 @@ jobs:
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git checkout -b release
 
-          PRERELEASE_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout | tr '[:upper:]' '[:lower:]')
           export QUARKUS_CONTAINER_IMAGE_REGISTRY="${{ secrets.IMAGE_REPO_HOSTNAME }}"
           export QUARKUS_CONTAINER_IMAGE_GROUP="${{ secrets.IMAGE_REPO_NAMESPACE }}"
           export QUARKUS_CONTAINER_IMAGE_USERNAME="${{ secrets.IMAGE_REPO_USERNAME }}"
@@ -65,10 +67,9 @@ jobs:
           export QUARKUS_KUBERNETES_NAMESPACE='$${NAMESPACE}'
 
           mvn -B release:prepare \
-            -DprereleaseVersion=${PRERELEASE_VERSION} \
             -DreleaseVersion=${{ steps.metadata.outputs.current-version }} \
             -DdevelopmentVersion=${{ steps.metadata.outputs.next-version }} \
-            -Dcontainer-image.registry=${{ secrets.IMAGE_REPO_HOSTNAME }}
+            '-Drelease.arguments=-DprereleaseVersion=${{ env.PRERELEASE_VERSION }} -DreleaseVersion=${{ steps.metadata.outputs.current-version }} -DdevelopmentVersion=${{ steps.metadata.outputs.next-version }} -Dcontainer-image.registry=${{ secrets.IMAGE_REPO_HOSTNAME }}'
 
           git checkout ${{github.base_ref}}
           git rebase release
