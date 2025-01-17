@@ -1,0 +1,107 @@
+---
+apiVersion: console.streamshub.github.com/v1alpha1
+kind: Console
+metadata:
+  name: example
+spec:
+  hostname: example-console.${CLUSTER_DOMAIN}
+
+  security:
+    oidc:
+      authServerUrl: <OIDC discovery URL>
+      clientId: <client-id>
+      clientSecret:
+        #value: <literal secret - development only!>
+        valueFrom:
+          secretKeyRef:
+            name: my-oidc-secret
+            key: client-secret
+
+    subjects:
+      # Subjects and their roles may be specified in terms of JWT claims or their subject name (user1, user100 below).
+      # Using claims is only supported when OIDC security is enabled.
+      - claim: groups
+        include:
+          - team-a
+          - team-b
+        roleNames:
+          - developers
+      - claim: groups
+        include:
+          - team-c
+        roleNames:
+          - administrators
+      - include:
+          # When no claim is specified, the subject's name will be used. For JWT, this is typically `preferred_username`
+          # `upn`, or `sub` claims. When using per-Kafka authentication credentials, this will be the user name used to
+          # authenticate.
+          - user1
+          - user200
+        roleNames:
+          - administrators
+
+    # Roles and associated rules for global resources (currently only Kafka clusters) are given here in the `security.roles`
+    # section. Rules for Kafka-scoped resources are specified within the cluster configuration section below. That is,
+    # at paths `kafka.clusters[].security.rules[].
+    roles:
+      # developers may perform any operation with clusters 'a' and 'b'.
+      - name: developers
+        rules:
+          - resources:
+              - kafkas
+          - resourceNames:
+              - dev-cluster-a
+              - dev-cluster-b
+          - privileges:
+              - '*'
+      # administrators may operate on any (unspecified) Kafka clusters
+      - name: administrators
+        rules:
+          - resources:
+              - kafkas
+          - privileges:
+              - '*'
+
+  kafkaClusters:
+    #
+    # The values below make use of the example Kafka cluster from examples/kafka.
+    # Adjust according to your environment.
+    #
+    - name: console-kafka             # Name of the `Kafka` CR representing the cluster
+      namespace: ${KAFKA_NAMESPACE}   # Namespace of the `Kafka` CR representing the cluster
+      listener: secure                # Listener on the `Kafka` CR to connect from the console
+      credentials:
+        kafkaUser:
+          name: console-kafka-user1   # Name of the `KafkaUser` resource used to connect to Kafka
+                                      # This is optional if properties are used to configure the user
+      security:
+        roles:
+          # developers may only list and view some resources
+          - name: developers
+            rules:
+              - resources:
+                  - topics
+                  - topics/records
+                  - consumerGroups
+                  - rebalances
+              - privileges:
+                  - get
+                  - list
+
+          # administrators may list, view, and update an expanded set of resources
+          - name: administrators
+            rules:
+              - resources:
+                  - topics
+                  - topics/records
+                  - consumerGroups
+                  - rebalances
+                  - nodes/configs
+              - privileges:
+                  - get
+                  - list
+              - resources:
+                  - consumerGroups
+                  - rebalances
+              - privileges:
+                  - update
