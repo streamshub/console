@@ -409,7 +409,7 @@
     "shutdown_active_members": "Shut down active members before proceeding",
     "learn_to_shutdown_members": "Learn how to shut down members",
     "reset_consumer_offset": "Reset consumer offsets",
-    "consumer_name": "Consumer group: <b>{consumerGroupName}</b>",
+    "consumer_name": "Consumer group: <b>{groupId}</b>",
     "target": "Target",
     "apply_action_on": "Apply action on",
     "all_consumer_topics": "All consumer topics",

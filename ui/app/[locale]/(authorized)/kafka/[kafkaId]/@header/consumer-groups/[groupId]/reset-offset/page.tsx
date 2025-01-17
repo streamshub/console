@@ -32,7 +32,14 @@ function Header({
 
   return (
     <AppHeader
-      title={decodeURIComponent(groupId) === "+" ? <i>Empty Name</i> : groupId}
+      title={t("ConsumerGroupsTable.reset_consumer_offset")}
+      subTitle={
+        decodeURIComponent(groupId) === "+" ? (
+          <i>Empty Name</i>
+        ) : (
+          t.rich("ConsumerGroupsTable.consumer_name", { groupId })
+        )
+      }
     />
   );
 }
