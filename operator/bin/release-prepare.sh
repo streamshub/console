@@ -5,10 +5,10 @@ set -xEeuo pipefail
 SCRIPT_PATH="$(cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P)"
 OPERATOR_PATH="$(cd -- "${SCRIPT_PATH}/.." >/dev/null 2>&1 ; pwd -P)"
 
-PRERELEASE_VERSION="${1?prerelease version is required}"
+PRERELEASE_VERSION=$(echo "${1?prerelease version is required}" | tr '[:upper:]' '[:lower:]')
 RELEASE_VERSION="${2?release version is required}"
-POSTRELEASE_VERSION="${3?postrelease version is required}"
-VERSION="${4?current version is required}"
+POSTRELEASE_VERSION=$(echo "${3?postrelease version is required}" | tr '[:upper:]' '[:lower:]')
+VERSION=$(echo "${4?current version is required}" | tr '[:upper:]' '[:lower:]')
 IMAGE_NAME="${5?image name is required}"
 GIT_STAGE="${6:-false}"
 

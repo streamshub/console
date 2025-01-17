@@ -6,7 +6,7 @@
     <groupId>com.github.streamshub</groupId>
     <artifactId>console</artifactId>
     <packaging>pom</packaging>
-    <version>0.7.0-SNAPSHOT</version>
+    <version>0.6.1-SNAPSHOT</version>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -258,7 +258,7 @@
                     <tagNameFormat>@{project.version}</tagNameFormat>
                     <preparationProfiles>release-preparation</preparationProfiles>
                     <preparationGoals>verify</preparationGoals>
-                    <completionGoals>process-resources -pl ui</completionGoals>
+                    <completionGoals>verify</completionGoals>
                     <pushChanges>false</pushChanges>
                     <localCheckout>true</localCheckout>
                     <remoteTagging>false</remoteTagging>
@@ -268,16 +268,4 @@
             </plugin>
         </plugins>
     </build>
-
-    <profiles>
-        <profile>
-            <id>release-preparation</id>
-            <properties>
-                <!-- Used for operator bundle during preparation/completion of release:prepare goal -->
-                <prereleaseVersion />
-                <releaseVersion />
-                <developmentVersion />
-            </properties>
-        </profile>
-    </profiles>
 </project>
