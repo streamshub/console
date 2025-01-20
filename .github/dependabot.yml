@@ -27,6 +27,11 @@ updates:
   schedule:
     interval: weekly
 
+- package-ecosystem: "docker"
+  directory: "/operator/src/main/docker"
+  schedule:
+    interval: weekly
+
 - package-ecosystem: "npm"
   directory: "/ui"
   schedule:
