@@ -8,10 +8,11 @@ spec:
 
   security:
     oidc:
-      authServerUrl: <OIDC discovery URL>
-      clientId: <client-id>
+      authServerUrl: <OIDC discovery URL> # URL for OIDC provider discovery
+      clientId: <client-id> # Client ID for OIDC authentication
       clientSecret:
-        #value: <literal secret - development only!>
+     # For development use only: provide a secret directly (not recommended for production).
+     # value: <literal secret - development only!>
         valueFrom:
           secretKeyRef:
             name: my-oidc-secret
@@ -32,17 +33,16 @@ spec:
         roleNames:
           - administrators
       - include:
-          # When no claim is specified, the subject's name will be used. For JWT, this is typically `preferred_username`
-          # `upn`, or `sub` claims. When using per-Kafka authentication credentials, this will be the user name used to
-          # authenticate.
+          #  Match subjects by their name when no claim is specified.
+          #  For JWT, this is typically `preferred_username`, `upn`, or `sub` claims. 
+          # For per-Kafka authentication credentials, this is the user name used to authenticate.
           - user1
           - user200
         roleNames:
           - administrators
 
-    # Roles and associated rules for global resources (currently only Kafka clusters) are given here in the `security.roles`
-    # section. Rules for Kafka-scoped resources are specified within the cluster configuration section below. That is,
-    # at paths `kafka.clusters[].security.rules[].
+      # Roles and associated rules for accessing global resources (currently limited to Kafka clusters) are defined in `security.roles`.
+  # Rules for individual Kafka clusters are specified under `kafka.clusters[].security.rules[]`.
     roles:
       # developers may perform any operation with clusters 'a' and 'b'.
       - name: developers
@@ -63,16 +63,15 @@ spec:
               - '*'
 
   kafkaClusters:
-    #
-    # The values below make use of the example Kafka cluster from examples/kafka.
-    # Adjust according to your environment.
-    #
+    # Kafka cluster configuration.
+    # The example uses the Kafka cluster configuration from `examples/kafka`.
+    # Adjust the values to match your environment.
     - name: console-kafka             # Name of the `Kafka` CR representing the cluster
-      namespace: ${KAFKA_NAMESPACE}   # Namespace of the `Kafka` CR representing the cluster
-      listener: secure                # Listener on the `Kafka` CR to connect from the console
+      namespace: ${KAFKA_NAMESPACE}   # Namespace where the `Kafka` CR is deployed
+      listener: secure                # Listener name from the `Kafka` CR to connect the console
       credentials:
         kafkaUser:
-          name: console-kafka-user1   # Name of the `KafkaUser` resource used to connect to Kafka
+          name: console-kafka-user1   # Name of the `KafkaUser` CR used by the console to connect to the Kafka cluster
                                       # This is optional if properties are used to configure the user
       security:
         roles:

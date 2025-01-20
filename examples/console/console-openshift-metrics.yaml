@@ -7,20 +7,21 @@ spec:
   hostname: example-console.${CLUSTER_DOMAIN}
 
   metricsSources:
-    # type=openshift-monitoring requires no other attributes, but truststore may be used if necessary
+    # Example metrics source using OpenShift's built-in monitoring.
+    # For `type: openshift-monitoring`, no additional attributes are required,
+    # but you can configure a truststore if needed.
     - name: my-ocp-prometheus
       type: openshift-monitoring
 
   kafkaClusters:
-    #
-    # The values below make use of the example Kafka cluster from examples/kafka.
-    # Adjust according to your environment.
-    #
+    # Kafka cluster configuration.
+    # The example uses the Kafka cluster configuration from `examples/kafka`.
+    # Adjust the values to match your environment.
     - name: console-kafka             # Name of the `Kafka` CR representing the cluster
-      namespace: ${KAFKA_NAMESPACE}   # Namespace of the `Kafka` CR representing the cluster
-      listener: secure                # Listener on the `Kafka` CR to connect from the console
-      metricsSource: my-ocp-prometheus # Name of the configured metrics source from the `metricsSources` section
+      namespace: ${KAFKA_NAMESPACE}   # Namespace where the `Kafka` CR is deployed
+      listener: secure                # Listener name from the `Kafka` CR to connect the console
+      metricsSource: my-ocp-prometheus # Name of the configured metrics source defined in `metricsSources`
       credentials:
         kafkaUser:
-          name: console-kafka-user1   # Name of the `KafkaUser` resource used to connect to Kafka
+          name: console-kafka-user1   # Name of the `KafkaUser` CR used by the console to connect to the Kafka cluster
                                       # This is optional if properties are used to configure the user
