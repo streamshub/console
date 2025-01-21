@@ -33,21 +33,21 @@ spec:
       # Using claims is only supported when OIDC security is enabled.
       - claim: groups
         include:
-          - team-a
-          - team-b
+          - <team_name_1>
+          - <team_name_2>
         roleNames:
           - developers
       - claim: groups
         include:
-          - team-c
+          - <team_name_3>
         roleNames:
           - administrators
       - include:
           #  Match subjects by their name when no claim is specified.
           #  For JWT, this is typically `preferred_username`, `upn`, or `sub` claims.
           # For per-Kafka authentication credentials, this is the user name used to authenticate.
-          - user1
-          - user200
+          - <user_1>
+          - <user_2>
         roleNames:
           - administrators
 
