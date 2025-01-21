@@ -155,7 +155,6 @@ export function MessagesTable({
               message={selectedMessage}
               defaultTab={defaultTab}
               onClose={onDeselectMessage}
-              baseurl={baseurl}
             />
           }
         >
