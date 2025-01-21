@@ -1,3 +1,13 @@
+#
+# This example demonstrates the use of an OIDC provider at `.spec.security.oidc`
+# for user authentication in the console. Any OIDC provider should work - such as
+# Keycloak or dex with a suitable backend identity provider.
+#
+# In addition to the OIDC configuration, this example show how one may configure
+# subjects and roles for user authorization. Note that global resources (kafka clusters)
+# are configured within `.spec.security` whereas resources within a specific Kafka
+# cluster are configured within `.spec.kafkaClusters[].security`.
+#
 ---
 apiVersion: console.streamshub.github.com/v1alpha1
 kind: Console
@@ -34,7 +44,7 @@ spec:
           - administrators
       - include:
           #  Match subjects by their name when no claim is specified.
-          #  For JWT, this is typically `preferred_username`, `upn`, or `sub` claims. 
+          #  For JWT, this is typically `preferred_username`, `upn`, or `sub` claims.
           # For per-Kafka authentication credentials, this is the user name used to authenticate.
           - user1
           - user200

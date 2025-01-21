@@ -1,3 +1,13 @@
+#
+# This example demonstrates the use of OpenShift user-workload monitoring as
+# a source of Kafka metrics for the console. This configuration makes use of the
+# `openshift-monitoring` type of metrics source. The linkage between the entry
+# under `metricsSources` and a `kafkaClusters` entry is the `metricsSource` given
+# for the Kafka cluster.
+#
+# See https://docs.openshift.com/container-platform/4.17/observability/monitoring/enabling-monitoring-for-user-defined-projects.html
+# for details on how to enable monitoring of user-defined projects in OpenShift.
+#
 ---
 apiVersion: console.streamshub.github.com/v1alpha1
 kind: Console

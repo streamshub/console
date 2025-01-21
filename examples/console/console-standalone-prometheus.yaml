@@ -1,3 +1,13 @@
+#
+# This example demonstrates the use of a user-supplied Prometheus instance as
+# a source of Kafka metrics for the console. This configuration makes use of the
+# `standalone` type of metrics source. The linkage between the entry
+# under `metricsSources` and a `kafkaClusters` entry is the `metricsSource` given
+# for the Kafka cluster.
+#
+# See examples/prometheus for sample Prometheus instance resources configured for
+# use with a Strimzi Kafka cluster.
+#
 ---
 apiVersion: console.streamshub.github.com/v1alpha1
 kind: Console
