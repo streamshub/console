@@ -3,7 +3,7 @@
 # for user authentication in the console. Any OIDC provider should work - such as
 # Keycloak or dex with a suitable backend identity provider.
 #
-# In addition to the OIDC configuration, this example show how one may configure
+# In addition to the OIDC configuration, this example shows how to configure
 # subjects and roles for user authorization. Note that global resources (kafka clusters)
 # are configured within `.spec.security` whereas resources within a specific Kafka
 # cluster are configured within `.spec.kafkaClusters[].security`.
