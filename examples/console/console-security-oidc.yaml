@@ -7,6 +7,7 @@
 # subjects and roles for user authorization. Note that global resources (kafka clusters)
 # are configured within `.spec.security` whereas resources within a specific Kafka
 # cluster are configured within `.spec.kafkaClusters[].security`.
+# Replace <placeholders> with actual values specific to the environment.
 #
 ---
 apiVersion: console.streamshub.github.com/v1alpha1
