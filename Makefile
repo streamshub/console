@@ -26,6 +26,7 @@ CONSOLE_UI_NEXTAUTH_SECRET ?= $(shell openssl rand -base64 32)
 # Without this export, UI and API images could not be pulled from registry during the deployment of Console instance
 export QUARKUS_CONTAINER_IMAGE_TAG=${VERSION}
 export QUARKUS_KUBERNETES_VERSION=${VERSION}
+export QUARKUS_DOCKER_BUILDX_PLATFORM=${PLATFORMS}
 
 container-image-api:
 	mvn package -am -pl api -Pcontainer-image -DskipTests -Dquarkus.container-image.image=$(CONSOLE_API_IMAGE)
