@@ -122,7 +122,7 @@ With the operator resources created, you may create a `Console` resource like th
 
 Running the console locally requires configuration of any Apache Kafka<sup>®</sup> clusters that will be accessed from the console and (optionally) the use of a Kubernetes cluster that hosts the Strimzi Kafka operator. To get started, you will need to provide a console configuration file and (optionally) credentials to connect to the Kubernetes cluster where Strimzi is operating.
 
-1. Using the [console-config.yaml](./examples/console-config.yaml) file as an   example, create your own configuration
+1. Using the [console-config.yaml](./examples/console-config.yaml) file as an example, create your own configuration
    in a file `console-config.yaml` in the repository root. The `compose.yaml` file expects this location to be used and
    any difference in name or location requires an adjustment to the compose file.
 2. Install the prerequisite software into the Kubernetes cluster.
