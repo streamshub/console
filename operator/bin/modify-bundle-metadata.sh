@@ -111,6 +111,11 @@ ${YQ} eval -o yaml -i '.spec.relatedImages += [{
   "image": "'${ui_image_with_digest}'"
 }]' "${CSV_FILE_PATH}"
 
+${YQ} eval -o yaml -i ".metadata.labels[\"operatorframework.io/arch.amd64\"] = \"supported\"" "${CSV_FILE_PATH}"
+${YQ} eval -o yaml -i ".metadata.labels[\"operatorframework.io/arch.arm64\"] = \"supported\"" "${CSV_FILE_PATH}"
+${YQ} eval -o yaml -i ".metadata.labels[\"operatorframework.io/arch.ppc64le\"] = \"supported\"" "${CSV_FILE_PATH}"
+${YQ} eval -o yaml -i ".metadata.labels[\"operatorframework.io/arch.s390x\"] = \"supported\"" "${CSV_FILE_PATH}"
+
 # Add skipRange if present
 if [[ -n "$SKIP_RANGE" ]]; then
     echo "[DEBUG] Setting skipRange = \"${SKIP_RANGE}\""
