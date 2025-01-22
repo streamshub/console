@@ -1,0 +1,51 @@
+#
+# This example demonstrates the use of a user-supplied Prometheus instance as
+# a source of Kafka metrics for the console. This configuration uses the
+# `standalone` metrics source type. The connection between a
+# `metricsSources` and a `kafkaClusters` entry is established through 
+# the `metricsSource` specified for the Kafka cluster.
+#
+# See examples/prometheus for sample Prometheus instance resources configured for
+# use with a Strimzi Kafka cluster.
+#
+---
+apiVersion: console.streamshub.github.com/v1alpha1
+kind: Console
+metadata:
+  name: example
+spec:
+  hostname: example-console.${CLUSTER_DOMAIN}
+
+  metricsSources:
+    # type=standalone when providing your own existing prometheus instance
+    - name: my-custom-prometheus
+      type: standalone
+      url: http://my-custom-prometheus.cloud2.example.com
+      authentication: # optional
+        # Either username + password or token
+        username: my-user
+        password: my-password
+        #token: my-token
+      trustStore: # optional
+        type: JKS
+        content:
+          valueFrom:
+            configMapKeyRef: # or secretKeyRef
+              name: my-prometheus-configmap
+              key: ca.jks
+        password:
+          # For development use only: if not provided through `valueFrom` properties, provide a password directly (not recommended for production).
+          value: changeit
+
+  kafkaClusters:
+    # Kafka cluster configuration.
+    # The example uses the Kafka cluster configuration from `examples/kafka`.
+    # Adjust the values to match your environment.
+    - name: console-kafka             # Name of the `Kafka` CR representing the cluster
+      namespace: ${KAFKA_NAMESPACE}   # Namespace where the `Kafka` CR is deployed
+      listener: secure                # Listener name from the `Kafka` CR to connect the console
+      metricsSource: null             # Name of the configured metrics source defined in `metricsSources`
+      credentials:
+        kafkaUser:
+          name: console-kafka-user1   # Name of the `KafkaUser` CR used by the console to connect to the Kafka cluster
+                                      # This is optional if properties are used to configure the user

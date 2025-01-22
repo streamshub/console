@@ -1,0 +1,37 @@
+#
+# This example demonstrates using OpenShift user-workload monitoring as
+# a source of Kafka metrics for the console. This configuration uses the
+# `openshift-monitoring` metrics source type. The connection between a
+# `metricsSources` entry and a `kafkaClusters` entry is established through 
+# the `metricsSource` specified for the Kafka cluster.
+#
+# See https://docs.openshift.com/container-platform/4.17/observability/monitoring/enabling-monitoring-for-user-defined-projects.html
+# for details on how to enable monitoring of user-defined projects in OpenShift.
+#
+---
+apiVersion: console.streamshub.github.com/v1alpha1
+kind: Console
+metadata:
+  name: example
+spec:
+  hostname: example-console.${CLUSTER_DOMAIN}
+
+  metricsSources:
+    # Example metrics source using OpenShift's built-in monitoring.
+    # For `type: openshift-monitoring`, no additional attributes are required,
+    # but you can configure a truststore if needed.
+    - name: my-ocp-prometheus
+      type: openshift-monitoring
+
+  kafkaClusters:
+    # Kafka cluster configuration.
+    # The example uses the Kafka cluster configuration from `examples/kafka`.
+    # Adjust the values to match your environment.
+    - name: console-kafka             # Name of the `Kafka` CR representing the cluster
+      namespace: ${KAFKA_NAMESPACE}   # Namespace where the `Kafka` CR is deployed
+      listener: secure                # Listener name from the `Kafka` CR to connect the console
+      metricsSource: my-ocp-prometheus # Name of the configured metrics source defined in `metricsSources`
+      credentials:
+        kafkaUser:
+          name: console-kafka-user1   # Name of the `KafkaUser` CR used by the console to connect to the Kafka cluster
+                                      # This is optional if properties are used to configure the user

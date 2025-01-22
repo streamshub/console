@@ -69,8 +69,9 @@ export NAMESPACE=default
 cat install/operator-olm/*.yaml | envsubst | kubectl apply -n ${NAMESPACE} -f -
 ```
 
-#### Console Custom Resource Example
+#### Console Custom Resource Examples
 Once the operator is ready, you may then create a `Console` resource in the namespace where the console should be deployed. This example `Console` is based on the example Apache Kafka<sup>®</sup> cluster deployed above in the [prerequisites section](#prerequisites). Also see [examples/console/010-Console-example.yaml](examples/console/010-Console-example.yaml).
+
 ```yaml
 apiVersion: console.streamshub.github.com/v1alpha1
 kind: Console
@@ -100,6 +101,8 @@ spec:
                                       # This is optional if properties are used to configure the user
 ```
 
+Additional Console resource examples can be found at [examples/console/](examples/console/), including OpenShift monitoring metrics configuration and OIDC security configuration.
+
 ### Deploy the operator directly
 Deploying the operator without the use of OLM requires applying the component Kubernetes resources for the operator directly. These resources are bundled and attached to each StreamsHub Console release. The latest release can be found [here](https://github.com/streamshub/console/releases/latest). The resource file is named `streamshub-console-operator.yaml`.
 
@@ -113,13 +116,13 @@ curl -sL https://github.com/streamshub/console/releases/download/${VERSION}/stre
 ```
 Note: if you are not using the Prometheus operator you may see an error about a missing `ServiceMonitor` custom resource type. This error may be ignored.
 
-With the operator resources created, you may create a `Console` resource like the one shown in [Console Custom Resource Example](#console-custom-resource-example).
+With the operator resources created, you may create a `Console` resource like the one shown in [Console Custom Resource Examples](#console-custom-resource-examples).
 
 ## Running locally
 
 Running the console locally requires configuration of any Apache Kafka<sup>®</sup> clusters that will be accessed from the console and (optionally) the use of a Kubernetes cluster that hosts the Strimzi Kafka operator. To get started, you will need to provide a console configuration file and (optionally) credentials to connect to the Kubernetes cluster where Strimzi is operating.
 
-1. Using the [console-config-example.yaml](./console-config-example.yaml) file as an example, create your own configuration
+1. Using the [console-config.yaml](./examples/console-config.yaml) file as an example, create your own configuration
    in a file `console-config.yaml` in the repository root. The `compose.yaml` file expects this location to be used and
    any difference in name or location requires an adjustment to the compose file.
 2. Install the prerequisite software into the Kubernetes cluster.
