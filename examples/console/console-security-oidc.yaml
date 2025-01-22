@@ -1,0 +1,117 @@
+#
+# This example demonstrates the use of an OIDC provider at `.spec.security.oidc`
+# for user authentication in the console. Any OIDC provider should work - such as
+# Keycloak or dex with a suitable backend identity provider.
+#
+# In addition to the OIDC configuration, this example shows how to configure
+# subjects and roles for user authorization. Note that global resources (kafka clusters)
+# are configured within `.spec.security` whereas resources within a specific Kafka
+# cluster are configured within `.spec.kafkaClusters[].security`.
+# Replace <placeholders> with actual values specific to the environment.
+#
+---
+apiVersion: console.streamshub.github.com/v1alpha1
+kind: Console
+metadata:
+  name: example
+spec:
+  hostname: example-console.${CLUSTER_DOMAIN}
+
+  security:
+    oidc:
+      authServerUrl: <OIDC discovery URL> # URL for OIDC provider discovery
+      clientId: <client-id> # Client ID for OIDC authentication
+      clientSecret:
+     # For development use only: provide a secret directly (not recommended for production).
+     # value: <literal secret - development only!>
+        valueFrom:
+          secretKeyRef:
+            name: my-oidc-secret
+            key: client-secret
+
+    subjects:
+      # Subjects and their roles may be specified in terms of JWT claims or their subject name (user1, user100 below).
+      # Using claims is only supported when OIDC security is enabled.
+      - claim: groups
+        include:
+          - <team_name_1>
+          - <team_name_2>
+        roleNames:
+          - developers
+      - claim: groups
+        include:
+          - <team_name_3>
+        roleNames:
+          - administrators
+      - include:
+          #  Match subjects by their name when no claim is specified.
+          #  For JWT, this is typically `preferred_username`, `upn`, or `sub` claims.
+          # For per-Kafka authentication credentials, this is the user name used to authenticate.
+          - <user_1>
+          - <user_2>
+        roleNames:
+          - administrators
+
+      # Roles and associated rules for accessing global resources (currently limited to Kafka clusters) are defined in `security.roles`.
+  # Rules for individual Kafka clusters are specified under `kafka.clusters[].security.rules[]`.
+    roles:
+      # developers may perform any operation with clusters 'a' and 'b'.
+      - name: developers
+        rules:
+          - resources:
+              - kafkas
+          - resourceNames:
+              - dev-cluster-a
+              - dev-cluster-b
+          - privileges:
+              - '*'
+      # administrators may operate on any (unspecified) Kafka clusters
+      - name: administrators
+        rules:
+          - resources:
+              - kafkas
+          - privileges:
+              - '*'
+
+  kafkaClusters:
+    # Kafka cluster configuration.
+    # The example uses the Kafka cluster configuration from `examples/kafka`.
+    # Adjust the values to match your environment.
+    - name: console-kafka             # Name of the `Kafka` CR representing the cluster
+      namespace: ${KAFKA_NAMESPACE}   # Namespace where the `Kafka` CR is deployed
+      listener: secure                # Listener name from the `Kafka` CR to connect the console
+      credentials:
+        kafkaUser:
+          name: console-kafka-user1   # Name of the `KafkaUser` CR used by the console to connect to the Kafka cluster
+                                      # This is optional if properties are used to configure the user
+      security:
+        roles:
+          # developers may only list and view some resources
+          - name: developers
+            rules:
+              - resources:
+                  - topics
+                  - topics/records
+                  - consumerGroups
+                  - rebalances
+              - privileges:
+                  - get
+                  - list
+
+          # administrators may list, view, and update an expanded set of resources
+          - name: administrators
+            rules:
+              - resources:
+                  - topics
+                  - topics/records
+                  - consumerGroups
+                  - rebalances
+                  - nodes/configs
+              - privileges:
+                  - get
+                  - list
+              - resources:
+                  - consumerGroups
+                  - rebalances
+              - privileges:
+                  - update

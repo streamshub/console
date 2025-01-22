@@ -52,9 +52,8 @@ security:
       roleNames:
         - administrators
 
-  # Roles and associate rules for global resources (currently only Kafka clusters) are given here in the `security.roles`
-  # section. Rules for Kafka-scoped resources are specified within the cluster configuration section below. That is,
-  # at paths `kafka.clusters[].security.rules[].
+  # Roles and associated rules for accessing global resources (currently limited to Kafka clusters) are defined in `security.roles`.
+  # Rules for individual Kafka clusters are specified under `kafka.clusters[].security.rules[]`.
   roles:
     # developers may perform any operation with clusters 'a' and 'b'.
     - name: developers
@@ -123,6 +122,10 @@ kafka:
               - privileges:
                   - get
                   - list
+              - resources:
+                  - consumerGroups
+                  - rebalances
+              - privileges:
                   - update
 
     - name: my-kafka2

@@ -133,10 +133,10 @@ jobs:
           # Display the resource
           export KAFKA_NAMESPACE="${TARGET_NAMESPACE}"
 
-          cat examples/console/* | envsubst && echo
+          cat examples/console/010-Console-example.yaml | envsubst && echo
 
           # Apply the resource
-          cat examples/console/* | envsubst | kubectl apply -n ${TARGET_NAMESPACE} -f -
+          cat examples/console/010-Console-example.yaml | envsubst | kubectl apply -n ${TARGET_NAMESPACE} -f -
 
           kubectl wait console/example --for=condition=Ready --timeout=300s -n $TARGET_NAMESPACE
 
