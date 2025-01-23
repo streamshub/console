@@ -99,6 +99,15 @@ export function ResetOffset({
 
   return (
     <Panel>
+      <PanelHeader>
+        <TextContent>
+          <Text component={TextVariants.h1}>{t("reset_consumer_offset")}</Text>
+        </TextContent>
+        <TextContent>
+          <Text>{t.rich("consumer_name", { groupId: consumerGroupName })}</Text>
+        </TextContent>
+      </PanelHeader>
+      <Divider />
       <PanelMain>
         <PanelMainBody>
           {error && <Alert variant="danger" isInline title={error} />}
