@@ -1,6 +1,7 @@
 package com.github.streamshub.console;
 
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
@@ -10,6 +11,7 @@ import java.util.function.Consumer;
 
 import jakarta.inject.Inject;
 
+import org.awaitility.core.ConditionTimeoutException;
 import org.eclipse.microprofile.config.Config;
 import org.jboss.logging.Logger;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,6 +28,7 @@ import com.github.streamshub.console.dependents.ConsoleSecret;
 import io.fabric8.kubernetes.api.model.ConfigMap;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.KeyToPath;
+import io.fabric8.kubernetes.api.model.KubernetesResourceList;
 import io.fabric8.kubernetes.api.model.NamespaceBuilder;
 import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
 import io.fabric8.kubernetes.api.model.Secret;
@@ -34,6 +37,8 @@ import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.kubernetes.api.model.networking.v1.Ingress;
 import io.fabric8.kubernetes.client.KubernetesClient;
+import io.fabric8.kubernetes.client.dsl.Deletable;
+import io.fabric8.kubernetes.client.dsl.Listable;
 import io.javaoperatorsdk.operator.Operator;
 import io.strimzi.api.kafka.Crds;
 import io.strimzi.api.kafka.model.kafka.Kafka;
@@ -75,6 +80,17 @@ abstract class ConsoleReconcilerTestBase {
     public static <T extends HasMetadata> T apply(KubernetesClient client, T resource) {
         client.resource(resource).serverSideApply();
         return client.resource(resource).patchStatus();
+    }
+
+    static void delete(Deletable... clients) {
+        Arrays.asList(clients).forEach(Deletable::delete);
+    }
+
+    @SafeVarargs
+    static List<?> allItems(Listable<? extends KubernetesResourceList<?>>... clients) {
+        return Arrays.stream(clients)
+            .flatMap(c -> c.list().getItems().stream())
+            .toList();
     }
 
     @BeforeEach
@@ -120,23 +136,20 @@ abstract class ConsoleReconcilerTestBase {
         var allSecrets = client.resources(Secret.class).inAnyNamespace().withLabels(ConsoleResource.MANAGEMENT_LABEL);
         var allIngresses = client.resources(Ingress.class).inAnyNamespace().withLabels(ConsoleResource.MANAGEMENT_LABEL);
 
-        allConsoles.delete();
-        allKafkas.delete();
-        allKafkaUsers.delete();
-        allDeployments.delete();
-        allConfigMaps.delete();
-        allSecrets.delete();
-        allIngresses.delete();
+        delete(allConsoles, allKafkas, allKafkaUsers, allDeployments, allConfigMaps, allSecrets, allIngresses);
 
-        await().atMost(Duration.ofSeconds(30)).untilAsserted(() -> {
-            assertTrue(allConsoles.list().getItems().isEmpty());
-            assertTrue(allKafkas.list().getItems().isEmpty());
-            assertTrue(allKafkaUsers.list().getItems().isEmpty());
-            assertTrue(allDeployments.list().getItems().isEmpty());
-            assertTrue(allConfigMaps.list().getItems().isEmpty());
-            assertTrue(allSecrets.list().getItems().isEmpty());
-            assertTrue(allIngresses.list().getItems().isEmpty());
-        });
+        try {
+            await().atMost(Duration.ofSeconds(30)).until(() -> allItems(allConsoles, allKafkas, allKafkaUsers,
+                    allDeployments, allConfigMaps, allSecrets, allIngresses).isEmpty());
+        } catch (ConditionTimeoutException e) {
+            var remainingItems = allItems(allConsoles, allKafkas, allKafkaUsers,
+                    allDeployments, allConfigMaps, allSecrets, allIngresses);
+
+            if (!remainingItems.isEmpty()) {
+                LOGGER.warnf("Items were not deleted before timeout: %s", remainingItems);
+                throw e;
+            }
+        }
 
         operator.start();
 
