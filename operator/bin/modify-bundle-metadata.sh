@@ -16,6 +16,7 @@ for ARGUMENT in "$@" ; do
     VERSION)                            VERSION=${VALUE};;
     SKIP_RANGE)                         SKIP_RANGE=${VALUE};;
     SKOPEO_TRANSPORT)                   SKOPEO_TRANSPORT=${VALUE};;
+    PLATFORMS)                          PLATFORMS=${VALUE};;
     *)
   esac
 done
@@ -110,6 +111,12 @@ ${YQ} eval -o yaml -i '.spec.relatedImages += [{
   "name": "streamshub-console-ui",
   "image": "'${ui_image_with_digest}'"
 }]' "${CSV_FILE_PATH}"
+
+for full_arch in ${PLATFORMS//,/ } ; do
+  os_arch=($(echo ${full_arch} | tr '/' '\n'))
+  arch=${os_arch[1]}
+  ${YQ} eval -o yaml -i ".metadata.labels[\"operatorframework.io/arch.${arch}\"] = \"supported\"" "${CSV_FILE_PATH}"
+done
 
 # Add skipRange if present
 if [[ -n "$SKIP_RANGE" ]]; then

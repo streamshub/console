@@ -17,7 +17,7 @@ CONSOLE_OPERATOR_CATALOG_IMAGE ?= $(IMAGE_REGISTRY)/$(IMAGE_GROUP)/console-opera
 
 CONTAINER_RUNTIME ?= $(shell which podman || which docker)
 SKOPEO_TRANSPORT ?= $(shell which podman >/dev/null && echo "containers-storage:" || echo "docker-daemon:")
-ARCH ?= linux/amd64
+PLATFORMS ?= linux/amd64,linux/arm64,linux/ppc64le,linux/s390x
 SKIP_RANGE ?= ""
 
 CONSOLE_UI_NEXTAUTH_SECRET ?= $(shell openssl rand -base64 32)
@@ -26,6 +26,7 @@ CONSOLE_UI_NEXTAUTH_SECRET ?= $(shell openssl rand -base64 32)
 # Without this export, UI and API images could not be pulled from registry during the deployment of Console instance
 export QUARKUS_CONTAINER_IMAGE_TAG=${VERSION}
 export QUARKUS_KUBERNETES_VERSION=${VERSION}
+export QUARKUS_DOCKER_BUILDX_PLATFORM=${PLATFORMS}
 
 container-image-api:
 	mvn package -am -pl api -Pcontainer-image -DskipTests -Dquarkus.container-image.image=$(CONSOLE_API_IMAGE)
@@ -35,10 +36,10 @@ container-image-api-push: container-image-api
 
 container-image-operator:
 	mvn package -am -pl operator -Pcontainer-image -DskipTests -Dquarkus.kubernetes.namespace='$${NAMESPACE}' -Dquarkus.container-image.image=$(CONSOLE_OPERATOR_IMAGE)
-	operator/bin/modify-bundle-metadata.sh "VERSION=$(CSV_VERSION)" "SKIP_RANGE=$(SKIP_RANGE)" "SKOPEO_TRANSPORT=$(SKOPEO_TRANSPORT)"
+	operator/bin/modify-bundle-metadata.sh "VERSION=$(CSV_VERSION)" "SKIP_RANGE=$(SKIP_RANGE)" "SKOPEO_TRANSPORT=$(SKOPEO_TRANSPORT)" "PLATFORMS=$(PLATFORMS)"
 	operator/bin/generate-catalog.sh operator/target/bundle/streamshub-console-operator
-	$(CONTAINER_RUNTIME) build --platform=$(ARCH) -t $(CONSOLE_OPERATOR_BUNDLE_IMAGE) -f operator/target/bundle/streamshub-console-operator/bundle.Dockerfile
-	$(CONTAINER_RUNTIME) build --platform=$(ARCH) -t $(CONSOLE_OPERATOR_CATALOG_IMAGE) -f operator/src/main/docker/catalog.Dockerfile operator
+	$(CONTAINER_RUNTIME) build --platform=$(PLATFORMS) -t $(CONSOLE_OPERATOR_BUNDLE_IMAGE) -f operator/target/bundle/streamshub-console-operator/bundle.Dockerfile
+	$(CONTAINER_RUNTIME) build --platform=$(PLATFORMS) -t $(CONSOLE_OPERATOR_CATALOG_IMAGE) -f operator/src/main/docker/catalog.Dockerfile operator
 
 container-image-operator-push: container-image-operator
 	skopeo copy --preserve-digests $(SKOPEO_TRANSPORT)$(CONSOLE_OPERATOR_IMAGE) docker://$(CONSOLE_OPERATOR_IMAGE)
@@ -54,7 +55,7 @@ container-image-ui:
 	export CONSOLE_MODE=read-only && \
 	npm run build && \
 	cd $(CURDIR) && \
-	$(CONTAINER_RUNTIME) build --platform=$(ARCH) -t $(CONSOLE_UI_IMAGE) ./ui -f ./ui/Dockerfile
+	$(CONTAINER_RUNTIME) build --platform=$(PLATFORMS) -t $(CONSOLE_UI_IMAGE) ./ui -f ./ui/Dockerfile
 
 container-image-ui-push: container-image-ui
 	skopeo copy --preserve-digests $(SKOPEO_TRANSPORT)$(CONSOLE_UI_IMAGE) docker://$(CONSOLE_UI_IMAGE)
