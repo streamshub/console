@@ -87,16 +87,25 @@
                 <artifactId>kafka-clients</artifactId>
                 <version>3.9.0</version>
             </dependency>
-            <!-- Manage nimbus-jose-jwt for CVE-2023-52428 -->
-            <dependency>
-                <groupId>com.nimbusds</groupId>
-                <artifactId>nimbus-jose-jwt</artifactId>
-                <version>9.41.2</version>
-            </dependency>
             <dependency>
                 <groupId>io.strimzi</groupId>
                 <artifactId>kafka-oauth-client</artifactId>
                 <version>${strimzi-oauth.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.apicurio</groupId>
+                <artifactId>apicurio-registry-client</artifactId>
+                <version>${apicurio-registry.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.apicurio</groupId>
+                <artifactId>apicurio-registry-serdes-avro-serde</artifactId>
+                <version>${apicurio-registry.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.apicurio</groupId>
+                <artifactId>apicurio-registry-serdes-protobuf-serde</artifactId>
+                <version>${apicurio-registry.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.strimzi</groupId>

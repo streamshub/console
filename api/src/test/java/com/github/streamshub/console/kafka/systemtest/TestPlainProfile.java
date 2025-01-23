@@ -9,6 +9,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import com.github.streamshub.console.kafka.systemtest.deployment.ApicurioResourceManager;
 import com.github.streamshub.console.kafka.systemtest.deployment.KafkaResourceManager;
 import com.github.streamshub.console.kafka.systemtest.deployment.KeycloakResourceManager;
 import com.github.streamshub.console.kafka.systemtest.deployment.StrimziCrdResourceManager;
@@ -37,6 +38,7 @@ public class TestPlainProfile implements QuarkusTestProfile {
     @Override
     public List<TestResourceEntry> testResources() {
         return List.of(
+                new TestResourceEntry(ApicurioResourceManager.class, Collections.emptyMap(), true),
                 new TestResourceEntry(StrimziCrdResourceManager.class, Collections.emptyMap(), true),
                 new TestResourceEntry(KeycloakResourceManager.class, Collections.emptyMap(), true),
                 new TestResourceEntry(KafkaResourceManager.class, Map.of("profile", PROFILE), true));
@@ -50,11 +52,7 @@ public class TestPlainProfile implements QuarkusTestProfile {
 
                 schemaRegistries:
                   - name: test-registry
-                    ###
-                    # This is the property used by Dev Services for Apicurio Registry
-                    # https://quarkus.io/guides/apicurio-registry-dev-services
-                    ###
-                    url: ${mp.messaging.connector.smallrye-kafka.apicurio.registry.url}
+                    url: ${console.test.apicurio-url}
 
                 kafka:
                   clusters:
