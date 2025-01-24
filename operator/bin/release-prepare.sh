@@ -33,7 +33,7 @@ if [ "${VERSION}" == "${POSTRELEASE_VERSION}" ] ; then
     if [ ! -f ${OPERATOR_PATH}/src/main/olm/channel.${POSTRELEASE_CHANNEL}.yaml ] ; then
         echo '---
 schema: olm.channel
-name: '${RELEASE_CHANNEL}'
+name: '${POSTRELEASE_CHANNEL}'
 package: streamshub-console-operator
 properties: []
 entries: []' > ${OPERATOR_PATH}/src/main/olm/channel.${POSTRELEASE_CHANNEL}.yaml
