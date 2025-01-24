@@ -67,6 +67,9 @@ else
     echo "image: ${IMAGE_NAME}:${VERSION}" > ${OPERATOR_PATH}/src/main/olm/bundles/${RELEASE_CSV_NAME}.yaml
 
     if [ "${GIT_STAGE}" == "true" ] ; then
-        git add ${OPERATOR_PATH}/src/main/olm/channel.alpha.yaml ${OPERATOR_PATH}/src/main/olm/bundles/${RELEASE_CSV_NAME}.yaml
+        git add \
+          ${OPERATOR_PATH}/src/main/olm/channel.alpha.yaml \
+          ${OPERATOR_PATH}/src/main/olm/channel.${RELEASE_CHANNEL}.yaml \
+          ${OPERATOR_PATH}/src/main/olm/bundles/${RELEASE_CSV_NAME}.yaml
     fi
 fi
