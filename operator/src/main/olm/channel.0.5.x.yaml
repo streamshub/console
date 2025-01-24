@@ -1,0 +1,7 @@
+---
+schema: olm.channel
+name: 0.5.x
+package: streamshub-console-operator
+properties: []
+entries:
+  - name: streamshub-console-operator.v0.5.0
