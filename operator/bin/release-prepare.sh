@@ -59,17 +59,39 @@ else
 
     RELEASE_CHANNEL=$(echo "${RELEASE_VERSION}" | sed -E 's/([0-9]+)\.([0-9]+)\.[0-9]+/\1.\2.x/g')
 
-    # Change the name of the entry to be the released version (e.g removing the -snapshot suffix)
-    ${YQ} -i '(.entries[].name | select(. == "'${PRERELEASE_CSV_NAME}'")) = "'${RELEASE_CSV_NAME}'"' \
-      ${OPERATOR_PATH}/src/main/olm/channel.${RELEASE_CHANNEL}.yaml
+    if [ ! -f ${OPERATOR_PATH}/src/main/olm/channel.${RELEASE_CHANNEL}.yaml ] ; then
+        REPLACES="$(${YQ} '.entries[] | select( .name == "'${RELEASE_CSV_NAME}'") | .replaces' \
+          ${OPERATOR_PATH}/src/main/olm/channel.alpha.yaml)"
+
+        echo '---
+schema: olm.channel
+name: '${RELEASE_CHANNEL}'
+package: streamshub-console-operator
+properties: []
+entries:
+  - name: '${RELEASE_CSV_NAME}'' > ${OPERATOR_PATH}/src/main/olm/channel.${RELEASE_CHANNEL}.yaml
+
+        if [ -n "${REPLACES}" ] ; then
+            ${YQ} -i '(.entries[] | select(.name == "'${RELEASE_CSV_NAME}'")).replaces = "'${REPLACES}'"' \
+              ${OPERATOR_PATH}/src/main/olm/channel.${RELEASE_CHANNEL}.yaml
+        fi
+
+        PRERELEASE_CHANNEL=$(echo "${PRERELEASE_VERSION}" | sed -E 's/([0-9]+)\.([0-9]+)\.[0-9]+(-snapshot)?/\1.\2.x/g')
+
+        if [ -f ${OPERATOR_PATH}/src/main/olm/channel.${PRERELEASE_CHANNEL}.yaml ] ; then
+          ${YQ} -i 'del(.entries[] | select(.name == "'${PRERELEASE_CSV_NAME}'"))' \
+            ${OPERATOR_PATH}/src/main/olm/channel.${PRERELEASE_CHANNEL}.yaml
+        fi
+    else
+        # Change the name of the entry to be the released version (e.g removing the -snapshot suffix)
+        ${YQ} -i '(.entries[].name | select(. == "'${PRERELEASE_CSV_NAME}'")) = "'${RELEASE_CSV_NAME}'"' \
+          ${OPERATOR_PATH}/src/main/olm/channel.${RELEASE_CHANNEL}.yaml
+    fi
 
     # Create a file with a reference to the bundle image to be generated during the release
     echo "image: ${IMAGE_NAME}:${VERSION}" > ${OPERATOR_PATH}/src/main/olm/bundles/${RELEASE_CSV_NAME}.yaml
 
     if [ "${GIT_STAGE}" == "true" ] ; then
-        git add \
-          ${OPERATOR_PATH}/src/main/olm/channel.alpha.yaml \
-          ${OPERATOR_PATH}/src/main/olm/channel.${RELEASE_CHANNEL}.yaml \
-          ${OPERATOR_PATH}/src/main/olm/bundles/${RELEASE_CSV_NAME}.yaml
+        git add ${OPERATOR_PATH}/src/main/olm/channel.*.yaml ${OPERATOR_PATH}/src/main/olm/bundles/${RELEASE_CSV_NAME}.yaml
     fi
 fi
