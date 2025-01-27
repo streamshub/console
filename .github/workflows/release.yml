@@ -69,7 +69,7 @@ jobs:
           mvn -B release:prepare \
             -DreleaseVersion=${{ steps.metadata.outputs.current-version }} \
             -DdevelopmentVersion=${{ steps.metadata.outputs.next-version }} \
-            '-Drelease.arguments=-DprereleaseVersion=${{ env.PRERELEASE_VERSION }} -DreleaseVersion=${{ steps.metadata.outputs.current-version }} -DdevelopmentVersion=${{ steps.metadata.outputs.next-version }} -Dcontainer-image.registry=${{ secrets.IMAGE_REPO_HOSTNAME }}'
+            -Drelease.arguments='-DprereleaseVersion=${{ env.PRERELEASE_VERSION }} -DreleaseVersion=${{ steps.metadata.outputs.current-version }} -DdevelopmentVersion=${{ steps.metadata.outputs.next-version }} -Dcontainer-image.registry=${{ secrets.IMAGE_REPO_HOSTNAME }}'
 
           git checkout ${{github.base_ref}}
           git rebase release
