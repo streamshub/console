@@ -130,6 +130,14 @@ jobs:
           operator/bin/generate-catalog.sh \
             ${{ secrets.IMAGE_REPO_HOSTNAME }}/${{ secrets.IMAGE_REPO_NAMESPACE }}/console-operator-bundle
 
+      - name: Archive Failed Catalog
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: failed-operator-catalog
+          path: |
+            target/checkout/operator/target/catalog/
+
       - name: Build and Push Operator Catalog Image
         uses: docker/build-push-action@v6
         with:
