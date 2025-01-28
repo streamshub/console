@@ -28,11 +28,18 @@ function Header({
 }: {
   params: KafkaConsumerGroupMembersParams;
 }) {
-  const t = useTranslations();
+  const t = useTranslations("ConsumerGroupsTable");
 
   return (
     <AppHeader
-      title={decodeURIComponent(groupId) === "+" ? <i>Empty Name</i> : groupId}
+      title={t("reset_consumer_offset")}
+      subTitle={
+        decodeURIComponent(groupId) === "+" ? (
+          <i>Empty Name</i>
+        ) : (
+          t.rich("consumer_name", { groupId })
+        )
+      }
     />
   );
 }

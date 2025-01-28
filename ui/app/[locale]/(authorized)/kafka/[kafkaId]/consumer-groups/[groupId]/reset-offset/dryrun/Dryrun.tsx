@@ -1,5 +1,3 @@
-"use client";
-
 import {
   Alert,
   Button,
@@ -83,28 +81,6 @@ export function Dryrun({
 
   return (
     <Panel>
-      <PanelHeader>
-        <Flex>
-          <FlexItem>
-            <TextContent>
-              <Text>{t.rich("dry_run_result")}</Text>
-            </TextContent>
-          </FlexItem>
-          <FlexItem>
-            <Button variant="link" onClick={onClickDownload}>
-              {
-                <>
-                  {t("download_dryrun_result")} <DownloadIcon />
-                </>
-              }
-            </Button>
-          </FlexItem>
-        </Flex>
-        <TextContent>
-          <Text>{t.rich("consumer_name", { groupId: consumerGroupName })}</Text>
-        </TextContent>
-      </PanelHeader>
-      <Divider />
       <PanelMain>
         <PanelMainBody>
           <Stack hasGutter>

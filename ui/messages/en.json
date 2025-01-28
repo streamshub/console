@@ -432,6 +432,7 @@
     "iso_date_format": "ISO 8601 Date-Time Format",
     "unix_date_format": "Unix Epoch Milliseconds",
     "dry_run_result": "<b>Dry Run results</b>",
+    "dry_run_results_breadcrumb": "Dry-run results",
     "download_dryrun_result": "Download Dry Run results",
     "jump_to_topic": "<b>Jump to topic</b>",
     "dry_run_execution_alert": "Dry Run results are accurate as of the execution time, but they may differ when performing the live reset of offset changes",
