@@ -7,10 +7,12 @@ metadata:
     strimzi.io/kraft: enabled
     strimzi.io/node-pools: enabled
 spec:
+  cruiseControl: {}
   entityOperator:
     topicOperator: {}
     userOperator: {}
   kafka:
+    version: 3.9.0
     authorization:
       type: simple
     config:
@@ -45,4 +47,3 @@ spec:
         configMapKeyRef:
           name: console-kafka-metrics
           key: kafka-metrics-config.yml
-    version: 3.9.0
