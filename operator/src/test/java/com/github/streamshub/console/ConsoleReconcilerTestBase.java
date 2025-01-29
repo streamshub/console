@@ -38,7 +38,7 @@ import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.kubernetes.api.model.networking.v1.Ingress;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.dsl.Deletable;
-import io.fabric8.kubernetes.client.dsl.Listable;
+import io.fabric8.kubernetes.client.dsl.FilterWatchListDeletable;
 import io.javaoperatorsdk.operator.Operator;
 import io.strimzi.api.kafka.Crds;
 import io.strimzi.api.kafka.model.kafka.Kafka;
@@ -82,12 +82,24 @@ abstract class ConsoleReconcilerTestBase {
         return client.resource(resource).patchStatus();
     }
 
-    static void delete(Deletable... clients) {
+    @SafeVarargs
+    static void delete(FilterWatchListDeletable<?, ? extends KubernetesResourceList<?>, ?>... clients) {
         Arrays.asList(clients).forEach(Deletable::delete);
+
+        try {
+            await().atMost(Duration.ofSeconds(30)).until(() -> allItems(clients).isEmpty());
+        } catch (ConditionTimeoutException e) {
+            var remainingItems = allItems(clients);
+
+            if (!remainingItems.isEmpty()) {
+                LOGGER.warnf("Items were not deleted before timeout: %s", remainingItems);
+                throw e;
+            }
+        }
     }
 
     @SafeVarargs
-    static List<?> allItems(Listable<? extends KubernetesResourceList<?>>... clients) {
+    static List<?> allItems(FilterWatchListDeletable<?, ? extends KubernetesResourceList<?>, ?>... clients) {
         return Arrays.stream(clients)
             .flatMap(c -> c.list().getItems().stream())
             .toList();
@@ -136,20 +148,8 @@ abstract class ConsoleReconcilerTestBase {
         var allSecrets = client.resources(Secret.class).inAnyNamespace().withLabels(ConsoleResource.MANAGEMENT_LABEL);
         var allIngresses = client.resources(Ingress.class).inAnyNamespace().withLabels(ConsoleResource.MANAGEMENT_LABEL);
 
-        delete(allConsoles, allKafkas, allKafkaUsers, allDeployments, allConfigMaps, allSecrets, allIngresses);
-
-        try {
-            await().atMost(Duration.ofSeconds(30)).until(() -> allItems(allConsoles, allKafkas, allKafkaUsers,
-                    allDeployments, allConfigMaps, allSecrets, allIngresses).isEmpty());
-        } catch (ConditionTimeoutException e) {
-            var remainingItems = allItems(allConsoles, allKafkas, allKafkaUsers,
-                    allDeployments, allConfigMaps, allSecrets, allIngresses);
-
-            if (!remainingItems.isEmpty()) {
-                LOGGER.warnf("Items were not deleted before timeout: %s", remainingItems);
-                throw e;
-            }
-        }
+        delete(allConsoles, allKafkas, allKafkaUsers);
+        delete(allDeployments, allConfigMaps, allSecrets, allIngresses);
 
         operator.start();
 
