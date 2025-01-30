@@ -52,7 +52,7 @@ container-image-ui:
 	export BACKEND_URL=http://example && \
 	export NEXTAUTH_SECRET=examplesecret && \
 	export LOG_LEVEL=info && \
-	export CONSOLE_MODE=read-only && \
+	export NEXT_PUBLIC_CONSOLE_MODE=read-only && \
 	npm run build && \
 	cd $(CURDIR) && \
 	$(CONTAINER_RUNTIME) build --platform=$(PLATFORMS) -t $(CONSOLE_UI_IMAGE) ./ui -f ./ui/Dockerfile
