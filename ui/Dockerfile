@@ -7,11 +7,11 @@ COPY --chown=1001:1001 .next/standalone ./
 COPY --chown=1001:1001 .next/static     ./.next/static
 
 ARG log_level=info
-ARG console_mode=read-only
+ARG NEXT_PUBLIC_CONSOLE_MODE=read-only
 
 # Ensure set to some default for runtime
 ENV LOG_LEVEL=$log_level
-ENV CONSOLE_MODE=$console_mode
+ENV NEXT_PUBLIC_CONSOLE_MODE=$NEXT_PUBLIC_CONSOLE_MODE
 
 USER 1001
 
