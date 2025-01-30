@@ -97,7 +97,7 @@ spec:
           value: 'http://127.0.0.1:8080'
         - name: CONSOLE_CONFIG_PATH
           value: /app/console-config.yaml
-        - name: CONSOLE_MODE
+        - name: NEXT_PUBLIC_CONSOLE_MODE
           value: read-only
         - name: LOG_LEVEL
           value: info
