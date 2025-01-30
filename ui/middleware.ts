@@ -56,21 +56,13 @@ export default async function middleware(req: NextRequest) {
   const searchParams = req.nextUrl.searchParams;
   const requestPath = req.nextUrl.pathname;
 
-  // Explicitly check if the request is for `/api/schema` with required query parameters
   const isSchemaPublic =
-    requestPath === "/api/schema" &&
+    requestPath === "/schema" &&
     searchParams.has("content") &&
     searchParams.has("schemaname");
 
-  if (isSchemaPublic) {
-    log.info(
-      { path: requestPath },
-      "Bypassing OIDC authentication for /api/schema",
-    );
-    return NextResponse.next(); // Allow access without authentication
-  }
-
-  const isPublicPage = !oidcEnabled && publicPathnameRegex.test(requestPath);
+  const isPublicPage =
+    (!oidcEnabled && publicPathnameRegex.test(requestPath)) || isSchemaPublic;
   const isProtectedPage =
     oidcEnabled || protectedPathnameRegex.test(requestPath);
 
