@@ -7,7 +7,7 @@ import { logger } from "@/utils/logger";
 const log = logger.child({ module: "middleware" });
 
 const publicPages = ["/kafka/[^/]+/login", "/cluster", "/", "/schema"];
-const protectedPages = ["/kafka/[^/]+/.*"];
+const protectedPages = ["/kafka/[^/]+/.*", "/schema/[^/]+/.*"];
 
 const intlMiddleware = createIntlMiddleware(routing);
 
