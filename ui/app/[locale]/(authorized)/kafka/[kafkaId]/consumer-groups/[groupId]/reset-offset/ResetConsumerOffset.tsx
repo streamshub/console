@@ -9,7 +9,6 @@ import {
 } from "../types";
 import { useRouter } from "@/i18n/routing";
 import { updateConsumerGroup } from "@/api/consumerGroups/actions";
-import { Dryrun } from "./Dryrun";
 import { LoadingPage } from "./LoadingPage";
 import { ResetOffset } from "./ResetOffset";
 import { Page, PageSection } from "@/libs/patternfly/react-core";
@@ -63,10 +62,6 @@ export function ResetConsumerOffset({
   const [isLoading, setIsLoading] = useState(false);
 
   const [error, setError] = useState<string | undefined>();
-
-  const [newOffsetData, setNewOffsetData] = useState<Offset[]>([]);
-
-  const [showDryRun, setShowDryRun] = useState(false);
 
   const onTopicSelect = (value: TopicSelection) => {
     setSelectedConsumerTopic(value);
@@ -202,35 +197,16 @@ export function ResetConsumerOffset({
     );
   };
 
-  const openDryrun = async () => {
+  const openDryrun = () => {
     const uniqueOffsets = generateOffsets();
-    const response = await updateConsumerGroup(
-      kafkaId,
-      consumerGroupName,
-      uniqueOffsets,
-      true, // dryRun
+    const data = JSON.stringify(uniqueOffsets);
+    const searchParams = new URLSearchParams();
+    const cliCommand = generateCliCommand();
+    searchParams.set("data", data);
+    searchParams.set("cliCommand", cliCommand);
+    router.push(
+      `${baseurl}/${consumerGroupName}/reset-offset/dryrun?${searchParams.toString()}`,
     );
-
-    if (response.payload) {
-      const res = response.payload;
-      const offsets: Offset[] = Array.from(res.attributes?.offsets ?? []).map(
-        (o) => {
-          return {
-            topicId: o.topicId!,
-            topicName: o.topicName,
-            partition: o.partition,
-            offset: o.offset,
-          };
-        },
-      );
-
-      setNewOffsetData(offsets);
-      setShowDryRun(true);
-    }
-  };
-
-  const closeDryrun = () => {
-    setShowDryRun(false);
   };
 
   const closeResetOffset = () => {
@@ -285,13 +261,6 @@ export function ResetConsumerOffset({
     <PageSection isFilled={true} hasOverflowScroll={true}>
       {isLoading ? (
         <LoadingPage />
-      ) : showDryRun ? (
-        <Dryrun
-          consumerGroupName={consumerGroupName}
-          newOffset={newOffsetData}
-          onClickCloseDryrun={closeDryrun}
-          cliCommand={generateCliCommand()}
-        />
       ) : (
         <ResetOffset
           consumerGroupName={consumerGroupName}
