@@ -55,7 +55,6 @@ export default async function middleware(req: NextRequest) {
 
   const searchParams = req.nextUrl.searchParams;
   const requestPath = req.nextUrl.pathname;
-
   const isSchemaPublic =
     requestPath === "/schema" &&
     searchParams.has("content") &&
