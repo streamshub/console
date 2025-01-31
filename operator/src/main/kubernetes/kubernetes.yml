@@ -196,6 +196,7 @@ rules:
       - kafka.strimzi.io
     resources:
       - kafkas
+      - kafkanodepools
       - kafkarebalances
       - kafkatopics
       - kafkausers

@@ -4,19 +4,21 @@ import { BreadcrumbLink } from "@/components/Navigation/BreadcrumbLink";
 import { BreadcrumbItem } from "@/libs/patternfly/react-core";
 import { Skeleton } from "@patternfly/react-core";
 import { Suspense } from "react";
+import { useTranslations } from "next-intl";
 
 export async function NodeBreadcrumb({
   params: { kafkaId, nodeId },
 }: {
   params: KafkaNodeParams;
 }) {
+  const t = useTranslations();
   return [
     <BreadcrumbLink
       key={"nodes"}
       href={`/kafka/${kafkaId}/nodes`}
       showDivider={true}
     >
-      Brokers
+      {t("nodes.title")}
     </BreadcrumbLink>,
     <BreadcrumbItem key={"current-node"} showDivider={true}>
       Broker&nbsp;
