@@ -1,5 +1,6 @@
 package com.github.streamshub.console.dependents;
 
+import java.util.Optional;
 import java.util.Set;
 
 import com.github.streamshub.console.api.v1alpha1.Console;
@@ -19,7 +20,7 @@ abstract class BaseClusterRoleBinding extends KubernetesDependentResource<Cluste
         Creator<ClusterRoleBinding, Console>,
         Updater<ClusterRoleBinding, Console>,
         Deleter<Console>,
-        ConsoleResource {
+        ConsoleResource<ClusterRoleBinding> {
 
     private final String appName;
     private final String templateName;
@@ -30,6 +31,11 @@ abstract class BaseClusterRoleBinding extends KubernetesDependentResource<Cluste
         this.appName = appName;
         this.templateName = templateName;
         this.resourceName = resourceName;
+    }
+
+    @Override
+    public Optional<ClusterRoleBinding> getSecondaryResource(Console primary, Context<Console> context) {
+        return ConsoleResource.super.getSecondaryResource(primary, context);
     }
 
     @Override

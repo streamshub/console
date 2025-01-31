@@ -2,14 +2,10 @@ package com.github.streamshub.console.dependents;
 
 import jakarta.enterprise.context.ApplicationScoped;
 
-import com.github.streamshub.console.dependents.discriminators.ConsoleLabelDiscriminator;
-
 import io.javaoperatorsdk.operator.processing.dependent.kubernetes.KubernetesDependent;
 
 @ApplicationScoped
-@KubernetesDependent(
-        labelSelector = ConsoleResource.MANAGEMENT_SELECTOR,
-        resourceDiscriminator = ConsoleLabelDiscriminator.class)
+@KubernetesDependent(labelSelector = ConsoleResource.MANAGEMENT_SELECTOR)
 public class ConsoleServiceAccount extends BaseServiceAccount {
 
     public static final String NAME = "console-serviceaccount";
