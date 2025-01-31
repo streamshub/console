@@ -30,6 +30,7 @@ public interface ConsoleResource<R extends HasMetadata> extends DependentResourc
     static final String COMPONENT_LABEL = "app.kubernetes.io/component";
     static final String INSTANCE_LABEL = "app.kubernetes.io/instance";
     static final String MANAGER = "streamshub-console-operator";
+    static final String INGRESS_URL_KEY = "console.ingress-url";
 
     public static final Map<String, String> MANAGEMENT_LABEL = Map.of(MANAGED_BY_LABEL, MANAGER);
     static final String MANAGEMENT_SELECTOR = MANAGED_BY_LABEL + '=' + MANAGER;
@@ -42,13 +43,12 @@ public interface ConsoleResource<R extends HasMetadata> extends DependentResourc
         return primary.getMetadata().getName() + "-" + resourceName();
     }
 
+    @Override
     default Optional<R> getSecondaryResource(Console primary, Context<Console> context) {
         String instanceName = instanceName(primary);
 
         return context.getSecondaryResourcesAsStream(resourceType())
-                .filter(resource -> {
-                    return Objects.equals(instanceName, resource.getMetadata().getName());
-                })
+                .filter(resource -> Objects.equals(instanceName, resource.getMetadata().getName()))
                 .findFirst();
     }
 
