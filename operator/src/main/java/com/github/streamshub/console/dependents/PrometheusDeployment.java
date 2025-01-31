@@ -1,7 +1,6 @@
 package com.github.streamshub.console.dependents;
 
 import java.util.Map;
-import java.util.Optional;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -10,12 +9,11 @@ import com.github.streamshub.console.api.v1alpha1.Console;
 
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.javaoperatorsdk.operator.api.reconciler.Context;
-import io.javaoperatorsdk.operator.processing.dependent.kubernetes.CRUDKubernetesDependentResource;
 import io.javaoperatorsdk.operator.processing.dependent.kubernetes.KubernetesDependent;
 
 @ApplicationScoped
 @KubernetesDependent(labelSelector = ConsoleResource.MANAGEMENT_SELECTOR)
-public class PrometheusDeployment extends CRUDKubernetesDependentResource<Deployment, Console> implements ConsoleResource<Deployment> {
+public class PrometheusDeployment extends BaseDeployment {
 
     public static final String NAME = "prometheus-deployment";
 
@@ -26,17 +24,7 @@ public class PrometheusDeployment extends CRUDKubernetesDependentResource<Deploy
     PrometheusConfigMap configMap;
 
     public PrometheusDeployment() {
-        super(Deployment.class);
-    }
-
-    @Override
-    public Optional<Deployment> getSecondaryResource(Console primary, Context<Console> context) {
-        return ConsoleResource.super.getSecondaryResource(primary, context);
-    }
-
-    @Override
-    public String resourceName() {
-        return NAME;
+        super(NAME);
     }
 
     @Override

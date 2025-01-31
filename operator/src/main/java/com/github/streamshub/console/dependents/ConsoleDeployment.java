@@ -23,13 +23,12 @@ import io.fabric8.kubernetes.api.model.Volume;
 import io.fabric8.kubernetes.api.model.VolumeMount;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.javaoperatorsdk.operator.api.reconciler.Context;
-import io.javaoperatorsdk.operator.processing.dependent.kubernetes.CRUDKubernetesDependentResource;
 import io.javaoperatorsdk.operator.processing.dependent.kubernetes.KubernetesDependent;
 
 @ApplicationScoped
 @KubernetesDependent(
         labelSelector = ConsoleResource.MANAGEMENT_SELECTOR)
-public class ConsoleDeployment extends CRUDKubernetesDependentResource<Deployment, Console> implements ConsoleResource<Deployment> {
+public class ConsoleDeployment extends BaseDeployment {
 
     public static final String NAME = "console-deployment";
 
@@ -48,17 +47,7 @@ public class ConsoleDeployment extends CRUDKubernetesDependentResource<Deploymen
     String defaultUIImage;
 
     public ConsoleDeployment() {
-        super(Deployment.class);
-    }
-
-    @Override
-    public Optional<Deployment> getSecondaryResource(Console primary, Context<Console> context) {
-        return ConsoleResource.super.getSecondaryResource(primary, context);
-    }
-
-    @Override
-    public String resourceName() {
-        return NAME;
+        super(NAME);
     }
 
     @Override
@@ -130,7 +119,7 @@ public class ConsoleDeployment extends CRUDKubernetesDependentResource<Deploymen
                             .withImagePullPolicy(pullPolicy(imageUI))
                             .withResources(templateUI.map(ContainerSpec::getResources).orElse(null))
                             .editMatchingEnv(env -> "NEXTAUTH_URL".equals(env.getName()))
-                                .withValue(getAttribute(context, ConsoleIngress.NAME + ".url", String.class))
+                                .withValue(getAttribute(context, INGRESS_URL_KEY, String.class))
                             .endEnv()
                             .editMatchingEnv(env -> "NEXTAUTH_SECRET".equals(env.getName()))
                                 .editValueFrom()

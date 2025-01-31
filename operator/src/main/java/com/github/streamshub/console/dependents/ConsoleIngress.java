@@ -32,7 +32,7 @@ public class ConsoleIngress extends CRUDKubernetesDependentResource<Ingress, Con
     @Override
     protected Ingress desired(Console primary, Context<Console> context) {
         String host = primary.getSpec().getHostname();
-        setAttribute(context, NAME + ".url", "https://" + host);
+        setAttribute(context, INGRESS_URL_KEY, "https://" + host);
 
         return load(context, "console.ingress.yaml", Ingress.class)
             .edit()
