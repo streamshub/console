@@ -12,6 +12,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Supplier;
 
@@ -20,14 +21,16 @@ import com.github.streamshub.console.dependents.support.ConfigSupport;
 
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.javaoperatorsdk.operator.api.reconciler.Context;
+import io.javaoperatorsdk.operator.api.reconciler.dependent.DependentResource;
 
-public interface ConsoleResource {
+public interface ConsoleResource<R extends HasMetadata> extends DependentResource<R, Console> {
 
     static final String MANAGED_BY_LABEL = "app.kubernetes.io/managed-by";
     static final String NAME_LABEL = "app.kubernetes.io/name";
     static final String COMPONENT_LABEL = "app.kubernetes.io/component";
     static final String INSTANCE_LABEL = "app.kubernetes.io/instance";
     static final String MANAGER = "streamshub-console-operator";
+    static final String INGRESS_URL_KEY = "console.ingress-url";
 
     public static final Map<String, String> MANAGEMENT_LABEL = Map.of(MANAGED_BY_LABEL, MANAGER);
     static final String MANAGEMENT_SELECTOR = MANAGED_BY_LABEL + '=' + MANAGER;
@@ -38,6 +41,15 @@ public interface ConsoleResource {
 
     default String instanceName(Console primary) {
         return primary.getMetadata().getName() + "-" + resourceName();
+    }
+
+    @Override
+    default Optional<R> getSecondaryResource(Console primary, Context<Console> context) {
+        String instanceName = instanceName(primary);
+
+        return context.getSecondaryResourcesAsStream(resourceType())
+                .filter(resource -> Objects.equals(instanceName, resource.getMetadata().getName()))
+                .findFirst();
     }
 
     default <T extends HasMetadata> T load(Context<Console> context, String resourceName, Class<T> resourceType) {

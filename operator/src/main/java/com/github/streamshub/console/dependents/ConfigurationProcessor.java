@@ -104,7 +104,7 @@ import static com.github.streamshub.console.support.StringSupport.toEnv;
  * VolumeMounts) that will be used later in the reconciliation process.
  */
 @ApplicationScoped
-public class ConfigurationProcessor implements DependentResource<HasMetadata, Console>, ConsoleResource {
+public class ConfigurationProcessor implements DependentResource<HasMetadata, Console>, ConsoleResource<HasMetadata> {
 
     public static final String NAME = "ConfigurationProcessor";
 
