@@ -11,7 +11,8 @@ import io.javaoperatorsdk.operator.processing.dependent.kubernetes.KubernetesDep
 
 @ApplicationScoped
 @KubernetesDependent(labelSelector = ConsoleResource.MANAGEMENT_SELECTOR)
-public class PrometheusConfigMap extends CRUDKubernetesDependentResource<ConfigMap, Console> implements ConsoleResource {
+public class PrometheusConfigMap extends CRUDKubernetesDependentResource<ConfigMap, Console>
+        implements ConsoleResource<ConfigMap> {
 
     public static final String NAME = "prometheus-configmap";
 

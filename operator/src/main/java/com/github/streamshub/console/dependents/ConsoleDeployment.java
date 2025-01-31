@@ -16,7 +16,6 @@ import com.github.streamshub.console.api.v1alpha1.spec.Images;
 import com.github.streamshub.console.api.v1alpha1.spec.containers.ContainerSpec;
 import com.github.streamshub.console.api.v1alpha1.spec.containers.ContainerTemplateSpec;
 import com.github.streamshub.console.api.v1alpha1.spec.containers.Containers;
-import com.github.streamshub.console.dependents.discriminators.ConsoleLabelDiscriminator;
 
 import io.fabric8.kubernetes.api.model.EnvVar;
 import io.fabric8.kubernetes.api.model.KubernetesResource;
@@ -29,9 +28,8 @@ import io.javaoperatorsdk.operator.processing.dependent.kubernetes.KubernetesDep
 
 @ApplicationScoped
 @KubernetesDependent(
-        labelSelector = ConsoleResource.MANAGEMENT_SELECTOR,
-        resourceDiscriminator = ConsoleLabelDiscriminator.class)
-public class ConsoleDeployment extends CRUDKubernetesDependentResource<Deployment, Console> implements ConsoleResource {
+        labelSelector = ConsoleResource.MANAGEMENT_SELECTOR)
+public class ConsoleDeployment extends CRUDKubernetesDependentResource<Deployment, Console> implements ConsoleResource<Deployment> {
 
     public static final String NAME = "console-deployment";
 
@@ -51,6 +49,11 @@ public class ConsoleDeployment extends CRUDKubernetesDependentResource<Deploymen
 
     public ConsoleDeployment() {
         super(Deployment.class);
+    }
+
+    @Override
+    public Optional<Deployment> getSecondaryResource(Console primary, Context<Console> context) {
+        return ConsoleResource.super.getSecondaryResource(primary, context);
     }
 
     @Override

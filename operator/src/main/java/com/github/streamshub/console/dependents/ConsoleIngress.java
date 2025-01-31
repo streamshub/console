@@ -13,7 +13,7 @@ import io.javaoperatorsdk.operator.processing.dependent.kubernetes.KubernetesDep
 
 @ApplicationScoped
 @KubernetesDependent(labelSelector = ConsoleResource.MANAGEMENT_SELECTOR)
-public class ConsoleIngress extends CRUDKubernetesDependentResource<Ingress, Console> implements ConsoleResource {
+public class ConsoleIngress extends CRUDKubernetesDependentResource<Ingress, Console> implements ConsoleResource<Ingress> {
 
     public static final String NAME = "console-ingress";
 

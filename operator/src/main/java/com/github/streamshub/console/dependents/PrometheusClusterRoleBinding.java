@@ -4,7 +4,6 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
 import com.github.streamshub.console.api.v1alpha1.Console;
-import com.github.streamshub.console.dependents.discriminators.PrometheusLabelDiscriminator;
 
 import io.javaoperatorsdk.operator.api.reconciler.Constants;
 import io.javaoperatorsdk.operator.processing.dependent.kubernetes.KubernetesDependent;
@@ -12,8 +11,7 @@ import io.javaoperatorsdk.operator.processing.dependent.kubernetes.KubernetesDep
 @ApplicationScoped
 @KubernetesDependent(
         namespaces = Constants.WATCH_ALL_NAMESPACES,
-        labelSelector = ConsoleResource.MANAGEMENT_SELECTOR,
-        resourceDiscriminator = PrometheusLabelDiscriminator.class)
+        labelSelector = ConsoleResource.MANAGEMENT_SELECTOR)
 public class PrometheusClusterRoleBinding extends BaseClusterRoleBinding {
 
     public static final String NAME = "prometheus-clusterrolebinding";

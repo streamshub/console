@@ -4,14 +4,11 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
 import com.github.streamshub.console.api.v1alpha1.Console;
-import com.github.streamshub.console.dependents.discriminators.ConsoleLabelDiscriminator;
 
 import io.javaoperatorsdk.operator.processing.dependent.kubernetes.KubernetesDependent;
 
 @ApplicationScoped
-@KubernetesDependent(
-        labelSelector = ConsoleResource.MANAGEMENT_SELECTOR,
-        resourceDiscriminator = ConsoleLabelDiscriminator.class)
+@KubernetesDependent(labelSelector = ConsoleResource.MANAGEMENT_SELECTOR)
 public class ConsoleService extends BaseService {
 
     public static final String NAME = "console-service";

@@ -1,7 +1,6 @@
 package com.github.streamshub.console.dependents;
 
 import java.util.Collections;
-import java.util.Map;
 import java.util.Optional;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -9,7 +8,6 @@ import jakarta.inject.Inject;
 
 import com.github.streamshub.console.api.v1alpha1.Console;
 import com.github.streamshub.console.api.v1alpha1.spec.metrics.MetricsSource.Type;
-import com.github.streamshub.console.dependents.discriminators.ConsoleLabelDiscriminator;
 
 import io.fabric8.kubernetes.api.model.rbac.ClusterRoleBinding;
 import io.javaoperatorsdk.operator.api.reconciler.Constants;
@@ -21,17 +19,10 @@ import io.javaoperatorsdk.operator.processing.dependent.workflow.Condition;
 @ApplicationScoped
 @KubernetesDependent(
         namespaces = Constants.WATCH_ALL_NAMESPACES,
-        labelSelector = ConsoleResource.MANAGEMENT_SELECTOR,
-        resourceDiscriminator = ConsoleMonitoringClusterRoleBinding.Discriminator.class)
+        labelSelector = ConsoleResource.MANAGEMENT_SELECTOR)
 public class ConsoleMonitoringClusterRoleBinding extends BaseClusterRoleBinding {
 
     public static final String NAME = "console-monitoring-clusterrolebinding";
-
-    public static class Discriminator extends ConsoleLabelDiscriminator {
-        public Discriminator() {
-            super(Map.of(COMPONENT_LABEL, NAME));
-        }
-    }
 
     @Inject
     ConsoleClusterRole clusterRole;

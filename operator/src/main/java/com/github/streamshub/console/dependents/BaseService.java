@@ -1,12 +1,14 @@
 package com.github.streamshub.console.dependents;
 
+import java.util.Optional;
+
 import com.github.streamshub.console.api.v1alpha1.Console;
 
 import io.fabric8.kubernetes.api.model.Service;
 import io.javaoperatorsdk.operator.api.reconciler.Context;
 import io.javaoperatorsdk.operator.processing.dependent.kubernetes.CRUDKubernetesDependentResource;
 
-abstract class BaseService extends CRUDKubernetesDependentResource<Service, Console> implements ConsoleResource {
+abstract class BaseService extends CRUDKubernetesDependentResource<Service, Console> implements ConsoleResource<Service> {
 
     private final String appName;
     private final String templateName;
@@ -17,6 +19,11 @@ abstract class BaseService extends CRUDKubernetesDependentResource<Service, Cons
         this.appName = appName;
         this.templateName = templateName;
         this.resourceName = resourceName;
+    }
+
+    @Override
+    public Optional<Service> getSecondaryResource(Console primary, Context<Console> context) {
+        return ConsoleResource.super.getSecondaryResource(primary, context);
     }
 
     @Override
