@@ -3,6 +3,7 @@ import { KafkaParams } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/kafka.p
 import { DistributionChart } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/nodes/DistributionChart";
 import {
   Node,
+  NodeStatus,
   NodesTable,
 } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/nodes/NodesTable";
 import { Alert, PageSection } from "@/libs/patternfly/react-core";
@@ -20,8 +21,9 @@ export async function generateMetadata() {
 function nodeMetric(
   metrics: { value: string, nodeId: string }[] | undefined,
   nodeId: number,
-): number {
-  return parseFloat(metrics?.find(e => e.nodeId == nodeId.toString())?.value ?? "0");
+): number | undefined {
+  let metricValue = metrics?.find(e => e.nodeId == nodeId.toString())?.value;
+  return metricValue ? parseFloat(metricValue) : undefined;
 }
 
 function nodeRangeMetric(
@@ -49,43 +51,62 @@ async function ConnectedNodes({ params }: { params: KafkaParams }) {
 
   const nodes: Node[] = (cluster?.attributes.nodes ?? []).map((node) => {
     let brokerState = metrics && nodeMetric(metrics.values?.["broker_state"], node.id);
-    let status;
+    let brokerStatus;
+    let brokerStable = false;
 
-    /*
-     * https://github.com/apache/kafka/blob/3.8.0/metadata/src/main/java/org/apache/kafka/metadata/BrokerState.java
-     */
-    switch (brokerState ?? 127) {
-      case 0:
-        status = "Not Running";
-        break;
-      case 1:
-        status = "Starting";
-        break;
-      case 2:
-        status = "Recovery";
-        break;
-      case 3:
-        status = "Running";
-        break;
-      case 6:
-        status = "Pending Controlled Shutdown";
-        break;
-      case 7:
-        status = "Shutting Down";
-        break;
-      case 127:
-      default:
-        status = "Unknown";
-        break;
+    if ((node.roles ?? [ "broker" ]).includes("broker")) {
+      /*
+       * https://github.com/apache/kafka/blob/3.8.0/metadata/src/main/java/org/apache/kafka/metadata/BrokerState.java
+       */
+      switch (brokerState ?? 127) {
+        case 0:
+          brokerStatus = "Not Running";
+          break;
+        case 1:
+          brokerStatus = "Starting";
+          break;
+        case 2:
+          brokerStatus = "Recovery";
+          break;
+        case 3:
+          brokerStatus = "Running";
+          brokerStable = true;
+          break;
+        case 6:
+          brokerStatus = "Pending Controlled Shutdown";
+          break;
+        case 7:
+          brokerStatus = "Shutting Down";
+          break;
+        case 127:
+        default:
+          brokerStatus = "Unknown";
+          break;
+      }
+    }
+
+    let controllerStatus;
+    let controllerStable = true;
+
+    if ((node.roles ?? []).includes("controller")) {
+      let metadataState = node.metadataState!;
+      if (metadataState.status == "leader") {
+        controllerStatus = "Quorum Leader";
+      } else if (metadataState.lag > 0) {
+        controllerStatus = "Quorum Follower (Lagged)";
+        controllerStable = false;
+      } else {
+        controllerStatus = "Quorum Follower";
+      }
     }
 
     const leaders = metrics
-      ? nodeMetric(metrics.values?.["leader_count"], node.id)
+      ? nodeMetric(metrics.values?.["leader_count"], node.id) ?? 0
       : undefined;
 
     const followers =
       metrics && leaders
-        ? nodeMetric(metrics.values?.["replica_count"], node.id) - leaders
+        ? nodeMetric(metrics.values?.["replica_count"], node.id) ?? 0 - leaders
         : undefined;
 
     const diskCapacity = metrics
@@ -98,10 +119,19 @@ async function ConnectedNodes({ params }: { params: KafkaParams }) {
 
     return {
       id: node.id,
-      status,
+      nodePool: node.nodePool ?? "N/A",
+      roles: node.roles ?? [ "broker" ],
+      isLeader: node.metadataState?.status == "leader",
+      brokerStatus: brokerStatus ? {
+        stable: brokerStable,
+        description: brokerStatus,
+      } : undefined,
+      controllerStatus: controllerStatus ? {
+        stable: controllerStable,
+        description: controllerStatus,
+      } : undefined,
       hostname: node.host,
       rack: node.rack,
-      isLeader: node.id === cluster?.attributes.controller.id,
       followers,
       leaders,
       diskCapacity,

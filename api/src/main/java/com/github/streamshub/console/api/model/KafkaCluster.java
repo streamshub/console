@@ -162,9 +162,6 @@ public class KafkaCluster extends Resource<KafkaCluster.Attributes> implements P
         final List<Node> nodes;
 
         @JsonProperty
-        final Node controller;
-
-        @JsonProperty
         final List<String> authorizedOperations;
 
         @JsonProperty
@@ -188,15 +185,14 @@ public class KafkaCluster extends Resource<KafkaCluster.Attributes> implements P
         @JsonProperty
         Metrics metrics = new Metrics();
 
-        Attributes(List<Node> nodes, Node controller, List<String> authorizedOperations) {
+        Attributes(List<Node> nodes, List<String> authorizedOperations) {
             this.nodes = nodes;
-            this.controller = controller;
             this.authorizedOperations = authorizedOperations;
         }
     }
 
-    public KafkaCluster(String id, List<Node> nodes, Node controller, List<String> authorizedOperations) {
-        super(id, API_TYPE, new Attributes(nodes, controller, authorizedOperations));
+    public KafkaCluster(String id, List<Node> nodes, List<String> authorizedOperations) {
+        super(id, API_TYPE, new Attributes(nodes, authorizedOperations));
     }
 
     @JsonCreator
@@ -205,7 +201,7 @@ public class KafkaCluster extends Resource<KafkaCluster.Attributes> implements P
     }
 
     public static KafkaCluster fromId(String id) {
-        return new KafkaCluster(id, (List<Node>) null, (Node) null, (List<String>) null);
+        return new KafkaCluster(id, (List<Node>) null, (List<String>) null);
     }
 
     /**
@@ -268,10 +264,6 @@ public class KafkaCluster extends Resource<KafkaCluster.Attributes> implements P
 
     public List<Node> nodes() {
         return attributes.nodes;
-    }
-
-    public Node controller() {
-        return attributes.controller;
     }
 
     public List<String> authorizedOperations() {

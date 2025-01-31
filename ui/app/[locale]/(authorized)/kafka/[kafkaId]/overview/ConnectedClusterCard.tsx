@@ -47,7 +47,7 @@ export async function ConnectedClusterCard({
   );
 
   const brokersTotal =
-    res?.attributes.metrics?.values?.["broker_state"]?.length ?? 0;
+    res?.attributes.nodes.filter(n => (n.roles ?? ["broker"]).includes("broker")).length ?? 0;
   const brokersOnline = (
     res?.attributes.metrics?.values?.["broker_state"] ?? []
   ).filter((s) => s.value === "3").length;
