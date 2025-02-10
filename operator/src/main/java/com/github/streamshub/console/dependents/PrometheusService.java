@@ -4,16 +4,13 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
 import com.github.streamshub.console.api.v1alpha1.Console;
-import com.github.streamshub.console.dependents.discriminators.PrometheusLabelDiscriminator;
 
 import io.fabric8.kubernetes.api.model.Service;
 import io.javaoperatorsdk.operator.api.reconciler.Context;
 import io.javaoperatorsdk.operator.processing.dependent.kubernetes.KubernetesDependent;
 
 @ApplicationScoped
-@KubernetesDependent(
-        labelSelector = ConsoleResource.MANAGEMENT_SELECTOR,
-        resourceDiscriminator = PrometheusLabelDiscriminator.class)
+@KubernetesDependent(labelSelector = ConsoleResource.MANAGEMENT_SELECTOR)
 public class PrometheusService extends BaseService {
 
     public static final String NAME = "prometheus-service";

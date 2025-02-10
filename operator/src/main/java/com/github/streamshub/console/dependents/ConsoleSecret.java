@@ -14,7 +14,7 @@ import io.javaoperatorsdk.operator.processing.dependent.kubernetes.KubernetesDep
 
 @ApplicationScoped
 @KubernetesDependent(labelSelector = ConsoleResource.MANAGEMENT_SELECTOR)
-public class ConsoleSecret extends CRUDKubernetesDependentResource<Secret, Console> implements ConsoleResource {
+public class ConsoleSecret extends CRUDKubernetesDependentResource<Secret, Console> implements ConsoleResource<Secret> {
 
     public static final String NAME = "console-secret";
 

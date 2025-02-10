@@ -2,16 +2,13 @@ package com.github.streamshub.console.dependents;
 
 import jakarta.enterprise.context.ApplicationScoped;
 
-import com.github.streamshub.console.dependents.discriminators.ConsoleLabelDiscriminator;
-
 import io.javaoperatorsdk.operator.api.reconciler.Constants;
 import io.javaoperatorsdk.operator.processing.dependent.kubernetes.KubernetesDependent;
 
 @ApplicationScoped
 @KubernetesDependent(
         namespaces = Constants.WATCH_ALL_NAMESPACES,
-        labelSelector = ConsoleResource.MANAGEMENT_SELECTOR,
-        resourceDiscriminator = ConsoleLabelDiscriminator.class)
+        labelSelector = ConsoleResource.MANAGEMENT_SELECTOR)
 public class ConsoleClusterRole extends BaseClusterRole {
 
     public static final String NAME = "console-clusterrole";

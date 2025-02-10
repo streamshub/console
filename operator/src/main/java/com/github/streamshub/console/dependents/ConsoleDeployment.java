@@ -16,7 +16,6 @@ import com.github.streamshub.console.api.v1alpha1.spec.Images;
 import com.github.streamshub.console.api.v1alpha1.spec.containers.ContainerSpec;
 import com.github.streamshub.console.api.v1alpha1.spec.containers.ContainerTemplateSpec;
 import com.github.streamshub.console.api.v1alpha1.spec.containers.Containers;
-import com.github.streamshub.console.dependents.discriminators.ConsoleLabelDiscriminator;
 
 import io.fabric8.kubernetes.api.model.EnvVar;
 import io.fabric8.kubernetes.api.model.KubernetesResource;
@@ -24,14 +23,12 @@ import io.fabric8.kubernetes.api.model.Volume;
 import io.fabric8.kubernetes.api.model.VolumeMount;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.javaoperatorsdk.operator.api.reconciler.Context;
-import io.javaoperatorsdk.operator.processing.dependent.kubernetes.CRUDKubernetesDependentResource;
 import io.javaoperatorsdk.operator.processing.dependent.kubernetes.KubernetesDependent;
 
 @ApplicationScoped
 @KubernetesDependent(
-        labelSelector = ConsoleResource.MANAGEMENT_SELECTOR,
-        resourceDiscriminator = ConsoleLabelDiscriminator.class)
-public class ConsoleDeployment extends CRUDKubernetesDependentResource<Deployment, Console> implements ConsoleResource {
+        labelSelector = ConsoleResource.MANAGEMENT_SELECTOR)
+public class ConsoleDeployment extends BaseDeployment {
 
     public static final String NAME = "console-deployment";
 
@@ -50,12 +47,7 @@ public class ConsoleDeployment extends CRUDKubernetesDependentResource<Deploymen
     String defaultUIImage;
 
     public ConsoleDeployment() {
-        super(Deployment.class);
-    }
-
-    @Override
-    public String resourceName() {
-        return NAME;
+        super(NAME);
     }
 
     @Override
@@ -127,7 +119,7 @@ public class ConsoleDeployment extends CRUDKubernetesDependentResource<Deploymen
                             .withImagePullPolicy(pullPolicy(imageUI))
                             .withResources(templateUI.map(ContainerSpec::getResources).orElse(null))
                             .editMatchingEnv(env -> "NEXTAUTH_URL".equals(env.getName()))
-                                .withValue(getAttribute(context, ConsoleIngress.NAME + ".url", String.class))
+                                .withValue(getAttribute(context, INGRESS_URL_KEY, String.class))
                             .endEnv()
                             .editMatchingEnv(env -> "NEXTAUTH_SECRET".equals(env.getName()))
                                 .editValueFrom()
