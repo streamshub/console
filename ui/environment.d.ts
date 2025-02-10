@@ -8,5 +8,6 @@ namespace NodeJS {
     NEXT_PUBLIC_CONSOLE_MODE?: "read-only" | "read-write";
     CONSOLE_CONFIG_PATH: string;
     CONSOLE_SECURITY_OIDC_TRUSTSTORE?: string;
+    NEXT_PUBLIC_TECH_PREVIEW?: "true" | "false";
   }
 }

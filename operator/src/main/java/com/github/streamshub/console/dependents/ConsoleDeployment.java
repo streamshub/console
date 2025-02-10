@@ -39,6 +39,10 @@ public class ConsoleDeployment extends BaseDeployment {
     ConsoleSecret secret;
 
     @Inject
+    @ConfigProperty(name = "console.tech-preview")
+    boolean techPreview;
+
+    @Inject
     @ConfigProperty(name = "console.deployment.default-api-image")
     String defaultAPIImage;
 
@@ -127,6 +131,9 @@ public class ConsoleDeployment extends BaseDeployment {
                                         .withName(configSecretName)
                                     .endSecretKeyRef()
                                 .endValueFrom()
+                            .endEnv()
+                            .editMatchingEnv(env -> "NEXT_PUBLIC_TECH_PREVIEW".equals(env.getName()))
+                                .withValue(String.valueOf(techPreview))
                             .endEnv()
                             .addAllToEnv(envVarsUI)
                         .endContainer()
