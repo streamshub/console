@@ -168,7 +168,7 @@ class ConsoleReconcilerTest extends ConsoleReconcilerTestBase {
                 .withRequests(Map.of("cpu", Quantity.parse("100m")))
                 .withLimits(Map.of("cpu", Quantity.parse("200m")))
                 .build(), uiContainer.getResources());
-        assertEquals(8, uiContainer.getEnv().size()); // 1 override + 6 from YAML template
+        assertEquals(7, uiContainer.getEnv().size()); // 1 override + 6 from YAML template
         assertEquals("value2", uiContainer.getEnv().stream()
                 .filter(e -> e.getName().equals("CUSTOM_UI_VAR")).map(EnvVar::getValue).findFirst().orElseThrow());
     }

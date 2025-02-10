@@ -99,8 +99,6 @@ spec:
           value: /app/console-config.yaml
         - name: NEXT_PUBLIC_CONSOLE_MODE
           value: read-only
-        - name: NEXT_PUBLIC_TECH_PREVIEW
-          value: "true"
         - name: LOG_LEVEL
           value: info
         startupProbe:
