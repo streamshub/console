@@ -21,6 +21,7 @@ import { useState } from "react";
 import { useAppLayout } from "./AppLayoutProvider";
 import { UserDropdown } from "./UserDropdown";
 import Image from "next/image";
+import { isTechPreview } from "@/utils/env";
 
 export function AppMasthead({
   username,
@@ -79,13 +80,15 @@ export function AppMasthead({
                   variant="icon-button-group"
                   visibility={{ default: "hidden", lg: "visible" }}
                 >
-                  <ToolbarItem>
-                    <TechPreviewPopover>
-                      <Label color={"blue"} isCompact={true}>
-                        {t("AppMasthead.tech_preview_label")}
-                      </Label>
-                    </TechPreviewPopover>
-                  </ToolbarItem>
+                  {isTechPreview && (
+                    <ToolbarItem>
+                      <TechPreviewPopover>
+                        <Label color={"blue"} isCompact={true}>
+                          {t("AppMasthead.tech_preview_label")}
+                        </Label>
+                      </TechPreviewPopover>
+                    </ToolbarItem>
+                  )}
                   <ToolbarItem>
                     <Button
                       aria-label={t("AppMasthead.help")}
