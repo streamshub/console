@@ -4,7 +4,7 @@ import { NewConfigMap } from "@/api/topics/schema";
 import { KafkaParams } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/kafka.params";
 import { CreateTopic } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/topics/create/CreateTopic";
 import { redirect } from "@/i18n/routing";
-import { isReadonly } from "@/utils/env";
+import config from "@/utils/config";
 import { NoDataErrorState } from "@/components/NoDataErrorState";
 
 export default async function CreateTopicPage({
@@ -12,7 +12,9 @@ export default async function CreateTopicPage({
 }: {
   params: KafkaParams;
 }) {
-  if (isReadonly) {
+  const isReadOnly = (await config()).readOnly;
+
+  if (isReadOnly) {
     redirect(`/kafka/${kafkaId}/topics`);
     return;
   }

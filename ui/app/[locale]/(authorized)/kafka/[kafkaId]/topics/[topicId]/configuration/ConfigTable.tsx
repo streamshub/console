@@ -6,7 +6,7 @@ import { topicMutateErrorToFieldError } from "@/app/[locale]/(authorized)/kafka/
 import { Number } from "@/components/Format/Number";
 import { ResponsiveTableProps, TableView } from "@/components/Table";
 import { usePathname, useRouter } from "@/i18n/routing";
-import { isReadonly } from "@/utils/env";
+import config from "@/utils/config";
 import {
   Button,
   FormGroup,
@@ -24,7 +24,7 @@ import { CheckIcon, PencilAltIcon, TimesIcon } from "@patternfly/react-icons";
 import { TableVariant } from "@patternfly/react-table";
 import { useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
-import { useCallback, useState } from "react";
+import { useEffect, useCallback, useState } from "react";
 import { NoResultsEmptyState } from "./NoResultsEmptyState";
 
 type Column = "property" | "value";
@@ -43,6 +43,13 @@ export function ConfigTable({
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const [isReadOnly, setIsReadOnly] = useState(true);
+
+  useEffect(() => {
+    config().then(cfg => {
+      setIsReadOnly(cfg.readOnly);
+    })
+  }, []);
 
   // Get a new searchParams string by merging the current
   // searchParams with a provided key/value pair
@@ -320,7 +327,7 @@ export function ConfigTable({
         }}
         renderCell={renderCell}
         renderActions={({ row: [name] }) => {
-          if (isReadonly) {
+          if (isReadOnly) {
             return <></>;
           }
 

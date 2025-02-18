@@ -13,11 +13,11 @@ import {
   Tooltip,
 } from "@/libs/patternfly/react-core";
 import { HelpIcon } from "@/libs/patternfly/react-icons";
-import { isProductizedBuild } from "@/utils/env";
+import config from '@/utils/config';
 import { useTranslations } from "next-intl";
 import { TopicsTable } from "./components/TopicsTable";
 
-export function RecentTopicsCard({
+export async function RecentTopicsCard({
   viewedTopics,
   isLoading,
 }: {
@@ -26,6 +26,8 @@ export function RecentTopicsCard({
 }) {
   const t = useTranslations();
   const productName = t("common.product");
+  const showLearning = await config().then(cfg => cfg.showLearning);
+
   return (
     <ExpandableCard
       title={
@@ -60,7 +62,7 @@ export function RecentTopicsCard({
             <EmptyStateBody>
               {t("homepage.empty_topics_description", { product: productName })}
             </EmptyStateBody>
-            {isProductizedBuild && (
+            {showLearning && (
               <EmptyStateFooter>
                 <EmptyStateActions className={"pf-v5-u-font-size-sm"}>
                   <ExternalLink

@@ -26,7 +26,6 @@ import {
   TextContent,
   Title,
 } from "@/libs/patternfly/react-core";
-import { isProductizedBuild } from "@/utils/env";
 import { getTranslations } from "next-intl/server";
 import { Suspense } from "react";
 import styles from "./home.module.css";
@@ -68,6 +67,8 @@ export default async function Home() {
   if (allClusters.length === 1 && !oidcEnabled) {
     return <RedirectOnLoad url={`/kafka/${allClusters[0].id}/login`} />;
   }
+
+  const showLearning = (await config()).showLearning;
 
   return (
     <AppLayout username={username}>
@@ -111,7 +112,7 @@ export default async function Home() {
             </Card>
           </StackItem>
           <StackItem></StackItem>
-          {isProductizedBuild && (
+          {showLearning && (
             <StackItem>
               <ExpandableCard
                 title={

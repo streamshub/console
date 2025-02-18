@@ -3,11 +3,11 @@ namespace NodeJS {
     NEXTAUTH_URL: string;
     NEXTAUTH_SECRET: string;
     BACKEND_URL: string;
-    NEXT_PUBLIC_PRODUCTIZED_BUILD?: "true" | "false";
     LOG_LEVEL?: "fatal" | "error" | "warn" | "info" | "debug" | "trace";
-    NEXT_PUBLIC_CONSOLE_MODE?: "read-only" | "read-write";
+    CONSOLE_MODE?: "read-only" | "read-write";
     CONSOLE_CONFIG_PATH: string;
+    CONSOLE_SHOW_LEARNING?: "true" | "false";
     CONSOLE_SECURITY_OIDC_TRUSTSTORE?: string;
-    NEXT_PUBLIC_TECH_PREVIEW?: "true" | "false";
+    CONSOLE_TECH_PREVIEW?: "true" | "false";
   }
 }
