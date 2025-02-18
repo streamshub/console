@@ -32,6 +32,7 @@ import React, { ReactNode } from "react";
 import { EmptyStateNoMatchFound } from "@/components/Table/EmptyStateNoMatchFound";
 import { EmptyStateNoKafkaRebalance } from "./EmptyStateNoKafkaRebalance";
 import Image from "next/image";
+import { DateTime } from "@/components/Format/DateTime";
 
 export const RebalanceTableColumns = ["name", "status", "createdAt"] as const;
 
@@ -227,7 +228,12 @@ export function RebalanceTable({
           case "createdAt":
             return (
               <Td key={key} dataLabel={"Created At"}>
-                {row.attributes.creationTimestamp}
+                <DateTime
+                  value={row.attributes.creationTimestamp}
+                  tz={"UTC"}
+                  dateStyle={"short"}
+                  timeStyle={"medium"}
+                />
               </Td>
             );
         }
