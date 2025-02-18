@@ -18,6 +18,9 @@ const config: StorybookConfig = {
     "@storybook/addon-onboarding",
     "@storybook/addon-interactions",
   ],
+  features: {
+    experimentalRSC: true,
+  },
   framework: {
     name: "@storybook/nextjs",
     options: {},
@@ -25,7 +28,7 @@ const config: StorybookConfig = {
   docs: {
     autodocs: "tag",
   },
-  webpackFinal: async (config, { configType }) => {
+  webpackFinal: async (config) => {
     // @ts-ignore
     config.resolve.plugins = [new TsconfigPathsPlugin()];
     return config;
