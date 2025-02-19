@@ -13,7 +13,7 @@ import {
   Tooltip,
 } from "@/libs/patternfly/react-core";
 import { HelpIcon } from "@/libs/patternfly/react-icons";
-import config from '@/utils/config';
+import { clientConfig as config } from '@/utils/config';
 import { useTranslations } from "next-intl";
 import { TopicsTable } from "./components/TopicsTable";
 

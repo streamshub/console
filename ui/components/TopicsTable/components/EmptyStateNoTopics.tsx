@@ -11,7 +11,7 @@ import {
 } from "@/libs/patternfly/react-core";
 import { PlusCircleIcon } from "@/libs/patternfly/react-icons";
 import { useTranslations } from "next-intl";
-import config from '@/utils/config';
+import { clientConfig as config } from '@/utils/config';
 
 export async function EmptyStateNoTopics({
   canCreate,

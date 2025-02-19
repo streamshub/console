@@ -6,7 +6,7 @@ import { topicMutateErrorToFieldError } from "@/app/[locale]/(authorized)/kafka/
 import { Number } from "@/components/Format/Number";
 import { ResponsiveTableProps, TableView } from "@/components/Table";
 import { usePathname, useRouter } from "@/i18n/routing";
-import config from "@/utils/config";
+import { clientConfig as config } from "@/utils/config";
 import {
   Button,
   FormGroup,

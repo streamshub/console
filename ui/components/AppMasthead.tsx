@@ -21,7 +21,7 @@ import { useEffect, useState } from "react";
 import { useAppLayout } from "./AppLayoutProvider";
 import { UserDropdown } from "./UserDropdown";
 import Image from "next/image";
-import config from "@/utils/config";
+import { clientConfig as config } from "@/utils/config";
 
 export function AppMasthead({
   username,

@@ -3,7 +3,7 @@ import { ApiResponse } from "@/api/api";
 import { getTopic, updateTopic } from "@/api/topics/actions";
 import { KafkaTopicParams } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/topics/kafkaTopic.params";
 import { PageSection } from "@/libs/patternfly/react-core";
-import config from "@/utils/config";
+import { clientConfig as config } from "@/utils/config";
 import { Suspense } from "react";
 import { ConfigTable } from "./ConfigTable";
 import { NoDataErrorState } from "@/components/NoDataErrorState";

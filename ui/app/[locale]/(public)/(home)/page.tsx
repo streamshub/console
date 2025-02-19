@@ -68,7 +68,7 @@ export default async function Home() {
     return <RedirectOnLoad url={`/kafka/${allClusters[0].id}/login`} />;
   }
 
-  const showLearning = (await config()).showLearning;
+  const showLearning = cfg.showLearning;
 
   return (
     <AppLayout username={username}>

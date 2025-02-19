@@ -12,7 +12,7 @@ import {
 import { useEffect, useState } from "react";
 import { Divider, Stack, StackItem } from "@patternfly/react-core";
 import { useTranslations } from "next-intl";
-import config from '@/utils/config';
+import { clientConfig as config } from '@/utils/config';
 
 export async function ClusterConnectionDetails({
   clusterId,

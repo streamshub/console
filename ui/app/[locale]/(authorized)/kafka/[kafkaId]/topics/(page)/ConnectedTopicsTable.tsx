@@ -7,7 +7,7 @@ import {
   TopicsTableColumns,
 } from "@/components/TopicsTable/TopicsTable";
 import { useRouter } from "@/i18n/routing";
-import config from "@/utils/config";
+import { clientConfig as config } from "@/utils/config";
 import { useFilterParams } from "@/utils/useFilterParams";
 import { useEffect, useState, useOptimistic, useTransition } from "react";
 

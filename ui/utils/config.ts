@@ -25,6 +25,11 @@ export interface ConsoleConfig {
     loadTime: Date;
 }
 
+/**
+ * Determine if the configuration should be reloaded. This is needed when it has not yet been loaded,
+ * the configuration file has changed on disk, or one of the environment variables has been modified
+ * (dev mode only).
+ */
 function reloadConfig(consoleConfig: ConsoleConfig, readOnly: boolean, techPreview: boolean, showLearning: boolean) {
     if (consoleConfig === undefined) {
         return true;
@@ -102,4 +107,18 @@ async function getOrLoadConfig(): Promise<ConsoleConfig> {
 
 export default async function config(): Promise<ConsoleConfig> {
     return getOrLoadConfig();
+}
+
+/**
+ * Fetch configuration safe to use from client-side code that does not include security
+ * information.
+ */
+export async function clientConfig(): Promise<ConsoleConfig> {
+    return getOrLoadConfig().then(cfg => {
+        return {
+            ...cfg,
+            // Do not return security information do client-side
+            security: null
+        };
+    });
 }
