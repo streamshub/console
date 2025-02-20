@@ -9,16 +9,24 @@ import {
   Text,
   TextContent,
 } from "@/libs/patternfly/react-core";
+import { useEffect, useState } from "react";
 import { Divider, Stack, StackItem } from "@patternfly/react-core";
 import { useTranslations } from "next-intl";
-import { isProductizedBuild } from "@/utils/env";
-
+import { clientConfig as config } from '@/utils/config';
 
 export async function ClusterConnectionDetails({
   clusterId,
 }: {
   clusterId: string;
 }) {
+  const [showLearning, setShowLearning] = useState(false);
+
+  useEffect(() => {
+    config().then(cfg => {
+      setShowLearning(cfg.showLearning);
+    })
+  }, []);
+
   const t = useTranslations();
   const data = (await getKafkaCluster(clusterId))?.payload;
   if (!data) {
@@ -103,7 +111,7 @@ export async function ClusterConnectionDetails({
           </ExpandableSection>
         </TextContent>
       </StackItem>
-      {isProductizedBuild && (
+      {showLearning && (
         <StackItem>
           <Divider />
           <Stack hasGutter={true} className={"pf-v5-u-p-lg"}>

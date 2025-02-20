@@ -11,9 +11,9 @@ import {
 } from "@/libs/patternfly/react-core";
 import { PlusCircleIcon } from "@/libs/patternfly/react-icons";
 import { useTranslations } from "next-intl";
-import { isProductizedBuild } from "@/utils/env"
+import { clientConfig as config } from '@/utils/config';
 
-export function EmptyStateNoTopics({
+export async function EmptyStateNoTopics({
   canCreate,
   createHref,
   onShowHiddenTopics,
@@ -23,6 +23,8 @@ export function EmptyStateNoTopics({
   onShowHiddenTopics: () => void;
 }) {
   const t = useTranslations();
+  const showLearning = await config().then(cfg => cfg.showLearning);
+
   return (
     <EmptyState>
       <EmptyStateHeader
@@ -44,7 +46,7 @@ export function EmptyStateNoTopics({
             {t("EmptyStateNoTopics.show_internal_topics")}
           </Button>
         </EmptyStateActions>
-        {isProductizedBuild && (
+        {showLearning && (
           <EmptyStateActions>
             <ExternalLink
               testId={"create-topic"}

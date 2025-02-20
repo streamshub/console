@@ -49,10 +49,6 @@ container-image-operator-push: container-image-operator
 container-image-ui:
 	cd ui && \
 	npm ci --omit=dev && \
-	export BACKEND_URL=http://example && \
-	export NEXTAUTH_SECRET=examplesecret && \
-	export LOG_LEVEL=info && \
-	export NEXT_PUBLIC_CONSOLE_MODE=read-only && \
 	npm run build && \
 	cd $(CURDIR) && \
 	$(CONTAINER_RUNTIME) build --platform=$(PLATFORMS) -t $(CONSOLE_UI_IMAGE) ./ui -f ./ui/Dockerfile

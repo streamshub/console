@@ -7,9 +7,9 @@ import {
   TopicsTableColumns,
 } from "@/components/TopicsTable/TopicsTable";
 import { useRouter } from "@/i18n/routing";
-import { isReadonly } from "@/utils/env";
+import { clientConfig as config } from "@/utils/config";
 import { useFilterParams } from "@/utils/useFilterParams";
-import { useOptimistic, useTransition } from "react";
+import { useEffect, useState, useOptimistic, useTransition } from "react";
 
 export type ConnectedTopicsTableProps = {
   topics: TopicList[] | undefined;
@@ -91,6 +91,14 @@ export function ConnectedTopicsTable({
       });
     });
   }
+
+  const [isReadOnly, setIsReadOnly] = useState(true);
+
+  useEffect(() => {
+    config().then(cfg => {
+      setIsReadOnly(cfg.readOnly);
+    })
+  }, []);
 
   return (
     <TopicsTable
@@ -192,7 +200,7 @@ export function ConnectedTopicsTable({
         });
       }}
       includeHidden={includeHidden}
-      isReadOnly={isReadonly}
+      isReadOnly={isReadOnly}
     />
   );
 }

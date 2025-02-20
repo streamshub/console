@@ -3,7 +3,7 @@ import { ApiResponse } from "@/api/api";
 import { getTopic, updateTopic } from "@/api/topics/actions";
 import { KafkaTopicParams } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/topics/kafkaTopic.params";
 import { PageSection } from "@/libs/patternfly/react-core";
-import { isReadonly } from "@/utils/env";
+import { clientConfig as config } from "@/utils/config";
 import { Suspense } from "react";
 import { ConfigTable } from "./ConfigTable";
 import { NoDataErrorState } from "@/components/NoDataErrorState";
@@ -47,8 +47,9 @@ async function ConnectedTopicConfiguration({
 
   async function onSaveProperty(name: string, value: string) {
     "use server";
+    const isReadOnly = (await config()).readOnly;
 
-    if (isReadonly) {
+    if (isReadOnly) {
       // silently ignore attempt to change a property value in read-only mode
       return Promise.resolve({ payload: undefined } as ApiResponse<undefined>);
     }

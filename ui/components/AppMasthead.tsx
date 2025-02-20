@@ -17,11 +17,11 @@ import { BarsIcon, QuestionCircleIcon } from "@/libs/patternfly/react-icons";
 import { FeedbackModal } from "@patternfly/react-user-feedback";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAppLayout } from "./AppLayoutProvider";
 import { UserDropdown } from "./UserDropdown";
 import Image from "next/image";
-import { isTechPreview } from "@/utils/env";
+import { clientConfig as config } from "@/utils/config";
 
 export function AppMasthead({
   username,
@@ -33,6 +33,14 @@ export function AppMasthead({
   const t = useTranslations();
   const { toggleSidebar } = useAppLayout();
   const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
+  const [isTechPreview, setIsTechPreview] = useState(false);
+
+  useEffect(() => {
+    config().then(cfg => {
+      setIsTechPreview(cfg.techPreview);
+    })
+  }, []);
+
   const openFeedbackModal = () => {
     setIsFeedbackModalOpen(true);
   };
