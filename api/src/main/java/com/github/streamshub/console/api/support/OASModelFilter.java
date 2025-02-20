@@ -28,6 +28,9 @@ import org.jboss.logging.Logger;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.streamshub.console.api.support.StringListParamConverterProvider.StringListParamConverter;
+import com.github.streamshub.console.config.ConsoleConfig;
+import com.github.streamshub.console.config.security.GlobalSecurityConfig;
+import com.github.streamshub.console.config.security.OidcConfig;
 
 import io.smallrye.openapi.api.util.FilterUtil;
 import io.smallrye.openapi.api.util.UnusedSchemaFilter;
@@ -118,11 +121,23 @@ public class OASModelFilter extends AbstractOperationFilter implements OASFilter
         // Prune any schemas no longer referenced
         FilterUtil.applyFilter(new UnusedSchemaFilter(), openAPI);
 
-        config.getOptionalValue("quarkus.oidc.auth-server-url", String.class)
-            .ifPresent(url -> Optional.of(openAPI.getComponents())
-                    .map(Components::getSecuritySchemes)
-                    .map(schemes -> schemes.get("ConsoleSecurity"))
-                    .ifPresent(scheme -> scheme.setOpenIdConnectUrl(url)));
+        try {
+            Optional.of(CDI.current().select(ConsoleConfig.class))
+                .filter(Instance::isResolvable)
+                .map(Instance::get)
+                .map(ConsoleConfig::getSecurity)
+                .map(GlobalSecurityConfig::getOidc)
+                .map(OidcConfig::getAuthServerUrl)
+                .filter(Objects::nonNull)
+                .ifPresent(oidcUrl -> Optional.of(openAPI.getComponents())
+                        .map(Components::getSecuritySchemes)
+                        .map(schemes -> schemes.get("ConsoleSecurity"))
+                        .ifPresent(scheme -> {
+                            scheme.setOpenIdConnectUrl(oidcUrl + "/.well-known/openid-configuration");
+                        }));
+        } catch (Exception e) {
+            LOGGER.warnf("Error retrieving OIDC URL", e.getMessage());
+        }
     }
 
     void maybeSaveReference(Schema schema, String propertyName) {
