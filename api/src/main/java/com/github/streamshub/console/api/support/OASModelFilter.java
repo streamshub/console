@@ -30,6 +30,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.streamshub.console.api.support.StringListParamConverterProvider.StringListParamConverter;
 import com.github.streamshub.console.config.ConsoleConfig;
 import com.github.streamshub.console.config.security.GlobalSecurityConfig;
+import com.github.streamshub.console.config.security.OidcConfig;
 
 import io.smallrye.openapi.api.util.FilterUtil;
 import io.smallrye.openapi.api.util.UnusedSchemaFilter;
@@ -119,27 +120,20 @@ public class OASModelFilter extends AbstractOperationFilter implements OASFilter
         openAPI.getComponents().setSchemas(new TreeMap<>(openAPI.getComponents().getSchemas()));
         // Prune any schemas no longer referenced
         FilterUtil.applyFilter(new UnusedSchemaFilter(), openAPI);
-        Optional<ConsoleConfig> consoleConfig = Optional.empty();
 
         try {
-            Instance<ConsoleConfig> configInstance = CDI.current().select(ConsoleConfig.class);
-
-            if (configInstance.isResolvable()) {
-                consoleConfig = Optional.of(configInstance.get());
-            }
-        } catch (Exception e) {
-            // Ignore, expected at build time where CDI may not be available
-        }
-
-        try {
-            consoleConfig.map(ConsoleConfig::getSecurity)
+            Optional.of(CDI.current().select(ConsoleConfig.class))
+                .filter(Instance::isResolvable)
+                .map(Instance::get)
+                .map(ConsoleConfig::getSecurity)
                 .map(GlobalSecurityConfig::getOidc)
-                .filter(oidc -> Objects.nonNull(oidc.getAuthServerUrl()))
-                .ifPresent(oidc -> Optional.of(openAPI.getComponents())
+                .map(OidcConfig::getAuthServerUrl)
+                .filter(Objects::nonNull)
+                .ifPresent(oidcUrl -> Optional.of(openAPI.getComponents())
                         .map(Components::getSecuritySchemes)
                         .map(schemes -> schemes.get("ConsoleSecurity"))
                         .ifPresent(scheme -> {
-                            scheme.setOpenIdConnectUrl(oidc.getAuthServerUrl() + "/.well-known/openid-configuration");
+                            scheme.setOpenIdConnectUrl(oidcUrl + "/.well-known/openid-configuration");
                         }));
         } catch (Exception e) {
             LOGGER.warnf("Error retrieving OIDC URL", e.getMessage());
