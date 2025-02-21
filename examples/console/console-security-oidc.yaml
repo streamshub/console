@@ -60,18 +60,20 @@ spec:
         rules:
           - resources:
               - kafkas
-          - resourceNames:
+            resourceNames:
               - dev-cluster-a
               - dev-cluster-b
-          - privileges:
-              - '*'
+            privileges:
+              - 'ALL'
       # administrators may operate on any (unspecified) Kafka clusters
       - name: administrators
         rules:
           - resources:
               - kafkas
-          - privileges:
-              - '*'
+            resourceNames:
+              - "*"
+            privileges:
+              - 'ALL'
 
   kafkaClusters:
     # Kafka cluster configuration.
@@ -94,9 +96,9 @@ spec:
                   - topics/records
                   - consumerGroups
                   - rebalances
-              - privileges:
-                  - get
-                  - list
+                privileges:
+                  - GET
+                  - LIST
 
           # administrators may list, view, and update an expanded set of resources
           - name: administrators
@@ -107,11 +109,11 @@ spec:
                   - consumerGroups
                   - rebalances
                   - nodes/configs
-              - privileges:
-                  - get
-                  - list
+                privileges:
+                  - GET
+                  - LIST
               - resources:
                   - consumerGroups
                   - rebalances
-              - privileges:
-                  - update
+                privileges:
+                  - UPDATE
