@@ -60,18 +60,20 @@ spec:
         rules:
           - resources:
               - kafkas
-          - resourceNames:
+            resourceNames:
               - dev-cluster-a
               - dev-cluster-b
-          - privileges:
-              - '*'
+            privileges:
+              - 'ALL'
       # administrators may operate on any (unspecified) Kafka clusters
       - name: administrators
         rules:
           - resources:
               - kafkas
-          - privileges:
-              - '*'
+            resourceNames:
+              - "*"
+            privileges:
+              - 'ALL'
 
   kafkaClusters:
     # Kafka cluster configuration.

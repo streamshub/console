@@ -18,10 +18,19 @@ spec:
 
   metricsSources:
     # Example metrics source using OpenShift's built-in monitoring.
-    # For `type: openshift-monitoring`, no additional attributes are required,
-    # but you can configure a truststore if needed (see console-openshift-metrics-self-signed-cluster-ca.yaml).
     - name: my-ocp-prometheus
       type: openshift-monitoring
+      # In case your OpenShift cluster uses self-signed CA you can pass kube-root-ca into
+      # console by setting trustStore configuration as follows. Console will inject
+      # the cert into it's truststore and then will be able to connected to internal Prometheus
+      # ConfigMap kube-root-ca.crt is available in every namespace on OpenShift cluster.
+      trustStore:
+        content:
+          valueFrom:
+            configMapKeyRef:
+              key: ca.crt
+              name: kube-root-ca.crt
+        type: PEM
 
   kafkaClusters:
     # Kafka cluster configuration.
