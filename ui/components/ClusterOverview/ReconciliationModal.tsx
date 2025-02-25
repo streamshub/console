@@ -7,15 +7,21 @@ export function ReconciliationModal({
   isModalOpen,
   onClickClose,
   onClickPauseReconciliation,
+  isReconciliationPaused,
 }: {
   isModalOpen: boolean;
   onClickClose: () => void;
   onClickPauseReconciliation: () => void;
+  isReconciliationPaused: boolean;
 }) {
   const t = useTranslations();
   return (
     <Modal
-      title={t("reconciliation.pause_reconciliation")}
+      title={
+        isReconciliationPaused
+          ? t("reconciliation.resume_cluster_reconciliation")
+          : t("reconciliation.pause_reconciliation")
+      }
       isOpen={isModalOpen}
       variant={ModalVariant.medium}
       onClose={onClickClose}
@@ -32,7 +38,9 @@ export function ReconciliationModal({
         </Button>,
       ]}
     >
-      {t("reconciliation.pause_reconciliation_description")}
+      {isReconciliationPaused
+        ? t("reconciliation.resume_cluster_reconciliation_description")
+        : t("reconciliation.pause_reconciliation_description")}
     </Modal>
   );
 }
