@@ -24,6 +24,13 @@ export function ReconciliationModal({
       }
       isOpen={isModalOpen}
       variant={ModalVariant.medium}
+      description={
+        isReconciliationPaused ? (
+          <></>
+        ) : (
+          t("reconciliation.pause_reconciliation_description")
+        )
+      }
       onClose={onClickClose}
       actions={[
         <Button
@@ -40,7 +47,7 @@ export function ReconciliationModal({
     >
       {isReconciliationPaused
         ? t("reconciliation.resume_cluster_reconciliation_description")
-        : t("reconciliation.pause_reconciliation_description")}
+        : t("reconciliation.pause_reconciliation_text")}
     </Modal>
   );
 }

@@ -368,7 +368,8 @@
   "reconciliation": {
     "pause_reconciliation_button": "Pause Reconciliation",
     "pause_reconciliation": "Pause cluster reconciliation?",
-    "pause_reconciliation_description": "While paused, any changes to the cluster configuration will be ignored until reconciliation is resumed",
+    "pause_reconciliation_description": "Pausing reconciliation stops the operator from making changes to the Kafka cluster temporarily. Use this for safe configuration changes, maintenance, or debugging.",
+    "pause_reconciliation_text": "While paused, updates to the cluster are ignored until reconciliation is resumed.",
     "resume_cluster_reconciliation": "Resume cluster reconciliation?",
     "resume_cluster_reconciliation_description": "While resumed, the changes to the cluster configuration will be saved.",
     "confirm": "Confirm",
