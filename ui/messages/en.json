@@ -371,7 +371,7 @@
     "pause_reconciliation_description": "Pausing reconciliation stops the operator from making changes to the Kafka cluster temporarily. Use this for safe configuration changes, maintenance, or debugging.",
     "pause_reconciliation_text": "While paused, updates to the cluster are ignored until reconciliation is resumed.",
     "resume_cluster_reconciliation": "Resume cluster reconciliation?",
-    "resume_cluster_reconciliation_description": "While resumed, the changes to the cluster configuration will be saved.",
+    "resume_cluster_reconciliation_description": "Resuming reconciliation re-enables operator management of the Kafka cluster. The operator reverts any changes made to the cluster while reconciliation was paused.",
     "confirm": "Confirm",
     "cancel": "Cancel",
     "reconciliation_paused_warning": "Reconciliation paused. Make sure to fetch the last transition time.",
