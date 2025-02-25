@@ -5,8 +5,58 @@ import { Link } from "@/i18n/routing";
 import { Truncate } from "@patternfly/react-core";
 import { TableVariant } from "@patternfly/react-table";
 import { useTranslations } from "next-intl";
+import { ReactNode } from "react";
+import { Icon } from "@/libs/patternfly/react-core";
+import {
+  CheckCircleIcon,
+  ExclamationCircleIcon,
+  ExclamationTriangleIcon,
+} from "@/libs/patternfly/react-icons";
+import { TopicStatus } from "@/api/topics/schema";
 
-export const TopicsTableColumns = ["name", "cluster"] as const;
+export const TopicsTableColumns = ["name", "status"] as const;
+const StatusLabel: Record<TopicStatus, ReactNode> = {
+  FullyReplicated: (
+    <>
+      <Icon status={"success"}>
+        <CheckCircleIcon />
+      </Icon>
+      &nbsp;Fully replicated
+    </>
+  ),
+  UnderReplicated: (
+    <>
+      <Icon status={"warning"}>
+        <ExclamationTriangleIcon />
+      </Icon>
+      &nbsp;Under replicated
+    </>
+  ),
+  PartiallyOffline: (
+    <>
+      <Icon status={"warning"}>
+        <ExclamationTriangleIcon />
+      </Icon>
+      &nbsp;Partially offline
+    </>
+  ),
+  Unknown: (
+    <>
+      <Icon status={"warning"}>
+        <ExclamationTriangleIcon />
+      </Icon>
+      &nbsp;Unknown
+    </>
+  ),
+  Offline: (
+    <>
+      <Icon status={"danger"}>
+        <ExclamationCircleIcon />
+      </Icon>
+      &nbsp;Offline
+    </>
+  ),
+};
 
 export type TopicsTableProps = {
   topics: ViewedTopic[] | undefined;
@@ -28,10 +78,10 @@ export function TopicsTable({ topics }: TopicsTableProps) {
                 {t("recently_viewed_topics.topic_name")}
               </Th>
             );
-          case "cluster":
+          case "status":
             return (
-              <Th key={key} dataLabel={"Cluster"}>
-                {t("recently_viewed_topics.cluster")}
+              <Th key={key} dataLabel={"Status"}>
+                {t("recently_viewed_topics.topic_status")}
               </Th>
             );
         }
@@ -46,10 +96,10 @@ export function TopicsTable({ topics }: TopicsTableProps) {
                 </Link>
               </Td>
             );
-          case "cluster":
+          case "status":
             return (
-              <Td key={key} dataLabel={"Cluster"}>
-                <Link href={`/kafka/${row.kafkaId}`}>{row.kafkaName}</Link>
+              <Td key={key} dataLabel={"Status"}>
+                {StatusLabel[row.topicStatus!]}
               </Td>
             );
         }
