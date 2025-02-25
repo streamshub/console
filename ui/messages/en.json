@@ -369,6 +369,8 @@
     "pause_reconciliation_button": "Pause Reconciliation",
     "pause_reconciliation": "Pause cluster reconciliation?",
     "pause_reconciliation_description": "While paused, any changes to the cluster configuration will be ignored until reconciliation is resumed",
+    "resume_cluster_reconciliation": "Resume cluster reconciliation?",
+    "resume_cluster_reconciliation_description": "While resumed, the changes to the cluster configuration will be saved.",
     "confirm": "Confirm",
     "cancel": "Cancel",
     "reconciliation_paused_warning": "Reconciliation paused. Make sure to fetch the last transition time.",
