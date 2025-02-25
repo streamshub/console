@@ -42,11 +42,7 @@ export function ReconciliationPauseButton({
         <Button
           variant="link"
           icon={isReconciliationPaused ? <PlayIcon /> : <PauseCircleIcon />}
-          onClick={
-            isReconciliationPaused
-              ? () => onClickUpdate(false)
-              : () => setIsModalOpen(true)
-          }
+          onClick={() => setIsModalOpen(true)}
         >
           {isReconciliationPaused
             ? t("reconciliation.resume_reconciliation")
@@ -57,7 +53,12 @@ export function ReconciliationPauseButton({
         <ReconciliationModal
           isModalOpen={isModalOpen}
           onClickClose={() => setIsModalOpen(false)}
-          onClickPauseReconciliation={() => onClickUpdate(true)}
+          onClickPauseReconciliation={
+            isReconciliationPaused
+              ? () => onClickUpdate(false)
+              : () => onClickUpdate(true)
+          }
+          isReconciliationPaused={isReconciliationPaused}
         />
       )}
     </>
