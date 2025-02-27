@@ -3,14 +3,13 @@
 import { Number } from "@/components/Format/Number";
 import { ResponsiveTable } from "@/components/Table";
 import {
-  ChartDonutThreshold,
   ChartDonutUtilization,
 } from "@/libs/patternfly/react-charts";
 import {
   ClipboardCopy,
-  Divider,
   Flex,
   FlexItem,
+  Label,
   Text,
   TextContent,
   Tooltip,
@@ -34,7 +33,7 @@ export type NodeStatus = {
 };
 
 export type Node = {
-  id: number;
+  id: string;
   nodePool: string;
   roles: string[];
   isLeader: boolean;
@@ -46,6 +45,7 @@ export type Node = {
   hostname?: string;
   diskCapacity?: number;
   diskUsage?: number;
+  kafkaVersion?: string;
 };
 
 export function NodesTable({ nodes }: { nodes: Node[] }) {
@@ -102,41 +102,48 @@ export function NodesTable({ nodes }: { nodes: Node[] }) {
             return (
               <Td key={key} dataLabel={"Node ID"}>
                 <Link href={`nodes/${row.id}`}>{row.id}</Link>
+                {row.isLeader && (
+                  <Label
+                      isCompact={true}
+                      color={"green"}
+                      className={"pf-v5-u-ml-sm"}
+                    >
+                      Leader
+                  </Label>
+                )}
               </Td>
             );
           case "roles":
             return (
               <Td key={key} dataLabel={"Roles"}>
-                {row.roles.join(", ")}
+                {
+                    row.roles.map((role, _) => {
+                        return <div key={role}>{role}</div>;
+                    })
+                }
               </Td>
             );
           case "status":
             return (
               <Td key={key} dataLabel={"Status"}>
-                <Flex>
-                { row.brokerStatus &&
-                  <Flex>
-                  Broker:&nbsp;
-                  <Icon status={row.brokerStatus.stable ? "success" : "warning"}>
-                    {row.brokerStatus.stable ? <CheckCircleIcon /> : <ExclamationCircleIcon />}
-                  </Icon>
-                  &nbsp;
-                  {row.brokerStatus?.description}
-                  </Flex>
-                }
-                { row.controllerStatus && row.brokerStatus &&
-                  <Divider orientation={{ default: "horizontal", sm: "horizontal" }} /> }
                 { row.controllerStatus &&
-                  <Flex>
-                  Controller:&nbsp;
+                  <div>
                   <Icon status={row.controllerStatus.stable ? "success" : "warning"}>
                     {row.controllerStatus.stable ? <CheckCircleIcon /> : <ExclamationCircleIcon />}
                   </Icon>
                   &nbsp;
                   {row.controllerStatus?.description}
-                  </Flex>
+                  </div>
                 }
-                </Flex>
+                { row.brokerStatus &&
+                  <div>
+                  <Icon status={row.brokerStatus.stable ? "success" : "warning"}>
+                    {row.brokerStatus.stable ? <CheckCircleIcon /> : <ExclamationCircleIcon />}
+                  </Icon>
+                  &nbsp;
+                  {row.brokerStatus?.description}
+                  </div>
+                }
               </Td>
             );
           case "replicas":
@@ -194,9 +201,9 @@ export function NodesTable({ nodes }: { nodes: Node[] }) {
                   {t.rich("nodes.disk_usage")}
                 </Text>
               </TextContent>
-              <div style={{ width: 350, height: 200 }}>
+              <div>
                 {usedCapacity !== undefined && (
-                    <div style={{  height: '230px', width: '435px' }}>
+                    <div style={{ height: '300px', width: '230px' }}>
                     <ChartDonutUtilization
                         data={{
                           x: "Used capacity",
@@ -214,10 +221,11 @@ export function NodesTable({ nodes }: { nodes: Node[] }) {
                           { name: `Available: ${formatBytes(row.diskCapacity! - row.diskUsage!)}` },
                         ]}
                         legendOrientation="vertical"
+                        legendPosition="bottom"
                         padding={{
-                            bottom: 20,
+                            bottom: 75, // Adjusted to accommodate legend
                             left: 20,
-                            right: 225, // Adjusted to accommodate legend
+                            right: 20,
                             top: 20
                           }}
                         title={`${format.number(usedCapacity, {
@@ -226,10 +234,21 @@ export function NodesTable({ nodes }: { nodes: Node[] }) {
                         )}`}
                         subTitle={`of ${formatBytes(row.diskCapacity!)}`}
                         thresholds={[{ value: 60 }, { value: 90 }]}
-                        width={435}
+                        height={300}
+                        width={230}
                       />
                     </div>
                   )}
+              </div>
+            </FlexItem>
+            <FlexItem>
+              <TextContent>
+                <Text>
+                  {t.rich("nodes.kafka_version")}
+                </Text>
+              </TextContent>
+              <div>
+                {row.kafkaVersion ?? "Unknown"}
               </div>
             </FlexItem>
           </Flex>

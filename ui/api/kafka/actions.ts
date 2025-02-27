@@ -1,6 +1,6 @@
 "use server";
 
-import { fetchData, patchData, ApiResponse, getHeaders } from "@/api/api";
+import { fetchData, patchData, ApiResponse } from "@/api/api";
 import {
   ClusterDetail,
   ClusterList,
@@ -38,7 +38,7 @@ export async function getKafkaCluster(
     `/api/kafkas/${clusterId}`,
     new URLSearchParams({
       "fields[kafkas]": params?.fields ??
-        "name,namespace,creationTimestamp,status,kafkaVersion,nodes,controller,listeners,conditions,nodePools,cruiseControlEnabled",
+        "name,namespace,creationTimestamp,status,kafkaVersion,nodes,listeners,conditions,nodePools,cruiseControlEnabled",
     }),
     (rawData: any) => ClusterResponse.parse(rawData).data,
     undefined,

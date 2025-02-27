@@ -1,5 +1,5 @@
 import { ApiErrorSchema } from "@/api/api";
-import { NodeSchema } from "@/api/kafka/schema";
+import { NodeSchema } from "@/api/nodes/schema";
 import { z } from "zod";
 
 const ConsumerGroupStateSchema = z.union([

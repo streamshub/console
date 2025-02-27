@@ -3,18 +3,13 @@ package com.github.streamshub.console.api.service;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
-import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
@@ -24,28 +19,26 @@ import java.util.stream.Stream;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import jakarta.inject.Named;
 import jakarta.ws.rs.BadRequestException;
 
 import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.clients.admin.DescribeClusterOptions;
 import org.apache.kafka.clients.admin.DescribeClusterResult;
-import org.apache.kafka.clients.admin.DescribeMetadataQuorumResult;
-import org.apache.kafka.common.KafkaFuture;
-import org.apache.kafka.common.errors.UnsupportedVersionException;
+import org.apache.kafka.clients.admin.QuorumInfo;
 import org.eclipse.microprofile.context.ThreadContext;
 import org.jboss.logging.Logger;
 
 import com.github.streamshub.console.api.Annotations;
 import com.github.streamshub.console.api.ClientFactory;
 import com.github.streamshub.console.api.model.Condition;
+import com.github.streamshub.console.api.model.Identifier;
 import com.github.streamshub.console.api.model.KafkaCluster;
 import com.github.streamshub.console.api.model.KafkaListener;
-import com.github.streamshub.console.api.model.Node;
 import com.github.streamshub.console.api.security.PermissionService;
 import com.github.streamshub.console.api.support.Holder;
 import com.github.streamshub.console.api.support.KafkaContext;
 import com.github.streamshub.console.api.support.ListRequestContext;
+import com.github.streamshub.console.api.support.MetadataQuorumSupport;
 import com.github.streamshub.console.config.ConsoleConfig;
 import com.github.streamshub.console.config.security.Privilege;
 
@@ -62,7 +55,6 @@ import io.strimzi.api.kafka.model.kafka.listener.GenericKafkaListenerConfigurati
 import io.strimzi.api.kafka.model.kafka.listener.KafkaListenerAuthentication;
 import io.strimzi.api.kafka.model.kafka.listener.KafkaListenerType;
 import io.strimzi.api.kafka.model.kafka.listener.ListenerStatus;
-import io.strimzi.api.kafka.model.nodepool.KafkaNodePool;
 
 import static com.github.streamshub.console.api.BlockingSupplier.get;
 
@@ -95,6 +87,9 @@ public class KafkaClusterService {
     MetricsService metricsService;
 
     @Inject
+    NodeService nodeService;
+
+    @Inject
     /**
      * All Kafka contexts known to the application
      */
@@ -108,23 +103,10 @@ public class KafkaClusterService {
     KafkaContext kafkaContext;
 
     @Inject
-    @Named("KafkaNodePools")
-    // Keys: namespace -> cluster name -> pool name
-    Map<String, Map<String, Map<String, KafkaNodePool>>> nodePools;
-
-    @Inject
     PermissionService permissionService;
 
     boolean listUnconfigured = false;
     Predicate<KafkaCluster> includeAll = k -> listUnconfigured;
-
-    /**
-     * Used to model the roles assigned to each pool in
-     * {@linkplain KafkaClusterService#nodePools nodePools}.
-     */
-    private record PoolRoles(String poolName, Set<Node.Role> roles) {
-        static final PoolRoles NO_POOL = new PoolRoles(null, null);
-    }
 
     public List<KafkaCluster> listClusters(ListRequestContext<KafkaCluster> listSupport) {
         List<KafkaCluster> kafkaResources = kafkaResources()
@@ -169,76 +151,31 @@ public class KafkaClusterService {
         DescribeClusterOptions options = new DescribeClusterOptions()
                 .includeAuthorizedOperations(fields.contains(KafkaCluster.Fields.AUTHORIZED_OPERATIONS));
         var clusterResult = adminClient.describeCluster(options);
-        var quorumResult = adminClient.describeMetadataQuorum();
+        var quorumResult = MetadataQuorumSupport.quorumInfo(adminClient.describeMetadataQuorum());
 
-        return KafkaFuture.allOf(
-                clusterResult.authorizedOperations(),
-                clusterResult.clusterId(),
-                clusterResult.nodes(),
-                quorumResult.quorumInfo())
-            .toCompletionStage()
-            .thenApplyAsync(nothing -> new KafkaCluster(
-                        get(clusterResult::clusterId),
-                        mapNodes(clusterResult, quorumResult),
-                        enumNames(get(clusterResult::authorizedOperations))),
-                    threadContext.currentContextExecutor())
+        return CompletableFuture.allOf(
+                clusterResult.authorizedOperations().toCompletionStage().toCompletableFuture(),
+                clusterResult.clusterId().toCompletionStage().toCompletableFuture(),
+                clusterResult.nodes().toCompletionStage().toCompletableFuture(),
+                quorumResult)
+            .thenApply(nothing -> new KafkaCluster(get(clusterResult::clusterId), enumNames(get(clusterResult::authorizedOperations))))
+            .thenComposeAsync(cluster -> addNodes(cluster, clusterResult, quorumResult), threadContext.currentContextExecutor())
             .thenApplyAsync(this::addKafkaContextData, threadContext.currentContextExecutor())
             .thenApply(this::addKafkaResourceData)
             .thenCompose(cluster -> addMetrics(cluster, fields))
             .thenApply(this::setManaged);
     }
 
-    private List<Node> mapNodes(DescribeClusterResult clusterResult, DescribeMetadataQuorumResult quorumResult) {
-        Map<Integer, Node.MetadataState> metadataStates = new IdentityHashMap<>();
-
-        try {
-            var quorum = get(quorumResult::quorumInfo);
-            int leaderId = quorum.leaderId();
-            var leader = quorum.voters().stream().filter(r -> r.replicaId() == leaderId).findFirst().get();
-
-            for (var r : quorum.voters()) {
-                int id = r.replicaId();
-                long logEndOffset = r.logEndOffset();
-                long lag = leader.logEndOffset() - logEndOffset;
-                var status = (id == leaderId) ? Node.MetadataStatus.LEADER : Node.MetadataStatus.FOLLOWER;
-                metadataStates.put(id, new Node.MetadataState(status, logEndOffset, lag));
-            }
-
-            for (var r : quorum.observers()) {
-                int id = r.replicaId();
-                long logEndOffset = r.logEndOffset();
-                long lag = leader.logEndOffset() - logEndOffset;
-                metadataStates.put(id, new Node.MetadataState(Node.MetadataStatus.OBSERVER, logEndOffset, lag));
-            }
-        } catch (UnsupportedVersionException e) {
-
-        }
-
-        Map<Integer, PoolRoles> nodePoolRoles = nodePoolRoles();
-        Map<Integer, Node> nodes = new TreeMap<>();
-
-        for (var node : get(clusterResult::nodes)) {
-            PoolRoles poolRoles = nodePoolRoles.getOrDefault(node.id(), PoolRoles.NO_POOL);
-
-            nodes.put(node.id(), Node.fromKafkaModel(
-                    node,
-                    poolRoles.poolName(),
-                    poolRoles.roles(),
-                    metadataStates.get(node.id())));
-        }
-
-        metadataStates.entrySet().stream().filter(ms -> !nodes.containsKey(ms.getKey())).forEach(ms -> {
-            int nodeId = ms.getKey();
-            PoolRoles poolRoles = nodePoolRoles.getOrDefault(nodeId, PoolRoles.NO_POOL);
-
-            nodes.put(nodeId, Node.fromMetadataState(
-                    nodeId,
-                    poolRoles.poolName(),
-                    poolRoles.roles(),
-                    ms.getValue()));
-        });
-
-        return new ArrayList<>(nodes.values());
+    private CompletionStage<KafkaCluster> addNodes(KafkaCluster cluster, DescribeClusterResult clusterResult, CompletableFuture<QuorumInfo> quorumResult) {
+        return nodeService.getNodes(clusterResult, quorumResult)
+            .thenAccept(nodes -> {
+                var identifiers = nodes.stream().map(n -> new Identifier("nodes", n.getId())).toList();
+                var nodesRelationship = cluster.nodes();
+                nodesRelationship.data().addAll(identifiers);
+                nodesRelationship.addMeta("summary", nodeService.summarize(nodes));
+                nodesRelationship.addMeta("count", identifiers.size());
+            })
+            .thenApply(nothing -> cluster);
     }
 
     public KafkaCluster patchCluster(KafkaCluster cluster) {
@@ -403,7 +340,6 @@ public class KafkaClusterService {
         return cluster;
     }
 
-
     CompletionStage<KafkaCluster> addMetrics(KafkaCluster cluster, List<String> fields) {
         if (!fields.contains(KafkaCluster.Fields.METRICS)) {
             return CompletableFuture.completedStage(cluster);
@@ -456,28 +392,6 @@ public class KafkaClusterService {
                     .stream()
                     .filter(Predicate.not(k -> annotatedKafka(k, Annotations.CONSOLE_HIDDEN))))
                 .orElseGet(Stream::empty);
-    }
-
-    private Map<Integer, PoolRoles> nodePoolRoles() {
-        return Optional.ofNullable(kafkaContext.resource())
-                .map(Kafka::getMetadata)
-                .flatMap(kafkaMeta -> Optional.ofNullable(nodePools.get(kafkaMeta.getNamespace()))
-                        .map(clustersInNamespace -> clustersInNamespace.get(kafkaMeta.getName()))
-                        .map(poolsInCluster -> poolsInCluster.values()))
-                .orElseGet(Collections::emptyList)
-                .stream()
-                .flatMap(nodePool -> {
-                    return nodePool.getStatus().getNodeIds().stream().map(nodeId -> {
-                        Map.Entry<Integer, PoolRoles> entry;
-                        entry = Map.entry(
-                                nodeId,
-                                new PoolRoles(
-                                        nodePool.getMetadata().getName(),
-                                        nodePool.getSpec().getRoles().stream().map(r -> Node.Role.valueOf(r.name())).collect(Collectors.toSet())));
-                        return entry;
-                    });
-                })
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
     static int listenerSortKey(GenericKafkaListener listener, Annotations listenerAnnotation) {
