@@ -374,7 +374,7 @@
     "resume_cluster_reconciliation_description": "Resuming reconciliation re-enables operator management of the Kafka cluster. The operator reverts any changes made to the cluster while reconciliation was paused.",
     "confirm": "Confirm",
     "cancel": "Cancel",
-    "reconciliation_paused_warning": "Reconciliation paused. Make sure to fetch the last transition time.",
+    "reconciliation_paused_warning": "Cluster reconciliation paused. Changes to the Kafka resource will not be applied",
     "resume": "Resume",
     "reconciliation_paused": "Reconciliation paused",
     "resume_reconciliation": "Resume Reconciliation"
