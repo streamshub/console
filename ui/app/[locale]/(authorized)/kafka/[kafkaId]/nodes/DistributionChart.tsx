@@ -47,11 +47,11 @@ export function DistributionChart({
   const getCount = (nodeData: { leaders?: number; followers?: number }) => {
     switch (filter) {
       case "leaders":
-        return nodeData.leaders ?? 0;
+        return nodeData.leaders;
       case "followers":
-        return nodeData.followers ?? 0;
+        return nodeData.followers;
       default:
-        return (nodeData.leaders ?? 0) + (nodeData.followers ?? 0);
+        return (nodeData.leaders && nodeData.followers) ? (nodeData.leaders) + (nodeData.followers) : undefined;
     }
   };
 
@@ -143,8 +143,11 @@ export function DistributionChart({
                 orientation={"horizontal"}
                 data={Object.keys(data).map((node) => {
                   const count = getCount(data[node]);
-                  const percentage = getPercentage(count);
-                  return { name: t("DistributionChart.broker_node_count", { node, count, percentage }) };
+                  if (count) {
+                    const percentage = getPercentage(count);
+                    return { name: t("DistributionChart.broker_node_count", { node, count, percentage }) };
+                  }
+                  return { name: t("DistributionChart.broker_node_count_missing", { node }) };
                 })}
                 itemsPerRow={width > 600 ? 3 : 1}
               />
@@ -175,7 +178,7 @@ export function DistributionChart({
                     {
                       name: `Broker ${node}`,
                       x: "x",
-                      y: getCount(data),
+                      y: getCount(data) ?? 0,
                     },
                   ]}
                 />

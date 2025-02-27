@@ -30,7 +30,7 @@ async function ConnectedHeader({ params }: { params: KafkaParams }) {
   const cluster = (await getKafkaCluster(params.kafkaId))?.payload;
   return (
     <Header
-      total={cluster?.attributes.nodes.length || 0}
+      total={cluster?.relationships.nodes?.meta?.count || 0}
       kafkaId={cluster?.id}
       cruiseControlEnable={cluster?.attributes.cruiseControlEnabled || false}
     />

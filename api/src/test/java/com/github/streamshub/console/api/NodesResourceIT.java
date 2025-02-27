@@ -34,9 +34,9 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 
 @QuarkusTest
-@TestHTTPEndpoint(BrokersResource.class)
+@TestHTTPEndpoint(NodesResource.class)
 @TestProfile(TestPlainProfile.class)
-class BrokersResourceIT {
+class NodesResourceIT {
 
     @Inject
     Config config;

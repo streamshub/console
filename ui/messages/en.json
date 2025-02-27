@@ -85,8 +85,9 @@
     "rack": "Rack",
     "replicas_tooltip": "The overall count of partition replicas hosted by the broker. Replicas provide fault tolerance and data availability.",
     "rack_tooltip": "Represents the ID of the rack or datacenter in which the broker resides.",
-    "host_name": "<b>Broker host name</b>",
-    "disk_usage": "<b>Node disk usage</b>"
+    "host_name": "<b>Node host name</b>",
+    "disk_usage": "<b>Node disk usage</b>",
+    "kafka_version": "<b>Kafka version</b>"
   },
   "node-config-table": {
     "no_results_title": "No properties found",
@@ -502,7 +503,8 @@
     "broker_node_voronoi_all": "{name} total partitions: {value}",
     "broker_node_voronoi_leaders": "{name} leaders: {value}",
     "broker_node_voronoi_followers": "{name} followers: {value}",
-    "broker_node_count": "Broker {node}: {count} partitions ({percentage}%)"
+    "broker_node_count": "Broker {node}: {count} partitions ({percentage}%)",
+    "broker_node_count_missing": "Broker {node}: unknown"
   },
   "EmptyStateNoTopics": {
     "to_get_started_create_your_first_topic": "To get started, create your first topic",

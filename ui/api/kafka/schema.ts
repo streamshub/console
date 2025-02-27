@@ -1,21 +1,5 @@
 import { z } from "zod";
 
-export const NodeSchema = z.object({
-  id: z.number(),
-  host: z.string().optional(),
-  port: z.number().optional(),
-  rack: z.string().optional(),
-  nodePool: z.string().optional(),
-  roles: z.array(z.enum([ "controller", "broker" ])).optional(),
-  metadataState: z.object({
-    status: z.enum([ "leader", "follower", "observer" ]),
-    logEndOffset: z.number(),
-    lag: z.number(),
-  }).optional(),
-});
-
-export type KafkaNode = z.infer<typeof NodeSchema>;
-
 export const ClusterListSchema = z.object({
   id: z.string(),
   type: z.literal("kafkas"),
@@ -65,7 +49,6 @@ const ClusterDetailSchema = z.object({
     creationTimestamp: z.string().nullable().optional(),
     status: z.string().nullable().optional(),
     kafkaVersion: z.string().nullable().optional(),
-    nodes: z.array(NodeSchema),
     authorizedOperations: z.array(z.string()).optional(),
     cruiseControlEnabled: z.boolean().optional(),
     listeners: z
@@ -111,6 +94,12 @@ const ClusterDetailSchema = z.object({
       })
       .optional()
       .nullable(),
+  }),
+  relationships: z.object({
+    nodes: z.object({
+      meta: z.record(z.any()).optional(),
+      data: z.array(z.any()),
+    }).optional(),
   }),
 });
 
