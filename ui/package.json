@@ -15,7 +15,7 @@
   },
   "dependencies": {
     "@patternfly/patternfly": "^5.4.2",
-    "@patternfly/quickstarts": "^5.4.2",
+    "@patternfly/quickstarts": "^5.4.3",
     "@patternfly/react-charts": "^7.4.9",
     "@patternfly/react-core": "^5.4.14",
     "@patternfly/react-drag-drop": "^5.4.15",
