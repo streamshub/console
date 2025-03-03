@@ -8,6 +8,9 @@ import org.apache.kafka.common.errors.UnsupportedVersionException;
 
 public class MetadataQuorumSupport {
 
+    private MetadataQuorumSupport() {
+    }
+
     /**
      * Converts a {@code DescribeMetadataQuorumResult} to
      * {@code CompletableFuture<QuorumInfo>}. If the describe metadata quorum

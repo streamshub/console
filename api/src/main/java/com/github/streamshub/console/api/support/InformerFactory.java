@@ -94,9 +94,9 @@ public class InformerFactory {
     }
 
     /**
-     * Close the KafkaTopic informer used to update the topics map being disposed.
+     * Close the KafkaNodePool informer used to update the node pool map being disposed.
      *
-     * @param topics map of KafkaTopics being disposed.
+     * @param nodePools map of KafkaNodePools being disposed.
      */
     void disposeKafkaNodePools(@Disposes Map<String, Map<String, Map<String, KafkaNodePool>>> nodePools) {
         if (kafkaNodePoolInformer != null) {
@@ -115,7 +115,7 @@ public class InformerFactory {
         }
     }
 
-    private static abstract class EventHandler<T extends HasMetadata> implements ResourceEventHandler<T> {
+    private abstract static class EventHandler<T extends HasMetadata> implements ResourceEventHandler<T> {
         Map<String, Map<String, Map<String, T>>> items;
 
         EventHandler(Map<String, Map<String, Map<String, T>>> items) {

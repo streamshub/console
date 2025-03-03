@@ -63,23 +63,26 @@ public class Node extends Resource<Node.Attributes> {
         static final Comparator<Node> ID_COMPARATOR =
                 comparing(Node::numericId, nullsLast(Integer::compareTo));
 
+        /**
+         * Calculate rank for for sorting instances of the set.
+         * 1. Controllers
+         * 2. Dual-role
+         * 3. Brokers
+         */
+        static final int rank(Set<Role> roles) {
+            if (roles.size() == 2) {
+                return 2;
+            }
+            return roles.contains(Role.CONTROLLER) ? 1 : 3;
+        }
+
         static final Map<String, Map<Boolean, Comparator<Node>>> COMPARATORS =
                 ComparatorBuilder.bidirectional(
                         Map.of("id", ID_COMPARATOR,
                                 NODE_POOL, comparing(Node::nodePool, nullsLast(String::compareTo)),
                                 RACK, comparing(Node::rack, nullsLast(String::compareTo)),
                                 STATUS, comparing(Node::status, nullsLast(String::compareTo)),
-                                ROLES, comparing(Node::roles, nullsLast((r1, r2) -> {
-                                    /*
-                                     * Ranking
-                                     * 1. Controllers
-                                     * 2. Dual-role
-                                     * 3. Brokers
-                                     */
-                                    int rank1 = r1.size() == 2 ? 2 : (r1.contains(Role.CONTROLLER) ? 1 : 3);
-                                    int rank2 = r2.size() == 2 ? 2 : (r2.contains(Role.CONTROLLER) ? 1 : 3);
-                                    return Integer.compare(rank1, rank2);
-                                }))
+                                ROLES, comparing(Node::roles, nullsLast((r1, r2) -> Integer.compare(rank(r1), rank(r2))))
                         )
                 );
 
@@ -194,15 +197,11 @@ public class Node extends Resource<Node.Attributes> {
         public String status() {
             String status = "Ready";
 
-            if (broker != null) {
-                if (broker.status() != BrokerStatus.RUNNING) {
-                    status = "Warning";
-                }
+            if (broker != null && broker.status() != BrokerStatus.RUNNING) {
+                status = "Warning";
             }
-            if (controller != null) {
-                if (controller.status() == ControllerStatus.FOLLOWER_LAGGED) {
-                    status = "Warning";
-                }
+            if (controller != null && controller.status() == ControllerStatus.FOLLOWER_LAGGED) {
+                status = "Warning";
             }
 
             return status;
