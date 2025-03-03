@@ -123,7 +123,7 @@ public class FetchFilterPredicate<B, F> implements Predicate<B> {
 
         switch (operator) {
             case IN_LIST: {
-                if (field instanceof Collection values) {
+                if (field instanceof Collection<?> values) {
                     /*
                      * Here we treat any intersection of the bean collection property
                      * and the operands as true.
