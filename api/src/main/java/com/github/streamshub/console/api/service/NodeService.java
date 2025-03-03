@@ -20,6 +20,7 @@ import java.util.stream.Collectors;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.inject.Named;
+import jakarta.ws.rs.NotFoundException;
 
 import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.clients.admin.DescribeClusterResult;
@@ -118,7 +119,17 @@ public class NodeService {
     }
 
     public CompletionStage<Map<String, ConfigEntry>> describeConfigs(String nodeId) {
-        return configService.describeConfigs(ConfigResource.Type.BROKER, nodeId);
+        return kafkaContext.admin().describeCluster().nodes()
+            .thenApply(nodes -> {
+                if (nodes.stream().map(n -> String.valueOf(n.id())).noneMatch(nodeId::equals)) {
+                    throw new NotFoundException("No such node: " + nodeId);
+                }
+                return null;
+            })
+            .toCompletionStage()
+            .thenComposeAsync(
+                    nothing -> configService.describeConfigs(ConfigResource.Type.BROKER, nodeId),
+                    threadContext.currentContextExecutor());
     }
 
     Map<String, Object> summarize(List<Node> nodes) {

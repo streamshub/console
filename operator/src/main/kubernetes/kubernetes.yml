@@ -210,6 +210,15 @@ rules:
       - kafkas
       - kafkarebalances
 
+  # Granted to console API for listing pods to obtain the Kafka version annotation set by Strimzi
+  - verbs:
+      - get
+      - list
+    apiGroups:
+      - ""
+    resources:
+      - pods
+
   # Granted to Console instances when using OpenShift Monitoring. These rules
   # match the rules declared by ClusterRule `cluster-monitoring-view`, which is the role
   # actually bound to the console instance's service account in the ClusterRoleBinding

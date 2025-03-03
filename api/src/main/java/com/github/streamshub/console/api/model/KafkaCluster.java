@@ -180,6 +180,7 @@ public class KafkaCluster extends RelatableResource<KafkaCluster.Attributes, Kaf
         @JsonProperty
         Metrics metrics = new Metrics();
 
+        @JsonCreator
         Attributes(List<String> authorizedOperations) {
             this.authorizedOperations = authorizedOperations;
         }
