@@ -11,6 +11,7 @@ rules:
       - kafka.strimzi.io
     resources:
       - kafkas
+      - kafkanodepools
       - kafkarebalances
       - kafkatopics
   - verbs:
@@ -20,3 +21,10 @@ rules:
     resources:
       - kafkas
       - kafkarebalances
+  - verbs:
+      - get
+      - list
+    apiGroups:
+      - ""
+    resources:
+      - pods

@@ -12,12 +12,20 @@ rules:
     resources:
       - kafkas
       - kafkanodepools
+      - kafkarebalances
       - kafkatopics
   - verbs:
-      - get
-      - list
       - patch
     apiGroups:
       - kafka.strimzi.io
     resources:
+      - kafkas
       - kafkarebalances
+  # API must list pods to obtain the Kafka version annotation set by Strimzi
+  - verbs:
+      - get
+      - list
+    apiGroups:
+      - ""
+    resources:
+      - pods

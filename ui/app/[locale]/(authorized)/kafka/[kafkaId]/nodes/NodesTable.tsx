@@ -55,7 +55,7 @@ export function NodesTable({ nodes }: { nodes: Node[] }) {
   const formatBytes = useFormatBytes();
   return (
     <ResponsiveTable
-      ariaLabel={"Kafka clusters"}
+      ariaLabel={"Kafka nodes"}
       columns={columns}
       data={nodes}
       renderHeader={({ column, key, Th }) => {
