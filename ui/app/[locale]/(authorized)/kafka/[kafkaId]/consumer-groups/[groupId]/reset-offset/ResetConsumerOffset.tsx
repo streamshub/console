@@ -11,7 +11,6 @@ import { useRouter } from "@/i18n/routing";
 import { updateConsumerGroup } from "@/api/consumerGroups/actions";
 import { LoadingPage } from "./LoadingPage";
 import { ResetOffset } from "./ResetOffset";
-import { Page, PageSection } from "@/libs/patternfly/react-core";
 import { useTranslations } from "next-intl";
 import { useAlert } from "@/components/AlertContext";
 
@@ -258,7 +257,7 @@ export function ResetConsumerOffset({
   };
 
   return (
-    <PageSection isFilled={true} hasOverflowScroll={true}>
+    <>
       {isLoading ? (
         <LoadingPage />
       ) : (
@@ -287,6 +286,6 @@ export function ResetConsumerOffset({
           cliCommand={generateCliCommand()}
         />
       )}
-    </PageSection>
+    </>
   );
 }
