@@ -102,11 +102,7 @@ public class NodeService {
         var summary = initialSummary();
         listSupport.meta().put("summary", summary);
 
-        return CompletableFuture.allOf(
-                clusterResult.authorizedOperations().toCompletionStage().toCompletableFuture(),
-                clusterResult.clusterId().toCompletionStage().toCompletableFuture(),
-                clusterResult.nodes().toCompletionStage().toCompletableFuture(),
-                quorumResult)
+        return CompletableFuture.allOf(clusterResult.nodes().toCompletionStage().toCompletableFuture(), quorumResult)
             .thenComposeAsync(nothing -> getNodes(clusterResult, quorumResult), threadContext.currentContextExecutor())
             .thenApply(nodes -> nodes.stream()
                     .filter(listSupport)

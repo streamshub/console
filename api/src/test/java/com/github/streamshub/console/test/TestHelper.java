@@ -21,6 +21,7 @@ import com.github.streamshub.console.api.Annotations;
 import com.github.streamshub.console.config.security.GlobalSecurityConfigBuilder;
 import com.github.streamshub.console.kafka.systemtest.utils.ClientsConfig;
 
+import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.client.CustomResource;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.restassured.response.Response;
@@ -123,9 +124,15 @@ public class TestHelper {
             .build();
     }
 
-    public <S, T, C extends CustomResource<S, T>> C apply(KubernetesClient client, C resource) {
-        client.resource(resource).serverSideApply();
-        return client.resource(resource).patchStatus();
+    public <T extends HasMetadata> T apply(KubernetesClient client, T resource) {
+        var resourceClient = client.resource(resource);
+        resource = resourceClient.serverSideApply();
+
+        if (resource instanceof CustomResource<?, ?>) {
+            resource = resourceClient.patchStatus();
+        }
+
+        return resource;
     }
 
     public String getClusterId() {
