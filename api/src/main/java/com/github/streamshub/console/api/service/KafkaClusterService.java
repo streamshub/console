@@ -156,7 +156,6 @@ public class KafkaClusterService {
         return CompletableFuture.allOf(
                 clusterResult.authorizedOperations().toCompletionStage().toCompletableFuture(),
                 clusterResult.clusterId().toCompletionStage().toCompletableFuture(),
-                clusterResult.nodes().toCompletionStage().toCompletableFuture(),
                 quorumResult)
             .thenApply(nothing -> new KafkaCluster(get(clusterResult::clusterId), enumNames(get(clusterResult::authorizedOperations))))
             .thenComposeAsync(cluster -> addNodes(cluster, clusterResult, quorumResult), threadContext.currentContextExecutor())
