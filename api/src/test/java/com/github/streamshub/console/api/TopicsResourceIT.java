@@ -404,7 +404,7 @@ class TopicsResourceIT {
                 .map(name -> name + "-" + randomSuffix)
                 .toArray(String[]::new);
 
-        AdminClientSpy.install(client -> {
+        AdminClientSpy.install(adminClient -> {
             doAnswer(inv -> {
                 DescribeLogDirsResult realResult = (DescribeLogDirsResult) inv.callRealMethod();
                 Map<Integer, KafkaFuture<Map<String, LogDirDescription>>> promises = new HashMap<>();
@@ -444,7 +444,7 @@ class TopicsResourceIT {
                 var result = Mockito.mock(DescribeLogDirsResult.class);
                 Mockito.when(result.descriptions()).thenReturn(promises);
                 return result;
-            }).when(client).describeLogDirs(Mockito.anyCollection(), any(DescribeLogDirsOptions.class));
+            }).when(adminClient).describeLogDirs(Mockito.anyCollection(), any(DescribeLogDirsOptions.class));
         });
 
         whenRequesting(req -> req
@@ -1215,9 +1215,9 @@ class TopicsResourceIT {
                     .collect(Collectors.toMap(Function.identity(), p -> failure)));
         };
 
-        AdminClientSpy.install(client -> {
+        AdminClientSpy.install(adminClient -> {
             // Mock listOffsets
-            doAnswer(listOffsetsFailed).when(client).listOffsets(anyMap(), any(ListOffsetsOptions.class));
+            doAnswer(listOffsetsFailed).when(adminClient).listOffsets(anyMap(), any(ListOffsetsOptions.class));
         });
 
         whenRequesting(req -> req
@@ -1255,10 +1255,10 @@ class TopicsResourceIT {
             return new Result();
         };
 
-        AdminClientSpy.install(client -> {
+        AdminClientSpy.install(adminClient -> {
             // Mock describeTopics
             doAnswer(describeTopicsFailed)
-                .when(client)
+                .when(adminClient)
                 .describeTopics(any(TopicIdCollection.class), any(DescribeTopicsOptions.class));
         });
 
@@ -1302,9 +1302,9 @@ class TopicsResourceIT {
             return new Result();
         };
 
-        AdminClientSpy.install(client -> {
+        AdminClientSpy.install(adminClient -> {
             // Mock describeTopics
-            doAnswer(describeConfigsFailed).when(client).describeConfigs(anyCollection());
+            doAnswer(describeConfigsFailed).when(adminClient).describeConfigs(anyCollection());
         });
 
         whenRequesting(req -> req
@@ -1358,10 +1358,10 @@ class TopicsResourceIT {
             return new Result();
         };
 
-        AdminClientSpy.install(client -> {
+        AdminClientSpy.install(adminClient -> {
             // Mock listOffsets
             doAnswer(describeTopicsResult)
-                .when(client)
+                .when(adminClient)
                 .describeTopics(any(TopicCollection.class), any(DescribeTopicsOptions.class));
         });
 
