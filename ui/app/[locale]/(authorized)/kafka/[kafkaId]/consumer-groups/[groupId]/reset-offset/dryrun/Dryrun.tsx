@@ -7,7 +7,6 @@ import {
   DescriptionListDescription,
   DescriptionListGroup,
   DescriptionListTerm,
-  Divider,
   Flex,
   FlexItem,
   JumpLinks,
@@ -15,7 +14,6 @@ import {
   List,
   ListItem,
   Panel,
-  PanelHeader,
   PanelMain,
   PanelMainBody,
   Sidebar,
@@ -23,12 +21,9 @@ import {
   SidebarPanel,
   Stack,
   StackItem,
-  TextContent,
-  Text,
   CardBody,
 } from "@/libs/patternfly/react-core";
 import { useTranslations } from "next-intl";
-import { DownloadIcon } from "@/libs/patternfly/react-icons";
 
 export type NewOffset = {
   topicName: string;

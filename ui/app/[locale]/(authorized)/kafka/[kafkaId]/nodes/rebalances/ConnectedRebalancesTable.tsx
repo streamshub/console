@@ -12,7 +12,6 @@ import {
   AlertActionLink,
   Grid,
   GridItem,
-  PageSection,
 } from "@/libs/patternfly/react-core";
 import { useTranslations } from "next-intl";
 import { RebalancesCountCard } from "./RebalancesCountCard";
@@ -150,136 +149,134 @@ export function ConnectedReabalancesTable({
   };
 
   return (
-    <PageSection hasOverflowScroll={true} aria-label={"rebalancing"}>
-      <Grid hasGutter>
-        <GridItem>
-          {isAlertVisible && (
-            <Alert
-              variant="info"
-              isInline
-              title={t("cruisecontrol_enable")}
-              actionClose={<AlertActionCloseButton onClose={handleClose} />}
-              actionLinks={
-                <AlertActionLink component="a" href="#">
-                  {t("learn_more_about_cruisecontrol_enablement")}
-                </AlertActionLink>
-              }
-            />
-          )}
-        </GridItem>
-        <GridItem>
-          <RebalancesCountCard
-            TotalRebalancing={rebalancesCount}
-            proposalReady={statusCounts.proposalReady}
-            rebalancing={statusCounts.rebalancing}
-            ready={statusCounts.ready}
-            stopped={statusCounts.stopped}
-          />
-        </GridItem>
-        <GridItem>
-          <RebalanceTable
-            page={page}
-            perPage={state.perPage}
-            onPageChange={(newPage, perPage) => {
-              startTransition(() => {
-                const pageDiff = newPage - page;
-                switch (pageDiff) {
-                  case -1:
-                    updateUrl({ perPage, page: prevPageCursor });
-                    break;
-                  case 1:
-                    updateUrl({ perPage, page: nextPageCursor });
-                    break;
-                  default:
-                    updateUrl({ perPage });
-                    break;
-                }
-                addOptimistic({ perPage });
-              });
-            }}
-            onClearAllFilters={clearFilters}
-            rebalanceList={state.rebalances}
-            rebalancesCount={rebalancesCount}
-            isColumnSortable={(col) => {
-              if (!RebalanceTableColumns.includes(col)) {
-                return undefined;
-              }
-              const activeIndex = RebalanceTableColumns.indexOf(state.sort);
-              const columnIndex = RebalanceTableColumns.indexOf(col);
-              return {
-                label: col as string,
-                columnIndex,
-                onSort: () => {
-                  startTransition(() => {
-                    const newSortDir =
-                      activeIndex === columnIndex
-                        ? state.sortDir === "asc"
-                          ? "desc"
-                          : "asc"
-                        : "asc";
-                    updateUrl({
-                      sort: col,
-                      sortDir: newSortDir,
-                    });
-                    addOptimistic({ sort: col, sortDir: newSortDir });
-                  });
-                },
-                sortBy: {
-                  index: activeIndex,
-                  direction: state.sortDir,
-                  defaultDirection: "asc",
-                },
-                isFavorites: undefined,
-              };
-            }}
-            filterName={state.name}
-            onFilterNameChange={(name) => {
-              startTransition(() => {
-                updateUrl({ name });
-                addOptimistic({ name });
-              });
-            }}
-            filterMode={state.mode}
-            onFilterModeChange={(mode) => {
-              startTransition(() => {
-                updateUrl({ mode });
-                addOptimistic({ mode });
-              });
-            }}
-            filterStatus={state.status}
-            onFilterStatusChange={(status) => {
-              startTransition(() => {
-                updateUrl({ status });
-                addOptimistic({ status });
-              });
-            }}
-            onApprove={(row) => {
-              setModalOpen(true);
-              setApprovalStatus("approve");
-              setRebalanceId(row.id);
-            }}
-            onRefresh={(row) => {
-              setModalOpen(true);
-              setApprovalStatus("refresh");
-              setRebalanceId(row.id);
-            }}
-            onStop={(row) => {
-              setModalOpen(true);
-              setApprovalStatus("stop");
-              setRebalanceId(row.id);
-            }}
-            baseurl={baseurl}
-          />
-        </GridItem>
-        {isModalOpen && (
-          <ValidationModal
-            status={approvalStatus}
-            isModalOpen={isModalOpen}
-            onConfirm={onConfirm}
-            onCancel={() => setModalOpen(false)}
+    <Grid hasGutter>
+      <GridItem>
+        {isAlertVisible && (
+          <Alert
+            variant="info"
+            isInline
+            title={t("cruisecontrol_enable")}
+            actionClose={<AlertActionCloseButton onClose={handleClose} />}
+            actionLinks={
+              <AlertActionLink component="a" href="#">
+                {t("learn_more_about_cruisecontrol_enablement")}
+              </AlertActionLink>
+            }
           />
         )}
-      </Grid>
-    </PageSection>
+      </GridItem>
+      <GridItem>
+        <RebalancesCountCard
+          TotalRebalancing={rebalancesCount}
+          proposalReady={statusCounts.proposalReady}
+          rebalancing={statusCounts.rebalancing}
+          ready={statusCounts.ready}
+          stopped={statusCounts.stopped}
+        />
+      </GridItem>
+      <GridItem>
+        <RebalanceTable
+          page={page}
+          perPage={state.perPage}
+          onPageChange={(newPage, perPage) => {
+            startTransition(() => {
+              const pageDiff = newPage - page;
+              switch (pageDiff) {
+                case -1:
+                  updateUrl({ perPage, page: prevPageCursor });
+                  break;
+                case 1:
+                  updateUrl({ perPage, page: nextPageCursor });
+                  break;
+                default:
+                  updateUrl({ perPage });
+                  break;
+              }
+              addOptimistic({ perPage });
+            });
+          }}
+          onClearAllFilters={clearFilters}
+          rebalanceList={state.rebalances}
+          rebalancesCount={rebalancesCount}
+          isColumnSortable={(col) => {
+            if (!RebalanceTableColumns.includes(col)) {
+              return undefined;
+            }
+            const activeIndex = RebalanceTableColumns.indexOf(state.sort);
+            const columnIndex = RebalanceTableColumns.indexOf(col);
+            return {
+              label: col as string,
+              columnIndex,
+              onSort: () => {
+                startTransition(() => {
+                  const newSortDir =
+                    activeIndex === columnIndex
+                      ? state.sortDir === "asc"
+                        ? "desc"
+                        : "asc"
+                      : "asc";
+                  updateUrl({
+                    sort: col,
+                    sortDir: newSortDir,
+                  });
+                  addOptimistic({ sort: col, sortDir: newSortDir });
+                });
+              },
+              sortBy: {
+                index: activeIndex,
+                direction: state.sortDir,
+                defaultDirection: "asc",
+              },
+              isFavorites: undefined,
+            };
+          }}
+          filterName={state.name}
+          onFilterNameChange={(name) => {
+            startTransition(() => {
+              updateUrl({ name });
+              addOptimistic({ name });
+            });
+          }}
+          filterMode={state.mode}
+          onFilterModeChange={(mode) => {
+            startTransition(() => {
+              updateUrl({ mode });
+              addOptimistic({ mode });
+            });
+          }}
+          filterStatus={state.status}
+          onFilterStatusChange={(status) => {
+            startTransition(() => {
+              updateUrl({ status });
+              addOptimistic({ status });
+            });
+          }}
+          onApprove={(row) => {
+            setModalOpen(true);
+            setApprovalStatus("approve");
+            setRebalanceId(row.id);
+          }}
+          onRefresh={(row) => {
+            setModalOpen(true);
+            setApprovalStatus("refresh");
+            setRebalanceId(row.id);
+          }}
+          onStop={(row) => {
+            setModalOpen(true);
+            setApprovalStatus("stop");
+            setRebalanceId(row.id);
+          }}
+          baseurl={baseurl}
+        />
+      </GridItem>
+      {isModalOpen && (
+        <ValidationModal
+          status={approvalStatus}
+          isModalOpen={isModalOpen}
+          onConfirm={onConfirm}
+          onCancel={() => setModalOpen(false)}
+        />
+      )}
+    </Grid>
   );
 }
