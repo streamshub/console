@@ -35,11 +35,15 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response.Status;
 
 import org.apache.kafka.clients.admin.DescribeConfigsResult;
+import org.apache.kafka.clients.admin.DescribeLogDirsOptions;
+import org.apache.kafka.clients.admin.DescribeLogDirsResult;
 import org.apache.kafka.clients.admin.DescribeTopicsOptions;
 import org.apache.kafka.clients.admin.DescribeTopicsResult;
 import org.apache.kafka.clients.admin.ListOffsetsOptions;
 import org.apache.kafka.clients.admin.ListOffsetsResult;
 import org.apache.kafka.clients.admin.ListOffsetsResult.ListOffsetsResultInfo;
+import org.apache.kafka.clients.admin.LogDirDescription;
+import org.apache.kafka.clients.admin.ReplicaInfo;
 import org.apache.kafka.clients.admin.TopicDescription;
 import org.apache.kafka.common.KafkaFuture;
 import org.apache.kafka.common.Node;
@@ -64,6 +68,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.aggregator.AggregateWith;
 import org.junit.jupiter.params.provider.CsvFileSource;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.mockito.Mockito;
 import org.mockito.stubbing.Answer;
 import org.skyscreamer.jsonassert.JSONAssert;
 import org.skyscreamer.jsonassert.JSONCompareMode;
@@ -375,6 +380,77 @@ class TopicsResourceIT {
                 .toArray(String[]::new);
 
         whenRequesting(req -> req.queryParam("sort", sortParam).get("", clusterId1))
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()))
+            .body("data.size()", equalTo(topicNames.size()))
+            .body("data.attributes.name", contains(expectedNames));
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        "'totalLeaderLogBytes', 't2,t3,t4,t5,t1'",
+        "'-totalLeaderLogBytes', 't1,t5,t4,t3,t2'"
+    })
+    void testListTopicsSortedByStorage(String sortParam, String expectedNameList) {
+        String randomSuffix = UUID.randomUUID().toString();
+
+        List<String> topicNames = IntStream.rangeClosed(1, 5)
+                .mapToObj(i -> "t" + i + "-" + randomSuffix)
+                .toList();
+
+        topicUtils.createTopics(clusterId1, topicNames, 1);
+
+        String[] expectedNames = Stream.of(expectedNameList.split(","))
+                .map(name -> name + "-" + randomSuffix)
+                .toArray(String[]::new);
+
+        AdminClientSpy.install(client -> {
+            doAnswer(inv -> {
+                DescribeLogDirsResult realResult = (DescribeLogDirsResult) inv.callRealMethod();
+                Map<Integer, KafkaFuture<Map<String, LogDirDescription>>> promises = new HashMap<>();
+
+                realResult.descriptions().forEach((nodeId, pendingDescriptions) -> {
+                    promises.put(nodeId, pendingDescriptions.thenApply(descriptions -> descriptions
+                            .entrySet()
+                            .stream()
+                            .collect(Collectors.toMap(Map.Entry::getKey, e -> {
+                                var descr = e.getValue();
+                                var replicaInfos = new HashMap<>(descr.replicaInfos());
+
+                                // remove storage info for t1 to verify null can be sorted
+                                replicaInfos.remove(new TopicPartition("t1-" + randomSuffix, 0));
+
+                                replicaInfos.entrySet().stream()
+                                    .filter(r -> r.getKey().topic().matches("^t[1-5]-.*"))
+                                    .forEach(r -> {
+                                        var replica = r.getValue();
+                                        // use the topic number (t2, t3, etc) to generate a size
+                                        var size = 1000 * Integer.parseInt(r.getKey().topic().substring(1, 2));
+
+                                        r.setValue(new ReplicaInfo(
+                                                size,
+                                                replica.offsetLag(),
+                                                replica.isFuture()));
+                                    });
+
+                                return new LogDirDescription(
+                                        descr.error(),
+                                        replicaInfos,
+                                        descr.totalBytes().orElse(-1),
+                                        descr.usableBytes().orElse(-1));
+                            }))));
+                });
+
+                var result = Mockito.mock(DescribeLogDirsResult.class);
+                Mockito.when(result.descriptions()).thenReturn(promises);
+                return result;
+            }).when(client).describeLogDirs(Mockito.anyCollection(), any(DescribeLogDirsOptions.class));
+        });
+
+        whenRequesting(req -> req
+                .queryParam("sort", sortParam)
+                .queryParam("fields[topics]", "name,totalLeaderLogBytes")
+                .get("", clusterId1))
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
             .body("data.size()", equalTo(topicNames.size()))
