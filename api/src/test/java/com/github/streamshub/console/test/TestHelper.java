@@ -1,6 +1,8 @@
 package com.github.streamshub.console.test;
 
+import java.lang.reflect.Method;
 import java.net.URI;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.UUID;
@@ -128,11 +130,20 @@ public class TestHelper {
         var resourceClient = client.resource(resource);
         resource = resourceClient.serverSideApply();
 
-        if (resource instanceof CustomResource<?, ?>) {
+        if (resource instanceof CustomResource<?, ?> || hasStatus(resource)) {
             resource = resourceClient.patchStatus();
         }
 
         return resource;
+    }
+
+    private static boolean hasStatus(Object resource) {
+        try {
+            Method getStatus = resource.getClass().getMethod("getStatus");
+            return Objects.nonNull(getStatus.invoke(resource));
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     public String getClusterId() {

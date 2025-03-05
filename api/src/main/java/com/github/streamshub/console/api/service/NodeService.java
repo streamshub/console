@@ -209,6 +209,13 @@ public class NodeService {
             }
         });
 
+        /*
+         * Initialize all broker nodes' state to unknown status. We will attempt obtain the correct status
+         * from metrics, the pod status, or assumed from the nodes list from describeCluster.
+         */
+        var initialBrokerState = new Node.Attributes.Broker(BrokerStatus.UNKNOWN, 0, 0);
+        nodes.values().stream().filter(Node::isBroker).forEach(n -> n.broker(initialBrokerState));
+
         return valueMetrics
                 .thenCombine(podPromise, (metrics, pods) -> includeMetricsAndPods(nodes, metrics, pods))
                 .thenApply(ArrayList::new);
@@ -275,7 +282,7 @@ public class NodeService {
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
-    CompletionStage<Map<Integer, Pod>> getClusterPods() {
+    CompletionStage<Map<String, Pod>> getClusterPods() {
         return Optional.ofNullable(kafkaContext.resource()).map(Kafka::getMetadata).map(kafkaMeta -> {
             String namespace = kafkaMeta.getNamespace();
             String name = kafkaMeta.getName();
@@ -293,10 +300,10 @@ public class NodeService {
                                 pod -> {
                                     String podName = pod.getMetadata().getName();
                                     int index = podName.lastIndexOf("-");
-                                    return Integer.valueOf(podName.substring(index + 1));
+                                    return podName.substring(index + 1);
                                 },
                                 Function.identity())));
-        }).orElseGet(() -> CompletableFuture.completedFuture(Collections.<Integer, Pod>emptyMap()));
+        }).orElseGet(() -> CompletableFuture.completedFuture(Collections.<String, Pod>emptyMap()));
     }
 
     CompletionStage<Map<String, List<ValueMetric>>> getClusterValueMetrics() {
@@ -325,54 +332,17 @@ public class NodeService {
     Collection<Node> includeMetricsAndPods(
             Map<Integer, Node> nodes,
             Map<String, List<ValueMetric>> metrics,
-            Map<Integer, Pod> pods) {
+            Map<String, Pod> pods) {
 
         for (var node : nodes.values()) {
             String nodeId = node.getId();
 
-            if (node.isBroker()) {
-                var brokerState = getMetric(metrics, nodeId, "broker_state", BrokerStatus::fromValue, BrokerStatus.UNKNOWN);
-                var replicaCount = getMetric(metrics, nodeId, "replica_count", Integer::parseInt, 0);
-                var leaderCount = getMetric(metrics, nodeId, "leader_count", Integer::parseInt, 0);
-                node.broker(new Node.Attributes.Broker(brokerState, replicaCount, leaderCount));
+            if (metrics.containsKey(nodeId)) {
+                includeMetrics(node, metrics);
             }
 
-            if (node.isController()) {
-                var controllerStatus = ControllerStatus.UNKNOWN;
-                if (node.isQuorumLeader()) {
-                    controllerStatus = ControllerStatus.LEADER;
-                } else if (node.hasLag()) {
-                    controllerStatus = ControllerStatus.FOLLOWER_LAGGED;
-                } else {
-                    controllerStatus = ControllerStatus.FOLLOWER;
-                }
-                node.controller(new Node.Attributes.Controller(controllerStatus));
-            }
-
-            node.storage(
-                getMetric(metrics, nodeId, "volume_stats_used_bytes", Long::valueOf, null),
-                getMetric(metrics, nodeId, "volume_stats_capacity_bytes", Long::valueOf, null)
-            );
-
-            Pod nodePod = pods.get(Integer.valueOf(nodeId));
-
-            if (nodePod != null) {
-                Optional.ofNullable(nodePod.getMetadata())
-                    .map(ObjectMeta::getAnnotations)
-                    .map(annotations -> annotations.get(ResourceAnnotations.STRIMZI_DOMAIN + "kafka-version"))
-                    .ifPresent(node::kafkaVersion);
-
-                if (node.isBroker() && node.broker().status() == BrokerStatus.UNKNOWN) {
-                    var podStatus = nodePod.getStatus();
-                    String podPhase = podStatus.getPhase();
-
-                    if ("Running".equals(podPhase)) {
-                        boolean podReady = Readiness.isPodReady(nodePod);
-                        node.broker(node.broker().status(podReady ? BrokerStatus.RUNNING : BrokerStatus.STARTING));
-                    } else if (!"Unknown".equals(podPhase)) {
-                        node.broker(node.broker().status(BrokerStatus.NOT_RUNNING));
-                    }
-                }
+            if (pods.containsKey(nodeId)) {
+                includePodStatus(node, pods.get(nodeId));
             }
 
             if (node.isBroker() && node.broker().status() == BrokerStatus.UNKNOWN) {
@@ -382,9 +352,56 @@ public class NodeService {
                     node.broker(node.broker().status(BrokerStatus.NOT_RUNNING));
                 }
             }
+
+            if (node.isController()) {
+                ControllerStatus controllerStatus;
+                if (node.isQuorumLeader()) {
+                    controllerStatus = ControllerStatus.LEADER;
+                } else if (node.hasLag()) {
+                    controllerStatus = ControllerStatus.FOLLOWER_LAGGED;
+                } else {
+                    controllerStatus = ControllerStatus.FOLLOWER;
+                }
+                node.controller(new Node.Attributes.Controller(controllerStatus));
+            }
         }
 
         return nodes.values();
+    }
+
+    private void includeMetrics(Node node, Map<String, List<ValueMetric>> metrics) {
+        String nodeId = node.getId();
+
+        if (node.isBroker()) {
+            var brokerState = getMetric(metrics, nodeId, "broker_state", BrokerStatus::fromValue, BrokerStatus.UNKNOWN);
+            var replicaCount = getMetric(metrics, nodeId, "replica_count", Integer::parseInt, 0);
+            var leaderCount = getMetric(metrics, nodeId, "leader_count", Integer::parseInt, 0);
+            node.broker(new Node.Attributes.Broker(brokerState, replicaCount, leaderCount));
+        }
+
+        node.storage(
+            getMetric(metrics, nodeId, "volume_stats_used_bytes", Long::valueOf, null),
+            getMetric(metrics, nodeId, "volume_stats_capacity_bytes", Long::valueOf, null)
+        );
+    }
+
+    private void includePodStatus(Node node, Pod nodePod) {
+        Optional.ofNullable(nodePod.getMetadata())
+            .map(ObjectMeta::getAnnotations)
+            .map(annotations -> annotations.get(ResourceAnnotations.STRIMZI_DOMAIN + "kafka-version"))
+            .ifPresent(node::kafkaVersion);
+
+        if (node.isBroker() && node.broker().status() == BrokerStatus.UNKNOWN) {
+            var podStatus = nodePod.getStatus();
+            String podPhase = podStatus.getPhase();
+
+            if ("Running".equals(podPhase)) {
+                boolean podReady = Readiness.isPodReady(nodePod);
+                node.broker(node.broker().status(podReady ? BrokerStatus.RUNNING : BrokerStatus.STARTING));
+            } else if (!"Unknown".equals(podPhase)) {
+                node.broker(node.broker().status(BrokerStatus.NOT_RUNNING));
+            }
+        }
     }
 
     private static <T> T getMetric(

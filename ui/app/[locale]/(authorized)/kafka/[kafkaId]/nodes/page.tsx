@@ -3,12 +3,21 @@ import { KafkaParams } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/kafka.p
 import { DistributionChart } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/nodes/DistributionChart";
 import {
   Node,
-  NodeStatus,
   NodesTable,
 } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/nodes/NodesTable";
 import { Alert, PageSection } from "@/libs/patternfly/react-core";
 import { getTranslations } from "next-intl/server";
 import { Suspense } from "react";
+
+function splitAndCapitalize(value: string) {
+  // Split by uppercase letters, preserving them with a lookahead
+  const words = value.split(/(?=[A-Z])/);
+
+  // Capitalize each word and join with a space
+  return words
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+}
 
 export async function generateMetadata() {
   const t = await getTranslations();
@@ -42,11 +51,11 @@ async function ConnectedNodes({ params }: { params: KafkaParams }) {
       isLeader: node.attributes.metadataState?.status == "leader",
       brokerStatus: node.attributes.broker ? {
         stable: node.attributes.broker.status === "Running",
-        description: node.attributes.broker.status,
+        description: splitAndCapitalize(node.attributes.broker.status),
       } : undefined,
       controllerStatus: node.attributes.controller ? {
         stable: node.attributes.controller.status !== "QuorumFollowerLagged",
-        description: node.attributes.controller.status,
+        description: splitAndCapitalize(node.attributes.controller.status),
       } : undefined,
       hostname: node.attributes.host ?? undefined,
       rack: node.attributes.rack ?? undefined,

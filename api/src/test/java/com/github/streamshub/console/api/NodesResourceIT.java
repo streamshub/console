@@ -3,7 +3,6 @@ package com.github.streamshub.console.api;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.IntStream;
 
 import jakarta.inject.Inject;
 import jakarta.ws.rs.core.Response.Status;
@@ -17,6 +16,8 @@ import org.apache.kafka.common.KafkaFuture;
 import org.eclipse.microprofile.config.Config;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mockito;
 
 import com.github.streamshub.console.config.ConsoleConfig;
@@ -49,6 +50,7 @@ import static org.hamcrest.Matchers.anEmptyMap;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.everyItem;
+import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
@@ -118,168 +120,91 @@ class NodesResourceIT {
                 .build());
 
         clusterId = consoleConfig.getKafka().getCluster("default/test-kafka1").get().getId();
-    }
 
-    @Test
-    void testListNodesWithDualRoles() {
-        var clusterResult = Mockito.mock(DescribeClusterResult.class);
-        var nodes = List.<org.apache.kafka.common.Node>of(
-                new org.apache.kafka.common.Node(0, "node-0.example.com", 9092, "az1"),
-                new org.apache.kafka.common.Node(1, "node-1.example.com", 9092, "az2"),
-                new org.apache.kafka.common.Node(2, "node-2.example.com", 9092, "az3")
+        /*
+         * Below sets up several mocked nodes to support node listing tests
+         *
+         *
+         *
+         */
+        record NodeProperties(
+                int id,
+                String rack,
+                boolean address,
+                boolean nodePool,
+                String podPhase,
+                String podReadyStatus,
+                String brokerStatus,
+                String controllerStatus
+        ) {
+            public boolean isSingleRole() {
+                return brokerStatus == null || controllerStatus == null;
+            }
+
+            public boolean isDualRole() {
+                return !isSingleRole();
+            }
+        }
+
+        var nodeProps = List.of(
+            // Brokers
+            new NodeProperties(0, "az1", true, true, "Running", "True", "Running", null),
+            new NodeProperties(1, "az2", true, true, "Running", "False", "NotRunning", null),
+            new NodeProperties(2, "az3", true, true, "Pending", null, "NotRunning", null),
+            // Controllers
+            new NodeProperties(3, "az1", false, true, "Running", "True", null, "QuorumLeader"),
+            new NodeProperties(4, "az2", false, true, "Running", "False", null, "QuorumFollower"),
+            new NodeProperties(5, "az3", false, true, "Unknown", null, null, "QuorumFollower"),
+            // Dual role
+            new NodeProperties(6, "az1", false, true, "Running", "True", "Running", "QuorumFollowerLagged"),
+            new NodeProperties(7, "az2", false, true, "Unknown", null, "NotRunning", "QuorumFollower"),
+            new NodeProperties(8, "az3", true, true, "Unknown", null, "NotRunning", "QuorumFollower")
         );
+
+        var clusterResult = Mockito.mock(DescribeClusterResult.class);
+        var nodes = nodeProps.stream().filter(n -> n.brokerStatus() != null).map(n -> {
+            return new org.apache.kafka.common.Node(
+                n.id(),
+                n.address() ? "node-%d.example.com".formatted(n.id()) : null,
+                n.address() ? 9092 : -1,
+                n.rack()
+            );
+        }).toList();
         when(clusterResult.nodes()).thenReturn(KafkaFuture.completedFuture(nodes));
 
         var quorumResult = Mockito.mock(DescribeMetadataQuorumResult.class);
         var quorumInfo = MockHelper.mockAll(QuorumInfo.class, Map.of(
-                QuorumInfo::leaderId, 0,
-                QuorumInfo::voters, List.of(
-                        MockHelper.mockAll(QuorumInfo.ReplicaState.class, Map.of(
-                                QuorumInfo.ReplicaState::replicaId, 0,
-                                QuorumInfo.ReplicaState::logEndOffset, 1000L
-                        )),
-                        MockHelper.mockAll(QuorumInfo.ReplicaState.class, Map.of(
-                                QuorumInfo.ReplicaState::replicaId, 1,
-                                QuorumInfo.ReplicaState::logEndOffset, 1000L
-                        )),
-                        MockHelper.mockAll(QuorumInfo.ReplicaState.class, Map.of(
-                                QuorumInfo.ReplicaState::replicaId, 2,
-                                QuorumInfo.ReplicaState::logEndOffset, 1000L
-                        ))
-                ),
-                QuorumInfo::observers, List.of()
+                QuorumInfo::leaderId, nodeProps.stream()
+                    .filter(n -> "QuorumLeader".equals(n.controllerStatus()))
+                    .findFirst()
+                    .orElseThrow()
+                    .id(),
+
+                QuorumInfo::voters, nodeProps.stream()
+                    .filter(n -> n.controllerStatus() != null)
+                    .map(n -> MockHelper.mockAll(QuorumInfo.ReplicaState.class, Map.of(
+                        QuorumInfo.ReplicaState::replicaId, n.id(),
+                        QuorumInfo.ReplicaState::logEndOffset, n.controllerStatus().contains("Lagged") ? 999L : 1000L
+                    )))
+                    .toList(),
+
+                QuorumInfo::observers, nodeProps.stream()
+                    .filter(n -> n.brokerStatus() != null)
+                    .filter(n -> n.controllerStatus() == null)
+                    .map(n -> MockHelper.mockAll(QuorumInfo.ReplicaState.class, Map.of(
+                        QuorumInfo.ReplicaState::replicaId, n.id(),
+                        QuorumInfo.ReplicaState::logEndOffset, 1000L
+                    )))
+                    .toList()
         ));
         when(quorumResult.quorumInfo()).thenReturn(KafkaFuture.completedFuture(quorumInfo));
 
-        AdminClientSpy.install(client -> {
+        AdminClientSpy.install(adminClient -> {
             doReturn(clusterResult)
-                .when(client)
+                .when(adminClient)
                 .describeCluster(any(DescribeClusterOptions.class));
             doReturn(quorumResult)
-                .when(client)
-                .describeMetadataQuorum(any(DescribeMetadataQuorumOptions.class));
-        });
-
-        whenRequesting(req -> req.get("", clusterId))
-            .assertThat()
-            .statusCode(is(Status.OK.getStatusCode()))
-            .body("data.size()", is(3))
-            .body("data.attributes.findAll { it }.collect { it.roles }", everyItem(contains("controller", "broker")));
-    }
-
-    @Test
-    void testListNodesWithSplitRoles() {
-        var clusterResult = Mockito.mock(DescribeClusterResult.class);
-        var nodes = List.<org.apache.kafka.common.Node>of(
-                // Controllers are not returned in the nodes listing
-                new org.apache.kafka.common.Node(3, "node-3.example.com", 9092, "az2"),
-                new org.apache.kafka.common.Node(4, "node-4.example.com", 9092, "az3"),
-                new org.apache.kafka.common.Node(5, "node-5.example.com", 9092, "az3")
-        );
-        when(clusterResult.nodes()).thenReturn(KafkaFuture.completedFuture(nodes));
-
-        var quorumResult = Mockito.mock(DescribeMetadataQuorumResult.class);
-        var quorumInfo = MockHelper.mockAll(QuorumInfo.class, Map.of(
-                QuorumInfo::leaderId, 0,
-                QuorumInfo::voters, List.of(
-                        MockHelper.mockAll(QuorumInfo.ReplicaState.class, Map.of(
-                                QuorumInfo.ReplicaState::replicaId, 0,
-                                QuorumInfo.ReplicaState::logEndOffset, 1000L
-                        )),
-                        MockHelper.mockAll(QuorumInfo.ReplicaState.class, Map.of(
-                                QuorumInfo.ReplicaState::replicaId, 1,
-                                QuorumInfo.ReplicaState::logEndOffset, 1000L
-                        )),
-                        MockHelper.mockAll(QuorumInfo.ReplicaState.class, Map.of(
-                                QuorumInfo.ReplicaState::replicaId, 2,
-                                QuorumInfo.ReplicaState::logEndOffset, 1000L
-                        ))
-                ),
-                QuorumInfo::observers, List.of(
-                        MockHelper.mockAll(QuorumInfo.ReplicaState.class, Map.of(
-                                QuorumInfo.ReplicaState::replicaId, 3,
-                                QuorumInfo.ReplicaState::logEndOffset, 1000L
-                        )),
-                        MockHelper.mockAll(QuorumInfo.ReplicaState.class, Map.of(
-                                QuorumInfo.ReplicaState::replicaId, 4,
-                                QuorumInfo.ReplicaState::logEndOffset, 1000L
-                        )),
-                        MockHelper.mockAll(QuorumInfo.ReplicaState.class, Map.of(
-                                QuorumInfo.ReplicaState::replicaId, 5,
-                                QuorumInfo.ReplicaState::logEndOffset, 1000L
-                        ))
-                )
-        ));
-        when(quorumResult.quorumInfo()).thenReturn(KafkaFuture.completedFuture(quorumInfo));
-
-        AdminClientSpy.install(client -> {
-            doReturn(clusterResult)
-                .when(client)
-                .describeCluster(any(DescribeClusterOptions.class));
-            doReturn(quorumResult)
-                .when(client)
-                .describeMetadataQuorum(any(DescribeMetadataQuorumOptions.class));
-        });
-
-        whenRequesting(req -> req.get("", clusterId))
-            .assertThat()
-            .statusCode(is(Status.OK.getStatusCode()))
-            .body("data.size()", is(6))
-            .body("data.findAll { it.id <= '2' }.attributes.collect { it.roles }", everyItem(contains("controller")))
-            .body("data.findAll { it.id >= '3' }.attributes.collect { it.roles }", everyItem(contains("broker")));
-    }
-
-    @Test
-    void testListNodesWithNodePoolsAndPods() {
-        var clusterResult = Mockito.mock(DescribeClusterResult.class);
-        var nodes = List.<org.apache.kafka.common.Node>of(
-                // Controllers are not returned in the nodes listing
-                new org.apache.kafka.common.Node(3, "node-3.example.com", 9092, "az2"),
-                new org.apache.kafka.common.Node(4, "node-4.example.com", 9092, "az3"),
-                new org.apache.kafka.common.Node(5, "node-5.example.com", 9092, "az3")
-        );
-        when(clusterResult.nodes()).thenReturn(KafkaFuture.completedFuture(nodes));
-
-        var quorumResult = Mockito.mock(DescribeMetadataQuorumResult.class);
-        var quorumInfo = MockHelper.mockAll(QuorumInfo.class, Map.of(
-                QuorumInfo::leaderId, 0,
-                QuorumInfo::voters, List.of(
-                        MockHelper.mockAll(QuorumInfo.ReplicaState.class, Map.of(
-                                QuorumInfo.ReplicaState::replicaId, 0,
-                                QuorumInfo.ReplicaState::logEndOffset, 1000L
-                        )),
-                        MockHelper.mockAll(QuorumInfo.ReplicaState.class, Map.of(
-                                QuorumInfo.ReplicaState::replicaId, 1,
-                                QuorumInfo.ReplicaState::logEndOffset, 1000L
-                        )),
-                        MockHelper.mockAll(QuorumInfo.ReplicaState.class, Map.of(
-                                QuorumInfo.ReplicaState::replicaId, 2,
-                                QuorumInfo.ReplicaState::logEndOffset, 1000L
-                        ))
-                ),
-                QuorumInfo::observers, List.of(
-                        MockHelper.mockAll(QuorumInfo.ReplicaState.class, Map.of(
-                                QuorumInfo.ReplicaState::replicaId, 3,
-                                QuorumInfo.ReplicaState::logEndOffset, 1000L
-                        )),
-                        MockHelper.mockAll(QuorumInfo.ReplicaState.class, Map.of(
-                                QuorumInfo.ReplicaState::replicaId, 4,
-                                QuorumInfo.ReplicaState::logEndOffset, 1000L
-                        )),
-                        MockHelper.mockAll(QuorumInfo.ReplicaState.class, Map.of(
-                                QuorumInfo.ReplicaState::replicaId, 5,
-                                QuorumInfo.ReplicaState::logEndOffset, 1000L
-                        ))
-                )
-        ));
-        when(quorumResult.quorumInfo()).thenReturn(KafkaFuture.completedFuture(quorumInfo));
-
-        AdminClientSpy.install(client -> {
-            doReturn(clusterResult)
-                .when(client)
-                .describeCluster(any(DescribeClusterOptions.class));
-            doReturn(quorumResult)
-                .when(client)
+                .when(adminClient)
                 .describeMetadataQuorum(any(DescribeMetadataQuorumOptions.class));
         });
 
@@ -290,11 +215,11 @@ class NodesResourceIT {
                 .endMetadata()
                 .build());
 
-        IntStream.rangeClosed(0, 5).forEach(nodeId -> {
+        nodeProps.stream().forEach(n -> {
             utils.apply(client, new PodBuilder()
                     .withNewMetadata()
                         .withNamespace(clusterNamespace1)
-                        .withName(clusterId + "-" + nodeId)
+                        .withName(clusterId + "-" + n.id())
                         .addToLabels(Map.of(
                             ResourceLabels.STRIMZI_CLUSTER_LABEL, clusterName1,
                             ResourceLabels.STRIMZI_COMPONENT_TYPE_LABEL, "kafka"
@@ -308,14 +233,33 @@ class NodesResourceIT {
                         .endContainer()
                     .endSpec()
                     .withNewStatus()
-                        .withPhase("Running")
+                        .withPhase(n.podPhase())
                         .addNewCondition()
                             .withType("Ready")
-                            .withStatus("True")
+                            .withStatus(n.podReadyStatus())
                         .endCondition()
                     .endStatus()
                     .build());
         });
+
+        utils.apply(client, new KafkaNodePoolBuilder()
+                .withNewMetadata()
+                    .withNamespace(clusterNamespace1)
+                    .withName(clusterId + "-brokers")
+                    .addToLabels(ResourceLabels.STRIMZI_CLUSTER_LABEL, clusterName1)
+                .endMetadata()
+                .withNewSpec()
+                    .withRoles(ProcessRoles.BROKER)
+                .endSpec()
+                .withNewStatus()
+                    .withNodeIds(nodeProps.stream()
+                            .filter(NodeProperties::nodePool)
+                            .filter(NodeProperties::isSingleRole)
+                            .filter(n -> n.brokerStatus() != null)
+                            .map(NodeProperties::id)
+                            .toList())
+                .endStatus()
+                .build());
 
         utils.apply(client, new KafkaNodePoolBuilder()
                 .withNewMetadata()
@@ -327,29 +271,78 @@ class NodesResourceIT {
                     .withRoles(ProcessRoles.CONTROLLER)
                 .endSpec()
                 .withNewStatus()
-                    .withNodeIds(0, 1, 2)
-                .endStatus()
-                .build());
-        utils.apply(client, new KafkaNodePoolBuilder()
-                .withNewMetadata()
-                    .withNamespace(clusterNamespace1)
-                    .withName(clusterId + "-brokers")
-                    .addToLabels(ResourceLabels.STRIMZI_CLUSTER_LABEL, clusterName1)
-                .endMetadata()
-                .withNewSpec()
-                    .withRoles(ProcessRoles.BROKER)
-                .endSpec()
-                .withNewStatus()
-                    .withNodeIds(3, 4, 5)
+                    .withNodeIds(nodeProps.stream()
+                            .filter(NodeProperties::nodePool)
+                            .filter(NodeProperties::isSingleRole)
+                            .filter(n -> n.controllerStatus() != null)
+                            .map(NodeProperties::id)
+                            .toList())
                 .endStatus()
                 .build());
 
-        whenRequesting(req -> req.get("", clusterId))
+        utils.apply(client, new KafkaNodePoolBuilder()
+                .withNewMetadata()
+                    .withNamespace(clusterNamespace1)
+                    .withName(clusterId + "-dual")
+                    .addToLabels(ResourceLabels.STRIMZI_CLUSTER_LABEL, clusterName1)
+                .endMetadata()
+                .withNewSpec()
+                    .withRoles(ProcessRoles.CONTROLLER, ProcessRoles.BROKER)
+                .endSpec()
+                .withNewStatus()
+                    .withNodeIds(nodeProps.stream()
+                            .filter(NodeProperties::nodePool)
+                            .filter(NodeProperties::isDualRole)
+                            .map(NodeProperties::id)
+                            .toList())
+                .endStatus()
+                .build());
+    }
+
+    @Test
+    void testListNodesWithDualRoles() {
+        whenRequesting(req -> req
+                .param("filter[nodePool]", "in," + clusterId + "-dual")
+                .get("", clusterId))
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()))
+            .body("data.size()", is(3))
+            .body("data.attributes.findAll { it }.collect { it.roles }", everyItem(contains("controller", "broker")));
+    }
+
+    @Test
+    void testListNodesWithSplitRoles() {
+        whenRequesting(req -> req
+                .param("filter[nodePool]", "in," + clusterId + "-controllers," + clusterId + "-brokers")
+                .get("", clusterId))
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
             .body("data.size()", is(6))
-            .body("data.findAll { it.id <= '2' }.attributes.collect { it.nodePool }", everyItem(is(clusterId + "-controllers")))
-            .body("data.findAll { it.id >= '3' }.attributes.collect { it.nodePool }", everyItem(is(clusterId + "-brokers")));
+            .body("data.findAll { it.id <= '2' }.attributes.collect { it.roles }", everyItem(contains("broker")))
+            .body("data.findAll { it.id >= '3' && it.id <= '5' }.attributes.collect { it.roles }", everyItem(contains("controller")));
+    }
+
+    @Test
+    void testListNodesAllPools() {
+        whenRequesting(req -> req.get("", clusterId))
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()))
+            .body("data.size()", is(9))
+            .body("data.findAll { it.id <= '2' }.attributes.collect { it.nodePool }", everyItem(is(clusterId + "-brokers")))
+            .body("data.findAll { it.id >= '3' && it.id <= '5' }.attributes.collect { it.nodePool }", everyItem(is(clusterId + "-controllers")))
+            .body("data.findAll { it.id >= '6' }.attributes.collect { it.nodePool }", everyItem(is(clusterId + "-dual")));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = { "broker", "controller" })
+    void testListNodesByRole(String role) {
+        whenRequesting(req -> req
+                .param("filter[roles]", "in," + role)
+                .get("", clusterId))
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()))
+            .body("data.size()", is(6))
+            .body("data.attributes.collect { it.roles }", everyItem(hasItem(role)));
     }
 
     @Test
@@ -376,4 +369,5 @@ class NodesResourceIT {
             .body("errors.code", contains("4041"))
             .body("errors.detail", contains("No such node: 99"));
     }
+
 }
