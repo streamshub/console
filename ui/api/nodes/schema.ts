@@ -1,5 +1,54 @@
 import { z } from "zod";
 
+export const NodeSchema = z.object({
+  id: z.string(),
+  type: z.literal("nodes"),
+  attributes: z.object({
+    host: z.string().optional().nullable(),
+    port: z.number().optional().nullable(),
+    rack: z.string().optional().nullable(),
+    nodePool: z.string().optional().nullable(),
+    kafkaVersion: z.string().optional().nullable(),
+    roles: z.array(z.enum([ "controller", "broker" ])).optional(),
+    metadataState: z.object({
+      status: z.enum([ "leader", "follower", "observer" ]),
+      logEndOffset: z.number(),
+      lag: z.number(),
+    }).optional().nullable(),
+    broker: z.object({
+      status: z.enum([
+        "NotRunning",
+        "Starting",
+        "Recovery",
+        "Running",
+        "PendingControlledShutdown",
+        "ShuttingDown",
+        "Unknown"
+      ]),
+      replicaCount: z.number(),
+      leaderCount: z.number(),
+    }).optional().nullable(),
+    controller: z.object({
+      status: z.enum([
+        "QuorumLeader",
+        "QuorumFollower",
+        "QuorumFollowerLagged",
+        "Unknown"
+      ]),
+    }).optional().nullable(),
+    storageUsed: z.number().optional().nullable(),
+    storageCapacity: z.number().optional().nullable(),
+  }),
+});
+
+export type KafkaNode = z.infer<typeof NodeSchema>;
+
+export const NodesResponseSchema = z.object({
+  data: z.array(NodeSchema),
+});
+
+export type NodeList = z.infer<typeof NodesResponseSchema>;
+
 const ConfigSchema = z.object({
   id: z.string().optional(),
   type: z.string(),
@@ -15,7 +64,9 @@ const ConfigSchema = z.object({
     }),
   ),
 });
+
 export type NodeConfig = z.infer<typeof ConfigSchema>;
+
 export const ConfigResponseSchema = z.object({
   data: ConfigSchema,
 });

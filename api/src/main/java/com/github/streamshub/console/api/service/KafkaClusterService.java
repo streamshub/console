@@ -24,20 +24,21 @@ import jakarta.ws.rs.BadRequestException;
 import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.clients.admin.DescribeClusterOptions;
 import org.apache.kafka.clients.admin.DescribeClusterResult;
-import org.apache.kafka.common.KafkaFuture;
+import org.apache.kafka.clients.admin.QuorumInfo;
 import org.eclipse.microprofile.context.ThreadContext;
 import org.jboss.logging.Logger;
 
 import com.github.streamshub.console.api.Annotations;
 import com.github.streamshub.console.api.ClientFactory;
 import com.github.streamshub.console.api.model.Condition;
+import com.github.streamshub.console.api.model.Identifier;
 import com.github.streamshub.console.api.model.KafkaCluster;
 import com.github.streamshub.console.api.model.KafkaListener;
-import com.github.streamshub.console.api.model.Node;
 import com.github.streamshub.console.api.security.PermissionService;
 import com.github.streamshub.console.api.support.Holder;
 import com.github.streamshub.console.api.support.KafkaContext;
 import com.github.streamshub.console.api.support.ListRequestContext;
+import com.github.streamshub.console.api.support.MetadataQuorumSupport;
 import com.github.streamshub.console.config.ConsoleConfig;
 import com.github.streamshub.console.config.security.Privilege;
 
@@ -84,6 +85,9 @@ public class KafkaClusterService {
 
     @Inject
     MetricsService metricsService;
+
+    @Inject
+    NodeService nodeService;
 
     @Inject
     /**
@@ -146,23 +150,31 @@ public class KafkaClusterService {
         Admin adminClient = kafkaContext.admin();
         DescribeClusterOptions options = new DescribeClusterOptions()
                 .includeAuthorizedOperations(fields.contains(KafkaCluster.Fields.AUTHORIZED_OPERATIONS));
-        DescribeClusterResult result = adminClient.describeCluster(options);
+        var clusterResult = adminClient.describeCluster(options);
+        var quorumResult = MetadataQuorumSupport.quorumInfo(adminClient.describeMetadataQuorum());
 
-        return KafkaFuture.allOf(
-                result.authorizedOperations(),
-                result.clusterId(),
-                result.controller(),
-                result.nodes())
-            .toCompletionStage()
-            .thenApply(nothing -> new KafkaCluster(
-                        get(result::clusterId),
-                        get(result::nodes).stream().map(Node::fromKafkaModel).toList(),
-                        Node.fromKafkaModel(get(result::controller)),
-                        enumNames(get(result::authorizedOperations))))
+        return CompletableFuture.allOf(
+                clusterResult.authorizedOperations().toCompletionStage().toCompletableFuture(),
+                clusterResult.clusterId().toCompletionStage().toCompletableFuture(),
+                quorumResult)
+            .thenApply(nothing -> new KafkaCluster(get(clusterResult::clusterId), enumNames(get(clusterResult::authorizedOperations))))
+            .thenComposeAsync(cluster -> addNodes(cluster, clusterResult, quorumResult), threadContext.currentContextExecutor())
             .thenApplyAsync(this::addKafkaContextData, threadContext.currentContextExecutor())
             .thenApply(this::addKafkaResourceData)
             .thenCompose(cluster -> addMetrics(cluster, fields))
             .thenApply(this::setManaged);
+    }
+
+    private CompletionStage<KafkaCluster> addNodes(KafkaCluster cluster, DescribeClusterResult clusterResult, CompletableFuture<QuorumInfo> quorumResult) {
+        return nodeService.getNodes(clusterResult, quorumResult)
+            .thenAccept(nodes -> {
+                var identifiers = nodes.stream().map(n -> new Identifier("nodes", n.getId())).toList();
+                var nodesRelationship = cluster.nodes();
+                nodesRelationship.data().addAll(identifiers);
+                nodesRelationship.addMeta("summary", nodeService.summarize(nodes));
+                nodesRelationship.addMeta("count", identifiers.size());
+            })
+            .thenApply(nothing -> cluster);
     }
 
     public KafkaCluster patchCluster(KafkaCluster cluster) {
@@ -326,7 +338,6 @@ public class KafkaClusterService {
                 .orElse(Boolean.FALSE));
         return cluster;
     }
-
 
     CompletionStage<KafkaCluster> addMetrics(KafkaCluster cluster, List<String> fields) {
         if (!fields.contains(KafkaCluster.Fields.METRICS)) {

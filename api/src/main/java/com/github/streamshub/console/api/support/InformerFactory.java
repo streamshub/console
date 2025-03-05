@@ -16,11 +16,13 @@ import org.jboss.logging.Logger;
 
 import com.github.streamshub.console.config.ConsoleConfig;
 
+import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
 import io.fabric8.kubernetes.client.informers.ResourceEventHandler;
 import io.fabric8.kubernetes.client.informers.SharedIndexInformer;
 import io.strimzi.api.kafka.model.kafka.Kafka;
+import io.strimzi.api.kafka.model.nodepool.KafkaNodePool;
 import io.strimzi.api.kafka.model.topic.KafkaTopic;
 import io.strimzi.api.kafka.model.topic.KafkaTopicSpec;
 
@@ -28,9 +30,7 @@ import io.strimzi.api.kafka.model.topic.KafkaTopicSpec;
 public class InformerFactory {
 
     private static final String STRIMZI_CLUSTER = "strimzi.io/cluster";
-
-    @Inject
-    Logger logger;
+    private static final Logger LOGGER = Logger.getLogger(InformerFactory.class);
 
     @Inject
     KubernetesClient k8s;
@@ -45,10 +45,17 @@ public class InformerFactory {
 
     @Produces
     @ApplicationScoped
+    @Named("KafkaNodePools")
+    // Keys: namespace -> cluster name -> pool name
+    Map<String, Map<String, Map<String, KafkaNodePool>>> nodePools = new ConcurrentHashMap<>();
+
+    @Produces
+    @ApplicationScoped
     @Named("KafkaTopics")
     // Keys: namespace -> cluster name -> topic name
     Map<String, Map<String, Map<String, KafkaTopic>>> topics = new ConcurrentHashMap<>();
 
+    SharedIndexInformer<KafkaNodePool> kafkaNodePoolInformer;
     SharedIndexInformer<KafkaTopic> topicInformer;
 
     /**
@@ -58,27 +65,43 @@ public class InformerFactory {
      */
     void onStartup(@Observes Startup event) {
         if (consoleConfig.getKubernetes().isEnabled()) {
-            var kafkaResources = k8s.resources(Kafka.class).inAnyNamespace();
+            try {
+                kafkaInformer = Holder.of(k8s.resources(Kafka.class).inAnyNamespace().inform());
+            } catch (KubernetesClientException e) {
+                LOGGER.warnf("Failed to create Strimzi Kafka informer: %s", e.getMessage());
+            }
 
             try {
-                kafkaInformer = Holder.of(kafkaResources.inform());
+                kafkaNodePoolInformer = k8s.resources(KafkaNodePool.class).inAnyNamespace().inform();
+                kafkaNodePoolInformer.addEventHandler(new KafkaNodePoolEventHandler(nodePools));
             } catch (KubernetesClientException e) {
-                logger.warnf("Failed to create Strimzi Kafka informer: %s", e.getMessage());
+                LOGGER.warnf("Failed to create Strimzi KafkaNodePool informer: %s", e.getMessage());
             }
 
             try {
                 topicInformer = k8s.resources(KafkaTopic.class).inAnyNamespace().inform();
                 topicInformer.addEventHandler(new KafkaTopicEventHandler(topics));
             } catch (KubernetesClientException e) {
-                logger.warnf("Failed to create Strimzi KafkaTopic informer: %s", e.getMessage());
+                LOGGER.warnf("Failed to create Strimzi KafkaTopic informer: %s", e.getMessage());
             }
         } else {
-            logger.warn("Kubernetes client connection is disabled. Custom resource information will not be available.");
+            LOGGER.warn("Kubernetes client connection is disabled. Custom resource information will not be available.");
         }
     }
 
     void disposeKafkaInformer(@Disposes @Named("KafkaInformer") Holder<SharedIndexInformer<Kafka>> informer) {
         informer.ifPresent(SharedIndexInformer::close);
+    }
+
+    /**
+     * Close the KafkaNodePool informer used to update the node pool map being disposed.
+     *
+     * @param nodePools map of KafkaNodePools being disposed.
+     */
+    void disposeKafkaNodePools(@Disposes Map<String, Map<String, Map<String, KafkaNodePool>>> nodePools) {
+        if (kafkaNodePoolInformer != null) {
+            kafkaNodePoolInformer.close();
+        }
     }
 
     /**
@@ -92,52 +115,69 @@ public class InformerFactory {
         }
     }
 
-    private class KafkaTopicEventHandler implements ResourceEventHandler<KafkaTopic> {
-        Map<String, Map<String, Map<String, KafkaTopic>>> topics;
+    private abstract static class EventHandler<T extends HasMetadata> implements ResourceEventHandler<T> {
+        Map<String, Map<String, Map<String, T>>> items;
 
-        public KafkaTopicEventHandler(Map<String, Map<String, Map<String, KafkaTopic>>> topics) {
-            this.topics = topics;
+        EventHandler(Map<String, Map<String, Map<String, T>>> items) {
+            this.items = items;
+        }
+
+        protected String name(T item) {
+            return item.getMetadata().getName();
         }
 
         @Override
-        public void onAdd(KafkaTopic topic) {
-            topicMap(topic).ifPresent(map -> map.put(topicName(topic), topic));
+        public void onAdd(T item) {
+            map(item).ifPresent(map -> map.put(name(item), item));
         }
 
         @Override
-        public void onUpdate(KafkaTopic oldTopic, KafkaTopic topic) {
-            onDelete(oldTopic, false);
-            onAdd(topic);
+        public void onUpdate(T oldItem, T item) {
+            onDelete(oldItem, false);
+            onAdd(item);
         }
 
         @Override
-        public void onDelete(KafkaTopic topic, boolean deletedFinalStateUnknown) {
-            topicMap(topic).ifPresent(map -> map.remove(topicName(topic)));
+        public void onDelete(T item, boolean deletedFinalStateUnknown) {
+            map(item).ifPresent(map -> map.remove(name(item)));
         }
 
-        private static String topicName(KafkaTopic topic) {
-            return Optional.ofNullable(topic.getSpec())
-                    .map(KafkaTopicSpec::getTopicName)
-                    .orElseGet(() -> topic.getMetadata().getName());
-        }
-
-        Optional<Map<String, KafkaTopic>> topicMap(KafkaTopic topic) {
-            String namespace = topic.getMetadata().getNamespace();
-            String clusterName = topic.getMetadata().getLabels().get(STRIMZI_CLUSTER);
+        Optional<Map<String, T>> map(T item) {
+            String namespace = item.getMetadata().getNamespace();
+            String clusterName = item.getMetadata().getLabels().get(STRIMZI_CLUSTER);
 
             if (clusterName == null) {
-                logger.warnf("KafkaTopic %s/%s is missing label %s and will be ignored",
+                LOGGER.warnf("%s %s/%s is missing label %s and will be ignored",
+                        item.getClass().getSimpleName(),
                         namespace,
-                        topic.getMetadata().getName(),
+                        item.getMetadata().getName(),
                         STRIMZI_CLUSTER);
                 return Optional.empty();
             }
 
-            Map<String, KafkaTopic> map = topics.computeIfAbsent(namespace, k -> new ConcurrentHashMap<>())
+            Map<String, T> map = items.computeIfAbsent(namespace, k -> new ConcurrentHashMap<>())
                     .computeIfAbsent(clusterName, k -> new ConcurrentHashMap<>());
 
             return Optional.of(map);
         }
     }
 
+    private static class KafkaNodePoolEventHandler extends EventHandler<KafkaNodePool> {
+        public KafkaNodePoolEventHandler(Map<String, Map<String, Map<String, KafkaNodePool>>> nodePools) {
+            super(nodePools);
+        }
+    }
+
+    private static class KafkaTopicEventHandler extends EventHandler<KafkaTopic> {
+        public KafkaTopicEventHandler(Map<String, Map<String, Map<String, KafkaTopic>>> topics) {
+            super(topics);
+        }
+
+        @Override
+        protected String name(KafkaTopic topic) {
+            return Optional.ofNullable(topic.getSpec())
+                    .map(KafkaTopicSpec::getTopicName)
+                    .orElseGet(() -> super.name(topic));
+        }
+    }
 }

@@ -1,6 +1,8 @@
 package com.github.streamshub.console.api.support;
 
+import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
@@ -9,19 +11,44 @@ import com.github.streamshub.console.api.model.FetchFilter;
 
 public class FetchFilterPredicate<B, F> implements Predicate<B> {
 
+    public enum Operator {
+        IN_LIST("in"),
+        GREATER_THAN_OR_EQUAL_TO("gte"),
+        LIKE_PATTERN("like"),
+        EQUAL_TO("eq");
+
+        private final String value;
+
+        private Operator(String value) {
+            this.value = value;
+        }
+
+        public static Operator fromValue(String value) {
+            Objects.requireNonNull(value);
+
+            for (Operator o : values()) {
+                if (o.value.equals(value)) {
+                    return o;
+                }
+            }
+
+            throw new IllegalArgumentException(value);
+        }
+    }
+
     private final String name;
-    private final String operator;
+    private final Operator operator;
     private final List<F> operands;
-    private final Function<B, F> fieldSource;
+    private final Function<B, Object> fieldSource;
     private final Pattern likePattern;
 
-    public FetchFilterPredicate(String name, FetchFilter filter, Function<String, F> operandParser, Function<B, F> fieldSource) {
+    public FetchFilterPredicate(String name, FetchFilter filter, Function<String, F> operandParser, Function<B, Object> fieldSource) {
         this.name = name;
-        this.operator = filter.getOperator();
+        this.operator = Operator.fromValue(filter.getOperator());
         this.operands = filter.getOperands().stream().map(operandParser).toList();
         this.fieldSource = fieldSource;
 
-        if (operator.equals("like")) {
+        if (operator == Operator.LIKE_PATTERN) {
             // throws ClassCastException if this class is constructed with an incorrect operandParser (API bug)
             String firstOperand = (String) firstOperand();
             StringBuilder pattern = new StringBuilder();
@@ -60,17 +87,17 @@ public class FetchFilterPredicate<B, F> implements Predicate<B> {
         }
     }
 
-    public FetchFilterPredicate(FetchFilter filter, Function<String, F> operandParser, Function<B, F> fieldSource) {
+    public FetchFilterPredicate(FetchFilter filter, Function<String, F> operandParser, Function<B, Object> fieldSource) {
         this(null, filter, operandParser, fieldSource);
     }
 
     @SuppressWarnings("unchecked")
-    public FetchFilterPredicate(String name, FetchFilter filter, Function<B, F> fieldSource) {
+    public FetchFilterPredicate(String name, FetchFilter filter, Function<B, Object> fieldSource) {
         this(name, filter, op -> (F) op, fieldSource);
     }
 
     @SuppressWarnings("unchecked")
-    public FetchFilterPredicate(FetchFilter filter, Function<B, F> fieldSource) {
+    public FetchFilterPredicate(FetchFilter filter, Function<B, Object> fieldSource) {
         this(null, filter, op -> (F) op, fieldSource);
     }
 
@@ -82,7 +109,7 @@ public class FetchFilterPredicate<B, F> implements Predicate<B> {
         return name;
     }
 
-    public String operator() {
+    public Operator operator() {
         return operator;
     }
 
@@ -92,25 +119,41 @@ public class FetchFilterPredicate<B, F> implements Predicate<B> {
 
     @Override
     public boolean test(B bean) {
-        F field = fieldSource.apply(bean);
+        Object field = fieldSource.apply(bean);
 
         switch (operator) {
-            case "in":
-                return operands.contains(field);
+            case IN_LIST: {
+                if (field instanceof Collection<?> values) {
+                    /*
+                     * Here we treat any intersection of the bean collection property
+                     * and the operands as true.
+                     *
+                     *  E.g. if the bean has values of [ "string1", "string2" ] and the
+                     *  operands in the request have [ "string2", "string3" ], the result
+                     *  will be true.
+                     */
+                    return operands.stream().anyMatch(values::contains);
+                }
 
-            case "gte": {
+                return operands.contains(field);
+            }
+
+            case GREATER_THAN_OR_EQUAL_TO: {
                 @SuppressWarnings("unchecked")
                 // throws ClassCastException if this class is constructed with an incorrect operandParser (API bug)
                 Comparable<F> firstOperand = (Comparable<F>) firstOperand();
-                return firstOperand.compareTo(field) <= 0;
+                @SuppressWarnings("unchecked")
+                // throws ClassCastException if this class is constructed for an incompatible bean property (API bug)
+                F comparableField = (F) field;
+                return firstOperand.compareTo(comparableField) <= 0;
             }
 
-            case "like": {
+            case LIKE_PATTERN: {
                 // throws ClassCastException if this class is constructed with an incorrect fieldSource (API bug)
                 return likePattern.matcher((String) field).matches();
             }
 
-            case "eq":
+            case EQUAL_TO:
                 return firstOperand().equals(field);
 
             default:

@@ -52,7 +52,7 @@ export default async function CreateTopicPage({
   return (
     <CreateTopic
       kafkaId={kafkaId}
-      maxReplicas={cluster.attributes.nodes.length}
+      maxReplicas={cluster.relationships.nodes?.meta?.count}
       initialOptions={tempOptions}
       onSave={onSave}
     />

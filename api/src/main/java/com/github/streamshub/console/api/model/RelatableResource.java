@@ -21,6 +21,11 @@ public abstract class RelatableResource<A, R> extends Resource<A> {
         this.relationships = relationships;
     }
 
+    protected RelatableResource(String id, String type, JsonApiMeta meta, A attributes, R relationships) {
+        super(id, type, meta, attributes);
+        this.relationships = relationships;
+    }
+
     public R getRelationships() {
         return relationships;
     }
