@@ -5,9 +5,7 @@
         "http://www.puppycrawl.com/dtds/suppressions_1_1.dtd">
 
 <suppressions>
-
     <!-- Note that [/\\] must be used as the path separator for cross-platform support -->
-
-    <suppress checks="MethodLength|JavaNCSS"
-              files="admin[/\\]kafka[/\\]admin[/\\]handlers[/\\]TopicListHandler.java"/>
+    <suppress checks="MethodLength"
+              files="NodesResourceIT.java"/>
 </suppressions>
