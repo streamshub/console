@@ -9,6 +9,7 @@ import {
   TextInput,
   ActionGroup,
   Button,
+  Alert,
   FormHelperText,
   HelperText,
   HelperTextItem,
@@ -23,7 +24,8 @@ import {
 import { TypeaheadSelect } from "./TypeaheadSelect";
 import { DryrunSelect } from "./DryrunSelect";
 import { SelectComponent } from "./SelectComponent";
-import { ExclamationCircleIcon } from "@/libs/patternfly/react-icons";
+import { ErrorState } from "./ResetConsumerOffset";
+import { ExclamationCircleIcon } from "@patternfly/react-icons";
 
 export type Offset = {
   topicId: string;
@@ -35,7 +37,6 @@ export type Offset = {
 
 export function ResetOffset({
   cliCommand,
-  consumerGroupName,
   topics,
   partitions,
   selectTopic,
@@ -64,7 +65,7 @@ export function ResetOffset({
   selectTopic: TopicSelection;
   selectPartition: partitionSelection;
   selectOffset: OffsetValue;
-  error: string | undefined;
+  error: ErrorState;
   onTopicSelect: (value: TopicSelection) => void;
   onPartitionSelect: (value: partitionSelection) => void;
   offset: Offset;
@@ -99,6 +100,9 @@ export function ResetOffset({
     <Panel>
       <PanelMain>
         <PanelMainBody>
+          {error.GeneralError && (
+            <Alert variant="danger" isInline title={error.GeneralError} />
+          )}
           <Form>
             <FormSection title={t("target")}>
               <FormGroup
@@ -147,6 +151,18 @@ export function ResetOffset({
                     isChecked={selectPartition === "selectedPartition"}
                     onChange={() => onPartitionSelect("selectedPartition")}
                   />
+                  {error.PartitionError && (
+                    <FormHelperText>
+                      <HelperText>
+                        <HelperTextItem
+                          icon={<ExclamationCircleIcon />}
+                          variant={"error"}
+                        >
+                          {error.PartitionError}
+                        </HelperTextItem>
+                      </HelperText>
+                    </FormHelperText>
+                  )}
                 </FormGroup>
               )}
               {selectTopic === "selectedTopic" &&
@@ -212,14 +228,14 @@ export function ResetOffset({
                       type="number"
                       min={0}
                     />
-                    {error && (
+                    {error.CustomOffsetError && (
                       <FormHelperText>
                         <HelperText>
                           <HelperTextItem
                             icon={<ExclamationCircleIcon />}
                             variant={"error"}
                           >
-                            {t("custom_offset_error_message")}
+                            {error.CustomOffsetError}
                           </HelperTextItem>
                         </HelperText>
                       </FormHelperText>
@@ -262,6 +278,18 @@ export function ResetOffset({
                       }
                       onChange={(_event, value) => handleDateTimeChange(value)}
                     />
+                    {error.SpecificDateTimeNotValidError && (
+                      <FormHelperText>
+                        <HelperText>
+                          <HelperTextItem
+                            icon={<ExclamationCircleIcon />}
+                            variant={"error"}
+                          >
+                            {error.SpecificDateTimeNotValidError}
+                          </HelperTextItem>
+                        </HelperText>
+                      </FormHelperText>
+                    )}
                   </FormGroup>
                 </>
               )}

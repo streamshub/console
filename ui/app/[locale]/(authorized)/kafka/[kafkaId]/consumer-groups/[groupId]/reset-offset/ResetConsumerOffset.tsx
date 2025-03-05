@@ -22,6 +22,15 @@ export type Offset = {
   metadeta?: string;
 };
 
+export type SignInPageErrorParam =
+  | "KafkaError"
+  | "CustomOffsetError"
+  | "PartitionError"
+  | "SpecificDateTimeNotValidError"
+  | "GeneralError";
+
+export type ErrorState = Partial<Record<SignInPageErrorParam, string>>;
+
 export function ResetConsumerOffset({
   kafkaId,
   consumerGroupName,
@@ -60,7 +69,7 @@ export function ResetConsumerOffset({
 
   const [isLoading, setIsLoading] = useState(false);
 
-  const [error, setError] = useState<string | undefined>();
+  const [error, setError] = useState<ErrorState>({});
 
   const onTopicSelect = (value: TopicSelection) => {
     setSelectedConsumerTopic(value);
@@ -222,7 +231,7 @@ export function ResetConsumerOffset({
   };
 
   const handleSave = async () => {
-    setError(undefined);
+    setError({});
     setIsLoading(true);
 
     try {
@@ -232,14 +241,27 @@ export function ResetConsumerOffset({
         consumerGroupName,
         uniqueOffsets,
       );
+      if (response.errors?.length) {
+        const newErrors: ErrorState = {};
 
-      if (response.errors) {
-        const errorMessages = response.errors.map((err) => err.detail);
-        const errorMessage =
-          errorMessages.length > 0
-            ? errorMessages[0]
-            : "Failed to update consumer group";
-        setError(errorMessage);
+        response.errors.forEach((err) => {
+          if (err.detail.includes("must be between the earliest offset")) {
+            newErrors.CustomOffsetError = err.detail;
+          } else if (err.detail.includes("not valid for topic")) {
+            newErrors.PartitionError = err.detail;
+          } else if (
+            err.detail.includes("does not exist") ||
+            err.status === "404"
+          ) {
+            newErrors.KafkaError = err.detail;
+          } else if (err.detail.includes("valid UTC ISO timestamp")) {
+            newErrors.SpecificDateTimeNotValidError = err.detail;
+          } else {
+            newErrors.GeneralError = err.detail;
+          }
+        });
+
+        setError(newErrors);
       } else {
         closeResetOffset();
         addAlert({
@@ -250,7 +272,7 @@ export function ResetConsumerOffset({
         });
       }
     } catch (e: unknown) {
-      setError("Unknown error occurred");
+      setError({ GeneralError: "Unknown error" });
     } finally {
       setIsLoading(false);
     }
