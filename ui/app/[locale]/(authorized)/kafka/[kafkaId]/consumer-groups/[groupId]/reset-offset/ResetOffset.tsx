@@ -65,7 +65,7 @@ export function ResetOffset({
   selectTopic: TopicSelection;
   selectPartition: partitionSelection;
   selectOffset: OffsetValue;
-  error: ErrorState;
+  error?: ErrorState;
   onTopicSelect: (value: TopicSelection) => void;
   onPartitionSelect: (value: partitionSelection) => void;
   offset: Offset;
@@ -100,7 +100,7 @@ export function ResetOffset({
     <Panel>
       <PanelMain>
         <PanelMainBody>
-          {error.GeneralError && (
+          {error?.GeneralError && (
             <Alert variant="danger" isInline title={error.GeneralError} />
           )}
           <Form>
@@ -151,7 +151,7 @@ export function ResetOffset({
                     isChecked={selectPartition === "selectedPartition"}
                     onChange={() => onPartitionSelect("selectedPartition")}
                   />
-                  {error.PartitionError && (
+                  {error?.PartitionError && (
                     <FormHelperText>
                       <HelperText>
                         <HelperTextItem
@@ -228,7 +228,7 @@ export function ResetOffset({
                       type="number"
                       min={0}
                     />
-                    {error.CustomOffsetError && (
+                    {error?.CustomOffsetError && (
                       <FormHelperText>
                         <HelperText>
                           <HelperTextItem
@@ -278,7 +278,7 @@ export function ResetOffset({
                       }
                       onChange={(_event, value) => handleDateTimeChange(value)}
                     />
-                    {error.SpecificDateTimeNotValidError && (
+                    {error?.SpecificDateTimeNotValidError && (
                       <FormHelperText>
                         <HelperText>
                           <HelperTextItem

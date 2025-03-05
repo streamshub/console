@@ -22,14 +22,14 @@ export type Offset = {
   metadeta?: string;
 };
 
-export type SignInPageErrorParam =
+export type ResetOffsetErrorParam =
   | "KafkaError"
   | "CustomOffsetError"
   | "PartitionError"
   | "SpecificDateTimeNotValidError"
   | "GeneralError";
 
-export type ErrorState = Partial<Record<SignInPageErrorParam, string>>;
+export type ErrorState = Partial<Record<ResetOffsetErrorParam, string>>;
 
 export function ResetConsumerOffset({
   kafkaId,
@@ -166,7 +166,7 @@ export function ResetConsumerOffset({
             partition: partition,
             offset:
               selectedOffset === "custom" ||
-              selectedOffset === "specificDateTime"
+                selectedOffset === "specificDateTime"
                 ? selectDateTimeFormat === "Epoch"
                   ? convertEpochToISO(String(offset.offset))
                   : offset.offset
