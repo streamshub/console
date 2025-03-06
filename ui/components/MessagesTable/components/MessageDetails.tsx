@@ -227,7 +227,7 @@ export function MessageDetailsBody({
                 <StackItem>
                   <Flex direction={{ default: "column" }}>
                     <FlexItem>
-                      <Title headingLevel="h2">{t("schema")}</Title>
+                      <Title headingLevel="h3">{t("schema")}</Title>
                     </FlexItem>
                     <FlexItem>
                       <Title headingLevel="h4">
@@ -282,7 +282,7 @@ export function MessageDetailsBody({
                 <StackItem>
                   <Flex direction={{ default: "column" }}>
                     <FlexItem>
-                      <Title headingLevel="h1">{t("schema")}</Title>
+                      <Title headingLevel="h3">{t("schema")}</Title>
                     </FlexItem>
                     <FlexItem>
                       <Title headingLevel="h4">
