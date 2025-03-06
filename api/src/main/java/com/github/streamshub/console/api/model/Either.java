@@ -44,7 +44,7 @@ public class Either<P, A> {
     }
 
     public static <P, A> Either<P, A> ofAlternate(A alternate) {
-        Objects.nonNull(alternate);
+        Objects.requireNonNull(alternate);
         return Either.of(Optional.empty(), alternate);
     }
 
