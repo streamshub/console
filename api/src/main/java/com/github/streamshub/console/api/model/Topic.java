@@ -58,7 +58,9 @@ public class Topic extends RelatableResource<Topic.Attributes, Topic.Relationshi
         static final Map<String, Map<Boolean, Comparator<Topic>>> COMPARATORS = ComparatorBuilder.bidirectional(
                 Map.of("id", ID_COMPARATOR,
                         NAME, comparing(topic -> topic.attributes.name),
-                        TOTAL_LEADER_LOG_BYTES, nullsLast(comparing(topic -> topic.attributes.getTotalLeaderLogBytes()))));
+                        TOTAL_LEADER_LOG_BYTES, comparing(
+                                topic -> topic.attributes.getTotalLeaderLogBytes(),
+                                nullsLast(BigInteger::compareTo))));
 
         public static final ComparatorBuilder<Topic> COMPARATOR_BUILDER =
                 new ComparatorBuilder<>(Topic.Fields::comparator, Topic.Fields.defaultComparator());
