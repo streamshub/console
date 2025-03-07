@@ -225,19 +225,27 @@ export function MessageDetailsBody({
               </StackItem>
               {valueSchemaContent && (
                 <StackItem>
-                  <Title headingLevel={"h4"}>
-                    {message.relationships.valueSchema?.meta?.name &&
-                    message.relationships.valueSchema?.links?.content ? (
-                      <ExternalLink
-                        testId="schema-value"
-                        href={`/schema?content=${encodeURIComponent(message.relationships.valueSchema.links.content)}&schemaname=${encodeURIComponent(message.relationships.valueSchema.meta.name)}`}
-                      >
-                        {message.relationships.valueSchema.meta.name}
-                      </ExternalLink>
-                    ) : (
-                      message.relationships.valueSchema?.meta?.name
-                    )}
-                  </Title>
+                  <Flex direction={{ default: "column" }}>
+                    <FlexItem>
+                      <Title headingLevel="h3">{t("schema")}</Title>
+                    </FlexItem>
+                    <FlexItem>
+                      <Title headingLevel="h4">
+                        {" "}
+                        {message.relationships.valueSchema?.meta?.name &&
+                        message.relationships.valueSchema?.links?.content ? (
+                          <ExternalLink
+                            testId="schema-value"
+                            href={`/schema?content=${encodeURIComponent(message.relationships.valueSchema.links.content)}&schemaname=${encodeURIComponent(message.relationships.valueSchema.meta.name)}`}
+                          >
+                            {message.relationships.valueSchema.meta.name}
+                          </ExternalLink>
+                        ) : (
+                          message.relationships.valueSchema?.meta?.name
+                        )}
+                      </Title>
+                    </FlexItem>
+                  </Flex>
                   <SchemaValue
                     schema={valueSchemaContent}
                     name={message.relationships.valueSchema?.meta?.name ?? ""}
@@ -272,21 +280,28 @@ export function MessageDetailsBody({
               </StackItem>
               {keySchemaContent && (
                 <StackItem>
-                  <Title headingLevel={"h4"}>
-                    {message.relationships.keySchema?.meta?.name &&
-                    message.relationships.keySchema?.links?.content ? (
-                      <ExternalLink
-                        testId={"key-schema"}
-                        href={`/schema?content=${encodeURIComponent(message.relationships.keySchema?.links?.content)}&schemaname=${encodeURIComponent(
-                          message.relationships.keySchema?.meta?.name,
-                        )}`}
-                      >
-                        {message.relationships.keySchema?.meta?.name}
-                      </ExternalLink>
-                    ) : (
-                      message.relationships.keySchema?.meta?.name
-                    )}
-                  </Title>
+                  <Flex direction={{ default: "column" }}>
+                    <FlexItem>
+                      <Title headingLevel="h3">{t("schema")}</Title>
+                    </FlexItem>
+                    <FlexItem>
+                      <Title headingLevel="h4">
+                        {message.relationships.keySchema?.meta?.name &&
+                        message.relationships.keySchema?.links?.content ? (
+                          <ExternalLink
+                            testId={"key-schema"}
+                            href={`/schema?content=${encodeURIComponent(message.relationships.keySchema?.links?.content)}&schemaname=${encodeURIComponent(
+                              message.relationships.keySchema?.meta?.name,
+                            )}`}
+                          >
+                            {message.relationships.keySchema?.meta?.name}
+                          </ExternalLink>
+                        ) : (
+                          message.relationships.keySchema?.meta?.name
+                        )}
+                      </Title>
+                    </FlexItem>
+                  </Flex>
                   <SchemaValue
                     schema={keySchemaContent}
                     name={message.relationships.keySchema?.meta?.name ?? ""}

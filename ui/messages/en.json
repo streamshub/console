@@ -227,7 +227,8 @@
     "select_partition_of_count": "of {partitions}",
     "select_partition_typeahead": "Specify partition value",
     "show_more": "Show more",
-    "table_aria_label": "Messages table"
+    "table_aria_label": "Messages table",
+    "schema": "Schema"
   },
   "message-producer": {
     "title": "Message producer",
