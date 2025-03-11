@@ -370,17 +370,16 @@ class NodesResourceIT {
     @MethodSource("testListNodesByStatusSource")
     void testListNodesByStatus(List<String> brokerStatuses, List<String> controllerStatuses, List<Integer> nodeIds) {
         whenRequesting(req -> {
-                if (!brokerStatuses.isEmpty()) {
-                    req = req.param("filter[broker.status]", "in," + String.join(",", brokerStatuses));
-                }
+            if (!brokerStatuses.isEmpty()) {
+                req = req.param("filter[broker.status]", "in," + String.join(",", brokerStatuses));
+            }
 
-                if (!controllerStatuses.isEmpty()) {
-                    req = req.param("filter[controller.status]", "in," + String.join(",", controllerStatuses));
-                }
+            if (!controllerStatuses.isEmpty()) {
+                req = req.param("filter[controller.status]", "in," + String.join(",", controllerStatuses));
+            }
 
-                return req.get("", clusterId);
-            })
-            .assertThat()
+            return req.get("", clusterId);
+        }).assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
             .body("data.id", contains(nodeIds.stream().map(String::valueOf).toArray(String[]::new)));
     }
