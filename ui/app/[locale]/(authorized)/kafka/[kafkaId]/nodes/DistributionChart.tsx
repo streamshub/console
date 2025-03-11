@@ -66,7 +66,7 @@ export function DistributionChart({
     }
   };
 
-  return allCount > 0 ? (
+  return (
     <Card className={"pf-v5-u-mb-lg"}>
       <CardHeader>
         <CardTitle>
@@ -80,7 +80,7 @@ export function DistributionChart({
           </Tooltip>
         </CardTitle>
       </CardHeader>
-      <CardBody>
+      { allCount > 0 ? ( <CardBody>
         <ToggleGroup
           isCompact
           aria-label={t("DistributionChart.distribution_toggles")}
@@ -186,7 +186,12 @@ export function DistributionChart({
             </ChartStack>
           </Chart>
         </div>
-      </CardBody>
-    </Card>
-  ) : null;
+      </CardBody> ) : (
+        <CardBody>
+          <div>
+            {t("DistributionChart.metrics_unavailable")}
+          </div>
+        </CardBody>
+      )}
+    </Card> );
 }

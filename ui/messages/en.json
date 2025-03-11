@@ -489,6 +489,7 @@
     "no_advanced_options_specified": "No advanced options specified."
   },
   "DistributionChart": {
+    "metrics_unavailable": "Topic replication metrics not available",
     "partitions_distribution_of_total": "Partitions distribution (% of total)",
     "partitions_distribution_of_total_tooltip": "The percentage distribution of partitions across brokers in the cluster. Consider rebalancing if the distribution is uneven to ensure efficient resource utilization.",
     "distribution_toggles": "Compact variant toggle group",
