@@ -14,10 +14,16 @@ test("Nodes page", async ({ page }) => {
     expect(await page.innerText("body")).toContain(
       "Partitions distribution (% of total)",
     );
-    expect(await page.innerText("body")).toContain("Status");
-    expect(await page.innerText("body")).toContain("Total Replicas");
-    expect(await page.innerText("body")).toContain("Rack");
-    expect(await page.innerText("body")).toContain("Node ID");
+
+    const headerRows = await page.locator('table[aria-label="Kafka nodes"] thead tr').all();
+    const headerRow = headerRows[0];
+    expect(await headerRow.locator("th").nth(1).innerText()).toBe("Node ID");
+    expect(await headerRow.locator("th").nth(2).innerText()).toBe("Roles");
+    expect(await headerRow.locator("th").nth(3).innerText()).toBe("Status");
+    expect(await headerRow.locator("th").nth(4).innerText()).toContain("Total Replicas ");
+    expect(await headerRow.locator("th").nth(5).innerText()).toContain("Rack ");
+    expect(await headerRow.locator("th").nth(6).innerText()).toBe("Node Pool");
+
     const dataRows = await page
       .locator('table[aria-label="Kafka nodes"] tbody tr')
       .count();
