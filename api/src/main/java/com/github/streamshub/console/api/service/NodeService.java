@@ -337,7 +337,7 @@ public class NodeService {
         for (var node : nodes.values()) {
             String nodeId = node.getId();
 
-            if (metrics.containsKey(nodeId)) {
+            if (nodeHasMetrics(nodeId, metrics)) {
                 includeMetrics(node, metrics);
             }
 
@@ -402,6 +402,17 @@ public class NodeService {
                 node.broker(node.broker().status(BrokerStatus.NOT_RUNNING));
             }
         }
+    }
+
+    private static boolean nodeHasMetrics(String nodeId, Map<String, List<ValueMetric>> metrics) {
+        for (var metricList : metrics.values()) {
+            for (var metric : metricList) {
+                if (nodeId.equals(metric.attributes().get("nodeId"))) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     private static <T> T getMetric(
