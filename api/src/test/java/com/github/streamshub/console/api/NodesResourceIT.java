@@ -1,8 +1,10 @@
 package com.github.streamshub.console.api;
 
 import java.net.URI;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 import jakarta.inject.Inject;
 import jakarta.ws.rs.core.Response.Status;
@@ -17,6 +19,8 @@ import org.eclipse.microprofile.config.Config;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mockito;
 
@@ -54,6 +58,7 @@ import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.when;
@@ -123,9 +128,6 @@ class NodesResourceIT {
 
         /*
          * Below sets up several mocked nodes to support node listing tests
-         *
-         *
-         *
          */
         record NodeProperties(
                 int id,
@@ -149,7 +151,7 @@ class NodesResourceIT {
         var nodeProps = List.of(
             // Brokers
             new NodeProperties(0, "az1", true, true, "Running", "True", "Running", null),
-            new NodeProperties(1, "az2", true, true, "Running", "False", "NotRunning", null),
+            new NodeProperties(1, "az2", false, true, "Running", "False", "Starting", null),
             new NodeProperties(2, "az3", true, true, "Pending", null, "NotRunning", null),
             // Controllers
             new NodeProperties(3, "az1", false, true, "Running", "True", null, "QuorumLeader"),
@@ -158,7 +160,10 @@ class NodesResourceIT {
             // Dual role
             new NodeProperties(6, "az1", false, true, "Running", "True", "Running", "QuorumFollowerLagged"),
             new NodeProperties(7, "az2", false, true, "Unknown", null, "NotRunning", "QuorumFollower"),
-            new NodeProperties(8, "az3", true, true, "Unknown", null, "NotRunning", "QuorumFollower")
+            new NodeProperties(8, "az3", true, true, "Unknown", null, "Running", "QuorumFollower"),
+            // Not a member of a node pool
+            new NodeProperties(9, "az1", false, false, "Running", "True", null, "QuorumFollower"),
+            new NodeProperties(10, "az2", true, false, "Running", "True", "Running", null)
         );
 
         var clusterResult = Mockito.mock(DescribeClusterResult.class);
@@ -324,13 +329,20 @@ class NodesResourceIT {
 
     @Test
     void testListNodesAllPools() {
-        whenRequesting(req -> req.get("", clusterId))
+        whenRequesting(req -> req
+                .param("page[size]", "20")
+                .get("", clusterId))
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
-            .body("data.size()", is(9))
-            .body("data.findAll { it.id <= '2' }.attributes.collect { it.nodePool }", everyItem(is(clusterId + "-brokers")))
-            .body("data.findAll { it.id >= '3' && it.id <= '5' }.attributes.collect { it.nodePool }", everyItem(is(clusterId + "-controllers")))
-            .body("data.findAll { it.id >= '6' }.attributes.collect { it.nodePool }", everyItem(is(clusterId + "-dual")));
+            .body("data.size()", is(11))
+            .body("data.findAll { it.id as Integer <= 2 }.attributes.collect { it.nodePool }",
+                    everyItem(is(clusterId + "-brokers")))
+            .body("data.findAll { it.id as Integer >= 3 && it.id as Integer <= 5 }.attributes.collect { it.nodePool }",
+                    everyItem(is(clusterId + "-controllers")))
+            .body("data.findAll { it.id as Integer >= 6 && it.id as Integer <= 8 }.attributes.collect { it.nodePool }",
+                    everyItem(is(clusterId + "-dual")))
+            .body("data.findAll { it.id as Integer >= 9 }.attributes.collect { it.nodePool }",
+                    everyItem(is(nullValue())));
     }
 
     @ParameterizedTest
@@ -341,8 +353,36 @@ class NodesResourceIT {
                 .get("", clusterId))
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
-            .body("data.size()", is(6))
+            .body("data.size()", is(7))
             .body("data.attributes.collect { it.roles }", everyItem(hasItem(role)));
+    }
+
+    static Stream<Arguments> testListNodesByStatusSource() {
+        return Stream.of(
+            Arguments.of(List.of("Running"), Collections.emptyList(), List.of(0, 6, 8, 10)),
+            Arguments.of(List.of("NotRunning"), Collections.emptyList(), List.of(2, 7)),
+            Arguments.of(List.of("Running"), List.of("QuorumLeader"), List.of(0, 3, 6, 8, 10)),
+            Arguments.of(Collections.emptyList(), List.of("QuorumLeader", "QuorumFollowerLagged"), List.of(3, 6))
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("testListNodesByStatusSource")
+    void testListNodesByStatus(List<String> brokerStatuses, List<String> controllerStatuses, List<Integer> nodeIds) {
+        whenRequesting(req -> {
+                if (!brokerStatuses.isEmpty()) {
+                    req = req.param("filter[broker.status]", "in," + String.join(",", brokerStatuses));
+                }
+
+                if (!controllerStatuses.isEmpty()) {
+                    req = req.param("filter[controller.status]", "in," + String.join(",", controllerStatuses));
+                }
+
+                return req.get("", clusterId);
+            })
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()))
+            .body("data.id", contains(nodeIds.stream().map(String::valueOf).toArray(String[]::new)));
     }
 
     @Test

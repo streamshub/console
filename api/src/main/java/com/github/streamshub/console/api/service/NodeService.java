@@ -373,7 +373,7 @@ public class NodeService {
         String nodeId = node.getId();
 
         if (node.isBroker()) {
-            var brokerState = getMetric(metrics, nodeId, "broker_state", BrokerStatus::fromValue, BrokerStatus.UNKNOWN);
+            var brokerState = getMetric(metrics, nodeId, "broker_state", BrokerStatus::fromState, BrokerStatus.UNKNOWN);
             var replicaCount = getMetric(metrics, nodeId, "replica_count", Integer::parseInt, 0);
             var leaderCount = getMetric(metrics, nodeId, "leader_count", Integer::parseInt, 0);
             node.broker(new Node.Attributes.Broker(brokerState, replicaCount, leaderCount));

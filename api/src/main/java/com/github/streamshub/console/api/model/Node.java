@@ -49,7 +49,6 @@ public class Node extends Resource<Node.Attributes> {
     public static class Fields {
         public static final String NODE_POOL = "nodePool";
         public static final String ROLES = "roles";
-        public static final String STATUS = "status";
         public static final String KAFKA_VERSION = "kafkaVersion";
         public static final String METADATA_STATE = "metadataState";
         public static final String BROKER = "broker";
@@ -81,7 +80,6 @@ public class Node extends Resource<Node.Attributes> {
                         Map.of("id", ID_COMPARATOR,
                                 NODE_POOL, comparing(Node::nodePool, nullsLast(String::compareTo)),
                                 RACK, comparing(Node::rack, nullsLast(String::compareTo)),
-                                STATUS, comparing(Node::status, nullsLast(String::compareTo)),
                                 ROLES, comparing(Node::roles, nullsLast((r1, r2) -> Integer.compare(rank(r1), rank(r2))))
                         )
                 );
@@ -92,7 +90,6 @@ public class Node extends Resource<Node.Attributes> {
         public static final String LIST_DEFAULT =
                 NODE_POOL + ", "
                         + ROLES + ", "
-                        + STATUS + ", "
                         + KAFKA_VERSION + ", "
                         + METADATA_STATE + ", "
                         + BROKER + ", "
@@ -192,20 +189,6 @@ public class Node extends Resource<Node.Attributes> {
 
         public Attributes() {
         }
-
-        @JsonProperty
-        public String status() {
-            String status = "Ready";
-
-            if (broker != null && broker.status() != BrokerStatus.RUNNING) {
-                status = "Warning";
-            }
-            if (controller != null && controller.status() == ControllerStatus.FOLLOWER_LAGGED) {
-                status = "Warning";
-            }
-
-            return status;
-        }
     }
 
     public enum Role {
@@ -240,7 +223,7 @@ public class Node extends Resource<Node.Attributes> {
             this.value = value;
         }
 
-        public static BrokerStatus fromValue(String brokerState) {
+        public static BrokerStatus fromState(String brokerState) {
             return switch (brokerState) {
                 case "0" -> NOT_RUNNING;
                 case "1" -> STARTING;
@@ -250,6 +233,15 @@ public class Node extends Resource<Node.Attributes> {
                 case "7" -> SHUTTING_DOWN;
                 default -> UNKNOWN;
             };
+        }
+
+        public static BrokerStatus fromValue(String value) {
+            for (BrokerStatus s : values()) {
+                if (s.value.equals(value)) {
+                    return s;
+                }
+            }
+            return UNKNOWN;
         }
 
         @Override
@@ -418,10 +410,6 @@ public class Node extends Resource<Node.Attributes> {
         return attributes.nodePool;
     }
 
-    public String status() {
-        return attributes.status();
-    }
-
     @JsonIgnore
     public boolean isAddressable() {
         return Objects.nonNull(attributes.host);
@@ -441,6 +429,10 @@ public class Node extends Resource<Node.Attributes> {
 
     public void broker(Attributes.Broker broker) {
         attributes.broker = broker;
+    }
+
+    public Attributes.Controller controller() {
+        return attributes.controller;
     }
 
     public void controller(Attributes.Controller controller) {

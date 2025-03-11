@@ -2,6 +2,7 @@ package com.github.streamshub.console.api.model;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Predicate;
 
 import jakarta.ws.rs.QueryParam;
@@ -55,9 +56,9 @@ public class NodeFilterParams {
         node = "filter[roles]")
     FetchFilter roleFilter;
 
-    @QueryParam("filter[status]")
+    @QueryParam("filter[broker.status]")
     @Parameter(
-        description = "Retrieve only nodes matching the status identified by this parameter",
+        description = "Retrieve only brokers matching the status identified by this parameter",
         schema = @Schema(implementation = String[].class, minItems = 2),
         explode = Explode.FALSE)
     @Expression(
@@ -65,14 +66,33 @@ public class NodeFilterParams {
         value = "self.operator == 'eq' || self.operator == 'in'",
         message = "unsupported filter operator, supported values: [ 'eq', 'in' ]",
         payload = ErrorCategory.InvalidQueryParameter.class,
-        node = "filter[status]")
+        node = "filter[broker.status]")
     @Expression(
         when = "self != null",
         value = "self.operands.size() >= 1",
         message = "at least 1 operand is required",
         payload = ErrorCategory.InvalidQueryParameter.class,
-        node = "filter[status]")
-    FetchFilter statusFilter;
+        node = "filter[broker.status]")
+    FetchFilter brokerStatusFilter;
+
+    @QueryParam("filter[controller.status]")
+    @Parameter(
+        description = "Retrieve only controllers matching the status identified by this parameter",
+        schema = @Schema(implementation = String[].class, minItems = 2),
+        explode = Explode.FALSE)
+    @Expression(
+        when = "self != null",
+        value = "self.operator == 'eq' || self.operator == 'in'",
+        message = "unsupported filter operator, supported values: [ 'eq', 'in' ]",
+        payload = ErrorCategory.InvalidQueryParameter.class,
+        node = "filter[controller.status]")
+    @Expression(
+        when = "self != null",
+        value = "self.operands.size() >= 1",
+        message = "at least 1 operand is required",
+        payload = ErrorCategory.InvalidQueryParameter.class,
+        node = "filter[controller.status]")
+    FetchFilter controllerStatusFilter;
 
     public List<Predicate<Node>> buildPredicates() {
         List<Predicate<Node>> predicates = new ArrayList<>(3);
@@ -85,11 +105,35 @@ public class NodeFilterParams {
             predicates.add(new FetchFilterPredicate<>(roleFilter, Node.Role::fromValue, Node::roles));
         }
 
-        if (statusFilter != null) {
-            predicates.add(new FetchFilterPredicate<>(statusFilter, Node::status));
-        }
+        maybeAddStatusFilters(predicates);
 
         return predicates;
     }
 
+    private void maybeAddStatusFilters(List<Predicate<Node>> predicates) {
+        Predicate<Node> brokerPredicate = brokerStatusFilter != null
+                ? new FetchFilterPredicate<>(
+                        brokerStatusFilter,
+                        Node.BrokerStatus::fromValue,
+                        n -> Optional.ofNullable(n.broker())
+                            .map(Node.Attributes.Broker::status)
+                            .orElse(null))
+                : null;
+        Predicate<Node> controllerPredicate = controllerStatusFilter != null
+                ? new FetchFilterPredicate<>(
+                        controllerStatusFilter,
+                        Node.ControllerStatus::fromValue,
+                        n -> Optional.ofNullable(n.controller())
+                            .map(Node.Attributes.Controller::status)
+                            .orElse(null))
+                : null;
+
+        if (brokerPredicate != null && controllerPredicate != null) {
+            predicates.add(brokerPredicate.or(controllerPredicate));
+        } else if (brokerPredicate != null) {
+            predicates.add(brokerPredicate);
+        } else if (controllerPredicate != null) {
+            predicates.add(controllerPredicate);
+        }
+    }
 }

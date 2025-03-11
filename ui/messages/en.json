@@ -154,7 +154,7 @@
     "partition_table": {
       "partition_id": "Partition ID",
       "status": "Status",
-      "leader": "Leader",
+      "leader": "Lead Controller",
       "leader_tooltip": "The ID of the partition leader. For a given partition, a broker is elected as the leader, handling all produce requests. Followers on other brokers replicate the leader's data. A follower is considered in-sync if it catches up with the leader's latest committed message. Under-replication occurs when the replicas for a partition fall below the configured replication factor.",
       "preferred_leader": "Preferred leader",
       "preferred_leader_tooltip": "Whenever a new topic is created, Kafka runs its leader election algorithm for each partition to assign a leader from the list of replicas. This algorithm aims to create a balanced spread of leadership assignments across the brokers. A \"Yes\" value indicates that the current leader is the preferred leader. A \"No\" value may indicate that the leadership assignments in the cluster are not balanced.",

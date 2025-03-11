@@ -76,7 +76,6 @@ public class NodesResource {
                     allowedValues = {
                         Node.Fields.NODE_POOL,
                         Node.Fields.ROLES,
-                        Node.Fields.STATUS,
                         Node.Fields.KAFKA_VERSION,
                         Node.Fields.METADATA_STATE,
                         Node.Fields.BROKER,
@@ -99,7 +98,6 @@ public class NodesResource {
                             enumeration = {
                                 Node.Fields.NODE_POOL,
                                 Node.Fields.ROLES,
-                                Node.Fields.STATUS,
                                 Node.Fields.KAFKA_VERSION,
                                 Node.Fields.METADATA_STATE,
                                 Node.Fields.BROKER,
