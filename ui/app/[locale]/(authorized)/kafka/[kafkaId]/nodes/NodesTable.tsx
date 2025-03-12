@@ -108,7 +108,7 @@ export function NodesTable({ nodes }: { nodes: Node[] }) {
                       color={"green"}
                       className={"pf-v5-u-ml-sm"}
                     >
-                      Leader
+                    {t.rich("nodes.lead_controller")}
                   </Label>
                 )}
               </Td>
