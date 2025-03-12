@@ -46,7 +46,7 @@ async function ConnectedNodes({ params }: { params: KafkaParams }) {
 
     return {
       id: node.id,
-      nodePool: node.attributes.nodePool ?? "N/A",
+      nodePool: node.attributes.nodePool ?? undefined,
       roles: node.attributes.roles ?? [ "broker" ],
       isLeader: node.attributes.metadataState?.status == "leader",
       brokerStatus: node.attributes.broker ? {
@@ -68,7 +68,7 @@ async function ConnectedNodes({ params }: { params: KafkaParams }) {
   });
 
   const data = Object.fromEntries(
-    nodes.map((n) => {
+    nodes.filter(n => n.roles.includes("broker")).map((n) => {
       return [n.id, { followers: n.followers, leaders: n.leaders }];
     }),
   );

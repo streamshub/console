@@ -5,7 +5,6 @@ import {
   Chart,
   ChartAxis,
   ChartBar,
-  ChartLegend,
   ChartStack,
   ChartVoronoiContainer,
 } from "@/libs/patternfly/react-charts";
@@ -51,7 +50,9 @@ export function DistributionChart({
       case "followers":
         return nodeData.followers;
       default:
-        return (nodeData.leaders && nodeData.followers) ? (nodeData.leaders) + (nodeData.followers) : undefined;
+        return (typeof nodeData.leaders == 'number' && typeof nodeData.followers == 'number')
+            ? (nodeData.leaders) + (nodeData.followers)
+            : undefined;
     }
   };
 
@@ -138,20 +139,14 @@ export function DistributionChart({
             }
             legendOrientation="horizontal"
             legendPosition="bottom"
-            legendComponent={
-              <ChartLegend
-                orientation={"horizontal"}
-                data={Object.keys(data).map((node) => {
-                  const count = getCount(data[node]);
-                  if (count) {
-                    const percentage = getPercentage(count);
-                    return { name: t("DistributionChart.broker_node_count", { node, count, percentage }) };
-                  }
-                  return { name: t("DistributionChart.broker_node_count_missing", { node }) };
-                })}
-                itemsPerRow={width > 600 ? 3 : 1}
-              />
-            }
+            legendData={Object.keys(data).map((node) => {
+              const count = getCount(data[node]);
+              if (count !== undefined) {
+                const percentage = getPercentage(count);
+                return { name: t("DistributionChart.broker_node_count", { node, count, percentage }) };
+              }
+              return { name: t("DistributionChart.broker_node_count_missing", { node }) };
+            })}
             height={100}
             padding={{
               bottom: 70,

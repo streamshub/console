@@ -313,21 +313,19 @@ public class NodeService {
             return CompletableFuture.completedStage(Collections.<String, List<ValueMetric>>emptyMap());
         }
 
-        return Optional.ofNullable(kafkaContext.resource()).map(Kafka::getMetadata).map(kafkaMeta -> {
-            String namespace = kafkaMeta.getNamespace();
-            String name = kafkaMeta.getName();
-            String valueQuery;
+        var clusterConfig = kafkaContext.clusterConfig();
+        String namespace = clusterConfig.getNamespace();
+        String name = clusterConfig.getName();
+        String valueQuery;
 
-            try (var valuesStream = getClass().getResourceAsStream("/metrics/queries/kafkaCluster_values.promql")) {
-                valueQuery = new String(valuesStream.readAllBytes(), StandardCharsets.UTF_8)
-                        .formatted(namespace, name);
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
+        try (var valuesStream = getClass().getResourceAsStream("/metrics/queries/kafkaCluster_values.promql")) {
+            valueQuery = new String(valuesStream.readAllBytes(), StandardCharsets.UTF_8)
+                    .formatted(namespace, name);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
 
-            return metricsService.queryValues(valueQuery);
-        }).orElseGet(() -> CompletableFuture.completedStage(Collections.<String, List<ValueMetric>>emptyMap()));
-
+        return metricsService.queryValues(valueQuery);
     }
 
     Collection<Node> includeMetricsAndPods(

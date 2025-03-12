@@ -34,7 +34,7 @@ export type NodeStatus = {
 
 export type Node = {
   id: string;
-  nodePool: string;
+  nodePool?: string;
   roles: string[];
   isLeader: boolean;
   brokerStatus?: NodeStatus;
@@ -151,7 +151,7 @@ export function NodesTable({ nodes }: { nodes: Node[] }) {
               <Td key={key} dataLabel={"Total replicas"}>
                 <Number
                   value={
-                    row.followers && row.leaders
+                    typeof row.followers == 'number' && typeof row.leaders == 'number'
                       ? row.followers + row.leaders
                       : undefined
                   }
