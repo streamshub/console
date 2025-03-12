@@ -72,5 +72,10 @@
     "prettier": "^3.5.3",
     "storybook": "^8.1.11",
     "tsconfig-paths-webpack-plugin": "^4.2.0"
+  },
+  "overrides": {
+    "eslint-plugin-storybook": {
+      "typescript": "$typescript"
+    }
   }
 }
