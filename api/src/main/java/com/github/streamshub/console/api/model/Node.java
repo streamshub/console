@@ -340,11 +340,11 @@ public class Node extends Resource<Node.Attributes> {
                 .add("id", id);
         JsonObjectBuilder attrBuilder = Json.createObjectBuilder();
 
-        if (sortFields.contains(Fields.NODE_POOL)) {
+        if (sortFields.contains(Fields.NODE_POOL) && attributes.nodePool != null) {
             attrBuilder.add(Fields.NODE_POOL, attributes.nodePool);
         }
 
-        if (sortFields.contains(Fields.RACK)) {
+        if (sortFields.contains(Fields.RACK) && attributes.rack != null) {
             attrBuilder.add(Fields.RACK, attributes.rack);
         }
 

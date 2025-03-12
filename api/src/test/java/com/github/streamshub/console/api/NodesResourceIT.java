@@ -1,12 +1,22 @@
 package com.github.streamshub.console.api;
 
+import java.io.IOException;
 import java.net.URI;
+import java.time.Instant;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import jakarta.inject.Inject;
+import jakarta.json.Json;
+import jakarta.json.JsonObject;
+import jakarta.ws.rs.client.ClientRequestContext;
+import jakarta.ws.rs.client.ClientRequestFilter;
+import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.Response.Status;
 
 import org.apache.kafka.clients.admin.DescribeClusterOptions;
@@ -24,7 +34,10 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mockito;
 
+import com.github.streamshub.console.api.service.MetricsService;
 import com.github.streamshub.console.config.ConsoleConfig;
+import com.github.streamshub.console.config.PrometheusConfig;
+import com.github.streamshub.console.config.PrometheusConfig.Type;
 import com.github.streamshub.console.kafka.systemtest.TestPlainProfile;
 import com.github.streamshub.console.kafka.systemtest.deployment.DeploymentManager;
 import com.github.streamshub.console.test.AdminClientSpy;
@@ -66,7 +79,7 @@ import static org.mockito.Mockito.when;
 @QuarkusTest
 @TestHTTPEndpoint(NodesResource.class)
 @TestProfile(TestPlainProfile.class)
-class NodesResourceIT {
+class NodesResourceIT implements ClientRequestFilter {
 
     @Inject
     Config config;
@@ -76,6 +89,9 @@ class NodesResourceIT {
 
     @Inject
     ConsoleConfig consoleConfig;
+
+    @Inject
+    MetricsService metricsService;
 
     @DeploymentManager.InjectDeploymentManager
     DeploymentManager deployments;
@@ -88,8 +104,43 @@ class NodesResourceIT {
     String clusterId;
     URI bootstrapServers;
 
+    Consumer<ClientRequestContext> filterQuery;
+    final Consumer<ClientRequestContext> filterQueryRange = ctx -> { /* No-op */ };
+
+    @Override
+    public void filter(ClientRequestContext requestContext) throws IOException {
+        var requestUri = requestContext.getUri();
+
+        if (requestUri.getPath().endsWith("query")) {
+            filterQuery.accept(requestContext);
+        } else if (requestUri.getPath().endsWith("query_range")) {
+            filterQueryRange.accept(requestContext);
+        }
+    }
+
     @BeforeEach
     void setup() {
+        metricsService.setAdditionalFilter(Optional.of(this));
+
+        /*
+         * Create a mock Prometheus configuration and point test-kafka1 to use it. A client
+         * will be created when the Kafka CR is discovered. The request filter mock created
+         * above is our way to intercept outbound requests and abort them with the desired
+         * response for each test.
+         */
+        var prometheusConfig = new PrometheusConfig();
+        prometheusConfig.setName("test");
+        prometheusConfig.setType(Type.fromValue("standalone"));
+        prometheusConfig.setUrl("http://prometheus.example.com");
+
+        var prometheusAuthN = new PrometheusConfig.Basic();
+        prometheusAuthN.setUsername("pr0m3th3u5");
+        prometheusAuthN.setPassword("password42");
+        prometheusConfig.setAuthentication(prometheusAuthN);
+
+        consoleConfig.setMetricsSources(List.of(prometheusConfig));
+        consoleConfig.getKafka().getCluster("default/test-kafka1").get().setMetricsSource("test");
+
         kafkaContainer = deployments.getKafkaContainer();
         bootstrapServers = URI.create(kafkaContainer.getBootstrapServers());
         utils = new TestHelper(bootstrapServers, config, null);
@@ -302,6 +353,22 @@ class NodesResourceIT {
                             .toList())
                 .endStatus()
                 .build());
+
+        // Generate metrics only for node 10
+        filterQuery = ctx -> {
+            ctx.abortWith(Response.ok(Json.createObjectBuilder()
+                    .add("data", Json.createObjectBuilder()
+                        .add("result", Json.createArrayBuilder()
+                            .add(Json.createObjectBuilder()
+                                .add("metric", Json.createObjectBuilder()
+                                    .add(MetricsService.METRIC_NAME, "broker_state")
+                                    .add("nodeId", "10"))
+                                .add("value", Json.createArrayBuilder()
+                                    .add(Instant.now().toEpochMilli() / 1000f)
+                                    .add("3"))))) // Running
+                    .build())
+                .build());
+        };
     }
 
     @Test
@@ -382,6 +449,59 @@ class NodesResourceIT {
         }).assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
             .body("data.id", contains(nodeIds.stream().map(String::valueOf).toArray(String[]::new)));
+    }
+
+    static Stream<Arguments> testListNodesWithSortSource() {
+        return Stream.of(
+            Arguments.of("roles,-id,nodePool,rack", List.of(9, 5, 4, 3, 8, 7, 6, 10, 2, 1, 0))
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("testListNodesWithSortSource")
+    void testListNodesWithSort(String sort, List<Integer> nodeIds) {
+        final int pageSize = 6;
+
+        var fullResponse = whenRequesting(req -> req
+                    .param("sort", sort)
+                    .param("page[size]", pageSize)
+                    .get("", clusterId))
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()))
+            .body("meta.page.total", is(nodeIds.size()))
+            .body("data.size()", is(pageSize))
+            .body("data.meta.page", everyItem(hasKey(equalTo("cursor"))))
+            .body("data.id", contains(nodeIds.stream()
+                    .limit(pageSize)
+                    .map(String::valueOf)
+                    .toArray(String[]::new)))
+            .extract()
+            .asInputStream();
+
+        JsonObject responseJson;
+
+        try (var reader = Json.createReader(fullResponse)) {
+            responseJson = reader.readObject();
+        }
+
+        Map<String, Object> parametersMap = new HashMap<>();
+        parametersMap.put("sort", sort);
+        parametersMap.put("page[size]", pageSize);
+        utils.getCursor(responseJson, pageSize - 1)
+            .ifPresent(cursor -> parametersMap.put("page[after]", cursor));
+
+        whenRequesting(req -> req
+                .queryParams(parametersMap)
+                .get("", clusterId))
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()))
+            .body("meta.page.total", is(nodeIds.size())) // total is the count for the full/unpaged result set
+            .body("data.size()", is(nodeIds.size() - pageSize))
+            .body("data.meta.page", everyItem(hasKey(equalTo("cursor"))))
+            .body("data.id", contains(nodeIds.stream()
+                    .skip(pageSize)
+                    .map(String::valueOf)
+                    .toArray(String[]::new)));
     }
 
     @Test
