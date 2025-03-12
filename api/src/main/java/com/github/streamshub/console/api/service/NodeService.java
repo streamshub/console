@@ -218,6 +218,7 @@ public class NodeService {
 
         return valueMetrics
                 .thenCombine(podPromise, (metrics, pods) -> includeMetricsAndPods(nodes, metrics, pods))
+                .thenApply(this::finalizeStatuses)
                 .thenApply(ArrayList::new);
     }
 
@@ -344,26 +345,6 @@ public class NodeService {
             if (pods.containsKey(nodeId)) {
                 includePodStatus(node, pods.get(nodeId));
             }
-
-            if (node.isBroker() && node.broker().status() == BrokerStatus.UNKNOWN) {
-                if (node.isAddressable()) {
-                    node.broker(node.broker().status(BrokerStatus.RUNNING));
-                } else {
-                    node.broker(node.broker().status(BrokerStatus.NOT_RUNNING));
-                }
-            }
-
-            if (node.isController()) {
-                ControllerStatus controllerStatus;
-                if (node.isQuorumLeader()) {
-                    controllerStatus = ControllerStatus.LEADER;
-                } else if (node.hasLag()) {
-                    controllerStatus = ControllerStatus.FOLLOWER_LAGGED;
-                } else {
-                    controllerStatus = ControllerStatus.FOLLOWER;
-                }
-                node.controller(new Node.Attributes.Controller(controllerStatus));
-            }
         }
 
         return nodes.values();
@@ -402,6 +383,32 @@ public class NodeService {
                 node.broker(node.broker().status(BrokerStatus.NOT_RUNNING));
             }
         }
+    }
+
+    private Collection<Node> finalizeStatuses(Collection<Node> nodes) {
+        for (var node : nodes) {
+            if (node.isBroker() && node.broker().status() == BrokerStatus.UNKNOWN) {
+                if (node.isAddressable()) {
+                    node.broker(node.broker().status(BrokerStatus.RUNNING));
+                } else {
+                    node.broker(node.broker().status(BrokerStatus.NOT_RUNNING));
+                }
+            }
+
+            if (node.isController()) {
+                ControllerStatus controllerStatus;
+                if (node.isQuorumLeader()) {
+                    controllerStatus = ControllerStatus.LEADER;
+                } else if (node.hasLag()) {
+                    controllerStatus = ControllerStatus.FOLLOWER_LAGGED;
+                } else {
+                    controllerStatus = ControllerStatus.FOLLOWER;
+                }
+                node.controller(new Node.Attributes.Controller(controllerStatus));
+            }
+        }
+
+        return nodes;
     }
 
     private static boolean nodeHasMetrics(String nodeId, Map<String, List<ValueMetric>> metrics) {
