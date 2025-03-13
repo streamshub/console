@@ -5,7 +5,6 @@ import {
   Chart,
   ChartAxis,
   ChartBar,
-  ChartLegend,
   ChartStack,
   ChartVoronoiContainer,
 } from "@/libs/patternfly/react-charts";
@@ -47,11 +46,13 @@ export function DistributionChart({
   const getCount = (nodeData: { leaders?: number; followers?: number }) => {
     switch (filter) {
       case "leaders":
-        return nodeData.leaders ?? 0;
+        return nodeData.leaders;
       case "followers":
-        return nodeData.followers ?? 0;
+        return nodeData.followers;
       default:
-        return (nodeData.leaders ?? 0) + (nodeData.followers ?? 0);
+        return (typeof nodeData.leaders == 'number' && typeof nodeData.followers == 'number')
+            ? (nodeData.leaders) + (nodeData.followers)
+            : undefined;
     }
   };
 
@@ -66,7 +67,7 @@ export function DistributionChart({
     }
   };
 
-  return allCount > 0 ? (
+  return (
     <Card className={"pf-v5-u-mb-lg"}>
       <CardHeader>
         <CardTitle>
@@ -80,7 +81,7 @@ export function DistributionChart({
           </Tooltip>
         </CardTitle>
       </CardHeader>
-      <CardBody>
+      { allCount > 0 ? ( <CardBody>
         <ToggleGroup
           isCompact
           aria-label={t("DistributionChart.distribution_toggles")}
@@ -138,17 +139,14 @@ export function DistributionChart({
             }
             legendOrientation="horizontal"
             legendPosition="bottom"
-            legendComponent={
-              <ChartLegend
-                orientation={"horizontal"}
-                data={Object.keys(data).map((node) => {
-                  const count = getCount(data[node]);
-                  const percentage = getPercentage(count);
-                  return { name: t("DistributionChart.broker_node_count", { node, count, percentage }) };
-                })}
-                itemsPerRow={width > 600 ? 3 : 1}
-              />
-            }
+            legendData={Object.keys(data).map((node) => {
+              const count = getCount(data[node]);
+              if (count !== undefined) {
+                const percentage = getPercentage(count);
+                return { name: t("DistributionChart.broker_node_count", { node, count, percentage }) };
+              }
+              return { name: t("DistributionChart.broker_node_count_missing", { node }) };
+            })}
             height={100}
             padding={{
               bottom: 70,
@@ -175,7 +173,7 @@ export function DistributionChart({
                     {
                       name: `Broker ${node}`,
                       x: "x",
-                      y: getCount(data),
+                      y: getCount(data) ?? 0,
                     },
                   ]}
                 />
@@ -183,7 +181,12 @@ export function DistributionChart({
             </ChartStack>
           </Chart>
         </div>
-      </CardBody>
-    </Card>
-  ) : null;
+      </CardBody> ) : (
+        <CardBody>
+          <div>
+            {t("DistributionChart.metrics_unavailable")}
+          </div>
+        </CardBody>
+      )}
+    </Card> );
 }

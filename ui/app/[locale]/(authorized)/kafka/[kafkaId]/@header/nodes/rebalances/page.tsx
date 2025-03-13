@@ -14,6 +14,7 @@ import {
 } from "@/libs/patternfly/react-core";
 import { CheckCircleIcon } from "@/libs/patternfly/react-icons";
 import { Suspense } from "react";
+import { useTranslations } from "next-intl";
 
 export default function NodesHeader({ params }: { params: KafkaParams }) {
   return (
@@ -29,7 +30,7 @@ async function ConnectedHeader({ params }: { params: KafkaParams }) {
   const cluster = (await getKafkaCluster(params.kafkaId))?.payload;
   return (
     <Header
-      total={cluster?.attributes.nodes.length || 0}
+      total={cluster?.relationships.nodes?.meta?.count || 0}
       kafkaId={cluster?.id}
       cruiseControlEnable={cluster?.attributes.cruiseControlEnabled || false}
     />
@@ -45,11 +46,12 @@ function Header({
   kafkaId: string | undefined;
   cruiseControlEnable: boolean;
 }) {
+  const t = useTranslations();
   return (
     <AppHeader
       title={
         <Split hasGutter={true}>
-          <SplitItem>Brokers</SplitItem>
+          <SplitItem>{t("nodes.title")}</SplitItem>
           <SplitItem>
             <Label
               color={"green"}

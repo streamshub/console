@@ -43,7 +43,7 @@ import static java.util.Comparator.nullsLast;
     message = "resource type conflicts with operation",
     node = "type",
     payload = ErrorCategory.ResourceConflict.class)
-public class KafkaCluster extends Resource<KafkaCluster.Attributes> implements PaginatedKubeResource {
+public class KafkaCluster extends RelatableResource<KafkaCluster.Attributes, KafkaCluster.Relationships> implements PaginatedKubeResource {
 
     public static final String API_TYPE = "kafkas";
     public static final String FIELDS_PARAM = "fields[" + API_TYPE + "]";
@@ -53,7 +53,6 @@ public class KafkaCluster extends Resource<KafkaCluster.Attributes> implements P
         public static final String NAMESPACE = "namespace";
         public static final String CREATION_TIMESTAMP = "creationTimestamp";
         public static final String NODES = "nodes";
-        public static final String CONTROLLER = "controller";
         public static final String AUTHORIZED_OPERATIONS = "authorizedOperations";
         public static final String LISTENERS = "listeners";
         public static final String METRICS = "metrics";
@@ -91,7 +90,6 @@ public class KafkaCluster extends Resource<KafkaCluster.Attributes> implements P
                 + NAMESPACE + ", "
                 + CREATION_TIMESTAMP + ", "
                 + NODES + ", "
-                + CONTROLLER + ", "
                 + AUTHORIZED_OPERATIONS + ", "
                 + LISTENERS + ", "
                 + KAFKA_VERSION + ", "
@@ -159,12 +157,6 @@ public class KafkaCluster extends Resource<KafkaCluster.Attributes> implements P
         String creationTimestamp; // Strimzi Kafka CR only
 
         @JsonProperty
-        final List<Node> nodes;
-
-        @JsonProperty
-        final Node controller;
-
-        @JsonProperty
         final List<String> authorizedOperations;
 
         @JsonProperty
@@ -188,24 +180,29 @@ public class KafkaCluster extends Resource<KafkaCluster.Attributes> implements P
         @JsonProperty
         Metrics metrics = new Metrics();
 
-        Attributes(List<Node> nodes, Node controller, List<String> authorizedOperations) {
-            this.nodes = nodes;
-            this.controller = controller;
+        @JsonCreator
+        Attributes(List<String> authorizedOperations) {
             this.authorizedOperations = authorizedOperations;
         }
     }
 
-    public KafkaCluster(String id, List<Node> nodes, Node controller, List<String> authorizedOperations) {
-        super(id, API_TYPE, new Attributes(nodes, controller, authorizedOperations));
+    @JsonFilter("fieldFilter")
+    static class Relationships {
+        @JsonProperty
+        DataList<Identifier> nodes = new DataList<>();
+    }
+
+    public KafkaCluster(String id, List<String> authorizedOperations) {
+        super(id, API_TYPE, new Attributes(authorizedOperations), new Relationships());
     }
 
     @JsonCreator
-    public KafkaCluster(String id, String type, Attributes attributes, Meta meta) {
-        super(id, type, meta, attributes);
+    public KafkaCluster(String id, String type, Meta meta, Attributes attributes, Relationships relationships) {
+        super(id, type, meta, attributes, relationships);
     }
 
     public static KafkaCluster fromId(String id) {
-        return new KafkaCluster(id, (List<Node>) null, (Node) null, (List<String>) null);
+        return new KafkaCluster(id, null);
     }
 
     /**
@@ -266,12 +263,8 @@ public class KafkaCluster extends Resource<KafkaCluster.Attributes> implements P
         this.id = id;
     }
 
-    public List<Node> nodes() {
-        return attributes.nodes;
-    }
-
-    public Node controller() {
-        return attributes.controller;
+    public DataList<Identifier> nodes() {
+        return relationships.nodes;
     }
 
     public List<String> authorizedOperations() {

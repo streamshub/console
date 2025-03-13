@@ -254,7 +254,7 @@ public class ListFetchParams {
                 .toList();
 
         List<String> cursorPointers = new ArrayList<>();
-        appendPointers(cursorPointers, "", cursor);
+        appendPointers(sortPointers, cursorPointers, "", cursor);
         Collections.sort(cursorPointers);
 
         return sortPointers.equals(cursorPointers);
@@ -301,24 +301,30 @@ public class ListFetchParams {
         return value;
     }
 
-    static void appendPointers(List<String> pointers, String pointer, JsonValue value) {
+    static void appendPointers(List<String> sortPointers, List<String> cursorPointers, String pointer, JsonValue value) {
         switch (value.getValueType()) {
             case OBJECT:
                 value.asJsonObject().forEach((k, v) ->
-                    appendPointers(pointers, pointer + "/" + Json.encodePointer(k), v));
+                    appendPointers(sortPointers, cursorPointers, pointer + "/" + Json.encodePointer(k), v));
                 break;
 
             case ARRAY:
-                int index = 0;
+                if (sortPointers.contains(pointer)) {
+                    // save the pointer of a non-terminal array node when it was requested as a sort key
+                    cursorPointers.add(pointer);
+                } else {
+                    int index = 0;
 
-                for (var entry : value.asJsonArray()) {
-                    appendPointers(pointers, pointer + "/" + (index++), entry);
+                    for (var entry : value.asJsonArray()) {
+                        appendPointers(sortPointers, cursorPointers, pointer + "/" + (index++), entry);
+                    }
                 }
+
                 break;
 
             default:
                 // save the pointer of any terminal node, value does not matter
-                pointers.add(pointer);
+                cursorPointers.add(pointer);
                 break;
         }
     }

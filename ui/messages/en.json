@@ -75,16 +75,20 @@
     "title": "Overview"
   },
   "nodes": {
-    "title": "Brokers",
+    "title": "Nodes",
     "kpis_offline": "Prometheus can't be reached, or is not configured. Information on the page will be incomplete. Please check your configuration.",
-    "broker_id": "Broker ID",
+    "broker_id": "Node ID",
+    "lead_controller": "Lead controller",
+    "roles": "Roles",
+    "nodePool": "Node Pool",
     "status": "Status",
     "replicas": "Total Replicas",
     "rack": "Rack",
     "replicas_tooltip": "The overall count of partition replicas hosted by the broker. Replicas provide fault tolerance and data availability.",
     "rack_tooltip": "Represents the ID of the rack or datacenter in which the broker resides.",
-    "broker_host_name": "<b>Broker host name</b>",
-    "broker_disk_usage": "<b>Broker disk usage</b>"
+    "host_name": "<b>Node host name</b>",
+    "disk_usage": "<b>Node disk usage</b>",
+    "kafka_version": "<b>Kafka version</b>"
   },
   "node-config-table": {
     "no_results_title": "No properties found",
@@ -269,7 +273,7 @@
     "external_link": "Learn more",
     "cluster_overview": "Cluster overview",
     "topics": "Topics",
-    "brokers": "Brokers",
+    "brokers": "Kafka nodes",
     "consumer_groups": "Consumer groups"
   },
   "AppMasthead": {
@@ -486,6 +490,7 @@
     "no_advanced_options_specified": "No advanced options specified."
   },
   "DistributionChart": {
+    "metrics_unavailable": "Topic replication metrics not available",
     "partitions_distribution_of_total": "Partitions distribution (% of total)",
     "partitions_distribution_of_total_tooltip": "The percentage distribution of partitions across brokers in the cluster. Consider rebalancing if the distribution is uneven to ensure efficient resource utilization.",
     "distribution_toggles": "Compact variant toggle group",
@@ -500,7 +505,8 @@
     "broker_node_voronoi_all": "{name} total partitions: {value}",
     "broker_node_voronoi_leaders": "{name} leaders: {value}",
     "broker_node_voronoi_followers": "{name} followers: {value}",
-    "broker_node_count": "Broker {node}: {count} partitions ({percentage}%)"
+    "broker_node_count": "Broker {node}: {count} partitions ({percentage}%)",
+    "broker_node_count_missing": "Broker {node}: unknown"
   },
   "EmptyStateNoTopics": {
     "to_get_started_create_your_first_topic": "To get started, create your first topic",

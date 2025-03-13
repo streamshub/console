@@ -50,9 +50,7 @@ export async function getTopics(
       "page[before]": params.pageCursor?.startsWith("before:")
         ? params.pageCursor.slice(7)
         : undefined,
-      sort: params.sort
-        ? (params.sortDir !== "asc" ? "-" : "") + params.sort
-        : undefined,
+      sort: sortParam(params.sort, params.sortDir),
     }),
   );
 
