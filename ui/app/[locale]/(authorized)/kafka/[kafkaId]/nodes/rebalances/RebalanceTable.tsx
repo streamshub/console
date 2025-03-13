@@ -126,6 +126,19 @@ const StatusLabel: Record<RebalanceStatus, ReactNode> = {
   ),
 };
 
+function statusLabel(status: RebalanceStatus | null): ReactNode {
+  return status ? StatusLabel[status] : (
+    <Tooltip content="Rebalance status is missing">
+      <span>
+        <Icon>
+          <PauseCircleIcon />
+        </Icon>
+        &nbsp;Unknown
+      </span>
+    </Tooltip>
+  );
+}
+
 const ModeLabel: Record<RebalanceMode, ReactNode> = {
   full: <>Full</>,
   "add-brokers": <>Add</>,
@@ -222,7 +235,7 @@ export function RebalanceTable({
           case "status":
             return (
               <Td key={key} dataLabel={"Status"}>
-                {StatusLabel[row.attributes.status]}
+                {statusLabel(row.attributes.status)}
               </Td>
             );
           case "createdAt":
