@@ -20,7 +20,7 @@ export async function generateMetadata() {
 
 export default async function OverviewPage({ params }: { params: KafkaParams }) {
   const kafkaCluster = getKafkaCluster(params.kafkaId, {
-    fields: 'name,namespace,creationTimestamp,status,kafkaVersion,nodes,controller,authorizedOperations,listeners,conditions,metrics'
+    fields: 'name,namespace,creationTimestamp,status,kafkaVersion,nodes,listeners,conditions,metrics'
   }).then(r => r.payload ?? null);
 
   const topics = getTopics(params.kafkaId, { fields: "status", pageSize: 1 });

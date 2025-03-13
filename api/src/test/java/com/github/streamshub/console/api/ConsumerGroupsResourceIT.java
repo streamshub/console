@@ -257,7 +257,7 @@ class ConsumerGroupsResourceIT {
                 .body("data.size()", is(1))
                 .body("data[0].attributes.state", is(notNullValue(String.class)))
                 .body("data[0].attributes.simpleConsumerGroup", is(notNullValue(Boolean.class)))
-                .body("data[0].attributes.coordinator.id", is(0))
+                .body("data[0].attributes.coordinator.id", is("0"))
                 .body("data[0].attributes.authorizedOperations.size()", is(greaterThanOrEqualTo(1)))
                 .body("data[0].attributes.offsets.size()", is(2))
                 .body("data[0].attributes.offsets", everyItem(allOf(
