@@ -48,7 +48,7 @@ export const RebalanceSchema = z.object({
     name: z.string(),
     namespace: z.string(),
     creationTimestamp: z.string(),
-    status: RebalanceStatusSchema,
+    status: RebalanceStatusSchema.nullable(),
     mode: ModeSchema,
     brokers: z.array(z.number()).nullable(),
     sessionId: z.string().nullable(),

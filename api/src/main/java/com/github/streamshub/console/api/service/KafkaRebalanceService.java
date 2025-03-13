@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -195,7 +196,14 @@ public class KafkaRebalanceService {
                 .withLabel(ResourceLabels.STRIMZI_CLUSTER_LABEL, owner.getMetadata().getName())
                 .list()
                 .getItems()
-                .stream();
+                .stream()
+                .filter(Predicate.not(this::isTemplate));
     }
 
+    private boolean isTemplate(io.strimzi.api.kafka.model.rebalance.KafkaRebalance rebalance) {
+        return Optional.ofNullable(rebalance.getMetadata().getAnnotations())
+            .map(annotations -> annotations.get(ResourceAnnotations.ANNO_STRIMZI_IO_REBALANCE_TEMPLATE))
+            .map(Boolean::valueOf)
+            .orElse(false);
+    }
 }

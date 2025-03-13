@@ -76,7 +76,7 @@ class KafkaRebalancesResourceIT {
     URI bootstrapServers;
     URI randomBootstrapServers;
 
-    static KafkaRebalance buildRebalance(int sequence, String clusterName, KafkaRebalanceMode mode, KafkaRebalanceState state) {
+    static KafkaRebalance buildRebalance(int sequence, String clusterName, KafkaRebalanceMode mode, KafkaRebalanceState state, boolean template) {
         var builder = new KafkaRebalanceBuilder()
             .withNewMetadata()
                 .withName("rebalance-" + sequence)
@@ -89,6 +89,12 @@ class KafkaRebalancesResourceIT {
         if (clusterName != null) {
             builder.editMetadata()
                 .addToLabels(ResourceLabels.STRIMZI_CLUSTER_LABEL, clusterName)
+                .endMetadata();
+        }
+
+        if (template) {
+            builder.editMetadata()
+                .addToAnnotations(ResourceAnnotations.ANNO_STRIMZI_IO_REBALANCE_TEMPLATE, "true")
                 .endMetadata();
         }
 
@@ -143,15 +149,17 @@ class KafkaRebalancesResourceIT {
         int r = 0;
 
         // No cluster name - MUST BE FIRST for "Not found" test
-        utils.apply(client, buildRebalance(r++, null, KafkaRebalanceMode.FULL, null));
+        utils.apply(client, buildRebalance(r++, null, KafkaRebalanceMode.FULL, null, false));
 
         for (String clusterName : Arrays.asList("test-kafka1", "test-kafka2", "test-kafka3")) {
             for (KafkaRebalanceMode mode : KafkaRebalanceMode.values()) {
                 // No status
-                utils.apply(client, buildRebalance(r++, clusterName, mode, null));
+                utils.apply(client, buildRebalance(r++, clusterName, mode, null, false));
+                // No status + template annotation
+                utils.apply(client, buildRebalance(r++, clusterName, mode, null, true));
 
                 for (KafkaRebalanceState state : KafkaRebalanceState.values()) {
-                    utils.apply(client, buildRebalance(r++, clusterName, mode, state));
+                    utils.apply(client, buildRebalance(r++, clusterName, mode, state, false));
                 }
             }
         }
