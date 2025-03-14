@@ -12,7 +12,7 @@ spec:
   storage:
     type: jbod
     volumes:
-      - deleteClaim: true
+      - deleteClaim: false
         id: 0
         size: 10Gi
         type: persistent-claim
