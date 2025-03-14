@@ -6,6 +6,36 @@ It is composed of three main parts:
 - a [user interface (UI)](./ui) built with [Next.js](https://nextjs.org/) and [PatternFly](https://patternfly.org)
 - a Kubernetes [operator](./operator) developed with Java and [Quarkus](https://quarkus.io/)
 
+## Features
+
+- Cluster overview
+
+  High-level cluster information, include storage, memory, and CPU utilization.
+  <a href="./docs/resources/console-overview.png">
+    <img src="./docs/resources/console-overview.png" width="50%">
+  </a>
+
+- Topics
+
+  List Kafka topics & view messages, partition information, and configurations
+  <a href="./docs/resources/console-topics.png">
+    <img src="./docs/resources/console-topics.png" width="50%">
+  </a>
+
+- Kafka nodes
+
+  See information on each node in the Kafka cluster, including support for KRaft (ZooKeeper-less Kafka)
+  <a href="./docs/resources/console-nodes.png">
+    <img src="./docs/resources/console-nodes.png" width="50%">
+  </a>
+
+- Consumer groups
+
+  View, inspect, and alter committed offsets for consumer groups in the Kafka cluster
+  <a href="./docs/resources/console-consumer-groups.png">
+    <img src="./docs/resources/console-consumer-groups.png" width="50%">
+  </a>
+
 ## Roadmap / Goals
 
 The future goals of this project are to provide a user interface to interact with and manage additional data streaming components such as:
