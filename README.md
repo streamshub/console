@@ -66,7 +66,7 @@ This example will create the operator's OLM resources in the `default` namespace
 
 ```shell
 export NAMESPACE=default
-cat install/operator-olm/*.yaml | envsubst | kubectl apply -n ${NAMESPACE} -f -
+cat install/operator/olm/*.yaml | envsubst | kubectl apply -n ${NAMESPACE} -f -
 ```
 
 #### Console Custom Resource Examples
@@ -137,9 +137,9 @@ Running the console locally requires configuration of any Apache Kafka<sup>®</s
    The service account token may be obtained using the `kubectl create token` command. For example, to create a service account named "console-server" with the correct permissions and a token that expires in 1 year ([yq](https://github.com/mikefarah/yq/releases) required):
    ```shell
    export NAMESPACE=<service account namespace>
-   kubectl apply -n ${NAMESPACE} -f ./install/console/010-ServiceAccount-console-server.yaml
-   kubectl apply -n ${NAMESPACE} -f ./install/console/020-ClusterRole-console-server.yaml
-   cat ./install/console/030-ClusterRoleBinding-console-server.yaml | envsubst | kubectl apply -n ${NAMESPACE} -f -
+   kubectl apply -n ${NAMESPACE} -f ./install/operatorless/010-ServiceAccount-console-server.yaml
+   kubectl apply -n ${NAMESPACE} -f ./install/operatorless/020-ClusterRole-console-server.yaml
+   cat ./install/operatorless/030-ClusterRoleBinding-console-server.yaml | envsubst | kubectl apply -n ${NAMESPACE} -f -
    kubectl create token console-server -n ${NAMESPACE} --duration=$((365*24))h
    ```
 
