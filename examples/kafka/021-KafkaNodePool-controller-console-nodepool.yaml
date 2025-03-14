@@ -2,7 +2,7 @@
 apiVersion: kafka.strimzi.io/v1beta2
 kind: KafkaNodePool
 metadata:
-  name: console-brokers
+  name: console-controllers
   labels:
     strimzi.io/cluster: console-kafka
 spec:
