@@ -60,13 +60,13 @@ Prometheus is an optional dependency of the console if cluster metrics are to be
 The console may be configured to use an OpenID Connect (OIDC) provider for user authentication. An example using [dex](https://dexidp.io/) for OIDC with an OpenShift identity provider is available in [examples/dex-openshift](./examples/dex-openshift).
 
 ### Deploy the operator with OLM
-The preferred way to deploy the console is using the Operator Lifecycle Manager, or OLM. The sample install files in `install/operator-olm` will install the operator with cluster-wide scope. This means that `Console` instances may be created in any namespace. If you wish to limit the scope of the operator, the `OperatorGroup` resource may be modified to specify only the namespace that should be watched by the operator.
+The preferred way to deploy the console is using the Operator Lifecycle Manager, or OLM. The sample install files in `install/operator/olm` will install the operator with cluster-wide scope. This means that `Console` instances may be created in any namespace. If you wish to limit the scope of the operator, the `OperatorGroup` resource may be modified to specify only the namespace that should be watched by the operator.
 
 This example will create the operator's OLM resources in the `default` namespace. Modify the `NAMESPACE` variable according to your needs.
 
 ```shell
 export NAMESPACE=default
-cat install/operator-olm/*.yaml | envsubst | kubectl apply -n ${NAMESPACE} -f -
+cat install/operator/olm/*.yaml | envsubst | kubectl apply -n ${NAMESPACE} -f -
 ```
 
 #### Console Custom Resource Examples
@@ -137,9 +137,9 @@ Running the console locally requires configuration of any Apache Kafka<sup>®</s
    The service account token may be obtained using the `kubectl create token` command. For example, to create a service account named "console-server" with the correct permissions and a token that expires in 1 year ([yq](https://github.com/mikefarah/yq/releases) required):
    ```shell
    export NAMESPACE=<service account namespace>
-   kubectl apply -n ${NAMESPACE} -f ./install/console/010-ServiceAccount-console-server.yaml
-   kubectl apply -n ${NAMESPACE} -f ./install/console/020-ClusterRole-console-server.yaml
-   cat ./install/console/030-ClusterRoleBinding-console-server.yaml | envsubst | kubectl apply -n ${NAMESPACE} -f -
+   kubectl apply -n ${NAMESPACE} -f ./install/operatorless/010-ServiceAccount-console-server.yaml
+   kubectl apply -n ${NAMESPACE} -f ./install/operatorless/020-ClusterRole-console-server.yaml
+   cat ./install/operatorless/030-ClusterRoleBinding-console-server.yaml | envsubst | kubectl apply -n ${NAMESPACE} -f -
    kubectl create token console-server -n ${NAMESPACE} --duration=$((365*24))h
    ```
 
