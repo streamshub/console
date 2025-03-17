@@ -123,3 +123,5 @@ if [[ -n "$SKIP_RANGE" ]]; then
     echo "[DEBUG] Setting skipRange = \"${SKIP_RANGE}\""
     ${YQ} eval -o yaml -i ".metadata.annotations.[\"olm.skipRange\"] = \"${SKIP_RANGE}\"" "${CSV_FILE_PATH}"
 fi
+
+${YQ} -i '.spec.icon = [{ "base64data": "'$(base64 -w0 ${SCRIPT_PATH}/../src/main/olm/icon.png)'", "mediatype": "image/png" }]' "${CSV_FILE_PATH}"
