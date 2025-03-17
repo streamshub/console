@@ -1,6 +1,7 @@
 package com.github.streamshub.console.api.model;
 
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.Comparator;
@@ -295,7 +296,10 @@ public class Node extends Resource<Node.Attributes> {
     public static record MetadataState(
         MetadataStatus status,
         long logEndOffset,
-        long lag
+        Instant lastFetchTimestamp,
+        Instant lastCaughtUpTimestamp,
+        long lag,
+        long timeLag
     ) {
     }
 
@@ -402,8 +406,8 @@ public class Node extends Resource<Node.Attributes> {
     }
 
     @JsonIgnore
-    public boolean hasLag() {
-        return attributes.metadataState.lag > 0;
+    public boolean hasLag(long fetchTimeout) {
+        return attributes.metadataState.timeLag() >= fetchTimeout;
     }
 
     public String nodePool() {
