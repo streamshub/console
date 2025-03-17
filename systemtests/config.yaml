@@ -1,0 +1,54 @@
+---
+# -------------------------------------------
+# Common
+# -------------------------------------------
+# Run Playwright tests in headless mode without browser popping up
+RUN_HEADLESS: true
+# Keep test resources after execution (false = delete resources)
+SKIP_TEARDOWN: false
+# Directory to store screenshots from tests. Relative to systemtests dir ["screenshots"]
+SCREENSHOTS_DIR_PATH: screenshots
+# Skip Strimzi installation if it's installed externally. Otherwise, system tests will install strimzi
+SKIP_STRIMZI_INSTALLATION: false
+# Deployment name of the Strimzi Operator. Need to set this when Strimzi is installed externally
+STRIMZI_OPERATOR_NAME: strimzi-cluster-operator
+# Deployment name of the Console instance
+CONSOLE_DEPLOYMENT_NAME: streamshub-console
+# Install type for Console Operator [OLM; YAML]
+INSTALL_USING_OLM: true
+# -------------------------------------------
+# OLM
+# -------------------------------------------
+# Name of the CatalogSource for Console Operator (OLM install)
+CONSOLE_CATALOG_SOURCE_NAME: streamshub-console-catalog
+# OLM channel for selecting the Operator version
+OLM_OPERATOR_CHANNEL: alpha
+# Deployment name for the OLM install type Console Operator
+CONSOLE_OLM_DEPLOYMENT_NAME: streamshub-console-operator
+# -------------------------------------------
+# YAML
+# -------------------------------------------
+# URL to Strimzi Operator CRDs for installation.
+STRIMZI_OPERATOR_CRDS_URL: https://github.com/strimzi/strimzi-kafka-operator/tree/0.45.0/packaging/install/cluster-operator
+# URL or local path for Console Operator installation
+# 1. URL - released console-operator.yaml ["https://github.com/streamshub/console/releases/download/0.6.3/streamshub-console-operator.yaml"]
+# 2. Local path relative to systemtests folder
+CONSOLE_OPERATOR_BUNDLE_URL: ../install/console-operator/non-olm/console-operator.yaml
+# Custom Console Operator image. Overrides default image used in bundle yaml
+CONSOLE_OPERATOR_IMAGE: ""
+# -------------------------------------------
+# Console instance images
+# -------------------------------------------
+# Custom Console API image. Overrides default image installed automatically by Operator
+CONSOLE_API_IMAGE: ""
+# Custom Console UI image. Overrides default image installed automatically by Operator
+CONSOLE_UI_IMAGE: ""
+# -------------------------------------------
+# Kafka
+# -------------------------------------------
+# Kafka version used in system tests
+ST_KAFKA_VERSION: 3.9.0
+# Image for test client containers in system tests
+TEST_CLIENTS_IMAGE: quay.io/strimzi-test-clients/test-clients:latest-kafka-3.9.0
+# Secret used for pulling testing clients image
+SYSTEM_TEST_STRIMZI_IMAGE_PULL_SECRET: ""
