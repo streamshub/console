@@ -2,14 +2,13 @@
 apiVersion: kafka.strimzi.io/v1beta2
 kind: KafkaNodePool
 metadata:
-  name: console-nodepool
+  name: console-controllers
   labels:
     strimzi.io/cluster: console-kafka
 spec:
   replicas: 3
   roles:
     - controller
-    - broker
   storage:
     type: jbod
     volumes:
