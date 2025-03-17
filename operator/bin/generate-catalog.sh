@@ -15,6 +15,7 @@ echo "[INFO] Generate catalog in ${CATALOG_PATH}"
 rm -rvf ${CATALOG_PATH}
 mkdir -p ${CATALOG_PATH}
 cp -v ${OPERATOR_PATH}/src/main/olm/*.yaml ${CATALOG_PATH}/
+${YQ} -i '.icon = { "base64data": "'$(base64 -w0 ${OPERATOR_PATH}/src/main/olm/icon.png)'", "mediatype": "image/png" }' ${CATALOG_PATH}/package.yaml
 
 for CSV_NAME in $(${YQ} '.entries[].name' ${CATALOG_PATH}/channel.alpha.yaml | sort -V) ; do
     if [ -f ${OPERATOR_PATH}/src/main/olm/bundles/${CSV_NAME}.yaml ] ; then
