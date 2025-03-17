@@ -39,7 +39,9 @@ main () {
         mkdir -v ${COMMUNITY_CATALOG_PATH}/${VERSION}
         ${CONTAINER_RUNTIME} cp ${CONTAINER_ID}:/manifests ${COMMUNITY_CATALOG_PATH}/${VERSION}
         ${CONTAINER_RUNTIME} cp ${CONTAINER_ID}:/metadata ${COMMUNITY_CATALOG_PATH}/${VERSION}
-        ${YQ} -i '.spec.replaces = "'$(replaces ${CSV_NAME})'"' ${COMMUNITY_CATALOG_PATH}/${VERSION}/manifests/*.clusterserviceversion.yaml
+        CSV_FILE_PATH="${COMMUNITY_CATALOG_PATH}/${VERSION}/manifests/*.clusterserviceversion.yaml"
+        ${YQ} -i '.spec.replaces = "'$(replaces ${CSV_NAME})'"' ${CSV_FILE_PATH}
+        ${YQ} -i '.spec.icon = [{ "base64data": "'$(base64 -w0 ${SCRIPT_PATH}/../src/main/olm/icon.png)'", "mediatype": "image/png" }]' ${CSV_FILE_PATH}
         ${YQ} -i '.annotations["operators.operatorframework.io.bundle.channels.v1"] = "'$(channels ${CSV_NAME})'"' ${COMMUNITY_CATALOG_PATH}/${VERSION}/metadata/annotations.yaml
         ${CONTAINER_RUNTIME} rm ${CONTAINER_ID}
         #${CONTAINER_RUNTIME} image rm ${BUNDLE_IMAGE}
