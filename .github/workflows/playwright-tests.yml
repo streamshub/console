@@ -79,7 +79,7 @@ jobs:
 
           # Create the CatalogSource with the Console operator bundle
           yq ea '.spec.image = "localhost:5000/streamshub/console-operator-catalog:${{ env.PROJECT_VERSION }}"' \
-            ./install/operator-olm/010-CatalogSource-console-operator-catalog.yaml \
+            ./install/operator/olm/010-CatalogSource-console-operator-catalog.yaml \
             | kubectl apply -n olm -f -
 
           kubectl wait catalogsource/streamshub-console-catalog -n olm \
@@ -99,7 +99,7 @@ jobs:
               sourceNamespace: olm' | kubectl apply -n operators -f -
 
           # Install Console Operator
-          yq ea '.spec.sourceNamespace = "olm"' ./install/operator-olm/020-Subscription-console-operator.yaml \
+          yq ea '.spec.sourceNamespace = "olm"' ./install/operator/olm/020-Subscription-console-operator.yaml \
             | kubectl apply -n operators -f -
 
           wait_operator() {
