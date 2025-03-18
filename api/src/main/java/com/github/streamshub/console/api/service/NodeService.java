@@ -3,6 +3,7 @@ package com.github.streamshub.console.api.service;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -11,6 +12,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
@@ -49,6 +51,8 @@ import io.fabric8.kubernetes.client.readiness.Readiness;
 import io.strimzi.api.ResourceAnnotations;
 import io.strimzi.api.ResourceLabels;
 import io.strimzi.api.kafka.model.kafka.Kafka;
+import io.strimzi.api.kafka.model.kafka.KafkaClusterSpec;
+import io.strimzi.api.kafka.model.kafka.KafkaSpec;
 import io.strimzi.api.kafka.model.nodepool.KafkaNodePool;
 
 import static com.github.streamshub.console.api.BlockingSupplier.get;
@@ -218,7 +222,7 @@ public class NodeService {
 
         return valueMetrics
                 .thenCombine(podPromise, (metrics, pods) -> includeMetricsAndPods(nodes, metrics, pods))
-                .thenApply(this::finalizeStatuses)
+                .thenApplyAsync(this::finalizeStatuses, threadContext.currentContextExecutor())
                 .thenApply(ArrayList::new);
     }
 
@@ -240,22 +244,42 @@ public class NodeService {
             for (var r : quorum.voters()) {
                 int id = r.replicaId();
                 long logEndOffset = r.logEndOffset();
-                long lag = leader.logEndOffset() - logEndOffset;
                 var status = (id == leaderId) ? Node.MetadataStatus.LEADER : Node.MetadataStatus.FOLLOWER;
-                metadataStates.put(id, new Node.MetadataState(status, logEndOffset, lag));
+
+                metadataStates.put(id, new Node.MetadataState(
+                        status,
+                        logEndOffset,
+                        instantOf(r.lastFetchTimestamp()),
+                        instantOf(r.lastCaughtUpTimestamp()),
+                        // lag
+                        leader.logEndOffset() - logEndOffset,
+                        // timeLag
+                        leader.lastCaughtUpTimestamp().orElse(-1) - r.lastCaughtUpTimestamp().orElse(-1)));
             }
 
             for (var r : quorum.observers()) {
                 int id = r.replicaId();
                 long logEndOffset = r.logEndOffset();
-                long lag = leader.logEndOffset() - logEndOffset;
-                metadataStates.put(id, new Node.MetadataState(Node.MetadataStatus.OBSERVER, logEndOffset, lag));
+
+                metadataStates.put(id, new Node.MetadataState(
+                        Node.MetadataStatus.OBSERVER,
+                        logEndOffset,
+                        instantOf(r.lastFetchTimestamp()),
+                        instantOf(r.lastCaughtUpTimestamp()),
+                        // lag
+                        leader.logEndOffset() - logEndOffset,
+                        // timeLag
+                        leader.lastCaughtUpTimestamp().orElse(-1) - r.lastCaughtUpTimestamp().orElse(-1)));
             }
         } else {
             metadataStates = Collections.emptyMap();
         }
 
         return metadataStates;
+    }
+
+    private static Instant instantOf(OptionalLong millis) {
+        return millis.stream().mapToObj(Instant::ofEpochMilli).findFirst().orElse(null);
     }
 
     /**
@@ -397,7 +421,7 @@ public class NodeService {
                 ControllerStatus controllerStatus;
                 if (node.isQuorumLeader()) {
                     controllerStatus = ControllerStatus.LEADER;
-                } else if (node.hasLag()) {
+                } else if (node.hasLag(getQuorumFetchTimeout())) {
                     controllerStatus = ControllerStatus.FOLLOWER_LAGGED;
                 } else {
                     controllerStatus = ControllerStatus.FOLLOWER;
@@ -407,6 +431,29 @@ public class NodeService {
         }
 
         return nodes;
+    }
+
+    /**
+     * Obtain the value of the `controller.quorum.fetch.timeout.ms` configuration from
+     * the Kafka CR, or default to 2s if not available.
+     */
+    private long getQuorumFetchTimeout() {
+        return Optional.ofNullable(kafkaContext.resource())
+            .map(Kafka::getSpec)
+            .map(KafkaSpec::getKafka)
+            .map(KafkaClusterSpec::getConfig)
+            .map(config -> config.get("controller.quorum.fetch.timeout.ms"))
+            .map(String::valueOf)
+            .map(value -> {
+                try {
+                    return Long.parseLong(value);
+                } catch (Exception e) {
+                    logger.debugf("Value of controller.quorum.fetch.timeout.ms could not be parsed as a long: %s", value);
+                    // Ignore the un-parseable value and use the default.
+                    return null;
+                }
+            })
+            .orElse(2000L);
     }
 
     private static boolean nodeHasMetrics(String nodeId, Map<String, List<ValueMetric>> metrics) {

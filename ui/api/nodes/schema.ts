@@ -13,7 +13,10 @@ export const NodeSchema = z.object({
     metadataState: z.object({
       status: z.enum([ "leader", "follower", "observer" ]),
       logEndOffset: z.number(),
+      lastFetchTimestamp: z.string().nullable(),
+      lastCaughtUpTimestamp: z.string().nullable(),
       lag: z.number(),
+      timeLag: z.number(),
     }).optional().nullable(),
     broker: z.object({
       status: z.enum([

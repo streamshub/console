@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
@@ -30,6 +31,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mockito;
@@ -139,7 +141,7 @@ class NodesResourceIT implements ClientRequestFilter {
         prometheusConfig.setAuthentication(prometheusAuthN);
 
         consoleConfig.setMetricsSources(List.of(prometheusConfig));
-        consoleConfig.getKafka().getCluster("default/test-kafka1").get().setMetricsSource("test");
+        consoleConfig.getKafka().getCluster(clusterNamespace1 + '/' + clusterName1).get().setMetricsSource("test");
 
         kafkaContainer = deployments.getKafkaContainer();
         bootstrapServers = URI.create(kafkaContainer.getBootstrapServers());
@@ -175,7 +177,7 @@ class NodesResourceIT implements ClientRequestFilter {
                 .endStatus()
                 .build());
 
-        clusterId = consoleConfig.getKafka().getCluster("default/test-kafka1").get().getId();
+        clusterId = consoleConfig.getKafka().getCluster(clusterNamespace1 + '/' + clusterName1).get().getId();
 
         /*
          * Below sets up several mocked nodes to support node listing tests
@@ -228,6 +230,8 @@ class NodesResourceIT implements ClientRequestFilter {
         }).toList();
         when(clusterResult.nodes()).thenReturn(KafkaFuture.completedFuture(nodes));
 
+        var now = OptionalLong.of(System.currentTimeMillis());
+        var beforeTimeout = OptionalLong.of(System.currentTimeMillis() - 2000);
         var quorumResult = Mockito.mock(DescribeMetadataQuorumResult.class);
         var quorumInfo = MockHelper.mockAll(QuorumInfo.class, Map.of(
                 QuorumInfo::leaderId, nodeProps.stream()
@@ -240,7 +244,9 @@ class NodesResourceIT implements ClientRequestFilter {
                     .filter(n -> n.controllerStatus() != null)
                     .map(n -> MockHelper.mockAll(QuorumInfo.ReplicaState.class, Map.of(
                         QuorumInfo.ReplicaState::replicaId, n.id(),
-                        QuorumInfo.ReplicaState::logEndOffset, n.controllerStatus().contains("Lagged") ? 999L : 1000L
+                        QuorumInfo.ReplicaState::logEndOffset, 1000L - n.id(), // for some variety
+                        QuorumInfo.ReplicaState::lastFetchTimestamp, n.controllerStatus().contains("Lagged") ? beforeTimeout : now,
+                        QuorumInfo.ReplicaState::lastCaughtUpTimestamp, n.controllerStatus().contains("Lagged") ? beforeTimeout : now
                     )))
                     .toList(),
 
@@ -502,6 +508,32 @@ class NodesResourceIT implements ClientRequestFilter {
                     .skip(pageSize)
                     .map(String::valueOf)
                     .toArray(String[]::new)));
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        "2000, QuorumFollowerLagged",
+        "3000, QuorumFollower",
+        "NaN,  QuorumFollowerLagged "
+    })
+    void testListNodesWithVaryingQuorumFetchTimeout(String quorumFetchTime, String nodeStatus6) {
+        client.resources(Kafka.class)
+            .inNamespace(clusterNamespace1)
+            .withName(clusterName1)
+            .edit(k -> new KafkaBuilder(k)
+                    .editSpec()
+                        .editKafka()
+                            .addToConfig("controller.quorum.fetch.timeout.ms", quorumFetchTime)
+                        .endKafka()
+                    .endSpec()
+                    .build());
+
+        whenRequesting(req -> req
+                .param("filter[controller.status]", "in," + nodeStatus6)
+                .get("", clusterId))
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()))
+            .body("data.collect { it.id }", hasItem("6"));
     }
 
     @Test
