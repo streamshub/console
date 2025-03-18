@@ -3,6 +3,8 @@ package com.github.streamshub.systemtests;
 import com.github.streamshub.systemtests.enums.BrowserTypes;
 import io.skodjob.testframe.environment.TestEnvironmentVariables;
 
+import java.io.IOException;
+
 import static io.skodjob.testframe.TestFrameEnv.USER_PATH;
 
 public class Environment {
@@ -33,6 +35,10 @@ public class Environment {
     // ------------------------------------------------------------------------------------------------------------------------------------------------------------
     // Deny instantiation
     private Environment() {}
+
+    public static void saveConfigToFile() throws IOException {
+        ENVS.saveConfigurationFile(TEST_LOG_DIR);
+    }
 
     static {
         ENVS.logEnvironmentVariables();

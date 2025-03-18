@@ -1,7 +1,7 @@
 package com.github.streamshub.systemtests;
 
-import com.github.streamshub.systemtests.exceptions.KubernetesClusterUnstableException;
 import com.github.streamshub.systemtests.logs.TestLogCollector;
+import io.skodjob.testframe.clients.KubeClusterException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -18,7 +18,7 @@ public class TestExecutionWatcher implements TestExecutionExceptionHandler, Life
     @Override
     public void handleTestExecutionException(ExtensionContext extensionContext, Throwable throwable) throws Throwable {
         LOGGER.error("{} - Exception {} has been thrown in @Test. Going to collect logs from components.", extensionContext.getRequiredTestClass().getSimpleName(), throwable.getMessage());
-        if (!(throwable instanceof TestAbortedException || throwable instanceof KubernetesClusterUnstableException)) {
+        if (!(throwable instanceof TestAbortedException || throwable instanceof KubeClusterException)) {
             final String testClass = extensionContext.getRequiredTestClass().getName();
             final String testMethod = extensionContext.getRequiredTestMethod().getName();
 
@@ -30,7 +30,7 @@ public class TestExecutionWatcher implements TestExecutionExceptionHandler, Life
     @Override
     public void handleBeforeAllMethodExecutionException(ExtensionContext extensionContext, Throwable throwable) throws Throwable {
         LOGGER.error("[BeforeAll@{}] Thrown Exception [{}]. Going to collect logs from components.", extensionContext.getRequiredTestClass().getSimpleName(), throwable.getMessage());
-        if (!(throwable instanceof TestAbortedException || throwable instanceof KubernetesClusterUnstableException)) {
+        if (!(throwable instanceof TestAbortedException || throwable instanceof KubeClusterException)) {
             final String testClass = extensionContext.getRequiredTestClass().getName();
 
             LOG_COLLECTOR.collectLogs(testClass);
@@ -41,7 +41,7 @@ public class TestExecutionWatcher implements TestExecutionExceptionHandler, Life
     @Override
     public void handleBeforeEachMethodExecutionException(ExtensionContext extensionContext, Throwable throwable) throws Throwable {
         LOGGER.error("[BeforeEach@{}] Thrown Exception [{}]. Going to collect logs from components.", extensionContext.getRequiredTestClass().getSimpleName(), throwable.getMessage());
-        if (!(throwable instanceof TestAbortedException || throwable instanceof KubernetesClusterUnstableException)) {
+        if (!(throwable instanceof TestAbortedException || throwable instanceof KubeClusterException)) {
             final String testClass = extensionContext.getRequiredTestClass().getName();
             final String testMethod = extensionContext.getRequiredTestMethod().getName();
 
@@ -53,7 +53,7 @@ public class TestExecutionWatcher implements TestExecutionExceptionHandler, Life
     @Override
     public void handleAfterEachMethodExecutionException(ExtensionContext extensionContext, Throwable throwable) throws Throwable {
         LOGGER.error("[AfterEach@{}] Thrown Exception [{}]. Going to collect logs from components.", extensionContext.getRequiredTestClass().getSimpleName(), throwable.getMessage());
-        if (!(throwable instanceof KubernetesClusterUnstableException)) {
+        if (!(throwable instanceof KubeClusterException)) {
             final String testClass = extensionContext.getRequiredTestClass().getName();
             final String testMethod = extensionContext.getRequiredTestMethod().getName();
 
@@ -65,7 +65,7 @@ public class TestExecutionWatcher implements TestExecutionExceptionHandler, Life
     @Override
     public void handleAfterAllMethodExecutionException(ExtensionContext extensionContext, Throwable throwable) throws Throwable {
         LOGGER.error("[AfterAll@{}] Thrown Exception [{}]. Going to collect logs from components.", extensionContext.getRequiredTestClass().getSimpleName(), throwable.getMessage());
-        if (!(throwable instanceof KubernetesClusterUnstableException)) {
+        if (!(throwable instanceof KubeClusterException)) {
             final String testClass = extensionContext.getRequiredTestClass().getName();
 
             LOG_COLLECTOR.collectLogs(testClass);
