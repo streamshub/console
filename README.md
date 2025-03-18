@@ -6,6 +6,36 @@ It is composed of three main parts:
 - a [user interface (UI)](./ui) built with [Next.js](https://nextjs.org/) and [PatternFly](https://patternfly.org)
 - a Kubernetes [operator](./operator) developed with Java and [Quarkus](https://quarkus.io/)
 
+## Features
+
+- Cluster overview
+
+  High-level cluster information, include storage, memory, and CPU utilization.
+  <a href="./docs/resources/console-overview.png">
+    <img src="./docs/resources/console-overview.png" width="50%">
+  </a>
+
+- Topics
+
+  List Kafka topics & view messages, partition information, and configurations
+  <a href="./docs/resources/console-topics.png">
+    <img src="./docs/resources/console-topics.png" width="50%">
+  </a>
+
+- Kafka nodes
+
+  See information on each node in the Kafka cluster, including support for KRaft (ZooKeeper-less Kafka)
+  <a href="./docs/resources/console-nodes.png">
+    <img src="./docs/resources/console-nodes.png" width="50%">
+  </a>
+
+- Consumer groups
+
+  View, inspect, and alter committed offsets for consumer groups in the Kafka cluster
+  <a href="./docs/resources/console-consumer-groups.png">
+    <img src="./docs/resources/console-consumer-groups.png" width="50%">
+  </a>
+
 ## Roadmap / Goals
 
 The future goals of this project are to provide a user interface to interact with and manage additional data streaming components such as:
@@ -18,7 +48,7 @@ Contributions and discussions around use cases for these (and other relevant) co
 ## Deployment
 Deploy the console using one of the following methods:
 
-- Through its dedicated operator using the Operator Lifecycle Manager (OLM)
+- Through its dedicated operator using the [Operator Lifecycle Manager](https://olm.operatorframework.io/) (OLM)
 - Using the operator with plain Kubernetes resources
 - Directly with Kubernetes resources, without the operator
 
@@ -60,7 +90,9 @@ Prometheus is an optional dependency of the console if cluster metrics are to be
 The console may be configured to use an OpenID Connect (OIDC) provider for user authentication. An example using [dex](https://dexidp.io/) for OIDC with an OpenShift identity provider is available in [examples/dex-openshift](./examples/dex-openshift).
 
 ### Deploy the operator with OLM
-The preferred way to deploy the console is using the Operator Lifecycle Manager, or OLM. The sample install files in `install/operator-olm` will install the operator with cluster-wide scope. This means that `Console` instances may be created in any namespace. If you wish to limit the scope of the operator, the `OperatorGroup` resource may be modified to specify only the namespace that should be watched by the operator.
+The preferred way to deploy the console is using the Operator Lifecycle Manager, or OLM - see [OLM releases](https://github.com/operator-framework/operator-lifecycle-manager/releases) for details on how to install it. Note, if you are using OpenShift, OLM is already installed.
+
+The sample install files in `install/operator-olm` will install the operator with cluster-wide scope. This means that `Console` instances may be created in any namespace. If you wish to limit the scope of the operator, the `OperatorGroup` resource may be modified to specify only the namespace that should be watched by the operator.
 
 This example will create the operator's OLM resources in the `default` namespace. Modify the `NAMESPACE` variable according to your needs.
 
