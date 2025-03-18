@@ -2,7 +2,8 @@ package com.github.streamshub.systemtests.constants;
 
 import static io.skodjob.testframe.TestFrameEnv.USER_PATH;
 
-public interface ExampleFilePaths {
+public class ExampleFilePaths {
+    private ExampleFilePaths() {}
 
     // ---------------
     // Install resources

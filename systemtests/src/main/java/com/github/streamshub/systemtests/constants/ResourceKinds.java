@@ -1,40 +1,42 @@
 package com.github.streamshub.systemtests.constants;
 
-public interface ResourceKinds {
+public class ResourceKinds {
+    private ResourceKinds() {}
+
     // ----------
     // K8s
     // ----------
-    String CUSTOM_RESOURCE_DEFINITION = "CustomResourceDefinition";
-    String CONFIG_MAP = "ConfigMap";
-    String DEPLOYMENT = "Deployment";
-    String DEPLOYMENT_CONFIG = "DeploymentConfig";
-    String POD = "Pod";
-    String SERVICE = "Service";
-    String SECRET = "Secret";
-    String CLUSTER_ROLE = "ClusterRole";
-    String CLUSTER_ROLE_BINDING = "ClusterRoleBinding";
-    String ROLE_BINDING = "RoleBinding";
-    String SERVICE_ACCOUNT = "ServiceAccount";
-    String JOB = "Job";
-    String NAMESPACE = "Namespace";
+    public static final String CUSTOM_RESOURCE_DEFINITION = "customresourcedefinition";
+    public static final String CONFIG_MAP = "configmap";
+    public static final String DEPLOYMENT = "deployment";
+    public static final String DEPLOYMENT_CONFIG = "deploymentconfig";
+    public static final String POD = "pod";
+    public static final String SERVICE = "service";
+    public static final String SECRET = "secret";
+    public static final String CLUSTER_ROLE = "clusterrole";
+    public static final String CLUSTER_ROLE_BINDING = "clusterrolebinding";
+    public static final String ROLE_BINDING = "rolebinding";
+    public static final String SERVICE_ACCOUNT = "serviceaccount";
+    public static final String JOB = "job";
+    public static final String NAMESPACE = "namespace";
     // ----------
     // Openshift
     // ----------
-    String CATALOG_SOURCE = "CatalogSource";
-    String SUBSCRIPTION = "Subscription";
-    String INSTALL_PLAN = "InstallPlan";
-    String CLUSTER_SERVICE_VERSION = "ClusterServiceVersion";
-    String OPERATOR_GROUP = "OperatorGroup";
-    String OPERATOR = "Operator";
+    public static final String CATALOG_SOURCE = "catalogsource";
+    public static final String SUBSCRIPTION = "subscription";
+    public static final String INSTALL_PLAN = "installplan";
+    public static final String CLUSTER_SERVICE_VERSION = "clusterserviceversion";
+    public static final String OPERATOR_GROUP = "operatorgroup";
+    public static final String OPERATOR = "operator";
     // ----------
     // Kafka
     // ----------
-    String KAFKA_TOPIC = "KafkaTopic";
-    String KAFKA = "Kafka";
-    String KAFKA_USER = "KafkaUser";
-    String KAFKA_NODE_POOL = "KafkaNodePool";
+    public static final String KAFKA_TOPIC = "kafkatopic";
+    public static final String KAFKA = "kafka";
+    public static final String KAFKA_USER = "kafkauser";
+    public static final String KAFKA_NODE_POOL = "kafkanodepool";
     // ----------
     // Console
     // ----------
-    String CONSOLE = "Console";
+    public static final String CONSOLE = "console";
 }

@@ -2,15 +2,14 @@ package com.github.streamshub.systemtests.logs;
 
 
 import com.github.streamshub.systemtests.Environment;
+import com.github.streamshub.systemtests.constants.Labels;
 import com.github.streamshub.systemtests.constants.ResourceKinds;
-import com.github.streamshub.systemtests.resources.NamespaceManager;
+import io.fabric8.kubernetes.api.model.LabelSelectorBuilder;
 import io.skodjob.testframe.LogCollector;
 import io.skodjob.testframe.LogCollectorBuilder;
 import io.skodjob.testframe.clients.KubeClient;
 import io.skodjob.testframe.clients.cmdClient.Kubectl;
 import io.skodjob.testframe.resources.KubeResourceManager;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.nio.file.Path;
@@ -19,11 +18,11 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 public class TestLogCollector {
     private static final String CURRENT_DATE;
-    private static final Logger LOGGER = LogManager.getLogger(TestLogCollector.class);
     private final LogCollector logCollector;
 
     static {
@@ -121,11 +120,8 @@ public class TestLogCollector {
             .withRootFolderPath(rootPathToLogsForTestCase.toString())
             .build();
 
-        List<String> namespaces = NamespaceManager.getInstance().getListOfNamespacesForTestClassAndTestCase(testClass, testCase);
-        if (namespaces.isEmpty()) {
-            LOGGER.warn("This test did not have any namespaces");
-        } else {
-            testCaseCollector.collectFromNamespaces(namespaces.toArray(new String[0]));
-        }
+        testCaseCollector.collectFromNamespacesWithLabels(new LabelSelectorBuilder()
+            .withMatchLabels(Collections.singletonMap(Labels.COLLECT_ST_LOGS, "true"))
+            .build());
     }
 }
