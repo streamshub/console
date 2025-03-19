@@ -19,6 +19,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.github.streamshub.console.api.support.factories.ConsoleConfigFactory;
 import com.github.streamshub.console.config.SchemaRegistryConfig;
 
 import io.apicurio.registry.rest.client.impl.ErrorHandler;
@@ -83,10 +84,13 @@ public class ApicurioClient implements ApicurioHttpClient {
     }
 
     Optional<TlsConfiguration> getTlsConfiguration(String sourceName) {
-        String dotSeparatedSource = "schema.registry." + replaceNonAlphanumeric(sourceName, '.');
-        String dashSeparatedSource = "schema-registry-" + replaceNonAlphanumeric(sourceName, '-');
         var tlsRegistry = CDI.current().select(TlsConfigurationRegistry.class).get();
-        return tlsRegistry.get(dotSeparatedSource).or(() -> tlsRegistry.get(dashSeparatedSource));
+
+        return tlsRegistry.get(ConsoleConfigFactory.TRUST_PREFIX_SCHEMA_REGISTRY + sourceName).or(() -> {
+            String dotSeparatedSource = "schema.registry." + replaceNonAlphanumeric(sourceName, '.');
+            String dashSeparatedSource = "schema-registry-" + replaceNonAlphanumeric(sourceName, '-');
+            return tlsRegistry.get(dotSeparatedSource).or(() -> tlsRegistry.get(dashSeparatedSource));
+        });
     }
 
     @Override

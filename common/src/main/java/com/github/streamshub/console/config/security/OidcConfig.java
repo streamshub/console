@@ -1,11 +1,17 @@
 package com.github.streamshub.console.config.security;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+
+import com.github.streamshub.console.config.TrustStoreConfig;
+import com.github.streamshub.console.config.Trustable;
 
 import io.sundr.builder.annotations.Buildable;
 
 @Buildable(editableEnabled = false)
-public class OidcConfig {
+public class OidcConfig implements Trustable {
+
+    public static final String NAME = "auth-server";
 
     private String tenantId = "streamshub-console";
     @NotBlank
@@ -15,6 +21,13 @@ public class OidcConfig {
     private String clientId;
     @NotBlank
     private String clientSecret;
+    @Valid
+    private TrustStoreConfig trustStore;
+
+    @Override
+    public String getName() {
+        return NAME;
+    }
 
     public String getTenantId() {
         return tenantId;
@@ -56,4 +69,11 @@ public class OidcConfig {
         this.clientSecret = clientSecret;
     }
 
+    public TrustStoreConfig getTrustStore() {
+        return trustStore;
+    }
+
+    public void setTrustStore(TrustStoreConfig trustStore) {
+        this.trustStore = trustStore;
+    }
 }

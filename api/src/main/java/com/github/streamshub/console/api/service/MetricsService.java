@@ -29,6 +29,7 @@ import com.github.streamshub.console.api.model.Metrics;
 import com.github.streamshub.console.api.model.Metrics.RangeEntry;
 import com.github.streamshub.console.api.support.KafkaContext;
 import com.github.streamshub.console.api.support.PrometheusAPI;
+import com.github.streamshub.console.api.support.factories.ConsoleConfigFactory;
 import com.github.streamshub.console.config.ConsoleConfig;
 import com.github.streamshub.console.config.KafkaClusterConfig;
 import com.github.streamshub.console.config.PrometheusConfig;
@@ -119,9 +120,11 @@ public class MetricsService {
     }
 
     Optional<TlsConfiguration> getTlsConfiguration(String sourceName) {
-        String dotSeparatedSource = "metrics.source." + replaceNonAlphanumeric(sourceName, '.');
-        String dashSeparatedSource = "metrics-source-" + replaceNonAlphanumeric(sourceName, '-');
-        return tlsRegistry.get(dotSeparatedSource).or(() -> tlsRegistry.get(dashSeparatedSource));
+        return tlsRegistry.get(ConsoleConfigFactory.TRUST_PREFIX_METRICS + sourceName).or(() -> {
+            String dotSeparatedSource = "metrics.source." + replaceNonAlphanumeric(sourceName, '.');
+            String dashSeparatedSource = "metrics-source-" + replaceNonAlphanumeric(sourceName, '-');
+            return tlsRegistry.get(dotSeparatedSource).or(() -> tlsRegistry.get(dashSeparatedSource));
+        });
     }
 
     CompletionStage<Map<String, List<Metrics.ValueMetric>>> queryValues(String query) {
