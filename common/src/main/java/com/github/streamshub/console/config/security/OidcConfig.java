@@ -3,6 +3,7 @@ package com.github.streamshub.console.config.security;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.github.streamshub.console.config.TrustStoreConfig;
 import com.github.streamshub.console.config.Trustable;
 
@@ -25,6 +26,7 @@ public class OidcConfig implements Trustable {
     private TrustStoreConfig trustStore;
 
     @Override
+    @JsonIgnore
     public String getName() {
         return NAME;
     }

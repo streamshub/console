@@ -8,10 +8,9 @@ import io.xlate.validation.constraints.Expression;
 @Expression(
     message = "Either value or valueFrom must be specified, but not both",
     value = """
-        (self.value not empty || self.valueFrom not empty)
+        (not empty self.value || not empty self.valueFrom)
         &&
-        (self.value == null || self.valueFrom == null)
-        """)
+        (self.value == null || self.valueFrom == null)""")
 @Buildable
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class Value {

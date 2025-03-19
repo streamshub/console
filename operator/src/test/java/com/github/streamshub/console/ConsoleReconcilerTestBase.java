@@ -27,12 +27,10 @@ import com.github.streamshub.console.dependents.ConsoleSecret;
 
 import io.fabric8.kubernetes.api.model.ConfigMap;
 import io.fabric8.kubernetes.api.model.HasMetadata;
-import io.fabric8.kubernetes.api.model.KeyToPath;
 import io.fabric8.kubernetes.api.model.KubernetesResourceList;
 import io.fabric8.kubernetes.api.model.NamespaceBuilder;
 import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
 import io.fabric8.kubernetes.api.model.Secret;
-import io.fabric8.kubernetes.api.model.VolumeMount;
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinitionBuilder;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.kubernetes.api.model.networking.v1.Ingress;
@@ -329,15 +327,4 @@ abstract class ConsoleReconcilerTestBase {
             .endStatus()
             .build();
     }
-
-    void assertKeyToPath(String expectedKey, String expectedPath, KeyToPath keyPath) {
-        assertEquals(expectedKey, keyPath.getKey());
-        assertEquals(expectedPath, keyPath.getPath());
-    }
-
-    void assertMounthPaths(String expectedPath, String expectedSubpath, VolumeMount mount) {
-        assertEquals(expectedPath, mount.getMountPath());
-        assertEquals(expectedSubpath, mount.getSubPath());
-    }
-
 }

@@ -6,11 +6,19 @@ import { logger } from "@/utils/logger";
 
 const log = logger.child({ module: "utils" });
 
+export interface TrustStore {
+    type: string;
+    content: {
+        value?: string | null;
+        valueFrom?: string | null;
+    }
+}
+
 export interface OidcConfig {
     authServerUrl: string | null;
     clientId: string | null;
     clientSecret: string | null;
-    truststore: string | null;
+    trustStore: TrustStore | null;
 }
 
 export interface GlobalSecurityConfig {
@@ -79,6 +87,28 @@ async function getOrLoadConfig(): Promise<ConsoleConfig> {
         } else {
             const fileContents = fs.readFileSync(process.env.CONSOLE_CONFIG_PATH, 'utf8');
             const cfg = yaml.load(fileContents) as ConsoleConfig;
+            const trustStoreCfg = cfg.security?.oidc?.trustStore ?? null;
+            let trustStore: TrustStore | null = null;
+
+            if (trustStoreCfg?.type == "PEM") {
+                if (trustStoreCfg.content.value) {
+                    trustStore = {
+                        type: trustStoreCfg.type,
+                        content: {
+                            value: trustStoreCfg.content.value,
+                        }
+                    };
+                } else if (trustStoreCfg.content.valueFrom) {
+                    trustStore = {
+                        type: trustStoreCfg.type,
+                        content: {
+                            value: fs.readFileSync(trustStoreCfg.content.valueFrom, 'utf8'),
+                        }
+                    };
+                }
+            } else {
+                log.warn("console configuration with OIDC non-PEM truststore is not supported");
+            }
 
             consoleConfig = {
                 readOnly: readOnly,
@@ -89,7 +119,7 @@ async function getOrLoadConfig(): Promise<ConsoleConfig> {
                         authServerUrl: cfg.security?.oidc?.authServerUrl ?? null,
                         clientId: cfg.security?.oidc?.clientId ?? null,
                         clientSecret: cfg.security?.oidc?.clientSecret ?? null,
-                        truststore: process.env.CONSOLE_SECURITY_OIDC_TRUSTSTORE ?? null,
+                        trustStore: trustStore,
                     }
                 },
                 loadTime: new Date()

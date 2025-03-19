@@ -9,8 +9,8 @@ import io.sundr.builder.annotations.Buildable;
 import io.xlate.validation.constraints.Expression;
 
 @Expression(
-    classImports = "com.github.streamshub.console.config.TrustStoreConfig",
-    when = "self.type == TrustStoreConfig.Type.PEM",
+    staticImports = "com.github.streamshub.console.config.TrustStoreConfig$Type.PEM",
+    when = "self.type == PEM",
     value = "self.password == null && self.alias == null",
     message = "Trust store password and alias may not be used for PEM trust stores")
 @Buildable

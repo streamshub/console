@@ -9,19 +9,14 @@ import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateEncodingException;
-import java.security.cert.CertificateException;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -59,6 +54,9 @@ import com.github.streamshub.console.config.ConsoleConfig;
 import com.github.streamshub.console.config.KafkaClusterConfig;
 import com.github.streamshub.console.config.PrometheusConfig;
 import com.github.streamshub.console.config.SchemaRegistryConfig;
+import com.github.streamshub.console.config.TrustStoreConfig;
+import com.github.streamshub.console.config.TrustStoreConfigBuilder;
+import com.github.streamshub.console.config.ValueBuilder;
 import com.github.streamshub.console.config.security.AuditConfigBuilder;
 import com.github.streamshub.console.config.security.Decision;
 import com.github.streamshub.console.config.security.OidcConfigBuilder;
@@ -69,14 +67,8 @@ import com.github.streamshub.console.config.security.SecurityConfig;
 import com.github.streamshub.console.config.security.SubjectConfigBuilder;
 import com.github.streamshub.console.dependents.support.ConfigSupport;
 
-import io.fabric8.kubernetes.api.model.EnvVar;
-import io.fabric8.kubernetes.api.model.EnvVarBuilder;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.Secret;
-import io.fabric8.kubernetes.api.model.Volume;
-import io.fabric8.kubernetes.api.model.VolumeBuilder;
-import io.fabric8.kubernetes.api.model.VolumeMount;
-import io.fabric8.kubernetes.api.model.VolumeMountBuilder;
 import io.fabric8.openshift.api.model.Route;
 import io.fabric8.openshift.api.model.RouteIngress;
 import io.javaoperatorsdk.operator.api.reconciler.Context;
@@ -93,8 +85,6 @@ import io.strimzi.api.kafka.model.user.KafkaUserStatus;
 import static com.github.streamshub.console.dependents.support.ConfigSupport.getResource;
 import static com.github.streamshub.console.dependents.support.ConfigSupport.getValue;
 import static com.github.streamshub.console.dependents.support.ConfigSupport.setConfigVars;
-import static com.github.streamshub.console.support.StringSupport.replaceNonAlphanumeric;
-import static com.github.streamshub.console.support.StringSupport.toEnv;
 
 /**
  * Virtual resource that is a dependency of all other resources (directly or
@@ -110,9 +100,6 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
 
     private static final Logger LOGGER = Logger.getLogger(ConfigurationProcessor.class);
     private static final String EMBEDDED_METRICS_NAME = "streamshub.console.embedded-prometheus";
-    private static final String OIDC_TRUST_PREFIX = "oidc-truststore.";
-    private static final String METRICS_TRUST_PREFIX = "metrics-source-truststore.";
-    private static final String REGISTRY_TRUST_PREFIX = "schema-registry-truststore.";
     private static final Random RANDOM = new SecureRandom();
 
     @Inject
@@ -123,9 +110,6 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
 
     @Inject
     PrometheusService prometheusService;
-
-    @Inject
-    ConsoleSecret configurationSecret;
 
     public static class Postcondition implements Condition<HasMetadata, Console> {
         @Override
@@ -143,7 +127,9 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
             LOGGER.debugf("Validation gate passed: %s", primary.getMetadata().getName());
             context.managedDependentResourceContext().put(NAME, Boolean.TRUE);
         } else {
-            LOGGER.debugf("Validation gate failed: %s", primary.getMetadata().getName());
+            LOGGER.debugf("Validation gate failed: %s; %s",
+                    primary.getMetadata().getName(),
+                    primary.getStatus().getCondition(Types.ERROR).getMessage());
             context.managedDependentResourceContext().put(NAME, Boolean.FALSE);
         }
 
@@ -223,204 +209,109 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
         }
     }
 
-    class TrustStoreProcessor {
-        final Console primary;
-        final Context<Console> context;
-        final Map<String, String> data;
-        final String namespace;
-        final String secretName;
-        final Map<Class<?>, List<?>> deploymentResources = new HashMap<>();
-        final Map<Class<?>, List<?>> deploymentResourcesUI = new HashMap<>();
-
-        TrustStoreProcessor(Console primary, Context<Console> context, Map<String, String> data) {
-            this.primary = primary;
-            this.context = context;
-            this.data = data;
-            this.namespace = primary.getMetadata().getNamespace();
-            this.secretName = configurationSecret.instanceName(primary);
-        }
-
-        void process() {
-            var oidcTruststore = Optional.ofNullable(primary.getSpec().getSecurity())
-                    .map(GlobalSecurity::getOidc)
-                    .map(Oidc::getTrustStore)
-                    .orElse(null);
-
-            if (oidcTruststore != null) {
-                reconcileTrustStore("trust", OIDC_TRUST_PREFIX, oidcTruststore, "oidc-provider", true);
-            }
-
-            for (var metricsSource : Optional.ofNullable(primary.getSpec().getMetricsSources())
-                    .orElse(Collections.emptyList())) {
-                var truststore = metricsSource.getTrustStore();
-
-                if (truststore != null) {
-                    reconcileTrustStore(metricsSource.getName(), METRICS_TRUST_PREFIX, truststore, "metrics-source", false);
-                }
-            }
-
-            for (var registry : Optional.ofNullable(primary.getSpec().getSchemaRegistries())
-                    .orElse(Collections.emptyList())) {
-                var truststore = registry.getTrustStore();
-
-                if (truststore != null) {
-                    reconcileTrustStore(registry.getName(), REGISTRY_TRUST_PREFIX, truststore, "schema-registry", false);
-                }
-            }
-
-            context.managedDependentResourceContext().put("TrustStoreResources", deploymentResources);
-            context.managedDependentResourceContext().put("TrustStoreResourcesUI", deploymentResourcesUI);
-        }
-
-        private void reconcileTrustStore(String sourceName, String sourcePrefix, TrustStore truststore, String bucketPrefix, boolean uiServer) {
-            String typeCode = truststore.getType().toString();
-            String volumeName = replaceNonAlphanumeric(sourcePrefix + sourceName, '-');
-            String fileName = sourcePrefix + sourceName + "." + typeCode;
-
-            @SuppressWarnings("unchecked")
-            List<Volume> volumes = (List<Volume>) deploymentResources.computeIfAbsent(Volume.class, k -> new ArrayList<>());
-
-            volumes.add(new VolumeBuilder()
-                    .withName(volumeName)
-                    .withNewSecret()
-                        .withSecretName(secretName)
-                        .addNewItem()
-                            .withKey(sourcePrefix + sourceName + ".content")
-                            .withPath(fileName)
-                        .endItem()
-                        .withDefaultMode(420)
-                    .endSecret()
-                    .build());
-
-            @SuppressWarnings("unchecked")
-            List<VolumeMount> mounts = (List<VolumeMount>) deploymentResources.computeIfAbsent(VolumeMount.class, k -> new ArrayList<>());
-
-            mounts.add(new VolumeMountBuilder()
-                    .withName(volumeName)
-                    .withMountPath("/etc/ssl/" + fileName)
-                    .withSubPath(fileName)
-                    .build());
-
-            String configTemplate = "quarkus.tls.\"" + bucketPrefix + "-%s\".trust-store.%s.%s";
-
-            @SuppressWarnings("unchecked")
-            List<EnvVar> vars = (List<EnvVar>) deploymentResources.computeIfAbsent(EnvVar.class, k -> new ArrayList<>());
-
-            @SuppressWarnings("unchecked")
-            List<EnvVar> varsUI = (List<EnvVar>) deploymentResourcesUI.computeIfAbsent(EnvVar.class, k -> new ArrayList<>());
-
-            byte[] content = getValue(context, namespace, truststore.getContent());
-            byte[] password = getValue(context, namespace, truststore.getPassword());
-            String alias = truststore.getAlias();
-
-            // `content` is required by the CRD so we don't need to test that it was put in the data map
-            putTrustStoreValue(data, sourcePrefix + sourceName, "content", content);
-
-            String pathKey = switch (truststore.getType()) {
-                case JKS, PKCS12 -> "path";
-                case PEM -> "certs";
-            };
-
-            vars.add(new EnvVarBuilder()
-                .withName(toEnv(configTemplate.formatted(sourceName, typeCode, pathKey)))
-                .withValue("/etc/ssl/" + fileName)
-                .build());
-
-            if (putTrustStoreValue(data, sourcePrefix + sourceName, "password", password)) {
-                vars.add(new EnvVarBuilder()
-                        .withName(toEnv(configTemplate.formatted(sourceName, typeCode, "password")))
-                        .withNewValueFrom()
-                            .withNewSecretKeyRef(sourcePrefix + sourceName + ".password", secretName, false)
-                        .endValueFrom()
-                        .build());
-            }
-
-            if (putTrustStoreValue(data, sourcePrefix + sourceName, "alias",
-                    alias != null ? alias.getBytes(StandardCharsets.UTF_8) : null)) {
-                vars.add(new EnvVarBuilder()
-                        .withName(toEnv(configTemplate.formatted(sourceName, typeCode, "alias")))
-                        .withNewValueFrom()
-                            .withNewSecretKeyRef(sourcePrefix + sourceName + ".alias", secretName, false)
-                        .endValueFrom()
-                        .build());
-            }
-
-            if (uiServer && truststore.getType() != TrustStore.Type.PEM) {
-                KeyStore keystore;
-
-                try (InputStream in = new ByteArrayInputStream(content)) {
-                    keystore = KeyStore.getInstance(truststore.getType().toString());
-                    char[] secret = password != null
-                            ? new String(password, StandardCharsets.UTF_8).toCharArray() : null;
-
-                    keystore.load(in, secret);
-                } catch (IOException | CertificateException | KeyStoreException | NoSuchAlgorithmException e) {
-                    throw new ReconciliationException("Truststore %s could not be loaded. %s"
-                            .formatted(sourceName, e.getMessage()));
-                }
-
-                ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-
-                try {
-                    if (alias != null) {
-                        var certificate = keystore.getCertificate(alias);
-                        encodeCertificate(buffer, certificate);
-                    } else {
-                        for (var aliases = keystore.aliases().asIterator(); aliases.hasNext(); ) {
-                            alias = aliases.next();
-
-                            if (keystore.isCertificateEntry(alias)) {
-                                var certificate = keystore.getCertificate(alias);
-                                encodeCertificate(buffer, certificate);
-                            }
-                        }
-                    }
-                } catch (KeyStoreException | IOException | CertificateEncodingException e) {
-                    throw new ReconciliationException("Truststore %s could not be loaded. %s"
-                            .formatted(sourceName, e.getMessage()));
-                }
-
-                putTrustStoreValue(data, sourcePrefix + sourceName, "content.pem", buffer.toByteArray());
-
-                varsUI.add(new EnvVarBuilder()
-                        .withName("CONSOLE_SECURITY_OIDC_TRUSTSTORE")
-                        .withNewValueFrom()
-                            .withNewSecretKeyRef(sourcePrefix + sourceName + ".content.pem", secretName, false)
-                        .endValueFrom()
-                        .build());
-            } else if (uiServer) {
-                varsUI.add(new EnvVarBuilder()
-                        .withName("CONSOLE_SECURITY_OIDC_TRUSTSTORE")
-                        .withNewValueFrom()
-                            .withNewSecretKeyRef(sourcePrefix + sourceName + ".content", secretName, false)
-                        .endValueFrom()
-                        .build());
-            }
-        }
-
-        private boolean putTrustStoreValue(Map<String, String> data, String sourceName, String key, byte[] value) {
-            if (value != null) {
-                data.put(sourceName + "." + key, ConfigSupport.encodeBytes(value));
-                return true;
-            }
-            return false;
-        }
-
-        private void encodeCertificate(OutputStream buffer, Certificate certificate) throws IOException, CertificateEncodingException {
-            buffer.write("-----BEGIN CERTIFICATE-----\n".getBytes(StandardCharsets.UTF_8));
-            buffer.write(Base64.getMimeEncoder(80, new byte[] {'\n'}).encode(certificate.getEncoded()));
-            buffer.write("\n-----END CERTIFICATE-----\n".getBytes(StandardCharsets.UTF_8));
-        }
-    }
-
     /**
      * Generate additional entries in the secret for metric source trust stores. Also, this
      * method will add to the context the resources to be added to the console deployment to
      * access the secret entries.
      */
     private void buildTrustStores(Console primary, Context<Console> context, Map<String, String> data) {
-        var processor = new TrustStoreProcessor(primary, context, data);
-        processor.process();
+        Optional.ofNullable(primary.getSpec().getSecurity())
+            .map(GlobalSecurity::getOidc)
+            .map(Oidc::getTrustStore)
+            .ifPresent(trustStore -> buildTrustStore(
+                    context,
+                    primary.getMetadata().getNamespace(),
+                    "oidc-provider",
+                    trustStore,
+                    data
+            ));
+
+        coalesce(primary.getSpec().getMetricsSources(), Collections::emptyList).stream()
+            .filter(source -> Objects.nonNull(source.getTrustStore()))
+            .map(source -> Map.entry(source.getName(), source.getTrustStore()))
+            .forEach(trustStore -> buildTrustStore(
+                    context,
+                    primary.getMetadata().getNamespace(),
+                    "metrics-source-" + trustStore.getKey(),
+                    trustStore.getValue(),
+                    data
+            ));
+
+        coalesce(primary.getSpec().getSchemaRegistries(), Collections::emptyList).stream()
+            .filter(source -> Objects.nonNull(source.getTrustStore()))
+            .map(source -> Map.entry(source.getName(), source.getTrustStore()))
+            .forEach(trustStore -> buildTrustStore(
+                    context,
+                    primary.getMetadata().getNamespace(),
+                    "schema-registry-" + trustStore.getKey(),
+                    trustStore.getValue(),
+                    data
+            ));
+    }
+
+    private void buildTrustStore(Context<Console> context, String namespace, String name, TrustStore trustStore, Map<String, String> data) {
+        byte[] password = getValue(context, namespace, trustStore.getPassword());
+        byte[] content = getValue(context, namespace, trustStore.getContent());
+        TrustStore.Type type = trustStore.getType();
+
+        if ("oidc-provider".equals(name) && type != TrustStore.Type.PEM) {
+            // OIDC CAs must be PEM encoded for use by the UI container
+            content = pemEncode(name, trustStore, password, content);
+            type = TrustStore.Type.PEM;
+            password = null;
+        }
+
+        String key = "truststore-%s-content.%s".formatted(name, type);
+        data.put(key, ConfigSupport.encodeBytes(content));
+
+        if (password != null) {
+            data.put("truststore-%s-password.txt".formatted(name), ConfigSupport.encodeBytes(content));
+        }
+    }
+
+    private byte[] pemEncode(String name, TrustStore trustStore, byte[] password, byte[] content) {
+        KeyStore keystore;
+
+        try (InputStream in = new ByteArrayInputStream(content)) {
+            keystore = KeyStore.getInstance(trustStore.getType().toString());
+            char[] secret = password != null
+                    ? new String(password, StandardCharsets.UTF_8).toCharArray() : null;
+
+            keystore.load(in, secret);
+        } catch (Exception e) {
+            throw new ReconciliationException("Truststore %s could not be loaded. %s"
+                    .formatted(name, e.getMessage()));
+        }
+
+        String alias = trustStore.getAlias();
+        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+
+        try {
+            if (alias != null) {
+                var certificate = keystore.getCertificate(alias);
+                encodeCertificate(buffer, certificate);
+            } else {
+                for (var aliases = keystore.aliases().asIterator(); aliases.hasNext(); ) {
+                    alias = aliases.next();
+
+                    if (keystore.isCertificateEntry(alias)) {
+                        var certificate = keystore.getCertificate(alias);
+                        encodeCertificate(buffer, certificate);
+                    }
+                }
+            }
+        } catch (KeyStoreException | IOException | CertificateEncodingException e) {
+            throw new ReconciliationException("Truststore %s could not be loaded. %s"
+                    .formatted(name, e.getMessage()));
+        }
+
+        return buffer.toByteArray();
+    }
+
+    private void encodeCertificate(OutputStream buffer, Certificate certificate) throws IOException, CertificateEncodingException {
+        buffer.write("-----BEGIN CERTIFICATE-----\n".getBytes(StandardCharsets.UTF_8));
+        buffer.write(Base64.getMimeEncoder(80, new byte[] {'\n'}).encode(certificate.getEncoded()));
+        buffer.write("\n-----END CERTIFICATE-----\n".getBytes(StandardCharsets.UTF_8));
     }
 
     private static String generateRandomBase64EncodedSecret(int length) {
@@ -473,10 +364,49 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
                     .withIssuer(oidc.getIssuer())
                     .withClientId(oidc.getClientId())
                     .withClientSecret(clientSecret)
+                    .withTrustStore(buildTrustStoreConfig(oidc.getTrustStore(), "oidc-provider"))
                     .build());
         }
 
         addSecurity(security, securityConfig);
+    }
+
+    private TrustStoreConfig buildTrustStoreConfig(TrustStore trustStore, String name) {
+        TrustStoreConfig trustStoreConfig = null;
+
+        if (trustStore != null) {
+            TrustStore.Type type;
+            String alias;
+            com.github.streamshub.console.config.Value password;
+
+            if ("oidc-provider".equals(name)) {
+                // OIDC CAs are always converted to PEM to allow use by the UI container
+                type = TrustStore.Type.PEM;
+                alias = null;
+                password = null;
+            } else {
+                type = trustStore.getType();
+                alias = trustStore.getAlias();
+                password = Optional
+                    .ofNullable(trustStore.getPassword())
+                    .map(p -> new ValueBuilder()
+                            .withValueFrom("/deployments/config/truststore-%s-password.txt".formatted(name))
+                            .build())
+                    .orElse(null);
+            }
+
+            trustStoreConfig = new TrustStoreConfigBuilder()
+                    .withType(TrustStoreConfig.Type.valueOf(type.name()))
+                    .withNewContent()
+                        .withValueFrom("/deployments/config/truststore-%s-content.%s"
+                                .formatted(name, type.toString()))
+                    .endContent()
+                    .withPassword(password)
+                    .withAlias(alias)
+                    .build();
+        }
+
+        return trustStoreConfig;
     }
 
     private void addSecurity(Security source, SecurityConfig target) {
@@ -544,8 +474,9 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
         }
 
         for (MetricsSource metricsSource : metricsSources) {
+            String name = metricsSource.getName();
             var prometheusConfig = new PrometheusConfig();
-            prometheusConfig.setName(metricsSource.getName());
+            prometheusConfig.setName(name);
 
             if (metricsSource.getType() == Type.OPENSHIFT_MONITORING) {
                 prometheusConfig.setType(PrometheusConfig.Type.OPENSHIFT_MONITORING);
@@ -576,6 +507,11 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
                 }
             }
 
+            prometheusConfig.setTrustStore(buildTrustStoreConfig(
+                    metricsSource.getTrustStore(),
+                    "metrics-source-" + name
+            ));
+
             config.getMetricsSources().add(prometheusConfig);
         }
     }
@@ -596,9 +532,15 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
 
     private void addSchemaRegistries(Console primary, ConsoleConfig config) {
         for (SchemaRegistry registry : coalesce(primary.getSpec().getSchemaRegistries(), Collections::emptyList)) {
+            String name = registry.getName();
             var registryConfig = new SchemaRegistryConfig();
-            registryConfig.setName(registry.getName());
+            registryConfig.setName(name);
             registryConfig.setUrl(registry.getUrl());
+            registryConfig.setTrustStore(buildTrustStoreConfig(
+                    registry.getTrustStore(),
+                    "schema-registry-" + name
+            ));
+
             config.getSchemaRegistries().add(registryConfig);
         }
     }

@@ -194,6 +194,6 @@ export default async function oidcSource() {
       oidcConfig?.authServerUrl ?? null,
       oidcConfig?.clientId ?? null,
       oidcConfig?.clientSecret ?? null,
-      oidcConfig?.truststore ?? null,
+      oidcConfig?.trustStore?.content?.value ?? null,
     );
 };
