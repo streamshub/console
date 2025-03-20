@@ -139,7 +139,9 @@ export function ConfigTable({ config }: { config: NodeConfig }) {
         },
         "Data source": {
           type: "checkbox",
-          options: Object.fromEntries(dataSources.map((s) => [s, s])),
+          options: Object.fromEntries(
+            dataSources.map((s) => [s, { label: s }]),
+          ),
           onRemoveChip: onRemoveDataSource,
           chips: selectedDataSources,
           onRemoveGroup: () => {

@@ -1,4 +1,4 @@
-import type { ToolbarToggleGroupProps } from "@/libs/patternfly/react-core";
+import type { ToolbarChip, ToolbarToggleGroupProps } from "@/libs/patternfly/react-core";
 import {
   InputGroup,
   ToolbarFilter,
@@ -14,7 +14,7 @@ import {
   FilterSelect,
   FilterSwitcher,
 } from "./components";
-import type { FilterType } from "./types";
+import type { CheckboxType, FilterType } from "./types";
 
 export type ChipFilterProps = {
   filters: { [label: string]: FilterType };
@@ -24,6 +24,7 @@ export type ChipFilterProps = {
 export function ChipFilter({ filters, breakpoint = "md" }: ChipFilterProps) {
   const options = Object.keys(filters);
   const [selectedOption, setSelectedOption] = useState<string>(options[0]);
+
 
   const getFilterComponent = (label: string, f: FilterType) => {
     switch (f.type) {
@@ -55,6 +56,17 @@ export function ChipFilter({ filters, breakpoint = "md" }: ChipFilterProps) {
           />
         );
     }
+  };
+
+  const getToolbarChips = (f: FilterType): ToolbarChip[] => {
+    if ("options" in f) {
+      const checkboxFilter = f as CheckboxType<any>; // Type assertion
+      return checkboxFilter.chips.map((c) => ({
+        key: c,
+        node: checkboxFilter.options[c].label,
+      }));
+    }
+    return f.chips.map((chip) => ({ key: chip, node: chip }));
   };
 
   return (
@@ -94,11 +106,7 @@ export function ChipFilter({ filters, breakpoint = "md" }: ChipFilterProps) {
           {Object.entries(filters).map(([label, f], index) => (
             <ToolbarFilter
               key={index}
-              chips={
-                "options" in f
-                  ? f.chips.map((c) => ({ key: c, node: f.options[c] }))
-                  : f.chips
-              }
+              chips={getToolbarChips(f)}
               deleteChip={(_, chip) =>
                 f.onRemoveChip(typeof chip === "string" ? chip : chip.key)
               }

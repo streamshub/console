@@ -1,4 +1,4 @@
-import {ReactNode} from "react";
+import { ReactNode } from "react";
 
 export type SearchType = {
   type: "search";
@@ -12,7 +12,9 @@ export type SearchType = {
 export type CheckboxType<T extends string | number> = {
   type: "checkbox";
   chips: string[];
-  options: { [key in T]: ReactNode };
+  options: {
+    [key in T]: { label: React.ReactNode; description?: React.ReactNode };
+  };
   onToggle: (value: T) => void;
   onRemoveChip: (value: T) => void;
   onRemoveGroup: () => void;

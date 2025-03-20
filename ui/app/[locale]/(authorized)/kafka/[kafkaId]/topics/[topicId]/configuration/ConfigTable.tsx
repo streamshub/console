@@ -46,9 +46,9 @@ export function ConfigTable({
   const [isReadOnly, setIsReadOnly] = useState(true);
 
   useEffect(() => {
-    config().then(cfg => {
+    config().then((cfg) => {
       setIsReadOnly(cfg.readOnly);
-    })
+    });
   }, []);
 
   // Get a new searchParams string by merging the current
@@ -291,7 +291,9 @@ export function ConfigTable({
           },
           "Data source": {
             type: "checkbox",
-            options: Object.fromEntries(dataSources.map((s) => [s, s])),
+            options: Object.fromEntries(
+              dataSources.map((s) => [s, { label: s }]),
+            ),
             onRemoveChip: onRemoveDataSource,
             chips: selectedDataSources,
             onRemoveGroup: () => {
@@ -348,7 +350,10 @@ export function ConfigTable({
                         [name]: "saving",
                       }));
 
-                      const res = (onSaveProperty && await onSaveProperty(name, options[name])) ?? { errors: undefined };
+                      const res = (onSaveProperty &&
+                        (await onSaveProperty(name, options[name]))) ?? {
+                        errors: undefined,
+                      };
 
                       if (res.errors) {
                         setErrors(res.errors);
