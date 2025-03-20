@@ -123,9 +123,9 @@
                     <systemProperties>
                         <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
                         <maven.home>${maven.home}</maven.home>
-                        <quarkus.jacoco.data-file>${project.basedir}/../target/jacoco.exec</quarkus.jacoco.data-file>
+                        <quarkus.jacoco.data-file>${project.basedir}/target/jacoco.exec</quarkus.jacoco.data-file>
                         <quarkus.jacoco.reuse-data-file>true</quarkus.jacoco.reuse-data-file>
-                        <quarkus.jacoco.report-location>${project.basedir}/../target/coverage</quarkus.jacoco.report-location>
+                        <quarkus.jacoco.report>false</quarkus.jacoco.report>
                     </systemProperties>
                 </configuration>
             </plugin>
