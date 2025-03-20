@@ -7,6 +7,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -109,8 +110,8 @@ public class NodeService {
         return CompletableFuture.allOf(clusterResult.nodes().toCompletionStage().toCompletableFuture(), quorumResult)
             .thenComposeAsync(nothing -> getNodes(clusterResult, quorumResult), threadContext.currentContextExecutor())
             .thenApply(nodes -> nodes.stream()
-                    .filter(listSupport)
                     .map(node -> tallySummary(node, summary))
+                    .filter(listSupport)
                     .map(listSupport::tally)
                     .filter(listSupport::betweenCursors)
                     .sorted(listSupport.getSortComparator())
@@ -142,20 +143,40 @@ public class NodeService {
     private Map<String, Object> initialSummary() {
         Map<String, Object> summary = new LinkedHashMap<>();
         summary.put("nodePools", new TreeMap<>());
-        summary.put("brokersCount", 0);
-        summary.put("brokersRunning", 0);
+        summary.put("statuses", Map.of(
+            "brokers", new HashMap<>(),
+            "controllers", new HashMap<>(),
+            "combined", new HashMap<>()
+        ));
+
         return summary;
     }
 
     private Node tallySummary(Node node, Map<String, Object> summary) {
-        String poolName = node.nodePool();
+        @SuppressWarnings("unchecked")
+        Map<String, Map<String, Integer>> statuses = (Map<String, Map<String, Integer>>) summary.get("statuses");
+        boolean healthy = true;
 
         if (node.isBroker()) {
-            summary.compute("brokersCount", (k, v) -> (Integer) v + 1);
-            if (node.broker().status() == BrokerStatus.RUNNING) {
-                summary.compute("brokersRunning", (k, v) -> (Integer) v + 1);
+            var status = node.broker().status();
+            if (status != BrokerStatus.RUNNING) {
+                healthy = false;
             }
+            statuses.get("brokers").compute(status.toString(), (k, v) -> v == null ? 1 : v + 1);
         }
+
+        if (node.isController()) {
+            var status = node.controller().status();
+            if (status == ControllerStatus.FOLLOWER_LAGGED) {
+                healthy = false;
+            }
+            statuses.get("controllers").compute(status.toString(), (k, v) -> v == null ? 1 : v + 1);
+        }
+
+        String combinedStatusKey = healthy ? "Healthy" : "Unhealthy";
+        statuses.get("combined").compute(combinedStatusKey, (k, v) -> v == null ? 1 : v + 1);
+
+        String poolName = node.nodePool();
 
         if (poolName != null) {
             @SuppressWarnings("unchecked")

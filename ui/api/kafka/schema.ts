@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { NodesListMetaSummary } from "../nodes/schema";
 
 export const ClusterListSchema = z.object({
   id: z.string(),
@@ -97,7 +98,9 @@ const ClusterDetailSchema = z.object({
   }),
   relationships: z.object({
     nodes: z.object({
-      meta: z.record(z.any()).optional(),
+      meta: z.object({
+        summary: NodesListMetaSummary
+      }),
       data: z.array(z.any()),
     }).optional(),
   }),

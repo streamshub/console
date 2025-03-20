@@ -49,10 +49,13 @@ export default async function CreateTopicPage({
     }
   }
 
+  const combinedStatuses = cluster?.relationships.nodes?.meta?.summary?.statuses?.combined || {};
+  const nodeCount = Object.values(combinedStatuses).reduce((sum, count) => sum + count, 0);
+
   return (
     <CreateTopic
       kafkaId={kafkaId}
-      maxReplicas={cluster.relationships.nodes?.meta?.count}
+      maxReplicas={nodeCount}
       initialOptions={tempOptions}
       onSave={onSave}
     />

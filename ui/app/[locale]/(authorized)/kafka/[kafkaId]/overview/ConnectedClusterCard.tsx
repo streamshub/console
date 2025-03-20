@@ -46,8 +46,9 @@ export async function ConnectedClusterCard({
     grpResp.errors ? undefined : (grpResp.payload?.meta.page.total ?? 0),
   );
 
-  const brokersTotal = res?.relationships.nodes?.meta?.summary?.brokersCount ?? 0;
-  const brokersOnline = res?.relationships.nodes?.meta?.summary?.brokersRunning ?? 0;
+  const brokerStatuses = res?.relationships.nodes?.meta?.summary?.statuses?.brokers || {};
+  const brokersTotal = Object.values(brokerStatuses).reduce((sum, count) => sum + count, 0);
+  const brokersOnline = brokerStatuses["Running"] ?? 0;
 
   return (
     <ClusterCard

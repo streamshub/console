@@ -46,7 +46,17 @@ export const NodeSchema = z.object({
 
 export type KafkaNode = z.infer<typeof NodeSchema>;
 
+export const NodesListMetaSummary = z.object({
+  nodePools: z.record(z.string(), z.array(z.string())),
+  statuses: z.record(z.enum(["brokers", "controllers", "combined"]), z.record(z.string(), z.number())),
+});
+
+export type NodesListMetaSummary = z.infer<typeof NodesListMetaSummary>;
+
 export const NodesResponseSchema = z.object({
+  meta: z.object({
+    summary: NodesListMetaSummary,
+  }),
   data: z.array(NodeSchema),
 });
 
