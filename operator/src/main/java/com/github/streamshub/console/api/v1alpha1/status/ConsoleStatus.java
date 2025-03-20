@@ -12,7 +12,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import io.javaoperatorsdk.operator.api.ObservedGenerationAwareStatus;
 import io.sundr.builder.annotations.Buildable;
 
-@Buildable
+@Buildable(editableEnabled = false)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ConsoleStatus extends ObservedGenerationAwareStatus {
 

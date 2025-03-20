@@ -41,31 +41,37 @@ const SortColumns = [
   "status",
   "storage",
 ] as const;
-const StatusLabel: Record<PartitionStatus, ReactNode> = {
-  FullyReplicated: (
-    <>
-      <Icon status={"success"}>
-        <CheckCircleIcon />
-      </Icon>{" "}
-      In-sync
-    </>
-  ),
-  UnderReplicated: (
-    <>
-      <Icon status={"warning"}>
-        <ExclamationTriangleIcon />
-      </Icon>{" "}
-      Under replicated
-    </>
-  ),
-  Offline: (
-    <>
-      <Icon status={"danger"}>
-        <ExclamationCircleIcon />
-      </Icon>{" "}
-      Offline
-    </>
-  ),
+const StatusLabel: Record<PartitionStatus, { label: ReactNode }> = {
+  FullyReplicated: {
+    label: (
+      <>
+        <Icon status={"success"}>
+          <CheckCircleIcon />
+        </Icon>{" "}
+        In-sync
+      </>
+    ),
+  },
+  UnderReplicated: {
+    label: (
+      <>
+        <Icon status={"warning"}>
+          <ExclamationTriangleIcon />
+        </Icon>{" "}
+        Under replicated
+      </>
+    ),
+  },
+  Offline: {
+    label: (
+      <>
+        <Icon status={"danger"}>
+          <ExclamationCircleIcon />
+        </Icon>{" "}
+        Offline
+      </>
+    ),
+  },
 };
 
 export function PartitionsTable({
@@ -94,7 +100,10 @@ export function PartitionsTable({
         const response = await getTopic(kafkaId, initialData.id);
 
         if (response.errors) {
-          console.warn("Failed to reload topic", { kafkaId, topicId: initialData.id });
+          console.warn("Failed to reload topic", {
+            kafkaId,
+            topicId: initialData.id,
+          });
         } else {
           setTopic(response.payload!);
         }
@@ -131,7 +140,9 @@ export function PartitionsTable({
         itemCount={sortedData?.length || 0}
         page={page}
         perPage={perPage}
-        onPageChange={(newPage, newPerPage) => setPagination(newPage, newPerPage)}
+        onPageChange={(newPage, newPerPage) =>
+          setPagination(newPage, newPerPage)
+        }
         data={paginatedData}
         emptyStateNoData={<div>{t("partition_table.no_partition")}</div>}
         emptyStateNoResults={
@@ -203,7 +214,7 @@ export function PartitionsTable({
             case "status":
               return (
                 <Td key={key} dataLabel={"Status"}>
-                  {StatusLabel[row.status]}
+                  {StatusLabel[row.status].label}
                 </Td>
               );
             case "preferredLeader":
@@ -306,7 +317,7 @@ export function PartitionsTable({
             <ToggleGroupItem
               text={
                 <>
-                  {StatusLabel.FullyReplicated} (
+                  {StatusLabel.FullyReplicated.label} (
                   {topic?.attributes.partitions?.filter(
                     (p) => p.status === "FullyReplicated",
                   ).length || 0}
@@ -322,7 +333,7 @@ export function PartitionsTable({
             <ToggleGroupItem
               text={
                 <>
-                  {StatusLabel.UnderReplicated} (
+                  {StatusLabel.UnderReplicated.label} (
                   {topic?.attributes.partitions?.filter(
                     (p) => p.status === "UnderReplicated",
                   ).length || 0}
@@ -338,7 +349,7 @@ export function PartitionsTable({
             <ToggleGroupItem
               text={
                 <>
-                  {StatusLabel.Offline} (
+                  {StatusLabel.Offline.label} (
                   {topic?.attributes.partitions?.filter(
                     (p) => p.status === "Offline",
                   ).length || 0}

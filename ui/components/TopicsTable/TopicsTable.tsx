@@ -32,47 +32,57 @@ export type SortableTopicsTableColumns = Exclude<
 >;
 export type TopicsTableColumn = (typeof TopicsTableColumns)[number];
 export const SortableColumns = ["name", "storage"];
-const StatusLabel: Record<TopicStatus, ReactNode> = {
-  FullyReplicated: (
-    <>
-      <Icon status={"success"}>
-        <CheckCircleIcon />
-      </Icon>
-      &nbsp;Fully replicated
-    </>
-  ),
-  UnderReplicated: (
-    <>
-      <Icon status={"warning"}>
-        <ExclamationTriangleIcon />
-      </Icon>
-      &nbsp;Under replicated
-    </>
-  ),
-  PartiallyOffline: (
-    <>
-      <Icon status={"warning"}>
-        <ExclamationTriangleIcon />
-      </Icon>
-      &nbsp;Partially offline
-    </>
-  ),
-  Unknown: (
-    <>
-      <Icon status={"warning"}>
-        <ExclamationTriangleIcon />
-      </Icon>
-      &nbsp;Unknown
-    </>
-  ),
-  Offline: (
-    <>
-      <Icon status={"danger"}>
-        <ExclamationCircleIcon />
-      </Icon>
-      &nbsp;Offline
-    </>
-  ),
+const StatusLabel: Record<TopicStatus, { label: ReactNode }> = {
+  FullyReplicated: {
+    label: (
+      <>
+        <Icon status={"success"}>
+          <CheckCircleIcon />
+        </Icon>
+        &nbsp; Fully replicated
+      </>
+    ),
+  },
+  UnderReplicated: {
+    label: (
+      <>
+        <Icon status={"warning"}>
+          <ExclamationTriangleIcon />
+        </Icon>
+        &nbsp;Under replicated
+      </>
+    ),
+  },
+  PartiallyOffline: {
+    label: (
+      <>
+        <Icon status={"warning"}>
+          <ExclamationTriangleIcon />
+        </Icon>
+        &nbsp;Partially offline
+      </>
+    ),
+  },
+  Unknown: {
+    label: (
+      <>
+        <Icon status={"warning"}>
+          <ExclamationTriangleIcon />
+        </Icon>
+        &nbsp;Unknown
+      </>
+    ),
+  },
+  Offline: {
+    label: (
+      <>
+        <Icon status={"danger"}>
+          <ExclamationCircleIcon />
+        </Icon>
+        &nbsp;Offline
+      </>
+    ),
+  },
 };
 
 export type TopicsTableProps = {
@@ -200,7 +210,7 @@ export function TopicsTable({
           case "status":
             return (
               <Td key={key} dataLabel={"Status"}>
-                {StatusLabel[row.attributes.status!]}
+                {StatusLabel[row.attributes.status!].label}
               </Td>
             );
           case "consumerGroups":
@@ -208,10 +218,14 @@ export function TopicsTable({
               <Td key={key} dataLabel={"Consumer groups"}>
                 {row.relationships.consumerGroups?.meta?.count !== undefined ? (
                   <Link href={`${baseurl}/${row.id}/consumer-groups`}>
-                    <Number value={row.relationships.consumerGroups?.meta?.count} />
+                    <Number
+                      value={row.relationships.consumerGroups?.meta?.count}
+                    />
                   </Link>
                 ) : (
-                  <Number value={row.relationships.consumerGroups?.meta?.count} />
+                  <Number
+                    value={row.relationships.consumerGroups?.meta?.count}
+                  />
                 )}
               </Td>
             );

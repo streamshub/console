@@ -8,7 +8,7 @@ import io.fabric8.kubernetes.api.model.ConfigMapEnvSource;
 import io.fabric8.kubernetes.api.model.SecretEnvSource;
 import io.sundr.builder.annotations.Buildable;
 
-@Buildable
+@Buildable(editableEnabled = false)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @ValidationRule(
         value = "has(self.configMapRef) || has(self.secretRef)",

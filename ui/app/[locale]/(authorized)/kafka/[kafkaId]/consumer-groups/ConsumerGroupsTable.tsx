@@ -30,23 +30,27 @@ export type SortableConsumerGroupTableColumns = Exclude<
 
 export const SortableColumns = ["name", "state"];
 
-const StateLabel: Partial<Record<ConsumerGroupState, ReactNode>> = {
-  STABLE: (
-    <>
-      <Icon status={"success"}>
-        <CheckCircleIcon />
-      </Icon>
-      &nbsp;STABLE
-    </>
-  ),
-  EMPTY: (
-    <>
-      <Icon status={"info"}>
-        <InfoCircleIcon />
-      </Icon>
-      &nbsp;EMPTY
-    </>
-  ),
+const StateLabel: Partial<Record<ConsumerGroupState, { label: ReactNode }>> = {
+  STABLE: {
+    label: (
+      <>
+        <Icon status={"success"}>
+          <CheckCircleIcon />
+        </Icon>
+        &nbsp;STABLE
+      </>
+    ),
+  },
+  EMPTY: {
+    label: (
+      <>
+        <Icon status={"info"}>
+          <InfoCircleIcon />
+        </Icon>
+        &nbsp;EMPTY
+      </>
+    ),
+  },
 };
 
 export function ConsumerGroupsTable({
@@ -178,7 +182,7 @@ export function ConsumerGroupsTable({
           case "state":
             return (
               <Td key={key} dataLabel={t("ConsumerGroupsTable.state")}>
-                {StateLabel[row.attributes.state]}
+                {StateLabel[row.attributes.state]?.label}
               </Td>
             );
           case "lag":
