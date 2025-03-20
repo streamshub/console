@@ -7,8 +7,10 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalLong;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
@@ -37,6 +39,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mockito;
 
 import com.github.streamshub.console.api.service.MetricsService;
+import com.github.streamshub.console.api.support.KafkaContext;
 import com.github.streamshub.console.config.ConsoleConfig;
 import com.github.streamshub.console.config.PrometheusConfig;
 import com.github.streamshub.console.config.PrometheusConfig.Type;
@@ -50,6 +53,7 @@ import io.fabric8.kubernetes.api.model.Pod;
 import io.fabric8.kubernetes.api.model.PodBuilder;
 import io.fabric8.kubernetes.api.model.ServiceAccountBuilder;
 import io.fabric8.kubernetes.client.KubernetesClient;
+import io.fabric8.kubernetes.client.informers.cache.Cache;
 import io.quarkus.test.common.http.TestHTTPEndpoint;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
@@ -64,6 +68,7 @@ import io.strimzi.api.kafka.model.nodepool.ProcessRoles;
 import io.strimzi.test.container.StrimziKafkaContainer;
 
 import static com.github.streamshub.console.test.TestHelper.whenRequesting;
+import static org.awaitility.Awaitility.await;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.anEmptyMap;
 import static org.hamcrest.Matchers.contains;
@@ -94,6 +99,9 @@ class NodesResourceIT implements ClientRequestFilter {
 
     @Inject
     MetricsService metricsService;
+
+    @Inject
+    Map<String, KafkaContext> configuredContexts;
 
     @DeploymentManager.InjectDeploymentManager
     DeploymentManager deployments;
@@ -517,16 +525,27 @@ class NodesResourceIT implements ClientRequestFilter {
         "NaN,  QuorumFollowerLagged "
     })
     void testListNodesWithVaryingQuorumFetchTimeout(String quorumFetchTime, String nodeStatus6) {
-        client.resources(Kafka.class)
+        final String quorumFetchConfigKey = "controller.quorum.fetch.timeout.ms";
+
+        var kafka = client.resources(Kafka.class)
             .inNamespace(clusterNamespace1)
             .withName(clusterName1)
             .edit(k -> new KafkaBuilder(k)
                     .editSpec()
                         .editKafka()
-                            .addToConfig("controller.quorum.fetch.timeout.ms", quorumFetchTime)
+                            .addToConfig(quorumFetchConfigKey, quorumFetchTime)
                         .endKafka()
                     .endSpec()
                     .build());
+
+        // Wait for updated config to reach the context map
+        await().atMost(10, TimeUnit.SECONDS).ignoreException(NullPointerException.class)
+            .until(() -> configuredContexts.values()
+                    .stream()
+                    .map(KafkaContext::resource)
+                    .filter(Objects::nonNull)
+                    .filter(k -> Cache.metaNamespaceKeyFunc(kafka).equals(Cache.metaNamespaceKeyFunc(k)))
+                    .allMatch(k -> quorumFetchTime.equals(k.getSpec().getKafka().getConfig().get(quorumFetchConfigKey))));
 
         whenRequesting(req -> req
                 .param("filter[controller.status]", "in," + nodeStatus6)
