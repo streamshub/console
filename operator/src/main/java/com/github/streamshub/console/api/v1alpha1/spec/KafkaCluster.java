@@ -8,7 +8,7 @@ import io.fabric8.generator.annotation.Required;
 import io.fabric8.generator.annotation.ValidationRule;
 import io.sundr.builder.annotations.Buildable;
 
-@Buildable
+@Buildable(editableEnabled = false)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @ValidationRule(
         // The `namespace` property must be wrapped in double underscore to escape it

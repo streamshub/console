@@ -37,6 +37,7 @@
         <!-- Sonar settings -->
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
         <sonar.organization>streamshub</sonar.organization>
+        <sonar.coverage.jacoco.xmlReportPaths>target/coverage/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
         <sonar.exclusions>api/src/main/java/com/github/streamshub/console/api/support/TrustAllCertificateManager.java</sonar.exclusions>
         <!-- Ignore duplicates in configuration model classes -->
         <sonar.cpd.exclusions>
