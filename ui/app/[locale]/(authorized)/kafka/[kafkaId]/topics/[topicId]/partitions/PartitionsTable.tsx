@@ -317,7 +317,7 @@ export function PartitionsTable({
             <ToggleGroupItem
               text={
                 <>
-                  {StatusLabel.FullyReplicated} (
+                  {StatusLabel.FullyReplicated.label} (
                   {topic?.attributes.partitions?.filter(
                     (p) => p.status === "FullyReplicated",
                   ).length || 0}
@@ -333,7 +333,7 @@ export function PartitionsTable({
             <ToggleGroupItem
               text={
                 <>
-                  {StatusLabel.UnderReplicated} (
+                  {StatusLabel.UnderReplicated.label} (
                   {topic?.attributes.partitions?.filter(
                     (p) => p.status === "UnderReplicated",
                   ).length || 0}
@@ -349,7 +349,7 @@ export function PartitionsTable({
             <ToggleGroupItem
               text={
                 <>
-                  {StatusLabel.Offline} (
+                  {StatusLabel.Offline.label} (
                   {topic?.attributes.partitions?.filter(
                     (p) => p.status === "Offline",
                   ).length || 0}
