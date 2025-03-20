@@ -1,73 +1,75 @@
 package com.github.streamshub.systemtests.unit.cluster;
 
 import com.github.streamshub.systemtests.cluster.KubeCluster;
-import io.skodjob.testframe.annotations.TestVisualSeparator;
 import io.skodjob.testframe.clients.KubeClusterException;
 import io.skodjob.testframe.executor.Exec;
 import io.skodjob.testframe.executor.ExecResult;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.junitpioneer.jupiter.ClearEnvironmentVariable;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 
-import static com.github.streamshub.systemtests.unit.cluster.UnitTestUtils.setEnv;
+import static com.github.streamshub.systemtests.unit.UnitTestUtils.removeEnv;
+import static com.github.streamshub.systemtests.unit.UnitTestUtils.setEnv;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mockStatic;
 
 @ExtendWith(MockitoExtension.class)
-@TestVisualSeparator
-class KubeClusterTest {
+class KubeClusterUT {
 
     private static final Logger LOGGER = LogManager.getLogger(KubeCluster.class);
-
-    private MockedStatic<Exec> mockedExec;
-
-    @BeforeEach
-    void setUp() {
-        mockedExec = mockStatic(Exec.class);
-    }
-
-    @AfterEach
-    @ClearEnvironmentVariable(key = "TEST_CLUSTER_TYPE")
-    void tearDown() {
-        mockedExec.close();
-    }
+    private MockedStatic<Exec> mockedExec = mockStatic(Exec.class);
 
     @ParameterizedTest
     @ValueSource(strings = {"minikube", "oc", "kubectl", "random"})
-    void testClusterDetectionWithEnv(String cmd) throws Exception {
+    void testClusterDetection(String cmd) throws Exception {
+        LOGGER.info("Test cluster type with set env");
         setEnv("TEST_CLUSTER_TYPE", cmd);
+        assertEquals(System.getenv("TEST_CLUSTER_TYPE"), cmd);
+        testClusterDetection(cmd, true);
 
-        LOGGER.info("Detect cluster is up");
+        LOGGER.info("Now test cluster types without the env");
+        removeEnv("TEST_CLUSTER_TYPE");
+        assertNull(System.getenv("TEST_CLUSTER_TYPE"));
+        testClusterDetection(cmd, false);
+
+        mockedExec.close();
+    }
+
+    void testClusterDetection(String cmd, boolean setByEnv) throws Exception {
+        if (setByEnv) {
+            setEnv("TEST_CLUSTER_TYPE", cmd);
+        }
+
+        LOGGER.info("Detect {} cluster is up", cmd);
         testClusterDetection(cmd, true, true);
 
-        LOGGER.info("Now fail to detect cluster is up");
+        LOGGER.info("Now fail to detect {} cluster is up", cmd);
         // Unknown clusters will start throwing right at the isAvailable, so there is no point of exhausting parameter
         if (!cmd.equals("random")) {
             assertThrows(KubeClusterException.class, () -> testClusterDetection(cmd, true, false));
         }
     }
 
-    @ParameterizedTest
-    @ValueSource(strings = {"minikube", "oc", "kubectl", "random"})
-    void testClusterDetectionWithoutEnv(String cmd) throws Exception {
-        LOGGER.info("Detect cluster is up");
-        testClusterDetection(cmd, true, true);
-
-        LOGGER.info("Now fail to detect cluster is up");
-        // Unknown clusters will start throwing right at the isAvailable, so there is no point of exhausting parameter
-        if (!cmd.equals("random")) {
-            assertThrows(KubeClusterException.class, () -> testClusterDetection(cmd, true, false));
+    void testClusterDetection(String cmd, boolean cmdOnPath, boolean clusterPresent) throws KubeClusterException {
+        setCmdPresent(cmd, cmdOnPath);
+        setClusterPresent(cmd, clusterPresent);
+        if (cmd.equals("random")) {
+            Throwable th = assertThrows(KubeClusterException.class, KubeCluster::getInstance);
+            assertTrue(th.getMessage().contains("Unable to find a cluster type") || th.getMessage().contains("is not a supported cluster type"));
+        } else {
+            KubeCluster cluster = KubeCluster.getInstance();
+            assertNotNull(cluster);
+            assertTrue(cluster.isClusterUp());
         }
     }
 
@@ -93,19 +95,6 @@ class KubeClusterTest {
                     .thenReturn(new ExecResult(present ? 0 : 1, "", ""));
             }
             default -> LOGGER.info("Unexpected cluster type, will throw error");
-        }
-    }
-
-    void testClusterDetection(String cmd, boolean cmdOnPath, boolean clusterPresent) throws KubeClusterException {
-        setCmdPresent(cmd, cmdOnPath);
-        setClusterPresent(cmd, clusterPresent);
-        if (cmd.equals("random")) {
-            Throwable th = assertThrows(KubeClusterException.class, KubeCluster::getInstance);
-            assertTrue(th.getMessage().contains("Unable to find a cluster type") || th.getMessage().contains("is not a supported cluster type"));
-        } else {
-            KubeCluster cluster = KubeCluster.getInstance();
-            assertNotNull(cluster);
-            assertTrue(cluster.isClusterUp());
         }
     }
 }
