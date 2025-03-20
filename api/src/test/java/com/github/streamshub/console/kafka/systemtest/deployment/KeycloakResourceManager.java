@@ -16,6 +16,7 @@ import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.images.builder.Transferable;
 
+import com.github.streamshub.console.config.TrustStoreConfig;
 import com.github.streamshub.console.test.TlsHelper;
 
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
@@ -90,8 +91,9 @@ public class KeycloakResourceManager implements QuarkusTestResourceLifecycleMana
                 "console.test.oidc-url", oidcUrl,
                 "console.test.oidc-host", "localhost:%d".formatted(port),
                 "console.test.oidc-issuer", urlTemplate.formatted(port),
-                "quarkus.tls.\"oidc-provider-trust\".trust-store.jks.path", truststoreFile.getAbsolutePath(),
-                "quarkus.tls.\"oidc-provider-trust\".trust-store.jks.password", String.copyValueOf(tls.getPassphrase())
+                "console.test.oidc-trust-store.type", TrustStoreConfig.Type.JKS.name(),
+                "console.test.oidc-trust-store.path", truststoreFile.getAbsolutePath(),
+                "console.test.oidc-trust-store.password", String.copyValueOf(tls.getPassphrase())
         );
     }
 

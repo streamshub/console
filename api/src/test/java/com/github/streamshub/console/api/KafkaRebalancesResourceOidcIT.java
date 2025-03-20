@@ -15,6 +15,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
 import com.github.streamshub.console.config.ConsoleConfig;
+import com.github.streamshub.console.config.security.GlobalSecurityConfigBuilder;
 import com.github.streamshub.console.config.security.KafkaSecurityConfigBuilder;
 import com.github.streamshub.console.config.security.Privilege;
 import com.github.streamshub.console.kafka.systemtest.TestPlainProfile;
@@ -106,11 +107,11 @@ class KafkaRebalancesResourceOidcIT {
                 .orElseThrow());
 
         utils = new TestHelper(bootstrapServers, config, null);
+        utils.resetSecurity(consoleConfig, true);
         tokens = new TokenUtils(config);
 
         client.resources(Kafka.class).inAnyNamespace().delete();
         client.resources(KafkaRebalance.class).inAnyNamespace().delete();
-        consoleConfig.clearSecurity();
 
         utils.apply(client, new KafkaBuilder(utils.buildKafkaResource("test-kafka1", utils.getClusterId(), bootstrapServers))
                 .editSpec()
@@ -159,7 +160,7 @@ class KafkaRebalancesResourceOidcIT {
     void testListRebalancesWithPerTeamKafkaClusterAccess(String username, String team) {
         int total = KafkaRebalanceMode.values().length * (KafkaRebalanceState.values().length + 1);
 
-        consoleConfig.setSecurity(utils.oidcSecurity()
+        utils.updateSecurity(consoleConfig.getSecurity(), new GlobalSecurityConfigBuilder()
                 .addNewSubject()
                     .withClaim("groups")
                     .withInclude("team-a")
@@ -219,8 +220,7 @@ class KafkaRebalancesResourceOidcIT {
     @Test
     void testListRebalancesWithUnrelatedRoleAccess() {
         // alice is granted access to topics, but not rebalances
-
-        consoleConfig.setSecurity(utils.oidcSecurity()
+        utils.updateSecurity(consoleConfig.getSecurity(), new GlobalSecurityConfigBuilder()
                 .addNewSubject()
                     .withInclude("alice")
                     .withRoleNames("developer")
@@ -250,8 +250,7 @@ class KafkaRebalancesResourceOidcIT {
     @Test
     void testListRebalancesWithMissingPrivilege() {
         // alice can get and update rebalances, but she may not list them
-
-        consoleConfig.setSecurity(utils.oidcSecurity()
+        utils.updateSecurity(consoleConfig.getSecurity(), new GlobalSecurityConfigBuilder()
                 .addNewSubject()
                     .withInclude("alice")
                     .withRoleNames("developer")

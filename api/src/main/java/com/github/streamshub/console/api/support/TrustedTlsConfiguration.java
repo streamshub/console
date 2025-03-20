@@ -38,7 +38,7 @@ import io.vertx.core.net.TrustOptions;
  * {@link io.quarkus.tls.TlsConfigurationRegistry TlsConfigurationRegistry} at
  * runtime.
  */
-public class TrustedTlsConfiguration extends BaseTlsConfiguration {
+class TrustedTlsConfiguration extends BaseTlsConfiguration {
 
     private final Vertx vertx;
     private TrustOptions trustOptions;

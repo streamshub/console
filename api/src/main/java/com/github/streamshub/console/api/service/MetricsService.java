@@ -29,7 +29,7 @@ import com.github.streamshub.console.api.model.Metrics;
 import com.github.streamshub.console.api.model.Metrics.RangeEntry;
 import com.github.streamshub.console.api.support.KafkaContext;
 import com.github.streamshub.console.api.support.PrometheusAPI;
-import com.github.streamshub.console.api.support.factories.ConsoleConfigFactory;
+import com.github.streamshub.console.api.support.TrustStoreSupport;
 import com.github.streamshub.console.config.ConsoleConfig;
 import com.github.streamshub.console.config.KafkaClusterConfig;
 import com.github.streamshub.console.config.PrometheusConfig;
@@ -39,7 +39,6 @@ import io.fabric8.kubernetes.client.KubernetesClient;
 import io.quarkus.tls.TlsConfiguration;
 import io.quarkus.tls.TlsConfigurationRegistry;
 
-import static com.github.streamshub.console.support.StringSupport.replaceNonAlphanumeric;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.mapping;
 import static java.util.stream.Collectors.toList;
@@ -120,11 +119,7 @@ public class MetricsService {
     }
 
     Optional<TlsConfiguration> getTlsConfiguration(String sourceName) {
-        return tlsRegistry.get(ConsoleConfigFactory.TRUST_PREFIX_METRICS + sourceName).or(() -> {
-            String dotSeparatedSource = "metrics.source." + replaceNonAlphanumeric(sourceName, '.');
-            String dashSeparatedSource = "metrics-source-" + replaceNonAlphanumeric(sourceName, '-');
-            return tlsRegistry.get(dotSeparatedSource).or(() -> tlsRegistry.get(dashSeparatedSource));
-        });
+        return tlsRegistry.get(TrustStoreSupport.TRUST_PREFIX_METRICS + sourceName);
     }
 
     CompletionStage<Map<String, List<Metrics.ValueMetric>>> queryValues(String query) {

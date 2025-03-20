@@ -108,10 +108,10 @@ class RecordsResourceIT {
         topicUtils.deleteAllTopics();
 
         utils = new TestHelper(bootstrapServers, config, null);
+        utils.resetSecurity(consoleConfig, false);
         recordUtils = new RecordHelper(bootstrapServers, config, null);
 
         client.resources(Kafka.class).inAnyNamespace().delete();
-        consoleConfig.clearSecurity();
 
         utils.apply(client, utils.buildKafkaResource("test-kafka1", utils.getClusterId(), bootstrapServers));
         // Second cluster is offline/non-existent

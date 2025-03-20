@@ -9,6 +9,7 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
+import jakarta.enterprise.inject.spi.CDI;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonString;
 import jakarta.json.JsonStructure;
@@ -20,7 +21,11 @@ import org.eclipse.microprofile.config.Config;
 import org.jboss.logging.Logger;
 
 import com.github.streamshub.console.api.Annotations;
+import com.github.streamshub.console.api.support.TrustStoreSupport;
+import com.github.streamshub.console.config.ConsoleConfig;
+import com.github.streamshub.console.config.TrustStoreConfig;
 import com.github.streamshub.console.config.security.GlobalSecurityConfigBuilder;
+import com.github.streamshub.console.config.security.SecurityConfig;
 import com.github.streamshub.console.kafka.systemtest.utils.ClientsConfig;
 
 import io.fabric8.kubernetes.api.model.HasMetadata;
@@ -176,13 +181,37 @@ public class TestHelper {
         return response.then().log().ifValidationFails();
     }
 
-    public GlobalSecurityConfigBuilder oidcSecurity() {
+    public void resetSecurity(ConsoleConfig consoleConfig, boolean oidc) {
+        consoleConfig.clearSecurity();
+
+        if (oidc) {
+            consoleConfig.setSecurity(oidcSecurity().build());
+            CDI.current().select(TrustStoreSupport.class).get().registerTrustStores(consoleConfig);
+        }
+    }
+
+    public void updateSecurity(SecurityConfig config, SecurityConfig updates) {
+        config.setAudit(updates.getAudit());
+        config.setRoles(updates.getRoles());
+        config.setSubjects(updates.getSubjects());
+    }
+
+    private GlobalSecurityConfigBuilder oidcSecurity() {
         return new GlobalSecurityConfigBuilder()
             .withNewOidc()
                 .withClientId("console-client")
                 .withClientSecret("console-client-secret")
                 .withAuthServerUrl(config.getValue("console.test.oidc-url", String.class))
                 .withIssuer(config.getValue("console.test.oidc-issuer", String.class))
+                .withNewTrustStore()
+                    .withType(TrustStoreConfig.Type.valueOf(config.getValue("console.test.oidc-trust-store.type", String.class)))
+                    .withNewPassword()
+                        .withValue(config.getValue("console.test.oidc-trust-store.password", String.class))
+                    .endPassword()
+                    .withNewContent()
+                        .withValueFrom(config.getValue("console.test.oidc-trust-store.path", String.class))
+                    .endContent()
+                .endTrustStore()
             .endOidc();
     }
 }

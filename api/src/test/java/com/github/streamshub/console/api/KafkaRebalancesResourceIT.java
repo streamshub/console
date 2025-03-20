@@ -123,10 +123,10 @@ class KafkaRebalancesResourceIT {
                 .orElseThrow());
 
         utils = new TestHelper(bootstrapServers, config, null);
+        utils.resetSecurity(consoleConfig, false);
 
         client.resources(Kafka.class).inAnyNamespace().delete();
         client.resources(KafkaRebalance.class).inAnyNamespace().delete();
-        consoleConfig.clearSecurity();
 
         utils.apply(client, new KafkaBuilder(utils.buildKafkaResource("test-kafka1", utils.getClusterId(), bootstrapServers))
                 .editSpec()
