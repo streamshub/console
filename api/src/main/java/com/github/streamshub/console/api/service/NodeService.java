@@ -145,9 +145,9 @@ public class NodeService {
         summary.put("nodePools", new TreeMap<>());
         summary.put("statuses", Map.of(
             "brokers", new HashMap<>(),
-            "controllers", new HashMap<>()
+            "controllers", new HashMap<>(),
+            "combined", new HashMap<>()
         ));
-        summary.put("totalNodes", 0);
 
         return summary;
     }
@@ -155,22 +155,26 @@ public class NodeService {
     private Node tallySummary(Node node, Map<String, Object> summary) {
         @SuppressWarnings("unchecked")
         Map<String, Map<String, Integer>> statuses = (Map<String, Map<String, Integer>>) summary.get("statuses");
+        boolean healthy = true;
 
         if (node.isBroker()) {
-            statuses.get("brokers").compute(
-                    node.broker().status().toString(),
-                    (k, v) -> v == null ? 1 : v + 1
-            );
+            var status = node.broker().status();
+            if (status != BrokerStatus.RUNNING) {
+                healthy = false;
+            }
+            statuses.get("brokers").compute(status.toString(), (k, v) -> v == null ? 1 : v + 1);
         }
 
         if (node.isController()) {
-            statuses.get("controllers").compute(
-                    node.controller().status().toString(),
-                    (k, v) -> v == null ? 1 : v + 1
-            );
+            var status = node.controller().status();
+            if (status == ControllerStatus.FOLLOWER_LAGGED) {
+                healthy = false;
+            }
+            statuses.get("controllers").compute(status.toString(), (k, v) -> v == null ? 1 : v + 1);
         }
 
-        summary.compute("totalNodes", (k, v) -> (Integer) v + 1);
+        String combinedStatusKey = healthy ? "Healthy" : "Unhealthy";
+        statuses.get("combined").compute(combinedStatusKey, (k, v) -> v == null ? 1 : v + 1);
 
         String poolName = node.nodePool();
 
