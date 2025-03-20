@@ -27,8 +27,8 @@ export const sampleCheckboxFilter: CheckboxType<any> = {
   // eslint-disable-next-line @typescript-eslint/no-empty-function
   onToggle: () => {},
   options: {
-    "opt-1": "Option 1",
-    "opt-2": "Option 2",
+    "opt-1": { label: "Option 1" },
+    "opt-2": { label: "Option 2" },
   },
 };
 export const sampleCheckboxFilterWithChips: CheckboxType<any> = {

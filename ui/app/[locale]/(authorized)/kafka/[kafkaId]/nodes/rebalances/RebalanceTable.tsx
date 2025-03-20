@@ -38,111 +38,131 @@ export const RebalanceTableColumns = ["name", "status", "createdAt"] as const;
 
 export type RebalanceTableColumn = (typeof RebalanceTableColumns)[number];
 
-const StatusLabel: Record<RebalanceStatus, ReactNode> = {
-  New: (
-    <Tooltip content="New rebalance initiated">
-      <span>
-        <Icon>
-          <ExclamationCircleIcon />
-        </Icon>
-        &nbsp; New
-      </span>
-    </Tooltip>
-  ),
-  PendingProposal: (
-    <Tooltip content="Optimization proposal not generated">
-      <span>
-        <Icon>
-          <PendingIcon />
-        </Icon>
-        &nbsp;PendingProposal
-      </span>
-    </Tooltip>
-  ),
-  ProposalReady: (
-    <Tooltip content="Optimization proposal is ready for approval">
-      <span>
-        <Icon>
-          <CheckIcon />
-        </Icon>
-        &nbsp;ProposalReady
-      </span>
-    </Tooltip>
-  ),
-  Stopped: (
-    <Tooltip content="Rebalance stopped">
-      <span>
-        <Icon>
-          <Image
-            src={"/stop-icon.svg"}
-            alt="stop icon"
-            width={100}
-            height={100}
-          />
-        </Icon>
-        &nbsp;Stopped
-      </span>
-    </Tooltip>
-  ),
-  Rebalancing: (
-    <Tooltip content="Rebalance in progress">
-      <span>
-        <Icon>
-          <PendingIcon />
-        </Icon>
-        &nbsp;Rebalancing
-      </span>
-    </Tooltip>
-  ),
-  NotReady: (
-    <Tooltip content="Error occurred with the rebalance">
-      <span>
-        <Icon>
-          <OutlinedClockIcon />
-        </Icon>
-        &nbsp;NotReady
-      </span>
-    </Tooltip>
-  ),
-  Ready: (
-    <Tooltip content="Rebalance complete">
-      <span>
-        <Icon>
-          <CheckIcon />
-        </Icon>
-        &nbsp;Ready
-      </span>
-    </Tooltip>
-  ),
-  ReconciliationPaused: (
-    <Tooltip content="Rebalance is paused">
-      <span>
-        <Icon>
-          <PauseCircleIcon />
-        </Icon>
-        &nbsp;ReconciliationPaused
-      </span>
-    </Tooltip>
-  ),
+const StatusLabel: Record<RebalanceStatus, { label: ReactNode }> = {
+  New: {
+    label: (
+      <Tooltip content="New rebalance initiated">
+        <span>
+          <Icon>
+            <ExclamationCircleIcon />
+          </Icon>
+          &nbsp; New
+        </span>
+      </Tooltip>
+    ),
+  },
+  PendingProposal: {
+    label: (
+      <Tooltip content="Optimization proposal not generated">
+        <span>
+          <Icon>
+            <PendingIcon />
+          </Icon>
+          &nbsp;PendingProposal
+        </span>
+      </Tooltip>
+    ),
+  },
+  ProposalReady: {
+    label: (
+      <Tooltip content="Optimization proposal is ready for approval">
+        <span>
+          <Icon>
+            <CheckIcon />
+          </Icon>
+          &nbsp;ProposalReady
+        </span>
+      </Tooltip>
+    ),
+  },
+  Stopped: {
+    label: (
+      <Tooltip content="Rebalance stopped">
+        <span>
+          <Icon>
+            <Image
+              src={"/stop-icon.svg"}
+              alt="stop icon"
+              width={100}
+              height={100}
+            />
+          </Icon>
+          &nbsp;Stopped
+        </span>
+      </Tooltip>
+    ),
+  },
+  Rebalancing: {
+    label: (
+      <Tooltip content="Rebalance in progress">
+        <span>
+          <Icon>
+            <PendingIcon />
+          </Icon>
+          &nbsp;Rebalancing
+        </span>
+      </Tooltip>
+    ),
+  },
+  NotReady: {
+    label: (
+      <Tooltip content="Error occurred with the rebalance">
+        <span>
+          <Icon>
+            <OutlinedClockIcon />
+          </Icon>
+          &nbsp;NotReady
+        </span>
+      </Tooltip>
+    ),
+  },
+  Ready: {
+    label: (
+      <Tooltip content="Rebalance complete">
+        <span>
+          <Icon>
+            <CheckIcon />
+          </Icon>
+          &nbsp;Ready
+        </span>
+      </Tooltip>
+    ),
+  },
+  ReconciliationPaused: {
+    label: (
+      <Tooltip content="Rebalance is paused">
+        <span>
+          <Icon>
+            <PauseCircleIcon />
+          </Icon>
+          &nbsp;ReconciliationPaused
+        </span>
+      </Tooltip>
+    ),
+  },
 };
 
-function statusLabel(status: RebalanceStatus | null): ReactNode {
-  return status ? StatusLabel[status] : (
-    <Tooltip content="Rebalance status is missing">
-      <span>
-        <Icon>
-          <PauseCircleIcon />
-        </Icon>
-        &nbsp;Unknown
-      </span>
-    </Tooltip>
-  );
+function statusLabel(status: RebalanceStatus | null): { label: ReactNode } {
+  return status
+    ? StatusLabel[status]
+    : {
+        label: (
+          <Tooltip content="Rebalance status is missing">
+            <span>
+              <Icon>
+                <PauseCircleIcon />
+              </Icon>
+              &nbsp;Unknown
+            </span>
+          </Tooltip>
+        ),
+      };
 }
 
-const ModeLabel: Record<RebalanceMode, ReactNode> = {
-  full: <>Full</>,
-  "add-brokers": <>Add</>,
-  "remove-brokers": <>Remove</>,
+const ModeLabel: Record<RebalanceMode, { label: ReactNode }> = {
+  full: { label: <> Full</> },
+  "add-brokers": { label: <>Add</> },
+  "remove-brokers": { label: <>Remove</> },
 };
 
 export type RebalanceTabelProps = {
@@ -235,7 +255,7 @@ export function RebalanceTable({
           case "status":
             return (
               <Td key={key} dataLabel={"Status"}>
-                {statusLabel(row.attributes.status)}
+                {statusLabel(row.attributes.status).label}
               </Td>
             );
           case "createdAt":
@@ -329,7 +349,7 @@ export function RebalanceTable({
                   </DescriptionListTerm>
                   <DescriptionListDescription>
                     {row.attributes.mode === "full" ? (
-                      ModeLabel[row.attributes.mode]
+                      ModeLabel[row.attributes.mode].label
                     ) : (
                       <>
                         {ModeLabel[row.attributes.mode]}{" "}

@@ -1,4 +1,9 @@
-import { MenuToggle, Select, SelectOption } from "@/libs/patternfly/react-core";
+import {
+  MenuToggle,
+  Select,
+  SelectOption,
+  SelectList,
+} from "@/libs/patternfly/react-core";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import type { CheckboxType } from "../types";
@@ -13,6 +18,7 @@ export function FilterCheckbox({
 }) {
   const t = useTranslations();
   const [isOpen, setIsOpen] = useState(false);
+
   return (
     <Select
       aria-label={label}
@@ -27,26 +33,25 @@ export function FilterCheckbox({
           ref={toggleRef}
           onClick={() => setIsOpen((o) => !o)}
           isExpanded={isOpen}
-          style={
-            {
-              width: "200px",
-            } as React.CSSProperties
-          }
+          style={{ width: "200px" } as React.CSSProperties}
         >
           {t("common.search_hint", { label: label.toLocaleLowerCase() })}
         </MenuToggle>
       )}
     >
-      {Object.entries(options).map(([key, label]) => (
-        <SelectOption
-          key={key}
-          value={key}
-          hasCheckbox={true}
-          isSelected={chips.includes(key)}
-        >
-          {label}
-        </SelectOption>
-      ))}
+      <SelectList>
+        {Object.entries(options).map(([key, { label, description }]) => (
+          <SelectOption
+            key={key}
+            value={key}
+            hasCheckbox={true}
+            isSelected={chips.includes(key)}
+            description={description} // Optional description
+          >
+            {label}
+          </SelectOption>
+        ))}
+      </SelectList>
     </Select>
   );
 }
