@@ -30,7 +30,8 @@
         <test-frame.version>0.8.0</test-frame.version>
         <log4j.version>2.24.3</log4j.version>
         <skipTests>false</skipTests>
-        <skipUTs>false</skipUTs>
+        <skipUTs>${skipTests}</skipUTs>
+        <skipSTs>${skipTests}</skipSTs>
     </properties>
 
     <dependencies>
@@ -137,12 +138,18 @@
                 <version>${surefire-plugin.version}</version>
                 <configuration>
                     <skipTests>${skipUTs}</skipTests>
+                    <includes>
+                        <include>**/*UT.java</include>
+                        <include>**/*Test.java</include>
+                    </includes>
+                    <!-- Known issue, mocking in order to change ENV for UTs needs `add-opens` for utils package,
+                    but then jacoco needs no argLine or @argLine to be passed to JVM in order to run properly -->
                     <argLine>
+                        @{argLine}
                         --add-opens java.base/java.util=ALL-UNNAMED
                         --add-opens java.base/java.lang=ALL-UNNAMED
                     </argLine>
                 </configuration>
-
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -157,6 +164,7 @@
                     </execution>
                 </executions>
                 <configuration>
+                    <skipTests>${skipSTs}</skipTests>
                     <includes>
                         <include>**/*ST.java</include>
                     </includes>
@@ -189,11 +197,19 @@
                                 <exclude>**/*Builder.class</exclude>
                                 <exclude>**/*Fluent.class</exclude>
                                 <exclude>**/*Nested.class</exclude>
+                                <!-- Exclude Constants and Enums -->
+                                <exclude>com/github/streamshub/systemtests/constants/*</exclude>
+                                <exclude>com/github/streamshub/systemtests/enums/*</exclude>
+                                <!-- Exclude Environment. It's tested by TF -->
+                                <exclude>com/github/streamshub/systemtests/Environment.class</exclude>
+                                <!-- Exclude LogCollector. It's tested by TF -->
+                                <exclude>com/github/streamshub/systemtests/logs/TestLogCollector.class</exclude>
+                                <exclude>com/github/streamshub/systemtests/unit/*</exclude>
                             </excludes>
                             <includeCurrentProject>true</includeCurrentProject>
                             <outputDirectory>${project.reporting.outputDirectory}/jacoco</outputDirectory>
                             <formats>
-                                <format>XML</format>
+                                <format>HTML</format>
                             </formats>
                         </configuration>
                     </execution>

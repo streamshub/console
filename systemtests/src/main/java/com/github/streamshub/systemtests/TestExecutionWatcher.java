@@ -11,8 +11,7 @@ import org.opentest4j.TestAbortedException;
 
 public class TestExecutionWatcher implements TestExecutionExceptionHandler, LifecycleMethodExecutionExceptionHandler {
 
-    private static final TestLogCollector LOG_COLLECTOR = new TestLogCollector();
-
+    private final TestLogCollector logCollector = TestLogCollector.getInstance();
     private static final Logger LOGGER = LogManager.getLogger(TestExecutionWatcher.class);
 
     @Override
@@ -22,7 +21,7 @@ public class TestExecutionWatcher implements TestExecutionExceptionHandler, Life
             final String testClass = extensionContext.getRequiredTestClass().getName();
             final String testMethod = extensionContext.getRequiredTestMethod().getName();
 
-            LOG_COLLECTOR.collectLogs(testClass, testMethod);
+            logCollector.collectLogs(testClass, testMethod);
         }
         throw throwable;
     }
@@ -33,7 +32,7 @@ public class TestExecutionWatcher implements TestExecutionExceptionHandler, Life
         if (!(throwable instanceof TestAbortedException || throwable instanceof KubeClusterException)) {
             final String testClass = extensionContext.getRequiredTestClass().getName();
 
-            LOG_COLLECTOR.collectLogs(testClass);
+            logCollector.collectLogs(testClass);
         }
         throw throwable;
     }
@@ -45,7 +44,7 @@ public class TestExecutionWatcher implements TestExecutionExceptionHandler, Life
             final String testClass = extensionContext.getRequiredTestClass().getName();
             final String testMethod = extensionContext.getRequiredTestMethod().getName();
 
-            LOG_COLLECTOR.collectLogs(testClass, testMethod);
+            logCollector.collectLogs(testClass, testMethod);
         }
         throw throwable;
     }
@@ -57,7 +56,7 @@ public class TestExecutionWatcher implements TestExecutionExceptionHandler, Life
             final String testClass = extensionContext.getRequiredTestClass().getName();
             final String testMethod = extensionContext.getRequiredTestMethod().getName();
 
-            LOG_COLLECTOR.collectLogs(testClass, testMethod);
+            logCollector.collectLogs(testClass, testMethod);
         }
         throw throwable;
     }
@@ -68,7 +67,7 @@ public class TestExecutionWatcher implements TestExecutionExceptionHandler, Life
         if (!(throwable instanceof KubeClusterException)) {
             final String testClass = extensionContext.getRequiredTestClass().getName();
 
-            LOG_COLLECTOR.collectLogs(testClass);
+            logCollector.collectLogs(testClass);
         }
         throw throwable;
     }

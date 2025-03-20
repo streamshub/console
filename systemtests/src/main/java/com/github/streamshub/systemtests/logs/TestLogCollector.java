@@ -10,6 +10,8 @@ import io.skodjob.testframe.LogCollectorBuilder;
 import io.skodjob.testframe.clients.KubeClient;
 import io.skodjob.testframe.clients.cmdClient.Kubectl;
 import io.skodjob.testframe.resources.KubeResourceManager;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.nio.file.Path;
@@ -22,18 +24,24 @@ import java.util.Collections;
 import java.util.List;
 
 public class TestLogCollector {
-    private static final String CURRENT_DATE;
+    private static final Logger LOGGER = LogManager.getLogger(TestLogCollector.class);
+    private static TestLogCollector instance;
+    private final String currentDate;
     private final LogCollector logCollector;
 
-    static {
+    private TestLogCollector() {
         // Get current date to create a unique folder
         DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd-HH-mm-ss");
         dateTimeFormatter = dateTimeFormatter.withZone(ZoneId.of("GMT"));
-        CURRENT_DATE = dateTimeFormatter.format(LocalDateTime.now());
+        currentDate = dateTimeFormatter.format(LocalDateTime.now());
+        this.logCollector = defaultLogCollector();
     }
 
-    public TestLogCollector() {
-        this.logCollector = defaultLogCollector();
+    public static TestLogCollector getInstance() {
+        if (instance == null) {
+            instance = new TestLogCollector();
+        }
+        return instance;
     }
 
     private LogCollector defaultLogCollector() {
@@ -43,7 +51,8 @@ public class TestLogCollector {
             ResourceKinds.KAFKA,
             ResourceKinds.KAFKA_NODE_POOL,
             ResourceKinds.KAFKA_TOPIC,
-            ResourceKinds.KAFKA_USER
+            ResourceKinds.KAFKA_USER,
+            ResourceKinds.CONSOLE
         ));
 
         if (Environment.INSTALL_USING_OLM) {
@@ -93,7 +102,7 @@ public class TestLogCollector {
     }
 
     private Path buildFullPathToLogs(String testClass, String testCase) {
-        Path rootPathToLogsForTestCase = Path.of(Environment.TEST_LOG_DIR, CURRENT_DATE, testClass);
+        Path rootPathToLogsForTestCase = Path.of(Environment.TEST_LOG_DIR, currentDate, testClass);
 
         if (testCase != null) {
             rootPathToLogsForTestCase = rootPathToLogsForTestCase.resolve(testCase);
@@ -114,6 +123,7 @@ public class TestLogCollector {
     }
 
     public void collectLogs(String testClass, String testCase) {
+        LOGGER.debug("Collecting logs from {}#{}", testClass, testCase);
         Path rootPathToLogsForTestCase = buildFullPathToLogs(testClass, testCase);
 
         final LogCollector testCaseCollector = new LogCollectorBuilder(logCollector)
