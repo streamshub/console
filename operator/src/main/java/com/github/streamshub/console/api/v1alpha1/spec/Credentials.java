@@ -7,7 +7,7 @@ import io.fabric8.generator.annotation.ValidationRule;
 import io.sundr.builder.annotations.Buildable;
 
 @ValidationRule(value = "has(self.kafkaUser)", message = "kafkaUser is required")
-@Buildable
+@Buildable(editableEnabled = false)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class Credentials {
 

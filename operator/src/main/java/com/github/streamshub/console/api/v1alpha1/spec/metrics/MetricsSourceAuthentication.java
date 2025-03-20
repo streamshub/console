@@ -5,7 +5,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import io.fabric8.generator.annotation.ValidationRule;
 import io.sundr.builder.annotations.Buildable;
 
-@Buildable
+@Buildable(editableEnabled = false)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @ValidationRule(
         value = "has(self.token) || (has(self.username) && has(self.password))",
