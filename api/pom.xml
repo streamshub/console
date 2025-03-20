@@ -313,7 +313,7 @@
                                 <exclude>com/github/streamshub/console/api/support/TrustAllCertificateManager.class</exclude>
                             </excludes>
                             <exclClassLoaders>*QuarkusClassLoader</exclClassLoaders>
-                            <destFile>${project.basedir}/../target/jacoco.exec</destFile>
+                            <destFile>${project.basedir}/target/jacoco.exec</destFile>
                             <append>true</append>
                         </configuration>
                     </execution>
@@ -326,27 +326,8 @@
                             <excludes>
                                 <exclude>com/github/streamshub/console/api/support/TrustAllCertificateManager.class</exclude>
                             </excludes>
-                            <destFile>${project.basedir}/../target/jacoco.exec</destFile>
+                            <destFile>${project.basedir}/target/jacoco.exec</destFile>
                             <append>true</append>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>report-aggregate</id>
-                        <goals>
-                            <goal>report-aggregate</goal>
-                        </goals>
-                        <phase>verify</phase>
-                        <configuration>
-                            <includeCurrentProject>true</includeCurrentProject>
-                            <dataFileIncludes>
-                                <dataFileInclude>${project.basedir}/../target/jacoco.exec</dataFileInclude>
-                            </dataFileIncludes>
-                            <excludes>
-                                <exclude>com/github/streamshub/console/config/**/*Builder.class</exclude>
-                                <exclude>com/github/streamshub/console/config/**/*Fluent.class</exclude>
-                                <exclude>com/github/streamshub/console/config/**/*Nested.class</exclude>
-                            </excludes>
-                            <outputDirectory>${project.basedir}/../target/coverage</outputDirectory>
                         </configuration>
                     </execution>
                 </executions>
