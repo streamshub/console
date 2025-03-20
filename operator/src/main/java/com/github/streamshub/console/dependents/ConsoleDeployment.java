@@ -103,7 +103,6 @@ public class ConsoleDeployment extends BaseDeployment {
                             .withImage(imageAPI)
                             .withImagePullPolicy(pullPolicy(imageAPI))
                             .withResources(templateAPI.map(ContainerSpec::getResources).orElse(null))
-                            //.addAllToVolumeMounts(getResourcesByType(trustResources, VolumeMount.class))
                             .addAllToEnv(envVars)
                         .endContainer()
                         // Set UI container image options
