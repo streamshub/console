@@ -9,25 +9,24 @@
         <version>0.7.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>systemtests</artifactId>
+    <artifactId>console-systemtests</artifactId>
     <description>
         The intention of this module is to test StreamsHub Console UI with kafka instance deployed and managed by Strimzi Cluster Operator, to simulate a real user scenarios for end-to-end testing.
     </description>
 
     <properties>
-        <maven.compiler.source>17</maven.compiler.source>
-        <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <!-- Simple logging facade for java for log4j -->
+        <log4j.version>2.24.3</log4j.version>
         <slf4j.version>2.0.12</slf4j.version>
         <!-- Playwright -->
         <playwright.version>1.47.0</playwright.version>
-        <!--    Mocking environment    -->
+        <!-- Mocking environment -->
         <mockito.version>5.15.2</mockito.version>
         <junit-pioneer.version>2.3.0</junit-pioneer.version>
         <!-- Used for test-frame -->
         <test-frame.version>0.8.0</test-frame.version>
-        <log4j.version>2.24.3</log4j.version>
+        <!-- Allows skipping tests - unit, system or both types -->
         <skipTests>false</skipTests>
         <skipUTs>${skipTests}</skipUTs>
         <skipSTs>${skipTests}</skipSTs>
@@ -58,16 +57,19 @@
                 </exclusion>
             </exclusions>
         </dependency>
+        <!-- Playwright used for system testing UI -->
         <dependency>
             <groupId>com.microsoft.playwright</groupId>
             <artifactId>playwright</artifactId>
             <version>${playwright.version}</version>
         </dependency>
+        <!-- Strimzi API helps to interact with Kafka -->
         <dependency>
             <groupId>io.strimzi</groupId>
             <artifactId>api</artifactId>
             <version>${strimzi-api.version}</version>
         </dependency>
+        <!-- Test Frame used for handling k8s resources -->
         <dependency>
             <groupId>io.skodjob</groupId>
             <artifactId>test-frame-common</artifactId>
@@ -88,7 +90,7 @@
             <artifactId>test-frame-log-collector</artifactId>
             <version>${test-frame.version}</version>
         </dependency>
-        <!--   Mocking environment     -->
+        <!-- Mocking environment -->
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-junit-jupiter</artifactId>
@@ -101,7 +103,7 @@
             <version>${junit-pioneer.version}</version>
             <scope>test</scope>
         </dependency>
-        <!--    Logger      -->
+        <!-- Logger -->
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-api</artifactId>
@@ -131,6 +133,7 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>${maven.compiler.version}</version>
             </plugin>
+            <!-- Used for unit testing -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
@@ -138,7 +141,7 @@
                 <configuration>
                     <skipTests>${skipUTs}</skipTests>
                     <includes>
-                        <include>**/*UT.java</include>
+                        <!-- Use only conventional UT naming - *Test.java -->
                         <include>**/*Test.java</include>
                     </includes>
                     <!-- Known issue, mocking in order to change ENV for UTs needs `add-opens` for utils package,
@@ -150,6 +153,7 @@
                     </argLine>
                 </configuration>
             </plugin>
+            <!-- Used for system testing -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-failsafe-plugin</artifactId>
@@ -169,6 +173,7 @@
                     </includes>
                 </configuration>
             </plugin>
+            <!-- Used for code coverage with UT -->
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
@@ -193,6 +198,7 @@
                         <phase>verify</phase>
                         <configuration>
                             <excludes>
+                                <!-- Exclude Builder classes-->
                                 <exclude>**/*Builder.class</exclude>
                                 <exclude>**/*Fluent.class</exclude>
                                 <exclude>**/*Nested.class</exclude>
@@ -209,7 +215,9 @@
                             <includeCurrentProject>true</includeCurrentProject>
                             <outputDirectory>${project.reporting.outputDirectory}/jacoco</outputDirectory>
                             <formats>
+                                <!-- Keep both human readable HTML and sonarcloud specific XML formats-->
                                 <format>HTML</format>
+                                <format>XML</format>
                             </formats>
                         </configuration>
                     </execution>
