@@ -833,11 +833,6 @@ class ConsoleReconcilerTest extends ConsoleReconcilerTestBase {
                 "/deployments/config/truststore-schema-registry-example-registry-content.pem",
                 registryTrustStore.getContent().getValueFrom()
             );
-
-//            var consoleSecret = client.resources(Secret.class)
-//                    .inNamespace(CONSOLE_NS)
-//                    .withName(CONSOLE_NAME + '-' + ConsoleSecret.NAME)
-//                    .get();
         });
     }
 

@@ -7,6 +7,7 @@ import java.nio.file.Path;
 import java.security.KeyStore;
 import java.security.SecureRandom;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 import javax.net.ssl.SSLContext;
@@ -41,14 +42,15 @@ import io.vertx.core.net.TrustOptions;
 class TrustedTlsConfiguration extends BaseTlsConfiguration {
 
     private final Vertx vertx;
-    private TrustOptions trustOptions;
-    private KeyStore trustStore;
+    private final TrustOptions trustOptions;
+    private final KeyStore trustStore;
 
     public TrustedTlsConfiguration(String name, Vertx vertx, TrustStoreConfig config) {
         this.vertx = vertx;
         var trustStoreResult = load(name, vertx, config);
-        trustOptions = trustStoreResult != null ? trustStoreResult.options : null;
-        trustStore = trustStoreResult != null ? trustStoreResult.trustStore : null;
+        Objects.requireNonNull(trustStoreResult, "trustStoreResult is unexpectedly null");
+        trustOptions = trustStoreResult.options;
+        trustStore = trustStoreResult.trustStore;
     }
 
     TrustStoreAndTrustOptions load(String name, Vertx vertx, TrustStoreConfig config) {
@@ -56,28 +58,21 @@ class TrustedTlsConfiguration extends BaseTlsConfiguration {
     }
 
     @Override
-    public synchronized TrustOptions getTrustStoreOptions() {
+    public TrustOptions getTrustStoreOptions() {
         return trustOptions;
     }
 
     @Override
-    public synchronized KeyStore getTrustStore() {
+    public KeyStore getTrustStore() {
         return trustStore;
     }
 
     @Override
     public synchronized SSLContext createSSLContext() throws Exception {
-        TrustManagerFactory trustManagerFactory;
-        TrustManager[] trustManagers = null;
-
-        if (trustOptions != null) {
-            trustManagerFactory = trustOptions.getTrustManagerFactory(vertx);
-            trustManagers = trustManagerFactory.getTrustManagers();
-        }
-
+        TrustManagerFactory trustManagerFactory = trustOptions.getTrustManagerFactory(vertx);
+        TrustManager[] trustManagers = trustManagerFactory.getTrustManagers();
         SSLContext sslContext = SSLContext.getInstance("TLS");
         sslContext.init(null, trustManagers, new SecureRandom());
-
         return sslContext;
     }
 
@@ -98,11 +93,15 @@ class TrustedTlsConfiguration extends BaseTlsConfiguration {
             return null;
         }
 
+        private <C> Optional<C> optionalType(Type type, Class<C> target) {
+            return this.type != type ? Optional.empty() : Optional.of(target.cast(this));
+        }
+
         // Methods for PEM trust stores
 
         @Override
         public Optional<PemCertsConfig> pem() {
-            return type == Type.PEM ? Optional.of(this) : Optional.empty();
+            return optionalType(Type.PEM, PemCertsConfig.class);
         }
 
         @Override
@@ -114,12 +113,12 @@ class TrustedTlsConfiguration extends BaseTlsConfiguration {
 
         @Override
         public Optional<JKSTrustStoreConfig> jks() {
-            return type == Type.JKS ? Optional.of(this) : Optional.empty();
+            return optionalType(Type.JKS, JKSTrustStoreConfig.class);
         }
 
         @Override
         public Optional<P12TrustStoreConfig> p12() {
-            return type == Type.PKCS12 ? Optional.of(this) : Optional.empty();
+            return optionalType(Type.PKCS12, P12TrustStoreConfig.class);
         }
 
         @Override

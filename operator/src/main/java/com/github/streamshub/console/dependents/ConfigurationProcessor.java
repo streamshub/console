@@ -100,6 +100,7 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
 
     private static final Logger LOGGER = Logger.getLogger(ConfigurationProcessor.class);
     private static final String EMBEDDED_METRICS_NAME = "streamshub.console.embedded-prometheus";
+    private static final String OIDC_PROVIDER_TRUST_NAME = "oidc-provider";
     private static final Random RANDOM = new SecureRandom();
 
     @Inject
@@ -221,7 +222,7 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
             .ifPresent(trustStore -> buildTrustStore(
                     context,
                     primary.getMetadata().getNamespace(),
-                    "oidc-provider",
+                    OIDC_PROVIDER_TRUST_NAME,
                     trustStore,
                     data
             ));
@@ -254,7 +255,7 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
         byte[] content = getValue(context, namespace, trustStore.getContent());
         TrustStore.Type type = trustStore.getType();
 
-        if ("oidc-provider".equals(name) && type != TrustStore.Type.PEM) {
+        if (OIDC_PROVIDER_TRUST_NAME.equals(name) && type != TrustStore.Type.PEM) {
             // OIDC CAs must be PEM encoded for use by the UI container
             content = pemEncode(name, trustStore, password, content);
             type = TrustStore.Type.PEM;
@@ -364,7 +365,7 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
                     .withIssuer(oidc.getIssuer())
                     .withClientId(oidc.getClientId())
                     .withClientSecret(clientSecret)
-                    .withTrustStore(buildTrustStoreConfig(oidc.getTrustStore(), "oidc-provider"))
+                    .withTrustStore(buildTrustStoreConfig(oidc.getTrustStore(), OIDC_PROVIDER_TRUST_NAME))
                     .build());
         }
 
@@ -379,7 +380,7 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
             String alias;
             com.github.streamshub.console.config.Value password;
 
-            if ("oidc-provider".equals(name)) {
+            if (OIDC_PROVIDER_TRUST_NAME.equals(name)) {
                 // OIDC CAs are always converted to PEM to allow use by the UI container
                 type = TrustStore.Type.PEM;
                 alias = null;
