@@ -2,6 +2,12 @@
 # -------------------------------------------
 # Common
 # -------------------------------------------
+# Log level used in file output
+TEST_FILE_LOG_LEVEL: DEBUG
+# Log level used in console output
+TEST_CONSOLE_LOG_LEVEL: INFO
+# Path for log output
+TEST_LOG_DIR: target/logs
 # Run Playwright tests in headless mode without browser popping up
 RUN_HEADLESS: true
 # Keep test resources after execution (false = delete resources)

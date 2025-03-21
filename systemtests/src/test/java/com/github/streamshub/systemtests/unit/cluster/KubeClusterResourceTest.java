@@ -10,7 +10,7 @@ import static io.smallrye.common.constraint.Assert.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.Mockito.mockStatic;
 
-class KubeClusterResourceUT {
+class KubeClusterResourceTest {
 
     @Test
     void testSingletonInstance() {

@@ -10,7 +10,6 @@ import io.skodjob.testframe.LogCollectorBuilder;
 import io.skodjob.testframe.clients.KubeClient;
 import io.skodjob.testframe.clients.cmdClient.Kubectl;
 import io.skodjob.testframe.resources.KubeResourceManager;
-import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.File;
@@ -24,7 +23,7 @@ import java.util.Collections;
 import java.util.List;
 
 public class TestLogCollector {
-    private static final Logger LOGGER = LogManager.getLogger(TestLogCollector.class);
+    private static final Logger LOGGER = LogWrapper.getLogger(TestLogCollector.class);
     private static TestLogCollector instance;
     private final String currentDate;
     private final LogCollector logCollector;

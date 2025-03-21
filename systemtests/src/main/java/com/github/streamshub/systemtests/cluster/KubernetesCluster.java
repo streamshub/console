@@ -1,8 +1,8 @@
 package com.github.streamshub.systemtests.cluster;
 
+import com.github.streamshub.systemtests.logs.LogWrapper;
 import io.skodjob.testframe.clients.KubeClusterException;
 import io.skodjob.testframe.executor.Exec;
-import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.List;
@@ -10,7 +10,7 @@ import java.util.List;
 public class KubernetesCluster implements KubeCluster {
 
     public static final String CMD = "kubectl";
-    private static final Logger LOGGER = LogManager.getLogger(KubernetesCluster.class);
+    private static final Logger LOGGER = LogWrapper.getLogger(KubernetesCluster.class);
 
     @Override
     public boolean isAvailable() {

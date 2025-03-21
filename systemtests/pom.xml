@@ -18,7 +18,6 @@
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-
         <!-- Simple logging facade for java for log4j -->
         <slf4j.version>2.0.12</slf4j.version>
         <!-- Playwright -->
@@ -26,7 +25,6 @@
         <!--    Mocking environment    -->
         <mockito.version>5.15.2</mockito.version>
         <junit-pioneer.version>2.3.0</junit-pioneer.version>
-        <springframework.version>6.2.5</springframework.version>
         <!-- Used for test-frame -->
         <test-frame.version>0.8.0</test-frame.version>
         <log4j.version>2.24.3</log4j.version>
@@ -101,19 +99,6 @@
             <groupId>org.junit-pioneer</groupId>
             <artifactId>junit-pioneer</artifactId>
             <version>${junit-pioneer.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <!--    Reflections    -->
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-context</artifactId>
-            <version>${springframework.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-test</artifactId>
-            <version>${springframework.version}</version>
             <scope>test</scope>
         </dependency>
         <!--    Logger      -->
@@ -216,8 +201,9 @@
                                 <exclude>com/github/streamshub/systemtests/enums/*</exclude>
                                 <!-- Exclude Environment. It's tested by TF -->
                                 <exclude>com/github/streamshub/systemtests/Environment.class</exclude>
-                                <!-- Exclude LogCollector. It's tested by TF -->
-                                <exclude>com/github/streamshub/systemtests/logs/TestLogCollector.class</exclude>
+                                <!-- Exclude LogCollector and Logger from code coverage -->
+                                <exclude>com/github/streamshub/systemtests/logs/*</exclude>
+                                <!-- Exclude unit test utils -->
                                 <exclude>com/github/streamshub/systemtests/unit/*</exclude>
                             </excludes>
                             <includeCurrentProject>true</includeCurrentProject>

@@ -1,7 +1,7 @@
 package com.github.streamshub.systemtests.cluster;
 
+import com.github.streamshub.systemtests.logs.LogWrapper;
 import io.skodjob.testframe.clients.KubeClusterException;
-import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.Arrays;
@@ -9,13 +9,14 @@ import java.util.Locale;
 
 public interface KubeCluster {
 
+
     String TEST_CLUSTER_TYPE_ENV = "TEST_CLUSTER_TYPE";
 
     boolean isAvailable();
     boolean isClusterUp();
 
     static KubeCluster getInstance() {
-        Logger logger = LogManager.getLogger(KubeCluster.class);
+        final Logger logger = LogWrapper.getLogger(KubeCluster.class);
         KubeCluster[] clusters = null;
         String clusterName = System.getenv(TEST_CLUSTER_TYPE_ENV);
         // In case the env is specified
