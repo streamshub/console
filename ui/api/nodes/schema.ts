@@ -73,9 +73,7 @@ export type NodesListMetaSummary = z.infer<typeof NodesListMetaSummary>;
 
 export const NodesResponseSchema = z.object({
   meta: z.object({
-<<<<<<< HEAD
     summary: NodesListMetaSummary,
-=======
     page: z.object({
       total: z.number(),
       pageNumber: z.number().optional(),
@@ -86,7 +84,6 @@ export const NodesResponseSchema = z.object({
     prev: z.string().nullable(),
     next: z.string().nullable(),
     last: z.string().nullable(),
->>>>>>> 1f7997e (feat: UI changes for KRaft)
   }),
   data: z.array(NodeSchema),
 });
