@@ -1,8 +1,8 @@
 package com.github.streamshub.systemtests;
 
+import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.logs.TestLogCollector;
 import io.skodjob.testframe.clients.KubeClusterException;
-import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.LifecycleMethodExecutionExceptionHandler;
@@ -12,7 +12,7 @@ import org.opentest4j.TestAbortedException;
 public class TestExecutionWatcher implements TestExecutionExceptionHandler, LifecycleMethodExecutionExceptionHandler {
 
     private final TestLogCollector logCollector = TestLogCollector.getInstance();
-    private static final Logger LOGGER = LogManager.getLogger(TestExecutionWatcher.class);
+    private static final Logger LOGGER = LogWrapper.getLogger(TestExecutionWatcher.class);
 
     @Override
     public void handleTestExecutionException(ExtensionContext extensionContext, Throwable throwable) throws Throwable {

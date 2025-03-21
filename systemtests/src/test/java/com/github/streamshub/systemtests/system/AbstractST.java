@@ -4,6 +4,7 @@ import com.github.streamshub.systemtests.Environment;
 import com.github.streamshub.systemtests.cluster.KubeClusterResource;
 import com.github.streamshub.systemtests.constants.Labels;
 import com.github.streamshub.systemtests.constants.ResourceKinds;
+import com.github.streamshub.systemtests.logs.LogWrapper;
 import io.skodjob.testframe.annotations.ResourceManager;
 import io.skodjob.testframe.annotations.TestVisualSeparator;
 import io.skodjob.testframe.clients.KubeClusterException;
@@ -23,7 +24,6 @@ import io.skodjob.testframe.resources.ServiceAccountType;
 import io.skodjob.testframe.resources.ServiceType;
 import io.skodjob.testframe.resources.SubscriptionType;
 import io.skodjob.testframe.utils.KubeUtils;
-import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -35,7 +35,7 @@ import java.io.IOException;
 @TestVisualSeparator
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public abstract class AbstractST {
-    private static final Logger LOGGER = LogManager.getLogger(AbstractST.class);
+    private static final Logger LOGGER = LogWrapper.getLogger(AbstractST.class);
     protected static final KubeResourceManager RESOURCE_MANAGER = KubeResourceManager.getInstance();
     protected KubeClusterResource cluster = KubeClusterResource.getInstance();
 

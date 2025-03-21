@@ -21,4 +21,19 @@ public class UnitTestUtils {
         field.setAccessible(true);
         ((Map<String, String>) field.get(env)).remove(key);
     }
+
+    public static void setField(Object target, String fieldName, Object newValue) {
+        Field field = null;
+        try {
+            field = target.getClass().getDeclaredField(fieldName);
+        } catch (NoSuchFieldException e) {
+            throw new RuntimeException(e);
+        }
+        field.setAccessible(true);
+        try {
+            field.set(target, newValue);
+        } catch (IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
+    }
 }

@@ -1,15 +1,14 @@
 package com.github.streamshub.systemtests.unit;
 
 import com.github.streamshub.systemtests.TestExecutionWatcher;
+import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.logs.TestLogCollector;
 import io.skodjob.testframe.clients.KubeClusterException;
-import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.opentest4j.TestAbortedException;
-import org.springframework.test.util.ReflectionTestUtils;
 
 import java.lang.reflect.Method;
 
@@ -22,8 +21,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-class TestExecutionWatcherUT {
-    private static final Logger LOGGER = LogManager.getLogger(TestExecutionWatcherUT.class);
+class TestExecutionWatcherTest {
+    private static final Logger LOGGER = LogWrapper.getLogger(TestExecutionWatcherTest.class);
     private final TestExecutionWatcher mockWatcher = new TestExecutionWatcher();
     private final TestLogCollector mockTestLogCollector = mock(TestLogCollector.class);
     private final ExtensionContext mockContext = mock(ExtensionContext.class);
@@ -35,7 +34,7 @@ class TestExecutionWatcherUT {
 
     @BeforeEach
     void setUp() throws NoSuchMethodException {
-        ReflectionTestUtils.setField(mockWatcher, "logCollector", mockTestLogCollector);
+        UnitTestUtils.setField(mockWatcher, "logCollector", mockTestLogCollector);
         when(mockContext.getRequiredTestClass()).thenReturn((Class) String.class);
         when(mockContext.getRequiredTestMethod()).thenReturn(String.class.getDeclaredMethod("toString"));
         doNothing().when(mockTestLogCollector).collectLogs(anyString(), anyString());

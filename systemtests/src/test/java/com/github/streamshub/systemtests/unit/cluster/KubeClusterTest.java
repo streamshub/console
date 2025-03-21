@@ -4,19 +4,17 @@ import com.github.streamshub.systemtests.cluster.KubeCluster;
 import com.github.streamshub.systemtests.cluster.KubernetesCluster;
 import com.github.streamshub.systemtests.cluster.MinikubeCluster;
 import com.github.streamshub.systemtests.cluster.OpenshiftCluster;
+import com.github.streamshub.systemtests.logs.LogWrapper;
 import io.skodjob.testframe.clients.KubeClusterException;
 import io.skodjob.testframe.executor.Exec;
 import io.skodjob.testframe.executor.ExecResult;
-import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.MockedStatic;
-import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 
@@ -30,10 +28,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mockStatic;
 
-@ExtendWith(MockitoExtension.class)
-class KubeClusterUT {
+class KubeClusterTest {
 
-    private static final Logger LOGGER = LogManager.getLogger(KubeCluster.class);
+    private static final Logger LOGGER = LogWrapper.getLogger(KubeCluster.class);
     private MockedStatic<Exec> mockedExec;
 
     @BeforeEach

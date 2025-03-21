@@ -1,15 +1,15 @@
 package com.github.streamshub.systemtests.cluster;
 
+import com.github.streamshub.systemtests.logs.LogWrapper;
 import io.skodjob.testframe.clients.KubeClusterException;
 import io.skodjob.testframe.executor.Exec;
-import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.List;
 
 public class MinikubeCluster implements KubeCluster {
     public static final String CMD = "minikube";
-    private static final Logger LOGGER = LogManager.getLogger(MinikubeCluster.class);
+    private static final Logger LOGGER = LogWrapper.getLogger(MinikubeCluster.class);
 
     @Override
     public boolean isAvailable() {
