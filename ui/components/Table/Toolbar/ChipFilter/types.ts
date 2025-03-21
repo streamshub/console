@@ -19,6 +19,21 @@ export type CheckboxType<T extends string | number> = {
   onRemoveChip: (value: T) => void;
   onRemoveGroup: () => void;
 };
+
+export type GroupedCheckboxType<T extends string | number> = {
+  type: "groupedCheckbox";
+  chips: string[];
+  options: {
+    groupLabel: string;
+    groupOptions: {
+      [key in T]: ReactNode;
+    };
+  }[];
+  onToggle: (value: T) => void;
+  onRemoveChip: (value: T) => void;
+  onRemoveGroup: () => void;
+};
+
 export type SelectType<T extends string | number> = {
   type: "select";
   chips: string[];
@@ -27,4 +42,8 @@ export type SelectType<T extends string | number> = {
   onRemoveChip: (value: T) => void;
   onRemoveGroup: () => void;
 };
-export type FilterType = SearchType | CheckboxType<any> | SelectType<any>;
+export type FilterType =
+  | SearchType
+  | CheckboxType<any>
+  | SelectType<any>
+  | GroupedCheckboxType<any>;
