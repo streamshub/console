@@ -23,18 +23,10 @@ public class UnitTestUtils {
         ((Map<String, String>) field.get(env)).remove(key);
     }
 
-    public static void setField(Object target, String fieldName, Object newValue) {
+    public static void setField(Object target, String fieldName, Object newValue) throws NoSuchFieldException, IllegalAccessException {
         Field field;
-        try {
-            field = target.getClass().getDeclaredField(fieldName);
-        } catch (NoSuchFieldException e) {
-            throw new RuntimeException(e);
-        }
+        field = target.getClass().getDeclaredField(fieldName);
         field.setAccessible(true);
-        try {
-            field.set(target, newValue);
-        } catch (IllegalAccessException e) {
-            throw new RuntimeException(e);
-        }
+        field.set(target, newValue);
     }
 }

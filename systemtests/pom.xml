@@ -215,7 +215,7 @@
                             <includeCurrentProject>true</includeCurrentProject>
                             <outputDirectory>${project.reporting.outputDirectory}/jacoco</outputDirectory>
                             <formats>
-                                <!-- Keep both human readable HTML and sonarcloud specific XML formats-->
+                                <!-- Keep both easily verifiable HTML and sonarcloud specific XML formats -->
                                 <format>HTML</format>
                                 <format>XML</format>
                             </formats>

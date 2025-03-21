@@ -33,7 +33,7 @@ class TestExecutionWatcherTest {
     private static final Throwable ARRAY_OOB_EXCEPTION = new ArrayIndexOutOfBoundsException("Array index out of bounds exception occurred");
 
     @BeforeEach
-    void setUp() throws NoSuchMethodException {
+    void setUp() throws NoSuchMethodException, NoSuchFieldException, IllegalAccessException {
         UnitTestUtils.setField(mockWatcher, "logCollector", mockTestLogCollector);
         when(mockContext.getRequiredTestClass()).thenReturn((Class) String.class);
         when(mockContext.getRequiredTestMethod()).thenReturn(String.class.getDeclaredMethod("toString"));
