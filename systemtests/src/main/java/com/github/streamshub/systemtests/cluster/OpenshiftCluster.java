@@ -8,7 +8,6 @@ import org.apache.logging.log4j.Logger;
 import java.util.List;
 
 public class OpenshiftCluster implements KubeCluster {
-
     private static final String CMD = "oc";
     private static final Logger LOGGER = LogWrapper.getLogger(OpenshiftCluster.class);
 

@@ -56,14 +56,12 @@ public abstract class AbstractST {
             new ServiceType(),
             new SubscriptionType());
 
-
         RESOURCE_MANAGER.addCreateCallback(resource -> {
             // Set collect label for every namespace created with TF
             if (resource.getKind().equalsIgnoreCase(ResourceKinds.NAMESPACE)) {
                 KubeUtils.labelNamespace(resource.getMetadata().getName(), Labels.COLLECT_ST_LOGS, "true");
             }
         });
-
 
         // Allow storing yaml files
         KubeResourceManager.setStoreYamlPath(Environment.TEST_LOG_DIR);

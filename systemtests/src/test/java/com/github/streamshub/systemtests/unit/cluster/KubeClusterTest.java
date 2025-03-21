@@ -29,7 +29,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mockStatic;
 
 class KubeClusterTest {
-
     private static final Logger LOGGER = LogWrapper.getLogger(KubeCluster.class);
     private MockedStatic<Exec> mockedExec;
 
@@ -40,7 +39,8 @@ class KubeClusterTest {
 
     @AfterEach
     void tearDown() {
-        mockedExec.close(); // Ensures static mock is deregistered after each test
+        // Ensures static mock is deregistered after each test
+        mockedExec.close();
     }
 
     @ParameterizedTest
@@ -60,7 +60,6 @@ class KubeClusterTest {
         setCmdPresent("oc", true);
         setCmdPresent("kubectl", true);
         setCmdPresent("minikube", true);
-        // kubectl return exit status but fail contains
 
         mockedExec.when(() -> Exec.exec(List.of("kubectl", "get", "nodes", "-o", "jsonpath='{.items[*].metadata.labels}'")))
             .thenThrow(new KubeClusterException(new Throwable("fail")));
@@ -86,7 +85,6 @@ class KubeClusterTest {
         assertThrows(KubeClusterException.class, KubeCluster::getInstance);
     }
 
-
     void testClusterDetection(String cmd, boolean setByEnv) throws Exception {
         if (setByEnv) {
             setEnv("TEST_CLUSTER_TYPE", cmd);
@@ -94,6 +92,7 @@ class KubeClusterTest {
         // Cluster is up
         testClusterDetection(cmd, true, true);
         // Cluster is down - throw
+        // + Unsupported cmd not worth testing, because it fails at cluster check in previous detection step
         if (!cmd.equals("random")) {
             assertThrows(KubeClusterException.class, () -> testClusterDetection(cmd, true, false));
         }
