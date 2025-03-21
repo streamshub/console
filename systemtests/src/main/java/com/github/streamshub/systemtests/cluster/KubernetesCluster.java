@@ -8,7 +8,6 @@ import org.apache.logging.log4j.Logger;
 import java.util.List;
 
 public class KubernetesCluster implements KubeCluster {
-
     public static final String CMD = "kubectl";
     private static final Logger LOGGER = LogWrapper.getLogger(KubernetesCluster.class);
 

@@ -1,6 +1,5 @@
 package com.github.streamshub.systemtests.logs;
 
-
 import com.github.streamshub.systemtests.Environment;
 import com.github.streamshub.systemtests.constants.Labels;
 import com.github.streamshub.systemtests.constants.ResourceKinds;

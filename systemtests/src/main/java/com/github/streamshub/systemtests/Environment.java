@@ -9,7 +9,6 @@ import static io.skodjob.testframe.TestFrameEnv.USER_PATH;
 
 public class Environment {
     private static final TestEnvironmentVariables ENVS = new TestEnvironmentVariables();
-
     // ------------------------------------------------------------------------------------------------------------------------------------------------------------
     public static final String BUILD_ID = ENVS.getOrDefault("BUILD_ID", "0");
     public static final String BROWSER_TYPE = ENVS.getOrDefault("BROWSER_TYPE", BrowserTypes.CHROMIUM.toString());

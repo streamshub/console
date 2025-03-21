@@ -14,7 +14,6 @@ import org.apache.logging.log4j.core.config.LoggerConfig;
 import org.apache.logging.log4j.core.layout.PatternLayout;
 
 public class LogWrapper {
-
     private static final String STDOUT = "STDOUT";
     private static final String ROLLING_FILE = "RollingFile";
 

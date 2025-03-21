@@ -8,8 +8,6 @@ import java.util.Arrays;
 import java.util.Locale;
 
 public interface KubeCluster {
-
-
     String TEST_CLUSTER_TYPE_ENV = "TEST_CLUSTER_TYPE";
 
     boolean isAvailable();
