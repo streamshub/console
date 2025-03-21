@@ -1,10 +1,6 @@
 package com.github.streamshub.systemtests.cluster;
 
-import com.github.streamshub.systemtests.logs.LogWrapper;
-import org.apache.logging.log4j.Logger;
-
 public class KubeClusterResource {
-    private static final Logger LOGGER = LogWrapper.getLogger(KubeClusterResource.class);
     private KubeCluster kubeCluster;
     private static KubeClusterResource kubeClusterResource;
 
