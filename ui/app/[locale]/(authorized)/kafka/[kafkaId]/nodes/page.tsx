@@ -5,7 +5,12 @@ import { Grid, GridItem, PageSection } from "@/libs/patternfly/react-core";
 import { getTranslations } from "next-intl/server";
 import { Suspense } from "react";
 import { NodeListColumn } from "./NodesTable";
-import { NodePools, NodeRoles } from "@/api/nodes/schema";
+import {
+  BrokerStatus,
+  ControllerStatus,
+  NodePools,
+  NodeRoles,
+} from "@/api/nodes/schema";
 import { NoDataErrorState } from "@/components/NoDataErrorState";
 import { ConnectedNodesTable } from "./ConnectedNodesTable";
 import { stringToInt } from "@/utils/stringToInt";
@@ -30,6 +35,7 @@ export default function NodesPage({
     page: string | undefined;
     nodePool: string | undefined;
     roles: string | undefined;
+    status: string | undefined;
   };
 }) {
   const pageSize = stringToInt(searchParams.perPage) || 20;
@@ -42,6 +48,9 @@ export default function NodesPage({
   const roles = (searchParams["roles"] || "").split(",").filter((v) => !!v) as
     | NodeRoles[]
     | undefined;
+  const status = (searchParams["status"] || "")
+    .split(",")
+    .filter((v) => !!v) as (BrokerStatus | ControllerStatus)[] | undefined;
 
   return (
     <Suspense
@@ -53,9 +62,9 @@ export default function NodesPage({
           perPage={pageSize}
           nodePool={nodePool}
           sort={sort}
+          status={status}
           sortDir={sortDir}
-          nodeRole={roles}
-          baseurl={""}
+          roles={roles}
           nextPageCursor={undefined}
           prevPageCursor={undefined}
         />
@@ -69,6 +78,7 @@ export default function NodesPage({
         nodePool={nodePool}
         roles={roles}
         kafkaId={params.kafkaId}
+        status={status}
       />
     </Suspense>
   );
@@ -81,6 +91,7 @@ async function AsyncNodesTable({
   pageCursor,
   pageSize,
   nodePool,
+  status,
   roles,
 }: {
   sort: NodeListColumn;
@@ -89,6 +100,7 @@ async function AsyncNodesTable({
   pageCursor: string | undefined;
   nodePool: NodePools[] | undefined;
   roles: NodeRoles[] | undefined;
+  status: (BrokerStatus | ControllerStatus)[] | undefined;
 } & KafkaParams) {
   const nodeCounts = {
     totalNodes: 0,
@@ -102,6 +114,8 @@ async function AsyncNodesTable({
     sortDir,
     pageSize,
     pageCursor,
+    roles,
+    status,
   });
 
   if (response.errors) {
@@ -148,7 +162,6 @@ async function AsyncNodesTable({
     }
   });
 
-  console.log("nodescount", nodeCounts);
   return (
     <PageSection isFilled>
       <Grid hasGutter>
@@ -164,10 +177,10 @@ async function AsyncNodesTable({
             nodePool={nodePool}
             sort={sort}
             sortDir={sortDir}
-            nodeRole={roles}
-            baseurl={""}
+            roles={roles}
+            status={status}
             nextPageCursor={nextPageCursor}
-            prevPageCursor={nextPageCursor}
+            prevPageCursor={prevPageCursor}
           />
         </GridItem>
       </Grid>

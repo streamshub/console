@@ -18,18 +18,12 @@ const sampleNodesData = [
         lag: 0,
       },
       broker: {
-        status: {
-          stable: true,
-          description: "Running",
-        },
+        status: "Running",
         replicaCount: 10,
         leaderCount: 1,
       },
       controller: {
-        status: {
-          stable: true,
-          description: "Quorum Leader",
-        },
+        status: "Quorum Leader",
       },
       storageUsed: 3,
       storageCapacity: 97.45,
@@ -51,18 +45,12 @@ const sampleNodesData = [
         lag: 50,
       },
       broker: {
-        status: {
-          stable: true,
-          description: "Running",
-        },
+        status: "Running",
         replicaCount: 10,
         leaderCount: 1,
       },
       controller: {
-        status: {
-          stable: true,
-          description: "Quorum Follower",
-        },
+        status: "Quorum Follower",
       },
       storageUsed: 3,
       storageCapacity: 97.45,

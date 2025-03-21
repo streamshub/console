@@ -1,5 +1,12 @@
 "use client";
-import { KafkaNode, NodePools, NodeRoles } from "@/api/nodes/schema";
+import {
+  BrokerStatus,
+  ControllerStatus,
+  KafkaNode,
+  NodeListResponse,
+  NodePools,
+  NodeRoles,
+} from "@/api/nodes/schema";
 import { NodeListColumn } from "./NodesTable";
 import { useFilterParams } from "@/utils/useFilterParams";
 import { useOptimistic, useTransition } from "react";
@@ -13,8 +20,8 @@ export type ConnectedNodesTableProps = {
   nodePool: NodePools[] | undefined;
   sort: NodeListColumn;
   sortDir: "asc" | "desc";
-  nodeRole: NodeRoles[] | undefined;
-  baseurl: string;
+  roles: NodeRoles[] | undefined;
+  status: (BrokerStatus | ControllerStatus)[] | undefined;
   nextPageCursor: string | null | undefined;
   prevPageCursor: string | null | undefined;
 };
@@ -23,14 +30,15 @@ type State = {
   nodes: KafkaNode[] | undefined;
   perPage: number;
   nodePool: NodePools[] | undefined;
+  status: (BrokerStatus | ControllerStatus)[] | undefined;
   sort: NodeListColumn;
   sortDir: "asc" | "desc";
-  nodeRole: NodeRoles[] | undefined;
+  roles: NodeRoles[] | undefined;
 };
 
 export function ConnectedNodesTable({
   nodePool,
-  nodeRole,
+  roles,
   nodesCount,
   nodes,
   sort,
@@ -39,6 +47,7 @@ export function ConnectedNodesTable({
   prevPageCursor,
   perPage,
   page,
+  status,
 }: ConnectedNodesTableProps) {
   const _updateUrl = useFilterParams({ perPage, sort, sortDir });
   const [_, startTransition] = useTransition();
@@ -52,7 +61,8 @@ export function ConnectedNodesTable({
       sort,
       sortDir,
       nodePool,
-      nodeRole,
+      roles,
+      status,
     },
     (state, options) => ({ ...state, ...options, nodes: undefined }),
   );
@@ -70,7 +80,8 @@ export function ConnectedNodesTable({
       _updateUrl({});
       addOptimistic({
         nodePool: undefined,
-        nodeRole: undefined,
+        roles: undefined,
+        status: undefined,
       });
     });
   }
@@ -98,7 +109,7 @@ export function ConnectedNodesTable({
         });
       }}
       filterNodePool={state.nodePool}
-      filterRole={state.nodeRole}
+      filterRole={state.roles}
       onFilterNodePoolChange={(nodePool) => {
         startTransition(() => {
           updateUrl({ nodePool });
@@ -106,10 +117,17 @@ export function ConnectedNodesTable({
         });
       }}
       onClearAllFilters={clearFilters}
-      onFilterRoleChange={(nodeRole) => {
+      onFilterRoleChange={(roles) => {
         startTransition(() => {
-          updateUrl({ nodeRole });
-          addOptimistic({ nodeRole });
+          updateUrl({ roles });
+          addOptimistic({ roles });
+        });
+      }}
+      filterStatus={state.status}
+      onFilterStatusChange={(status) => {
+        startTransition(() => {
+          updateUrl({ status });
+          addOptimistic({ status });
         });
       }}
     />

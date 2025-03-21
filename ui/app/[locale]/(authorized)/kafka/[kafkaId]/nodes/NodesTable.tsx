@@ -4,6 +4,7 @@ import {
   NodeRoles,
   NodeList,
   KafkaNode,
+  ControllerStatus,
 } from "@/api/nodes/schema";
 import {
   ClipboardCopy,
@@ -28,15 +29,13 @@ import { Number } from "@/components/Format/Number";
 import { ChartDonutUtilization } from "@/libs/patternfly/react-charts";
 import { useFormatBytes } from "@/utils/useFormatBytes";
 import { TableView, TableViewProps } from "@/components/Table/TableView";
+import { EmptyStateNoMatchFound } from "@/components/Table/EmptyStateNoMatchFound";
 
-function splitAndCapitalize(value: string) {
-  // Split by uppercase letters, preserving them with a lookahead
-  const words = value.split(/(?=[A-Z])/);
-
-  // Capitalize each word and join with a space
-  return words
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(" ");
+function capitalizeWords(value: string) {
+  if (typeof value !== "string") {
+    return value; // Return non-string values unchanged
+  }
+  return value.replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
 export const NodeListColumns = [
@@ -50,30 +49,93 @@ export const NodeListColumns = [
 
 export type NodeListColumn = (typeof NodeListColumns)[number];
 
-const NodePoolLabel: Record<NodePools, ReactNode> = {
-  dual1: (
-    <SelectOption
-      value="both-pool"
-      description="Nodes role: broker, controller"
-    >
-      both-pool
-    </SelectOption>
+const NodePoolLabel: Record<
+  NodePools,
+  { label: ReactNode; description: ReactNode }
+> = {
+  dual1: {
+    label: <>both-pool</>,
+    description: <>Nodes role: broker, controller</>,
+  },
+  brokers1: {
+    label: <>B- pool - 1</>,
+    description: <>Nodes role: broker</>,
+  },
+  controllers1: {
+    label: <>C-pool-1</>,
+    description: <>Nodes role: controller</>,
+  },
+};
+
+const NodeRoleLabel: Record<NodeRoles, { label: ReactNode }> = {
+  broker: { label: <>Broker</> },
+  controller: { label: <>Controller</> },
+};
+
+const BrokerStatusLabel: Record<BrokerStatus, ReactNode> = {
+  NotRunning: (
+    <>
+      <Icon status={"warning"}>
+        <ExclamationCircleIcon />
+      </Icon>
+      &nbsp;Not Running
+    </>
   ),
-  brokers1: (
-    <SelectOption value="B-pool-1" description="Nodes role: broker">
-      B-pool-1
-    </SelectOption>
+  PendingControlledShutdown: (
+    <>
+      <Icon status={"danger"}>
+        <ExclamationCircleIcon />
+      </Icon>
+      &nbsp;Pending Controlled Shutdown
+    </>
   ),
-  controllers1: (
-    <SelectOption value="C-pool-1" description="Nodes role: controller">
-      C-pool-1
-    </SelectOption>
+  ShuttingDown: (
+    <>
+      <Icon status={"warning"}>
+        <ExclamationCircleIcon />
+      </Icon>
+      &nbsp;Shutting Down
+    </>
+  ),
+  Recovery: (
+    <>
+      <Icon status={"warning"}>
+        <ExclamationCircleIcon />
+      </Icon>
+      &nbsp;Recovery
+    </>
+  ),
+  Starting: (
+    <>
+      <Icon status={"warning"}>
+        <ExclamationCircleIcon />
+      </Icon>
+      &nbsp;Starting
+    </>
+  ),
+  Running: (
+    <>
+      <Icon status={"success"}>
+        <CheckCircleIcon />
+      </Icon>
+      &nbsp;Running
+    </>
+  ),
+  Unknown: (
+    <>
+      <Icon status={"warning"}>
+        <ExclamationCircleIcon />
+      </Icon>
+      &nbsp;Unknown
+    </>
   ),
 };
 
-const NodeRoleLabel: Record<NodeRoles, ReactNode> = {
-  broker: <>Broker</>,
-  controller: <>Controller</>,
+const ControllerStatusLabel: Record<ControllerStatus, ReactNode> = {
+  QuorumLeader: <>Quorum Leader</>,
+  QuorumFollowerLagged: <>Quorum Follower Lagged</>,
+  QuorumFollower: <>Quorum Follower</>,
+  Unknown: <>Unknown</>,
 };
 
 export type NodesTableProps = {
@@ -81,10 +143,12 @@ export type NodesTableProps = {
   page: number;
   perPage: number;
   filterNodePool: NodePools[] | undefined;
-  // filterStatus: BrokerStatus[] | undefined;
+  filterStatus: (BrokerStatus | ControllerStatus)[] | undefined;
   filterRole: NodeRoles[] | undefined;
   onFilterNodePoolChange: (pool: NodePools[] | undefined) => void;
-  // onFilterStatusChange: (status: BrokerStatus[] | undefined) => void;
+  onFilterStatusChange: (
+    status: (BrokerStatus | ControllerStatus)[] | undefined,
+  ) => void;
   onFilterRoleChange: (role: NodeRoles[] | undefined) => void;
 } & Pick<
   TableViewProps<NodeList, (typeof NodeListColumns)[number]>,
@@ -95,11 +159,11 @@ export function NodesTable({
   isColumnSortable,
   nodeList,
   filterNodePool,
-  // filterStatus,
+  filterStatus,
   filterRole,
   onFilterNodePoolChange,
   onFilterRoleChange,
-  // onFilterStatusChange,
+  onFilterStatusChange,
   page,
   perPage,
   onPageChange,
@@ -118,7 +182,9 @@ export function NodesTable({
       onClearAllFilters={onClearAllFilters}
       data={nodeList}
       emptyStateNoData={<></>}
-      emptyStateNoResults={<></>}
+      emptyStateNoResults={
+        <EmptyStateNoMatchFound onClear={onClearAllFilters!} />
+      }
       ariaLabel={"Kafka nodes"}
       columns={NodeListColumns}
       renderHeader={({ column, key, Th }) => {
@@ -172,7 +238,7 @@ export function NodesTable({
             return (
               <Td key={key} dataLabel={"Roles"}>
                 {row.attributes.roles.map((role, _) => {
-                  return <div key={role}>{role}</div>;
+                  return <div key={role}>{NodeRoleLabel[role].label}</div>;
                 })}
               </Td>
             );
@@ -197,28 +263,11 @@ export function NodesTable({
                       )}
                     </Icon>
                     &nbsp;
-                    {splitAndCapitalize(row.attributes.controller.status)}
+                    {capitalizeWords(row.attributes.controller.status)}
                   </div>
                 )}
-                {row.attributes.broker && (
-                  <div>
-                    <Icon
-                      status={
-                        row.attributes.broker.status === "Running"
-                          ? "success"
-                          : "warning"
-                      }
-                    >
-                      {row.attributes.broker.status === "Running" ? (
-                        <CheckCircleIcon />
-                      ) : (
-                        <ExclamationCircleIcon />
-                      )}
-                    </Icon>
-                    &nbsp;
-                    {splitAndCapitalize(row.attributes.broker.status)}
-                  </div>
-                )}
+                {row.attributes.broker &&
+                  BrokerStatusLabel[row.attributes.broker.status]}
               </Td>
             );
           case "replicas":
@@ -353,7 +402,7 @@ export function NodesTable({
             const newRole = filterRole?.includes(role)
               ? filterRole.filter((r) => r !== role)
               : [...filterRole!, role];
-            onFilterNodePoolChange(newRole);
+            onFilterRoleChange(newRole);
           },
           onRemoveChip: (role) => {
             const newRole = (filterRole || []).filter((r) => r !== role);
@@ -363,6 +412,33 @@ export function NodesTable({
             onFilterRoleChange(undefined);
           },
           options: NodeRoleLabel,
+        },
+        Status: {
+          type: "groupedCheckbox",
+          chips: filterStatus || [],
+          onToggle: (status: BrokerStatus | ControllerStatus) => {
+            const newStatus = filterStatus?.includes(status)
+              ? filterStatus.filter((s) => s !== status)
+              : [...filterStatus!, status];
+            onFilterStatusChange(newStatus);
+          },
+          onRemoveChip: (status: BrokerStatus | ControllerStatus) => {
+            const newStatus = (filterStatus || []).filter((s) => s !== status);
+            onFilterStatusChange(newStatus);
+          },
+          onRemoveGroup: () => {
+            onFilterStatusChange(undefined);
+          },
+          options: [
+            {
+              groupLabel: "Broker Status",
+              groupOptions: BrokerStatusLabel,
+            },
+            {
+              groupLabel: "Controller Status",
+              groupOptions: ControllerStatusLabel,
+            },
+          ],
         },
       }}
     />
