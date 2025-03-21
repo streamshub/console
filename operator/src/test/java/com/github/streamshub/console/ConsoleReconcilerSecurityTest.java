@@ -10,6 +10,8 @@ import java.util.List;
 import java.util.function.Supplier;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import com.github.streamshub.console.api.v1alpha1.Console;
 import com.github.streamshub.console.api.v1alpha1.ConsoleBuilder;
@@ -218,8 +220,12 @@ class ConsoleReconcilerSecurityTest extends ConsoleReconcilerTestBase {
         });
     }
 
-    @Test
-    void testConsoleReconciliationWithOidcTrustStore() throws Exception {
+    @ParameterizedTest
+    @CsvSource({
+        "kube-apiserver-lb-signer, kube-apiserver-lb-signer.pem",
+        "                        , kube-certs.pem"
+    })
+    void testConsoleReconciliationWithOidcTrustStore(String alias, String expectedPemFile) throws Exception {
         Secret passwordSecret = new SecretBuilder()
                 .withNewMetadata()
                     .withName("my-secret")
@@ -272,6 +278,7 @@ class ConsoleReconcilerSecurityTest extends ConsoleReconcilerTestBase {
                                         .withNewConfigMapKeyRef("truststore", "my-configmap", Boolean.FALSE)
                                     .endValueFrom()
                                 .endContent()
+                                .withAlias(alias)
                             .endTrustStore()
                         .endOidc()
                     .endSecurity()
@@ -311,7 +318,7 @@ class ConsoleReconcilerSecurityTest extends ConsoleReconcilerTestBase {
             try {
                 CertificateFactory fact = CertificateFactory.getInstance("X.509");
 
-                try (InputStream in = getClass().getResourceAsStream("kube-certs.pem")) {
+                try (InputStream in = getClass().getResourceAsStream(expectedPemFile)) {
                     expectedCertificates = fact.generateCertificates(in);
                 }
 
