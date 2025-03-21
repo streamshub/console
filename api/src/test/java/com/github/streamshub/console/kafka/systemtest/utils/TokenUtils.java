@@ -19,6 +19,9 @@ import jakarta.ws.rs.core.HttpHeaders;
 
 import org.eclipse.microprofile.config.Config;
 
+import com.github.streamshub.console.api.support.TrustStoreSupport;
+import com.github.streamshub.console.config.security.OidcConfig;
+
 import io.quarkus.tls.TlsConfigurationRegistry;
 import io.restassured.http.Header;
 
@@ -35,7 +38,9 @@ public class TokenUtils {
         var tlsRegistry = CDI.current().select(TlsConfigurationRegistry.class).get();
 
         try {
-            tls = tlsRegistry.get("oidc-provider-trust").get().createSSLContext();
+            tls = tlsRegistry.get(TrustStoreSupport.TRUST_PREFIX_OIDC_PROVIDER + OidcConfig.NAME)
+                    .orElseThrow()
+                    .createSSLContext();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

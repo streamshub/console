@@ -7,11 +7,11 @@ import java.security.cert.CertificateFactory;
 import java.util.Base64;
 import java.util.Collection;
 import java.util.List;
-import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import com.github.streamshub.console.api.v1alpha1.Console;
 import com.github.streamshub.console.api.v1alpha1.ConsoleBuilder;
@@ -19,18 +19,16 @@ import com.github.streamshub.console.api.v1alpha1.spec.TrustStore;
 import com.github.streamshub.console.api.v1alpha1.spec.security.AuditRule.Decision;
 import com.github.streamshub.console.api.v1alpha1.spec.security.Rule;
 import com.github.streamshub.console.api.v1alpha1.status.Condition;
+import com.github.streamshub.console.config.TrustStoreConfig;
 import com.github.streamshub.console.config.security.Privilege;
-import com.github.streamshub.console.dependents.ConsoleDeployment;
 import com.github.streamshub.console.dependents.ConsoleResource;
+import com.github.streamshub.console.dependents.ConsoleSecret;
 
 import io.fabric8.kubernetes.api.model.ConfigMap;
 import io.fabric8.kubernetes.api.model.ConfigMapBuilder;
-import io.fabric8.kubernetes.api.model.EnvVar;
 import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
 import io.fabric8.kubernetes.api.model.Secret;
 import io.fabric8.kubernetes.api.model.SecretBuilder;
-import io.fabric8.kubernetes.api.model.Volume;
-import io.fabric8.kubernetes.api.model.VolumeMount;
 import io.quarkus.test.junit.QuarkusTest;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -222,8 +220,12 @@ class ConsoleReconcilerSecurityTest extends ConsoleReconcilerTestBase {
         });
     }
 
-    @Test
-    void testConsoleReconciliationWithOidcTrustStore() throws Exception {
+    @ParameterizedTest
+    @CsvSource({
+        "kube-apiserver-lb-signer, kube-apiserver-lb-signer.pem",
+        "                        , kube-certs.pem"
+    })
+    void testConsoleReconciliationWithOidcTrustStore(String alias, String expectedPemFile) throws Exception {
         Secret passwordSecret = new SecretBuilder()
                 .withNewMetadata()
                     .withName("my-secret")
@@ -276,6 +278,7 @@ class ConsoleReconcilerSecurityTest extends ConsoleReconcilerTestBase {
                                         .withNewConfigMapKeyRef("truststore", "my-configmap", Boolean.FALSE)
                                     .endValueFrom()
                                 .endContent()
+                                .withAlias(alias)
                             .endTrustStore()
                         .endOidc()
                     .endSecurity()
@@ -292,61 +295,45 @@ class ConsoleReconcilerSecurityTest extends ConsoleReconcilerTestBase {
         awaitDependentsNotReady(consoleCR, "ConsoleIngress");
         setConsoleIngressReady(consoleCR);
         awaitDependentsNotReady(consoleCR, "ConsoleDeployment");
-        var consoleDeployment = setDeploymentReady(consoleCR, ConsoleDeployment.NAME);
 
-        var podSpec = consoleDeployment.getSpec().getTemplate().getSpec();
-        var containerSpecAPI = podSpec.getContainers().get(0);
+        assertConsoleConfig(consoleConfig -> {
+            var trustStore = consoleConfig.getSecurity().getOidc().getTrustStore();
+            assertEquals(TrustStoreConfig.Type.PEM, trustStore.getType());
+            assertEquals(
+                    "/deployments/config/truststore-oidc-provider-content.pem",
+                    trustStore.getContent().getValueFrom()
+            );
 
-        var volumes = podSpec.getVolumes().stream().collect(Collectors.toMap(Volume::getName, Function.identity()));
-        assertEquals(3, volumes.size()); // cache, config + 1 volume for truststore
+            var consoleSecret = client.resources(Secret.class)
+                    .inNamespace(CONSOLE_NS)
+                    .withName(CONSOLE_NAME + '-' + ConsoleSecret.NAME)
+                    .get();
 
-        var truststoreVolName = "oidc-truststore-trust";
+            var truststorePemValue = Base64.getDecoder()
+                    .decode(consoleSecret.getData().get("truststore-oidc-provider-content.pem"));
 
-        var truststoreVolume = volumes.get(truststoreVolName);
-        assertEquals("oidc-truststore.trust.content", truststoreVolume.getSecret().getItems().get(0).getKey());
-        assertEquals("oidc-truststore.trust.jks", truststoreVolume.getSecret().getItems().get(0).getPath());
+            Collection<? extends Certificate> expectedCertificates;
+            Collection<? extends Certificate> actualCertificates;
 
-        var mounts = containerSpecAPI.getVolumeMounts().stream().collect(Collectors.toMap(VolumeMount::getName, Function.identity()));
-        assertEquals(3, mounts.size(), mounts::toString);
+            try {
+                CertificateFactory fact = CertificateFactory.getInstance("X.509");
 
-        var truststoreMount = mounts.get(truststoreVolName);
-        var truststoreMountPath = "/etc/ssl/oidc-truststore.trust.jks";
-        assertEquals(truststoreMountPath, truststoreMount.getMountPath());
-        assertEquals("oidc-truststore.trust.jks", truststoreMount.getSubPath());
+                try (InputStream in = getClass().getResourceAsStream(expectedPemFile)) {
+                    expectedCertificates = fact.generateCertificates(in);
+                }
 
-        var envVarsAPI = containerSpecAPI.getEnv().stream().collect(Collectors.toMap(EnvVar::getName, Function.identity()));
+                try (InputStream in = new ByteArrayInputStream(truststorePemValue)) {
+                    actualCertificates = fact.generateCertificates(in);
+                }
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
 
-        var truststorePath = envVarsAPI.get("QUARKUS_TLS__OIDC_PROVIDER_TRUST__TRUST_STORE_JKS_PATH");
-        assertEquals(truststoreMountPath, truststorePath.getValue());
-        var truststorePasswordSource = envVarsAPI.get("QUARKUS_TLS__OIDC_PROVIDER_TRUST__TRUST_STORE_JKS_PASSWORD");
-        assertEquals("console-1-console-secret", truststorePasswordSource.getValueFrom().getSecretKeyRef().getName());
-        assertEquals("oidc-truststore.trust.password", truststorePasswordSource.getValueFrom().getSecretKeyRef().getKey());
+            assertEquals(expectedCertificates.size(), actualCertificates.size());
 
-        var containerSpecUI = podSpec.getContainers().get(1);
-        var envVarsUI = containerSpecUI.getEnv().stream().collect(Collectors.toMap(EnvVar::getName, Function.identity()));
-        var truststorePemRef = envVarsUI.get("CONSOLE_SECURITY_OIDC_TRUSTSTORE").getValueFrom().getSecretKeyRef();
-        var truststorePemSecret = client.resources(Secret.class)
-                .inNamespace(CONSOLE_NS)
-                .withName(truststorePemRef.getName())
-                .get();
-        var truststorePemValue = Base64.getDecoder().decode(truststorePemSecret.getData().get(truststorePemRef.getKey()));
-
-        CertificateFactory fact = CertificateFactory.getInstance("X.509");
-        Collection<? extends Certificate> expectedCertificates;
-        Collection<? extends Certificate> actualCertificates;
-
-        try (InputStream in = getClass().getResourceAsStream("kube-certs.pem")) {
-            expectedCertificates = fact.generateCertificates(in);
-        }
-
-        try (InputStream in = new ByteArrayInputStream(truststorePemValue)) {
-            actualCertificates = fact.generateCertificates(in);
-        }
-
-        assertEquals(expectedCertificates.size(), actualCertificates.size());
-
-        for (Certificate exp : expectedCertificates) {
-            assertTrue(actualCertificates.contains(exp));
-        }
+            for (Certificate exp : expectedCertificates) {
+                assertTrue(actualCertificates.contains(exp));
+            }
+        });
     }
 }

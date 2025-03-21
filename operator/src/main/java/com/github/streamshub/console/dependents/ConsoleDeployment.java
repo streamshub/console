@@ -19,8 +19,6 @@ import com.github.streamshub.console.api.v1alpha1.spec.containers.Containers;
 
 import io.fabric8.kubernetes.api.model.EnvVar;
 import io.fabric8.kubernetes.api.model.KubernetesResource;
-import io.fabric8.kubernetes.api.model.Volume;
-import io.fabric8.kubernetes.api.model.VolumeMount;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.javaoperatorsdk.operator.api.reconciler.Context;
 import io.javaoperatorsdk.operator.processing.dependent.kubernetes.KubernetesDependent;
@@ -69,16 +67,12 @@ public class ConsoleDeployment extends BaseDeployment {
                 .or(() -> images.map(Images::getUi))
                 .orElse(defaultUIImage);
 
-        var trustResources = getTrustResources("TrustStoreResources", context);
         List<EnvVar> envVars = new ArrayList<>();
         envVars.addAll(coalesce(primary.getSpec().getEnv(), Collections::emptyList));
         envVars.addAll(templateAPI.map(ContainerSpec::getEnv).orElseGet(Collections::emptyList));
-        envVars.addAll(getResourcesByType(trustResources, EnvVar.class));
 
-        var trustResourcesUI = getTrustResources("TrustStoreResourcesUI", context);
         List<EnvVar> envVarsUI = new ArrayList<>();
         envVarsUI.addAll(templateUI.map(ContainerSpec::getEnv).orElseGet(Collections::emptyList));
-        envVarsUI.addAll(getResourcesByType(trustResourcesUI, EnvVar.class));
 
         return desired.edit()
             .editMetadata()
@@ -104,13 +98,11 @@ public class ConsoleDeployment extends BaseDeployment {
                                 .withSecretName(configSecretName)
                             .endSecret()
                         .endVolume()
-                        .addAllToVolumes(getResourcesByType(trustResources, Volume.class))
                         // Set API container image options
                         .editMatchingContainer(c -> "console-api".equals(c.getName()))
                             .withImage(imageAPI)
                             .withImagePullPolicy(pullPolicy(imageAPI))
                             .withResources(templateAPI.map(ContainerSpec::getResources).orElse(null))
-                            .addAllToVolumeMounts(getResourcesByType(trustResources, VolumeMount.class))
                             .addAllToEnv(envVars)
                         .endContainer()
                         // Set UI container image options

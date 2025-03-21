@@ -12,7 +12,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 
 @JsonInclude(Include.NON_NULL)
-public class PrometheusConfig implements Named {
+public class PrometheusConfig implements Trustable {
 
     @NotBlank(message = "Metrics source `name` is required")
     private String name;
@@ -21,6 +21,8 @@ public class PrometheusConfig implements Named {
     private String url;
     @Valid
     private Authentication authentication;
+    @Valid
+    private TrustStoreConfig trustStore;
 
     @Override
     public String getName() {
@@ -53,6 +55,14 @@ public class PrometheusConfig implements Named {
 
     public void setAuthentication(Authentication authentication) {
         this.authentication = authentication;
+    }
+
+    public TrustStoreConfig getTrustStore() {
+        return trustStore;
+    }
+
+    public void setTrustStore(TrustStoreConfig trustStore) {
+        this.trustStore = trustStore;
     }
 
     public enum Type {

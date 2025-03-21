@@ -53,6 +53,12 @@ public class TestPlainProfile implements QuarkusTestProfile {
                 schemaRegistries:
                   - name: test-registry
                     url: ${console.test.apicurio-url}
+                    trustStore:
+                      type: ${console.test.apicurio-trust-store.type}
+                      content:
+                        valueFrom: ${console.test.apicurio-trust-store.path}
+                      password:
+                        valueFrom: ${console.test.apicurio-trust-store.password-path}
 
                 kafka:
                   clusters:

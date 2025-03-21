@@ -190,10 +190,10 @@ class TopicsResourceIT {
         groupUtils = new ConsumerUtils(config, null);
 
         utils = new TestHelper(bootstrapServers1, config, null);
+        utils.resetSecurity(consoleConfig, false);
 
         client.resources(Kafka.class).inAnyNamespace().delete();
         client.resources(KafkaTopic.class).inAnyNamespace().delete();
-        consoleConfig.clearSecurity();
 
         auditLogCapture.records().clear();
 

@@ -29,6 +29,7 @@ import com.github.streamshub.console.api.support.KafkaContext;
 import com.github.streamshub.console.config.ConsoleConfig;
 import com.github.streamshub.console.config.KafkaClusterConfig;
 import com.github.streamshub.console.config.security.Decision;
+import com.github.streamshub.console.config.security.GlobalSecurityConfigBuilder;
 import com.github.streamshub.console.config.security.KafkaSecurityConfigBuilder;
 import com.github.streamshub.console.config.security.Privilege;
 import com.github.streamshub.console.config.security.ResourceTypes;
@@ -128,11 +129,11 @@ class TopicsResourceOidcIT {
         groupUtils = new ConsumerUtils(config, null);
 
         utils = new TestHelper(bootstrapServers1, config, null);
+        utils.resetSecurity(consoleConfig, true);
         tokens = new TokenUtils(config);
 
         client.resources(Kafka.class).inAnyNamespace().delete();
         client.resources(KafkaTopic.class).inAnyNamespace().delete();
-        consoleConfig.clearSecurity();
 
         var kafka1 = utils.apply(client, utils.buildKafkaResource(clusterName1, utils.getClusterId(), bootstrapServers1));
         // Second cluster is offline/non-existent
@@ -157,7 +158,7 @@ class TopicsResourceOidcIT {
         "susan, b",
     })
     void testListTopicsWithForbiddenFieldsNull(String username, String team) {
-        consoleConfig.setSecurity(utils.oidcSecurity()
+        utils.updateSecurity(consoleConfig.getSecurity(), new GlobalSecurityConfigBuilder()
                 .addNewSubject()
                     .withClaim("groups")
                     .withInclude("team-a")
@@ -285,7 +286,7 @@ class TopicsResourceOidcIT {
         String deniedTopic = "b-" + UUID.randomUUID().toString();
         topicUtils.createTopics(clusterId1, List.of(allowedTopic, deniedTopic), 1);
 
-        consoleConfig.setSecurity(utils.oidcSecurity()
+        utils.updateSecurity(consoleConfig.getSecurity(), new GlobalSecurityConfigBuilder()
                 .addNewSubject()
                     .withClaim("groups")
                     .withInclude("team-a")
@@ -343,7 +344,7 @@ class TopicsResourceOidcIT {
         "susan, b",
     })
     void testDescribeTopicWithForbiddenFieldsNull(String username, String team) {
-        consoleConfig.setSecurity(utils.oidcSecurity()
+        utils.updateSecurity(consoleConfig.getSecurity(), new GlobalSecurityConfigBuilder()
                 .addNewSubject()
                     .withClaim("groups")
                     .withInclude("team-a")
@@ -423,7 +424,7 @@ class TopicsResourceOidcIT {
         "b-, FORBIDDEN",
     })
     void testCreateTopicWithAuthorization(String topicPrefix, Status expectedStatus) {
-        consoleConfig.setSecurity(utils.oidcSecurity()
+        utils.updateSecurity(consoleConfig.getSecurity(), new GlobalSecurityConfigBuilder()
                 .addNewSubject()
                     .withClaim("groups")
                     .withInclude("team-a")
@@ -471,7 +472,7 @@ class TopicsResourceOidcIT {
         "b-, FORBIDDEN",
     })
     void testDeleteTopicWithAuthorization(String topicPrefix, Status expectedStatus) {
-        consoleConfig.setSecurity(utils.oidcSecurity()
+        utils.updateSecurity(consoleConfig.getSecurity(), new GlobalSecurityConfigBuilder()
                 .addNewSubject()
                     .withClaim("groups")
                     .withInclude("team-a")
@@ -510,7 +511,7 @@ class TopicsResourceOidcIT {
         "b-, FORBIDDEN",
     })
     void testPatchTopicWithAuthorization(String topicPrefix, Status expectedStatus) {
-        consoleConfig.setSecurity(utils.oidcSecurity()
+        utils.updateSecurity(consoleConfig.getSecurity(), new GlobalSecurityConfigBuilder()
                 .addNewSubject()
                     .withClaim("groups")
                     .withInclude("team-a")
@@ -557,7 +558,7 @@ class TopicsResourceOidcIT {
 
     @Test
     void testListTopicWithNullResourceNames() {
-        consoleConfig.setSecurity(utils.oidcSecurity()
+        utils.updateSecurity(consoleConfig.getSecurity(), new GlobalSecurityConfigBuilder()
                 .addNewSubject()
                     .withClaim("groups")
                     .withInclude("team-a")

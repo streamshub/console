@@ -97,7 +97,7 @@
 
         <module name="ClassFanOutComplexity">
             <!-- default is 20 -->
-            <property name="max" value="50"/>
+            <property name="max" value="60"/>
             <property name="excludedPackages" value="java.time,javax.json,javax.ws.rs,javax.ws.rs.core"/>
         </module>
         <module name="CyclomaticComplexity">

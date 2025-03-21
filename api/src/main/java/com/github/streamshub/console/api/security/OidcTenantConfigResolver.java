@@ -19,7 +19,9 @@ import jakarta.inject.Inject;
 
 import org.jboss.logging.Logger;
 
+import com.github.streamshub.console.api.support.TrustStoreSupport;
 import com.github.streamshub.console.config.ConsoleConfig;
+import com.github.streamshub.console.config.security.OidcConfig;
 
 import io.quarkus.oidc.OidcRequestContext;
 import io.quarkus.oidc.OidcTenantConfig;
@@ -69,9 +71,7 @@ public class OidcTenantConfigResolver implements TenantConfigResolver {
     }
 
     Optional<TlsConfiguration> getTlsConfiguration() {
-        String dotSeparatedSource = "oidc.provider.trust";
-        String dashSeparatedSource = "oidc-provider-trust";
-        return tlsRegistry.get(dotSeparatedSource).or(() -> tlsRegistry.get(dashSeparatedSource));
+        return tlsRegistry.get(TrustStoreSupport.TRUST_PREFIX_OIDC_PROVIDER + OidcConfig.NAME);
     }
 
     /**

@@ -7,7 +7,6 @@ namespace NodeJS {
     CONSOLE_MODE?: "read-only" | "read-write";
     CONSOLE_CONFIG_PATH: string;
     CONSOLE_SHOW_LEARNING?: "true" | "false";
-    CONSOLE_SECURITY_OIDC_TRUSTSTORE?: string;
     CONSOLE_TECH_PREVIEW?: "true" | "false";
   }
 }

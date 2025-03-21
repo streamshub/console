@@ -6,8 +6,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import org.apache.kafka.common.config.SaslConfigs;
 import org.junit.jupiter.api.Test;
@@ -20,6 +18,7 @@ import com.github.streamshub.console.api.v1alpha1.spec.metrics.MetricsSource.Typ
 import com.github.streamshub.console.api.v1alpha1.status.Condition;
 import com.github.streamshub.console.config.ConsoleConfig;
 import com.github.streamshub.console.config.PrometheusConfig;
+import com.github.streamshub.console.config.TrustStoreConfig;
 import com.github.streamshub.console.dependents.ConsoleDeployment;
 import com.github.streamshub.console.dependents.ConsoleResource;
 import com.github.streamshub.console.dependents.ConsoleSecret;
@@ -35,8 +34,6 @@ import io.fabric8.kubernetes.api.model.Quantity;
 import io.fabric8.kubernetes.api.model.ResourceRequirementsBuilder;
 import io.fabric8.kubernetes.api.model.Secret;
 import io.fabric8.kubernetes.api.model.SecretBuilder;
-import io.fabric8.kubernetes.api.model.Volume;
-import io.fabric8.kubernetes.api.model.VolumeMount;
 import io.fabric8.kubernetes.client.KubernetesClientException;
 import io.fabric8.openshift.api.model.Route;
 import io.fabric8.openshift.api.model.RouteBuilder;
@@ -745,13 +742,14 @@ class ConsoleReconcilerTest extends ConsoleReconcilerTestBase {
 
     @Test
     void testConsoleReconciliationWithTrustStores() {
+        final String jksPassword = "0p3n535@m3";
         Secret passwordSecret = new SecretBuilder()
                 .withNewMetadata()
                     .withName("my-secret")
                     .withNamespace("ns2")
                     .addToLabels(ConsoleResource.MANAGEMENT_LABEL)
                 .endMetadata()
-                .addToData("pass", Base64.getEncoder().encodeToString("0p3n535@m3".getBytes()))
+                .addToData("pass", Base64.getEncoder().encodeToString(jksPassword.getBytes()))
                 .build();
         ConfigMap contentConfigMap = new ConfigMapBuilder()
                 .withNewMetadata()
@@ -812,86 +810,30 @@ class ConsoleReconcilerTest extends ConsoleReconcilerTestBase {
 
         client.resource(consoleCR).create();
 
-        await().ignoreException(NullPointerException.class).atMost(LIMIT).untilAsserted(() -> {
-            var console = client.resources(Console.class)
-                    .inNamespace(consoleCR.getMetadata().getNamespace())
-                    .withName(consoleCR.getMetadata().getName())
-                    .get();
-            assertEquals(1, console.getStatus().getConditions().size(), () -> console.getStatus().getConditions().toString());
-            var condition = console.getStatus().getConditions().iterator().next();
-            assertEquals(Condition.Types.READY, condition.getType());
-            assertEquals("False", condition.getStatus());
-            assertEquals("DependentsNotReady", condition.getReason());
-            assertTrue(condition.getMessage().contains("ConsoleIngress"));
-        });
-
+        awaitDependentsNotReady(consoleCR, "ConsoleIngress");
         setConsoleIngressReady(consoleCR);
+        awaitDependentsNotReady(consoleCR, "ConsoleDeployment");
 
-        await().ignoreException(NullPointerException.class).atMost(LIMIT).untilAsserted(() -> {
-            var console = client.resources(Console.class)
-                    .inNamespace(consoleCR.getMetadata().getNamespace())
-                    .withName(consoleCR.getMetadata().getName())
-                    .get();
-            assertEquals(1, console.getStatus().getConditions().size(), console.getStatus().getConditions()::toString);
-            var condition = console.getStatus().getConditions().iterator().next();
-            assertEquals(Condition.Types.READY, condition.getType());
-            assertEquals("False", condition.getStatus());
-            assertEquals("DependentsNotReady", condition.getReason());
-            assertTrue(condition.getMessage().contains("ConsoleDeployment"));
+        assertConsoleConfig(consoleConfig -> {
+            var metricsTrustStore = consoleConfig.getMetricsSources().get(0).getTrustStore();
+            assertEquals(TrustStoreConfig.Type.JKS, metricsTrustStore.getType());
+            assertEquals(
+                "/deployments/config/truststore-metrics-source-example-prometheus-content.jks",
+                metricsTrustStore.getContent().getValueFrom()
+            );
+            assertEquals(
+                "/deployments/config/truststore-metrics-source-example-prometheus-password.txt",
+                metricsTrustStore.getPassword().getValueFrom()
+            );
+            assertEquals("cert-ca", metricsTrustStore.getAlias());
+
+            var registryTrustStore = consoleConfig.getSchemaRegistries().get(0).getTrustStore();
+            assertEquals(TrustStoreConfig.Type.PEM, registryTrustStore.getType());
+            assertEquals(
+                "/deployments/config/truststore-schema-registry-example-registry-content.pem",
+                registryTrustStore.getContent().getValueFrom()
+            );
         });
-
-        var consoleDeployment = client.apps().deployments()
-                .inNamespace(consoleCR.getMetadata().getNamespace())
-                .withName("console-1-console-deployment")
-                .get();
-
-        var podSpec = consoleDeployment.getSpec().getTemplate().getSpec();
-        var containerSpecAPI = podSpec.getContainers().get(0);
-
-        var volumes = podSpec.getVolumes().stream().collect(Collectors.toMap(Volume::getName, Function.identity()));
-        assertEquals(4, volumes.size()); // cache, config + 2 volumes for truststores
-
-        var mounts = containerSpecAPI.getVolumeMounts().stream().collect(Collectors.toMap(VolumeMount::getName, Function.identity()));
-        assertEquals(4, mounts.size(), mounts::toString);
-
-        var envVars = containerSpecAPI.getEnv().stream().collect(Collectors.toMap(EnvVar::getName, Function.identity()));
-
-        var metricsVolName = "metrics-source-truststore-example-prometheus";
-        var metricsMountPath = "/etc/ssl/metrics-source-truststore.example-prometheus.jks";
-
-        assertKeyToPath(
-                "metrics-source-truststore.example-prometheus.content",
-                "metrics-source-truststore.example-prometheus.jks",
-                volumes.get(metricsVolName).getSecret().getItems().get(0));
-        assertMounthPaths(
-                metricsMountPath,
-                "metrics-source-truststore.example-prometheus.jks",
-                mounts.get(metricsVolName));
-
-        var metricsTrustPath = envVars.get("QUARKUS_TLS__METRICS_SOURCE_EXAMPLE_PROMETHEUS__TRUST_STORE_JKS_PATH");
-        assertEquals(metricsMountPath, metricsTrustPath.getValue());
-        var metricsAliasSource = envVars.get("QUARKUS_TLS__METRICS_SOURCE_EXAMPLE_PROMETHEUS__TRUST_STORE_JKS_ALIAS");
-        assertEquals("console-1-console-secret", metricsAliasSource.getValueFrom().getSecretKeyRef().getName());
-        assertEquals("metrics-source-truststore.example-prometheus.alias", metricsAliasSource.getValueFrom().getSecretKeyRef().getKey());
-        var metricsPasswordSource = envVars.get("QUARKUS_TLS__METRICS_SOURCE_EXAMPLE_PROMETHEUS__TRUST_STORE_JKS_PASSWORD");
-        assertEquals("console-1-console-secret", metricsPasswordSource.getValueFrom().getSecretKeyRef().getName());
-        assertEquals("metrics-source-truststore.example-prometheus.password", metricsPasswordSource.getValueFrom().getSecretKeyRef().getKey());
-
-        var registryVolName = "schema-registry-truststore-example-registry";
-        var registryMountPath = "/etc/ssl/schema-registry-truststore.example-registry.pem";
-
-        assertKeyToPath(
-                "schema-registry-truststore.example-registry.content",
-                "schema-registry-truststore.example-registry.pem",
-                volumes.get(registryVolName).getSecret().getItems().get(0));
-
-        assertMounthPaths(
-                registryMountPath,
-                "schema-registry-truststore.example-registry.pem",
-                mounts.get(registryVolName));
-
-        var registryTrustPath = envVars.get("QUARKUS_TLS__SCHEMA_REGISTRY_EXAMPLE_REGISTRY__TRUST_STORE_PEM_CERTS");
-        assertEquals(registryMountPath, registryTrustPath.getValue());
     }
 
     @Test

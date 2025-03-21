@@ -81,10 +81,10 @@ class KafkaClustersResourceOidcIT {
         bootstrapServers = URI.create(kafkaContainer.getBootstrapServers());
 
         utils = new TestHelper(bootstrapServers, config, null);
+        utils.resetSecurity(consoleConfig, true);
         tokens = new TokenUtils(config);
 
         client.resources(Kafka.class).inAnyNamespace().delete();
-        consoleConfig.clearSecurity();
 
         Kafka kafka1 = new KafkaBuilder(utils.buildKafkaResource("test-kafka1", utils.getClusterId(), bootstrapServers))
             .editOrNewStatus()
@@ -128,8 +128,6 @@ class KafkaClustersResourceOidcIT {
 
     @Test
     void testListClustersWithNoRolesDefined() {
-        consoleConfig.setSecurity(oidcSecurity().build());
-
         whenRequesting(req -> req
                 .auth()
                     .oauth2(tokens.getToken("alice"))
@@ -144,7 +142,7 @@ class KafkaClustersResourceOidcIT {
     @Test
     void testListClustersWithFullAccess() {
         // alice is a developer and developers may list all kafkas
-        consoleConfig.setSecurity(oidcSecurity()
+        utils.updateSecurity(consoleConfig.getSecurity(), new GlobalSecurityConfigBuilder()
                 .addNewRole()
                     .withName("developer")
                     .addNewRule()
@@ -172,7 +170,7 @@ class KafkaClustersResourceOidcIT {
     @Test
     void testListClustersUnauthenticated() {
         // alice is a developer and developers may list all kafkas
-        consoleConfig.setSecurity(oidcSecurity()
+        utils.updateSecurity(consoleConfig.getSecurity(), new GlobalSecurityConfigBuilder()
                 .addNewRole()
                     .withName("developer")
                     .addNewRule()
@@ -197,7 +195,7 @@ class KafkaClustersResourceOidcIT {
         List<String> visibleClusters = Arrays.asList("test-kafka1", "test-kafkaY");
 
         // alice is a developer and developers may only list two of three clusters
-        consoleConfig.setSecurity(oidcSecurity()
+        utils.updateSecurity(consoleConfig.getSecurity(), new GlobalSecurityConfigBuilder()
                 .addNewRole()
                     .withName("developer")
                     .addNewRule()
@@ -226,7 +224,7 @@ class KafkaClustersResourceOidcIT {
     @Test
     void testDescribeClusterWithAdminAccess() {
         // make alice an admin
-        consoleConfig.setSecurity(oidcSecurity()
+        utils.updateSecurity(consoleConfig.getSecurity(), new GlobalSecurityConfigBuilder()
                 .addNewRole()
                     .withName("admin")
                     .addNewRule()
@@ -251,7 +249,7 @@ class KafkaClustersResourceOidcIT {
 
     @Test
     void testDescribeClusterWithoutAdminAccess() {
-        consoleConfig.setSecurity(oidcSecurity()
+        utils.updateSecurity(consoleConfig.getSecurity(), new GlobalSecurityConfigBuilder()
                 .addNewRole()
                     .withName("admin")
                     .addNewRule()
@@ -283,7 +281,7 @@ class KafkaClustersResourceOidcIT {
     })
     void testDescribeClusterWithGroupAccess(String username, Status expectedStatus) {
         // team-a group is given admin access Kafkas
-        consoleConfig.setSecurity(oidcSecurity()
+        utils.updateSecurity(consoleConfig.getSecurity(), new GlobalSecurityConfigBuilder()
                 .addNewRole()
                     .withName("admin-a")
                     .addNewRule()
@@ -309,16 +307,6 @@ class KafkaClustersResourceOidcIT {
     }
 
     // Helper methods
-
-    GlobalSecurityConfigBuilder oidcSecurity() {
-        return new GlobalSecurityConfigBuilder()
-            .withNewOidc()
-                .withClientId("console-client")
-                .withClientSecret("console-client-secret")
-                .withAuthServerUrl(config.getValue("console.test.oidc-url", String.class))
-                .withIssuer(config.getValue("console.test.oidc-issuer", String.class))
-            .endOidc();
-    }
 
     static Map<String, Object> mockAdminClient() {
         return mockAdminClient(Map.of(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, SecurityProtocol.PLAINTEXT.name));
