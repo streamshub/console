@@ -1,16 +1,32 @@
 "use server";
 
-import { fetchData, ApiResponse, filterEq, filterIn, filterLike, sortParam } from "@/api/api";
-import { NodesResponseSchema, NodeList, ConfigResponseSchema, NodeConfig } from "@/api/nodes/schema";
+import {
+  fetchData,
+  ApiResponse,
+  filterEq,
+  filterIn,
+  filterLike,
+  sortParam,
+} from "@/api/api";
+import {
+  NodesResponseSchema,
+  NodeList,
+  ConfigResponseSchema,
+  NodeConfig,
+  NodeRoles,
+  BrokerStatus,
+  ControllerStatus,
+  NodePools,
+} from "@/api/nodes/schema";
 import { filterUndefinedFromObj } from "@/utils/filterUndefinedFromObj";
 
 export async function getNodes(
   kafkaId: string,
   params?: {
     fields?: string;
-    status?: string[];
-    nodePool?: string[];
-    roles?: string[];
+    status?: (BrokerStatus | ControllerStatus)[];
+    nodePool?: NodePools[];
+    roles?: NodeRoles[];
     id?: string;
     pageSize?: number;
     pageCursor?: string;
@@ -35,10 +51,8 @@ export async function getNodes(
     }),
   );
 
-  return fetchData(
-    `/api/kafkas/${kafkaId}/nodes`,
-    sp,
-    (rawData: any) => NodesResponseSchema.parse(rawData),
+  return fetchData(`/api/kafkas/${kafkaId}/nodes`, sp, (rawData: any) =>
+    NodesResponseSchema.parse(rawData),
   );
 }
 
@@ -49,6 +63,6 @@ export async function getNodeConfiguration(
   return fetchData(
     `/api/kafkas/${kafkaId}/nodes/${nodeId}/configs`,
     "",
-    (rawData) => ConfigResponseSchema.parse(rawData).data
+    (rawData) => ConfigResponseSchema.parse(rawData).data,
   );
 }
