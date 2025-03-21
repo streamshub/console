@@ -76,7 +76,7 @@ class TestExecutionWatcherTest {
 
     private void testHandleMethod(String methodName, Throwable exception, boolean shouldCollect, Integer parameterCount) throws Exception {
         Method method = TestExecutionWatcher.class.getDeclaredMethod(methodName, ExtensionContext.class, Throwable.class);
-        LOGGER.info("Testing method: " + method.getName());
+        LOGGER.info("Testing method: {}", method.getName());
         try {
             method.invoke(mockWatcher, mockContext, exception);
         } catch (Throwable ignored) {
@@ -84,12 +84,13 @@ class TestExecutionWatcherTest {
         }
 
         switch (parameterCount == null ? 0 : parameterCount) {
-            case 0: verify(mockTestLogCollector, times(shouldCollect ? 1 : 0)).collectLogs();
+            case 2: verify(mockTestLogCollector, times(shouldCollect ? 1 : 0)).collectLogs(any(), any());
                 break;
             case 1: verify(mockTestLogCollector, times(shouldCollect ? 1 : 0)).collectLogs(any());
                 break;
-            case 2: verify(mockTestLogCollector, times(shouldCollect ? 1 : 0)).collectLogs(any(), any());
+            case 0: verify(mockTestLogCollector, times(shouldCollect ? 1 : 0)).collectLogs();
                 break;
+            default: throw new RuntimeException("Unexpected parameter count for method collectLogs ->" + parameterCount);
         }
         clearInvocations(mockTestLogCollector);
     }
