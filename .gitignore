@@ -28,3 +28,7 @@ release.properties
 /compose-runtime.env
 /console-config.yaml
 /compose.env
+
+# Systemtests
+systemtests/screenshots/
+systemtests/config.yaml
