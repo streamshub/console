@@ -1,6 +1,7 @@
 package com.github.streamshub.systemtests.unit;
 
 import com.github.streamshub.systemtests.TestExecutionWatcher;
+import com.github.streamshub.systemtests.exceptions.ClusterUnreachableException;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.logs.TestLogCollector;
 import io.skodjob.testframe.clients.KubeClusterException;
@@ -28,9 +29,9 @@ class TestExecutionWatcherTest {
     private final ExtensionContext mockContext = mock(ExtensionContext.class);
 
     private static final Throwable RUNTIME_EXCEPTION = new RuntimeException("Test error happened during runtime");
-    private static final Throwable KUBECLUSTER_EXCEPTION = new KubeClusterException(new Throwable("Some KubeClusterException occurred"));
+    private static final Throwable KUBE_CLUSTER_EXCEPTION = new KubeClusterException(new Throwable("Some KubeClusterException occurred"));
+    private static final Throwable UNREACHABLE_CLUSTER_EXCEPTION = new ClusterUnreachableException("Failed to check cluster health");
     private static final Throwable TEST_ABORTED_EXCEPTION = new TestAbortedException("Test was aborted");
-    private static final Throwable ARRAY_OOB_EXCEPTION = new ArrayIndexOutOfBoundsException("Array index out of bounds exception occurred");
 
     @BeforeEach
     void setUp() throws NoSuchMethodException, NoSuchFieldException, IllegalAccessException {
@@ -42,36 +43,47 @@ class TestExecutionWatcherTest {
 
     @Test
     void testHandleTestExecutionException() throws Exception {
-        testHandleMethod("handleTestExecutionException", RUNTIME_EXCEPTION, true, 2);
-        testHandleMethod("handleTestExecutionException", ARRAY_OOB_EXCEPTION, true, 2);
-        testHandleMethod("handleTestExecutionException", KUBECLUSTER_EXCEPTION, false, 2);
-        testHandleMethod("handleTestExecutionException", TEST_ABORTED_EXCEPTION, false, 2);
+        final String methodName = "handleTestExecutionException";
+        testHandleMethod(methodName, RUNTIME_EXCEPTION, true, 2);
+        testHandleMethod(methodName, TEST_ABORTED_EXCEPTION, false, 2);
+        testHandleMethod(methodName, KUBE_CLUSTER_EXCEPTION, true, 2);
+        testHandleMethod(methodName, UNREACHABLE_CLUSTER_EXCEPTION, false, 2);
     }
 
     @Test
     void testHandleBeforeAllMethodExecutionException() throws Exception {
-        testHandleMethod("handleBeforeAllMethodExecutionException", RUNTIME_EXCEPTION, true, 1);
-        testHandleMethod("handleBeforeAllMethodExecutionException", ARRAY_OOB_EXCEPTION, true, 1);
-        testHandleMethod("handleBeforeAllMethodExecutionException", TEST_ABORTED_EXCEPTION, false, 1);
-        testHandleMethod("handleBeforeAllMethodExecutionException", KUBECLUSTER_EXCEPTION, false, 1);
+        final String methodName = "handleBeforeAllMethodExecutionException";
+        testHandleMethod(methodName, RUNTIME_EXCEPTION, true, 1);
+        testHandleMethod(methodName, TEST_ABORTED_EXCEPTION, false, 1);
+        testHandleMethod(methodName, KUBE_CLUSTER_EXCEPTION, true, 1);
+        testHandleMethod(methodName, UNREACHABLE_CLUSTER_EXCEPTION, false, 1);
     }
 
     @Test
     void testHandleBeforeEachMethodExecutionException() throws Exception {
-        testHandleMethod("handleBeforeEachMethodExecutionException", RUNTIME_EXCEPTION, true, 2);
-        testHandleMethod("handleBeforeEachMethodExecutionException", KUBECLUSTER_EXCEPTION, false, 2);
+        final String methodName = "handleBeforeEachMethodExecutionException";
+        testHandleMethod(methodName, RUNTIME_EXCEPTION, true, 2);
+        testHandleMethod(methodName, TEST_ABORTED_EXCEPTION, false, 2);
+        testHandleMethod(methodName, KUBE_CLUSTER_EXCEPTION, true, 2);
+        testHandleMethod(methodName, UNREACHABLE_CLUSTER_EXCEPTION, false, 2);
     }
 
     @Test
     void testHandleAfterEachMethodExecutionException() throws Exception {
-        testHandleMethod("handleAfterEachMethodExecutionException", RUNTIME_EXCEPTION, true, 2);
-        testHandleMethod("handleAfterEachMethodExecutionException", KUBECLUSTER_EXCEPTION, false, 2);
+        final String methodName = "handleAfterEachMethodExecutionException";
+        testHandleMethod(methodName, RUNTIME_EXCEPTION, true, 2);
+        testHandleMethod(methodName, TEST_ABORTED_EXCEPTION, true, 2);
+        testHandleMethod(methodName, KUBE_CLUSTER_EXCEPTION, true, 2);
+        testHandleMethod(methodName, UNREACHABLE_CLUSTER_EXCEPTION, false, 2);
     }
 
     @Test
     void testHandleAfterAllMethodExecutionException() throws Exception {
-        testHandleMethod("handleAfterAllMethodExecutionException", RUNTIME_EXCEPTION, true, 1);
-        testHandleMethod("handleAfterAllMethodExecutionException", KUBECLUSTER_EXCEPTION, false, 1);
+        final String methodName = "handleAfterAllMethodExecutionException";
+        testHandleMethod(methodName, RUNTIME_EXCEPTION, true, 1);
+        testHandleMethod(methodName, TEST_ABORTED_EXCEPTION, true, 1);
+        testHandleMethod(methodName, KUBE_CLUSTER_EXCEPTION, true, 1);
+        testHandleMethod(methodName, UNREACHABLE_CLUSTER_EXCEPTION, false, 1);
     }
 
     private void testHandleMethod(String methodName, Throwable exception, boolean shouldCollect, Integer parameterCount) throws Exception {

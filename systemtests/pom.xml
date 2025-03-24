@@ -211,6 +211,8 @@
                                 <exclude>com/github/streamshub/systemtests/logs/*</exclude>
                                 <!-- Exclude unit test utils -->
                                 <exclude>com/github/streamshub/systemtests/unit/*</exclude>
+                                <!-- Exclude exceptions -->
+                                <exclude>com/github/streamshub/systemtests/exceptions/*</exclude>
                             </excludes>
                             <includeCurrentProject>true</includeCurrentProject>
                             <outputDirectory>${project.reporting.outputDirectory}/jacoco</outputDirectory>

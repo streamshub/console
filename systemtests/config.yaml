@@ -22,6 +22,8 @@ STRIMZI_OPERATOR_NAME: strimzi-cluster-operator
 CONSOLE_DEPLOYMENT_NAME: streamshub-console
 # Install type for Console Operator [OLM; YAML]
 INSTALL_USING_OLM: true
+# Kubernetes client type used to execute cmd [oc, kubectl]
+CLIENT_TYPE: kubectl
 # -------------------------------------------
 # OLM
 # -------------------------------------------

@@ -11,6 +11,7 @@ public class Environment {
     private static final TestEnvironmentVariables ENVS = new TestEnvironmentVariables();
     // ------------------------------------------------------------------------------------------------------------------------------------------------------------
     public static final String BUILD_ID = ENVS.getOrDefault("BUILD_ID", "0");
+    public static final String CLIENT_TYPE = ENVS.getOrDefault("CLIENT_TYPE", "kubectl");
     public static final String BROWSER_TYPE = ENVS.getOrDefault("BROWSER_TYPE", BrowserTypes.CHROMIUM.toString());
     public static final String CONSOLE_DEPLOYMENT_NAME = ENVS.getOrDefault("CONSOLE_DEPLOYMENT_NAME", "streamshub-console");
     public static final String STRIMZI_OPERATOR_NAME = ENVS.getOrDefault("STRIMZI_OPERATOR_NAME", "strimzi-cluster-operator");

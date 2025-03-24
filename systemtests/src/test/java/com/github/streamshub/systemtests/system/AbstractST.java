@@ -1,13 +1,12 @@
 package com.github.streamshub.systemtests.system;
 
 import com.github.streamshub.systemtests.Environment;
-import com.github.streamshub.systemtests.cluster.KubeClusterResource;
 import com.github.streamshub.systemtests.constants.Labels;
 import com.github.streamshub.systemtests.constants.ResourceKinds;
 import com.github.streamshub.systemtests.logs.LogWrapper;
+import com.github.streamshub.systemtests.utils.ClusterUtils;
 import io.skodjob.testframe.annotations.ResourceManager;
 import io.skodjob.testframe.annotations.TestVisualSeparator;
-import io.skodjob.testframe.clients.KubeClusterException;
 import io.skodjob.testframe.resources.ClusterRoleBindingType;
 import io.skodjob.testframe.resources.ClusterRoleType;
 import io.skodjob.testframe.resources.ConfigMapType;
@@ -37,7 +36,6 @@ import java.io.IOException;
 public abstract class AbstractST {
     private static final Logger LOGGER = LogWrapper.getLogger(AbstractST.class);
     protected static final KubeResourceManager RESOURCE_MANAGER = KubeResourceManager.getInstance();
-    protected KubeClusterResource cluster = KubeClusterResource.getInstance();
 
     static {
         RESOURCE_MANAGER.setResourceTypes(
@@ -80,8 +78,6 @@ public abstract class AbstractST {
 
     @BeforeEach
     void beforeEach() {
-        if (!cluster.cluster().isClusterUp()) {
-            throw new KubeClusterException(new Throwable("Cluster is not responding and may be un-stable (i.e., caused by network, OOM problem)"));
-        }
+        ClusterUtils.checkClusterHealth();
     }
 }
