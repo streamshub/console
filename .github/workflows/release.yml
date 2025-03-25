@@ -32,6 +32,9 @@ jobs:
           github-token: ${{secrets.GITHUB_TOKEN}}
           metadata-file-path: '.github/project.yml'
 
+      - name: Fetch Operator Framework Utilities
+        run: ./operator/bin/fetch-operator-utilities.sh
+
       - name: Setup JDK
         uses: actions/setup-java@v4
         with:
@@ -119,7 +122,6 @@ jobs:
       - name: Generate Operator Catalog Config
         working-directory: target/checkout
         run: |
-          operator/bin/fetch-operator-dependencies.sh
           operator/bin/generate-catalog.sh \
             ${{ secrets.IMAGE_REPO_HOSTNAME }}/${{ secrets.IMAGE_REPO_NAMESPACE }}/console-operator-bundle
 
