@@ -391,7 +391,7 @@ class TopicsResourceIT {
         "'totalLeaderLogBytes', 't2,t3,t4,t5,t1'",
         "'-totalLeaderLogBytes', 't1,t5,t4,t3,t2'"
     })
-    void testListTopicsSortedByStorage(String sortParam, String expectedNameList) {
+    void testListTopicsSortedByStorageWithPagination(String sortParam, String expectedNameList) {
         String randomSuffix = UUID.randomUUID().toString();
 
         List<String> topicNames = IntStream.rangeClosed(1, 5)
@@ -399,10 +399,6 @@ class TopicsResourceIT {
                 .toList();
 
         topicUtils.createTopics(clusterId1, topicNames, 1);
-
-        String[] expectedNames = Stream.of(expectedNameList.split(","))
-                .map(name -> name + "-" + randomSuffix)
-                .toArray(String[]::new);
 
         AdminClientSpy.install(adminClient -> {
             doAnswer(inv -> {
@@ -447,14 +443,58 @@ class TopicsResourceIT {
             }).when(adminClient).describeLogDirs(Mockito.anyCollection(), any(DescribeLogDirsOptions.class));
         });
 
-        whenRequesting(req -> req
+        List<String> expectedNames = Stream.of(expectedNameList.split(","))
+                .map(name -> name + "-" + randomSuffix)
+                .toList();
+
+        // Page 1
+        String response1 = whenRequesting(req -> req
                 .queryParam("sort", sortParam)
+                .queryParam("page[size]", "2")
                 .queryParam("fields[topics]", "name,totalLeaderLogBytes")
                 .get("", clusterId1))
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
-            .body("data.size()", equalTo(topicNames.size()))
-            .body("data.attributes.name", contains(expectedNames));
+            .body("data.size()", equalTo(2))
+            .body("data.attributes.name", contains(expectedNames.subList(0, 2).toArray(String[]::new)))
+            .extract()
+            .asString();
+
+        JsonObject links1 = linkExtract(response1);
+
+        // Advance to page 3, using `last` link from page 1
+        String response2 = whenRequesting(req -> req
+                .urlEncodingEnabled(false)
+                .get(URI.create(links1.getString("last"))))
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()))
+            .body("links.size()", is(4))
+            .body("links", allOf(
+                    hasEntry(is("first"), is(links1.getString("first"))),
+                    hasEntry(is("prev"), notNullValue()),
+                    hasEntry(is("next"), nullValue()),
+                    hasEntry(is("last"), is(links1.getString("last")))))
+            .body("data.size()", is(1))
+            .body("data.attributes.name", contains(expectedNames.subList(4, 5).toArray(String[]::new)))
+            .extract()
+            .asString();
+
+        JsonObject links2 = linkExtract(response2);
+        whenRequesting(req -> req
+                .urlEncodingEnabled(false)
+                .get(URI.create(links2.getString("prev"))))
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()))
+            .body("links.size()", is(4))
+            .body("links", allOf(
+                    hasEntry(is("first"), is(links1.getString("first"))),
+                    hasEntry(is("prev"), notNullValue()),
+                    hasEntry(is("next"), notNullValue()),
+                    hasEntry(is("last"), is(links1.getString("last")))))
+            .body("data.size()", is(2))
+            .body("data.attributes.name", contains(expectedNames.subList(2, 4).toArray(String[]::new)))
+            .extract()
+            .asString();
     }
 
     @ParameterizedTest
@@ -584,12 +624,6 @@ class TopicsResourceIT {
 
         topicUtils.createTopics(clusterId1, topicNames, 1);
 
-        Function<String, JsonObject> linkExtract = response -> {
-            try (JsonReader reader = Json.createReader(new StringReader(response))) {
-                return reader.readObject().getJsonObject("links");
-            }
-        };
-
         // Page 1
         String response1 = whenRequesting(req -> req
                 .queryParam("fields[topics]", "name")
@@ -611,7 +645,7 @@ class TopicsResourceIT {
             .extract()
             .asString();
 
-        JsonObject links1 = linkExtract.apply(response1);
+        JsonObject links1 = linkExtract(response1);
         String links1First = links1.getString("first");
         String links1Last = links1.getString("last");
 
@@ -637,7 +671,7 @@ class TopicsResourceIT {
             .asString();
 
         // Jump to final page 11 using `last` link from page 2
-        JsonObject links2 = linkExtract.apply(response2);
+        JsonObject links2 = linkExtract(response2);
         URI request3 = URI.create(links2.getString("last"));
         String response3 = whenRequesting(req -> req
                 .urlEncodingEnabled(false)
@@ -659,7 +693,7 @@ class TopicsResourceIT {
             .asString();
 
         // Jump to previous page 10 using `prev` link from page 3
-        JsonObject links3 = linkExtract.apply(response3);
+        JsonObject links3 = linkExtract(response3);
         URI request4 = URI.create(links3.getString("prev"));
         String response4 = whenRequesting(req -> req
                 .urlEncodingEnabled(false)
@@ -681,7 +715,7 @@ class TopicsResourceIT {
             .asString();
 
         // Return to page 1 using the `first` link provided by page 10
-        JsonObject links4 = linkExtract.apply(response4);
+        JsonObject links4 = linkExtract(response4);
         URI request5 = URI.create(links4.getString("first"));
         String response5 = whenRequesting(req -> req
                 .urlEncodingEnabled(false)
@@ -2044,6 +2078,14 @@ class TopicsResourceIT {
                 .body("errors.size()", is(1))
                 .body("errors.status", contains("404"))
                 .body("errors.code", contains("4041"));
+        }
+    }
+
+    // Utilities
+
+    JsonObject linkExtract(String response) {
+        try (JsonReader reader = Json.createReader(new StringReader(response))) {
+            return reader.readObject().getJsonObject("links");
         }
     }
 }
