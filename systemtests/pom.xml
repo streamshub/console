@@ -189,40 +189,6 @@
                             <append>true</append>
                         </configuration>
                     </execution>
-                    <!-- Generate aggregated coverage report -->
-                    <execution>
-                        <id>report-aggregate</id>
-                        <goals>
-                            <goal>report-aggregate</goal>
-                        </goals>
-                        <phase>verify</phase>
-                        <configuration>
-                            <excludes>
-                                <!-- Exclude Builder classes-->
-                                <exclude>**/*Builder.class</exclude>
-                                <exclude>**/*Fluent.class</exclude>
-                                <exclude>**/*Nested.class</exclude>
-                                <!-- Exclude Constants and Enums -->
-                                <exclude>com/github/streamshub/systemtests/constants/*</exclude>
-                                <exclude>com/github/streamshub/systemtests/enums/*</exclude>
-                                <!-- Exclude Environment. It's tested by TF -->
-                                <exclude>com/github/streamshub/systemtests/Environment.class</exclude>
-                                <!-- Exclude LogCollector and Logger from code coverage -->
-                                <exclude>com/github/streamshub/systemtests/logs/*</exclude>
-                                <!-- Exclude unit test utils -->
-                                <exclude>com/github/streamshub/systemtests/unit/*</exclude>
-                                <!-- Exclude exceptions -->
-                                <exclude>com/github/streamshub/systemtests/exceptions/*</exclude>
-                            </excludes>
-                            <includeCurrentProject>true</includeCurrentProject>
-                            <outputDirectory>${project.reporting.outputDirectory}/jacoco</outputDirectory>
-                            <formats>
-                                <!-- Keep both easily verifiable HTML and sonarcloud specific XML formats -->
-                                <format>HTML</format>
-                                <format>XML</format>
-                            </formats>
-                        </configuration>
-                    </execution>
                 </executions>
             </plugin>
         </plugins>
