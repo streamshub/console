@@ -2,6 +2,7 @@ package com.github.streamshub.console.test;
 
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
@@ -9,6 +10,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -26,6 +28,7 @@ import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.TopicPartitionInfo;
+import org.apache.kafka.common.errors.UnknownTopicOrPartitionException;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.eclipse.microprofile.config.Config;
 import org.jboss.logging.Logger;
@@ -33,6 +36,7 @@ import org.jboss.logging.Logger;
 import com.github.streamshub.console.api.BlockingSupplier;
 import com.github.streamshub.console.kafka.systemtest.utils.ClientsConfig;
 
+import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.fail;
 
 public class TopicHelper {
@@ -55,19 +59,42 @@ public class TopicHelper {
         adminConfig.setProperty(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers.toString());
     }
 
+    private List<String> allTopics(Admin admin) {
+        return admin.listTopics()
+            .listings()
+            .toCompletionStage()
+            .thenApply(topics -> topics.stream().map(TopicListing::name).toList())
+            .toCompletableFuture()
+            .join();
+    }
+
     public void deleteAllTopics() {
         // Tests assume a clean slate - remove any existing topics
         try (Admin admin = Admin.create(adminConfig)) {
-            admin.listTopics()
-                .listings()
-                .toCompletionStage()
-                .thenApply(topics -> topics.stream().map(TopicListing::name).toList())
-                .thenComposeAsync(topicNames -> {
-                    log.infof("Deleting topics: %s", topicNames);
-                    return admin.deleteTopics(topicNames).all().toCompletionStage();
-                })
-                .toCompletableFuture()
-                .get(20, TimeUnit.SECONDS);
+            List<String> allTopics = allTopics(admin);
+            log.infof("Deleting topics: %s", allTopics);
+
+            while (!allTopics.isEmpty()) {
+                admin.deleteTopics(allTopics)
+                    .topicNameValues()
+                    .entrySet()
+                    .stream()
+                    .map(e -> {
+                        return e.getValue().toCompletionStage().handle((nothing, error) -> {
+                            if (error == null || error instanceof UnknownTopicOrPartitionException) {
+                                return (Void) null;
+                            }
+
+                            log.warnf("Failed to delete topic %s: %s", e.getKey(), error.getMessage());
+                            throw new CompletionException(error);
+                        }).toCompletableFuture();
+                    })
+                    .reduce(CompletableFuture::allOf)
+                    .orElseGet(() -> CompletableFuture.completedFuture(null))
+                    .get(10, TimeUnit.SECONDS);
+
+                allTopics = allTopics(admin);
+            }
         } catch (InterruptedException e) {
             log.warn("Process interruptted", e);
             Thread.currentThread().interrupt();
@@ -98,6 +125,9 @@ public class TopicHelper {
             topicIds = names.stream().collect(Collectors.toMap(Function.identity(), name -> {
                 return BlockingSupplier.get(() -> result.topicId(name)).toString();
             }));
+
+            await().atMost(Duration.ofSeconds(5))
+                .until(() -> allTopics(admin).containsAll(names));
         } catch (InterruptedException e) {
             log.warn("Process interrupted", e);
             Thread.currentThread().interrupt();
