@@ -125,3 +125,5 @@ if [[ -n "$SKIP_RANGE" ]]; then
 fi
 
 ${YQ} -i '.spec.icon = [{ "base64data": "'$(base64 -w0 ${SCRIPT_PATH}/../src/main/olm/icon.png)'", "mediatype": "image/png" }]' "${CSV_FILE_PATH}"
+
+operator-sdk bundle validate "${BUNDLE_PATH}" --select-optional name=operatorhub

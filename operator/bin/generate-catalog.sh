@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -xEeuo pipefail
+set -Eeuo pipefail
 
 SCRIPT_PATH="$(cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P)"
 
@@ -32,6 +32,7 @@ for CSV_NAME in $(${YQ} '.entries[].name' ${CATALOG_PATH}/channel.alpha.yaml | s
         RENDER_FLAGS="--use-http ${RENDER_FLAGS}"
     fi
 
+    echo "[INFO] Rendering bundle ${CATALOG_PATH}/${CSV_NAME}.yaml"
     opm render ${BUNDLE_IMAGE} ${RENDER_FLAGS} > ${CATALOG_PATH}/${CSV_NAME}.yaml
 done
 
