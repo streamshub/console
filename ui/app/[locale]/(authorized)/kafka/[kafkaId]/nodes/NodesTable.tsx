@@ -20,7 +20,11 @@ import {
 import {
   CheckCircleIcon,
   ExclamationCircleIcon,
+  ExclamationTriangleIcon,
   HelpIcon,
+  InProgressIcon,
+  NewProcessIcon,
+  PendingIcon,
 } from "@/libs/patternfly/react-icons";
 import { useFormatter, useTranslations } from "next-intl";
 import Link from "next/link";
@@ -30,13 +34,6 @@ import { ChartDonutUtilization } from "@/libs/patternfly/react-charts";
 import { useFormatBytes } from "@/utils/useFormatBytes";
 import { TableView, TableViewProps } from "@/components/Table/TableView";
 import { EmptyStateNoMatchFound } from "@/components/Table/EmptyStateNoMatchFound";
-
-function capitalizeWords(value: string) {
-  if (typeof value !== "string") {
-    return value; // Return non-string values unchanged
-  }
-  return value.replace(/\b\w/g, (char) => char.toUpperCase());
-}
 
 export const NodeListColumns = [
   "id",
@@ -73,46 +70,6 @@ const NodeRoleLabel: Record<NodeRoles, { label: ReactNode }> = {
 };
 
 const BrokerStatusLabel: Record<BrokerStatus, ReactNode> = {
-  NotRunning: (
-    <>
-      <Icon status={"warning"}>
-        <ExclamationCircleIcon />
-      </Icon>
-      &nbsp;Not Running
-    </>
-  ),
-  PendingControlledShutdown: (
-    <>
-      <Icon status={"danger"}>
-        <ExclamationCircleIcon />
-      </Icon>
-      &nbsp;Pending Controlled Shutdown
-    </>
-  ),
-  ShuttingDown: (
-    <>
-      <Icon status={"warning"}>
-        <ExclamationCircleIcon />
-      </Icon>
-      &nbsp;Shutting Down
-    </>
-  ),
-  Recovery: (
-    <>
-      <Icon status={"warning"}>
-        <ExclamationCircleIcon />
-      </Icon>
-      &nbsp;Recovery
-    </>
-  ),
-  Starting: (
-    <>
-      <Icon status={"warning"}>
-        <ExclamationCircleIcon />
-      </Icon>
-      &nbsp;Starting
-    </>
-  ),
   Running: (
     <>
       <Icon status={"success"}>
@@ -121,9 +78,49 @@ const BrokerStatusLabel: Record<BrokerStatus, ReactNode> = {
       &nbsp;Running
     </>
   ),
-  Unknown: (
+  Starting: (
+    <>
+      <Icon>
+        <InProgressIcon />
+      </Icon>
+      &nbsp;Starting
+    </>
+  ),
+  ShuttingDown: (
+    <>
+      <Icon>
+        <PendingIcon />
+      </Icon>
+      &nbsp;Shutting Down
+    </>
+  ),
+  PendingControlledShutdown: (
     <>
       <Icon status={"warning"}>
+        <ExclamationTriangleIcon />
+      </Icon>
+      &nbsp;Pending Controlled Shutdown
+    </>
+  ),
+  Recovery: (
+    <>
+      <Icon>
+        <NewProcessIcon />
+      </Icon>
+      &nbsp;Recovery
+    </>
+  ),
+  NotRunning: (
+    <>
+      <Icon status={"danger"}>
+        <ExclamationCircleIcon />
+      </Icon>
+      &nbsp;Not Running
+    </>
+  ),
+  Unknown: (
+    <>
+      <Icon status={"danger"}>
         <ExclamationCircleIcon />
       </Icon>
       &nbsp;Unknown
@@ -132,14 +129,44 @@ const BrokerStatusLabel: Record<BrokerStatus, ReactNode> = {
 };
 
 const ControllerStatusLabel: Record<ControllerStatus, ReactNode> = {
-  QuorumLeader: <>Quorum Leader</>,
-  QuorumFollowerLagged: <>Quorum Follower Lagged</>,
-  QuorumFollower: <>Quorum Follower</>,
-  Unknown: <>Unknown</>,
+  QuorumLeader: (
+    <>
+      <Icon status={"success"}>
+        <CheckCircleIcon />
+      </Icon>
+      &nbsp;Quorum Leader
+    </>
+  ),
+  QuorumFollower: (
+    <>
+      <Icon status={"success"}>
+        <CheckCircleIcon />
+      </Icon>
+      &nbsp;Quorum Follower
+    </>
+  ),
+  QuorumFollowerLagged: (
+    <>
+      {" "}
+      <Icon status={"warning"}>
+        <ExclamationTriangleIcon />
+      </Icon>
+      &nbsp;Quorum Follower Lagged
+    </>
+  ),
+  Unknown: (
+    <>
+      <Icon status={"danger"}>
+        <ExclamationCircleIcon />
+      </Icon>
+      &nbsp;Unknown
+    </>
+  ),
 };
 
 export type NodesTableProps = {
   nodeList: KafkaNode[] | undefined;
+  nodesCount: number;
   page: number;
   perPage: number;
   filterNodePool: NodePools[] | undefined;
@@ -168,6 +195,7 @@ export function NodesTable({
   perPage,
   onPageChange,
   onClearAllFilters,
+  nodesCount,
 }: NodesTableProps) {
   const t = useTranslations();
   const format = useFormatter();
@@ -178,6 +206,8 @@ export function NodesTable({
       page={page}
       perPage={perPage}
       onPageChange={onPageChange}
+      itemCount={nodesCount}
+      isColumnSortable={isColumnSortable}
       isRowExpandable={() => true}
       onClearAllFilters={onClearAllFilters}
       data={nodeList}
@@ -245,29 +275,14 @@ export function NodesTable({
           case "status":
             return (
               <Td key={key} dataLabel={"Status"}>
-                {row.attributes.controller && (
-                  <div>
-                    <Icon
-                      status={
-                        row.attributes.controller.status !==
-                        "QuorumFollowerLagged"
-                          ? "success"
-                          : "warning"
-                      }
-                    >
-                      {row.attributes.controller.status !==
-                      "QuorumFollowerLagged" ? (
-                        <CheckCircleIcon />
-                      ) : (
-                        <ExclamationCircleIcon />
-                      )}
-                    </Icon>
-                    &nbsp;
-                    {capitalizeWords(row.attributes.controller.status)}
-                  </div>
-                )}
-                {row.attributes.broker &&
-                  BrokerStatusLabel[row.attributes.broker.status]}
+                <div>
+                  {row.attributes.broker &&
+                    BrokerStatusLabel[row.attributes.broker.status]}
+                </div>
+                <div>
+                  {row.attributes.controller &&
+                    ControllerStatusLabel[row.attributes.controller.status]}
+                </div>
               </Td>
             );
           case "replicas":
