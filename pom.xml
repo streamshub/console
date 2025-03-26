@@ -79,6 +79,7 @@
         <module>operator</module>
         <module>ui</module>
         <module>coverage</module>
+        <module>systemtests</module>
     </modules>
 
     <dependencyManagement>
