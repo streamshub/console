@@ -358,7 +358,7 @@ export function RebalanceTable({
                       ModeLabel[row.attributes.mode].label
                     ) : (
                       <>
-                        {ModeLabel[row.attributes.mode]}{" "}
+                        {ModeLabel[row.attributes.mode].label}{" "}
                         {row.attributes.brokers?.length
                           ? row.attributes.brokers.map((b, index) => (
                               <>
