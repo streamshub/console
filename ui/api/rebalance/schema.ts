@@ -53,6 +53,18 @@ export const RebalanceSchema = z.object({
     brokers: z.array(z.number()).nullable(),
     sessionId: z.string().nullable(),
     optimizationResult: OptimizationResultSchema,
+    conditions: z
+      .array(
+        z.object({
+          type: z.string().optional(),
+          status: z.string().optional(),
+          reason: z.string().optional(),
+          message: z.string().optional(),
+          lastTransitionTime: z.string().optional(),
+        }),
+      )
+      .nullable()
+      .optional()
   }),
 });
 
@@ -73,7 +85,8 @@ const RebalancesListSchema = z.object({
     creationTimestamp: true,
     mode: true,
     brokers: true,
-    optimizationResult: true
+    optimizationResult: true,
+    conditions: true,
   }),
 });
 

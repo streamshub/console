@@ -573,6 +573,7 @@
     "rebalance_name": "Name",
     "status": "Status",
     "created_at": "Created at",
+    "last_updated": "Last updated",
     "refresh": "Refresh",
     "total_rebalances": "Total Rebalancing",
     "proposal_ready": "ProposalReady",

@@ -34,7 +34,7 @@ import { EmptyStateNoKafkaRebalance } from "./EmptyStateNoKafkaRebalance";
 import Image from "next/image";
 import { DateTime } from "@/components/Format/DateTime";
 
-export const RebalanceTableColumns = ["name", "status", "createdAt"] as const;
+export const RebalanceTableColumns = ["name", "status", "lastUpdated"] as const;
 
 export type RebalanceTableColumn = (typeof RebalanceTableColumns)[number];
 
@@ -234,10 +234,10 @@ export function RebalanceTable({
                 {t("status")}
               </Th>
             );
-          case "createdAt":
+          case "lastUpdated":
             return (
-              <Th key={key} dataLabel={"Consumer groups"}>
-                {t("created_at")}
+              <Th key={key} dataLabel={"Last updated"}>
+                {t("last_updated")}
               </Th>
             );
         }
@@ -258,11 +258,17 @@ export function RebalanceTable({
                 {statusLabel(row.attributes.status).label}
               </Td>
             );
-          case "createdAt":
+          case "lastUpdated":
             return (
-              <Td key={key} dataLabel={"Created At"}>
+              <Td key={key} dataLabel={"Last updated"}>
                 <DateTime
-                  value={row.attributes.creationTimestamp}
+                  value={
+                    row.attributes.conditions?.
+                        filter((c) => c.type == row.attributes.status).
+                        map((c) => c.lastTransitionTime!).
+                        find(() => true)
+                         ?? row.attributes.creationTimestamp
+                  }
                   tz={"UTC"}
                   dateStyle={"short"}
                   timeStyle={"medium"}
