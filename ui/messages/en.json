@@ -371,7 +371,7 @@
     "pause_reconciliation_description": "While paused, any changes to the cluster configuration will be ignored until reconciliation is resumed",
     "confirm": "Confirm",
     "cancel": "Cancel",
-    "reconciliation_paused_warning": "Reconciliation paused. Make sure to fetch the last transition time.",
+    "reconciliation_paused_warning": "Cluster reconciliation paused. Changes to the Kafka resource will not be applied",
     "resume": "Resume",
     "reconciliation_paused": "Reconciliation paused",
     "resume_reconciliation": "Resume Reconciliation"

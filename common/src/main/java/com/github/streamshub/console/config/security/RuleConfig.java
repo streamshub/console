@@ -2,9 +2,12 @@ package com.github.streamshub.console.config.security;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
+
+import com.fasterxml.jackson.annotation.JsonSetter;
 
 import io.sundr.builder.annotations.Buildable;
 
@@ -40,8 +43,9 @@ public class RuleConfig {
         return resourceNames;
     }
 
+    @JsonSetter
     public void setResourceNames(List<String> resourceNames) {
-        this.resourceNames = resourceNames;
+        this.resourceNames = Objects.requireNonNullElseGet(resourceNames, ArrayList::new);
     }
 
     public List<Privilege> getPrivileges() {

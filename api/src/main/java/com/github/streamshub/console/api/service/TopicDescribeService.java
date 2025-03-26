@@ -6,6 +6,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -108,11 +109,13 @@ public class TopicDescribeService {
     ConsumerGroupService consumerGroupService;
 
     public CompletionStage<List<Topic>> listTopics(List<String> fields, String offsetSpec, ListRequestContext<Topic> listSupport) {
-        List<String> fetchList = new ArrayList<>(fields);
+        Set<String> fetchList = new LinkedHashSet<>(fields);
+        List<String> sortFields = listSupport.getSortNames();
 
-        if (listSupport.getSortEntries().stream().anyMatch(CONFIG_SORT)) {
+        if (sortFields.stream().anyMatch(CONFIG_SORT)) {
             fetchList.add(Topic.Fields.CONFIGS);
         }
+        sortFields.stream().filter(Predicate.not(CONFIG_SORT)).forEach(fetchList::add);
 
         Admin adminClient = kafkaContext.admin();
         final Map<String, Integer> statuses = new HashMap<>();
@@ -125,7 +128,7 @@ public class TopicDescribeService {
         return listTopics(true, true)
             .thenApply(list -> list.stream().map(Topic::fromTopicListing).toList())
             .thenComposeAsync(
-                    list -> augmentList(adminClient, list, fetchList, offsetSpec),
+                    list -> augmentList(adminClient, list, new ArrayList<>(fetchList), offsetSpec),
                     threadContext.currentContextExecutor())
             .thenApply(list -> list.stream()
                     .filter(listSupport)

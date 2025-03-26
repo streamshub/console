@@ -12,12 +12,26 @@ export async function ConnectedClusterCard({
 }) {
   const res = await cluster;
 
+  const messages = res?.attributes.conditions
+    ?.filter((c) => "Ready" !== c.type)
+    .map((c) => ({
+      variant:
+        c.type === "Error" ? "danger" : ("warning" as "danger" | "warning"),
+      subject: {
+        type: c.type!,
+        name: res?.attributes.name ?? "",
+        id: res?.id ?? "",
+      },
+      message: c.message ?? "",
+      date: c.lastTransitionTime ?? "",
+    }));
+
   if (!res?.attributes?.metrics) {
     return (
       <ClusterCard
         isLoading={false}
         status={res?.attributes.status ?? "n/a"}
-        messages={[]}
+        messages={messages ?? []}
         name={res?.attributes.name ?? "n/a"}
         consumerGroups={undefined}
         brokersOnline={undefined}
@@ -37,20 +51,6 @@ export async function ConnectedClusterCard({
   const brokersOnline = (
     res?.attributes.metrics?.values?.["broker_state"] ?? []
   ).filter((s) => s.value === "3").length;
-
-  const messages = res?.attributes.conditions
-    ?.filter((c) => "Ready" !== c.type)
-    .map((c) => ({
-      variant:
-        c.type === "Error" ? "danger" : ("warning" as "danger" | "warning"),
-      subject: {
-        type: c.type!,
-        name: res?.attributes.name ?? "",
-        id: res?.id ?? "",
-      },
-      message: c.message ?? "",
-      date: c.lastTransitionTime ?? "",
-    }));
 
   return (
     <ClusterCard

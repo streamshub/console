@@ -19,6 +19,7 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import org.jboss.logging.Logger;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.streamshub.console.api.support.serdes.ApicurioClient;
 import com.github.streamshub.console.api.support.serdes.ArtifactReferences;
 import com.github.streamshub.console.api.support.serdes.MultiformatSchemaParser;
 import com.github.streamshub.console.config.ConsoleConfig;
@@ -71,7 +72,7 @@ public class SchemasResource {
                 .findFirst()
                 .orElseThrow(() -> new NotFoundException("Unknown registry"));
 
-        RegistryClient registryClient = RegistryClientFactory.create(registryConfig.getUrl());
+        RegistryClient registryClient = RegistryClientFactory.create(new ApicurioClient(registryConfig));
 
         @SuppressWarnings("resource")
         SchemaResolver<Object, ?> schemaResolver = new DefaultSchemaResolver<>();

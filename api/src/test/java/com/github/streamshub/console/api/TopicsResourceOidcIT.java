@@ -19,6 +19,7 @@ import org.eclipse.microprofile.config.Config;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.aggregator.AggregateWith;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -554,4 +555,40 @@ class TopicsResourceOidcIT {
             .statusCode(is(expectedStatus.getStatusCode()));
     }
 
+    @Test
+    void testListTopicWithNullResourceNames() {
+        consoleConfig.setSecurity(utils.oidcSecurity()
+                .addNewSubject()
+                    .withClaim("groups")
+                    .withInclude("team-a")
+                    .withRoleNames("dev-a")
+                .endSubject()
+            .build());
+
+        // alice's team may list all topics, but the names are omitted from the configuration
+        consoleConfig.getKafka().getClusterById(clusterId1).ifPresent(cfg -> {
+            cfg.setSecurity(new KafkaSecurityConfigBuilder()
+                    .addNewRole()
+                        .withName("dev-a")
+                        .addNewRule()
+                            .withResources("topics")
+                            // Setting to null results in an empty collection in the config model
+                            .withResourceNames((List<String>) null)
+                            .withPrivileges(Privilege.LIST)
+                        .endRule()
+                    .endRole()
+                .build());
+        });
+
+        String topicName = UUID.randomUUID().toString();
+        topicUtils.createTopics(clusterId1, List.of(topicName), 1);
+
+        whenRequesting(req -> req
+                .auth()
+                    .oauth2(tokens.getToken("alice"))
+                .get("", clusterId1))
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()))
+            .body("data.size()", equalTo(1));
+    }
 }
