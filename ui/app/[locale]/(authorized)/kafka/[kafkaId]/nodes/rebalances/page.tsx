@@ -22,7 +22,7 @@ export async function generateMetadata() {
 const sortMap: Record<(typeof RebalanceTableColumns)[number], string> = {
   name: "name",
   status: "status",
-  createdAt: "createdAt",
+  lastUpdated: "lastUpdated",
 };
 
 export default function RebalancesPage({

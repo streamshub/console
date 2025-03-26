@@ -26,7 +26,7 @@ export async function getRebalancesList(
   const sp = new URLSearchParams(
     filterUndefinedFromObj({
       "fields[kafkaRebalances]":
-        "name,namespace,creationTimestamp,status,mode,brokers,optimizationResult",
+        "name,namespace,creationTimestamp,status,mode,brokers,optimizationResult,conditions",
       "filter[name]": params.name ? `like,*${params.name}*` : undefined,
       "filter[status]": filterIn(params.status),
       "filter[mode]": filterIn(params.mode),
