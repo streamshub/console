@@ -1,6 +1,5 @@
 package com.github.streamshub.console.api;
 
-import java.io.IOException;
 import java.net.URI;
 import java.util.Map;
 
@@ -58,7 +57,7 @@ class KafkaClustersResourceNoK8sIT {
     URI randomBootstrapServers;
 
     @BeforeEach
-    void setup() throws IOException {
+    void setup() {
         kafkaContainer = deployments.getKafkaContainer();
         bootstrapServers = URI.create(kafkaContainer.getBootstrapServers());
         randomBootstrapServers = URI.create(consoleConfig.getKafka()

@@ -61,7 +61,7 @@ public class TopicHelper {
             admin.listTopics()
                 .listings()
                 .toCompletionStage()
-                .thenApply(topics -> topics.stream().map(TopicListing::name).collect(Collectors.toList()))
+                .thenApply(topics -> topics.stream().map(TopicListing::name).toList())
                 .thenComposeAsync(topicNames -> {
                     log.infof("Deleting topics: %s", topicNames);
                     return admin.deleteTopics(topicNames).all().toCompletionStage();
@@ -76,11 +76,11 @@ public class TopicHelper {
         }
     }
 
-    public Map<String, String> createTopics(String clusterId, List<String> names, int numPartitions) {
-        return createTopics(clusterId, names, numPartitions, null);
+    public Map<String, String> createTopics(List<String> names, int numPartitions) {
+        return createTopics(names, numPartitions, null);
     }
 
-    public Map<String, String> createTopics(String clusterId, List<String> names, int numPartitions, Map<String, String> configs) {
+    public Map<String, String> createTopics(List<String> names, int numPartitions, Map<String, String> configs) {
         Map<String, String> topicIds = null;
 
         try (Admin admin = Admin.create(adminConfig)) {
@@ -192,9 +192,9 @@ public class TopicHelper {
         Long timestamp = Optional.ofNullable(instant).map(Instant::toEpochMilli).orElse(null);
 
         try (Producer<String, String> producer = new KafkaProducer<>(props)) {
-            var record = new ProducerRecord<String, String>(topicName, partition, timestamp, key, value);
-            headers.forEach((k, v) -> record.headers().add(k, v.toString().getBytes(StandardCharsets.UTF_8)));
-            producer.send(record);
+            var rec = new ProducerRecord<String, String>(topicName, partition, timestamp, key, value);
+            headers.forEach((k, v) -> rec.headers().add(k, v.toString().getBytes(StandardCharsets.UTF_8)));
+            producer.send(rec);
         } catch (Exception e) {
             fail(e);
         }

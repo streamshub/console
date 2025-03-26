@@ -16,6 +16,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Supplier;
 
+import com.github.streamshub.console.ReconciliationException;
 import com.github.streamshub.console.api.v1alpha1.Console;
 import com.github.streamshub.console.dependents.support.ConfigSupport;
 
@@ -92,7 +93,7 @@ public interface ConsoleResource<R extends HasMetadata> extends DependentResourc
             // Ignore java:S4790, SHA-1 is not used in sensitive context
             return MessageDigest.getInstance("SHA-1"); // NOSONAR
         } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException(e);
+            throw new ReconciliationException("Failed to get SHA-1 MessageDigest", e);
         }
     }
 

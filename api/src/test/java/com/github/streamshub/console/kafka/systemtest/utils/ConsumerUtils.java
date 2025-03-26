@@ -222,10 +222,6 @@ public class ConsumerUtils {
     }
 
     ConsumerResponse consume(ConsumerRequest consumerRequest, boolean autoClose) {
-        Properties adminConfig = token != null ?
-            ClientsConfig.getAdminConfigOauth(config, token) :
-            ClientsConfig.getAdminConfig(config);
-
         ConsumerResponse response = new ConsumerResponse();
 
         try (Admin admin = Admin.create(adminConfig)) {

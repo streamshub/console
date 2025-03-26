@@ -1,6 +1,5 @@
 package com.github.streamshub.console.api;
 
-import java.io.IOException;
 import java.io.StringReader;
 import java.net.URI;
 import java.util.Collection;
@@ -113,7 +112,7 @@ class ConsumerGroupsResourceIT {
     String clusterId2;
 
     @BeforeEach
-    void setup() throws IOException {
+    void setup() {
         URI bootstrapServers = URI.create(deployments.getExternalBootstrapServers());
 
         topicUtils = new TopicHelper(bootstrapServers, config, null);
@@ -178,8 +177,8 @@ class ConsumerGroupsResourceIT {
 
         groupIds.forEach(groupId -> {
             String topic = "t-" + UUID.randomUUID().toString();
-            String client = "c-" + UUID.randomUUID().toString();
-            groupUtils.consume(groupId, topic, client, 1, true);
+            String clientId = "c-" + UUID.randomUUID().toString();
+            groupUtils.consume(groupId, topic, clientId, 1, true);
         });
 
         String topic01 = "t-" + UUID.randomUUID().toString();
@@ -212,8 +211,8 @@ class ConsumerGroupsResourceIT {
 
         groupIds.forEach(groupId -> {
             String topic = "t-" + UUID.randomUUID().toString();
-            String client = "c-" + UUID.randomUUID().toString();
-            groupUtils.consume(groupId, topic, client, 1, true);
+            String clientId = "c-" + UUID.randomUUID().toString();
+            groupUtils.consume(groupId, topic, clientId, 1, true);
         });
 
         String topic01 = "t-" + UUID.randomUUID().toString();
@@ -283,8 +282,8 @@ class ConsumerGroupsResourceIT {
 
         groupIds.forEach(groupId -> {
             String topic = "t-" + UUID.randomUUID().toString();
-            String client = "c-" + UUID.randomUUID().toString();
-            groupUtils.consume(groupId, topic, client, 1, true);
+            String clientId = "c-" + UUID.randomUUID().toString();
+            groupUtils.consume(groupId, topic, clientId, 1, true);
         });
 
         Function<String, JsonObject> linkExtract = response -> {
@@ -402,10 +401,10 @@ class ConsumerGroupsResourceIT {
             return new DescribeConsumerGroupsResult(futures);
         };
 
-        AdminClientSpy.install(client -> {
+        AdminClientSpy.install(adminClient -> {
             // Mock listOffsets
             doAnswer(describeConsumerGroupsFailed)
-                .when(client)
+                .when(adminClient)
                 .describeConsumerGroups(anyCollection(), any(DescribeConsumerGroupsOptions.class));
         });
 
@@ -496,10 +495,10 @@ class ConsumerGroupsResourceIT {
             return resultMock;
         };
 
-        AdminClientSpy.install(client -> {
+        AdminClientSpy.install(adminClient -> {
             // Mock listOffsets
             doAnswer(listConsumerGroupOffsetsFailed)
-                .when(client)
+                .when(adminClient)
                 .listConsumerGroupOffsets(anyMap());
         });
 
@@ -534,10 +533,10 @@ class ConsumerGroupsResourceIT {
             return new ListOffsetsResult(futures);
         };
 
-        AdminClientSpy.install(client -> {
+        AdminClientSpy.install(adminClient -> {
             // Mock listOffsets
             doAnswer(listOffsetsFailed)
-                .when(client)
+                .when(adminClient)
                 .listOffsets(anyMap());
         });
 
@@ -649,7 +648,7 @@ class ConsumerGroupsResourceIT {
             throws JSONException {
 
         String topic1 = "t1-" + UUID.randomUUID().toString();
-        String topic1Id = topicUtils.createTopics(clusterId1, List.of(topic1), 2).get(topic1);
+        String topic1Id = topicUtils.createTopics(List.of(topic1), 2).get(topic1);
         String group1 = "g1-" + UUID.randomUUID().toString();
         String client1 = "c1-" + UUID.randomUUID().toString();
 
@@ -709,7 +708,7 @@ class ConsumerGroupsResourceIT {
             long afterOffset) {
         final int partitionCount = 2;
         String topic1 = "t1-" + UUID.randomUUID().toString();
-        String topic1Id = topicUtils.createTopics(clusterId1, List.of(topic1), partitionCount).get(topic1);
+        String topic1Id = topicUtils.createTopics(List.of(topic1), partitionCount).get(topic1);
         String group1 = "g1-" + UUID.randomUUID().toString();
         String client1 = "c1-" + UUID.randomUUID().toString();
 
@@ -775,7 +774,7 @@ class ConsumerGroupsResourceIT {
             int afterOffset) {
         final int partitionCount = 2;
         String topic1 = "t1-" + UUID.randomUUID().toString();
-        String topic1Id = topicUtils.createTopics(clusterId1, List.of(topic1), partitionCount).get(topic1);
+        String topic1Id = topicUtils.createTopics(List.of(topic1), partitionCount).get(topic1);
         String group1 = "g1-" + UUID.randomUUID().toString();
         String client1 = "c1-" + UUID.randomUUID().toString();
 

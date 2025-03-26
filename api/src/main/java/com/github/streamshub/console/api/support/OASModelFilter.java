@@ -132,9 +132,8 @@ public class OASModelFilter extends AbstractOperationFilter implements OASFilter
                 .ifPresent(oidcUrl -> Optional.of(openAPI.getComponents())
                         .map(Components::getSecuritySchemes)
                         .map(schemes -> schemes.get("ConsoleSecurity"))
-                        .ifPresent(scheme -> {
-                            scheme.setOpenIdConnectUrl(oidcUrl + "/.well-known/openid-configuration");
-                        }));
+                        .ifPresent(scheme ->
+                            scheme.setOpenIdConnectUrl(oidcUrl + "/.well-known/openid-configuration")));
         } catch (Exception e) {
             LOGGER.warnf("Error retrieving OIDC URL", e.getMessage());
         }

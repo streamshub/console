@@ -11,7 +11,7 @@ class UuidValidatorTest {
     KafkaUuid.Validator target;
 
     @BeforeEach
-    void setUp() throws Exception {
+    void setUp() {
         target = new KafkaUuid.Validator();
     }
 

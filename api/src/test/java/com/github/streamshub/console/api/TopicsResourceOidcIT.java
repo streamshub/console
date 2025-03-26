@@ -1,6 +1,5 @@
 package com.github.streamshub.console.api;
 
-import java.io.IOException;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
@@ -116,7 +115,7 @@ class TopicsResourceOidcIT {
     }
 
     @BeforeEach
-    void setup() throws IOException {
+    void setup() {
         bootstrapServers1 = URI.create(deployments.getExternalBootstrapServers());
         URI randomBootstrapServers = URI.create(consoleConfig.getKafka()
                 .getCluster("default/test-kafka2")
@@ -284,7 +283,7 @@ class TopicsResourceOidcIT {
     void testListTopicsWithAuditLogging(String fields, @AggregateWith(VarargsAggregator.class) Privilege... privilegesAudited) {
         String allowedTopic = "a-" + UUID.randomUUID().toString();
         String deniedTopic = "b-" + UUID.randomUUID().toString();
-        topicUtils.createTopics(clusterId1, List.of(allowedTopic, deniedTopic), 1);
+        topicUtils.createTopics(List.of(allowedTopic, deniedTopic), 1);
 
         utils.updateSecurity(consoleConfig.getSecurity(), new GlobalSecurityConfigBuilder()
                 .addNewSubject()
@@ -383,7 +382,7 @@ class TopicsResourceOidcIT {
 
         String topicA = "a-" + UUID.randomUUID().toString();
         String topicB = "b-" + UUID.randomUUID().toString();
-        var topicIds = topicUtils.createTopics(clusterId1, List.of(topicA, topicB), 1);
+        var topicIds = topicUtils.createTopics(List.of(topicA, topicB), 1);
 
         String allowedTopic;
         String forbiddenTopic;
@@ -495,7 +494,7 @@ class TopicsResourceOidcIT {
         });
 
         String topicName = topicPrefix + UUID.randomUUID().toString();
-        Map<String, String> topicIds = topicUtils.createTopics(clusterId1, List.of(topicName), 2);
+        Map<String, String> topicIds = topicUtils.createTopics(List.of(topicName), 2);
 
         whenRequesting(req -> req
                 .auth()
@@ -535,7 +534,7 @@ class TopicsResourceOidcIT {
         });
 
         String topicName = topicPrefix + UUID.randomUUID().toString();
-        Map<String, String> topicIds = topicUtils.createTopics(clusterId1, List.of(topicName), 1);
+        Map<String, String> topicIds = topicUtils.createTopics(List.of(topicName), 1);
 
         whenRequesting(req -> req
                 .auth()
@@ -582,7 +581,7 @@ class TopicsResourceOidcIT {
         });
 
         String topicName = UUID.randomUUID().toString();
-        topicUtils.createTopics(clusterId1, List.of(topicName), 1);
+        topicUtils.createTopics(List.of(topicName), 1);
 
         whenRequesting(req -> req
                 .auth()

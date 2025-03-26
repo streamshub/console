@@ -110,7 +110,7 @@ class KafkaClustersResourceMetricsIT implements ClientRequestFilter {
     }
 
     @BeforeEach
-    void setup() throws IOException {
+    void setup() {
         filterQuery = ctx -> { /* No-op */ };
         filterQueryRange = ctx -> { /* No-op */ };
         metricsService.setAdditionalFilter(Optional.of(this));
