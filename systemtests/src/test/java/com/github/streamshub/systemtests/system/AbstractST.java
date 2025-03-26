@@ -1,10 +1,13 @@
 package com.github.streamshub.systemtests.system;
 
 import com.github.streamshub.systemtests.Environment;
+import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.constants.Labels;
 import com.github.streamshub.systemtests.constants.ResourceKinds;
 import com.github.streamshub.systemtests.logs.LogWrapper;
-import com.github.streamshub.systemtests.utils.ClusterUtils;
+import com.github.streamshub.systemtests.setup.StrimziOperatorSetup;
+import com.github.streamshub.systemtests.utils.resources.ClusterUtils;
+import com.github.streamshub.systemtests.utils.resources.NamespaceUtils;
 import io.skodjob.testframe.annotations.ResourceManager;
 import io.skodjob.testframe.annotations.TestVisualSeparator;
 import io.skodjob.testframe.resources.ClusterRoleBindingType;
@@ -24,11 +27,15 @@ import io.skodjob.testframe.resources.ServiceType;
 import io.skodjob.testframe.resources.SubscriptionType;
 import io.skodjob.testframe.utils.KubeUtils;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInstance;
 
 import java.io.IOException;
+
+import static com.github.streamshub.systemtests.utils.resources.NamespaceUtils.createNamespaceAndPrepare;
+import static com.github.streamshub.systemtests.utils.resources.NamespaceUtils.getNamespace;
 
 @ResourceManager
 @TestVisualSeparator
@@ -36,6 +43,8 @@ import java.io.IOException;
 public abstract class AbstractST {
     private static final Logger LOGGER = LogWrapper.getLogger(AbstractST.class);
     protected static final KubeResourceManager RESOURCE_MANAGER = KubeResourceManager.getInstance();
+    // Operators
+    protected final StrimziOperatorSetup strimziOperatorSetup = new StrimziOperatorSetup(Constants.CO_NAMESPACE);
 
     static {
         RESOURCE_MANAGER.setResourceTypes(
@@ -72,12 +81,32 @@ public abstract class AbstractST {
     }
 
     @BeforeAll
-    void beforeAll() {
-        LOGGER.info("=========== AbstractST - BeforeAll ===========");
+    void setupTestSuite() {
+        LOGGER.info("=========== AbstractST - BeforeAll - Setup TestSuite ===========");
+        if (NamespaceUtils.getNamespace(Constants.CO_NAMESPACE) == null) {
+            createNamespaceAndPrepare(Constants.CO_NAMESPACE);
+        }
+        strimziOperatorSetup.setup();
     }
 
     @BeforeEach
-    void beforeEach() {
+    void setupTestCase() {
+        LOGGER.info("=========== AbstractST - BeforeEach - Setup TestCase {} ===========", KubeResourceManager.getTestContext().getTestMethod());
         ClusterUtils.checkClusterHealth();
+    }
+
+    @AfterAll
+    void tearDownTestSuite() {
+        LOGGER.info("=========== AbstractST - AfterAll - Tear down the TestSuite ===========");
+        if (Environment.SKIP_TEARDOWN) {
+            LOGGER.warn("Teardown was skipped because of SKIP_TEARDOWN env");
+            return;
+        }
+
+        // If Strimzi was installed externally, keep it and the namespace it's deployed in.
+        if (!Environment.SKIP_STRIMZI_INSTALLATION) {
+            KubeResourceManager.getInstance().deleteResource(getNamespace(Constants.CO_NAMESPACE));
+            strimziOperatorSetup.teardown();
+        }
     }
 }

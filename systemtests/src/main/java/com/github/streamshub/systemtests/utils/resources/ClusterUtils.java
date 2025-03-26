@@ -1,4 +1,4 @@
-package com.github.streamshub.systemtests.utils;
+package com.github.streamshub.systemtests.utils.resources;
 
 import com.github.streamshub.systemtests.exceptions.ClusterUnreachableException;
 import io.skodjob.testframe.executor.ExecResult;

@@ -1,7 +1,7 @@
 package com.github.streamshub.systemtests.unit.utils;
 
 import com.github.streamshub.systemtests.exceptions.ClusterUnreachableException;
-import com.github.streamshub.systemtests.utils.ClusterUtils;
+import com.github.streamshub.systemtests.utils.resources.ClusterUtils;
 import io.skodjob.testframe.clients.cmdClient.KubeCmdClient;
 import io.skodjob.testframe.executor.ExecResult;
 import io.skodjob.testframe.resources.KubeResourceManager;
