@@ -392,6 +392,7 @@ class NodesResourceIT implements ClientRequestFilter {
                 .get("", clusterId))
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
+            .body("meta.summary.leaderId", is("3"))
             .body("data.size()", is(3))
             .body("data.attributes.findAll { it }.collect { it.roles }", everyItem(contains("controller", "broker")));
     }
@@ -403,6 +404,7 @@ class NodesResourceIT implements ClientRequestFilter {
                 .get("", clusterId))
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
+            .body("meta.summary.leaderId", is("3"))
             .body("data.size()", is(6))
             .body("data.findAll { it.id <= '2' }.attributes.collect { it.roles }", everyItem(contains("broker")))
             .body("data.findAll { it.id >= '3' && it.id <= '5' }.attributes.collect { it.roles }", everyItem(contains("controller")));
@@ -415,6 +417,7 @@ class NodesResourceIT implements ClientRequestFilter {
                 .get("", clusterId))
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
+            .body("meta.summary.leaderId", is("3"))
             .body("data.size()", is(11))
             .body("data.findAll { it.id as Integer <= 2 }.attributes.collect { it.nodePool }",
                     everyItem(is(clusterId + "-brokers")))
@@ -434,6 +437,7 @@ class NodesResourceIT implements ClientRequestFilter {
                 .get("", clusterId))
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
+            .body("meta.summary.leaderId", is("3"))
             .body("data.size()", is(7))
             .body("data.attributes.collect { it.roles }", everyItem(hasItem(role)));
     }
@@ -462,6 +466,7 @@ class NodesResourceIT implements ClientRequestFilter {
             return req.get("", clusterId);
         }).assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
+            .body("meta.summary.leaderId", is("3"))
             .body("data.id", contains(nodeIds.stream().map(String::valueOf).toArray(String[]::new)));
     }
 
@@ -482,6 +487,7 @@ class NodesResourceIT implements ClientRequestFilter {
                     .get("", clusterId))
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
+            .body("meta.summary.leaderId", is("3"))
             .body("meta.page.total", is(nodeIds.size()))
             .body("data.size()", is(pageSize))
             .body("data.meta.page", everyItem(hasKey(equalTo("cursor"))))
@@ -509,6 +515,7 @@ class NodesResourceIT implements ClientRequestFilter {
                 .get("", clusterId))
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
+            .body("meta.summary.leaderId", is("3"))
             .body("meta.page.total", is(nodeIds.size())) // total is the count for the full/unpaged result set
             .body("data.size()", is(nodeIds.size() - pageSize))
             .body("data.meta.page", everyItem(hasKey(equalTo("cursor"))))
@@ -552,6 +559,7 @@ class NodesResourceIT implements ClientRequestFilter {
                 .get("", clusterId))
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
+            .body("meta.summary.leaderId", is("3"))
             .body("data.collect { it.id }", hasItem("6"));
     }
 
