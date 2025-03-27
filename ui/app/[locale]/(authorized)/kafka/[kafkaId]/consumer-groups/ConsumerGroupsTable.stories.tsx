@@ -62,17 +62,6 @@ export const ConsumerGroups: Story = {
       );
       return groups;
     })(),
-    total: (() => {
-      const groups = Array.from({ length: 21 }, (_, i) =>
-        generateConsumerGroup(
-          `console-datagen-group-${i}`,
-          ["STABLE", "EMPTY"][i % 2],
-          i * 1000,
-          i * 1000,
-          i % 3 === 0 ? i * 1000 : undefined,
-        ),
-      );
-      return groups.length;
-    })(),
+    total: 21,
   },
 };
