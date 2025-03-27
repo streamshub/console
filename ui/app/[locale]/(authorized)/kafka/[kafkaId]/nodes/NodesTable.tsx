@@ -443,67 +443,33 @@ export function NodesTable({
             ...(filterControllerStatus || []),
           ],
           onToggle: (status: BrokerStatus | ControllerStatus) => {
-            const newBrokerStatus = filterBrokerStatus
-              ? [...filterBrokerStatus]
-              : [];
-            const newControllerStatus = filterControllerStatus
-              ? [...filterControllerStatus]
-              : [];
+            const updateStatus = (statusList: any[], status: any) =>
+              statusList.includes(status)
+                ? statusList.filter((s) => s !== status)
+                : [...statusList, status];
 
-            if (brokerStatusKeys.includes(status as BrokerStatus)) {
-              if (newBrokerStatus.includes(status as BrokerStatus)) {
-                newBrokerStatus.splice(
-                  newBrokerStatus.indexOf(status as BrokerStatus),
-                  1,
-                );
-              } else {
-                newBrokerStatus.push(status as BrokerStatus);
-              }
-            } else if (
+            onFilterStatusChange(
+              brokerStatusKeys.includes(status as BrokerStatus)
+                ? updateStatus(filterBrokerStatus || [], status)
+                : filterBrokerStatus,
               controllerStatusKeys.includes(status as ControllerStatus)
-            ) {
-              if (newControllerStatus.includes(status as ControllerStatus)) {
-                newControllerStatus.splice(
-                  newControllerStatus.indexOf(status as ControllerStatus),
-                  1,
-                );
-              } else {
-                newControllerStatus.push(status as ControllerStatus);
-              }
-            }
-            onFilterStatusChange(newBrokerStatus, newControllerStatus);
+                ? updateStatus(filterControllerStatus || [], status)
+                : filterControllerStatus,
+            );
           },
           onRemoveChip: (status: BrokerStatus | ControllerStatus) => {
-            const newBrokerStatus = filterBrokerStatus
-              ? [...filterBrokerStatus]
-              : [];
-            const newControllerStatus = filterControllerStatus
-              ? [...filterControllerStatus]
-              : [];
-
-            if (brokerStatusKeys.includes(status as BrokerStatus)) {
-              newBrokerStatus.splice(
-                newBrokerStatus.indexOf(status as BrokerStatus),
-                1,
-              );
-            } else if (
+            onFilterStatusChange(
+              brokerStatusKeys.includes(status as BrokerStatus)
+                ? (filterBrokerStatus || []).filter((s) => s !== status)
+                : filterBrokerStatus,
               controllerStatusKeys.includes(status as ControllerStatus)
-            ) {
-              newControllerStatus.splice(
-                newControllerStatus.indexOf(status as ControllerStatus),
-                1,
-              );
-            }
-            onFilterStatusChange(newBrokerStatus, newControllerStatus);
+                ? (filterControllerStatus || []).filter((s) => s !== status)
+                : filterControllerStatus,
+            );
           },
-          onRemoveGroup: () => {
-            onFilterStatusChange(undefined, undefined);
-          },
+          onRemoveGroup: () => onFilterStatusChange(undefined, undefined),
           options: [
-            {
-              groupLabel: "Broker Status",
-              groupOptions: BrokerStatusLabel,
-            },
+            { groupLabel: "Broker Status", groupOptions: BrokerStatusLabel },
             {
               groupLabel: "Controller Status",
               groupOptions: ControllerStatusLabel,
