@@ -88,7 +88,7 @@ export function ChipFilter({ filters, breakpoint = "md" }: ChipFilterProps) {
       const checkboxFilter = f as CheckboxType<any>; // Type assertion
       return checkboxFilter.chips.map((c) => ({
         key: c,
-        node: checkboxFilter.options[c].label,
+        node: checkboxFilter.options[c]?.label ?? c,
       }));
     }
     return f.chips.map((chip) => ({ key: chip, node: chip }));

@@ -16,7 +16,6 @@ import {
   NodeRoles,
   BrokerStatus,
   ControllerStatus,
-  NodePools,
 } from "@/api/nodes/schema";
 import { filterUndefinedFromObj } from "@/utils/filterUndefinedFromObj";
 
@@ -25,7 +24,7 @@ export async function getNodes(
   params?: {
     fields?: string;
     status?: (BrokerStatus | ControllerStatus)[];
-    nodePool?: NodePools[];
+    nodePool?: string[];
     roles?: NodeRoles[];
     id?: string;
     pageSize?: number;

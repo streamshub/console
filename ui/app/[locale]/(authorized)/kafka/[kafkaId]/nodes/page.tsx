@@ -5,12 +5,7 @@ import { Grid, GridItem, PageSection } from "@/libs/patternfly/react-core";
 import { getTranslations } from "next-intl/server";
 import { Suspense } from "react";
 import { NodeListColumn } from "./NodesTable";
-import {
-  BrokerStatus,
-  ControllerStatus,
-  NodePools,
-  NodeRoles,
-} from "@/api/nodes/schema";
+import { BrokerStatus, ControllerStatus, NodeRoles } from "@/api/nodes/schema";
 import { NoDataErrorState } from "@/components/NoDataErrorState";
 import { ConnectedNodesTable } from "./ConnectedNodesTable";
 import { stringToInt } from "@/utils/stringToInt";
@@ -44,7 +39,7 @@ export default function NodesPage({
   const pageCursor = searchParams["page"];
   const nodePool = (searchParams["nodePool"] || "")
     .split(",")
-    .filter((v) => !!v) as NodePools[] | undefined;
+    .filter((v) => !!v) as string[] | undefined;
   const roles = (searchParams["roles"] || "").split(",").filter((v) => !!v) as
     | NodeRoles[]
     | undefined;
@@ -67,6 +62,7 @@ export default function NodesPage({
           roles={roles}
           nextPageCursor={undefined}
           prevPageCursor={undefined}
+          nodePoolList={undefined}
         />
       }
     >
@@ -98,7 +94,7 @@ async function AsyncNodesTable({
   sortDir: "asc" | "desc";
   pageSize: number;
   pageCursor: string | undefined;
-  nodePool: NodePools[] | undefined;
+  nodePool: string[] | undefined;
   roles: NodeRoles[] | undefined;
   status: (BrokerStatus | ControllerStatus)[] | undefined;
 } & KafkaParams) {
@@ -172,6 +168,7 @@ async function AsyncNodesTable({
           <ConnectedNodesTable
             nodes={nodes.data}
             nodesCount={nodes.meta.page.total}
+            nodePoolList={nodes.meta.summary.nodePools}
             page={nodes.meta.page.pageNumber || 1}
             perPage={pageSize}
             nodePool={nodePool}

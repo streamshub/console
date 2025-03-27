@@ -1,6 +1,12 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { NodesTable } from "./NodesTable";
 
+const nodePoolData = {
+  "pool-1": ["controller", "broker"],
+  "pool-2": ["broker"],
+  "pool-3": ["controller"],
+};
+
 const sampleNodesData = [
   {
     id: "0",
@@ -62,6 +68,7 @@ export default {
   component: NodesTable,
   args: {
     nodeList: sampleNodesData,
+    nodePoolList: nodePoolData,
   },
 } as Meta<typeof NodesTable>;
 
