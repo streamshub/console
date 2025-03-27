@@ -876,7 +876,7 @@ class TopicsResourceIT {
         "'name,numPartitions', LIST, GET"
     })
     void testListTopicsWithAuditLogging(String fields, @AggregateWith(VarargsAggregator.class) Privilege... privilegesAudited) {
-        String topicName = UUID.randomUUID().toString();
+        String topicName = "audit-" + UUID.randomUUID().toString();
         topicUtils.createTopics(clusterId1, List.of(topicName), 1);
 
         consoleConfig.getKafka().getClusterById(clusterId1).ifPresent(clusterConfig -> {
