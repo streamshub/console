@@ -18,6 +18,7 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -156,13 +157,14 @@ public class NodeService {
         @SuppressWarnings("unchecked")
         Map<String, Map<String, Integer>> statuses = (Map<String, Map<String, Integer>>) summary.get("statuses");
         boolean healthy = true;
+        BiFunction<String, Integer, Integer> accumulator = (k, v) -> v == null ? 1 : v + 1;
 
         if (node.isBroker()) {
             var status = node.broker().status();
             if (status != BrokerStatus.RUNNING) {
                 healthy = false;
             }
-            statuses.get("brokers").compute(status.toString(), (k, v) -> v == null ? 1 : v + 1);
+            statuses.get("brokers").compute(status.toString(), accumulator);
         }
 
         if (node.isController()) {
@@ -170,11 +172,15 @@ public class NodeService {
             if (status == ControllerStatus.FOLLOWER_LAGGED) {
                 healthy = false;
             }
-            statuses.get("controllers").compute(status.toString(), (k, v) -> v == null ? 1 : v + 1);
+            statuses.get("controllers").compute(status.toString(), accumulator);
+
+            if (status == ControllerStatus.LEADER) {
+                summary.put("leaderId", node.getId());
+            }
         }
 
         String combinedStatusKey = healthy ? "Healthy" : "Unhealthy";
-        statuses.get("combined").compute(combinedStatusKey, (k, v) -> v == null ? 1 : v + 1);
+        statuses.get("combined").compute(combinedStatusKey, accumulator);
 
         String poolName = node.nodePool();
 
