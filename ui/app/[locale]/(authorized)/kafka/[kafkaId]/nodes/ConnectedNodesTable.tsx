@@ -4,7 +4,7 @@ import {
   ControllerStatus,
   KafkaNode,
   NodeListResponse,
-  NodePools,
+  NodePoolsType,
   NodeRoles,
 } from "@/api/nodes/schema";
 import { NodeListColumn } from "./NodesTable";
@@ -17,29 +17,32 @@ export type ConnectedNodesTableProps = {
   nodesCount: number;
   page: number;
   perPage: number;
-  nodePool: NodePools[] | undefined;
+  nodePool: string[] | undefined;
   sort: NodeListColumn;
   sortDir: "asc" | "desc";
   roles: NodeRoles[] | undefined;
   status: (BrokerStatus | ControllerStatus)[] | undefined;
   nextPageCursor: string | null | undefined;
   prevPageCursor: string | null | undefined;
+  nodePoolList: NodePoolsType | undefined;
 };
 
 type State = {
   nodes: KafkaNode[] | undefined;
   perPage: number;
-  nodePool: NodePools[] | undefined;
+  nodePool: string[] | undefined;
   status: (BrokerStatus | ControllerStatus)[] | undefined;
   sort: NodeListColumn;
   sortDir: "asc" | "desc";
   roles: NodeRoles[] | undefined;
+  nodePoolList: NodePoolsType | undefined;
 };
 
 export function ConnectedNodesTable({
   nodePool,
   roles,
   nodesCount,
+  nodePoolList,
   nodes,
   sort,
   sortDir,
@@ -63,12 +66,13 @@ export function ConnectedNodesTable({
       nodePool,
       roles,
       status,
+      nodePoolList,
     },
     (state, options) => ({ ...state, ...options, nodes: undefined }),
   );
 
   const updateUrl: typeof _updateUrl = (newParams) => {
-    const { nodes, ...s } = state;
+    const { nodes, nodePoolList, ...s } = state;
     _updateUrl({
       ...s,
       ...newParams,
@@ -88,6 +92,7 @@ export function ConnectedNodesTable({
 
   return (
     <NodesTable
+      nodePoolList={nodePoolList}
       nodeList={state.nodes}
       page={page}
       perPage={state.perPage}
@@ -130,6 +135,7 @@ export function ConnectedNodesTable({
           addOptimistic({ status });
         });
       }}
+      nodesCount={nodesCount}
     />
   );
 }

@@ -1,10 +1,10 @@
 import {
   BrokerStatus,
-  NodePools,
   NodeRoles,
   NodeList,
   KafkaNode,
   ControllerStatus,
+  NodePoolsType,
 } from "@/api/nodes/schema";
 import {
   ClipboardCopy,
@@ -45,24 +45,6 @@ export const NodeListColumns = [
 ] as const;
 
 export type NodeListColumn = (typeof NodeListColumns)[number];
-
-const NodePoolLabel: Record<
-  NodePools,
-  { label: ReactNode; description: ReactNode }
-> = {
-  dual1: {
-    label: <>both-pool</>,
-    description: <>Nodes role: broker, controller</>,
-  },
-  brokers1: {
-    label: <>B- pool - 1</>,
-    description: <>Nodes role: broker</>,
-  },
-  controllers1: {
-    label: <>C-pool-1</>,
-    description: <>Nodes role: controller</>,
-  },
-};
 
 const NodeRoleLabel: Record<NodeRoles, { label: ReactNode }> = {
   broker: { label: <>Broker</> },
@@ -169,14 +151,15 @@ export type NodesTableProps = {
   nodesCount: number;
   page: number;
   perPage: number;
-  filterNodePool: NodePools[] | undefined;
+  filterNodePool: string[] | undefined;
   filterStatus: (BrokerStatus | ControllerStatus)[] | undefined;
   filterRole: NodeRoles[] | undefined;
-  onFilterNodePoolChange: (pool: NodePools[] | undefined) => void;
+  onFilterNodePoolChange: (nodePool: string[] | undefined) => void;
   onFilterStatusChange: (
     status: (BrokerStatus | ControllerStatus)[] | undefined,
   ) => void;
   onFilterRoleChange: (role: NodeRoles[] | undefined) => void;
+  nodePoolList: NodePoolsType | undefined;
 } & Pick<
   TableViewProps<NodeList, (typeof NodeListColumns)[number]>,
   "isColumnSortable" | "onPageChange" | "onClearAllFilters"
@@ -196,10 +179,23 @@ export function NodesTable({
   onPageChange,
   onClearAllFilters,
   nodesCount,
+  nodePoolList,
 }: NodesTableProps) {
   const t = useTranslations();
   const format = useFormatter();
   const formatBytes = useFormatBytes();
+
+  const nodePoolOptions = nodePoolList
+    ? Object.fromEntries(
+        Object.entries(nodePoolList).map(([poolName, roles]) => [
+          poolName,
+          {
+            label: <>{poolName}</>,
+            description: <>Nodes role: {roles.join(", ")}</>,
+          },
+        ]),
+      )
+    : {};
 
   return (
     <TableView
@@ -308,7 +304,9 @@ export function NodesTable({
           case "nodePool":
             return (
               <Td key={key} dataLabel={"Node Pool"}>
-                {row.attributes.nodePool ?? "n/a"}
+                {row.attributes.nodePool
+                  ? (nodePoolOptions[row.attributes.nodePool]?.label ?? "n/a")
+                  : "n/a"}
               </Td>
             );
         }
@@ -395,20 +393,22 @@ export function NodesTable({
         "Node pool": {
           type: "checkbox",
           chips: filterNodePool || [],
-          onToggle: (pool) => {
-            const newPool = filterNodePool?.includes(pool)
-              ? filterNodePool.filter((p) => p !== pool)
-              : [...filterNodePool!, pool];
+          onToggle: (nodePool) => {
+            const newPool = filterNodePool?.includes(nodePool)
+              ? filterNodePool.filter((p) => p !== nodePool)
+              : [...filterNodePool!, nodePool];
             onFilterNodePoolChange(newPool);
           },
-          onRemoveChip: (pool) => {
-            const newPool = (filterNodePool || []).filter((p) => p !== pool);
+          onRemoveChip: (nodePool) => {
+            const newPool = (filterNodePool || []).filter(
+              (p) => p !== nodePool,
+            );
             onFilterNodePoolChange(newPool);
           },
           onRemoveGroup: () => {
             onFilterNodePoolChange(undefined);
           },
-          options: NodePoolLabel,
+          options: nodePoolOptions,
         },
         Role: {
           type: "checkbox",
