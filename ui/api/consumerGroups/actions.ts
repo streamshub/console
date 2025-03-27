@@ -6,6 +6,7 @@ import {
   ApiResponse,
   filterEq,
   filterIn,
+  filterLike,
 } from "@/api/api";
 import {
   ConsumerGroup,
@@ -43,7 +44,7 @@ export async function getConsumerGroups(
     filterUndefinedFromObj({
       "fields[consumerGroups]":
         params.fields ?? "state,simpleConsumerGroup,members,offsets",
-      "filter[id]": filterEq(params.id),
+      "filter[id]": filterLike(params.id),
       "filter[state]": filterIn(params.state),
       "page[size]": params.pageSize,
       "page[after]": params.pageCursor?.startsWith("after:")
