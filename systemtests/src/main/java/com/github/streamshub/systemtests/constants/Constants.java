@@ -22,6 +22,11 @@ public class Constants {
      */
     public static final int MESSAGE_COUNT = 1000;
 
+    /**
+     * CRDs
+     */
+    public static final String RBAC_AUTH_API_GROUP = "rbac.authorization.k8s.io";
+
 
     // --------------------------------
     // ----------- Strimzi ------------

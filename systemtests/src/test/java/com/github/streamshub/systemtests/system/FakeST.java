@@ -9,5 +9,4 @@ public class FakeST extends  AbstractST {
     void faketest() {
         assertTrue(true);
     }
-
 }

@@ -111,8 +111,8 @@ public class TestLogCollector {
 
     public void collectLogs() {
         collectLogs(
-            KubeResourceManager.getTestContext().getRequiredTestClass().getName(),
-            KubeResourceManager.getTestContext().getRequiredTestMethod().getName()
+            KubeResourceManager.get().getTestContext().getRequiredTestClass().getName(),
+            KubeResourceManager.get().getTestContext().getRequiredTestMethod().getName()
         );
     }
 

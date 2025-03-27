@@ -3,11 +3,13 @@ package com.github.streamshub.systemtests.system;
 import com.github.streamshub.systemtests.Environment;
 import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.constants.Labels;
-import com.github.streamshub.systemtests.constants.ResourceKinds;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.setup.StrimziOperatorSetup;
-import com.github.streamshub.systemtests.utils.resources.ClusterUtils;
-import com.github.streamshub.systemtests.utils.resources.NamespaceUtils;
+import com.github.streamshub.systemtests.utils.ClusterUtils;
+import com.github.streamshub.systemtests.utils.ResourceUtils;
+import com.github.streamshub.systemtests.utils.SetupUtils;
+import io.fabric8.kubernetes.api.model.Namespace;
+import io.fabric8.kubernetes.api.model.NamespaceBuilder;
 import io.skodjob.testframe.annotations.ResourceManager;
 import io.skodjob.testframe.annotations.TestVisualSeparator;
 import io.skodjob.testframe.resources.ClusterRoleBindingType;
@@ -34,15 +36,14 @@ import org.junit.jupiter.api.TestInstance;
 
 import java.io.IOException;
 
-import static com.github.streamshub.systemtests.utils.resources.NamespaceUtils.createNamespaceAndPrepare;
-import static com.github.streamshub.systemtests.utils.resources.NamespaceUtils.getNamespace;
+import static com.github.streamshub.systemtests.constants.ResourceKinds.NAMESPACE;
 
 @ResourceManager
 @TestVisualSeparator
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public abstract class AbstractST {
     private static final Logger LOGGER = LogWrapper.getLogger(AbstractST.class);
-    protected static final KubeResourceManager RESOURCE_MANAGER = KubeResourceManager.getInstance();
+    protected static final KubeResourceManager RESOURCE_MANAGER = KubeResourceManager.get();
     // Operators
     protected final StrimziOperatorSetup strimziOperatorSetup = new StrimziOperatorSetup(Constants.CO_NAMESPACE);
 
@@ -65,13 +66,13 @@ public abstract class AbstractST {
 
         RESOURCE_MANAGER.addCreateCallback(resource -> {
             // Set collect label for every namespace created with TF
-            if (resource.getKind().equalsIgnoreCase(ResourceKinds.NAMESPACE)) {
+            if (resource.getKind().equals(NAMESPACE)) {
                 KubeUtils.labelNamespace(resource.getMetadata().getName(), Labels.COLLECT_ST_LOGS, "true");
             }
         });
 
         // Allow storing yaml files
-        KubeResourceManager.setStoreYamlPath(Environment.TEST_LOG_DIR);
+        KubeResourceManager.get().setStoreYamlPath(Environment.TEST_LOG_DIR);
 
         try {
             Environment.saveConfigToFile();
@@ -83,15 +84,16 @@ public abstract class AbstractST {
     @BeforeAll
     void setupTestSuite() {
         LOGGER.info("=========== AbstractST - BeforeAll - Setup TestSuite ===========");
-        if (NamespaceUtils.getNamespace(Constants.CO_NAMESPACE) == null) {
-            createNamespaceAndPrepare(Constants.CO_NAMESPACE);
+        if (ResourceUtils.getKubeResource(Namespace.class, Constants.CO_NAMESPACE) == null) {
+            KubeResourceManager.get().createOrUpdateResourceWithWait(new NamespaceBuilder().withNewMetadata().withName(Constants.CO_NAMESPACE).endMetadata().build());
+            SetupUtils.copyImagePullSecrets(Constants.CO_NAMESPACE);
         }
         strimziOperatorSetup.setup();
     }
 
     @BeforeEach
     void setupTestCase() {
-        LOGGER.info("=========== AbstractST - BeforeEach - Setup TestCase {} ===========", KubeResourceManager.getTestContext().getTestMethod());
+        LOGGER.info("=========== AbstractST - BeforeEach - Setup TestCase {} ===========", KubeResourceManager.get().getTestContext().getTestMethod());
         ClusterUtils.checkClusterHealth();
     }
 
@@ -103,9 +105,8 @@ public abstract class AbstractST {
             return;
         }
 
-        // If Strimzi was installed externally, keep it and the namespace it's deployed in.
+        // If Strimzi was installed externally, keep it
         if (!Environment.SKIP_STRIMZI_INSTALLATION) {
-            KubeResourceManager.getInstance().deleteResource(getNamespace(Constants.CO_NAMESPACE));
             strimziOperatorSetup.teardown();
         }
     }
