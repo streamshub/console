@@ -85,7 +85,9 @@ public class ConfigService {
                 .sorted(Comparator.comparing(org.apache.kafka.clients.admin.ConfigEntry::name))
                 .collect(Collectors.toMap(
                         org.apache.kafka.clients.admin.ConfigEntry::name,
-                        ConfigEntry::fromKafkaModel));
+                        ConfigEntry::fromKafkaModel,
+                        (v1, v2) -> v1,
+                        LinkedHashMap::new));
     }
 
     Collection<AlterConfigOp> fromMap(Map<String, ConfigEntry> configs) {

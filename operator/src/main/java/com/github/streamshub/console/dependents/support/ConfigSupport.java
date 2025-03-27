@@ -2,9 +2,9 @@ package com.github.streamshub.console.dependents.support;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Function;
 
 import com.github.streamshub.console.ReconciliationException;
 import com.github.streamshub.console.api.v1alpha1.Console;
@@ -13,9 +13,11 @@ import com.github.streamshub.console.api.v1alpha1.spec.Value;
 import com.github.streamshub.console.api.v1alpha1.spec.ValueReference;
 
 import io.fabric8.kubernetes.api.model.ConfigMap;
+import io.fabric8.kubernetes.api.model.ConfigMapEnvSource;
 import io.fabric8.kubernetes.api.model.ConfigMapKeySelector;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.Secret;
+import io.fabric8.kubernetes.api.model.SecretEnvSource;
 import io.fabric8.kubernetes.api.model.SecretKeySelector;
 import io.fabric8.kubernetes.client.KubernetesClientException;
 import io.javaoperatorsdk.operator.api.reconciler.Context;
@@ -50,35 +52,18 @@ public class ConfigSupport {
             var secretRef = fromSource.getSecretRef();
 
             if (configMapRef != null) {
-                copyData(context, target, ConfigMap.class, namespace, configMapRef.getName(), prefix, configMapRef.getOptional(), ConfigMap::getData);
+                copyData(target, getData(context, namespace, configMapRef), prefix, false);
             }
 
             if (secretRef != null) {
-                copyData(context, target, Secret.class, namespace, secretRef.getName(), prefix, secretRef.getOptional(), Secret::getData);
+                copyData(target, getData(context, namespace, secretRef), prefix, true);
             }
         });
 
         source.getValues().forEach(configVar -> target.put(configVar.getName(), configVar.getValue()));
     }
 
-    @SuppressWarnings("java:S107") // Ignore Sonar warning for too many args
-    public static <S extends HasMetadata> void copyData(Context<Console> context,
-            Map<String, String> target,
-            Class<S> sourceType,
-            String namespace,
-            String name,
-            String prefix,
-            Boolean optional,
-            Function<S, Map<String, String>> dataProvider) {
-
-        S source = getResource(context, sourceType, namespace, name, Boolean.TRUE.equals(optional));
-
-        if (source != null) {
-            copyData(target, dataProvider.apply(source), prefix, Secret.class.equals(sourceType));
-        }
-    }
-
-    public static void copyData(Map<String, String> target, Map<String, String> source, String prefix, boolean decode) {
+    private static void copyData(Map<String, String> target, Map<String, String> source, String prefix, boolean decode) {
         source.forEach((key, value) -> {
             if (prefix != null) {
                 key = prefix + key;
@@ -129,6 +114,17 @@ public class ConfigSupport {
         return Optional.empty();
     }
 
+    private static Map<String, String> getData(Context<Console> context,
+            String namespace,
+            ConfigMapEnvSource ref) {
+
+        ConfigMap source = getResource(context, ConfigMap.class, namespace, ref.getName(), Boolean.TRUE.equals(ref.getOptional()));
+
+        return Optional.ofNullable(source)
+                .map(ConfigMap::getData)
+                .orElseGet(Collections::emptyMap);
+    }
+
     private static Optional<byte[]> getValue(Context<Console> context,
             String namespace,
             SecretKeySelector ref) {
@@ -142,6 +138,17 @@ public class ConfigSupport {
         }
 
         return Optional.empty();
+    }
+
+    private static Map<String, String> getData(Context<Console> context,
+            String namespace,
+            SecretEnvSource ref) {
+
+        Secret source = getResource(context, Secret.class, namespace, ref.getName(), Boolean.TRUE.equals(ref.getOptional()));
+
+        return Optional.ofNullable(source)
+                .map(Secret::getData)
+                .orElseGet(Collections::emptyMap);
     }
 
     public static <T extends HasMetadata> T getResource(

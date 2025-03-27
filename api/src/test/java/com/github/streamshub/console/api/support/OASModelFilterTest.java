@@ -18,7 +18,7 @@ import static org.hamcrest.Matchers.not;
 class OASModelFilterTest {
 
     @Test
-    void testOpenApiOperationsMatchConfiguration() throws Exception {
+    void testOpenApiOperationsMatchConfiguration() {
         whenRequesting(req -> req.get("/openapi.json"))
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))

@@ -24,7 +24,7 @@ import static org.hamcrest.Matchers.is;
 class EnabledOperationFilterTest {
 
     @Test
-    void testDescribeTopicNotAllowed() throws Exception {
+    void testDescribeTopicNotAllowed() {
         whenRequesting(req -> req.get("/api/kafkas/{clusterId}/topics/{topicId}",
                 Uuid.randomUuid().toString(),
                 Uuid.randomUuid().toString()))

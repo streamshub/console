@@ -51,7 +51,7 @@ class LoggingConfigWatcherTest {
             switch (loopCount.incrementAndGet()) {
                 case 1:
                     // Trigger a modification event
-                    writeString(override, String.format("%s=%s\nignored=anything\\n", property, newLevel));
+                    writeString(override, String.format("%s=%s%nignored=anything\\n", property, newLevel));
                     break;
                 case 2:
                     delete(override);
@@ -87,7 +87,7 @@ class LoggingConfigWatcherTest {
             }
 
             // Trigger a modification event
-            writeString(override, String.format("%s=%s\nignored=anything\n", property, "DEBUG"));
+            writeString(override, String.format("%s=%s%nignored=anything%n", property, "DEBUG"));
             return ws.poll(15, TimeUnit.SECONDS);
         });
 

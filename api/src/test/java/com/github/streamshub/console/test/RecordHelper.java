@@ -45,11 +45,11 @@ public class RecordHelper {
     }
 
     public void produceRecord(String topicName, Instant timestamp, Map<String, Object> headers, byte[] key, byte[] value) {
-        Properties producerConfig = new Properties();
-        producerConfig.putAll(this.producerConfig);
-        producerConfig.setProperty(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, ByteArraySerializer.class.getName());
-        producerConfig.setProperty(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, ByteArraySerializer.class.getName());
-        produceRecord(producerConfig, topicName, null, timestamp, headers, key, value);
+        Properties cfg = new Properties();
+        cfg.putAll(this.producerConfig);
+        cfg.setProperty(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, ByteArraySerializer.class.getName());
+        cfg.setProperty(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, ByteArraySerializer.class.getName());
+        produceRecord(cfg, topicName, null, timestamp, headers, key, value);
     }
 
     static <K, V> void produceRecord(Properties config, String topicName, Integer partition, Instant timestamp, Map<String, Object> headers, K key, V value) {

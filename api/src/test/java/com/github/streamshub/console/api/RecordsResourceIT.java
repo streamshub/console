@@ -1,7 +1,6 @@
 package com.github.streamshub.console.api;
 
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.net.URI;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
@@ -31,6 +30,7 @@ import org.awaitility.core.EvaluatedCondition;
 import org.awaitility.core.TimeoutEvent;
 import org.eclipse.microprofile.config.Config;
 import org.jboss.logging.Logger;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -68,7 +68,6 @@ import static org.hamcrest.Matchers.hasEntry;
 import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @QuarkusTest
 @TestHTTPEndpoint(RecordsResource.class)
@@ -97,7 +96,7 @@ class RecordsResourceIT {
     String clusterId2;
 
     @BeforeEach
-    void setup() throws IOException {
+    void setup() {
         URI bootstrapServers = URI.create(deployments.getExternalBootstrapServers());
         URI randomBootstrapServers = URI.create(consoleConfig.getKafka()
                 .getCluster("default/test-kafka2")
@@ -144,7 +143,7 @@ class RecordsResourceIT {
     @Test
     void testConsumeRecordFromInvalidPartition() {
         final String topicName = UUID.randomUUID().toString();
-        var topicIds = topicUtils.createTopics(clusterId1, List.of(topicName), 2);
+        var topicIds = topicUtils.createTopics(List.of(topicName), 2);
 
         whenRequesting(req -> req
                 .queryParam("filter[partition]", -1)
@@ -160,7 +159,7 @@ class RecordsResourceIT {
     @Test
     void testConsumeRecordFromNonexistentPartition() {
         final String topicName = UUID.randomUUID().toString();
-        var topicIds = topicUtils.createTopics(clusterId1, List.of(topicName), 2);
+        var topicIds = topicUtils.createTopics(List.of(topicName), 2);
 
         whenRequesting(req -> req
                 .queryParam("filter[partition]", 2)
@@ -174,7 +173,7 @@ class RecordsResourceIT {
     @ValueSource(ints = { -1, 0, 1001 })
     void testConsumeRecordWithInvalidPageSize(int pageSize) {
         final String topicName = UUID.randomUUID().toString();
-        var topicIds = topicUtils.createTopics(clusterId1, List.of(topicName), 2);
+        var topicIds = topicUtils.createTopics(List.of(topicName), 2);
 
         whenRequesting(req -> req
                 .queryParam("page[size]", pageSize)
@@ -195,7 +194,7 @@ class RecordsResourceIT {
     })
     void testConsumeRecordsAsOfTimestamp(Instant ts1, Instant ts2, Instant tsSearch, int expectedResults) {
         final String topicName = UUID.randomUUID().toString();
-        var topicIds = topicUtils.createTopics(clusterId1, List.of(topicName), 2, Map.of("retention.ms", "-1"));
+        var topicIds = topicUtils.createTopics(List.of(topicName), 2, Map.of("retention.ms", "-1"));
         recordUtils.produceRecord(topicName, ts1, null, "the-key1", "the-value1");
         recordUtils.produceRecord(topicName, ts2, null, "the-key2", "the-value2");
 
@@ -205,6 +204,7 @@ class RecordsResourceIT {
                 public void conditionEvaluated(EvaluatedCondition<Boolean> condition) {
                     // No-op
                 }
+                @Override
                 public void onTimeout(TimeoutEvent timeoutEvent) {
                     Logger.getLogger(getClass()).warnf("Timed out waiting for number of records to be 2: actual %d", topicUtils.getTopicSize(topicName));
                 }
@@ -227,7 +227,7 @@ class RecordsResourceIT {
     })
     void testConsumeRecordsAsOfInvalidTimestamp(Instant ts1, Instant ts2, String tsSearch) {
         final String topicName = UUID.randomUUID().toString();
-        var topicIds = topicUtils.createTopics(clusterId1, List.of(topicName), 2, Map.of("retention.ms", "-1"));
+        var topicIds = topicUtils.createTopics(List.of(topicName), 2, Map.of("retention.ms", "-1"));
         recordUtils.produceRecord(topicName, ts1, null, "the-key1", "the-value1");
         recordUtils.produceRecord(topicName, ts2, null, "the-key2", "the-value2");
 
@@ -237,6 +237,7 @@ class RecordsResourceIT {
                 public void conditionEvaluated(EvaluatedCondition<Boolean> condition) {
                     // No-op
                 }
+                @Override
                 public void onTimeout(TimeoutEvent timeoutEvent) {
                     Logger.getLogger(getClass()).warnf("Timed out waiting for number of records to be 2: actual %d", topicUtils.getTopicSize(topicName));
                 }
@@ -264,7 +265,7 @@ class RecordsResourceIT {
     })
     void testConsumeRecordsByStartingOffset(int startingOffset, int expectedResults) {
         final String topicName = UUID.randomUUID().toString();
-        var topicIds = topicUtils.createTopics(clusterId1, List.of(topicName), 1); // single partition
+        var topicIds = topicUtils.createTopics(List.of(topicName), 1); // single partition
         for (int i = 0; i < 3; i++) {
             recordUtils.produceRecord(topicName, null, null, "the-key-" + i, "the-value-" + i);
         }
@@ -289,7 +290,7 @@ class RecordsResourceIT {
     })
     void testConsumeRecordsByInvalidStartingOffset(String startingOffset) {
         final String topicName = UUID.randomUUID().toString();
-        var topicIds = topicUtils.createTopics(clusterId1, List.of(topicName), 1); // single partition
+        var topicIds = topicUtils.createTopics(List.of(topicName), 1); // single partition
         for (int i = 0; i < 3; i++) {
             recordUtils.produceRecord(topicName, null, null, "the-key-" + i, "the-value-" + i);
         }
@@ -320,7 +321,7 @@ class RecordsResourceIT {
     void testConsumeLatestRecords(int limit) {
         final String topicName = UUID.randomUUID().toString();
         final int totalRecords = 100;
-        var topicIds = topicUtils.createTopics(clusterId1, List.of(topicName), 10);
+        var topicIds = topicUtils.createTopics(List.of(topicName), 10);
         List<String> messageValues = new ArrayList<>();
 
         for (int i = 0; i < totalRecords; i++) {
@@ -348,7 +349,7 @@ class RecordsResourceIT {
     @Test
     void testConsumeRecordsIncludeOnlyHeaders() {
         final String topicName = UUID.randomUUID().toString();
-        var topicIds = topicUtils.createTopics(clusterId1, List.of(topicName), 2);
+        var topicIds = topicUtils.createTopics(List.of(topicName), 2);
         for (int i = 0; i < 3; i++) {
             recordUtils.produceRecord(topicName, null, Map.of("h1", "h1-value-" + i), "the-key-" + i, "the-value-" + i);
         }
@@ -373,7 +374,7 @@ class RecordsResourceIT {
     @Test
     void testConsumeRecordWithEmptyValue() {
         final String topicName = UUID.randomUUID().toString();
-        var topicIds = topicUtils.createTopics(clusterId1, List.of(topicName), 2);
+        var topicIds = topicUtils.createTopics(List.of(topicName), 2);
 
         recordUtils.produceRecord(topicName, null, null, null, "");
 
@@ -390,7 +391,7 @@ class RecordsResourceIT {
     @Test
     void testConsumeRecordWithBinaryValue() throws NoSuchAlgorithmException {
         final String topicName = UUID.randomUUID().toString();
-        var topicIds = topicUtils.createTopics(clusterId1, List.of(topicName), 2);
+        var topicIds = topicUtils.createTopics(List.of(topicName), 2);
 
         final byte[] data = new byte[512];
         SecureRandom.getInstanceStrong().nextBytes(data);
@@ -417,7 +418,7 @@ class RecordsResourceIT {
     })
     void testConsumeRecordWithValueLengthLimit(Integer maxValueLength, int responseValueLength) {
         final String topicName = UUID.randomUUID().toString();
-        var topicIds = topicUtils.createTopics(clusterId1, List.of(topicName), 1);
+        var topicIds = topicUtils.createTopics(List.of(topicName), 1);
         String h1Value = "h".repeat(100);
         String key = "k".repeat(100);
         String value = "v".repeat(100);
@@ -443,7 +444,7 @@ class RecordsResourceIT {
     @Test
     void testConsumeRecordWithOffsetBeforeBeginning() {
         final String topicName = UUID.randomUUID().toString();
-        var topicIds = topicUtils.createTopics(clusterId1, List.of(topicName), 1);
+        var topicIds = topicUtils.createTopics(List.of(topicName), 1);
 
         Stream.of("first", "second", "third", "fourth")
             .forEach(msg -> recordUtils.produceRecord(topicName, null, null, null, msg));
@@ -469,7 +470,7 @@ class RecordsResourceIT {
     @Test
     void testConsumeRecordFromTimestampAcrossPartitions() {
         final String topicName = UUID.randomUUID().toString();
-        var topicIds = topicUtils.createTopics(clusterId1, List.of(topicName), 3);
+        var topicIds = topicUtils.createTopics(List.of(topicName), 3);
 
         Instant ts1 = Instant.now();
         recordUtils.produceRecord(topicName, 0, ts1, null, null, "message A");
@@ -510,7 +511,7 @@ class RecordsResourceIT {
     @Test
     void testProduceRecordSimple() {
         final String topicName = UUID.randomUUID().toString();
-        var topicIds = topicUtils.createTopics(clusterId1, List.of(topicName), 1);
+        var topicIds = topicUtils.createTopics(List.of(topicName), 1);
 
         whenRequesting(req -> req
                 .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
@@ -532,7 +533,7 @@ class RecordsResourceIT {
     @Test
     void testProduceRecordSimpleWithPartition() {
         final String topicName = UUID.randomUUID().toString();
-        var topicIds = topicUtils.createTopics(clusterId1, List.of(topicName), 2);
+        var topicIds = topicUtils.createTopics(List.of(topicName), 2);
 
         whenRequesting(req -> req
                 .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
@@ -560,7 +561,7 @@ class RecordsResourceIT {
     })
     void testProduceRecordWithHeaders(String headerName, String headerValue) {
         final String topicName = UUID.randomUUID().toString();
-        var topicIds = topicUtils.createTopics(clusterId1, List.of(topicName), 1);
+        var topicIds = topicUtils.createTopics(List.of(topicName), 1);
 
         whenRequesting(req -> req
                 .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
@@ -588,7 +589,7 @@ class RecordsResourceIT {
     @Test
     void testProduceRecordWithInvalidPartition() {
         final String topicName = UUID.randomUUID().toString();
-        var topicIds = topicUtils.createTopics(clusterId1, List.of(topicName), 1);
+        var topicIds = topicUtils.createTopics(List.of(topicName), 1);
 
         whenRequesting(req -> req
                 .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
@@ -653,7 +654,7 @@ class RecordsResourceIT {
 
 
         final String topicName = UUID.randomUUID().toString();
-        var topicIds = topicUtils.createTopics(clusterId1, List.of(topicName), 1);
+        var topicIds = topicUtils.createTopics(List.of(topicName), 1);
         JsonObject requestBody = Json.createObjectBuilder()
                 .add("data", Json.createObjectBuilder()
                         .add("type", "records")
@@ -750,7 +751,7 @@ class RecordsResourceIT {
 
 
         final String topicName = UUID.randomUUID().toString();
-        var topicIds = topicUtils.createTopics(clusterId1, List.of(topicName), 1);
+        var topicIds = topicUtils.createTopics(List.of(topicName), 1);
         JsonObject requestBody = Json.createObjectBuilder()
                 .add("data", Json.createObjectBuilder()
                         .add("type", "records")
@@ -805,9 +806,7 @@ class RecordsResourceIT {
                     {"value1":"value-of-value1"}"""))
             .extract();
 
-        assertSchemaContent(keySchema, valueSchema, recordsResponse, (exp, act) -> {
-            assertEquals(exp, act);
-        });
+        assertSchemaContent(keySchema, valueSchema, recordsResponse, Assertions::assertEquals);
     }
 
     private void assertSchemaContent(

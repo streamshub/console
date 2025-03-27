@@ -1,8 +1,6 @@
 package com.github.streamshub.console.api;
 
-import java.io.IOException;
 import java.io.StringReader;
-import java.net.MalformedURLException;
 import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
@@ -177,7 +175,7 @@ class TopicsResourceIT {
     }
 
     @BeforeEach
-    void setup() throws IOException {
+    void setup() {
         bootstrapServers1 = URI.create(deployments.getExternalBootstrapServers());
         URI randomBootstrapServers = URI.create(consoleConfig.getKafka()
                 .getCluster("default/test-kafka2")
@@ -215,7 +213,7 @@ class TopicsResourceIT {
                 .mapToObj(i -> UUID.randomUUID().toString())
                 .toList();
 
-        topicUtils.createTopics(clusterId1, topicNames, 1);
+        topicUtils.createTopics(topicNames, 1);
 
         whenRequesting(req -> req.get("", clusterId1))
             .assertThat()
@@ -237,7 +235,7 @@ class TopicsResourceIT {
     @Test
     void testListTopicsWithNameAndConfigsIncluded() {
         String topicName = UUID.randomUUID().toString();
-        topicUtils.createTopics(clusterId1, List.of(topicName), 1);
+        topicUtils.createTopics(List.of(topicName), 1);
 
         whenRequesting(req -> req
                 .queryParam("fields[topics]", "configs,name")
@@ -259,7 +257,7 @@ class TopicsResourceIT {
     @Test
     void testListTopicsWithNameAndAuthorizedOperationsIncluded() {
         String topicName = UUID.randomUUID().toString();
-        topicUtils.createTopics(clusterId1, List.of(topicName), 1);
+        topicUtils.createTopics(List.of(topicName), 1);
 
         whenRequesting(req -> req
                 .queryParam("fields[topics]", "authorizedOperations,name")
@@ -275,7 +273,7 @@ class TopicsResourceIT {
     @Test
     void testListTopicsWithNameAndPartitionsIncludedAndLatestOffset() {
         String topicName = UUID.randomUUID().toString();
-        topicUtils.createTopics(clusterId1, List.of(topicName), 2);
+        topicUtils.createTopics(List.of(topicName), 2);
         topicUtils.produceRecord(topicName, 0, null, Collections.emptyMap(), "k1", "v1");
         topicUtils.produceRecord(topicName, 0, null, Collections.emptyMap(), "k2", "v2");
 
@@ -295,7 +293,7 @@ class TopicsResourceIT {
     @Test
     void testListTopicsWithNameAndPartitionsIncludedAndEarliestOffset() {
         String topicName = UUID.randomUUID().toString();
-        topicUtils.createTopics(clusterId1, List.of(topicName), 2);
+        topicUtils.createTopics(List.of(topicName), 2);
         topicUtils.produceRecord(topicName, 0, null, Collections.emptyMap(), "k1", "v1");
         topicUtils.produceRecord(topicName, 0, null, Collections.emptyMap(), "k2", "v2");
 
@@ -316,7 +314,7 @@ class TopicsResourceIT {
     @Test
     void testListTopicsWithPartitionsIncludedAndOffsetWithTimestamp() {
         String topicName = UUID.randomUUID().toString();
-        topicUtils.createTopics(clusterId1, List.of(topicName), 2);
+        topicUtils.createTopics(List.of(topicName), 2);
 
         Instant first = Instant.now().truncatedTo(ChronoUnit.MILLIS);
         topicUtils.produceRecord(topicName, 0, first, Collections.emptyMap(), "k1", "v1");
@@ -340,7 +338,7 @@ class TopicsResourceIT {
     @Test
     void testListTopicsWithNameAndPartitionsIncludedAndOffsetWithMaxTimestamp() {
         String topicName = UUID.randomUUID().toString();
-        topicUtils.createTopics(clusterId1, List.of(topicName), 2);
+        topicUtils.createTopics(List.of(topicName), 2);
 
         Instant first = Instant.now().truncatedTo(ChronoUnit.MILLIS);
         topicUtils.produceRecord(topicName, 0, first, Collections.emptyMap(), "k1", "v1");
@@ -373,7 +371,7 @@ class TopicsResourceIT {
                 .mapToObj(i -> "t" + i + "-" + randomSuffix)
                 .toList();
 
-        topicUtils.createTopics(clusterId1, topicNames, 1);
+        topicUtils.createTopics(topicNames, 1);
 
         String[] expectedNames = Stream.of(expectedNameList.split(","))
                 .map(name -> name + "-" + randomSuffix)
@@ -398,7 +396,7 @@ class TopicsResourceIT {
                 .mapToObj(i -> "t" + i + "-" + randomSuffix)
                 .toList();
 
-        topicUtils.createTopics(clusterId1, topicNames, 1);
+        topicUtils.createTopics(topicNames, 1);
 
         AdminClientSpy.install(adminClient -> {
             doAnswer(inv -> {
@@ -514,7 +512,7 @@ class TopicsResourceIT {
             .forEach(i -> {
                 String name = "t" + i + "-" + randomSuffix;
                 Map<String, String> configs = Map.of(sortParam, expectedValues[i]);
-                topicUtils.createTopics(clusterId1, List.of(name), 1, configs);
+                topicUtils.createTopics(List.of(name), 1, configs);
             });
 
         whenRequesting(req -> req
@@ -536,7 +534,7 @@ class TopicsResourceIT {
         IntStream.range(0, 10).forEach(i -> {
             var names = List.of("t" + i + "-" + randomSuffix);
             var configs = Map.of("retention.ms", Integer.toString(week + i));
-            topicIds.putAll(topicUtils.createTopics(clusterId1, names, 1, configs));
+            topicIds.putAll(topicUtils.createTopics(names, 1, configs));
         });
 
         var fullResponse = whenRequesting(req -> req
@@ -603,7 +601,7 @@ class TopicsResourceIT {
                 .mapToObj(i -> UUID.randomUUID().toString())
                 .toList();
 
-        var topicIds = topicUtils.createTopics(clusterId1, topicNames, 1);
+        var topicIds = topicUtils.createTopics(topicNames, 1);
         String[] sortedIds = topicIds.values().stream().sorted().toArray(String[]::new);
 
         whenRequesting(req -> req
@@ -616,13 +614,13 @@ class TopicsResourceIT {
     }
 
     @Test
-    void testListTopicsPaginationLinksWithDefaultPageSize() throws MalformedURLException {
+    void testListTopicsPaginationLinksWithDefaultPageSize() {
         List<String> topicNames = IntStream.range(0, 102)
                 .mapToObj("%03d-"::formatted)
                 .map(prefix -> prefix + UUID.randomUUID().toString())
                 .toList();
 
-        topicUtils.createTopics(clusterId1, topicNames, 1);
+        topicUtils.createTopics(topicNames, 1);
 
         // Page 1
         String response1 = whenRequesting(req -> req
@@ -740,13 +738,13 @@ class TopicsResourceIT {
     }
 
     @Test
-    void testListTopicsPaginationLinksNullWithSinglePage() throws MalformedURLException {
+    void testListTopicsPaginationLinksNullWithSinglePage() {
         List<String> topicNames = IntStream.range(0, 102)
                 .mapToObj("%03d-"::formatted)
                 .map(prefix -> prefix + UUID.randomUUID().toString())
                 .toList();
 
-        topicUtils.createTopics(clusterId1, topicNames, 1);
+        topicUtils.createTopics(topicNames, 1);
 
         whenRequesting(req -> req
                 .queryParam("fields[topics]", "name")
@@ -769,7 +767,7 @@ class TopicsResourceIT {
     }
 
     @Test
-    void testListTopicsWithConsumerGroupsLinkage() throws Exception {
+    void testListTopicsWithConsumerGroupsLinkage() {
         String topic1 = "t1-" + UUID.randomUUID().toString();
         String topic2 = "t2-" + UUID.randomUUID().toString();
 
@@ -811,7 +809,7 @@ class TopicsResourceIT {
                 .mapToObj(i -> (i % 2 == 0 ? "_x." : "wx.") + UUID.randomUUID().toString())
                 .toList();
 
-        topicUtils.createTopics(clusterId1, topicNames, 1);
+        topicUtils.createTopics(topicNames, 1);
 
         Map<String, String> params = new HashMap<>();
         params.put("filter[name]", "like,?x*"); // any single char, following by `x`, followed by anything
@@ -835,7 +833,7 @@ class TopicsResourceIT {
                 .mapToObj(i -> UUID.randomUUID().toString())
                 .toList();
 
-        var topicIds = topicUtils.createTopics(clusterId1, topicNames, 1).values().stream().sorted().toList();
+        var topicIds = topicUtils.createTopics(topicNames, 1).values().stream().sorted().toList();
         var selectedIds = topicIds.subList(0, 4);
 
         whenRequesting(req -> req
@@ -852,7 +850,7 @@ class TopicsResourceIT {
         var topicIds = IntStream.rangeClosed(1, 9)
                 .mapToObj(i -> {
                     String topicName = i + "-" + UUID.randomUUID().toString();
-                    return topicUtils.createTopics(clusterId1, List.of(topicName), i)
+                    return topicUtils.createTopics(List.of(topicName), i)
                         .get(topicName);
                 })
                 .toList();
@@ -877,7 +875,7 @@ class TopicsResourceIT {
     })
     void testListTopicsWithAuditLogging(String fields, @AggregateWith(VarargsAggregator.class) Privilege... privilegesAudited) {
         String topicName = UUID.randomUUID().toString();
-        topicUtils.createTopics(clusterId1, List.of(topicName), 1);
+        topicUtils.createTopics(List.of(topicName), 1);
 
         consoleConfig.getKafka().getClusterById(clusterId1).ifPresent(clusterConfig -> {
             clusterConfig.setSecurity(new KafkaSecurityConfigBuilder()
@@ -915,7 +913,7 @@ class TopicsResourceIT {
         String topic2 = "t2-" + UUID.randomUUID().toString();
         String topic3 = "t3-" + UUID.randomUUID().toString();
         String topic4 = "t4-" + UUID.randomUUID().toString();
-        Map<String, String> topics = topicUtils.createTopics(clusterId1, List.of(topic1, topic2, topic3, topic4), 1);
+        Map<String, String> topics = topicUtils.createTopics(List.of(topic1, topic2, topic3, topic4), 1);
 
         utils.apply(client, new KafkaTopicBuilder()
                 .withNewMetadata()
@@ -983,7 +981,7 @@ class TopicsResourceIT {
     void testListTopicsWithManagedTopicMissingCluster() {
         String topic1 = "t1-" + UUID.randomUUID().toString();
         String topic2 = "t2-" + UUID.randomUUID().toString();
-        Map<String, String> topics = topicUtils.createTopics(clusterId1, List.of(topic1, topic2), 1);
+        Map<String, String> topics = topicUtils.createTopics(List.of(topic1, topic2), 1);
 
         KafkaTopic topicCR = utils.apply(client, new KafkaTopicBuilder()
                 .withNewMetadata()
@@ -1042,7 +1040,7 @@ class TopicsResourceIT {
     void testListTopicsWithManagedTopicBecomingUnmanaged() {
         String topic1 = "t1-" + UUID.randomUUID().toString();
         String topic2 = "t2-" + UUID.randomUUID().toString();
-        Map<String, String> topics = topicUtils.createTopics(clusterId1, List.of(topic1, topic2), 1);
+        Map<String, String> topics = topicUtils.createTopics(List.of(topic1, topic2), 1);
 
         KafkaTopic topicCR = utils.apply(client, new KafkaTopicBuilder()
                 .withNewMetadata()
@@ -1089,7 +1087,7 @@ class TopicsResourceIT {
                     .map(KafkaTopic::getMetadata)
                     .map(ObjectMeta::getAnnotations)
                     .map(annotations -> annotations.getOrDefault("strimzi.io/managed", "true"))
-                    .map(managed -> "false".equals(managed))
+                    .map("false"::equals)
                     .isPresent());
 
         whenRequesting(req -> req.get("", clusterId1))
@@ -1104,7 +1102,7 @@ class TopicsResourceIT {
     @Test
     void testDescribeTopicWithNameAndConfigsIncluded() {
         String topicName = UUID.randomUUID().toString();
-        Map<String, String> topicIds = topicUtils.createTopics(clusterId1, List.of(topicName), 1);
+        Map<String, String> topicIds = topicUtils.createTopics(List.of(topicName), 1);
 
         whenRequesting(req -> req
                 .queryParam("fields[topics]", "name,configs")
@@ -1125,7 +1123,7 @@ class TopicsResourceIT {
     @Test
     void testDescribeTopicWithAuthorizedOperations() {
         String topicName = UUID.randomUUID().toString();
-        Map<String, String> topicIds = topicUtils.createTopics(clusterId1, List.of(topicName), 1);
+        Map<String, String> topicIds = topicUtils.createTopics(List.of(topicName), 1);
 
         whenRequesting(req -> req.get("{topicId}", clusterId1, topicIds.get(topicName)))
             .assertThat()
@@ -1139,7 +1137,7 @@ class TopicsResourceIT {
     @Test
     void testDescribeTopicWithLatestOffset() {
         String topicName = UUID.randomUUID().toString();
-        Map<String, String> topicIds = topicUtils.createTopics(clusterId1, List.of(topicName), 2);
+        Map<String, String> topicIds = topicUtils.createTopics(List.of(topicName), 2);
         topicUtils.produceRecord(topicName, 0, null, Collections.emptyMap(), "k1", "v1");
         topicUtils.produceRecord(topicName, 0, null, Collections.emptyMap(), "k2", "v2");
 
@@ -1156,7 +1154,7 @@ class TopicsResourceIT {
     @Test
     void testDescribeTopicWithEarliestOffset() {
         String topicName = UUID.randomUUID().toString();
-        Map<String, String> topicIds = topicUtils.createTopics(clusterId1, List.of(topicName), 2);
+        Map<String, String> topicIds = topicUtils.createTopics(List.of(topicName), 2);
         topicUtils.produceRecord(topicName, 0, null, Collections.emptyMap(), "k1", "v1");
         topicUtils.produceRecord(topicName, 0, null, Collections.emptyMap(), "k2", "v2");
 
@@ -1175,7 +1173,7 @@ class TopicsResourceIT {
     @Test
     void testDescribeTopicWithTimestampOffset() {
         String topicName = UUID.randomUUID().toString();
-        Map<String, String> topicIds = topicUtils.createTopics(clusterId1, List.of(topicName), 2);
+        Map<String, String> topicIds = topicUtils.createTopics(List.of(topicName), 2);
 
         Instant first = Instant.now().truncatedTo(ChronoUnit.MILLIS);
         topicUtils.produceRecord(topicName, 0, first, Collections.emptyMap(), "k1", "v1");
@@ -1197,7 +1195,7 @@ class TopicsResourceIT {
     @Test
     void testDescribeTopicWithMaxTimestampOffset() {
         String topicName = UUID.randomUUID().toString();
-        Map<String, String> topicIds = topicUtils.createTopics(clusterId1, List.of(topicName), 2);
+        Map<String, String> topicIds = topicUtils.createTopics(List.of(topicName), 2);
 
         Instant first = Instant.now().truncatedTo(ChronoUnit.MILLIS);
         topicUtils.produceRecord(topicName, 0, first, Collections.emptyMap(), "k1", "v1");
@@ -1219,7 +1217,7 @@ class TopicsResourceIT {
     @Test
     void testDescribeTopicWithBadOffsetTimestamp() {
         String topicName = UUID.randomUUID().toString();
-        Map<String, String> topicIds = topicUtils.createTopics(clusterId1, List.of(topicName), 2);
+        Map<String, String> topicIds = topicUtils.createTopics(List.of(topicName), 2);
 
         whenRequesting(req -> req
                 .queryParam("offsetSpec", "Invalid Timestamp")
@@ -1236,7 +1234,7 @@ class TopicsResourceIT {
     @Test
     void testDescribeTopicWithListOffetsFailure() {
         String topicName = UUID.randomUUID().toString();
-        Map<String, String> topicIds = topicUtils.createTopics(clusterId1, List.of(topicName), 2);
+        Map<String, String> topicIds = topicUtils.createTopics(List.of(topicName), 2);
 
         Answer<ListOffsetsResult> listOffsetsFailed = args -> {
             @SuppressWarnings("unchecked")
@@ -1269,7 +1267,7 @@ class TopicsResourceIT {
     @Test
     void testListTopicsWithDescribeTopicsFailure() {
         String topicName = UUID.randomUUID().toString();
-        topicUtils.createTopics(clusterId1, List.of(topicName), 2);
+        topicUtils.createTopics(List.of(topicName), 2);
 
         Answer<DescribeTopicsResult> describeTopicsFailed = args -> {
             TopicIdCollection topicCollection = args.getArgument(0);
@@ -1314,7 +1312,7 @@ class TopicsResourceIT {
     @Test
     void testListTopicsWithDescribeConfigsFailure() {
         String topicName = UUID.randomUUID().toString();
-        topicUtils.createTopics(clusterId1, List.of(topicName), 2);
+        topicUtils.createTopics(List.of(topicName), 2);
 
         Answer<DescribeConfigsResult> describeConfigsFailed = args -> {
             Collection<ConfigResource> resources = args.getArgument(0);
@@ -1365,7 +1363,7 @@ class TopicsResourceIT {
     @Test
     void testDescribeTopicWithOfflinePartition() {
         String topicName = UUID.randomUUID().toString();
-        Map<String, String> topicIds = topicUtils.createTopics(clusterId1, List.of(topicName), 2);
+        Map<String, String> topicIds = topicUtils.createTopics(List.of(topicName), 2);
 
         //int partition, Node leader, List<Node> replicas, List<Node> isr
         Node node0 = new Node(0, "node0", bootstrapServers1.getPort());
@@ -1856,7 +1854,7 @@ class TopicsResourceIT {
     @Test
     void testDeleteTopicSucceeds() {
         String topicName = UUID.randomUUID().toString();
-        Map<String, String> topicIds = topicUtils.createTopics(clusterId1, List.of(topicName), 2);
+        Map<String, String> topicIds = topicUtils.createTopics(List.of(topicName), 2);
 
         whenRequesting(req -> req.delete("{topicId}", clusterId1, topicIds.get(topicName)))
             .assertThat()
@@ -1878,7 +1876,7 @@ class TopicsResourceIT {
     @Test
     void testPatchTopicWithAllOptions() {
         String topicName = UUID.randomUUID().toString();
-        Map<String, String> topicIds = topicUtils.createTopics(clusterId1, List.of(topicName), 3);
+        Map<String, String> topicIds = topicUtils.createTopics(List.of(topicName), 3);
 
         whenRequesting(req -> req
                 .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
@@ -1915,7 +1913,7 @@ class TopicsResourceIT {
     @Test
     void testPatchTopicWithConfigOverrideDelete() {
         String topicName = UUID.randomUUID().toString();
-        Map<String, String> topicIds = topicUtils.createTopics(clusterId1, List.of(topicName), 1, Map.of("retention.ms", "300000"));
+        Map<String, String> topicIds = topicUtils.createTopics(List.of(topicName), 1, Map.of("retention.ms", "300000"));
 
         whenRequesting(req -> req
                 .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
@@ -1944,7 +1942,7 @@ class TopicsResourceIT {
     @Test
     void testPatchTopicWithValidateOnly() {
         String topicName = UUID.randomUUID().toString();
-        Map<String, String> topicIds = topicUtils.createTopics(clusterId1, List.of(topicName), 1, Map.of("retention.ms", "300000"));
+        Map<String, String> topicIds = topicUtils.createTopics(List.of(topicName), 1, Map.of("retention.ms", "300000"));
 
         whenRequesting(req -> req
                 .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
@@ -1983,7 +1981,7 @@ class TopicsResourceIT {
             throws JSONException {
 
         String topicName = UUID.randomUUID().toString();
-        String topicId = topicUtils.createTopics(clusterId1, List.of(topicName), 2).get(topicName);
+        String topicId = topicUtils.createTopics(List.of(topicName), 2).get(topicName);
         String preparedRequest = requestBody.contains("%s") ? requestBody.formatted(topicId) : requestBody;
 
         whenRequesting(req -> req
@@ -2011,9 +2009,9 @@ class TopicsResourceIT {
     }
 
     @Test
-    void testListTopicConsumerGroupsMatchesRelatedConsumerGroups() throws Exception {
+    void testListTopicConsumerGroupsMatchesRelatedConsumerGroups() {
         String topic1 = "t1-" + UUID.randomUUID().toString();
-        String topic1Id = topicUtils.createTopics(clusterId1, List.of(topic1), 2).get(topic1);
+        String topic1Id = topicUtils.createTopics(List.of(topic1), 2).get(topic1);
 
         String group1 = "g1-" + UUID.randomUUID().toString();
         String group2 = "g2-" + UUID.randomUUID().toString();
@@ -2042,13 +2040,13 @@ class TopicsResourceIT {
     }
 
     @Test
-    void testListTopicConsumerGroupsWithEmptyList() throws Exception {
+    void testListTopicConsumerGroupsWithEmptyList() {
         String topic1 = "t1-" + UUID.randomUUID().toString();
         String group1 = "g1-" + UUID.randomUUID().toString();
         String client1 = "c1-" + UUID.randomUUID().toString();
 
         String topic2 = "t2-" + UUID.randomUUID().toString();
-        String topic2Id = topicUtils.createTopics(clusterId1, List.of(topic2), 2).get(topic2);
+        String topic2Id = topicUtils.createTopics(List.of(topic2), 2).get(topic2);
 
         try (var consumer1 = groupUtils.consume(group1, topic1, client1, 2, false)) {
             whenRequesting(req -> req
@@ -2066,7 +2064,7 @@ class TopicsResourceIT {
     }
 
     @Test
-    void testListTopicConsumerGroupsWithNoSuchTopic() throws Exception {
+    void testListTopicConsumerGroupsWithNoSuchTopic() {
         String topic1 = "t1-" + UUID.randomUUID().toString();
         String group1 = "g1-" + UUID.randomUUID().toString();
         String client1 = "c1-" + UUID.randomUUID().toString();
