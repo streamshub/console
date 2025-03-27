@@ -152,11 +152,13 @@ export type NodesTableProps = {
   page: number;
   perPage: number;
   filterNodePool: string[] | undefined;
-  filterStatus: (BrokerStatus | ControllerStatus)[] | undefined;
+  filterBrokerStatus: BrokerStatus[] | undefined;
+  filterControllerStatus: ControllerStatus[] | undefined;
   filterRole: NodeRoles[] | undefined;
   onFilterNodePoolChange: (nodePool: string[] | undefined) => void;
   onFilterStatusChange: (
-    status: (BrokerStatus | ControllerStatus)[] | undefined,
+    brokerStatus: BrokerStatus[] | undefined,
+    controllerStatus: ControllerStatus[] | undefined,
   ) => void;
   onFilterRoleChange: (role: NodeRoles[] | undefined) => void;
   nodePoolList: NodePoolsType | undefined;
@@ -169,7 +171,8 @@ export function NodesTable({
   isColumnSortable,
   nodeList,
   filterNodePool,
-  filterStatus,
+  filterBrokerStatus,
+  filterControllerStatus,
   filterRole,
   onFilterNodePoolChange,
   onFilterRoleChange,
@@ -196,6 +199,11 @@ export function NodesTable({
         ]),
       )
     : {};
+
+  const brokerStatusKeys = Object.keys(BrokerStatusLabel) as BrokerStatus[];
+  const controllerStatusKeys = Object.keys(
+    ControllerStatusLabel,
+  ) as ControllerStatus[];
 
   return (
     <TableView
@@ -430,19 +438,66 @@ export function NodesTable({
         },
         Status: {
           type: "groupedCheckbox",
-          chips: filterStatus || [],
+          chips: [
+            ...(filterBrokerStatus || []),
+            ...(filterControllerStatus || []),
+          ],
           onToggle: (status: BrokerStatus | ControllerStatus) => {
-            const newStatus = filterStatus?.includes(status)
-              ? filterStatus.filter((s) => s !== status)
-              : [...filterStatus!, status];
-            onFilterStatusChange(newStatus);
+            const newBrokerStatus = filterBrokerStatus
+              ? [...filterBrokerStatus]
+              : [];
+            const newControllerStatus = filterControllerStatus
+              ? [...filterControllerStatus]
+              : [];
+
+            if (brokerStatusKeys.includes(status as BrokerStatus)) {
+              if (newBrokerStatus.includes(status as BrokerStatus)) {
+                newBrokerStatus.splice(
+                  newBrokerStatus.indexOf(status as BrokerStatus),
+                  1,
+                );
+              } else {
+                newBrokerStatus.push(status as BrokerStatus);
+              }
+            } else if (
+              controllerStatusKeys.includes(status as ControllerStatus)
+            ) {
+              if (newControllerStatus.includes(status as ControllerStatus)) {
+                newControllerStatus.splice(
+                  newControllerStatus.indexOf(status as ControllerStatus),
+                  1,
+                );
+              } else {
+                newControllerStatus.push(status as ControllerStatus);
+              }
+            }
+            onFilterStatusChange(newBrokerStatus, newControllerStatus);
           },
           onRemoveChip: (status: BrokerStatus | ControllerStatus) => {
-            const newStatus = (filterStatus || []).filter((s) => s !== status);
-            onFilterStatusChange(newStatus);
+            const newBrokerStatus = filterBrokerStatus
+              ? [...filterBrokerStatus]
+              : [];
+            const newControllerStatus = filterControllerStatus
+              ? [...filterControllerStatus]
+              : [];
+
+            if (brokerStatusKeys.includes(status as BrokerStatus)) {
+              newBrokerStatus.splice(
+                newBrokerStatus.indexOf(status as BrokerStatus),
+                1,
+              );
+            } else if (
+              controllerStatusKeys.includes(status as ControllerStatus)
+            ) {
+              newControllerStatus.splice(
+                newControllerStatus.indexOf(status as ControllerStatus),
+                1,
+              );
+            }
+            onFilterStatusChange(newBrokerStatus, newControllerStatus);
           },
           onRemoveGroup: () => {
-            onFilterStatusChange(undefined);
+            onFilterStatusChange(undefined, undefined);
           },
           options: [
             {

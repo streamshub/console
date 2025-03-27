@@ -30,7 +30,8 @@ export default function NodesPage({
     page: string | undefined;
     nodePool: string | undefined;
     roles: string | undefined;
-    status: string | undefined;
+    brokerStatus: string | undefined;
+    controllerStatus: string | undefined;
   };
 }) {
   const pageSize = stringToInt(searchParams.perPage) || 20;
@@ -43,9 +44,12 @@ export default function NodesPage({
   const roles = (searchParams["roles"] || "").split(",").filter((v) => !!v) as
     | NodeRoles[]
     | undefined;
-  const status = (searchParams["status"] || "")
+  const brokerStatus = (searchParams["brokerStatus"] || "")
     .split(",")
-    .filter((v) => !!v) as (BrokerStatus | ControllerStatus)[] | undefined;
+    .filter((v) => !!v) as BrokerStatus[] | undefined;
+  const controllerStatus = (searchParams["controllerStatus"] || "")
+    .split(",")
+    .filter((v) => !!v) as ControllerStatus[] | undefined;
 
   return (
     <Suspense
@@ -57,12 +61,13 @@ export default function NodesPage({
           perPage={pageSize}
           nodePool={nodePool}
           sort={sort}
-          status={status}
+          brokerStatus={brokerStatus}
           sortDir={sortDir}
           roles={roles}
           nextPageCursor={undefined}
           prevPageCursor={undefined}
           nodePoolList={undefined}
+          controllerStatus={controllerStatus}
         />
       }
     >
@@ -74,7 +79,8 @@ export default function NodesPage({
         nodePool={nodePool}
         roles={roles}
         kafkaId={params.kafkaId}
-        status={status}
+        brokerStatus={brokerStatus}
+        controllerStatus={controllerStatus}
       />
     </Suspense>
   );
@@ -87,7 +93,8 @@ async function AsyncNodesTable({
   pageCursor,
   pageSize,
   nodePool,
-  status,
+  brokerStatus,
+  controllerStatus,
   roles,
 }: {
   sort: NodeListColumn;
@@ -96,7 +103,8 @@ async function AsyncNodesTable({
   pageCursor: string | undefined;
   nodePool: string[] | undefined;
   roles: NodeRoles[] | undefined;
-  status: (BrokerStatus | ControllerStatus)[] | undefined;
+  brokerStatus: BrokerStatus[] | undefined;
+  controllerStatus: ControllerStatus[] | undefined;
 } & KafkaParams) {
   const nodeCounts = {
     totalNodes: 0,
@@ -111,7 +119,8 @@ async function AsyncNodesTable({
     pageSize,
     pageCursor,
     roles,
-    status,
+    brokerStatus,
+    controllerStatus,
   });
 
   if (response.errors) {
@@ -175,7 +184,8 @@ async function AsyncNodesTable({
             sort={sort}
             sortDir={sortDir}
             roles={roles}
-            status={status}
+            brokerStatus={brokerStatus}
+            controllerStatus={controllerStatus}
             nextPageCursor={nextPageCursor}
             prevPageCursor={prevPageCursor}
           />

@@ -23,7 +23,8 @@ export async function getNodes(
   kafkaId: string,
   params?: {
     fields?: string;
-    status?: (BrokerStatus | ControllerStatus)[];
+    brokerStatus?: BrokerStatus[];
+    controllerStatus?: ControllerStatus[];
     nodePool?: string[];
     roles?: NodeRoles[];
     id?: string;
@@ -36,7 +37,8 @@ export async function getNodes(
   const sp = new URLSearchParams(
     filterUndefinedFromObj({
       "fields[nodes]": params?.fields,
-      "filter[status]": filterIn(params?.status),
+      "filter[broker.status]": filterIn(params?.brokerStatus),
+      "filter[controller.status]": filterIn(params?.controllerStatus),
       "filter[nodePool]": filterIn(params?.nodePool),
       "filter[roles]": filterIn(params?.roles),
       "page[size]": params?.pageSize,

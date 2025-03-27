@@ -21,7 +21,8 @@ export type ConnectedNodesTableProps = {
   sort: NodeListColumn;
   sortDir: "asc" | "desc";
   roles: NodeRoles[] | undefined;
-  status: (BrokerStatus | ControllerStatus)[] | undefined;
+  brokerStatus: BrokerStatus[] | undefined;
+  controllerStatus: ControllerStatus[] | undefined;
   nextPageCursor: string | null | undefined;
   prevPageCursor: string | null | undefined;
   nodePoolList: NodePoolsType | undefined;
@@ -31,7 +32,8 @@ type State = {
   nodes: KafkaNode[] | undefined;
   perPage: number;
   nodePool: string[] | undefined;
-  status: (BrokerStatus | ControllerStatus)[] | undefined;
+  brokerStatus: BrokerStatus[] | undefined;
+  controllerStatus: ControllerStatus[] | undefined;
   sort: NodeListColumn;
   sortDir: "asc" | "desc";
   roles: NodeRoles[] | undefined;
@@ -50,13 +52,14 @@ export function ConnectedNodesTable({
   prevPageCursor,
   perPage,
   page,
-  status,
+  brokerStatus,
+  controllerStatus,
 }: ConnectedNodesTableProps) {
   const _updateUrl = useFilterParams({ perPage, sort, sortDir });
   const [_, startTransition] = useTransition();
   const [state, addOptimistic] = useOptimistic<
     State,
-    Partial<Omit<State, "topics">>
+    Partial<Omit<State, "nodes">>
   >(
     {
       nodes,
@@ -65,9 +68,11 @@ export function ConnectedNodesTable({
       sortDir,
       nodePool,
       roles,
-      status,
+      brokerStatus,
+      controllerStatus,
       nodePoolList,
     },
+
     (state, options) => ({ ...state, ...options, nodes: undefined }),
   );
 
@@ -85,7 +90,8 @@ export function ConnectedNodesTable({
       addOptimistic({
         nodePool: undefined,
         roles: undefined,
-        status: undefined,
+        controllerStatus: undefined,
+        brokerStatus: undefined,
       });
     });
   }
@@ -128,11 +134,12 @@ export function ConnectedNodesTable({
           addOptimistic({ roles });
         });
       }}
-      filterStatus={state.status}
-      onFilterStatusChange={(status) => {
+      filterBrokerStatus={state.brokerStatus}
+      filterControllerStatus={state.controllerStatus}
+      onFilterStatusChange={(brokerStatus, controllerStatus) => {
         startTransition(() => {
-          updateUrl({ status });
-          addOptimistic({ status });
+          updateUrl({ brokerStatus, controllerStatus });
+          addOptimistic({ brokerStatus, controllerStatus });
         });
       }}
       nodesCount={nodesCount}
