@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -xEeuo pipefail
+set -Eeuo pipefail
 
 SCRIPT_PATH="$(cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P)"
 
@@ -15,6 +15,7 @@ echo "[INFO] Generate catalog in ${CATALOG_PATH}"
 rm -rvf ${CATALOG_PATH}
 mkdir -p ${CATALOG_PATH}
 cp -v ${OPERATOR_PATH}/src/main/olm/*.yaml ${CATALOG_PATH}/
+${YQ} -i '.icon = { "base64data": "'$(base64 -w0 ${OPERATOR_PATH}/src/main/olm/icon.png)'", "mediatype": "image/png" }' ${CATALOG_PATH}/package.yaml
 
 for CSV_NAME in $(${YQ} '.entries[].name' ${CATALOG_PATH}/channel.alpha.yaml | sort -V) ; do
     if [ -f ${OPERATOR_PATH}/src/main/olm/bundles/${CSV_NAME}.yaml ] ; then
@@ -31,6 +32,7 @@ for CSV_NAME in $(${YQ} '.entries[].name' ${CATALOG_PATH}/channel.alpha.yaml | s
         RENDER_FLAGS="--use-http ${RENDER_FLAGS}"
     fi
 
+    echo "[INFO] Rendering bundle ${CATALOG_PATH}/${CSV_NAME}.yaml"
     opm render ${BUNDLE_IMAGE} ${RENDER_FLAGS} > ${CATALOG_PATH}/${CSV_NAME}.yaml
 done
 
