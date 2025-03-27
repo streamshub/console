@@ -51,25 +51,25 @@ export const ConsumerGroups: Story = {
   args: {
     perPage: 20,
     consumerGroups: (() => {
-      const groups = Array.from({ length: 30 }, (_, i) =>
+      const groups = Array.from({ length: 21 }, (_, i) =>
         generateConsumerGroup(
           `console-datagen-group-${i}`,
           ["STABLE", "EMPTY"][i % 2],
-          Math.floor(Math.random() * 1000),
-          Math.floor(Math.random() * 1000),
-          i % 3 === 0 ? Math.floor(Math.random() * 1000) : undefined, // Add a third lag sometimes
+          i * 1000,
+          i * 1000,
+          i % 3 === 0 ? i * 1000 : undefined,
         ),
       );
       return groups;
     })(),
     total: (() => {
-      const groups = Array.from({ length: 30 }, (_, i) =>
+      const groups = Array.from({ length: 21 }, (_, i) =>
         generateConsumerGroup(
           `console-datagen-group-${i}`,
           ["STABLE", "EMPTY"][i % 2],
-          Math.floor(Math.random() * 1000),
-          Math.floor(Math.random() * 1000),
-          i % 3 === 0 ? Math.floor(Math.random() * 1000) : undefined, // Add a third lag sometimes
+          i * 1000,
+          i * 1000,
+          i % 3 === 0 ? i * 1000 : undefined,
         ),
       );
       return groups.length;
