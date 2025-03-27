@@ -49,7 +49,7 @@ export type KafkaNode = z.infer<typeof NodeSchema>;
 export const NodesListMetaSummary = z.object({
   nodePools: z.record(z.string(), z.array(z.string())),
   statuses: z.record(z.enum(["brokers", "controllers", "combined"]), z.record(z.string(), z.number())),
-  leaderId: z.number().optional(),
+  leaderId: z.string().optional(),
 });
 
 export type NodesListMetaSummary = z.infer<typeof NodesListMetaSummary>;
