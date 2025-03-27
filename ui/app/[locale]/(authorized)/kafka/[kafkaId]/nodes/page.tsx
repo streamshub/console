@@ -121,6 +121,7 @@ async function AsyncNodesTable({
     roles,
     brokerStatus,
     controllerStatus,
+    nodePool,
   });
 
   if (response.errors) {
