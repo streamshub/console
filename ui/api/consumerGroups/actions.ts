@@ -33,7 +33,7 @@ export async function getConsumerGroups(
   params: {
     fields?: string;
     id?: string;
-    state?: ConsumerGroupState[];
+    consumerGroupState?: ConsumerGroupState[];
     pageSize?: number;
     pageCursor?: string;
     sort?: string;
@@ -45,7 +45,7 @@ export async function getConsumerGroups(
       "fields[consumerGroups]":
         params.fields ?? "state,simpleConsumerGroup,members,offsets",
       "filter[id]": filterLike(params.id),
-      "filter[state]": filterIn(params.state),
+      "filter[state]": filterIn(params.consumerGroupState),
       "page[size]": params.pageSize,
       "page[after]": params.pageCursor?.startsWith("after:")
         ? params.pageCursor.slice(6)
