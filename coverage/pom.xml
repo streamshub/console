@@ -56,14 +56,11 @@
                                 <exclude>**/com/github/streamshub/console/api/v1alpha1/**/*Builder.class</exclude>
                                 <exclude>**/com/github/streamshub/console/api/v1alpha1/**/*Fluent.class</exclude>
                                 <exclude>**/com/github/streamshub/console/api/v1alpha1/**/*Nested.class</exclude>
-                                <!-- Systemtests -->
-                                <exclude>**/com/github/streamshub/systemtests/constants/*.class</exclude>
-                                <exclude>**/com/github/streamshub/systemtests/enums/*.class</exclude>
-                                <exclude>**/com/github/streamshub/systemtests/Environment.class</exclude>
-                                <exclude>**/com/github/streamshub/systemtests/logs/*.class</exclude>
-                                <exclude>**/com/github/streamshub/systemtests/unit/*.class</exclude>
-                                <exclude>**/com/github/streamshub/systemtests/exceptions/*.class</exclude>
                             </excludes>
+                            <includes>
+                                <include>**/com/github/streamshub/systemtests/utils/*.class</include>
+                                <include>**/com/github/streamshub/systemtests/TestExecutionWatcher.class</include>
+                            </includes>
                             <outputDirectory>${project.build.directory}/coverage</outputDirectory>
                         </configuration>
                     </execution>

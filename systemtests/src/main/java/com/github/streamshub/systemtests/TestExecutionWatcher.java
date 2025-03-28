@@ -10,7 +10,7 @@ import org.junit.jupiter.api.extension.TestExecutionExceptionHandler;
 import org.opentest4j.TestAbortedException;
 
 public class TestExecutionWatcher implements TestExecutionExceptionHandler, LifecycleMethodExecutionExceptionHandler {
-    private final TestLogCollector logCollector = TestLogCollector.getInstance();
+    private final static TestLogCollector LOG_COLLECTOR = TestLogCollector.getInstance();
     private static final Logger LOGGER = LogWrapper.getLogger(TestExecutionWatcher.class);
 
     @Override
@@ -20,7 +20,7 @@ public class TestExecutionWatcher implements TestExecutionExceptionHandler, Life
             final String testClass = extensionContext.getRequiredTestClass().getName();
             final String testMethod = extensionContext.getRequiredTestMethod().getName();
 
-            logCollector.collectLogs(testClass, testMethod);
+            LOG_COLLECTOR.collectLogs(testClass, testMethod);
         }
         throw throwable;
     }
@@ -31,7 +31,7 @@ public class TestExecutionWatcher implements TestExecutionExceptionHandler, Life
         if (!(throwable instanceof TestAbortedException || throwable instanceof ClusterUnreachableException)) {
             final String testClass = extensionContext.getRequiredTestClass().getName();
 
-            logCollector.collectLogs(testClass);
+            LOG_COLLECTOR.collectLogs(testClass);
         }
         throw throwable;
     }
@@ -43,7 +43,7 @@ public class TestExecutionWatcher implements TestExecutionExceptionHandler, Life
             final String testClass = extensionContext.getRequiredTestClass().getName();
             final String testMethod = extensionContext.getRequiredTestMethod().getName();
 
-            logCollector.collectLogs(testClass, testMethod);
+            LOG_COLLECTOR.collectLogs(testClass, testMethod);
         }
         throw throwable;
     }
@@ -55,7 +55,7 @@ public class TestExecutionWatcher implements TestExecutionExceptionHandler, Life
             final String testClass = extensionContext.getRequiredTestClass().getName();
             final String testMethod = extensionContext.getRequiredTestMethod().getName();
 
-            logCollector.collectLogs(testClass, testMethod);
+            LOG_COLLECTOR.collectLogs(testClass, testMethod);
         }
         throw throwable;
     }
@@ -66,7 +66,7 @@ public class TestExecutionWatcher implements TestExecutionExceptionHandler, Life
         if (!(throwable instanceof ClusterUnreachableException)) {
             final String testClass = extensionContext.getRequiredTestClass().getName();
 
-            logCollector.collectLogs(testClass);
+            LOG_COLLECTOR.collectLogs(testClass);
         }
         throw throwable;
     }

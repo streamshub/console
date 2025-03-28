@@ -23,14 +23,28 @@
         <playwright.version>1.47.0</playwright.version>
         <!-- Mocking environment -->
         <mockito.version>5.15.2</mockito.version>
-        <junit-pioneer.version>2.3.0</junit-pioneer.version>
+        <powermock.version>2.0.9</powermock.version>
         <!-- Used for test-frame -->
-        <test-frame.version>0.8.0</test-frame.version>
+        <test-frame.version>0.11.0-SNAPSHOT</test-frame.version>
         <!-- Allows skipping tests - unit, system or both types -->
         <skipTests>false</skipTests>
         <skipUTs>${skipTests}</skipUTs>
         <skipSTs>${skipTests}</skipSTs>
     </properties>
+
+    <repositories>
+      <repository>
+        <name>Central Portal Snapshots</name>
+        <id>central-portal-snapshots</id>
+        <url>https://central.sonatype.com/repository/maven-snapshots/</url>
+        <releases>
+          <enabled>false</enabled>
+        </releases>
+        <snapshots>
+          <enabled>true</enabled>
+        </snapshots>
+      </repository>
+    </repositories>
 
     <dependencies>
         <dependency>
@@ -90,6 +104,12 @@
             <artifactId>test-frame-log-collector</artifactId>
             <version>${test-frame.version}</version>
         </dependency>
+        <!-- JUnit 5 Jupiter API and Engine -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-params</artifactId>
+            <scope>test</scope>
+        </dependency>
         <!-- Mocking environment -->
         <dependency>
             <groupId>org.mockito</groupId>
@@ -97,10 +117,11 @@
             <version>${mockito.version}</version>
             <scope>test</scope>
         </dependency>
+        <!-- Allows final static field reflection -->
         <dependency>
-            <groupId>org.junit-pioneer</groupId>
-            <artifactId>junit-pioneer</artifactId>
-            <version>${junit-pioneer.version}</version>
+            <groupId>org.powermock</groupId>
+            <artifactId>powermock-reflect</artifactId>
+            <version>${powermock.version}</version>
             <scope>test</scope>
         </dependency>
         <!-- Logger -->
