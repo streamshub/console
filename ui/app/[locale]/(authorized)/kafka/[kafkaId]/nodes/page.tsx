@@ -152,21 +152,16 @@ async function AsyncNodesTable({
       }),
   );
 
-  nodes.data.forEach((node) => {
-    nodeCounts.totalNodes++;
-
-    if (node.attributes.roles.includes("broker")) {
-      nodeCounts.totalBrokers++;
-    }
-
-    if (node.attributes.roles.includes("controller")) {
-      nodeCounts.totalControllers++;
-    }
-
-    if (node.attributes.metadataState?.status === "leader") {
-      nodeCounts.leadControllerId = node.id;
-    }
-  });
+  nodeCounts.totalNodes = Object.values(
+    nodes.meta.summary.statuses.combined ?? 0,
+  ).reduce((tally, value) => tally + value, 0);
+  nodeCounts.totalBrokers = Object.values(
+    nodes.meta.summary.statuses.brokers ?? 0,
+  ).reduce((tally, value) => tally + value, 0);
+  nodeCounts.totalControllers = Object.values(
+    nodes.meta.summary.statuses.controllers ?? 0,
+  ).reduce((tally, value) => tally + value, 0);
+  nodeCounts.leadControllerId = nodes.meta.summary.leaderId ?? "";
 
   return (
     <PageSection isFilled>
