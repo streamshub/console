@@ -3,9 +3,9 @@ import {
   BrokerStatus,
   ControllerStatus,
   KafkaNode,
-  NodeListResponse,
   NodePoolsType,
   NodeRoles,
+  Statuses,
 } from "@/api/nodes/schema";
 import { NodeListColumn } from "./NodesTable";
 import { useFilterParams } from "@/utils/useFilterParams";
@@ -26,6 +26,7 @@ export type ConnectedNodesTableProps = {
   nextPageCursor: string | null | undefined;
   prevPageCursor: string | null | undefined;
   nodePoolList: NodePoolsType | undefined;
+  statuses: Statuses | undefined;
 };
 
 type State = {
@@ -54,6 +55,7 @@ export function ConnectedNodesTable({
   page,
   brokerStatus,
   controllerStatus,
+  statuses,
 }: ConnectedNodesTableProps) {
   const _updateUrl = useFilterParams({ perPage, sort, sortDir });
   const [_, startTransition] = useTransition();
@@ -143,6 +145,7 @@ export function ConnectedNodesTable({
         });
       }}
       nodesCount={nodesCount}
+      statuses={statuses}
     />
   );
 }

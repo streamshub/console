@@ -68,6 +68,7 @@ export default function NodesPage({
           prevPageCursor={undefined}
           nodePoolList={undefined}
           controllerStatus={controllerStatus}
+          statuses={undefined}
         />
       }
     >
@@ -184,6 +185,7 @@ async function AsyncNodesTable({
             controllerStatus={controllerStatus}
             nextPageCursor={nextPageCursor}
             prevPageCursor={prevPageCursor}
+            statuses={nodes.meta.summary.statuses}
           />
         </GridItem>
       </Grid>

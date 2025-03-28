@@ -5,6 +5,7 @@ import {
   KafkaNode,
   ControllerStatus,
   NodePoolsType,
+  Statuses,
 } from "@/api/nodes/schema";
 import {
   ClipboardCopy,
@@ -14,8 +15,9 @@ import {
   TextContent,
   Tooltip,
   Text,
-  SelectOption,
   Icon,
+  Level,
+  LevelItem,
 } from "@/libs/patternfly/react-core";
 import {
   CheckCircleIcon,
@@ -162,6 +164,7 @@ export type NodesTableProps = {
   ) => void;
   onFilterRoleChange: (role: NodeRoles[] | undefined) => void;
   nodePoolList: NodePoolsType | undefined;
+  statuses: Statuses | undefined;
 } & Pick<
   TableViewProps<NodeList, (typeof NodeListColumns)[number]>,
   "isColumnSortable" | "onPageChange" | "onClearAllFilters"
@@ -183,10 +186,51 @@ export function NodesTable({
   onClearAllFilters,
   nodesCount,
   nodePoolList,
+  statuses,
 }: NodesTableProps) {
   const t = useTranslations();
   const format = useFormatter();
   const formatBytes = useFormatBytes();
+
+  const getBrokerStatusLabel = (statuses?: Record<string, number>) => {
+    return Object.entries(BrokerStatusLabel).reduce(
+      (acc, [key, label]) => {
+        const count = statuses?.[key] ?? 0;
+        acc[key as BrokerStatus] = (
+          <Level>
+            <LevelItem>{label}</LevelItem>
+            <LevelItem>
+              <span style={{ color: "var(--pf-v5-global--Color--200)" }}>
+                {count}
+              </span>
+            </LevelItem>
+          </Level>
+        );
+        return acc;
+      },
+      {} as Record<BrokerStatus, ReactNode>,
+    );
+  };
+
+  const getControllerStatusLabel = (statuses?: Record<string, number>) => {
+    return Object.entries(ControllerStatusLabel).reduce(
+      (acc, [key, label]) => {
+        const count = statuses?.[key] ?? 0;
+        acc[key as ControllerStatus] = (
+          <Level>
+            <LevelItem>{label}</LevelItem>
+            <LevelItem>
+              <span style={{ color: "var(--pf-v5-global--Color--200)" }}>
+                {count}
+              </span>
+            </LevelItem>
+          </Level>
+        );
+        return acc;
+      },
+      {} as Record<ControllerStatus, ReactNode>,
+    );
+  };
 
   const nodePoolOptions = nodePoolList
     ? Object.fromEntries(
@@ -231,7 +275,7 @@ export function NodesTable({
             return <Th key={key}>{t("nodes.status")}</Th>;
           case "replicas":
             return (
-              <Th key={key}>
+              <Th key={key} width={20}>
                 {t("nodes.replicas")}{" "}
                 <Tooltip content={t("nodes.replicas_tooltip")}>
                   <HelpIcon />
@@ -469,10 +513,13 @@ export function NodesTable({
           },
           onRemoveGroup: () => onFilterStatusChange(undefined, undefined),
           options: [
-            { groupLabel: "Broker", groupOptions: BrokerStatusLabel },
+            {
+              groupLabel: "Broker",
+              groupOptions: getBrokerStatusLabel(statuses?.brokers),
+            },
             {
               groupLabel: "Controller",
-              groupOptions: ControllerStatusLabel,
+              groupOptions: getControllerStatusLabel(statuses?.controllers),
             },
           ],
         },
