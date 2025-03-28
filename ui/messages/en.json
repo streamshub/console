@@ -506,7 +506,14 @@
     "broker_node_voronoi_leaders": "{name} leaders: {value}",
     "broker_node_voronoi_followers": "{name} followers: {value}",
     "broker_node_count": "Broker {node}: {count} partitions ({percentage}%)",
-    "broker_node_count_missing": "Broker {node}: unknown"
+    "broker_node_count_missing": "Broker {node}: unknown",
+    "total_nodes": "Total nodes",
+    "controller_role": "Controller role",
+    "broker_role": "Broker role",
+    "lead_controller": "Lead controller",
+    "lead_controller_value": "Node ID:{leadController}",
+    "total_nodes_tooltip": "The total count of Kafka nodes, regardless of their role or type of Kafka Nodes in KRaft Mode",
+    "lead_controller_tooltip": "The Lead Controller (also called the Active Controller) is the primary metadata manager in a KRaft-based Kafka cluster. It maintains a global view of the cluster, processes metadata updates, and distributes them to other nodes."
   },
   "EmptyStateNoTopics": {
     "to_get_started_create_your_first_topic": "To get started, create your first topic",
