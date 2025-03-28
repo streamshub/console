@@ -12,11 +12,11 @@ public class Constants {
     public static final String CO_NAMESPACE = "co-namespace";
     public static final String OPENSHIFT_MARKETPLACE_NAMESPACE = "openshift-marketplace";
 
-    public static final String EO_DEP_SUFFIX = "entity-operator";
     /**
      * Test values
      */
     public static final String USER_USERNAME = "Anonymous";
+
     /**
      * Messages
      */

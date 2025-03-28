@@ -70,7 +70,7 @@ public abstract class AbstractST {
             }
         });
 
-        // Allow storing yaml files
+        // Allow storing YAML files
         KubeResourceManager.get().setStoreYamlPath(Environment.TEST_LOG_DIR);
 
         try {
@@ -103,10 +103,6 @@ public abstract class AbstractST {
             LOGGER.warn("Teardown was skipped because of SKIP_TEARDOWN env");
             return;
         }
-
-        // If Strimzi was installed externally, keep it
-        if (!Environment.SKIP_STRIMZI_INSTALLATION) {
-            strimziOperatorSetup.teardown();
-        }
+        strimziOperatorSetup.teardown();
     }
 }

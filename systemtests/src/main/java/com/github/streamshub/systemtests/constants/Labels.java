@@ -39,7 +39,7 @@ public class Labels {
         switch (processRole) {
             case BROKER -> matchLabels.put(Labels.STRIMZI_BROKER_ROLE_LABEL, "true");
             case CONTROLLER -> matchLabels.put(Labels.STRIMZI_CONTROLLER_ROLE_LABEL, "true");
-            default -> throw new UnsupportedKafkaRoleException("KafkaNodePool without specified role is unsupported");
+            default -> throw new UnsupportedKafkaRoleException("KafkaNodePool without specified Broker or Controller role is unsupported");
         }
 
         return new LabelSelectorBuilder().withMatchLabels(matchLabels).build();

@@ -60,7 +60,7 @@ public class StrimziOperatorSetup {
         RESOURCE_MANAGER.createResourceWithWait(getStrimziWatchAllCrbs());
 
         if (Environment.SKIP_STRIMZI_INSTALLATION || ResourceUtils.getKubeResource(Deployment.class, this.deploymentNamespace, this.deploymentName) != null) {
-            LOGGER.warn("Skipping Strimzi installation. It is already installed or installation was skipped!");
+            LOGGER.warn("Skipping Strimzi installation. It is already installed or env to skip installation was set to `true`!");
             return;
         }
 
@@ -245,7 +245,7 @@ public class StrimziOperatorSetup {
         List<File> yamlFiles = new ArrayList<>();
         for (String fileUrl : extractYamlFileLinksFromGithubDir()) {
             String fileName = fileUrl.substring(fileUrl.lastIndexOf('/') + 1).replace(".yaml", "");
-            LOGGER.debug("Fetching strimzi file: {}", fileName);
+            LOGGER.debug("Fetching Strimzi YAML file: {}", fileName);
             Path tempFile = null;
             try {
                 tempFile = Files.createTempFile(fileName + "-tmp_", ".yaml");
@@ -259,7 +259,7 @@ public class StrimziOperatorSetup {
     }
 
     private List<String> extractYamlFileLinksFromGithubDir() {
-        LOGGER.debug("Extracting Strimzi YAML files from GitHub link {}", Environment.STRIMZI_OPERATOR_CRDS_URL);
+        LOGGER.debug("Extracting Strimzi YAML file links from GitHub url: {}", Environment.STRIMZI_OPERATOR_CRDS_URL);
         int maxRetries = 10;
         int attempt = 0;
 
@@ -301,6 +301,6 @@ public class StrimziOperatorSetup {
 
             attempt++;
         }
-        throw new RuntimeException("Could not retrieve Strimzi CRs from GitHub after " + maxRetries + " attempts. Check your connection.");
+        throw new RuntimeException("Could not retrieve Strimzi CRs from GitHub after " + maxRetries + " attempts");
     }
 }

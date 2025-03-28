@@ -25,7 +25,7 @@ public class SetupUtils {
     // Yaml config
     // --------------
     public static String getYamlFileContent(String fileUrl) {
-        LOGGER.debug("Loading yaml file content from url {}", fileUrl);
+        LOGGER.debug("Loading YAML file content from url {}", fileUrl);
         StringBuilder content;
         try (BufferedReader in = new BufferedReader(new InputStreamReader(new URL(fileUrl).openStream(), StandardCharsets.UTF_8))) {
             content = new StringBuilder();
@@ -35,7 +35,7 @@ public class SetupUtils {
                 content.append(inputLine).append("\n");
             }
         } catch (IOException e) {
-            throw new RuntimeException("Cannot download yaml content from url: " + fileUrl, e);
+            throw new RuntimeException("Cannot download YAML content from url: " + fileUrl, e);
         }
         return content.toString();
     }
@@ -54,12 +54,13 @@ public class SetupUtils {
     // --------------
     public static void copyImagePullSecrets(String targetNamespace) {
         if (!Environment.TEST_CLIENTS_IMAGE_PULL_SECRET.isEmpty()) {
-            LOGGER.info("Checking if Secret: {} is in the default Namespace", Environment.TEST_CLIENTS_IMAGE_PULL_SECRET);
+            LOGGER.info("Checking if test clients pull secret: {} is in the default namespace", Environment.TEST_CLIENTS_IMAGE_PULL_SECRET);
             if (ResourceUtils.getKubeResource(Secret.class, "default", Environment.TEST_CLIENTS_IMAGE_PULL_SECRET) == null) {
-                throw new RuntimeException(Environment.TEST_CLIENTS_IMAGE_PULL_SECRET + " pull secret is not in the default Namespace!");
+                throw new RuntimeException(Environment.TEST_CLIENTS_IMAGE_PULL_SECRET + " pull secret is not in the default namespace! " +
+                 "Tests would not be able to use Kafka clients to produce or consume messages");
             }
 
-            // Check the target namespace does not have the pull secret already deplyoed
+            // Check the target namespace does not have the pull secret already deployed
             if (ResourceUtils.getKubeResource(Secret.class, targetNamespace, Environment.TEST_CLIENTS_IMAGE_PULL_SECRET) != null) {
                 LOGGER.warn("Pull secret {} is already present in the target namespace {}", Environment.TEST_CLIENTS_IMAGE_PULL_SECRET, targetNamespace);
                 return;
