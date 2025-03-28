@@ -469,9 +469,9 @@ export function NodesTable({
           },
           onRemoveGroup: () => onFilterStatusChange(undefined, undefined),
           options: [
-            { groupLabel: "Broker Status", groupOptions: BrokerStatusLabel },
+            { groupLabel: "Broker", groupOptions: BrokerStatusLabel },
             {
-              groupLabel: "Controller Status",
+              groupLabel: "Controller",
               groupOptions: ControllerStatusLabel,
             },
           ],
