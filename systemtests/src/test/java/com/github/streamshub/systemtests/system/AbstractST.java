@@ -3,6 +3,7 @@ package com.github.streamshub.systemtests.system;
 import com.github.streamshub.systemtests.Environment;
 import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.constants.Labels;
+import com.github.streamshub.systemtests.constants.ResourceKinds;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.setup.StrimziOperatorSetup;
 import com.github.streamshub.systemtests.utils.ClusterUtils;
@@ -36,8 +37,6 @@ import org.junit.jupiter.api.TestInstance;
 
 import java.io.IOException;
 
-import static com.github.streamshub.systemtests.constants.ResourceKinds.NAMESPACE;
-
 @ResourceManager
 @TestVisualSeparator
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -66,7 +65,7 @@ public abstract class AbstractST {
 
         RESOURCE_MANAGER.addCreateCallback(resource -> {
             // Set collect label for every namespace created with TF
-            if (resource.getKind().equals(NAMESPACE)) {
+            if (resource.getKind().equals(ResourceKinds.NAMESPACE)) {
                 KubeUtils.labelNamespace(resource.getMetadata().getName(), Labels.COLLECT_ST_LOGS, "true");
             }
         });
