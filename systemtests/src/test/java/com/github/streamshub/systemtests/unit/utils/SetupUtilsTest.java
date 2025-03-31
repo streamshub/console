@@ -1,7 +1,5 @@
 package com.github.streamshub.systemtests.unit.utils;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.github.streamshub.systemtests.Environment;
 import com.github.streamshub.systemtests.utils.ResourceUtils;
 import com.github.streamshub.systemtests.utils.SetupUtils;
@@ -77,7 +75,6 @@ class SetupUtilsTest {
         File yamlFile = Files.createTempFile("test-config", ".yaml").toFile();
         Files.write(yamlFile.toPath(), "key: superValue".getBytes());
 
-        ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
         TestConfig config = SetupUtils.configFromYaml(yamlFile, TestConfig.class);
 
         assertNotNull(config);

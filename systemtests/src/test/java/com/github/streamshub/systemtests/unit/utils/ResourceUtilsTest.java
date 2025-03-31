@@ -74,7 +74,6 @@ class ResourceUtilsTest {
     void testGetNamespacelessKubeResource() {
         final KubernetesClient mockedK8sClient = mock(KubernetesClient.class);
         final MixedOperation<Namespace, KubernetesResourceList<Namespace>, Resource<Namespace>> mockedMixedOp = mock(MixedOperation.class);
-        final NonNamespaceOperation<Namespace, KubernetesResourceList<Namespace>, Resource<Namespace>> mockedNonNsOp = mock(NonNamespaceOperation.class);
         final Resource<Namespace> mockedNsResource = mock(Resource.class);
         final Namespace mockedNs = mock(Namespace.class);
 
