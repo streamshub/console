@@ -10,7 +10,7 @@ import org.junit.jupiter.api.extension.TestExecutionExceptionHandler;
 import org.opentest4j.TestAbortedException;
 
 public class TestExecutionWatcher implements TestExecutionExceptionHandler, LifecycleMethodExecutionExceptionHandler {
-    private final static TestLogCollector LOG_COLLECTOR = TestLogCollector.getInstance();
+    private static final TestLogCollector LOG_COLLECTOR = TestLogCollector.getInstance();
     private static final Logger LOGGER = LogWrapper.getLogger(TestExecutionWatcher.class);
 
     @Override
