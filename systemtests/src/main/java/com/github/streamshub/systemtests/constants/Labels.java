@@ -4,6 +4,7 @@ import com.github.streamshub.systemtests.exceptions.UnsupportedKafkaRoleExceptio
 import io.fabric8.kubernetes.api.model.LabelSelector;
 import io.fabric8.kubernetes.api.model.LabelSelectorBuilder;
 import io.strimzi.api.ResourceLabels;
+import io.strimzi.api.kafka.model.kafka.Kafka;
 import io.strimzi.api.kafka.model.nodepool.ProcessRoles;
 
 import java.util.HashMap;
@@ -33,7 +34,7 @@ public class Labels {
         Map<String, String> matchLabels = new HashMap<>();
 
         matchLabels.put(ResourceLabels.STRIMZI_CLUSTER_LABEL, clusterName);
-        matchLabels.put(ResourceLabels.STRIMZI_KIND_LABEL, ResourceKinds.KAFKA.toLowerCase(Locale.ENGLISH));
+        matchLabels.put(ResourceLabels.STRIMZI_KIND_LABEL, Kafka.RESOURCE_KIND.toLowerCase(Locale.ENGLISH));
         matchLabels.put(Labels.STRIMZI_POOL_NAME_LABEL, poolName);
 
         switch (processRole) {

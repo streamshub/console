@@ -8,7 +8,6 @@ import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.setup.StrimziOperatorSetup;
 import com.github.streamshub.systemtests.utils.ClusterUtils;
 import com.github.streamshub.systemtests.utils.ResourceUtils;
-import com.github.streamshub.systemtests.utils.SetupUtils;
 import io.fabric8.kubernetes.api.model.Namespace;
 import io.fabric8.kubernetes.api.model.NamespaceBuilder;
 import io.skodjob.testframe.annotations.ResourceManager;
@@ -42,12 +41,11 @@ import java.io.IOException;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public abstract class AbstractST {
     private static final Logger LOGGER = LogWrapper.getLogger(AbstractST.class);
-    protected static final KubeResourceManager RESOURCE_MANAGER = KubeResourceManager.get();
     // Operators
     protected final StrimziOperatorSetup strimziOperatorSetup = new StrimziOperatorSetup(Constants.CO_NAMESPACE);
 
     static {
-        RESOURCE_MANAGER.setResourceTypes(
+        KubeResourceManager.get().setResourceTypes(
             new CustomResourceDefinitionType(),
             new ClusterRoleBindingType(),
             new ClusterRoleType(),
@@ -63,7 +61,7 @@ public abstract class AbstractST {
             new ServiceType(),
             new SubscriptionType());
 
-        RESOURCE_MANAGER.addCreateCallback(resource -> {
+        KubeResourceManager.get().addCreateCallback(resource -> {
             // Set collect label for every namespace created with TF
             if (resource.getKind().equals(ResourceKinds.NAMESPACE)) {
                 KubeUtils.labelNamespace(resource.getMetadata().getName(), Labels.COLLECT_ST_LOGS, "true");
@@ -85,7 +83,6 @@ public abstract class AbstractST {
         LOGGER.info("=========== AbstractST - BeforeAll - Setup TestSuite ===========");
         if (ResourceUtils.getKubeResource(Namespace.class, Constants.CO_NAMESPACE) == null) {
             KubeResourceManager.get().createOrUpdateResourceWithWait(new NamespaceBuilder().withNewMetadata().withName(Constants.CO_NAMESPACE).endMetadata().build());
-            SetupUtils.copyImagePullSecrets(Constants.CO_NAMESPACE);
         }
         strimziOperatorSetup.setup();
     }

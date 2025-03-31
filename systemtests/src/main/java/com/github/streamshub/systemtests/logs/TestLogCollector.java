@@ -9,6 +9,10 @@ import io.skodjob.testframe.LogCollectorBuilder;
 import io.skodjob.testframe.clients.KubeClient;
 import io.skodjob.testframe.clients.cmdClient.Kubectl;
 import io.skodjob.testframe.resources.KubeResourceManager;
+import io.strimzi.api.kafka.model.kafka.Kafka;
+import io.strimzi.api.kafka.model.nodepool.KafkaNodePool;
+import io.strimzi.api.kafka.model.topic.KafkaTopic;
+import io.strimzi.api.kafka.model.user.KafkaUser;
 import org.apache.logging.log4j.Logger;
 
 import java.io.File;
@@ -46,11 +50,11 @@ public class TestLogCollector {
         List<String> resources = new ArrayList<>(List.of(
             ResourceKinds.SECRET,
             ResourceKinds.DEPLOYMENT,
-            ResourceKinds.KAFKA,
-            ResourceKinds.KAFKA_NODE_POOL,
-            ResourceKinds.KAFKA_TOPIC,
-            ResourceKinds.KAFKA_USER,
-            ResourceKinds.CONSOLE
+            ResourceKinds.CONSOLE,
+            Kafka.RESOURCE_KIND,
+            KafkaNodePool.RESOURCE_KIND,
+            KafkaTopic.RESOURCE_KIND,
+            KafkaUser.RESOURCE_KIND
         ));
 
         if (Environment.INSTALL_USING_OLM) {

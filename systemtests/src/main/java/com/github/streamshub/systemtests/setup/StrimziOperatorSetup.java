@@ -2,7 +2,6 @@ package com.github.streamshub.systemtests.setup;
 
 import com.github.streamshub.systemtests.Environment;
 import com.github.streamshub.systemtests.constants.Constants;
-import com.github.streamshub.systemtests.constants.Labels;
 import com.github.streamshub.systemtests.constants.ResourceKinds;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.utils.ResourceUtils;
@@ -22,9 +21,8 @@ import io.fabric8.kubernetes.api.model.rbac.ClusterRoleBuilder;
 import io.fabric8.kubernetes.api.model.rbac.RoleBinding;
 import io.fabric8.kubernetes.api.model.rbac.RoleBindingBuilder;
 import io.fabric8.kubernetes.api.model.rbac.SubjectBuilder;
-import io.fabric8.openshift.api.model.operatorhub.v1.OperatorGroup;
-import io.fabric8.openshift.api.model.operatorhub.v1.OperatorGroupBuilder;
 import io.skodjob.testframe.resources.KubeResourceManager;
+import io.skodjob.testframe.utils.TestFrameUtils;
 import org.apache.logging.log4j.Logger;
 
 import java.io.BufferedReader;
@@ -35,14 +33,12 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class StrimziOperatorSetup {
     private static final Logger LOGGER = LogWrapper.getLogger(StrimziOperatorSetup.class);
-    private static final KubeResourceManager RESOURCE_MANAGER = KubeResourceManager.get();
 
     private final List<File> strimziResources = fetchStrimziYamlFiles();
     private final String deploymentNamespace;
@@ -57,7 +53,7 @@ public class StrimziOperatorSetup {
         LOGGER.info("----------- Setup Strimzi Cluster Operator -----------");
         // Watch all namespaces CRB
         // https://strimzi.io/docs/operators/latest/deploying#deploying-cluster-operator-to-watch-whole-cluster-str
-        RESOURCE_MANAGER.createResourceWithWait(getStrimziWatchAllCrbs());
+        KubeResourceManager.get().createResourceWithWait(getStrimziWatchAllCrbs());
 
         if (Environment.SKIP_STRIMZI_INSTALLATION || ResourceUtils.getKubeResource(Deployment.class, this.deploymentNamespace, this.deploymentName) != null) {
             LOGGER.warn("Skipping Strimzi installation. It is already installed or env to skip installation was set to `true`!");
@@ -65,13 +61,13 @@ public class StrimziOperatorSetup {
         }
 
         LOGGER.info("Install Strimzi Cluster Operator in namespace: {}", this.deploymentNamespace);
-        RESOURCE_MANAGER.createResourceWithoutWait(getBundleCrds());
-        RESOURCE_MANAGER.createResourceWithoutWait(getBundleClusterRoles());
-        RESOURCE_MANAGER.createResourceWithoutWait(getBundleServiceAccount());
-        RESOURCE_MANAGER.createResourceWithoutWait(getBundleRoleBindings());
-        RESOURCE_MANAGER.createResourceWithoutWait(getBundleClusterRoleBindings());
-        RESOURCE_MANAGER.createResourceWithoutWait(getBundleConfigMap());
-        RESOURCE_MANAGER.createResourceWithWait(getBundleDeployment());
+        KubeResourceManager.get().createResourceWithoutWait(getBundleCrds());
+        KubeResourceManager.get().createResourceWithoutWait(getBundleClusterRoles());
+        KubeResourceManager.get().createResourceWithoutWait(getBundleServiceAccount());
+        KubeResourceManager.get().createResourceWithoutWait(getBundleRoleBindings());
+        KubeResourceManager.get().createResourceWithoutWait(getBundleClusterRoleBindings());
+        KubeResourceManager.get().createResourceWithoutWait(getBundleConfigMap());
+        KubeResourceManager.get().createResourceWithWait(getBundleDeployment());
     }
 
     public void teardown() {
@@ -82,15 +78,14 @@ public class StrimziOperatorSetup {
         }
 
         // Watch all namespaces CRB
-        RESOURCE_MANAGER.deleteResource(getStrimziOperatorGroup());
-        RESOURCE_MANAGER.deleteResource(getStrimziWatchAllCrbs());
-        RESOURCE_MANAGER.deleteResource(getBundleCrds());
-        RESOURCE_MANAGER.deleteResource(getBundleClusterRoles());
-        RESOURCE_MANAGER.deleteResource(getBundleServiceAccount());
-        RESOURCE_MANAGER.deleteResource(getBundleRoleBindings());
-        RESOURCE_MANAGER.deleteResource(getBundleClusterRoleBindings());
-        RESOURCE_MANAGER.deleteResource(getBundleConfigMap());
-        RESOURCE_MANAGER.deleteResource(getBundleDeployment());
+        KubeResourceManager.get().deleteResource(getStrimziWatchAllCrbs());
+        KubeResourceManager.get().deleteResource(getBundleCrds());
+        KubeResourceManager.get().deleteResource(getBundleClusterRoles());
+        KubeResourceManager.get().deleteResource(getBundleServiceAccount());
+        KubeResourceManager.get().deleteResource(getBundleRoleBindings());
+        KubeResourceManager.get().deleteResource(getBundleClusterRoleBindings());
+        KubeResourceManager.get().deleteResource(getBundleConfigMap());
+        KubeResourceManager.get().deleteResource(getBundleDeployment());
     }
 
     private ClusterRoleBinding[] getStrimziWatchAllCrbs() {
@@ -143,18 +138,8 @@ public class StrimziOperatorSetup {
         };
     }
 
-    private OperatorGroup getStrimziOperatorGroup() {
-        return new OperatorGroupBuilder()
-            .editOrNewMetadata()
-                .withName(Constants.CONSOLE_OPERATOR_GROUP_NAME)
-                .withNamespace(this.deploymentNamespace)
-                .withLabels(Collections.singletonMap(Labels.APP, Constants.STRIMZI_NAME))
-            .endMetadata()
-            .build();
-    }
-
     private ConfigMap getBundleConfigMap() {
-        return new ConfigMapBuilder(SetupUtils.configFromYaml(strimziResources.stream()
+        return new ConfigMapBuilder(TestFrameUtils.configFromYaml(strimziResources.stream()
             .filter(file -> file.getName().matches(".*050-ConfigMap-.*\\.yaml")).toList().get(0), ConfigMap.class))
             .editMetadata()
                 .withNamespace(this.deploymentNamespace)
@@ -164,7 +149,7 @@ public class StrimziOperatorSetup {
     }
 
     private ServiceAccount getBundleServiceAccount() {
-        return new ServiceAccountBuilder(SetupUtils.configFromYaml(strimziResources.stream()
+        return new ServiceAccountBuilder(TestFrameUtils.configFromYaml(strimziResources.stream()
             .filter(file -> file.getName().matches(".*010-ServiceAccount-.*\\.yaml")).toList().get(0), ServiceAccount.class))
             .editMetadata()
                 .withNamespace(this.deploymentNamespace)
@@ -173,7 +158,7 @@ public class StrimziOperatorSetup {
     }
 
     private Deployment getBundleDeployment() {
-        return new DeploymentBuilder(SetupUtils.configFromYaml(strimziResources.stream()
+        return new DeploymentBuilder(TestFrameUtils.configFromYaml(strimziResources.stream()
             .filter(file -> file.getName().matches(".*060-Deployment-.*\\.yaml")).toList().get(0), Deployment.class))
             .editMetadata()
                 .withNamespace(this.deploymentNamespace)
@@ -197,7 +182,7 @@ public class StrimziOperatorSetup {
 
     private CustomResourceDefinition[] getBundleCrds() {
         return strimziResources.stream().filter(file -> file.getName().matches(".*-Crd-.*\\.yaml"))
-            .map(crd -> new CustomResourceDefinitionBuilder(SetupUtils.configFromYaml(crd, CustomResourceDefinition.class))
+            .map(crd -> new CustomResourceDefinitionBuilder(TestFrameUtils.configFromYaml(crd, CustomResourceDefinition.class))
                 .editMetadata()
                     .withNamespace(this.deploymentNamespace)
                 .endMetadata()
@@ -207,7 +192,7 @@ public class StrimziOperatorSetup {
 
     private ClusterRole[] getBundleClusterRoles() {
         return strimziResources.stream().filter(file -> file.getName().matches(".*-ClusterRole-.*\\.yaml"))
-            .map(file -> new ClusterRoleBuilder(SetupUtils.configFromYaml(file, ClusterRole.class))
+            .map(file -> new ClusterRoleBuilder(TestFrameUtils.configFromYaml(file, ClusterRole.class))
                 .editMetadata()
                     .withNamespace(this.deploymentNamespace)
                 .endMetadata()
@@ -217,7 +202,7 @@ public class StrimziOperatorSetup {
 
     private RoleBinding[] getBundleRoleBindings() {
         return strimziResources.stream().filter(file -> file.getName().matches(".*-RoleBinding-.*\\.yaml"))
-            .map(rb -> new RoleBindingBuilder(SetupUtils.configFromYaml(rb, RoleBinding.class))
+            .map(rb -> new RoleBindingBuilder(TestFrameUtils.configFromYaml(rb, RoleBinding.class))
                 .editMetadata()
                     .withNamespace(this.deploymentNamespace)
                 .endMetadata()
@@ -230,7 +215,7 @@ public class StrimziOperatorSetup {
 
     private ClusterRoleBinding[] getBundleClusterRoleBindings() {
         return strimziResources.stream().filter(file -> file.getName().matches(".*-ClusterRoleBinding-.*\\.yaml"))
-            .map(crb -> new ClusterRoleBindingBuilder(SetupUtils.configFromYaml(crb, ClusterRoleBinding.class))
+            .map(crb -> new ClusterRoleBindingBuilder(TestFrameUtils.configFromYaml(crb, ClusterRoleBinding.class))
                 .editMetadata()
                     .withNamespace(this.deploymentNamespace)
                 .endMetadata()

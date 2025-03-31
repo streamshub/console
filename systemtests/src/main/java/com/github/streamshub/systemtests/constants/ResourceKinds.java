@@ -9,7 +9,6 @@ public class ResourceKinds {
     public static final String CUSTOM_RESOURCE_DEFINITION = "CustomResourceDefinition";
     public static final String CONFIG_MAP = "ConfigMap";
     public static final String DEPLOYMENT = "Deployment";
-    public static final String DEPLOYMENT_CONFIG = "DeploymentConfig";
     public static final String POD = "Pod";
     public static final String SERVICE = "Service";
     public static final String SECRET = "Secret";
@@ -29,14 +28,6 @@ public class ResourceKinds {
     public static final String CLUSTER_SERVICE_VERSION = "ClusterServiceVersion";
     public static final String OPERATOR_GROUP = "OperatorGroup";
     public static final String OPERATOR = "Operator";
-
-    // ----------
-    // Kafka
-    // ----------
-    public static final String KAFKA_TOPIC = "KafkaTopic";
-    public static final String KAFKA = "Kafka";
-    public static final String KAFKA_USER = "KafkaUser";
-    public static final String KAFKA_NODE_POOL = "KafkaNodePool";
 
     // ----------
     // Console
