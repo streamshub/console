@@ -30,6 +30,9 @@ jobs:
       - name: Set Image Tag Env
         run: echo "NEXT_VERSION=$(echo ${{steps.metadata.outputs.next-version}} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
 
+      - name: Fetch Operator Framework Utilities
+        run: ./operator/bin/fetch-operator-utilities.sh
+
       - name: Setup JDK
         uses: actions/setup-java@v4
         with:
@@ -111,10 +114,6 @@ jobs:
       # ==================== Operator-Catalog ====================
       - name: Generate Operator Catalog Config
         run: |
-          curl -L -o opm https://github.com/operator-framework/operator-registry/releases/download/v1.43.1/linux-amd64-opm
-          chmod +x opm
-          sudo cp -v opm /usr/bin/
-          rm -vf opm
           operator/bin/generate-catalog.sh \
             ${{ secrets.IMAGE_REPO_HOSTNAME }}/${{ secrets.IMAGE_REPO_NAMESPACE }}/console-operator-bundle
 

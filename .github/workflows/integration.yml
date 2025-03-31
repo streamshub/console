@@ -32,6 +32,9 @@ jobs:
       - name: Operator Version Check
         run: ./operator/bin/version-check.sh "${{ env.PROJECT_VERSION }}"
 
+      - name: Fetch Operator Framework Utilities
+        run: ./operator/bin/fetch-operator-utilities.sh
+
       - name: Set Up JDK 17
         uses: actions/setup-java@v4
         with:
@@ -113,10 +116,6 @@ jobs:
       # ==================== Operator-Catalog ====================
       - name: Generate Operator Catalog Config
         run: |
-          curl -L -o opm https://github.com/operator-framework/operator-registry/releases/download/v1.43.1/linux-amd64-opm
-          chmod +x opm
-          sudo cp -v opm /usr/bin/
-          rm -vf opm
           operator/bin/generate-catalog.sh localhost:5000/streamshub/console-operator-bundle true
 
       - name: Build Operator Catalog Image
