@@ -315,7 +315,7 @@ export function NodesTable({
           case "roles":
             return (
               <Td key={key} dataLabel={"Roles"}>
-                {row.attributes.roles.map((role, _) => {
+                {row.attributes.roles?.map((role, _) => {
                   return <div key={role}>{NodeRoleLabel[role].label}</div>;
                 })}
               </Td>
