@@ -234,7 +234,7 @@ public class StrimziOperatorSetup {
             Path tempFile = null;
             try {
                 tempFile = Files.createTempFile(fileName + "-tmp_", ".yaml");
-                Files.write(tempFile, SetupUtils.getYamlFileContent(fileUrl).getBytes());
+                Files.write(tempFile, SetupUtils.getYamlContentFromUrl(fileUrl).getBytes());
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }

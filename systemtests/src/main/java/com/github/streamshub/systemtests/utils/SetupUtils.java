@@ -8,6 +8,8 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 public class SetupUtils {
     private static final Logger LOGGER = LogWrapper.getLogger(SetupUtils.class);
@@ -16,8 +18,8 @@ public class SetupUtils {
     // ---------------
     // Yaml config
     // --------------
-    public static String getYamlFileContent(String fileUrl) {
-        LOGGER.debug("Loading YAML file content from url {}", fileUrl);
+    public static String getYamlContentFromUrl(String fileUrl) {
+        LOGGER.debug("Loading YAML content from url: {}", fileUrl);
         StringBuilder content;
         try (BufferedReader in = new BufferedReader(new InputStreamReader(new URL(fileUrl).openStream(), StandardCharsets.UTF_8))) {
             content = new StringBuilder();
@@ -30,5 +32,14 @@ public class SetupUtils {
             throw new RuntimeException("Cannot download YAML content from url: " + fileUrl, e);
         }
         return content.toString();
+    }
+
+    public static String getYamlContentFromFile(String filePath) {
+        LOGGER.debug("Loading YAML content from file: {}", filePath);
+        try {
+            return Files.readString(Paths.get(filePath), StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            throw new RuntimeException("Cannot get YAML content from file: " + filePath, e);
+        }
     }
 }

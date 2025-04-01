@@ -29,6 +29,8 @@ CLIENT_TYPE: kubectl
 # -------------------------------------------
 # Name of the CatalogSource for Console Operator (OLM install)
 CONSOLE_CATALOG_SOURCE_NAME: streamshub-console-catalog
+# Namespace where lies the CatalogSource for Console Operator
+OLM_CATALOG_NAMESPACE: ""
 # OLM channel for selecting the Operator version
 OLM_OPERATOR_CHANNEL: alpha
 # Deployment name for the OLM install type Console Operator

@@ -1,5 +1,6 @@
 package com.github.streamshub.systemtests;
 
+import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.enums.BrowserTypes;
 import io.skodjob.testframe.environment.TestEnvironmentVariables;
 
@@ -33,6 +34,7 @@ public class Environment {
     public static final boolean INSTALL_USING_OLM = ENVS.getOrDefault("INSTALL_USING_OLM", Boolean::parseBoolean, false);
     public static final String TEST_CLIENTS_IMAGE = ENVS.getOrDefault("TEST_CLIENTS_IMAGE", "");
     public static final String OLM_OPERATOR_CHANNEL = ENVS.getOrDefault("OLM_OPERATOR_CHANNEL", "alpha");
+    public static final String OLM_CATALOG_NAMESPACE = ENVS.getOrDefault("OLM_OPERATOR_CHANNEL", Constants.OPENSHIFT_MARKETPLACE_NAMESPACE);
     // ------------------------------------------------------------------------------------------------------------------------------------------------------------
     // Deny instantiation
     private Environment() {}

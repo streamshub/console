@@ -71,4 +71,8 @@ public class Constants {
     public static final String CONSOLE_CRD_API_VERSION = HasMetadata.getGroup(Console.class) + "/" + HasMetadata.getVersion(Console.class);
     public static final String CONSOLE_OPERATOR_GROUP_NAME = "streamshub-operators";
     public static final String CONSOLE_INSTANCE = "console-instance";
+    /**
+     * OLM
+     */
+    public static final String CONSOLE_OPERATOR_SUBSCRIPTION_NAME = "console-sub";
 }
