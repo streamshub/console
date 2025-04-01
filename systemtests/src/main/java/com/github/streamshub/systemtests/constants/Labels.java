@@ -17,7 +17,6 @@ public class Labels {
     // ------------
     // General
     // ------------
-    public static final String APP = "app";
     public static final String COLLECT_ST_LOGS = "streamshub-st";
 
     // ------------

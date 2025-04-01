@@ -28,10 +28,4 @@ public class ResourceKinds {
     public static final String CLUSTER_SERVICE_VERSION = "ClusterServiceVersion";
     public static final String OPERATOR_GROUP = "OperatorGroup";
     public static final String OPERATOR = "Operator";
-
-    // ----------
-    // Console
-    // ----------
-    public static final String CONSOLE = "Console";
-
 }

@@ -32,7 +32,6 @@ public class Environment {
     public static final String SCREENSHOTS_DIR_PATH = ENVS.getOrDefault("SCREENSHOTS_DIR_PATH", USER_PATH + "/screenshots");
     public static final boolean INSTALL_USING_OLM = ENVS.getOrDefault("INSTALL_USING_OLM", Boolean::parseBoolean, false);
     public static final String TEST_CLIENTS_IMAGE = ENVS.getOrDefault("TEST_CLIENTS_IMAGE", "");
-    public static final String TEST_CLIENTS_IMAGE_PULL_SECRET = ENVS.getOrDefault("TEST_CLIENTS_IMAGE_PULL_SECRET", "");
     public static final String OLM_OPERATOR_CHANNEL = ENVS.getOrDefault("OLM_OPERATOR_CHANNEL", "alpha");
     // ------------------------------------------------------------------------------------------------------------------------------------------------------------
     // Deny instantiation

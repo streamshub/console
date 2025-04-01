@@ -1,8 +1,10 @@
 package com.github.streamshub.systemtests.logs;
 
+import com.github.streamshub.console.api.v1alpha1.Console;
 import com.github.streamshub.systemtests.Environment;
 import com.github.streamshub.systemtests.constants.Labels;
 import com.github.streamshub.systemtests.constants.ResourceKinds;
+import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.LabelSelectorBuilder;
 import io.skodjob.testframe.LogCollector;
 import io.skodjob.testframe.LogCollectorBuilder;
@@ -50,7 +52,7 @@ public class TestLogCollector {
         List<String> resources = new ArrayList<>(List.of(
             ResourceKinds.SECRET,
             ResourceKinds.DEPLOYMENT,
-            ResourceKinds.CONSOLE,
+            HasMetadata.getKind(Console.class),
             Kafka.RESOURCE_KIND,
             KafkaNodePool.RESOURCE_KIND,
             KafkaTopic.RESOURCE_KIND,
