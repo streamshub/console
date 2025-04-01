@@ -23,15 +23,6 @@ import {
   CardTitle,
   CardHeader,
 } from "@/libs/patternfly/react-core";
-import {
-  CheckCircleIcon,
-  ExclamationCircleIcon,
-  ExclamationTriangleIcon,
-  HelpIcon,
-  InProgressIcon,
-  NewProcessIcon,
-  PendingIcon,
-} from "@/libs/patternfly/react-icons";
 import { useFormatter, useTranslations } from "next-intl";
 import Link from "next/link";
 import { ReactNode } from "react";
@@ -40,6 +31,12 @@ import { ChartDonutUtilization } from "@/libs/patternfly/react-charts";
 import { useFormatBytes } from "@/utils/useFormatBytes";
 import { TableView, TableViewProps } from "@/components/Table/TableView";
 import { EmptyStateNoMatchFound } from "@/components/Table/EmptyStateNoMatchFound";
+import {
+  getBrokerLabel,
+  getControllerLabel,
+  getNodeRoleLabel,
+} from "./NodesLabel";
+import { HelpIcon } from "@/libs/patternfly/react-icons";
 
 export const NodeListColumns = [
   "id",
@@ -51,106 +48,6 @@ export const NodeListColumns = [
 ] as const;
 
 export type NodeListColumn = (typeof NodeListColumns)[number];
-
-const NodeRoleLabel: Record<NodeRoles, { label: ReactNode }> = {
-  broker: { label: <>Broker</> },
-  controller: { label: <>Controller</> },
-};
-
-const BrokerStatusLabel: Record<BrokerStatus, ReactNode> = {
-  Running: (
-    <>
-      <Icon status={"success"}>
-        <CheckCircleIcon />
-      </Icon>
-      &nbsp;Running
-    </>
-  ),
-  Starting: (
-    <>
-      <Icon>
-        <InProgressIcon />
-      </Icon>
-      &nbsp;Starting
-    </>
-  ),
-  ShuttingDown: (
-    <>
-      <Icon>
-        <PendingIcon />
-      </Icon>
-      &nbsp;Shutting Down
-    </>
-  ),
-  PendingControlledShutdown: (
-    <>
-      <Icon status={"warning"}>
-        <ExclamationTriangleIcon />
-      </Icon>
-      &nbsp;Pending Controlled Shutdown
-    </>
-  ),
-  Recovery: (
-    <>
-      <Icon>
-        <NewProcessIcon />
-      </Icon>
-      &nbsp;Recovery
-    </>
-  ),
-  NotRunning: (
-    <>
-      <Icon status={"danger"}>
-        <ExclamationCircleIcon />
-      </Icon>
-      &nbsp;Not Running
-    </>
-  ),
-  Unknown: (
-    <>
-      <Icon status={"danger"}>
-        <ExclamationCircleIcon />
-      </Icon>
-      &nbsp;Unknown
-    </>
-  ),
-};
-
-const ControllerStatusLabel: Record<ControllerStatus, ReactNode> = {
-  QuorumLeader: (
-    <>
-      <Icon status={"success"}>
-        <CheckCircleIcon />
-      </Icon>
-      &nbsp;Quorum Leader
-    </>
-  ),
-  QuorumFollower: (
-    <>
-      <Icon status={"success"}>
-        <CheckCircleIcon />
-      </Icon>
-      &nbsp;Quorum Follower
-    </>
-  ),
-  QuorumFollowerLagged: (
-    <>
-      {" "}
-      <Icon status={"warning"}>
-        <ExclamationTriangleIcon />
-      </Icon>
-      &nbsp;Quorum Follower Lagged
-    </>
-  ),
-  Unknown: (
-    <>
-      <Icon status={"danger"}>
-        <ExclamationCircleIcon />
-      </Icon>
-      &nbsp;Unknown
-    </>
-  ),
-};
 
 export type NodesTableProps = {
   nodeList: KafkaNode[] | undefined;
@@ -196,6 +93,10 @@ export function NodesTable({
   const format = useFormatter();
   const formatBytes = useFormatBytes();
 
+  const NodeRoleLabel = getNodeRoleLabel();
+  const BrokerStatusLabel = getBrokerLabel();
+  const ControllerStatusLabel = getControllerLabel();
+
   const getBrokerStatusLabel = (statuses?: Record<string, number>) => {
     return Object.entries(BrokerStatusLabel).reduce(
       (acc, [key, label]) => {
@@ -238,14 +139,14 @@ export function NodesTable({
 
   const nodePoolOptions = nodePoolList
     ? Object.fromEntries(
-        Object.entries(nodePoolList).map(([poolName, roles]) => [
-          poolName,
-          {
-            label: <>{poolName}</>,
-            description: <>Nodes role: {roles.join(", ")}</>,
-          },
-        ]),
-      )
+      Object.entries(nodePoolList).map(([poolName, roles]) => [
+        poolName,
+        {
+          label: <>{poolName}</>,
+          description: <>Nodes role: {roles.join(", ")}</>,
+        },
+      ]),
+    )
     : {};
 
   const brokerStatusKeys = Object.keys(BrokerStatusLabel) as BrokerStatus[];
@@ -332,7 +233,7 @@ export function NodesTable({
               case "status":
                 return (
                   <Td key={key} dataLabel={"Status"}>
-                    <div>
+                    <div className={"pf-v5-u-active-color-100"}>
                       {row.attributes.broker &&
                         BrokerStatusLabel[row.attributes.broker.status]}
                     </div>
@@ -349,9 +250,9 @@ export function NodesTable({
                       value={
                         typeof row.attributes.broker?.leaderCount ===
                           "number" &&
-                        typeof row.attributes.broker?.replicaCount === "number"
+                          typeof row.attributes.broker?.replicaCount === "number"
                           ? row.attributes.broker.leaderCount +
-                            row.attributes.broker.replicaCount
+                          row.attributes.broker.replicaCount
                           : undefined
                       }
                     />
@@ -416,8 +317,8 @@ export function NodesTable({
                           labels={({ datum }) =>
                             datum.x
                               ? `${datum.x}: ${format.number(datum.y / 100, {
-                                  style: "percent",
-                                })}`
+                                style: "percent",
+                              })}`
                               : null
                           }
                           legendData={[
