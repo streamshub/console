@@ -16,8 +16,10 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import jakarta.json.Json;
+import jakarta.json.JsonNumber;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
+import jakarta.json.JsonValue.ValueType;
 
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
@@ -58,7 +60,9 @@ public class Topic extends RelatableResource<Topic.Attributes, Topic.Relationshi
         static final Map<String, Map<Boolean, Comparator<Topic>>> COMPARATORS = ComparatorBuilder.bidirectional(
                 Map.of("id", ID_COMPARATOR,
                         NAME, comparing(topic -> topic.attributes.name),
-                        TOTAL_LEADER_LOG_BYTES, nullsLast(comparing(topic -> topic.attributes.getTotalLeaderLogBytes()))));
+                        TOTAL_LEADER_LOG_BYTES, comparing(
+                                topic -> topic.attributes.getTotalLeaderLogBytes(),
+                                nullsLast(BigInteger::compareTo))));
 
         public static final ComparatorBuilder<Topic> COMPARATOR_BUILDER =
                 new ComparatorBuilder<>(Topic.Fields::comparator, Topic.Fields.defaultComparator());
@@ -235,6 +239,10 @@ public class Topic extends RelatableResource<Topic.Attributes, Topic.Relationshi
         super(id, API_TYPE, new Attributes(name, internal), new Relationships());
     }
 
+    private Topic(String id, Attributes attributes) {
+        super(id, API_TYPE, attributes, new Relationships());
+    }
+
     public static Topic fromTopicListing(org.apache.kafka.clients.admin.TopicListing listing) {
         return new Topic(listing.name(), listing.isInternal(), listing.topicId().toString());
     }
@@ -266,7 +274,19 @@ public class Topic extends RelatableResource<Topic.Attributes, Topic.Relationshi
 
         JsonObject attr = cursor.getJsonObject("attributes");
 
-        Topic topic = new Topic(attr.getString(Fields.NAME, null), false, cursor.getString("id"));
+        Topic topic = new Topic(cursor.getString("id"), new Attributes(attr.getString(Fields.NAME, null), false) {
+            @Override
+            public BigInteger getTotalLeaderLogBytes() {
+                if (attr.containsKey(Fields.TOTAL_LEADER_LOG_BYTES)) {
+                    var value = attr.get(Fields.TOTAL_LEADER_LOG_BYTES);
+                    return value.getValueType() == ValueType.NUMBER ?
+                            JsonNumber.class.cast(value).bigIntegerValue() :
+                            null;
+                }
+
+                return null;
+            }
+        });
 
         if (attr.containsKey(Fields.CONFIGS)) {
             var configs = attr.getJsonObject(Fields.CONFIGS)
@@ -288,6 +308,15 @@ public class Topic extends RelatableResource<Topic.Attributes, Topic.Relationshi
 
         if (sortFields.contains(Fields.NAME)) {
             attrBuilder.add(Fields.NAME, attributes.name);
+        }
+
+        if (sortFields.contains(Fields.TOTAL_LEADER_LOG_BYTES)) {
+            var bytes = attributes.getTotalLeaderLogBytes();
+            if (bytes != null) {
+                attrBuilder.add(Fields.TOTAL_LEADER_LOG_BYTES, bytes);
+            } else {
+                attrBuilder.addNull(Fields.TOTAL_LEADER_LOG_BYTES);
+            }
         }
 
         JsonObjectBuilder sortedConfigsBuilder = Json.createObjectBuilder();

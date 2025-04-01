@@ -1,7 +1,7 @@
   sum by (nodeId, __console_metric_name__) (
     label_replace(
       label_replace(
-        rate(container_cpu_usage_seconds_total{namespace="%1$s",pod=~"%2$s-.+-\\d+"}[5m]),
+        rate(container_cpu_usage_seconds_total{namespace="%1$s",pod=~"%2$s-.+-\\d+",container="kafka"}[5m]),
         "nodeId",
         "$1",
         "pod",
@@ -17,7 +17,7 @@ or
   sum by (nodeId, __console_metric_name__) (
     label_replace(
       label_replace(
-        container_memory_usage_bytes{namespace="%1$s",pod=~"%2$s-.+-\\d+"},
+        container_memory_usage_bytes{namespace="%1$s",pod=~"%2$s-.+-\\d+",container="kafka"},
         "nodeId",
         "$1",
         "pod",
