@@ -141,7 +141,7 @@ async function AsyncNodesTable({
 
   const data = Object.fromEntries(
     nodes.data
-      .filter((n) => n.attributes.roles.includes("broker"))
+      .filter((n) => n.attributes.roles?.includes("broker"))
       .map((n) => {
         return [
           n.id,
