@@ -30,7 +30,7 @@ export const NodeSchema = z.object({
     rack: z.string().optional().nullable(),
     nodePool: z.string().optional().nullable(),
     kafkaVersion: z.string().optional().nullable(),
-    roles: z.array(NodeRoleSchema),
+    roles: z.array(NodeRoleSchema).optional().nullable(),
     metadataState: z
       .object({
         status: z.enum(["leader", "follower", "observer"]),
