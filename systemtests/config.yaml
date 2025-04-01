@@ -58,5 +58,3 @@ CONSOLE_UI_IMAGE: ""
 ST_KAFKA_VERSION: 3.9.0
 # Image for test client containers in system tests
 TEST_CLIENTS_IMAGE: quay.io/strimzi-test-clients/test-clients:latest-kafka-3.9.0
-# Secret used for pulling testing clients image
-SYSTEM_TEST_STRIMZI_IMAGE_PULL_SECRET: ""
