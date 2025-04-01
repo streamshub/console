@@ -1,10 +1,15 @@
 package com.github.streamshub.systemtests.system;
 
 import com.github.streamshub.systemtests.Environment;
+import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.constants.Labels;
-import com.github.streamshub.systemtests.constants.ResourceKinds;
 import com.github.streamshub.systemtests.logs.LogWrapper;
+import com.github.streamshub.systemtests.setup.StrimziOperatorSetup;
 import com.github.streamshub.systemtests.utils.ClusterUtils;
+import com.github.streamshub.systemtests.utils.ResourceUtils;
+import io.fabric8.kubernetes.api.model.HasMetadata;
+import io.fabric8.kubernetes.api.model.Namespace;
+import io.fabric8.kubernetes.api.model.NamespaceBuilder;
 import io.skodjob.testframe.annotations.ResourceManager;
 import io.skodjob.testframe.annotations.TestVisualSeparator;
 import io.skodjob.testframe.resources.ClusterRoleBindingType;
@@ -24,6 +29,7 @@ import io.skodjob.testframe.resources.ServiceType;
 import io.skodjob.testframe.resources.SubscriptionType;
 import io.skodjob.testframe.utils.KubeUtils;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInstance;
@@ -35,10 +41,11 @@ import java.io.IOException;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public abstract class AbstractST {
     private static final Logger LOGGER = LogWrapper.getLogger(AbstractST.class);
-    protected static final KubeResourceManager RESOURCE_MANAGER = KubeResourceManager.getInstance();
+    // Operators
+    protected final StrimziOperatorSetup strimziOperatorSetup = new StrimziOperatorSetup(Constants.CO_NAMESPACE);
 
     static {
-        RESOURCE_MANAGER.setResourceTypes(
+        KubeResourceManager.get().setResourceTypes(
             new CustomResourceDefinitionType(),
             new ClusterRoleBindingType(),
             new ClusterRoleType(),
@@ -54,15 +61,15 @@ public abstract class AbstractST {
             new ServiceType(),
             new SubscriptionType());
 
-        RESOURCE_MANAGER.addCreateCallback(resource -> {
+        KubeResourceManager.get().addCreateCallback(resource -> {
             // Set collect label for every namespace created with TF
-            if (resource.getKind().equalsIgnoreCase(ResourceKinds.NAMESPACE)) {
+            if (resource.getKind().equals(HasMetadata.getKind(Namespace.class))) {
                 KubeUtils.labelNamespace(resource.getMetadata().getName(), Labels.COLLECT_ST_LOGS, "true");
             }
         });
 
-        // Allow storing yaml files
-        KubeResourceManager.setStoreYamlPath(Environment.TEST_LOG_DIR);
+        // Allow storing YAML files
+        KubeResourceManager.get().setStoreYamlPath(Environment.TEST_LOG_DIR);
 
         try {
             Environment.saveConfigToFile();
@@ -72,12 +79,27 @@ public abstract class AbstractST {
     }
 
     @BeforeAll
-    void beforeAll() {
-        LOGGER.info("=========== AbstractST - BeforeAll ===========");
+    void setupTestSuite() {
+        LOGGER.info("=========== AbstractST - BeforeAll - Setup TestSuite ===========");
+        if (ResourceUtils.getKubeResource(Namespace.class, Constants.CO_NAMESPACE) == null) {
+            KubeResourceManager.get().createOrUpdateResourceWithWait(new NamespaceBuilder().withNewMetadata().withName(Constants.CO_NAMESPACE).endMetadata().build());
+        }
+        strimziOperatorSetup.setup();
     }
 
     @BeforeEach
-    void beforeEach() {
+    void setupTestCase() {
+        LOGGER.info("=========== AbstractST - BeforeEach - Setup TestCase {} ===========", KubeResourceManager.get().getTestContext().getTestMethod());
         ClusterUtils.checkClusterHealth();
+    }
+
+    @AfterAll
+    void tearDownTestSuite() {
+        LOGGER.info("=========== AbstractST - AfterAll - Tear down the TestSuite ===========");
+        if (Environment.SKIP_TEARDOWN) {
+            LOGGER.warn("Teardown was skipped because of SKIP_TEARDOWN env");
+            return;
+        }
+        strimziOperatorSetup.teardown();
     }
 }
