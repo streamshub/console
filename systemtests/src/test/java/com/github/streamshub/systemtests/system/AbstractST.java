@@ -3,11 +3,11 @@ package com.github.streamshub.systemtests.system;
 import com.github.streamshub.systemtests.Environment;
 import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.constants.Labels;
-import com.github.streamshub.systemtests.constants.ResourceKinds;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.setup.StrimziOperatorSetup;
 import com.github.streamshub.systemtests.utils.ClusterUtils;
 import com.github.streamshub.systemtests.utils.ResourceUtils;
+import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.Namespace;
 import io.fabric8.kubernetes.api.model.NamespaceBuilder;
 import io.skodjob.testframe.annotations.ResourceManager;
@@ -63,7 +63,7 @@ public abstract class AbstractST {
 
         KubeResourceManager.get().addCreateCallback(resource -> {
             // Set collect label for every namespace created with TF
-            if (resource.getKind().equals(ResourceKinds.NAMESPACE)) {
+            if (resource.getKind().equals(HasMetadata.getKind(Namespace.class))) {
                 KubeUtils.labelNamespace(resource.getMetadata().getName(), Labels.COLLECT_ST_LOGS, "true");
             }
         });

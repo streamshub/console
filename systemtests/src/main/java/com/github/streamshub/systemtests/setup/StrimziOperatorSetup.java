@@ -2,12 +2,12 @@ package com.github.streamshub.systemtests.setup;
 
 import com.github.streamshub.systemtests.Environment;
 import com.github.streamshub.systemtests.constants.Constants;
-import com.github.streamshub.systemtests.constants.ResourceKinds;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.utils.ResourceUtils;
 import com.github.streamshub.systemtests.utils.SetupUtils;
 import io.fabric8.kubernetes.api.model.ConfigMap;
 import io.fabric8.kubernetes.api.model.ConfigMapBuilder;
+import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.ServiceAccount;
 import io.fabric8.kubernetes.api.model.ServiceAccountBuilder;
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition;
@@ -96,11 +96,11 @@ public class StrimziOperatorSetup {
                 .endMetadata()
                 .withNewRoleRef()
                     .withApiGroup(Constants.RBAC_AUTH_API_GROUP)
-                    .withKind(ResourceKinds.CLUSTER_ROLE)
+                    .withKind(HasMetadata.getKind(ClusterRole.class))
                     .withName(Constants.STRIMZI_CO_NAME + "-namespaced")
                 .endRoleRef()
                 .withSubjects(new SubjectBuilder()
-                    .withKind(ResourceKinds.SERVICE_ACCOUNT)
+                    .withKind(HasMetadata.getKind(ServiceAccount.class))
                     .withName(Constants.STRIMZI_CO_NAME)
                     .withNamespace(this.deploymentNamespace)
                     .build())
@@ -111,11 +111,11 @@ public class StrimziOperatorSetup {
                 .endMetadata()
                 .withNewRoleRef()
                     .withApiGroup(Constants.RBAC_AUTH_API_GROUP)
-                    .withKind(ResourceKinds.CLUSTER_ROLE)
+                    .withKind(HasMetadata.getKind(ClusterRole.class))
                     .withName(Constants.STRIMZI_CO_NAME  + "-entity-operator")
                 .endRoleRef()
                 .withSubjects(new SubjectBuilder()
-                    .withKind(ResourceKinds.SERVICE_ACCOUNT)
+                    .withKind(HasMetadata.getKind(ServiceAccount.class))
                     .withName(Constants.STRIMZI_CO_NAME)
                     .withNamespace(this.deploymentNamespace)
                     .build())
@@ -126,11 +126,11 @@ public class StrimziOperatorSetup {
                 .endMetadata()
                 .withNewRoleRef()
                     .withApiGroup(Constants.RBAC_AUTH_API_GROUP)
-                    .withKind(ResourceKinds.CLUSTER_ROLE)
+                    .withKind(HasMetadata.getKind(ClusterRole.class))
                     .withName(Constants.STRIMZI_CO_NAME + "-watched")
                 .endRoleRef()
                 .withSubjects(new SubjectBuilder()
-                    .withKind(ResourceKinds.SERVICE_ACCOUNT)
+                    .withKind(HasMetadata.getKind(ServiceAccount.class))
                     .withName(Constants.STRIMZI_CO_NAME)
                     .withNamespace(this.deploymentNamespace)
                     .build())
@@ -140,7 +140,7 @@ public class StrimziOperatorSetup {
 
     private ConfigMap getBundleConfigMap() {
         return new ConfigMapBuilder(TestFrameUtils.configFromYaml(strimziResources.stream()
-            .filter(file -> file.getName().matches(".*050-ConfigMap-.*\\.yaml")).toList().get(0), ConfigMap.class))
+            .filter(file -> file.getName().startsWith("050-ConfigMap")).toList().get(0), ConfigMap.class))
             .editMetadata()
                 .withNamespace(this.deploymentNamespace)
                 .withName(this.deploymentName)
@@ -150,7 +150,7 @@ public class StrimziOperatorSetup {
 
     private ServiceAccount getBundleServiceAccount() {
         return new ServiceAccountBuilder(TestFrameUtils.configFromYaml(strimziResources.stream()
-            .filter(file -> file.getName().matches(".*010-ServiceAccount-.*\\.yaml")).toList().get(0), ServiceAccount.class))
+            .filter(file -> file.getName().startsWith("010-ServiceAccount")).toList().get(0), ServiceAccount.class))
             .editMetadata()
                 .withNamespace(this.deploymentNamespace)
             .endMetadata()
@@ -159,7 +159,7 @@ public class StrimziOperatorSetup {
 
     private Deployment getBundleDeployment() {
         return new DeploymentBuilder(TestFrameUtils.configFromYaml(strimziResources.stream()
-            .filter(file -> file.getName().matches(".*060-Deployment-.*\\.yaml")).toList().get(0), Deployment.class))
+            .filter(file -> file.getName().startsWith("060-Deployment")).toList().get(0), Deployment.class))
             .editMetadata()
                 .withNamespace(this.deploymentNamespace)
                 .withName(this.deploymentName)
@@ -181,7 +181,7 @@ public class StrimziOperatorSetup {
     }
 
     private CustomResourceDefinition[] getBundleCrds() {
-        return strimziResources.stream().filter(file -> file.getName().matches(".*-Crd-.*\\.yaml"))
+        return strimziResources.stream().filter(file -> file.getName().contains("-Crd-"))
             .map(crd -> new CustomResourceDefinitionBuilder(TestFrameUtils.configFromYaml(crd, CustomResourceDefinition.class))
                 .editMetadata()
                     .withNamespace(this.deploymentNamespace)
@@ -191,7 +191,7 @@ public class StrimziOperatorSetup {
     }
 
     private ClusterRole[] getBundleClusterRoles() {
-        return strimziResources.stream().filter(file -> file.getName().matches(".*-ClusterRole-.*\\.yaml"))
+        return strimziResources.stream().filter(file -> file.getName().contains("-ClusterRole-"))
             .map(file -> new ClusterRoleBuilder(TestFrameUtils.configFromYaml(file, ClusterRole.class))
                 .editMetadata()
                     .withNamespace(this.deploymentNamespace)
@@ -201,7 +201,7 @@ public class StrimziOperatorSetup {
     }
 
     private RoleBinding[] getBundleRoleBindings() {
-        return strimziResources.stream().filter(file -> file.getName().matches(".*-RoleBinding-.*\\.yaml"))
+        return strimziResources.stream().filter(file -> file.getName().contains("-RoleBinding-"))
             .map(rb -> new RoleBindingBuilder(TestFrameUtils.configFromYaml(rb, RoleBinding.class))
                 .editMetadata()
                     .withNamespace(this.deploymentNamespace)
@@ -214,7 +214,7 @@ public class StrimziOperatorSetup {
     }
 
     private ClusterRoleBinding[] getBundleClusterRoleBindings() {
-        return strimziResources.stream().filter(file -> file.getName().matches(".*-ClusterRoleBinding-.*\\.yaml"))
+        return strimziResources.stream().filter(file -> file.getName().contains("-ClusterRoleBinding-"))
             .map(crb -> new ClusterRoleBindingBuilder(TestFrameUtils.configFromYaml(crb, ClusterRoleBinding.class))
                 .editMetadata()
                     .withNamespace(this.deploymentNamespace)

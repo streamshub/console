@@ -3,9 +3,14 @@ package com.github.streamshub.systemtests.logs;
 import com.github.streamshub.console.api.v1alpha1.Console;
 import com.github.streamshub.systemtests.Environment;
 import com.github.streamshub.systemtests.constants.Labels;
-import com.github.streamshub.systemtests.constants.ResourceKinds;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.LabelSelectorBuilder;
+import io.fabric8.kubernetes.api.model.Secret;
+import io.fabric8.kubernetes.api.model.apps.Deployment;
+import io.fabric8.openshift.api.model.operatorhub.v1.OperatorGroup;
+import io.fabric8.openshift.api.model.operatorhub.v1alpha1.ClusterServiceVersion;
+import io.fabric8.openshift.api.model.operatorhub.v1alpha1.InstallPlan;
+import io.fabric8.openshift.api.model.operatorhub.v1alpha1.Subscription;
 import io.skodjob.testframe.LogCollector;
 import io.skodjob.testframe.LogCollectorBuilder;
 import io.skodjob.testframe.clients.KubeClient;
@@ -50,8 +55,8 @@ public class TestLogCollector {
 
     private LogCollector defaultLogCollector() {
         List<String> resources = new ArrayList<>(List.of(
-            ResourceKinds.SECRET,
-            ResourceKinds.DEPLOYMENT,
+            HasMetadata.getKind(Secret.class),
+            HasMetadata.getKind(Deployment.class),
             HasMetadata.getKind(Console.class),
             Kafka.RESOURCE_KIND,
             KafkaNodePool.RESOURCE_KIND,
@@ -61,10 +66,10 @@ public class TestLogCollector {
 
         if (Environment.INSTALL_USING_OLM) {
             resources.addAll(List.of(
-                ResourceKinds.OPERATOR_GROUP,
-                ResourceKinds.SUBSCRIPTION,
-                ResourceKinds.INSTALL_PLAN,
-                ResourceKinds.CLUSTER_SERVICE_VERSION
+                HasMetadata.getKind(OperatorGroup.class),
+                HasMetadata.getKind(Subscription.class),
+                HasMetadata.getKind(InstallPlan.class),
+                HasMetadata.getKind(ClusterServiceVersion.class)
             ));
         }
 

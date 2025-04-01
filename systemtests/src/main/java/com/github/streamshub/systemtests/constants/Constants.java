@@ -1,5 +1,8 @@
 package com.github.streamshub.systemtests.constants;
 
+import com.github.streamshub.console.api.v1alpha1.Console;
+import io.fabric8.kubernetes.api.model.HasMetadata;
+
 public class Constants {
     private Constants() {}
 
@@ -64,8 +67,8 @@ public class Constants {
     /**
      * CRDs
      */
-    public static final String CONSOLE_CRD_API_NAME = "consoles.console.streamshub.github.com";
-    public static final String CONSOLE_CRD_API_VERSION = "console.streamshub.github.com/v1alpha1";
+    public static final String CONSOLE_CRD_API_NAME = HasMetadata.getFullResourceName(Console.class);
+    public static final String CONSOLE_CRD_API_VERSION = HasMetadata.getGroup(Console.class) + "/" + HasMetadata.getVersion(Console.class);
     public static final String CONSOLE_OPERATOR_GROUP_NAME = "streamshub-operators";
     public static final String CONSOLE_INSTANCE = "console-instance";
 }
