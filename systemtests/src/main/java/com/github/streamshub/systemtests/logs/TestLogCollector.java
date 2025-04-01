@@ -1,14 +1,25 @@
 package com.github.streamshub.systemtests.logs;
 
+import com.github.streamshub.console.api.v1alpha1.Console;
 import com.github.streamshub.systemtests.Environment;
 import com.github.streamshub.systemtests.constants.Labels;
-import com.github.streamshub.systemtests.constants.ResourceKinds;
+import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.LabelSelectorBuilder;
+import io.fabric8.kubernetes.api.model.Secret;
+import io.fabric8.kubernetes.api.model.apps.Deployment;
+import io.fabric8.openshift.api.model.operatorhub.v1.OperatorGroup;
+import io.fabric8.openshift.api.model.operatorhub.v1alpha1.ClusterServiceVersion;
+import io.fabric8.openshift.api.model.operatorhub.v1alpha1.InstallPlan;
+import io.fabric8.openshift.api.model.operatorhub.v1alpha1.Subscription;
 import io.skodjob.testframe.LogCollector;
 import io.skodjob.testframe.LogCollectorBuilder;
 import io.skodjob.testframe.clients.KubeClient;
 import io.skodjob.testframe.clients.cmdClient.Kubectl;
 import io.skodjob.testframe.resources.KubeResourceManager;
+import io.strimzi.api.kafka.model.kafka.Kafka;
+import io.strimzi.api.kafka.model.nodepool.KafkaNodePool;
+import io.strimzi.api.kafka.model.topic.KafkaTopic;
+import io.strimzi.api.kafka.model.user.KafkaUser;
 import org.apache.logging.log4j.Logger;
 
 import java.io.File;
@@ -44,21 +55,21 @@ public class TestLogCollector {
 
     private LogCollector defaultLogCollector() {
         List<String> resources = new ArrayList<>(List.of(
-            ResourceKinds.SECRET,
-            ResourceKinds.DEPLOYMENT,
-            ResourceKinds.KAFKA,
-            ResourceKinds.KAFKA_NODE_POOL,
-            ResourceKinds.KAFKA_TOPIC,
-            ResourceKinds.KAFKA_USER,
-            ResourceKinds.CONSOLE
+            HasMetadata.getKind(Secret.class),
+            HasMetadata.getKind(Deployment.class),
+            HasMetadata.getKind(Console.class),
+            Kafka.RESOURCE_KIND,
+            KafkaNodePool.RESOURCE_KIND,
+            KafkaTopic.RESOURCE_KIND,
+            KafkaUser.RESOURCE_KIND
         ));
 
         if (Environment.INSTALL_USING_OLM) {
             resources.addAll(List.of(
-                ResourceKinds.OPERATOR_GROUP,
-                ResourceKinds.SUBSCRIPTION,
-                ResourceKinds.INSTALL_PLAN,
-                ResourceKinds.CLUSTER_SERVICE_VERSION
+                HasMetadata.getKind(OperatorGroup.class),
+                HasMetadata.getKind(Subscription.class),
+                HasMetadata.getKind(InstallPlan.class),
+                HasMetadata.getKind(ClusterServiceVersion.class)
             ));
         }
 
@@ -111,8 +122,8 @@ public class TestLogCollector {
 
     public void collectLogs() {
         collectLogs(
-            KubeResourceManager.getTestContext().getRequiredTestClass().getName(),
-            KubeResourceManager.getTestContext().getRequiredTestMethod().getName()
+            KubeResourceManager.get().getTestContext().getRequiredTestClass().getName(),
+            KubeResourceManager.get().getTestContext().getRequiredTestMethod().getName()
         );
     }
 

@@ -10,6 +10,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.opentest4j.TestAbortedException;
+import org.powermock.reflect.Whitebox;
 
 import java.lang.reflect.Method;
 
@@ -34,8 +35,8 @@ class TestExecutionWatcherTest {
     private static final Throwable TEST_ABORTED_EXCEPTION = new TestAbortedException("Test was aborted");
 
     @BeforeEach
-    void setUp() throws NoSuchMethodException, NoSuchFieldException, IllegalAccessException {
-        UnitTestUtils.setField(mockWatcher, "logCollector", mockTestLogCollector);
+    void setUp() throws NoSuchMethodException {
+        Whitebox.setInternalState(TestExecutionWatcher.class, "LOG_COLLECTOR", mockTestLogCollector);
         when(mockContext.getRequiredTestClass()).thenReturn((Class) String.class);
         when(mockContext.getRequiredTestMethod()).thenReturn(String.class.getDeclaredMethod("toString"));
         doNothing().when(mockTestLogCollector).collectLogs(anyString(), anyString());
