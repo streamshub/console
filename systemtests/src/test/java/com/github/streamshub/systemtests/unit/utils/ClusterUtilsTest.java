@@ -27,18 +27,20 @@ class ClusterUtilsTest {
 
     private static final KubeCmdClient MOCKED_CMD_CLIENT = mock(KubeCmdClient.class);
     private static final ExecResult MOCKED_EXEC_RESULT = mock(ExecResult.class);
-    private static MockedStatic<KubeResourceManager> mockedKubeResourceManager;
+    private static MockedStatic<KubeResourceManager> staticMockedKubeResourceManager;
+    private static final KubeResourceManager MOCKED_KUBE_RESOURCE_MANAGER = mock(KubeResourceManager.class);
 
     @BeforeEach
     void setup() {
-        mockedKubeResourceManager = mockStatic(KubeResourceManager.class);
-        mockedKubeResourceManager.when(KubeResourceManager::getKubeCmdClient).thenReturn(MOCKED_CMD_CLIENT);
+        staticMockedKubeResourceManager = mockStatic(KubeResourceManager.class);
+        staticMockedKubeResourceManager.when(KubeResourceManager::get).thenReturn(MOCKED_KUBE_RESOURCE_MANAGER);
+        when(MOCKED_KUBE_RESOURCE_MANAGER.kubeCmdClient()).thenReturn(MOCKED_CMD_CLIENT);
         when(MOCKED_CMD_CLIENT.exec(false, "cluster-info")).thenReturn(MOCKED_EXEC_RESULT);
     }
 
     @AfterEach
     void tearDown() {
-        mockedKubeResourceManager.close();
+        staticMockedKubeResourceManager.close();
     }
 
     static Stream<Arguments> clusterHealthTestCases() {
@@ -66,7 +68,7 @@ class ClusterUtilsTest {
 
     @Test
     void testIsOcp() {
-        ExecResult methodCall = KubeResourceManager.getKubeCmdClient().exec(false, "api-versions");
+        ExecResult methodCall = KubeResourceManager.get().kubeCmdClient().exec(false, "api-versions");
         when(methodCall).thenReturn(new ExecResult(0, "openshift.io version 1.2.3", ""));
         assertTrue(ClusterUtils.isOcp());
 
