@@ -226,3 +226,37 @@ export const ControllerLabel = (): Record<ControllerStatus, ReactNode> => {
     ),
   };
 };
+
+const generateStatusLabel = <T extends string>(
+  labels: Record<T, ReactNode>, // ✅ Accept `ReactNode` instead of `string`
+  statuses: Record<T, number> = {} as Record<T, number>,
+): Record<T, ReactNode> => {
+  return Object.entries(labels).reduce(
+    (acc, [key, label]) => {
+      const typedKey = key as T;
+      const count = statuses[typedKey] ?? 0;
+
+      acc[typedKey] = (
+        <Level>
+          <LevelItem>{label as ReactNode}</LevelItem>{" "}
+          {/* ✅ No need for type conversion */}
+          <LevelItem>
+            <span style={{ color: "var(--pf-v5-global--Color--200)" }}>
+              {count}
+            </span>
+          </LevelItem>
+        </Level>
+      );
+      return acc;
+    },
+    {} as Record<T, ReactNode>,
+  );
+};
+
+export const getBrokerStatusLabel = (statuses?: Record<string, number>) => {
+  return generateStatusLabel(BrokerLabel(), statuses);
+};
+
+export const getControllerStatusLabel = (statuses?: Record<string, number>) => {
+  return generateStatusLabel(ControllerLabel(), statuses);
+};

@@ -31,7 +31,13 @@ import { ChartDonutUtilization } from "@/libs/patternfly/react-charts";
 import { useFormatBytes } from "@/utils/useFormatBytes";
 import { TableView, TableViewProps } from "@/components/Table/TableView";
 import { EmptyStateNoMatchFound } from "@/components/Table/EmptyStateNoMatchFound";
-import { BrokerLabel, ControllerLabel, RoleLabel } from "./NodesLabel";
+import {
+  BrokerLabel,
+  ControllerLabel,
+  getBrokerStatusLabel,
+  getControllerStatusLabel,
+  RoleLabel,
+} from "./NodesLabel";
 import { HelpIcon } from "@/libs/patternfly/react-icons";
 
 export const NodeListColumns = [
@@ -92,46 +98,10 @@ export function NodesTable({
   const NodeRoleLabel = RoleLabel(statuses);
   const BrokerStatusLabel = BrokerLabel();
   const ControllerStatusLabel = ControllerLabel();
-
-  const getBrokerStatusLabel = (statuses?: Record<string, number>) => {
-    return Object.entries(BrokerStatusLabel).reduce(
-      (acc, [key, label]) => {
-        const count = statuses?.[key] ?? 0;
-        acc[key as BrokerStatus] = (
-          <Level>
-            <LevelItem>{label}</LevelItem>
-            <LevelItem>
-              <span style={{ color: "var(--pf-v5-global--Color--200)" }}>
-                {count}
-              </span>
-            </LevelItem>
-          </Level>
-        );
-        return acc;
-      },
-      {} as Record<BrokerStatus, ReactNode>,
-    );
-  };
-
-  const getControllerStatusLabel = (statuses?: Record<string, number>) => {
-    return Object.entries(ControllerStatusLabel).reduce(
-      (acc, [key, label]) => {
-        const count = statuses?.[key] ?? 0;
-        acc[key as ControllerStatus] = (
-          <Level>
-            <LevelItem>{label}</LevelItem>
-            <LevelItem>
-              <span style={{ color: "var(--pf-v5-global--Color--200)" }}>
-                {count}
-              </span>
-            </LevelItem>
-          </Level>
-        );
-        return acc;
-      },
-      {} as Record<ControllerStatus, ReactNode>,
-    );
-  };
+  const BrokerStatusLabelOptions = getBrokerStatusLabel(statuses?.brokers);
+  const ControllerStatusLabelOptions = getControllerStatusLabel(
+    statuses?.controllers,
+  );
 
   const nodePoolOptions = nodePoolList
     ? Object.fromEntries(
@@ -416,10 +386,8 @@ export function NodesTable({
                 )
                   ? updateStatus(filterControllerStatus || [], status)
                   : filterControllerStatus;
-                onFilterStatusChange(
-                  newBrokerStatus ?? [],
-                  newControllerStatus ?? [],
-                );
+
+                onFilterStatusChange(newBrokerStatus, newControllerStatus);
               },
               onRemoveChip: (status: BrokerStatus | ControllerStatus) => {
                 onFilterStatusChange(
@@ -435,11 +403,11 @@ export function NodesTable({
               options: [
                 {
                   groupLabel: "Broker",
-                  groupOptions: getBrokerStatusLabel(statuses?.brokers),
+                  groupOptions: BrokerStatusLabelOptions,
                 },
                 {
                   groupLabel: "Controller",
-                  groupOptions: getControllerStatusLabel(statuses?.controllers),
+                  groupOptions: ControllerStatusLabelOptions,
                 },
               ],
             },
