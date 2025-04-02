@@ -37,8 +37,12 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.FileAttribute;
+import java.nio.file.attribute.PosixFilePermission;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -112,7 +116,8 @@ public class ConsoleOperatorSetup {
                 Path tempFile = null;
 
                 try {
-                    tempFile = Files.createTempFile("console-" + fileName + "-tmp_", ".yaml");
+                    FileAttribute<Set<PosixFilePermission>> attr = PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwx------"));
+                    tempFile = Files.createTempFile("console-" + fileName + "-tmp_", ".yaml", attr);
                     Files.write(tempFile, file.trim().getBytes(StandardCharsets.UTF_8));
                 } catch (IOException e) {
                     throw new FileOperationException("Failed to create temp file: " + fileName, e);
