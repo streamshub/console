@@ -51,7 +51,7 @@ public class ConsoleOperatorSetup {
 
     private final String deploymentNamespace;
     private final String operatorDeploymentName = ConsoleUtils.getConsoleOperatorName();
-    private List<File> consoleBundleResources = getConsoleBundleResources();
+    private List<File> consoleBundleResources;
 
     public ConsoleOperatorSetup(String namespace) {
         this.deploymentNamespace = namespace;

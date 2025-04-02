@@ -1,6 +1,7 @@
 package com.github.streamshub.systemtests.utils;
 
 import io.fabric8.kubernetes.api.model.apps.Deployment;
+import io.fabric8.kubernetes.client.readiness.Readiness;
 import io.skodjob.testframe.TestFrameConstants;
 import io.skodjob.testframe.wait.Wait;
 
@@ -18,11 +19,10 @@ public class WaitUtils {
             TestFrameConstants.GLOBAL_POLL_INTERVAL_1_SEC, TestFrameConstants.GLOBAL_TIMEOUT_MEDIUM,
             () -> {
                 Deployment dep = listKubeResourcesByPrefix(Deployment.class, namespaceName, deploymentNamePrefix).get(0);
-                if (dep == null || dep.getStatus() == null || dep.getStatus().getAvailableReplicas() == null ||
-                    !dep.getStatus().getAvailableReplicas().equals(dep.getSpec().getReplicas())) {
+                if (dep == null) {
                     return false;
                 }
-                return true;
+                return Readiness.isDeploymentReady(dep);
             });
     }
 }

@@ -17,7 +17,7 @@ public class Environment {
     public static final String CONSOLE_DEPLOYMENT_NAME = ENVS.getOrDefault("CONSOLE_DEPLOYMENT_NAME", "streamshub-console");
     public static final String STRIMZI_OPERATOR_NAME = ENVS.getOrDefault("STRIMZI_OPERATOR_NAME", "strimzi-cluster-operator");
     public static final String STRIMZI_OPERATOR_CRDS_URL = ENVS.getOrDefault("STRIMZI_OPERATOR_CRDS_URL", "");
-    public static final String CONSOLE_OPERATOR_BUNDLE_URL = USER_PATH + "/" + ENVS.getOrDefault("CONSOLE_OPERATOR_BUNDLE_URL", "../install/console-operator/non-olm/console-operator.yaml");
+    public static final String CONSOLE_OPERATOR_BUNDLE_URL = ENVS.getOrDefault("CONSOLE_OPERATOR_BUNDLE_URL", "");
     public static final String CONSOLE_CATALOG_SOURCE_NAME = ENVS.getOrDefault("CONSOLE_CATALOG_SOURCE_NAME", "streamshub-console-catalog");
     public static final String TEST_LOG_DIR = ENVS.getOrDefault("TEST_LOG_DIR",  USER_PATH + "/target/logs/");
     public static final String TEST_FILE_LOG_LEVEL = ENVS.getOrDefault("TEST_FILE_LOG_LEVEL",  "INFO");
