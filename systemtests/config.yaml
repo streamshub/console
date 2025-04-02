@@ -28,9 +28,9 @@ CLIENT_TYPE: kubectl
 # OLM
 # -------------------------------------------
 # Name of the CatalogSource for Console Operator (OLM install)
-CONSOLE_CATALOG_SOURCE_NAME: streamshub-console-catalog
+CONSOLE_CATALOG_SOURCE_NAME: strimzi-source
 # Namespace where lies the CatalogSource for Console Operator
-OLM_CATALOG_NAMESPACE: ""
+OLM_CATALOG_NAMESPACE:
 # OLM channel for selecting the Operator version
 OLM_OPERATOR_CHANNEL: alpha
 # Deployment name for the OLM install type Console Operator
@@ -43,16 +43,16 @@ STRIMZI_OPERATOR_CRDS_URL: https://github.com/strimzi/strimzi-kafka-operator/tre
 # URL or local path for Console Operator installation
 # 1. URL - released console-operator.yaml ["https://github.com/streamshub/console/releases/download/0.6.3/streamshub-console-operator.yaml"]
 # 2. Local path relative to systemtests folder
-CONSOLE_OPERATOR_BUNDLE_URL: ../install/console-operator/non-olm/console-operator.yaml
+CONSOLE_OPERATOR_BUNDLE_URL: ../target/operator.yaml
 # Custom Console Operator image. Overrides default image used in bundle yaml
-CONSOLE_OPERATOR_IMAGE: ""
+CONSOLE_OPERATOR_IMAGE:
 # -------------------------------------------
 # Console instance images
 # -------------------------------------------
 # Custom Console API image. Overrides default image installed automatically by Operator
-CONSOLE_API_IMAGE: ""
+CONSOLE_API_IMAGE:
 # Custom Console UI image. Overrides default image installed automatically by Operator
-CONSOLE_UI_IMAGE: ""
+CONSOLE_UI_IMAGE:
 # -------------------------------------------
 # Kafka
 # -------------------------------------------

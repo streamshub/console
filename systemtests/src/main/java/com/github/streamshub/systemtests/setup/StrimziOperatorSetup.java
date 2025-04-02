@@ -53,7 +53,9 @@ public class StrimziOperatorSetup {
         LOGGER.info("----------- Setup Strimzi Cluster Operator -----------");
         // Watch all namespaces CRB
         // https://strimzi.io/docs/operators/latest/deploying#deploying-cluster-operator-to-watch-whole-cluster-str
-        KubeResourceManager.get().createResourceWithWait(getStrimziWatchAllCrbs());
+        if (ResourceUtils.getKubeResource(ClusterRoleBinding.class, Constants.STRIMZI_CO_NAME + "-namespaced") == null) {
+            KubeResourceManager.get().createResourceWithoutWait(getStrimziWatchAllCrbs());
+        }
 
         if (Environment.SKIP_STRIMZI_INSTALLATION || ResourceUtils.getKubeResource(Deployment.class, this.deploymentNamespace, this.deploymentName) != null) {
             LOGGER.warn("Skipping Strimzi installation. It is already installed or env to skip installation was set to `true`!");

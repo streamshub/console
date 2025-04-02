@@ -11,10 +11,17 @@ public class WaitUtils {
     // ------------
     // Deployment
     // ------------
-    public static void waitForDeploymentWithPrefix(String namespaceName, String deploymentNamePrefix) {
+    public static void waitForDeploymentWithPrefixIsReady(String namespaceName, String deploymentNamePrefix) {
         Wait.until(String.format("creation of Deployment with prefix: %s in Namespace: %s", deploymentNamePrefix, namespaceName),
             TestFrameConstants.GLOBAL_POLL_INTERVAL_1_SEC, TestFrameConstants.GLOBAL_TIMEOUT_MEDIUM,
-            () -> !listKubeResourcesByPrefix(Deployment.class, namespaceName, deploymentNamePrefix).isEmpty());
+            () -> {
+                Deployment dep = listKubeResourcesByPrefix(Deployment.class, namespaceName, deploymentNamePrefix).get(0);
+                if (dep == null || dep.getStatus() == null || dep.getStatus().getAvailableReplicas() == null ||
+                    !dep.getStatus().getAvailableReplicas().equals(dep.getSpec().getReplicas())) {
+                    return false;
+                }
+                return true;
+            });
     }
 
     // ------------

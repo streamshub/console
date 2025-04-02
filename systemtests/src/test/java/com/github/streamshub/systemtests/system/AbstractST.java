@@ -5,6 +5,7 @@ import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.constants.Labels;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.resources.ConsoleType;
+import com.github.streamshub.systemtests.setup.ConsoleOperatorSetup;
 import com.github.streamshub.systemtests.setup.StrimziOperatorSetup;
 import com.github.streamshub.systemtests.utils.ClusterUtils;
 import com.github.streamshub.systemtests.utils.ResourceUtils;
@@ -44,6 +45,7 @@ public abstract class AbstractST {
     private static final Logger LOGGER = LogWrapper.getLogger(AbstractST.class);
     // Operators
     protected final StrimziOperatorSetup strimziOperatorSetup = new StrimziOperatorSetup(Constants.CO_NAMESPACE);
+    protected final ConsoleOperatorSetup consoleOperatorSetup = new ConsoleOperatorSetup(Constants.CO_NAMESPACE);
 
     static {
         KubeResourceManager.get().setResourceTypes(
@@ -87,6 +89,7 @@ public abstract class AbstractST {
             KubeResourceManager.get().createOrUpdateResourceWithWait(new NamespaceBuilder().withNewMetadata().withName(Constants.CO_NAMESPACE).endMetadata().build());
         }
         strimziOperatorSetup.setup();
+        consoleOperatorSetup.setup();
     }
 
     @BeforeEach
@@ -102,6 +105,5 @@ public abstract class AbstractST {
             LOGGER.warn("Teardown was skipped because of SKIP_TEARDOWN env");
             return;
         }
-        strimziOperatorSetup.teardown();
     }
 }

@@ -22,9 +22,10 @@ import io.fabric8.kubernetes.api.model.rbac.ClusterRoleBindingBuilder;
 import io.fabric8.kubernetes.api.model.rbac.ClusterRoleBuilder;
 import io.fabric8.kubernetes.api.model.rbac.RoleBinding;
 import io.fabric8.kubernetes.api.model.rbac.RoleBindingBuilder;
+import io.fabric8.openshift.api.model.operatorhub.v1.OperatorGroup;
+import io.fabric8.openshift.api.model.operatorhub.v1.OperatorGroupBuilder;
 import io.fabric8.openshift.api.model.operatorhub.v1alpha1.Subscription;
 import io.fabric8.openshift.api.model.operatorhub.v1alpha1.SubscriptionBuilder;
-import io.skodjob.testframe.TestFrameEnv;
 import io.skodjob.testframe.resources.KubeResourceManager;
 import io.skodjob.testframe.utils.TestFrameUtils;
 import org.apache.logging.log4j.Logger;
@@ -56,7 +57,7 @@ public class ConsoleOperatorSetup {
     public void setup() {
         LOGGER.info("----------- Setup Console Operator -----------");
 
-        if (ResourceUtils.getKubeResource(Deployment.class, this.deploymentNamespace, this.operatorDeploymentName) != null) {
+        if (!ResourceUtils.listKubeResourcesByPrefix(Deployment.class, this.deploymentNamespace, this.operatorDeploymentName).isEmpty()) {
             LOGGER.warn("Console Operator is already deployed. Skipping deployment");
             return;
         }
@@ -68,37 +69,26 @@ public class ConsoleOperatorSetup {
                 ResourceUtils.getKubeResource(CustomResourceDefinition.class, "subscriptions.operators.coreos.com") == null) {
                 throw new RuntimeException("Operator SDK is not installed on the current cluster. Cannot install Console Operator using subscriptions");
             }
-
+            KubeResourceManager.get().createResourceWithWait(getOlmOperatorGroup());
             KubeResourceManager.get().createResourceWithWait(getOlmSubscription());
-            WaitUtils.waitForDeploymentWithPrefix(this.deploymentNamespace, this.deploymentNamespace);
+            WaitUtils.waitForDeploymentWithPrefixIsReady(this.deploymentNamespace, this.operatorDeploymentName);
         } else {
             LOGGER.info("Setup Console Operator using YAML files");
-            KubeResourceManager.get().createOrUpdateResourceWithoutWait(getBundleCrds());
-            KubeResourceManager.get().createOrUpdateResourceWithoutWait(getBundleServiceAccount());
-            KubeResourceManager.get().createOrUpdateResourceWithoutWait(getBundleClusterRoles());
-            KubeResourceManager.get().createOrUpdateResourceWithoutWait(getBundleClusterRoleBindings());
-            KubeResourceManager.get().createOrUpdateResourceWithoutWait(getBundleRoleBindings());
-            KubeResourceManager.get().createOrUpdateResourceWithoutWait(getBundleDeployment());
+            KubeResourceManager.get().createResourceWithoutWait(getBundleCrds());
+            KubeResourceManager.get().createResourceWithoutWait(getBundleServiceAccount());
+            KubeResourceManager.get().createResourceWithoutWait(getBundleClusterRoles());
+            KubeResourceManager.get().createResourceWithoutWait(getBundleClusterRoleBindings());
+            KubeResourceManager.get().createResourceWithoutWait(getBundleRoleBindings());
+            KubeResourceManager.get().createResourceWithWait(getBundleDeployment());
         }
     }
 
     public void teardown() {
-        if (!Environment.SKIP_TEARDOWN) {
-            LOGGER.info("----------- Teardown Console Operator -----------");
-            // Console CRD
-            ConsoleUtils.removeFinalizersInAllConsoleInstances();
-            if (Environment.INSTALL_USING_OLM) {
-                KubeResourceManager.get().deleteResource(getBundleCrds());
-            } else {
-                KubeResourceManager.get().deleteResource(getBundleCrds());
-                KubeResourceManager.get().deleteResource(getBundleServiceAccount());
-                KubeResourceManager.get().deleteResource(getBundleClusterRoles());
-                KubeResourceManager.get().deleteResource(getBundleClusterRoleBindings());
-                KubeResourceManager.get().deleteResource(getBundleRoleBindings());
-                KubeResourceManager.get().deleteResource(getBundleDeployment());
-            }
-        } else {
-            LOGGER.warn("Console Operator teardown was skipped due to SKIP_TEARDOWN env");
+        LOGGER.info("----------- Teardown Console Operator -----------");
+        // Console CRD
+        ConsoleUtils.removeFinalizersInAllConsoleInstances();
+        if (Environment.INSTALL_USING_OLM) {
+
         }
     }
 
@@ -112,7 +102,7 @@ public class ConsoleOperatorSetup {
         if (Environment.CONSOLE_OPERATOR_BUNDLE_URL.startsWith("http://") || Environment.CONSOLE_OPERATOR_BUNDLE_URL.startsWith("https://")) {
             yamlFiles = SetupUtils.getYamlContentFromUrl(Environment.CONSOLE_OPERATOR_BUNDLE_URL).split("---");
         } else {
-            yamlFiles = SetupUtils.getYamlContentFromFile(TestFrameEnv.USER_PATH + "/" + Environment.CONSOLE_OPERATOR_BUNDLE_URL).split("---");
+            yamlFiles = SetupUtils.getYamlContentFromFile(Environment.CONSOLE_OPERATOR_BUNDLE_URL).split("---");
         }
 
         // Separate one file into multiple YAML files for easier object mapping
@@ -269,8 +259,17 @@ public class ConsoleOperatorSetup {
     // ------
     // OLM
     // ------
-    public Subscription getOlmSubscription() {
-        return new SubscriptionBuilder(TestFrameUtils.configFromYaml(ExampleFilePaths.CONSOLE_OPERATOR_SUBSCRIPTION_YAML, Subscription.class))
+    private OperatorGroup getOlmOperatorGroup() {
+        return new OperatorGroupBuilder(
+            TestFrameUtils.configFromYaml(SetupUtils.getYamlContentFromFile(ExampleFilePaths.CONSOLE_OPERATOR_GROUP_YAML), OperatorGroup.class))
+            .editMetadata()
+                .withNamespace(this.deploymentNamespace)
+            .endMetadata()
+            .build();
+    }
+
+    private Subscription getOlmSubscription() {
+        return new SubscriptionBuilder(TestFrameUtils.configFromYaml(SetupUtils.getYamlContentFromFile(ExampleFilePaths.CONSOLE_OPERATOR_SUBSCRIPTION_YAML), Subscription.class))
             .editMetadata()
                 .withNamespace(this.deploymentNamespace)
                 .withName(Constants.CONSOLE_OPERATOR_SUBSCRIPTION_NAME)

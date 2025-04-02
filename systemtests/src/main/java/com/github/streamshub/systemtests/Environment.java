@@ -34,7 +34,7 @@ public class Environment {
     public static final boolean INSTALL_USING_OLM = ENVS.getOrDefault("INSTALL_USING_OLM", Boolean::parseBoolean, false);
     public static final String TEST_CLIENTS_IMAGE = ENVS.getOrDefault("TEST_CLIENTS_IMAGE", "");
     public static final String OLM_OPERATOR_CHANNEL = ENVS.getOrDefault("OLM_OPERATOR_CHANNEL", "alpha");
-    public static final String OLM_CATALOG_NAMESPACE = ENVS.getOrDefault("OLM_OPERATOR_CHANNEL", Constants.OPENSHIFT_MARKETPLACE_NAMESPACE);
+    public static final String OLM_CATALOG_NAMESPACE = ENVS.getOrDefault("OLM_CATALOG_NAMESPACE", Constants.OPENSHIFT_MARKETPLACE_NAMESPACE);
     // ------------------------------------------------------------------------------------------------------------------------------------------------------------
     // Deny instantiation
     private Environment() {}
