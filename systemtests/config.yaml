@@ -28,7 +28,7 @@ CLIENT_TYPE: kubectl
 # OLM
 # -------------------------------------------
 # Name of the CatalogSource for Console Operator (OLM install)
-CONSOLE_CATALOG_SOURCE_NAME: strimzi-source
+CONSOLE_CATALOG_SOURCE_NAME: console-source
 # Namespace where lies the CatalogSource for Console Operator
 OLM_CATALOG_NAMESPACE:
 # OLM channel for selecting the Operator version
