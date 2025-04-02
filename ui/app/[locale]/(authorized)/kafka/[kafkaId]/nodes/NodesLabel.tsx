@@ -18,7 +18,7 @@ import { useTranslations } from "next-intl";
 
 export const RoleLabel = (
   statuses?: Statuses,
-): Record<NodeRoles, { label: ReactNode }> => {
+): Record<NodeRoles, { label: ReactNode; labelWithCount: ReactNode }> => {
   const t = useTranslations("nodes");
 
   const brokerCount = statuses?.brokers
@@ -34,7 +34,8 @@ export const RoleLabel = (
 
   return {
     broker: {
-      label: (
+      label: <>{t("node_roles.broker")}</>, // Label without count
+      labelWithCount: (
         <Level>
           <LevelItem>{t("node_roles.broker")}</LevelItem>
           <LevelItem>
@@ -46,7 +47,8 @@ export const RoleLabel = (
       ),
     },
     controller: {
-      label: (
+      label: <>{t("node_roles.controller")}</>,
+      labelWithCount: (
         <Level>
           <LevelItem>{t("node_roles.controller")}</LevelItem>
           <LevelItem>
@@ -228,7 +230,7 @@ export const ControllerLabel = (): Record<ControllerStatus, ReactNode> => {
 };
 
 const generateStatusLabel = <T extends string>(
-  labels: Record<T, ReactNode>, // ✅ Accept `ReactNode` instead of `string`
+  labels: Record<T, ReactNode>,
   statuses: Record<T, number> = {} as Record<T, number>,
 ): Record<T, ReactNode> => {
   return Object.entries(labels).reduce(
@@ -239,7 +241,6 @@ const generateStatusLabel = <T extends string>(
       acc[typedKey] = (
         <Level>
           <LevelItem>{label as ReactNode}</LevelItem>{" "}
-          {/* ✅ No need for type conversion */}
           <LevelItem>
             <span style={{ color: "var(--pf-v5-global--Color--200)" }}>
               {count}

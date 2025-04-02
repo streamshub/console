@@ -138,11 +138,9 @@ export function DistributionChart({
                   </Tooltip>
                 </DescriptionListTerm>
                 <DescriptionListDescription>
-                  <Link href={`nodes/${leadController}`}>
-                    {t("DistributionChart.lead_controller_value", {
-                      leadController,
-                    })}
-                  </Link>
+                  {t("DistributionChart.lead_controller_value", {
+                    leadController,
+                  })}
                 </DescriptionListDescription>
               </DescriptionListGroup>
             </DescriptionList>

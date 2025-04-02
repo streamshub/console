@@ -133,6 +133,12 @@ export function NodesTable({
           itemCount={nodesCount}
           isColumnSortable={isColumnSortable}
           isRowExpandable={() => true}
+          isFiltered={
+            filterNodePool?.length !== 0 ||
+            filterRole?.length != 0 ||
+            filterBrokerStatus?.length !== 0 ||
+            filterControllerStatus?.length !== 0
+          }
           onClearAllFilters={onClearAllFilters}
           data={nodeList}
           emptyStateNoData={<></>}
@@ -176,7 +182,11 @@ export function NodesTable({
               case "id":
                 return (
                   <Td key={key} dataLabel={"Node ID"}>
-                    <Link href={`nodes/${row.id}`}>{row.id}</Link>
+                    {row.attributes.broker ? (
+                      <Link href={`nodes/${row.id}`}>{row.id}</Link>
+                    ) : (
+                      <>{row.id}</>
+                    )}
                     {row.attributes.metadataState?.status === "leader" && (
                       <Label
                         isCompact={true}
@@ -361,7 +371,15 @@ export function NodesTable({
               onRemoveGroup: () => {
                 onFilterRoleChange(undefined);
               },
-              options: NodeRoleLabel,
+              options: Object.keys(NodeRoleLabel).reduce(
+                (acc: Record<NodeRoles, { label: ReactNode }>, role) => {
+                  acc[role as NodeRoles] = {
+                    label: NodeRoleLabel[role as NodeRoles].labelWithCount,
+                  };
+                  return acc;
+                },
+                {} as Record<NodeRoles, { label: ReactNode }>,
+              ),
             },
             Status: {
               type: "groupedCheckbox",
