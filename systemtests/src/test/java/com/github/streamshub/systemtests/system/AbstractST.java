@@ -4,7 +4,6 @@ import com.github.streamshub.systemtests.Environment;
 import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.constants.Labels;
 import com.github.streamshub.systemtests.logs.LogWrapper;
-import com.github.streamshub.systemtests.resources.ConsoleType;
 import com.github.streamshub.systemtests.setup.ConsoleOperatorSetup;
 import com.github.streamshub.systemtests.setup.StrimziOperatorSetup;
 import com.github.streamshub.systemtests.utils.ClusterUtils;
@@ -52,7 +51,6 @@ public abstract class AbstractST {
             new ClusterRoleBindingType(),
             new ClusterRoleType(),
             new ConfigMapType(),
-            new ConsoleType(),
             new DeploymentType(),
             new InstallPlanType(),
             new JobType(),

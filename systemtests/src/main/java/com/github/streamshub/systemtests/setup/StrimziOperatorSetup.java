@@ -2,6 +2,7 @@ package com.github.streamshub.systemtests.setup;
 
 import com.github.streamshub.systemtests.Environment;
 import com.github.streamshub.systemtests.constants.Constants;
+import com.github.streamshub.systemtests.exceptions.FileOperationException;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.utils.ResourceUtils;
 import com.github.streamshub.systemtests.utils.SetupUtils;
@@ -220,7 +221,7 @@ public class StrimziOperatorSetup {
                 tempFile = Files.createTempFile(fileName + "-tmp_", ".yaml");
                 Files.write(tempFile, SetupUtils.getYamlContentFromUrl(fileUrl).getBytes());
             } catch (IOException e) {
-                throw new RuntimeException(e);
+                throw new FileOperationException("Failed to create temp file: " + fileName, e);
             }
             yamlFiles.add(tempFile.toFile());
         }

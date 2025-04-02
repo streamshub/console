@@ -8,6 +8,8 @@ import static com.github.streamshub.systemtests.utils.ResourceUtils.listKubeReso
 
 public class WaitUtils {
 
+    private WaitUtils() {}
+
     // ------------
     // Deployment
     // ------------

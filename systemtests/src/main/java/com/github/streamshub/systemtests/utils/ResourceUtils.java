@@ -1,11 +1,9 @@
 package com.github.streamshub.systemtests.utils;
 
 import io.fabric8.kubernetes.api.model.HasMetadata;
-import io.fabric8.kubernetes.client.CustomResource;
 import io.skodjob.testframe.resources.KubeResourceManager;
 
 import java.util.List;
-import java.util.function.Consumer;
 
 public class ResourceUtils {
 
@@ -31,18 +29,5 @@ public class ResourceUtils {
 
     public static <T extends HasMetadata> List<T> listKubeResourcesByPrefix(Class<T> resourceClass, String namespaceName, String prefix) {
         return listKubeResources(resourceClass, namespaceName).stream().filter(it -> it.getMetadata().getName().startsWith(prefix)).toList();
-    }
-
-    public static <T extends HasMetadata> List<T> listKubeResourceInAllNamespaces(Class<T> resourceClass) {
-        return KubeResourceManager.get().kubeClient().getClient().resources(resourceClass).inAnyNamespace().list().getItems();
-    }
-
-    // ------
-    // Replace
-    // ------
-    public static <T extends CustomResource> void replaceCustomResource(Class<T> resourceClass, String namespaceName, String resourceName, Consumer<T> consumer) {
-        T toBeReplaced = getKubeResource(resourceClass, namespaceName, resourceName);
-        consumer.accept(toBeReplaced);
-        KubeResourceManager.get().updateResource(toBeReplaced);
     }
 }

@@ -1,5 +1,6 @@
 package com.github.streamshub.systemtests.utils;
 
+import com.github.streamshub.systemtests.exceptions.FileOperationException;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import org.apache.logging.log4j.Logger;
 
@@ -29,7 +30,7 @@ public class SetupUtils {
                 content.append(inputLine).append("\n");
             }
         } catch (IOException e) {
-            throw new RuntimeException("Cannot download YAML content from url: " + fileUrl, e);
+            throw new FileOperationException("Cannot download YAML content from url: " + fileUrl, e);
         }
         return content.toString();
     }
@@ -39,7 +40,7 @@ public class SetupUtils {
         try {
             return Files.readString(Paths.get(filePath), StandardCharsets.UTF_8);
         } catch (IOException e) {
-            throw new RuntimeException("Cannot get YAML content from file: " + filePath, e);
+            throw new FileOperationException("Cannot get YAML content from file: " + filePath, e);
         }
     }
 }

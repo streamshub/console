@@ -3,6 +3,8 @@ package com.github.streamshub.systemtests.setup;
 import com.github.streamshub.systemtests.Environment;
 import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.constants.ExampleFilePaths;
+import com.github.streamshub.systemtests.exceptions.FileOperationException;
+import com.github.streamshub.systemtests.exceptions.OperatorSdkNotInstalledException;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.utils.ClusterUtils;
 import com.github.streamshub.systemtests.utils.ConsoleUtils;
@@ -67,7 +69,7 @@ public class ConsoleOperatorSetup {
             // Check for non OpenShift clusters
             if (!ClusterUtils.isOcp() &&
                 ResourceUtils.getKubeResource(CustomResourceDefinition.class, "subscriptions.operators.coreos.com") == null) {
-                throw new RuntimeException("Operator SDK is not installed on the current cluster. Cannot install Console Operator using subscriptions");
+                throw new OperatorSdkNotInstalledException("Operator SDK is not installed on the current cluster. Cannot install Console Operator using subscriptions");
             }
             KubeResourceManager.get().createResourceWithWait(getOlmOperatorGroup());
             KubeResourceManager.get().createResourceWithWait(getOlmSubscription());
@@ -113,11 +115,11 @@ public class ConsoleOperatorSetup {
                     tempFile = Files.createTempFile("console-" + fileName + "-tmp_", ".yaml");
                     Files.write(tempFile, file.trim().getBytes(StandardCharsets.UTF_8));
                 } catch (IOException e) {
-                    throw new RuntimeException(e);
+                    throw new FileOperationException("Failed to create temp file: " + fileName, e);
                 }
 
                 tempFiles.add(tempFile.toFile());
-                LOGGER.debug("Created temp file: " + tempFile.toAbsolutePath());
+                LOGGER.debug("Created temp file: {}", tempFile.toAbsolutePath());
             }
         }
 
