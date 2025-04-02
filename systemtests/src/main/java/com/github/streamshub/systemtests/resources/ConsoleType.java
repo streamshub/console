@@ -54,7 +54,6 @@ public class ConsoleType implements ResourceType<Console> {
 
     @Override
     public boolean isReady(Console resource) {
-        // TODO: check readiness
         return resource != null;
     }
 

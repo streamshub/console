@@ -1,9 +1,11 @@
 package com.github.streamshub.systemtests.utils;
 
 import io.fabric8.kubernetes.api.model.HasMetadata;
+import io.fabric8.kubernetes.client.CustomResource;
 import io.skodjob.testframe.resources.KubeResourceManager;
 
 import java.util.List;
+import java.util.function.Consumer;
 
 public class ResourceUtils {
 
@@ -35,4 +37,12 @@ public class ResourceUtils {
         return KubeResourceManager.get().kubeClient().getClient().resources(resourceClass).inAnyNamespace().list().getItems();
     }
 
+    // ------
+    // Replace
+    // ------
+    public static <T extends CustomResource> void replaceCustomResource(Class<T> resourceClass, String namespaceName, String resourceName, Consumer<T> consumer) {
+        T toBeReplaced = getKubeResource(resourceClass, namespaceName, resourceName);
+        consumer.accept(toBeReplaced);
+        KubeResourceManager.get().updateResource(toBeReplaced);
+    }
 }

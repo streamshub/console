@@ -72,24 +72,6 @@ public class StrimziOperatorSetup {
         KubeResourceManager.get().createResourceWithWait(getBundleDeployment());
     }
 
-    public void teardown() {
-        LOGGER.info("----------- Teardown Strimzi Cluster Operator -----------");
-        if (Environment.SKIP_STRIMZI_INSTALLATION || ResourceUtils.getKubeResource(Deployment.class, this.deploymentNamespace, this.deploymentName) == null) {
-            LOGGER.warn("Skipping Strimzi deletion. It is already deleted or installation was skipped!");
-            return;
-        }
-
-        // Watch all namespaces CRB
-        KubeResourceManager.get().deleteResource(getStrimziWatchAllCrbs());
-        KubeResourceManager.get().deleteResource(getBundleCrds());
-        KubeResourceManager.get().deleteResource(getBundleClusterRoles());
-        KubeResourceManager.get().deleteResource(getBundleServiceAccount());
-        KubeResourceManager.get().deleteResource(getBundleRoleBindings());
-        KubeResourceManager.get().deleteResource(getBundleClusterRoleBindings());
-        KubeResourceManager.get().deleteResource(getBundleConfigMap());
-        KubeResourceManager.get().deleteResource(getBundleDeployment());
-    }
-
     private ClusterRoleBinding[] getStrimziWatchAllCrbs() {
         return new ClusterRoleBinding[]{
             new ClusterRoleBindingBuilder()

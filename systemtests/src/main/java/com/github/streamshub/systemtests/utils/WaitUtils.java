@@ -23,13 +23,4 @@ public class WaitUtils {
                 return true;
             });
     }
-
-    // ------------
-    // ConsoleOperator
-    // ------------
-    // public static void waitForConsoleOperator(String namespace, String name) {
-    //     DeploymentResource.waitForDeploymentByPrefixReady(namespace, name);
-    //     String consoleOperatorDeploymentFullName = DeploymentResource.getDeploymentByPrefix(namespace, name).getMetadata().getName();
-    //     PodResource.waitForPodsReady(namespace, TestUtils.getConsoleOperatorPodLabelSelector(consoleOperatorDeploymentFullName), 1, false);
-    // }
 }

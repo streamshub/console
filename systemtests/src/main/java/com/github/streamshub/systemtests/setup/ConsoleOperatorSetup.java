@@ -83,15 +83,6 @@ public class ConsoleOperatorSetup {
         }
     }
 
-    public void teardown() {
-        LOGGER.info("----------- Teardown Console Operator -----------");
-        // Console CRD
-        ConsoleUtils.removeFinalizersInAllConsoleInstances();
-        if (Environment.INSTALL_USING_OLM) {
-
-        }
-    }
-
     // ------
     // Bundle
     // ------

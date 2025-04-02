@@ -31,7 +31,6 @@ import io.skodjob.testframe.resources.ServiceType;
 import io.skodjob.testframe.resources.SubscriptionType;
 import io.skodjob.testframe.utils.KubeUtils;
 import org.apache.logging.log4j.Logger;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInstance;
@@ -96,14 +95,5 @@ public abstract class AbstractST {
     void setupTestCase() {
         LOGGER.info("=========== AbstractST - BeforeEach - Setup TestCase {} ===========", KubeResourceManager.get().getTestContext().getTestMethod());
         ClusterUtils.checkClusterHealth();
-    }
-
-    @AfterAll
-    void tearDownTestSuite() {
-        LOGGER.info("=========== AbstractST - AfterAll - Tear down the TestSuite ===========");
-        if (Environment.SKIP_TEARDOWN) {
-            LOGGER.warn("Teardown was skipped because of SKIP_TEARDOWN env");
-            return;
-        }
     }
 }
