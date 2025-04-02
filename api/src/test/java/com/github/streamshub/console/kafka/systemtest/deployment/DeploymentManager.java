@@ -99,7 +99,8 @@ public class DeploymentManager {
                 .withCreateContainerCmdModifier(cmd -> cmd.withName(name("kafka")))
                 .withKafkaConfigurationMap(Map.of(
                     "auto.create.topics.enable", "false",
-                    "group.initial.rebalance.delay.ms", "0"
+                    "group.initial.rebalance.delay.ms", "0",
+                    "group.coordinator.new.enable", "false"
                 ))
                 .withNetwork(testNetwork);
 
