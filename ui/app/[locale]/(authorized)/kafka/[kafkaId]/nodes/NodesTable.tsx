@@ -31,11 +31,7 @@ import { ChartDonutUtilization } from "@/libs/patternfly/react-charts";
 import { useFormatBytes } from "@/utils/useFormatBytes";
 import { TableView, TableViewProps } from "@/components/Table/TableView";
 import { EmptyStateNoMatchFound } from "@/components/Table/EmptyStateNoMatchFound";
-import {
-  getBrokerLabel,
-  getControllerLabel,
-  getNodeRoleLabel,
-} from "./NodesLabel";
+import { BrokerLabel, ControllerLabel, RoleLabel } from "./NodesLabel";
 import { HelpIcon } from "@/libs/patternfly/react-icons";
 
 export const NodeListColumns = [
@@ -93,9 +89,9 @@ export function NodesTable({
   const format = useFormatter();
   const formatBytes = useFormatBytes();
 
-  const NodeRoleLabel = getNodeRoleLabel();
-  const BrokerStatusLabel = getBrokerLabel();
-  const ControllerStatusLabel = getControllerLabel();
+  const NodeRoleLabel = RoleLabel();
+  const BrokerStatusLabel = BrokerLabel();
+  const ControllerStatusLabel = ControllerLabel();
 
   const getBrokerStatusLabel = (statuses?: Record<string, number>) => {
     return Object.entries(BrokerStatusLabel).reduce(
@@ -139,14 +135,14 @@ export function NodesTable({
 
   const nodePoolOptions = nodePoolList
     ? Object.fromEntries(
-      Object.entries(nodePoolList).map(([poolName, roles]) => [
-        poolName,
-        {
-          label: <>{poolName}</>,
-          description: <>Nodes role: {roles.join(", ")}</>,
-        },
-      ]),
-    )
+        Object.entries(nodePoolList).map(([poolName, roles]) => [
+          poolName,
+          {
+            label: <>{poolName}</>,
+            description: <>Nodes role: {roles.join(", ")}</>,
+          },
+        ]),
+      )
     : {};
 
   const brokerStatusKeys = Object.keys(BrokerStatusLabel) as BrokerStatus[];
@@ -250,9 +246,9 @@ export function NodesTable({
                       value={
                         typeof row.attributes.broker?.leaderCount ===
                           "number" &&
-                          typeof row.attributes.broker?.replicaCount === "number"
+                        typeof row.attributes.broker?.replicaCount === "number"
                           ? row.attributes.broker.leaderCount +
-                          row.attributes.broker.replicaCount
+                            row.attributes.broker.replicaCount
                           : undefined
                       }
                     />
@@ -317,8 +313,8 @@ export function NodesTable({
                           labels={({ datum }) =>
                             datum.x
                               ? `${datum.x}: ${format.number(datum.y / 100, {
-                                style: "percent",
-                              })}`
+                                  style: "percent",
+                                })}`
                               : null
                           }
                           legendData={[
@@ -409,13 +405,20 @@ export function NodesTable({
                     ? statusList.filter((s) => s !== status)
                     : [...statusList, status];
 
+                const newBrokerStatus = brokerStatusKeys.includes(
+                  status as BrokerStatus,
+                )
+                  ? updateStatus(filterBrokerStatus || [], status)
+                  : filterBrokerStatus;
+
+                const newControllerStatus = controllerStatusKeys.includes(
+                  status as ControllerStatus,
+                )
+                  ? updateStatus(filterControllerStatus || [], status)
+                  : filterControllerStatus;
                 onFilterStatusChange(
-                  brokerStatusKeys.includes(status as BrokerStatus)
-                    ? updateStatus(filterBrokerStatus || [], status)
-                    : filterBrokerStatus,
-                  controllerStatusKeys.includes(status as ControllerStatus)
-                    ? updateStatus(filterControllerStatus || [], status)
-                    : filterControllerStatus,
+                  newBrokerStatus ?? [],
+                  newControllerStatus ?? [],
                 );
               },
               onRemoveChip: (status: BrokerStatus | ControllerStatus) => {

@@ -11,18 +11,16 @@ import {
 import { Icon, Popover } from "@/libs/patternfly/react-core";
 import { useTranslations } from "next-intl";
 
-export const getNodeRoleLabel = (): Record<NodeRoles, { label: ReactNode }> => {
+export const RoleLabel = (): Record<NodeRoles, { label: ReactNode }> => {
   const t = useTranslations("nodes");
-
   return {
     broker: { label: <>{t("node_roles.broker")}</> },
     controller: { label: <>{t("node_roles.controller")}</> },
   };
 };
 
-export const getBrokerLabel = (): Record<BrokerStatus, ReactNode> => {
+export const BrokerLabel = (): Record<BrokerStatus, ReactNode> => {
   const t = useTranslations("nodes.broker_status");
-
   return {
     Running: (
       <Popover
@@ -125,7 +123,7 @@ export const getBrokerLabel = (): Record<BrokerStatus, ReactNode> => {
   };
 };
 
-export const getControllerLabel = (): Record<ControllerStatus, ReactNode> => {
+export const ControllerLabel = (): Record<ControllerStatus, ReactNode> => {
   const t = useTranslations("nodes.controller_status");
 
   return {
