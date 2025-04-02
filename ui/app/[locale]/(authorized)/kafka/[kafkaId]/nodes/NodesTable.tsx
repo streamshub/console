@@ -89,7 +89,7 @@ export function NodesTable({
   const format = useFormatter();
   const formatBytes = useFormatBytes();
 
-  const NodeRoleLabel = RoleLabel();
+  const NodeRoleLabel = RoleLabel(statuses);
   const BrokerStatusLabel = BrokerLabel();
   const ControllerStatusLabel = ControllerLabel();
 

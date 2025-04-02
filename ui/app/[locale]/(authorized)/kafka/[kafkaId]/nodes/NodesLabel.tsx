@@ -1,4 +1,9 @@
-import { BrokerStatus, ControllerStatus, NodeRoles } from "@/api/nodes/schema";
+import {
+  BrokerStatus,
+  ControllerStatus,
+  NodeRoles,
+  Statuses,
+} from "@/api/nodes/schema";
 import { ReactNode } from "react";
 import {
   CheckCircleIcon,
@@ -8,14 +13,50 @@ import {
   NewProcessIcon,
   PendingIcon,
 } from "@/libs/patternfly/react-icons";
-import { Icon, Popover } from "@/libs/patternfly/react-core";
+import { Icon, Level, LevelItem, Popover } from "@/libs/patternfly/react-core";
 import { useTranslations } from "next-intl";
 
-export const RoleLabel = (): Record<NodeRoles, { label: ReactNode }> => {
+export const RoleLabel = (
+  statuses?: Statuses,
+): Record<NodeRoles, { label: ReactNode }> => {
   const t = useTranslations("nodes");
+
+  const brokerCount = statuses?.brokers
+    ? Object.values(statuses.brokers).reduce((total, count) => total + count, 0)
+    : 0;
+
+  const controllerCount = statuses?.controllers
+    ? Object.values(statuses.controllers).reduce(
+        (total, count) => total + count,
+        0,
+      )
+    : 0;
+
   return {
-    broker: { label: <>{t("node_roles.broker")}</> },
-    controller: { label: <>{t("node_roles.controller")}</> },
+    broker: {
+      label: (
+        <Level>
+          <LevelItem>{t("node_roles.broker")}</LevelItem>
+          <LevelItem>
+            <span style={{ color: "var(--pf-v5-global--Color--200)" }}>
+              {brokerCount}
+            </span>
+          </LevelItem>
+        </Level>
+      ),
+    },
+    controller: {
+      label: (
+        <Level>
+          <LevelItem>{t("node_roles.controller")}</LevelItem>
+          <LevelItem>
+            <span style={{ color: "var(--pf-v5-global--Color--200)" }}>
+              {controllerCount}
+            </span>
+          </LevelItem>
+        </Level>
+      ),
+    },
   };
 };
 
