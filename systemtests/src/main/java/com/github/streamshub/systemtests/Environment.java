@@ -21,7 +21,7 @@ public class Environment {
     public static final String CONSOLE_CATALOG_SOURCE_NAME = ENVS.getOrDefault("CONSOLE_CATALOG_SOURCE_NAME", "streamshub-console-catalog");
     public static final String TEST_LOG_DIR = ENVS.getOrDefault("TEST_LOG_DIR",  USER_PATH + "/target/logs/");
     public static final String TEST_FILE_LOG_LEVEL = ENVS.getOrDefault("TEST_FILE_LOG_LEVEL",  "INFO");
-    public static final String TEST_CONSOLE_LOG_LEVEL = ENVS.getOrDefault("TEST_CONSOLE_LOG_LEVEL",  "");
+    public static final String TEST_CONSOLE_LOG_LEVEL = ENVS.getOrDefault("TEST_CONSOLE_LOG_LEVEL",  "INFO");
     public static final boolean SKIP_TEARDOWN = ENVS.getOrDefault("SKIP_TEARDOWN", Boolean::parseBoolean, false);
     public static final String ST_KAFKA_VERSION = ENVS.getOrDefault("ST_KAFKA_VERSION", "");
     public static final String CONSOLE_OLM_PACKAGE_NAME = ENVS.getOrDefault("CONSOLE_OLM_PACKAGE_NAME", "streamshub-console-operator");
