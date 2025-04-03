@@ -24,22 +24,25 @@ import io.fabric8.kubernetes.api.model.rbac.SubjectBuilder;
 import io.skodjob.testframe.resources.KubeResourceManager;
 import io.skodjob.testframe.utils.TestFrameUtils;
 import org.apache.logging.log4j.Logger;
-import org.jsoup.Jsoup;
 
-import java.io.IOException;
-import java.net.URL;
+import java.util.Arrays;
 import java.util.List;
 
 public class StrimziOperatorSetup {
     private static final Logger LOGGER = LogWrapper.getLogger(StrimziOperatorSetup.class);
-    private final String resourceURL = "https://github.com/strimzi/strimzi-kafka-operator/tree/" + Environment.STRIMZI_OPERATOR_VERSION + "/packaging/install/cluster-operator";
-    private final List<String> strimziResources = getStrimziYamlFilesContent();
+    private final List<String> strimziResources;
     private final String deploymentNamespace;
     private final String deploymentName;
 
     public StrimziOperatorSetup(String deploymentNamespace) {
         this.deploymentNamespace = deploymentNamespace;
         this.deploymentName = Environment.STRIMZI_OPERATOR_NAME;
+
+        this.strimziResources = Arrays.stream(SetupUtils.getYamlContent(String.format(
+            "https://github.com/strimzi/strimzi-kafka-operator/releases/download/%s/strimzi-cluster-operator-%s.yaml",
+            Environment.STRIMZI_OPERATOR_VERSION, Environment.STRIMZI_OPERATOR_VERSION))
+            .split("---"))
+            .toList();
     }
 
     public void setup() {
@@ -214,29 +217,5 @@ public class StrimziOperatorSetup {
                 .endSubject()
                 .build())
             .toArray(ClusterRoleBinding[]::new);
-    }
-
-    private List<String> getStrimziYamlFilesContent() {
-        LOGGER.debug("Extracting Strimzi YAML file links from GitHub url: {}", resourceURL);
-        for (int attempt = 0; attempt < 10; attempt++) {
-            try {
-                // Github row locator of current dir
-                List<String> yamlFileLinks = Jsoup.parse(new URL(resourceURL), 10_000)
-                    .select("tr.react-directory-row div.react-directory-filename-cell a.Link--primary")
-                    .eachAttr("href").stream()
-                    .map(it -> SetupUtils.getYamlContent("https://raw.githubusercontent.com" + it.replace("/blob/", "/")))
-                    .distinct()
-                    .toList();
-
-                if (!yamlFileLinks.isEmpty()) {
-                    return yamlFileLinks;
-                }
-                LOGGER.warn("Attempt {}: Could not get GitHub Strimzi YAML file links, retrying in 3 seconds...", attempt + 1);
-                Thread.sleep(3_000);
-            } catch (IOException | InterruptedException e) {
-                LOGGER.error("Attempt {} failed: {}", attempt + 1, e.getMessage());
-            }
-        }
-        throw new RuntimeException("Could not retrieve Strimzi CRs from GitHub after " + 10 + " attempts");
     }
 }
