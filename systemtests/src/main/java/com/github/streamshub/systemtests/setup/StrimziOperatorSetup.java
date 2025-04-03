@@ -2,9 +2,9 @@ package com.github.streamshub.systemtests.setup;
 
 import com.github.streamshub.systemtests.Environment;
 import com.github.streamshub.systemtests.constants.Constants;
+import com.github.streamshub.systemtests.exceptions.SetupException;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.utils.ResourceUtils;
-import com.github.streamshub.systemtests.utils.SetupUtils;
 import io.fabric8.kubernetes.api.model.ConfigMap;
 import io.fabric8.kubernetes.api.model.ConfigMapBuilder;
 import io.fabric8.kubernetes.api.model.HasMetadata;
@@ -22,27 +22,28 @@ import io.fabric8.kubernetes.api.model.rbac.RoleBinding;
 import io.fabric8.kubernetes.api.model.rbac.RoleBindingBuilder;
 import io.fabric8.kubernetes.api.model.rbac.SubjectBuilder;
 import io.skodjob.testframe.resources.KubeResourceManager;
-import io.skodjob.testframe.utils.TestFrameUtils;
 import org.apache.logging.log4j.Logger;
 
-import java.util.Arrays;
+import java.io.IOException;
+import java.net.URL;
 import java.util.List;
 
 public class StrimziOperatorSetup {
     private static final Logger LOGGER = LogWrapper.getLogger(StrimziOperatorSetup.class);
-    private final List<String> strimziResources;
+    private final List<HasMetadata> strimziResources;
     private final String deploymentNamespace;
     private final String deploymentName;
 
     public StrimziOperatorSetup(String deploymentNamespace) {
         this.deploymentNamespace = deploymentNamespace;
         this.deploymentName = Environment.STRIMZI_OPERATOR_NAME;
-
-        this.strimziResources = Arrays.stream(SetupUtils.getYamlContent(String.format(
-            "https://github.com/strimzi/strimzi-kafka-operator/releases/download/%s/strimzi-cluster-operator-%s.yaml",
-            Environment.STRIMZI_OPERATOR_VERSION, Environment.STRIMZI_OPERATOR_VERSION))
-            .split("---"))
-            .toList();
+        try {
+            this.strimziResources = KubeResourceManager.get().kubeClient().getClient().load(new URL(String.format(
+                "https://github.com/strimzi/strimzi-kafka-operator/releases/download/%s/strimzi-cluster-operator-%s.yaml",
+                Environment.STRIMZI_OPERATOR_VERSION, Environment.STRIMZI_OPERATOR_VERSION)).openStream()).items();
+        } catch (IOException e) {
+            throw new SetupException("Cannot get Strimzi YAML resources: ", e);
+        }
     }
 
     public void setup() {
@@ -120,33 +121,36 @@ public class StrimziOperatorSetup {
 
     private ConfigMap getBundleConfigMap() {
         return strimziResources.stream()
-            .filter(content -> SetupUtils.isOfKind(content, ConfigMap.class))
-            .map(r -> new ConfigMapBuilder(TestFrameUtils.configFromYaml(r, ConfigMap.class))
-            .editMetadata()
-                .withNamespace(this.deploymentNamespace)
-                .withName(this.deploymentName)
-            .endMetadata()
-            .build())
-            .toList()
-            .get(0);
+            .filter(ConfigMap.class::isInstance)
+            .map(ConfigMap.class::cast)
+            .map(r -> new ConfigMapBuilder(r)
+                .editMetadata()
+                    .withNamespace(this.deploymentNamespace)
+                    .withName(this.deploymentName)
+                .endMetadata()
+                .build())
+            .findFirst()
+            .orElseThrow();
     }
 
     private ServiceAccount getBundleServiceAccount() {
         return strimziResources.stream()
-            .filter(content -> SetupUtils.isOfKind(content, ServiceAccount.class))
-            .map(r -> new ServiceAccountBuilder(TestFrameUtils.configFromYaml(r, ServiceAccount.class))
-            .editMetadata()
-                .withNamespace(this.deploymentNamespace)
-            .endMetadata()
-            .build())
-            .toList()
-            .get(0);
+            .filter(ServiceAccount.class::isInstance)
+            .map(ServiceAccount.class::cast)
+            .map(r -> new ServiceAccountBuilder(r)
+                .editMetadata()
+                    .withNamespace(this.deploymentNamespace)
+                .endMetadata()
+                .build())
+            .findFirst()
+            .orElseThrow();
     }
 
     private Deployment getBundleDeployment() {
         return strimziResources.stream()
-            .filter(content -> SetupUtils.isOfKind(content, Deployment.class))
-            .map(r -> new DeploymentBuilder(TestFrameUtils.configFromYaml(r, Deployment.class))
+            .filter(Deployment.class::isInstance)
+            .map(Deployment.class::cast)
+            .map(r -> new DeploymentBuilder(r)
             .editMetadata()
                 .withNamespace(this.deploymentNamespace)
                 .withName(this.deploymentName)
@@ -171,8 +175,9 @@ public class StrimziOperatorSetup {
 
     private CustomResourceDefinition[] getBundleCrds() {
         return strimziResources.stream()
-            .filter(content -> SetupUtils.isOfKind(content, CustomResourceDefinition.class))
-            .map(r -> new CustomResourceDefinitionBuilder(TestFrameUtils.configFromYaml(r, CustomResourceDefinition.class))
+            .filter(CustomResourceDefinition.class::isInstance)
+            .map(CustomResourceDefinition.class::cast)
+            .map(r -> new CustomResourceDefinitionBuilder(r)
                 .editMetadata()
                     .withNamespace(this.deploymentNamespace)
                 .endMetadata()
@@ -182,8 +187,9 @@ public class StrimziOperatorSetup {
 
     private ClusterRole[] getBundleClusterRoles() {
         return strimziResources.stream()
-            .filter(content -> SetupUtils.isOfKind(content, ClusterRole.class))
-            .map(r -> new ClusterRoleBuilder(TestFrameUtils.configFromYaml(r, ClusterRole.class))
+            .filter(ClusterRole.class::isInstance)
+            .map(ClusterRole.class::cast)
+            .map(r -> new ClusterRoleBuilder(r)
                 .editMetadata()
                     .withNamespace(this.deploymentNamespace)
                 .endMetadata()
@@ -193,8 +199,9 @@ public class StrimziOperatorSetup {
 
     private RoleBinding[] getBundleRoleBindings() {
         return strimziResources.stream()
-            .filter(content -> SetupUtils.isOfKind(content, RoleBinding.class))
-            .map(r -> new RoleBindingBuilder(TestFrameUtils.configFromYaml(r, RoleBinding.class))
+            .filter(RoleBinding.class::isInstance)
+            .map(RoleBinding.class::cast)
+            .map(r -> new RoleBindingBuilder(r)
                 .editMetadata()
                     .withNamespace(this.deploymentNamespace)
                 .endMetadata()
@@ -207,8 +214,9 @@ public class StrimziOperatorSetup {
 
     private ClusterRoleBinding[] getBundleClusterRoleBindings() {
         return strimziResources.stream()
-            .filter(content -> SetupUtils.isOfKind(content, ClusterRoleBinding.class))
-            .map(r -> new ClusterRoleBindingBuilder(TestFrameUtils.configFromYaml(r, ClusterRoleBinding.class))
+            .filter(ClusterRoleBinding.class::isInstance)
+            .map(ClusterRoleBinding.class::cast)
+            .map(r -> new ClusterRoleBindingBuilder(r)
                 .editMetadata()
                     .withNamespace(this.deploymentNamespace)
                 .endMetadata()

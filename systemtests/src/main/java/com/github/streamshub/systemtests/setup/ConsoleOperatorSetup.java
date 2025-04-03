@@ -4,16 +4,17 @@ import com.github.streamshub.systemtests.Environment;
 import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.constants.ExampleFilePaths;
 import com.github.streamshub.systemtests.exceptions.OperatorSdkNotInstalledException;
+import com.github.streamshub.systemtests.exceptions.SetupException;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.utils.ClusterUtils;
 import com.github.streamshub.systemtests.utils.ResourceUtils;
 import com.github.streamshub.systemtests.utils.SetupUtils;
 import com.github.streamshub.systemtests.utils.WaitUtils;
 import io.fabric8.kubernetes.api.model.EnvVarBuilder;
+import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.ServiceAccount;
 import io.fabric8.kubernetes.api.model.ServiceAccountBuilder;
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition;
-import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinitionBuilder;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.kubernetes.api.model.apps.DeploymentBuilder;
 import io.fabric8.kubernetes.api.model.rbac.ClusterRole;
@@ -30,7 +31,12 @@ import io.skodjob.testframe.resources.KubeResourceManager;
 import io.skodjob.testframe.utils.TestFrameUtils;
 import org.apache.logging.log4j.Logger;
 
-import java.util.Arrays;
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 public class ConsoleOperatorSetup {
@@ -38,15 +44,21 @@ public class ConsoleOperatorSetup {
 
     private final String deploymentNamespace;
     private String operatorDeploymentName;
-    private List<String> consoleBundleResources;
+    private List<HasMetadata> consoleBundleResources;
 
     public ConsoleOperatorSetup(String namespace) {
         this.operatorDeploymentName = Environment.CONSOLE_DEPLOYMENT_NAME + "-operator";
         this.deploymentNamespace = namespace;
         if (SetupUtils.isYamlInstall()) {
-            this.consoleBundleResources = Arrays.stream(SetupUtils.getYamlContent(Environment.CONSOLE_OPERATOR_BUNDLE_URL)
-                .split("---"))
-                .toList();
+            // Need to replace streamed content due to KubernetesException during load of `namespace: ${NAMESPACE}`
+            try (InputStream yamlContentStream = new URL(Environment.CONSOLE_OPERATOR_BUNDLE_URL).openStream()) {
+                InputStream replacedStream = new ByteArrayInputStream(new String(yamlContentStream.readAllBytes(), StandardCharsets.UTF_8)
+                    .replace("${NAMESPACE}", "NAMESPACE")
+                    .getBytes(StandardCharsets.UTF_8));
+                this.consoleBundleResources = KubeResourceManager.get().kubeClient().getClient().load(replacedStream).items();
+            } catch (IOException e) {
+                throw new SetupException("Cannot get Console YAML resources: ", e);
+            }
         }
     }
 
@@ -92,28 +104,29 @@ public class ConsoleOperatorSetup {
     // ------
     private CustomResourceDefinition[] getBundleCrds() {
         return consoleBundleResources.stream()
-            .filter(r -> SetupUtils.isOfKind(r, CustomResourceDefinition.class))
-            .map(content -> new CustomResourceDefinitionBuilder(TestFrameUtils.configFromYaml(content, CustomResourceDefinition.class))
-                .build())
+            .filter(CustomResourceDefinition.class::isInstance)
+            .map(CustomResourceDefinition.class::cast)
             .toArray(CustomResourceDefinition[]::new);
     }
 
     private ServiceAccount getBundleServiceAccount() {
         return consoleBundleResources.stream()
-            .filter(r -> SetupUtils.isOfKind(r, ServiceAccount.class))
-            .map(content -> new ServiceAccountBuilder(TestFrameUtils.configFromYaml(content, ServiceAccount.class))
+            .filter(ServiceAccount.class::isInstance)
+            .map(ServiceAccount.class::cast)
+            .map(r -> new ServiceAccountBuilder(r)
                 .editMetadata()
                     .withNamespace(deploymentNamespace)
                 .endMetadata()
                 .build())
-            .toList()
-            .get(0);
+            .findFirst()
+            .orElseThrow();
     }
 
     private ClusterRole[] getBundleClusterRoles() {
         return consoleBundleResources.stream()
-            .filter(r -> SetupUtils.isOfKind(r, ClusterRole.class))
-            .map(content -> new ClusterRoleBuilder(TestFrameUtils.configFromYaml(content, ClusterRole.class))
+            .filter(ClusterRole.class::isInstance)
+            .map(ClusterRole.class::cast)
+            .map(r -> new ClusterRoleBuilder(r)
                 .editMetadata()
                     .withNamespace(deploymentNamespace)
                 .endMetadata()
@@ -123,8 +136,9 @@ public class ConsoleOperatorSetup {
 
     private ClusterRoleBinding[] getBundleClusterRoleBindings() {
         return consoleBundleResources.stream()
-            .filter(r -> SetupUtils.isOfKind(r, ClusterRoleBinding.class))
-            .map(content -> new ClusterRoleBindingBuilder(TestFrameUtils.configFromYaml(content, ClusterRoleBinding.class))
+            .filter(ClusterRoleBinding.class::isInstance)
+            .map(ClusterRoleBinding.class::cast)
+            .map(r -> new ClusterRoleBindingBuilder(r)
                 .editMetadata()
                     .withNamespace(deploymentNamespace)
                 .endMetadata()
@@ -137,8 +151,9 @@ public class ConsoleOperatorSetup {
 
     private RoleBinding[] getBundleRoleBindings() {
         return consoleBundleResources.stream()
-            .filter(r -> SetupUtils.isOfKind(r, RoleBinding.class))
-            .map(content -> new RoleBindingBuilder(TestFrameUtils.configFromYaml(content, RoleBinding.class))
+            .filter(RoleBinding.class::isInstance)
+            .map(RoleBinding.class::cast)
+            .map(r -> new RoleBindingBuilder(r)
                 .editMetadata()
                     .withNamespace(deploymentNamespace)
                 .endMetadata()
@@ -151,8 +166,9 @@ public class ConsoleOperatorSetup {
 
     private Deployment getBundleDeployment() {
         DeploymentBuilder consoleOperator = consoleBundleResources.stream()
-            .filter(r -> SetupUtils.isOfKind(r, Deployment.class))
-            .map(content -> new DeploymentBuilder(TestFrameUtils.configFromYaml(content, Deployment.class))
+            .filter(Deployment.class::isInstance)
+            .map(Deployment.class::cast)
+            .map(r -> new DeploymentBuilder(r)
                 .editMetadata()
                     .withNamespace(deploymentNamespace)
                     .withName(operatorDeploymentName)
@@ -164,8 +180,8 @@ public class ConsoleOperatorSetup {
                         .endMetadata()
                     .endTemplate()
                 .endSpec())
-                .toList()
-                .get(0);
+                .findFirst()
+                .orElseThrow();
 
         // Override Console images if provided
         if (!Environment.CONSOLE_OPERATOR_IMAGE.isEmpty()) {
@@ -220,7 +236,7 @@ public class ConsoleOperatorSetup {
     // ------
     private OperatorGroup getOlmOperatorGroup() {
         return new OperatorGroupBuilder(
-            TestFrameUtils.configFromYaml(SetupUtils.getYamlContent(ExampleFilePaths.CONSOLE_OPERATOR_GROUP_YAML), OperatorGroup.class))
+            TestFrameUtils.configFromYaml(new File(ExampleFilePaths.CONSOLE_OPERATOR_GROUP_YAML), OperatorGroup.class))
             .editMetadata()
                 .withNamespace(deploymentNamespace)
             .endMetadata()
@@ -228,7 +244,7 @@ public class ConsoleOperatorSetup {
     }
 
     private Subscription getOlmSubscription() {
-        return new SubscriptionBuilder(TestFrameUtils.configFromYaml(SetupUtils.getYamlContent(ExampleFilePaths.CONSOLE_OPERATOR_SUBSCRIPTION_YAML), Subscription.class))
+        return new SubscriptionBuilder(TestFrameUtils.configFromYaml(new File(ExampleFilePaths.CONSOLE_OPERATOR_SUBSCRIPTION_YAML), Subscription.class))
             .editMetadata()
                 .withNamespace(deploymentNamespace)
                 .withName(Constants.CONSOLE_OPERATOR_SUBSCRIPTION_NAME)

@@ -27,7 +27,7 @@ CLIENT_TYPE: kubectl
 # -------------------------------------------
 # OLM
 # -------------------------------------------
-# Name of the CatalogSource for Console Operator (OLM install)
+# Name of the CatalogSource for Console Operator
 CONSOLE_CATALOG_SOURCE_NAME: console-source
 # Namespace where lies the CatalogSource for Console Operator
 OLM_CATALOG_NAMESPACE:
@@ -38,7 +38,7 @@ CONSOLE_OLM_DEPLOYMENT_NAME: streamshub-console-operator
 # -------------------------------------------
 # YAML
 # -------------------------------------------
-# URL to Strimzi Operator CRDs for installation.
+# Which released version of Strimzi Cluster Operator to install
 STRIMZI_OPERATOR_VERSION: 0.45.0
 # URL or local path for Console Operator installation
 # 1. URL - released console-operator.yaml
