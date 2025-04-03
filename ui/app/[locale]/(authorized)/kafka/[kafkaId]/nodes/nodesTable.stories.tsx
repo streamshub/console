@@ -2,9 +2,18 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { NodesTable } from "./NodesTable";
 
 const nodePoolData = {
-  "pool-1": ["controller", "broker"],
-  "pool-2": ["broker"],
-  "pool-3": ["controller"],
+  "pool-1": {
+    "roles": ["controller", "broker"],
+    "count": 2,
+  },
+  "pool-2": {
+    "roles": ["broker"],
+    "count": 2 // not part of sampleNodesData
+  },
+  "pool-3": {
+    "roles": ["controller"],
+    "count": 2 // not part of sampleNodesData
+  },
 };
 
 const sampleNodesData = [
