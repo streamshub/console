@@ -73,7 +73,7 @@ public abstract class AbstractST {
         KubeResourceManager.get().setStoreYamlPath(Environment.TEST_LOG_DIR);
 
         try {
-            Environment.saveConfigToFile();
+            Environment.logConfigAndSaveToFile();
         } catch (IOException e) {
             LOGGER.error("Saving of config env file failed");
         }

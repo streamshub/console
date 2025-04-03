@@ -21,7 +21,7 @@ STRIMZI_OPERATOR_NAME: strimzi-cluster-operator
 # Deployment name of the Console instance
 CONSOLE_DEPLOYMENT_NAME: streamshub-console
 # Install type for Console Operator [OLM; YAML]
-INSTALL_USING_OLM: true
+CONSOLE_INSTALL_TYPE: olm
 # Kubernetes client type used to execute cmd [oc, kubectl]
 CLIENT_TYPE: kubectl
 # -------------------------------------------
@@ -39,7 +39,7 @@ CONSOLE_OLM_DEPLOYMENT_NAME: streamshub-console-operator
 # YAML
 # -------------------------------------------
 # URL to Strimzi Operator CRDs for installation.
-STRIMZI_OPERATOR_CRDS_URL: https://github.com/strimzi/strimzi-kafka-operator/tree/0.45.0/packaging/install/cluster-operator
+STRIMZI_OPERATOR_VERSION: 0.45.0
 # URL or local path for Console Operator installation
 # 1. URL - released console-operator.yaml
 # 2. Local path relative to systemtests dir
@@ -59,4 +59,4 @@ CONSOLE_UI_IMAGE:
 # Kafka version used in system tests
 ST_KAFKA_VERSION: 3.9.0
 # Image for test client containers in system tests
-TEST_CLIENTS_IMAGE: quay.io/strimzi-test-clients/test-clients:latest-kafka-3.9.0
+TEST_CLIENTS_IMAGE: quay.io/strimzi-test-clients/test-clients:0.10.0-kafka-3.9.0

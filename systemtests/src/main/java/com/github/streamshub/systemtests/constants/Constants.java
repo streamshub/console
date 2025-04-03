@@ -30,7 +30,6 @@ public class Constants {
      */
     public static final String RBAC_AUTH_API_GROUP = "rbac.authorization.k8s.io";
 
-
     // --------------------------------
     // ----------- Strimzi ------------
     // --------------------------------

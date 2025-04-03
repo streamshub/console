@@ -3,6 +3,7 @@ package com.github.streamshub.systemtests.logs;
 import com.github.streamshub.console.api.v1alpha1.Console;
 import com.github.streamshub.systemtests.Environment;
 import com.github.streamshub.systemtests.constants.Labels;
+import com.github.streamshub.systemtests.utils.SetupUtils;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.LabelSelectorBuilder;
 import io.fabric8.kubernetes.api.model.Secret;
@@ -64,7 +65,7 @@ public class TestLogCollector {
             KafkaUser.RESOURCE_KIND
         ));
 
-        if (Environment.INSTALL_USING_OLM) {
+        if (SetupUtils.isOlmInstall()) {
             resources.addAll(List.of(
                 HasMetadata.getKind(OperatorGroup.class),
                 HasMetadata.getKind(Subscription.class),

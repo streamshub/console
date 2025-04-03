@@ -3,11 +3,9 @@ package com.github.streamshub.systemtests.setup;
 import com.github.streamshub.systemtests.Environment;
 import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.constants.ExampleFilePaths;
-import com.github.streamshub.systemtests.exceptions.FileOperationException;
 import com.github.streamshub.systemtests.exceptions.OperatorSdkNotInstalledException;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.utils.ClusterUtils;
-import com.github.streamshub.systemtests.utils.ConsoleUtils;
 import com.github.streamshub.systemtests.utils.ResourceUtils;
 import com.github.streamshub.systemtests.utils.SetupUtils;
 import com.github.streamshub.systemtests.utils.WaitUtils;
@@ -32,43 +30,35 @@ import io.skodjob.testframe.resources.KubeResourceManager;
 import io.skodjob.testframe.utils.TestFrameUtils;
 import org.apache.logging.log4j.Logger;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.attribute.FileAttribute;
-import java.nio.file.attribute.PosixFilePermission;
-import java.nio.file.attribute.PosixFilePermissions;
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
-import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class ConsoleOperatorSetup {
     private static final Logger LOGGER = LogWrapper.getLogger(ConsoleOperatorSetup.class);
 
     private final String deploymentNamespace;
-    private final String operatorDeploymentName = ConsoleUtils.getConsoleOperatorName();
-    private List<File> consoleBundleResources;
+    private String operatorDeploymentName;
+    private List<String> consoleBundleResources;
 
     public ConsoleOperatorSetup(String namespace) {
+        this.operatorDeploymentName = Environment.CONSOLE_DEPLOYMENT_NAME + "-operator";
         this.deploymentNamespace = namespace;
-        if (!Environment.INSTALL_USING_OLM) {
-            this.consoleBundleResources = getConsoleBundleResources();
+        if (SetupUtils.isYamlInstall()) {
+            this.consoleBundleResources = Arrays.stream(SetupUtils.getYamlContent(Environment.CONSOLE_OPERATOR_BUNDLE_URL)
+                .split("---"))
+                .toList();
         }
     }
 
     public void setup() {
         LOGGER.info("----------- Setup Console Operator -----------");
 
-        if (!ResourceUtils.listKubeResourcesByPrefix(Deployment.class, this.deploymentNamespace, this.operatorDeploymentName).isEmpty()) {
+        if (!ResourceUtils.listKubeResourcesByPrefix(Deployment.class, deploymentNamespace, operatorDeploymentName).isEmpty()) {
             LOGGER.warn("Console Operator is already deployed. Skipping deployment");
             return;
         }
 
-        if (Environment.INSTALL_USING_OLM) {
+        if (SetupUtils.isOlmInstall()) {
             LOGGER.info("Setup Console Operator using OLM");
             // Check for non OpenShift clusters
             if (!ClusterUtils.isOcp() &&
@@ -77,8 +67,16 @@ public class ConsoleOperatorSetup {
             }
             KubeResourceManager.get().createResourceWithWait(getOlmOperatorGroup());
             KubeResourceManager.get().createResourceWithWait(getOlmSubscription());
-            WaitUtils.waitForDeploymentWithPrefixIsReady(this.deploymentNamespace, this.operatorDeploymentName);
-        } else {
+            WaitUtils.waitForDeploymentWithPrefixIsReady(deploymentNamespace, operatorDeploymentName);
+
+            // Set full name in case of OLM, as it is different from YAML installation.
+            // Yaml deployment name is used here to get the full operator deployment name
+            operatorDeploymentName = ResourceUtils.listKubeResourcesByPrefix(Deployment.class, deploymentNamespace, operatorDeploymentName)
+                .get(0)
+                .getMetadata()
+                .getName();
+
+        } else if (SetupUtils.isYamlInstall()) {
             LOGGER.info("Setup Console Operator using YAML files");
             KubeResourceManager.get().createResourceWithoutWait(getBundleCrds());
             KubeResourceManager.get().createResourceWithoutWait(getBundleServiceAccount());
@@ -92,119 +90,82 @@ public class ConsoleOperatorSetup {
     // ------
     // Bundle
     // ------
-    private List<File> getConsoleBundleResources() {
-        List<File> tempFiles = new ArrayList<>();
-        String[] yamlFiles;
-
-        if (Environment.CONSOLE_OPERATOR_BUNDLE_URL.startsWith("http://") || Environment.CONSOLE_OPERATOR_BUNDLE_URL.startsWith("https://")) {
-            yamlFiles = SetupUtils.getYamlContentFromUrl(Environment.CONSOLE_OPERATOR_BUNDLE_URL).split("---");
-        } else {
-            yamlFiles = SetupUtils.getYamlContentFromFile(Environment.CONSOLE_OPERATOR_BUNDLE_URL).split("---");
-        }
-
-        // Separate one file into multiple YAML files for easier object mapping
-        for (String file : yamlFiles) {
-            if (!file.trim().isEmpty()) {
-                String fileName = "";
-                // Matches resource kind name to be used as a YAML file name
-                Matcher matcher = Pattern.compile("\\nkind\\: (\\w+)\\n").matcher(file);
-
-                while (matcher.find()) {
-                    fileName = matcher.group(1);
-                }
-
-                Path tempFile = null;
-
-                try {
-                    FileAttribute<Set<PosixFilePermission>> attr = PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwx------"));
-                    tempFile = Files.createTempFile("console-" + fileName + "-tmp_", ".yaml", attr);
-                    Files.write(tempFile, file.trim().getBytes(StandardCharsets.UTF_8));
-                } catch (IOException e) {
-                    throw new FileOperationException("Failed to create temp file: " + fileName, e);
-                }
-
-                tempFiles.add(tempFile.toFile());
-                LOGGER.debug("Created temp file: {}", tempFile.toAbsolutePath());
-            }
-        }
-
-        return tempFiles;
-    }
-
     private CustomResourceDefinition[] getBundleCrds() {
-        return this.consoleBundleResources.stream()
-            .filter(file -> file.getName().contains("-CustomResourceDefinition-"))
-            .map(crd -> new CustomResourceDefinitionBuilder(TestFrameUtils.configFromYaml(crd, CustomResourceDefinition.class)).build())
+        return consoleBundleResources.stream()
+            .filter(r -> SetupUtils.isOfKind(r, CustomResourceDefinition.class))
+            .map(content -> new CustomResourceDefinitionBuilder(TestFrameUtils.configFromYaml(content, CustomResourceDefinition.class))
+                .build())
             .toArray(CustomResourceDefinition[]::new);
     }
 
     private ServiceAccount getBundleServiceAccount() {
-        return new ServiceAccountBuilder(TestFrameUtils.configFromYaml(this.consoleBundleResources.stream()
-            .filter(file -> file.getName().contains("-ServiceAccount-"))
-            .toList().get(0), ServiceAccount.class))
+        return consoleBundleResources.stream()
+            .filter(r -> SetupUtils.isOfKind(r, ServiceAccount.class))
+            .map(content -> new ServiceAccountBuilder(TestFrameUtils.configFromYaml(content, ServiceAccount.class))
                 .editMetadata()
-                    .withNamespace(this.deploymentNamespace)
+                    .withNamespace(deploymentNamespace)
                 .endMetadata()
-                .build();
+                .build())
+            .toList()
+            .get(0);
     }
 
     private ClusterRole[] getBundleClusterRoles() {
-        return this.consoleBundleResources.stream()
-            .filter(file -> file.getName().contains("-ClusterRole-"))
-            .map(cr -> new ClusterRoleBuilder(TestFrameUtils.configFromYaml(cr, ClusterRole.class))
+        return consoleBundleResources.stream()
+            .filter(r -> SetupUtils.isOfKind(r, ClusterRole.class))
+            .map(content -> new ClusterRoleBuilder(TestFrameUtils.configFromYaml(content, ClusterRole.class))
                 .editMetadata()
-                    .withNamespace(this.deploymentNamespace)
+                    .withNamespace(deploymentNamespace)
                 .endMetadata()
                 .build())
             .toArray(ClusterRole[]::new);
     }
 
     private ClusterRoleBinding[] getBundleClusterRoleBindings() {
-        return this.consoleBundleResources.stream()
-            .filter(file -> file.getName().contains("-ClusterRoleBinding-"))
-            .map(crb -> new ClusterRoleBindingBuilder(TestFrameUtils.configFromYaml(crb, ClusterRoleBinding.class))
+        return consoleBundleResources.stream()
+            .filter(r -> SetupUtils.isOfKind(r, ClusterRoleBinding.class))
+            .map(content -> new ClusterRoleBindingBuilder(TestFrameUtils.configFromYaml(content, ClusterRoleBinding.class))
                 .editMetadata()
-                    .withNamespace(this.deploymentNamespace)
+                    .withNamespace(deploymentNamespace)
                 .endMetadata()
                 .editFirstSubject()
-                    .withNamespace(this.deploymentNamespace)
+                    .withNamespace(deploymentNamespace)
                 .endSubject()
                 .build())
             .toArray(ClusterRoleBinding[]::new);
     }
 
     private RoleBinding[] getBundleRoleBindings() {
-        return this.consoleBundleResources.stream()
-            .filter(file -> file.getName().contains("-RoleBinding-"))
-            .map(rb -> new RoleBindingBuilder(TestFrameUtils.configFromYaml(rb, RoleBinding.class))
+        return consoleBundleResources.stream()
+            .filter(r -> SetupUtils.isOfKind(r, RoleBinding.class))
+            .map(content -> new RoleBindingBuilder(TestFrameUtils.configFromYaml(content, RoleBinding.class))
                 .editMetadata()
-                    .withNamespace(this.deploymentNamespace)
+                    .withNamespace(deploymentNamespace)
                 .endMetadata()
                 .editFirstSubject()
-                    .withNamespace(this.deploymentNamespace)
+                    .withNamespace(deploymentNamespace)
                 .endSubject()
                 .build())
             .toArray(RoleBinding[]::new);
     }
 
     private Deployment getBundleDeployment() {
-        DeploymentBuilder consoleOperator = new DeploymentBuilder(TestFrameUtils.configFromYaml(
-                this.consoleBundleResources.stream()
-                    .filter(file -> file.getName().contains("-Deployment-"))
-                    .findFirst()
-                    .orElseThrow(() -> new IllegalArgumentException("No Console Operator deployment YAML found")),
-                Deployment.class))
+        DeploymentBuilder consoleOperator = consoleBundleResources.stream()
+            .filter(r -> SetupUtils.isOfKind(r, Deployment.class))
+            .map(content -> new DeploymentBuilder(TestFrameUtils.configFromYaml(content, Deployment.class))
                 .editMetadata()
-                    .withNamespace(this.deploymentNamespace)
-                    .withName(ConsoleUtils.getConsoleOperatorName())
+                    .withNamespace(deploymentNamespace)
+                    .withName(operatorDeploymentName)
                 .endMetadata()
                 .editSpec()
                     .editTemplate()
                         .editMetadata()
-                            .withNamespace(this.deploymentNamespace)
+                            .withNamespace(deploymentNamespace)
                         .endMetadata()
                     .endTemplate()
-                .endSpec();
+                .endSpec())
+                .toList()
+                .get(0);
 
         // Override Console images if provided
         if (!Environment.CONSOLE_OPERATOR_IMAGE.isEmpty()) {
@@ -259,17 +220,17 @@ public class ConsoleOperatorSetup {
     // ------
     private OperatorGroup getOlmOperatorGroup() {
         return new OperatorGroupBuilder(
-            TestFrameUtils.configFromYaml(SetupUtils.getYamlContentFromFile(ExampleFilePaths.CONSOLE_OPERATOR_GROUP_YAML), OperatorGroup.class))
+            TestFrameUtils.configFromYaml(SetupUtils.getYamlContent(ExampleFilePaths.CONSOLE_OPERATOR_GROUP_YAML), OperatorGroup.class))
             .editMetadata()
-                .withNamespace(this.deploymentNamespace)
+                .withNamespace(deploymentNamespace)
             .endMetadata()
             .build();
     }
 
     private Subscription getOlmSubscription() {
-        return new SubscriptionBuilder(TestFrameUtils.configFromYaml(SetupUtils.getYamlContentFromFile(ExampleFilePaths.CONSOLE_OPERATOR_SUBSCRIPTION_YAML), Subscription.class))
+        return new SubscriptionBuilder(TestFrameUtils.configFromYaml(SetupUtils.getYamlContent(ExampleFilePaths.CONSOLE_OPERATOR_SUBSCRIPTION_YAML), Subscription.class))
             .editMetadata()
-                .withNamespace(this.deploymentNamespace)
+                .withNamespace(deploymentNamespace)
                 .withName(Constants.CONSOLE_OPERATOR_SUBSCRIPTION_NAME)
             .endMetadata()
             .editSpec()

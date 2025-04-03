@@ -2,7 +2,6 @@ package com.github.streamshub.systemtests.setup;
 
 import com.github.streamshub.systemtests.Environment;
 import com.github.streamshub.systemtests.constants.Constants;
-import com.github.streamshub.systemtests.exceptions.FileOperationException;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.utils.ResourceUtils;
 import com.github.streamshub.systemtests.utils.SetupUtils;
@@ -25,27 +24,16 @@ import io.fabric8.kubernetes.api.model.rbac.SubjectBuilder;
 import io.skodjob.testframe.resources.KubeResourceManager;
 import io.skodjob.testframe.utils.TestFrameUtils;
 import org.apache.logging.log4j.Logger;
+import org.jsoup.Jsoup;
 
-import java.io.BufferedReader;
-import java.io.File;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.attribute.FileAttribute;
-import java.nio.file.attribute.PosixFilePermission;
-import java.nio.file.attribute.PosixFilePermissions;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class StrimziOperatorSetup {
     private static final Logger LOGGER = LogWrapper.getLogger(StrimziOperatorSetup.class);
-
-    private final List<File> strimziResources = fetchStrimziYamlFiles();
+    private final String resourceURL = "https://github.com/strimzi/strimzi-kafka-operator/tree/" + Environment.STRIMZI_OPERATOR_VERSION + "/packaging/install/cluster-operator";
+    private final List<String> strimziResources = getStrimziYamlFilesContent();
     private final String deploymentNamespace;
     private final String deploymentName;
 
@@ -128,27 +116,34 @@ public class StrimziOperatorSetup {
     }
 
     private ConfigMap getBundleConfigMap() {
-        return new ConfigMapBuilder(TestFrameUtils.configFromYaml(strimziResources.stream()
-            .filter(file -> file.getName().startsWith("050-ConfigMap")).toList().get(0), ConfigMap.class))
+        return strimziResources.stream()
+            .filter(content -> SetupUtils.isOfKind(content, ConfigMap.class))
+            .map(r -> new ConfigMapBuilder(TestFrameUtils.configFromYaml(r, ConfigMap.class))
             .editMetadata()
                 .withNamespace(this.deploymentNamespace)
                 .withName(this.deploymentName)
             .endMetadata()
-            .build();
+            .build())
+            .toList()
+            .get(0);
     }
 
     private ServiceAccount getBundleServiceAccount() {
-        return new ServiceAccountBuilder(TestFrameUtils.configFromYaml(strimziResources.stream()
-            .filter(file -> file.getName().startsWith("010-ServiceAccount")).toList().get(0), ServiceAccount.class))
+        return strimziResources.stream()
+            .filter(content -> SetupUtils.isOfKind(content, ServiceAccount.class))
+            .map(r -> new ServiceAccountBuilder(TestFrameUtils.configFromYaml(r, ServiceAccount.class))
             .editMetadata()
                 .withNamespace(this.deploymentNamespace)
             .endMetadata()
-            .build();
+            .build())
+            .toList()
+            .get(0);
     }
 
     private Deployment getBundleDeployment() {
-        return new DeploymentBuilder(TestFrameUtils.configFromYaml(strimziResources.stream()
-            .filter(file -> file.getName().startsWith("060-Deployment")).toList().get(0), Deployment.class))
+        return strimziResources.stream()
+            .filter(content -> SetupUtils.isOfKind(content, Deployment.class))
+            .map(r -> new DeploymentBuilder(TestFrameUtils.configFromYaml(r, Deployment.class))
             .editMetadata()
                 .withNamespace(this.deploymentNamespace)
                 .withName(this.deploymentName)
@@ -166,12 +161,15 @@ public class StrimziOperatorSetup {
                     .endSpec()
                 .endTemplate()
             .endSpec()
-            .build();
+            .build())
+            .toList()
+            .get(0);
     }
 
     private CustomResourceDefinition[] getBundleCrds() {
-        return strimziResources.stream().filter(file -> file.getName().contains("-Crd-"))
-            .map(crd -> new CustomResourceDefinitionBuilder(TestFrameUtils.configFromYaml(crd, CustomResourceDefinition.class))
+        return strimziResources.stream()
+            .filter(content -> SetupUtils.isOfKind(content, CustomResourceDefinition.class))
+            .map(r -> new CustomResourceDefinitionBuilder(TestFrameUtils.configFromYaml(r, CustomResourceDefinition.class))
                 .editMetadata()
                     .withNamespace(this.deploymentNamespace)
                 .endMetadata()
@@ -180,8 +178,9 @@ public class StrimziOperatorSetup {
     }
 
     private ClusterRole[] getBundleClusterRoles() {
-        return strimziResources.stream().filter(file -> file.getName().contains("-ClusterRole-"))
-            .map(file -> new ClusterRoleBuilder(TestFrameUtils.configFromYaml(file, ClusterRole.class))
+        return strimziResources.stream()
+            .filter(content -> SetupUtils.isOfKind(content, ClusterRole.class))
+            .map(r -> new ClusterRoleBuilder(TestFrameUtils.configFromYaml(r, ClusterRole.class))
                 .editMetadata()
                     .withNamespace(this.deploymentNamespace)
                 .endMetadata()
@@ -190,8 +189,9 @@ public class StrimziOperatorSetup {
     }
 
     private RoleBinding[] getBundleRoleBindings() {
-        return strimziResources.stream().filter(file -> file.getName().contains("-RoleBinding-"))
-            .map(rb -> new RoleBindingBuilder(TestFrameUtils.configFromYaml(rb, RoleBinding.class))
+        return strimziResources.stream()
+            .filter(content -> SetupUtils.isOfKind(content, RoleBinding.class))
+            .map(r -> new RoleBindingBuilder(TestFrameUtils.configFromYaml(r, RoleBinding.class))
                 .editMetadata()
                     .withNamespace(this.deploymentNamespace)
                 .endMetadata()
@@ -203,8 +203,9 @@ public class StrimziOperatorSetup {
     }
 
     private ClusterRoleBinding[] getBundleClusterRoleBindings() {
-        return strimziResources.stream().filter(file -> file.getName().contains("-ClusterRoleBinding-"))
-            .map(crb -> new ClusterRoleBindingBuilder(TestFrameUtils.configFromYaml(crb, ClusterRoleBinding.class))
+        return strimziResources.stream()
+            .filter(content -> SetupUtils.isOfKind(content, ClusterRoleBinding.class))
+            .map(r -> new ClusterRoleBindingBuilder(TestFrameUtils.configFromYaml(r, ClusterRoleBinding.class))
                 .editMetadata()
                     .withNamespace(this.deploymentNamespace)
                 .endMetadata()
@@ -215,67 +216,27 @@ public class StrimziOperatorSetup {
             .toArray(ClusterRoleBinding[]::new);
     }
 
-    private List<File> fetchStrimziYamlFiles() {
-        List<File> yamlFiles = new ArrayList<>();
-        for (String fileUrl : extractYamlFileLinksFromGithubDir()) {
-            String fileName = fileUrl.substring(fileUrl.lastIndexOf('/') + 1).replace(".yaml", "");
-            LOGGER.debug("Fetching Strimzi YAML file: {}", fileName);
-            Path tempFile = null;
+    private List<String> getStrimziYamlFilesContent() {
+        LOGGER.debug("Extracting Strimzi YAML file links from GitHub url: {}", Environment.STRIMZI_OPERATOR_VERSION);
+        for (int attempt = 0; attempt < 10; attempt++) {
             try {
-                FileAttribute<Set<PosixFilePermission>> attr = PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwx------"));
-                tempFile = Files.createTempFile(fileName + "-tmp_", ".yaml", attr);
-                Files.write(tempFile, SetupUtils.getYamlContentFromUrl(fileUrl).getBytes());
-            } catch (IOException e) {
-                throw new FileOperationException("Failed to create temp file: " + fileName, e);
-            }
-            yamlFiles.add(tempFile.toFile());
-        }
-        return yamlFiles;
-    }
-
-    private List<String> extractYamlFileLinksFromGithubDir() {
-        LOGGER.debug("Extracting Strimzi YAML file links from GitHub url: {}", Environment.STRIMZI_OPERATOR_CRDS_URL);
-        int maxRetries = 10;
-        int attempt = 0;
-
-        while (attempt < maxRetries) {
-            try {
-                BufferedReader htmlWithLinksFromDir = new BufferedReader(
-                    new InputStreamReader(new URL(Environment.STRIMZI_OPERATOR_CRDS_URL).openStream()));
-
-                StringBuilder content = new StringBuilder();
-                String inputLine;
-
-                while ((inputLine = htmlWithLinksFromDir.readLine()) != null) {
-                    content.append(inputLine);
-                }
-
-                htmlWithLinksFromDir.close();
-
-                List<String> yamlFileLinks = new ArrayList<>();
-                Matcher matcher = Pattern.compile("href=\"(\\/[a-zA-Z0-9\\.\\/\\-]+\\/.{3}[a-zA-Z\\-]+\\d?\\.yaml)\"")
-                    .matcher(content.toString());
-
-                while (matcher.find()) {
-                    final String rawUrl = "https://raw.githubusercontent.com" + matcher.group(1)
-                        .replace("/blob/", "/");
-                    if (!yamlFileLinks.contains(rawUrl)) {
-                        yamlFileLinks.add(rawUrl);
-                    }
-                }
+                // Github row locator of current dir
+                List<String> yamlFileLinks = Jsoup.parse(new URL(resourceURL), 10_000)
+                    .select("tr.react-directory-row div.react-directory-filename-cell a.Link--primary")
+                    .eachAttr("href").stream()
+                    .map(it -> SetupUtils.getYamlContent("https://raw.githubusercontent.com" + it.replace("/blob/", "/")))
+                    .distinct()
+                    .toList();
 
                 if (!yamlFileLinks.isEmpty()) {
                     return yamlFileLinks;
                 }
-
                 LOGGER.warn("Attempt {}: Could not get GitHub Strimzi YAML file links, retrying in 3 seconds...", attempt + 1);
                 Thread.sleep(3_000);
             } catch (IOException | InterruptedException e) {
                 LOGGER.error("Attempt {} failed: {}", attempt + 1, e.getMessage());
             }
-
-            attempt++;
         }
-        throw new RuntimeException("Could not retrieve Strimzi CRs from GitHub after " + maxRetries + " attempts");
+        throw new RuntimeException("Could not retrieve Strimzi CRs from GitHub after " + 10 + " attempts");
     }
 }

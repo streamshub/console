@@ -16,7 +16,7 @@ public class Environment {
     public static final String BROWSER_TYPE = ENVS.getOrDefault("BROWSER_TYPE", BrowserTypes.CHROMIUM.toString());
     public static final String CONSOLE_DEPLOYMENT_NAME = ENVS.getOrDefault("CONSOLE_DEPLOYMENT_NAME", "streamshub-console");
     public static final String STRIMZI_OPERATOR_NAME = ENVS.getOrDefault("STRIMZI_OPERATOR_NAME", "strimzi-cluster-operator");
-    public static final String STRIMZI_OPERATOR_CRDS_URL = ENVS.getOrDefault("STRIMZI_OPERATOR_CRDS_URL", "");
+    public static final String STRIMZI_OPERATOR_VERSION = ENVS.getOrDefault("STRIMZI_OPERATOR_VERSION", "");
     public static final String CONSOLE_OPERATOR_BUNDLE_URL = ENVS.getOrDefault("CONSOLE_OPERATOR_BUNDLE_URL", "");
     public static final String CONSOLE_CATALOG_SOURCE_NAME = ENVS.getOrDefault("CONSOLE_CATALOG_SOURCE_NAME", "streamshub-console-catalog");
     public static final String TEST_LOG_DIR = ENVS.getOrDefault("TEST_LOG_DIR",  USER_PATH + "/target/logs/");
@@ -31,7 +31,7 @@ public class Environment {
     public static final String CONSOLE_OPERATOR_IMAGE = ENVS.getOrDefault("CONSOLE_OPERATOR_IMAGE", "");
     public static final boolean RUN_HEADLESS = ENVS.getOrDefault("RUN_HEADLESS", Boolean::parseBoolean, true);
     public static final String SCREENSHOTS_DIR_PATH = ENVS.getOrDefault("SCREENSHOTS_DIR_PATH", USER_PATH + "/screenshots");
-    public static final boolean INSTALL_USING_OLM = ENVS.getOrDefault("INSTALL_USING_OLM", Boolean::parseBoolean, false);
+    public static final String CONSOLE_INSTALL_TYPE = ENVS.getOrDefault("CONSOLE_INSTALL_TYPE", "yaml");
     public static final String TEST_CLIENTS_IMAGE = ENVS.getOrDefault("TEST_CLIENTS_IMAGE", "");
     public static final String OLM_OPERATOR_CHANNEL = ENVS.getOrDefault("OLM_OPERATOR_CHANNEL", "alpha");
     public static final String OLM_CATALOG_NAMESPACE = ENVS.getOrDefault("OLM_CATALOG_NAMESPACE", Constants.OPENSHIFT_MARKETPLACE_NAMESPACE);
@@ -39,11 +39,8 @@ public class Environment {
     // Deny instantiation
     private Environment() {}
 
-    public static void saveConfigToFile() throws IOException {
-        ENVS.saveConfigurationFile(TEST_LOG_DIR);
-    }
-
-    static {
+    public static void logConfigAndSaveToFile() throws IOException {
         ENVS.logEnvironmentVariables();
+        ENVS.saveConfigurationFile(TEST_LOG_DIR);
     }
 }
