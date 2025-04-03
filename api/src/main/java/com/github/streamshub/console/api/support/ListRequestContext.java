@@ -197,7 +197,6 @@ public class ListRequestContext<T> implements Predicate<T> {
         return Map.of("cursor", cursorBuilder.apply(getSortNames()));
     }
 
-
     public Map<String, Object> buildPageMeta() {
         Map<String, Object> pageMeta = new LinkedHashMap<>();
 

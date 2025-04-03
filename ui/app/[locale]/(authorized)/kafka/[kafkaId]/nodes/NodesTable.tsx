@@ -105,11 +105,11 @@ export function NodesTable({
 
   const nodePoolOptions = nodePoolList
     ? Object.fromEntries(
-        Object.entries(nodePoolList).map(([poolName, roles]) => [
+        Object.entries(nodePoolList).map(([poolName, poolMeta]) => [
           poolName,
           {
             label: <>{poolName}</>,
-            description: <>Nodes role: {roles.join(", ")}</>,
+            description: <>Nodes role: {poolMeta.roles.join(", ")}</>,
           },
         ]),
       )
