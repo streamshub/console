@@ -217,7 +217,7 @@ public class StrimziOperatorSetup {
     }
 
     private List<String> getStrimziYamlFilesContent() {
-        LOGGER.debug("Extracting Strimzi YAML file links from GitHub url: {}", Environment.STRIMZI_OPERATOR_VERSION);
+        LOGGER.debug("Extracting Strimzi YAML file links from GitHub url: {}", resourceURL);
         for (int attempt = 0; attempt < 10; attempt++) {
             try {
                 // Github row locator of current dir
