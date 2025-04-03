@@ -1,4 +1,7 @@
-import type { ToolbarChip, ToolbarToggleGroupProps } from "@/libs/patternfly/react-core";
+import type {
+  ToolbarChip,
+  ToolbarToggleGroupProps,
+} from "@/libs/patternfly/react-core";
 import {
   InputGroup,
   ToolbarFilter,
@@ -13,8 +16,9 @@ import {
   FilterSearch,
   FilterSelect,
   FilterSwitcher,
+  FilterGroupedCheckbox,
 } from "./components";
-import type { CheckboxType, FilterType } from "./types";
+import type { CheckboxType, FilterType, GroupedCheckboxType } from "./types";
 
 export type ChipFilterProps = {
   filters: { [label: string]: FilterType };
@@ -24,7 +28,6 @@ export type ChipFilterProps = {
 export function ChipFilter({ filters, breakpoint = "md" }: ChipFilterProps) {
   const options = Object.keys(filters);
   const [selectedOption, setSelectedOption] = useState<string>(options[0]);
-
 
   const getFilterComponent = (label: string, f: FilterType) => {
     switch (f.type) {
@@ -55,15 +58,37 @@ export function ChipFilter({ filters, breakpoint = "md" }: ChipFilterProps) {
             label={label}
           />
         );
+      case "groupedCheckbox":
+        return (
+          <FilterGroupedCheckbox
+            chips={f.chips}
+            options={f.options}
+            onToggle={f.onToggle}
+            label={label}
+          />
+        );
     }
   };
 
   const getToolbarChips = (f: FilterType): ToolbarChip[] => {
     if ("options" in f) {
+      if (f.type === "groupedCheckbox") {
+        const groupedFilter = f as GroupedCheckboxType<any>;
+        const allOptions = groupedFilter.options.flatMap((group) =>
+          Object.entries(group.groupOptions),
+        );
+        return groupedFilter.chips.map((c) => {
+          const found = allOptions.find(([key]) => key === c);
+          return {
+            key: c,
+            node: found ? found[1] : c,
+          };
+        });
+      }
       const checkboxFilter = f as CheckboxType<any>; // Type assertion
       return checkboxFilter.chips.map((c) => ({
         key: c,
-        node: checkboxFilter.options[c].label,
+        node: checkboxFilter.options[c]?.label ?? c,
       }));
     }
     return f.chips.map((chip) => ({ key: chip, node: chip }));

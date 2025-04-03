@@ -7,6 +7,13 @@ const sampleData = {
   3: { leaders: 45, followers: 65 },
 };
 
+const sampleNodesCount = {
+  totalNodes: 10,
+  totalBrokers: 7,
+  totalControllers: 3,
+  leadControllerId: "1",
+};
+
 const meta: Meta<typeof DistributionChart> = {
   component: DistributionChart,
 };
@@ -17,5 +24,6 @@ type Story = StoryObj<typeof DistributionChart>;
 export const Default: Story = {
   args: {
     data: sampleData,
+    nodesCount: sampleNodesCount,
   },
 };

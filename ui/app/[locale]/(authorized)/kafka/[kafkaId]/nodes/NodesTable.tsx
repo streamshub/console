@@ -1,259 +1,437 @@
-"use client";
-
-import { Number } from "@/components/Format/Number";
-import { ResponsiveTable } from "@/components/Table";
 import {
-  ChartDonutUtilization,
-} from "@/libs/patternfly/react-charts";
+  BrokerStatus,
+  NodeRoles,
+  NodeList,
+  KafkaNode,
+  ControllerStatus,
+  NodePoolsType,
+  Statuses,
+} from "@/api/nodes/schema";
 import {
   ClipboardCopy,
   Flex,
   FlexItem,
   Label,
-  Text,
   TextContent,
   Tooltip,
+  Text,
+  Icon,
+  Level,
+  LevelItem,
+  Card,
+  CardBody,
+  CardTitle,
+  CardHeader,
 } from "@/libs/patternfly/react-core";
-import { HelpIcon } from "@/libs/patternfly/react-icons";
-import { useFormatBytes } from "@/utils/useFormatBytes";
-import { Icon } from "@patternfly/react-core";
-import {
-  CheckCircleIcon,
-  ExclamationCircleIcon,
-} from "@patternfly/react-icons";
-import { useFormatter } from "next-intl";
+import { useFormatter, useTranslations } from "next-intl";
 import Link from "next/link";
-import { useTranslations } from "next-intl";
+import { ReactNode } from "react";
+import { Number } from "@/components/Format/Number";
+import { ChartDonutUtilization } from "@/libs/patternfly/react-charts";
+import { useFormatBytes } from "@/utils/useFormatBytes";
+import { TableView, TableViewProps } from "@/components/Table/TableView";
+import { EmptyStateNoMatchFound } from "@/components/Table/EmptyStateNoMatchFound";
+import {
+  BrokerLabel,
+  ControllerLabel,
+  getBrokerStatusLabel,
+  getControllerStatusLabel,
+  RoleLabel,
+} from "./NodesLabel";
+import { HelpIcon } from "@/libs/patternfly/react-icons";
 
-const columns = ["id", "roles", "status", "replicas", "rack", "nodePool"] as const;
+export const NodeListColumns = [
+  "id",
+  "roles",
+  "status",
+  "replicas",
+  "rack",
+  "nodePool",
+] as const;
 
-export type NodeStatus = {
-  stable: boolean,
-  description: string,
-};
+export type NodeListColumn = (typeof NodeListColumns)[number];
 
-export type Node = {
-  id: string;
-  nodePool?: string;
-  roles: string[];
-  isLeader: boolean;
-  brokerStatus?: NodeStatus;
-  controllerStatus?: NodeStatus;
-  followers?: number;
-  leaders?: number;
-  rack?: string;
-  hostname?: string;
-  diskCapacity?: number;
-  diskUsage?: number;
-  kafkaVersion?: string;
-};
+export type NodesTableProps = {
+  nodeList: KafkaNode[] | undefined;
+  nodesCount: number;
+  page: number;
+  perPage: number;
+  filterNodePool: string[] | undefined;
+  filterBrokerStatus: BrokerStatus[] | undefined;
+  filterControllerStatus: ControllerStatus[] | undefined;
+  filterRole: NodeRoles[] | undefined;
+  onFilterNodePoolChange: (nodePool: string[] | undefined) => void;
+  onFilterStatusChange: (
+    brokerStatus: BrokerStatus[] | undefined,
+    controllerStatus: ControllerStatus[] | undefined,
+  ) => void;
+  onFilterRoleChange: (role: NodeRoles[] | undefined) => void;
+  nodePoolList: NodePoolsType | undefined;
+  statuses: Statuses | undefined;
+} & Pick<
+  TableViewProps<NodeList, (typeof NodeListColumns)[number]>,
+  "isColumnSortable" | "onPageChange" | "onClearAllFilters"
+>;
 
-export function NodesTable({ nodes }: { nodes: Node[] }) {
-
+export function NodesTable({
+  isColumnSortable,
+  nodeList,
+  filterNodePool,
+  filterBrokerStatus,
+  filterControllerStatus,
+  filterRole,
+  onFilterNodePoolChange,
+  onFilterRoleChange,
+  onFilterStatusChange,
+  page,
+  perPage,
+  onPageChange,
+  onClearAllFilters,
+  nodesCount,
+  nodePoolList,
+  statuses,
+}: NodesTableProps) {
   const t = useTranslations();
   const format = useFormatter();
   const formatBytes = useFormatBytes();
-  return (
-    <ResponsiveTable
-      ariaLabel={"Kafka nodes"}
-      columns={columns}
-      data={nodes}
-      renderHeader={({ column, key, Th }) => {
-        switch (column) {
-          case "id":
-            return <Th key={key}>{t("nodes.broker_id")}</Th>;
-          case "roles":
-            return <Th key={key}>{t("nodes.roles")}</Th>;
-          case "status":
-            return <Th key={key}>{t("nodes.status")}</Th>;
-          case "replicas":
-            return (
-              <Th key={key}>
-                {t("nodes.replicas")}{" "}
-                <Tooltip
-                  content={
-                    t("nodes.replicas_tooltip")
-                  }
-                >
-                  <HelpIcon />
-                </Tooltip>
-              </Th>
-            );
-          case "rack":
-            return (
-              <Th key={key}>
-                {t("nodes.rack")}{" "}
-                <Tooltip
-                  content={
-                    t("nodes.rack_tooltip")
-                  }
-                >
-                  <HelpIcon />
-                </Tooltip>
-              </Th>
-            );
-          case "nodePool":
-            return <Th key={key}>{t("nodes.nodePool")}</Th>;
-        }
-      }}
-      renderCell={({ column, key, row, Td }) => {
-        switch (column) {
-          case "id":
-            return (
-              <Td key={key} dataLabel={"Node ID"}>
-                <Link href={`nodes/${row.id}`}>{row.id}</Link>
-                {row.isLeader && (
-                  <Label
-                      isCompact={true}
-                      color={"green"}
-                      className={"pf-v5-u-ml-sm"}
-                    >
-                    {t.rich("nodes.lead_controller")}
-                  </Label>
-                )}
-              </Td>
-            );
-          case "roles":
-            return (
-              <Td key={key} dataLabel={"Roles"}>
-                {
-                    row.roles.map((role, _) => {
-                        return <div key={role}>{role}</div>;
-                    })
-                }
-              </Td>
-            );
-          case "status":
-            return (
-              <Td key={key} dataLabel={"Status"}>
-                { row.controllerStatus &&
-                  <div>
-                  <Icon status={row.controllerStatus.stable ? "success" : "warning"}>
-                    {row.controllerStatus.stable ? <CheckCircleIcon /> : <ExclamationCircleIcon />}
-                  </Icon>
-                  &nbsp;
-                  {row.controllerStatus?.description}
-                  </div>
-                }
-                { row.brokerStatus &&
-                  <div>
-                  <Icon status={row.brokerStatus.stable ? "success" : "warning"}>
-                    {row.brokerStatus.stable ? <CheckCircleIcon /> : <ExclamationCircleIcon />}
-                  </Icon>
-                  &nbsp;
-                  {row.brokerStatus?.description}
-                  </div>
-                }
-              </Td>
-            );
-          case "replicas":
-            return (
-              <Td key={key} dataLabel={"Total replicas"}>
-                <Number
-                  value={
-                    typeof row.followers == 'number' && typeof row.leaders == 'number'
-                      ? row.followers + row.leaders
-                      : undefined
-                  }
-                />
-              </Td>
-            );
-          case "rack":
-            return (
-              <Td key={key} dataLabel={"Rack"}>
-                {row.rack || "n/a"}
-              </Td>
-            );
-          case "nodePool":
-            return (
-              <Td key={key} dataLabel={"Node Pool"}>
-                {row.nodePool ?? "n/a"}
-              </Td>
-            );
-        }
-      }}
-      isRowExpandable={() => true}
-      getExpandedRow={({ row }) => {
-        let usedCapacity = (row.diskUsage !== undefined && row.diskCapacity !== undefined)
-          ? (row.diskUsage / row.diskCapacity) : undefined;
 
-        return (
-          <Flex gap={{ default: "gap4xl" }} className={"pf-v5-u-p-xl"}>
-            <FlexItem flex={{ default: "flex_1" }} style={{ maxWidth: "50%" }}>
-              <TextContent>
-                <Text>
-                  {t.rich("nodes.host_name")}
-                </Text>
-                <Text>
-                  <ClipboardCopy
-                    isReadOnly={true}
-                    variant={"expansion"}
-                    isExpanded={true}
-                  >
-                    {row.hostname || "n/a"}
-                  </ClipboardCopy>
-                </Text>
-              </TextContent>
-            </FlexItem>
-            <FlexItem>
-              <TextContent>
-                <Text>
-                  {t.rich("nodes.disk_usage")}
-                </Text>
-              </TextContent>
-              <div>
-                {usedCapacity !== undefined && (
-                    <div style={{ height: '300px', width: '230px' }}>
-                    <ChartDonutUtilization
-                        data={{
-                          x: "Used capacity",
-                          y: usedCapacity * 100,
-                        }}
-                        labels={({ datum }) =>
-                          datum.x
-                            ? `${datum.x}: ${format.number(datum.y / 100, {
-                              style: "percent",
-                            })}`
-                            : null
-                        }
-                        legendData={[
-                          { name: `Used capacity: ${formatBytes(row.diskUsage!)}` },
-                          { name: `Available: ${formatBytes(row.diskCapacity! - row.diskUsage!)}` },
-                        ]}
-                        legendOrientation="vertical"
-                        legendPosition="bottom"
-                        padding={{
+  const NodeRoleLabel = RoleLabel(statuses);
+  const BrokerStatusLabel = BrokerLabel();
+  const ControllerStatusLabel = ControllerLabel();
+  const BrokerStatusLabelOptions = getBrokerStatusLabel(statuses?.brokers);
+  const ControllerStatusLabelOptions = getControllerStatusLabel(
+    statuses?.controllers,
+  );
+
+  const nodePoolOptions = nodePoolList
+    ? Object.fromEntries(
+        Object.entries(nodePoolList).map(([poolName, roles]) => [
+          poolName,
+          {
+            label: <>{poolName}</>,
+            description: <>Nodes role: {roles.join(", ")}</>,
+          },
+        ]),
+      )
+    : {};
+
+  const brokerStatusKeys = Object.keys(BrokerStatusLabel) as BrokerStatus[];
+  const controllerStatusKeys = Object.keys(
+    ControllerStatusLabel,
+  ) as ControllerStatus[];
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="pf-v5-u-pl-md">{t("nodes.title")}</CardTitle>
+      </CardHeader>
+      <CardBody>
+        <TableView
+          page={page}
+          perPage={perPage}
+          onPageChange={onPageChange}
+          itemCount={nodesCount}
+          isColumnSortable={isColumnSortable}
+          isRowExpandable={() => true}
+          isFiltered={
+            filterNodePool?.length !== 0 ||
+            filterRole?.length != 0 ||
+            filterBrokerStatus?.length !== 0 ||
+            filterControllerStatus?.length !== 0
+          }
+          onClearAllFilters={onClearAllFilters}
+          data={nodeList}
+          emptyStateNoData={<></>}
+          emptyStateNoResults={
+            <EmptyStateNoMatchFound onClear={onClearAllFilters!} />
+          }
+          ariaLabel={"Kafka nodes"}
+          columns={NodeListColumns}
+          renderHeader={({ column, key, Th }) => {
+            switch (column) {
+              case "id":
+                return <Th key={key}>{t("nodes.broker_id")}</Th>;
+              case "roles":
+                return <Th key={key}>{t("nodes.roles")}</Th>;
+              case "status":
+                return <Th key={key}>{t("nodes.status")}</Th>;
+              case "replicas":
+                return (
+                  <Th key={key} width={20}>
+                    {t("nodes.replicas")}{" "}
+                    <Tooltip content={t("nodes.replicas_tooltip")}>
+                      <HelpIcon />
+                    </Tooltip>
+                  </Th>
+                );
+              case "rack":
+                return (
+                  <Th key={key}>
+                    {t("nodes.rack")}{" "}
+                    <Tooltip content={t("nodes.rack_tooltip")}>
+                      <HelpIcon />
+                    </Tooltip>
+                  </Th>
+                );
+              case "nodePool":
+                return <Th key={key}>{t("nodes.nodePool")}</Th>;
+            }
+          }}
+          renderCell={({ column, key, row, Td }) => {
+            switch (column) {
+              case "id":
+                return (
+                  <Td key={key} dataLabel={"Node ID"}>
+                    {row.attributes.broker ? (
+                      <Link href={`nodes/${row.id}`}>{row.id}</Link>
+                    ) : (
+                      <>{row.id}</>
+                    )}
+                    {row.attributes.metadataState?.status === "leader" && (
+                      <Label
+                        isCompact={true}
+                        color={"green"}
+                        className={"pf-v5-u-ml-sm"}
+                      >
+                        {t.rich("nodes.lead_controller")}
+                      </Label>
+                    )}
+                  </Td>
+                );
+              case "roles":
+                return (
+                  <Td key={key} dataLabel={"Roles"}>
+                    {row.attributes.roles?.map((role, _) => {
+                      return <div key={role}>{NodeRoleLabel[role].label}</div>;
+                    })}
+                  </Td>
+                );
+              case "status":
+                return (
+                  <Td key={key} dataLabel={"Status"}>
+                    <div className={"pf-v5-u-active-color-100"}>
+                      {row.attributes.broker &&
+                        BrokerStatusLabel[row.attributes.broker.status]}
+                    </div>
+                    <div>
+                      {row.attributes.controller &&
+                        ControllerStatusLabel[row.attributes.controller.status]}
+                    </div>
+                  </Td>
+                );
+              case "replicas":
+                return (
+                  <Td key={key} dataLabel={"Total replicas"}>
+                    <Number
+                      value={
+                        typeof row.attributes.broker?.leaderCount ===
+                          "number" &&
+                        typeof row.attributes.broker?.replicaCount === "number"
+                          ? row.attributes.broker.leaderCount +
+                            row.attributes.broker.replicaCount
+                          : undefined
+                      }
+                    />
+                  </Td>
+                );
+              case "rack":
+                return (
+                  <Td key={key} dataLabel={"Rack"}>
+                    {row.attributes.rack || "n/a"}
+                  </Td>
+                );
+              case "nodePool":
+                return (
+                  <Td key={key} dataLabel={"Node Pool"}>
+                    {row.attributes.nodePool
+                      ? (nodePoolOptions[row.attributes.nodePool]?.label ??
+                        "n/a")
+                      : "n/a"}
+                  </Td>
+                );
+            }
+          }}
+          getExpandedRow={({ row }) => {
+            const diskCapacity = row.attributes.storageCapacity ?? undefined;
+            const diskUsage = row.attributes.storageUsed ?? undefined;
+
+            let usedCapacity =
+              diskUsage !== undefined && diskCapacity !== undefined
+                ? diskUsage / diskCapacity
+                : undefined;
+            return (
+              <Flex gap={{ default: "gap4xl" }} className={"pf-v5-u-p-xl"}>
+                <FlexItem
+                  flex={{ default: "flex_1" }}
+                  style={{ maxWidth: "50%" }}
+                >
+                  <TextContent>
+                    <Text>{t.rich("nodes.host_name")}</Text>
+                    <Text>
+                      <ClipboardCopy
+                        isReadOnly={true}
+                        variant={"expansion"}
+                        isExpanded={true}
+                      >
+                        {row.attributes.host || "n/a"}
+                      </ClipboardCopy>
+                    </Text>
+                  </TextContent>
+                </FlexItem>
+                <FlexItem>
+                  <TextContent>
+                    <Text>{t.rich("nodes.disk_usage")}</Text>
+                  </TextContent>
+                  <div>
+                    {usedCapacity !== undefined && (
+                      <div style={{ height: "300px", width: "230px" }}>
+                        <ChartDonutUtilization
+                          data={{
+                            x: "Used capacity",
+                            y: usedCapacity * 100,
+                          }}
+                          labels={({ datum }) =>
+                            datum.x
+                              ? `${datum.x}: ${format.number(datum.y / 100, {
+                                  style: "percent",
+                                })}`
+                              : null
+                          }
+                          legendData={[
+                            {
+                              name: `Used capacity: ${formatBytes(diskUsage!)}`,
+                            },
+                            {
+                              name: `Available: ${formatBytes(diskCapacity! - diskUsage!)}`,
+                            },
+                          ]}
+                          legendOrientation="vertical"
+                          legendPosition="bottom"
+                          padding={{
                             bottom: 75, // Adjusted to accommodate legend
                             left: 20,
                             right: 20,
-                            top: 20
+                            top: 20,
                           }}
-                        title={`${format.number(usedCapacity, {
+                          title={`${format.number(usedCapacity, {
                             style: "percent",
-                          },
-                        )}`}
-                        subTitle={`of ${formatBytes(row.diskCapacity!)}`}
-                        thresholds={[{ value: 60 }, { value: 90 }]}
-                        height={300}
-                        width={230}
-                      />
-                    </div>
-                  )}
-              </div>
-            </FlexItem>
-            <FlexItem>
-              <TextContent>
-                <Text>
-                  {t.rich("nodes.kafka_version")}
-                </Text>
-              </TextContent>
-              <div>
-                {row.kafkaVersion ?? "Unknown"}
-              </div>
-            </FlexItem>
-          </Flex>
-        );
-      }}
-    />
+                          })}`}
+                          subTitle={`of ${formatBytes(diskCapacity!)}`}
+                          thresholds={[{ value: 60 }, { value: 90 }]}
+                          height={300}
+                          width={230}
+                        />
+                      </div>
+                    )}
+                  </div>
+                </FlexItem>
+                <FlexItem>
+                  <TextContent>
+                    <Text>{t.rich("nodes.kafka_version")}</Text>
+                  </TextContent>
+                  <div>{row.attributes.kafkaVersion ?? "Unknown"}</div>
+                </FlexItem>
+              </Flex>
+            );
+          }}
+          filters={{
+            "Node pool": {
+              type: "checkbox",
+              chips: filterNodePool || [],
+              onToggle: (nodePool) => {
+                const newPool = filterNodePool?.includes(nodePool)
+                  ? filterNodePool.filter((p) => p !== nodePool)
+                  : [...filterNodePool!, nodePool];
+                onFilterNodePoolChange(newPool);
+              },
+              onRemoveChip: (nodePool) => {
+                const newPool = (filterNodePool || []).filter(
+                  (p) => p !== nodePool,
+                );
+                onFilterNodePoolChange(newPool);
+              },
+              onRemoveGroup: () => {
+                onFilterNodePoolChange(undefined);
+              },
+              options: nodePoolOptions,
+            },
+            Role: {
+              type: "checkbox",
+              chips: filterRole || [],
+              onToggle: (role) => {
+                const newRole = filterRole?.includes(role)
+                  ? filterRole.filter((r) => r !== role)
+                  : [...filterRole!, role];
+                onFilterRoleChange(newRole);
+              },
+              onRemoveChip: (role) => {
+                const newRole = (filterRole || []).filter((r) => r !== role);
+                onFilterRoleChange(newRole);
+              },
+              onRemoveGroup: () => {
+                onFilterRoleChange(undefined);
+              },
+              options: Object.keys(NodeRoleLabel).reduce(
+                (acc: Record<NodeRoles, { label: ReactNode }>, role) => {
+                  acc[role as NodeRoles] = {
+                    label: NodeRoleLabel[role as NodeRoles].labelWithCount,
+                  };
+                  return acc;
+                },
+                {} as Record<NodeRoles, { label: ReactNode }>,
+              ),
+            },
+            Status: {
+              type: "groupedCheckbox",
+              chips: [
+                ...(filterBrokerStatus || []),
+                ...(filterControllerStatus || []),
+              ],
+              onToggle: (status: BrokerStatus | ControllerStatus) => {
+                const updateStatus = (statusList: any[], status: any) =>
+                  statusList.includes(status)
+                    ? statusList.filter((s) => s !== status)
+                    : [...statusList, status];
+
+                const newBrokerStatus = brokerStatusKeys.includes(
+                  status as BrokerStatus,
+                )
+                  ? updateStatus(filterBrokerStatus || [], status)
+                  : filterBrokerStatus;
+
+                const newControllerStatus = controllerStatusKeys.includes(
+                  status as ControllerStatus,
+                )
+                  ? updateStatus(filterControllerStatus || [], status)
+                  : filterControllerStatus;
+
+                onFilterStatusChange(newBrokerStatus, newControllerStatus);
+              },
+              onRemoveChip: (status: BrokerStatus | ControllerStatus) => {
+                onFilterStatusChange(
+                  brokerStatusKeys.includes(status as BrokerStatus)
+                    ? (filterBrokerStatus || []).filter((s) => s !== status)
+                    : filterBrokerStatus,
+                  controllerStatusKeys.includes(status as ControllerStatus)
+                    ? (filterControllerStatus || []).filter((s) => s !== status)
+                    : filterControllerStatus,
+                );
+              },
+              onRemoveGroup: () => onFilterStatusChange(undefined, undefined),
+              options: [
+                {
+                  groupLabel: "Broker",
+                  groupOptions: BrokerStatusLabelOptions,
+                },
+                {
+                  groupLabel: "Controller",
+                  groupOptions: ControllerStatusLabelOptions,
+                },
+              ],
+            },
+          }}
+        />
+      </CardBody>
+    </Card>
   );
 }

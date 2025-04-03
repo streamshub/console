@@ -88,7 +88,51 @@
     "rack_tooltip": "Represents the ID of the rack or datacenter in which the broker resides.",
     "host_name": "<b>Node host name</b>",
     "disk_usage": "<b>Node disk usage</b>",
-    "kafka_version": "<b>Kafka version</b>"
+    "kafka_version": "<b>Kafka version</b>",
+    "node_roles": {
+      "broker": "Broker",
+      "controller": "Controller"
+    },
+    "broker_status": {
+      "running": {
+        "label": "Running",
+        "popover_text": "The broker is registered and accepting client requests."
+      },
+      "not_running": {
+        "label": "Not Running",
+        "popover_text": "The broker is not active yet."
+      },
+      "unknown": {
+        "label": "Unknown",
+        "popover_text": "The broker's state is unknown."
+      },
+      "starting": {
+        "label": "Starting",
+        "popover_text": "The broker is catching up with the cluster metadata."
+      },
+      "recovery": {
+        "label": "Recovery",
+        "popover_text": "The broker has synced with the cluster metadata but is not fully active yet."
+      },
+      "pending_controlled_shutdown": {
+        "label": "Pending Controlled Shutdown",
+        "popover_text": "The broker is preparing for a controlled shutdown."
+      },
+      "shutting_down": {
+        "label": "Shutting Down",
+        "popover_text": "The broker is shutting down."
+      }
+    },
+    "controller_status": {
+      "quorum_leader": "QuorumLeader",
+      "quorum_leader_popover_text": "The leader of the metadata quorum (also known as the Active Controller). It handles all metadata requests from Kafka brokers.",
+      "quorum_follower": "QuorumFollower",
+      "quorum_follower_popover_text": "Follower controllers replicate metadata written by the quorum leader (Active Controller) and serve as hot standbys in case of leader failure.",
+      "quorum_follower_lagged": "QuorumFollowerLagged",
+      "quorum_follower_lagged_popover_text": "Follower controllers replicate metadata written by the quorum leader (Active Controller). This follower is lagging behind he leader. Quorum followers must stay up-to-date to prevent data loss if the leader fails.",
+      "unknown": "Unknown",
+      "unknown_popover_text": "The controller's state is unknown"
+    }
   },
   "node-config-table": {
     "no_results_title": "No properties found",
@@ -506,7 +550,14 @@
     "broker_node_voronoi_leaders": "{name} leaders: {value}",
     "broker_node_voronoi_followers": "{name} followers: {value}",
     "broker_node_count": "Broker {node}: {count} partitions ({percentage}%)",
-    "broker_node_count_missing": "Broker {node}: unknown"
+    "broker_node_count_missing": "Broker {node}: unknown",
+    "total_nodes": "Total nodes",
+    "controller_role": "Controller role",
+    "broker_role": "Broker role",
+    "lead_controller": "Lead controller",
+    "lead_controller_value": "Node ID:{leadController}",
+    "total_nodes_tooltip": "Total number of Kafka nodes across all roles (broker, controller, or combined).",
+    "lead_controller_tooltip": "The Lead Controller (also known as the Active Controller) is the primary metadata manager in a KRaft-based Kafka cluster. It maintains a global view of the cluster, processes metadata updates, and distributes them to all other nodes."
   },
   "EmptyStateNoTopics": {
     "to_get_started_create_your_first_topic": "To get started, create your first topic",
