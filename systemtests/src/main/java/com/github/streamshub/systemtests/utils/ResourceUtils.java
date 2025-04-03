@@ -4,6 +4,8 @@ import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.skodjob.testframe.resources.KubeResourceManager;
 
 import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.stream.Stream;
 
 public class ResourceUtils {
 
@@ -29,5 +31,20 @@ public class ResourceUtils {
 
     public static <T extends HasMetadata> List<T> listKubeResourcesByPrefix(Class<T> resourceClass, String namespaceName, String prefix) {
         return listKubeResources(resourceClass, namespaceName).stream().filter(it -> it.getMetadata().getName().startsWith(prefix)).toList();
+    }
+
+    // --------------------
+    // Resources kind cast
+    // --------------------
+    public static <T> Stream<T> getResourcesStreamFromListOfResources(List<HasMetadata> resources, Class<T> type) {
+        return resources.stream()
+            .filter(type::isInstance)
+            .map(type::cast);
+    }
+
+    public static <T> T getResourceFromListOfResources(List<HasMetadata> resources, Class<T> type) {
+        return getResourcesStreamFromListOfResources(resources, type)
+            .findFirst()
+            .orElseThrow(() -> new NoSuchElementException("No resources of type " + type.getSimpleName() + " found."));
     }
 }

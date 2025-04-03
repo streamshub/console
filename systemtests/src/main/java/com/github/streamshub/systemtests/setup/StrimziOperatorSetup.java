@@ -120,37 +120,24 @@ public class StrimziOperatorSetup {
     }
 
     private ConfigMap getBundleConfigMap() {
-        return strimziResources.stream()
-            .filter(ConfigMap.class::isInstance)
-            .map(ConfigMap.class::cast)
-            .map(r -> new ConfigMapBuilder(r)
-                .editMetadata()
-                    .withNamespace(this.deploymentNamespace)
-                    .withName(this.deploymentName)
-                .endMetadata()
-                .build())
-            .findFirst()
-            .orElseThrow();
+        return new ConfigMapBuilder(ResourceUtils.getResourceFromListOfResources(strimziResources, ConfigMap.class))
+            .editMetadata()
+                .withNamespace(this.deploymentNamespace)
+                .withName(this.deploymentName)
+            .endMetadata()
+            .build();
     }
 
     private ServiceAccount getBundleServiceAccount() {
-        return strimziResources.stream()
-            .filter(ServiceAccount.class::isInstance)
-            .map(ServiceAccount.class::cast)
-            .map(r -> new ServiceAccountBuilder(r)
-                .editMetadata()
-                    .withNamespace(this.deploymentNamespace)
-                .endMetadata()
-                .build())
-            .findFirst()
-            .orElseThrow();
+        return new ServiceAccountBuilder(ResourceUtils.getResourceFromListOfResources(strimziResources, ServiceAccount.class))
+            .editMetadata()
+                .withNamespace(this.deploymentNamespace)
+            .endMetadata()
+            .build();
     }
 
     private Deployment getBundleDeployment() {
-        return strimziResources.stream()
-            .filter(Deployment.class::isInstance)
-            .map(Deployment.class::cast)
-            .map(r -> new DeploymentBuilder(r)
+        return new DeploymentBuilder(ResourceUtils.getResourceFromListOfResources(strimziResources, Deployment.class))
             .editMetadata()
                 .withNamespace(this.deploymentNamespace)
                 .withName(this.deploymentName)
@@ -168,15 +155,11 @@ public class StrimziOperatorSetup {
                     .endSpec()
                 .endTemplate()
             .endSpec()
-            .build())
-            .toList()
-            .get(0);
+            .build();
     }
 
     private CustomResourceDefinition[] getBundleCrds() {
-        return strimziResources.stream()
-            .filter(CustomResourceDefinition.class::isInstance)
-            .map(CustomResourceDefinition.class::cast)
+        return ResourceUtils.getResourcesStreamFromListOfResources(strimziResources, CustomResourceDefinition.class)
             .map(r -> new CustomResourceDefinitionBuilder(r)
                 .editMetadata()
                     .withNamespace(this.deploymentNamespace)
@@ -186,9 +169,7 @@ public class StrimziOperatorSetup {
     }
 
     private ClusterRole[] getBundleClusterRoles() {
-        return strimziResources.stream()
-            .filter(ClusterRole.class::isInstance)
-            .map(ClusterRole.class::cast)
+        return ResourceUtils.getResourcesStreamFromListOfResources(strimziResources, ClusterRole.class)
             .map(r -> new ClusterRoleBuilder(r)
                 .editMetadata()
                     .withNamespace(this.deploymentNamespace)
@@ -198,9 +179,7 @@ public class StrimziOperatorSetup {
     }
 
     private RoleBinding[] getBundleRoleBindings() {
-        return strimziResources.stream()
-            .filter(RoleBinding.class::isInstance)
-            .map(RoleBinding.class::cast)
+        return ResourceUtils.getResourcesStreamFromListOfResources(strimziResources, RoleBinding.class)
             .map(r -> new RoleBindingBuilder(r)
                 .editMetadata()
                     .withNamespace(this.deploymentNamespace)
@@ -213,9 +192,7 @@ public class StrimziOperatorSetup {
     }
 
     private ClusterRoleBinding[] getBundleClusterRoleBindings() {
-        return strimziResources.stream()
-            .filter(ClusterRoleBinding.class::isInstance)
-            .map(ClusterRoleBinding.class::cast)
+        return ResourceUtils.getResourcesStreamFromListOfResources(strimziResources, ClusterRoleBinding.class)
             .map(r -> new ClusterRoleBindingBuilder(r)
                 .editMetadata()
                     .withNamespace(this.deploymentNamespace)

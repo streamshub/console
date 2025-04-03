@@ -103,29 +103,20 @@ public class ConsoleOperatorSetup {
     // Bundle
     // ------
     private CustomResourceDefinition[] getBundleCrds() {
-        return consoleBundleResources.stream()
-            .filter(CustomResourceDefinition.class::isInstance)
-            .map(CustomResourceDefinition.class::cast)
+        return ResourceUtils.getResourcesStreamFromListOfResources(consoleBundleResources, CustomResourceDefinition.class)
             .toArray(CustomResourceDefinition[]::new);
     }
 
     private ServiceAccount getBundleServiceAccount() {
-        return consoleBundleResources.stream()
-            .filter(ServiceAccount.class::isInstance)
-            .map(ServiceAccount.class::cast)
-            .map(r -> new ServiceAccountBuilder(r)
-                .editMetadata()
-                    .withNamespace(deploymentNamespace)
-                .endMetadata()
-                .build())
-            .findFirst()
-            .orElseThrow();
+        return new ServiceAccountBuilder(ResourceUtils.getResourceFromListOfResources(consoleBundleResources, ServiceAccount.class))
+            .editMetadata()
+                .withNamespace(deploymentNamespace)
+            .endMetadata()
+            .build();
     }
 
     private ClusterRole[] getBundleClusterRoles() {
-        return consoleBundleResources.stream()
-            .filter(ClusterRole.class::isInstance)
-            .map(ClusterRole.class::cast)
+        return ResourceUtils.getResourcesStreamFromListOfResources(consoleBundleResources, ClusterRole.class)
             .map(r -> new ClusterRoleBuilder(r)
                 .editMetadata()
                     .withNamespace(deploymentNamespace)
@@ -135,9 +126,7 @@ public class ConsoleOperatorSetup {
     }
 
     private ClusterRoleBinding[] getBundleClusterRoleBindings() {
-        return consoleBundleResources.stream()
-            .filter(ClusterRoleBinding.class::isInstance)
-            .map(ClusterRoleBinding.class::cast)
+        return ResourceUtils.getResourcesStreamFromListOfResources(consoleBundleResources, ClusterRoleBinding.class)
             .map(r -> new ClusterRoleBindingBuilder(r)
                 .editMetadata()
                     .withNamespace(deploymentNamespace)
@@ -150,9 +139,7 @@ public class ConsoleOperatorSetup {
     }
 
     private RoleBinding[] getBundleRoleBindings() {
-        return consoleBundleResources.stream()
-            .filter(RoleBinding.class::isInstance)
-            .map(RoleBinding.class::cast)
+        return ResourceUtils.getResourcesStreamFromListOfResources(consoleBundleResources, RoleBinding.class)
             .map(r -> new RoleBindingBuilder(r)
                 .editMetadata()
                     .withNamespace(deploymentNamespace)
@@ -165,10 +152,7 @@ public class ConsoleOperatorSetup {
     }
 
     private Deployment getBundleDeployment() {
-        DeploymentBuilder consoleOperator = consoleBundleResources.stream()
-            .filter(Deployment.class::isInstance)
-            .map(Deployment.class::cast)
-            .map(r -> new DeploymentBuilder(r)
+        DeploymentBuilder consoleOperator = new DeploymentBuilder(ResourceUtils.getResourceFromListOfResources(consoleBundleResources, Deployment.class))
                 .editMetadata()
                     .withNamespace(deploymentNamespace)
                     .withName(operatorDeploymentName)
@@ -179,9 +163,7 @@ public class ConsoleOperatorSetup {
                             .withNamespace(deploymentNamespace)
                         .endMetadata()
                     .endTemplate()
-                .endSpec())
-                .findFirst()
-                .orElseThrow();
+                .endSpec();
 
         // Override Console images if provided
         if (!Environment.CONSOLE_OPERATOR_IMAGE.isEmpty()) {
