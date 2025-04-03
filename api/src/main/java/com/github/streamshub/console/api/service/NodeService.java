@@ -7,9 +7,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.IdentityHashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -40,7 +38,7 @@ import com.github.streamshub.console.api.model.Node;
 import com.github.streamshub.console.api.model.Node.BrokerStatus;
 import com.github.streamshub.console.api.model.Node.ControllerStatus;
 import com.github.streamshub.console.api.model.Node.MetadataStatus;
-import com.github.streamshub.console.api.model.Node.Role;
+import com.github.streamshub.console.api.model.NodeSummary;
 import com.github.streamshub.console.api.support.KafkaContext;
 import com.github.streamshub.console.api.support.ListRequestContext;
 import com.github.streamshub.console.api.support.MetadataQuorumSupport;
@@ -105,7 +103,7 @@ public class NodeService {
         Admin adminClient = kafkaContext.admin();
         var clusterResult = adminClient.describeCluster();
         var quorumResult = MetadataQuorumSupport.quorumInfo(adminClient.describeMetadataQuorum());
-        var summary = initialSummary();
+        var summary = new NodeSummary();
         listSupport.meta().put("summary", summary);
 
         return CompletableFuture.allOf(clusterResult.nodes().toCompletionStage().toCompletableFuture(), quorumResult)
@@ -135,27 +133,13 @@ public class NodeService {
                     threadContext.currentContextExecutor());
     }
 
-    Map<String, Object> summarize(List<Node> nodes) {
-        var summary = initialSummary();
+    NodeSummary summarize(List<Node> nodes) {
+        var summary = new NodeSummary();
         nodes.forEach(node -> tallySummary(node, summary));
         return summary;
     }
 
-    private Map<String, Object> initialSummary() {
-        Map<String, Object> summary = new LinkedHashMap<>();
-        summary.put("nodePools", new TreeMap<>());
-        summary.put("statuses", Map.of(
-            "brokers", new HashMap<>(),
-            "controllers", new HashMap<>(),
-            "combined", new HashMap<>()
-        ));
-
-        return summary;
-    }
-
-    private Node tallySummary(Node node, Map<String, Object> summary) {
-        @SuppressWarnings("unchecked")
-        Map<String, Map<String, Integer>> statuses = (Map<String, Map<String, Integer>>) summary.get("statuses");
+    private Node tallySummary(Node node, NodeSummary summary) {
         boolean healthy = true;
         BiFunction<String, Integer, Integer> accumulator = (k, v) -> v == null ? 1 : v + 1;
 
@@ -164,7 +148,7 @@ public class NodeService {
             if (status != BrokerStatus.RUNNING) {
                 healthy = false;
             }
-            statuses.get("brokers").compute(status.toString(), accumulator);
+            summary.getStatuses().brokers().compute(status.toString(), accumulator);
         }
 
         if (node.isController()) {
@@ -172,22 +156,22 @@ public class NodeService {
             if (status == ControllerStatus.FOLLOWER_LAGGED) {
                 healthy = false;
             }
-            statuses.get("controllers").compute(status.toString(), accumulator);
+            summary.getStatuses().controllers().compute(status.toString(), accumulator);
 
             if (status == ControllerStatus.LEADER) {
-                summary.put("leaderId", node.getId());
+                summary.setLeaderId(node.getId());
             }
         }
 
         String combinedStatusKey = healthy ? "Healthy" : "Unhealthy";
-        statuses.get("combined").compute(combinedStatusKey, accumulator);
+        summary.getStatuses().combined().compute(combinedStatusKey, accumulator);
 
         String poolName = node.nodePool();
 
         if (poolName != null) {
-            @SuppressWarnings("unchecked")
-            Map<String, Set<Node.Role>> poolRoles = (Map<String, Set<Role>>) summary.get("nodePools");
-            poolRoles.put(poolName, node.roles());
+            var pool = summary.nodePool(poolName);
+            pool.roles().addAll(node.roles());
+            pool.count().getAndIncrement();
         }
 
         return node;

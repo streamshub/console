@@ -19,7 +19,10 @@ const ControllerStatusSchema = z.union([
   z.literal("Unknown"),
 ]);
 
-const NodePoolsSchema = z.record(z.string(), z.array(z.string()));
+const NodePoolsSchema = z.record(z.string(), z.object({
+  roles: z.array(z.string()),
+  count: z.number(),
+}));
 
 export const NodeSchema = z.object({
   id: z.string(),
@@ -68,7 +71,7 @@ export type KafkaNode = z.infer<typeof NodeSchema>;
 export type NodePoolsType = z.infer<typeof NodePoolsSchema>;
 
 export const NodesListMetaSummary = z.object({
-  nodePools: z.record(z.string(), z.array(z.string())),
+  nodePools: NodePoolsSchema,
   statuses: StatusesSchema,
   leaderId: z.string().optional(),
 });

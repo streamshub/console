@@ -114,8 +114,37 @@ public class Node extends Resource<Node.Attributes> {
         }
     }
 
-    @Schema(name = "NodeDataList")
+    @Schema(
+        name = "NodeDataList",
+        properties = {
+            @SchemaProperty(name = "meta", implementation = NodeDataList.Meta.class)
+        })
     public static final class NodeDataList extends DataList<Node> {
+        @Schema(name = "NodeDataListMeta", additionalProperties = Object.class)
+        @JsonInclude(value = Include.NON_NULL)
+        public static final class Meta extends JsonApiMeta {
+            private NodeSummary summary;
+
+            public NodeSummary getSummary() {
+                return summary;
+            }
+        }
+
+        @Override
+        public JsonApiMeta metaFactory() {
+            return new Meta();
+        }
+
+        @Override
+        public JsonApiDocument addMeta(String key, Object value) {
+            if (value instanceof NodeSummary summary) {
+                ((Meta) getOrCreateMeta()).summary = summary;
+            } else {
+                super.addMeta(key, value);
+            }
+            return this;
+        }
+
         public NodeDataList(List<Node> data, ListRequestContext<Node> listSupport) {
             super(data.stream()
                     .map(entry -> {

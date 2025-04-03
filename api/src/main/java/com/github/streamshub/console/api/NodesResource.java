@@ -25,6 +25,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Content;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponseSchema;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 import com.github.streamshub.console.api.model.ConfigEntry;
@@ -60,6 +61,7 @@ public class NodesResource {
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
+    @APIResponseSchema(Node.NodeDataList.class)
     @APIResponse(responseCode = "500", ref = "ServerError")
     @APIResponse(responseCode = "504", ref = "ServerTimeout")
     @Authorized
