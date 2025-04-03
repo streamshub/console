@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
@@ -26,6 +27,7 @@ import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.ConsumerGroupState;
 import org.apache.kafka.common.TopicPartition;
+import org.apache.kafka.common.errors.GroupIdNotFoundException;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.eclipse.microprofile.config.Config;
 import org.jboss.logging.Logger;
@@ -99,20 +101,41 @@ public class ConsumerUtils {
         }
     }
 
+    private List<String> allGroupIds(Admin admin) {
+        return admin.listConsumerGroups()
+            .all()
+            .toCompletionStage()
+            .thenApply(listing -> listing.stream().map(ConsumerGroupListing::groupId).toList())
+            .toCompletableFuture()
+            .join();
+    }
+
     public void deleteConsumerGroups() {
         try (Admin admin = Admin.create(adminConfig)) {
-            admin.listConsumerGroups()
-                    .all()
-                    .thenApply(listing -> listing.stream().map(ConsumerGroupListing::groupId).toList())
-                    .thenApply(listing -> {
-                        log.infof("Deleting consumer groups: %s", listing);
-                        return listing;
+            List<String> allGroupIds = allGroupIds(admin);
+            log.infof("Deleting consumer groups: %s", allGroupIds);
+
+            while (!allGroupIds.isEmpty()) {
+                admin.deleteConsumerGroups(allGroupIds)
+                    .deletedGroups()
+                    .entrySet()
+                    .stream()
+                    .map(e -> {
+                        return e.getValue().toCompletionStage().handle((nothing, error) -> {
+                            if (error == null || error instanceof GroupIdNotFoundException) {
+                                return (Void) null;
+                            }
+
+                            log.warnf("Failed to delete consumer group %s: %s", e.getKey(), error.getMessage());
+                            throw new CompletionException(error);
+                        }).toCompletableFuture();
                     })
-                    .thenApply(admin::deleteConsumerGroups)
-                    .toCompletionStage()
-                    .thenCompose(result -> result.all().toCompletionStage())
-                    .toCompletableFuture()
-                    .join();
+                    .reduce(CompletableFuture::allOf)
+                    .orElseGet(() -> CompletableFuture.completedFuture(null))
+                    .get(10, TimeUnit.SECONDS);
+
+                allGroupIds = allGroupIds(admin);
+            }
         } catch (Exception e) {
             fail(e);
         }
