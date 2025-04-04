@@ -74,5 +74,5 @@ public class Constants {
     /**
      * OLM
      */
-    public static final String CONSOLE_OPERATOR_SUBSCRIPTION_NAME = "console-sub";
+    public static final String CONSOLE_OLM_SUBSCRIPTION_NAME = "console-sub";
 }
