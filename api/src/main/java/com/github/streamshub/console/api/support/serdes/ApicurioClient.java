@@ -8,9 +8,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.Collections;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.Supplier;
 
 import jakarta.enterprise.inject.spi.CDI;
@@ -19,18 +17,16 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.github.streamshub.console.api.support.AuthenticationSupport;
 import com.github.streamshub.console.api.support.TrustStoreSupport;
 import com.github.streamshub.console.config.SchemaRegistryConfig;
 
 import io.apicurio.registry.rest.client.impl.ErrorHandler;
-import io.apicurio.rest.client.auth.Auth;
 import io.apicurio.rest.client.error.RestClientErrorHandler;
 import io.apicurio.rest.client.request.Request;
 import io.apicurio.rest.client.spi.ApicurioHttpClient;
 import io.apicurio.rest.client.util.RegistryDateDeserializer;
 import io.apicurio.rest.client.util.UriUtil;
-import io.quarkus.tls.TlsConfiguration;
-import io.quarkus.tls.TlsConfigurationRegistry;
 
 import static java.util.Objects.requireNonNull;
 
@@ -45,8 +41,8 @@ public class ApicurioClient implements ApicurioHttpClient {
 
     public static final String INVALID_EMPTY_HTTP_KEY = "";
     private final HttpClient client;
+    private final AuthenticationSupport authentication;
     private final String endpoint;
-    private final Auth auth;
     private final RestClientErrorHandler errorHandler;
 
     private static final ThreadLocal<Map<String, String>> HEADERS = ThreadLocal.withInitial(Collections::emptyMap);
@@ -60,31 +56,26 @@ public class ApicurioClient implements ApicurioHttpClient {
 
         final HttpClient.Builder httpClientBuilder = handleConfiguration(config);
         this.endpoint = url;
-        this.auth = null;
         this.client = httpClientBuilder.build();
         this.errorHandler = new ErrorHandler();
+        this.authentication = new AuthenticationSupport(config);
     }
 
     private HttpClient.Builder handleConfiguration(SchemaRegistryConfig config) {
         HttpClient.Builder clientBuilder = HttpClient.newBuilder();
         clientBuilder.version(HttpClient.Version.HTTP_1_1);
 
-        var tlsConfig = getTlsConfiguration(config.getName());
-
-        if (tlsConfig.isPresent()) {
-            try {
-                clientBuilder = clientBuilder.sslContext(tlsConfig.get().createSSLContext());
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        }
+        CDI.current().select(TrustStoreSupport.class).get()
+            .getTlsConfiguration(config, null)
+            .ifPresent(tlsConfig -> {
+                try {
+                    clientBuilder.sslContext(tlsConfig.createSSLContext());
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            });
 
         return clientBuilder;
-    }
-
-    Optional<TlsConfiguration> getTlsConfiguration(String sourceName) {
-        var tlsRegistry = CDI.current().select(TlsConfigurationRegistry.class).get();
-        return tlsRegistry.get(TrustStoreSupport.TRUST_PREFIX_SCHEMA_REGISTRY + sourceName);
     }
 
     @Override
@@ -100,13 +91,11 @@ public class ApicurioClient implements ApicurioHttpClient {
             HEADERS.get().forEach(requestBuilder::header);
             HEADERS.remove();
 
-            Map<String, String> headers = request.getHeaders();
-            if (this.auth != null) {
-                //make headers mutable...
-                headers = new HashMap<>(headers);
-                this.auth.apply(headers);
-            }
-            headers.forEach(requestBuilder::header);
+            request.getHeaders().forEach(requestBuilder::header);
+
+            authentication.get().ifPresent(authn ->
+                requestBuilder.header("Authorization", authn)
+            );
 
             switch (request.getOperation()) {
                 case GET:
