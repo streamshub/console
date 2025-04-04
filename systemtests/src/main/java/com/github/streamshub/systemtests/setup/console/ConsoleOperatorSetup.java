@@ -16,7 +16,7 @@ public class ConsoleOperatorSetup {
         switch (Environment.CONSOLE_INSTALL_TYPE) {
             case Yaml -> installConfig = new YamlConfig();
             case Olm -> installConfig = new OlmConfig();
-            case Unknown, default -> throw new SetupException("Unknown installation type: " + Environment.CONSOLE_INSTALL_TYPE);
+            default -> throw new SetupException("Unknown installation type: " + Environment.CONSOLE_INSTALL_TYPE);
         }
     }
 
