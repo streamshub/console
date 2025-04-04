@@ -50,6 +50,7 @@ import com.github.streamshub.console.api.v1alpha1.status.Condition.Reasons;
 import com.github.streamshub.console.api.v1alpha1.status.Condition.Types;
 import com.github.streamshub.console.api.v1alpha1.status.ConditionBuilder;
 import com.github.streamshub.console.api.v1alpha1.status.ConsoleStatus;
+import com.github.streamshub.console.config.AuthenticationConfig;
 import com.github.streamshub.console.config.ConsoleConfig;
 import com.github.streamshub.console.config.KafkaClusterConfig;
 import com.github.streamshub.console.config.PrometheusConfig;
@@ -510,12 +511,12 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
 
             if (metricsAuthn != null) {
                 if (metricsAuthn.getToken() == null) {
-                    var basicConfig = new PrometheusConfig.Basic();
+                    var basicConfig = new AuthenticationConfig.Basic();
                     basicConfig.setUsername(metricsAuthn.getUsername());
                     basicConfig.setPassword(metricsAuthn.getPassword());
                     prometheusConfig.setAuthentication(basicConfig);
                 } else {
-                    var bearerConfig = new PrometheusConfig.Bearer();
+                    var bearerConfig = new AuthenticationConfig.Bearer();
                     bearerConfig.setToken(metricsAuthn.getToken());
                     prometheusConfig.setAuthentication(bearerConfig);
                 }

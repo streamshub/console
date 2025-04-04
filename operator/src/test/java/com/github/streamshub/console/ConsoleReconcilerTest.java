@@ -16,6 +16,7 @@ import com.github.streamshub.console.api.v1alpha1.spec.TrustStore;
 import com.github.streamshub.console.api.v1alpha1.spec.metrics.MetricsSource;
 import com.github.streamshub.console.api.v1alpha1.spec.metrics.MetricsSource.Type;
 import com.github.streamshub.console.api.v1alpha1.status.Condition;
+import com.github.streamshub.console.config.AuthenticationConfig;
 import com.github.streamshub.console.config.ConsoleConfig;
 import com.github.streamshub.console.config.PrometheusConfig;
 import com.github.streamshub.console.config.TrustStoreConfig;
@@ -658,7 +659,7 @@ class ConsoleReconcilerTest extends ConsoleReconcilerTestBase {
             assertEquals("some-prometheus", prometheusConfig.getName());
             assertEquals("https://prometheus.example.com", prometheusConfig.getUrl());
             assertEquals(PrometheusConfig.Type.STANDALONE, prometheusConfig.getType());
-            var prometheusAuthN = (PrometheusConfig.Basic) prometheusConfig.getAuthentication();
+            var prometheusAuthN = (AuthenticationConfig.Basic) prometheusConfig.getAuthentication();
             assertEquals("pr0m3th3u5", prometheusAuthN.getUsername());
             assertEquals("password42", prometheusAuthN.getPassword());
 
@@ -701,7 +702,7 @@ class ConsoleReconcilerTest extends ConsoleReconcilerTestBase {
             assertEquals("some-prometheus", prometheusConfig.getName());
             assertEquals("https://prometheus.example.com", prometheusConfig.getUrl());
             assertEquals(PrometheusConfig.Type.STANDALONE, prometheusConfig.getType());
-            var prometheusAuthN = (PrometheusConfig.Bearer) prometheusConfig.getAuthentication();
+            var prometheusAuthN = (AuthenticationConfig.Bearer) prometheusConfig.getAuthentication();
             assertEquals(token, prometheusAuthN.getToken());
 
             String metricsRef = consoleConfig.getKafka().getClusters().get(0).getMetricsSource();
