@@ -44,17 +44,12 @@ public class TopicHelper {
     static final Logger log = Logger.getLogger(TopicHelper.class);
     final URI bootstrapServers;
     final Config config;
-    final String token;
     final Properties adminConfig;
 
-    public TopicHelper(URI bootstrapServers, Config config, String token) {
+    public TopicHelper(URI bootstrapServers, Config config) {
         this.bootstrapServers = bootstrapServers;
         this.config = config;
-        this.token = token;
-
-        adminConfig = token != null ?
-            ClientsConfig.getAdminConfigOauth(config, token) :
-            ClientsConfig.getAdminConfig(config);
+        this.adminConfig = ClientsConfig.getAdminConfig(config);
 
         adminConfig.setProperty(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers.toString());
     }
@@ -96,7 +91,7 @@ public class TopicHelper {
                 allTopics = allTopics(admin);
             }
         } catch (InterruptedException e) {
-            log.warn("Process interruptted", e);
+            log.warn("Process interrupted", e);
             Thread.currentThread().interrupt();
         } catch (Exception e) {
             fail(e);

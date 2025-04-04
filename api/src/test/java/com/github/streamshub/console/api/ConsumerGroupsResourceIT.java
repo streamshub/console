@@ -115,13 +115,13 @@ class ConsumerGroupsResourceIT {
     void setup() {
         URI bootstrapServers = URI.create(deployments.getExternalBootstrapServers());
 
-        topicUtils = new TopicHelper(bootstrapServers, config, null);
+        topicUtils = new TopicHelper(bootstrapServers, config);
         topicUtils.deleteAllTopics();
 
-        groupUtils = new ConsumerUtils(config, null);
+        groupUtils = new ConsumerUtils(config);
         groupUtils.deleteConsumerGroups();
 
-        utils = new TestHelper(bootstrapServers, config, null);
+        utils = new TestHelper(bootstrapServers, config);
         utils.resetSecurity(consoleConfig, false);
 
         client.resources(Kafka.class).inAnyNamespace().delete();

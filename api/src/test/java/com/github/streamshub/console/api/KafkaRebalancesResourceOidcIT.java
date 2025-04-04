@@ -106,7 +106,7 @@ class KafkaRebalancesResourceOidcIT {
                 .map(k -> k.getProperties().get("bootstrap.servers"))
                 .orElseThrow());
 
-        utils = new TestHelper(bootstrapServers, config, null);
+        utils = new TestHelper(bootstrapServers, config);
         utils.resetSecurity(consoleConfig, true);
         tokens = new TokenUtils(config);
 

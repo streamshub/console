@@ -79,7 +79,7 @@ class KafkaClustersResourceOidcIT {
         kafkaContainer = deployments.getKafkaContainer();
         bootstrapServers = URI.create(kafkaContainer.getBootstrapServers());
 
-        utils = new TestHelper(bootstrapServers, config, null);
+        utils = new TestHelper(bootstrapServers, config);
         utils.resetSecurity(consoleConfig, true);
         tokens = new TokenUtils(config);
 

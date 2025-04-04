@@ -153,7 +153,7 @@ class NodesResourceIT implements ClientRequestFilter {
 
         kafkaContainer = deployments.getKafkaContainer();
         bootstrapServers = URI.create(kafkaContainer.getBootstrapServers());
-        utils = new TestHelper(bootstrapServers, config, null);
+        utils = new TestHelper(bootstrapServers, config);
         utils.resetSecurity(consoleConfig, false);
 
         client.resources(Kafka.class).inAnyNamespace().delete();
