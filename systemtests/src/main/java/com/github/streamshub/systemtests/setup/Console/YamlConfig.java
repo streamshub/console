@@ -45,8 +45,6 @@ public class YamlConfig extends InstallConfig {
 
     @Override
     public void install() {
-
-        LOGGER.info("Setup Console Operator using YAML files");
         KubeResourceManager.get().createResourceWithoutWait(getBundleCrds());
         KubeResourceManager.get().createResourceWithoutWait(getBundleServiceAccount());
         KubeResourceManager.get().createResourceWithoutWait(getBundleClusterRoles());
