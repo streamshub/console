@@ -56,6 +56,7 @@ public class ClientsConfig {
         Properties conf = new Properties();
         conf.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, config.getValue(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, String.class));
         conf.put(AdminClientConfig.REQUEST_TIMEOUT_MS_CONFIG, "5000");
+        conf.put(AdminClientConfig.METADATA_MAX_AGE_CONFIG, "1");
         return conf;
     }
 
