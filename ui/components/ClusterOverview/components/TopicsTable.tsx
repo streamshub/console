@@ -14,7 +14,7 @@ import {
 } from "@/libs/patternfly/react-icons";
 import { TopicStatus } from "@/api/topics/schema";
 
-export const TopicsTableColumns = ["name", "status"] as const;
+export const TopicsTableColumns = ["name"] as const;
 const StatusLabel: Record<TopicStatus, ReactNode> = {
   FullyReplicated: (
     <>
@@ -78,12 +78,6 @@ export function TopicsTable({ topics }: TopicsTableProps) {
                 {t("recently_viewed_topics.topic_name")}
               </Th>
             );
-          case "status":
-            return (
-              <Th key={key} dataLabel={"Status"}>
-                {t("recently_viewed_topics.topic_status")}
-              </Th>
-            );
         }
       }}
       renderCell={({ Td, column, row, key }) => {
@@ -94,12 +88,6 @@ export function TopicsTable({ topics }: TopicsTableProps) {
                 <Link href={`/kafka/${row.kafkaId}/topics/${row.topicId}`}>
                   <Truncate content={row.topicName} />
                 </Link>
-              </Td>
-            );
-          case "status":
-            return (
-              <Td key={key} dataLabel={"Status"}>
-                {StatusLabel[row.topicStatus!]}
               </Td>
             );
         }

@@ -160,7 +160,6 @@ export type ViewedTopic = {
   kafkaName: string;
   topicId: string;
   topicName: string;
-  topicStatus: TopicStatus;
 };
 
 export async function getViewedTopics(): Promise<ViewedTopic[]> {
@@ -184,7 +183,6 @@ export async function setTopicAsViewed(kafkaId: string, topicId: string) {
       topicId,
       // name is included in the `fields[topics]` param list so we are sure it is present
       topicName: topic.attributes.name!,
-      topicStatus: topic.attributes.status!,
     };
     if (viewedTopics.find((t) => t.topicId === viewedTopic.topicId)) {
       log.trace(
