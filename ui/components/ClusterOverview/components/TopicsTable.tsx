@@ -5,58 +5,8 @@ import { Link } from "@/i18n/routing";
 import { Truncate } from "@patternfly/react-core";
 import { TableVariant } from "@patternfly/react-table";
 import { useTranslations } from "next-intl";
-import { ReactNode } from "react";
-import { Icon } from "@/libs/patternfly/react-core";
-import {
-  CheckCircleIcon,
-  ExclamationCircleIcon,
-  ExclamationTriangleIcon,
-} from "@/libs/patternfly/react-icons";
-import { TopicStatus } from "@/api/topics/schema";
 
 export const TopicsTableColumns = ["name"] as const;
-const StatusLabel: Record<TopicStatus, ReactNode> = {
-  FullyReplicated: (
-    <>
-      <Icon status={"success"}>
-        <CheckCircleIcon />
-      </Icon>
-      &nbsp;Fully replicated
-    </>
-  ),
-  UnderReplicated: (
-    <>
-      <Icon status={"warning"}>
-        <ExclamationTriangleIcon />
-      </Icon>
-      &nbsp;Under replicated
-    </>
-  ),
-  PartiallyOffline: (
-    <>
-      <Icon status={"warning"}>
-        <ExclamationTriangleIcon />
-      </Icon>
-      &nbsp;Partially offline
-    </>
-  ),
-  Unknown: (
-    <>
-      <Icon status={"warning"}>
-        <ExclamationTriangleIcon />
-      </Icon>
-      &nbsp;Unknown
-    </>
-  ),
-  Offline: (
-    <>
-      <Icon status={"danger"}>
-        <ExclamationCircleIcon />
-      </Icon>
-      &nbsp;Offline
-    </>
-  ),
-};
 
 export type TopicsTableProps = {
   topics: ViewedTopic[] | undefined;
