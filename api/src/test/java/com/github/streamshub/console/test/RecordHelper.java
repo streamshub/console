@@ -23,17 +23,12 @@ public class RecordHelper {
     static final Logger log = Logger.getLogger(RecordHelper.class);
     final URI bootstrapServers;
     final Config config;
-    final String token;
     final Properties producerConfig;
 
-    public RecordHelper(URI bootstrapServers, Config config, String token) {
+    public RecordHelper(URI bootstrapServers, Config config) {
         this.bootstrapServers = bootstrapServers;
         this.config = config;
-        this.token = token;
-
-        producerConfig = token != null ?
-                ClientsConfig.getProducerConfigOauth(config, token) :
-                ClientsConfig.getProducerConfig(config);
+        this.producerConfig = ClientsConfig.getProducerConfig(config);
     }
 
     public void produceRecord(String topicName, Instant timestamp, Map<String, Object> headers, String key, String value) {

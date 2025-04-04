@@ -122,12 +122,12 @@ class TopicsResourceOidcIT {
                 .map(k -> k.getProperties().get("bootstrap.servers"))
                 .orElseThrow());
 
-        topicUtils = new TopicHelper(bootstrapServers1, config, null);
+        topicUtils = new TopicHelper(bootstrapServers1, config);
         topicUtils.deleteAllTopics();
 
-        groupUtils = new ConsumerUtils(config, null);
+        groupUtils = new ConsumerUtils(config);
 
-        utils = new TestHelper(bootstrapServers1, config, null);
+        utils = new TestHelper(bootstrapServers1, config);
         utils.resetSecurity(consoleConfig, true);
         tokens = new TokenUtils(config);
 

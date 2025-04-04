@@ -39,20 +39,15 @@ public class ConsumerUtils {
 
     static final Logger log = Logger.getLogger(ConsumerUtils.class);
     final Config config;
-    final String token;
     final Properties adminConfig;
 
-    public ConsumerUtils(Config config, String token) {
-        this(null, config, token);
+    public ConsumerUtils(Config config) {
+        this(null, config);
     }
 
-    public ConsumerUtils(URI bootstrapServers, Config config, String token) {
+    public ConsumerUtils(URI bootstrapServers, Config config) {
         this.config = config;
-        this.token = token;
-
-        adminConfig = token != null ?
-                ClientsConfig.getAdminConfigOauth(config, token) :
-                ClientsConfig.getAdminConfig(config);
+        this.adminConfig = ClientsConfig.getAdminConfig(config);
 
         if (bootstrapServers != null) {
             adminConfig.setProperty(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers.toString());
@@ -232,7 +227,6 @@ public class ConsumerUtils {
         }
     }
 
-    @SuppressWarnings("resource")
     public Consumer<String, String> consume(String groupId, String topicName, String clientId, int numPartitions, boolean autoClose) {
         return request()
                 .groupId(groupId)
@@ -280,9 +274,8 @@ public class ConsumerUtils {
             return CompletableFuture.completedStage(null);
         }
 
-        Properties producerConfig = token != null ?
-            ClientsConfig.getProducerConfigOauth(config, token) :
-            ClientsConfig.getProducerConfig(config, consumerRequest.keySerializer, consumerRequest.valueSerializer);
+        Properties producerConfig =
+                ClientsConfig.getProducerConfig(config, consumerRequest.keySerializer, consumerRequest.valueSerializer);
 
         List<CompletableFuture<Void>> pending = new ArrayList<>();
 
@@ -324,9 +317,8 @@ public class ConsumerUtils {
     }
 
     void consumeMessages(ConsumerRequest consumerRequest, ConsumerResponse response) {
-        Properties consumerConfig = token != null ?
-            ClientsConfig.getConsumerConfigOauth(config, consumerRequest.groupId, token) :
-            ClientsConfig.getConsumerConfig(config, consumerRequest.groupId);
+        Properties consumerConfig =
+                ClientsConfig.getConsumerConfig(config, consumerRequest.groupId);
 
         consumerConfig.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
         consumerConfig.put(CommonClientConfigs.CLIENT_ID_CONFIG, consumerRequest.clientId);

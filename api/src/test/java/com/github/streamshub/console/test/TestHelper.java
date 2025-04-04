@@ -46,16 +46,11 @@ public class TestHelper {
 
     static final Logger log = Logger.getLogger(TestHelper.class);
     final Config config;
-    final String token;
     final Properties adminConfig;
 
-    public TestHelper(URI bootstrapServers, Config config, String token) {
+    public TestHelper(URI bootstrapServers, Config config) {
         this.config = config;
-        this.token = token;
-
-        adminConfig = token != null ?
-            ClientsConfig.getAdminConfigOauth(config, token) :
-            ClientsConfig.getAdminConfig(config);
+        this.adminConfig = ClientsConfig.getAdminConfig(config);
 
         adminConfig.setProperty(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers.toString());
     }
