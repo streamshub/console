@@ -1,4 +1,4 @@
-package com.github.streamshub.systemtests.setup.Strimzi;
+package com.github.streamshub.systemtests.setup.strimzi;
 
 import com.github.streamshub.systemtests.Environment;
 import com.github.streamshub.systemtests.logs.LogWrapper;

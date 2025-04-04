@@ -1,4 +1,4 @@
-package com.github.streamshub.systemtests.setup.Console;
+package com.github.streamshub.systemtests.setup.console;
 
 import com.github.streamshub.systemtests.Environment;
 import com.github.streamshub.systemtests.exceptions.SetupException;
@@ -16,7 +16,7 @@ public class ConsoleOperatorSetup {
         switch (Environment.CONSOLE_INSTALL_TYPE) {
             case Yaml -> installConfig = new YamlConfig();
             case Olm -> installConfig = new OlmConfig();
-            case Unknown -> throw new SetupException("Unknown installation type: " + Environment.CONSOLE_INSTALL_TYPE);
+            case Unknown, default -> throw new SetupException("Unknown installation type: " + Environment.CONSOLE_INSTALL_TYPE);
         }
     }
 

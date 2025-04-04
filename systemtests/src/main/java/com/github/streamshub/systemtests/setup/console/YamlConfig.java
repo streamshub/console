@@ -1,4 +1,4 @@
-package com.github.streamshub.systemtests.setup.Console;
+package com.github.streamshub.systemtests.setup.console;
 
 import com.github.streamshub.systemtests.Environment;
 import com.github.streamshub.systemtests.exceptions.SetupException;
@@ -28,10 +28,11 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 public class YamlConfig extends InstallConfig {
-    private static final Logger LOGGER = LogWrapper.getLogger(ConsoleOperatorSetup.class);
+    private static final Logger LOGGER = LogWrapper.getLogger(YamlConfig.class);
     private List<HasMetadata> consoleBundleResources;
 
     public YamlConfig() {
+        LOGGER.info("Console Operator will be installed using YAML bundle");
         // Need to replace streamed content due to KubernetesException during load of `namespace: ${NAMESPACE}`
         try (InputStream yamlContentStream = new URL(Environment.CONSOLE_OPERATOR_BUNDLE_URL).openStream()) {
             InputStream replacedStream = new ByteArrayInputStream(new String(yamlContentStream.readAllBytes(), StandardCharsets.UTF_8)

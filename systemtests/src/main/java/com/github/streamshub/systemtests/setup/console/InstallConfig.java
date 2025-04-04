@@ -1,4 +1,4 @@
-package com.github.streamshub.systemtests.setup.Console;
+package com.github.streamshub.systemtests.setup.console;
 
 import com.github.streamshub.systemtests.Environment;
 import com.github.streamshub.systemtests.constants.Constants;
@@ -8,7 +8,7 @@ public abstract class InstallConfig {
 
     protected String deploymentNamespace = Constants.CO_NAMESPACE;
 
-    public InstallConfig() {}
+    protected InstallConfig() {}
 
     abstract void install();
 
