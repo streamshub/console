@@ -4,6 +4,7 @@ import com.github.streamshub.systemtests.Environment;
 import com.github.streamshub.systemtests.exceptions.SetupException;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.utils.ResourceUtils;
+import com.github.streamshub.systemtests.utils.SetupUtils;
 import io.fabric8.kubernetes.api.model.EnvVarBuilder;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.ServiceAccount;
@@ -23,7 +24,6 @@ import org.apache.logging.log4j.Logger;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
@@ -33,12 +33,17 @@ public class YamlConfig extends InstallConfig {
 
     public YamlConfig() {
         LOGGER.info("Console Operator will be installed using YAML bundle");
-        // Need to replace streamed content due to KubernetesException during load of `namespace: ${NAMESPACE}`
-        try (InputStream yamlContentStream = new URL(Environment.CONSOLE_OPERATOR_BUNDLE_URL).openStream()) {
+        // Need to replace streamed content due to KubernetesException being thrown during load of released YAML
+        // that contains `namespace: ${NAMESPACE}` where $ is an unknown symbol that cannot be parsed
+        try (InputStream yamlContentStream = SetupUtils.resolveLocation(Environment.CONSOLE_OPERATOR_BUNDLE_URL).openStream()) {
             InputStream replacedStream = new ByteArrayInputStream(new String(yamlContentStream.readAllBytes(), StandardCharsets.UTF_8)
                 .replace("${NAMESPACE}", "NAMESPACE")
                 .getBytes(StandardCharsets.UTF_8));
-            this.consoleBundleResources = KubeResourceManager.get().kubeClient().getClient().load(replacedStream).items();
+            this.consoleBundleResources = KubeResourceManager.get()
+                .kubeClient()
+                .getClient()
+                .load(replacedStream)
+                .items();
         } catch (IOException e) {
             throw new SetupException("Cannot get Console YAML resources: ", e);
         }

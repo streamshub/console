@@ -5,7 +5,6 @@ import com.github.streamshub.systemtests.constants.Constants;
 
 public abstract class InstallConfig {
     protected String deploymentName = Environment.CONSOLE_DEPLOYMENT_NAME;
-
     protected String deploymentNamespace = Constants.CO_NAMESPACE;
 
     protected InstallConfig() {}

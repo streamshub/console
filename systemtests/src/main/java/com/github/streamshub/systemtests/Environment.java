@@ -43,7 +43,6 @@ public class Environment {
     public static final String TEST_FILE_LOG_LEVEL = ENVS.getOrDefault("TEST_FILE_LOG_LEVEL",  "INFO");
     public static final String TEST_CONSOLE_LOG_LEVEL = ENVS.getOrDefault("TEST_CONSOLE_LOG_LEVEL",  "INFO");
     public static final String SCREENSHOTS_DIR_PATH = ENVS.getOrDefault("SCREENSHOTS_DIR_PATH", USER_PATH + "/screenshots");
-    public static final boolean SKIP_TEARDOWN = ENVS.getOrDefault("SKIP_TEARDOWN", Boolean::parseBoolean, false);
 
     // Playwright
     public static final String BROWSER_TYPE = ENVS.getOrDefault("BROWSER_TYPE", BrowserTypes.CHROMIUM.toString());

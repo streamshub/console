@@ -22,7 +22,7 @@ import org.apache.logging.log4j.Logger;
 import java.io.File;
 
 public class OlmConfig extends InstallConfig {
-    private static final Logger LOGGER = LogWrapper.getLogger(YamlConfig.class);
+    private static final Logger LOGGER = LogWrapper.getLogger(OlmConfig.class);
     private String olmAppBundlePrefix = Environment.CONSOLE_DEPLOYMENT_NAME;
     private String packageName = Environment.CONSOLE_OLM_PACKAGE_NAME;
     private String catalogSourceName = Environment.CONSOLE_OLM_CATALOG_SOURCE_NAME;
@@ -47,8 +47,7 @@ public class OlmConfig extends InstallConfig {
 
         WaitUtils.waitForDeploymentWithPrefixIsReady(deploymentNamespace, olmAppBundlePrefix);
 
-        // Set full name in case of OLM, as it is different from YAML installation.
-        // Yaml deployment name is used here to get the full operator deployment name
+        // Get and set the deployment full name from known OLM bundle prefix
         deploymentName = ResourceUtils.listKubeResourcesByPrefix(Deployment.class, deploymentNamespace, olmAppBundlePrefix)
             .get(0)
             .getMetadata()
@@ -72,8 +71,7 @@ public class OlmConfig extends InstallConfig {
     }
 
     private OperatorGroup getOlmOperatorGroup() {
-        return new OperatorGroupBuilder(
-            TestFrameUtils.configFromYaml(operatorGroupFile, OperatorGroup.class))
+        return new OperatorGroupBuilder(TestFrameUtils.configFromYaml(operatorGroupFile, OperatorGroup.class))
             .editMetadata()
                 .withNamespace(deploymentNamespace)
             .endMetadata()
