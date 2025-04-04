@@ -215,8 +215,7 @@
       "replica": "Replica"
     },
     "recently_viewed_topics": {
-      "topic_name": "Name",
-      "cluster": "Cluster"
+      "topic_name": "Name"
     }
   },
   "topic-creator": {

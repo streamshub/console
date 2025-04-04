@@ -1,5 +1,15 @@
 "use server";
-import { fetchData, patchData, postData, getHeaders, ApiResponse, filterEq, filterIn, filterLike, sortParam } from "@/api/api";
+import {
+  fetchData,
+  patchData,
+  postData,
+  getHeaders,
+  ApiResponse,
+  filterEq,
+  filterIn,
+  filterLike,
+  sortParam,
+} from "@/api/api";
 import { getKafkaCluster } from "@/api/kafka/actions";
 import {
   describeTopicsQuery,
@@ -54,10 +64,8 @@ export async function getTopics(
     }),
   );
 
-  return fetchData(
-    `/api/kafkas/${kafkaId}/topics`,
-    sp,
-    (rawData: any) => TopicsResponseSchema.parse(rawData),
+  return fetchData(`/api/kafkas/${kafkaId}/topics`, sp, (rawData: any) =>
+    TopicsResponseSchema.parse(rawData),
   );
 }
 
@@ -96,7 +104,7 @@ export async function createTopic(
         },
       },
     },
-    (rawData) => TopicCreateResponseSchema.parse(rawData)
+    (rawData) => TopicCreateResponseSchema.parse(rawData),
   );
 }
 
@@ -120,7 +128,7 @@ export async function updateTopic(
         },
       },
     },
-    _ => undefined
+    (_) => undefined,
   );
 }
 

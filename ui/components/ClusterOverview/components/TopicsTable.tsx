@@ -6,7 +6,7 @@ import { Truncate } from "@patternfly/react-core";
 import { TableVariant } from "@patternfly/react-table";
 import { useTranslations } from "next-intl";
 
-export const TopicsTableColumns = ["name", "cluster"] as const;
+export const TopicsTableColumns = ["name"] as const;
 
 export type TopicsTableProps = {
   topics: ViewedTopic[] | undefined;
@@ -28,12 +28,6 @@ export function TopicsTable({ topics }: TopicsTableProps) {
                 {t("recently_viewed_topics.topic_name")}
               </Th>
             );
-          case "cluster":
-            return (
-              <Th key={key} dataLabel={"Cluster"}>
-                {t("recently_viewed_topics.cluster")}
-              </Th>
-            );
         }
       }}
       renderCell={({ Td, column, row, key }) => {
@@ -44,12 +38,6 @@ export function TopicsTable({ topics }: TopicsTableProps) {
                 <Link href={`/kafka/${row.kafkaId}/topics/${row.topicId}`}>
                   <Truncate content={row.topicName} />
                 </Link>
-              </Td>
-            );
-          case "cluster":
-            return (
-              <Td key={key} dataLabel={"Cluster"}>
-                <Link href={`/kafka/${row.kafkaId}`}>{row.kafkaName}</Link>
               </Td>
             );
         }
