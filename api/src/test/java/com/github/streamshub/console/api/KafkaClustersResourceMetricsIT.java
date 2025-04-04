@@ -137,7 +137,7 @@ class KafkaClustersResourceMetricsIT implements ClientRequestFilter {
         kafkaContainer = deployments.getKafkaContainer();
         bootstrapServers = URI.create(kafkaContainer.getBootstrapServers());
 
-        utils = new TestHelper(bootstrapServers, config, null);
+        utils = new TestHelper(bootstrapServers, config);
 
         client.resources(Kafka.class).inAnyNamespace().delete();
 
