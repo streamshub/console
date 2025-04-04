@@ -38,7 +38,7 @@ public class TokenUtils {
         var tlsRegistry = CDI.current().select(TlsConfigurationRegistry.class).get();
 
         try {
-            tls = tlsRegistry.get(TrustStoreSupport.TRUST_PREFIX_OIDC_PROVIDER + OidcConfig.NAME)
+            tls = tlsRegistry.get(TrustStoreSupport.trustConfigName(new OidcConfig(), null))
                     .orElseThrow()
                     .createSSLContext();
         } catch (Exception e) {

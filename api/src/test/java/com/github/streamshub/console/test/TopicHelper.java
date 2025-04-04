@@ -96,7 +96,7 @@ public class TopicHelper {
                 allTopics = allTopics(admin);
             }
         } catch (InterruptedException e) {
-            log.warn("Process interruptted", e);
+            log.warn("Process interrupted", e);
             Thread.currentThread().interrupt();
         } catch (Exception e) {
             fail(e);

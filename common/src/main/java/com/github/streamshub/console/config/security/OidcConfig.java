@@ -28,6 +28,8 @@ public class OidcConfig implements Trustable {
     @Override
     @JsonIgnore
     public String getName() {
+        // OidcConfig is a special case Trustable - there will be at most
+        // one instance, so we hard-code a name.
         return NAME;
     }
 
