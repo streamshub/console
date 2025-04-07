@@ -15,7 +15,6 @@ public class Environment {
 
     public static final String CLIENT_TYPE = ENVS.getOrDefault("CLIENT_TYPE", "kubectl");
 
-
     // Strimzi
     public static final String STRIMZI_OPERATOR_NAME = ENVS.getOrDefault("STRIMZI_OPERATOR_NAME", "strimzi-cluster-operator");
     public static final String STRIMZI_OPERATOR_VERSION = ENVS.getOrDefault("STRIMZI_OPERATOR_VERSION", "");
