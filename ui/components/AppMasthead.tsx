@@ -36,9 +36,9 @@ export function AppMasthead({
   const [isTechPreview, setIsTechPreview] = useState(false);
 
   useEffect(() => {
-    config().then(cfg => {
+    config().then((cfg) => {
       setIsTechPreview(cfg.techPreview);
-    })
+    });
   }, []);
 
   const openFeedbackModal = () => {
@@ -62,7 +62,7 @@ export function AppMasthead({
           </MastheadToggle>
         )}
         <MastheadMain>
-          <Link href={"/"} className={"pf-v5-c-masthead_brand"}>
+          <Link href={"/"} className={"pf-v6-c-masthead_brand"}>
             <Image
               src={"/full-logo.svg"}
               alt={t("common.title")}

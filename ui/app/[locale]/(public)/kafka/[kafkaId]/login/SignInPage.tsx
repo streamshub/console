@@ -127,7 +127,7 @@ export function SignInPage({
       backgroundImgSrc="/assets/images/pfbg-icon.svg"
       loginTitle={t("homepage.page_header", { product: productName })}
       loginSubtitle={t("login-in-page.login_sub_title")}
-      textContent={t("login-in-page.text_content", { product: productName })}
+      Content={t("login-in-page.text_content", { product: productName })}
       brandImgSrc={"/full-logo.svg"}
       footerListItems={t("login-in-page.footer_text")}
       socialMediaLoginContent={learnMoreResource}

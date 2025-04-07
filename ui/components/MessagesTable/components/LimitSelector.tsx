@@ -24,7 +24,7 @@ export function LimitSelector({ value, onChange }: LimitSelectorProps) {
           ref={toggleRef}
           onClick={toggleOpen}
           isExpanded={isOpen}
-          className={"pf-v5-u-w-100"}
+          className={"pf-v6-u-w-100"}
         >
           {t.rich("per_page_label", { value })}
         </MenuToggle>

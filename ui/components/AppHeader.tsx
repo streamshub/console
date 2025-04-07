@@ -32,7 +32,7 @@ export function AppHeader({
       <PageSection
         variant={"light"}
         padding={{ default: navigation ? "noPadding" : "padding" }}
-        className={navigation ? "pf-v5-u-px-lg pf-v5-u-pt-sm" : undefined}
+        className={navigation ? "pf-v6-u-px-lg pf-v6-u-pt-sm" : undefined}
         hasShadowBottom={!navigation}
       >
         <Flex direction={{ default: "column" }}>
@@ -44,7 +44,7 @@ export function AppHeader({
             {showRefresh && (
               <FlexItem
                 alignSelf={{ default: "alignSelfFlexEnd" }}
-                className={"pf-v5-u-font-size-sm"}
+                className={"pf-v6-u-font-size-sm"}
               >
                 Last updated{" "}
                 <DateTime

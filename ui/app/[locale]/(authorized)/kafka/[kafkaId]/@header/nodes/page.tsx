@@ -32,11 +32,15 @@ export default function NodesHeader({ params }: { params: KafkaParams }) {
 
 async function ConnectedHeader({ params }: { params: KafkaParams }) {
   const cluster = (await getKafkaCluster(params.kafkaId))?.payload;
-  const combinedStatuses = cluster?.relationships.nodes?.meta?.summary?.statuses?.combined || {};
+  const combinedStatuses =
+    cluster?.relationships.nodes?.meta?.summary?.statuses?.combined || {};
 
   return (
     <Header
-      total={Object.values(combinedStatuses).reduce((sum, count) => sum + count, 0)}
+      total={Object.values(combinedStatuses).reduce(
+        (sum, count) => sum + count,
+        0,
+      )}
       ok={combinedStatuses["Healthy"] ?? 0}
       warning={combinedStatuses["Unhealthy"] ?? 0}
       kafkaId={cluster?.id}
@@ -81,7 +85,7 @@ function Header({
                     <CheckCircleIcon />
                   )
                 }
-                color={"cyan"}
+                color={"teal"}
               >
                 {ok !== undefined && <Number value={ok} />}
               </Label>
