@@ -122,7 +122,7 @@ class KafkaRebalancesResourceIT {
                 .map(k -> k.getProperties().get("bootstrap.servers"))
                 .orElseThrow());
 
-        utils = new TestHelper(bootstrapServers, config, null);
+        utils = new TestHelper(bootstrapServers, config);
         utils.resetSecurity(consoleConfig, false);
 
         client.resources(Kafka.class).inAnyNamespace().delete();

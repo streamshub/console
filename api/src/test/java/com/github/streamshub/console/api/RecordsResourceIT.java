@@ -103,12 +103,12 @@ class RecordsResourceIT {
                 .map(k -> k.getProperties().get("bootstrap.servers"))
                 .orElseThrow());
 
-        topicUtils = new TopicHelper(bootstrapServers, config, null);
+        topicUtils = new TopicHelper(bootstrapServers, config);
         topicUtils.deleteAllTopics();
 
-        utils = new TestHelper(bootstrapServers, config, null);
+        utils = new TestHelper(bootstrapServers, config);
         utils.resetSecurity(consoleConfig, false);
-        recordUtils = new RecordHelper(bootstrapServers, config, null);
+        recordUtils = new RecordHelper(bootstrapServers, config);
 
         client.resources(Kafka.class).inAnyNamespace().delete();
 

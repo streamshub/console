@@ -65,7 +65,7 @@ class KafkaClustersResourceNoK8sIT {
                 .map(k -> k.getProperties().get("bootstrap.servers"))
                 .orElseThrow());
 
-        utils = new TestHelper(bootstrapServers, config, null);
+        utils = new TestHelper(bootstrapServers, config);
         utils.resetSecurity(consoleConfig, false);
 
         clusterId1 = consoleConfig.getKafka().getCluster("test-kafka1").get().getId();
