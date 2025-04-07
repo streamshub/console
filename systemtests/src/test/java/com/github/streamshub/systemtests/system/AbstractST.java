@@ -4,7 +4,8 @@ import com.github.streamshub.systemtests.Environment;
 import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.constants.Labels;
 import com.github.streamshub.systemtests.logs.LogWrapper;
-import com.github.streamshub.systemtests.setup.StrimziOperatorSetup;
+import com.github.streamshub.systemtests.setup.console.ConsoleOperatorSetup;
+import com.github.streamshub.systemtests.setup.strimzi.StrimziOperatorSetup;
 import com.github.streamshub.systemtests.utils.ClusterUtils;
 import com.github.streamshub.systemtests.utils.ResourceUtils;
 import io.fabric8.kubernetes.api.model.HasMetadata;
@@ -29,7 +30,6 @@ import io.skodjob.testframe.resources.ServiceType;
 import io.skodjob.testframe.resources.SubscriptionType;
 import io.skodjob.testframe.utils.KubeUtils;
 import org.apache.logging.log4j.Logger;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInstance;
@@ -43,6 +43,7 @@ public abstract class AbstractST {
     private static final Logger LOGGER = LogWrapper.getLogger(AbstractST.class);
     // Operators
     protected final StrimziOperatorSetup strimziOperatorSetup = new StrimziOperatorSetup(Constants.CO_NAMESPACE);
+    protected final ConsoleOperatorSetup consoleOperatorSetup = new ConsoleOperatorSetup();
 
     static {
         KubeResourceManager.get().setResourceTypes(
@@ -72,7 +73,7 @@ public abstract class AbstractST {
         KubeResourceManager.get().setStoreYamlPath(Environment.TEST_LOG_DIR);
 
         try {
-            Environment.saveConfigToFile();
+            Environment.logConfigAndSaveToFile();
         } catch (IOException e) {
             LOGGER.error("Saving of config env file failed");
         }
@@ -84,22 +85,13 @@ public abstract class AbstractST {
         if (ResourceUtils.getKubeResource(Namespace.class, Constants.CO_NAMESPACE) == null) {
             KubeResourceManager.get().createOrUpdateResourceWithWait(new NamespaceBuilder().withNewMetadata().withName(Constants.CO_NAMESPACE).endMetadata().build());
         }
-        strimziOperatorSetup.setup();
+        strimziOperatorSetup.install();
+        consoleOperatorSetup.install();
     }
 
     @BeforeEach
     void setupTestCase() {
         LOGGER.info("=========== AbstractST - BeforeEach - Setup TestCase {} ===========", KubeResourceManager.get().getTestContext().getTestMethod());
         ClusterUtils.checkClusterHealth();
-    }
-
-    @AfterAll
-    void tearDownTestSuite() {
-        LOGGER.info("=========== AbstractST - AfterAll - Tear down the TestSuite ===========");
-        if (Environment.SKIP_TEARDOWN) {
-            LOGGER.warn("Teardown was skipped because of SKIP_TEARDOWN env");
-            return;
-        }
-        strimziOperatorSetup.teardown();
     }
 }
