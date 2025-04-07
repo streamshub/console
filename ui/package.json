@@ -52,7 +52,7 @@
     "react-dom": "18.3.1",
     "react-highlight-words": "^0.21.0",
     "react-json-view-lite": "^2.4.1",
-    "typescript": "5.8.2",
+    "typescript": "5.8.3",
     "use-debounce": "^10.0.4",
     "use-resize-observer": "^9.1.0",
     "zod": "^3.24.2"
