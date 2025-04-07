@@ -14,6 +14,7 @@ public class ExampleFilePaths {
     // OLM Console operator
     // -----
     public static final String OLM_RESOURCES_PATH = OPERATOR_INSTALL_PATH + "/olm/";
+    public static final String CONSOLE_OPERATOR_GROUP_YAML = OLM_RESOURCES_PATH + "000-OperatorGroup-console-operator.yaml";
     public static final String CONSOLE_OPERATOR_SUBSCRIPTION_YAML = OLM_RESOURCES_PATH + "020-Subscription-console-operator.yaml";
     // -----
     // Kafka
