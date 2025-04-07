@@ -1,34 +1,27 @@
 package com.github.streamshub.systemtests.utils;
 
-import com.github.streamshub.systemtests.logs.LogWrapper;
-import org.apache.logging.log4j.Logger;
+import com.github.streamshub.systemtests.exceptions.SetupException;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.File;
+import java.net.MalformedURLException;
 import java.net.URL;
-import java.nio.charset.StandardCharsets;
 
 public class SetupUtils {
-    private static final Logger LOGGER = LogWrapper.getLogger(SetupUtils.class);
     private SetupUtils() {}
 
-    // ---------------
-    // Yaml config
-    // --------------
-    public static String getYamlFileContent(String fileUrl) {
-        LOGGER.debug("Loading YAML file content from url {}", fileUrl);
-        StringBuilder content;
-        try (BufferedReader in = new BufferedReader(new InputStreamReader(new URL(fileUrl).openStream(), StandardCharsets.UTF_8))) {
-            content = new StringBuilder();
-            String inputLine;
-
-            while ((inputLine = in.readLine()) != null) {
-                content.append(inputLine).append("\n");
+    public static URL resolveLocation(String location) throws SetupException {
+        // First check if the location is a valid local path
+        try {
+            File file = new File(location).getAbsoluteFile();
+            if (file.exists()) {
+                // Due to escape characters need to convert to URI first
+                return file.toURI().toURL();
             }
-        } catch (IOException e) {
-            throw new RuntimeException("Cannot download YAML content from url: " + fileUrl, e);
+
+            // Check if the location is a valid URL
+            return new URL(location);
+        } catch (MalformedURLException e) {
+            throw new SetupException("Could not resolve given location: " + location);
         }
-        return content.toString();
     }
 }

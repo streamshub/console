@@ -64,7 +64,7 @@ public class TestLogCollector {
             KafkaUser.RESOURCE_KIND
         ));
 
-        if (Environment.INSTALL_USING_OLM) {
+        if (Environment.isOlmInstall()) {
             resources.addAll(List.of(
                 HasMetadata.getKind(OperatorGroup.class),
                 HasMetadata.getKind(Subscription.class),

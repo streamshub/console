@@ -21,42 +21,42 @@ STRIMZI_OPERATOR_NAME: strimzi-cluster-operator
 # Deployment name of the Console instance
 CONSOLE_DEPLOYMENT_NAME: streamshub-console
 # Install type for Console Operator [OLM; YAML]
-INSTALL_USING_OLM: true
+CONSOLE_INSTALL_TYPE: olm
 # Kubernetes client type used to execute cmd [oc, kubectl]
 CLIENT_TYPE: kubectl
 # -------------------------------------------
 # OLM
 # -------------------------------------------
-# Name of the CatalogSource for Console Operator (OLM install)
-CONSOLE_CATALOG_SOURCE_NAME: streamshub-console-catalog
+# Name of the CatalogSource for Console Operator
+CONSOLE_OLM_CATALOG_SOURCE_NAME: console-source
+# Namespace where lies the CatalogSource for Console Operator
+CONSOLE_OLM_CATALOG_SOURCE_NAMESPACE: openshift-marketplace
+# Package name of the console operator
+CONSOLE_OLM_PACKAGE_NAME: streamshub-console-operator
 # OLM channel for selecting the Operator version
-OLM_OPERATOR_CHANNEL: alpha
-# Deployment name for the OLM install type Console Operator
-CONSOLE_OLM_DEPLOYMENT_NAME: streamshub-console-operator
+CONSOLE_OLM_CHANNEL_NAME: alpha
 # -------------------------------------------
 # YAML
 # -------------------------------------------
-# URL to Strimzi Operator CRDs for installation.
-STRIMZI_OPERATOR_CRDS_URL: https://github.com/strimzi/strimzi-kafka-operator/tree/0.45.0/packaging/install/cluster-operator
+# Which released version of Strimzi Cluster Operator to install
+STRIMZI_OPERATOR_VERSION: 0.45.0
 # URL or local path for Console Operator installation
-# 1. URL - released console-operator.yaml ["https://github.com/streamshub/console/releases/download/0.6.3/streamshub-console-operator.yaml"]
-# 2. Local path relative to systemtests folder
-CONSOLE_OPERATOR_BUNDLE_URL: ../install/console-operator/non-olm/console-operator.yaml
+# 1. URL - released console-operator.yaml
+# 2. Local path relative to systemtests dir
+CONSOLE_OPERATOR_BUNDLE_URL: https://github.com/streamshub/console/releases/download/0.6.4/streamshub-console-operator.yaml
 # Custom Console Operator image. Overrides default image used in bundle yaml
-CONSOLE_OPERATOR_IMAGE: ""
+CONSOLE_OPERATOR_IMAGE:
 # -------------------------------------------
 # Console instance images
 # -------------------------------------------
 # Custom Console API image. Overrides default image installed automatically by Operator
-CONSOLE_API_IMAGE: ""
+CONSOLE_API_IMAGE:
 # Custom Console UI image. Overrides default image installed automatically by Operator
-CONSOLE_UI_IMAGE: ""
+CONSOLE_UI_IMAGE:
 # -------------------------------------------
 # Kafka
 # -------------------------------------------
 # Kafka version used in system tests
 ST_KAFKA_VERSION: 3.9.0
 # Image for test client containers in system tests
-TEST_CLIENTS_IMAGE: quay.io/strimzi-test-clients/test-clients:latest-kafka-3.9.0
-# Secret used for pulling testing clients image
-SYSTEM_TEST_STRIMZI_IMAGE_PULL_SECRET: ""
+TEST_CLIENTS_IMAGE: quay.io/strimzi-test-clients/test-clients:0.10.0-kafka-3.9.0
