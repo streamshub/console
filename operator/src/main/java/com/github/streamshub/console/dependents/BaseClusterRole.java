@@ -56,6 +56,6 @@ abstract class BaseClusterRole extends KubernetesDependentResource<ClusterRole, 
 
     @Override
     public Set<ResourceID> toPrimaryResourceIDs(ClusterRole resource) {
-        return Mappers.fromDefaultAnnotations().toPrimaryResourceIDs(resource);
+        return Mappers.fromDefaultAnnotations(Console.class).toPrimaryResourceIDs(resource);
     }
 }

@@ -67,6 +67,6 @@ abstract class BaseClusterRoleBinding extends KubernetesDependentResource<Cluste
 
     @Override
     public Set<ResourceID> toPrimaryResourceIDs(ClusterRoleBinding resource) {
-        return Mappers.fromDefaultAnnotations().toPrimaryResourceIDs(resource);
+        return Mappers.fromDefaultAnnotations(Console.class).toPrimaryResourceIDs(resource);
     }
 }

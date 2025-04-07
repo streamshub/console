@@ -70,13 +70,15 @@ public class OASModelFilter extends AbstractOperationFilter implements OASFilter
 
     @Override
     public Schema filterSchema(Schema schema) {
-        if (schema.getType() == SchemaType.ARRAY && schema.getDefaultValue() instanceof String dflt) {
-            schema.setDefaultValue(new StringListParamConverter().fromString(dflt));
-        }
+        if (schema.getType() != null && schema.getType().contains(SchemaType.ARRAY)) {
+            if (schema.getDefaultValue() instanceof String dflt) {
+                schema.setDefaultValue(new StringListParamConverter().fromString(dflt));
+            }
 
-        if (schema.getType() == SchemaType.ARRAY && schema.getEnumeration() != null) {
-            schema.getItems().setEnumeration(schema.getEnumeration());
-            schema.setEnumeration(null);
+            if (schema.getEnumeration() != null) {
+                schema.getItems().setEnumeration(schema.getEnumeration());
+                schema.setEnumeration(null);
+            }
         }
 
         maybeSaveReference(schema, "meta");
@@ -104,10 +106,10 @@ public class OASModelFilter extends AbstractOperationFilter implements OASFilter
     @Override
     public void filterOpenAPI(OpenAPI openAPI) {
         openAPI.getComponents().addSchema("OffsetSpec", OASFactory.createSchema()
-                .type(SchemaType.STRING)
+                .addType(SchemaType.STRING)
                 .defaultValue(KafkaOffsetSpec.LATEST)
                 .addOneOf(OASFactory.createSchema()
-                        .type(SchemaType.STRING)
+                        .addType(SchemaType.STRING)
                         .addEnumeration(KafkaOffsetSpec.EARLIEST)
                         .addEnumeration(KafkaOffsetSpec.LATEST)
                         .addEnumeration(KafkaOffsetSpec.MAX_TIMESTAMP))

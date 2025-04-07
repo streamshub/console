@@ -118,7 +118,7 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
                 Console primary,
                 Context<Console> context) {
 
-            return context.managedDependentResourceContext().getMandatory(NAME, Boolean.class);
+            return context.managedWorkflowAndDependentResourceContext().getMandatory(NAME, Boolean.class);
         }
     }
 
@@ -126,12 +126,12 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
     public ReconcileResult<HasMetadata> reconcile(Console primary, Context<Console> context) {
         if (buildSecretData(primary, context)) {
             LOGGER.debugf("Validation gate passed: %s", primary.getMetadata().getName());
-            context.managedDependentResourceContext().put(NAME, Boolean.TRUE);
+            context.managedWorkflowAndDependentResourceContext().put(NAME, Boolean.TRUE);
         } else {
             LOGGER.debugf("Validation gate failed: %s; %s",
                     primary.getMetadata().getName(),
                     primary.getStatus().getCondition(Types.ERROR).getMessage());
-            context.managedDependentResourceContext().put(NAME, Boolean.FALSE);
+            context.managedWorkflowAndDependentResourceContext().put(NAME, Boolean.FALSE);
         }
 
         return ReconcileResult.noOperation(primary);
@@ -171,7 +171,7 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
                     .build());
         }
 
-        context.managedDependentResourceContext().put("ConsoleSecretData", data);
+        context.managedWorkflowAndDependentResourceContext().put("ConsoleSecretData", data);
         return !status.hasCondition(Types.ERROR);
     }
 

@@ -6,9 +6,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.KeyStore;
 import java.security.SecureRandom;
+import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
@@ -22,6 +24,7 @@ import io.quarkus.tls.BaseTlsConfiguration;
 import io.quarkus.tls.runtime.CertificateRecorder;
 import io.quarkus.tls.runtime.TrustStoreAndTrustOptions;
 import io.quarkus.tls.runtime.config.JKSTrustStoreConfig;
+import io.quarkus.tls.runtime.config.KeyStoreConfig;
 import io.quarkus.tls.runtime.config.P12TrustStoreConfig;
 import io.quarkus.tls.runtime.config.PemCertsConfig;
 import io.quarkus.tls.runtime.config.TrustStoreCredentialProviderConfig;
@@ -54,7 +57,7 @@ class TrustedTlsConfiguration extends BaseTlsConfiguration {
     }
 
     TrustStoreAndTrustOptions load(String name, Vertx vertx, TrustStoreConfig config) {
-        return CertificateRecorder.verifyTrustStore(new CommonTrustStoreConfig(config), vertx, name);
+        return CertificateRecorder.getTrustStore(new BucketConfig(config), vertx, name);
     }
 
     @Override
@@ -76,6 +79,64 @@ class TrustedTlsConfiguration extends BaseTlsConfiguration {
         return sslContext;
     }
 
+    private static class BucketConfig implements io.quarkus.tls.runtime.config.TlsBucketConfig {
+        private final Optional<io.quarkus.tls.runtime.config.TrustStoreConfig> tsConfig;
+
+        BucketConfig(TrustStoreConfig config) {
+            this.tsConfig = Optional.of(new CommonTrustStoreConfig(config));
+        }
+
+        @Override
+        public Optional<KeyStoreConfig> keyStore() {
+            return Optional.empty();
+        }
+
+        @Override
+        public Optional<io.quarkus.tls.runtime.config.TrustStoreConfig> trustStore() {
+            return tsConfig;
+        }
+
+        @Override
+        public Optional<List<String>> cipherSuites() {
+            return Optional.empty();
+        }
+
+        @Override
+        public Set<String> protocols() {
+            return Set.of("TLSv1.3", "TLSv1.2");
+        }
+
+        @Override
+        public Duration handshakeTimeout() {
+            return Duration.ofSeconds(10);
+        }
+
+        @Override
+        public boolean alpn() {
+            return true;
+        }
+
+        @Override
+        public Optional<List<Path>> certificateRevocationList() {
+            return Optional.empty();
+        }
+
+        @Override
+        public boolean trustAll() {
+            return false;
+        }
+
+        @Override
+        public Optional<String> hostnameVerificationAlgorithm() {
+            return Optional.empty();
+        }
+
+        @Override
+        public Optional<Duration> reloadPeriod() {
+            return Optional.empty();
+        }
+    }
+
     private static class CommonTrustStoreConfig implements io.quarkus.tls.runtime.config.TrustStoreConfig,
             JKSTrustStoreConfig, P12TrustStoreConfig, PemCertsConfig {
         private final TrustStoreConfig config;
@@ -91,6 +152,11 @@ class TrustedTlsConfiguration extends BaseTlsConfiguration {
         @Override
         public TrustStoreCredentialProviderConfig credentialsProvider() {
             return null;
+        }
+
+        @Override
+        public CertificateExpiryPolicy certificateExpirationPolicy() {
+            return CertificateExpiryPolicy.WARN;
         }
 
         private <C> Optional<C> optionalType(Type type, Class<C> target) {

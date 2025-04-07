@@ -24,6 +24,10 @@
             <artifactId>quarkus-operator-sdk</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.fabric8</groupId>
+            <artifactId>openshift-model</artifactId>
+        </dependency>
+        <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-smallrye-health</artifactId>
         </dependency>

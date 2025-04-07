@@ -2,8 +2,7 @@ package com.github.streamshub.console;
 
 import java.time.Instant;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -36,15 +35,12 @@ import io.javaoperatorsdk.operator.api.reconciler.Cleaner;
 import io.javaoperatorsdk.operator.api.reconciler.Context;
 import io.javaoperatorsdk.operator.api.reconciler.ControllerConfiguration;
 import io.javaoperatorsdk.operator.api.reconciler.DeleteControl;
-import io.javaoperatorsdk.operator.api.reconciler.ErrorStatusHandler;
 import io.javaoperatorsdk.operator.api.reconciler.ErrorStatusUpdateControl;
-import io.javaoperatorsdk.operator.api.reconciler.EventSourceContext;
-import io.javaoperatorsdk.operator.api.reconciler.EventSourceInitializer;
 import io.javaoperatorsdk.operator.api.reconciler.MaxReconciliationInterval;
 import io.javaoperatorsdk.operator.api.reconciler.Reconciler;
 import io.javaoperatorsdk.operator.api.reconciler.UpdateControl;
+import io.javaoperatorsdk.operator.api.reconciler.Workflow;
 import io.javaoperatorsdk.operator.api.reconciler.dependent.Dependent;
-import io.javaoperatorsdk.operator.processing.event.source.EventSource;
 import io.quarkiverse.operatorsdk.annotations.CSVMetadata;
 import io.quarkiverse.operatorsdk.annotations.CSVMetadata.Annotations;
 import io.quarkiverse.operatorsdk.annotations.CSVMetadata.Annotations.Annotation;
@@ -55,7 +51,9 @@ import io.quarkiverse.operatorsdk.annotations.CSVMetadata.Provider;
 @ControllerConfiguration(
         maxReconciliationInterval = @MaxReconciliationInterval(
                 interval = 60,
-                timeUnit = TimeUnit.SECONDS),
+                timeUnit = TimeUnit.SECONDS)
+)
+@Workflow(
         dependents = {
             @Dependent(
                     name = ConfigurationProcessor.NAME,
@@ -197,19 +195,20 @@ import io.quarkiverse.operatorsdk.annotations.CSVMetadata.Provider;
             @Link(name = "GitHub", url = "https://github.com/streamshub/console"),
             @Link(name = "Documentation", url = "https://github.com/streamshub/console/blob/main/README.md")
         })
-public class ConsoleReconciler
-    implements EventSourceInitializer<Console>, Reconciler<Console>, Cleaner<Console>, ErrorStatusHandler<Console> {
-
-    @Override
-    public Map<String, EventSource> prepareEventSources(EventSourceContext<Console> context) {
-        return Collections.emptyMap();
-    }
+public class ConsoleReconciler implements Reconciler<Console>, Cleaner<Console> {
 
     @Override
     public UpdateControl<Console> reconcile(Console resource, Context<Console> context) {
         determineReadyCondition(resource, context);
         resource.getStatus().clearStaleConditions();
-        return UpdateControl.updateStatus(resource);
+
+        Long generation = resource.getMetadata().getGeneration();
+
+        if (!Objects.equals(generation, resource.getStatus().getObservedGeneration())) {
+            resource.getStatus().setObservedGeneration(generation);
+        }
+
+        return UpdateControl.patchStatus(resource);
     }
 
     @Override
@@ -247,7 +246,7 @@ public class ConsoleReconciler
 
         status.clearStaleConditions();
 
-        return ErrorStatusUpdateControl.updateStatus(resource);
+        return ErrorStatusUpdateControl.patchStatus(resource);
     }
 
     @Override
@@ -256,7 +255,7 @@ public class ConsoleReconciler
     }
 
     private void determineReadyCondition(Console resource, Context<Console> context) {
-        var result = context.managedDependentResourceContext().getWorkflowReconcileResult();
+        var result = context.managedWorkflowAndDependentResourceContext().getWorkflowReconcileResult();
         var status = resource.getOrCreateStatus();
         var readyCondition = status.getCondition("Ready");
         var notReady = result.map(r -> r.getNotReadyDependents()).filter(Predicate.not(Collection::isEmpty));
