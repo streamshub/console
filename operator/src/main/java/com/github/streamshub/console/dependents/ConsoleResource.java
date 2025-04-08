@@ -62,7 +62,7 @@ public interface ConsoleResource<R extends HasMetadata> extends DependentResourc
     }
 
     default <T> Optional<T> getOptionalAttribute(Context<Console> context, String key, Class<T> type) {
-        return context.managedDependentResourceContext().get(key, type);
+        return context.managedWorkflowAndDependentResourceContext().get(key, type);
     }
 
     default <T> T getAttribute(Context<Console> context, String key, Class<T> type) {
@@ -71,7 +71,7 @@ public interface ConsoleResource<R extends HasMetadata> extends DependentResourc
     }
 
     default <T> void setAttribute(Context<Console> context, String key, T value) {
-        context.managedDependentResourceContext().put(key, value);
+        context.managedWorkflowAndDependentResourceContext().put(key, value);
     }
 
     default Map<String, String> commonLabels(String appName) {
@@ -110,7 +110,7 @@ public interface ConsoleResource<R extends HasMetadata> extends DependentResourc
     }
 
     default String serializeDigest(Context<Console> context, String digestName) {
-        var resourceContext = context.managedDependentResourceContext();
+        var resourceContext = context.managedWorkflowAndDependentResourceContext();
         return resourceContext.get(digestName, MessageDigest.class)
                 .map(MessageDigest::digest)
                 .map(DIGEST_FORMAT::formatHex)

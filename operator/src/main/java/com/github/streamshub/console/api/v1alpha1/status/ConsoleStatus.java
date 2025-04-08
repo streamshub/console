@@ -9,12 +9,13 @@ import java.util.function.Predicate;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
-import io.javaoperatorsdk.operator.api.ObservedGenerationAwareStatus;
 import io.sundr.builder.annotations.Buildable;
 
 @Buildable(editableEnabled = false)
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class ConsoleStatus extends ObservedGenerationAwareStatus {
+public class ConsoleStatus {
+
+    private long observedGeneration;
 
     private final Set<Condition> conditions = new TreeSet<>(Comparator
             .comparing(Condition::getType).reversed()
@@ -22,6 +23,14 @@ public class ConsoleStatus extends ObservedGenerationAwareStatus {
             .thenComparing(Condition::getStatus, Comparator.nullsLast(String::compareTo))
             .thenComparing(Condition::getReason, Comparator.nullsLast(String::compareTo))
             .thenComparing(Condition::getMessage, Comparator.nullsLast(String::compareTo)));
+
+    public long getObservedGeneration() {
+        return observedGeneration;
+    }
+
+    public void setObservedGeneration(long observedGeneration) {
+        this.observedGeneration = observedGeneration;
+    }
 
     public Set<Condition> getConditions() {
         return conditions;

@@ -20,12 +20,14 @@ import com.github.streamshub.console.api.v1alpha1.spec.containers.Containers;
 import io.fabric8.kubernetes.api.model.EnvVar;
 import io.fabric8.kubernetes.api.model.KubernetesResource;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
+import io.javaoperatorsdk.operator.api.config.informer.Informer;
 import io.javaoperatorsdk.operator.api.reconciler.Context;
 import io.javaoperatorsdk.operator.processing.dependent.kubernetes.KubernetesDependent;
 
 @ApplicationScoped
 @KubernetesDependent(
-        labelSelector = ConsoleResource.MANAGEMENT_SELECTOR)
+    informer = @Informer(
+        labelSelector = ConsoleResource.MANAGEMENT_SELECTOR))
 public class ConsoleDeployment extends BaseDeployment {
 
     public static final String NAME = "console-deployment";
@@ -130,7 +132,7 @@ public class ConsoleDeployment extends BaseDeployment {
 
     @SuppressWarnings("unchecked")
     <R extends KubernetesResource> Map<Class<R>, List<R>> getTrustResources(String key, Context<Console> context) {
-        return context.managedDependentResourceContext().getMandatory(key, Map.class);
+        return context.managedWorkflowAndDependentResourceContext().getMandatory(key, Map.class);
     }
 
     @SuppressWarnings("unchecked")

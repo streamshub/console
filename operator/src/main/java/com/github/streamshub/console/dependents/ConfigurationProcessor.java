@@ -73,6 +73,7 @@ import io.fabric8.openshift.api.model.Route;
 import io.fabric8.openshift.api.model.RouteIngress;
 import io.javaoperatorsdk.operator.api.reconciler.Context;
 import io.javaoperatorsdk.operator.api.reconciler.dependent.DependentResource;
+import io.javaoperatorsdk.operator.api.reconciler.dependent.NameSetter;
 import io.javaoperatorsdk.operator.api.reconciler.dependent.ReconcileResult;
 import io.javaoperatorsdk.operator.processing.dependent.workflow.Condition;
 import io.strimzi.api.kafka.model.kafka.Kafka;
@@ -94,9 +95,9 @@ import static com.github.streamshub.console.dependents.support.ConfigSupport.set
  * VolumeMounts) that will be used later in the reconciliation process.
  */
 @ApplicationScoped
-public class ConfigurationProcessor implements DependentResource<HasMetadata, Console>, ConsoleResource<HasMetadata> {
+public class ConfigurationProcessor implements DependentResource<HasMetadata, Console>, NameSetter, ConsoleResource<HasMetadata> {
 
-    public static final String NAME = "ConfigurationProcessor";
+    public static final String NAME = "ConfigurationProcessor"; // NOSONAR
 
     private static final Logger LOGGER = Logger.getLogger(ConfigurationProcessor.class);
     private static final String EMBEDDED_METRICS_NAME = "streamshub.console.embedded-prometheus";
@@ -112,26 +113,38 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
     @Inject
     PrometheusService prometheusService;
 
+    private String instanceName;
+
     public static class Postcondition implements Condition<HasMetadata, Console> {
         @Override
         public boolean isMet(DependentResource<HasMetadata, Console> dependentResource,
                 Console primary,
                 Context<Console> context) {
 
-            return context.managedDependentResourceContext().getMandatory(NAME, Boolean.class);
+            return context.managedWorkflowAndDependentResourceContext().getMandatory(NAME, Boolean.class);
         }
+    }
+
+    @Override
+    public String name() {
+        return instanceName;
+    }
+
+    @Override
+    public void setName(String name) {
+        this.instanceName = name;
     }
 
     @Override
     public ReconcileResult<HasMetadata> reconcile(Console primary, Context<Console> context) {
         if (buildSecretData(primary, context)) {
             LOGGER.debugf("Validation gate passed: %s", primary.getMetadata().getName());
-            context.managedDependentResourceContext().put(NAME, Boolean.TRUE);
+            context.managedWorkflowAndDependentResourceContext().put(NAME, Boolean.TRUE);
         } else {
             LOGGER.debugf("Validation gate failed: %s; %s",
                     primary.getMetadata().getName(),
                     primary.getStatus().getCondition(Types.ERROR).getMessage());
-            context.managedDependentResourceContext().put(NAME, Boolean.FALSE);
+            context.managedWorkflowAndDependentResourceContext().put(NAME, Boolean.FALSE);
         }
 
         return ReconcileResult.noOperation(primary);
@@ -171,7 +184,7 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
                     .build());
         }
 
-        context.managedDependentResourceContext().put("ConsoleSecretData", data);
+        context.managedWorkflowAndDependentResourceContext().put("ConsoleSecretData", data);
         return !status.hasCondition(Types.ERROR);
     }
 

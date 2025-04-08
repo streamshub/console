@@ -7,12 +7,13 @@ import com.github.streamshub.console.api.v1alpha1.Console;
 
 import io.fabric8.kubernetes.api.model.networking.v1.Ingress;
 import io.fabric8.openshift.api.model.Route;
+import io.javaoperatorsdk.operator.api.config.informer.Informer;
 import io.javaoperatorsdk.operator.api.reconciler.Context;
 import io.javaoperatorsdk.operator.processing.dependent.kubernetes.CRUDKubernetesDependentResource;
 import io.javaoperatorsdk.operator.processing.dependent.kubernetes.KubernetesDependent;
 
 @ApplicationScoped
-@KubernetesDependent(labelSelector = ConsoleResource.MANAGEMENT_SELECTOR)
+@KubernetesDependent(informer = @Informer(labelSelector = ConsoleResource.MANAGEMENT_SELECTOR))
 public class ConsoleIngress extends CRUDKubernetesDependentResource<Ingress, Console> implements ConsoleResource<Ingress> {
 
     public static final String NAME = "console-ingress";

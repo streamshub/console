@@ -7,9 +7,10 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
 import com.github.streamshub.console.api.v1alpha1.Console;
-import com.github.streamshub.console.api.v1alpha1.spec.metrics.MetricsSource.Type;
+import com.github.streamshub.console.api.v1alpha1.spec.metrics.MetricsSource;
 
 import io.fabric8.kubernetes.api.model.rbac.ClusterRoleBinding;
+import io.javaoperatorsdk.operator.api.config.informer.Informer;
 import io.javaoperatorsdk.operator.api.reconciler.Constants;
 import io.javaoperatorsdk.operator.api.reconciler.Context;
 import io.javaoperatorsdk.operator.api.reconciler.dependent.DependentResource;
@@ -18,8 +19,9 @@ import io.javaoperatorsdk.operator.processing.dependent.workflow.Condition;
 
 @ApplicationScoped
 @KubernetesDependent(
+    informer = @Informer(
         namespaces = Constants.WATCH_ALL_NAMESPACES,
-        labelSelector = ConsoleResource.MANAGEMENT_SELECTOR)
+        labelSelector = ConsoleResource.MANAGEMENT_SELECTOR))
 public class ConsoleMonitoringClusterRoleBinding extends BaseClusterRoleBinding {
 
     public static final String NAME = "console-monitoring-clusterrolebinding";
@@ -63,7 +65,7 @@ public class ConsoleMonitoringClusterRoleBinding extends BaseClusterRoleBinding 
             }
 
             return metricsSources.stream()
-                .anyMatch(prometheus -> prometheus.getType() == Type.OPENSHIFT_MONITORING);
+                .anyMatch(prometheus -> prometheus.getType() == MetricsSource.Type.OPENSHIFT_MONITORING);
         }
     }
 }

@@ -4,7 +4,7 @@ import java.util.Collections;
 import java.util.Optional;
 
 import com.github.streamshub.console.api.v1alpha1.Console;
-import com.github.streamshub.console.api.v1alpha1.spec.metrics.MetricsSource.Type;
+import com.github.streamshub.console.api.v1alpha1.spec.metrics.MetricsSource;
 
 import io.javaoperatorsdk.operator.api.reconciler.Context;
 import io.javaoperatorsdk.operator.api.reconciler.dependent.DependentResource;
@@ -22,7 +22,7 @@ public class PrometheusPrecondition implements Condition<Object, Console> {
         }
 
         return metricsSources.stream()
-                .anyMatch(prometheus -> prometheus.getType() == Type.EMBEDDED);
+                .anyMatch(prometheus -> prometheus.getType() == MetricsSource.Type.EMBEDDED);
     }
 
 }
