@@ -2,7 +2,7 @@ import { KafkaConsumerGroupMembersParams } from "@/app/[locale]/(authorized)/kaf
 import { AppHeader } from "@/components/AppHeader";
 import { Suspense } from "react";
 import { useTranslations } from "next-intl";
-import { Flex, FlexItem, Content, Text } from "@/libs/patternfly/react-core";
+import { Flex, FlexItem, Content } from "@/libs/patternfly/react-core";
 import { NoDataErrorState } from "@/components/NoDataErrorState";
 import { updateConsumerGroup } from "@/api/consumerGroups/actions";
 import { Offset } from "../../../../../consumer-groups/[groupId]/reset-offset/ResetOffset";
@@ -104,7 +104,7 @@ function Header({
         <Flex>
           <FlexItem>
             <Content>
-              <Text>{t.rich("dry_run_result")}</Text>
+              <Content>{t.rich("dry_run_result")}</Content>
             </Content>
           </FlexItem>
           <FlexItem>

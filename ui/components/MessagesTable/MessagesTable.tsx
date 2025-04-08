@@ -8,7 +8,6 @@ import {
   Drawer,
   DrawerContent,
   PageSection,
-  Text,
   Content,
   Tooltip,
 } from "@/libs/patternfly/react-core";
@@ -230,10 +229,10 @@ export function MessagesTable({
                           <Cell>
                             <Number value={row.attributes.offset} />
                             <Content>
-                              <Text component={"small"}>
+                              <Content component={"small"}>
                                 Partition{" "}
                                 <Number value={row.attributes.partition} />
-                              </Text>
+                              </Content>
                             </Content>
                           </Cell>
                         );
@@ -279,7 +278,7 @@ export function MessagesTable({
                                 />
                                 {row.relationships.keySchema && (
                                   <Content>
-                                    <Text component={"small"}>
+                                    <Content component={"small"}>
                                       {row.relationships.keySchema?.meta?.name}
                                       {row.relationships.keySchema?.meta
                                         ?.errors && (
@@ -291,7 +290,7 @@ export function MessagesTable({
                                           }
                                         </>
                                       )}
-                                    </Text>
+                                    </Content>
                                   </Content>
                                 )}
                               </>
@@ -334,7 +333,7 @@ export function MessagesTable({
                                 />
                                 {row.relationships.valueSchema && (
                                   <Content>
-                                    <Text component={"small"}>
+                                    <Content component={"small"}>
                                       {
                                         row.relationships.valueSchema?.meta
                                           ?.name
@@ -349,7 +348,7 @@ export function MessagesTable({
                                           }
                                         </>
                                       )}
-                                    </Text>
+                                    </Content>
                                   </Content>
                                 )}
                               </>
@@ -390,14 +389,17 @@ export function MessagesTable({
             </InnerScrollContainer>
           </OuterScrollContainer>
           <Content>
-            <Text component={"small"} className={"pf-v6-u-px-md pf-v6-u-py-sm"}>
+            <Content
+              component={"small"}
+              className={"pf-v6-u-px-md pf-v6-u-py-sm"}
+            >
               Last updated:{" "}
               <DateTime
                 value={lastUpdated}
                 timeStyle={"medium"}
                 dateStyle={"short"}
               />
-            </Text>
+            </Content>
           </Content>
         </DrawerContent>
       </Drawer>

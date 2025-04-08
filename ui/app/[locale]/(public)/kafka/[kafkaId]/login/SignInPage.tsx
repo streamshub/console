@@ -127,13 +127,15 @@ export function SignInPage({
       backgroundImgSrc="/assets/images/pfbg-icon.svg"
       loginTitle={t("homepage.page_header", { product: productName })}
       loginSubtitle={t("login-in-page.login_sub_title")}
-      Content={t("login-in-page.text_content", { product: productName })}
+      textContent={t("login-in-page.text_content", { product: productName })}
       brandImgSrc={"/full-logo.svg"}
       footerListItems={t("login-in-page.footer_text")}
       socialMediaLoginContent={learnMoreResource}
       signUpForAccountMessage={
         hasMultipleClusters && (
-          <Link href={"/"}>Log in to a different cluster</Link>
+          <Link href={"/"}>
+            {t("login-in-page.log_into_a_different_cluster")}
+          </Link>
         )
       }
     >

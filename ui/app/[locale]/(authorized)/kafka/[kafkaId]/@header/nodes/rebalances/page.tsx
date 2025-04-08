@@ -7,7 +7,6 @@ import {
   Label,
   Nav,
   NavList,
-  PageNavigation,
   Spinner,
   Split,
   SplitItem,
@@ -110,20 +109,16 @@ function Header({
         </Split>
       }
       navigation={
-        <PageNavigation>
-          <Nav aria-label="Node navigation" variant="tertiary">
-            <NavList>
-              <NavItemLink url={`/kafka/${kafkaId}/nodes`}>
-                Overview
+        <Nav aria-label="Node navigation" variant="default">
+          <NavList>
+            <NavItemLink url={`/kafka/${kafkaId}/nodes`}>Overview</NavItemLink>
+            {cruiseControlEnable && (
+              <NavItemLink url={`/kafka/${kafkaId}/nodes/rebalances`}>
+                Rebalance
               </NavItemLink>
-              {cruiseControlEnable && (
-                <NavItemLink url={`/kafka/${kafkaId}/nodes/rebalances`}>
-                  Rebalance
-                </NavItemLink>
-              )}
-            </NavList>
-          </Nav>
-        </PageNavigation>
+            )}
+          </NavList>
+        </Nav>
       }
     />
   );

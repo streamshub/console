@@ -30,7 +30,7 @@ export function AppHeader({
   return (
     <>
       <PageSection
-        variant={"light"}
+        variant={"default"}
         padding={{ default: navigation ? "noPadding" : "padding" }}
         className={navigation ? "pf-v6-u-px-lg pf-v6-u-pt-sm" : undefined}
         hasShadowBottom={!navigation}

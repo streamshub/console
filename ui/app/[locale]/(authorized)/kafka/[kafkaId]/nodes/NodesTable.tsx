@@ -14,10 +14,6 @@ import {
   Label,
   Content,
   Tooltip,
-  Text,
-  Icon,
-  Level,
-  LevelItem,
   Card,
   CardBody,
   CardTitle,
@@ -266,8 +262,8 @@ export function NodesTable({
                   style={{ maxWidth: "50%" }}
                 >
                   <Content>
-                    <Text>{t.rich("nodes.host_name")}</Text>
-                    <Text>
+                    <Content>{t.rich("nodes.host_name")}</Content>
+                    <Content>
                       <ClipboardCopy
                         isReadOnly={true}
                         variant={"expansion"}
@@ -275,12 +271,12 @@ export function NodesTable({
                       >
                         {row.attributes.host || "n/a"}
                       </ClipboardCopy>
-                    </Text>
+                    </Content>
                   </Content>
                 </FlexItem>
                 <FlexItem>
                   <Content>
-                    <Text>{t.rich("nodes.disk_usage")}</Text>
+                    <Content>{t.rich("nodes.disk_usage")}</Content>
                   </Content>
                   <div>
                     {usedCapacity !== undefined && (
@@ -327,7 +323,7 @@ export function NodesTable({
                 </FlexItem>
                 <FlexItem>
                   <Content>
-                    <Text>{t.rich("nodes.kafka_version")}</Text>
+                    <Content>{t.rich("nodes.kafka_version")}</Content>
                   </Content>
                   <div>{row.attributes.kafkaVersion ?? "Unknown"}</div>
                 </FlexItem>

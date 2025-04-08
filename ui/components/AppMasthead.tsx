@@ -80,12 +80,11 @@ export function AppMasthead({
           >
             <ToolbarContent id={"masthead-toolbar"}>
               <ToolbarGroup
-                variant="icon-button-group"
-                align={{ default: "alignRight" }}
-                spacer={{ default: "spacerNone", md: "spacerMd" }}
+                variant="action-group"
+                align={{ default: "alignEnd" }}
               >
                 <ToolbarGroup
-                  variant="icon-button-group"
+                  variant="label-group"
                   visibility={{ default: "hidden", lg: "visible" }}
                 >
                   {isTechPreview && (

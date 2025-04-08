@@ -208,7 +208,7 @@ const SkipReviewFooter = ({
         triggerRef={() => document.getElementById("review-button")!}
       >
         <Button
-          variant="tertiary"
+          variant="plain"
           onClick={() => onClick(() => goToStepById("step-review"))}
           id={"review-button"}
           isDisabled={loading}

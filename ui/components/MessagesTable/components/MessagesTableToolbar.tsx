@@ -92,8 +92,7 @@ export function MessagesTableToolbar({
     >
       <ToolbarContent>
         <ToolbarItem
-          variant={"search-filter"}
-          widths={{ default: "calc(100% - 52px * 2)" }}
+          variant={"label"}
           style={{
             maxWidth: 700,
           }}

@@ -41,7 +41,7 @@ export function ErrorsAndWarnings({
               </Label>
             )}
             {warnings > 0 && (
-              <Label color={"gold"} isCompact={true}>
+              <Label color={"yellow"} isCompact={true}>
                 <ExclamationTriangleIcon /> {warnings}
               </Label>
             )}
