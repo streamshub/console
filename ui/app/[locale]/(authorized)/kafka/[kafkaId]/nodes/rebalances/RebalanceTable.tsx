@@ -304,7 +304,7 @@ export function RebalanceTable({
       }
       getExpandedRow={({ row }) => {
         return (
-          <DescriptionList className="pf-v6-u-mb-lg">
+          <DescriptionList className="pf-v6-u-mt-md pf-v6-u-mb-lg">
             <Flex justifyContent={{ default: "justifyContentSpaceEvenly" }}>
               <FlexItem
                 style={{

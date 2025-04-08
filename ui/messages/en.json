@@ -141,6 +141,18 @@
     "no_results_body": "Adjust your selection criteria and try again.",
     "no_results_reset": "Clear all filters"
   },
+  "node-header": {
+    "overveiw": "Overview",
+    "rebalance": "Rebalance",
+    "brokers": "Brokers",
+    "title": "Nodes"
+  },
+  "topic-header": {
+    "messages": "Messages",
+    "partitions": "Partitions",
+    "consumer_groups": "Consumer groups",
+    "configuration": "Configuration"
+  },
   "topics": {
     "title": "Topics",
     "create_topic": "Create topic",

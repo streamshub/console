@@ -2,11 +2,12 @@ import { getKafkaCluster } from "@/api/kafka/actions";
 import { KafkaParams } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/kafka.params";
 import { AppHeader } from "@/components/AppHeader";
 import { Number } from "@/components/Format/Number";
-import { NavItemLink } from "@/components/Navigation/NavItemLink";
+import { NavTabLink } from "@/components/Navigation/NavTabLink";
 import {
   Label,
   Nav,
   NavList,
+  PageSection,
   Spinner,
   Split,
   SplitItem,
@@ -61,12 +62,26 @@ function Header({
   kafkaId: string | undefined;
   cruiseControlEnable: boolean;
 }) {
-  const t = useTranslations();
+  const t = useTranslations("node-header");
+
+  const tabs = [
+    { key: 0, title: t("overveiw"), url: `/kafka/${kafkaId}/nodes` },
+    ...(cruiseControlEnable
+      ? [
+          {
+            key: 1,
+            title: t("rebalance"),
+            url: `/kafka/${kafkaId}/nodes/rebalances`,
+          },
+        ]
+      : []),
+  ];
+
   return (
     <AppHeader
       title={
         <Split hasGutter={true}>
-          <SplitItem>{t("nodes.title")}</SplitItem>
+          <SplitItem>{t("title")}</SplitItem>
           <SplitItem>
             <Label
               icon={total === undefined ? <Spinner size={"sm"} /> : undefined}
@@ -109,18 +124,9 @@ function Header({
         </Split>
       }
       navigation={
-        <Nav aria-label="Node navigation" variant="default">
-          <NavList>
-            <NavItemLink url={`/kafka/${kafkaId}/nodes`} exact={true}>
-              Overview
-            </NavItemLink>
-            {cruiseControlEnable && (
-              <NavItemLink url={`/kafka/${kafkaId}/nodes/rebalances`}>
-                Rebalance
-              </NavItemLink>
-            )}
-          </NavList>
-        </Nav>
+        <PageSection className={"pf-v6-u-px-sm"} type="subnav">
+          <NavTabLink tabs={tabs} />
+        </PageSection>
       }
     />
   );
