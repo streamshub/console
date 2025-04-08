@@ -126,6 +126,31 @@
           "claim.name": "groups"
         }
       }]
+    }, {
+      "clientId": "registry-api",
+      "enabled": true,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "registry-api-secret",
+      "bearerOnly": false,
+      "consentRequired": false,
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "publicClient": false,
+      "fullScopeAllowed": true,
+      "protocolMappers": [{
+        "name": "Groups Mapper",
+        "protocol": "openid-connect",
+        "protocolMapper": "oidc-group-membership-mapper",
+        "consentRequired": false,
+        "config": {
+          "userinfo.token.claim": "true",
+          "id.token.claim": "true",
+          "access.token.claim": "true",
+          "claim.name": "groups"
+        }
+      }]
     }
   ]
 }

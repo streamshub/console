@@ -4,10 +4,14 @@ import java.time.Duration;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import jakarta.enterprise.inject.spi.CDI;
+
+import org.jboss.logging.Logger;
 
 import com.github.streamshub.console.config.Authenticated;
 import com.github.streamshub.console.config.AuthenticationConfig;
@@ -21,16 +25,17 @@ import io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials;
 
 public class AuthenticationSupport implements Supplier<Optional<String>> {
 
+    private static final Logger LOGGER = Logger.getLogger(AuthenticationSupport.class);
     private final AuthenticationConfig authConfig;
-    private final OidcClient oidcClient;
+    private final CompletableFuture<OidcClient> oidcClient;
     private final TokensHelper tokens;
 
     public AuthenticationSupport(Authenticated serviceConfig) {
         this.authConfig = serviceConfig.getAuthentication();
 
         if (authConfig instanceof AuthenticationConfig.OIDC oidc) {
-
             final var builder = io.quarkus.oidc.client.runtime.OidcClientConfig.builder()
+                .id(serviceConfig.getName() + "-oidc-client")
                 .authServerUrl(oidc.getAuthServerUrl())
                 .tokenPath(oidc.getTokenPath())
                 .scopes(Optional.ofNullable(oidc.getScopes()).orElseGet(Collections::emptyList))
@@ -87,11 +92,10 @@ public class AuthenticationSupport implements Supplier<Optional<String>> {
             oidcClient = CDI.current().select(OidcClients.class)
                     .get()
                     .newClient(builder.build())
-                    .await()
-                    .atMost(Duration.ofSeconds(10));
+                    .subscribeAsCompletionStage();
         } else {
             tokens = null;
-            oidcClient = null;
+            oidcClient = CompletableFuture.failedFuture(new IllegalStateException("OIDC client requested for non-OIDC authentication mechanism"));
         }
     }
 
@@ -113,7 +117,21 @@ public class AuthenticationSupport implements Supplier<Optional<String>> {
         } else if (authConfig instanceof AuthenticationConfig.Bearer bearer) {
             authHeader = "Bearer " + bearer.getToken();
         } else if (authConfig instanceof AuthenticationConfig.OIDC) {
-            authHeader = tokens.getTokens(oidcClient)
+            OidcClient client;
+
+            try {
+                client = oidcClient.get(10, TimeUnit.SECONDS);
+            } catch (Exception e) {
+                LOGGER.errorf(e, "Failed to obtain OIDC client: %s", e.getMessage());
+
+                if (e instanceof InterruptedException) {
+                    Thread.currentThread().interrupt();
+                }
+
+                throw new RuntimeException(e);
+            }
+
+            authHeader = tokens.getTokens(client)
                 .onItem()
                 .transform(t -> "Bearer " + t.getAccessToken())
                 .await()

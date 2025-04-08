@@ -15,9 +15,12 @@ import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.Date;
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x509.BasicConstraints;
@@ -50,12 +53,16 @@ public class TlsHelper {
         Security.addProvider(new BouncyCastleProvider());
     }
 
-    public static TlsHelper newInstance() {
+    public static TlsHelper newInstance(String... subjectAltNames) {
         try {
-            return new TlsHelper();
+            return new TlsHelper(Arrays.asList(subjectAltNames));
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public static TlsHelper newInstance() {
+        return newInstance(new String[0]);
     }
 
     private Certificate rootCA;
@@ -103,7 +110,7 @@ public class TlsHelper {
         }
     }
 
-    private TlsHelper() throws Exception {
+    private TlsHelper(List<String> subjectAltNames) throws Exception {
         // Initialize a new KeyPair generator
         KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance(KEY_ALGORITHM, BC_PROVIDER);
         keyPairGenerator.initialize(2048);
@@ -116,7 +123,8 @@ public class TlsHelper {
         X509Certificate rootCert = buildCACertificate(rootKeyPair, notBefore, notAfter);
 
         KeyPair issuedCertKeyPair = keyPairGenerator.generateKeyPair();
-        Certificate issuedCert = buildServerCertificate(issuedCertKeyPair, rootKeyPair, rootCert, notBefore, notAfter);
+        Certificate issuedCert = buildServerCertificate(subjectAltNames,
+                issuedCertKeyPair, rootKeyPair, rootCert, notBefore, notAfter);
 
         rootCA = rootCert;
 
@@ -159,7 +167,8 @@ public class TlsHelper {
                 .getCertificate(rootCertHolder);
     }
 
-    private Certificate buildServerCertificate(KeyPair keyPair, KeyPair signerKeyPair, X509Certificate signerCert, Date notBefore, Date notAfter)
+    private Certificate buildServerCertificate(List<String> subjectAltNames, KeyPair keyPair, KeyPair signerKeyPair,
+            X509Certificate signerCert, Date notBefore, Date notAfter)
             throws GeneralSecurityException, IOException, OperatorCreationException {
 
         // Generate a new KeyPair and sign it using the Root Cert Private Key
@@ -195,9 +204,12 @@ public class TlsHelper {
         issuedCertBuilder.addExtension(Extension.keyUsage, false, new KeyUsage(KeyUsage.digitalSignature | KeyUsage.keyEncipherment));
 
         // Add DNS name is cert is to used for SSL
-        GeneralNames subjectAltName = new GeneralNames(new GeneralName[] {
-            new GeneralName(GeneralName.dNSName, "localhost")
-        });
+        var names = Stream.concat(Stream.of("localhost"), subjectAltNames.stream())
+            .distinct()
+            .map(name -> new GeneralName(GeneralName.dNSName, name))
+            .toArray(GeneralName[]::new);
+
+        GeneralNames subjectAltName = new GeneralNames(names);
         issuedCertBuilder.addExtension(Extension.subjectAlternativeName, false, subjectAltName);
 
         X509CertificateHolder issuedCertHolder = issuedCertBuilder.build(csrContentSigner);
