@@ -1,18 +1,19 @@
-import { getKafkaCluster } from "@/api/kafka/actions";
 import { getTopic } from "@/api/topics/actions";
 import { KafkaTopicParams } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/topics/kafkaTopic.params";
 import { AppHeader } from "@/components/AppHeader";
 import { Number } from "@/components/Format/Number";
 import { ManagedTopicLabel } from "@/components/ManagedTopicLabel";
+import { NavItemLink } from "@/components/Navigation/NavItemLink";
 import { NavTabLink } from "@/components/Navigation/NavTabLink";
 import {
   Label,
+  Nav,
+  NavList,
   PageSection,
   Skeleton,
   Spinner,
 } from "@/libs/patternfly/react-core";
 import { useTranslations } from "next-intl";
-import { notFound } from "next/navigation";
 import { ReactNode, Suspense } from "react";
 
 export type TopicHeaderProps = {
@@ -24,7 +25,6 @@ export function TopicHeader({
   params: { kafkaId, topicId },
   showRefresh,
 }: TopicHeaderProps) {
-  const portal = <div key={"topic-header-portal"} id={"topic-header-portal"} />;
   const t = useTranslations("topic-header");
 
   const tabs = [
@@ -71,6 +71,7 @@ export function TopicHeader({
     },
   ];
 
+  const portal = <div key={"topic-header-portal"} id={"topic-header-portal"} />;
   return (
     <Suspense
       fallback={
@@ -105,11 +106,14 @@ async function ConnectedTopicHeader({
   portal: ReactNode;
 }) {
   const t = useTranslations("topic-header");
-  const cluster = await getKafkaCluster(kafkaId);
-  if (!cluster) {
-    notFound();
+
+  const response = await getTopic(kafkaId, topicId);
+
+  if (response.errors) {
+    return <AppHeader title={`Topic ${topicId}`} />;
   }
-  const topic = await getTopic(cluster.id, topicId);
+
+  const topic = response.payload;
 
   const tabs = [
     {
