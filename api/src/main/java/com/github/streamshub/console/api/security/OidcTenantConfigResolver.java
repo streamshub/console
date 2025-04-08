@@ -51,7 +51,7 @@ public class OidcTenantConfigResolver implements TenantConfigResolver {
         if (oidc.getIssuer() != null) {
             builder.token()
                 .issuer(oidc.getIssuer())
-            .end();
+                .end();
         }
 
         trustStores.configureTruststoreFile(oidc, null, builder);

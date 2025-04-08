@@ -85,7 +85,7 @@ public class TrustStoreSupport {
 
             if (source instanceof Authenticated auth
                     && auth.getAuthentication() instanceof Trustable trustableAuth) {
-                registerTrustStores(List.of(trustableAuth), context);
+                registerTrustStores(List.of(trustableAuth), source);
             }
         }
     }
