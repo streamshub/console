@@ -16,6 +16,7 @@ export function FilterSelect({
   return (
     <Select
       aria-label={label}
+      popperProps={{ appendTo: "inline" }}
       onSelect={(_, value) => {
         onToggle(value);
         setIsOpen(false);

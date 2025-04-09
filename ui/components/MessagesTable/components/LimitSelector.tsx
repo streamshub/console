@@ -15,6 +15,7 @@ export function LimitSelector({ value, onChange }: LimitSelectorProps) {
   return (
     <Select
       aria-label={t("per_page_aria_label", { value })}
+      popperProps={{appendTo:  "inline"}}
       selected={value}
       isOpen={isOpen}
       onSelect={() => setIsOpen(false)}

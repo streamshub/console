@@ -3,7 +3,6 @@ import { KafkaTopicParams } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/to
 import { AppHeader } from "@/components/AppHeader";
 import { Number } from "@/components/Format/Number";
 import { ManagedTopicLabel } from "@/components/ManagedTopicLabel";
-import { NavItemLink } from "@/components/Navigation/NavItemLink";
 import { NavTabLink } from "@/components/Navigation/NavTabLink";
 import {
   Label,

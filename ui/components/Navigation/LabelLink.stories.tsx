@@ -13,7 +13,7 @@ const meta: Meta<typeof LabelLink> = {
       control: "select",
       options: [
         "blue",
-        "cyan",
+        "teal",
         "green",
         "orange",
         "purple",
