@@ -12,12 +12,8 @@ import {
   Flex,
   FlexItem,
   Label,
-  TextContent,
+  Content,
   Tooltip,
-  Text,
-  Icon,
-  Level,
-  LevelItem,
   Card,
   CardBody,
   CardTitle,
@@ -133,7 +129,7 @@ export function NodesTable({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="pf-v5-u-pl-md">{t("nodes.title")}</CardTitle>
+        <CardTitle className="pf-v6-u-pl-md">{t("nodes.title")}</CardTitle>
       </CardHeader>
       <CardBody>
         <TableView
@@ -201,7 +197,7 @@ export function NodesTable({
                       <Label
                         isCompact={true}
                         color={"green"}
-                        className={"pf-v5-u-ml-sm"}
+                        className={"pf-v6-u-ml-sm"}
                       >
                         {t.rich("nodes.lead_controller")}
                       </Label>
@@ -219,7 +215,7 @@ export function NodesTable({
               case "status":
                 return (
                   <Td key={key} dataLabel={"Status"}>
-                    <div className={"pf-v5-u-active-color-100"}>
+                    <div className={"pf-v6-u-active-color-100"}>
                       {row.attributes.broker &&
                         BrokerStatusLabel[row.attributes.broker.status]}
                     </div>
@@ -270,14 +266,14 @@ export function NodesTable({
                 ? diskUsage / diskCapacity
                 : undefined;
             return (
-              <Flex gap={{ default: "gap4xl" }} className={"pf-v5-u-p-xl"}>
+              <Flex gap={{ default: "gap4xl" }} className={"pf-v6-u-p-xl"}>
                 <FlexItem
                   flex={{ default: "flex_1" }}
                   style={{ maxWidth: "50%" }}
                 >
-                  <TextContent>
-                    <Text>{t.rich("nodes.host_name")}</Text>
-                    <Text>
+                  <Content>
+                    <Content>{t.rich("nodes.host_name")}</Content>
+                    <Content>
                       <ClipboardCopy
                         isReadOnly={true}
                         variant={"expansion"}
@@ -285,13 +281,13 @@ export function NodesTable({
                       >
                         {row.attributes.host || "n/a"}
                       </ClipboardCopy>
-                    </Text>
-                  </TextContent>
+                    </Content>
+                  </Content>
                 </FlexItem>
                 <FlexItem>
-                  <TextContent>
-                    <Text>{t.rich("nodes.disk_usage")}</Text>
-                  </TextContent>
+                  <Content>
+                    <Content>{t.rich("nodes.disk_usage")}</Content>
+                  </Content>
                   <div>
                     {usedCapacity !== undefined && (
                       <div style={{ height: "300px", width: "230px" }}>
@@ -336,9 +332,9 @@ export function NodesTable({
                   </div>
                 </FlexItem>
                 <FlexItem>
-                  <TextContent>
-                    <Text>{t.rich("nodes.kafka_version")}</Text>
-                  </TextContent>
+                  <Content>
+                    <Content>{t.rich("nodes.kafka_version")}</Content>
+                  </Content>
                   <div>{row.attributes.kafkaVersion ?? "Unknown"}</div>
                 </FlexItem>
               </Flex>

@@ -93,7 +93,7 @@ export function PartitionSelector({
           ref={toggleRef}
           onClick={toggleOpen}
           isExpanded={isOpen}
-          className={"pf-v5-u-w-100"}
+          className={"pf-v6-u-w-100"}
         >
           {value !== -1
             ? t("partition_option", { value })

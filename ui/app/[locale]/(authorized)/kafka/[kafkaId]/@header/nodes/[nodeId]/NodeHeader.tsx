@@ -11,13 +11,11 @@ export async function NodeHeader({
   return (
     <AppHeader
       title={
-        <Suspense fallback={<Skeleton width="35%" />}>
-          Broker {nodeId}
-        </Suspense>
+        <Suspense fallback={<Skeleton width="35%" />}>Broker {nodeId}</Suspense>
       }
       navigation={
         // <PageNavigation>
-        //   <Nav aria-label="Group section navigation" variant="tertiary">
+        //   <Nav aria-label="Group section navigation" variant="default">
         //     <NavList>
         //       <NavItemLink
         //         url={`/kafka/${kafkaId}/nodes/${nodeId}/configuration`}

@@ -1,27 +1,34 @@
 "use client";
 import { TechPreviewPopover } from "@/components/TechPreviewPopover";
 import {
+  Brand,
   Button,
   Label,
   Masthead,
+  MastheadBrand,
   MastheadContent,
+  MastheadLogo,
   MastheadMain,
   MastheadToggle,
   PageToggleButton,
+  ToggleGroup,
+  ToggleGroupItem,
   Toolbar,
   ToolbarContent,
   ToolbarGroup,
   ToolbarItem,
 } from "@/libs/patternfly/react-core";
-import { BarsIcon, QuestionCircleIcon } from "@/libs/patternfly/react-icons";
+import {
+  BarsIcon,
+  MoonIcon,
+  QuestionCircleIcon,
+  SunIcon,
+} from "@/libs/patternfly/react-icons";
 import { FeedbackModal } from "@patternfly/react-user-feedback";
 import { useTranslations } from "next-intl";
-import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useAppLayout } from "./AppLayoutProvider";
 import { UserDropdown } from "./UserDropdown";
-import Image from "next/image";
-import { clientConfig as config } from "@/utils/config";
 
 export function AppMasthead({
   username,
@@ -33,13 +40,6 @@ export function AppMasthead({
   const t = useTranslations();
   const { toggleSidebar } = useAppLayout();
   const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
-  const [isTechPreview, setIsTechPreview] = useState(false);
-
-  useEffect(() => {
-    config().then(cfg => {
-      setIsTechPreview(cfg.techPreview);
-    })
-  }, []);
 
   const openFeedbackModal = () => {
     setIsFeedbackModalOpen(true);
@@ -47,29 +47,31 @@ export function AppMasthead({
   const closeFeedbackModal = () => {
     setIsFeedbackModalOpen(false);
   };
+
   return (
     <>
       <Masthead>
-        {showSidebarToggle && (
-          <MastheadToggle>
-            <PageToggleButton
-              variant="plain"
-              aria-label={t("AppMasthead.global_navigation")}
-              onClick={toggleSidebar}
-            >
-              <BarsIcon />
-            </PageToggleButton>
-          </MastheadToggle>
-        )}
         <MastheadMain>
-          <Link href={"/"} className={"pf-v5-c-masthead_brand"}>
-            <Image
-              src={"/full-logo.svg"}
-              alt={t("common.title")}
-              width={300}
-              height={150}
-            />
-          </Link>
+          {showSidebarToggle && (
+            <MastheadToggle>
+              <PageToggleButton
+                variant="plain"
+                aria-label={t("AppMasthead.global_navigation")}
+                onClick={toggleSidebar}
+              >
+                <BarsIcon />
+              </PageToggleButton>
+            </MastheadToggle>
+          )}
+          <MastheadBrand>
+            <MastheadLogo href="/" target="_blank">
+              <Brand
+                src={"/full-logo.svg"}
+                alt={t("common.title")}
+                heights={{ default: "56px" }}
+              />
+            </MastheadLogo>
+          </MastheadBrand>
         </MastheadMain>
         <MastheadContent>
           <Toolbar
@@ -80,24 +82,21 @@ export function AppMasthead({
           >
             <ToolbarContent id={"masthead-toolbar"}>
               <ToolbarGroup
-                variant="icon-button-group"
-                align={{ default: "alignRight" }}
-                spacer={{ default: "spacerNone", md: "spacerMd" }}
+                variant="action-group"
+                align={{ default: "alignEnd" }}
               >
                 <ToolbarGroup
-                  variant="icon-button-group"
+                  variant="label-group"
                   visibility={{ default: "hidden", lg: "visible" }}
                 >
-                  {isTechPreview && (
-                    <ToolbarItem>
-                      <TechPreviewPopover>
-                        <Label color={"blue"} isCompact={true}>
-                          {t("AppMasthead.tech_preview_label")}
-                        </Label>
-                      </TechPreviewPopover>
-                    </ToolbarItem>
-                  )}
-                  <ToolbarItem>
+                  <ToolbarItem className={"pf-v6-u-py-sm"}>
+                    <TechPreviewPopover>
+                      <Label color={"blue"} isCompact>
+                        {t("AppMasthead.tech_preview_label")}
+                      </Label>
+                    </TechPreviewPopover>
+                  </ToolbarItem>
+                  <ToolbarItem className={"pf-v6-u-py-sm"}>
                     <Button
                       aria-label={t("AppMasthead.help")}
                       variant={"plain"}

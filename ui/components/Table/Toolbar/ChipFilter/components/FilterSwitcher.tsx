@@ -28,6 +28,7 @@ export function FilterSwitcher({
 
   return (
     <Select
+      popperProps={{ appendTo: "inline" }}
       toggle={(toggleRef) => (
         <MenuToggle
           ref={toggleRef}
