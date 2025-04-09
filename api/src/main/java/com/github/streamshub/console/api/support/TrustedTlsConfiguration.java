@@ -191,9 +191,7 @@ class TrustedTlsConfiguration extends BaseTlsConfiguration {
 
         @Override
         public Optional<String> password() {
-            return UncheckedIO.call(
-                    () -> Value.getOptionalValue(config.getPassword()),
-                    () -> "Exception reading TLS truststore password");
+            return Value.getOptional(config.getPassword());
         }
 
         @Override

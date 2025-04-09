@@ -43,9 +43,7 @@ public class AuthenticationSupport implements Supplier<Optional<String>> {
                 .clientId(oidc.getClientId());
 
             setIfPresent(
-                    UncheckedIO.call(
-                            () -> Value.getValue(oidc.getClientSecret()),
-                            () -> "Exception retrieving clientSecret"),
+                    Value.getOptional(oidc.getClientSecret()).orElse(null),
                     secret -> builder.credentials()
                         .clientSecret(secret)
                         .end());
