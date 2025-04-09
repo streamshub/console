@@ -1,6 +1,7 @@
 package com.github.streamshub.console.config;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Optional;
@@ -48,23 +49,20 @@ public class Value {
     }
 
     @JsonIgnore
-    public static Optional<String> getOptionalValue(Value value) throws IOException {
-        return Optional.ofNullable(getValue(value));
+    public static Optional<String> getOptional(Value value) {
+        return Optional.ofNullable(value).map(Value::get);
     }
 
     @JsonIgnore
-    public static String getValue(Value value) throws IOException {
-        if (value == null) {
-            return null;
-        }
-        return value.get();
-    }
-
-    @JsonIgnore
-    public String get() throws IOException {
+    public String get() {
         if (value != null) {
             return value;
         }
-        return Files.readString(Path.of(valueFrom));
+
+        try {
+            return Files.readString(Path.of(valueFrom));
+        } catch (IOException e) {
+            throw new UncheckedIOException("Exception reading from path " + valueFrom, e);
+        }
     }
 }

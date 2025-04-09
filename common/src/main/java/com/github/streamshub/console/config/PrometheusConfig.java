@@ -8,7 +8,10 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 
+import io.sundr.builder.annotations.Buildable;
+
 @JsonInclude(Include.NON_NULL)
+@Buildable(editableEnabled = false)
 public class PrometheusConfig implements Authenticated, Trustable {
 
     @NotBlank(message = "Metrics source `name` is required")
