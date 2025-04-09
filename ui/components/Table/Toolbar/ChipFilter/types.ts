@@ -18,6 +18,7 @@ export type CheckboxType<T extends string | number> = {
   onToggle: (value: T) => void;
   onRemoveChip: (value: T) => void;
   onRemoveGroup: () => void;
+  placeholder?: string;
 };
 
 export type GroupedCheckboxType<T extends string | number> = {
@@ -32,6 +33,7 @@ export type GroupedCheckboxType<T extends string | number> = {
   onToggle: (value: T) => void;
   onRemoveChip: (value: T) => void;
   onRemoveGroup: () => void;
+  placeholder?: string;
 };
 
 export type SelectType<T extends string | number> = {

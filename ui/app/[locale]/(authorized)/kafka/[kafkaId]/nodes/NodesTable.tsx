@@ -108,7 +108,17 @@ export function NodesTable({
         Object.entries(nodePoolList).map(([poolName, poolMeta]) => [
           poolName,
           {
-            label: <>{poolName}</>,
+            label: <>{poolName}</>, // Label without count
+            labelWithCount: (
+              <Level>
+                <LevelItem>{poolName}</LevelItem>
+                <LevelItem>
+                  <span style={{ color: "var(--pf-v5-global--Color--200)" }}>
+                    {poolMeta.count}
+                  </span>
+                </LevelItem>
+              </Level>
+            ),
             description: <>Nodes role: {poolMeta.roles.join(", ")}</>,
           },
         ]),
@@ -337,6 +347,9 @@ export function NodesTable({
           filters={{
             "Node pool": {
               type: "checkbox",
+              placeholder: `${t("nodes.all_node_pools_placeholder")} (${
+                nodePoolList ? Object.keys(nodePoolList).length : 0
+              })`,
               chips: filterNodePool || [],
               onToggle: (nodePool) => {
                 const newPool = filterNodePool?.includes(nodePool)
@@ -353,7 +366,21 @@ export function NodesTable({
               onRemoveGroup: () => {
                 onFilterNodePoolChange(undefined);
               },
-              options: nodePoolOptions,
+              options: nodePoolList
+                ? Object.keys(nodePoolOptions).reduce(
+                    (acc, poolName) => {
+                      acc[poolName] = {
+                        label: nodePoolOptions[poolName].labelWithCount,
+                        description: nodePoolOptions[poolName].description,
+                      };
+                      return acc;
+                    },
+                    {} as Record<
+                      string,
+                      { label: ReactNode; description: ReactNode }
+                    >,
+                  )
+                : {},
             },
             Role: {
               type: "checkbox",
@@ -383,6 +410,7 @@ export function NodesTable({
             },
             Status: {
               type: "groupedCheckbox",
+              placeholder: t("nodes.status_placeholder"),
               chips: [
                 ...(filterBrokerStatus || []),
                 ...(filterControllerStatus || []),
