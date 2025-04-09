@@ -41,8 +41,10 @@ import com.github.streamshub.console.api.v1alpha1.spec.Credentials;
 import com.github.streamshub.console.api.v1alpha1.spec.KafkaCluster;
 import com.github.streamshub.console.api.v1alpha1.spec.SchemaRegistry;
 import com.github.streamshub.console.api.v1alpha1.spec.TrustStore;
+import com.github.streamshub.console.api.v1alpha1.spec.authentication.Authentication;
 import com.github.streamshub.console.api.v1alpha1.spec.metrics.MetricsSource;
 import com.github.streamshub.console.api.v1alpha1.spec.metrics.MetricsSource.Type;
+import com.github.streamshub.console.api.v1alpha1.spec.metrics.MetricsSourceAuthentication;
 import com.github.streamshub.console.api.v1alpha1.spec.security.GlobalSecurity;
 import com.github.streamshub.console.api.v1alpha1.spec.security.Oidc;
 import com.github.streamshub.console.api.v1alpha1.spec.security.Security;
@@ -50,7 +52,6 @@ import com.github.streamshub.console.api.v1alpha1.status.Condition.Reasons;
 import com.github.streamshub.console.api.v1alpha1.status.Condition.Types;
 import com.github.streamshub.console.api.v1alpha1.status.ConditionBuilder;
 import com.github.streamshub.console.api.v1alpha1.status.ConsoleStatus;
-import com.github.streamshub.console.config.AuthenticationConfig;
 import com.github.streamshub.console.config.ConsoleConfig;
 import com.github.streamshub.console.config.KafkaClusterConfig;
 import com.github.streamshub.console.config.PrometheusConfig;
@@ -58,6 +59,8 @@ import com.github.streamshub.console.config.SchemaRegistryConfig;
 import com.github.streamshub.console.config.TrustStoreConfig;
 import com.github.streamshub.console.config.TrustStoreConfigBuilder;
 import com.github.streamshub.console.config.ValueBuilder;
+import com.github.streamshub.console.config.authentication.Authenticated;
+import com.github.streamshub.console.config.authentication.AuthenticationConfigBuilder;
 import com.github.streamshub.console.config.security.AuditConfigBuilder;
 import com.github.streamshub.console.config.security.Decision;
 import com.github.streamshub.console.config.security.OidcConfigBuilder;
@@ -510,16 +513,7 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
             var metricsAuthn = metricsSource.getAuthentication();
 
             if (metricsAuthn != null) {
-                if (metricsAuthn.getToken() == null) {
-                    var basicConfig = new AuthenticationConfig.Basic();
-                    basicConfig.setUsername(metricsAuthn.getUsername());
-                    basicConfig.setPassword(metricsAuthn.getPassword());
-                    prometheusConfig.setAuthentication(basicConfig);
-                } else {
-                    var bearerConfig = new AuthenticationConfig.Bearer();
-                    bearerConfig.setToken(metricsAuthn.getToken());
-                    prometheusConfig.setAuthentication(bearerConfig);
-                }
+                addAuthentication(metricsAuthn, prometheusConfig);
             }
 
             prometheusConfig.setTrustStore(buildTrustStoreConfig(
@@ -545,6 +539,25 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
         return "https://" + host;
     }
 
+    private void addAuthentication(MetricsSourceAuthentication metricsAuthn, PrometheusConfig prometheusConfig) {
+        if (!addAuthentication((Authentication) metricsAuthn, prometheusConfig)) {
+            if (metricsAuthn.getToken() != null) {
+                prometheusConfig.setAuthentication(new AuthenticationConfigBuilder()
+                    .withNewBearer()
+                        .withToken(metricsAuthn.getToken())
+                    .endBearer()
+                    .build());
+            } else {
+                prometheusConfig.setAuthentication(new AuthenticationConfigBuilder()
+                    .withNewBasic()
+                        .withUsername(metricsAuthn.getUsername())
+                        .withPassword(metricsAuthn.getPassword())
+                    .endBasic()
+                    .build());
+            }
+        }
+    }
+
     private void addSchemaRegistries(Console primary, ConsoleConfig config) {
         for (SchemaRegistry registry : coalesce(primary.getSpec().getSchemaRegistries(), Collections::emptyList)) {
             String name = registry.getName();
@@ -556,8 +569,38 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
                     "schema-registry-" + name
             ));
 
+            var authentication = registry.getAuthentication();
+
+            if (authentication != null) {
+                addAuthentication(authentication, registryConfig);
+            }
+
             config.getSchemaRegistries().add(registryConfig);
         }
+    }
+
+    private boolean addAuthentication(Authentication authn, Authenticated authenticated) {
+        if (authn.hasBasic()) {
+            authenticated.setAuthentication(new AuthenticationConfigBuilder()
+                .withNewBasic()
+                    .withUsername(authn.getBasic().getUsername())
+                    .withPassword(authn.getBasic().getPassword())
+                .endBasic()
+                .build());
+            return true;
+        } else if (authn.hasBearer()) {
+            authenticated.setAuthentication(new AuthenticationConfigBuilder()
+                .withNewBearer()
+                    .withToken(authn.getBearer().getToken())
+                .endBearer()
+                .build());
+            return true;
+        } else if (authn.hasOIDC()) {
+
+            return true;
+        }
+
+        return false;
     }
 
     private KafkaClusterConfig addConfig(Console primary, Context<Console> context, ConsoleConfig config, KafkaCluster kafkaRef) {

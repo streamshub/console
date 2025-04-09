@@ -13,9 +13,9 @@ import jakarta.enterprise.inject.spi.CDI;
 
 import org.jboss.logging.Logger;
 
-import com.github.streamshub.console.config.Authenticated;
-import com.github.streamshub.console.config.AuthenticationConfig;
 import com.github.streamshub.console.config.Value;
+import com.github.streamshub.console.config.authentication.Authenticated;
+import com.github.streamshub.console.config.authentication.AuthenticationConfig;
 
 import io.quarkus.oidc.client.OidcClient;
 import io.quarkus.oidc.client.OidcClients;
@@ -33,7 +33,8 @@ public class AuthenticationSupport implements Supplier<Optional<String>> {
     public AuthenticationSupport(Authenticated serviceConfig) {
         this.authConfig = serviceConfig.getAuthentication();
 
-        if (authConfig instanceof AuthenticationConfig.OIDC oidc) {
+        if (authConfig != null && authConfig.hasOIDC()) {
+            var oidc = authConfig.getOidc();
             final var builder = io.quarkus.oidc.client.runtime.OidcClientConfig.builder()
                 .id(serviceConfig.getName() + "-oidc-client")
                 .authServerUrl(oidc.getAuthServerUrl())
@@ -107,14 +108,17 @@ public class AuthenticationSupport implements Supplier<Optional<String>> {
     public Optional<String> get() {
         String authHeader;
 
-        if (authConfig instanceof AuthenticationConfig.Basic basic) {
+        if (authConfig == null) {
+            authHeader = null;
+        } else if (authConfig.hasBasic()) {
+            var basic = authConfig.getBasic();
             authHeader = "Basic " + Base64.getEncoder().encodeToString("%s:%s".formatted(
                     basic.getUsername(),
                     basic.getPassword())
                     .getBytes());
-        } else if (authConfig instanceof AuthenticationConfig.Bearer bearer) {
-            authHeader = "Bearer " + bearer.getToken();
-        } else if (authConfig instanceof AuthenticationConfig.OIDC) {
+        } else if (authConfig.hasBearer()) {
+            authHeader = "Bearer " + authConfig.getBearer().getToken();
+        } else if (authConfig.hasOIDC()) {
             OidcClient client;
 
             try {

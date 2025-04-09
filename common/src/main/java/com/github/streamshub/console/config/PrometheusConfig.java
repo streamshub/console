@@ -7,6 +7,8 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.github.streamshub.console.config.authentication.Authenticated;
+import com.github.streamshub.console.config.authentication.AuthenticationConfig;
 
 import io.sundr.builder.annotations.Buildable;
 

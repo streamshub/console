@@ -66,18 +66,19 @@ public class TestPlainProfile implements QuarkusTestProfile {
                   - name: test-registry
                     url: ${console.test.apicurio-url}
                     authentication:
-                      authServerUrl: ${console.test.oidc-url}
-                      clientId: registry-api
-                      clientSecret:
-                        value: registry-api-secret
-                      method: POST
-                      grantType: CLIENT
-                      trustStore:
-                        type: ${console.test.oidc-trust-store.type}
-                        content:
-                          valueFrom: ${console.test.oidc-trust-store.path}
-                        password:
-                          value: ${console.test.oidc-trust-store.password}
+                      oidc:
+                        authServerUrl: ${console.test.oidc-url}
+                        clientId: registry-api
+                        clientSecret:
+                          value: registry-api-secret
+                        method: POST
+                        grantType: CLIENT
+                        trustStore:
+                          type: ${console.test.oidc-trust-store.type}
+                          content:
+                            valueFrom: ${console.test.oidc-trust-store.path}
+                          password:
+                            value: ${console.test.oidc-trust-store.password}
                     trustStore:
                       type: ${console.test.apicurio-trust-store.type}
                       content:

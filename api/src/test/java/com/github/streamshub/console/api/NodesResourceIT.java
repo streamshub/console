@@ -40,10 +40,11 @@ import org.mockito.Mockito;
 
 import com.github.streamshub.console.api.service.MetricsService;
 import com.github.streamshub.console.api.support.KafkaContext;
-import com.github.streamshub.console.config.AuthenticationConfig;
 import com.github.streamshub.console.config.ConsoleConfig;
 import com.github.streamshub.console.config.PrometheusConfig;
 import com.github.streamshub.console.config.PrometheusConfig.Type;
+import com.github.streamshub.console.config.authentication.AuthenticationConfigBuilder;
+import com.github.streamshub.console.config.authentication.Basic;
 import com.github.streamshub.console.kafka.systemtest.TestPlainProfile;
 import com.github.streamshub.console.kafka.systemtest.deployment.DeploymentManager;
 import com.github.streamshub.console.test.AdminClientSpy;
@@ -144,10 +145,12 @@ class NodesResourceIT implements ClientRequestFilter {
         prometheusConfig.setType(Type.fromValue("standalone"));
         prometheusConfig.setUrl("http://prometheus.example.com");
 
-        var authN = new AuthenticationConfig.Basic();
+        var authN = new Basic();
         authN.setUsername("pr0m3th3u5");
         authN.setPassword("password42");
-        prometheusConfig.setAuthentication(authN);
+        prometheusConfig.setAuthentication(new AuthenticationConfigBuilder()
+            .withBasic(authN)
+            .build());
 
         consoleConfig.setMetricsSources(List.of(prometheusConfig));
         consoleConfig.getKafka().getCluster(clusterNamespace1 + '/' + clusterName1).get().setMetricsSource("test");

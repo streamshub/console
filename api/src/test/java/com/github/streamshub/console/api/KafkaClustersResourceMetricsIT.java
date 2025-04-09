@@ -34,10 +34,12 @@ import org.junit.jupiter.api.TestInfo;
 import com.github.streamshub.console.api.model.KafkaCluster;
 import com.github.streamshub.console.api.service.MetricsService;
 import com.github.streamshub.console.api.support.KafkaContext;
-import com.github.streamshub.console.config.AuthenticationConfig;
 import com.github.streamshub.console.config.ConsoleConfig;
 import com.github.streamshub.console.config.KafkaClusterConfig;
 import com.github.streamshub.console.config.PrometheusConfig.Type;
+import com.github.streamshub.console.config.authentication.AuthenticationConfigBuilder;
+import com.github.streamshub.console.config.authentication.Basic;
+import com.github.streamshub.console.config.authentication.Bearer;
 import com.github.streamshub.console.config.PrometheusConfigBuilder;
 import com.github.streamshub.console.kafka.systemtest.TestPlainProfile;
 import com.github.streamshub.console.kafka.systemtest.deployment.DeploymentManager;
@@ -136,18 +138,22 @@ class KafkaClustersResourceMetricsIT implements ClientRequestFilter {
         } else if (testInfo.getTags().contains("unauthenticated")) {
             prometheusConfig.setType(Type.STANDALONE);
         } else if (testInfo.getTags().contains("bearer-token")) {
-            var authN = new AuthenticationConfig.Bearer();
+            var authN = new Bearer();
             authN.setToken("my-bearer-token");
 
             prometheusConfig.setType(Type.fromValue("standalone"));
-            prometheusConfig.setAuthentication(authN);
+            prometheusConfig.setAuthentication(new AuthenticationConfigBuilder()
+                .withBearer(authN)
+                .build());
         } else {
-            var authN = new AuthenticationConfig.Basic();
+            var authN = new Basic();
             authN.setUsername("pr0m3th3u5");
             authN.setPassword("password42");
 
             prometheusConfig.setType(Type.fromValue("standalone"));
-            prometheusConfig.setAuthentication(authN);
+            prometheusConfig.setAuthentication(new AuthenticationConfigBuilder()
+                    .withBasic(authN)
+                    .build());
         }
 
         consoleConfig.setMetricsSources(List.of(prometheusConfig));

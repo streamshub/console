@@ -16,10 +16,11 @@ import com.github.streamshub.console.api.v1alpha1.spec.TrustStore;
 import com.github.streamshub.console.api.v1alpha1.spec.metrics.MetricsSource;
 import com.github.streamshub.console.api.v1alpha1.spec.metrics.MetricsSource.Type;
 import com.github.streamshub.console.api.v1alpha1.status.Condition;
-import com.github.streamshub.console.config.AuthenticationConfig;
 import com.github.streamshub.console.config.ConsoleConfig;
 import com.github.streamshub.console.config.PrometheusConfig;
 import com.github.streamshub.console.config.TrustStoreConfig;
+import com.github.streamshub.console.config.authentication.Basic;
+import com.github.streamshub.console.config.authentication.Bearer;
 import com.github.streamshub.console.dependents.ConsoleDeployment;
 import com.github.streamshub.console.dependents.ConsoleResource;
 import com.github.streamshub.console.dependents.ConsoleSecret;
@@ -639,8 +640,10 @@ class ConsoleReconcilerTest extends ConsoleReconcilerTestBase {
                         .withType(Type.fromValue("standalone"))
                         .withUrl("https://prometheus.example.com")
                         .withNewAuthentication()
-                            .withUsername("pr0m3th3u5")
-                            .withPassword("password42")
+                            .withNewBasic()
+                                .withUsername("pr0m3th3u5")
+                                .withPassword("password42")
+                            .endBasic()
                         .endAuthentication()
                     .endMetricsSource()
                     .addNewKafkaCluster()
@@ -659,7 +662,7 @@ class ConsoleReconcilerTest extends ConsoleReconcilerTestBase {
             assertEquals("some-prometheus", prometheusConfig.getName());
             assertEquals("https://prometheus.example.com", prometheusConfig.getUrl());
             assertEquals(PrometheusConfig.Type.STANDALONE, prometheusConfig.getType());
-            var prometheusAuthN = (AuthenticationConfig.Basic) prometheusConfig.getAuthentication();
+            var prometheusAuthN = (Basic) prometheusConfig.getAuthentication().getBasic();
             assertEquals("pr0m3th3u5", prometheusAuthN.getUsername());
             assertEquals("password42", prometheusAuthN.getPassword());
 
@@ -683,7 +686,9 @@ class ConsoleReconcilerTest extends ConsoleReconcilerTestBase {
                         .withType(Type.fromValue("standalone"))
                         .withUrl("https://prometheus.example.com")
                         .withNewAuthentication()
-                            .withToken(token)
+                            .withNewBearer()
+                                .withToken(token)
+                            .endBearer()
                         .endAuthentication()
                     .endMetricsSource()
                     .addNewKafkaCluster()
@@ -702,7 +707,7 @@ class ConsoleReconcilerTest extends ConsoleReconcilerTestBase {
             assertEquals("some-prometheus", prometheusConfig.getName());
             assertEquals("https://prometheus.example.com", prometheusConfig.getUrl());
             assertEquals(PrometheusConfig.Type.STANDALONE, prometheusConfig.getType());
-            var prometheusAuthN = (AuthenticationConfig.Bearer) prometheusConfig.getAuthentication();
+            var prometheusAuthN = (Bearer) prometheusConfig.getAuthentication().getBearer();
             assertEquals(token, prometheusAuthN.getToken());
 
             String metricsRef = consoleConfig.getKafka().getClusters().get(0).getMetricsSource();

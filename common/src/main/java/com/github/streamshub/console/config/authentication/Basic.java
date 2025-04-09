@@ -1,17 +1,20 @@
-package com.github.streamshub.console.api.v1alpha1.spec.metrics;
+package com.github.streamshub.console.config.authentication;
+
+import jakarta.validation.constraints.NotBlank;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.github.streamshub.console.api.v1alpha1.spec.authentication.Authentication;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 
 import io.sundr.builder.annotations.Buildable;
 
 @Buildable(editableEnabled = false)
-@JsonInclude(JsonInclude.Include.NON_NULL)
-public class MetricsSourceAuthentication extends Authentication {
+@JsonInclude(Include.NON_NULL)
+public class Basic {
 
+    @NotBlank
     private String username;
+    @NotBlank
     private String password;
-    private String token;
 
     public String getUsername() {
         return username;
@@ -27,13 +30,5 @@ public class MetricsSourceAuthentication extends Authentication {
 
     public void setPassword(String password) {
         this.password = password;
-    }
-
-    public String getToken() {
-        return token;
-    }
-
-    public void setToken(String token) {
-        this.token = token;
     }
 }

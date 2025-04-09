@@ -2,6 +2,7 @@ package com.github.streamshub.console.api.v1alpha1.spec;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import com.github.streamshub.console.api.v1alpha1.spec.authentication.Authentication;
 
 import io.fabric8.generator.annotation.Required;
 import io.sundr.builder.annotations.Buildable;
@@ -28,6 +29,8 @@ public class SchemaRegistry {
             """)
     private TrustStore trustStore;
 
+    private Authentication authentication;
+
     public String getName() {
         return name;
     }
@@ -50,5 +53,13 @@ public class SchemaRegistry {
 
     public void setTrustStore(TrustStore trustStore) {
         this.trustStore = trustStore;
+    }
+
+    public Authentication getAuthentication() {
+        return authentication;
+    }
+
+    public void setAuthentication(Authentication authentication) {
+        this.authentication = authentication;
     }
 }

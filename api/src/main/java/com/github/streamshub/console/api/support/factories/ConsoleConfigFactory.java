@@ -133,6 +133,4 @@ public class ConsoleConfigFactory {
 
         return value;
     }
-
-
 }

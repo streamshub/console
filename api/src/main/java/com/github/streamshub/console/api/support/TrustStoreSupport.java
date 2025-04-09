@@ -9,11 +9,11 @@ import jakarta.inject.Inject;
 
 import org.jboss.logging.Logger;
 
-import com.github.streamshub.console.config.Authenticated;
 import com.github.streamshub.console.config.ConsoleConfig;
 import com.github.streamshub.console.config.PrometheusConfig;
 import com.github.streamshub.console.config.SchemaRegistryConfig;
 import com.github.streamshub.console.config.Trustable;
+import com.github.streamshub.console.config.authentication.Authenticated;
 import com.github.streamshub.console.config.security.OidcConfig;
 
 import io.quarkus.oidc.common.runtime.config.OidcCommonConfigBuilder;
@@ -83,9 +83,9 @@ public class TrustStoreSupport {
                 this.tlsRegistry.register(name, tlsConfig);
             }
 
-            if (source instanceof Authenticated auth
-                    && auth.getAuthentication() instanceof Trustable trustableAuth) {
-                registerTrustStores(List.of(trustableAuth), source);
+            if (source instanceof Authenticated auth) {
+                auth.getTrustableAuthentication()
+                    .ifPresent(trustableAuth -> registerTrustStores(List.of(trustableAuth), source));
             }
         }
     }

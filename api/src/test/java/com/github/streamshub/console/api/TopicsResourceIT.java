@@ -1691,6 +1691,8 @@ class TopicsResourceIT {
             .body("errors[0].status", is("409"))
             .body("errors[0].code", is("4091"))
             .body("errors[0].source.pointer", is("/data/attributes/name"));
+
+        topicUtils.deleteTopics(topicName);
     }
 
     @Test
