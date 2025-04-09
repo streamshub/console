@@ -15,7 +15,11 @@ export function FilterGroupedCheckbox<T extends string | number>({
   chips,
   options,
   onToggle,
-}: Pick<GroupedCheckboxType<any>, "chips" | "options" | "onToggle"> & {
+  placeholder,
+}: Pick<
+  GroupedCheckboxType<any>,
+  "chips" | "options" | "onToggle" | "placeholder"
+> & {
   label: string;
 }) {
   const t = useTranslations();
@@ -37,7 +41,9 @@ export function FilterGroupedCheckbox<T extends string | number>({
           isExpanded={isOpen}
           style={{ width: "200px" } as React.CSSProperties}
         >
-          {t("common.search_hint", { label: label.toLocaleLowerCase() })}
+          {placeholder
+            ? placeholder
+            : t("common.search_hint", { label: label.toLocaleLowerCase() })}
         </MenuToggle>
       )}
     >

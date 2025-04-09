@@ -81,6 +81,8 @@
     "lead_controller": "Lead controller",
     "roles": "Roles",
     "nodePool": "Node Pool",
+    "all_node_pools_placeholder": "All Node pools",
+    "status_placeholder": "All Status",
     "status": "Status",
     "replicas": "Total Replicas",
     "rack": "Rack",

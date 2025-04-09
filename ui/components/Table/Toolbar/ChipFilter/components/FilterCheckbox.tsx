@@ -13,7 +13,8 @@ export function FilterCheckbox({
   chips,
   options,
   onToggle,
-}: Pick<CheckboxType<any>, "chips" | "options" | "onToggle"> & {
+  placeholder,
+}: Pick<CheckboxType<any>, "chips" | "options" | "onToggle" | "placeholder"> & {
   label: string;
 }) {
   const t = useTranslations();
@@ -35,7 +36,9 @@ export function FilterCheckbox({
           isExpanded={isOpen}
           style={{ width: "200px" } as React.CSSProperties}
         >
-          {t("common.search_hint", { label: label.toLocaleLowerCase() })}
+          {placeholder
+            ? placeholder
+            : t("common.search_hint", { label: label.toLocaleLowerCase() })}
         </MenuToggle>
       )}
     >
