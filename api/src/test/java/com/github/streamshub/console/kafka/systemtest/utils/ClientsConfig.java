@@ -45,8 +45,8 @@ public class ClientsConfig {
         Properties props = bootstrap(config);
         props.put(AdminClientConfig.REQUEST_TIMEOUT_MS_CONFIG, "5000");
         // Set very low values to reduce risk of out-dated metadata
-        props.put(AdminClientConfig.METADATA_MAX_AGE_CONFIG, "1");
-        props.put(AdminClientConfig.RETRY_BACKOFF_MS_CONFIG, "1");
+        props.put(AdminClientConfig.METADATA_MAX_AGE_CONFIG, "0");
+        props.put(AdminClientConfig.RETRY_BACKOFF_MS_CONFIG, "0");
         return props;
     }
 }

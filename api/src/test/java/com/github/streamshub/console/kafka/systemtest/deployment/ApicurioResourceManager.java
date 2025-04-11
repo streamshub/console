@@ -7,6 +7,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Map;
 
 import org.slf4j.LoggerFactory;
@@ -20,16 +21,17 @@ import com.github.streamshub.console.test.TlsHelper;
 
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
 
-public class ApicurioResourceManager implements QuarkusTestResourceLifecycleManager {
+public class ApicurioResourceManager extends ResourceManagerBase implements QuarkusTestResourceLifecycleManager {
 
     GenericContainer<?> apicurio;
 
     @Override
     @SuppressWarnings("resource")
-    public Map<String, String> start() {
+    public Map<String, String> start(Map<Class<?>, Map<String, String>> dependencyProperties) throws IOException {
         int port = 8443;
         TlsHelper tls = TlsHelper.newInstance();
         String keystorePath = "/opt/apicurio/keystore.p12";
+        String truststorePath = "/opt/apicurio/keycloak-truststore.jks";
         String apicurioImage;
 
         try (InputStream in = getClass().getResourceAsStream("/Dockerfile.apicurio");
@@ -39,16 +41,35 @@ public class ApicurioResourceManager implements QuarkusTestResourceLifecycleMana
             throw new UncheckedIOException(e);
         }
 
+        var keycloakProperties = dependencyProperties.get(KeycloakResourceManager.class);
+        var authServerUrl = keycloakProperties.get("console.test.oidc-url-internal");
+
         apicurio = new GenericContainer<>(apicurioImage)
                 .withLogConsumer(new Slf4jLogConsumer(LoggerFactory.getLogger("systemtests.apicurio"), true))
+                .withCreateContainerCmdModifier(setContainerName("apicurio-registry"))
+                .withNetwork(SHARED_NETWORK)
                 .withExposedPorts(port)
                 .withEnv(Map.of(
                         "QUARKUS_TLS_KEY_STORE_P12_PATH", keystorePath,
                         "QUARKUS_TLS_KEY_STORE_P12_PASSWORD", String.copyValueOf(tls.getPassphrase()),
-                        "QUARKUS_HTTP_INSECURE_REQUESTS", "disabled"))
+                        "QUARKUS_HTTP_INSECURE_REQUESTS", "disabled",
+                        /*
+                         * See https://www.apicur.io/registry/docs/apicurio-registry/2.6.x/getting-started/assembly-configuring-registry-security.html#registry-security-keycloak_registry
+                         * Note, these variables will change with Apicurio Registry 3.x
+                         */
+                        "AUTH_ENABLED", "true",
+                        "KEYCLOAK_URL", authServerUrl,
+                        "KEYCLOAK_REALM", keycloakProperties.get("console.test.oidc-realm"),
+                        "KEYCLOAK_API_CLIENT_ID", "registry-api",
+                        "QUARKUS_OIDC_TLS_TRUST_STORE_FILE", truststorePath,
+                        "QUARKUS_OIDC_TLS_TRUST_STORE_PASSWORD", keycloakProperties.get("console.test.oidc-trust-store.password")
+                ))
                 .withCopyToContainer(
                         Transferable.of(tls.getKeyStoreBytes()),
                         keystorePath)
+                .withCopyToContainer(
+                        Transferable.of(Files.readAllBytes(Path.of(keycloakProperties.get("console.test.oidc-trust-store.path")))),
+                        truststorePath)
                 .waitingFor(Wait.forListeningPort());
 
         File truststoreFile;
@@ -85,6 +106,8 @@ public class ApicurioResourceManager implements QuarkusTestResourceLifecycleMana
 
     @Override
     public void stop() {
-        apicurio.stop();
+        if (apicurio != null) {
+            apicurio.stop();
+        }
     }
 }

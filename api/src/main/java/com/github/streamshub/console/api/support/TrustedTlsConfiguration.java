@@ -1,8 +1,5 @@
 package com.github.streamshub.console.api.support;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.KeyStore;
 import java.security.SecureRandom;
@@ -194,14 +191,7 @@ class TrustedTlsConfiguration extends BaseTlsConfiguration {
 
         @Override
         public Optional<String> password() {
-            return Optional.ofNullable(config.getPassword())
-                    .map(p -> Optional.ofNullable(p.getValue()).orElseGet(() -> {
-                        try {
-                            return Files.readString(Path.of(p.getValueFrom()));
-                        } catch (IOException e) {
-                            throw new UncheckedIOException(e);
-                        }
-                    }));
+            return Value.getOptional(config.getPassword());
         }
 
         @Override
