@@ -2,7 +2,7 @@ package com.github.streamshub.systemtests.setup.console;
 
 import com.github.streamshub.systemtests.Environment;
 import com.github.streamshub.systemtests.constants.Constants;
-import com.github.streamshub.systemtests.constants.ExampleFilePaths;
+import com.github.streamshub.systemtests.constants.ExampleFiles;
 import com.github.streamshub.systemtests.exceptions.OperatorSdkNotInstalledException;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.utils.ClusterUtils;
@@ -16,10 +16,7 @@ import io.fabric8.openshift.api.model.operatorhub.v1alpha1.Subscription;
 import io.fabric8.openshift.api.model.operatorhub.v1alpha1.SubscriptionBuilder;
 import io.skodjob.testframe.resources.KubeResourceManager;
 import io.skodjob.testframe.utils.TestFrameUtils;
-
 import org.apache.logging.log4j.Logger;
-
-import java.io.File;
 
 public class OlmConfig extends InstallConfig {
     private static final Logger LOGGER = LogWrapper.getLogger(OlmConfig.class);
@@ -29,8 +26,6 @@ public class OlmConfig extends InstallConfig {
     private String catalogSourceNamespace = Environment.CONSOLE_OLM_CATALOG_SOURCE_NAMESPACE;
     private String channelName = Environment.CONSOLE_OLM_CHANNEL_NAME;
     private String subscriptionName = Constants.CONSOLE_OLM_SUBSCRIPTION_NAME;
-    private File subscriptionFile = new File(ExampleFilePaths.CONSOLE_OPERATOR_SUBSCRIPTION_YAML);
-    private File operatorGroupFile = new File(ExampleFilePaths.CONSOLE_OPERATOR_GROUP_YAML);
 
     public OlmConfig() {
         LOGGER.info("Console Operator will be installed using OLM");
@@ -55,7 +50,7 @@ public class OlmConfig extends InstallConfig {
     }
 
     private Subscription getOlmSubscription() {
-        return new SubscriptionBuilder(TestFrameUtils.configFromYaml(subscriptionFile, Subscription.class))
+        return new SubscriptionBuilder(TestFrameUtils.configFromYaml(ExampleFiles.CONSOLE_OPERATOR_SUBSCRIPTION, Subscription.class))
             .editMetadata()
                 .withNamespace(deploymentNamespace)
                 .withName(subscriptionName)
@@ -71,7 +66,7 @@ public class OlmConfig extends InstallConfig {
     }
 
     private OperatorGroup getOlmOperatorGroup() {
-        return new OperatorGroupBuilder(TestFrameUtils.configFromYaml(operatorGroupFile, OperatorGroup.class))
+        return new OperatorGroupBuilder(TestFrameUtils.configFromYaml(ExampleFiles.CONSOLE_OPERATOR_GROUP, OperatorGroup.class))
             .editMetadata()
                 .withNamespace(deploymentNamespace)
             .endMetadata()

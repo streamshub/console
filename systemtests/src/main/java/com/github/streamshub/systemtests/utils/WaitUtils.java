@@ -1,5 +1,6 @@
 package com.github.streamshub.systemtests.utils;
 
+import io.fabric8.kubernetes.api.model.Secret;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.kubernetes.client.readiness.Readiness;
 import io.skodjob.testframe.TestFrameConstants;
@@ -23,6 +24,19 @@ public class WaitUtils {
                     return false;
                 }
                 return Readiness.isDeploymentReady(dep);
+            });
+    }
+
+    public static void waitForSecretReady(String namespace, String kafkaUserName) {
+        Wait.until(String.format("creation of Secret %s/%s", namespace, kafkaUserName),
+            TestFrameConstants.GLOBAL_POLL_INTERVAL_1_SEC, TestFrameConstants.GLOBAL_TIMEOUT_MEDIUM,
+            () -> {
+                Secret secret = ResourceUtils.getKubeResource(Secret.class, namespace, kafkaUserName);
+                if (secret == null || secret.getData() == null || secret.getData().isEmpty()) {
+                    return false;
+                }
+                // Optionally check for specific keys
+                return secret.getData().containsKey("ca.crt") || secret.getData().containsKey("password");
             });
     }
 }

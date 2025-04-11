@@ -4,6 +4,9 @@ import com.github.streamshub.systemtests.Environment;
 import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.constants.Labels;
 import com.github.streamshub.systemtests.logs.LogWrapper;
+import com.github.streamshub.systemtests.resourcetypes.KafkaTopicType;
+import com.github.streamshub.systemtests.resourcetypes.KafkaType;
+import com.github.streamshub.systemtests.resourcetypes.KafkaUserType;
 import com.github.streamshub.systemtests.setup.console.ConsoleOperatorSetup;
 import com.github.streamshub.systemtests.setup.strimzi.StrimziOperatorSetup;
 import com.github.streamshub.systemtests.utils.ClusterUtils;
@@ -36,9 +39,9 @@ import org.junit.jupiter.api.TestInstance;
 
 import java.io.IOException;
 
-@ResourceManager
 @TestVisualSeparator
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@ResourceManager(asyncDeletion = false)
 public abstract class AbstractST {
     private static final Logger LOGGER = LogWrapper.getLogger(AbstractST.class);
     // Operators
@@ -54,6 +57,9 @@ public abstract class AbstractST {
             new DeploymentType(),
             new InstallPlanType(),
             new JobType(),
+            new KafkaType(),
+            new KafkaTopicType(),
+            new KafkaUserType(),
             new NamespaceType(),
             new OperatorGroupType(),
             new RoleBindingType(),
@@ -80,7 +86,7 @@ public abstract class AbstractST {
     }
 
     @BeforeAll
-    void setupTestSuite() {
+    public void setupTestSuite() {
         LOGGER.info("=========== AbstractST - BeforeAll - Setup TestSuite ===========");
         if (ResourceUtils.getKubeResource(Namespace.class, Constants.CO_NAMESPACE) == null) {
             KubeResourceManager.get().createOrUpdateResourceWithWait(new NamespaceBuilder().withNewMetadata().withName(Constants.CO_NAMESPACE).endMetadata().build());
@@ -90,7 +96,7 @@ public abstract class AbstractST {
     }
 
     @BeforeEach
-    void setupTestCase() {
+    public void setupTestCase() {
         LOGGER.info("=========== AbstractST - BeforeEach - Setup TestCase {} ===========", KubeResourceManager.get().getTestContext().getTestMethod());
         ClusterUtils.checkClusterHealth();
     }
