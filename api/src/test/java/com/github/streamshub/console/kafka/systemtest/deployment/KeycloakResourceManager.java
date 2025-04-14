@@ -60,7 +60,11 @@ public class KeycloakResourceManager implements QuarkusTestResourceLifecycleMana
                         keystorePath)
                 .withCopyToContainer(
                         Transferable.of(realmConfig),
-                        "/opt/keycloak/data/import/console-realm.json")
+                        /*
+                         * File name must match realm name:
+                         * https://github.com/keycloak/keycloak/issues/33637#issuecomment-2651374165
+                         */
+                        "/opt/keycloak/data/import/console-authz.json")
                 .withCommand(
                         "start",
                         "--hostname=localhost",
