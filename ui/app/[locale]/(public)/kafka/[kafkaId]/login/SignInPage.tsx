@@ -43,10 +43,12 @@ const signinErrors: Record<SignInPageErrorParam | "default" | string, string> =
   };
 
 export function SignInPage({
+  kafkaId,
   provider,
   callbackUrl,
   hasMultipleClusters,
 }: {
+  kafkaId: string,
   provider: "credentials" | "oauth-token" | "anonymous";
   callbackUrl: string;
   hasMultipleClusters: boolean;
@@ -92,7 +94,8 @@ export function SignInPage({
       "oauth-token": { clientId: username, secret: password },
       anonymous: {},
     }[provider];
-    const res = await signIn(provider, {
+    const providerId = provider === "credentials" ? "credentials-" + kafkaId : provider;
+    const res = await signIn(providerId, {
       ...options,
       redirect: false,
     });

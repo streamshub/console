@@ -30,6 +30,7 @@ export default async function SignIn({
     }[authMethod?.method ?? "anonymous"];
     return (
       <SignInPage
+        kafkaId={params.kafkaId!}
         provider={provider}
         callbackUrl={
           searchParams?.callbackUrl ?? `/kafka/${params.kafkaId}/overview`
