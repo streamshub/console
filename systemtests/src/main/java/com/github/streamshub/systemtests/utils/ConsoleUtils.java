@@ -9,7 +9,7 @@ public class ConsoleUtils {
         return (httpSecure ? "https" : "http") + "://" +
             (ClusterUtils.isOcp() ?
                 ResourceUtils.listKubeResourcesByPrefix(Route.class, namespace, consoleInstanceName).get(0).getSpec().getHost() :
-                "minikube"
+                consoleInstanceName + "." + ClusterUtils.getDefaultClusterHostname()
             );
     }
 }

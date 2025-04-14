@@ -24,6 +24,4 @@ public class FileUtils {
             throw new SetupException("Could not resolve given location: " + location);
         }
     }
-
-
 }
