@@ -76,6 +76,9 @@
                         <goals>
                             <goal>jandex</goal>
                         </goals>
+                        <configuration>
+                            <indexVersion>12</indexVersion>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>
