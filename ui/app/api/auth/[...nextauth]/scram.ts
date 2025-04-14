@@ -11,6 +11,7 @@ function bytesToBase64(bytes: Uint8Array): string {
 export function makeScramShaProvider(kafkaId: string): Provider {
   const provider = CredentialsProvider({
     // The name to display on the sign in form (e.g. 'Sign in with...')
+    id: "credentials-" + kafkaId,
     name: "Kafka SAML",
 
     credentials: {
@@ -22,7 +23,7 @@ export function makeScramShaProvider(kafkaId: string): Provider {
       // try the username/password combo against the getKafkaCluster API call
       // if we get a response, then we can assume the credentials are correct
       try {
-        const url = `${process.env.BACKEND_URL}/api/kafkas/${kafkaId}?$`;
+        const url = `${process.env.BACKEND_URL}/api/kafkas/${kafkaId}`;
         const basicAuth = bytesToBase64(
           new TextEncoder().encode(
             `${credentials?.username}:${credentials?.password}`,
