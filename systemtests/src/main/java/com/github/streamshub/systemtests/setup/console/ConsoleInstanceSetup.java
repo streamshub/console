@@ -49,7 +49,7 @@ public class ConsoleInstanceSetup {
                 .withNamespace(deploymentNamespace)
                 .build())
             .withSpec(new ConsoleSpecBuilder()
-                .withHostname(instanceName + "." + ClusterUtils.getDefaultClusterHostname())
+                .withHostname(instanceName + "." + ClusterUtils.getClusterDomain())
                 .withKafkaClusters(
                     new KafkaClusterBuilder()
                         .withId(kafkaClusterName)

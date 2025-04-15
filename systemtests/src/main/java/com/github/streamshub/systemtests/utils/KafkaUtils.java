@@ -5,6 +5,7 @@ import com.github.streamshub.systemtests.constants.Constants;
 import static com.github.streamshub.systemtests.utils.Utils.hashStub;
 
 public class KafkaUtils {
+    private KafkaUtils() {}
 
     // -------------
     // Kafka names

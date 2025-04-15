@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class FakeST extends AbstractST {
+class FakeST extends AbstractST {
     private static final Logger LOGGER = LogWrapper.getLogger(FakeST.class);
     private static final String NAMESPACE_PREFIX = "fake-st";
 

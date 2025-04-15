@@ -88,17 +88,17 @@ public class TestCaseConfig {
         }
     }
 
-    private void addKafka(KafkaSetupConfig kafkaSetupConfig) {
+    public void addKafka(KafkaSetupConfig kafkaSetupConfig) {
         kafkaClusters.put(kafkaSetupConfig.getClusterName(), kafkaSetupConfig);
     }
 
-    private void setupKafkaClustersIfNeeded() {
+    public void setupKafkaClustersIfNeeded() {
         for (KafkaSetupConfig kc : kafkaClusters.values()) {
             kc.setupIfNeeded();
         }
     }
 
-    private void setConsoleInstance(ConsoleInstanceSetup consoleInstanceSetup) {
+    public void setConsoleInstance(ConsoleInstanceSetup consoleInstanceSetup) {
         this.consoleInstanceSetup = consoleInstanceSetup;
     }
 
