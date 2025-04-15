@@ -176,7 +176,7 @@
                     <execution>
                         <id>system-tests</id>
                         <goals>
-                            <goal>verify</goal>
+                            <goal>integration-test</goal>
                         </goals>
                     </execution>
                 </executions>

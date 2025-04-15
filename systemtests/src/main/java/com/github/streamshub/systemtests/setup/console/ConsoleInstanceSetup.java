@@ -12,7 +12,6 @@ import com.github.streamshub.systemtests.utils.ConsoleUtils;
 import com.github.streamshub.systemtests.utils.KafkaUtils;
 import com.github.streamshub.systemtests.utils.ResourceUtils;
 import com.github.streamshub.systemtests.utils.Utils;
-import com.github.streamshub.systemtests.utils.WaitUtils;
 import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.skodjob.testframe.resources.KubeResourceManager;
@@ -39,12 +38,11 @@ public class ConsoleInstanceSetup {
             return;
         }
 
-        KubeResourceManager.get().createResourceWithWait(getDefaultConsoleInstance());
-        WaitUtils.waitForDeploymentWithPrefixIsReady(deploymentNamespace, instanceName);
+        KubeResourceManager.get().createResourceWithWait(getExampleConsoleInstance());
         LOGGER.info("Console deployed and available at {}", ConsoleUtils.getConsoleUiUrl(deploymentNamespace, instanceName, true));
     }
 
-    private Console getDefaultConsoleInstance() {
+    private Console getExampleConsoleInstance() {
         ConsoleBuilder builder = new ConsoleBuilder(TestFrameUtils.configFromYaml(ExampleFiles.EXAMPLE_CONSOLE_INSTANCE, Console.class))
             .withMetadata(new ObjectMetaBuilder()
                 .withName(instanceName)

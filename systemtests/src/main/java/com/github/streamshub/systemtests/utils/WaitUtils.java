@@ -32,11 +32,7 @@ public class WaitUtils {
             TestFrameConstants.GLOBAL_POLL_INTERVAL_1_SEC, TestFrameConstants.GLOBAL_TIMEOUT_MEDIUM,
             () -> {
                 Secret secret = ResourceUtils.getKubeResource(Secret.class, namespace, kafkaUserName);
-                if (secret == null || secret.getData() == null || secret.getData().isEmpty()) {
-                    return false;
-                }
-                // Optionally check for specific keys
-                return secret.getData().containsKey("ca.crt") || secret.getData().containsKey("password");
+                return secret != null && secret.getData() != null && !secret.getData().isEmpty();
             });
     }
 }

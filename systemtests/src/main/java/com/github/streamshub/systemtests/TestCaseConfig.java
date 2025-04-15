@@ -1,5 +1,6 @@
 package com.github.streamshub.systemtests;
 
+import com.github.streamshub.systemtests.setup.console.ConsoleInstanceSetup;
 import com.github.streamshub.systemtests.setup.strimzi.KafkaSetupConfig;
 import com.github.streamshub.systemtests.utils.KafkaUtils;
 import com.github.streamshub.systemtests.utils.PwUtils;
@@ -21,6 +22,7 @@ public class TestCaseConfig {
     private final String testName;
     private final String namespaceName;
     private HashMap<String, KafkaSetupConfig> kafkaClusters = new HashMap<>();
+    private ConsoleInstanceSetup consoleInstanceSetup;
     private final Playwright playwright;
     private final Browser browser;
     private final BrowserContext context;
@@ -58,18 +60,6 @@ public class TestCaseConfig {
         return kafkaClusters.get(KafkaUtils.kafkaClusterName(namespaceName));
     }
 
-    public Playwright getPlaywright() {
-        return playwright;
-    }
-
-    public Browser getBrowser() {
-        return browser;
-    }
-
-    public BrowserContext getContext() {
-        return context;
-    }
-
     public Page getPage() {
         return page;
     }
@@ -78,9 +68,14 @@ public class TestCaseConfig {
     // Setup testcase
     // ----------
     public void defaultTestCaseSetup() {
+        // Namespace
         createNamespaceIfNeeded();
+        // Kafka
         addKafka(new KafkaSetupConfig(namespaceName));
         setupKafkaClustersIfNeeded();
+        // Console
+        setConsoleInstance(new ConsoleInstanceSetup(namespaceName, getDefaultKafkaCluster().getClusterName()));
+        consoleInstanceSetup.deploy();
     }
 
     public void createNamespaceIfNeeded() {
@@ -101,5 +96,13 @@ public class TestCaseConfig {
         for (KafkaSetupConfig kc : kafkaClusters.values()) {
             kc.setupIfNeeded();
         }
+    }
+
+    private void setConsoleInstance(ConsoleInstanceSetup consoleInstanceSetup) {
+        this.consoleInstanceSetup = consoleInstanceSetup;
+    }
+
+    public void close() {
+        this.playwright.close();
     }
 }

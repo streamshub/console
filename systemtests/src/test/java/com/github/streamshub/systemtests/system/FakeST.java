@@ -2,10 +2,11 @@ package com.github.streamshub.systemtests.system;
 
 import com.github.streamshub.systemtests.TestCaseConfig;
 import com.github.streamshub.systemtests.logs.LogWrapper;
-import com.github.streamshub.systemtests.setup.console.ConsoleInstanceSetup;
 import io.skodjob.testframe.resources.KubeResourceManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class FakeST extends AbstractST {
     private static final Logger LOGGER = LogWrapper.getLogger(FakeST.class);
@@ -13,13 +14,15 @@ public class FakeST extends AbstractST {
 
     @Test
     void fakeTestOne() {
-        // Deploy default Kafka
+        // Instantiate test case config for current context
         TestCaseConfig tcc = new TestCaseConfig(KubeResourceManager.get().getTestContext(), NAMESPACE_PREFIX);
+        // Create namespace, deploy kafka, deploy console instance
         tcc.defaultTestCaseSetup();
-        // Deploy console instance
-        ConsoleInstanceSetup consoleInstanceSetup = new ConsoleInstanceSetup(tcc.getNamespaceName(), tcc.getDefaultKafkaCluster().getClusterName());
-        consoleInstanceSetup.deploy();
 
         LOGGER.info("Test starts now");
+        assertTrue(true);
+
+        // Close current testcase playwright context
+        tcc.close();
     }
 }

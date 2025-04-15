@@ -76,16 +76,16 @@ public class KafkaSetupConfig {
         LOGGER.info("Deploy test Kafka cluster {}/{}", namespaceName, clusterName);
 
         if (ResourceUtils.getKubeResource(ConfigMap.class, namespaceName, KafkaUtils.kafkaMetricsConfigMapName(clusterName)) == null) {
-            KubeResourceManager.get().createResourceWithWait(getKafkaConfigMapFromExamples(namespaceName, clusterName));
+            KubeResourceManager.get().createResourceWithWait(getKafkaConfigMapFromExamples());
         }
 
         if (ResourceUtils.getKubeResource(Kafka.class, namespaceName, clusterName) == null) {
-            KubeResourceManager.get().createResourceWithWait(getBrokerNodePoolsFromExamples(namespaceName, clusterName, replicas));
-            KubeResourceManager.get().createResourceWithWait(getControllerNodePoolsFromExamples(namespaceName, clusterName, replicas));
+            KubeResourceManager.get().createResourceWithWait(getBrokerNodePoolsFromExamples());
+            KubeResourceManager.get().createResourceWithWait(getControllerNodePoolsFromExamples());
 
-            KubeResourceManager.get().createResourceWithWait(getKafkaFromExamples(namespaceName, clusterName, kafkaVersion));
+            KubeResourceManager.get().createResourceWithWait(getKafkaFromExamples());
 
-            KubeResourceManager.get().createResourceWithWait(getKafkaUserFromExamples(namespaceName, clusterName));
+            KubeResourceManager.get().createResourceWithWait(getKafkaUserFromExamples());
             WaitUtils.waitForSecretReady(namespaceName, kafkaUsername);
         }  else {
             LOGGER.warn("Skipping Kafka deployment, there already is a Kafka cluster");
@@ -99,22 +99,22 @@ public class KafkaSetupConfig {
         return clusterName;
     }
 
-    private static ConfigMap getKafkaConfigMapFromExamples(String namespace, String kafkaClusterName) {
+    private ConfigMap getKafkaConfigMapFromExamples() {
         return new ConfigMapBuilder(TestFrameUtils.configFromYaml(ExampleFiles.EXAMPLES_KAFKA_METRICS_CONFIG_MAP, ConfigMap.class))
             .editMetadata()
-                .withName(KafkaUtils.kafkaMetricsConfigMapName(kafkaClusterName))
-                .withNamespace(namespace)
-                .withLabels(Map.of(ResourceLabels.STRIMZI_CLUSTER_LABEL, kafkaClusterName))
+                .withName(KafkaUtils.kafkaMetricsConfigMapName(clusterName))
+                .withNamespace(namespaceName)
+                .withLabels(Map.of(ResourceLabels.STRIMZI_CLUSTER_LABEL, clusterName))
             .endMetadata()
             .build();
     }
 
-    public static KafkaNodePool getBrokerNodePoolsFromExamples(String namespace, String kafkaClusterName, int replicas) {
+    private KafkaNodePool getBrokerNodePoolsFromExamples() {
         return new KafkaNodePoolBuilder(TestFrameUtils.configFromYaml(ExampleFiles.EXAMPLES_KAFKA_NODEPOOLS_BROKER, KafkaNodePool.class))
             .editMetadata()
-                .withName(KafkaUtils.brokerPoolName(kafkaClusterName))
-                .withNamespace(namespace)
-                .withLabels(Map.of(ResourceLabels.STRIMZI_CLUSTER_LABEL, kafkaClusterName))
+                .withName(brokerPoolName)
+                .withNamespace(namespaceName)
+                .withLabels(Map.of(ResourceLabels.STRIMZI_CLUSTER_LABEL, clusterName))
             .endMetadata()
             .editSpec()
                 .withReplicas(replicas)
@@ -122,12 +122,12 @@ public class KafkaSetupConfig {
             .build();
     }
 
-    public static KafkaNodePool getControllerNodePoolsFromExamples(String namespace, String kafkaClusterName, int replicas) {
+    private KafkaNodePool getControllerNodePoolsFromExamples() {
         return new KafkaNodePoolBuilder(TestFrameUtils.configFromYaml(ExampleFiles.EXAMPLES_KAFKA_NODEPOOLS_CONTROLLER, KafkaNodePool.class))
             .editMetadata()
-                .withName(KafkaUtils.controllerPoolName(kafkaClusterName))
-                .withNamespace(namespace)
-                .withLabels(Map.of(ResourceLabels.STRIMZI_CLUSTER_LABEL, kafkaClusterName))
+                .withName(controllerPoolName)
+                .withNamespace(namespaceName)
+                .withLabels(Map.of(ResourceLabels.STRIMZI_CLUSTER_LABEL, clusterName))
             .endMetadata()
             .editSpec()
                 .withReplicas(replicas)
@@ -135,19 +135,20 @@ public class KafkaSetupConfig {
             .build();
     }
 
-    public static KafkaUser getKafkaUserFromExamples(String namespace, String kafkaClusterName) {
+    private KafkaUser getKafkaUserFromExamples() {
         return new KafkaUserBuilder(TestFrameUtils.configFromYaml(ExampleFiles.EXAMPLES_KAFKA_USER, KafkaUser.class))
             .editMetadata()
-                .withName(KafkaUtils.kafkaUserName(kafkaClusterName))
-                .withNamespace(namespace)
-                .withLabels(Map.of(ResourceLabels.STRIMZI_CLUSTER_LABEL, kafkaClusterName))
+                .withName(kafkaUsername)
+                .withNamespace(namespaceName)
+                .withLabels(Map.of(ResourceLabels.STRIMZI_CLUSTER_LABEL, clusterName))
             .endMetadata()
             .build();
     }
 
-    public static Kafka getKafkaFromExamples(String namespace, String kafkaClusterName, String kafkaVersion) {
+    private Kafka getKafkaFromExamples() {
         String kafkaYaml;
         String listenerType = ClusterUtils.isOcp() ? Route.class.getSimpleName().toLowerCase(Locale.ENGLISH) : Ingress.class.getSimpleName().toLowerCase(Locale.ENGLISH);
+
         try (InputStream yamlContentStream = ExampleFiles.EXAMPLES_KAFKA.toURI().toURL().openStream()) {
             kafkaYaml = new String(yamlContentStream.readAllBytes(), StandardCharsets.UTF_8)
                 .replace("${LISTENER_TYPE}", listenerType)
@@ -158,8 +159,8 @@ public class KafkaSetupConfig {
 
         return new KafkaBuilder(TestFrameUtils.configFromYaml(kafkaYaml, Kafka.class))
             .editMetadata()
-                .withNamespace(namespace)
-                .withName(kafkaClusterName)
+                .withNamespace(namespaceName)
+                .withName(clusterName)
             .endMetadata()
             .editSpec()
                 .editKafka()
@@ -167,20 +168,20 @@ public class KafkaSetupConfig {
                     .editFirstListener()
                         .withNewConfiguration()
                             .withNewBootstrap()
-                                .withHost(String.join(".", "bootstrap", kafkaClusterName, ClusterUtils.getClusterDomain()))
+                                .withHost(String.join(".", "bootstrap", clusterName, ClusterUtils.getClusterDomain()))
                             .endBootstrap()
                             .withBrokers(
                                 new GenericKafkaListenerConfigurationBrokerBuilder()
                                     .withBroker(0)
-                                    .withHost(String.join(".", "broker-0", kafkaClusterName, ClusterUtils.getClusterDomain()))
+                                    .withHost(String.join(".", "broker-0", clusterName, ClusterUtils.getClusterDomain()))
                                 .build(),
                                 new GenericKafkaListenerConfigurationBrokerBuilder()
                                     .withBroker(1)
-                                    .withHost(String.join(".", "broker-1", kafkaClusterName, ClusterUtils.getClusterDomain()))
+                                    .withHost(String.join(".", "broker-1", clusterName, ClusterUtils.getClusterDomain()))
                                 .build(),
                                 new GenericKafkaListenerConfigurationBrokerBuilder()
                                     .withBroker(2)
-                                    .withHost(String.join(".", "broker-2", kafkaClusterName, ClusterUtils.getClusterDomain()))
+                                    .withHost(String.join(".", "broker-2", clusterName, ClusterUtils.getClusterDomain()))
                                 .build())
                         .endConfiguration()
                     .endListener()
@@ -192,7 +193,7 @@ public class KafkaSetupConfig {
                         .build())
                     .withNewJmxPrometheusExporterMetricsConfig()
                         .withNewValueFrom()
-                            .withNewConfigMapKeyRef("kafka-metrics-config.yml", kafkaClusterName + "-metrics", false)
+                            .withNewConfigMapKeyRef("kafka-metrics-config.yml", clusterName + "-metrics", false)
                         .endValueFrom()
                     .endJmxPrometheusExporterMetricsConfig()
                 .endKafka()

@@ -22,18 +22,18 @@ public class ResourceUtils {
     }
 
     public static <T extends HasMetadata> T getKubeResource(Class<T> resourceClass, String namespaceName, String resourceName) {
-        return KubeResourceManager.get().kubeClient().getClient().resources(resourceClass).inNamespace(namespaceName).withName(resourceName).get();
+        return getKubeResourceClient(resourceClass).inNamespace(namespaceName).withName(resourceName).get();
     }
 
     public static <T extends HasMetadata> T getKubeResource(Class<T> resourceClass, String resourceName) {
-        return KubeResourceManager.get().kubeClient().getClient().resources(resourceClass).withName(resourceName).get();
+        return getKubeResourceClient(resourceClass).withName(resourceName).get();
     }
 
     // ------
     // List
     // ------
     public static <T extends HasMetadata> List<T> listKubeResources(Class<T> resourceClass, String namespaceName) {
-        return KubeResourceManager.get().kubeClient().getClient().resources(resourceClass).inNamespace(namespaceName).list().getItems();
+        return getKubeResourceClient(resourceClass).inNamespace(namespaceName).list().getItems();
     }
 
     public static <T extends HasMetadata> List<T> listKubeResourcesByPrefix(Class<T> resourceClass, String namespaceName, String prefix) {

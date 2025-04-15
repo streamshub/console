@@ -4,6 +4,7 @@ import com.github.streamshub.systemtests.Environment;
 import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.constants.Labels;
 import com.github.streamshub.systemtests.logs.LogWrapper;
+import com.github.streamshub.systemtests.resourcetypes.ConsoleType;
 import com.github.streamshub.systemtests.resourcetypes.KafkaTopicType;
 import com.github.streamshub.systemtests.resourcetypes.KafkaType;
 import com.github.streamshub.systemtests.resourcetypes.KafkaUserType;
@@ -42,6 +43,7 @@ import java.io.IOException;
 @TestVisualSeparator
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @ResourceManager(asyncDeletion = false)
+@SuppressWarnings("ClassDataAbstractionCoupling")
 public abstract class AbstractST {
     private static final Logger LOGGER = LogWrapper.getLogger(AbstractST.class);
     // Operators
@@ -54,6 +56,7 @@ public abstract class AbstractST {
             new ClusterRoleBindingType(),
             new ClusterRoleType(),
             new ConfigMapType(),
+            new ConsoleType(),
             new DeploymentType(),
             new InstallPlanType(),
             new JobType(),
