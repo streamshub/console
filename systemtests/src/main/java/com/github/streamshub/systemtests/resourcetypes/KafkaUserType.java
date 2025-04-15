@@ -31,17 +31,17 @@ public class KafkaUserType implements ResourceType<KafkaUser> {
 
     @Override
     public void create(KafkaUser kafkaUser) {
-        getKafkaUserClient().inNamespace(kafkaUser.getMetadata().getNamespace()).resource(kafkaUser).create();
+        getKafkaUserClient().resource(kafkaUser).create();
     }
 
     @Override
     public void update(KafkaUser kafkaUser) {
-        getKafkaUserClient().inNamespace(kafkaUser.getMetadata().getNamespace()).resource(kafkaUser).update();
+        getKafkaUserClient().resource(kafkaUser).update();
     }
 
     @Override
     public void delete(KafkaUser kafkaUser) {
-        getKafkaUserClient().inNamespace(kafkaUser.getMetadata().getNamespace()).resource(kafkaUser).delete();
+        getKafkaUserClient().resource(kafkaUser).delete();
     }
 
     @Override

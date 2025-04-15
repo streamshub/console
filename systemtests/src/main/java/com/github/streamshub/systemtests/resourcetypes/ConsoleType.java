@@ -3,6 +3,7 @@ package com.github.streamshub.systemtests.resourcetypes;
 import com.github.streamshub.console.api.v1alpha1.Console;
 import com.github.streamshub.console.api.v1alpha1.status.Condition;
 import com.github.streamshub.systemtests.utils.ResourceUtils;
+import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.KubernetesResourceList;
 import io.fabric8.kubernetes.client.dsl.MixedOperation;
 import io.fabric8.kubernetes.client.dsl.NonNamespaceOperation;
@@ -25,22 +26,22 @@ public class ConsoleType implements ResourceType<Console> {
 
     @Override
     public String getKind() {
-        return Console.class.getSimpleName();
+        return HasMetadata.getKind(Console.class);
     }
 
     @Override
     public void create(Console console) {
-        consoleClient().inNamespace(console.getMetadata().getNamespace()).resource(console).create();
+        consoleClient().resource(console).create();
     }
 
     @Override
     public void update(Console console) {
-        consoleClient().inNamespace(console.getMetadata().getNamespace()).resource(console).update();
+        consoleClient().resource(console).update();
     }
 
     @Override
     public void delete(Console console) {
-        consoleClient().inNamespace(console.getMetadata().getNamespace()).resource(console).update();
+        consoleClient().resource(console).delete();
     }
 
     @Override

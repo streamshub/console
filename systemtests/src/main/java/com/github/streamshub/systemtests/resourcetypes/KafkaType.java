@@ -37,12 +37,12 @@ public class KafkaType implements ResourceType<Kafka> {
 
     @Override
     public void create(Kafka kafka) {
-        kafkaClient().inNamespace(kafka.getMetadata().getNamespace()).resource(kafka).create();
+        kafkaClient().resource(kafka).create();
     }
 
     @Override
     public void update(Kafka kafka) {
-        kafkaClient().inNamespace(kafka.getMetadata().getNamespace()).resource(kafka).update();
+        kafkaClient().resource(kafka).update();
     }
 
     @Override

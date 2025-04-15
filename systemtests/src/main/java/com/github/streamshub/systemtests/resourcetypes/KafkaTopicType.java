@@ -31,17 +31,17 @@ public class KafkaTopicType implements ResourceType<KafkaTopic> {
 
     @Override
     public void create(KafkaTopic kafkaTopic) {
-        kafkaTopicClient().inNamespace(kafkaTopic.getMetadata().getNamespace()).resource(kafkaTopic).create();
+        kafkaTopicClient().resource(kafkaTopic).create();
     }
 
     @Override
     public void update(KafkaTopic kafkaTopic) {
-        kafkaTopicClient().inNamespace(kafkaTopic.getMetadata().getNamespace()).resource(kafkaTopic).update();
+        kafkaTopicClient().resource(kafkaTopic).update();
     }
 
     @Override
     public void delete(KafkaTopic kafkaTopic) {
-        kafkaTopicClient().inNamespace(kafkaTopic.getMetadata().getNamespace()).resource(kafkaTopic).delete();
+        kafkaTopicClient().resource(kafkaTopic).delete();
     }
 
     @Override
