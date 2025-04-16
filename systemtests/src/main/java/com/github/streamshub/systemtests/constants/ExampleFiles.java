@@ -28,5 +28,4 @@ public class ExampleFiles {
     // -----
     public static final String EXAMPLE_KAFKA_PATH = EXAMPLES_PATH + "/kafka/";
     public static final File EXAMPLES_KAFKA_METRICS_CONFIG_MAP = new File(EXAMPLE_KAFKA_PATH + "010-ConfigMap-console-kafka-metrics.yaml");
-    public static final File EXAMPLES_KAFKA = new File(EXAMPLE_KAFKA_PATH + "030-Kafka-console-kafka.yaml");
 }
