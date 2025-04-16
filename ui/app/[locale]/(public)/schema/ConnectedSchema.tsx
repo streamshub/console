@@ -11,7 +11,7 @@ export function ConnectedSchema({
   name: string;
 }) {
   return (
-    <PageSection variant="light">
+    <PageSection hasBodyWrapper={false}>
       <Flex direction={{ default: "column" }} gap={{ default: "gap2xl" }}>
         <FlexItem>
           <Title headingLevel={"h4"}>{name}</Title>

@@ -39,20 +39,17 @@ export function DryrunSelect({
         <MenuToggle
           ref={toggleRef}
           variant="secondary"
-          splitButtonOptions={{
-            variant: "action",
-            items: [
-              <MenuToggleAction
-                id="split-button-action-secondary-with-toggle-button"
-                key="split-action-secondary"
-                aria-label={t("dry_run")}
-                onClick={openDryrun}
-                isDisabled={isDisabled}
-              >
-                {t("dry_run")}
-              </MenuToggleAction>,
-            ],
-          }}
+          splitButtonItems={[
+            <MenuToggleAction
+              id="split-button-action-secondary-with-toggle-button"
+              key="split-action-secondary"
+              aria-label={t("dry_run")}
+              onClick={openDryrun}
+              isDisabled={isDisabled}
+            >
+              {t("dry_run")}
+            </MenuToggleAction>,
+          ]}
           aria-label="dryrun toggle button"
           onClick={onToggleClick}
           isDisabled={isDisabled}

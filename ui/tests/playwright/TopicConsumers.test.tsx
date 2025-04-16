@@ -27,7 +27,7 @@ test("Topics consumers", async ({ page, authenticatedPage }) => {
 
     const dataCells = await page
       .locator('table[aria-label="Consumer groups"] tbody tr td')
-      .evaluateAll((tds) => tds.map((td) => td.textContent?.trim() ?? ""));
+      .evaluateAll((tds) => tds.map((td) => td.Content?.trim() ?? ""));
     expect(dataCells.length).toBeGreaterThan(0);
   });
 });

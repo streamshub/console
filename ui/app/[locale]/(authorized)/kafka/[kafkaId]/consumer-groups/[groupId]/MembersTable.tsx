@@ -1,5 +1,9 @@
 "use client";
-import { ConsumerGroup, MemberDescription, OffsetAndMetadata } from "@/api/consumerGroups/schema";
+import {
+  ConsumerGroup,
+  MemberDescription,
+  OffsetAndMetadata,
+} from "@/api/consumerGroups/schema";
 import { LagTable } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/consumer-groups/[groupId]/LagTable";
 import { Number } from "@/components/Format/Number";
 import { ResponsiveTable } from "@/components/Table";
@@ -132,16 +136,17 @@ export function MembersTable({
         return true;
       }}
       getExpandedRow={({ row }) => {
-        const offsets: OffsetAndMetadata[] | undefined =
-          row.assignments?.map((a) => ({
+        const offsets: OffsetAndMetadata[] | undefined = row.assignments?.map(
+          (a) => ({
             ...a,
             ...consumerGroup!.attributes.offsets?.find(
               (o) => o.topicId === a.topicId && o.partition === a.partition,
             )!,
-          }));
+          }),
+        );
         offsets?.sort((a, b) => a.topicName.localeCompare(b.topicName));
         return (
-          <div className={"pf-v5-u-p-lg"}>
+          <div className={"pf-v6-u-p-lg"}>
             <LagTable kafkaId={kafkaId} offsets={offsets} />
           </div>
         );

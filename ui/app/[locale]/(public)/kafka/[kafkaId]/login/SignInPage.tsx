@@ -136,7 +136,9 @@ export function SignInPage({
       socialMediaLoginContent={learnMoreResource}
       signUpForAccountMessage={
         hasMultipleClusters && (
-          <Link href={"/"}>Log in to a different cluster</Link>
+          <Link href={"/"}>
+            {t("login-in-page.log_into_a_different_cluster")}
+          </Link>
         )
       }
     >

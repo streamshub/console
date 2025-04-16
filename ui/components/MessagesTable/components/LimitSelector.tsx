@@ -15,6 +15,7 @@ export function LimitSelector({ value, onChange }: LimitSelectorProps) {
   return (
     <Select
       aria-label={t("per_page_aria_label", { value })}
+      popperProps={{appendTo:  "inline"}}
       selected={value}
       isOpen={isOpen}
       onSelect={() => setIsOpen(false)}
@@ -24,7 +25,7 @@ export function LimitSelector({ value, onChange }: LimitSelectorProps) {
           ref={toggleRef}
           onClick={toggleOpen}
           isExpanded={isOpen}
-          className={"pf-v5-u-w-100"}
+          className={"pf-v6-u-w-100"}
         >
           {t.rich("per_page_label", { value })}
         </MenuToggle>
