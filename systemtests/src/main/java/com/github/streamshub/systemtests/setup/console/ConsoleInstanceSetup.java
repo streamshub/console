@@ -6,7 +6,6 @@ import com.github.streamshub.console.api.v1alpha1.spec.ConsoleSpecBuilder;
 import com.github.streamshub.console.api.v1alpha1.spec.KafkaClusterBuilder;
 import com.github.streamshub.systemtests.Environment;
 import com.github.streamshub.systemtests.constants.Constants;
-import com.github.streamshub.systemtests.constants.ExampleFiles;
 import com.github.streamshub.systemtests.utils.ClusterUtils;
 import com.github.streamshub.systemtests.utils.ConsoleUtils;
 import com.github.streamshub.systemtests.utils.KafkaNamingUtils;
@@ -15,7 +14,6 @@ import com.github.streamshub.systemtests.utils.Utils;
 import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.skodjob.testframe.resources.KubeResourceManager;
-import io.skodjob.testframe.utils.TestFrameUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -41,7 +39,7 @@ public class ConsoleInstanceSetup {
     }
 
     public static Console getDefaultConsoleInstance(String namespaceName, String instanceName, String kafkaName, String kafkaUserName) {
-        ConsoleBuilder builder = new ConsoleBuilder(TestFrameUtils.configFromYaml(ExampleFiles.EXAMPLE_CONSOLE_INSTANCE, Console.class))
+        ConsoleBuilder builder = new ConsoleBuilder()
             .withMetadata(new ObjectMetaBuilder()
                 .withName(instanceName)
                 .withNamespace(namespaceName)
