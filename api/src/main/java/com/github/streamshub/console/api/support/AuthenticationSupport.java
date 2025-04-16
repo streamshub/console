@@ -114,10 +114,10 @@ public class AuthenticationSupport implements Supplier<Optional<String>> {
             var basic = authConfig.getBasic();
             authHeader = "Basic " + Base64.getEncoder().encodeToString("%s:%s".formatted(
                     basic.getUsername(),
-                    basic.getPassword())
+                    Value.getOptional(basic.getPassword()).orElse(""))
                     .getBytes());
         } else if (authConfig.hasBearer()) {
-            authHeader = "Bearer " + authConfig.getBearer().getToken();
+            authHeader = "Bearer " + Value.getOptional(authConfig.getBearer().getToken()).orElseThrow();
         } else if (authConfig.hasOIDC()) {
             OidcClient client;
 

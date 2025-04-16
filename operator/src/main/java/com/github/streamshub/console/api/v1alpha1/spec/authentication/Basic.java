@@ -1,5 +1,7 @@
 package com.github.streamshub.console.api.v1alpha1.spec.authentication;
 
+import com.github.streamshub.console.api.v1alpha1.spec.Value;
+
 import io.fabric8.generator.annotation.Required;
 import io.sundr.builder.annotations.Buildable;
 
@@ -9,7 +11,7 @@ public class Basic {
     @Required
     private String username;
     @Required
-    private String password;
+    private Value password;
 
     public String getUsername() {
         return username;
@@ -19,11 +21,11 @@ public class Basic {
         this.username = username;
     }
 
-    public String getPassword() {
+    public Value getPassword() {
         return password;
     }
 
-    public void setPassword(String password) {
+    public void setPassword(Value password) {
         this.password = password;
     }
 }

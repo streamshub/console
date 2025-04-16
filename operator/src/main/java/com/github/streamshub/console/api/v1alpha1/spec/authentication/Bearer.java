@@ -1,5 +1,7 @@
 package com.github.streamshub.console.api.v1alpha1.spec.authentication;
 
+import com.github.streamshub.console.api.v1alpha1.spec.Value;
+
 import io.fabric8.generator.annotation.Required;
 import io.sundr.builder.annotations.Buildable;
 
@@ -7,13 +9,13 @@ import io.sundr.builder.annotations.Buildable;
 public class Bearer {
 
     @Required
-    private String token;
+    private Value token;
 
-    public String getToken() {
+    public Value getToken() {
         return token;
     }
 
-    public void setToken(String token) {
+    public void setToken(Value token) {
         this.token = token;
     }
 }

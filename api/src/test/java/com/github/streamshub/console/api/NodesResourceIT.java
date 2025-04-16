@@ -43,6 +43,7 @@ import com.github.streamshub.console.api.support.KafkaContext;
 import com.github.streamshub.console.config.ConsoleConfig;
 import com.github.streamshub.console.config.PrometheusConfig;
 import com.github.streamshub.console.config.PrometheusConfig.Type;
+import com.github.streamshub.console.config.ValueBuilder;
 import com.github.streamshub.console.config.authentication.AuthenticationConfigBuilder;
 import com.github.streamshub.console.config.authentication.Basic;
 import com.github.streamshub.console.kafka.systemtest.TestPlainProfile;
@@ -147,7 +148,7 @@ class NodesResourceIT implements ClientRequestFilter {
 
         var authN = new Basic();
         authN.setUsername("pr0m3th3u5");
-        authN.setPassword("password42");
+        authN.setPassword(new ValueBuilder().withValue("password42").build());
         prometheusConfig.setAuthentication(new AuthenticationConfigBuilder()
             .withBasic(authN)
             .build());

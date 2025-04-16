@@ -327,4 +327,11 @@ abstract class ConsoleReconcilerTestBase {
             .endStatus()
             .build();
     }
+
+    Secret getConsoleSecret(Console consoleCR) {
+        return client.secrets()
+                .inNamespace(consoleCR.getMetadata().getNamespace())
+                .withName("%s-console-secret".formatted(consoleCR.getMetadata().getName()))
+                .get();
+    }
 }

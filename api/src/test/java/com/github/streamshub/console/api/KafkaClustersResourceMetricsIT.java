@@ -37,10 +37,11 @@ import com.github.streamshub.console.api.support.KafkaContext;
 import com.github.streamshub.console.config.ConsoleConfig;
 import com.github.streamshub.console.config.KafkaClusterConfig;
 import com.github.streamshub.console.config.PrometheusConfig.Type;
+import com.github.streamshub.console.config.PrometheusConfigBuilder;
+import com.github.streamshub.console.config.ValueBuilder;
 import com.github.streamshub.console.config.authentication.AuthenticationConfigBuilder;
 import com.github.streamshub.console.config.authentication.Basic;
 import com.github.streamshub.console.config.authentication.Bearer;
-import com.github.streamshub.console.config.PrometheusConfigBuilder;
 import com.github.streamshub.console.kafka.systemtest.TestPlainProfile;
 import com.github.streamshub.console.kafka.systemtest.deployment.DeploymentManager;
 import com.github.streamshub.console.test.AdminClientSpy;
@@ -139,7 +140,7 @@ class KafkaClustersResourceMetricsIT implements ClientRequestFilter {
             prometheusConfig.setType(Type.STANDALONE);
         } else if (testInfo.getTags().contains("bearer-token")) {
             var authN = new Bearer();
-            authN.setToken("my-bearer-token");
+            authN.setToken(new ValueBuilder().withValue("my-bearer-token").build());
 
             prometheusConfig.setType(Type.fromValue("standalone"));
             prometheusConfig.setAuthentication(new AuthenticationConfigBuilder()
@@ -148,7 +149,7 @@ class KafkaClustersResourceMetricsIT implements ClientRequestFilter {
         } else {
             var authN = new Basic();
             authN.setUsername("pr0m3th3u5");
-            authN.setPassword("password42");
+            authN.setPassword(new ValueBuilder().withValue("password42").build());
 
             prometheusConfig.setType(Type.fromValue("standalone"));
             prometheusConfig.setAuthentication(new AuthenticationConfigBuilder()

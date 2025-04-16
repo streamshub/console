@@ -45,6 +45,7 @@ import io.strimzi.api.kafka.model.user.KafkaUserBuilder;
 import io.strimzi.api.kafka.model.user.KafkaUserScramSha512ClientAuthentication;
 
 import static org.awaitility.Awaitility.await;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -642,7 +643,9 @@ class ConsoleReconcilerTest extends ConsoleReconcilerTestBase {
                         .withNewAuthentication()
                             .withNewBasic()
                                 .withUsername("pr0m3th3u5")
-                                .withPassword("password42")
+                                .withNewPassword()
+                                    .withValue("password42")
+                                .endPassword()
                             .endBasic()
                         .endAuthentication()
                     .endMetricsSource()
@@ -664,7 +667,13 @@ class ConsoleReconcilerTest extends ConsoleReconcilerTestBase {
             assertEquals(PrometheusConfig.Type.STANDALONE, prometheusConfig.getType());
             var prometheusAuthN = (Basic) prometheusConfig.getAuthentication().getBasic();
             assertEquals("pr0m3th3u5", prometheusAuthN.getUsername());
-            assertEquals("password42", prometheusAuthN.getPassword());
+            assertEquals(
+                    "/deployments/config/metrics-source-some-prometheus-basic-password.txt",
+                    prometheusAuthN.getPassword().getValueFrom());
+            var secretData = getConsoleSecret(consoleCR).getData();
+            assertArrayEquals(
+                    "password42".getBytes(),
+                    Base64.getDecoder().decode(secretData.get("metrics-source-some-prometheus-basic-password.txt")));
 
             String metricsRef = consoleConfig.getKafka().getClusters().get(0).getMetricsSource();
             assertEquals("some-prometheus", metricsRef);
@@ -687,7 +696,9 @@ class ConsoleReconcilerTest extends ConsoleReconcilerTestBase {
                         .withUrl("https://prometheus.example.com")
                         .withNewAuthentication()
                             .withNewBearer()
-                                .withToken(token)
+                                .withNewToken()
+                                    .withValue(token)
+                                .endToken()
                             .endBearer()
                         .endAuthentication()
                     .endMetricsSource()
@@ -708,13 +719,17 @@ class ConsoleReconcilerTest extends ConsoleReconcilerTestBase {
             assertEquals("https://prometheus.example.com", prometheusConfig.getUrl());
             assertEquals(PrometheusConfig.Type.STANDALONE, prometheusConfig.getType());
             var prometheusAuthN = (Bearer) prometheusConfig.getAuthentication().getBearer();
-            assertEquals(token, prometheusAuthN.getToken());
+            assertEquals(
+                    "/deployments/config/metrics-source-some-prometheus-bearer-token.txt",
+                    prometheusAuthN.getToken().getValueFrom());
+            assertArrayEquals(
+                    token.getBytes(),
+                    Base64.getDecoder().decode(getConsoleSecret(consoleCR).getData().get("metrics-source-some-prometheus-bearer-token.txt")));
 
             String metricsRef = consoleConfig.getKafka().getClusters().get(0).getMetricsSource();
             assertEquals("some-prometheus", metricsRef);
         });
     }
-
 
     @Test
     void testConsoleReconciliationWithPrometheusEmptyAuthN() {
