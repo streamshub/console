@@ -223,7 +223,7 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
         }
 
         try {
-            var yaml = objectMapper.copyWith(new YAMLFactory());
+            var yaml = objectMapper.copyWith(YAMLFactory.builder().build());
             data.put("console-config.yaml", encodeString(yaml.writeValueAsString(consoleConfig)));
         } catch (JsonProcessingException e) {
             throw new UncheckedIOException(e);
@@ -248,28 +248,24 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
             ));
 
         coalesce(primary.getSpec().getMetricsSources(), Collections::emptyList).stream()
-            .forEach(source ->
-                buildClientSecrets(
-                    context,
-                    primary.getMetadata().getNamespace(),
-                    "metrics-source-" + source.getName(),
-                    source.getAuthentication(),
-                    source.getTrustStore(),
-                    data
-                )
-            );
+            .forEach(source -> buildClientSecrets(
+                context,
+                primary.getMetadata().getNamespace(),
+                "metrics-source-" + source.getName(),
+                source.getAuthentication(),
+                source.getTrustStore(),
+                data
+            ));
 
         coalesce(primary.getSpec().getSchemaRegistries(), Collections::emptyList).stream()
-            .forEach(source ->
-                buildClientSecrets(
-                    context,
-                    primary.getMetadata().getNamespace(),
-                    "schema-registry-" + source.getName(),
-                    source.getAuthentication(),
-                    source.getTrustStore(),
-                    data
-                )
-            );
+            .forEach(source -> buildClientSecrets(
+                context,
+                primary.getMetadata().getNamespace(),
+                "schema-registry-" + source.getName(),
+                source.getAuthentication(),
+                source.getTrustStore(),
+                data
+            ));
     }
 
     private void buildClientSecrets(Context<Console> context, String namespace, String name, Authentication authentication, TrustStore trustStore, Map<String, String> data) {
