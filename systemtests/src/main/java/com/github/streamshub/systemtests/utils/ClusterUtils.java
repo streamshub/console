@@ -1,6 +1,6 @@
 package com.github.streamshub.systemtests.utils;
 
-import com.github.streamshub.systemtests.constants.Constants;
+import com.github.streamshub.systemtests.Environment;
 import com.github.streamshub.systemtests.exceptions.ClusterUnreachableException;
 import io.fabric8.openshift.api.model.config.v1.DNS;
 import io.skodjob.testframe.executor.ExecResult;
@@ -29,6 +29,6 @@ public class ClusterUtils {
         if (isOcp()) {
             return "apps." + ResourceUtils.getKubeResource(DNS.class, "cluster").getSpec().getBaseDomain();
         }
-        return Constants.KUBE_DNS;
+        return Environment.CLUSTER_DOMAIN;
     }
 }

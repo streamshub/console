@@ -9,7 +9,6 @@ public class Constants {
     /**
      * Cluster
      */
-    public static final String KUBE_DNS = "192.168.49.2.nip.io";
     public static final String OPENSHIFT_CONSOLE = "openshift-console";
     public static final String OPENSHIFT_CONSOLE_ROUTE_NAME = "console";
 

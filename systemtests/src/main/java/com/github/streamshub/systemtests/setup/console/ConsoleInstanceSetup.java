@@ -9,7 +9,7 @@ import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.constants.ExampleFiles;
 import com.github.streamshub.systemtests.utils.ClusterUtils;
 import com.github.streamshub.systemtests.utils.ConsoleUtils;
-import com.github.streamshub.systemtests.utils.KafkaUtils;
+import com.github.streamshub.systemtests.utils.KafkaNamingUtils;
 import com.github.streamshub.systemtests.utils.ResourceUtils;
 import com.github.streamshub.systemtests.utils.Utils;
 import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
@@ -21,44 +21,42 @@ import org.apache.logging.log4j.Logger;
 
 public class ConsoleInstanceSetup {
     private static final Logger LOGGER = LogManager.getLogger(ConsoleInstanceSetup.class);
-    private final String deploymentNamespace;
-    private final String instanceName;
-    private final String kafkaClusterName;
+    private ConsoleInstanceSetup() {}
 
-    public ConsoleInstanceSetup(String namespace, String kafkaClusterName) {
-        this.deploymentNamespace = namespace;
-        this.instanceName = Constants.CONSOLE_INSTANCE + "-" + Utils.hashStub(namespace);
-        this.kafkaClusterName = kafkaClusterName;
-    }
-
-    public void deploy() {
+    public static void setupIfNeeded(Console console) {
         LOGGER.info("----------- Deploy Console Instance -----------");
-        if (ResourceUtils.getKubeResource(Deployment.class, deploymentNamespace, instanceName) != null) {
+        if (ResourceUtils.getKubeResource(Deployment.class, console.getMetadata().getNamespace(), console.getMetadata().getName()) != null) {
             LOGGER.warn("Skipping Console Instance deployment. It is already deployed");
             return;
         }
-
-        KubeResourceManager.get().createResourceWithWait(getExampleConsoleInstance());
-        LOGGER.info("Console deployed and available at {}", ConsoleUtils.getConsoleUiUrl(deploymentNamespace, instanceName, true));
+        KubeResourceManager.get().createResourceWithWait(console);
+        LOGGER.info("Console deployed and available at {}", ConsoleUtils.getConsoleUiUrl(console.getMetadata().getNamespace(), console.getMetadata().getName(), true));
     }
 
-    private Console getExampleConsoleInstance() {
+    public static Console getDefaultConsoleInstance(String namespaceName) {
+        return getDefaultConsoleInstance(namespaceName,
+        Constants.CONSOLE_INSTANCE + "-" + Utils.hashStub(namespaceName),
+            KafkaNamingUtils.kafkaClusterName(namespaceName),
+            KafkaNamingUtils.kafkaUserName(KafkaNamingUtils.kafkaClusterName(namespaceName)));
+    }
+
+    public static Console getDefaultConsoleInstance(String namespaceName, String instanceName, String kafkaName, String kafkaUserName) {
         ConsoleBuilder builder = new ConsoleBuilder(TestFrameUtils.configFromYaml(ExampleFiles.EXAMPLE_CONSOLE_INSTANCE, Console.class))
             .withMetadata(new ObjectMetaBuilder()
                 .withName(instanceName)
-                .withNamespace(deploymentNamespace)
+                .withNamespace(namespaceName)
                 .build())
             .withSpec(new ConsoleSpecBuilder()
                 .withHostname(instanceName + "." + ClusterUtils.getClusterDomain())
                 .withKafkaClusters(
                     new KafkaClusterBuilder()
-                        .withId(kafkaClusterName)
-                        .withName(kafkaClusterName)
+                        .withId(kafkaName)
+                        .withName(kafkaName)
                         .withListener(Constants.SECURE_LISTENER_NAME)
-                        .withNamespace(deploymentNamespace)
+                        .withNamespace(namespaceName)
                         .withNewCredentials()
                             .withNewKafkaUser()
-                                .withName(KafkaUtils.kafkaUserName(kafkaClusterName))
+                                .withName(kafkaUserName)
                             .endKafkaUser()
                         .endCredentials()
                     .build()

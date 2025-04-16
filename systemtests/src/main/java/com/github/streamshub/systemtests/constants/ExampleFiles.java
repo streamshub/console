@@ -27,10 +27,6 @@ public class ExampleFiles {
     // Kafka
     // -----
     public static final String EXAMPLE_KAFKA_PATH = EXAMPLES_PATH + "/kafka/";
-    public static final File EXAMPLES_KAFKA_TOPIC_YAML = new File(EXAMPLE_KAFKA_PATH + "050-KafkaTopic-console-topic.yaml");
     public static final File EXAMPLES_KAFKA_METRICS_CONFIG_MAP = new File(EXAMPLE_KAFKA_PATH + "010-ConfigMap-console-kafka-metrics.yaml");
-    public static final File EXAMPLES_KAFKA_USER = new File(EXAMPLE_KAFKA_PATH + "040-KafkaUser-console-kafka-user1.yaml");
     public static final File EXAMPLES_KAFKA = new File(EXAMPLE_KAFKA_PATH + "030-Kafka-console-kafka.yaml");
-    public static final File EXAMPLES_KAFKA_NODEPOOLS_BROKER = new File(EXAMPLE_KAFKA_PATH + "020-KafkaNodePool-broker-console-nodepool.yaml");
-    public static final File EXAMPLES_KAFKA_NODEPOOLS_CONTROLLER = new File(EXAMPLE_KAFKA_PATH + "021-KafkaNodePool-controller-console-nodepool.yaml");
 }

@@ -4,8 +4,8 @@ import com.github.streamshub.systemtests.constants.Constants;
 
 import static com.github.streamshub.systemtests.utils.Utils.hashStub;
 
-public class KafkaUtils {
-    private KafkaUtils() {}
+public class KafkaNamingUtils {
+    private KafkaNamingUtils() {}
 
     // -------------
     // Kafka names
@@ -18,8 +18,20 @@ public class KafkaUtils {
         return Constants.KAFKA_USER_PREFIX + "-" + hashStub(kafkaName);
     }
 
+    public static String kafkaProducerName(String kafkaName) {
+        return Constants.KAFKA_USER_PREFIX + "-" + hashStub(kafkaName);
+    }
+
+    public static String kafkaConsumerName(String kafkaName) {
+        return Constants.KAFKA_USER_PREFIX + "-" + hashStub(kafkaName);
+    }
+
     public static String brokerPoolName(String kafkaName) {
         return Constants.BROKER_ROLE_PREFIX + "-" + hashStub(kafkaName);
+    }
+
+    public static String topicPrefixName(String kafkaName) {
+        return Constants.KAFKA_TOPIC_PREFIX + "-" + Utils.hashStub(kafkaName);
     }
 
     public static String brokerPodName(String kafkaName) {
