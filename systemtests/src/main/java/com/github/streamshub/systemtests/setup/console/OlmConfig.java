@@ -2,7 +2,6 @@ package com.github.streamshub.systemtests.setup.console;
 
 import com.github.streamshub.systemtests.Environment;
 import com.github.streamshub.systemtests.constants.Constants;
-import com.github.streamshub.systemtests.constants.ExampleFiles;
 import com.github.streamshub.systemtests.exceptions.OperatorSdkNotInstalledException;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.utils.ClusterUtils;
@@ -15,8 +14,9 @@ import io.fabric8.openshift.api.model.operatorhub.v1.OperatorGroupBuilder;
 import io.fabric8.openshift.api.model.operatorhub.v1alpha1.Subscription;
 import io.fabric8.openshift.api.model.operatorhub.v1alpha1.SubscriptionBuilder;
 import io.skodjob.testframe.resources.KubeResourceManager;
-import io.skodjob.testframe.utils.TestFrameUtils;
 import org.apache.logging.log4j.Logger;
+
+import java.util.Collections;
 
 public class OlmConfig extends InstallConfig {
     private static final Logger LOGGER = LogWrapper.getLogger(OlmConfig.class);
@@ -50,7 +50,7 @@ public class OlmConfig extends InstallConfig {
     }
 
     private Subscription getOlmSubscription() {
-        return new SubscriptionBuilder(TestFrameUtils.configFromYaml(ExampleFiles.CONSOLE_OPERATOR_SUBSCRIPTION, Subscription.class))
+        return new SubscriptionBuilder()
             .editMetadata()
                 .withNamespace(deploymentNamespace)
                 .withName(subscriptionName)
@@ -66,10 +66,15 @@ public class OlmConfig extends InstallConfig {
     }
 
     private OperatorGroup getOlmOperatorGroup() {
-        return new OperatorGroupBuilder(TestFrameUtils.configFromYaml(ExampleFiles.CONSOLE_OPERATOR_GROUP, OperatorGroup.class))
-            .editMetadata()
+        return new OperatorGroupBuilder()
+            .withNewMetadata()
+                .withName("streamshub-operators")
                 .withNamespace(deploymentNamespace)
             .endMetadata()
+            .withNewSpec()
+                .withTargetNamespaces(Collections.emptyList())
+                .withUpgradeStrategy("Default")
+            .endSpec()
             .build();
     }
 }
