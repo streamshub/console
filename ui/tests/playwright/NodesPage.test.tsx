@@ -15,12 +15,16 @@ test("Nodes page", async ({ page }) => {
       "Partitions distribution (% of total)",
     );
 
-    const headerRows = await page.locator('table[aria-label="Kafka nodes"] thead tr').all();
+    const headerRows = await page
+      .locator('table[aria-label="Kafka nodes"] thead tr')
+      .all();
     const headerRow = headerRows[0];
     expect(await headerRow.locator("th").nth(1).innerText()).toBe("Node ID");
     expect(await headerRow.locator("th").nth(2).innerText()).toBe("Roles");
     expect(await headerRow.locator("th").nth(3).innerText()).toBe("Status");
-    expect(await headerRow.locator("th").nth(4).innerText()).toContain("Total Replicas ");
+    expect(await headerRow.locator("th").nth(4).innerText()).toContain(
+      "Total Replicas ",
+    );
     expect(await headerRow.locator("th").nth(5).innerText()).toContain("Rack ");
     expect(await headerRow.locator("th").nth(6).innerText()).toBe("Node Pool");
 
@@ -30,7 +34,7 @@ test("Nodes page", async ({ page }) => {
     expect(dataRows).toBeGreaterThan(0);
     const dataCells = await page
       .locator('table[aria-label="Kafka nodes"] tbody tr td')
-      .evaluateAll((tds) => tds.map((td) => td.textContent?.trim() ?? ""));
+      .evaluateAll((tds) => tds.map((td) => td.Content?.trim() ?? ""));
 
     expect(dataCells.length).toBeGreaterThan(0);
   });

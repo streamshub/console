@@ -47,9 +47,7 @@ export function CreateTopic({
   const [options, setOptions] = useState<NewConfigMap>({});
   const [pending, startTransition] = useTransition();
   const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState<ApiError[] | undefined>(
-    undefined,
-  );
+  const [errors, setErrors] = useState<ApiError[] | undefined>(undefined);
 
   const save = useCallback(async () => {
     try {
@@ -65,10 +63,12 @@ export function CreateTopic({
         }
       });
     } catch (e: unknown) {
-      setErrors([{
-        title: "Unknown error",
-        detail: String(e),
-      }]);
+      setErrors([
+        {
+          title: "Unknown error",
+          detail: String(e),
+        },
+      ]);
     } finally {
       setLoading(false);
     }
@@ -79,7 +79,13 @@ export function CreateTopic({
       try {
         setLoading(true);
         setErrors(undefined);
-        const response = await onSave(name, partitions, replicas, options, true);
+        const response = await onSave(
+          name,
+          partitions,
+          replicas,
+          options,
+          true,
+        );
         startTransition(() => {
           if (response.errors) {
             setErrors(response.errors);
@@ -88,10 +94,12 @@ export function CreateTopic({
           }
         });
       } catch (e: unknown) {
-        setErrors([{
-          title: "Unknown error",
-          detail: String(e),
-        }]);
+        setErrors([
+          {
+            title: "Unknown error",
+            detail: String(e),
+          },
+        ]);
       } finally {
         setLoading(false);
       }
@@ -102,7 +110,7 @@ export function CreateTopic({
   const formInvalid = errors !== undefined;
 
   return (
-    <PageSection type={"wizard"}>
+    <PageSection hasBodyWrapper={false} type={"wizard"}>
       <Wizard title={t("CreateTopic.title")} onClose={() => router.back()}>
         <WizardStep
           name={t("CreateTopic.topic_details")}
@@ -200,7 +208,7 @@ const SkipReviewFooter = ({
         triggerRef={() => document.getElementById("review-button")!}
       >
         <Button
-          variant="tertiary"
+          variant="plain"
           onClick={() => onClick(() => goToStepById("step-review"))}
           id={"review-button"}
           isDisabled={loading}
