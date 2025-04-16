@@ -2,8 +2,10 @@ package com.github.streamshub.console.config.authentication;
 
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.github.streamshub.console.config.TrustStoreConfig;
@@ -43,11 +45,13 @@ public class OIDC implements Trustable {
     private Value clientSecret;
     private Method method;
     private List<String> scopes;
-    private boolean absoluteExpiresIn = false;
+    private Boolean absoluteExpiresIn;
     private GrantType grantType = GrantType.CLIENT;
+    private Map<String, String> grantOptions;
     private TrustStoreConfig trustStore;
 
     @Override
+    @JsonIgnore
     public String getName() {
         return "oidc";
     }
@@ -100,11 +104,11 @@ public class OIDC implements Trustable {
         this.scopes = scopes;
     }
 
-    public boolean isAbsoluteExpiresIn() {
+    public Boolean isAbsoluteExpiresIn() {
         return absoluteExpiresIn;
     }
 
-    public void setAbsoluteExpiresIn(boolean absoluteExpiresIn) {
+    public void setAbsoluteExpiresIn(Boolean absoluteExpiresIn) {
         this.absoluteExpiresIn = absoluteExpiresIn;
     }
 
@@ -114,6 +118,14 @@ public class OIDC implements Trustable {
 
     public void setGrantType(GrantType grantType) {
         this.grantType = grantType;
+    }
+
+    public Map<String, String> getGrantOptions() {
+        return grantOptions;
+    }
+
+    public void setGrantOptions(Map<String, String> grantOptions) {
+        this.grantOptions = grantOptions;
     }
 
     @Override

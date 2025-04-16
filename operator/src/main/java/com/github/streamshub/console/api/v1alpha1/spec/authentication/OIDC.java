@@ -2,6 +2,7 @@ package com.github.streamshub.console.api.v1alpha1.spec.authentication;
 
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -44,8 +45,9 @@ public class OIDC {
     private Value clientSecret;
     private Method method;
     private List<String> scopes;
-    private boolean absoluteExpiresIn = false;
-    private GrantType grantType = GrantType.CLIENT;
+    private Boolean absoluteExpiresIn;
+    private GrantType grantType;
+    private Map<String, String> grantOptions;
     private TrustStore trustStore;
 
     public String getAuthServerUrl() {
@@ -96,11 +98,11 @@ public class OIDC {
         this.scopes = scopes;
     }
 
-    public boolean isAbsoluteExpiresIn() {
+    public Boolean isAbsoluteExpiresIn() {
         return absoluteExpiresIn;
     }
 
-    public void setAbsoluteExpiresIn(boolean absoluteExpiresIn) {
+    public void setAbsoluteExpiresIn(Boolean absoluteExpiresIn) {
         this.absoluteExpiresIn = absoluteExpiresIn;
     }
 
@@ -110,6 +112,14 @@ public class OIDC {
 
     public void setGrantType(GrantType grantType) {
         this.grantType = grantType;
+    }
+
+    public Map<String, String> getGrantOptions() {
+        return grantOptions;
+    }
+
+    public void setGrantOptions(Map<String, String> grantOptions) {
+        this.grantOptions = grantOptions;
     }
 
     public TrustStore getTrustStore() {

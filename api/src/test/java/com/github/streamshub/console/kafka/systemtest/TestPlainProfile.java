@@ -62,6 +62,46 @@ public class TestPlainProfile implements QuarkusTestProfile {
                 kubernetes:
                   enabled: true
 
+                metricsSources:
+                 - name: test-openshift-monitoring
+                   type: openshift-monitoring
+                   url: http://prometheus.example.com
+                 - name: test-unauthenticated
+                   type: standalone
+                   url: http://prometheus.example.com
+                 - name: test-basic
+                   type: standalone
+                   url: http://prometheus.example.com
+                   authentication:
+                     basic:
+                       username: pr0m3th3u5
+                       password:
+                         value: password42
+                 - name: test-bearer-token
+                   type: standalone
+                   url: http://prometheus.example.com
+                   authentication:
+                     bearer:
+                       token:
+                         value: my-bearer-token
+                 - name: test-oidc
+                   type: standalone
+                   url: http://prometheus.example.com
+                   authentication:
+                     oidc:
+                       authServerUrl: ${console.test.oidc-url}
+                       clientId: registry-api
+                       clientSecret:
+                         value: registry-api-secret
+                       method: BASIC
+                       grantType: CLIENT
+                       trustStore:
+                         type: ${console.test.oidc-trust-store.type}
+                         content:
+                           valueFrom: ${console.test.oidc-trust-store.path}
+                         password:
+                           value: ${console.test.oidc-trust-store.password}
+
                 schemaRegistries:
                   - name: test-registry
                     url: ${console.test.apicurio-url}
@@ -73,6 +113,8 @@ public class TestPlainProfile implements QuarkusTestProfile {
                           value: registry-api-secret
                         method: POST
                         grantType: CLIENT
+                        grantOptions:
+                          audience: ${console.test.apicurio-url}
                         trustStore:
                           type: ${console.test.oidc-trust-store.type}
                           content:

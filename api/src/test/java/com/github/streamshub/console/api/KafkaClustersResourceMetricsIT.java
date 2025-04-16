@@ -5,7 +5,6 @@ import java.net.URI;
 import java.time.Instant;
 import java.util.Base64;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
@@ -25,6 +24,7 @@ import jakarta.ws.rs.core.Response.Status;
 import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.common.security.auth.SecurityProtocol;
 import org.eclipse.microprofile.config.Config;
+import org.jose4j.jwt.consumer.JwtConsumerBuilder;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
@@ -36,12 +36,6 @@ import com.github.streamshub.console.api.service.MetricsService;
 import com.github.streamshub.console.api.support.KafkaContext;
 import com.github.streamshub.console.config.ConsoleConfig;
 import com.github.streamshub.console.config.KafkaClusterConfig;
-import com.github.streamshub.console.config.PrometheusConfig.Type;
-import com.github.streamshub.console.config.PrometheusConfigBuilder;
-import com.github.streamshub.console.config.ValueBuilder;
-import com.github.streamshub.console.config.authentication.AuthenticationConfigBuilder;
-import com.github.streamshub.console.config.authentication.Basic;
-import com.github.streamshub.console.config.authentication.Bearer;
 import com.github.streamshub.console.kafka.systemtest.TestPlainProfile;
 import com.github.streamshub.console.kafka.systemtest.deployment.DeploymentManager;
 import com.github.streamshub.console.test.AdminClientSpy;
@@ -123,42 +117,31 @@ class KafkaClustersResourceMetricsIT implements ClientRequestFilter {
         filterQueryRange = ctx -> { /* No-op */ };
         metricsService.setAdditionalFilter(Optional.of(this));
 
+        String metricsSource;
+
         /*
          * Create a mock Prometheus configuration and point test-kafka1 to use it. A client
          * will be created when the Kafka CR is discovered. The request filter mock created
          * above is our way to intercept outbound requests and abort them with the desired
          * response for each test.
+         *
+         * metricsSources referenced by name here are configured in the TestPlainProfile and
+         * are parsed/configured at startup, then referenced by the test-kafka1 configuration
+         * for tests here.
          */
-        var prometheusConfig = new PrometheusConfigBuilder()
-                .withName("test")
-                .withUrl("http://prometheus.example.com")
-                .build();
-
         if (testInfo.getTags().contains("openshift-monitoring")) {
-            prometheusConfig.setType(Type.OPENSHIFT_MONITORING);
+            metricsSource = "test-openshift-monitoring";
         } else if (testInfo.getTags().contains("unauthenticated")) {
-            prometheusConfig.setType(Type.STANDALONE);
+            metricsSource = "test-unauthenticated";
         } else if (testInfo.getTags().contains("bearer-token")) {
-            var authN = new Bearer();
-            authN.setToken(new ValueBuilder().withValue("my-bearer-token").build());
-
-            prometheusConfig.setType(Type.fromValue("standalone"));
-            prometheusConfig.setAuthentication(new AuthenticationConfigBuilder()
-                .withBearer(authN)
-                .build());
+            metricsSource = "test-bearer-token";
+        } else if (testInfo.getTags().contains("oidc")) {
+            metricsSource = "test-oidc";
         } else {
-            var authN = new Basic();
-            authN.setUsername("pr0m3th3u5");
-            authN.setPassword(new ValueBuilder().withValue("password42").build());
-
-            prometheusConfig.setType(Type.fromValue("standalone"));
-            prometheusConfig.setAuthentication(new AuthenticationConfigBuilder()
-                    .withBasic(authN)
-                    .build());
+            metricsSource = "test-basic";
         }
 
-        consoleConfig.setMetricsSources(List.of(prometheusConfig));
-        consoleConfig.getKafka().getCluster("default/test-kafka1").get().setMetricsSource("test");
+        consoleConfig.getKafka().getCluster("default/test-kafka1").get().setMetricsSource(metricsSource);
 
         kafkaContainer = deployments.getKafkaContainer();
         bootstrapServers = URI.create(kafkaContainer.getBootstrapServers());
@@ -274,6 +257,39 @@ class KafkaClustersResourceMetricsIT implements ClientRequestFilter {
         String expected = "Bearer my-bearer-token";
         assertEquals(expected, queryAuthHeader.get());
         assertEquals(expected, queryRangeAuthHeader.get());
+    }
+
+    @Test
+    @Tag("oidc")
+    void testDescribeClusterWithMetricsSetsOIDCBearerHeader() throws Exception {
+        AtomicReference<String> queryAuthHeader = new AtomicReference<>();
+        AtomicReference<String> queryRangeAuthHeader = new AtomicReference<>();
+
+        filterQuery = ctx -> {
+            queryAuthHeader.set(ctx.getHeaderString(HttpHeaders.AUTHORIZATION));
+            ctx.abortWith(Response.ok(EMPTY_METRICS).build());
+        };
+
+        filterQueryRange = ctx -> {
+            queryRangeAuthHeader.set(ctx.getHeaderString(HttpHeaders.AUTHORIZATION));
+            ctx.abortWith(Response.ok(EMPTY_METRICS).build());
+        };
+
+        whenRequesting(req -> req
+                .param("fields[" + KafkaCluster.API_TYPE + "]", "name,metrics")
+                .get("{clusterId}", clusterId1))
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()));
+
+        String authHeader = queryAuthHeader.get();
+        assertTrue(authHeader.startsWith("Bearer "));
+        assertEquals(authHeader, queryRangeAuthHeader.get());
+        var claims = new JwtConsumerBuilder()
+            .setSkipAllValidators()
+            .setSkipSignatureVerification()
+            .build()
+            .processToClaims(authHeader.substring("Bearer ".length()));
+        assertEquals("service-account-registry-api", claims.getClaimValue("preferred_username", String.class));
     }
 
     @Test

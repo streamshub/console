@@ -3,6 +3,7 @@ package com.github.streamshub.console.api.support;
 import java.time.Duration;
 import java.util.Base64;
 import java.util.Collections;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
@@ -40,9 +41,9 @@ public class AuthenticationSupport implements Supplier<Optional<String>> {
                 .authServerUrl(oidc.getAuthServerUrl())
                 .tokenPath(oidc.getTokenPath())
                 .scopes(Optional.ofNullable(oidc.getScopes()).orElseGet(Collections::emptyList))
-                .absoluteExpiresIn(oidc.isAbsoluteExpiresIn())
                 .clientId(oidc.getClientId());
 
+            setIfPresent(oidc.isAbsoluteExpiresIn(), builder::absoluteExpiresIn);
             setIfPresent(
                     Value.getOptional(oidc.getClientSecret()).orElse(null),
                     secret -> builder.credentials()
@@ -75,8 +76,14 @@ public class AuthenticationSupport implements Supplier<Optional<String>> {
                         builder.grant(Grant.Type.PASSWORD);
                         break;
                     default:
-                        break;
+                        // Unknown grant type
+                        return;
                 }
+
+                setIfPresent(
+                    oidc.getGrantOptions(),
+                    options -> builder.grantOptions(g.name().toLowerCase(Locale.ENGLISH), options)
+                );
             });
 
             setIfPresent(oidc.getTrustStore(), t ->

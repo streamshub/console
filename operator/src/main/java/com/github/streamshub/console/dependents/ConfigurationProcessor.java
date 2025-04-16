@@ -297,24 +297,15 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
         if (authentication.hasBasic()) {
             var basic = authentication.getBasic();
             byte[] password = getValue(context, namespace, basic.getPassword());
-
-            if (password != null) {
-                data.put(name + "-basic-password.txt", ConfigSupport.encodeBytes(password));
-            }
+            maybePutSecretEntry(data, name + "-basic-password.txt", password);
         } else if (authentication.hasBearer()) {
             var bearer = authentication.getBearer();
             byte[] token = getValue(context, namespace, bearer.getToken());
-
-            if (token != null) {
-                data.put(name + "-bearer-token.txt", ConfigSupport.encodeBytes(token));
-            }
+            maybePutSecretEntry(data, name + "-bearer-token.txt", token);
         } else if (authentication.hasOIDC()) {
             var oidc = authentication.getOidc();
             byte[] clientSecret = getValue(context, namespace, oidc.getClientSecret());
-
-            if (clientSecret != null) {
-                data.put(name + "-oidc-clientsecret.txt", ConfigSupport.encodeBytes(clientSecret));
-            }
+            maybePutSecretEntry(data, name + "-oidc-clientsecret.txt", clientSecret);
 
             var trustStore = oidc.getTrustStore();
 
@@ -338,10 +329,7 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
 
         String key = "truststore-%s-content.%s".formatted(name, type);
         data.put(key, ConfigSupport.encodeBytes(content));
-
-        if (password != null) {
-            data.put("truststore-%s-password.txt".formatted(name), ConfigSupport.encodeBytes(content));
-        }
+        maybePutSecretEntry(data, "truststore-%s-password.txt".formatted(name), password);
     }
 
     private byte[] pemEncode(String name, TrustStore trustStore, byte[] password, byte[] content) {
@@ -401,6 +389,12 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
         });
 
         return new String(buffer.toByteArray()).substring(0, length);
+    }
+
+    private void maybePutSecretEntry(Map<String, String> data, String key, byte[] value) {
+        if (value != null) {
+            data.put(key, ConfigSupport.encodeBytes(value));
+        }
     }
 
     private ConsoleConfig buildConfig(Console primary, Context<Console> context) {
@@ -666,10 +660,11 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
                     .withTokenPath(oidc.getTokenPath())
                     .withClientId(oidc.getClientId())
                     .withClientSecret(mapValue(oidc.getClientSecret(), name + "-oidc-clientsecret"))
-                    .withMethod(mapEnumByName(oidc.getMethod(), OIDC.Method::valueOf))
+                    .withMethod(mapEnumByName(oidc.getMethod(), OIDC.Method::valueOf, null))
                     .withScopes(oidc.getScopes())
                     .withAbsoluteExpiresIn(oidc.isAbsoluteExpiresIn())
-                    .withGrantType(mapEnumByName(oidc.getGrantType(), OIDC.GrantType::valueOf))
+                    .withGrantType(mapEnumByName(oidc.getGrantType(), OIDC.GrantType::valueOf, OIDC.GrantType.CLIENT))
+                    .withGrantOptions(oidc.getGrantOptions())
                     .withTrustStore(buildTrustStoreConfig(oidc.getTrustStore(), name + "-oidc"))
                 .endOidc()
                 .build());
@@ -688,11 +683,11 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
         return null;
     }
 
-    private <E extends Enum<E>> E mapEnumByName(Enum<?> source, Function<String, E> mapper) {
+    private <E extends Enum<E>> E mapEnumByName(Enum<?> source, Function<String, E> mapper, E defaultValue) {
         if (source != null) {
             return mapper.apply(source.name());
         }
-        return null;
+        return defaultValue;
     }
 
     private KafkaClusterConfig addConfig(Console primary, Context<Console> context, ConsoleConfig config, KafkaCluster kafkaRef) {
