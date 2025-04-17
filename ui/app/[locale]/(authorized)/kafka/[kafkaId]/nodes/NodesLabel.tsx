@@ -13,7 +13,7 @@ import {
   NewProcessIcon,
   PendingIcon,
 } from "@/libs/patternfly/react-icons";
-import { Icon, Level, LevelItem, Popover } from "@/libs/patternfly/react-core";
+import { Flex, FlexItem, Icon, Popover } from "@/libs/patternfly/react-core";
 import { useTranslations } from "next-intl";
 
 export const RoleLabel = (
@@ -36,37 +36,29 @@ export const RoleLabel = (
     broker: {
       label: <>{t("node_roles.broker")}</>, // Label without count
       labelWithCount: (
-        <Level>
-          <LevelItem>{t("node_roles.broker")}</LevelItem>
-          <LevelItem>
-            <span
-              style={{
-                color:
-                  "var(--pf-t--temp--dev--tbd)" /* CODEMODS: original v5 color was --pf-v6-global--Color--200 */,
-              }}
-            >
-              {brokerCount}
-            </span>
-          </LevelItem>
-        </Level>
+        <Flex>
+          <FlexItem>{t("node_roles.broker")}</FlexItem>
+          <FlexItem
+            align={{ default: "alignRight" }}
+            style={{ color: "var(--pf-t--global--text--color--subtle)" }}
+          >
+            {brokerCount}
+          </FlexItem>
+        </Flex>
       ),
     },
     controller: {
       label: <>{t("node_roles.controller")}</>,
       labelWithCount: (
-        <Level>
-          <LevelItem>{t("node_roles.controller")}</LevelItem>
-          <LevelItem>
-            <span
-              style={{
-                color:
-                  "var(--pf-t--temp--dev--tbd)" /* CODEMODS: original v5 color was --pf-v6-global--Color--200 */,
-              }}
-            >
-              {controllerCount}
-            </span>
-          </LevelItem>
-        </Level>
+        <Flex>
+          <FlexItem>{t("node_roles.controller")}</FlexItem>
+          <FlexItem
+            align={{ default: "alignRight" }}
+            style={{ color: "var(--pf-t--global--text--color--subtle)" }}
+          >
+            {controllerCount}
+          </FlexItem>
+        </Flex>
       ),
     },
   };
@@ -249,19 +241,15 @@ const generateStatusLabel = <T extends string>(
       const count = statuses[typedKey] ?? 0;
 
       acc[typedKey] = (
-        <Level>
-          <LevelItem>{label as ReactNode}</LevelItem>{" "}
-          <LevelItem>
-            <span
-              style={{
-                color:
-                  "var(--pf-t--temp--dev--tbd)" /* CODEMODS: original v5 color was --pf-v6-global--Color--200 */,
-              }}
-            >
-              {count}
-            </span>
-          </LevelItem>
-        </Level>
+        <Flex>
+          <FlexItem>{label as ReactNode}</FlexItem>{" "}
+          <FlexItem
+            align={{ default: "alignRight" }}
+            style={{ color: "var(--pf-t--global--text--color--subtle)" }}
+          >
+            {count}
+          </FlexItem>
+        </Flex>
       );
       return acc;
     },

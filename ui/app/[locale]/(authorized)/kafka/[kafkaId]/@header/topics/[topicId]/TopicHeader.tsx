@@ -3,7 +3,7 @@ import { getTopic } from "@/api/topics/actions";
 import { KafkaTopicParams } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/topics/kafkaTopic.params";
 import { AppHeader } from "@/components/AppHeader";
 import { ManagedTopicLabel } from "@/components/ManagedTopicLabel";
-import { Skeleton } from "@/libs/patternfly/react-core";
+import { PageSection, Skeleton } from "@/libs/patternfly/react-core";
 import { ReactNode, Suspense } from "react";
 import { TopicsTabs } from "./TopicTabs";
 
@@ -24,7 +24,13 @@ export function TopicHeader({
           title={<Skeleton width="35%" />}
           showRefresh={showRefresh}
           navigation={
-            <TopicsTabs kafkaId={kafkaId} topicId={topicId} isLoading={true} />
+            <PageSection className={"pf-v6-u-px-sm"} type="subnav">
+              <TopicsTabs
+                kafkaId={kafkaId}
+                topicId={topicId}
+                isLoading={true}
+              />
+            </PageSection>
           }
           actions={[portal]}
         />
@@ -66,15 +72,17 @@ async function ConnectedTopicHeader({
       }
       showRefresh={showRefresh}
       navigation={
-        <TopicsTabs
-          kafkaId={kafkaId}
-          topicId={topicId}
-          numPartitions={topic?.attributes.numPartitions || 0}
-          consumerGroupCount={
-            topic?.relationships.consumerGroups?.data.length ?? 0
-          }
-          isLoading={false}
-        />
+        <PageSection className={"pf-v6-u-px-sm"} type="subnav">
+          <TopicsTabs
+            kafkaId={kafkaId}
+            topicId={topicId}
+            numPartitions={topic?.attributes.numPartitions || 0}
+            consumerGroupCount={
+              topic?.relationships.consumerGroups?.data.length ?? 0
+            }
+            isLoading={false}
+          />
+        </PageSection>
       }
       actions={[portal]}
     />
