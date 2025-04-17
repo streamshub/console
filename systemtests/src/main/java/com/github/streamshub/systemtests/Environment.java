@@ -50,6 +50,8 @@ public class Environment {
     // Kafka
     public static final String TEST_CLIENTS_IMAGE = ENVS.getOrDefault("TEST_CLIENTS_IMAGE", "");
     public static final String ST_KAFKA_VERSION = ENVS.getOrDefault("ST_KAFKA_VERSION", "");
+
+    public static final String CLUSTER_DOMAIN = ENVS.getOrDefault("CLUSTER_DOMAIN", "");
     // ------------------------------------------------------------------------------------------------------------------------------------------------------------
     // Deny instantiation
     private Environment() {}

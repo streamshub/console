@@ -6,7 +6,7 @@ import io.skodjob.testframe.executor.ExecResult;
 public class ClusterUnreachableException extends KubeClusterException {
     public ClusterUnreachableException(ExecResult result) {
         super(result,
-            "Cluster is currently unreachable. This may be due to the cluster being unstable or down. Please check the connection.");
+            "Cluster is currently unreachable. This may be due to the cluster being unstable or down. Please check the connection.: " + result.out());
     }
 
     public ClusterUnreachableException(ExecResult result, String message) {

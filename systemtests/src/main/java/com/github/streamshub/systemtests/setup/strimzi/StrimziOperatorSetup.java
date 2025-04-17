@@ -42,6 +42,7 @@ public class StrimziOperatorSetup {
 
     public void uninstall() {
         LOGGER.info("----------- Uninstall Strimzi Cluster Operator -----------");
-        Helm.uninstall(deploymentName).call();
+        // In case namespace is deleted before operator, ignore error that the release is not present (it's uninstalled)
+        Helm.uninstall(deploymentName).ignoreNotFound().call();
     }
 }
