@@ -18,6 +18,8 @@ import {
   CardBody,
   CardTitle,
   CardHeader,
+  Level,
+  LevelItem,
 } from "@/libs/patternfly/react-core";
 import { useFormatter, useTranslations } from "next-intl";
 import Link from "next/link";
@@ -106,14 +108,15 @@ export function NodesTable({
           {
             label: <>{poolName}</>, // Label without count
             labelWithCount: (
-              <Level>
-                <LevelItem>{poolName}</LevelItem>
-                <LevelItem>
-                  <span style={{ color: "var(--pf-v5-global--Color--200)" }}>
-                    {poolMeta.count}
-                  </span>
-                </LevelItem>
-              </Level>
+              <Flex>
+                <FlexItem>{poolName}</FlexItem>
+                <FlexItem
+                  align={{ default: "alignRight" }}
+                  style={{ color: "var(--pf-t--global--text--color--subtle)" }}
+                >
+                  {poolMeta.count}
+                </FlexItem>
+              </Flex>
             ),
             description: <>Nodes role: {poolMeta.roles.join(", ")}</>,
           },

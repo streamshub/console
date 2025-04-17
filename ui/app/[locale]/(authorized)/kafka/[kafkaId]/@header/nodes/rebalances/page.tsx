@@ -4,6 +4,7 @@ import { AppHeader } from "@/components/AppHeader";
 import { Number } from "@/components/Format/Number";
 import {
   Label,
+  PageSection,
   Spinner,
   Split,
   SplitItem,
@@ -108,10 +109,12 @@ function Header({
         </Split>
       }
       navigation={
-        <NodesTabs
-          kafkaId={kafkaId}
-          cruiseControlEnable={cruiseControlEnable}
-        />
+        <PageSection className={"pf-v6-u-px-sm"} type="subnav">
+          <NodesTabs
+            kafkaId={kafkaId}
+            cruiseControlEnable={cruiseControlEnable}
+          />
+        </PageSection>
       }
     />
   );
