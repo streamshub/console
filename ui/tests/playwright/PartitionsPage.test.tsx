@@ -6,7 +6,7 @@ test.beforeEach(async ({ authenticatedPage }) => {
 
 test("Partitions page", async ({ page, authenticatedPage }) => {
   await test.step("Navigate to partitions page", async () => {
-    await authenticatedPage.clickLink("Partitions");
+    await authenticatedPage.clickTab("Partitions");
     await authenticatedPage.waitForTableLoaded();
   });
   await test.step("Partitions page should display table", async () => {

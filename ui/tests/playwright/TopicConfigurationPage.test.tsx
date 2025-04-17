@@ -6,7 +6,7 @@ test.beforeEach(async ({ authenticatedPage }) => {
 
 test("Topics configuration", async ({ page, authenticatedPage }) => {
   await test.step("Navigate to topics configuration page", async () => {
-    await authenticatedPage.clickLink("Configuration");
+    await authenticatedPage.clickTab("Configuration");
   });
   await test.step("Topics configuration page should display table", async () => {
     await authenticatedPage.waitForTableLoaded();
