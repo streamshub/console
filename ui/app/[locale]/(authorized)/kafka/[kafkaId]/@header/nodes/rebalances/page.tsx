@@ -2,12 +2,9 @@ import { getKafkaCluster } from "@/api/kafka/actions";
 import { KafkaParams } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/kafka.params";
 import { AppHeader } from "@/components/AppHeader";
 import { Number } from "@/components/Format/Number";
-import { NavItemLink } from "@/components/Navigation/NavItemLink";
 import {
   Label,
-  Nav,
-  NavList,
-  PageNavigation,
+  PageSection,
   Spinner,
   Split,
   SplitItem,
@@ -19,6 +16,7 @@ import {
 } from "@/libs/patternfly/react-icons";
 import { Suspense } from "react";
 import { useTranslations } from "next-intl";
+import { NodesTabs } from "../NodesTabs";
 
 export default function NodesHeader({ params }: { params: KafkaParams }) {
   return (
@@ -32,11 +30,15 @@ export default function NodesHeader({ params }: { params: KafkaParams }) {
 
 async function ConnectedHeader({ params }: { params: KafkaParams }) {
   const cluster = (await getKafkaCluster(params.kafkaId))?.payload;
-  const combinedStatuses = cluster?.relationships.nodes?.meta?.summary?.statuses?.combined || {};
+  const combinedStatuses =
+    cluster?.relationships.nodes?.meta?.summary?.statuses?.combined || {};
 
   return (
     <Header
-      total={Object.values(combinedStatuses).reduce((sum, count) => sum + count, 0)}
+      total={Object.values(combinedStatuses).reduce(
+        (sum, count) => sum + count,
+        0,
+      )}
       ok={combinedStatuses["Healthy"] ?? 0}
       warning={combinedStatuses["Unhealthy"] ?? 0}
       kafkaId={cluster?.id}
@@ -58,12 +60,13 @@ function Header({
   kafkaId: string | undefined;
   cruiseControlEnable: boolean;
 }) {
-  const t = useTranslations();
+  const t = useTranslations("node-header");
+
   return (
     <AppHeader
       title={
         <Split hasGutter={true}>
-          <SplitItem>{t("nodes.title")}</SplitItem>
+          <SplitItem>{t("title")}</SplitItem>
           <SplitItem>
             <Label
               icon={total === undefined ? <Spinner size={"sm"} /> : undefined}
@@ -81,7 +84,7 @@ function Header({
                     <CheckCircleIcon />
                   )
                 }
-                color={"cyan"}
+                color={"teal"}
               >
                 {ok !== undefined && <Number value={ok} />}
               </Label>
@@ -106,20 +109,12 @@ function Header({
         </Split>
       }
       navigation={
-        <PageNavigation>
-          <Nav aria-label="Node navigation" variant="tertiary">
-            <NavList>
-              <NavItemLink url={`/kafka/${kafkaId}/nodes`}>
-                Overview
-              </NavItemLink>
-              {cruiseControlEnable && (
-                <NavItemLink url={`/kafka/${kafkaId}/nodes/rebalances`}>
-                  Rebalance
-                </NavItemLink>
-              )}
-            </NavList>
-          </Nav>
-        </PageNavigation>
+        <PageSection className={"pf-v6-u-px-sm"} type="subnav">
+          <NodesTabs
+            kafkaId={kafkaId}
+            cruiseControlEnable={cruiseControlEnable}
+          />
+        </PageSection>
       }
     />
   );

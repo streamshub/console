@@ -18,7 +18,7 @@ test("Node property page", async ({ page, authenticatedPage }) => {
     expect(dataRows).toBeGreaterThan(0);
     const dataCells = await page
       .locator('table[aria-label="Node configuration"] tbody tr td')
-      .evaluateAll((tds) => tds.map((td) => td.textContent?.trim() ?? ""));
+      .evaluateAll((tds) => tds.map((td) => td.Content?.trim() ?? ""));
 
     expect(dataCells.length).toBeGreaterThan(0);
   });

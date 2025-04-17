@@ -22,14 +22,13 @@ import {
   Skeleton,
   Stack,
   StackItem,
-  Text,
-  TextContent,
+  Content,
   Title,
 } from "@/libs/patternfly/react-core";
 import { getTranslations } from "next-intl/server";
 import { Suspense } from "react";
 import styles from "./home.module.css";
-import config from '@/utils/config';
+import config from "@/utils/config";
 import { logger } from "@/utils/logger";
 import { getAuthOptions } from "@/app/api/auth/[...nextauth]/auth-options";
 import { getServerSession } from "next-auth";
@@ -46,14 +45,14 @@ export async function generateMetadata() {
 
 export default async function Home() {
   const t = await getTranslations();
-  log.trace("fetching known Kafka clusters...")
+  log.trace("fetching known Kafka clusters...");
   const allClusters = (await getKafkaClusters())?.payload ?? [];
-  log.trace(`fetched ${allClusters.length ?? 0} Kafka clusters`)
+  log.trace(`fetched ${allClusters.length ?? 0} Kafka clusters`);
   const productName = t("common.product");
   const brand = t("common.brand");
-  log.trace("fetching configuration")
+  log.trace("fetching configuration");
   let cfg = await config();
-  log.trace(`fetched configuration: ${cfg ? 'yes' : 'no'}`);
+  log.trace(`fetched configuration: ${cfg ? "yes" : "no"}`);
   let oidcCfg = cfg?.security?.oidc ?? null;
   let oidcEnabled = !!oidcCfg;
   let username: string | undefined;
@@ -61,7 +60,7 @@ export default async function Home() {
   if (oidcEnabled) {
     const authOptions = await getAuthOptions();
     const session = await getServerSession(authOptions);
-    username = (session?.user?.name ?? session?.user?.email) ?? undefined;
+    username = session?.user?.name ?? session?.user?.email ?? undefined;
   }
 
   if (allClusters.length === 1 && !oidcEnabled) {
@@ -72,20 +71,20 @@ export default async function Home() {
 
   return (
     <AppLayout username={username}>
-      <PageSection padding={{ default: "noPadding" }} variant={"light"}>
+      <PageSection padding={{ default: "noPadding" }} variant={"default"}>
         <div className={styles.hero}>
           <div>
-            <TextContent>
+            <Content>
               <Title headingLevel={"h1"} size={"2xl"}>
                 {t.rich("homepage.page_header", { product: productName })}
               </Title>
-              <Text className={"pf-v5-u-color-200"}>
+              <Content className={"pf-v6-u-color-200"}>
                 {t("homepage.page_subtitle", {
                   brand: brand,
                   product: productName,
                 })}
-              </Text>
-            </TextContent>
+              </Content>
+            </Content>
           </div>
         </div>
       </PageSection>
@@ -94,19 +93,29 @@ export default async function Home() {
           <StackItem>
             <Card isCompact={true}>
               <CardTitle>
-                <TextContent>
+                <Content>
                   {t.rich("homepage.platform_openshift_cluster")}
-                  <Text component={"small"}>
+                  <Content component={"small"}>
                     <Suspense fallback={<Skeleton width={"200px"} />}>
                       <Number value={allClusters.length} />
                       &nbsp;{t("homepage.connected_kafka_clusters")}
                     </Suspense>
-                  </Text>
-                </TextContent>
+                  </Content>
+                </Content>
               </CardTitle>
               <CardBody>
-                <Suspense fallback={<ClustersTable clusters={undefined} authenticated={oidcEnabled} />}>
-                  <ClustersTable clusters={allClusters} authenticated={oidcEnabled} />
+                <Suspense
+                  fallback={
+                    <ClustersTable
+                      clusters={undefined}
+                      authenticated={oidcEnabled}
+                    />
+                  }
+                >
+                  <ClustersTable
+                    clusters={allClusters}
+                    authenticated={oidcEnabled}
+                  />
                 </Suspense>
               </CardBody>
             </Card>
@@ -118,9 +127,9 @@ export default async function Home() {
                 title={
                   <Level>
                     <LevelItem>
-                      <TextContent>
+                      <Content>
                         {t.rich("homepage.recommended_learning_resources")}
-                      </TextContent>
+                      </Content>
                     </LevelItem>
                   </Level>
                 }
@@ -129,9 +138,9 @@ export default async function Home() {
                     <LevelItem>
                       <Stack>
                         <StackItem>
-                          <TextContent>
+                          <Content>
                             {t.rich("homepage.recommended_learning_resources")}
-                          </TextContent>
+                          </Content>
                         </StackItem>
                         <StackItem>
                           <LabelGroup isCompact>

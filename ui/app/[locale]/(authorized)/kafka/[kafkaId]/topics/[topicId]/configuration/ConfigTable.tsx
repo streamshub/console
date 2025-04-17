@@ -166,7 +166,7 @@ export function ConfigTable({
             <Td key={key} dataLabel={t("ConfigTable.property")}>
               <div>{name}</div>
               <LabelGroup>
-                <Label isCompact={true} color={"cyan"}>
+                <Label isCompact={true} color="teal">
                   source={property.source}
                 </Label>
                 {property.readOnly && (
@@ -230,8 +230,9 @@ export function ConfigTable({
     <>
       {errors && !fieldError && (
         <PageSection
+          hasBodyWrapper={false}
           padding={{ default: "noPadding" }}
-          className={"pf-v5-u-pb-md"}
+          className={"pf-v6-u-pb-md"}
         >
           <Errors errors={errors} />
         </PageSection>
@@ -335,12 +336,13 @@ export function ConfigTable({
 
           return isEditing[name] ? (
             <div
-              className="pf-v5-c-inline-edit pf-m-inline-editable"
+              className="pf-v6-c-inline-edit pf-m-inline-editable"
               id="inline-edit-action-group-icon-buttons-example"
             >
-              <div className="pf-v5-c-inline-edit__group pf-m-action-group pf-m-icon-group">
-                <div className="pf-v5-c-inline-edit__action pf-m-valid">
+              <div className="pf-v6-c-inline-edit__group pf-m-action-group pf-m-icon-group">
+                <div className="pf-v6-c-inline-edit__action pf-m-valid">
                   <Button
+                    icon={<CheckIcon />}
                     variant={"plain"}
                     isLoading={isEditing[name] === "saving"}
                     isDisabled={isEditing[name] === "saving"}
@@ -368,12 +370,11 @@ export function ConfigTable({
                         }));
                       }
                     }}
-                  >
-                    <CheckIcon />
-                  </Button>
+                  />
                 </div>
-                <div className="pf-v5-c-inline-edit__action">
+                <div className="pf-v6-c-inline-edit__action">
                   <Button
+                    icon={<TimesIcon />}
                     variant={"plain"}
                     isDisabled={isEditing[name] === "saving"}
                     onClick={() => {
@@ -382,14 +383,13 @@ export function ConfigTable({
                         [name]: undefined,
                       }));
                     }}
-                  >
-                    <TimesIcon />
-                  </Button>
+                  />
                 </div>
               </div>
             </div>
           ) : (
             <Button
+              icon={<PencilAltIcon />}
               variant={"plain"}
               onClick={() =>
                 setIsEditing((isEditing) => ({
@@ -397,9 +397,7 @@ export function ConfigTable({
                   [name]: "editing",
                 }))
               }
-            >
-              <PencilAltIcon />
-            </Button>
+            />
           );
         }}
         variant={TableVariant.compact}

@@ -10,8 +10,7 @@ import {
   DescriptionListTerm,
   Grid,
   GridItem,
-  Text,
-  TextContent,
+  Content,
   Title,
 } from "@patternfly/react-core";
 import { useTranslations } from "next-intl";
@@ -75,11 +74,11 @@ export function StepReview({
         {optionEntries.length > 0 ? (
           <ReviewTable options={options} initialOptions={initialOptions} />
         ) : (
-          <TextContent>
-            <Text component={"small"}>
+          <Content>
+            <Content component={"small"}>
               {t("CreateTopic.no_advanced_options_specified")}
-            </Text>
-          </TextContent>
+            </Content>
+          </Content>
         )}
       </GridItem>
     </Grid>

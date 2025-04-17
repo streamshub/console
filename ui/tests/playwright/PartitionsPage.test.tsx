@@ -6,7 +6,7 @@ test.beforeEach(async ({ authenticatedPage }) => {
 
 test("Partitions page", async ({ page, authenticatedPage }) => {
   await test.step("Navigate to partitions page", async () => {
-    await authenticatedPage.clickLink("Partitions");
+    await authenticatedPage.clickTab("Partitions");
     await authenticatedPage.waitForTableLoaded();
   });
   await test.step("Partitions page should display table", async () => {
@@ -22,7 +22,7 @@ test("Partitions page", async ({ page, authenticatedPage }) => {
     expect(dataRows.length).toBeGreaterThan(0);
     const dataCells = await page
       .locator('table[aria-label="Partitions"] tbody tr td')
-      .evaluateAll((tds) => tds.map((td) => td.textContent?.trim() ?? ""));
+      .evaluateAll((tds) => tds.map((td) => td.Content?.trim() ?? ""));
     expect(dataCells.length).toBeGreaterThan(0);
   });
 });

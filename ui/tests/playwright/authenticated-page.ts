@@ -21,6 +21,14 @@ export class AuthenticatedPage {
     await this.awaitLink(url);
   }
 
+  async clickTab(text: string, where: "main" | "sidebar" = "main") {
+    const tabsContainer = this.page
+      .locator(where === "main" ? "main" : "#page-sidebar")
+      .locator('[role="tablist"]');
+    const tab = tabsContainer.locator(`[role="tab"]:has-text("${text}")`);
+    await tab.click();
+  }
+
   async awaitLink(url: string) {
     // the first ** is to handle relative links
     // the last ** is to handle redirects, sometimes we link to a page that redirects to another page
