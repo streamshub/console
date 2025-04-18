@@ -1,13 +1,10 @@
 package com.github.streamshub.console.api.support.factories;
 
-import java.io.IOException;
 import java.io.InputStream;
-import java.io.UncheckedIOException;
 import java.net.URL;
 import java.nio.file.Path;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.function.Supplier;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Produces;
@@ -24,6 +21,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.github.streamshub.console.api.support.TrustStoreSupport;
+import com.github.streamshub.console.api.support.UncheckedIO;
 import com.github.streamshub.console.api.support.ValidationProxy;
 import com.github.streamshub.console.config.ConsoleConfig;
 
@@ -48,19 +46,6 @@ public class ConsoleConfigFactory {
 
     @Inject
     TrustStoreSupport trustStores;
-
-    // Note: extract this class and use generally where IOExceptions are simply re-thrown
-    interface UncheckedIO<R> {
-        R call() throws IOException;
-
-        static <R> R call(UncheckedIO<R> io, Supplier<String> exceptionMessage) {
-            try {
-                return io.call();
-            } catch (IOException e) {
-                throw new UncheckedIOException(exceptionMessage.get(), e);
-            }
-        }
-    }
 
     @Produces
     @ApplicationScoped
@@ -148,6 +133,4 @@ public class ConsoleConfigFactory {
 
         return value;
     }
-
-
 }

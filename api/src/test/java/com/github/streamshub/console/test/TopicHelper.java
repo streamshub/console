@@ -4,6 +4,7 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -61,6 +62,40 @@ public class TopicHelper {
             .thenApply(topics -> topics.stream().map(TopicListing::name).toList())
             .toCompletableFuture()
             .join();
+    }
+
+    public void deleteTopics(String... topicNames) {
+        try (Admin admin = Admin.create(adminConfig)) {
+            List<String> topics = Arrays.asList(topicNames);
+            log.infof("Deleting topics: %s", topics);
+
+            while (!topics.isEmpty()) {
+                admin.deleteTopics(topics)
+                    .topicNameValues()
+                    .entrySet()
+                    .stream()
+                    .map(e -> {
+                        return e.getValue().toCompletionStage().handle((nothing, error) -> {
+                            if (error == null || error instanceof UnknownTopicOrPartitionException) {
+                                return (Void) null;
+                            }
+
+                            log.warnf("Failed to delete topic %s: %s", e.getKey(), error.getMessage());
+                            throw new CompletionException(error);
+                        }).toCompletableFuture();
+                    })
+                    .reduce(CompletableFuture::allOf)
+                    .orElseGet(() -> CompletableFuture.completedFuture(null))
+                    .get(10, TimeUnit.SECONDS);
+
+                topics = allTopics(admin).stream().filter(topics::contains).toList();
+            }
+        } catch (InterruptedException e) {
+            log.warn("Process interrupted", e);
+            Thread.currentThread().interrupt();
+        } catch (Exception e) {
+            fail(e);
+        }
     }
 
     public void deleteAllTopics() {

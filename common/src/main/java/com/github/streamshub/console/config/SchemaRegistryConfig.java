@@ -5,21 +5,26 @@ import jakarta.validation.constraints.NotBlank;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.github.streamshub.console.config.authentication.Authenticated;
+import com.github.streamshub.console.config.authentication.AuthenticationConfig;
 
 import io.sundr.builder.annotations.Buildable;
 
 @JsonInclude(Include.NON_NULL)
 @Buildable(editableEnabled = false)
-public class SchemaRegistryConfig implements Trustable {
+public class SchemaRegistryConfig implements Authenticated, Trustable {
 
     @NotBlank(message = "Schema registry `name` is required")
-    String name;
+    private String name;
 
     @NotBlank(message = "Schema registry `url` is required")
-    String url;
+    private String url;
 
     @Valid
-    TrustStoreConfig trustStore;
+    private AuthenticationConfig authentication;
+
+    @Valid
+    private TrustStoreConfig trustStore;
 
     @Override
     public String getName() {
@@ -38,6 +43,16 @@ public class SchemaRegistryConfig implements Trustable {
         this.url = url;
     }
 
+    @Override
+    public AuthenticationConfig getAuthentication() {
+        return authentication;
+    }
+
+    public void setAuthentication(AuthenticationConfig authentication) {
+        this.authentication = authentication;
+    }
+
+    @Override
     public TrustStoreConfig getTrustStore() {
         return trustStore;
     }

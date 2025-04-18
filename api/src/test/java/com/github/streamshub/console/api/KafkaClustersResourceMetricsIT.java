@@ -5,7 +5,6 @@ import java.net.URI;
 import java.time.Instant;
 import java.util.Base64;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
@@ -25,17 +24,18 @@ import jakarta.ws.rs.core.Response.Status;
 import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.common.security.auth.SecurityProtocol;
 import org.eclipse.microprofile.config.Config;
+import org.jose4j.jwt.consumer.JwtConsumerBuilder;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 
 import com.github.streamshub.console.api.model.KafkaCluster;
 import com.github.streamshub.console.api.service.MetricsService;
 import com.github.streamshub.console.api.support.KafkaContext;
 import com.github.streamshub.console.config.ConsoleConfig;
 import com.github.streamshub.console.config.KafkaClusterConfig;
-import com.github.streamshub.console.config.PrometheusConfig;
-import com.github.streamshub.console.config.PrometheusConfig.Type;
 import com.github.streamshub.console.kafka.systemtest.TestPlainProfile;
 import com.github.streamshub.console.kafka.systemtest.deployment.DeploymentManager;
 import com.github.streamshub.console.test.AdminClientSpy;
@@ -59,7 +59,9 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasEntry;
 import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @QuarkusTest
 @TestHTTPEndpoint(KafkaClustersResource.class)
@@ -110,29 +112,36 @@ class KafkaClustersResourceMetricsIT implements ClientRequestFilter {
     }
 
     @BeforeEach
-    void setup() {
+    void setup(TestInfo testInfo) {
         filterQuery = ctx -> { /* No-op */ };
         filterQueryRange = ctx -> { /* No-op */ };
         metricsService.setAdditionalFilter(Optional.of(this));
+
+        String metricsSource;
 
         /*
          * Create a mock Prometheus configuration and point test-kafka1 to use it. A client
          * will be created when the Kafka CR is discovered. The request filter mock created
          * above is our way to intercept outbound requests and abort them with the desired
          * response for each test.
+         *
+         * metricsSources referenced by name here are configured in the TestPlainProfile and
+         * are parsed/configured at startup, then referenced by the test-kafka1 configuration
+         * for tests here.
          */
-        var prometheusConfig = new PrometheusConfig();
-        prometheusConfig.setName("test");
-        prometheusConfig.setType(Type.fromValue("standalone"));
-        prometheusConfig.setUrl("http://prometheus.example.com");
+        if (testInfo.getTags().contains("openshift-monitoring")) {
+            metricsSource = "test-openshift-monitoring";
+        } else if (testInfo.getTags().contains("unauthenticated")) {
+            metricsSource = "test-unauthenticated";
+        } else if (testInfo.getTags().contains("bearer-token")) {
+            metricsSource = "test-bearer-token";
+        } else if (testInfo.getTags().contains("oidc")) {
+            metricsSource = "test-oidc";
+        } else {
+            metricsSource = "test-basic";
+        }
 
-        var prometheusAuthN = new PrometheusConfig.Basic();
-        prometheusAuthN.setUsername("pr0m3th3u5");
-        prometheusAuthN.setPassword("password42");
-        prometheusConfig.setAuthentication(prometheusAuthN);
-
-        consoleConfig.setMetricsSources(List.of(prometheusConfig));
-        consoleConfig.getKafka().getCluster("default/test-kafka1").get().setMetricsSource("test");
+        consoleConfig.getKafka().getCluster("default/test-kafka1").get().setMetricsSource(metricsSource);
 
         kafkaContainer = deployments.getKafkaContainer();
         bootstrapServers = URI.create(kafkaContainer.getBootstrapServers());
@@ -195,6 +204,116 @@ class KafkaClustersResourceMetricsIT implements ClientRequestFilter {
         String expected = "Basic " + Base64.getEncoder().encodeToString("pr0m3th3u5:password42".getBytes());
         assertEquals(expected, queryAuthHeader.get());
         assertEquals(expected, queryRangeAuthHeader.get());
+    }
+
+    @Test
+    @Tag("openshift-monitoring")
+    void testDescribeClusterWithMetricsSetsOpenShiftBearerHeader() {
+        AtomicReference<String> queryAuthHeader = new AtomicReference<>();
+        AtomicReference<String> queryRangeAuthHeader = new AtomicReference<>();
+
+        filterQuery = ctx -> {
+            queryAuthHeader.set(ctx.getHeaderString(HttpHeaders.AUTHORIZATION));
+            ctx.abortWith(Response.ok(EMPTY_METRICS).build());
+        };
+
+        filterQueryRange = ctx -> {
+            queryRangeAuthHeader.set(ctx.getHeaderString(HttpHeaders.AUTHORIZATION));
+            ctx.abortWith(Response.ok(EMPTY_METRICS).build());
+        };
+
+        whenRequesting(req -> req
+                .param("fields[" + KafkaCluster.API_TYPE + "]", "name,metrics")
+                .get("{clusterId}", clusterId1))
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()));
+
+        assertTrue(queryAuthHeader.get().startsWith("Bearer "));
+        assertTrue(queryRangeAuthHeader.get().startsWith("Bearer "));
+    }
+
+    @Test
+    @Tag("bearer-token")
+    void testDescribeClusterWithMetricsSetsBearerHeader() {
+        AtomicReference<String> queryAuthHeader = new AtomicReference<>();
+        AtomicReference<String> queryRangeAuthHeader = new AtomicReference<>();
+
+        filterQuery = ctx -> {
+            queryAuthHeader.set(ctx.getHeaderString(HttpHeaders.AUTHORIZATION));
+            ctx.abortWith(Response.ok(EMPTY_METRICS).build());
+        };
+
+        filterQueryRange = ctx -> {
+            queryRangeAuthHeader.set(ctx.getHeaderString(HttpHeaders.AUTHORIZATION));
+            ctx.abortWith(Response.ok(EMPTY_METRICS).build());
+        };
+
+        whenRequesting(req -> req
+                .param("fields[" + KafkaCluster.API_TYPE + "]", "name,metrics")
+                .get("{clusterId}", clusterId1))
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()));
+
+        String expected = "Bearer my-bearer-token";
+        assertEquals(expected, queryAuthHeader.get());
+        assertEquals(expected, queryRangeAuthHeader.get());
+    }
+
+    @Test
+    @Tag("oidc")
+    void testDescribeClusterWithMetricsSetsOIDCBearerHeader() throws Exception {
+        AtomicReference<String> queryAuthHeader = new AtomicReference<>();
+        AtomicReference<String> queryRangeAuthHeader = new AtomicReference<>();
+
+        filterQuery = ctx -> {
+            queryAuthHeader.set(ctx.getHeaderString(HttpHeaders.AUTHORIZATION));
+            ctx.abortWith(Response.ok(EMPTY_METRICS).build());
+        };
+
+        filterQueryRange = ctx -> {
+            queryRangeAuthHeader.set(ctx.getHeaderString(HttpHeaders.AUTHORIZATION));
+            ctx.abortWith(Response.ok(EMPTY_METRICS).build());
+        };
+
+        whenRequesting(req -> req
+                .param("fields[" + KafkaCluster.API_TYPE + "]", "name,metrics")
+                .get("{clusterId}", clusterId1))
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()));
+
+        String authHeader = queryAuthHeader.get();
+        assertTrue(authHeader.startsWith("Bearer "));
+        assertEquals(authHeader, queryRangeAuthHeader.get());
+        var claims = new JwtConsumerBuilder()
+            .setSkipAllValidators()
+            .setSkipSignatureVerification()
+            .build()
+            .processToClaims(authHeader.substring("Bearer ".length()));
+        assertEquals("service-account-registry-api", claims.getClaimValue("preferred_username", String.class));
+    }
+
+    @Test
+    @Tag("unauthenticated")
+    void testDescribeClusterWithMetricsWithoutAuthorizationHeader() {
+        AtomicReference<String> queryAuthHeader = new AtomicReference<>();
+        AtomicReference<String> queryRangeAuthHeader = new AtomicReference<>();
+
+        filterQuery = ctx -> {
+            ctx.abortWith(Response.ok(EMPTY_METRICS).build());
+        };
+
+        filterQueryRange = ctx -> {
+            ctx.abortWith(Response.ok(EMPTY_METRICS).build());
+        };
+
+        whenRequesting(req -> req
+                .param("fields[" + KafkaCluster.API_TYPE + "]", "name,metrics")
+                .get("{clusterId}", clusterId1))
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()));
+
+        assertNull(queryAuthHeader.get());
+        assertNull(queryRangeAuthHeader.get());
     }
 
     @Test

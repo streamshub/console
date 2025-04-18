@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Random;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -41,8 +42,11 @@ import com.github.streamshub.console.api.v1alpha1.spec.Credentials;
 import com.github.streamshub.console.api.v1alpha1.spec.KafkaCluster;
 import com.github.streamshub.console.api.v1alpha1.spec.SchemaRegistry;
 import com.github.streamshub.console.api.v1alpha1.spec.TrustStore;
+import com.github.streamshub.console.api.v1alpha1.spec.Value;
+import com.github.streamshub.console.api.v1alpha1.spec.authentication.Authentication;
 import com.github.streamshub.console.api.v1alpha1.spec.metrics.MetricsSource;
 import com.github.streamshub.console.api.v1alpha1.spec.metrics.MetricsSource.Type;
+import com.github.streamshub.console.api.v1alpha1.spec.metrics.MetricsSourceAuthentication;
 import com.github.streamshub.console.api.v1alpha1.spec.security.GlobalSecurity;
 import com.github.streamshub.console.api.v1alpha1.spec.security.Oidc;
 import com.github.streamshub.console.api.v1alpha1.spec.security.Security;
@@ -57,6 +61,9 @@ import com.github.streamshub.console.config.SchemaRegistryConfig;
 import com.github.streamshub.console.config.TrustStoreConfig;
 import com.github.streamshub.console.config.TrustStoreConfigBuilder;
 import com.github.streamshub.console.config.ValueBuilder;
+import com.github.streamshub.console.config.authentication.Authenticated;
+import com.github.streamshub.console.config.authentication.AuthenticationConfigBuilder;
+import com.github.streamshub.console.config.authentication.OIDC;
 import com.github.streamshub.console.config.security.AuditConfigBuilder;
 import com.github.streamshub.console.config.security.Decision;
 import com.github.streamshub.console.config.security.OidcConfigBuilder;
@@ -170,7 +177,7 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
 
         try {
             buildConsoleConfig(primary, context, data);
-            buildTrustStores(primary, context, data);
+            buildClientSecrets(primary, context, data);
         } catch (Exception e) {
             if (!(e instanceof ReconciliationException)) {
                 LOGGER.warnf(e, "Exception processing console configuration from %s/%s", primary.getMetadata().getNamespace(), primary.getMetadata().getName());
@@ -216,7 +223,7 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
         }
 
         try {
-            var yaml = objectMapper.copyWith(new YAMLFactory());
+            var yaml = objectMapper.copyWith(YAMLFactory.builder().build());
             data.put("console-config.yaml", encodeString(yaml.writeValueAsString(consoleConfig)));
         } catch (JsonProcessingException e) {
             throw new UncheckedIOException(e);
@@ -228,7 +235,7 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
      * method will add to the context the resources to be added to the console deployment to
      * access the secret entries.
      */
-    private void buildTrustStores(Console primary, Context<Console> context, Map<String, String> data) {
+    private void buildClientSecrets(Console primary, Context<Console> context, Map<String, String> data) {
         Optional.ofNullable(primary.getSpec().getSecurity())
             .map(GlobalSecurity::getOidc)
             .map(Oidc::getTrustStore)
@@ -241,26 +248,67 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
             ));
 
         coalesce(primary.getSpec().getMetricsSources(), Collections::emptyList).stream()
-            .filter(source -> Objects.nonNull(source.getTrustStore()))
-            .map(source -> Map.entry(source.getName(), source.getTrustStore()))
-            .forEach(trustStore -> buildTrustStore(
-                    context,
-                    primary.getMetadata().getNamespace(),
-                    "metrics-source-" + trustStore.getKey(),
-                    trustStore.getValue(),
-                    data
+            .forEach(source -> buildClientSecrets(
+                context,
+                primary.getMetadata().getNamespace(),
+                "metrics-source-" + source.getName(),
+                source.getAuthentication(),
+                source.getTrustStore(),
+                data
             ));
 
         coalesce(primary.getSpec().getSchemaRegistries(), Collections::emptyList).stream()
-            .filter(source -> Objects.nonNull(source.getTrustStore()))
-            .map(source -> Map.entry(source.getName(), source.getTrustStore()))
-            .forEach(trustStore -> buildTrustStore(
-                    context,
-                    primary.getMetadata().getNamespace(),
-                    "schema-registry-" + trustStore.getKey(),
-                    trustStore.getValue(),
-                    data
+            .forEach(source -> buildClientSecrets(
+                context,
+                primary.getMetadata().getNamespace(),
+                "schema-registry-" + source.getName(),
+                source.getAuthentication(),
+                source.getTrustStore(),
+                data
             ));
+    }
+
+    private void buildClientSecrets(Context<Console> context, String namespace, String name, Authentication authentication, TrustStore trustStore, Map<String, String> data) {
+        if (authentication != null) {
+            buildAuthSecrets(
+                context,
+                namespace,
+                name,
+                authentication,
+                data
+            );
+        }
+        if (trustStore != null) {
+            buildTrustStore(
+                context,
+                namespace,
+                name,
+                trustStore,
+                data
+            );
+        }
+    }
+
+    private void buildAuthSecrets(Context<Console> context, String namespace, String name, Authentication authentication, Map<String, String> data) {
+        if (authentication.hasBasic()) {
+            var basic = authentication.getBasic();
+            byte[] password = getValue(context, namespace, basic.getPassword());
+            maybePutSecretEntry(data, name + "-basic-password.txt", password);
+        } else if (authentication.hasBearer()) {
+            var bearer = authentication.getBearer();
+            byte[] token = getValue(context, namespace, bearer.getToken());
+            maybePutSecretEntry(data, name + "-bearer-token.txt", token);
+        } else if (authentication.hasOIDC()) {
+            var oidc = authentication.getOidc();
+            byte[] clientSecret = getValue(context, namespace, oidc.getClientSecret());
+            maybePutSecretEntry(data, name + "-oidc-clientsecret.txt", clientSecret);
+
+            var trustStore = oidc.getTrustStore();
+
+            if (trustStore != null) {
+                buildTrustStore(context, namespace, name + "-oidc", trustStore, data);
+            }
+        }
     }
 
     private void buildTrustStore(Context<Console> context, String namespace, String name, TrustStore trustStore, Map<String, String> data) {
@@ -277,10 +325,7 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
 
         String key = "truststore-%s-content.%s".formatted(name, type);
         data.put(key, ConfigSupport.encodeBytes(content));
-
-        if (password != null) {
-            data.put("truststore-%s-password.txt".formatted(name), ConfigSupport.encodeBytes(content));
-        }
+        maybePutSecretEntry(data, "truststore-%s-password.txt".formatted(name), password);
     }
 
     private byte[] pemEncode(String name, TrustStore trustStore, byte[] password, byte[] content) {
@@ -340,6 +385,12 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
         });
 
         return new String(buffer.toByteArray()).substring(0, length);
+    }
+
+    private void maybePutSecretEntry(Map<String, String> data, String key, byte[] value) {
+        if (value != null) {
+            data.put(key, ConfigSupport.encodeBytes(value));
+        }
     }
 
     private ConsoleConfig buildConfig(Console primary, Context<Console> context) {
@@ -489,6 +540,7 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
 
         for (MetricsSource metricsSource : metricsSources) {
             String name = metricsSource.getName();
+            String qualifiedName = "metrics-source-" + name;
             var prometheusConfig = new PrometheusConfig();
             prometheusConfig.setName(name);
 
@@ -509,21 +561,12 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
             var metricsAuthn = metricsSource.getAuthentication();
 
             if (metricsAuthn != null) {
-                if (metricsAuthn.getToken() == null) {
-                    var basicConfig = new PrometheusConfig.Basic();
-                    basicConfig.setUsername(metricsAuthn.getUsername());
-                    basicConfig.setPassword(metricsAuthn.getPassword());
-                    prometheusConfig.setAuthentication(basicConfig);
-                } else {
-                    var bearerConfig = new PrometheusConfig.Bearer();
-                    bearerConfig.setToken(metricsAuthn.getToken());
-                    prometheusConfig.setAuthentication(bearerConfig);
-                }
+                addAuthentication(metricsAuthn, prometheusConfig, qualifiedName);
             }
 
             prometheusConfig.setTrustStore(buildTrustStoreConfig(
                     metricsSource.getTrustStore(),
-                    "metrics-source-" + name
+                    qualifiedName
             ));
 
             config.getMetricsSources().add(prometheusConfig);
@@ -544,19 +587,103 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
         return "https://" + host;
     }
 
+    private void addAuthentication(MetricsSourceAuthentication metricsAuthn, PrometheusConfig prometheusConfig, String name) {
+        if (!addAuthentication((Authentication) metricsAuthn, prometheusConfig, name)) {
+            if (metricsAuthn.getToken() != null) {
+                prometheusConfig.setAuthentication(new AuthenticationConfigBuilder()
+                    .withNewBearer()
+                        .withToken(mapValue(new com.github.streamshub.console.api.v1alpha1.spec.ValueBuilder()
+                            .withValue(metricsAuthn.getToken())
+                            .build(), name))
+                    .endBearer()
+                    .build());
+            } else {
+                prometheusConfig.setAuthentication(new AuthenticationConfigBuilder()
+                    .withNewBasic()
+                        .withUsername(metricsAuthn.getUsername())
+                        .withPassword(mapValue(new com.github.streamshub.console.api.v1alpha1.spec.ValueBuilder()
+                            .withValue(metricsAuthn.getPassword())
+                            .build(), name))
+                    .endBasic()
+                    .build());
+            }
+        }
+    }
+
     private void addSchemaRegistries(Console primary, ConsoleConfig config) {
         for (SchemaRegistry registry : coalesce(primary.getSpec().getSchemaRegistries(), Collections::emptyList)) {
             String name = registry.getName();
+            String qualifiedName = "schema-registry-" + name;
             var registryConfig = new SchemaRegistryConfig();
             registryConfig.setName(name);
             registryConfig.setUrl(registry.getUrl());
             registryConfig.setTrustStore(buildTrustStoreConfig(
                     registry.getTrustStore(),
-                    "schema-registry-" + name
+                    qualifiedName
             ));
+
+            var authentication = registry.getAuthentication();
+
+            if (authentication != null) {
+                addAuthentication(authentication, registryConfig, qualifiedName);
+            }
 
             config.getSchemaRegistries().add(registryConfig);
         }
+    }
+
+    private boolean addAuthentication(Authentication authn, Authenticated authenticated, String name) {
+        if (authn.hasBasic()) {
+            authenticated.setAuthentication(new AuthenticationConfigBuilder()
+                .withNewBasic()
+                    .withUsername(authn.getBasic().getUsername())
+                    .withPassword(mapValue(authn.getBasic().getPassword(), name + "-basic-password"))
+                .endBasic()
+                .build());
+            return true;
+        } else if (authn.hasBearer()) {
+            authenticated.setAuthentication(new AuthenticationConfigBuilder()
+                .withNewBearer()
+                    .withToken(mapValue(authn.getBearer().getToken(), name + "-bearer-token"))
+                .endBearer()
+                .build());
+            return true;
+        } else if (authn.hasOIDC()) {
+            var oidc = authn.getOidc();
+            authenticated.setAuthentication(new AuthenticationConfigBuilder()
+                .withNewOidc()
+                    .withAuthServerUrl(oidc.getAuthServerUrl())
+                    .withTokenPath(oidc.getTokenPath())
+                    .withClientId(oidc.getClientId())
+                    .withClientSecret(mapValue(oidc.getClientSecret(), name + "-oidc-clientsecret"))
+                    .withMethod(mapEnumByName(oidc.getMethod(), OIDC.Method::valueOf, null))
+                    .withScopes(oidc.getScopes())
+                    .withAbsoluteExpiresIn(oidc.isAbsoluteExpiresIn())
+                    .withGrantType(mapEnumByName(oidc.getGrantType(), OIDC.GrantType::valueOf, OIDC.GrantType.CLIENT))
+                    .withGrantOptions(oidc.getGrantOptions())
+                    .withTrustStore(buildTrustStoreConfig(oidc.getTrustStore(), name + "-oidc"))
+                .endOidc()
+                .build());
+            return true;
+        }
+
+        return false;
+    }
+
+    private com.github.streamshub.console.config.Value mapValue(Value value, String name) {
+        if (value != null) {
+            return new com.github.streamshub.console.config.ValueBuilder()
+                .withValueFrom("/deployments/config/%s.txt".formatted(name))
+                .build();
+        }
+        return null;
+    }
+
+    private <E extends Enum<E>> E mapEnumByName(Enum<?> source, Function<String, E> mapper, E defaultValue) {
+        if (source != null) {
+            return mapper.apply(source.name());
+        }
+        return defaultValue;
     }
 
     private KafkaClusterConfig addConfig(Console primary, Context<Console> context, ConsoleConfig config, KafkaCluster kafkaRef) {

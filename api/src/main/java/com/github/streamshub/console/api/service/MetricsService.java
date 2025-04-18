@@ -3,7 +3,6 @@ package com.github.streamshub.console.api.service;
 import java.net.URI;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.Base64;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -27,6 +26,7 @@ import org.jboss.logging.Logger;
 
 import com.github.streamshub.console.api.model.Metrics;
 import com.github.streamshub.console.api.model.Metrics.RangeEntry;
+import com.github.streamshub.console.api.support.AuthenticationSupport;
 import com.github.streamshub.console.api.support.KafkaContext;
 import com.github.streamshub.console.api.support.PrometheusAPI;
 import com.github.streamshub.console.api.support.TrustStoreSupport;
@@ -37,7 +37,6 @@ import com.github.streamshub.console.config.PrometheusConfig.Type;
 
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.quarkus.tls.TlsConfiguration;
-import io.quarkus.tls.TlsConfigurationRegistry;
 
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.mapping;
@@ -53,7 +52,7 @@ public class MetricsService {
     Logger logger;
 
     @Inject
-    TlsConfigurationRegistry tlsRegistry;
+    TrustStoreSupport trustStores;
 
     @Inject
     KubernetesClient k8s;
@@ -68,21 +67,16 @@ public class MetricsService {
     }
 
     ClientRequestFilter createAuthenticationFilter(PrometheusConfig config) {
-        return requestContext -> {
-            var authConfig = config.getAuthentication();
-            String authHeader = null;
+        AuthenticationSupport authentication = new AuthenticationSupport(config);
 
-            if (authConfig instanceof PrometheusConfig.Basic basic) {
-                authHeader = "Basic " + Base64.getEncoder().encodeToString("%s:%s".formatted(
-                        basic.getUsername(),
-                        basic.getPassword())
-                        .getBytes());
-            } else if (authConfig instanceof PrometheusConfig.Bearer bearer) {
-                authHeader = "Bearer " + bearer.getToken();
-            } else if (config.getType() == Type.OPENSHIFT_MONITORING) {
-                // ServiceAccount needs cluster role `cluster-monitoring-view`
-                authHeader = "Bearer " + k8s.getConfiguration().getAutoOAuthToken();
-            }
+        return requestContext -> {
+            String authHeader = authentication.get().orElseGet(() -> {
+                if (config.getType() == Type.OPENSHIFT_MONITORING) {
+                    // ServiceAccount needs cluster role `cluster-monitoring-view`
+                    return "Bearer " + k8s.getConfiguration().getAutoOAuthToken();
+                }
+                return null;
+            });
 
             if (authHeader != null) {
                 requestContext.getHeaders().add(HttpHeaders.AUTHORIZATION, authHeader);
@@ -101,7 +95,7 @@ public class MetricsService {
                     .findFirst()
                     .orElseThrow();
 
-            var trustStore = getTlsConfiguration(sourceName)
+            var trustStore = trustStores.getTlsConfiguration(prometheusConfig, null)
                     .map(TlsConfiguration::getTrustStore)
                     .orElse(null);
 
@@ -116,10 +110,6 @@ public class MetricsService {
         }
 
         return null;
-    }
-
-    Optional<TlsConfiguration> getTlsConfiguration(String sourceName) {
-        return tlsRegistry.get(TrustStoreSupport.TRUST_PREFIX_METRICS + sourceName);
     }
 
     CompletionStage<Map<String, List<Metrics.ValueMetric>>> queryValues(String query) {

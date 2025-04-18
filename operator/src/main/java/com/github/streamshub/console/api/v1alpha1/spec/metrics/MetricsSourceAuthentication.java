@@ -1,16 +1,13 @@
 package com.github.streamshub.console.api.v1alpha1.spec.metrics;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.github.streamshub.console.api.v1alpha1.spec.authentication.Authentication;
 
-import io.fabric8.generator.annotation.ValidationRule;
 import io.sundr.builder.annotations.Buildable;
 
 @Buildable(editableEnabled = false)
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@ValidationRule(
-        value = "has(self.token) || (has(self.username) && has(self.password))",
-        message = "One of `token` or `username` + `password` must be provided")
-public class MetricsSourceAuthentication {
+public class MetricsSourceAuthentication extends Authentication {
 
     private String username;
     private String password;

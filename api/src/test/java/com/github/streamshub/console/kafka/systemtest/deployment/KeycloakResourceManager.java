@@ -21,13 +21,13 @@ import com.github.streamshub.console.test.TlsHelper;
 
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
 
-public class KeycloakResourceManager implements QuarkusTestResourceLifecycleManager {
+public class KeycloakResourceManager extends ResourceManagerBase implements QuarkusTestResourceLifecycleManager {
 
     GenericContainer<?> keycloak;
 
     @Override
     @SuppressWarnings("resource")
-    public Map<String, String> start() {
+    public Map<String, String> start(Map<Class<?>, Map<String, String>> dependencyProperties) {
         byte[] realmConfig;
 
         try (InputStream stream = getClass().getResourceAsStream("/keycloak/console-realm.json")) {
@@ -36,8 +36,9 @@ public class KeycloakResourceManager implements QuarkusTestResourceLifecycleMana
             throw new UncheckedIOException(ioe);
         }
 
+        String alias = "keycloak";
         int port = 8443;
-        TlsHelper tls = TlsHelper.newInstance();
+        TlsHelper tls = TlsHelper.newInstance(alias);
         String keystorePath = "/opt/keycloak/keystore.p12";
         String keycloakImage;
 
@@ -50,6 +51,9 @@ public class KeycloakResourceManager implements QuarkusTestResourceLifecycleMana
 
         keycloak = new GenericContainer<>(keycloakImage)
                 .withLogConsumer(new Slf4jLogConsumer(LoggerFactory.getLogger("systemtests.keycloak"), true))
+                .withCreateContainerCmdModifier(setContainerName("keycloak"))
+                .withNetwork(SHARED_NETWORK)
+                .withNetworkAliases(alias)
                 .withExposedPorts(port)
                 .withEnv(Map.of(
                         "KC_BOOTSTRAP_ADMIN_USERNAME", "admin",
@@ -67,11 +71,14 @@ public class KeycloakResourceManager implements QuarkusTestResourceLifecycleMana
                         "/opt/keycloak/data/import/console-authz.json")
                 .withCommand(
                         "start",
-                        "--hostname=localhost",
+                        "--hostname=https://localhost:%d".formatted(port),
+                        "--hostname-backchannel-dynamic=true",
                         "--http-enabled=false",
+                        "--https-port=%d".formatted(port),
                         "--https-key-store-file=%s".formatted(keystorePath),
                         "--https-key-store-password=%s".formatted(String.copyValueOf(tls.getPassphrase())),
-                        "--import-realm"
+                        "--import-realm",
+                        "--verbose"
                 )
                 .waitingFor(Wait.forHttps("/realms/console-authz")
                         .allowInsecure()
@@ -91,10 +98,13 @@ public class KeycloakResourceManager implements QuarkusTestResourceLifecycleMana
 
         String urlTemplate = "https://localhost:%d/realms/console-authz";
         var oidcUrl = urlTemplate.formatted(keycloak.getMappedPort(port));
+
         return Map.of(
                 "console.test.oidc-url", oidcUrl,
+                "console.test.oidc-url-internal", "https://%s:%d".formatted(alias, port),
                 "console.test.oidc-host", "localhost:%d".formatted(port),
                 "console.test.oidc-issuer", urlTemplate.formatted(port),
+                "console.test.oidc-realm", "console-authz",
                 "console.test.oidc-trust-store.type", TrustStoreConfig.Type.JKS.name(),
                 "console.test.oidc-trust-store.path", truststoreFile.getAbsolutePath(),
                 "console.test.oidc-trust-store.password", String.copyValueOf(tls.getPassphrase())
@@ -103,6 +113,8 @@ public class KeycloakResourceManager implements QuarkusTestResourceLifecycleMana
 
     @Override
     public void stop() {
-        keycloak.stop();
+        if (keycloak != null) {
+            keycloak.stop();
+        }
     }
 }

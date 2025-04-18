@@ -1,5 +1,12 @@
 package com.github.streamshub.console.config;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Optional;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
 import io.sundr.builder.annotations.Buildable;
@@ -41,4 +48,21 @@ public class Value {
         this.valueFrom = valueFrom;
     }
 
+    @JsonIgnore
+    public static Optional<String> getOptional(Value value) {
+        return Optional.ofNullable(value).map(Value::get);
+    }
+
+    @JsonIgnore
+    public String get() {
+        if (value != null) {
+            return value;
+        }
+
+        try {
+            return Files.readString(Path.of(valueFrom));
+        } catch (IOException e) {
+            throw new UncheckedIOException("Exception reading from path " + valueFrom, e);
+        }
+    }
 }

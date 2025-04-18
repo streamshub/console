@@ -12,6 +12,7 @@ import java.util.Map;
 import com.github.streamshub.console.kafka.systemtest.deployment.ApicurioResourceManager;
 import com.github.streamshub.console.kafka.systemtest.deployment.KafkaResourceManager;
 import com.github.streamshub.console.kafka.systemtest.deployment.KeycloakResourceManager;
+import com.github.streamshub.console.kafka.systemtest.deployment.ResourceManagerBase;
 import com.github.streamshub.console.kafka.systemtest.deployment.StrimziCrdResourceManager;
 
 import io.quarkus.test.junit.QuarkusTestProfile;
@@ -30,6 +31,21 @@ public class TestPlainProfile implements QuarkusTestProfile {
         System.setProperty("jdk.httpclient.allowRestrictedHeaders", "host");
     }
 
+    private final List<TestResourceEntry> testResources;
+
+    public TestPlainProfile() {
+        testResources = List.of(
+                new TestResourceEntry(ApicurioResourceManager.class, Map.ofEntries(
+                        Map.entry(ResourceManagerBase.DEPENDENCIES, KeycloakResourceManager.class.getName())
+                    ), true),
+                new TestResourceEntry(StrimziCrdResourceManager.class, Collections.emptyMap(), true),
+                new TestResourceEntry(KeycloakResourceManager.class, Collections.emptyMap(), true),
+                new TestResourceEntry(KafkaResourceManager.class, Map.ofEntries(
+                        Map.entry("profile", PROFILE)
+                    ), true)
+            );
+    }
+
     @Override
     public String getConfigProfile() {
         return PROFILE;
@@ -37,11 +53,7 @@ public class TestPlainProfile implements QuarkusTestProfile {
 
     @Override
     public List<TestResourceEntry> testResources() {
-        return List.of(
-                new TestResourceEntry(ApicurioResourceManager.class, Collections.emptyMap(), true),
-                new TestResourceEntry(StrimziCrdResourceManager.class, Collections.emptyMap(), true),
-                new TestResourceEntry(KeycloakResourceManager.class, Collections.emptyMap(), true),
-                new TestResourceEntry(KafkaResourceManager.class, Map.of("profile", PROFILE), true));
+        return testResources;
     }
 
     @Override
@@ -50,9 +62,65 @@ public class TestPlainProfile implements QuarkusTestProfile {
                 kubernetes:
                   enabled: true
 
+                metricsSources:
+                 - name: test-openshift-monitoring
+                   type: openshift-monitoring
+                   url: http://prometheus.example.com
+                 - name: test-unauthenticated
+                   type: standalone
+                   url: http://prometheus.example.com
+                 - name: test-basic
+                   type: standalone
+                   url: http://prometheus.example.com
+                   authentication:
+                     basic:
+                       username: pr0m3th3u5
+                       password:
+                         value: password42
+                 - name: test-bearer-token
+                   type: standalone
+                   url: http://prometheus.example.com
+                   authentication:
+                     bearer:
+                       token:
+                         value: my-bearer-token
+                 - name: test-oidc
+                   type: standalone
+                   url: http://prometheus.example.com
+                   authentication:
+                     oidc:
+                       authServerUrl: ${console.test.oidc-url}
+                       clientId: registry-api
+                       clientSecret:
+                         value: registry-api-secret
+                       method: BASIC
+                       grantType: CLIENT
+                       trustStore:
+                         type: ${console.test.oidc-trust-store.type}
+                         content:
+                           valueFrom: ${console.test.oidc-trust-store.path}
+                         password:
+                           value: ${console.test.oidc-trust-store.password}
+
                 schemaRegistries:
                   - name: test-registry
                     url: ${console.test.apicurio-url}
+                    authentication:
+                      oidc:
+                        authServerUrl: ${console.test.oidc-url}
+                        clientId: registry-api
+                        clientSecret:
+                          value: registry-api-secret
+                        method: POST
+                        grantType: CLIENT
+                        grantOptions:
+                          audience: ${console.test.apicurio-url}
+                        trustStore:
+                          type: ${console.test.oidc-trust-store.type}
+                          content:
+                            valueFrom: ${console.test.oidc-trust-store.path}
+                          password:
+                            value: ${console.test.oidc-trust-store.password}
                     trustStore:
                       type: ${console.test.apicurio-trust-store.type}
                       content:
