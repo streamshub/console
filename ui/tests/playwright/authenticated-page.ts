@@ -1,4 +1,4 @@
-import type { Page } from "@playwright/test";
+import { expect, type Page } from "@playwright/test";
 
 export class AuthenticatedPage {
   private readonly baseUrl: string;
@@ -25,8 +25,12 @@ export class AuthenticatedPage {
     const tabsContainer = this.page
       .locator(where === "main" ? "main" : "#page-sidebar")
       .locator('[role="tablist"]');
-    const tab = tabsContainer.locator(`[role="tab"]:has-text("${text}")`);
-    await tab.click();
+    const tab = tabsContainer.getByRole("tab", { name: text });
+    await expect(tab).toBeVisible({ timeout: 5000 });
+    await tab.click({ force: true });
+    await expect(tab).toHaveAttribute("aria-selected", "true", {
+      timeout: 10000,
+    });
   }
 
   async awaitLink(url: string) {
