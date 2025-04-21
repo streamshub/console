@@ -1,6 +1,10 @@
 "use client";
-import { EmptyState, EmptyStateBody, Title } from "@patternfly/react-core";
-import { ErrorCircleOIcon, BanIcon } from "@patternfly/react-icons";
+import {
+  EmptyState,
+  EmptyStateBody,
+  Title,
+} from "@/libs/patternfly/react-core";
+import { ErrorCircleOIcon, BanIcon } from "@/libs/patternfly/react-icons";
 import { ApiError } from "@/api/api";
 
 export function NoDataErrorState({ errors }: { errors: ApiError[] }) {

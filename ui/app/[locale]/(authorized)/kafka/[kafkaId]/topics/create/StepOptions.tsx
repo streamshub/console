@@ -3,7 +3,7 @@ import { ConfigMap, NewConfigMap } from "@/api/topics/schema";
 import { ConfigTable } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/topics/create/ConfigTable";
 import { Errors } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/topics/create/Errors";
 import { topicMutateErrorToFieldError } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/topics/create/topicMutateErrorToFieldError";
-import { Content, Title } from "@patternfly/react-core";
+import { Content, Title } from "@/libs/patternfly/react-core";
 import { useTranslations } from "next-intl";
 
 export function StepOptions({

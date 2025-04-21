@@ -4,8 +4,13 @@ import { NodeConfig } from "@/api/nodes/schema";
 import { Number } from "@/components/Format/Number";
 import { TableView } from "@/components/Table";
 import { usePathname, useRouter } from "@/i18n/routing";
-import { Label, LabelGroup, List, ListItem } from "@patternfly/react-core";
-import { TableVariant } from "@patternfly/react-table";
+import {
+  Label,
+  LabelGroup,
+  List,
+  ListItem,
+} from "@/libs/patternfly/react-core";
+import { TableVariant } from "@/libs/patternfly/react-table";
 import { useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
 import { useCallback } from "react";

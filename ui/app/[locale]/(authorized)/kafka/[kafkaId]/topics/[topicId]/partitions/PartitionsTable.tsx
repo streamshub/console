@@ -21,7 +21,7 @@ import {
 import {
   ExclamationCircleIcon,
   ExclamationTriangleIcon,
-} from "@patternfly/react-icons";
+} from "@/libs/patternfly/react-icons";
 import { ReactNode, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { usePagination } from "@/utils/usePagination";

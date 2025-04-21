@@ -1,5 +1,5 @@
 import { ApiError } from "@/api/api";
-import { Alert, Content } from "@patternfly/react-core";
+import { Alert, Content } from "@/libs/patternfly/react-core";
 
 export function Errors({ errors }: { errors: ApiError[] | undefined }) {
   return errors !== undefined ? (

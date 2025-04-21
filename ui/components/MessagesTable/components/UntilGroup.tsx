@@ -6,7 +6,7 @@ import {
   FlexItem,
   FormHelperText,
   MenuToggle,
-} from "@patternfly/react-core";
+} from "@/libs/patternfly/react-core";
 import { useState } from "react";
 
 type Category = "limit" | "live";

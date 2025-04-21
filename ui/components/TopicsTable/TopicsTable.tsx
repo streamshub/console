@@ -14,7 +14,7 @@ import {
 } from "@/libs/patternfly/react-icons";
 import { TableVariant } from "@/libs/patternfly/react-table";
 import { Link } from "@/i18n/routing";
-import { Truncate } from "@patternfly/react-core";
+import { Truncate } from "@/libs/patternfly/react-core";
 import { useTranslations } from "next-intl";
 import { ReactNode } from "react";
 import { EmptyStateNoTopics } from "./components/EmptyStateNoTopics";

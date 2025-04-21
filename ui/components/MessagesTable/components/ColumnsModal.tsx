@@ -9,7 +9,7 @@ import {
   ModalBody,
   ModalFooter,
   ModalHeader,
-} from "@patternfly/react-core";
+} from "@/libs/patternfly/react-core";
 import { DragDropSort } from "@patternfly/react-drag-drop";
 import { useTranslations } from "next-intl";
 import { useState } from "react";

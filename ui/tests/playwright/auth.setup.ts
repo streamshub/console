@@ -14,5 +14,7 @@ setup("authenticate", async ({ page }) => {
 
   process.env.TEST_BASE_URL = page.url();
 
+  console.log(process.env.TEST_BASE_URL);
+
   await page.context().storageState({ path: authFile });
 });

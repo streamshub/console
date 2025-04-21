@@ -9,8 +9,8 @@ import {
   DrawerHead,
   DrawerPanelContent,
   Title,
+  Skeleton,
 } from "@/libs/patternfly/react-core";
-import { Skeleton } from "@patternfly/react-core";
 import { useTranslations } from "next-intl";
 import { PropsWithChildren, Suspense } from "react";
 import { ClusterConnectionDetails } from "./ClusterConnectionDetails";

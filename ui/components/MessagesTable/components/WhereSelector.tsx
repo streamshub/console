@@ -1,4 +1,8 @@
-import { Dropdown, DropdownItem, MenuToggle } from "@patternfly/react-core";
+import {
+  Dropdown,
+  DropdownItem,
+  MenuToggle,
+} from "@/libs/patternfly/react-core";
 import { useEffect, useState } from "react";
 import { MessagesTableProps } from "../MessagesTable";
 

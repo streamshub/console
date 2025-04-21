@@ -1,7 +1,12 @@
 "use client";
 
 import { SchemaValue } from "@/components/MessagesTable/components/SchemaValue";
-import { Flex, FlexItem, PageSection, Title } from "@patternfly/react-core";
+import {
+  Flex,
+  FlexItem,
+  PageSection,
+  Title,
+} from "@/libs/patternfly/react-core";
 
 export function ConnectedSchema({
   content,

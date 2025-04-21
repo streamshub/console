@@ -3,7 +3,7 @@ import { usePathname } from "@/i18n/routing";
 import {
   NavExpandable as PFNavExpendable,
   NavExpandableProps,
-} from "@patternfly/react-core";
+} from "@/libs/patternfly/react-core";
 import { PropsWithChildren } from "react";
 
 export function NavExpandable({

@@ -7,9 +7,11 @@ import {
   List,
   ListItem,
   Content,
+  Divider,
+  Stack,
+  StackItem,
 } from "@/libs/patternfly/react-core";
 import { useEffect, useState } from "react";
-import { Divider, Stack, StackItem } from "@patternfly/react-core";
 import { useTranslations } from "next-intl";
 import { clientConfig as config } from "@/utils/config";
 

@@ -7,7 +7,7 @@ import {
   NumberInput,
   Content,
   Title,
-} from "@patternfly/react-core";
+} from "@/libs/patternfly/react-core";
 import { useTranslations } from "next-intl";
 
 export function FieldPartitions({

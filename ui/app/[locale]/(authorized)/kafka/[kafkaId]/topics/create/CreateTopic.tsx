@@ -18,7 +18,7 @@ import {
   Wizard,
   WizardFooterWrapper,
   WizardStep,
-} from "@patternfly/react-core";
+} from "@/libs/patternfly/react-core";
 import { useTranslations } from "next-intl";
 import { useCallback, useState, useTransition } from "react";
 

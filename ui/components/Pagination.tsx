@@ -1,8 +1,8 @@
-import type { PaginationProps as PFPaginationProps } from "@patternfly/react-core";
+import type { PaginationProps as PFPaginationProps } from "@/libs/patternfly/react-core";
 import {
   Pagination as PFPagination,
   PaginationVariant,
-} from "@patternfly/react-core";
+} from "@/libs/patternfly/react-core";
 
 export type PaginationProps = {
   itemCount: number;

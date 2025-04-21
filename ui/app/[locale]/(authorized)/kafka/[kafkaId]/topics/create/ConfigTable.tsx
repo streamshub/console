@@ -6,8 +6,8 @@ import {
   HelperText,
   HelperTextItem,
   TextInput,
-} from "@patternfly/react-core";
-import { TableVariant } from "@patternfly/react-table";
+} from "@/libs/patternfly/react-core";
+import { TableVariant } from "@/libs/patternfly/react-table";
 import { useTranslations } from "next-intl";
 import { useCallback, useMemo } from "react";
 

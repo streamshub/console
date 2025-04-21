@@ -4,11 +4,16 @@ import { Link } from "@/i18n/routing";
 import {
   Alert,
   Button,
+  Flex,
+  FlexItem,
   LoginForm,
   LoginFormProps,
   LoginMainFooterBandItem,
   LoginPage,
-} from "@patternfly/react-core";
+  ToggleGroup,
+  ToggleGroupItem,
+} from "@/libs/patternfly/react-core";
+import { MoonIcon, SunIcon } from "@/libs/patternfly/react-icons";
 import { signIn } from "next-auth/react";
 import { useTranslations } from "next-intl";
 import { FormEvent, useState } from "react";
@@ -48,7 +53,7 @@ export function SignInPage({
   callbackUrl,
   hasMultipleClusters,
 }: {
-  kafkaId: string,
+  kafkaId: string;
   provider: "credentials" | "oauth-token" | "anonymous";
   callbackUrl: string;
   hasMultipleClusters: boolean;
@@ -60,6 +65,14 @@ export function SignInPage({
   const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | undefined>();
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+  const toggleDarkMode = (value: boolean) => {
+    setIsDarkMode(value);
+    document
+      .getElementsByTagName("html")[0]
+      .classList.toggle("pf-v6-theme-dark");
+  };
 
   const handleUsernameChange = (
     _event: FormEvent<HTMLInputElement>,
@@ -76,7 +89,7 @@ export function SignInPage({
   };
 
   const learnMoreResource = (
-    <LoginMainFooterBandItem>
+    <LoginMainFooterBandItem style={{ textAlign: "left", width: "100%" }}>
       <ExternalLink
         href={"https://redhat.com"}
         testId={"learn-more-about-streams-kafka"}
@@ -94,7 +107,8 @@ export function SignInPage({
       "oauth-token": { clientId: username, secret: password },
       anonymous: {},
     }[provider];
-    const providerId = provider === "credentials" ? "credentials-" + kafkaId : provider;
+    const providerId =
+      provider === "credentials" ? "credentials-" + kafkaId : provider;
     const res = await signIn(providerId, {
       ...options,
       redirect: false,
@@ -126,41 +140,65 @@ export function SignInPage({
       : t("login-in-page.clientSecret");
 
   return (
-    <LoginPage
-      backgroundImgSrc="/assets/images/pfbg-icon.svg"
-      loginTitle={t("homepage.page_header", { product: productName })}
-      loginSubtitle={t("login-in-page.login_sub_title")}
-      textContent={t("login-in-page.text_content", { product: productName })}
-      brandImgSrc={"/full-logo.svg"}
-      footerListItems={t("login-in-page.footer_text")}
-      socialMediaLoginContent={learnMoreResource}
-      signUpForAccountMessage={
-        hasMultipleClusters && (
-          <Link href={"/"}>
-            {t("login-in-page.log_into_a_different_cluster")}
-          </Link>
-        )
-      }
-    >
-      {error && isSubmitting === false && (
-        <Alert variant={"danger"} isInline={true} title={error} />
-      )}
+    <>
+      <Flex>
+        <FlexItem align={{ default: "alignRight" }}>
+          <ToggleGroup className={"pf-v6-u-py-md"}>
+            <ToggleGroupItem
+              icon={<SunIcon />}
+              aria-label="Light mode"
+              isSelected={!isDarkMode}
+              onChange={() => {
+                toggleDarkMode(false);
+              }}
+            />
+            <ToggleGroupItem
+              icon={<MoonIcon />}
+              aria-label="Dark mode"
+              isSelected={isDarkMode}
+              onChange={() => {
+                toggleDarkMode(true);
+              }}
+            />
+          </ToggleGroup>
+        </FlexItem>
+      </Flex>
+      <LoginPage
+        backgroundImgSrc="/assets/images/pfbg-icon.svg"
+        loginTitle={t("homepage.page_header", { product: productName })}
+        loginSubtitle={t("login-in-page.login_sub_title")}
+        textContent={t("login-in-page.text_content", { product: productName })}
+        brandImgSrc={"/full-logo.svg"}
+        footerListItems={t("login-in-page.footer_text")}
+        socialMediaLoginContent={learnMoreResource}
+        signUpForAccountMessage={
+          hasMultipleClusters && (
+            <Link href={"/"}>
+              {t("login-in-page.log_into_a_different_cluster")}
+            </Link>
+          )
+        }
+      >
+        {error && isSubmitting === false && (
+          <Alert variant={"danger"} isInline={true} title={error} />
+        )}
 
-      {provider === "anonymous" ? (
-        <Button onClick={doLogin}>Click to login anonymously</Button>
-      ) : (
-        <LoginForm
-          usernameLabel={usernameLabel}
-          passwordLabel={passwordLabel}
-          loginButtonLabel={t("login-in-page.login_button")}
-          usernameValue={username}
-          passwordValue={password}
-          onChangeUsername={handleUsernameChange}
-          onChangePassword={handlePasswordChange}
-          onSubmit={onSubmit}
-          isLoginButtonDisabled={isSubmitting}
-        />
-      )}
-    </LoginPage>
+        {provider === "anonymous" ? (
+          <Button onClick={doLogin}>Click to login anonymously</Button>
+        ) : (
+          <LoginForm
+            usernameLabel={usernameLabel}
+            passwordLabel={passwordLabel}
+            loginButtonLabel={t("login-in-page.login_button")}
+            usernameValue={username}
+            passwordValue={password}
+            onChangeUsername={handleUsernameChange}
+            onChangePassword={handlePasswordChange}
+            onSubmit={onSubmit}
+            isLoginButtonDisabled={isSubmitting}
+          />
+        )}
+      </LoginPage>
+    </>
   );
 }

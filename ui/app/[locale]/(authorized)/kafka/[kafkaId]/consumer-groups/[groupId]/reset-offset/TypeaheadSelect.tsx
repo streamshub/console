@@ -10,8 +10,8 @@ import {
   TextInputGroupMain,
   TextInputGroupUtilities,
   Button,
-} from "@patternfly/react-core";
-import { TimesIcon } from "@patternfly/react-icons";
+} from "@/libs/patternfly/react-core";
+import { TimesIcon } from "@/libs/patternfly/react-icons";
 
 export function TypeaheadSelect({
   value,

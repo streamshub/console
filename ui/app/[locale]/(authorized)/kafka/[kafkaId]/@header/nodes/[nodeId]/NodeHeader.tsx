@@ -1,6 +1,6 @@
 import { KafkaNodeParams } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/nodes/kafkaNode.params";
 import { AppHeader } from "@/components/AppHeader";
-import { Skeleton } from "@patternfly/react-core";
+import { Skeleton } from "@/libs/patternfly/react-core";
 import { Suspense } from "react";
 
 export async function NodeHeader({

@@ -1,6 +1,6 @@
 "use client";
+import { useInterval } from "@/libs/patternfly/react-core";
 import { logger } from "@/utils/loggerClient";
-import { useInterval } from "@patternfly/react-core";
 import { signIn, useSession } from "next-auth/react";
 import { useLayoutEffect } from "react";
 
@@ -25,7 +25,7 @@ export function SessionRefresher() {
   // immediately trigger a check to deal with expired sessions when opening the app after a long time
   useLayoutEffect(() => {
     void doRefresh();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Make sure the effect runs only once
 
   return null;

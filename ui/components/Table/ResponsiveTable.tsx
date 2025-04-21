@@ -5,7 +5,7 @@ import type {
   TbodyProps,
   TdProps,
   ThProps,
-} from "@patternfly/react-table";
+} from "@/libs/patternfly/react-table";
 import {
   ActionsColumn,
   ExpandableRowContent,
@@ -15,7 +15,7 @@ import {
   Th,
   Thead,
   Tr,
-} from "@patternfly/react-table";
+} from "@/libs/patternfly/react-table";
 import {
   cloneElement,
   CSSProperties,

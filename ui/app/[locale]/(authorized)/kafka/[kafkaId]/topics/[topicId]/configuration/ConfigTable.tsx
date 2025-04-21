@@ -19,9 +19,13 @@ import {
   ListItem,
   PageSection,
   TextInput,
-} from "@patternfly/react-core";
-import { CheckIcon, PencilAltIcon, TimesIcon } from "@patternfly/react-icons";
-import { TableVariant } from "@patternfly/react-table";
+} from "@/libs/patternfly/react-core";
+import {
+  CheckIcon,
+  PencilAltIcon,
+  TimesIcon,
+} from "@/libs/patternfly/react-icons";
+import { TableVariant } from "@/libs/patternfly/react-table";
 import { useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useCallback, useState } from "react";

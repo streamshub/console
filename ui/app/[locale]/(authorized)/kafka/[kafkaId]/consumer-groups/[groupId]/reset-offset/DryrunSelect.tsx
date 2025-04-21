@@ -7,7 +7,7 @@ import {
   MenuToggleElement,
   Tooltip,
 } from "@/libs/patternfly/react-core";
-import { CopyIcon, PlayIcon } from "@patternfly/react-icons";
+import { CopyIcon, PlayIcon } from "@/libs/patternfly/react-icons";
 import { useTranslations } from "next-intl";
 import React from "react";
 import { useState } from "react";

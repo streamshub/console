@@ -6,8 +6,8 @@ import {
   EmptyStateBody,
   EmptyStateFooter,
   Title,
-} from "@patternfly/react-core";
-import { CubesIcon } from "@patternfly/react-icons";
+} from "@/libs/patternfly/react-core";
+import { CubesIcon } from "@/libs/patternfly/react-icons";
 import { useTranslations } from "next-intl";
 import { startTransition } from "react";
 

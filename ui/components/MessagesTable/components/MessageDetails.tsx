@@ -19,15 +19,13 @@ import {
   TabTitleText,
   Content,
   Tooltip,
-} from "@/libs/patternfly/react-core";
-import { HelpIcon } from "@/libs/patternfly/react-icons";
-import {
   ClipboardCopy,
   ContentVariants,
   Stack,
   StackItem,
   Title,
-} from "@patternfly/react-core";
+} from "@/libs/patternfly/react-core";
+import { HelpIcon } from "@/libs/patternfly/react-icons";
 import { useTranslations } from "next-intl";
 import { useEffect, useMemo, useState } from "react";
 import { allExpanded, defaultStyles, JsonView } from "react-json-view-lite";
