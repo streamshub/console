@@ -1,0 +1,100 @@
+// Module included in the following assemblies:
+//
+// assembly-deploying.adoc
+
+[id='proc-deploying-kafka-{context}']
+= Deploying a new Kafka cluster
+
+[role="_abstract"]
+If you already have Strimzi installed but want to create a new Kafka cluster for use with the console, example deployment resources are available to help you get started.
+
+These resources create the following:
+
+* A Kafka cluster in KRaft mode with SCRAM-SHA-512 authentication.
+* A Strimzi `KafkaNodePool` resource to manage the cluster nodes.
+* A `KafkaUser` resource to enable authenticated and authorized console connections to the Kafka cluster.
+
+The `KafkaUser` custom resource in the `040-KafkaUser-console-kafka-user1.yaml` file includes the necessary ACL types to provide authorized access for the console to the Kafka cluster.
+
+The minimum required ACL rules are configured as follows:
+
+* `Describe`, `DescribeConfigs` permissions for the `cluster` resource
+* `Read`, `Describe`, `DescribeConfigs` permissions for all `topic` resources
+* `Read`, `Describe` permissions for all `group` resources
+
+NOTE: To ensure the console has the necessary access to function, a minimum level of authorization must be configured for the principal used in each Kafka cluster connection. 
+The specific permissions may vary based on the authorization framework in use, such as ACLs, Keycloak authorization, OPA, or a custom solution.
+
+When configuring the `KafkaUser` authentication and authorization, ensure they match the corresponding `Kafka` configuration:
+
+* `KafkaUser.spec.authentication` should match `Kafka.spec.kafka.listeners[*].authentication`.
+* `KafkaUser.spec.authorization` should match `Kafka.spec.kafka.authorization`.
+
+.Prerequisites
+
+* A Kubernetes {minKubernetesVersion} cluster.
+* Access to the Kubernetes web console using an account with `cluster-admin` permissions, such as `system:admin`.
+* The `kubectl` command-line tool is installed and configured to connect to the Kubernetes cluster.
+
+.Procedure
+
+. Download and extract the console installation artifacts.
++
+The artifacts are included with installation and example files available from the link:{ReleaseDownload}[release page^].
++
+The artifacts provide the deployment YAML files to the install the Kafka cluster.
+Use the sample installation files located in `examples/console/resources/kafka`. 
+
+. Set environment variables to update the installation files:
++
+[source,shell]
+----
+export NAMESPACE=kafka # <1>
+export LISTENER_TYPE=route # <2>
+export CLUSTER_DOMAIN=<domain_name> # <3>
+----
+<1> The namespace in which you want to deploy the Kafka operator.
+<2> The listener type used to expose Kafka to the console.
+<3> The cluster domain name for your Kubernetes cluster.
++
+In this example, the namespace variable is defined as `kafka` and the listener type is `route`.
+
+. Install the Kafka cluster.
++
+Run the following command to apply the YAML files and deploy the Kafka cluster to the defined namespace:
++
+[source,shell]
+----
+cat examples/console/resources/kafka/*.yaml | envsubst | kubectl apply -n ${NAMESPACE} -f -
+----
++
+This command reads the YAML files, replaces the namespace environment variables, and applies the resulting configuration to the specified Kubernetes namespace.
+
+. Check the status of the deployment:
++
+[source,shell]
+----
+oc get pods -n kafka
+----
++
+--
+.Output shows the operators and cluster readiness
+[source,shell]
+----
+NAME                              READY   STATUS   RESTARTS
+strimzi-cluster-operator          1/1     Running  0                    
+console-kafka-console-nodepool-0  1/1     Running  0
+console-kafka-console-nodepool-1  1/1     Running  0
+console-kafka-console-nodepool-2  1/1     Running  0
+----
+
+* `console-kafka` is the name of the cluster.
+* `console-nodepool` is the name of the node pool.
++
+A node ID identifies the nodes created. 
++
+With the default deployment, you install three nodes. 
++
+READY shows the number of replicas that are ready/expected. 
+The deployment is successful when the STATUS displays as Running.
+--

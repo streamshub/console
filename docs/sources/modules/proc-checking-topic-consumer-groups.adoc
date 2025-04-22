@@ -1,0 +1,24 @@
+[id='proc-checking-topic-consumer-groups-{context}']
+= Checking topic consumer groups
+
+[role="_abstract"]
+Check the consumer groups for a specific topic from the *Consumer groups* tab.
+The *Consumer groups* tab presents a list of consumer groups associated with a topic.
+
+.Procedure
+
+. From the StreamsHub Console, log in to the Kafka cluster, then click *Topics*. 
+. Click the name of the topic you want to check from the *Topics* page.
+. Check the information on the *Consumer groups* tab.
+. To check consumer group members, click the consumer group name.
+
+For each consumer group, you can see its status, the overall consumer lag across all partitions, and the number of members.
+For more information on checking consumer groups, see xref:con-consumer-groups-page-{context}[].
+
+For each group member, you see the unique (consumer) client ID assigned to the consumer within the consumer group, overall consumer lag, and the number of assigned partitions.
+For more information on checking consumer group members, see xref:proc-checking-consumer-groups-members-{context}[].
+
+[NOTE]
+====
+Monitoring consumer group behavior is essential for ensuring optimal distribution of messages between consumers.
+====

@@ -1,0 +1,80 @@
+// Module included in the following assemblies:
+//
+// assembly-deploying.adoc
+
+[id='proc-connecting-console-{context}']
+= Deploying and connecting the console to a Kafka cluster
+
+[role="_abstract"]
+Use the console operator to deploy the StreamsHub Console to the same Kubernetes cluster as a Kafka cluster managed by Strimzi. 
+Use the console to connect to the Kafka cluster.
+
+.Prerequisites
+
+* xref:con-deploying-prereqs-{context}[Deployment prerequisites].
+* The console operator is deployed to the Kubernetes cluster.
+
+.Procedure
+
+. Create a `Console` custom resource in the desired namespace. 
++
+If you deployed the xref:proc-deploying-kafka-{context}[example Kafka cluster] provided with the installation artifacts, you can use the configuration specified in the `examples/console/resources/console/010-Console-example.yaml` configuration file unchanged.
++
+Otherwise, configure the resource to connect to your Kafka cluster.
++
+.Example console configuration
+[source,yaml]
+----
+apiVersion: console.streamshub.github.com/v1alpha1
+kind: Console
+metadata:
+  name: my-console
+spec:
+  hostname: my-console.<cluster_domain> # <1>
+  kafkaClusters:
+    - name: console-kafka # <2>
+      namespace: kafka # <3>
+      listener: secure # <4>
+      properties:
+        values: [] # <5>                           
+        valuesFrom: [] # <6>                        
+      credentials:
+        kafkaUser:
+          name: console-kafka-user1 # <7>
+
+----
+<1> Hostname to access the console by HTTP.
+<2> Name of the `Kafka` resource representing the cluster.
+<3> Namespace of the Kafka cluster.
+<4> Listener to expose the Kafka cluster for console connection. 
+<5> (Optional) Add connection properties if needed.
+<6> (optional) References to config maps or secrets, if needed.
+<7> (Optional) Kafka user created for authenticated access to the Kafka cluster.
+
+. Apply the `Console` configuration to install the console.
++
+In this example, the console is deployed to the `console-namespace` namespace:
++
+[source,shell]
+----
+kubectl apply -f examples/console/resources/console/010-Console-example.yaml -n console-namespace
+
+----
+
+. Check the status of the deployment:
++
+[source,shell]
+----
+oc get pods -n console-namespace
+----
++
+.Output shows the deployment name and readiness
+[source,shell]
+----
+NAME           READY  STATUS  RUNNING
+console-kafka  1/1    1       1
+----
+
+. Access the console.
++
+When the console is running, use the hostname specified in the `Console` resource (`spec.hostname`) to access the user interface.

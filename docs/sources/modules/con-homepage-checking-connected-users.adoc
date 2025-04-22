@@ -1,0 +1,6 @@
+[id='con-homepage-checking-connected-users-{context}']
+= HOME: Checking connected clusters
+
+[role="_abstract"]
+The homepage offers a snapshot of connected Kafka clusters, providing information on the Kafka version and associated project for each cluster. 
+To find more information, log in to a cluster.

@@ -1,0 +1,28 @@
+include::attributes.adoc[]
+
+:context: str
+
+[id='configuring_book-{context}']
+= Using the StreamsHub Console
+
+include::modules/con-using-the-console.adoc[leveloffset=+1]
+include::assemblies/assembly-deploying.adoc[leveloffset=+1]
+include::modules/con-navigating-the-console.adoc[leveloffset=+1]
+include::modules/con-homepage-checking-connected-users.adoc[leveloffset=+1]
+include::modules/proc-logging-in.adoc[leveloffset=+2]
+include::modules/con-cluster-overview-page.adoc[leveloffset=+1]
+include::modules/proc-pausing-reconciliation.adoc[leveloffset=+2]
+include::modules/proc-accessing-connection-details.adoc[leveloffset=+2]
+include::modules/con-topics-page.adoc[leveloffset=+1]
+include::modules/proc-creating-topics.adoc[leveloffset=+2]
+include::modules/proc-deleting-topics.adoc[leveloffset=+2]
+include::modules/proc-checking-topic-messages.adoc[leveloffset=+2]
+include::modules/proc-checking-topic-partitions.adoc[leveloffset=+2]
+include::modules/proc-checking-topic-consumer-groups.adoc[leveloffset=+2]
+include::modules/proc-checking-topic-configuration.adoc[leveloffset=+2]
+include::modules/proc-changing-topic-configuration.adoc[leveloffset=+2]
+include::modules/con-brokers-page.adoc[leveloffset=+1]
+include::modules/proc-managing-rebalances.adoc[leveloffset=+2]
+include::modules/con-consumer-groups-page.adoc[leveloffset=+1]
+include::modules/proc-checking-consumer-groups-members.adoc[leveloffset=+2]
+include::modules/proc-resetting-consumer-offsets.adoc[leveloffset=+2]
