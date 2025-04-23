@@ -1,9 +1,15 @@
 package com.github.streamshub.systemtests.system;
 
 import com.github.streamshub.systemtests.Environment;
+import com.github.streamshub.systemtests.TestCaseConfig;
+import com.github.streamshub.systemtests.TestExecutionWatcher;
 import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.constants.Labels;
 import com.github.streamshub.systemtests.logs.LogWrapper;
+import com.github.streamshub.systemtests.resourcetypes.ConsoleType;
+import com.github.streamshub.systemtests.resourcetypes.KafkaTopicType;
+import com.github.streamshub.systemtests.resourcetypes.KafkaType;
+import com.github.streamshub.systemtests.resourcetypes.KafkaUserType;
 import com.github.streamshub.systemtests.setup.console.ConsoleOperatorSetup;
 import com.github.streamshub.systemtests.setup.strimzi.StrimziOperatorSetup;
 import com.github.streamshub.systemtests.utils.ClusterUtils;
@@ -30,15 +36,20 @@ import io.skodjob.testframe.resources.ServiceType;
 import io.skodjob.testframe.resources.SubscriptionType;
 import io.skodjob.testframe.utils.KubeUtils;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.ExtensionContext;
 
 import java.io.IOException;
 
-@ResourceManager
 @TestVisualSeparator
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@ResourceManager(asyncDeletion = false)
+@SuppressWarnings("ClassDataAbstractionCoupling")
+@ExtendWith({TestExecutionWatcher.class})
 public abstract class AbstractST {
     private static final Logger LOGGER = LogWrapper.getLogger(AbstractST.class);
     // Operators
@@ -51,9 +62,13 @@ public abstract class AbstractST {
             new ClusterRoleBindingType(),
             new ClusterRoleType(),
             new ConfigMapType(),
+            new ConsoleType(),
             new DeploymentType(),
             new InstallPlanType(),
             new JobType(),
+            new KafkaType(),
+            new KafkaTopicType(),
+            new KafkaUserType(),
             new NamespaceType(),
             new OperatorGroupType(),
             new RoleBindingType(),
@@ -79,6 +94,12 @@ public abstract class AbstractST {
         }
     }
 
+    protected TestCaseConfig getTestCaseConfig() {
+        return (TestCaseConfig) KubeResourceManager.get().getTestContext()
+            .getStore(ExtensionContext.Namespace.GLOBAL)
+            .get(KubeResourceManager.get().getTestContext().getTestMethod().orElseThrow());
+    }
+
     @BeforeAll
     void setupTestSuite() {
         LOGGER.info("=========== AbstractST - BeforeAll - Setup TestSuite ===========");
@@ -93,5 +114,19 @@ public abstract class AbstractST {
     void setupTestCase() {
         LOGGER.info("=========== AbstractST - BeforeEach - Setup TestCase {} ===========", KubeResourceManager.get().getTestContext().getTestMethod());
         ClusterUtils.checkClusterHealth();
+        // Init test case config based on the test context
+        TestCaseConfig tcc = new TestCaseConfig(KubeResourceManager.get().getTestContext());
+        // Create namespace
+        KubeResourceManager.get().createOrUpdateResourceWithWait(
+            new NamespaceBuilder().withNewMetadata().withName(tcc.namespace()).endMetadata().build());
+        // Store test case config into the test context
+        KubeResourceManager.get().getTestContext()
+            .getStore(ExtensionContext.Namespace.GLOBAL)
+            .put(KubeResourceManager.get().getTestContext().getTestMethod().get(), tcc);
+    }
+
+    @AfterEach
+    void teardownTestCase() {
+        getTestCaseConfig().playwright().close();
     }
 }
