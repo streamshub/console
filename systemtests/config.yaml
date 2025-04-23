@@ -24,6 +24,8 @@ CONSOLE_DEPLOYMENT_NAME: streamshub-console
 CONSOLE_INSTALL_TYPE: olm
 # Kubernetes client type used to execute cmd [oc, kubectl]
 CLIENT_TYPE: kubectl
+# Cluster domain required for k8s clusters except OpenShift.
+CLUSTER_DOMAIN: "192.168.49.2.nip.io"
 # -------------------------------------------
 # OLM
 # -------------------------------------------

@@ -4,7 +4,7 @@ import com.github.streamshub.systemtests.Environment;
 import com.github.streamshub.systemtests.exceptions.SetupException;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.utils.ResourceUtils;
-import com.github.streamshub.systemtests.utils.SetupUtils;
+import com.github.streamshub.systemtests.utils.FileUtils;
 import io.fabric8.kubernetes.api.model.EnvVarBuilder;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.ServiceAccount;
@@ -35,7 +35,7 @@ public class YamlConfig extends InstallConfig {
         LOGGER.info("Console Operator will be installed using YAML bundle");
         // Need to replace streamed content due to KubernetesException being thrown during load of released YAML
         // that contains `namespace: ${NAMESPACE}` where $ is an unknown symbol that cannot be parsed
-        try (InputStream yamlContentStream = SetupUtils.resolveLocation(Environment.CONSOLE_OPERATOR_BUNDLE_URL).openStream()) {
+        try (InputStream yamlContentStream = FileUtils.resolveLocation(Environment.CONSOLE_OPERATOR_BUNDLE_URL).openStream()) {
             InputStream replacedStream = new ByteArrayInputStream(new String(yamlContentStream.readAllBytes(), StandardCharsets.UTF_8)
                 .replace("${NAMESPACE}", "NAMESPACE")
                 .getBytes(StandardCharsets.UTF_8));
