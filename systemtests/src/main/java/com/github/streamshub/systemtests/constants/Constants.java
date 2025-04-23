@@ -1,14 +1,17 @@
 package com.github.streamshub.systemtests.constants;
 
-import com.github.streamshub.console.api.v1alpha1.Console;
-import io.fabric8.kubernetes.api.model.HasMetadata;
-
 public class Constants {
     private Constants() {}
 
     // --------------------------------
     // ------------ General -----------
     // --------------------------------
+    /**
+     * Cluster
+     */
+    public static final String OPENSHIFT_CONSOLE = "openshift-console";
+    public static final String OPENSHIFT_CONSOLE_ROUTE_NAME = "console";
+
     /**
      * Namespaces
      */
@@ -53,11 +56,17 @@ public class Constants {
     /**
      *  Kafka
      */
-    public static final String KAFKA_USER_PREFIX = "user";
+    public static final String KAFKA_USER_PREFIX = "ku";
     public static final String KAFKA_CLUSTER_PREFIX = "kc";
     public static final String BROKER_ROLE_PREFIX = "brk";
     public static final String CONTROLLER_ROLE_PREFIX = "ctrl";
     public static final int REGULAR_BROKER_REPLICAS = 3;
+
+    /**
+     * Listeners
+     */
+    public static final String PLAIN_LISTENER_NAME = "plain";
+    public static final String SECURE_LISTENER_NAME = "secure";
 
 
      // --------------------------------
@@ -66,9 +75,6 @@ public class Constants {
     /**
      * CRDs
      */
-    public static final String CONSOLE_CRD_API_NAME = HasMetadata.getFullResourceName(Console.class);
-    public static final String CONSOLE_CRD_API_VERSION = HasMetadata.getGroup(Console.class) + "/" + HasMetadata.getVersion(Console.class);
-    public static final String CONSOLE_OPERATOR_GROUP_NAME = "streamshub-operators";
     public static final String CONSOLE_INSTANCE = "console-instance";
 
     /**

@@ -6,8 +6,8 @@ import java.io.File;
 import java.net.MalformedURLException;
 import java.net.URL;
 
-public class SetupUtils {
-    private SetupUtils() {}
+public class FileUtils {
+    private FileUtils() {}
 
     public static URL resolveLocation(String location) throws SetupException {
         // First check if the location is a valid local path
