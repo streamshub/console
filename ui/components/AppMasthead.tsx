@@ -26,9 +26,10 @@ import {
 } from "@/libs/patternfly/react-icons";
 import { FeedbackModal } from "@patternfly/react-user-feedback";
 import { useTranslations } from "next-intl";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAppLayout } from "./AppLayoutProvider";
 import { UserDropdown } from "./UserDropdown";
+import { useDarkMode } from "@/app/[locale]/useDarkMode";
 
 export function AppMasthead({
   username,
@@ -39,21 +40,15 @@ export function AppMasthead({
 }) {
   const t = useTranslations();
   const { toggleSidebar } = useAppLayout();
+  const { isDarkMode, toggleDarkMode } = useDarkMode();
+
   const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
-  const [isDarkMode, setIsDarkMode] = useState(false);
 
   const openFeedbackModal = () => {
     setIsFeedbackModalOpen(true);
   };
   const closeFeedbackModal = () => {
     setIsFeedbackModalOpen(false);
-  };
-
-  const toggleDarkMode = (value: boolean) => {
-    setIsDarkMode(value);
-    document
-      .getElementsByTagName("html")[0]
-      .classList.toggle("pf-v6-theme-dark");
   };
 
   return (

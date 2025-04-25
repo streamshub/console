@@ -1,4 +1,5 @@
 "use client";
+import { useDarkMode } from "@/app/[locale]/useDarkMode";
 import { ExternalLink } from "@/components/Navigation/ExternalLink";
 import { Link } from "@/i18n/routing";
 import {
@@ -61,18 +62,12 @@ export function SignInPage({
   const t = useTranslations();
   const productName = t("common.product");
 
+  const { isDarkMode, toggleDarkMode } = useDarkMode();
+
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | undefined>();
-  const [isDarkMode, setIsDarkMode] = useState(false);
-
-  const toggleDarkMode = (value: boolean) => {
-    setIsDarkMode(value);
-    document
-      .getElementsByTagName("html")[0]
-      .classList.toggle("pf-v6-theme-dark");
-  };
 
   const handleUsernameChange = (
     _event: FormEvent<HTMLInputElement>,
@@ -142,7 +137,7 @@ export function SignInPage({
   return (
     <>
       <Flex>
-        <FlexItem align={{ default: "alignRight" }}>
+        <FlexItem align={{ default: "alignRight" }} className="pf-v6-u-mr-md">
           <ToggleGroup className={"pf-v6-u-py-md"}>
             <ToggleGroupItem
               icon={<SunIcon />}
