@@ -2,3 +2,4 @@
 @import "@patternfly/patternfly/patternfly-addons.css";
 @import "@patternfly/quickstarts/dist/quickstarts.min.css";
 @import "react-json-view-lite/dist/index.css";
+@import "@patternfly/patternfly/patternfly-charts.css";
