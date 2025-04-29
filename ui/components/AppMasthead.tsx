@@ -69,7 +69,11 @@ export function AppMasthead({
           <MastheadBrand>
             <MastheadLogo href="/" target="_blank">
               <Brand
-                src={"/full-logo.svg"}
+                src={
+                  isDarkMode
+                    ? "/streamshub_logo_hori_reverse.svg"
+                    : "/streamshub_logo_hori_default.svg"
+                }
                 alt={t("common.title")}
                 heights={{ default: "56px" }}
               />
@@ -110,13 +114,6 @@ export function AppMasthead({
                   variant="label-group"
                   visibility={{ default: "hidden", lg: "visible" }}
                 >
-                  <ToolbarItem className={"pf-v6-u-py-sm"}>
-                    <TechPreviewPopover>
-                      <Label color={"blue"} isCompact>
-                        {t("AppMasthead.tech_preview_label")}
-                      </Label>
-                    </TechPreviewPopover>
-                  </ToolbarItem>
                   <ToolbarItem className={"pf-v6-u-py-sm"}>
                     <Button
                       aria-label={t("AppMasthead.help")}

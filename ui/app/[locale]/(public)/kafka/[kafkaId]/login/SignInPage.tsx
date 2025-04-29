@@ -163,7 +163,11 @@ export function SignInPage({
         loginTitle={t("homepage.page_header", { product: productName })}
         loginSubtitle={t("login-in-page.login_sub_title")}
         textContent={t("login-in-page.text_content", { product: productName })}
-        brandImgSrc={"/full-logo.svg"}
+        brandImgSrc={
+          isDarkMode
+            ? "/streamshub_logo_hori_reverse.svg"
+            : "/streamshub_logo_hori_default.svg"
+        }
         footerListItems={t("login-in-page.footer_text")}
         socialMediaLoginContent={learnMoreResource}
         signUpForAccountMessage={
@@ -179,7 +183,9 @@ export function SignInPage({
         )}
 
         {provider === "anonymous" ? (
-          <Button onClick={doLogin}>Click to login anonymously</Button>
+          <Button onClick={doLogin}>
+            {t("login-in-page.login_anonymously")}
+          </Button>
         ) : (
           <LoginForm
             usernameLabel={usernameLabel}
