@@ -165,8 +165,8 @@ export function SignInPage({
         textContent={t("login-in-page.text_content", { product: productName })}
         brandImgSrc={
           isDarkMode
-            ? "/streamshub_logo_hori_reverse.svg"
-            : "/streamshub_logo_hori_default.svg"
+            ? "/full_logo_hori_reverse.svg"
+            : "/full_logo_hori_default.svg"
         }
         footerListItems={t("login-in-page.footer_text")}
         socialMediaLoginContent={learnMoreResource}
