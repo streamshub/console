@@ -5,7 +5,6 @@ import io.fabric8.kubernetes.api.model.KubernetesResourceList;
 import io.fabric8.kubernetes.client.dsl.MixedOperation;
 import io.fabric8.kubernetes.client.dsl.NonNamespaceOperation;
 import io.fabric8.kubernetes.client.dsl.Resource;
-import io.skodjob.testframe.TestFrameConstants;
 import io.skodjob.testframe.interfaces.ResourceType;
 import io.strimzi.api.kafka.model.common.Condition;
 import io.strimzi.api.kafka.model.kafka.Kafka;
@@ -18,11 +17,6 @@ public class KafkaType implements ResourceType<Kafka> {
 
     public static MixedOperation<Kafka, KubernetesResourceList<Kafka>, Resource<Kafka>> kafkaClient() {
         return ResourceUtils.getKubeResourceClient(Kafka.class);
-    }
-
-    @Override
-    public Long getTimeoutForResourceReadiness() {
-        return TestFrameConstants.GLOBAL_TIMEOUT;
     }
 
     @Override
