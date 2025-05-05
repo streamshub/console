@@ -19,4 +19,6 @@ public class TimeConstants {
     // Timeout
     public static final long COMPONENT_LOAD_TIMEOUT = seconds(40);
     public static final long GLOBAL_STATUS_TIMEOUT = minutes(3);
+    // HTML elements
+    public static final long ELEMENT_VISIBILITY_TIMEOUT = minutes(1);
 }

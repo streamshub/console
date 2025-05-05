@@ -81,12 +81,4 @@ public class Constants {
      * OLM
      */
     public static final String CONSOLE_OLM_SUBSCRIPTION_NAME = "console-sub";
-
-
-    // --------------------------------
-    // ---------- Playwright ----------
-    // --------------------------------
-    public static final double ELEMENT_VISIBILITY_TIMEOUT = 60_000;
-    public static final double ELEMENT_VISIBILITY_TIMEOUT_LONG = 120_000;
-
 }

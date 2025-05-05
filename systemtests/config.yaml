@@ -9,7 +9,7 @@ TEST_CONSOLE_LOG_LEVEL: INFO
 # Path for log output
 TEST_LOG_DIR: target/logs
 # Run Playwright tests in headless mode without browser popping up
-RUN_HEADLESS: false
+RUN_HEADLESS: true
 # Keep test resources after execution (false = delete resources)
 SKIP_TEARDOWN: false
 # Directory to store screenshots from tests. Relative to systemtests dir ["screenshots"]
@@ -21,7 +21,7 @@ STRIMZI_OPERATOR_NAME: strimzi-cluster-operator
 # Deployment name of the Console instance
 CONSOLE_DEPLOYMENT_NAME: streamshub-console
 # Install type for Console Operator [OLM; YAML]
-CONSOLE_INSTALL_TYPE: yaml
+CONSOLE_INSTALL_TYPE: olm
 # Kubernetes client type used to execute cmd [oc, kubectl]
 CLIENT_TYPE: kubectl
 # Cluster domain required for k8s clusters except OpenShift.

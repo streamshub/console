@@ -31,16 +31,13 @@ class KafkaST extends AbstractST {
         final int scaledBrokersCount = 6;
 
         LOGGER.debug("Check that Kafka does not contain paused reconciliation");
-        String reconciliationAnno = ResourceUtils.getKubeResource(Kafka.class, tcc.namespace(), tcc.kafkaName())
+        assertEquals("false", ResourceUtils.getKubeResource(Kafka.class, tcc.namespace(), tcc.kafkaName())
             .getMetadata()
             .getAnnotations()
-            .getOrDefault(ResourceAnnotations.ANNO_STRIMZI_IO_PAUSE_RECONCILIATION, "false");
-
-        assertEquals("false", reconciliationAnno);
+            .getOrDefault(ResourceAnnotations.ANNO_STRIMZI_IO_PAUSE_RECONCILIATION, "false"));
 
         LOGGER.debug("Pause Kafka reconciliation using UI");
-        PwUtils.navigateTo(tcc.page(), PwPageUrls.getOverviewPage(tcc, tcc.kafkaName()));
-
+        tcc.page().navigate(PwPageUrls.getOverviewPage(tcc, tcc.kafkaName()), PwUtils.getDefaultNavigateOpts());
         // Open popup
         PwUtils.waitForLocatorVisible(tcc, CssSelectors.C_OVERVIEW_KAFKA_PAUSE_RECONCILIATION_BUTTON);
         PwUtils.waitForContainsText(tcc, CssSelectors.C_OVERVIEW_KAFKA_PAUSE_RECONCILIATION_BUTTON, "Pause Reconciliation");
@@ -52,20 +49,18 @@ class KafkaST extends AbstractST {
             "While paused, any changes to the cluster configuration will be ignored until reconciliation is resumed");
         PwUtils.waitForContainsText(tcc, CssSelectors.C_OVERVIEW_RECONCILIATION_MODAL_CANCEL_BUTTON, "Cancel");
         PwUtils.waitForContainsText(tcc, CssSelectors.C_OVERVIEW_RECONCILIATION_MODAL_CONFIRM_BUTTON, "Confirm");
-
         // Click on confirm
         tcc.page().click(CssSelectors.C_OVERVIEW_RECONCILIATION_MODAL_CONFIRM_BUTTON);
-        // Assert after
+
+        // Check aftermath
         PwUtils.waitForLocatorVisible(tcc, CssSelectors.C_OVERVIEW_RECONCILIATION_PAUSED_NOTIFICATION);
         PwUtils.waitForContainsText(tcc, CssSelectors.C_OVERVIEW_RECONCILIATION_PAUSED_NOTIFICATION,
             "Cluster reconciliation paused. Changes to the Kafka resource will not be applied");
-
         // Check Kafka
         WaitUtils.waitForKafkaAnnotationWithValue(tcc.namespace(), tcc.kafkaName(), ResourceAnnotations.ANNO_STRIMZI_IO_PAUSE_RECONCILIATION, "true");
 
         // Scale brokers, but expect nothing happens
         KafkaUtils.scaleBrokers(tcc.namespace(), tcc.kafkaName(), scaledBrokersCount, false);
-
         // Check replicas are changed, but actual count stayed the same
         KafkaNodePool knp = ResourceUtils.getKubeResource(KafkaNodePool.class, tcc.namespace(), KafkaNamingUtils.brokerPoolName(tcc.kafkaName()));
         assertEquals(scaledBrokersCount, knp.getSpec().getReplicas());
@@ -79,14 +74,11 @@ class KafkaST extends AbstractST {
         PwUtils.waitForLocatorVisible(tcc, CssSelectors.C_OVERVIEW_KAFKA_PAUSE_RECONCILIATION_BUTTON);
         PwUtils.waitForContainsText(tcc, CssSelectors.C_OVERVIEW_KAFKA_PAUSE_RECONCILIATION_BUTTON, "Resume Reconciliation");
         tcc.page().click(CssSelectors.C_OVERVIEW_KAFKA_PAUSE_RECONCILIATION_BUTTON);
-
         // Reconciliation is resumed and button should display Pause
         PwUtils.waitForContainsText(tcc, CssSelectors.C_OVERVIEW_KAFKA_PAUSE_RECONCILIATION_BUTTON, "Pause Reconciliation");
-
         // Check annotation
         WaitUtils.waitForKafkaAnnotationWithValue(tcc.namespace(), tcc.kafkaName(), ResourceAnnotations.ANNO_STRIMZI_IO_PAUSE_RECONCILIATION, "false");
-
-        // Resuming reconciliaiton should trigger scaling
+        // Resuming reconciliation should trigger scaling, so check replicas
         WaitUtils.waitForPodsReady(tcc.namespace(), Labels.getKnpBrokerLabelSelector(tcc.kafkaName()), scaledBrokersCount, true);
     }
 
