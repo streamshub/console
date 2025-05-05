@@ -55,7 +55,7 @@
     "typescript": "5.8.3",
     "use-debounce": "^10.0.4",
     "use-resize-observer": "^9.1.0",
-    "zod": "^3.24.3"
+    "zod": "^3.24.4"
   },
   "devDependencies": {
     "@playwright/test": "^1.52.0",
