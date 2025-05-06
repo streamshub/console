@@ -24,30 +24,29 @@ public interface CssSelectors {
     // Login page
     // ----------------------------
     String LOGIN_ANONYMOUSLY_BUTTON = new CssBuilder()
-        .e_body().withDesc()
-        .e_div().c_login().withChild()
-        .e_div().c_login().s_container().withChild()
-        .e_main().c_login().s_main().withChild()
-        .e_div().c_login().s_mainBody().withChild()
-        .e_button().c_button()
+        .withElementBody().withDesc()
+        .withElementDiv().withComponentLogin().withChild()
+        .withElementDiv().withComponentLogin().withSubComponentContainer().withChild()
+        .withElementMain().withComponentLogin().withSubComponentMain().withChild()
+        .withElementDiv().withComponentLogin().withSubComponentMainBody().withChild()
+        .withElementButton().withComponentButton()
         .build();
-
 
     // ----------------------------
     // Page contents
     // ----------------------------
     String PAGES_MAIN_CONTENT = new CssBuilder()
-        .e_div().c_page().withChild()
-        .e_main().c_page().s_main().withChild()
-        .e_div().c_drawer().withChild()
-        .e_div().c_drawer().s_main().withChild()
-        .e_div().c_drawer().s_content().withChild()
-        .e_div().c_drawer().s_body()
+        .withElementDiv().withComponentPage().withChild()
+        .withElementMain().withComponentPage().withSubComponentMain().withChild()
+        .withElementDiv().withComponentDrawer().withChild()
+        .withElementDiv().withComponentDrawer().withSubComponentMain().withChild()
+        .withElementDiv().withComponentDrawer().withSubComponentContent().withChild()
+        .withElementDiv().withComponentDrawer().withSubComponentBody()
         .build();
 
     String PAGES_CONTENT = new CssBuilder(PAGES_MAIN_CONTENT)
         .withChild()
-        .e_section().c_page().s_mainSection()
+        .withElementSection().withComponentPage().withSubComponentMainSection()
         .build();
 
 
@@ -57,76 +56,75 @@ public interface CssSelectors {
 
     // Reconciliation
     String C_OVERVIEW_RECONCILIATION_MODAL = new CssBuilder()
-        .e_body().c_backdrop().s_open().withChild()
-        .e_div().c_backdrop().withChild()
-        .e_div().l_bullseye().withChild()
-        .e_div().c_modalBox()
+        .withElementBody().withComponentBackdrop().withSubComponentOpen().withChild()
+        .withElementDiv().withComponentBackdrop().withChild()
+        .withElementDiv().withLayoutBullseye().withChild()
+        .withElementDiv().withComponentModalBox()
         .build();
 
     String C_OVERVIEW_RECONCILIATION_MODAL_HEADER = new CssBuilder(C_OVERVIEW_RECONCILIATION_MODAL)
         .withChild()
-        .e_header().c_modalBox().s_header()
+        .withElementHeader().withComponentModalBox().withSubComponentHeader()
         .build();
 
 
     String C_OVERVIEW_RECONCILIATION_MODAL_CLOSE_BUTTON = new CssBuilder(C_OVERVIEW_RECONCILIATION_MODAL)
         .withChild()
-        .e_div().c_modalBox().s_close().withChild()
-        .e_button().c_button()
+        .withElementDiv().withComponentModalBox().withSubComponentClose().withChild()
+        .withElementButton().withComponentButton()
         .build();
 
     String C_OVERVIEW_RECONCILIATION_MODAL_BODY = new CssBuilder(C_OVERVIEW_RECONCILIATION_MODAL)
         .withChild()
-        .e_div().c_modalBox().s_body()
+        .withElementDiv().withComponentModalBox().withSubComponentBody()
         .build();
 
     String C_OVERVIEW_RECONCILIATION_MODAL_CONFIRM_BUTTON = new CssBuilder(C_OVERVIEW_RECONCILIATION_MODAL)
         .withChild()
-        .e_footer().c_modalBox().s_footer().withChild()
-        .e_button().c_button().nth(1)
+        .withElementFooter().withComponentModalBox().withSubComponentFooter().withChild()
+        .withElementButton().withComponentButton().nth(1)
         .build();
 
     String C_OVERVIEW_RECONCILIATION_MODAL_CANCEL_BUTTON = new CssBuilder(C_OVERVIEW_RECONCILIATION_MODAL)
         .withChild()
-        .e_footer().c_modalBox().s_footer().withChild()
-        .e_button().c_button().nth(2)
+        .withElementFooter().withComponentModalBox().withSubComponentFooter().withChild()
+        .withElementButton().withComponentButton().nth(2)
         .build();
 
     String C_OVERVIEW_RECONCILIATION_PAUSED_NOTIFICATION = new CssBuilder()
-        .e_body().withChild()
-        .e_div().withChild()
-        .e_div().c_page().withChild()
-        .e_main().c_page().s_main().withChild()
-        .e_div().c_banner().withChild()
-        .e_div().l_bullseye().withChild()
-        .e_div().l_flex()
+        .withElementBody().withChild()
+        .withElementDiv().withChild()
+        .withElementDiv().withComponentPage().withChild()
+        .withElementMain().withComponentPage().withSubComponentMain().withChild()
+        .withElementDiv().withComponentBanner().withChild()
+        .withElementDiv().withLayoutBullseye().withChild()
+        .withElementDiv().withLayoutFlex()
         .build();
 
     String C_OVERVIEW_RECONCILIATION_PAUSED_NOTIFICATION_RESUME_BUTTON = new CssBuilder(C_OVERVIEW_RECONCILIATION_PAUSED_NOTIFICATION)
         .withChild()
-        .e_div().withChild()
-        .e_button().c_button()
+        .withElementDiv().withChild()
+        .withElementButton().withComponentButton()
         .build();
 
     String C_OVERVIEW_CLUSTER_CARDS = new CssBuilder(PAGES_CONTENT)
         .withChild()
-        .e_div().l_grid().withChild()
-        .e_div().l_grid().s_item().nth(1).withChild()
-        .e_div().l_flex().withChild()
-        .e_div()
+        .withElementDiv().withLayoutGrid().withChild()
+        .withElementDiv().withLayoutGrid().withSubComponentItem().nth(1).withChild()
+        .withElementDiv().withLayoutFlex().withChild()
+        .withElementDiv()
         .build();
 
     String C_OVERVIEW_CLUSTER_CARD_KAFKA_INFO = new CssBuilder(C_OVERVIEW_CLUSTER_CARDS)
         .nth(1)
-        .e_div().c_card().withChild()
-        .e_div().c_card().s_body().withChild()
-        .e_div().l_flex()
+        .withElementDiv().withComponentCard().withChild()
+        .withElementDiv().withComponentCard().withSubComponentBody().withChild()
+        .withElementDiv().withLayoutFlex()
         .build();
 
     String C_OVERVIEW_KAFKA_PAUSE_RECONCILIATION_BUTTON = new CssBuilder(C_OVERVIEW_CLUSTER_CARD_KAFKA_INFO)
         .nth(1).withChild()
-        .e_div().nth(2).withChild()
-        .e_button().c_button()
+        .withElementDiv().nth(2).withChild()
+        .withElementButton().withComponentButton()
         .build();
-
 }

@@ -1,6 +1,5 @@
 package com.github.streamshub.systemtests.utils;
 
-import com.github.streamshub.systemtests.constants.Labels;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import io.skodjob.testframe.resources.KubeResourceManager;
 import io.strimzi.api.kafka.model.nodepool.KafkaNodePool;
@@ -11,6 +10,7 @@ import static com.github.streamshub.systemtests.utils.WaitUtils.waitForKafkaRead
 
 public class KafkaUtils {
     private static final Logger LOGGER = LogWrapper.getLogger(KafkaUtils.class);
+    private KafkaUtils() {}
 
     public static void scaleBrokers(String namespace, String kafkaName, int newBrokerCount, boolean wait) {
         KafkaNodePool knp = ResourceUtils.getKubeResource(KafkaNodePool.class, namespace, KafkaNamingUtils.brokerPoolName(kafkaName));
@@ -24,8 +24,6 @@ public class KafkaUtils {
                 .build());
 
             if (wait) {
-                WaitUtils.waitForPodsReady(namespace, Labels.getKnpBrokerLabelSelector(kafkaName), newBrokerCount, true);
-                WaitUtils.waitForPodsReady(namespace, Labels.getKnpControllerLabelSelector(kafkaName), newBrokerCount, true);
                 waitForKafkaReady(namespace, kafkaName);
             }
         }

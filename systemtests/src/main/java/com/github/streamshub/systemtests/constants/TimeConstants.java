@@ -3,6 +3,7 @@ package com.github.streamshub.systemtests.constants;
 import java.time.Duration;
 
 public class TimeConstants {
+    private TimeConstants() {}
 
     private static long minutes(int minutes) {
         return Duration.ofMinutes(minutes).toMillis();

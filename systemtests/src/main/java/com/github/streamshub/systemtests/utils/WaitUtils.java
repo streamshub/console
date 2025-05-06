@@ -78,7 +78,7 @@ public class WaitUtils {
 
                     if (containers) {
                         for (ContainerStatus cs : pod.getStatus().getContainerStatuses()) {
-                            if (!cs.getReady()) {
+                            if (Boolean.FALSE.equals(cs.getReady())) {
                                 LOGGER.debug("Container: {} of Pod: {}/{} not ready", namespaceName, pod.getMetadata().getName(), cs.getName());
                                 return false;
                             }
@@ -98,7 +98,7 @@ public class WaitUtils {
     }
 
     public static boolean waitForKafkaReady(String namespaceName, String clusterName) {
-        return waitForKafkaStatus(namespaceName, clusterName, ResourceStatus.Ready, ConditionStatus.True);
+        return waitForKafkaStatus(namespaceName, clusterName, ResourceStatus.READY, ConditionStatus.TRUE);
     }
 
     public static void waitForKafkaBrokerNodePoolReplicasInSpec(String namespace, String kafkaClusterName, int replicas) {

@@ -4,6 +4,7 @@ import com.github.streamshub.systemtests.TestCaseConfig;
 import com.github.streamshub.systemtests.utils.ConsoleUtils;
 
 public class PwPageUrls {
+    private PwPageUrls() {}
 
     private static String getConsoleUrl(TestCaseConfig tcc) {
         return ConsoleUtils.getConsoleUiUrl(tcc.namespace(), tcc.consoleInstanceName(), true);
