@@ -1,6 +1,8 @@
 package com.github.streamshub.systemtests;
 
-import com.github.streamshub.systemtests.utils.PwUtils;
+import com.github.streamshub.systemtests.constants.Constants;
+import com.github.streamshub.systemtests.utils.KafkaNamingUtils;
+import com.github.streamshub.systemtests.utils.playwright.PwUtils;
 import com.github.streamshub.systemtests.utils.Utils;
 import com.microsoft.playwright.Browser;
 import com.microsoft.playwright.BrowserContext;
@@ -19,6 +21,11 @@ public class TestCaseConfig {
     private final BrowserContext context;
     private final Page page;
 
+    // Default
+    private final String kafkaName;
+    private final String kafkaUserName;
+    private final String consoleInstanceName;
+
     public TestCaseConfig(ExtensionContext extensionContext) {
         this.testName = extensionContext.getTestMethod()
             .map(Method::getName)
@@ -33,6 +40,10 @@ public class TestCaseConfig {
         this.browser = PwUtils.createBrowser(playwright);
         this.context = browser.newContext(new Browser.NewContextOptions().setIgnoreHTTPSErrors(true));
         this.page = context.newPage();
+
+        this.kafkaName = KafkaNamingUtils.kafkaClusterName(namespace);
+        this.kafkaUserName =  KafkaNamingUtils.kafkaUserName(kafkaName);
+        this.consoleInstanceName = Constants.CONSOLE_INSTANCE + "-" + Utils.hashStub(namespace);
     }
 
     // ----------
@@ -52,5 +63,17 @@ public class TestCaseConfig {
 
     public Playwright playwright() {
         return playwright;
+    }
+
+    public String kafkaName() {
+        return kafkaName;
+    }
+
+    public String kafkaUserName() {
+        return kafkaUserName;
+    }
+
+    public String consoleInstanceName() {
+        return consoleInstanceName;
     }
 }
