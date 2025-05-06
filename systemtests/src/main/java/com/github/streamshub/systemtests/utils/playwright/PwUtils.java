@@ -53,8 +53,8 @@ public class PwUtils {
     }
 
     public static String getTrimmedText(String text) {
-        return text.replaceAll("\\n", "")
-            .replaceAll("[\\h\\s+\\t]", " ")
+        return text.replace("\n", "")
+            .replaceAll("[\\h\\s{2,}\\t]", " ")
             .trim();
     }
 
