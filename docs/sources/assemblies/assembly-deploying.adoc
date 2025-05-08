@@ -20,8 +20,9 @@ include::../modules/deploying/proc-deploying-kafka.adoc[leveloffset=+2]
 //instructions to deploy the operator
 include::../assemblies/assembly-deploying-operator.adoc[leveloffset=+1]
 include::../modules/deploying/proc-deploying-operator-crd.adoc[leveloffset=+2]
-include::../modules/deploying/proc-deploying-operator-olm-cli.adoc[leveloffset=+2]
-include::../modules/deploying/proc-deploying-operator-olm-ui.adoc[leveloffset=+2]
+// TODO: Enable this when the Operator is submitted to the OperatorHub. See https://github.com/streamshub/console/issues/1526
+//include::../modules/deploying/proc-deploying-operator-olm-cli.adoc[leveloffset=+2]
+//include::../modules/deploying/proc-deploying-operator-olm-ui.adoc[leveloffset=+2]
 //Using the operator to deploy the console
 include::../modules/deploying/proc-connecting-console.adoc[leveloffset=+1]
 //cluster connection authentication options
