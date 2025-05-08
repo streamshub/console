@@ -1,0 +1,27 @@
+[id='con-brokers-page-{context}']
+= Brokers page
+
+[role="_abstract"]
+The *Brokers* page shows all the brokers created for a Kafka cluster. 
+For each broker, you can see its status, as well as the distribution of partitions across the brokers, including the number of partition leaders and followers.
+
+The broker status is shown as one of the following:
+
+Not Running:: The broker has not yet been started or has been explicitly stopped.
+Starting:: The broker is initializing and connecting to the cluster, including discovering and joining the metadata quorum.
+Recovery:: The broker has joined the cluster but is in recovery mode, replicating necessary data and metadata before becoming fully operational. It is not serving clients.
+Running:: The broker is fully operational, registered with the controller, and actively serving client requests.
+Pending Controlled Shutdown:: The broker has initiated a controlled shutdown process and will shut down gracefully once complete.
+Shutting Down:: The broker is in the process of shutting down. Client connections are being closed, and internal resources are being released.
+Unknown:: The broker's state is unknown, possibly due to an unexpected error or failure.
+
+If the broker has a rack ID, this is the ID of the rack or datacenter in which the broker resides.
+
+Click on the right arrow (>) next to a broker name to see more information about the broker, including its hostname and disk usage.
+
+Click on the *Rebalance* tab to show any rebalances taking place on the cluster.
+
+[NOTE]
+====
+Consider rebalancing if the distribution is uneven to ensure efficient resource utilization.
+====

@@ -1,0 +1,98 @@
+// Module included in the following assemblies:
+//
+// assembly-deploying.adoc
+
+[id='ref-metrics-options-{context}']
+= Enabling a metrics provider
+[role="_abstract"]
+Configure the console deployment to enable a metrics provider. 
+You can set up configuration to use one of the following sources to scrape metrics from Kafka clusters using Prometheus:
+
+* *OpenShift's built-in user workload monitoring* +
+Use OpenShift's workload monitoring, incorporating the Prometheus operator, to monitor console services and workloads without the need for an additional monitoring solution.
+* *A standalone Prometheus instance* +
+Provide the details and credentials to connect with your own Prometheus instance.
+* *An embedded Prometheus instance* (default) +
+Deploy a private Prometheus instance for use only by the console instance. 
+The instance is configured to retrieve metrics from all Strimzi managed Kafka instances in the same Kubernetes cluster. 
+Using embedded metrics is intended for evaluation or development environments and should not be used in production scenarios.
+
+Example configuration for OpenShift monitoring and a standalone Prometheus instance is provided in the following files: 
+
+* `examples/console/resources/console/console-openshift-metrics.yaml`
+* `examples/console/resources/console/console-standalone-prometheus.yaml`
+
+The configuration introduces the `metricsSources` properties for enabling monitoring.
+Use the `type` property to define the source:
+
+* `openshift-monitoring`
+* `standalone` (Prometheus)
+* `embedded` (Prometheus)
+
+Assign the metrics source to a Kafka cluster using the `kafkaClusters.metricsSource` property.
+The configuration for `openshift-monitoring` and `embedded` requires no further configuration besides the `type`. 
+
+.Example metrics configuration for Openshift monitoring
+[source,yaml]
+----
+apiVersion: console.streamshub.github.com/v1alpha1
+kind: Console
+metadata:
+  name: my-console
+spec:
+  hostname: my-console.<cluster_domain>
+  # ...
+  metricsSources:
+    - name: my-ocp-prometheus
+      type: openshift-monitoring
+  kafkaClusters:
+    - name: console-kafka
+      namespace: kafka
+      listener: secure  
+      metricsSource: my-ocp-prometheus                  
+      credentials:
+        kafkaUser:
+          name: console-kafka-user1
+  # ...        
+----
+
+.Example metrics configuration for standalone Prometheus monitoring
+[source,yaml]
+----
+apiVersion: console.streamshub.github.com/v1alpha1
+kind: Console
+metadata:
+  name: my-console
+spec:
+  hostname: my-console.<cluster_domain>
+  # ...
+  metricsSources:
+    - name: my-custom-prometheus
+      type: standalone
+      url: <prometheus_instance_address> # <1>
+      authentication: # <2>
+        username: my-user
+        password: my-password
+      trustStore: # <3>
+        type: JKS
+        content:
+          valueFrom:
+            configMapKeyRef:
+              name: my-prometheus-configmap
+              key: ca.jks
+        password: # <4>
+          value: changeit
+  kafkaClusters:
+    - name: console-kafka
+      namespace: kafka
+      listener: secure  
+      metricsSource: my-ocp-prometheus                  
+      credentials:
+        kafkaUser:
+          name: console-kafka-user1
+  # ...        
+----
+<1> URL of the standalone Prometheus instance for metrics collection.
+<2> Optional authentication credentials for accessing the Prometheus instance. Either username and password or token can be used.
+<3> Optional truststore configuration for SSL, with JKS content provided through a `ConfigMap` or `Secret` (`secretKeyRef`).
+<4> Optional password for the truststore, either directly provided or referenced. Not recommended for production.

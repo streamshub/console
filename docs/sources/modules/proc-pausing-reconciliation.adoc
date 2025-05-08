@@ -1,0 +1,14 @@
+[id='proc-pausing-reconciliation-{context}']
+= Pausing reconciliation of clusters
+
+[role="_abstract"]
+Pause cluster reconciliations from the *Cluster overview* page by following these steps.
+While paused, any changes to the cluster configuration using the `Kafka` custom resource are ignored until reconciliation is resumed.
+
+.Procedure
+
+. From the StreamsHub Console, log in to the Kafka cluster that you want to connect to, then click *Cluster overview* and *Pause reconciliation*.
+. Confirm the pause, after which the *Cluster overview* page shows a change of status warning that reconciliation is paused.
+. Click *Resume reconciliation* to restart reconciliation.
+
+NOTE: If the status change is not displayed after pausing reconciliation, try refreshing the page.

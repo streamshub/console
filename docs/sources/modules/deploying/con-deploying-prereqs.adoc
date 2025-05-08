@@ -1,0 +1,31 @@
+// Module included in the following assemblies:
+//
+// assembly-deploying.adoc
+
+[id='con-deploying-prereqs-{context}']
+= Deployment prerequisites
+
+[role="_abstract"]
+To deploy the console, you need the following:
+
+* A Kubernetes {minKubernetesVersion} cluster.
+* The `kubectl` command-line tool is installed and configured to connect to the Kubernetes cluster.
+* Access to the Kubernetes cluster using an account with `cluster-admin` permissions, such as `system-admin`.
+* A Kafka cluster managed by Strimzi, running on the Kubernetes cluster.  
+
+Example files are provided for installing a Kafka cluster managed by Strimzi, along with a Kafka user representing the console. 
+These files offer the fastest way to set up and try the console, but you can also use your own Strimzi managed Kafka deployment.
+
+== Using your own Kafka cluster
+
+If you use your own Strimzi deployment, verify the configuration by comparing it with the example deployment files provided with the console.
+
+For each Kafka cluster, the `Kafka` resource used to install the cluster must be configured with the following:
+
+* Sufficient authorization for the console to connect
+* Metrics properties for the console to be able to display certain data
++
+The metrics configuration must match the properties specified in the example `Kafka` (`console-kafka`) and `ConfigMap` (`console-kafka-metrics`) resources.
+
+
+

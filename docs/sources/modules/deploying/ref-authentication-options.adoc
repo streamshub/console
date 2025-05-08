@@ -1,0 +1,141 @@
+// Module included in the following assemblies:
+//
+// assembly-deploying.adoc
+
+[id='ref-authentication-options-{context}']
+= Using an OIDC provider to secure access to Kafka clusters
+
+[role="_abstract"]
+Enable secure console connections to Kafka clusters using an OIDC provider.
+Configure the console deployment to configure connections to any Identity Provider (IdP), such as Keycloak or Dex, that supports OpenID Connect (OIDC).
+Also define the subjects and roles for user authorization.
+The security profiles can be configured for all Kafka cluster connections on a global level, though you can add roles and rules for specific Kafka clusters.
+
+An example configuration is provided in the following file: `examples/console/resources/console/console-security-oidc.yaml`.
+The configuration introduces the following additional properties for console deployment:
+
+`security`:: Properties that define the connection details for the console to connect with the OIDC provider.
+`subjects`:: Specifies the subjects (users or groups) and their roles in terms of JWT claims or explicit subject names, determining access permissions.
+`roles`:: Defines the roles and associated access rules for users, specifying which resources (like Kafka clusters) they can interact with and what operations they are permitted to perform.  
+
+.Example security configuration for all clusters
+[source,yaml]
+----
+apiVersion: console.streamshub.github.com/v1alpha1
+kind: Console
+metadata:
+  name: my-console
+spec:
+  hostname: my-console.<cluster_domain>
+  security:
+    oidc:
+      authServerUrl: <OIDC_discovery_URL> # <1>
+      clientId: <client_id> # <2>
+      clientSecret: # <3>
+        valueFrom:
+          secretKeyRef:
+            name: my-oidc-secret
+            key: client-secret
+    subjects:
+      - claim: groups # <4>
+        include: # <5>
+          - <team_name_1>
+          - <team_name_2>
+        roleNames: # <6>
+          - developers
+      - claim: groups
+        include:
+          - <team_name_3>
+        roleNames:
+          - administrators
+      - include: #<7>
+          - <user_1>
+          - <user_2>
+        roleNames:
+          - administrators
+    roles:
+      - name: developers
+        rules:
+          - resources: # <8> 
+              - kafkas
+          - resourceNames: # <9>
+              - <dev_cluster_a>
+              - <dev_cluster_b>
+          - privileges: # <10>
+              - '*'
+      - name: administrators
+        rules:
+          - resources:
+              - kafkas
+          - privileges:
+              - '*'
+  kafkaClusters:
+    - name: console-kafka
+      namespace: kafka
+      listener: secure                     
+      credentials:
+        kafkaUser:
+          name: console-kafka-user1
+
+----
+<1> URL for OIDC provider discovery.
+<2> Client ID for OIDC authentication to identify the client.
+<3> Client secret and client ID used for authentication.
+<4> JWT claim types or names to identify the users or groups.
+<5> Users or groups included under the specified claim.
+<6> Roles assigned to the specified users or groups.
+<7> Specific users included by name when no claim is specified.
+<8> Resources that the assigned role can access.
+<9> Specific resource names accessible by the assigned role.
+<10> Privileges granted to the assigned role for the specified resources.
+
+If you want to specify roles and rules for individual Kafka clusters, add the details under `kafka.clusters[].security.roles[]`.
+In the following example, the `console-kafka` cluster allows developers to list and view selected Kafka resources.
+Administrators can also update certain resources.
+
+.Example security configuration for an individual cluster
+[source,yaml]
+----
+apiVersion: console.streamshub.github.com/v1alpha1
+kind: Console
+metadata:
+  name: my-console
+spec:
+  hostname: my-console.<cluster_domain>
+  # ...
+  kafkaClusters:
+    - name: console-kafka
+      namespace: kafka
+      listener: secure                      
+      credentials:
+        kafkaUser:
+          name: console-kafka-user1
+      security:
+        roles:
+          - name: developers
+            rules:
+              - resources:
+                  - topics
+                  - topics/records
+                  - consumerGroups
+                  - rebalances
+              - privileges:
+                  - get
+                  - list
+          - name: administrators
+            rules:
+              - resources:
+                  - topics
+                  - topics/records
+                  - consumerGroups
+                  - rebalances
+                  - nodes/configs
+              - privileges:
+                  - get
+                  - list
+              - resources:
+                  - consumerGroups
+                  - rebalances
+              - privileges:
+                  - update
+----
