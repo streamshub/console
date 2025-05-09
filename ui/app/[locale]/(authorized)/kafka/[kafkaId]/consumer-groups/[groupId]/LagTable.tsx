@@ -4,7 +4,7 @@ import { ResponsiveTable } from "@/components/Table";
 import { Tooltip } from "@/libs/patternfly/react-core";
 import { HelpIcon } from "@/libs/patternfly/react-icons";
 import { Link } from "@/i18n/routing";
-import { TableVariant } from "@patternfly/react-table";
+import { TableVariant } from "@/libs/patternfly/react-table";
 import { useTranslations } from "next-intl";
 
 export function LagTable({

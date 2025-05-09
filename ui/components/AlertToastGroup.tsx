@@ -4,7 +4,7 @@ import {
   Alert,
   AlertActionCloseButton,
   AlertVariant,
-} from "@patternfly/react-core";
+} from "@/libs/patternfly/react-core";
 
 export type GroupToastAlertProps = {
   id: string;

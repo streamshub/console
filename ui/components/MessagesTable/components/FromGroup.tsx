@@ -3,7 +3,12 @@ import {
   DropdownItem,
   TextInput,
 } from "@/libs/patternfly/react-core";
-import { Divider, Flex, FlexItem, MenuToggle } from "@patternfly/react-core";
+import {
+  Divider,
+  Flex,
+  FlexItem,
+  MenuToggle,
+} from "@/libs/patternfly/react-core";
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useState } from "react";
 import { DateTimePicker } from "./DateTimePicker";
@@ -119,7 +124,7 @@ export function FromGroup({
               isExpanded={isOpen}
               data-testid={"filter-group"}
               ref={toggleRef}
-              className={"pf-v5-u-w-100"}
+              className={"pf-v6-u-w-100"}
             >
               {labels[currentCategory]}
             </MenuToggle>

@@ -1,11 +1,11 @@
-import type { SelectProps } from "@patternfly/react-core";
+import type { SelectProps } from "@/libs/patternfly/react-core";
 import {
   MenuToggle,
   Select,
   SelectList,
   SelectOption,
-} from "@patternfly/react-core";
-import { FilterIcon } from "@patternfly/react-icons";
+} from "@/libs/patternfly/react-core";
+import { FilterIcon } from "@/libs/patternfly/react-icons";
 import { useState } from "react";
 
 export function FilterSwitcher({
@@ -28,6 +28,7 @@ export function FilterSwitcher({
 
   return (
     <Select
+      popperProps={{ appendTo: "inline" }}
       toggle={(toggleRef) => (
         <MenuToggle
           ref={toggleRef}

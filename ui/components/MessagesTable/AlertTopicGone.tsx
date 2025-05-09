@@ -1,5 +1,5 @@
 import { Alert } from "@/libs/patternfly/react-core";
-import { AlertActionLink } from "@patternfly/react-core";
+import { AlertActionLink } from "@/libs/patternfly/react-core";
 import { useTranslations } from "next-intl";
 
 export function AlertTopicGone({ onClick }: { onClick: () => void }) {

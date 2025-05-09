@@ -1,7 +1,12 @@
 "use client";
 
 import { SchemaValue } from "@/components/MessagesTable/components/SchemaValue";
-import { Flex, FlexItem, PageSection, Title } from "@patternfly/react-core";
+import {
+  Flex,
+  FlexItem,
+  PageSection,
+  Title,
+} from "@/libs/patternfly/react-core";
 
 export function ConnectedSchema({
   content,
@@ -11,7 +16,7 @@ export function ConnectedSchema({
   name: string;
 }) {
   return (
-    <PageSection variant="light">
+    <PageSection hasBodyWrapper={false}>
       <Flex direction={{ default: "column" }} gap={{ default: "gap2xl" }}>
         <FlexItem>
           <Title headingLevel={"h4"}>{name}</Title>

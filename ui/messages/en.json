@@ -37,7 +37,9 @@
     "login_button": "Log in",
     "text_content": "The {product} console delivers real-time insights for managing and optimizing your Kafka clusters. Connect and monitor your clusters effortlessly.",
     "footer_text": "To log in, you need to enter your credentials.",
-    "learning_resource": "Learn more about {product}"
+    "learning_resource": "Learn more about {product}",
+    "log_into_a_different_cluster": "Log in to a different cluster",
+    "login_anonymously": "Click to login anonymously"
   },
   "cluster-selector": {
     "subtitle": "Select a cluster"
@@ -140,6 +142,18 @@
     "no_results_title": "No properties found",
     "no_results_body": "Adjust your selection criteria and try again.",
     "no_results_reset": "Clear all filters"
+  },
+  "node-header": {
+    "overveiw": "Overview",
+    "rebalance": "Rebalance",
+    "brokers": "Brokers",
+    "title": "Nodes"
+  },
+  "topic-header": {
+    "messages": "Messages",
+    "partitions": "Partitions",
+    "consumer_groups": "Consumer groups",
+    "configuration": "Configuration"
   },
   "topics": {
     "title": "Topics",

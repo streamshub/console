@@ -7,7 +7,7 @@ import {
   CodeBlockAction,
   CodeBlockCode,
 } from "@/libs/patternfly/react-core";
-import { DownloadIcon } from "@patternfly/react-icons";
+import { DownloadIcon } from "@/libs/patternfly/react-icons";
 import { useState } from "react";
 
 export function SchemaValue({

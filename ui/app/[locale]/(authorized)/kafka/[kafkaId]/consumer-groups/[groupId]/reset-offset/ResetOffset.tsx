@@ -25,7 +25,7 @@ import { TypeaheadSelect } from "./TypeaheadSelect";
 import { DryrunSelect } from "./DryrunSelect";
 import { SelectComponent } from "./SelectComponent";
 import { ErrorState } from "./ResetConsumerOffset";
-import { ExclamationCircleIcon } from "@patternfly/react-icons";
+import { ExclamationCircleIcon } from "@/libs/patternfly/react-icons";
 
 export type Offset = {
   topicId: string;

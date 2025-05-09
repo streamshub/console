@@ -6,12 +6,10 @@ import {
   EmptyStateActions,
   EmptyStateBody,
   EmptyStateFooter,
-  EmptyStateHeader,
-  EmptyStateIcon,
 } from "@/libs/patternfly/react-core";
 import { PlusCircleIcon } from "@/libs/patternfly/react-icons";
 import { useTranslations } from "next-intl";
-import { clientConfig as config } from '@/utils/config';
+import { clientConfig as config } from "@/utils/config";
 
 export async function EmptyStateNoTopics({
   canCreate,
@@ -23,15 +21,10 @@ export async function EmptyStateNoTopics({
   onShowHiddenTopics: () => void;
 }) {
   const t = useTranslations();
-  const showLearning = await config().then(cfg => cfg.showLearning);
+  const showLearning = await config().then((cfg) => cfg.showLearning);
 
   return (
-    <EmptyState>
-      <EmptyStateHeader
-        titleText="No topics"
-        headingLevel="h4"
-        icon={<EmptyStateIcon icon={PlusCircleIcon} />}
-      />
+    <EmptyState titleText="No topics" headingLevel="h4" icon={PlusCircleIcon}>
       <EmptyStateBody>
         {t("EmptyStateNoTopics.to_get_started_create_your_first_topic")}{" "}
       </EmptyStateBody>

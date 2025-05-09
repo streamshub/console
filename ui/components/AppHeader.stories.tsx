@@ -2,7 +2,6 @@ import {
   Breadcrumb,
   BreadcrumbItem,
   Button,
-  PageNavigation,
 } from "@/libs/patternfly/react-core";
 import type { Meta, StoryObj } from "@storybook/react";
 import { AppHeader } from "./AppHeader";
@@ -28,8 +27,8 @@ type Story = StoryObj<typeof AppHeader>;
 
 export const Default: Story = {
   args: {
-    staticRefresh: fixedDate
-  }
+    staticRefresh: fixedDate,
+  },
 };
 
 export const WithActions: Story = {
@@ -46,15 +45,13 @@ export const WithNavigation: Story = {
   args: {
     staticRefresh: fixedDate,
     navigation: (
-      <PageNavigation>
-        <Breadcrumb>
-          <BreadcrumbItem to="#">Home</BreadcrumbItem>
-          <BreadcrumbItem to="#">Section</BreadcrumbItem>
-          <BreadcrumbItem to="#" isActive>
-            Page
-          </BreadcrumbItem>
-        </Breadcrumb>
-      </PageNavigation>
+      <Breadcrumb>
+        <BreadcrumbItem to="#">Home</BreadcrumbItem>
+        <BreadcrumbItem to="#">Section</BreadcrumbItem>
+        <BreadcrumbItem to="#" isActive>
+          Page
+        </BreadcrumbItem>
+      </Breadcrumb>
     ),
   },
 };
@@ -67,15 +64,13 @@ export const FullFeatured: Story = {
       <Button key="action2">Action 2</Button>,
     ],
     navigation: (
-      <PageNavigation>
-        <Breadcrumb>
-          <BreadcrumbItem to="#">Home</BreadcrumbItem>
-          <BreadcrumbItem to="#">Section</BreadcrumbItem>
-          <BreadcrumbItem to="#" isActive>
-            Page
-          </BreadcrumbItem>
-        </Breadcrumb>
-      </PageNavigation>
+      <Breadcrumb>
+        <BreadcrumbItem to="#">Home</BreadcrumbItem>
+        <BreadcrumbItem to="#">Section</BreadcrumbItem>
+        <BreadcrumbItem to="#" isActive>
+          Page
+        </BreadcrumbItem>
+      </Breadcrumb>
     ),
   },
 };

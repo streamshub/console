@@ -13,7 +13,7 @@ import {
   NewProcessIcon,
   PendingIcon,
 } from "@/libs/patternfly/react-icons";
-import { Icon, Level, LevelItem, Popover } from "@/libs/patternfly/react-core";
+import { Flex, FlexItem, Icon, Popover } from "@/libs/patternfly/react-core";
 import { useTranslations } from "next-intl";
 
 export const RoleLabel = (
@@ -36,27 +36,29 @@ export const RoleLabel = (
     broker: {
       label: <>{t("node_roles.broker")}</>, // Label without count
       labelWithCount: (
-        <Level>
-          <LevelItem>{t("node_roles.broker")}</LevelItem>
-          <LevelItem>
-            <span style={{ color: "var(--pf-v5-global--Color--200)" }}>
-              {brokerCount}
-            </span>
-          </LevelItem>
-        </Level>
+        <Flex>
+          <FlexItem>{t("node_roles.broker")}</FlexItem>
+          <FlexItem
+            align={{ default: "alignRight" }}
+            style={{ color: "var(--pf-t--global--text--color--subtle)" }}
+          >
+            {brokerCount}
+          </FlexItem>
+        </Flex>
       ),
     },
     controller: {
       label: <>{t("node_roles.controller")}</>,
       labelWithCount: (
-        <Level>
-          <LevelItem>{t("node_roles.controller")}</LevelItem>
-          <LevelItem>
-            <span style={{ color: "var(--pf-v5-global--Color--200)" }}>
-              {controllerCount}
-            </span>
-          </LevelItem>
-        </Level>
+        <Flex>
+          <FlexItem>{t("node_roles.controller")}</FlexItem>
+          <FlexItem
+            align={{ default: "alignRight" }}
+            style={{ color: "var(--pf-t--global--text--color--subtle)" }}
+          >
+            {controllerCount}
+          </FlexItem>
+        </Flex>
       ),
     },
   };
@@ -71,7 +73,7 @@ export const BrokerLabel = (): Record<BrokerStatus, ReactNode> => {
         headerContent={<div>{t("running.label")}</div>}
         bodyContent={<div>{t("running.popover_text")}</div>}
       >
-        <span className="pf-v5-u-active-color-100">
+        <span className="pf-v6-u-active-color-100">
           <Icon status={"success"}>
             <CheckCircleIcon />
           </Icon>
@@ -85,7 +87,7 @@ export const BrokerLabel = (): Record<BrokerStatus, ReactNode> => {
         headerContent={<div>{t("starting.label")}</div>}
         bodyContent={<div>{t("starting.popover_text")}</div>}
       >
-        <span className="pf-v5-u-active-color-100">
+        <span className="pf-v6-u-active-color-100">
           <Icon>
             <InProgressIcon />
           </Icon>
@@ -99,7 +101,7 @@ export const BrokerLabel = (): Record<BrokerStatus, ReactNode> => {
         headerContent={<div>{t("shutting_down.label")}</div>}
         bodyContent={<div>{t("shutting_down.popover_text")}</div>}
       >
-        <span className="pf-v5-u-active-color-100">
+        <span className="pf-v6-u-active-color-100">
           <Icon>
             <PendingIcon />
           </Icon>
@@ -113,7 +115,7 @@ export const BrokerLabel = (): Record<BrokerStatus, ReactNode> => {
         headerContent={<div>{t("pending_controlled_shutdown.label")}</div>}
         bodyContent={<div>{t("pending_controlled_shutdown.popover_text")}</div>}
       >
-        <span className="pf-v5-u-active-color-100">
+        <span className="pf-v6-u-active-color-100">
           <Icon status={"warning"}>
             <ExclamationTriangleIcon />
           </Icon>
@@ -127,7 +129,7 @@ export const BrokerLabel = (): Record<BrokerStatus, ReactNode> => {
         headerContent={<div>{t("recovery.label")}</div>}
         bodyContent={<div>{t("recovery.popover_text")}</div>}
       >
-        <span className="pf-v5-u-active-color-100">
+        <span className="pf-v6-u-active-color-100">
           <Icon>
             <NewProcessIcon />
           </Icon>
@@ -141,7 +143,7 @@ export const BrokerLabel = (): Record<BrokerStatus, ReactNode> => {
         headerContent={<div>{t("not_running.label")}</div>}
         bodyContent={<div>{t("not_running.popover_text")}</div>}
       >
-        <span className="pf-v5-u-active-color-100">
+        <span className="pf-v6-u-active-color-100">
           <Icon status={"danger"}>
             <ExclamationCircleIcon />
           </Icon>
@@ -155,7 +157,7 @@ export const BrokerLabel = (): Record<BrokerStatus, ReactNode> => {
         headerContent={<div>{t("unknown.label")}</div>}
         bodyContent={<div>{t("unknown.popover_text")}</div>}
       >
-        <span className="pf-v5-u-active-color-100">
+        <span className="pf-v6-u-active-color-100">
           <Icon status={"danger"}>
             <ExclamationCircleIcon />
           </Icon>
@@ -176,7 +178,7 @@ export const ControllerLabel = (): Record<ControllerStatus, ReactNode> => {
         headerContent={<div>{t("quorum_leader")}</div>}
         bodyContent={<div>{t("quorum_leader_popover_text")}</div>}
       >
-        <span className="pf-v5-u-active-color-100">
+        <span className="pf-v6-u-active-color-100">
           <Icon status={"success"}>
             <CheckCircleIcon />
           </Icon>
@@ -190,7 +192,7 @@ export const ControllerLabel = (): Record<ControllerStatus, ReactNode> => {
         headerContent={<div>{t("quorum_follower")}</div>}
         bodyContent={<div>{t("quorum_follower_popover_text")}</div>}
       >
-        <span className="pf-v5-u-active-color-100">
+        <span className="pf-v6-u-active-color-100">
           <Icon status={"success"}>
             <CheckCircleIcon />
           </Icon>
@@ -204,7 +206,7 @@ export const ControllerLabel = (): Record<ControllerStatus, ReactNode> => {
         headerContent={<div>{t("quorum_follower_lagged")}</div>}
         bodyContent={<div>{t("quorum_follower_lagged_popover_text")}</div>}
       >
-        <span className="pf-v5-u-active-color-100">
+        <span className="pf-v6-u-active-color-100">
           <Icon status={"warning"}>
             <ExclamationTriangleIcon />
           </Icon>
@@ -218,7 +220,7 @@ export const ControllerLabel = (): Record<ControllerStatus, ReactNode> => {
         headerContent={<div>{t("unknown")}</div>}
         bodyContent={<div>{t("unknown_popover_text")}</div>}
       >
-        <span className="pf-v5-u-active-color-100">
+        <span className="pf-v6-u-active-color-100">
           <Icon status={"danger"}>
             <ExclamationCircleIcon />
           </Icon>
@@ -239,14 +241,15 @@ const generateStatusLabel = <T extends string>(
       const count = statuses[typedKey] ?? 0;
 
       acc[typedKey] = (
-        <Level>
-          <LevelItem>{label as ReactNode}</LevelItem>{" "}
-          <LevelItem>
-            <span style={{ color: "var(--pf-v5-global--Color--200)" }}>
-              {count}
-            </span>
-          </LevelItem>
-        </Level>
+        <Flex>
+          <FlexItem>{label as ReactNode}</FlexItem>{" "}
+          <FlexItem
+            align={{ default: "alignRight" }}
+            style={{ color: "var(--pf-t--global--text--color--subtle)" }}
+          >
+            {count}
+          </FlexItem>
+        </Flex>
       );
       return acc;
     },
