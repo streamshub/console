@@ -1,7 +1,7 @@
 import { getKafkaClusters } from "@/api/kafka/actions";
 import { redirect } from "@/i18n/routing";
 import { SignInPage } from "./SignInPage";
-import { getTranslations } from "next-intl/server";;
+import { getTranslations } from "next-intl/server";
 
 export async function generateMetadata() {
   const t = await getTranslations();
@@ -18,9 +18,9 @@ export default async function SignIn({
   searchParams?: { callbackUrl?: string };
   params: { kafkaId?: string };
 }) {
-  const clusters = (await getKafkaClusters())?.payload ?? [];
+  const clusters = (await getKafkaClusters())?.payload;
 
-  const cluster = clusters.find((c) => c.id === params.kafkaId);
+  const cluster = clusters?.data?.find((c) => c.id === params.kafkaId);
   if (cluster) {
     const authMethod = cluster.meta.authentication;
     const provider = {
@@ -35,7 +35,7 @@ export default async function SignIn({
         callbackUrl={
           searchParams?.callbackUrl ?? `/kafka/${params.kafkaId}/overview`
         }
-        hasMultipleClusters={clusters.length > 1}
+        hasMultipleClusters={(clusters?.data?.length ?? 0) > 1}
       />
     );
   }

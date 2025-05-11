@@ -2,46 +2,53 @@
 
 import { ClusterList } from "@/api/kafka/schema";
 import { ButtonLink } from "@/components/Navigation/ButtonLink";
-import { ResponsiveTable } from "@/components/Table";
+import { TableView } from "@/components/Table";
 import { Truncate } from "@/libs/patternfly/react-core";
-import { TableVariant } from "@/libs/patternfly/react-table";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/routing";
 
-const columns = [
+export const ClusterColumns = [
   "name",
   "version",
   "namespace",
   "authentication",
   "login",
-];
+] as const;
+
+export type ClusterColumn = (typeof ClusterColumns)[number];
 
 export function ClustersTable({
   clusters,
+  clusterCount,
   authenticated,
+  onPageChange,
+  page,
+  perPage,
 }: {
   clusters: ClusterList[] | undefined;
-  authenticated: boolean
+  authenticated: boolean;
+  page: number;
+  perPage: number;
+  onPageChange: (page: number, perPage: number) => void;
+  clusterCount: number;
 }) {
   const t = useTranslations();
-  const columns = authenticated ? [
-        "name",
-        "version",
-        "namespace",
-    ] as const : [
-        "name",
-        "version",
-        "namespace",
-        "authentication",
-        "login",
-    ] as const;
+
+  const columns = authenticated
+    ? (["name", "version", "namespace"] as const)
+    : ClusterColumns;
 
   return (
-    <ResponsiveTable
-      ariaLabel={"Kafka clusters"}
-      variant={TableVariant.compact}
-      columns={columns}
+    <TableView
+      itemCount={clusterCount}
+      page={page}
+      perPage={perPage}
+      onPageChange={onPageChange}
       data={clusters}
+      emptyStateNoData={<div>{t("ClustersTable.no_data")}</div>}
+      emptyStateNoResults={<div>{t("ClustersTable.no_data")}</div>}
+      ariaLabel={"Kafka clusters"}
+      columns={columns}
       renderHeader={({ column, key, Th }) => {
         switch (column) {
           case "name":
@@ -58,43 +65,40 @@ export function ClustersTable({
             return <Th key={key}>{t("ClustersTable.authentication")}</Th>;
           case "login":
             return (
-              <Th
-                key={key}
-                modifier={"fitContent"}
-                aria-label="Login buttons"
-              />
+              <Th key={key} modifier="fitContent" aria-label="Login buttons" />
             );
         }
       }}
-      renderCell={({ key, column, row, Td }) => {
+      renderCell={({ column, row, key, Td }) => {
         switch (column) {
           case "name":
             return (
-              <Td key={key}>
-                {authenticated
-                    ? <Link href={`/kafka/${row.id}`}>
-                        <Truncate content={row.attributes.name} />
-                      </Link>
-                    : <Truncate content={row.attributes.name} />
-                }
+              <Td key={key} dataLabel={t("ClustersTable.name")}>
+                {authenticated ? (
+                  <Link href={`/kafka/${row.id}`}>
+                    <Truncate content={row.attributes.name} />
+                  </Link>
+                ) : (
+                  <Truncate content={row.attributes.name} />
+                )}
               </Td>
             );
           case "version":
             return (
-              <Td key={key}>
+              <Td key={key} dataLabel={t("ClustersTable.kafka_version")}>
                 {row.attributes.kafkaVersion ??
                   t("ClustersTable.not_available")}
               </Td>
             );
           case "namespace":
             return (
-              <Td key={key}>
+              <Td key={key} dataLabel={t("ClustersTable.project")}>
                 {row.attributes.namespace ?? t("ClustersTable.not_available")}
               </Td>
             );
           case "authentication":
             return (
-              <Td key={key}>
+              <Td key={key} dataLabel={t("ClustersTable.authentication")}>
                 {
                   {
                     basic: t("ClustersTable.authentication_basic"),
@@ -106,33 +110,21 @@ export function ClustersTable({
             );
           case "login":
             return (
-              <Td key={key} modifier={"fitContent"}>
-                <ButtonLink href={ authenticated ? `/kafka/${row.id}` : `/kafka/${row.id}/login`} variant={"primary"}>
-                  { authenticated ? "View" : "Login to cluster" }
+              <Td key={key} modifier="fitContent">
+                <ButtonLink
+                  href={
+                    authenticated
+                      ? `/kafka/${row.id}`
+                      : `/kafka/${row.id}/login`
+                  }
+                  variant="primary"
+                >
+                  {authenticated ? "View" : "Login to cluster"}
                 </ButtonLink>
               </Td>
             );
         }
       }}
-      // renderActions={({ ActionsColumn, row }) => (
-      //   <ActionsColumn
-      //     items={[
-      //       {
-      //         title: t("ClustersTable.connection_details"),
-      //         onClick: () => {
-      //           open(row.id);
-      //         },
-      //       },
-      //       {
-      //         title: t("ClustersTable.view_openshift_console"),
-      //         icon: <ExternalLinkAltIcon />,
-      //         isDisabled: true,
-      //       },
-      //     ]}
-      //   />
-      // )}
-    >
-      {t("ClustersTable.no_data")}
-    </ResponsiveTable>
+    />
   );
 }

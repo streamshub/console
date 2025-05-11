@@ -1,6 +1,6 @@
 import { getKafkaClusters } from "@/api/kafka/actions";
 import { AppLayout } from "@/components/AppLayout";
-import { ClustersTable } from "@/components/ClustersTable";
+import { ClusterColumn } from "@/components/ClustersTable";
 import { ExpandableCard } from "@/components/ExpandableCard";
 import { Number } from "@/components/Format/Number";
 import { ExternalLink } from "@/components/Navigation/ExternalLink";
@@ -29,10 +29,12 @@ import {
 import { getTranslations } from "next-intl/server";
 import { Suspense } from "react";
 import styles from "./home.module.css";
-import config from '@/utils/config';
+import config from "@/utils/config";
 import { logger } from "@/utils/logger";
 import { getAuthOptions } from "@/app/api/auth/[...nextauth]/auth-options";
 import { getServerSession } from "next-auth";
+import { stringToInt } from "@/utils/stringToInt";
+import { ConnectedClusterTable } from "./ConnectedClustersTable";
 
 const log = logger.child({ module: "home" });
 
@@ -44,16 +46,67 @@ export async function generateMetadata() {
   };
 }
 
-export default async function Home() {
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: {
+    perPage: string | undefined;
+    sort: string | undefined;
+    sortDir: string | undefined;
+    page: string | undefined;
+  };
+}) {
   const t = await getTranslations();
-  log.trace("fetching known Kafka clusters...")
-  const allClusters = (await getKafkaClusters())?.payload ?? [];
-  log.trace(`fetched ${allClusters.length ?? 0} Kafka clusters`)
+  log.trace("fetching known Kafka clusters...");
+  const pageSize = stringToInt(searchParams.perPage) || 20;
+  const sort = (searchParams["sort"] || "name") as ClusterColumn;
+  const sortDir = (searchParams["sortDir"] || "asc") as "asc" | "desc";
+  const pageCursor = searchParams["page"];
+
+  log.trace(
+    "fetching known Kafka clusters inside AsyncConnectedClusterTable...",
+  );
+  const response = await getKafkaClusters(undefined, {
+    sort,
+    sortDir,
+    pageSize,
+    pageCursor,
+  });
+
+  if (!response?.payload) {
+    log.trace("No cluster data received in AsyncConnectedClusterTable.");
+    return (
+      <ConnectedClusterTable
+        clusters={undefined}
+        clusterCount={0}
+        page={0}
+        perPage={pageSize}
+        sort={sort}
+        sortDir={sortDir}
+        nextPageCursor={undefined}
+        prevPageCursor={undefined}
+        authenticated={false}
+      />
+    );
+  }
+
+  const allClusters = response.payload;
+  const nextPageCursor = allClusters?.links.next
+    ? new URLSearchParams(allClusters.links.next).get("page[after]")
+    : undefined;
+
+  console.log("next page cursor", nextPageCursor);
+  const prevPageCursor = allClusters?.links.prev
+    ? new URLSearchParams(allClusters.links.prev).get("page[before]")
+    : undefined;
+  log.trace(
+    `fetched ${allClusters.data.length} clusters in AsyncConnectedClusterTable, total: ${allClusters.meta.page.total}`,
+  );
   const productName = t("common.product");
   const brand = t("common.brand");
-  log.trace("fetching configuration")
+  log.trace("fetching configuration");
   let cfg = await config();
-  log.trace(`fetched configuration: ${cfg ? 'yes' : 'no'}`);
+  log.trace(`fetched configuration: ${cfg ? "yes" : "no"}`);
   let oidcCfg = cfg?.security?.oidc ?? null;
   let oidcEnabled = !!oidcCfg;
   let username: string | undefined;
@@ -61,11 +114,11 @@ export default async function Home() {
   if (oidcEnabled) {
     const authOptions = await getAuthOptions();
     const session = await getServerSession(authOptions);
-    username = (session?.user?.name ?? session?.user?.email) ?? undefined;
+    username = session?.user?.name ?? session?.user?.email ?? undefined;
   }
 
-  if (allClusters.length === 1 && !oidcEnabled) {
-    return <RedirectOnLoad url={`/kafka/${allClusters[0].id}/login`} />;
+  if (allClusters?.data.length === 1 && !oidcEnabled) {
+    return <RedirectOnLoad url={`/kafka/${allClusters?.data[0].id}/login`} />;
   }
 
   const showLearning = cfg.showLearning;
@@ -98,15 +151,39 @@ export default async function Home() {
                   {t.rich("homepage.platform_openshift_cluster")}
                   <Text component={"small"}>
                     <Suspense fallback={<Skeleton width={"200px"} />}>
-                      <Number value={allClusters.length} />
+                      <Number value={allClusters?.data.length} />
                       &nbsp;{t("homepage.connected_kafka_clusters")}
                     </Suspense>
                   </Text>
                 </TextContent>
               </CardTitle>
               <CardBody>
-                <Suspense fallback={<ClustersTable clusters={undefined} authenticated={oidcEnabled} />}>
-                  <ClustersTable clusters={allClusters} authenticated={oidcEnabled} />
+                <Suspense
+                  fallback={
+                    <ConnectedClusterTable
+                      clusters={undefined}
+                      clusterCount={0}
+                      page={1}
+                      perPage={pageSize}
+                      sort={sort}
+                      sortDir={sortDir}
+                      nextPageCursor={undefined}
+                      prevPageCursor={undefined}
+                      authenticated={oidcEnabled}
+                    />
+                  }
+                >
+                  <ConnectedClusterTable
+                    clusters={allClusters.data}
+                    clusterCount={allClusters.meta.page.total || 0}
+                    page={allClusters.meta.page.pageNumber || 0}
+                    perPage={pageSize}
+                    sort={sort}
+                    sortDir={sortDir}
+                    nextPageCursor={nextPageCursor}
+                    prevPageCursor={prevPageCursor}
+                    authenticated={oidcEnabled}
+                  />
                 </Suspense>
               </CardBody>
             </Card>
