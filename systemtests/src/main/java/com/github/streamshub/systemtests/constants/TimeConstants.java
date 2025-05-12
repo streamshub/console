@@ -5,21 +5,21 @@ import java.time.Duration;
 public class TimeConstants {
     private TimeConstants() {}
 
-    private static long minutes(int minutes) {
+    private static long minutesInMilis(int minutes) {
         return Duration.ofMinutes(minutes).toMillis();
     }
 
-    private static long seconds(int seconds) {
+    private static long secondsInMilis(int seconds) {
         return Duration.ofSeconds(seconds).toMillis();
     }
 
     // Poll
-    public static final long GLOBAL_POLL_INTERVAL_SHORT = seconds(3);
-    public static final long POLL_INTERVAL_FOR_RESOURCE_READINESS = seconds(5);
+    public static final long GLOBAL_POLL_INTERVAL_SHORT = secondsInMilis(3);
+    public static final long POLL_INTERVAL_FOR_RESOURCE_READINESS = secondsInMilis(5);
 
     // Timeout
-    public static final long COMPONENT_LOAD_TIMEOUT = seconds(40);
-    public static final long GLOBAL_STATUS_TIMEOUT = minutes(3);
+    public static final long COMPONENT_LOAD_TIMEOUT = secondsInMilis(40);
+    public static final long GLOBAL_STATUS_TIMEOUT = minutesInMilis(3);
     // HTML elements
-    public static final long ELEMENT_VISIBILITY_TIMEOUT = minutes(1);
+    public static final long ELEMENT_VISIBILITY_TIMEOUT = minutesInMilis(1);
 }
