@@ -1,0 +1,19 @@
+[id='con-navigating-the-console-{context}']
+= Navigating the StreamsHub Console
+
+[role="_abstract"]
+When you open the StreamsHub Console, the homepage presents a list of connected Kafka clusters. 
+By clicking on a Kafka cluster name on the homepage or from the side menu, you can find information on the following components:
+
+Kafka clusters:: A group of Kafka brokers and management components.
+Brokers:: A broker contains topics and orchestrates the storage and passing of messages.
+Topics:: A topic provides a destination for the storage of data. Kafka splits each topic into one or more partitions.
+Partitions:: A subset of a topic used for data sharding and replication. The number of partitions is defined in the topic configuration.
+Consumer groups:: Kafka groups consumers with the same group ID and distributes messages across group members. Consumers within a group receive data from one or more partitions.
+
+For example, you can view the status of a Kafka cluster before navigating to view information on the cluster’s brokers and topics, or the consumer groups connected to the Kafka cluster.
+
+[NOTE]
+====
+If the side menu is not visible, click the hamburger menu (three horizontal lines) in the console header.
+====

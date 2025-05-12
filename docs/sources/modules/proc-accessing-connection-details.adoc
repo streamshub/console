@@ -1,0 +1,15 @@
+[id='proc-accessing-connection-details-{context}']
+= Accessing cluster connection details for client access
+
+[role="_abstract"]
+When connecting a client to a Kafka cluster, retrieve the necessary connection details from the *Cluster overview* page by following these steps.
+
+.Procedure
+
+. From the StreamsHub Console, log in to the Kafka cluster that you want to connect to, then click *Cluster overview* and *Cluster connection details*.
+. Copy and add bootstrap address and connection properties to your Kafka client configuration to establish a connection with the Kafka cluster.
+
+[NOTE]
+====
+Ensure that the authentication type used by the client matches the authentication type configured for the Kafka cluster.
+====

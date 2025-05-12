@@ -1,0 +1,37 @@
+[id='proc-logging-in-{context}']
+= Logging in to a Kafka cluster
+
+[role="_abstract"]
+The console supports authenticated user login to a Kafka cluster using SCRAM-SHA-512 and OAuth 2.0 authentication mechanisms.
+For secure login, authentication must be configured in your Strimzi managed Kafka cluster.
+
+NOTE: If authentication is not set up for a Kafka cluster or the credentials have been provided using the Kafka `sasl.jaas.config` property (which defines SASL authentication settings) in the console configuration, you can log in anonymously to the cluster without authentication.
+
+.Prerequisites
+
+* You must have access to a Kubernetes cluster.
+* The console must be xref:assembly-deploying-{context}[deployed and set up to connect to a Kafka cluster].
+* For secure login, you must have appropriate authentication settings for the Kafka cluster and user.
+
+SCRAM-SHA-512 settings::
++
+* Listener authentication set to `scram-sha-512` in `Kafka.spec.kafka.listeners[*].authentication`.
+* Username and password configured in `KafkaUser.spec.authentication`.
+
+OAuth 2.0 settings::
++
+* An OAuth 2.0 authorization server with client definitions for the Kafka cluster and users.
+* Listener authentication set to `oauth` in `Kafka.spec.kafka.listeners[*].authentication`.
+
+For more information on configuring authentication, see the link:{BookURLDeploying}[Strimzi documentation^].
+
+.Procedure
+
+. From the homepage, click *Login to cluster* for a selected Kafka cluster.
+. Enter login credentials depending on the authentication method used.
++
+* For SCRAM-SHA-512, enter the username and password associated with the `KafkaUser`. 
+* For OAuth 2.0, provide a client ID and client secret that is valid for the OAuth provider configured for the Kafka listener.
+
+. To end your session, click your username and then *Logout* or navigate back to the homepage. 
+

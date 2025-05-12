@@ -1,0 +1,17 @@
+// Module included in the following assemblies:
+//
+// assembly-deploying.adoc
+
+[id='assembly-deploying-operator-{context}']
+= Installing the console operator
+
+[role="_abstract"]
+Install the console operator using one of the following methods:
+
+* By applying a `Console` Custom Resource Definition (CRD)
+* Once the StreamsHub operator is submitted to the OperatorHub (see https://github.com/streamshub/console/issues/1526[Issue 1526] for details), you can install the operator:
+** By using the Operator Lifecycle Manager (OLM) command line interface (CLI)
+** From the OperatorHub in the OpenShift web console (Openshift Clusters only)
+
+The recommended approach is to install the operator via the Kubernetes CLI (`kubectl`) using the Operator Lifecycle Manager (OLM) resources.
+If using the OLM is not suitable for your environment, you can install the operator by applying the CRD directly.

@@ -1,0 +1,16 @@
+[id='con-consumer-groups-page-{context}']
+= Consumer Groups page
+
+[role="_abstract"]
+The *Consumer Groups* page shows all the consumer groups associated with a Kafka cluster.
+For each consumer group, you can see its status, the overall consumer lag across all partitions, and the number of members.
+Click on associated topics to show the topic information available from the xref:con-topics-page-{context}[*Topics* page tabs]. 
+
+Consumer group status can be one of the following:
+
+* *Stable* indicates normal functioning
+* *Rebalancing* indicates ongoing adjustments to the consumer group’s members.
+* *Empty* suggests no active members. If in the empty state, consider adding members to the group.
+
+Check group members by clicking on a consumer group name. 
+Select the options icon (three vertical dots) against a consumer group to reset consumer offsets.

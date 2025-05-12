@@ -1,0 +1,62 @@
+// Module included in the following assemblies:
+//
+// assembly-deploying.adoc
+
+[id='proc-deploying-operator-olm-cli-{context}']
+= Installing the operator using the Kubernetes CLI
+
+[role="_abstract"]
+This procedure describes how to install the StreamsHub Console operator using the Kubernetes CLI (`kubectl`).
+
+.Prerequisites
+
+* xref:con-deploying-prereqs-{context}[Deployment prerequisites].
+
+.Procedure
+
+. Download and extract the console installation artifacts.
++
+The artifacts are included with installation and example files available from the link:{ReleaseDownload}[release page^].
++
+The artifacts provide the deployment YAML files to the install the console.
+
+. Set an environment variable to define the namespace where you want to install the operator:
++
+[source,shell]
+----
+export NAMESPACE=operator-namespace
+----
++
+In this example, the namespace variable is defined as `operator-namespace`.
+
+. Install the console operator with the OLM.
++
+Use the sample installation files located in `install/console-operator/olm`. 
+These files install the operator with cluster-wide scope, allowing it to manage console resources across all namespaces. 
+Run the following command to apply the YAML files and deploy the operator to the defined namespace:
++
+[source,shell]
+----
+cat install/console-operator/olm/*.yaml | envsubst | kubectl apply -n ${NAMESPACE} -f -
+----
++
+This command reads the YAML files, replaces the namespace environment variables, and applies the resulting configuration to the specified Kubernetes namespace.
+
+. Check the status of the deployment:
++
+[source,shell]
+----
+oc get pods -n operator-namespace
+----
++
+.Output shows the deployment name and readiness
+[source,shell]
+----
+NAME              READY  STATUS   RESTARTS
+console-operator  1/1    Running  1
+----
++
+`READY` shows the number of replicas that are ready/expected.
+The deployment is successful when the `STATUS` displays as `Running`.
+
+. Use the console operator to xref:proc-connecting-console-{context}[deploy the console and connect to a Kafka cluster].
