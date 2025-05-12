@@ -6,7 +6,7 @@ test.beforeEach(async ({ authenticatedPage }) => {
 
 test("Topics consumers", async ({ page, authenticatedPage }) => {
   await test.step("Navigate to topics consumers page", async () => {
-    await authenticatedPage.clickLink("Consumer groups");
+    await authenticatedPage.clickTab("Consumer groups");
   });
   await test.step("Topics consumers page should display table", async () => {
     await authenticatedPage.waitForTableLoaded();
@@ -27,7 +27,7 @@ test("Topics consumers", async ({ page, authenticatedPage }) => {
 
     const dataCells = await page
       .locator('table[aria-label="Consumer groups"] tbody tr td')
-      .evaluateAll((tds) => tds.map((td) => td.textContent?.trim() ?? ""));
+      .evaluateAll((tds) => tds.map((td) => td.Content?.trim() ?? ""));
     expect(dataCells.length).toBeGreaterThan(0);
   });
 });

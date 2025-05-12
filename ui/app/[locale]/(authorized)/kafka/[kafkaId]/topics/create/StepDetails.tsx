@@ -3,7 +3,7 @@ import { FieldName } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/topics/cr
 import { FieldPartitions } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/topics/create/FieldPartitions";
 import { FieldReplicas } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/topics/create/FieldReplicas";
 import { topicMutateErrorToFieldError } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/topics/create/topicMutateErrorToFieldError";
-import { Form } from "@patternfly/react-core";
+import { Form } from "@/libs/patternfly/react-core";
 
 const legalNameChars = new RegExp("^[a-zA-Z0-9._-]+$");
 

@@ -13,7 +13,7 @@ const meta: Meta<typeof LabelLink> = {
       control: "select",
       options: [
         "blue",
-        "cyan",
+        "teal",
         "green",
         "orange",
         "purple",
@@ -39,9 +39,9 @@ export const Blue: Story = {
   },
 };
 
-export const Cyan: Story = {
+export const Teal: Story = {
   args: {
-    color: "cyan",
+    color: "teal",
   },
 };
 

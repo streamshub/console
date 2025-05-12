@@ -1,6 +1,13 @@
 "use client";
 
-import { Button, Modal, ModalVariant } from "@/libs/patternfly/react-core";
+import {
+  Button,
+  Modal,
+  ModalBody,
+  ModalFooter,
+  ModalHeader,
+  ModalVariant,
+} from "@/libs/patternfly/react-core";
 import { useTranslations } from "next-intl";
 
 export function ReconciliationModal({
@@ -17,37 +24,37 @@ export function ReconciliationModal({
   const t = useTranslations();
   return (
     <Modal
-      title={
-        isReconciliationPaused
-          ? t("reconciliation.resume_cluster_reconciliation")
-          : t("reconciliation.pause_reconciliation")
-      }
       isOpen={isModalOpen}
       variant={ModalVariant.medium}
-      description={
-        isReconciliationPaused ? (
-          <></>
-        ) : (
-          t("reconciliation.pause_reconciliation_description")
-        )
-      }
       onClose={onClickClose}
-      actions={[
+    >
+      <ModalHeader
+        title={
+          isReconciliationPaused
+            ? t("reconciliation.resume_cluster_reconciliation")
+            : t("reconciliation.pause_reconciliation")
+        }
+      ></ModalHeader>
+      <ModalBody>
+        {isReconciliationPaused
+          ? t("reconciliation.resume_cluster_reconciliation_description")
+          : t("reconciliation.pause_reconciliation_text")}
+      </ModalBody>
+
+      <ModalFooter>
         <Button
           key="confirm"
           variant="primary"
           onClick={onClickPauseReconciliation}
         >
           {t("reconciliation.confirm")}
-        </Button>,
+        </Button>
+        ,
         <Button key="cancel" variant="link" onClick={onClickClose}>
           {t("reconciliation.cancel")}
-        </Button>,
-      ]}
-    >
-      {isReconciliationPaused
-        ? t("reconciliation.resume_cluster_reconciliation_description")
-        : t("reconciliation.pause_reconciliation_text")}
+        </Button>
+        ,
+      </ModalFooter>
     </Modal>
   );
 }

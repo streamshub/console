@@ -1,5 +1,9 @@
-import { MenuToggle, Select, SelectOption } from "@/libs/patternfly/react-core";
-import { SelectList } from "@patternfly/react-core";
+import {
+  MenuToggle,
+  Select,
+  SelectOption,
+  SelectList,
+} from "@/libs/patternfly/react-core";
 import { useTranslations } from "next-intl";
 import { useCallback, useMemo, useState } from "react";
 
@@ -93,7 +97,7 @@ export function PartitionSelector({
           ref={toggleRef}
           onClick={toggleOpen}
           isExpanded={isOpen}
-          className={"pf-v5-u-w-100"}
+          className={"pf-v6-u-w-100"}
         >
           {value !== -1
             ? t("partition_option", { value })

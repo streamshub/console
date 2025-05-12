@@ -263,11 +263,10 @@ export function RebalanceTable({
               <Td key={key} dataLabel={"Last updated"}>
                 <DateTime
                   value={
-                    row.attributes.conditions?.
-                        filter((c) => c.type == row.attributes.status).
-                        map((c) => c.lastTransitionTime!).
-                        find(() => true)
-                         ?? row.attributes.creationTimestamp
+                    row.attributes.conditions
+                      ?.filter((c) => c.type == row.attributes.status)
+                      .map((c) => c.lastTransitionTime!)
+                      .find(() => true) ?? row.attributes.creationTimestamp
                   }
                   tz={"UTC"}
                   dateStyle={"short"}
@@ -305,7 +304,7 @@ export function RebalanceTable({
       }
       getExpandedRow={({ row }) => {
         return (
-          <DescriptionList className="pf-v5-u-mb-lg">
+          <DescriptionList className="pf-v6-u-mt-md pf-v6-u-mb-lg">
             <Flex justifyContent={{ default: "justifyContentSpaceEvenly" }}>
               <FlexItem
                 style={{

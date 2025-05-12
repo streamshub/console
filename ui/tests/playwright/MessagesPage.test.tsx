@@ -22,7 +22,7 @@ test("Messages page", async ({ page, authenticatedPage }) => {
     expect(dataRows.length).toBeGreaterThan(0);
     const dataCells = await page
       .locator('table[aria-label="Messages table"] tbody tr td')
-      .evaluateAll((tds) => tds.map((td) => td.textContent?.trim() ?? ""));
+      .evaluateAll((tds) => tds.map((td) => td.Content?.trim() ?? ""));
     expect(dataCells.length).toBeGreaterThan(0);
   });
 });

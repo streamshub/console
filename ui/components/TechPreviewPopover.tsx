@@ -1,7 +1,6 @@
 import { useTranslations } from "next-intl";
 import { ExternalLink } from "@/components/Navigation/ExternalLink";
-import { Popover } from "@/libs/patternfly/react-core";
-import { PopoverProps } from "@patternfly/react-core";
+import { Popover, PopoverProps } from "@/libs/patternfly/react-core";
 
 export function TechPreviewPopover({
   children,
@@ -13,11 +12,7 @@ export function TechPreviewPopover({
     <Popover
       triggerAction={"hover"}
       headerContent={t("AppLayout.tech_preview_label")}
-      bodyContent={
-        <div>
-          {t("AppLayout.tech_preview_tooltip_description")}
-        </div>
-      }
+      bodyContent={<div>{t("AppLayout.tech_preview_tooltip_description")}</div>}
       footerContent={
         <ExternalLink
           href={"https://redhat.com"}

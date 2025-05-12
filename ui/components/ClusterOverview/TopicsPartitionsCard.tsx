@@ -9,8 +9,7 @@ import {
   FlexItem,
   Icon,
   Skeleton,
-  Text,
-  TextContent,
+  Content,
   Tooltip,
 } from "@/libs/patternfly/react-core";
 import {
@@ -50,137 +49,142 @@ export function TopicsPartitionsCard({
   let cardBody;
 
   if (errors) {
-    cardBody = <NoDataErrorState errors={ errors } />
+    cardBody = <NoDataErrorState errors={errors} />;
   } else {
     cardBody = (
-        <Flex gap={{ default: "gapLg" }}>
-          <Flex
-            flex={{ default: "flex_1" }}
-            direction={{ default: "column" }}
-            alignSelf={{ default: "alignSelfCenter" }}
-          >
-            <FlexItem>
-              {isLoading ? (
-                <Skeleton />
-              ) : (
-                <Flex gap={{ default: "gapMd" }}>
-                  <FlexItem>
-                    <TextContent>
-                      <Text component={"small"}>
-                        <Link href={"./topics"}>
-                          <Number value={topicsReplicated + topicsUnderReplicated + topicsOffline + topicsUnknown} />{" "}
-                          {t("ClusterOverview.total_topics")}
-                        </Link>
-                      </Text>
-                    </TextContent>
-                  </FlexItem>
-                  <Divider orientation={{ default: "vertical" }} />
-                  <FlexItem>
-                    <TextContent>
-                      <Text component={"small"}>
-                        <Number value={partitions} />
-                        &nbsp; {t("ClusterOverview.total_partitions")}
-                      </Text>
-                    </TextContent>
-                  </FlexItem>
-                </Flex>
-              )}
-            </FlexItem>
-          </Flex>
-          <Divider />
-          <Flex
-            flex={{ default: "flex_1" }}
-            style={{ textAlign: "center" }}
-            justifyContent={{ default: "justifyContentSpaceAround" }}
-            direction={{ default: "column", "2xl": "row" }}
-            flexWrap={{ default: "nowrap" }}
-          >
-            <FlexItem>
-              <Link href={"./topics?status=FullyReplicated"}>
-                {isLoading ? (
-                  <Skeleton
-                    shape={"circle"}
-                    width={"1rem"}
-                    style={{ display: "inline-block" }}
-                  />
-                ) : (
-                  <Number value={topicsReplicated} />
-                )}
-              </Link>
-              <TextContent className={"pf-v5-u-text-nowrap"}>
-                <Text component={"small"}>
-                  <Icon status={"success"}>
-                    <CheckCircleIcon />
-                  </Icon>
-                  &nbsp;{t("ClusterOverview.fully_replicated_partition")}&nbsp;
-                  <Tooltip
-                    content={t(
-                      "ClusterOverview.fully_replicated_partition_tooltip",
-                    )}
-                  >
-                    <HelpIcon />
-                  </Tooltip>
-                </Text>
-              </TextContent>
-            </FlexItem>
-            <FlexItem>
-              <Link href={"./topics?status=UnderReplicated"}>
-                {isLoading ? (
-                  <Skeleton
-                    shape={"circle"}
-                    width={"1rem"}
-                    style={{ display: "inline-block" }}
-                  />
-                ) : (
-                  <Number value={topicsUnderReplicated} />
-                )}
-              </Link>
-              <TextContent className={"pf-v5-u-text-nowrap"}>
-                <Text component={"small"}>
-                  <Icon status={"warning"}>
-                    <ExclamationTriangleIcon />
-                  </Icon>
-                  &nbsp;{t("ClusterOverview.under_replicated_partition")}&nbsp;
-                  <Tooltip
-                    content={t(
-                      "ClusterOverview.under_replicated_partition_tooltip",
-                    )}
-                  >
-                    <HelpIcon />
-                  </Tooltip>
-                </Text>
-              </TextContent>
-            </FlexItem>
-            <FlexItem>
-              <Link href={"./topics?status=Offline"}>
-                {isLoading ? (
-                  <Skeleton
-                    shape={"circle"}
-                    width={"1rem"}
-                    style={{ display: "inline-block" }}
-                  />
-                ) : (
-                  <Number
-                    value={topicsOffline}
-                  />
-                )}
-              </Link>
-              <TextContent className={"pf-v5-u-text-nowrap"}>
-                <Text component={"small"}>
-                  <Icon status={"danger"}>
-                    <ExclamationCircleIcon />
-                  </Icon>
-                  &nbsp;{t("ClusterOverview.unavailable_partition")}&nbsp;
-                  <Tooltip
-                    content={t("ClusterOverview.unavailable_partition_tooltip")}
-                  >
-                    <HelpIcon />
-                  </Tooltip>
-                </Text>
-              </TextContent>
-            </FlexItem>
-          </Flex>
+      <Flex gap={{ default: "gapLg" }}>
+        <Flex
+          flex={{ default: "flex_1" }}
+          direction={{ default: "column" }}
+          alignSelf={{ default: "alignSelfCenter" }}
+        >
+          <FlexItem>
+            {isLoading ? (
+              <Skeleton />
+            ) : (
+              <Flex gap={{ default: "gapMd" }}>
+                <FlexItem>
+                  <Content>
+                    <Content component={"small"}>
+                      <Link href={"./topics"}>
+                        <Number
+                          value={
+                            topicsReplicated +
+                            topicsUnderReplicated +
+                            topicsOffline +
+                            topicsUnknown
+                          }
+                        />{" "}
+                        {t("ClusterOverview.total_topics")}
+                      </Link>
+                    </Content>
+                  </Content>
+                </FlexItem>
+                <Divider orientation={{ default: "vertical" }} />
+                <FlexItem>
+                  <Content>
+                    <Content component={"small"}>
+                      <Number value={partitions} />
+                      &nbsp; {t("ClusterOverview.total_partitions")}
+                    </Content>
+                  </Content>
+                </FlexItem>
+              </Flex>
+            )}
+          </FlexItem>
         </Flex>
+        <Divider />
+        <Flex
+          flex={{ default: "flex_1" }}
+          style={{ textAlign: "center" }}
+          justifyContent={{ default: "justifyContentSpaceAround" }}
+          direction={{ default: "column", "2xl": "row" }}
+          flexWrap={{ default: "nowrap" }}
+        >
+          <FlexItem>
+            <Link href={"./topics?status=FullyReplicated"}>
+              {isLoading ? (
+                <Skeleton
+                  shape={"circle"}
+                  width={"1rem"}
+                  style={{ display: "inline-block" }}
+                />
+              ) : (
+                <Number value={topicsReplicated} />
+              )}
+            </Link>
+            <Content className={"pf-v6-u-text-nowrap"}>
+              <Content component={"small"}>
+                <Icon status={"success"}>
+                  <CheckCircleIcon />
+                </Icon>
+                &nbsp;{t("ClusterOverview.fully_replicated_partition")}&nbsp;
+                <Tooltip
+                  content={t(
+                    "ClusterOverview.fully_replicated_partition_tooltip",
+                  )}
+                >
+                  <HelpIcon />
+                </Tooltip>
+              </Content>
+            </Content>
+          </FlexItem>
+          <FlexItem>
+            <Link href={"./topics?status=UnderReplicated"}>
+              {isLoading ? (
+                <Skeleton
+                  shape={"circle"}
+                  width={"1rem"}
+                  style={{ display: "inline-block" }}
+                />
+              ) : (
+                <Number value={topicsUnderReplicated} />
+              )}
+            </Link>
+            <Content className={"pf-v6-u-text-nowrap"}>
+              <Content component={"small"}>
+                <Icon status={"warning"}>
+                  <ExclamationTriangleIcon />
+                </Icon>
+                &nbsp;{t("ClusterOverview.under_replicated_partition")}&nbsp;
+                <Tooltip
+                  content={t(
+                    "ClusterOverview.under_replicated_partition_tooltip",
+                  )}
+                >
+                  <HelpIcon />
+                </Tooltip>
+              </Content>
+            </Content>
+          </FlexItem>
+          <FlexItem>
+            <Link href={"./topics?status=Offline"}>
+              {isLoading ? (
+                <Skeleton
+                  shape={"circle"}
+                  width={"1rem"}
+                  style={{ display: "inline-block" }}
+                />
+              ) : (
+                <Number value={topicsOffline} />
+              )}
+            </Link>
+            <Content className={"pf-v6-u-text-nowrap"}>
+              <Content component={"small"}>
+                <Icon status={"danger"}>
+                  <ExclamationCircleIcon />
+                </Icon>
+                &nbsp;{t("ClusterOverview.unavailable_partition")}&nbsp;
+                <Tooltip
+                  content={t("ClusterOverview.unavailable_partition_tooltip")}
+                >
+                  <HelpIcon />
+                </Tooltip>
+              </Content>
+            </Content>
+          </FlexItem>
+        </Flex>
+      </Flex>
     );
   }
 
@@ -197,9 +201,7 @@ export function TopicsPartitionsCard({
       >
         <CardTitle>{t("ClusterOverview.topic_header")}</CardTitle>
       </CardHeader>
-      <CardBody>
-        { cardBody }
-      </CardBody>
+      <CardBody>{cardBody}</CardBody>
     </Card>
   );
 }

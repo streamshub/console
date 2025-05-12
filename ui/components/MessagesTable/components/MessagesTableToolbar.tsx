@@ -2,9 +2,11 @@ import {
   Toolbar,
   ToolbarContent,
   ToolbarItem,
+  Button,
+  ToolbarGroup,
+  Tooltip,
 } from "@/libs/patternfly/react-core";
-import { Button, ToolbarGroup, Tooltip } from "@patternfly/react-core";
-import { ColumnsIcon, FileCsvIcon } from "@patternfly/react-icons";
+import { ColumnsIcon, FileCsvIcon } from "@/libs/patternfly/react-icons";
 import { useMemo } from "react";
 import CsvDownloader from "react-csv-downloader";
 import { MessagesTableProps } from "../MessagesTable";
@@ -92,8 +94,7 @@ export function MessagesTableToolbar({
     >
       <ToolbarContent>
         <ToolbarItem
-          variant={"search-filter"}
-          widths={{ default: "calc(100% - 52px * 2)" }}
+          variant={"label"}
           style={{
             maxWidth: 700,
           }}
@@ -111,16 +112,15 @@ export function MessagesTableToolbar({
           />
         </ToolbarItem>
 
-        <ToolbarGroup variant={"icon-button-group"}>
+        <ToolbarGroup variant="action-group-plain">
           <ToolbarItem>
             <Tooltip content={"Manage columns"}>
               <Button
+                icon={<ColumnsIcon />}
                 onClick={onColumnManagement}
                 variant={"plain"}
                 aria-label={"Columns management"}
-              >
-                <ColumnsIcon />
-              </Button>
+              />
             </Tooltip>
           </ToolbarItem>
           <ToolbarItem>
@@ -132,12 +132,11 @@ export function MessagesTableToolbar({
                 separator={";"}
               >
                 <Button
+                  icon={<FileCsvIcon />}
                   variant={"plain"}
                   aria-label={"Download as CSV"}
                   isDisabled={messages.length === 0}
-                >
-                  <FileCsvIcon />
-                </Button>
+                />
               </CsvDownloader>
             </Tooltip>
           </ToolbarItem>

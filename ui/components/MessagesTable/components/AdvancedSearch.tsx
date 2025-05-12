@@ -16,7 +16,7 @@ import {
   Popper,
   SearchInput,
   TextInput,
-} from "@patternfly/react-core";
+} from "@/libs/patternfly/react-core";
 import { useTranslations } from "next-intl";
 import {
   MouseEvent,
@@ -264,10 +264,12 @@ export function AdvancedSearch({
                       <UntilGroup
                         limit={limit ?? 50}
                         onLimitChange={(newLimit) => {
-                          const validatedLimit = newLimit !== undefined && newLimit >= 0 ? newLimit : limit;
+                          const validatedLimit =
+                            newLimit !== undefined && newLimit >= 0
+                              ? newLimit
+                              : limit;
                           setLimit(validatedLimit);
                         }}
-                        
                         onLive={() => {
                           setLimit("continuously");
                         }}

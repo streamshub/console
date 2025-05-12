@@ -7,7 +7,7 @@ import {
   MenuToggleElement,
   Tooltip,
 } from "@/libs/patternfly/react-core";
-import { CopyIcon, PlayIcon } from "@patternfly/react-icons";
+import { CopyIcon, PlayIcon } from "@/libs/patternfly/react-icons";
 import { useTranslations } from "next-intl";
 import React from "react";
 import { useState } from "react";
@@ -39,20 +39,17 @@ export function DryrunSelect({
         <MenuToggle
           ref={toggleRef}
           variant="secondary"
-          splitButtonOptions={{
-            variant: "action",
-            items: [
-              <MenuToggleAction
-                id="split-button-action-secondary-with-toggle-button"
-                key="split-action-secondary"
-                aria-label={t("dry_run")}
-                onClick={openDryrun}
-                isDisabled={isDisabled}
-              >
-                {t("dry_run")}
-              </MenuToggleAction>,
-            ],
-          }}
+          splitButtonItems={[
+            <MenuToggleAction
+              id="split-button-action-secondary-with-toggle-button"
+              key="split-action-secondary"
+              aria-label={t("dry_run")}
+              onClick={openDryrun}
+              isDisabled={isDisabled}
+            >
+              {t("dry_run")}
+            </MenuToggleAction>,
+          ]}
           aria-label="dryrun toggle button"
           onClick={onToggleClick}
           isDisabled={isDisabled}
