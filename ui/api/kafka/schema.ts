@@ -30,8 +30,22 @@ export const ClusterListSchema = z.object({
 });
 
 export const ClustersResponseSchema = z.object({
+  meta: z.object({
+    page: z.object({
+      total: z.number(),
+      pageNumber: z.number().optional(),
+    }),
+  }),
+  links: z.object({
+    first: z.string().nullable(),
+    prev: z.string().nullable(),
+    next: z.string().nullable(),
+    last: z.string().nullable(),
+  }),
   data: z.array(ClusterListSchema),
 });
+
+export type CLustersResponse = z.infer<typeof ClustersResponseSchema>;
 
 export type ClusterList = z.infer<typeof ClusterListSchema>;
 
@@ -78,31 +92,34 @@ const ClusterDetailSchema = z.object({
     metrics: z
       .object({
         values: z.record(
-          z.array(z.object({
-            value: z.string(),
-            nodeId: z.string(),
-          })),
+          z.array(
+            z.object({
+              value: z.string(),
+              nodeId: z.string(),
+            }),
+          ),
         ),
         ranges: z.record(
-          z.array(z.object({
-            range: z.array(z.array(
-              z.string(),
-              z.string(),
-            )),
-            nodeId: z.string().optional(),
-          })),
+          z.array(
+            z.object({
+              range: z.array(z.array(z.string(), z.string())),
+              nodeId: z.string().optional(),
+            }),
+          ),
         ),
       })
       .optional()
       .nullable(),
   }),
   relationships: z.object({
-    nodes: z.object({
-      meta: z.object({
-        summary: NodesListMetaSummary
-      }),
-      data: z.array(z.any()),
-    }).optional(),
+    nodes: z
+      .object({
+        meta: z.object({
+          summary: NodesListMetaSummary,
+        }),
+        data: z.array(z.any()),
+      })
+      .optional(),
   }),
 });
 
