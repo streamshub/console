@@ -72,7 +72,7 @@ export function AppMasthead({
                 src={
                   isDarkMode
                     ? "/full_logo_hori_reverse.svg"
-                    : "full_logo_hori_default.svg"
+                    : "/full_logo_hori_default.svg"
                 }
                 alt={t("common.title")}
                 heights={{ default: "56px" }}
