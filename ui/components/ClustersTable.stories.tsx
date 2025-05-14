@@ -70,3 +70,10 @@ export const Default: Story = {
     clusters: clustersData,
   },
 };
+
+export const Authenticated: Story = {
+  args: {
+    clusters: clustersData,
+    authenticated: true,
+  },
+};
