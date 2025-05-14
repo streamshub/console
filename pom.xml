@@ -146,7 +146,7 @@
             <dependency>
                 <groupId>io.sundr</groupId>
                 <artifactId>builder-annotations</artifactId>
-                <version>0.200.3</version>
+                <version>0.200.4</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

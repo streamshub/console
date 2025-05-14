@@ -6,7 +6,7 @@ test.beforeEach(async ({ authenticatedPage }) => {
 
 test("Topics configuration", async ({ page, authenticatedPage }) => {
   await test.step("Navigate to topics configuration page", async () => {
-    await authenticatedPage.clickLink("Configuration");
+    await authenticatedPage.clickTab("Configuration");
   });
   await test.step("Topics configuration page should display table", async () => {
     await authenticatedPage.waitForTableLoaded();
@@ -16,7 +16,7 @@ test("Topics configuration", async ({ page, authenticatedPage }) => {
     expect(dataRows.length).toBeGreaterThan(0);
     const dataCells = await page
       .locator('table[aria-label="Node configuration"] tbody tr td')
-      .evaluateAll((tds) => tds.map((td) => td.textContent?.trim() ?? ""));
+      .evaluateAll((tds) => tds.map((td) => td.Content?.trim() ?? ""));
     expect(dataCells.length).toBeGreaterThan(0);
   });
 });

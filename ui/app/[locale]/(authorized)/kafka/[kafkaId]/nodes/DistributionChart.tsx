@@ -148,7 +148,7 @@ export function DistributionChart({
         </Card>
       </GridItem>
       <GridItem md={9}>
-        <Card className={"pf-v5-u-mb-lg"}>
+        <Card className={"mb-lg"}>
           <CardHeader>
             <CardTitle>
               {t("DistributionChart.partitions_distribution_of_total")}{" "}

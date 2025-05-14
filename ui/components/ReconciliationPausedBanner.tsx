@@ -39,7 +39,7 @@ export function ReconciliationPausedBanner({ kafkaId }: { kafkaId: string }) {
 
   return (
     <>
-      <Banner variant="gold">
+      <Banner color="yellow">
         <Bullseye>
           <Flex>
             <FlexItem spacer={{ default: "spacerNone" }}>

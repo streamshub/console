@@ -1,7 +1,4 @@
-import type {
-  ToolbarChip,
-  ToolbarToggleGroupProps,
-} from "@/libs/patternfly/react-core";
+import type { ToolbarToggleGroupProps } from "@/libs/patternfly/react-core";
 import {
   InputGroup,
   ToolbarFilter,
@@ -10,7 +7,7 @@ import {
   ToolbarToggleGroup,
 } from "@/libs/patternfly/react-core";
 import { FilterIcon } from "@/libs/patternfly/react-icons";
-import { useState } from "react";
+import { CSSProperties, useState } from "react";
 import {
   FilterCheckbox,
   FilterSearch,
@@ -70,7 +67,7 @@ export function ChipFilter({ filters, breakpoint = "md" }: ChipFilterProps) {
     }
   };
 
-  const getToolbarChips = (f: FilterType): ToolbarChip[] => {
+  const getToolbarChips = (f: FilterType) => {
     if ("options" in f) {
       if (f.type === "groupedCheckbox") {
         const groupedFilter = f as GroupedCheckboxType<any>;
@@ -97,10 +94,14 @@ export function ChipFilter({ filters, breakpoint = "md" }: ChipFilterProps) {
   return (
     <>
       <ToolbarItem
-        variant={"search-filter"}
+        variant={"label"}
         visibility={{ default: "hidden", [breakpoint]: "visible" }}
         data-testid={"large-viewport-toolbar"}
-        widths={{ default: "400px" }}
+        style={
+          {
+            "--pf-v6-c-toolbar__item--Width": "400px",
+          } as CSSProperties
+        }
       >
         <InputGroup>
           {options.length > 1 && (
@@ -131,11 +132,11 @@ export function ChipFilter({ filters, breakpoint = "md" }: ChipFilterProps) {
           {Object.entries(filters).map(([label, f], index) => (
             <ToolbarFilter
               key={index}
-              chips={getToolbarChips(f)}
-              deleteChip={(_, chip) =>
+              labels={getToolbarChips(f)}
+              deleteLabel={(_, chip) =>
                 f.onRemoveChip(typeof chip === "string" ? chip : chip.key)
               }
-              deleteChipGroup={f.onRemoveGroup}
+              deleteLabelGroup={f.onRemoveGroup}
               categoryName={label}
               showToolbarItem={label === selectedOption}
             >

@@ -6,7 +6,7 @@ import {
   MenuToggle,
   MenuToggleElement,
   SelectProps,
-} from "@patternfly/react-core";
+} from "@/libs/patternfly/react-core";
 
 export type SelectComponentProps<T extends string | number> = {
   options: { value: T; label: string }[];

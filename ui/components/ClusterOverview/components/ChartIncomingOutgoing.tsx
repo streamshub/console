@@ -10,7 +10,7 @@ import {
   createContainer,
 } from "@/libs/patternfly/react-charts";
 import { useFormatBytes } from "@/utils/useFormatBytes";
-import { Alert } from "@patternfly/react-core";
+import { Alert } from "@/libs/patternfly/react-core";
 import { useFormatter, useTranslations } from "next-intl";
 import { getHeight, getPadding } from "./chartConsts";
 import { useChartWidth } from "./useChartWidth";
@@ -52,13 +52,16 @@ export function ChartIncomingOutgoing({
   }
   // const showDate = shouldShowDate(duration);
   const CursorVoronoiContainer = createContainer("voronoi", "cursor");
-  const legendData = [ {
-    name: "Incoming bytes (all topics)",
-    childName: "incoming"
-  }, {
-    name: "Outgoing bytes (all topics)",
-    childName: "outgoing"
-  } ];
+  const legendData = [
+    {
+      name: "Incoming bytes (all topics)",
+      childName: "incoming",
+    },
+    {
+      name: "Outgoing bytes (all topics)",
+      childName: "outgoing",
+    },
+  ];
 
   const padding = getPadding(legendData.length / itemsPerRow);
   return (
@@ -127,32 +130,32 @@ export function ChartIncomingOutgoing({
           }}
         />
         <ChartGroup>
-            <ChartArea
-              key={ `incoming-line` }
-              data={ Object.entries(incoming).map(([k, v]) => {
-                  return ({
-                    name: `Incoming`,
-                    x: Date.parse(k),
-                    y: v,
-                    value: v,
-                  })
-              })}
-              name={ `incoming` }
-              interpolation={"stepAfter"}
-            />
-            <ChartArea
-              key={ `outgoing-line` }
-              data={ Object.entries(outgoing).map(([k, v]) => {
-                  return ({
-                    name: `Outgoing`,
-                    x: Date.parse(k),
-                    y: v * -1,
-                    value: v,
-                  })
-              })}
-              name={ `outgoing` }
-              interpolation={"stepAfter"}
-            />
+          <ChartArea
+            key={`incoming-line`}
+            data={Object.entries(incoming).map(([k, v]) => {
+              return {
+                name: `Incoming`,
+                x: Date.parse(k),
+                y: v,
+                value: v,
+              };
+            })}
+            name={`incoming`}
+            interpolation={"stepAfter"}
+          />
+          <ChartArea
+            key={`outgoing-line`}
+            data={Object.entries(outgoing).map(([k, v]) => {
+              return {
+                name: `Outgoing`,
+                x: Date.parse(k),
+                y: v * -1,
+                value: v,
+              };
+            })}
+            name={`outgoing`}
+            interpolation={"stepAfter"}
+          />
         </ChartGroup>
       </Chart>
     </div>

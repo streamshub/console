@@ -5,10 +5,9 @@ import {
   EmptyState,
   EmptyStateBody,
   EmptyStateFooter,
-  EmptyStateIcon,
   Title,
-} from "@patternfly/react-core";
-import { CubesIcon } from "@patternfly/react-icons";
+} from "@/libs/patternfly/react-core";
+import { CubesIcon } from "@/libs/patternfly/react-icons";
 import { useTranslations } from "next-intl";
 import { startTransition } from "react";
 
@@ -28,11 +27,15 @@ export function NoDataEmptyState() {
   }
 
   return (
-    <EmptyState variant={"lg"}>
-      <EmptyStateIcon icon={CubesIcon} />
-      <Title headingLevel="h4" size="lg">
-        {t("no_data_title")}
-      </Title>
+    <EmptyState
+      titleText={
+        <Title headingLevel="h4" size="lg">
+          {t("no_data_title")}
+        </Title>
+      }
+      icon={CubesIcon}
+      variant={"lg"}
+    >
       <EmptyStateBody>{t("no_data_body")}</EmptyStateBody>
       <EmptyStateFooter>
         <Button onClick={onRefresh}>{t("no_data_refresh")}</Button>

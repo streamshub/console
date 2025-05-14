@@ -5,7 +5,7 @@ import type {
   TbodyProps,
   TdProps,
   ThProps,
-} from "@patternfly/react-table";
+} from "@/libs/patternfly/react-table";
 import {
   ActionsColumn,
   ExpandableRowContent,
@@ -15,7 +15,7 @@ import {
   Th,
   Thead,
   Tr,
-} from "@patternfly/react-table";
+} from "@/libs/patternfly/react-table";
 import {
   cloneElement,
   CSSProperties,
@@ -500,7 +500,7 @@ const BoundActionsColumn = forwardRef<HTMLElement, ActionsColumnProps>(
           flipBehavior: ["bottom-end", "top-end"],
           appendTo: () =>
             document.getElementsByClassName(
-              "pf-v5-c-scroll-outer-wrapper",
+              "pf-v6-c-scroll-outer-wrapper",
             )[0] || document.getElementsByTagName("main")[0],
         }}
         ref={ref}

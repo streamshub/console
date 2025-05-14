@@ -6,13 +6,14 @@ import {
   ClipboardCopy,
   List,
   ListItem,
-  Text,
-  TextContent,
+  Content,
+  Divider,
+  Stack,
+  StackItem,
 } from "@/libs/patternfly/react-core";
 import { useEffect, useState } from "react";
-import { Divider, Stack, StackItem } from "@patternfly/react-core";
 import { useTranslations } from "next-intl";
-import { clientConfig as config } from '@/utils/config';
+import { clientConfig as config } from "@/utils/config";
 
 export async function ClusterConnectionDetails({
   clusterId,
@@ -22,9 +23,9 @@ export async function ClusterConnectionDetails({
   const [showLearning, setShowLearning] = useState(false);
 
   useEffect(() => {
-    config().then(cfg => {
+    config().then((cfg) => {
       setShowLearning(cfg.showLearning);
-    })
+    });
   }, []);
 
   const t = useTranslations();
@@ -38,8 +39,8 @@ export async function ClusterConnectionDetails({
   return (
     <Stack>
       <StackItem isFilled={true}>
-        <TextContent className={"pf-v5-u-p-lg"}>
-          <Text>{t("ClusterConnectionDetails.description")}</Text>
+        <Content className={"pf-v6-u-p-lg"}>
+          <Content>{t("ClusterConnectionDetails.description")}</Content>
 
           <ExpandableSection
             displaySize={"lg"}
@@ -51,23 +52,23 @@ export async function ClusterConnectionDetails({
               </div>
             }
           >
-            <Text>
+            <Content>
               {t(
                 "ClusterConnectionDetails.external_servers_bootstraps_description",
               )}
-            </Text>
+            </Content>
             <List isPlain={true}>
               {external.map((l, idx) => (
-                <ListItem key={idx} className={"pf-v5-u-py-sm"}>
+                <ListItem key={idx} className={"pf-v6-u-py-sm"}>
                   <ClipboardCopy isReadOnly={true}>
                     {l.bootstrapServers ?? ""}
                   </ClipboardCopy>
-                  <Text component={"small"}>
+                  <Content component={"small"}>
                     {/*Listener type: {l.type}*/}
                     {/*<br />*/}
                     {t("ClusterConnectionDetails.authentication_type")}{" "}
                     {l.authType || "none"}
-                  </Text>
+                  </Content>
                 </ListItem>
               ))}
             </List>
@@ -82,39 +83,39 @@ export async function ClusterConnectionDetails({
                 <Badge isRead={true}>{internal.length}</Badge>
               </div>
             }
-            className={"pf-v5-u-mt-lg"}
+            className={"pf-v6-u-mt-lg"}
           >
-            <Text>
+            <Content>
               {t(
                 "ClusterConnectionDetails.internal_Servers_bootstraps_description",
               )}
-            </Text>
+            </Content>
             <List isPlain={true}>
               {internal.map((l, idx) => (
-                <ListItem key={idx} className={"pf-v5-u-py-sm"}>
+                <ListItem key={idx} className={"pf-v6-u-py-sm"}>
                   <ClipboardCopy isReadOnly={true}>
                     {l.bootstrapServers ?? ""}
                   </ClipboardCopy>
-                  <Text component={"small"}>
+                  <Content component={"small"}>
                     {t("ClusterConnectionDetails.authentication_type")}{" "}
                     {l.authType || "none"}
-                  </Text>
+                  </Content>
                 </ListItem>
               ))}
             </List>
 
-            <Text>
+            <Content>
               {t(
                 "ClusterConnectionDetails.when_you_have_established_a_connection",
               )}
-            </Text>
+            </Content>
           </ExpandableSection>
-        </TextContent>
+        </Content>
       </StackItem>
       {showLearning && (
         <StackItem>
           <Divider />
-          <Stack hasGutter={true} className={"pf-v5-u-p-lg"}>
+          <Stack hasGutter={true} className={"pf-v6-u-p-lg"}>
             {t("learning.links.connecting") && (
               <StackItem>
                 <ExternalLink
