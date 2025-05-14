@@ -9,16 +9,19 @@ import { ClusterDrawerProvider } from "./ClusterDrawerProvider";
 import { ReconciliationProvider } from "./ReconciliationProvider";
 import { ReconciliationPausedBanner } from "./ReconciliationPausedBanner";
 import { AlertProvider } from "./AlertProvider";
+import { ClusterInfo } from "./AppDropdown";
 
 export function AppLayout({
   username,
   sidebar,
   children,
   kafkaId,
+  clusterInfoList,
 }: PropsWithChildren<{
   username?: string;
   sidebar?: ReactNode;
   kafkaId?: string;
+  clusterInfoList?: ClusterInfo[];
 }>) {
   const t = useTranslations();
 
@@ -26,7 +29,12 @@ export function AppLayout({
   return (
     <Page
       masthead={
-        <AppMasthead username={username} showSidebarToggle={!!sidebar} />
+        <AppMasthead
+          username={username}
+          showSidebarToggle={!!sidebar}
+          clusterInfoList={clusterInfoList || []}
+          kafkaId={kafkaId || ""}
+        />
       }
       sidebar={
         sidebar && (
