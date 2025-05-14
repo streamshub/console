@@ -39,7 +39,8 @@
     "footer_text": "To log in, you need to enter your credentials.",
     "learning_resource": "Learn more about {product}",
     "log_into_a_different_cluster": "Log in to a different cluster",
-    "login_anonymously": "Click to login anonymously"
+    "login_anonymously": "Click to login anonymously",
+    "stay_logged_in": "< Stay logged in to cluster <b>{clustername}</b>"
   },
   "cluster-selector": {
     "subtitle": "Select a cluster"
