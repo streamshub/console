@@ -13,11 +13,9 @@ import {
   LoginFooterItem,
   LoginForm,
   LoginFormProps,
-  LoginHeader,
-  LoginMainBody,
   LoginMainFooterBandItem,
+  LoginMainHeader,
   LoginPage,
-  PageSection,
   ToggleGroup,
   ToggleGroupItem,
 } from "@/libs/patternfly/react-core";
@@ -60,11 +58,13 @@ export function SignInPage({
   provider,
   callbackUrl,
   hasMultipleClusters,
+  clusterName,
 }: {
   kafkaId: string;
   provider: "credentials" | "oauth-token" | "anonymous";
   callbackUrl: string;
   hasMultipleClusters: boolean;
+  clusterName: string;
 }) {
   const t = useTranslations();
   const productName = t("common.product");
@@ -169,6 +169,15 @@ export function SignInPage({
       ? t("login-in-page.password")
       : t("login-in-page.clientSecret");
 
+  const loginSubtitle =
+    previousClusterId && previousClusterName
+      ? provider === "credentials"
+        ? t("login-in-page.login_subtitle_credentials", { clusterName })
+        : provider === "oauth-token"
+          ? t("login-in-page.login_subtitle_oauth", { clusterName })
+          : t("login-in-page.login_sub_title")
+      : t("login-in-page.login_sub_title");
+
   return (
     <>
       <Flex direction={{ default: "column" }}>
@@ -196,7 +205,7 @@ export function SignInPage({
       <LoginPage
         backgroundImgSrc="/assets/images/pfbg-icon.svg"
         loginTitle={t("homepage.page_header", { product: productName })}
-        loginSubtitle={t("login-in-page.login_sub_title")}
+        loginSubtitle={loginSubtitle}
         textContent={t("login-in-page.text_content", { product: productName })}
         brandImgSrc={
           isDarkMode
