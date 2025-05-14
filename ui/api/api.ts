@@ -4,16 +4,16 @@ import { logger } from "@/utils/logger";
 
 const log = logger.child({ module: "api" });
 
-const SERVER_ROOT = !process.env.BACKEND_URL?.endsWith("/") ?
-    process.env.BACKEND_URL :
-    process.env.BACKEND_URL.substring(0, process.env.BACKEND_URL.length - 1);
+const SERVER_ROOT = !process.env.BACKEND_URL?.endsWith("/")
+  ? process.env.BACKEND_URL
+  : process.env.BACKEND_URL.substring(0, process.env.BACKEND_URL.length - 1);
 
 export function sortParam(
-    sortField: string | undefined,
-    order: string | undefined
+  sortField: string | undefined,
+  order: string | undefined,
 ) {
   if (sortField) {
-    return (order === "asc" ? "-" : "") + sortField;
+    return (order === "desc" ? "-" : "") + sortField;
   }
   return undefined;
 }
@@ -46,8 +46,10 @@ export function filterIn(values: string[] | undefined) {
   return undefined;
 }
 
-export async function getHeaders(anonymous?: boolean): Promise<Record<string, string>> {
-  const user = anonymous? null : await getUser();
+export async function getHeaders(
+  anonymous?: boolean,
+): Promise<Record<string, string>> {
+  const user = anonymous ? null : await getUser();
   let headers: Record<string, string> = {
     Accept: "application/json",
     "Content-Type": "application/json",
@@ -59,21 +61,22 @@ export async function getHeaders(anonymous?: boolean): Promise<Record<string, st
 }
 
 export async function fetchData<T>(
-    path: string,
-    query: URLSearchParams | string,
-    parser: (json: any) => T,
-    anonymous?: boolean,
-    options?: { cache?: "no-store" | "force-cache", next?: { revalidate: false | 0 | number } }
-) : Promise<ApiResponse<T>> {
-
+  path: string,
+  query: URLSearchParams | string,
+  parser: (json: any) => T,
+  anonymous?: boolean,
+  options?: {
+    cache?: "no-store" | "force-cache";
+    next?: { revalidate: false | 0 | number };
+  },
+): Promise<ApiResponse<T>> {
   const queryString = query?.toString() ?? "";
   const url = `${SERVER_ROOT}${path}${queryString.length > 0 ? "?" + queryString : ""}`;
 
-  const response = await fetch(
-    url, {
-      headers: await getHeaders(anonymous),
-      ...options
-    });
+  const response = await fetch(url, {
+    headers: await getHeaders(anonymous),
+    ...options,
+  });
   const rawData = await response.json();
 
   if (response.ok) {
@@ -94,19 +97,17 @@ export async function fetchData<T>(
 }
 
 export async function postData<T>(
-    path: string,
-    body: any,
-    parser: (json: any) => T,
-) : Promise<ApiResponse<T>> {
-
+  path: string,
+  body: any,
+  parser: (json: any) => T,
+): Promise<ApiResponse<T>> {
   const url = `${SERVER_ROOT}${path}`;
 
-  const response = await fetch(
-    url, {
-      method: 'POST',
-      headers: await getHeaders(),
-      body: JSON.stringify(body),
-    });
+  const response = await fetch(url, {
+    method: "POST",
+    headers: await getHeaders(),
+    body: JSON.stringify(body),
+  });
 
   const rawData = await response.text();
 
@@ -128,19 +129,17 @@ export async function postData<T>(
 }
 
 export async function patchData<T>(
-    path: string,
-    body: any,
-    parser: (json: any) => T,
-) : Promise<ApiResponse<T>> {
-
+  path: string,
+  body: any,
+  parser: (json: any) => T,
+): Promise<ApiResponse<T>> {
   const url = `${SERVER_ROOT}${path}`;
 
-  const response = await fetch(
-    url, {
-      method: 'PATCH',
-      headers: await getHeaders(),
-      body: JSON.stringify(body),
-    });
+  const response = await fetch(url, {
+    method: "PATCH",
+    headers: await getHeaders(),
+    body: JSON.stringify(body),
+  });
 
   const rawData = await response.text();
 
@@ -185,7 +184,7 @@ export const ApiErrorResponse = z.object({
 });
 
 export type ApiResponse<T> = {
-    errors?: ApiError[];
-    payload?: T | null;
-    timestamp: Date;
+  errors?: ApiError[];
+  payload?: T | null;
+  timestamp: Date;
 };
