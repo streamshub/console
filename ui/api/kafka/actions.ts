@@ -1,29 +1,47 @@
 "use server";
 
-import { fetchData, patchData, ApiResponse } from "@/api/api";
+import { fetchData, patchData, ApiResponse, sortParam } from "@/api/api";
 import {
   ClusterDetail,
-  ClusterList,
   ClusterResponse,
+  CLustersResponse,
   ClustersResponseSchema,
 } from "@/api/kafka/schema";
+import { filterUndefinedFromObj } from "@/utils/filterUndefinedFromObj";
 import { logger } from "@/utils/logger";
 
 const log = logger.child({ module: "kafka-api" });
 
-export async function getKafkaClusters(anonymous?: boolean): Promise<ApiResponse<ClusterList[]>> {
+export async function getKafkaClusters(
+  anonymous?: boolean,
+  params?: {
+    pageSize?: number;
+    pageCursor?: string;
+    sort?: string;
+    sortDir?: string;
+  },
+): Promise<ApiResponse<CLustersResponse>> {
   return fetchData(
     "/api/kafkas",
-    new URLSearchParams({
-      "fields[kafkas]": "name,namespace,kafkaVersion",
-      sort: "name",
-    }),
-    (rawData: any) => ClustersResponseSchema.parse(rawData).data,
+    new URLSearchParams(
+      filterUndefinedFromObj({
+        "fields[kafkas]": "name,namespace,kafkaVersion",
+        "page[size]": params?.pageSize,
+        "page[after]": params?.pageCursor?.startsWith("after:")
+          ? params.pageCursor.slice(6)
+          : undefined,
+        "page[before]": params?.pageCursor?.startsWith("before:")
+          ? params.pageCursor.slice(7)
+          : undefined,
+        sort: sortParam(params?.sort, params?.sortDir),
+      }),
+    ),
+    (rawData: any) => ClustersResponseSchema.parse(rawData),
     anonymous,
     {
       next: {
-        revalidate: 60
-      }
+        revalidate: 60,
+      },
     },
   );
 }
@@ -32,12 +50,13 @@ export async function getKafkaCluster(
   clusterId: string,
   params?: {
     fields?: string;
-  }
+  },
 ): Promise<ApiResponse<ClusterDetail>> {
   return fetchData(
     `/api/kafkas/${clusterId}`,
     new URLSearchParams({
-      "fields[kafkas]": params?.fields ??
+      "fields[kafkas]":
+        params?.fields ??
         "name,namespace,creationTimestamp,status,kafkaVersion,nodes,listeners,conditions,nodePools,cruiseControlEnabled",
     }),
     (rawData: any) => ClusterResponse.parse(rawData).data,
@@ -64,6 +83,6 @@ export async function updateKafkaCluster(
         attributes: {},
       },
     },
-    (_: any) => undefined
+    (_: any) => undefined,
   );
 }

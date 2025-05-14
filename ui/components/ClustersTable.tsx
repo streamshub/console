@@ -1,47 +1,56 @@
-"use client";
-
+import { TableVariant } from "@patternfly/react-table";
+import { TableView, TableViewProps } from "./Table";
 import { ClusterList } from "@/api/kafka/schema";
-import { ButtonLink } from "@/components/Navigation/ButtonLink";
-import { ResponsiveTable } from "@/components/Table";
-import { Truncate } from "@/libs/patternfly/react-core";
-import { TableVariant } from "@/libs/patternfly/react-table";
 import { useTranslations } from "next-intl";
+import { ButtonLink } from "./Navigation/ButtonLink";
 import { Link } from "@/i18n/routing";
+import { Truncate } from "@/libs/patternfly/react-core";
 
-const columns = [
+export const ClusterColumns = [
   "name",
   "version",
   "namespace",
   "authentication",
   "login",
-];
+] as const;
+
+export type ClusterTableColumn = (typeof ClusterColumns)[number];
 
 export function ClustersTable({
   clusters,
   authenticated,
+  page,
+  perPage,
+  onPageChange,
+  clustersCount,
 }: {
   clusters: ClusterList[] | undefined;
-  authenticated: boolean
-}) {
+  authenticated: boolean;
+  page: number;
+  perPage: number;
+  clustersCount: number;
+} & Pick<
+  TableViewProps<ClusterList, (typeof ClusterColumns)[number]>,
+  "onPageChange"
+>) {
   const t = useTranslations();
-  const columns = authenticated ? [
-        "name",
-        "version",
-        "namespace",
-    ] as const : [
-        "name",
-        "version",
-        "namespace",
-        "authentication",
-        "login",
-    ] as const;
+
+  const columns: readonly ClusterTableColumn[] = authenticated
+    ? ClusterColumns.slice(0, 3)
+    : ClusterColumns;
 
   return (
-    <ResponsiveTable
+    <TableView
+      itemCount={clustersCount}
       ariaLabel={"Kafka clusters"}
+      page={page}
+      perPage={perPage}
       variant={TableVariant.compact}
-      columns={columns}
+      onPageChange={onPageChange}
       data={clusters}
+      emptyStateNoData={<>{t("ClustersTable.no_data")}</>}
+      emptyStateNoResults={<>{t("ClustersTable.no_data")}</>}
+      columns={columns}
       renderHeader={({ column, key, Th }) => {
         switch (column) {
           case "name":
@@ -71,12 +80,13 @@ export function ClustersTable({
           case "name":
             return (
               <Td key={key}>
-                {authenticated
-                    ? <Link href={`/kafka/${row.id}`}>
-                        <Truncate content={row.attributes.name} />
-                      </Link>
-                    : <Truncate content={row.attributes.name} />
-                }
+                {authenticated ? (
+                  <Link href={`/kafka/${row.id}`}>
+                    <Truncate content={row.attributes.name} />
+                  </Link>
+                ) : (
+                  <Truncate content={row.attributes.name} />
+                )}
               </Td>
             );
           case "version":
@@ -107,32 +117,20 @@ export function ClustersTable({
           case "login":
             return (
               <Td key={key} modifier={"fitContent"}>
-                <ButtonLink href={ authenticated ? `/kafka/${row.id}` : `/kafka/${row.id}/login`} variant={"primary"}>
-                  { authenticated ? "View" : "Login to cluster" }
+                <ButtonLink
+                  href={
+                    authenticated
+                      ? `/kafka/${row.id}`
+                      : `/kafka/${row.id}/login`
+                  }
+                  variant={"primary"}
+                >
+                  {authenticated ? "View" : "Login to cluster"}
                 </ButtonLink>
               </Td>
             );
         }
       }}
-      // renderActions={({ ActionsColumn, row }) => (
-      //   <ActionsColumn
-      //     items={[
-      //       {
-      //         title: t("ClustersTable.connection_details"),
-      //         onClick: () => {
-      //           open(row.id);
-      //         },
-      //       },
-      //       {
-      //         title: t("ClustersTable.view_openshift_console"),
-      //         icon: <ExternalLinkAltIcon />,
-      //         isDisabled: true,
-      //       },
-      //     ]}
-      //   />
-      // )}
-    >
-      {t("ClustersTable.no_data")}
-    </ResponsiveTable>
+    />
   );
 }
