@@ -32,9 +32,9 @@ export default async function AsyncLayout({
   const response = await getKafkaCluster(kafkaId);
 
   const clusters =
-    (await getKafkaClusters(undefined, { pageSize: 1000 }))?.payload || [];
+    (await getKafkaClusters(undefined, { pageSize: 1000 }))?.payload;
 
-  const clusterInfoList = clusters?.map((cluster: any) => {
+  const clusterInfoList = clusters?.data.map((cluster: any) => {
     const id = cluster.id;
     const name = cluster.attributes?.name;
     const namespace = cluster.attributes?.namespace ?? "Not provided";
