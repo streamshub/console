@@ -202,6 +202,9 @@ class KafkaST extends AbstractST {
 
         tcc.page().reload(PwUtils.getDefaultReloadOpts());
 
+        PwUtils.waitForLocatorVisible(tcc, CssSelectors.C_OVERVIEW_CLUSTER_CARD_KAFKA_WARNINGS_DROPDOWN_BUTTON);
+        tcc.page().click(CssSelectors.C_OVERVIEW_CLUSTER_CARD_KAFKA_WARNINGS_DROPDOWN_BUTTON);
+
         PwUtils.waitForLocatorVisible(tcc, CssSelectors.C_OVERVIEW_CLUSTER_CARD_KAFKA_WARNING_MESSAGE_ITEMS);
         PwUtils.waitForLocatorCount(tcc, 1,  CssSelectors.getLocator(tcc, CssSelectors.C_OVERVIEW_CLUSTER_CARD_KAFKA_WARNING_MESSAGE_ITEMS), true);
         PwUtils.waitForContainsText(tcc, CssSelectors.getLocator(tcc, CssSelectors.C_OVERVIEW_CLUSTER_CARD_KAFKA_WARNING_MESSAGE_ITEMS).nth(0), "No messages");
