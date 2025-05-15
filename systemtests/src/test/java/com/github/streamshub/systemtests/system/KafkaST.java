@@ -65,7 +65,7 @@ class KafkaST extends AbstractST {
         KubeResourceManager.get().createOrUpdateResourceWithWait(
             new KafkaNodePoolBuilder(knp)
                 .editSpec()
-                .withReplicas(scaledBrokersCount)
+                    .withReplicas(scaledBrokersCount)
                 .endSpec()
                 .build());
 
