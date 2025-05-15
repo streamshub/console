@@ -34,8 +34,8 @@ public class KafkaNamingUtils {
         return Constants.KAFKA_TOPIC_PREFIX + "-" + Utils.hashStub(kafkaName);
     }
 
-    public static String brokerPodName(String kafkaName) {
-        return Constants.BROKER_ROLE_PREFIX + "-" + hashStub(kafkaName);
+    public static String brokerPodNamePrefix(String kafkaName) {
+        return kafkaName + "-" + Constants.BROKER_ROLE_PREFIX + "-" + hashStub(kafkaName);
     }
 
     public static String controllerPoolName(String kafkaName) {
