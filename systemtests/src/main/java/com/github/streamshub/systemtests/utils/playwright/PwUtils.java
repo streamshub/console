@@ -69,6 +69,10 @@ public class PwUtils {
         locator.waitFor(new Locator.WaitForOptions().setTimeout(timeout).setState(WaitForSelectorState.VISIBLE));
     }
 
+    public static void waitForContainsText(TestCaseConfig tcc, Locator locator, String text) {
+        waitForContainsText(tcc.page(), locator, text, TimeConstants.COMPONENT_LOAD_TIMEOUT, true);
+    }
+
     public static void waitForContainsText(TestCaseConfig tcc, String selector, String text) {
         waitForContainsText(tcc.page(), CssSelectors.getLocator(tcc, selector), text, TimeConstants.COMPONENT_LOAD_TIMEOUT, true);
     }
@@ -96,6 +100,28 @@ public class PwUtils {
             },
             () -> LOGGER.error("Locator does not contain text [{}], instead it contains [{}]", text, getTrimmedText(locator.textContent()))
         );
+    }
+
+    public static void waitForLocatorCount(TestCaseConfig tcc, int count, String selector, boolean reload) {
+        waitForLocatorCount(tcc, count, CssSelectors.getLocator(tcc, selector), reload);
+    }
+
+    public static void waitForLocatorCount(TestCaseConfig tcc, int count, Locator locator, boolean reload) {
+        Wait.until("locator to have item count: " + count, TimeConstants.GLOBAL_POLL_INTERVAL_SHORT, TimeConstants.COMPONENT_LOAD_TIMEOUT,
+            () -> {
+                if (locator.all().size() == count) {
+                    LOGGER.debug("Locator has correct item count [{}]", count);
+                    return true;
+                }
+                LOGGER.debug("Locator has incorrect item count [{}]", locator.all().size());
+                if (reload) {
+                    tcc.page().reload(getDefaultReloadOpts());
+                }
+                return false;
+            },
+            () -> LOGGER.error("Page does not have enough locators count [{}] out of required [{}]", locator.all().size(), count)
+        );
+
     }
 
     // -----------------
