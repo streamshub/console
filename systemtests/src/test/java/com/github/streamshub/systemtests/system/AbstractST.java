@@ -97,7 +97,7 @@ public abstract class AbstractST {
     protected TestCaseConfig getTestCaseConfig() {
         return (TestCaseConfig) KubeResourceManager.get().getTestContext()
             .getStore(ExtensionContext.Namespace.GLOBAL)
-            .get(KubeResourceManager.get().getTestContext().getTestMethod().orElseThrow());
+            .get(KubeResourceManager.get().getTestContext().getTestMethod().orElseThrow().getName());
     }
 
     @BeforeAll
@@ -122,7 +122,7 @@ public abstract class AbstractST {
         // Store test case config into the test context
         KubeResourceManager.get().getTestContext()
             .getStore(ExtensionContext.Namespace.GLOBAL)
-            .put(KubeResourceManager.get().getTestContext().getTestMethod().get(), tcc);
+            .put(KubeResourceManager.get().getTestContext().getTestMethod().get().getName(), tcc);
     }
 
     @AfterEach
