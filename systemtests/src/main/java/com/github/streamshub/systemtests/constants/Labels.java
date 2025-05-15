@@ -53,4 +53,12 @@ public class Labels {
         return getKnpLabelSelector(clusterName, KafkaNamingUtils.controllerPoolName(clusterName), ProcessRoles.CONTROLLER);
     }
 
+    public static LabelSelector getKafkaPodLabelSelector(String clusterName) {
+        return new LabelSelectorBuilder().withMatchLabels(Map.of(
+                ResourceLabels.STRIMZI_CLUSTER_LABEL, clusterName,
+                ResourceLabels.STRIMZI_COMPONENT_TYPE_LABEL, Kafka.RESOURCE_KIND.toLowerCase(Locale.ENGLISH)
+            ))
+            .build();
+    }
+
 }

@@ -1,5 +1,7 @@
 package com.github.streamshub.systemtests.utils;
 
+import com.github.streamshub.systemtests.TestCaseConfig;
+import com.github.streamshub.systemtests.constants.Labels;
 import com.github.streamshub.systemtests.constants.ResourceConditions;
 import com.github.streamshub.systemtests.constants.TimeConstants;
 import com.github.streamshub.systemtests.enums.ConditionStatus;
@@ -20,6 +22,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import static com.github.streamshub.systemtests.utils.ResourceUtils.listKubeResourcesByPrefix;
 
@@ -89,6 +92,23 @@ public class WaitUtils {
             }, onTimeout);
     }
 
+
+    public static void waitForPodRoll(String namespace, String podName, Map<String, String> podSnapshot) {
+        waitForPodRoll(namespace, podName, podSnapshot, TestFrameConstants.GLOBAL_POLL_INTERVAL_MEDIUM, TestFrameConstants.GLOBAL_TIMEOUT);
+    }
+
+    public static void waitForPodRoll(String namespace, String podName, Map<String, String> podSnapshots, long poll, long timeout) {
+        Wait.until("Pod to roll " + namespace + "/" + podName, poll, timeout,
+            () -> {
+                Pod pod = ResourceUtils.getKubeResource(Pod.class, namespace, podName);
+                if (pod != null) {
+                    return !Objects.equals(podSnapshots.get(podName), pod.getMetadata().getUid());
+                }
+                return false;
+            }
+        );
+    }
+
     // ------------
     // Kafka
     // ------------
@@ -116,6 +136,35 @@ public class WaitUtils {
                 Map<String, String> anno = ResourceUtils.getKubeResource(Kafka.class, namespaceName, clusterName).getMetadata().getAnnotations();
                 if (!annotationKey.isEmpty()) {
                     return anno.getOrDefault(annotationKey, "nonexistent").equals(annotationValue);
+                }
+                return false;
+            });
+    }
+
+    public static void waitForKafkaPodsRoll(TestCaseConfig tcc, Map<String, String> kafkaPodsSnapshots) {
+        for (Pod controllerPod : ResourceUtils.listKubeResourcesByLabelSelector(Pod.class, tcc.namespace(), Labels.getKnpControllerLabelSelector(tcc.kafkaName()))) {
+            waitForPodRoll(tcc.namespace(), controllerPod.getMetadata().getName(), kafkaPodsSnapshots);
+        }
+
+        for (Pod brokerPod : ResourceUtils.listKubeResourcesByLabelSelector(Pod.class, tcc.namespace(), Labels.getKnpBrokerLabelSelector(tcc.kafkaName()))) {
+            waitForPodRoll(tcc.namespace(), brokerPod.getMetadata().getName(), kafkaPodsSnapshots);
+        }
+
+        waitForPodsReady(tcc.namespace(), Labels.getKafkaPodLabelSelector(tcc.kafkaName()), kafkaPodsSnapshots.size(), true);
+    }
+
+    public static void waitForKafkaHasWarningStatus(String namespaceName, String clusterName) {
+        waitForKafkaStatus(namespaceName, clusterName, ResourceStatus.WARNING, ConditionStatus.TRUE);
+    }
+
+    public static void waitForKafkaHasNoWarningStatus(String namespaceName, String clusterName) {
+        Wait.until("Kafka has no warnings",
+            TimeConstants.POLL_INTERVAL_FOR_RESOURCE_READINESS, TimeConstants.GLOBAL_STATUS_TIMEOUT,
+            () -> {
+                Kafka kafka = ResourceUtils.getKubeResource(Kafka.class, namespaceName, clusterName);
+                if (kafka.getStatus() != null) {
+                    return kafka.getStatus().getConditions().isEmpty() ||
+                        !ResourceConditions.checkMatchingConditions(kafka, ResourceStatus.WARNING, ConditionStatus.TRUE);
                 }
                 return false;
             });
