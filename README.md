@@ -159,7 +159,7 @@ Running the console locally requires configuration of any Apache Kafka<sup>®</s
    any difference in name or location requires an adjustment to the compose file.
 2. Install the prerequisite software into the Kubernetes cluster.
     * Install the [Strimzi operator](https://strimzi.io/docs/operators/latest/deploying#con-strimzi-installation-methods_str)
-    * Install the [Prometheus operator](https://github.com/prometheus-operator/prometheus-operator/blob/main/Documentation/user-guides/getting-started.md) and create a `Prometheus` instance (_optional_, only if you want to see metrics in the console)
+    * Install the [Prometheus operator](https://github.com/prometheus-operator/prometheus-operator/blob/main/Documentation/developer/getting-started.md) and create a `Prometheus` instance (_optional_, only if you want to see metrics in the console)
     * Create an Apache Kafka<sup>®</sup> cluster. See the [example above](#apache-kafka) This step is only required if you do not already have an existing cluster you would like to use with the console.
 3. (_Skip this step if you are not using Kubernetes and Prometheus_) Provide the Prometheus endpoint, the API server endpoint, and the service account token that you would like to use to connect to the Kubernetes cluster. These may be placed in a `compose.env` file that will be detected when starting the console.
    ```
