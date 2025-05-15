@@ -17,7 +17,7 @@ public class ResourceConditions {
         );
     }
 
-    private static <T extends CustomResource<? extends Spec, ? extends Status>> boolean checkMatchingConditions(T resource, ResourceStatus customResourceStatus, ConditionStatus conditionStatus) {
+    public static <T extends CustomResource<? extends Spec, ? extends Status>> boolean checkMatchingConditions(T resource, ResourceStatus customResourceStatus, ConditionStatus conditionStatus) {
         return resource.getStatus()
             .getConditions()
             .stream()

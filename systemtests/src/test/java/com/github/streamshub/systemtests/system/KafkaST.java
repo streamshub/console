@@ -3,10 +3,13 @@ package com.github.streamshub.systemtests.system;
 import com.github.streamshub.systemtests.TestCaseConfig;
 import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.constants.Labels;
+import com.github.streamshub.systemtests.enums.ConditionStatus;
+import com.github.streamshub.systemtests.enums.ResourceStatus;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.setup.console.ConsoleInstanceSetup;
 import com.github.streamshub.systemtests.setup.strimzi.KafkaSetup;
 import com.github.streamshub.systemtests.utils.KafkaNamingUtils;
+import com.github.streamshub.systemtests.utils.KafkaUtils;
 import com.github.streamshub.systemtests.utils.ResourceUtils;
 import com.github.streamshub.systemtests.utils.WaitUtils;
 import com.github.streamshub.systemtests.utils.playwright.PwPageUrls;
@@ -20,6 +23,9 @@ import io.strimzi.api.kafka.model.nodepool.KafkaNodePoolBuilder;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -88,6 +94,117 @@ class KafkaST extends AbstractST {
         WaitUtils.waitForKafkaAnnotationWithValue(tcc.namespace(), tcc.kafkaName(), ResourceAnnotations.ANNO_STRIMZI_IO_PAUSE_RECONCILIATION, "false");
         // Resuming reconciliation should trigger scaling, so check replicas
         WaitUtils.waitForPodsReady(tcc.namespace(), Labels.getKnpBrokerLabelSelector(tcc.kafkaName()), scaledBrokersCount, true);
+    }
+
+    @Test
+    void testAddRemoveBrokers() {
+        final TestCaseConfig tcc = getTestCaseConfig();
+        final int scaledBrokersCount = 7;
+
+        // Check default state
+        // Verify overview and brokers page
+        tcc.page().navigate(PwPageUrls.getOverviewPage(tcc, tcc.kafkaName()));
+        PwUtils.waitForContainsText(tcc, CssSelectors.C_OVERVIEW_CLUSTER_CARD_KAFKA_DATA_BROKER_COUNT,
+            Constants.REGULAR_BROKER_REPLICAS + "/" + Constants.REGULAR_BROKER_REPLICAS);
+
+        tcc.page().navigate(PwPageUrls.getBrokersPage(tcc, tcc.kafkaName()));
+        PwUtils.waitForContainsText(tcc, CssSelectors.BROKERS_PAGE_HEADER_TITLE_BROKER_COUNT, Integer.toString(Constants.REGULAR_BROKER_REPLICAS));
+        assertEquals(Constants.REGULAR_BROKER_REPLICAS, CssSelectors.getLocator(tcc, CssSelectors.BROKERS_PAGE_TABLE_BODY).all().size());
+
+        // Scale and wait for pods
+        KubeResourceManager.get().createOrUpdateResourceWithWait(
+            new KafkaNodePoolBuilder(ResourceUtils.getKubeResource(KafkaNodePool.class, tcc.namespace(), KafkaNamingUtils.brokerPoolName(tcc.kafkaName())))
+                .editSpec()
+                    .withReplicas(scaledBrokersCount)
+                .endSpec()
+                .build());
+
+        WaitUtils.waitForPodsReady(tcc.namespace(), Labels.getKnpBrokerLabelSelector(tcc.kafkaName()), scaledBrokersCount, true);
+
+        // Verify overview and brokers page
+        tcc.page().navigate(PwPageUrls.getOverviewPage(tcc, tcc.kafkaName()));
+        PwUtils.waitForContainsText(tcc, CssSelectors.C_OVERVIEW_CLUSTER_CARD_KAFKA_DATA_BROKER_COUNT, scaledBrokersCount + "/" + scaledBrokersCount);
+
+        tcc.page().navigate(PwPageUrls.getBrokersPage(tcc, tcc.kafkaName()));
+        PwUtils.waitForContainsText(tcc, CssSelectors.BROKERS_PAGE_HEADER_TITLE_BROKER_COUNT, Integer.toString(scaledBrokersCount));
+        assertEquals(scaledBrokersCount, CssSelectors.getLocator(tcc, CssSelectors.BROKERS_PAGE_TABLE_BODY).all().size());
+
+        // Scale back to original count
+        KubeResourceManager.get().createOrUpdateResourceWithWait(
+            new KafkaNodePoolBuilder(ResourceUtils.getKubeResource(KafkaNodePool.class, tcc.namespace(), KafkaNamingUtils.brokerPoolName(tcc.kafkaName())))
+                .editSpec()
+                    .withReplicas(Constants.REGULAR_BROKER_REPLICAS)
+                .endSpec()
+                .build());
+        WaitUtils.waitForPodsReady(tcc.namespace(), Labels.getKnpBrokerLabelSelector(tcc.kafkaName()), Constants.REGULAR_BROKER_REPLICAS, true);
+
+        tcc.page().navigate(PwPageUrls.getOverviewPage(tcc, tcc.kafkaName()));
+        PwUtils.waitForContainsText(tcc, CssSelectors.C_OVERVIEW_CLUSTER_CARD_KAFKA_DATA_BROKER_COUNT,
+            Constants.REGULAR_BROKER_REPLICAS + "/" + Constants.REGULAR_BROKER_REPLICAS);
+
+        tcc.page().navigate(PwPageUrls.getBrokersPage(tcc, tcc.kafkaName()));
+        PwUtils.waitForContainsText(tcc, CssSelectors.BROKERS_PAGE_HEADER_TITLE_BROKER_COUNT, Integer.toString(Constants.REGULAR_BROKER_REPLICAS));
+        assertEquals(Constants.REGULAR_BROKER_REPLICAS, CssSelectors.getLocator(tcc, CssSelectors.BROKERS_PAGE_TABLE_BODY).all().size());
+    }
+
+    @Test
+    void testDisplayKafkaErrorsAndWarnings() {
+        final TestCaseConfig tcc = getTestCaseConfig();
+
+        tcc.page().navigate(PwPageUrls.getOverviewPage(tcc, tcc.kafkaName()));
+        // Open warnings
+        PwUtils.waitForLocatorVisible(tcc, CssSelectors.C_OVERVIEW_CLUSTER_CARD_KAFKA_WARNINGS_DROPDOWN_BUTTON);
+        tcc.page().click(CssSelectors.C_OVERVIEW_CLUSTER_CARD_KAFKA_WARNINGS_DROPDOWN_BUTTON);
+        // Check warnings list
+        PwUtils.waitForLocatorVisible(tcc, CssSelectors.C_OVERVIEW_CLUSTER_CARD_KAFKA_WARNING_MESSAGE_ITEMS);
+        PwUtils.waitForLocatorCount(tcc, 1,  CssSelectors.getLocator(tcc, CssSelectors.C_OVERVIEW_CLUSTER_CARD_KAFKA_WARNING_MESSAGE_ITEMS), true);
+        PwUtils.waitForContainsText(tcc, CssSelectors.getLocator(tcc, CssSelectors.C_OVERVIEW_CLUSTER_CARD_KAFKA_WARNING_MESSAGE_ITEMS).nth(0), "No messages");
+
+        Map<String, String> kafkaPodsSnapshots = KafkaUtils.createKafkaPodsSnapshots(tcc.namespace(), tcc.kafkaName());
+
+        // Cause failures by setting wrong inter broker protocol
+        KubeResourceManager.get().replaceResource(ResourceUtils.getKubeResource(Kafka.class, tcc.namespace(), tcc.kafkaName()),
+            kafka -> {
+                Map<String, Object> config = kafka.getSpec().getKafka().getConfig();
+                if (config == null) {
+                    config = new HashMap<>();
+                    kafka.getSpec().getKafka().setConfig(config);
+                }
+                config.put("inter.broker.protocol.version", "3.3");
+            });
+
+        WaitUtils.waitForKafkaPodsRoll(tcc, kafkaPodsSnapshots);
+        WaitUtils.waitForKafkaHasWarningStatus(tcc.namespace(), tcc.kafkaName());
+
+        // Expect a warning message
+        String warningMessage = ResourceUtils.getKubeResource(Kafka.class, tcc.namespace(), tcc.kafkaName()).getStatus().getConditions().stream()
+            .filter(condition -> condition.getType().equals(ResourceStatus.WARNING.toString()) && condition.getStatus().equals(ConditionStatus.TRUE.toString()))
+            .toList().get(0).getMessage();
+
+        tcc.page().click(CssSelectors.PAGES_HEADER_RELOAD_BUTTON);
+
+        // Check warnings list
+        PwUtils.waitForLocatorVisible(tcc, CssSelectors.C_OVERVIEW_CLUSTER_CARD_KAFKA_WARNING_MESSAGE_ITEMS);
+        PwUtils.waitForLocatorCount(tcc, 1,  CssSelectors.C_OVERVIEW_CLUSTER_CARD_KAFKA_WARNING_MESSAGE_ITEMS, true);
+        PwUtils.waitForContainsText(tcc, CssSelectors.getLocator(tcc, CssSelectors.C_OVERVIEW_CLUSTER_CARD_KAFKA_WARNING_MESSAGE_ITEMS).nth(0), warningMessage);
+
+
+        kafkaPodsSnapshots = KafkaUtils.createKafkaPodsSnapshots(tcc.namespace(), tcc.kafkaName());
+        // Remove wrong config
+        KubeResourceManager.get().replaceResource(ResourceUtils.getKubeResource(Kafka.class, tcc.namespace(), tcc.kafkaName()),
+            kafka -> {
+                kafka.getSpec().getKafka().getConfig().remove("inter.broker.protocol.version");
+            }
+        );
+
+        WaitUtils.waitForKafkaPodsRoll(tcc, kafkaPodsSnapshots);
+        WaitUtils.waitForKafkaHasNoWarningStatus(tcc.namespace(), tcc.kafkaName());
+
+        tcc.page().reload(PwUtils.getDefaultReloadOpts());
+
+        PwUtils.waitForLocatorVisible(tcc, CssSelectors.C_OVERVIEW_CLUSTER_CARD_KAFKA_WARNING_MESSAGE_ITEMS);
+        PwUtils.waitForLocatorCount(tcc, 1,  CssSelectors.getLocator(tcc, CssSelectors.C_OVERVIEW_CLUSTER_CARD_KAFKA_WARNING_MESSAGE_ITEMS), true);
+        PwUtils.waitForContainsText(tcc, CssSelectors.getLocator(tcc, CssSelectors.C_OVERVIEW_CLUSTER_CARD_KAFKA_WARNING_MESSAGE_ITEMS).nth(0), "No messages");
     }
 
 
