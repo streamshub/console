@@ -1,6 +1,7 @@
 package com.github.streamshub.systemtests.constants;
 
 import com.github.streamshub.systemtests.exceptions.UnsupportedKafkaRoleException;
+import com.github.streamshub.systemtests.utils.KafkaNamingUtils;
 import io.fabric8.kubernetes.api.model.LabelSelector;
 import io.fabric8.kubernetes.api.model.LabelSelectorBuilder;
 import io.strimzi.api.ResourceLabels;
@@ -29,11 +30,11 @@ public class Labels {
     // ------------
     // Label selectors
     // ------------
-    public static LabelSelector getKnpLabelSelector(String clusterName, String poolName, ProcessRoles processRole) {
+    private static LabelSelector getKnpLabelSelector(String clusterName, String poolName, ProcessRoles processRole) {
         Map<String, String> matchLabels = new HashMap<>();
 
         matchLabels.put(ResourceLabels.STRIMZI_CLUSTER_LABEL, clusterName);
-        matchLabels.put(ResourceLabels.STRIMZI_KIND_LABEL, Kafka.RESOURCE_KIND.toLowerCase(Locale.ENGLISH));
+        matchLabels.put(ResourceLabels.STRIMZI_COMPONENT_TYPE_LABEL, Kafka.RESOURCE_KIND.toLowerCase(Locale.ENGLISH));
         matchLabels.put(Labels.STRIMZI_POOL_NAME_LABEL, poolName);
 
         switch (processRole) {
@@ -44,4 +45,12 @@ public class Labels {
 
         return new LabelSelectorBuilder().withMatchLabels(matchLabels).build();
     }
+
+    public static LabelSelector getKnpBrokerLabelSelector(String clusterName) {
+        return getKnpLabelSelector(clusterName, KafkaNamingUtils.brokerPoolName(clusterName), ProcessRoles.BROKER);
+    }
+    public static LabelSelector getKnpControllerLabelSelector(String clusterName) {
+        return getKnpLabelSelector(clusterName, KafkaNamingUtils.controllerPoolName(clusterName), ProcessRoles.CONTROLLER);
+    }
+
 }

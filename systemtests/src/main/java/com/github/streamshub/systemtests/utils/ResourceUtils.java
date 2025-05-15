@@ -2,6 +2,7 @@ package com.github.streamshub.systemtests.utils;
 
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.KubernetesResourceList;
+import io.fabric8.kubernetes.api.model.LabelSelector;
 import io.fabric8.kubernetes.client.dsl.MixedOperation;
 import io.fabric8.kubernetes.client.dsl.Resource;
 import io.skodjob.testframe.resources.KubeResourceManager;
@@ -38,6 +39,10 @@ public class ResourceUtils {
 
     public static <T extends HasMetadata> List<T> listKubeResourcesByPrefix(Class<T> resourceClass, String namespaceName, String prefix) {
         return listKubeResources(resourceClass, namespaceName).stream().filter(it -> it.getMetadata().getName().startsWith(prefix)).toList();
+    }
+
+    public static <T extends HasMetadata> List<T> listKubeResourcesByLabelSelector(Class<T> resourceClass, String namespaceName, LabelSelector labelSelector) {
+        return getKubeResourceClient(resourceClass).inNamespace(namespaceName).withLabelSelector(labelSelector).list().getItems();
     }
 
     // --------------------
