@@ -32,26 +32,26 @@ export async function getAuthOptions(): Promise<AuthOptions> {
 
   if (oidc.isEnabled()) {
     log.debug("OIDC is enabled");
-    providers = [ oidc.provider! ];
+    providers = [oidc.provider!];
     return {
       providers,
       pages: {
         signIn: "/api/auth/oidc/signin",
       },
       callbacks: {
-        async jwt({ token, account }: { token: JWT, account: any }) {
-            return oidc.jwt({ token, account });
+        async jwt({ token, account }: { token: JWT; account: any }) {
+          return oidc.jwt({ token, account });
         },
-        async session({ session, token }: { session: Session, token: JWT }) {
-            return oidc.session({ session, token });
-        }
-      }
-    }
+        async session({ session, token }: { session: Session; token: JWT }) {
+          return oidc.session({ session, token });
+        },
+      },
+    };
   } else {
     log.debug("OIDC is disabled");
     // retrieve the authentication method required by the default Kafka cluster
-    const clusters = (await getKafkaClusters(true))?.payload ?? [];
-    providers = clusters.map(makeAuthOption);
+    const clusters = (await getKafkaClusters(true))?.payload;
+    providers = clusters?.data.map(makeAuthOption) || [];
     log.trace({ providers }, "getAuthOptions");
     return {
       providers,

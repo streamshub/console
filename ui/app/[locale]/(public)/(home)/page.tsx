@@ -1,6 +1,6 @@
 import { getKafkaClusters } from "@/api/kafka/actions";
 import { AppLayout } from "@/components/AppLayout";
-import { ClustersTable } from "@/components/ClustersTable";
+import { ClusterTableColumn } from "@/components/ClustersTable";
 import { ExpandableCard } from "@/components/ExpandableCard";
 import { Number } from "@/components/Format/Number";
 import { ExternalLink } from "@/components/Navigation/ExternalLink";
@@ -34,6 +34,9 @@ import config from '@/utils/config';
 import { logger } from "@/utils/logger";
 import { getAuthOptions } from "@/app/api/auth/[...nextauth]/auth-options";
 import { getServerSession } from "next-auth";
+import { stringToInt } from "@/utils/stringToInt";
+import { NoDataErrorState } from "@/components/NoDataErrorState";
+import { ConnectedClustersTable } from "./ConnectedClustersTable";
 
 const log = logger.child({ module: "home" });
 
@@ -45,11 +48,46 @@ export async function generateMetadata() {
   };
 }
 
-export default async function Home() {
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: {
+    perPage: string | undefined;
+    sort: string | undefined;
+    sortDir: string | undefined;
+    page: string | undefined;
+  };
+}) {
   const t = await getTranslations();
+
+  const pageSize = stringToInt(searchParams.perPage) || 20;
+  const sort = (searchParams["sort"] || "name") as ClusterTableColumn;
+  const sortDir = (searchParams["sortDir"] || "asc") as "asc" | "desc";
+  const pageCursor = searchParams["page"];
+
   log.trace("fetching known Kafka clusters...")
-  const allClusters = (await getKafkaClusters())?.payload ?? [];
-  log.trace(`fetched ${allClusters.length ?? 0} Kafka clusters`)
+  const response = await getKafkaClusters(undefined, {
+    pageSize,
+    pageCursor,
+    sort,
+    sortDir,
+  });
+
+  if (response.errors) {
+    return <NoDataErrorState errors={response.errors} />;
+  }
+
+  const allClusters = response.payload!;
+  log.trace(`fetched ${allClusters?.data?.length ?? 0} Kafka clusters`);
+
+  const nextPageCursor = allClusters.links.next
+    ? `after:${new URLSearchParams(allClusters.links.next).get("page[after]")}`
+    : undefined;
+
+  const prevPageCursor = allClusters.links.prev
+    ? `before:${new URLSearchParams(allClusters.links.prev).get("page[before]")}`
+    : undefined;
+
   const productName = t("common.product");
   const brand = t("common.brand");
   log.trace("fetching configuration")
@@ -65,13 +103,13 @@ export default async function Home() {
     username = (session?.user?.name ?? session?.user?.email) ?? undefined;
   }
 
-  if (allClusters.length === 1 && !oidcEnabled) {
-    return <RedirectOnLoad url={`/kafka/${allClusters[0].id}/login`} />;
+  if (allClusters?.data.length === 1 && !oidcEnabled) {
+    return <RedirectOnLoad url={`/kafka/${allClusters.data[0].id}/login`} />;
   }
 
   return (
     <AppLayout username={username}>
-      <PageSection padding={{ default: "noPadding" }} variant={"light"}>
+      <PageSection padding={{ default: "noPadding" }}>
         <div className={styles.hero}>
           <div>
             <TextContent>
@@ -97,15 +135,39 @@ export default async function Home() {
                   {t.rich("homepage.platform_openshift_cluster")}
                   <Text component={"small"}>
                     <Suspense fallback={<Skeleton width={"200px"} />}>
-                      <Number value={allClusters.length} />
+                      <Number value={allClusters.meta.page.total} />
                       &nbsp;{t("homepage.connected_kafka_clusters")}
                     </Suspense>
                   </Text>
                 </TextContent>
               </CardTitle>
               <CardBody>
-                <Suspense fallback={<ClustersTable clusters={undefined} authenticated={oidcEnabled} />}>
-                  <ClustersTable clusters={allClusters} authenticated={oidcEnabled} />
+                <Suspense
+                  fallback={
+                    <ConnectedClustersTable
+                      clusters={undefined}
+                      authenticated={oidcEnabled}
+                      clustersCount={0}
+                      page={1}
+                      perPage={pageSize}
+                      sort={sort}
+                      sortDir={sortDir}
+                      nextPageCursor={undefined}
+                      prevPageCursor={undefined}
+                    />
+                  }
+                >
+                  <ConnectedClustersTable
+                    clusters={allClusters.data}
+                    clustersCount={allClusters.meta.page.total}
+                    page={allClusters.meta.page.pageNumber || 1}
+                    perPage={pageSize}
+                    sort={sort}
+                    sortDir={sortDir}
+                    nextPageCursor={nextPageCursor}
+                    prevPageCursor={prevPageCursor}
+                    authenticated={oidcEnabled}
+                  />
                 </Suspense>
               </CardBody>
             </Card>
