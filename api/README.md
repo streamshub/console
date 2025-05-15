@@ -35,8 +35,7 @@ mvn -am -pl api verify
 
 ### Strimzi and Prometheus
 
-Follow the steps in the [install README](../install/README.md) to install the Strimzi and Prometheus operators and to
-create instances of both Prometheus and Kafka.
+Before proceeding, please make sure the [prerequisites listed in the main README](https://github.com/streamshub/console/blob/main/api/README.md#strimzi-and-prometheus) are met. to install the Strimzi and Prometheus operators and to create instances of both Prometheus and Kafka.
 
 ### Start Console API in Development Mode
 
