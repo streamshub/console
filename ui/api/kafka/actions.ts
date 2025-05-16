@@ -1,6 +1,12 @@
 "use server";
 
-import { fetchData, patchData, ApiResponse, sortParam } from "@/api/api";
+import {
+  fetchData,
+  patchData,
+  ApiResponse,
+  sortParam,
+  filterLike,
+} from "@/api/api";
 import {
   ClusterDetail,
   ClusterResponse,
@@ -19,6 +25,7 @@ export async function getKafkaClusters(
     pageCursor?: string;
     sort?: string;
     sortDir?: string;
+    name?: string;
   },
 ): Promise<ApiResponse<CLustersResponse>> {
   return fetchData(
@@ -26,6 +33,7 @@ export async function getKafkaClusters(
     new URLSearchParams(
       filterUndefinedFromObj({
         "fields[kafkas]": "name,namespace,kafkaVersion",
+        "filter[name]": filterLike(params?.name),
         "page[size]": params?.pageSize,
         "page[after]": params?.pageCursor?.startsWith("after:")
           ? params.pageCursor.slice(6)
