@@ -113,8 +113,7 @@ public class KafkaClustersResource {
 
             @Valid
             @BeanParam
-            KafkaClusterFilterParams filters
-            ) {
+            KafkaClusterFilterParams filters) {
 
         requestedFields.accept(fields);
 
