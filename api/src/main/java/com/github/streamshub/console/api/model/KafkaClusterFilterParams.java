@@ -17,24 +17,24 @@ import io.xlate.validation.constraints.Expression;
 
 public class KafkaClusterFilterParams {
 
-  @QueryParam("filter[name]")
-  @Parameter(
-      description = "Retrieve only kafka clusters with a name matching this parameter",
-      schema = @Schema(implementation = String[].class, minItems = 2),
-      explode = Explode.FALSE)
-  @Expression(
-      when = "self != null",
-      value = "self.operator == 'eq' || self.operator == 'in' || self.operator == 'like'",
-      message = "unsupported filter operator, supported values: [ 'eq', 'in', 'like' ]",
-      payload = ErrorCategory.InvalidQueryParameter.class,
-      node = "filter[name]")
-  @Expression(
-      when = "self != null",
-      value = "self.operands.size() >= 1",
-      message = "at least 1 operand is required",
-      payload = ErrorCategory.InvalidQueryParameter.class,
-      node = "filter[name]")
-  FetchFilter nameFilter;
+    @QueryParam("filter[name]")
+    @Parameter(
+        description = "Retrieve only kafka clusters with a name matching this parameter",
+        schema = @Schema(implementation = String[].class, minItems = 2),
+        explode = Explode.FALSE)
+    @Expression(
+        when = "self != null",
+        value = "self.operator == 'eq' || self.operator == 'in' || self.operator == 'like'",
+        message = "unsupported filter operator, supported values: [ 'eq', 'in', 'like' ]",
+        payload = ErrorCategory.InvalidQueryParameter.class,
+        node = "filter[name]")
+    @Expression(
+        when = "self != null",
+        value = "self.operands.size() >= 1",
+        message = "at least 1 operand is required",
+        payload = ErrorCategory.InvalidQueryParameter.class,
+        node = "filter[name]")
+    FetchFilter nameFilter;
 
     public List<Predicate<KafkaCluster>> buildPredicates() {
         List<Predicate<KafkaCluster>> predicates = new ArrayList<>();
