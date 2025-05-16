@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { ButtonLink } from "./Navigation/ButtonLink";
 import { Link } from "@/i18n/routing";
 import { Truncate } from "@/libs/patternfly/react-core";
+import { EmptyStateNoMatchFound } from "./Table/EmptyStateNoMatchFound";
 
 export const ClusterColumns = [
   "name",
@@ -23,15 +24,20 @@ export function ClustersTable({
   perPage,
   onPageChange,
   clustersCount,
+  filterName,
+  onFilterNameChange,
+  onClearAllFilters,
 }: {
   clusters: ClusterList[] | undefined;
   authenticated: boolean;
   page: number;
   perPage: number;
   clustersCount: number;
+  filterName: string | undefined;
+  onFilterNameChange: (name: string | undefined) => void;
 } & Pick<
   TableViewProps<ClusterList, (typeof ClusterColumns)[number]>,
-  "onPageChange"
+  "onPageChange" | "onClearAllFilters"
 >) {
   const t = useTranslations();
 
@@ -49,7 +55,11 @@ export function ClustersTable({
       onPageChange={onPageChange}
       data={clusters}
       emptyStateNoData={<>{t("ClustersTable.no_data")}</>}
-      emptyStateNoResults={<>{t("ClustersTable.no_data")}</>}
+      emptyStateNoResults={
+        <EmptyStateNoMatchFound onClear={onClearAllFilters!} />
+      }
+      isFiltered={filterName !== undefined}
+      onClearAllFilters={onClearAllFilters}
       columns={columns}
       renderHeader={({ column, key, Th }) => {
         switch (column) {
@@ -130,6 +140,21 @@ export function ClustersTable({
               </Td>
             );
         }
+      }}
+      filters={{
+        Name: {
+          type: "search",
+          chips: filterName ? [filterName] : [],
+          onSearch: onFilterNameChange,
+          onRemoveChip: () => {
+            onFilterNameChange(undefined);
+          },
+          onRemoveGroup: () => {
+            onFilterNameChange(undefined);
+          },
+          validate: () => true,
+          errorMessage: "",
+        },
       }}
     />
   );
