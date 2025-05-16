@@ -30,6 +30,7 @@ export default async function SignIn({
       oauth: "oauth-token" as const,
       anonymous: "anonymous" as const,
     }[authMethod?.method ?? "anonymous"];
+    const clusterName = cluster.attributes.name;
     return (
       <SignInPage
         kafkaId={params.kafkaId!}
@@ -38,6 +39,7 @@ export default async function SignIn({
           searchParams?.callbackUrl ?? `/kafka/${params.kafkaId}/overview`
         }
         hasMultipleClusters={(clusters?.data?.length ?? 0) > 1}
+        clusterName={clusterName}
       />
     );
   }
