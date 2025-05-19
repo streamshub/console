@@ -1,7 +1,12 @@
 "use client";
 
 import { ClusterList } from "@/api/kafka/schema";
-import { ClustersTable, ClusterTableColumn } from "@/components/ClustersTable";
+import {
+  ClusterColumns,
+  ClustersTable,
+  ClusterTableColumn,
+  SortableColumns,
+} from "@/components/ClustersTable";
 import { useFilterParams } from "@/utils/useFilterParams";
 import { useOptimistic, useTransition } from "react";
 
@@ -95,6 +100,38 @@ export function ConnectedClustersTable({
           }
           addOptimistic({ perPage });
         });
+      }}
+      isColumnSortable={(col) => {
+        if (!SortableColumns.includes(col)) {
+          return undefined;
+        }
+        const activeIndex = ClusterColumns.indexOf(state.sort);
+        const columnIndex = ClusterColumns.indexOf(col);
+        return {
+          label: col as string,
+          columnIndex,
+          onSort: () => {
+            startTransition(() => {
+              const newSortDir =
+                activeIndex === columnIndex
+                  ? state.sortDir === "asc"
+                    ? "desc"
+                    : "asc"
+                  : "asc";
+              updateUrl({
+                sort: col,
+                sortDir: newSortDir,
+              });
+              addOptimistic({ sort: col, sortDir: newSortDir });
+            });
+          },
+          sortBy: {
+            index: activeIndex,
+            direction: state.sortDir,
+            defaultDirection: "asc",
+          },
+          isFavorites: undefined,
+        };
       }}
       filterName={state.name}
       onFilterNameChange={(name) => {

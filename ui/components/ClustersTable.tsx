@@ -17,6 +17,8 @@ export const ClusterColumns = [
 
 export type ClusterTableColumn = (typeof ClusterColumns)[number];
 
+export const SortableColumns = ["name"];
+
 export function ClustersTable({
   clusters,
   authenticated,
@@ -27,6 +29,7 @@ export function ClustersTable({
   filterName,
   onFilterNameChange,
   onClearAllFilters,
+  isColumnSortable,
 }: {
   clusters: ClusterList[] | undefined;
   authenticated: boolean;
@@ -37,7 +40,7 @@ export function ClustersTable({
   onFilterNameChange: (name: string | undefined) => void;
 } & Pick<
   TableViewProps<ClusterList, (typeof ClusterColumns)[number]>,
-  "onPageChange" | "onClearAllFilters"
+  "onPageChange" | "onClearAllFilters" | "isColumnSortable"
 >) {
   const t = useTranslations();
 
@@ -60,6 +63,7 @@ export function ClustersTable({
       }
       isFiltered={filterName !== undefined}
       onClearAllFilters={onClearAllFilters}
+      isColumnSortable={isColumnSortable}
       columns={columns}
       renderHeader={({ column, key, Th }) => {
         switch (column) {
