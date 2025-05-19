@@ -104,7 +104,11 @@ export default async function Home({
     username = session?.user?.name ?? session?.user?.email ?? undefined;
   }
 
-  if (allClusters?.data.length === 1 && !oidcEnabled) {
+  if (
+    allClusters?.data.length === 1 &&
+    !oidcEnabled &&
+    !Object.values(searchParams).some((p) => p !== undefined)
+  ) {
     return <RedirectOnLoad url={`/kafka/${allClusters.data[0].id}/login`} />;
   }
 
