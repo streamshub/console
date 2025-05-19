@@ -198,6 +198,18 @@ class KafkaClustersResourceIT {
     }
 
     @Test
+    void testListClustersWithNameFilter() {
+        whenRequesting(req -> 
+            req.queryParam("filter[name]", "test-kafka1")
+               .queryParam("fields[kafkas]", "name")
+               .get())
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()))
+            .body("data.size()", equalTo(1))
+            .body("data.attributes.name", contains("test-kafka1"));
+    }
+
+    @Test
     void testListClustersWithAnonymousLimited() {
         List<String> visibleClusters = Arrays.asList("test-kafka1", "test-kafkaY");
 

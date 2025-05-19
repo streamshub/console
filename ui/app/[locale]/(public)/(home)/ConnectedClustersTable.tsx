@@ -1,7 +1,12 @@
 "use client";
 
 import { ClusterList } from "@/api/kafka/schema";
-import { ClustersTable, ClusterTableColumn } from "@/components/ClustersTable";
+import {
+  ClusterColumns,
+  ClustersTable,
+  ClusterTableColumn,
+  SortableColumns,
+} from "@/components/ClustersTable";
 import { useFilterParams } from "@/utils/useFilterParams";
 import { useOptimistic, useTransition } from "react";
 
@@ -15,6 +20,7 @@ export type ConnectedClustersTableProps = {
   nextPageCursor: string | null | undefined;
   prevPageCursor: string | null | undefined;
   authenticated: boolean;
+  name: string | undefined;
 };
 
 type State = {
@@ -22,6 +28,7 @@ type State = {
   perPage: number;
   sort: ClusterTableColumn;
   sortDir: "asc" | "desc";
+  name: string | undefined;
 };
 
 export function ConnectedClustersTable({
@@ -34,6 +41,7 @@ export function ConnectedClustersTable({
   sort,
   sortDir,
   authenticated,
+  name,
 }: ConnectedClustersTableProps) {
   const _updateUrl = useFilterParams({ perPage, sort, sortDir });
   const [_, startTransition] = useTransition();
@@ -47,6 +55,7 @@ export function ConnectedClustersTable({
       perPage,
       sort,
       sortDir,
+      name,
     },
     (state, options) => ({ ...state, ...options, clusters: undefined }),
   );
@@ -58,6 +67,15 @@ export function ConnectedClustersTable({
       ...newParams,
     });
   };
+
+  function clearFilters() {
+    startTransition(() => {
+      _updateUrl({});
+      addOptimistic({
+        name: undefined,
+      });
+    });
+  }
 
   return (
     <ClustersTable
@@ -83,6 +101,46 @@ export function ConnectedClustersTable({
           addOptimistic({ perPage });
         });
       }}
+      isColumnSortable={(col) => {
+        if (!SortableColumns.includes(col)) {
+          return undefined;
+        }
+        const activeIndex = ClusterColumns.indexOf(state.sort);
+        const columnIndex = ClusterColumns.indexOf(col);
+        return {
+          label: col as string,
+          columnIndex,
+          onSort: () => {
+            startTransition(() => {
+              const newSortDir =
+                activeIndex === columnIndex
+                  ? state.sortDir === "asc"
+                    ? "desc"
+                    : "asc"
+                  : "asc";
+              updateUrl({
+                sort: col,
+                sortDir: newSortDir,
+              });
+              addOptimistic({ sort: col, sortDir: newSortDir });
+            });
+          },
+          sortBy: {
+            index: activeIndex,
+            direction: state.sortDir,
+            defaultDirection: "asc",
+          },
+          isFavorites: undefined,
+        };
+      }}
+      filterName={state.name}
+      onFilterNameChange={(name) => {
+        startTransition(() => {
+          updateUrl({ name });
+          addOptimistic({ name });
+        });
+      }}
+      onClearAllFilters={clearFilters}
     />
   );
 }

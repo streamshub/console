@@ -50,6 +50,7 @@ export default async function Home({
   searchParams,
 }: {
   searchParams: {
+    name: string | undefined;
     perPage: string | undefined;
     sort: string | undefined;
     sortDir: string | undefined;
@@ -58,6 +59,7 @@ export default async function Home({
 }) {
   const t = await getTranslations();
 
+  const name = searchParams["name"];
   const pageSize = stringToInt(searchParams.perPage) || 20;
   const sort = (searchParams["sort"] || "name") as ClusterTableColumn;
   const sortDir = (searchParams["sortDir"] || "asc") as "asc" | "desc";
@@ -69,6 +71,7 @@ export default async function Home({
     pageCursor,
     sort,
     sortDir,
+    name,
   });
 
   if (response.errors) {
@@ -101,7 +104,11 @@ export default async function Home({
     username = session?.user?.name ?? session?.user?.email ?? undefined;
   }
 
-  if (allClusters?.data.length === 1 && !oidcEnabled) {
+  if (
+    allClusters?.data.length === 1 &&
+    !oidcEnabled &&
+    !Object.values(searchParams).some((p) => p !== undefined)
+  ) {
     return <RedirectOnLoad url={`/kafka/${allClusters.data[0].id}/login`} />;
   }
 
@@ -154,6 +161,7 @@ export default async function Home({
                       sortDir={sortDir}
                       nextPageCursor={undefined}
                       prevPageCursor={undefined}
+                      name={name}
                     />
                   }
                 >
@@ -167,6 +175,7 @@ export default async function Home({
                     nextPageCursor={nextPageCursor}
                     prevPageCursor={prevPageCursor}
                     authenticated={oidcEnabled}
+                    name={name}
                   />
                 </Suspense>
               </CardBody>

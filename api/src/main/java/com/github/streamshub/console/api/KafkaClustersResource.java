@@ -31,6 +31,7 @@ import org.eclipse.microprofile.openapi.annotations.responses.APIResponseSchema;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 import com.github.streamshub.console.api.model.KafkaCluster;
+import com.github.streamshub.console.api.model.KafkaClusterFilterParams;
 import com.github.streamshub.console.api.model.ListFetchParams;
 import com.github.streamshub.console.api.security.Authorized;
 import com.github.streamshub.console.api.security.ResourcePrivilege;
@@ -108,11 +109,15 @@ public class KafkaClustersResource {
 
             @Valid
             @BeanParam
-            ListFetchParams listParams) {
+            ListFetchParams listParams,
+
+            @Valid
+            @BeanParam
+            KafkaClusterFilterParams filters) {
 
         requestedFields.accept(fields);
 
-        ListRequestContext<KafkaCluster> listSupport = new ListRequestContext<>(KafkaCluster.Fields.COMPARATOR_BUILDER, uriInfo.getRequestUri(), listParams, KafkaCluster::fromCursor);
+        ListRequestContext<KafkaCluster> listSupport = new ListRequestContext<>(filters.buildPredicates(), KafkaCluster.Fields.COMPARATOR_BUILDER, uriInfo.getRequestUri(), listParams, KafkaCluster::fromCursor);
         var clusterList = clusterService.listClusters(listSupport);
         var responseEntity = new KafkaCluster.KafkaClusterDataList(clusterList, listSupport);
 
