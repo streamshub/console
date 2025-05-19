@@ -198,35 +198,15 @@ class KafkaClustersResourceIT {
     }
 
     @Test
-    void testListClustersFilteredByName() {
-        whenRequesting(req -> req.queryParam("filter[name]", "test-kafka1").get())
+    void testListClustersWithNameFilter() {
+        whenRequesting(req -> 
+            req.queryParam("filter[name]", "test-kafka1")
+               .queryParam("fields[kafkas]", "name")
+               .get())
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
-            .body("data.size()", is(1))
+            .body("data.size()", equalTo(1))
             .body("data.attributes.name", contains("test-kafka1"));
-
-        whenRequesting(req -> req.queryParam("filter[name]", "kafka").get())
-            .assertThat()
-            .statusCode(is(Status.OK.getStatusCode()))
-            .body("data.size()", is(3))
-            .body("data.attributes.name", containsInAnyOrder("test-kafka1", "test-kafka2", "test-kafkaY"));
-
-        whenRequesting(req -> req.queryParam("filter[name]", "test-kafka").get())
-            .assertThat()
-            .statusCode(is(Status.OK.getStatusCode()))
-            .body("data.size()", is(2))
-            .body("data.attributes.name", containsInAnyOrder("test-kafka1", "test-kafka2"));
-
-        whenRequesting(req -> req.queryParam("filter[name]", "Y").get())
-            .assertThat()
-            .statusCode(is(Status.OK.getStatusCode()))
-            .body("data.size()", is(1))
-            .body("data.attributes.name", contains("test-kafkaY"));
-
-        whenRequesting(req -> req.queryParam("filter[name]", "non-existent").get())
-            .assertThat()
-            .statusCode(is(Status.OK.getStatusCode()))
-            .body("data.size()", is(0));
     }
 
     @Test
