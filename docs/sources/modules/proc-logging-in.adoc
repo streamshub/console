@@ -15,13 +15,17 @@ NOTE: If authentication is not set up for a Kafka cluster or the credentials hav
 
 SCRAM-SHA-512 settings::
 +
+--
 * Listener authentication set to `scram-sha-512` in `Kafka.spec.kafka.listeners[*].authentication`.
 * Username and password configured in `KafkaUser.spec.authentication`.
+--
 
 OAuth 2.0 settings::
 +
+--
 * An OAuth 2.0 authorization server with client definitions for the Kafka cluster and users.
 * Listener authentication set to `oauth` in `Kafka.spec.kafka.listeners[*].authentication`.
+--
 
 For more information on configuring authentication, see the link:{BookURLDeploying}[Strimzi documentation^].
 

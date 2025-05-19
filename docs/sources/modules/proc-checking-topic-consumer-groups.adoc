@@ -7,12 +7,12 @@ The *Consumer groups* tab presents a list of consumer groups associated with a t
 
 .Procedure
 
-. From the StreamsHub Console, log in to the Kafka cluster, then click *Topics*. 
-. Click the name of the topic you want to check from the *Topics* page.
+. Log in to the Kafka cluster in the StreamsHub Console, then click *Topics*. 
+. From the *Topics* page, click the name of the topic you want to inspect.
 . Check the information on the *Consumer groups* tab.
-. To check consumer group members, click the consumer group name.
+. Click a consumer group name to view consumer group members.
 
-For each consumer group, you can see its status, the overall consumer lag across all partitions, and the number of members.
+For each consumer group, you can view its status, the overall consumer lag across all partitions, and the number of members.
 For more information on checking consumer groups, see xref:con-consumer-groups-page-{context}[].
 
 For each group member, you see the unique (consumer) client ID assigned to the consumer within the consumer group, overall consumer lag, and the number of assigned partitions.

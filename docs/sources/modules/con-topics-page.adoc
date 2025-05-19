@@ -2,8 +2,8 @@
 = Topics page
 
 [role="_abstract"]
-The *Topics* page shows all the topics created for a Kafka cluster. 
-Use this page to check information on topics.
+The *Topics* page lists all topics created for a Kafka cluster. 
+You can filter the list by topic name, ID, or status.
 
 The *Topics* page shows the overall replication status for partitions in the topic, as well as counts for the partitions in the topic and the number of associated consumer groups.
 The overall storage used by the topic is also shown.
@@ -13,7 +13,7 @@ The overall storage used by the topic is also shown.
 Internal topics must not be modified. You can choose to hide internal topics from the list of topics returned on the *Topics* page. 
 ====
 
-By clicking on a topic name, additional topic information is presented on a series of tabs:
+Click on a topic name to view additional topic information presented on a series of tabs:
 
 Messages:: Messages shows the message log for a topic.
 Partitions:: Partitions shows the replication status of each partition in a topic. 

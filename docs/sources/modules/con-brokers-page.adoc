@@ -1,27 +1,37 @@
 [id='con-brokers-page-{context}']
-= Brokers page
+= Nodes page
 
 [role="_abstract"]
-The *Brokers* page shows all the brokers created for a Kafka cluster. 
-For each broker, you can see its status, as well as the distribution of partitions across the brokers, including the number of partition leaders and followers.
+The *Nodes* page lists all nodes created for a Kafka cluster, including nodes that perform broker, controller, or dual roles.
+You can filter the list by node pool, role (broker or controller), or status.
 
-The broker status is shown as one of the following:
+For each node, you can view its status.
+For broker nodes, the page shows partition distribution across the cluster, including the number of partition leaders and followers.
+
+Broker status is shown as one of the following:
 
 Not Running:: The broker has not yet been started or has been explicitly stopped.
-Starting:: The broker is initializing and connecting to the cluster, including discovering and joining the metadata quorum.
-Recovery:: The broker has joined the cluster but is in recovery mode, replicating necessary data and metadata before becoming fully operational. It is not serving clients.
-Running:: The broker is fully operational, registered with the controller, and actively serving client requests.
-Pending Controlled Shutdown:: The broker has initiated a controlled shutdown process and will shut down gracefully once complete.
-Shutting Down:: The broker is in the process of shutting down. Client connections are being closed, and internal resources are being released.
+Starting:: The broker is initializing and connecting to the cluster. It is discovering and joining the metadata quorum.
+Recovery:: The broker has joined the cluster but is in recovery mode. It is replicating necessary data and metadata before becoming fully operational. It is not yet serving client requests.
+Running:: The broker is fully operational. It is registered with the controller and serving client requests.
+Pending Controlled Shutdown:: The broker has initiated a controlled shutdown. It will shut down gracefully after completing in-flight operations.
+Shutting Down:: The broker is shutting down. Client connections are closing, and internal resources are being released.
 Unknown:: The broker's state is unknown, possibly due to an unexpected error or failure.
 
-If the broker has a rack ID, this is the ID of the rack or datacenter in which the broker resides.
+If the broker has a rack ID, it identifies the rack or datacenter in which the broker resides.
 
-Click on the right arrow (>) next to a broker name to see more information about the broker, including its hostname and disk usage.
+Controller status is shown as one of the following, describing the controller’s role within the metadata quorum:
+
+Quorum leader:: The controller is the active leader, coordinating cluster metadata updates and managing operations like partition reassignments and broker registrations.
+Quorum follower:: The controller is a follower in the metadata quorum, passively replicating updates from the leader while maintaining a synchronized state. It is ready to take over as the leader if needed.
+Quorum follower lagged:: The controller is a follower but has fallen behind the leader. It is not fully up to date with the latest metadata and may be ineligible for leader election until it catches up.
+Unknown:: The controller's state is unknown, possibly due to an unexpected error or failure.
+
+Click on the right arrow (>) next to a node name to view more information about the node, including its hostname and disk usage.
 
 Click on the *Rebalance* tab to show any rebalances taking place on the cluster.
 
 [NOTE]
 ====
-Consider rebalancing if the distribution is uneven to ensure efficient resource utilization.
+Consider rebalancing if partition distribution is uneven to ensure efficient resource utilization.
 ====

@@ -4,15 +4,16 @@
 [role="_abstract"]
 When you configure `KafkaRebalance` resources to generate optimization proposals on a cluster, you can check their status from the *Rebalance* tab.
 The *Rebalance* tab presents a chronological list of `KafkaRebalance` resources from which you can manage the optimization proposals.
+You can filter the list by name, status, or rebalance mode.
 
 NOTE: Cruise Control must be enabled to run alongside the Kafka cluster in order to use the *Rebalance* tab. For more information on setting up and using Cruise Control to generate proposals, see the link:{BookURLDeploying}[Strimzi documentation^]. 
 
 .Procedure
 
-. From the StreamsHub Console, log in to the Kafka cluster, then click *Brokers*. 
+. Log in to the Kafka cluster in the StreamsHub Console, then click *Kafka nodes*. 
 . Check the information on the *Rebalance* tab.
 +
-For each rebalance, you can see its status and a timestamp in UTC.
+For each rebalance, you can view its status and the time it was last updated.
 +
 --
 .Rebalance status descriptions
@@ -32,7 +33,7 @@ For each rebalance, you can see its status and a timestamp in UTC.
 NOTE: The status of the `KafkaRebalance` resource changes to `ReconciliationPaused` when the `strimzi.io/pause-reconciliation` annotation is set to `true` in its configuration. 
 --
 
-. Click on the right arrow (>) next to a rebalance name to see more information about the broker, including its rebalance mode, and whether auto-approval is enabled.
+. Click on the right arrow (>) next to a rebalance name to view more information about the broker, including its rebalance mode, and whether auto-approval is enabled.
 If the rebalance involved brokers being removed or added, they are also listed.
 
 Optimization proposals can be generated in one of three modes:
@@ -45,7 +46,7 @@ If auto-approval is enabled for a proposal, a successfully generated proposal go
 
 .Viewing optimization proposals
 
-Click on the name of a `KafkaRebalance` resource to see a generated optimization proposal.
+Click on the name of a `KafkaRebalance` resource to view a generated optimization proposal.
 An optimization proposal is a summary of proposed changes that would produce a more balanced Kafka cluster, with partition workloads distributed more evenly among the brokers.
 
 For more information on the properties shown on the proposal and what they mean, see the link:{BookURLDeploying}[Strimzi documentation^].

@@ -6,7 +6,7 @@ Create topics from the *Topics* page.
 
 .Procedure
 
-. From the StreamsHub Console, log in to the Kafka cluster that you want to add a topic to, then click *Topics* and *Create topic*.
+. Log in to the Kafka cluster in the StreamsHub Console, then click *Topics* and *Create topic*.
 . Set core configuration, such as the name of the topic, and the number of topic partitions and replicas.
 . (Optional) Specify additional configuration, such as the following: 
 +

@@ -7,11 +7,11 @@ The *Partitions* tab presents a list of partitions belonging to a topic.
 
 .Procedure
 
-. From the StreamsHub Console, log in to the Kafka cluster, then click *Topics*. 
-. Click the name of the topic you want to check from the *Topics* page.
+. Log in to the Kafka cluster in the StreamsHub Console, then click *Topics*.
+. From the *Topics* page, click the name of the topic you want to inspect.
 . Check the information on the *Partitions* tab.
 
-For each partition, you can see its replication status, as well as information on designated partition leaders, replica brokers, and the amount of data stored by the partition.
+For each partition, you can view its replication status, as well as information on designated partition leaders, replica brokers, and the amount of data stored by the partition.
 
 You can view partitions by replication status:
 
