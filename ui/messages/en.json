@@ -40,12 +40,16 @@
     "learning_resource": "Learn more about {product}",
     "log_into_a_different_cluster": "Log in to a different cluster",
     "login_anonymously": "Click to login anonymously",
-    "stay_logged_in": "< Stay logged in to cluster <b>{clustername}</b>",
+    "stay_logged_in": "Stay logged in to cluster <b>{clustername}</b>",
     "login_subtitle_credentials": "Provide username and password to Log in to {clusterName}",
     "login_subtitle_oauth": "Provide Client ID and Client Secret to Log in to {clusterName}"
   },
   "cluster-selector": {
-    "subtitle": "Select a cluster"
+    "subtitle": "Select a cluster",
+    "kafka-clusters": "Kafka Clusters",
+    "view-all-kafka-clusters": "View all Kafka clusters",
+    "login-to-cluster": "Login to cluster",
+    "no-results-found": "No results found"
   },
   "RefreshButton": {
     "refresh_button_label": "Refresh",
@@ -680,5 +684,12 @@
     "remove_brokers_mode": "<b>Remove-brokers mode:</b>",
     "remove_brokers_mode_description": "Moves replicas off brokers to be removed. Brokers must be specified",
     "broker": "broker {b}"
+  },
+  "breadcrumbs": {
+    "overview": "Overview",
+    "topics": "Topics",
+    "create_topic": "Create topic",
+    "consumer_groups": "Consumer groups",
+    "view_all_kafka_clusters": "View all Kafka clusters"
   }
 }

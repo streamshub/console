@@ -33,6 +33,7 @@ export function OverviewHeader({
   params: KafkaParams;
 }) {
   const t = useTranslations();
+
   return (
     <AppHeader
       title={t("ClusterOverview.header")}
