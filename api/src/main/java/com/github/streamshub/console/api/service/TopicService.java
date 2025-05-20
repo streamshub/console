@@ -2,6 +2,7 @@ package com.github.streamshub.console.api.service;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -28,6 +29,7 @@ import org.apache.kafka.common.errors.UnknownTopicIdException;
 import org.eclipse.microprofile.context.ThreadContext;
 import org.jboss.logging.Logger;
 
+import com.github.streamshub.console.api.model.ConfigEntry;
 import com.github.streamshub.console.api.model.NewTopic;
 import com.github.streamshub.console.api.model.Topic;
 import com.github.streamshub.console.api.model.TopicPatch;
@@ -41,6 +43,8 @@ import com.github.streamshub.console.config.security.Privilege;
 
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.strimzi.api.kafka.model.kafka.Kafka;
+import io.strimzi.api.kafka.model.topic.KafkaTopic;
+import io.strimzi.api.kafka.model.topic.KafkaTopicBuilder;
 
 import static org.apache.kafka.clients.admin.NewPartitions.increaseTo;
 
@@ -143,7 +147,7 @@ public class TopicService {
             .thenApply(topic -> validationService.validate(new TopicValidation.TopicPatchInputs(kafka, topic, patch)))
             .thenApply(TopicValidation.TopicPatchInputs::topic)
             .thenComposeAsync(topic -> topicDescribe.getManagedTopic(topic.name())
-                    .map(kafkaTopic -> patchManagedTopic())
+                    .map(kafkaTopic -> patchManagedTopic(kafkaTopic, patch, validateOnly))
                     .orElseGet(() -> patchUnmanagedTopic(topic, patch, validateOnly)),
                 threadContext.currentContextExecutor());
     }
@@ -152,46 +156,73 @@ public class TopicService {
         Admin adminClient = kafkaContext.admin();
         Uuid id = Uuid.fromString(topicId);
 
-        return topicDescribe.topicNameForId(topicId).thenComposeAsync(topicName -> {
-            if (topicName.isPresent()) {
-                return adminClient.deleteTopics(TopicCollection.ofTopicIds(List.of(id)))
-                        .topicIdValues()
-                        .get(id)
-                        .toCompletionStage();
-            }
-
-            throw new UnknownTopicIdException("No such topic: " + topicId);
-        }, threadContext.currentContextExecutor());
+        return topicDescribe.topicNameForId(topicId)
+                .thenApply(topicName -> {
+                    if (topicName.isEmpty()) {
+                        throw new UnknownTopicIdException("No such topic: " + topicId);
+                    }
+                    return topicName.get();
+                })
+                .thenComposeAsync(topicName -> topicDescribe.getManagedTopic(topicName)
+                        .map(kafkaTopic -> CompletableFuture.runAsync(() -> k8s.resource(kafkaTopic).delete()))
+                        .orElseGet(() -> adminClient.deleteTopics(TopicCollection.ofTopicIds(List.of(id)))
+                                .topicIdValues()
+                                .get(id)
+                                .toCompletionStage()
+                                .toCompletableFuture()),
+                    threadContext.currentContextExecutor());
     }
 
-    // Modifications disabled for now
-    private CompletionStage<Void> patchManagedTopic(/*KafkaTopic topic, TopicPatch patch, boolean validateOnly*/) {
-        return CompletableFuture.completedStage(null);
-//        if (validateOnly) { // NOSONAR
-//            return CompletableFuture.completedStage(null);
-//        }
-//
-//        Map<String, Object> modifiedConfig = Optional.ofNullable(patch.configs())
-//            .map(Map::entrySet)
-//            .map(Collection::stream)
-//            .orElseGet(Stream::empty)
-//            .map(e -> Map.entry(e.getKey(), e.getValue().getValue()))
-//            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-//
-//        KafkaTopic modifiedTopic = new KafkaTopicBuilder(topic)
-//            .editSpec()
-//                .withPartitions(patch.numPartitions())
-//                .withReplicas(patch.replicasAssignments()
-//                        .values()
-//                        .stream()
-//                        .findFirst()
-//                        .map(Collection::size)
-//                        .orElseGet(() -> topic.getSpec().getReplicas()))
-//                .addToConfig(modifiedConfig)
-//            .endSpec()
-//            .build();
-//
-//        return CompletableFuture.runAsync(() -> k8s.resource(modifiedTopic).serverSideApply());
+    private CompletionStage<Void> patchManagedTopic(KafkaTopic topic, TopicPatch patch, boolean validateOnly) {
+        if (validateOnly) { // NOSONAR
+            return CompletableFuture.completedStage(null);
+        }
+
+        Map<String, Object> topicConfig = Optional
+                .ofNullable(topic.getSpec().getConfig())
+                .orElseGet(Collections::emptyMap);
+        Map<String, ConfigEntry> patchConfig = Optional
+                .ofNullable(patch.configs())
+                .orElseGet(Collections::emptyMap);
+        Map<String, Object> modifiedConfig = new LinkedHashMap<>();
+
+        // Updates and removals
+        for (var config : topicConfig.entrySet()) {
+            String configKey = config.getKey();
+            ConfigEntry patchEntry = patchConfig.get(configKey);
+
+            if (patchEntry != null) {
+                String patchValue = patchEntry.getValue();
+
+                if (patchValue != null) {
+                    modifiedConfig.put(configKey, patchValue);
+                }
+            } else {
+                // Passed through with no changes
+                modifiedConfig.put(configKey, config.getValue());
+            }
+        }
+
+        // Additions
+        for (var config : patchConfig.entrySet()) {
+            String configKey = config.getKey();
+            ConfigEntry patchEntry = config.getValue();
+            String patchValue = patchEntry.getValue();
+
+            if (patchValue != null && !topicConfig.containsKey(configKey)) {
+                modifiedConfig.put(configKey, patchValue);
+            }
+        }
+
+        KafkaTopic modifiedTopic = new KafkaTopicBuilder(topic)
+            .editSpec()
+                .withPartitions(patch.numPartitions())
+                .withConfig(modifiedConfig)
+                // Replica modification not supported
+            .endSpec()
+            .build();
+
+        return CompletableFuture.runAsync(() -> k8s.resource(modifiedTopic).patch());
     }
 
     private CompletionStage<Void> patchUnmanagedTopic(Topic topic, TopicPatch patch, boolean validateOnly) {
