@@ -16,10 +16,13 @@ import {
   MenuSearchInput,
   MenuToggle,
   SearchInput,
+  Tooltip,
 } from "@/libs/patternfly/react-core";
-import { HomeIcon } from "@/libs/patternfly/react-icons";
+import { ArrowRightIcon, HomeIcon } from "@/libs/patternfly/react-icons";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 
 export type ClusterInfo = {
   projectName: string;
@@ -35,80 +38,94 @@ export function AppDropdown({
   clusters: ClusterInfo[];
   kafkaId: string;
 }) {
+  const t = useTranslations();
   const router = useRouter();
   const [activeItem, setActiveItem] = useState<string | undefined>(undefined);
-  const [input, setInput] = useState("");
-  const [isOpen, setIsOpen] = useState(false);
-  const toggleRef = useRef<any>(undefined);
-  const menuRef = useRef<any>(undefined);
+  const [searchText, setSearchText] = useState("");
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const toggleRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   const filteredClusters = clusters.filter((cluster) =>
-    cluster.clusterName.toLowerCase().includes(input.toLowerCase()),
+    cluster.clusterName.toLowerCase().includes(searchText.toLowerCase()),
   );
 
   const groupedClusters = filteredClusters.reduce<
     Record<string, ClusterInfo[]>
   >((acc, cluster) => {
-    if (!acc[cluster.projectName]) {
-      acc[cluster.projectName] = [];
-    }
+    acc[cluster.projectName] = acc[cluster.projectName] || [];
     acc[cluster.projectName].push(cluster);
     return acc;
   }, {});
 
-  const onSelect = (
+  const handleClusterSelect = (
     _event: React.MouseEvent<Element, MouseEvent> | undefined,
-    itemId: string | number | undefined,
+    selectedId: string | number | undefined,
   ) => {
-    if (itemId === undefined) return;
-    const id = String(itemId);
+    if (selectedId === undefined) return;
+    const id = String(selectedId);
     setActiveItem(id);
-    setIsOpen(false);
-    if (id === kafkaId) {
-      return;
-    }
-    const previousCluster = clusters.find((cluster) => cluster.id === kafkaId);
-    if (previousCluster) {
-      localStorage.setItem("PreviousClusterId", previousCluster.id);
-      localStorage.setItem("PreviousClusterName", previousCluster.clusterName);
+    setIsMenuOpen(false);
+    if (id === kafkaId) return;
+
+    const currentCluster = clusters.find((cluster) => cluster.id === kafkaId);
+    if (currentCluster) {
+      localStorage.setItem("PreviousClusterId", currentCluster.id);
+      localStorage.setItem("PreviousClusterName", currentCluster.clusterName);
     }
     router.push(`/kafka/${id}/login`);
   };
 
-  const handleTextInputChange = (value: string) => {
-    if (!isOpen) {
-      setIsOpen(true);
+  const handleSearchInputChange = (value: string) => {
+    if (!isMenuOpen) {
+      setIsMenuOpen(true);
     }
-    setInput(value);
+    setSearchText(value);
   };
 
-  const menuListGroups = Object.entries(groupedClusters).map(
-    ([projectName, clusters]) => (
-      <MenuGroup label={`Project: ${projectName}`} key={projectName}>
-        <MenuList>
-          {clusters.map((cluster) => {
-            return (
-              <MenuItem
-                key={cluster.id}
-                itemId={cluster.id}
-                description={`Authentication: ${cluster.authenticationMethod}`}
-                isSelected={kafkaId === cluster.id}
-              >
-                {cluster.clusterName}
-              </MenuItem>
-            );
-          })}
-        </MenuList>
-      </MenuGroup>
-    ),
-  );
+  const sortedProjectNames = Object.keys(groupedClusters).sort((a, b) => {
+    if (a.toLowerCase() === "not provided") return 1;
+    if (b.toLowerCase() === "not provided") return -1;
+    if (a === "") return 1;
+    if (b === "") return -1;
+    return a.localeCompare(b);
+  });
 
-  if (input && filteredClusters.length === 0) {
-    menuListGroups.push(
+  const menuItems = sortedProjectNames.map((projectName) => (
+    <MenuGroup
+      label={`Project: ${projectName || "not provided"}`}
+      key={projectName}
+    >
+      <MenuList>
+        {groupedClusters[projectName].map((cluster) => (
+          <MenuItem
+            key={cluster.id}
+            itemId={cluster.id}
+            description={`Authentication: ${cluster.authenticationMethod}`}
+            isSelected={kafkaId === cluster.id}
+          >
+            <Flex>
+              <FlexItem>{cluster.clusterName}</FlexItem>
+              <FlexItem align={{ default: "alignRight" }}>
+                {cluster.id !== kafkaId && (
+                  <Tooltip content={t("cluster-selector.login-to-cluster")}>
+                    <ArrowRightIcon />
+                  </Tooltip>
+                )}
+              </FlexItem>
+            </Flex>
+          </MenuItem>
+        ))}
+      </MenuList>
+    </MenuGroup>
+  ));
+
+  if (searchText && filteredClusters.length === 0) {
+    menuItems.push(
       <MenuGroup label="Results" key="no-results">
         <MenuList>
           <MenuItem isDisabled key="no-result" itemId={-1}>
-            No results found
+            {t("cluster-selector.no-results-found")}
           </MenuItem>
         </MenuList>
       </MenuGroup>,
@@ -118,14 +135,14 @@ export function AppDropdown({
   const toggle = (
     <MenuToggle
       ref={toggleRef}
-      onClick={() => setIsOpen(!isOpen)}
-      isExpanded={isOpen}
+      onClick={() => setIsMenuOpen(!isMenuOpen)}
+      isExpanded={isMenuOpen}
     >
       <Flex
         alignItems={{ default: "alignItemsCenter" }}
         gap={{ default: "gapMd" }}
       >
-        <FlexItem>Kafka Clusters</FlexItem>
+        <FlexItem>{t("cluster-selector.kafka-clusters")}</FlexItem>
         <FlexItem>
           <Badge isRead key="badge">
             {clusters.length}
@@ -138,23 +155,27 @@ export function AppDropdown({
   const menu = (
     <Menu
       ref={menuRef}
-      onSelect={onSelect}
+      onSelect={handleClusterSelect}
       activeItemId={activeItem}
       isScrollable
     >
       <MenuSearch>
         <MenuSearchInput>
           <SearchInput
-            value={input}
+            value={searchText}
             aria-label="Search Kafka clusters"
-            onChange={(_event, value) => handleTextInputChange(value)}
+            onChange={(_event, value) => handleSearchInputChange(value)}
           />
         </MenuSearchInput>
       </MenuSearch>
-      <MenuContent maxMenuHeight="300px">{menuListGroups}</MenuContent>
+      <MenuContent maxMenuHeight="300px">
+        <MenuList>{menuItems}</MenuList>
+      </MenuContent>
       <Divider />
       <MenuFooter>
-        <HomeIcon /> View all Kafka clusters
+        <Link href={"/"}>
+          <HomeIcon /> {t("cluster-selector.view-all-kafka-clusters")}
+        </Link>
       </MenuFooter>
     </Menu>
   );
@@ -165,8 +186,8 @@ export function AppDropdown({
       menuRef={menuRef}
       toggle={toggle}
       toggleRef={toggleRef}
-      isOpen={isOpen}
-      onOpenChange={setIsOpen}
+      isOpen={isMenuOpen}
+      onOpenChange={setIsMenuOpen}
       onOpenChangeKeys={["Escape"]}
     />
   );

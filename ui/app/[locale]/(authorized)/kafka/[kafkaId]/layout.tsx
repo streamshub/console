@@ -2,11 +2,7 @@ import { ClusterLinks } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/Cluste
 import { getAuthOptions } from "@/app/api/auth/[...nextauth]/auth-options";
 import { AppLayout } from "@/components/AppLayout";
 import { AppLayoutProvider } from "@/components/AppLayoutProvider";
-import {
-  Breadcrumb,
-  PageBreadcrumb,
-  PageGroup,
-} from "@/libs/patternfly/react-core";
+import { PageBreadcrumb, PageGroup } from "@/libs/patternfly/react-core";
 import { getServerSession } from "next-auth";
 import { useTranslations } from "next-intl";
 import { PropsWithChildren, ReactNode, Suspense } from "react";
@@ -31,8 +27,8 @@ export default async function AsyncLayout({
   const session = await getServerSession(authOptions);
   const response = await getKafkaCluster(kafkaId);
 
-  const clusters =
-    (await getKafkaClusters(undefined, { pageSize: 1000 }))?.payload;
+  const clusters = (await getKafkaClusters(undefined, { pageSize: 1000 }))
+    ?.payload;
 
   const clusterInfoList = clusters?.data.map((cluster: any) => {
     const id = cluster.id;
@@ -93,9 +89,7 @@ function Layout({
         clusterInfoList={clusterInfoList}
       >
         <PageGroup stickyOnBreakpoint={{ default: "top" }}>
-          <PageBreadcrumb>
-            <Breadcrumb>{activeBreadcrumb}</Breadcrumb>
-          </PageBreadcrumb>
+          <PageBreadcrumb>{activeBreadcrumb}</PageBreadcrumb>
           {header}
         </PageGroup>
         <Suspense>{children}</Suspense>

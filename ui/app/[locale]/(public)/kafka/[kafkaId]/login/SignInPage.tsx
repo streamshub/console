@@ -14,12 +14,15 @@ import {
   LoginForm,
   LoginFormProps,
   LoginMainFooterBandItem,
-  LoginMainHeader,
   LoginPage,
   ToggleGroup,
   ToggleGroupItem,
 } from "@/libs/patternfly/react-core";
-import { MoonIcon, SunIcon } from "@/libs/patternfly/react-icons";
+import {
+  AngleLeftIcon,
+  MoonIcon,
+  SunIcon,
+} from "@/libs/patternfly/react-icons";
 import { signIn } from "next-auth/react";
 import { useTranslations } from "next-intl";
 import { FormEvent, useEffect, useState } from "react";
@@ -230,6 +233,7 @@ export function SignInPage({
           previousClusterId !== kafkaId && (
             <LoginMainFooterBandItem>
               <Link href={`/kafka/${previousClusterId}/overview`}>
+                <AngleLeftIcon />{" "}
                 {t.rich("login-in-page.stay_logged_in", {
                   clustername: previousClusterName,
                 })}
