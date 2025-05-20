@@ -190,7 +190,7 @@ export function ConfigTable({
                   <TextInput
                     id={`property-${name}`}
                     placeholder={property.value}
-                    value={options[name] || ""}
+                    value={options[name] || property.value}
                     onChange={(_, value) => {
                       if (value.trim() !== "") {
                         setOptions({
@@ -202,6 +202,7 @@ export function ConfigTable({
                         delete newOpts[name];
                         setOptions(newOpts);
                       }
+                      property.value = value;
                     }}
                     validated={validated}
                     isDisabled={isEditing[name] === "saving"}
