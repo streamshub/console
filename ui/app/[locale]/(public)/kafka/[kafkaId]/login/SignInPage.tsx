@@ -5,8 +5,12 @@ import { Link } from "@/i18n/routing";
 import {
   Alert,
   Button,
+  Content,
   Flex,
   FlexItem,
+  ListVariant,
+  LoginFooter,
+  LoginFooterItem,
   LoginForm,
   LoginFormProps,
   LoginMainFooterBandItem,
@@ -14,10 +18,14 @@ import {
   ToggleGroup,
   ToggleGroupItem,
 } from "@/libs/patternfly/react-core";
-import { MoonIcon, SunIcon } from "@/libs/patternfly/react-icons";
+import {
+  AngleLeftIcon,
+  MoonIcon,
+  SunIcon,
+} from "@/libs/patternfly/react-icons";
 import { signIn } from "next-auth/react";
 import { useTranslations } from "next-intl";
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 
 type SignInPageErrorParam =
   | "Signin"
@@ -53,11 +61,13 @@ export function SignInPage({
   provider,
   callbackUrl,
   hasMultipleClusters,
+  clusterName,
 }: {
   kafkaId: string;
   provider: "credentials" | "oauth-token" | "anonymous";
   callbackUrl: string;
   hasMultipleClusters: boolean;
+  clusterName: string;
 }) {
   const t = useTranslations();
   const productName = t("common.product");
@@ -68,6 +78,22 @@ export function SignInPage({
   const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | undefined>();
+
+  const [previousClusterId, setPreviousClusterId] = useState<string | null>(
+    null,
+  );
+  const [previousClusterName, setPreviousClusterName] = useState<string | null>(
+    null,
+  );
+
+  useEffect(() => {
+    const prevId = localStorage.getItem("PreviousClusterId");
+    const prevName = localStorage.getItem("PreviousClusterName");
+    if (prevId && prevName) {
+      setPreviousClusterId(prevId);
+      setPreviousClusterName(prevName);
+    }
+  }, []);
 
   const handleUsernameChange = (
     _event: FormEvent<HTMLInputElement>,
@@ -84,14 +110,26 @@ export function SignInPage({
   };
 
   const learnMoreResource = (
-    <LoginMainFooterBandItem style={{ textAlign: "left", width: "100%" }}>
-      <ExternalLink
-        href={"https://redhat.com"}
-        testId={"learn-more-about-streams-kafka"}
+    <LoginFooter>
+      <Flex
+        direction={{ default: "column" }}
+        justifyContent={{ default: "justifyContentSpaceBetween" }}
       >
-        {t("login-in-page.learning_resource", { product: productName })}
-      </ExternalLink>
-    </LoginMainFooterBandItem>
+        <FlexItem>
+          <Content>{t("login-in-page.footer_text")}</Content>
+        </FlexItem>
+        <FlexItem>
+          <LoginFooterItem>
+            <ExternalLink
+              href={"https://redhat.com"}
+              testId={"learn-more-about-streams-kafka"}
+            >
+              {t("login-in-page.learning_resource", { product: productName })}
+            </ExternalLink>
+          </LoginFooterItem>
+        </FlexItem>
+      </Flex>
+    </LoginFooter>
   );
 
   const doLogin = async () => {
@@ -134,9 +172,18 @@ export function SignInPage({
       ? t("login-in-page.password")
       : t("login-in-page.clientSecret");
 
+  const loginSubtitle =
+    previousClusterId && previousClusterName
+      ? provider === "credentials"
+        ? t("login-in-page.login_subtitle_credentials", { clusterName })
+        : provider === "oauth-token"
+          ? t("login-in-page.login_subtitle_oauth", { clusterName })
+          : t("login-in-page.login_sub_title")
+      : t("login-in-page.login_sub_title");
+
   return (
     <>
-      <Flex>
+      <Flex direction={{ default: "column" }}>
         <FlexItem align={{ default: "alignRight" }} className="pf-v6-u-mr-md">
           <ToggleGroup className={"pf-v6-u-py-md"}>
             <ToggleGroupItem
@@ -161,20 +208,37 @@ export function SignInPage({
       <LoginPage
         backgroundImgSrc="/assets/images/pfbg-icon.svg"
         loginTitle={t("homepage.page_header", { product: productName })}
-        loginSubtitle={t("login-in-page.login_sub_title")}
+        loginSubtitle={loginSubtitle}
         textContent={t("login-in-page.text_content", { product: productName })}
         brandImgSrc={
           isDarkMode
             ? "/full_logo_hori_reverse.svg"
             : "/full_logo_hori_default.svg"
         }
-        footerListItems={t("login-in-page.footer_text")}
-        socialMediaLoginContent={learnMoreResource}
+        footerListItems={learnMoreResource}
+        footerListVariants={ListVariant.inline}
         signUpForAccountMessage={
           hasMultipleClusters && (
-            <Link href={"/"}>
-              {t("login-in-page.log_into_a_different_cluster")}
-            </Link>
+            <LoginMainFooterBandItem>
+              <Link href={"/"}>
+                {t("login-in-page.log_into_a_different_cluster")}
+              </Link>
+            </LoginMainFooterBandItem>
+          )
+        }
+        forgotCredentials={
+          hasMultipleClusters &&
+          previousClusterId &&
+          previousClusterName &&
+          previousClusterId !== kafkaId && (
+            <LoginMainFooterBandItem>
+              <Link href={`/kafka/${previousClusterId}/overview`}>
+                <AngleLeftIcon />{" "}
+                {t.rich("login-in-page.stay_logged_in", {
+                  clustername: previousClusterName,
+                })}
+              </Link>
+            </LoginMainFooterBandItem>
           )
         }
       >

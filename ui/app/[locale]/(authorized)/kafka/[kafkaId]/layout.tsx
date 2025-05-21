@@ -2,17 +2,14 @@ import { ClusterLinks } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/Cluste
 import { getAuthOptions } from "@/app/api/auth/[...nextauth]/auth-options";
 import { AppLayout } from "@/components/AppLayout";
 import { AppLayoutProvider } from "@/components/AppLayoutProvider";
-import {
-  Breadcrumb,
-  PageBreadcrumb,
-  PageGroup,
-} from "@/libs/patternfly/react-core";
+import { PageBreadcrumb, PageGroup } from "@/libs/patternfly/react-core";
 import { getServerSession } from "next-auth";
 import { useTranslations } from "next-intl";
 import { PropsWithChildren, ReactNode, Suspense } from "react";
 import { KafkaParams } from "./kafka.params";
-import { getKafkaCluster } from "@/api/kafka/actions";
+import { getKafkaCluster, getKafkaClusters } from "@/api/kafka/actions";
 import { NoDataErrorState } from "@/components/NoDataErrorState";
+import { ClusterInfo } from "@/components/AppDropdown";
 
 export default async function AsyncLayout({
   children,
@@ -30,11 +27,27 @@ export default async function AsyncLayout({
   const session = await getServerSession(authOptions);
   const response = await getKafkaCluster(kafkaId);
 
+  const clusters = (await getKafkaClusters(undefined, { pageSize: 1000 }))
+    ?.payload;
+
+  const clusterInfoList = clusters?.data.map((cluster: any) => {
+    const id = cluster.id;
+    const name = cluster.attributes?.name;
+    const namespace = cluster.attributes?.namespace ?? "Not provided";
+    const authMethod =
+      cluster.meta?.authentication?.method ?? "no authentication";
+
+    return {
+      clusterName: name,
+      projectName: namespace,
+      authenticationMethod: authMethod,
+      id: id,
+    };
+  });
+
   if (response.errors) {
     return <NoDataErrorState errors={response.errors} />;
   }
-
-  const cluster = response.payload;
 
   return (
     <Layout
@@ -43,6 +56,7 @@ export default async function AsyncLayout({
       activeBreadcrumb={activeBreadcrumb}
       header={header}
       modal={modal}
+      clusterInfoList={clusterInfoList || []}
     >
       {children}
     </Layout>
@@ -56,12 +70,14 @@ function Layout({
   modal,
   kafkaId,
   username,
+  clusterInfoList,
 }: PropsWithChildren<{
   kafkaId: string;
   username: string;
   header: ReactNode;
   activeBreadcrumb: ReactNode;
   modal: ReactNode;
+  clusterInfoList: ClusterInfo[];
 }>) {
   const t = useTranslations();
   return (
@@ -70,11 +86,10 @@ function Layout({
         username={username}
         kafkaId={kafkaId}
         sidebar={<ClusterLinks kafkaId={kafkaId} />}
+        clusterInfoList={clusterInfoList}
       >
         <PageGroup stickyOnBreakpoint={{ default: "top" }}>
-          <PageBreadcrumb>
-            <Breadcrumb>{activeBreadcrumb}</Breadcrumb>
-          </PageBreadcrumb>
+          <PageBreadcrumb>{activeBreadcrumb}</PageBreadcrumb>
           {header}
         </PageGroup>
         <Suspense>{children}</Suspense>
