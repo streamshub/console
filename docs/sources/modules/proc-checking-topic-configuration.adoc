@@ -7,11 +7,11 @@ The *Configuration* tab presents a list of configuration values for the topic.
 
 .Procedure
 
-. From the StreamsHub Console, log in to the Kafka cluster, then click *Topics*. 
-. Click the name of the topic you want to check from the *Topics* page.
+. Log in to the Kafka cluster in the StreamsHub Console, then click *Topics*.
+. From the *Topics* page, click the name of the topic you want to inspect.
 . Check the information on the *Configuration* tab.
 
-You can filter for the properties you wish to check, including selecting by data source:
+You can filter for the properties you want to check, including selecting by data source:
 
 * *DEFAULT_CONFIG* properties have a predefined default value. This value is used when there are no user-defined values for those properties. 
 * *STATIC_BROKER_CONFIG* properties have predefined values that apply to the entire broker and, by extension, to all topics managed by that broker. This value is used when there are no user-defined values for those properties. 
