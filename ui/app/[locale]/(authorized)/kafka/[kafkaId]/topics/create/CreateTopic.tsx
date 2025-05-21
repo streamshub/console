@@ -110,74 +110,72 @@ export function CreateTopic({
   const formInvalid = errors !== undefined;
 
   return (
-    <PageSection hasBodyWrapper={false} type={"wizard"}>
-      <Wizard title={t("CreateTopic.title")} onClose={() => router.back()}>
-        <WizardStep
-          name={t("CreateTopic.topic_details")}
-          id="step-details"
-          footer={
-            <SkipReviewFooter
-              formInvalid={formInvalid}
-              onClick={(success) => validate(success)}
-              loading={pending || loading}
-            />
-          }
-        >
-          <StepDetails
-            name={name}
-            partitions={partitions}
-            replicas={replicas}
-            maxReplicas={maxReplicas}
-            onNameChange={setName}
-            onPartitionsChange={setPartitions}
-            onReplicasChange={setReplicas}
-            errors={errors}
+    <Wizard title={t("CreateTopic.title")} onClose={() => router.back()}>
+      <WizardStep
+        name={t("CreateTopic.topic_details")}
+        id="step-details"
+        footer={
+          <SkipReviewFooter
+            formInvalid={formInvalid}
+            onClick={(success) => validate(success)}
+            loading={pending || loading}
           />
-        </WizardStep>
-        <WizardStep
-          name={t("CreateTopic.options")}
-          id="step-options"
-          footer={
-            <AsyncFooter
-              nextStepId={"step-review"}
-              nextDisabled={formInvalid || errors !== undefined}
-              onClick={(success) => validate(success)}
-              loading={pending || loading}
-              primaryLabel={t("CreateTopic.next")}
-            />
-          }
-        >
-          <StepOptions
-            options={options}
-            initialOptions={initialOptions}
-            onChange={setOptions}
-            errors={errors}
+        }
+      >
+        <StepDetails
+          name={name}
+          partitions={partitions}
+          replicas={replicas}
+          maxReplicas={maxReplicas}
+          onNameChange={setName}
+          onPartitionsChange={setPartitions}
+          onReplicasChange={setReplicas}
+          errors={errors}
+        />
+      </WizardStep>
+      <WizardStep
+        name={t("CreateTopic.options")}
+        id="step-options"
+        footer={
+          <AsyncFooter
+            nextStepId={"step-review"}
+            nextDisabled={formInvalid || errors !== undefined}
+            onClick={(success) => validate(success)}
+            loading={pending || loading}
+            primaryLabel={t("CreateTopic.next")}
           />
-        </WizardStep>
-        <WizardStep
-          name={t("CreateTopic.review")}
-          id="step-review"
-          footer={
-            <AsyncFooter
-              nextStepId={""}
-              nextDisabled={formInvalid}
-              onClick={save}
-              loading={pending || loading}
-              primaryLabel={t("CreateTopic.create_topic")}
-            />
-          }
-        >
-          <StepReview
-            name={name}
-            partitions={partitions}
-            replicas={replicas}
-            options={options}
-            initialOptions={initialOptions}
-            errors={errors}
+        }
+      >
+        <StepOptions
+          options={options}
+          initialOptions={initialOptions}
+          onChange={setOptions}
+          errors={errors}
+        />
+      </WizardStep>
+      <WizardStep
+        name={t("CreateTopic.review")}
+        id="step-review"
+        footer={
+          <AsyncFooter
+            nextStepId={""}
+            nextDisabled={formInvalid}
+            onClick={save}
+            loading={pending || loading}
+            primaryLabel={t("CreateTopic.create_topic")}
           />
-        </WizardStep>
-      </Wizard>
-    </PageSection>
+        }
+      >
+        <StepReview
+          name={name}
+          partitions={partitions}
+          replicas={replicas}
+          options={options}
+          initialOptions={initialOptions}
+          errors={errors}
+        />
+      </WizardStep>
+    </Wizard>
   );
 }
 
