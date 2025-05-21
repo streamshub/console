@@ -100,14 +100,10 @@ public class NodeService {
     }
 
     public CompletionStage<List<Node>> listNodes(ListRequestContext<Node> listSupport) {
-        Admin adminClient = kafkaContext.admin();
-        var clusterResult = adminClient.describeCluster();
-        var quorumResult = MetadataQuorumSupport.quorumInfo(adminClient.describeMetadataQuorum());
         var summary = new NodeSummary();
         listSupport.meta().put("summary", summary);
 
-        return CompletableFuture.allOf(clusterResult.nodes().toCompletionStage().toCompletableFuture(), quorumResult)
-            .thenComposeAsync(nothing -> getNodes(clusterResult, quorumResult), threadContext.currentContextExecutor())
+        return listNodes()
             .thenApply(nodes -> nodes.stream()
                     .map(node -> tallySummary(node, summary))
                     .filter(listSupport)
@@ -117,6 +113,15 @@ public class NodeService {
                     .dropWhile(listSupport::beforePageBegin)
                     .takeWhile(listSupport::pageCapacityAvailable)
                     .toList());
+    }
+
+    CompletionStage<List<Node>> listNodes() {
+        Admin adminClient = kafkaContext.admin();
+        var clusterResult = adminClient.describeCluster();
+        var quorumResult = MetadataQuorumSupport.quorumInfo(adminClient.describeMetadataQuorum());
+
+        return CompletableFuture.allOf(clusterResult.nodes().toCompletionStage().toCompletableFuture(), quorumResult)
+            .thenComposeAsync(nothing -> getNodes(clusterResult, quorumResult), threadContext.currentContextExecutor());
     }
 
     public CompletionStage<Map<String, ConfigEntry>> describeConfigs(String nodeId) {

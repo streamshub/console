@@ -89,17 +89,34 @@ public class TopicService {
     @Inject
     TopicDescribeService topicDescribe;
 
+    @Inject
+    NodeService nodeService;
+
     public CompletionStage<NewTopic> createTopic(NewTopic topic, boolean validateOnly) {
         permissionService.assertPermitted(Topic.API_TYPE, Privilege.CREATE, topic.name());
+
+        return validate(topic).thenComposeAsync(
+                nothing -> createTopicValidated(topic, validateOnly),
+                threadContext.currentContextExecutor()
+        );
+    }
+
+    private CompletionStage<Void> validate(NewTopic topic) {
+        return nodeService.listNodes()
+                .thenAccept(nodes -> validationService.validate(new TopicValidation.NewTopicInputs(
+                        nodes,
+                        Collections.emptyMap(),
+                        topic
+                )));
+    }
+
+    private CompletionStage<NewTopic> createTopicValidated(NewTopic topic, boolean validateOnly) {
         Kafka kafka = kafkaContext.resource();
-        Admin adminClient = kafkaContext.admin();
         boolean unmanagedTopics = Optional.ofNullable(kafka)
                 .map(Kafka::getSpec)
                 .map(KafkaSpec::getEntityOperator)
                 .map(EntityOperatorSpec::getTopicOperator)
                 .isEmpty();
-
-        validationService.validate(new TopicValidation.NewTopicInputs(kafka, Collections.emptyMap(), topic));
 
         String topicName = topic.name();
         org.apache.kafka.clients.admin.NewTopic newTopic;
@@ -134,11 +151,12 @@ public class TopicService {
         }
 
         if (validateOnly || unmanagedTopics) {
+            Admin adminClient = kafkaContext.admin();
             CreateTopicsResult result = adminClient
                     .createTopics(List.of(newTopic), new CreateTopicsOptions().validateOnly(validateOnly));
 
             return result.all()
-                    .thenApply(nothing -> NewTopic.fromKafkaModel(topicName, result))
+                    .thenApply(nothing1 -> NewTopic.fromKafkaModel(topicName, result))
                     .toCompletionStage();
         } else {
             Map<String, Object> newConfigs = new LinkedHashMap<>(newTopic.configs());
@@ -159,7 +177,10 @@ public class TopicService {
                     .build();
 
             CompletableFuture<NewTopic> promise = new CompletableFuture<>();
-            final Runnable informerCheck = new Runnable() {
+
+            class TopicCreationCheck implements Runnable {
+                final Runnable task = threadContext.contextualRunnable(this);
+
                 @Override
                 public void run() {
                     try {
@@ -167,6 +188,10 @@ public class TopicService {
                     } catch (Exception e) {
                         promise.completeExceptionally(e);
                     }
+                }
+
+                void schedule(long delayMs) {
+                    scheduler.schedule(task, delayMs, TimeUnit.MILLISECONDS);
                 }
 
                 private void pollTopic() {
@@ -185,25 +210,38 @@ public class TopicService {
                                 List.of(Topic.Fields.CONFIGS, Topic.Fields.PARTITIONS),
                                 KafkaOffsetSpec.LATEST)
                             .thenAccept(createdTopic -> {
-                                NewTopic response = new NewTopic(
-                                    topicName,
-                                    createdTopic.getId(),
-                                    createdTopic.partitions().getPrimary().size(),
-                                    replicationFactor.orElse(null),
-                                    Collections.emptyMap(),
-                                    createdTopic.configs().getPrimary()
-                                );
-                                promise.complete(response);
+                                if (createdTopic.partitions().isPrimaryEmpty()
+                                        || createdTopic.configs().isPrimaryEmpty()) {
+                                    // Topic hasn't fully been created, check again
+                                    schedule(100);
+                                } else {
+                                    NewTopic response = new NewTopic(
+                                        topicName,
+                                        createdTopic.getId(),
+                                        createdTopic.partitions().getPrimary().size(),
+                                        replicationFactor.orElse(null),
+                                        Collections.emptyMap(),
+                                        createdTopic.configs().getPrimary()
+                                    );
+                                    promise.complete(response);
+                                }
                             })
                             .exceptionally(e -> {
-                                promise.completeExceptionally(e);
+                                if (e.getCause() instanceof UnknownTopicIdException) {
+                                    // Topic hasn't fully been created, check again
+                                    schedule(100);
+                                } else {
+                                    promise.completeExceptionally(e);
+                                }
                                 return null;
                             });
                     } else {
-                        scheduler.schedule(threadContext.contextualRunnable(this), 100, TimeUnit.MILLISECONDS);
+                        schedule(100);
                     }
                 }
-            };
+            }
+
+            final TopicCreationCheck informerCheck = new TopicCreationCheck();
 
             CompletableFuture
                 .runAsync(() -> k8s.resource(topicResource).create())
@@ -211,9 +249,7 @@ public class TopicService {
                     promise.completeExceptionally(e);
                     return null;
                 })
-                .thenRunAsync(
-                        () -> scheduler.schedule(threadContext.contextualRunnable(informerCheck), 0, TimeUnit.MILLISECONDS),
-                        threadContext.currentContextExecutor())
+                .thenRunAsync(() -> informerCheck.schedule(0), threadContext.currentContextExecutor())
                 .exceptionally(e -> {
                     promise.completeExceptionally(e);
                     return null;
@@ -243,15 +279,31 @@ public class TopicService {
      * </ul>
      */
     public CompletionStage<Void> patchTopic(String topicId, TopicPatch patch, boolean validateOnly) {
-        Kafka kafka = kafkaContext.resource();
-
         return describeTopic(topicId, List.of(Topic.Fields.CONFIGS), KafkaOffsetSpec.LATEST)
-            .thenApply(topic -> validationService.validate(new TopicValidation.TopicPatchInputs(kafka, topic, patch)))
-            .thenApply(TopicValidation.TopicPatchInputs::topic)
-            .thenComposeAsync(topic -> topicDescribe.getManagedTopic(topic.name())
-                    .map(kafkaTopic -> patchManagedTopic(kafkaTopic, patch, validateOnly))
-                    .orElseGet(() -> patchUnmanagedTopic(topic, patch, validateOnly)),
-                threadContext.currentContextExecutor());
+            .thenComposeAsync(
+                    topic -> validate(topic, patch),
+                    threadContext.currentContextExecutor()
+            )
+            .thenComposeAsync(
+                    topic -> patchTopicValidated(topic, patch, validateOnly),
+                    threadContext.currentContextExecutor()
+            );
+    }
+
+    private CompletionStage<Topic> validate(Topic topic, TopicPatch patch) {
+        return nodeService.listNodes()
+                .thenApply(nodes -> validationService.validate(new TopicValidation.TopicPatchInputs(
+                        nodes,
+                        topic,
+                        patch
+                )))
+                .thenApply(TopicValidation.TopicPatchInputs::topic);
+    }
+
+    private CompletionStage<Void> patchTopicValidated(Topic topic, TopicPatch patch, boolean validateOnly) {
+        return topicDescribe.getManagedTopic(topic.name())
+                .map(kafkaTopic -> patchManagedTopic(kafkaTopic, patch, validateOnly))
+                .orElseGet(() -> patchUnmanagedTopic(topic, patch, validateOnly));
     }
 
     public CompletionStage<Void> deleteTopic(String topicId) {
