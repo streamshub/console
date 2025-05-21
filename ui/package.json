@@ -26,7 +26,7 @@
     "@patternfly/quickstarts": "^6.1.0",
     "@stdlib/string-truncate": "^0.2.2",
     "@stdlib/string-truncate-middle": "^0.2.2",
-    "@tanstack/react-virtual": "^3.13.8",
+    "@tanstack/react-virtual": "^3.13.9",
     "@types/js-yaml": "^4.0.9",
     "@types/node": "22.15.19",
     "@types/react": "18.3.12",
