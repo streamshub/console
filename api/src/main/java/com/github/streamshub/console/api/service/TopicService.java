@@ -128,7 +128,7 @@ public class TopicService {
                     .stream()
                     .findFirst()
                     .map(List::size)
-                    .map(Short.class::cast);
+                    .map(Integer::shortValue);
             newTopic = new org.apache.kafka.clients.admin.NewTopic(
                     topicName,
                     topic.replicasAssignments()
@@ -159,7 +159,9 @@ public class TopicService {
                     .thenApply(nothing1 -> NewTopic.fromKafkaModel(topicName, result))
                     .toCompletionStage();
         } else {
-            Map<String, Object> newConfigs = new LinkedHashMap<>(newTopic.configs());
+            Map<String, Object> newConfigs = Optional.ofNullable(newTopic.configs())
+                    .<Map<String, Object>>map(LinkedHashMap::new)
+                    .orElse(null);
 
             KafkaTopic topicResource = new KafkaTopicBuilder()
                     .withNewMetadata()

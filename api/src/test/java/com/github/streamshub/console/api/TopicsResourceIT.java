@@ -14,6 +14,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.logging.Level;
@@ -94,6 +95,7 @@ import io.quarkus.test.common.http.TestHTTPEndpoint;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.strimzi.api.kafka.model.kafka.Kafka;
+import io.strimzi.api.kafka.model.kafka.KafkaBuilder;
 import io.strimzi.api.kafka.model.topic.KafkaTopic;
 import io.strimzi.api.kafka.model.topic.KafkaTopicBuilder;
 
@@ -122,6 +124,7 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.anyMap;
@@ -1851,6 +1854,56 @@ class TopicsResourceIT {
             .body("errors.size()", is(1))
             .body("errors[0].status", is("400"))
             .body("errors[0].code", is("4003"));
+    }
+
+    @Test
+    void testCreateTopicWithStrimziManagement() {
+        client.resources(Kafka.class).inNamespace("default").withName(clusterName1).edit(k -> {
+            // Enable the topic entity operator for kafka1
+            return new KafkaBuilder(k)
+                .editSpec()
+                    .editOrNewEntityOperator()
+                        .editOrNewTopicOperator()
+                        .endTopicOperator()
+                    .endEntityOperator()
+                .endSpec()
+                .build();
+        });
+
+        String topicName = "t-" + UUID.randomUUID().toString();
+
+        var response = CompletableFuture.supplyAsync(() ->
+            whenRequesting(req -> req
+                .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
+                .body(Json.createObjectBuilder()
+                        .add("data", Json.createObjectBuilder()
+                                .add("type", "topics")
+                                .add("attributes", Json.createObjectBuilder()
+                                        .add("name", topicName)))
+                        .build()
+                        .toString())
+                .post("", clusterId1)));
+
+        // Acting as Strimzi Topic Operator
+        String topicId = topicUtils.createTopics(List.of(topicName), 1).get(topicName);
+        var topicClient = client.resources(KafkaTopic.class).inNamespace("default").withName(topicName);
+        await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertNotNull(topicClient.get()));
+        topicClient.editStatus(t -> {
+            return new KafkaTopicBuilder(t)
+                    .withNewStatus()
+                        .withTopicId(topicId)
+                        .addNewCondition()
+                            .withType("Ready")
+                            .withStatus("True")
+                        .endCondition()
+                    .endStatus()
+                    .build();
+        });
+
+        response.join()
+            .assertThat()
+            .statusCode(is(Status.CREATED.getStatusCode()))
+            .body("data.id", is(topicId));
     }
 
     @Test
