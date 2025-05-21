@@ -87,7 +87,7 @@ public class TopicsResource {
         description = "New topic successfully created",
         content = @Content(schema = @Schema(implementation = NewTopic.NewTopicDocument.class)))
     // authorization checked by TopicService
-    public Response createTopic(
+    public CompletionStage<Response> createTopic(
             @Parameter(description = "Cluster identifier")
             @PathParam("clusterId")
             String clusterId,
@@ -111,12 +111,13 @@ public class TopicsResource {
 
         final UriBuilder location = uriInfo.getRequestUriBuilder();
         final boolean validateOnly = Boolean.TRUE.equals(topic.meta("validateOnly"));
-        var entity = new NewTopic.NewTopicDocument(topicService.createTopic(topic.getData().getAttributes(), validateOnly));
 
-        return Response.status(validateOnly ? Status.OK : Status.CREATED)
-            .entity(entity)
-            .location(location.path(entity.getData().getId()).build())
-            .build();
+        return topicService.createTopic(topic.getData().getAttributes(), validateOnly)
+            .thenApply(NewTopic.NewTopicDocument::new)
+            .thenApply(entity -> Response.status(validateOnly ? Status.OK : Status.CREATED)
+                    .entity(entity)
+                    .location(location.path(entity.getData().getId()).build())
+                    .build());
     }
 
     @Path("{topicId}")

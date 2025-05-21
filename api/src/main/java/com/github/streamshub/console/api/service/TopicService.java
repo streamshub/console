@@ -9,9 +9,12 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -43,8 +46,11 @@ import com.github.streamshub.console.config.security.Privilege;
 
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.strimzi.api.kafka.model.kafka.Kafka;
+import io.strimzi.api.kafka.model.kafka.KafkaSpec;
+import io.strimzi.api.kafka.model.kafka.entityoperator.EntityOperatorSpec;
 import io.strimzi.api.kafka.model.topic.KafkaTopic;
 import io.strimzi.api.kafka.model.topic.KafkaTopicBuilder;
+import io.strimzi.api.kafka.model.topic.KafkaTopicStatus;
 
 import static org.apache.kafka.clients.admin.NewPartitions.increaseTo;
 
@@ -53,6 +59,9 @@ public class TopicService {
 
     @Inject
     Logger logger;
+
+    @Inject
+    ScheduledExecutorService scheduler;
 
     /**
      * ThreadContext of the request thread. This is used to execute asynchronous
@@ -80,17 +89,29 @@ public class TopicService {
     @Inject
     TopicDescribeService topicDescribe;
 
-    public NewTopic createTopic(NewTopic topic, boolean validateOnly) {
+    public CompletionStage<NewTopic> createTopic(NewTopic topic, boolean validateOnly) {
         permissionService.assertPermitted(Topic.API_TYPE, Privilege.CREATE, topic.name());
         Kafka kafka = kafkaContext.resource();
         Admin adminClient = kafkaContext.admin();
+        boolean unmanagedTopics = Optional.ofNullable(kafka)
+                .map(Kafka::getSpec)
+                .map(KafkaSpec::getEntityOperator)
+                .map(EntityOperatorSpec::getTopicOperator)
+                .isEmpty();
 
         validationService.validate(new TopicValidation.NewTopicInputs(kafka, Collections.emptyMap(), topic));
 
         String topicName = topic.name();
         org.apache.kafka.clients.admin.NewTopic newTopic;
+        Optional<Short> replicationFactor;
 
         if (topic.replicasAssignments() != null) {
+            replicationFactor = topic.replicasAssignments()
+                    .values()
+                    .stream()
+                    .findFirst()
+                    .map(List::size)
+                    .map(Short.class::cast);
             newTopic = new org.apache.kafka.clients.admin.NewTopic(
                     topicName,
                     topic.replicasAssignments()
@@ -98,10 +119,11 @@ public class TopicService {
                         .stream()
                         .collect(Collectors.toMap(e -> Integer.valueOf(e.getKey()), Map.Entry::getValue)));
         } else {
+            replicationFactor = Optional.ofNullable(topic.replicationFactor());
             newTopic = new org.apache.kafka.clients.admin.NewTopic(
                     topicName,
                     Optional.ofNullable(topic.numPartitions()),
-                    Optional.ofNullable(topic.replicationFactor()));
+                    replicationFactor);
         }
 
         if (topic.configs() != null) {
@@ -111,14 +133,94 @@ public class TopicService {
                     .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().getValue())));
         }
 
-        CreateTopicsResult result = adminClient
-                .createTopics(List.of(newTopic), new CreateTopicsOptions().validateOnly(validateOnly));
+        if (validateOnly || unmanagedTopics) {
+            CreateTopicsResult result = adminClient
+                    .createTopics(List.of(newTopic), new CreateTopicsOptions().validateOnly(validateOnly));
 
-        return result.all()
-                .thenApply(nothing -> NewTopic.fromKafkaModel(topicName, result))
-                .toCompletionStage()
-                .toCompletableFuture()
-                .join();
+            return result.all()
+                    .thenApply(nothing -> NewTopic.fromKafkaModel(topicName, result))
+                    .toCompletionStage();
+        } else {
+            Map<String, Object> newConfigs = new LinkedHashMap<>(newTopic.configs());
+
+            KafkaTopic topicResource = new KafkaTopicBuilder()
+                    .withNewMetadata()
+                        // Warning suppressed because unmanagedTopics would have been true above
+                        .withNamespace(kafka.getMetadata().getNamespace()) // NOSONAR
+                        .withName(topicName)
+                        .addToLabels("strimzi.io/cluster", kafka.getMetadata().getName())
+                    .endMetadata()
+                    .withNewSpec()
+                        .withTopicName(topicName)
+                        .withPartitions(newTopic.numPartitions())
+                        .withReplicas(replicationFactor.map(Integer::valueOf).orElse(null))
+                        .withConfig(newConfigs)
+                    .endSpec()
+                    .build();
+
+            CompletableFuture<NewTopic> promise = new CompletableFuture<>();
+            final Runnable informerCheck = new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        pollTopic();
+                    } catch (Exception e) {
+                        promise.completeExceptionally(e);
+                    }
+                }
+
+                private void pollTopic() {
+                    Optional<KafkaTopic> managedTopic = topicDescribe.getManagedTopic(topicName);
+                    boolean ready = managedTopic
+                        .map(KafkaTopic::getStatus)
+                        .map(KafkaTopicStatus::getConditions)
+                        .map(List::stream)
+                        .orElseGet(Stream::empty)
+                        .filter(c -> "Ready".equals(c.getType()))
+                        .anyMatch(c -> "True".equals(c.getStatus()));
+
+                    if (managedTopic.isPresent() && ready) {
+                        topicDescribe.describeTopic(
+                                managedTopic.get().getStatus().getTopicId(),
+                                List.of(Topic.Fields.CONFIGS, Topic.Fields.PARTITIONS),
+                                KafkaOffsetSpec.LATEST)
+                            .thenAccept(createdTopic -> {
+                                NewTopic response = new NewTopic(
+                                    topicName,
+                                    createdTopic.getId(),
+                                    createdTopic.partitions().getPrimary().size(),
+                                    replicationFactor.orElse(null),
+                                    Collections.emptyMap(),
+                                    createdTopic.configs().getPrimary()
+                                );
+                                promise.complete(response);
+                            })
+                            .exceptionally(e -> {
+                                promise.completeExceptionally(e);
+                                return null;
+                            });
+                    } else {
+                        scheduler.schedule(threadContext.contextualRunnable(this), 100, TimeUnit.MILLISECONDS);
+                    }
+                }
+            };
+
+            CompletableFuture
+                .runAsync(() -> k8s.resource(topicResource).create())
+                .exceptionally(e -> {
+                    promise.completeExceptionally(e);
+                    return null;
+                })
+                .thenRunAsync(
+                        () -> scheduler.schedule(threadContext.contextualRunnable(informerCheck), 0, TimeUnit.MILLISECONDS),
+                        threadContext.currentContextExecutor())
+                .exceptionally(e -> {
+                    promise.completeExceptionally(e);
+                    return null;
+                });
+
+            return promise;
+        }
     }
 
     public CompletionStage<List<Topic>> listTopics(List<String> fields, String offsetSpec, ListRequestContext<Topic> listSupport) {
