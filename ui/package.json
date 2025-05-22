@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@patternfly/patternfly": "^6.1.0",
+    "@patternfly/quickstarts": "^6.1.0",
     "@patternfly/react-charts": "^8.1.0",
     "@patternfly/react-core": "^6.1.0",
     "@patternfly/react-drag-drop": "^6.1.0",
@@ -23,7 +24,6 @@
     "@patternfly/react-table": "^6.1.0",
     "@patternfly/react-tokens": "^6.1.0",
     "@patternfly/react-user-feedback": "^6.0.0",
-    "@patternfly/quickstarts": "^6.1.0",
     "@stdlib/string-truncate": "^0.2.2",
     "@stdlib/string-truncate-middle": "^0.2.2",
     "@tanstack/react-virtual": "^3.13.9",
