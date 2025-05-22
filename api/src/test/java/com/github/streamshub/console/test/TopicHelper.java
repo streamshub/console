@@ -5,6 +5,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -18,6 +19,8 @@ import java.util.stream.Collectors;
 
 import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.clients.admin.AdminClientConfig;
+import org.apache.kafka.clients.admin.AlterConfigOp;
+import org.apache.kafka.clients.admin.NewPartitions;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.clients.admin.OffsetSpec;
 import org.apache.kafka.clients.admin.RecordsToDelete;
@@ -29,6 +32,7 @@ import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.TopicPartitionInfo;
+import org.apache.kafka.common.config.ConfigResource;
 import org.apache.kafka.common.errors.UnknownTopicOrPartitionException;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.eclipse.microprofile.config.Config;
@@ -166,6 +170,38 @@ public class TopicHelper {
         }
 
         return topicIds;
+    }
+
+    public void createPartitions(String name, int totalPartitions) {
+        try (Admin admin = Admin.create(adminConfig)) {
+            var result = admin.createPartitions(Map.of(name, NewPartitions.increaseTo(totalPartitions)));
+            result.all()
+                .toCompletionStage()
+                .thenRun(() -> log.infof("Partitions increased to %d for topic %s", totalPartitions, name))
+                .toCompletableFuture()
+                .get(20, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            log.warn("Process interrupted", e);
+            Thread.currentThread().interrupt();
+        } catch (Exception e) {
+            fail(e);
+        }
+    }
+
+    public void alterTopicConfigs(String name, Collection<AlterConfigOp> alteredConfigs) {
+        try (Admin admin = Admin.create(adminConfig)) {
+            var result = admin.incrementalAlterConfigs(Map.of(new ConfigResource(ConfigResource.Type.TOPIC, name), alteredConfigs));
+            result.all()
+                .toCompletionStage()
+                .thenRun(() -> log.infof("Altered configs for topic %s", name))
+                .toCompletableFuture()
+                .get(20, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            log.warn("Process interrupted", e);
+            Thread.currentThread().interrupt();
+        } catch (Exception e) {
+            fail(e);
+        }
     }
 
     /**
