@@ -23,7 +23,7 @@ public class PwPageUrls {
         return getConsoleUrl(tcc) + getKafkaBaseUrl(kafkaName) + "/overview";
     }
 
-    public static String getBrokersPage(TestCaseConfig tcc, String kafkaName) {
+    public static String getNodesPage(TestCaseConfig tcc, String kafkaName) {
         return getConsoleUrl(tcc) + getKafkaBaseUrl(kafkaName) + "/nodes";
     }
 }

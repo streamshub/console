@@ -44,30 +44,36 @@ class KafkaST extends AbstractST {
             .getAnnotations()
             .getOrDefault(ResourceAnnotations.ANNO_STRIMZI_IO_PAUSE_RECONCILIATION, "false"));
 
-        LOGGER.debug("Pause Kafka reconciliation using UI");
+        LOGGER.info("Pause Kafka reconciliation using UI");
         tcc.page().navigate(PwPageUrls.getOverviewPage(tcc, tcc.kafkaName()), PwUtils.getDefaultNavigateOpts());
-        // Open popup
+
+        LOGGER.debug("Open pop-up modal for pause reconciliation");
         PwUtils.waitForLocatorVisible(tcc, CssSelectors.C_OVERVIEW_KAFKA_PAUSE_RECONCILIATION_BUTTON);
         PwUtils.waitForContainsText(tcc, CssSelectors.C_OVERVIEW_KAFKA_PAUSE_RECONCILIATION_BUTTON, "Pause Reconciliation");
         tcc.page().click(CssSelectors.C_OVERVIEW_KAFKA_PAUSE_RECONCILIATION_BUTTON);
-        // Assert popup
+
+        LOGGER.debug("Check pop-up modal for pause reconciliation");
         PwUtils.waitForLocatorVisible(tcc, CssSelectors.C_OVERVIEW_RECONCILIATION_MODAL);
         PwUtils.waitForContainsText(tcc, CssSelectors.C_OVERVIEW_RECONCILIATION_MODAL_HEADER, "Pause cluster reconciliation?");
         PwUtils.waitForContainsText(tcc, CssSelectors.C_OVERVIEW_RECONCILIATION_MODAL_BODY,
             "While paused, any changes to the cluster configuration will be ignored until reconciliation is resumed");
         PwUtils.waitForContainsText(tcc, CssSelectors.C_OVERVIEW_RECONCILIATION_MODAL_CANCEL_BUTTON, "Cancel");
         PwUtils.waitForContainsText(tcc, CssSelectors.C_OVERVIEW_RECONCILIATION_MODAL_CONFIRM_BUTTON, "Confirm");
-        // Click on confirm
+
+        LOGGER.debug("Confirm pause reconciliation");
         tcc.page().click(CssSelectors.C_OVERVIEW_RECONCILIATION_MODAL_CONFIRM_BUTTON);
 
         // Check aftermath
+        LOGGER.info("Verify UI state after pausing Kafka reconciliation");
         PwUtils.waitForLocatorVisible(tcc, CssSelectors.C_OVERVIEW_RECONCILIATION_PAUSED_NOTIFICATION);
         PwUtils.waitForContainsText(tcc, CssSelectors.C_OVERVIEW_RECONCILIATION_PAUSED_NOTIFICATION,
             "Cluster reconciliation paused. Changes to the Kafka resource will not be applied");
-        // Check Kafka
+
+        LOGGER.debug("Verify Kafka has pause reconciliation annotation set to true");
         WaitUtils.waitForKafkaAnnotationWithValue(tcc.namespace(), tcc.kafkaName(), ResourceAnnotations.ANNO_STRIMZI_IO_PAUSE_RECONCILIATION, "true");
 
         // Scale brokers, but expect nothing happens
+        LOGGER.info("Trying to fail scaling Kafka brokers count to {}", scaledBrokersCount);
         KafkaNodePool knp = ResourceUtils.getKubeResource(KafkaNodePool.class, tcc.namespace(), KafkaNamingUtils.brokerPoolName(tcc.kafkaName()));
         KubeResourceManager.get().createOrUpdateResourceWithWait(
             new KafkaNodePoolBuilder(knp)
@@ -81,19 +87,23 @@ class KafkaST extends AbstractST {
         assertEquals(scaledBrokersCount, knp.getSpec().getReplicas());
         // Node IDs should remain the same
         assertEquals(Constants.REGULAR_BROKER_REPLICAS, knp.getStatus().getNodeIds().size());
+
         // Kafka should have original Broker Pod count, but in spec there should be the new count
+        LOGGER.debug("Verify UI displays old broker count of {}", Constants.REGULAR_BROKER_REPLICAS);
         WaitUtils.waitForKafkaBrokerNodePoolReplicasInSpec(tcc.namespace(), tcc.kafkaName(), scaledBrokersCount);
         WaitUtils.waitForPodsReady(tcc.namespace(), Labels.getKnpBrokerLabelSelector(tcc.kafkaName()), Constants.REGULAR_BROKER_REPLICAS, true);
 
-        LOGGER.debug("Resume Kafka reconciliation using UI");
+        LOGGER.info("Resume Kafka reconciliation using UI");
         PwUtils.waitForLocatorVisible(tcc, CssSelectors.C_OVERVIEW_KAFKA_PAUSE_RECONCILIATION_BUTTON);
         PwUtils.waitForContainsText(tcc, CssSelectors.C_OVERVIEW_KAFKA_PAUSE_RECONCILIATION_BUTTON, "Resume Reconciliation");
         tcc.page().click(CssSelectors.C_OVERVIEW_KAFKA_PAUSE_RECONCILIATION_BUTTON);
         // Reconciliation is resumed and button should display Pause
         PwUtils.waitForContainsText(tcc, CssSelectors.C_OVERVIEW_KAFKA_PAUSE_RECONCILIATION_BUTTON, "Pause Reconciliation");
         // Check annotation
+        LOGGER.debug("Verify Kafka has pause reconciliation annotation set back to false");
         WaitUtils.waitForKafkaAnnotationWithValue(tcc.namespace(), tcc.kafkaName(), ResourceAnnotations.ANNO_STRIMZI_IO_PAUSE_RECONCILIATION, "false");
-        // Resuming reconciliation should trigger scaling, so check replicas
+        // Resuming reconciliation should trigger scaling
+        LOGGER.debug("Verify Kafka finally scaled brokers");
         WaitUtils.waitForPodsReady(tcc.namespace(), Labels.getKnpBrokerLabelSelector(tcc.kafkaName()), scaledBrokersCount, true);
     }
 
@@ -102,17 +112,19 @@ class KafkaST extends AbstractST {
         final TestCaseConfig tcc = getTestCaseConfig();
         final int scaledBrokersCount = 7;
 
-        // Check default state
-        // Verify overview and brokers page
+        LOGGER.info("Verify default Kafka broker count is {}", Constants.REGULAR_BROKER_REPLICAS);
+
+        LOGGER.debug("Verify default Kafka broker count on OverviewPage");
         tcc.page().navigate(PwPageUrls.getOverviewPage(tcc, tcc.kafkaName()));
         PwUtils.waitForContainsText(tcc, CssSelectors.C_OVERVIEW_CLUSTER_CARD_KAFKA_DATA_BROKER_COUNT,
             Constants.REGULAR_BROKER_REPLICAS + "/" + Constants.REGULAR_BROKER_REPLICAS);
 
-        tcc.page().navigate(PwPageUrls.getBrokersPage(tcc, tcc.kafkaName()));
+        LOGGER.debug("Verify default Kafka broker count on Nodes page");
+        tcc.page().navigate(PwPageUrls.getNodesPage(tcc, tcc.kafkaName()));
         PwUtils.waitForContainsText(tcc, CssSelectors.BROKERS_PAGE_HEADER_TITLE_BROKER_COUNT, Integer.toString(Constants.REGULAR_BROKER_REPLICAS));
         assertEquals(Constants.REGULAR_BROKER_REPLICAS, CssSelectors.getLocator(tcc, CssSelectors.BROKERS_PAGE_TABLE_BODY).all().size());
 
-        // Scale and wait for pods
+        LOGGER.debug("Scale Kafka brokers to {}", scaledBrokersCount);
         KubeResourceManager.get().createOrUpdateResourceWithWait(
             new KafkaNodePoolBuilder(ResourceUtils.getKubeResource(KafkaNodePool.class, tcc.namespace(), KafkaNamingUtils.brokerPoolName(tcc.kafkaName())))
                 .editSpec()
@@ -122,15 +134,20 @@ class KafkaST extends AbstractST {
 
         WaitUtils.waitForPodsReady(tcc.namespace(), Labels.getKnpBrokerLabelSelector(tcc.kafkaName()), scaledBrokersCount, true);
 
-        // Verify overview and brokers page
+        // Check Overview and Nodes page
+        LOGGER.info("Verify newly added Kafka brokers are displayed in UI");
+
+        LOGGER.debug("Verify new Kafka broker count on OverviewPage is {}", scaledBrokersCount);
         tcc.page().navigate(PwPageUrls.getOverviewPage(tcc, tcc.kafkaName()));
         PwUtils.waitForContainsText(tcc, CssSelectors.C_OVERVIEW_CLUSTER_CARD_KAFKA_DATA_BROKER_COUNT, scaledBrokersCount + "/" + scaledBrokersCount);
 
-        tcc.page().navigate(PwPageUrls.getBrokersPage(tcc, tcc.kafkaName()));
+        LOGGER.debug("Verify new Kafka broker count on Nodes page is {}", scaledBrokersCount);
+        tcc.page().navigate(PwPageUrls.getNodesPage(tcc, tcc.kafkaName()));
         PwUtils.waitForContainsText(tcc, CssSelectors.BROKERS_PAGE_HEADER_TITLE_BROKER_COUNT, Integer.toString(scaledBrokersCount));
         assertEquals(scaledBrokersCount, CssSelectors.getLocator(tcc, CssSelectors.BROKERS_PAGE_TABLE_BODY).all().size());
 
-        // Scale back to original count
+        // Scale back
+        LOGGER.info("Scale Kafka brokers back to the default count of {}", Constants.REGULAR_BROKER_REPLICAS);
         KubeResourceManager.get().createOrUpdateResourceWithWait(
             new KafkaNodePoolBuilder(ResourceUtils.getKubeResource(KafkaNodePool.class, tcc.namespace(), KafkaNamingUtils.brokerPoolName(tcc.kafkaName())))
                 .editSpec()
@@ -139,11 +156,15 @@ class KafkaST extends AbstractST {
                 .build());
         WaitUtils.waitForPodsReady(tcc.namespace(), Labels.getKnpBrokerLabelSelector(tcc.kafkaName()), Constants.REGULAR_BROKER_REPLICAS, true);
 
+        LOGGER.info("Verify current Kafka broker count is {}", Constants.REGULAR_BROKER_REPLICAS);
+
+        LOGGER.debug("Verify current Kafka broker count on OverviewPage is {}", Constants.REGULAR_BROKER_REPLICAS);
         tcc.page().navigate(PwPageUrls.getOverviewPage(tcc, tcc.kafkaName()));
         PwUtils.waitForContainsText(tcc, CssSelectors.C_OVERVIEW_CLUSTER_CARD_KAFKA_DATA_BROKER_COUNT,
             Constants.REGULAR_BROKER_REPLICAS + "/" + Constants.REGULAR_BROKER_REPLICAS);
 
-        tcc.page().navigate(PwPageUrls.getBrokersPage(tcc, tcc.kafkaName()));
+        LOGGER.debug("Verify current Kafka broker count on NodesPage is {}", Constants.REGULAR_BROKER_REPLICAS);
+        tcc.page().navigate(PwPageUrls.getNodesPage(tcc, tcc.kafkaName()));
         PwUtils.waitForContainsText(tcc, CssSelectors.BROKERS_PAGE_HEADER_TITLE_BROKER_COUNT, Integer.toString(Constants.REGULAR_BROKER_REPLICAS));
         assertEquals(Constants.REGULAR_BROKER_REPLICAS, CssSelectors.getLocator(tcc, CssSelectors.BROKERS_PAGE_TABLE_BODY).all().size());
     }
@@ -152,18 +173,23 @@ class KafkaST extends AbstractST {
     void testDisplayKafkaWarnings() {
         final TestCaseConfig tcc = getTestCaseConfig();
 
+        LOGGER.info("Verify default Kafka state - expecting no warnings or errors");
         tcc.page().navigate(PwPageUrls.getOverviewPage(tcc, tcc.kafkaName()));
+
         // Open warnings
         PwUtils.waitForLocatorVisible(tcc, CssSelectors.C_OVERVIEW_CLUSTER_CARD_KAFKA_WARNINGS_DROPDOWN_BUTTON);
         tcc.page().click(CssSelectors.C_OVERVIEW_CLUSTER_CARD_KAFKA_WARNINGS_DROPDOWN_BUTTON);
+
         // Check warnings list
+        LOGGER.debug("Verify warnings list contains only one row with `No messages` text");
         PwUtils.waitForLocatorVisible(tcc, CssSelectors.C_OVERVIEW_CLUSTER_CARD_KAFKA_WARNING_MESSAGE_ITEMS);
         PwUtils.waitForLocatorCount(tcc, 1,  CssSelectors.getLocator(tcc, CssSelectors.C_OVERVIEW_CLUSTER_CARD_KAFKA_WARNING_MESSAGE_ITEMS), true);
         assertTrue(PwUtils.getTrimmedText(CssSelectors.getLocator(tcc, CssSelectors.C_OVERVIEW_CLUSTER_CARD_KAFKA_WARNING_MESSAGE_ITEMS).nth(0).innerText()).contains("No messages"));
 
         Map<String, String> kafkaPodsSnapshots = KafkaUtils.createKafkaPodsSnapshots(tcc.namespace(), tcc.kafkaName());
 
-        // Cause failures by setting wrong inter broker protocol
+        // Make kafka fail
+        LOGGER.info("Cause Kafka status to display Warning state by setting incorrect inter broker protocol version");
         KubeResourceManager.get().replaceResource(ResourceUtils.getKubeResource(Kafka.class, tcc.namespace(), tcc.kafkaName()),
             kafka -> {
                 Map<String, Object> config = kafka.getSpec().getKafka().getConfig();
@@ -181,19 +207,21 @@ class KafkaST extends AbstractST {
         String warningMessage = ResourceUtils.getKubeResource(Kafka.class, tcc.namespace(), tcc.kafkaName()).getStatus().getConditions().stream()
             .filter(condition -> condition.getType().equals(ResourceStatus.WARNING.toString()) && condition.getStatus().equals(ConditionStatus.TRUE.toString()))
             .toList().get(0).getMessage();
+        LOGGER.debug("Kafka currently contains warning message: [{}]", warningMessage);
 
         // Reload using on page button
         tcc.page().click(CssSelectors.PAGES_HEADER_RELOAD_BUTTON);
 
         // Check warnings list
+        LOGGER.debug("Verify warnings list now contains one row with warning message");
         PwUtils.waitForLocatorVisible(tcc, CssSelectors.C_OVERVIEW_CLUSTER_CARD_KAFKA_WARNING_MESSAGE_ITEMS);
         PwUtils.waitForLocatorCount(tcc, 1,  CssSelectors.C_OVERVIEW_CLUSTER_CARD_KAFKA_WARNING_MESSAGE_ITEMS, true);
         assertTrue(PwUtils.getTrimmedText(CssSelectors.getLocator(tcc, CssSelectors.C_OVERVIEW_CLUSTER_CARD_KAFKA_WARNING_MESSAGE_ITEMS).nth(0).innerText()).contains(warningMessage));
 
-
         kafkaPodsSnapshots = KafkaUtils.createKafkaPodsSnapshots(tcc.namespace(), tcc.kafkaName());
 
         // Remove wrong config
+        LOGGER.info("Remove incorrect inter broker protocol version from Kafka config to remove the warning from it's status");
         KubeResourceManager.get().replaceResource(ResourceUtils.getKubeResource(Kafka.class, tcc.namespace(), tcc.kafkaName()),
             kafka -> {
                 kafka.getSpec().getKafka().getConfig().remove("inter.broker.protocol.version");
@@ -203,6 +231,7 @@ class KafkaST extends AbstractST {
         WaitUtils.waitForKafkaPodsRoll(tcc, kafkaPodsSnapshots);
         WaitUtils.waitForKafkaHasNoWarningStatus(tcc.namespace(), tcc.kafkaName());
 
+        LOGGER.debug("Reload page and verify that there is `No messages` in the warnings list again");
         tcc.page().reload(PwUtils.getDefaultReloadOpts());
 
         PwUtils.waitForLocatorVisible(tcc, CssSelectors.C_OVERVIEW_CLUSTER_CARD_KAFKA_WARNINGS_DROPDOWN_BUTTON);
