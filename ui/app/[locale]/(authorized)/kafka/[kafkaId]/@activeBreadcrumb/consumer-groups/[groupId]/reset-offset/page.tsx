@@ -35,7 +35,6 @@ export default function ConsumerGroupsActiveBreadcrumb({
       >
         {t("consumer_groups")}
       </BreadcrumbLink>
-      ,
       <BreadcrumbItem key={"cgm"} showDivider={true} isActive={true}>
         {decodeURIComponent(groupId) === "+" ? <i>Empty Name</i> : groupId}
       </BreadcrumbItem>
