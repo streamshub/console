@@ -148,7 +148,7 @@ class KafkaST extends AbstractST {
     }
 
     @Test
-    void testDisplayKafkaErrorsAndWarnings() {
+    void testDisplayKafkaWarnings() {
         final TestCaseConfig tcc = getTestCaseConfig();
 
         tcc.page().navigate(PwPageUrls.getOverviewPage(tcc, tcc.kafkaName()));
@@ -181,15 +181,17 @@ class KafkaST extends AbstractST {
             .filter(condition -> condition.getType().equals(ResourceStatus.WARNING.toString()) && condition.getStatus().equals(ConditionStatus.TRUE.toString()))
             .toList().get(0).getMessage();
 
+        // Reload using on page button
         tcc.page().click(CssSelectors.PAGES_HEADER_RELOAD_BUTTON);
 
         // Check warnings list
         PwUtils.waitForLocatorVisible(tcc, CssSelectors.C_OVERVIEW_CLUSTER_CARD_KAFKA_WARNING_MESSAGE_ITEMS);
         PwUtils.waitForLocatorCount(tcc, 1,  CssSelectors.C_OVERVIEW_CLUSTER_CARD_KAFKA_WARNING_MESSAGE_ITEMS, true);
-        PwUtils.waitForContainsText(tcc, CssSelectors.getLocator(tcc, CssSelectors.C_OVERVIEW_CLUSTER_CARD_KAFKA_WARNING_MESSAGE_ITEMS).nth(0), warningMessage);
+        assertEquals(warningMessage, PwUtils.getTrimmedText(CssSelectors.getLocator(tcc, CssSelectors.C_OVERVIEW_CLUSTER_CARD_KAFKA_WARNING_MESSAGE_ITEMS).nth(0).innerText()));
 
 
         kafkaPodsSnapshots = KafkaUtils.createKafkaPodsSnapshots(tcc.namespace(), tcc.kafkaName());
+
         // Remove wrong config
         KubeResourceManager.get().replaceResource(ResourceUtils.getKubeResource(Kafka.class, tcc.namespace(), tcc.kafkaName()),
             kafka -> {

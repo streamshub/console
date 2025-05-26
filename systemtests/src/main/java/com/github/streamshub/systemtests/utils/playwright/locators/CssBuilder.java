@@ -11,7 +11,7 @@ public class CssBuilder {
     private final StringBuilder cssClass;
 
     // Page css selectors
-    private static final String PATTERNFLY = ".pf-v5";
+    private static final String PATTERNFLY = ".pf-v6";
     private static final String SUFFIX_CONTENT = "-c";
     private static final String SUFFIX_LAYOUT = "-l";
 
@@ -192,6 +192,7 @@ public class CssBuilder {
     public CssBuilder withSubComponentToggleText() { return withSubComponent("toggle-text"); }
     public CssBuilder withSubComponentToggleIcon() { return withSubComponent("toggle-icon"); }
     public CssBuilder withSubComponentMain() { return withSubComponent("main"); }
+    public CssBuilder withSubComponentMainContainer() { return withSubComponent("main-container"); }
     public CssBuilder withSubComponentMainBody() { return withSubComponent("main-body"); }
     public CssBuilder withSubComponentBrand() { return withSubComponent("brand"); }
     public CssBuilder withSubComponentList() { return withSubComponent("list"); }

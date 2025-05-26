@@ -25,7 +25,8 @@ public class CssSelectors {
     // Login page
     // ----------------------------
     public static final String LOGIN_ANONYMOUSLY_BUTTON = new CssBuilder()
-        .withElementBody().withDesc()
+        .withElementBody().withChild()
+        .withElementDiv().withChild()
         .withElementDiv().withComponentLogin().withChild()
         .withElementDiv().withComponentLogin().withSubComponentContainer().withChild()
         .withElementMain().withComponentLogin().withSubComponentMain().withChild()
@@ -38,6 +39,7 @@ public class CssSelectors {
     // ----------------------------
     public static final String PAGES_MAIN_CONTENT = new CssBuilder()
         .withElementDiv().withComponentPage().withChild()
+        .withElementDiv().withComponentPage().withSubComponentMainContainer().withChild()
         .withElementMain().withComponentPage().withSubComponentMain().withChild()
         .withElementDiv().withComponentDrawer().withChild()
         .withElementDiv().withComponentDrawer().withSubComponentMain().withChild()
@@ -58,6 +60,7 @@ public class CssSelectors {
     public static final String PAGES_HEADER_RELOAD_BUTTON = new CssBuilder(PAGES_CONTENT_HEADER)
         .withChild()
         .withElementSection().withComponentPage().withSubComponentMainSection().withChild()
+        .withElementDiv().withComponentPage().withSubComponentMainBody().withChild()
         .withElementDiv().withLayoutFlex().withChild()
         .withElementDiv().withLayoutFlex().nth(1).withChild()
         .withElementDiv().nth(2).withChild()
@@ -125,32 +128,36 @@ public class CssSelectors {
 
     public static final String C_OVERVIEW_CLUSTER_CARDS = new CssBuilder(PAGES_CONTENT)
         .withChild()
+        .withElementDiv().withComponentPage().withSubComponentMainBody().withChild()
         .withElementDiv().withLayoutGrid().withChild()
         .withElementDiv().withLayoutGrid().withSubComponentItem().nth(1).withChild()
-        .withElementDiv().withLayoutFlex().withChild()
-        .withElementDiv()
-        .build();
-
-    public static final String C_OVERVIEW_CLUSTER_CARD_KAFKA_INFO = new CssBuilder(C_OVERVIEW_CLUSTER_CARDS)
-        .nth(1)
-        .withElementDiv().withComponentCard().withChild()
-        .withElementDiv().withComponentCard().withSubComponentBody().withChild()
         .withElementDiv().withLayoutFlex()
         .build();
 
+    public static final String C_OVERVIEW_CLUSTER_CARD_KAFKA_INFO = new CssBuilder(C_OVERVIEW_CLUSTER_CARDS)
+        .withChild()
+        .withElementDiv().nth(1).withChild()
+        .withElementDiv().withComponentCard().withChild()
+        .withElementDiv().withComponentCard().withSubComponentBody()
+        .build();
+
     public static final String C_OVERVIEW_KAFKA_PAUSE_RECONCILIATION_BUTTON = new CssBuilder(C_OVERVIEW_CLUSTER_CARD_KAFKA_INFO)
-        .nth(1).withChild()
+        .withChild()
+        .withElementDiv().withLayoutFlex().nth(1).withChild()
         .withElementDiv().nth(2).withChild()
         .withElementButton().withComponentButton()
         .build();
 
     public static final String C_OVERVIEW_CLUSTER_CARD_KAFKA_NAME = new CssBuilder(C_OVERVIEW_CLUSTER_CARD_KAFKA_INFO)
+        .withChild()
         .withElementDiv().withLayoutFlex().nth(1).withChild()
         .withElementDiv().withChild()
         .withElementH2().withComponentTitle()
         .build();
 
     public static final String C_OVERVIEW_CLUSTER_CARD_KAFKA_WARNINGS = new CssBuilder(C_OVERVIEW_CLUSTER_CARD_KAFKA_INFO)
+        .withChild()
+        .withElementDiv().withLayoutFlex().nth(2).withChild()
         .withElementDiv().withChild()
         .withElementDiv().withComponentExpandableSection()
         .build();
@@ -177,7 +184,8 @@ public class CssSelectors {
             .build();
 
     public static final String C_OVERVIEW_CLUSTER_CARD_KAFKA_WARNINGS_DROPDOWN_BUTTON = new CssBuilder(C_OVERVIEW_CLUSTER_CARD_KAFKA_WARNINGS)
-        .withElementButton().withComponentExpandableSection().withSubComponentToggle()
+        .withElementDiv().withComponentExpandableSection().withSubComponentToggle().withChild()
+        .withElementButton()
         .build();
 
     public static final String C_OVERVIEW_CLUSTER_CARD_KAFKA_WARNING_MESSAGE_ITEMS = new CssBuilder(C_OVERVIEW_CLUSTER_CARD_KAFKA_WARNINGS)
