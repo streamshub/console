@@ -35,11 +35,9 @@ export function NodeBreadcrumb({
       >
         {t("nodes.title")}
       </BreadcrumbLink>
-      ,
       <BreadcrumbItem key={"current-node"} showDivider={true}>
         Node&nbsp;{nodeId ?? "-"}
       </BreadcrumbItem>
-      ,
     </Breadcrumb>
   );
 }

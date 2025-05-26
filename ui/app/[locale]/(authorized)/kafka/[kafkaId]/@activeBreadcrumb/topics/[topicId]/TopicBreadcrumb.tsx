@@ -45,11 +45,9 @@ async function ConnectedTopicBreadcrumb({
       >
         {t("topics")}
       </BreadcrumbLink>
-      ,
       <BreadcrumbItem key={"current-topic"} showDivider={true}>
         {response.payload?.attributes.name ?? topicId}
       </BreadcrumbItem>
-      ,
     </Breadcrumb>
   );
 }

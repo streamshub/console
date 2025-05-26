@@ -16,7 +16,6 @@ export default function OverviewBreadcrumb() {
           <HomeIcon />
         </Tooltip>
       </BreadcrumbItem>
-      ,
       <BreadcrumbItem key={t("overview")} showDivider>
         {t("overview")}
       </BreadcrumbItem>

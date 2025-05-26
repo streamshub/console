@@ -36,7 +36,6 @@ export default function DryrunActiveBreadcrumb({
       >
         {t("ConsumerGroupsTable.reset_consumer_offset")}
       </BreadcrumbLink>
-      ,
       <BreadcrumbItem key={"cgm"} showDivider={true} isActive={true}>
         {t("ConsumerGroupsTable.dry_run_results_breadcrumb")}
       </BreadcrumbItem>

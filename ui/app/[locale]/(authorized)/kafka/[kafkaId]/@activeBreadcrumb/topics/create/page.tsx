@@ -35,11 +35,9 @@ export default function TopicsActiveBreadcrumb({
       >
         {t("topics")}
       </BreadcrumbLink>
-      ,
       <BreadcrumbItem key={"create-topic"} showDivider={true}>
         {t("create_topic")}
       </BreadcrumbItem>
-      ,
     </Breadcrumb>
   );
 }
