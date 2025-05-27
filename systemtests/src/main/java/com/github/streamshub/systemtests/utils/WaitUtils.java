@@ -145,7 +145,7 @@ public class WaitUtils {
                 try {
                     return PodUtils.componentPodsHaveRolled(namespaceName, selector, snapshot);
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    LOGGER.error("An error has occurred during rolling update: {}", e.getMessage());
                     return false;
                 }
             });
