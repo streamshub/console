@@ -14,6 +14,7 @@ import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -29,12 +30,11 @@ import org.jboss.logging.Logger;
 
 import com.github.streamshub.console.api.model.ConfigEntry;
 import com.github.streamshub.console.api.model.NewTopic;
+import com.github.streamshub.console.api.model.Node;
 import com.github.streamshub.console.api.model.PartitionInfo;
 import com.github.streamshub.console.api.model.ReplicaAssignment;
 import com.github.streamshub.console.api.model.Topic;
 import com.github.streamshub.console.api.model.TopicPatch;
-
-import io.strimzi.api.kafka.model.kafka.Kafka;
 
 /**
  * Collection of types responsible for validating the inputs to the createTopic
@@ -87,7 +87,7 @@ public class TopicValidation {
      * validation.
      */
     interface TopicModification extends ReplicaAssignment {
-        Kafka kafkaCluster();
+        List<Node> nodes();
 
         /**
          * Name of the topic
@@ -127,7 +127,7 @@ public class TopicValidation {
      */
     @ValidTopic(payload = ErrorCategory.InvalidResource.class)
     public record NewTopicInputs(
-            Kafka kafkaCluster,
+            List<Node> nodes,
             Map<String, ConfigEntry> defaultConfigs,
             NewTopic topic
     ) implements TopicModification {
@@ -176,7 +176,7 @@ public class TopicValidation {
     @ValidTopic(payload = ErrorCategory.InvalidResource.class)
     @ValidTopicPatch(payload = ErrorCategory.InvalidResource.class)
     public record TopicPatchInputs(
-            Kafka kafkaCluster,
+            List<Node> nodes,
             Topic topic,
             TopicPatch patch
     ) implements TopicModification {
@@ -244,7 +244,7 @@ public class TopicValidation {
         private static final String ASSIGNMENT_MISSING = "Assignments missing for new partition %d";
         private static final String REPLICATION_FACTOR_INCONSISTENT = "Inconsistent replication factor between partitions, partition 0 has %d while partition %d has replication factor %d";
         private static final String REPLICA_DUPLICATED = "Replica ID %d is duplicated";
-        private static final String REPLICA_UNKNOWN = "Replica ID must be a known Kafka node ID (0 through %d); received %d";
+        private static final String REPLICA_UNKNOWN = "Replica ID must be a known Kafka broker ID (%s); received %d";
 
         @Override
         public boolean isValid(TopicModification input, ConstraintValidatorContext context) {
@@ -318,7 +318,7 @@ public class TopicValidation {
          */
         void validReplicaIds(AtomicBoolean valid, TopicModification input, ConstraintValidatorContext context) {
             int maxPartitionId = input.maxPartitionId();
-            int nodeCount = input.kafkaCluster().getSpec().getKafka().getReplicas();
+            var brokerIds = input.nodes().stream().filter(Node::isBroker).map(Node::getId).map(Integer::valueOf).collect(Collectors.toSet());
 
             IntStream.rangeClosed(0, maxPartitionId)
                 .filter(input::hasReplicaAssignment)
@@ -342,9 +342,9 @@ public class TopicValidation {
                                 .addConstraintViolation();
                         }
 
-                        if (nodeCount <= nodeId) {
+                        if (!brokerIds.contains(nodeId)) {
                             valid.set(false);
-                            String msg = REPLICA_UNKNOWN.formatted(nodeCount - 1, nodeId);
+                            String msg = REPLICA_UNKNOWN.formatted(brokerIds, nodeId);
                             createBuilder(context, msg, DATA, ATTRIBUTES, REPLICAS_ASSIGNMENTS)
                                 .addContainerElementNode(PARTITION_REPLICAS, Map.class, 1)
                                     .inIterable()
@@ -378,8 +378,8 @@ public class TopicValidation {
             var targetConfigs = input.targetConfigs();
 
             if (targetConfigs.isEmpty()) {
-                LOGGER.infof("Current/target configurations could not be retrieved for topic %s in cluster %s, skipping local validation",
-                        input.name(), input.kafkaCluster().getMetadata().getName());
+                LOGGER.infof("Current/target configurations could not be retrieved for topic %s, skipping local validation",
+                        input.name());
                 return;
             }
 

@@ -14,6 +14,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.logging.Level;
@@ -32,6 +33,8 @@ import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response.Status;
 
+import org.apache.kafka.clients.admin.AlterConfigOp;
+import org.apache.kafka.clients.admin.ConfigEntry;
 import org.apache.kafka.clients.admin.DescribeConfigsResult;
 import org.apache.kafka.clients.admin.DescribeLogDirsOptions;
 import org.apache.kafka.clients.admin.DescribeLogDirsResult;
@@ -52,6 +55,7 @@ import org.apache.kafka.common.TopicPartitionInfo;
 import org.apache.kafka.common.Uuid;
 import org.apache.kafka.common.acl.AclOperation;
 import org.apache.kafka.common.config.ConfigResource;
+import org.apache.kafka.common.config.TopicConfig;
 import org.apache.kafka.common.errors.ApiException;
 import org.apache.kafka.common.internals.KafkaFutureImpl;
 import org.eclipse.microprofile.config.Config;
@@ -93,7 +97,9 @@ import io.fabric8.kubernetes.client.informers.SharedIndexInformer;
 import io.quarkus.test.common.http.TestHTTPEndpoint;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
+import io.strimzi.api.ResourceLabels;
 import io.strimzi.api.kafka.model.kafka.Kafka;
+import io.strimzi.api.kafka.model.kafka.KafkaBuilder;
 import io.strimzi.api.kafka.model.topic.KafkaTopic;
 import io.strimzi.api.kafka.model.topic.KafkaTopicBuilder;
 
@@ -121,7 +127,9 @@ import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.startsWith;
+import static org.junit.Assert.assertNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.anyMap;
@@ -1854,6 +1862,56 @@ class TopicsResourceIT {
     }
 
     @Test
+    void testCreateTopicWithStrimziManagement() {
+        client.resources(Kafka.class).inNamespace("default").withName(clusterName1).edit(k -> {
+            // Enable the topic entity operator for kafka1
+            return new KafkaBuilder(k)
+                .editSpec()
+                    .editOrNewEntityOperator()
+                        .editOrNewTopicOperator()
+                        .endTopicOperator()
+                    .endEntityOperator()
+                .endSpec()
+                .build();
+        });
+
+        String topicName = "t-" + UUID.randomUUID().toString();
+
+        var response = CompletableFuture.supplyAsync(() ->
+            whenRequesting(req -> req
+                .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
+                .body(Json.createObjectBuilder()
+                        .add("data", Json.createObjectBuilder()
+                                .add("type", "topics")
+                                .add("attributes", Json.createObjectBuilder()
+                                        .add("name", topicName)))
+                        .build()
+                        .toString())
+                .post("", clusterId1)));
+
+        // Acting as Strimzi Topic Operator
+        String topicId = topicUtils.createTopics(List.of(topicName), 1).get(topicName);
+        var topicClient = client.resources(KafkaTopic.class).inNamespace("default").withName(topicName);
+        await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> assertNotNull(topicClient.get()));
+        topicClient.editStatus(t -> {
+            return new KafkaTopicBuilder(t)
+                    .withNewStatus()
+                        .withTopicId(topicId)
+                        .addNewCondition()
+                            .withType("Ready")
+                            .withStatus("True")
+                        .endCondition()
+                    .endStatus()
+                    .build();
+        });
+
+        response.join()
+            .assertThat()
+            .statusCode(is(Status.CREATED.getStatusCode()))
+            .body("data.id", is(topicId));
+    }
+
+    @Test
     void testDeleteTopicSucceeds() {
         String topicName = UUID.randomUUID().toString();
         Map<String, String> topicIds = topicUtils.createTopics(List.of(topicName), 2);
@@ -1873,6 +1931,44 @@ class TopicsResourceIT {
             .body("errors.size()", is(1))
             .body("errors.status", contains("404"))
             .body("errors.code", contains("4041"));
+    }
+
+    @Test
+    void testDeleteTopicWithStrimziManagement() {
+        String topicName = "t-" + UUID.randomUUID().toString();
+        String topicId = topicUtils.createTopics(List.of(topicName), 1).get(topicName);
+        utils.apply(client, new KafkaTopicBuilder()
+                .withNewMetadata()
+                    .withNamespace("default")
+                    .withName(topicName)
+                    .addToLabels(ResourceLabels.STRIMZI_CLUSTER_LABEL, clusterName1)
+                .endMetadata()
+                .withNewSpec()
+                    .withTopicName(topicName)
+                    .withPartitions(1)
+                .endSpec()
+                .withNewStatus()
+                    .withTopicId(topicId)
+                    .withTopicName(topicName)
+                    .addNewCondition()
+                        .withType("Ready")
+                        .withStatus("True")
+                    .endCondition()
+                .endStatus()
+                .build());
+
+        // Wait for the managed topic list to include the topic
+        await().atMost(10, TimeUnit.SECONDS)
+            .until(() -> Optional.ofNullable(managedTopics.get("default"))
+                    .map(clustersInNamespace -> clustersInNamespace.get(clusterName1))
+                    .map(topicsInCluster -> topicsInCluster.get(topicName))
+                    .isPresent());
+
+        whenRequesting(req -> req.delete("{topicId}", clusterId1, topicId))
+            .assertThat()
+            .statusCode(is(Status.NO_CONTENT.getStatusCode()));
+
+        assertNull(client.resources(KafkaTopic.class).inNamespace("default").withName(topicName).get());
     }
 
     @Test
@@ -2008,6 +2104,116 @@ class TopicsResourceIT {
                     description.appendValue(expectedResponse);
                 }
             });
+    }
+
+    @Test
+    void testPatchTopicWithStrimziManagement() {
+        String topicName = "t-" + UUID.randomUUID().toString();
+        String topicId = topicUtils.createTopics(List.of(topicName), 1).get(topicName);
+        utils.apply(client, new KafkaTopicBuilder()
+                .withNewMetadata()
+                    .withNamespace("default")
+                    .withName(topicName)
+                    .addToLabels(ResourceLabels.STRIMZI_CLUSTER_LABEL, clusterName1)
+                .endMetadata()
+                .withNewSpec()
+                    .withTopicName(topicName)
+                    .withPartitions(1)
+                    .addToConfig(TopicConfig.SEGMENT_BYTES_CONFIG, String.valueOf(16 * Math.pow(1024, 2)))
+                    .addToConfig(TopicConfig.COMPRESSION_TYPE_CONFIG, "gzip")
+                    .addToConfig(TopicConfig.CLEANUP_POLICY_CONFIG, "delete")
+                .endSpec()
+                .withNewStatus()
+                    .withTopicId(topicId)
+                    .withTopicName(topicName)
+                    .addNewCondition()
+                        .withType("Ready")
+                        .withStatus("True")
+                    .endCondition()
+                .endStatus()
+                .build());
+
+        // Wait for the managed topic list to include the topic
+        await().atMost(10, TimeUnit.SECONDS)
+            .until(() -> Optional.ofNullable(managedTopics.get("default"))
+                    .map(clustersInNamespace -> clustersInNamespace.get(clusterName1))
+                    .map(topicsInCluster -> topicsInCluster.get(topicName))
+                    .isPresent());
+
+        var response = CompletableFuture.supplyAsync(() ->
+            whenRequesting(req -> req
+                .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
+                .body(Json.createObjectBuilder()
+                        .add("meta", Json.createObjectBuilder()
+                                .add("validateOnly", false))
+                        .add("data", Json.createObjectBuilder()
+                                .add("id", topicId)
+                                .add("type", "topics")
+                                .add("attributes", Json.createObjectBuilder()
+                                        .add("numPartitions", 2) // adding partition
+                                        .add("configs", Json.createObjectBuilder()
+                                                // remove
+                                                .add(TopicConfig.SEGMENT_BYTES_CONFIG, JsonValue.NULL)
+                                                // change
+                                                .add(TopicConfig.COMPRESSION_TYPE_CONFIG, Json.createObjectBuilder()
+                                                        .add("value", "lz4"))
+                                                // add
+                                                .add(TopicConfig.RETENTION_MS_CONFIG, Json.createObjectBuilder()
+                                                        .add("value", "86400000"))
+                                        )
+                                )
+                        )
+                        .build()
+                        .toString())
+                .patch("{topicId}", clusterId1, topicId)));
+
+        // check that the API has changed the KafkaTopic CR
+        var topicClient = client.resources(KafkaTopic.class).inNamespace("default").withName(topicName);
+        await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
+            var topic = topicClient.get();
+            assertNotNull(topic);
+            assertEquals(2, topic.getSpec().getPartitions());
+            var expectedConfigs = Map.ofEntries(
+                Map.entry(TopicConfig.CLEANUP_POLICY_CONFIG, "delete"),
+                Map.entry(TopicConfig.COMPRESSION_TYPE_CONFIG, "lz4"),
+                Map.entry(TopicConfig.RETENTION_MS_CONFIG, "86400000")
+            );
+            var actualConfigs = topic.getSpec().getConfig();
+            assertEquals(expectedConfigs, actualConfigs);
+        });
+
+        // Acting as Strimzi Topic Operator
+        topicUtils.createPartitions(topicName, 2);
+        topicUtils.alterTopicConfigs(topicName, List.of(
+            new AlterConfigOp(new ConfigEntry(TopicConfig.SEGMENT_BYTES_CONFIG, ""), AlterConfigOp.OpType.DELETE),
+            new AlterConfigOp(new ConfigEntry(TopicConfig.COMPRESSION_TYPE_CONFIG, "lz4"), AlterConfigOp.OpType.SET),
+            new AlterConfigOp(new ConfigEntry(TopicConfig.RETENTION_MS_CONFIG, "86400000"), AlterConfigOp.OpType.SET)
+        ));
+
+        // update the generation to allow the response to complete
+        topicClient.editStatus(t -> {
+            return new KafkaTopicBuilder(t)
+                    .editStatus()
+                        .withObservedGeneration(t.getMetadata().getGeneration())
+                    .endStatus()
+                    .build();
+        });
+
+        response.join().assertThat().statusCode(is(Status.NO_CONTENT.getStatusCode()));
+
+        // Confirm values are expected
+        whenRequesting(req -> req
+                .queryParam("fields[topics]", "name,partitions,configs")
+                .get("{topicId}", clusterId1, topicId))
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()))
+            .body("data.attributes.partitions.size()", is(2))
+            .body("data.attributes.configs.'segment.bytes'.value", is("1073741824"))
+            .body("data.attributes.configs.'segment.bytes'.source", is(ConfigEntry.ConfigSource.DEFAULT_CONFIG.name()))
+            .body("data.attributes.configs.'compression.type'.value", is("lz4"))
+            .body("data.attributes.configs.'compression.type'.source", is(ConfigEntry.ConfigSource.DYNAMIC_TOPIC_CONFIG.name()))
+            .body("data.attributes.configs.'retention.ms'.value", is("86400000"))
+            .body("data.attributes.configs.'retention.ms'.source", is(ConfigEntry.ConfigSource.DYNAMIC_TOPIC_CONFIG.name()));
     }
 
     @Test

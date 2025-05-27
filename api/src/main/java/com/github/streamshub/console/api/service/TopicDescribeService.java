@@ -92,6 +92,9 @@ public class TopicDescribeService {
     @Inject
     KafkaContext kafkaContext;
 
+    /**
+     * @see com.github.streamshub.console.api.support.InformerFactory#topics InformerFactory topics field
+     */
     @Inject
     @Named("KafkaTopics")
     Map<String, Map<String, Map<String, KafkaTopic>>> managedTopics;
