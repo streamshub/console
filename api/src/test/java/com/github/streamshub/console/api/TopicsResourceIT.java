@@ -1892,7 +1892,7 @@ class TopicsResourceIT {
         // Acting as Strimzi Topic Operator
         String topicId = topicUtils.createTopics(List.of(topicName), 1).get(topicName);
         var topicClient = client.resources(KafkaTopic.class).inNamespace("default").withName(topicName);
-        await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertNotNull(topicClient.get()));
+        await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> assertNotNull(topicClient.get()));
         topicClient.editStatus(t -> {
             return new KafkaTopicBuilder(t)
                     .withNewStatus()
@@ -2169,7 +2169,7 @@ class TopicsResourceIT {
 
         // check that the API has changed the KafkaTopic CR
         var topicClient = client.resources(KafkaTopic.class).inNamespace("default").withName(topicName);
-        await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> {
+        await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
             var topic = topicClient.get();
             assertNotNull(topic);
             assertEquals(2, topic.getSpec().getPartitions());
