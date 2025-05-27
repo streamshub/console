@@ -1,5 +1,24 @@
-import { BreadcrumbItem } from "@/libs/patternfly/react-core";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  Tooltip,
+} from "@/libs/patternfly/react-core";
+import { HomeIcon } from "@/libs/patternfly/react-icons";
+import { useTranslations } from "next-intl";
 
 export default function OverviewBreadcrumb() {
-  return <BreadcrumbItem showDivider={true}>Overview</BreadcrumbItem>;
+  const t = useTranslations("breadcrumbs");
+
+  return (
+    <Breadcrumb>
+      <BreadcrumbItem key="home" to="/" showDivider>
+        <Tooltip content={t("view_all_kafka_clusters")}>
+          <HomeIcon />
+        </Tooltip>
+      </BreadcrumbItem>
+      <BreadcrumbItem key={t("overview")} showDivider>
+        {t("overview")}
+      </BreadcrumbItem>
+    </Breadcrumb>
+  );
 }

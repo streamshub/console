@@ -1,9 +1,7 @@
 "use client";
-import { TechPreviewPopover } from "@/components/TechPreviewPopover";
 import {
   Brand,
   Button,
-  Label,
   Masthead,
   MastheadBrand,
   MastheadContent,
@@ -26,17 +24,22 @@ import {
 } from "@/libs/patternfly/react-icons";
 import { FeedbackModal } from "@patternfly/react-user-feedback";
 import { useTranslations } from "next-intl";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useAppLayout } from "./AppLayoutProvider";
 import { UserDropdown } from "./UserDropdown";
 import { useDarkMode } from "@/app/[locale]/useDarkMode";
+import { AppDropdown, ClusterInfo } from "./AppDropdown";
 
 export function AppMasthead({
   username,
   showSidebarToggle,
+  clusterInfoList,
+  kafkaId,
 }: {
   username?: string;
   showSidebarToggle: boolean;
+  clusterInfoList: ClusterInfo[];
+  kafkaId: string;
 }) {
   const t = useTranslations();
   const { toggleSidebar } = useAppLayout();
@@ -88,6 +91,11 @@ export function AppMasthead({
             isStatic
           >
             <ToolbarContent id={"masthead-toolbar"}>
+              {showSidebarToggle && (
+                <ToolbarItem className={"pf-v6-u-py-sm"}>
+                  <AppDropdown clusters={clusterInfoList} kafkaId={kafkaId} />
+                </ToolbarItem>
+              )}
               <ToolbarGroup
                 variant="action-group"
                 align={{ default: "alignEnd" }}
