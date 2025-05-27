@@ -1,7 +1,5 @@
 package com.github.streamshub.systemtests.utils;
 
-import com.github.streamshub.systemtests.TestCaseConfig;
-import com.github.streamshub.systemtests.constants.Labels;
 import com.github.streamshub.systemtests.constants.ResourceConditions;
 import com.github.streamshub.systemtests.constants.TimeConstants;
 import com.github.streamshub.systemtests.enums.ConditionStatus;
@@ -141,16 +139,19 @@ public class WaitUtils {
             });
     }
 
-    public static void waitForKafkaPodsRoll(TestCaseConfig tcc, Map<String, String> kafkaPodsSnapshots) {
-        for (Pod controllerPod : ResourceUtils.listKubeResourcesByLabelSelector(Pod.class, tcc.namespace(), Labels.getKnpControllerLabelSelector(tcc.kafkaName()))) {
-            waitForPodRoll(tcc.namespace(), controllerPod.getMetadata().getName(), kafkaPodsSnapshots);
-        }
+    public static Map<String, String> waitForComponentPodsToRoll(String namespaceName, LabelSelector selector, Map<String, String> snapshot) {
+        Wait.until("rolling update of component with selector: " + selector.toString(),
+            TimeConstants.ROLLING_UPDATE_POLL_INTERVAL, PodUtils.getTimeoutForPodOperations(snapshot.size()), () -> {
+                try {
+                    return PodUtils.componentPodsHaveRolled(namespaceName, selector, snapshot);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    return false;
+                }
+            });
 
-        for (Pod brokerPod : ResourceUtils.listKubeResourcesByLabelSelector(Pod.class, tcc.namespace(), Labels.getKnpBrokerLabelSelector(tcc.kafkaName()))) {
-            waitForPodRoll(tcc.namespace(), brokerPod.getMetadata().getName(), kafkaPodsSnapshots);
-        }
-
-        waitForPodsReady(tcc.namespace(), Labels.getKafkaPodLabelSelector(tcc.kafkaName()), kafkaPodsSnapshots.size(), true);
+        LOGGER.info("Component matching selector [{}] has been successfully rolled", selector);
+        return PodUtils.getPodSnapshotBySelector(namespaceName, selector);
     }
 
     public static void waitForKafkaHasWarningStatus(String namespaceName, String clusterName) {

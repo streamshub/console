@@ -24,6 +24,8 @@ import io.strimzi.api.kafka.model.nodepool.KafkaNodePoolBuilder;
 import io.strimzi.api.kafka.model.nodepool.ProcessRoles;
 import io.strimzi.api.kafka.model.user.KafkaUser;
 import io.strimzi.api.kafka.model.user.KafkaUserBuilder;
+import io.strimzi.api.kafka.model.user.acl.AclOperation;
+import io.strimzi.api.kafka.model.user.acl.AclResourcePatternType;
 import org.apache.logging.log4j.Logger;
 
 import java.util.Map;
@@ -119,6 +121,27 @@ public class KafkaSetup {
             .withNewSpec()
                 .withNewKafkaUserScramSha512ClientAuthentication()
                 .endKafkaUserScramSha512ClientAuthentication()
+            .withNewKafkaUserAuthorizationSimple()
+                .addNewAcl()
+                    .withNewAclRuleClusterResource()
+                    .endAclRuleClusterResource()
+                    .withOperations(AclOperation.DESCRIBE, AclOperation.DESCRIBECONFIGS)
+                .endAcl()
+                .addNewAcl()
+                    .withNewAclRuleGroupResource()
+                        .withName("*")
+                        .withPatternType(AclResourcePatternType.LITERAL)
+                    .endAclRuleGroupResource()
+                    .withOperations(AclOperation.READ, AclOperation.DESCRIBE)
+                .endAcl()
+                .addNewAcl()
+                    .withNewAclRuleTopicResource()
+                        .withName("*")
+                        .withPatternType(AclResourcePatternType.LITERAL)
+                    .endAclRuleTopicResource()
+                    .withOperations(AclOperation.READ, AclOperation.DESCRIBE, AclOperation.DESCRIBECONFIGS)
+                .endAcl()
+            .endKafkaUserAuthorizationSimple()
             .endSpec()
             .build();
     }

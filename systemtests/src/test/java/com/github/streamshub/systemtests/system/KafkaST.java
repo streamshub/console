@@ -9,7 +9,7 @@ import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.setup.console.ConsoleInstanceSetup;
 import com.github.streamshub.systemtests.setup.strimzi.KafkaSetup;
 import com.github.streamshub.systemtests.utils.KafkaNamingUtils;
-import com.github.streamshub.systemtests.utils.KafkaUtils;
+import com.github.streamshub.systemtests.utils.PodUtils;
 import com.github.streamshub.systemtests.utils.ResourceUtils;
 import com.github.streamshub.systemtests.utils.WaitUtils;
 import com.github.streamshub.systemtests.utils.playwright.PwPageUrls;
@@ -186,7 +186,7 @@ class KafkaST extends AbstractST {
         PwUtils.waitForLocatorCount(tcc, 1,  CssSelectors.getLocator(tcc, CssSelectors.C_OVERVIEW_CLUSTER_CARD_KAFKA_WARNING_MESSAGE_ITEMS), true);
         assertTrue(PwUtils.getTrimmedText(CssSelectors.getLocator(tcc, CssSelectors.C_OVERVIEW_CLUSTER_CARD_KAFKA_WARNING_MESSAGE_ITEMS).nth(0).innerText()).contains("No messages"));
 
-        Map<String, String> kafkaPodsSnapshots = KafkaUtils.createKafkaPodsSnapshots(tcc.namespace(), tcc.kafkaName());
+        Map<String, String> kafkaSnapshot = PodUtils.getPodSnapshotBySelector(tcc.namespace(), Labels.getKafkaPodLabelSelector(tcc.kafkaName()));
 
         // Make kafka fail
         LOGGER.info("Cause Kafka status to display Warning state by setting incorrect inter broker protocol version");
@@ -200,7 +200,7 @@ class KafkaST extends AbstractST {
                 config.put("inter.broker.protocol.version", "3.3");
             });
 
-        WaitUtils.waitForKafkaPodsRoll(tcc, kafkaPodsSnapshots);
+        WaitUtils.waitForComponentPodsToRoll(tcc.namespace(), Labels.getKafkaPodLabelSelector(tcc.kafkaName()), kafkaSnapshot);
         WaitUtils.waitForKafkaHasWarningStatus(tcc.namespace(), tcc.kafkaName());
 
         // Expect a warning message
@@ -218,7 +218,8 @@ class KafkaST extends AbstractST {
         PwUtils.waitForLocatorCount(tcc, 1,  CssSelectors.C_OVERVIEW_CLUSTER_CARD_KAFKA_WARNING_MESSAGE_ITEMS, true);
         assertTrue(PwUtils.getTrimmedText(CssSelectors.getLocator(tcc, CssSelectors.C_OVERVIEW_CLUSTER_CARD_KAFKA_WARNING_MESSAGE_ITEMS).nth(0).innerText()).contains(warningMessage));
 
-        kafkaPodsSnapshots = KafkaUtils.createKafkaPodsSnapshots(tcc.namespace(), tcc.kafkaName());
+        // Update snapshot
+        kafkaSnapshot = PodUtils.getPodSnapshotBySelector(tcc.namespace(), Labels.getKafkaPodLabelSelector(tcc.kafkaName()));
 
         // Remove wrong config
         LOGGER.info("Remove incorrect inter broker protocol version from Kafka config to remove the warning from it's status");
@@ -228,7 +229,7 @@ class KafkaST extends AbstractST {
             }
         );
 
-        WaitUtils.waitForKafkaPodsRoll(tcc, kafkaPodsSnapshots);
+        WaitUtils.waitForComponentPodsToRoll(tcc.namespace(), Labels.getKafkaPodLabelSelector(tcc.kafkaName()), kafkaSnapshot);
         WaitUtils.waitForKafkaHasNoWarningStatus(tcc.namespace(), tcc.kafkaName());
 
         LOGGER.debug("Reload page and verify that there is `No messages` in the warnings list again");
