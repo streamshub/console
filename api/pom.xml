@@ -250,10 +250,6 @@
                         <goals>
                             <goal>build</goal>
                         </goals>
-                        <configuration>
-                            <systemProperties>
-                            </systemProperties>
-                        </configuration>
                     </execution>
                 </executions>
             </plugin>
@@ -344,13 +340,13 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
                     <redirectTestOutputToFile>true</redirectTestOutputToFile>
-                    <systemProperties>
+                    <systemPropertyVariables>
                         <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
                         <maven.home>${maven.home}</maven.home>
                         <quarkus.jacoco.reuse-data-file>true</quarkus.jacoco.reuse-data-file>
                         <quarkus.jacoco.report>false</quarkus.jacoco.report>
                         <quarkus.test.arg-line>${argLine}</quarkus.test.arg-line>
-                    </systemProperties>
+                    </systemPropertyVariables>
                 </configuration>
             </plugin>
             <plugin>
@@ -364,13 +360,13 @@
                         </goals>
                         <configuration>
                             <redirectTestOutputToFile>true</redirectTestOutputToFile>
-                            <systemProperties>
+                            <systemPropertyVariables>
                                 <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
                                 <maven.home>${maven.home}</maven.home>
                                 <quarkus.jacoco.reuse-data-file>true</quarkus.jacoco.reuse-data-file>
                                 <quarkus.jacoco.report>false</quarkus.jacoco.report>
                                 <quarkus.test.arg-line>${argLine}</quarkus.test.arg-line>
-                            </systemProperties>
+                            </systemPropertyVariables>
                             <environmentVariables>
                                 <DOCKER_CONFIG>${env.HOME}/.docker/config.json</DOCKER_CONFIG>
                             </environmentVariables>
