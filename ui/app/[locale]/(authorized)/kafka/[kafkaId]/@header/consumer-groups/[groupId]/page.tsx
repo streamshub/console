@@ -4,6 +4,7 @@ import { AppHeader } from "@/components/AppHeader";
 import { Suspense } from "react";
 import { useTranslations } from "next-intl";
 import { ConsumerGroupActionButton } from "./ConsumerGroupActionButton";
+import RichText from "@/components/RichText";
 
 export default function Page({
   params: { kafkaId, groupId },
@@ -24,10 +25,9 @@ async function ConnectedAppHeader({
 }: {
   params: KafkaConsumerGroupMembersParams;
 }) {
-  const disabled = (await getConsumerGroup(kafkaId, groupId))?.
-    payload?.
-    attributes.
-    state !== "EMPTY";
+  const disabled =
+    (await getConsumerGroup(kafkaId, groupId))?.payload?.attributes.state !==
+    "EMPTY";
 
   return <Header params={{ kafkaId, groupId }} disabled={disabled} />;
 }
@@ -43,7 +43,13 @@ function Header({
 
   return (
     <AppHeader
-      title={decodeURIComponent(groupId) === "+" ? <i>Empty Name</i> : groupId}
+      title={
+        decodeURIComponent(groupId) === "+" ? (
+          <RichText>{(tags) => t.rich("common.empty_name", tags)}</RichText>
+        ) : (
+          groupId
+        )
+      }
       actions={[
         <ConsumerGroupActionButton
           key={"consumergGroupActionButton"}

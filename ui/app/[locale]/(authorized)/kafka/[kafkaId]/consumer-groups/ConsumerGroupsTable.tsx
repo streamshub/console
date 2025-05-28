@@ -178,7 +178,9 @@ export function ConsumerGroupsTable({
                   href={`/kafka/${kafkaId}/consumer-groups/${row.id === "" ? "+" : encodeURIComponent(row.id)}`}
                 >
                   {row.id === "" ? (
-                    <i>{t("ConsumerGroupsTable.empty_name")}</i>
+                    <RichText>
+                      {(tags) => t.rich("ConsumerGroupsTable.empty_name", tags)}
+                    </RichText>
                   ) : (
                     row.id
                   )}

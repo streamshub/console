@@ -117,7 +117,7 @@ function Header({
       }
       subTitle={
         decodeURIComponent(groupId) === "+" ? (
-          <i>Empty Name</i>
+          <RichText>{(tags) => t.rich("common.empty_name", tags)}</RichText>
         ) : (
           <RichText>
             {(tags) => t.rich("consumer_name", { ...tags, groupId })}
