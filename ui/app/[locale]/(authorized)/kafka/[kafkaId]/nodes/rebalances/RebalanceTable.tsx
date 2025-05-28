@@ -33,6 +33,7 @@ import { EmptyStateNoMatchFound } from "@/components/Table/EmptyStateNoMatchFoun
 import { EmptyStateNoKafkaRebalance } from "./EmptyStateNoKafkaRebalance";
 import Image from "next/image";
 import { DateTime } from "@/components/Format/DateTime";
+import RichText from "@/components/RichText";
 
 export const RebalanceTableColumns = ["name", "status", "lastUpdated"] as const;
 
@@ -332,16 +333,31 @@ export function RebalanceTable({
                         <div>
                           <List>
                             <ListItem>
-                              {t.rich("full_mode")}&nbsp;
+                              {
+                                <RichText>
+                                  {(tags) => t.rich("full_mode", tags)}
+                                </RichText>
+                              }
+                              &nbsp;
                               {t("full_mode_description")}
                             </ListItem>
                             <ListItem>
-                              {t.rich("add_brokers_mode")}
+                              {
+                                <RichText>
+                                  {(tags) => t.rich("add_brokers_mode", tags)}
+                                </RichText>
+                              }
                               &nbsp;
                               {t("add_brokers_mode_description")}
                             </ListItem>
                             <ListItem>
-                              {t.rich("remove_brokers_mode")}
+                              {
+                                <RichText>
+                                  {(tags) =>
+                                    t.rich("remove_brokers_mode", tags)
+                                  }
+                                </RichText>
+                              }
                               &nbsp;
                               {t("remove_brokers_mode_description")}
                             </ListItem>

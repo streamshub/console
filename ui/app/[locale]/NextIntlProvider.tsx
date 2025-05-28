@@ -1,5 +1,4 @@
 "use client";
-import { defaultTranslationValues } from "@/i18n";
 import { AbstractIntlMessages, NextIntlClientProvider } from "next-intl";
 import { ReactNode } from "react";
 
@@ -18,7 +17,6 @@ export default function NextIntlProvider({
     <NextIntlClientProvider
       locale={locale}
       messages={messages}
-      defaultTranslationValues={defaultTranslationValues}
       timeZone={timeZone}
     >
       {children}

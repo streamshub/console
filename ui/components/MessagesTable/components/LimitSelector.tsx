@@ -1,3 +1,4 @@
+import RichText from "@/components/RichText";
 import { MenuToggle, Select, SelectOption } from "@/libs/patternfly/react-core";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
@@ -15,7 +16,7 @@ export function LimitSelector({ value, onChange }: LimitSelectorProps) {
   return (
     <Select
       aria-label={t("per_page_aria_label", { value })}
-      popperProps={{appendTo:  "inline"}}
+      popperProps={{ appendTo: "inline" }}
       selected={value}
       isOpen={isOpen}
       onSelect={() => setIsOpen(false)}
@@ -27,7 +28,9 @@ export function LimitSelector({ value, onChange }: LimitSelectorProps) {
           isExpanded={isOpen}
           className={"pf-v6-u-w-100"}
         >
-          {t.rich("per_page_label", { value })}
+          <RichText>
+            {(tags) => t.rich("per_page_label", { ...tags, value })}
+          </RichText>
         </MenuToggle>
       )}
     >

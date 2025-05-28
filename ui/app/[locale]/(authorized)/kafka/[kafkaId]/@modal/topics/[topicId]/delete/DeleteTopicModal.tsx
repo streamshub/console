@@ -1,6 +1,7 @@
 "use client";
 import { KafkaParams } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/kafka.params";
 import { DeleteModal } from "@/components/DeleteModal";
+import RichText from "@/components/RichText";
 import { useRouter } from "@/i18n/routing";
 import { useTranslations } from "next-intl";
 import { useParams } from "next/navigation";
@@ -50,9 +51,9 @@ export function DeleteTopicModal({
       onCancel={onCancel}
     >
       <>
-        {t.rich("message", {
-          topicName,
-        })}
+        <RichText>
+          {(tags) => t.rich("message", { ...tags, topicName })}
+        </RichText>
       </>
     </DeleteModal>
   );

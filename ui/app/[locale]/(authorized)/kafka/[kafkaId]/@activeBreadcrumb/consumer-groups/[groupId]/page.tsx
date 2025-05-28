@@ -1,5 +1,6 @@
 import { KafkaConsumerGroupMembersParams } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/consumer-groups/[groupId]/KafkaConsumerGroupMembers.params";
 import { BreadcrumbLink } from "@/components/Navigation/BreadcrumbLink";
+import RichText from "@/components/RichText";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -13,11 +14,11 @@ export default function ConsumerGroupsActiveBreadcrumb({
 }: {
   params: KafkaConsumerGroupMembersParams;
 }) {
-  const t = useTranslations("breadcrumbs");
+  const t = useTranslations();
   return (
     <Breadcrumb>
       <BreadcrumbItem key="home" to="/" showDivider>
-        <Tooltip content={t("view_all_kafka_clusters")}>
+        <Tooltip content={t("breadcrumbs.view_all_kafka_clusters")}>
           <HomeIcon />
         </Tooltip>
       </BreadcrumbItem>
@@ -26,17 +27,21 @@ export default function ConsumerGroupsActiveBreadcrumb({
         to={`/kafka/${kafkaId}/overview`}
         showDivider
       >
-        {t("overview")}
+        {t("breadcrumbs.overview")}
       </BreadcrumbItem>
       <BreadcrumbLink
         key={"cg"}
         href={`/kafka/${kafkaId}/consumer-groups`}
         showDivider={true}
       >
-        {t("consumer_groups")}
+        {t("breadcrumbs.consumer_groups")}
       </BreadcrumbLink>
       <BreadcrumbItem key={"cgm"} showDivider={true} isActive={true}>
-        {decodeURIComponent(groupId) === "+" ? <i>Empty Name</i> : groupId}
+        {decodeURIComponent(groupId) === "+" ? (
+          <RichText>{(tags) => t.rich("common.empty_name", tags)}</RichText>
+        ) : (
+          groupId
+        )}
       </BreadcrumbItem>
     </Breadcrumb>
   );

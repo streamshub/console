@@ -3,6 +3,7 @@ import { ConfigMap, NewConfigMap } from "@/api/topics/schema";
 import { Errors } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/topics/create/Errors";
 import { ReviewTable } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/topics/create/ReviewTable";
 import { Number } from "@/components/Format/Number";
+import RichText from "@/components/RichText";
 import {
   DescriptionList,
   DescriptionListDescription,
@@ -46,7 +47,11 @@ export function StepReview({
           <DescriptionListGroup>
             <DescriptionListTerm>{t("CreateTopic.name")}</DescriptionListTerm>
             <DescriptionListDescription>
-              {name || <i>{t("CreateTopic.empty")}</i>}
+              {name || (
+                <RichText>
+                  {(tags) => t.rich("CreateTopic.empty", tags)}
+                </RichText>
+              )}
             </DescriptionListDescription>
           </DescriptionListGroup>
           <DescriptionListGroup>

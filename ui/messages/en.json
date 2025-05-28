@@ -3,7 +3,8 @@
     "brand": "",
     "product": "StreamsHub",
     "title": "StreamsHub console",
-    "search_hint": "Filter by {label}"
+    "search_hint": "Filter by {label}",
+    "empty_name": "<i>Empty Name</i>"
   },
   "feedback": {
     "links": {

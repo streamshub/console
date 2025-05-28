@@ -37,6 +37,7 @@ import {
   RoleLabel,
 } from "./NodesLabel";
 import { HelpIcon } from "@/libs/patternfly/react-icons";
+import RichText from "@/components/RichText";
 
 export const NodeListColumns = [
   "id",
@@ -202,7 +203,9 @@ export function NodesTable({
                         color={"green"}
                         className={"pf-v6-u-ml-sm"}
                       >
-                        {t.rich("nodes.lead_controller")}
+                        <RichText>
+                          {(tags) => t.rich("nodes.lead_controller", tags)}
+                        </RichText>
                       </Label>
                     )}
                   </Td>
@@ -275,7 +278,11 @@ export function NodesTable({
                   style={{ maxWidth: "50%" }}
                 >
                   <Content>
-                    <Content>{t.rich("nodes.host_name")}</Content>
+                    <Content>
+                      <RichText>
+                        {(tags) => t.rich("nodes.host_name", tags)}
+                      </RichText>
+                    </Content>
                     <Content>
                       <ClipboardCopy
                         isReadOnly={true}
@@ -289,7 +296,11 @@ export function NodesTable({
                 </FlexItem>
                 <FlexItem>
                   <Content>
-                    <Content>{t.rich("nodes.disk_usage")}</Content>
+                    <Content>
+                      <RichText>
+                        {(tags) => t.rich("nodes.disk_usage", tags)}
+                      </RichText>
+                    </Content>
                   </Content>
                   <div>
                     {usedCapacity !== undefined && (
@@ -336,7 +347,11 @@ export function NodesTable({
                 </FlexItem>
                 <FlexItem>
                   <Content>
-                    <Content>{t.rich("nodes.kafka_version")}</Content>
+                    <Content>
+                      <RichText>
+                        {(tags) => t.rich("nodes.kafka_version", tags)}
+                      </RichText>
+                    </Content>
                   </Content>
                   <div>{row.attributes.kafkaVersion ?? "Unknown"}</div>
                 </FlexItem>

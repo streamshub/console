@@ -2,6 +2,7 @@ import { KafkaConsumerGroupMembersParams } from "@/app/[locale]/(authorized)/kaf
 import { AppHeader } from "@/components/AppHeader";
 import { Suspense } from "react";
 import { useTranslations } from "next-intl";
+import RichText from "@/components/RichText";
 
 export default function Page({
   params: { kafkaId, groupId },
@@ -35,9 +36,11 @@ function Header({
       title={t("reset_consumer_offset")}
       subTitle={
         decodeURIComponent(groupId) === "+" ? (
-          <i>Empty Name</i>
+          <RichText>{(tags) => t.rich("common.empty_name", tags)}</RichText>
         ) : (
-          t.rich("consumer_name", { groupId })
+          <RichText>
+            {(tags) => t.rich("consumer_name", { ...tags, groupId })}
+          </RichText>
         )
       }
     />
