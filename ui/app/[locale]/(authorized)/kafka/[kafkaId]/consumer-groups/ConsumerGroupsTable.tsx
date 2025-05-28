@@ -10,7 +10,7 @@ import {
 } from "@/libs/patternfly/react-icons";
 import { Link } from "@/i18n/routing";
 import { useTranslations } from "next-intl";
-import { ReactNode, useEffect, useState } from "react";
+import { ReactNode } from "react";
 import { EmptyStateNoMatchFound } from "@/components/Table/EmptyStateNoMatchFound";
 import RichText from "@/components/RichText";
 
@@ -112,7 +112,7 @@ export function ConsumerGroupsTable({
             );
           case "state":
             return (
-              <Th key={key}>
+              <Th key={key} width={20}>
                 {t("ConsumerGroupsTable.state")}{" "}
                 <Tooltip
                   content={
@@ -129,7 +129,7 @@ export function ConsumerGroupsTable({
             );
           case "lag":
             return (
-              <Th key={key}>
+              <Th key={key} width={15}>
                 {t("ConsumerGroupsTable.overall_lag")}{" "}
                 <Tooltip
                   style={{ whiteSpace: "pre-line" }}
@@ -147,7 +147,7 @@ export function ConsumerGroupsTable({
             );
           case "members":
             return (
-              <Th key={key}>
+              <Th key={key} width={15}>
                 {t("ConsumerGroupsTable.members")}{" "}
                 <Tooltip
                   content={
