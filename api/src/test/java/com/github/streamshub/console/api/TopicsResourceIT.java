@@ -76,6 +76,7 @@ import org.skyscreamer.jsonassert.JSONAssert;
 import org.skyscreamer.jsonassert.JSONCompareMode;
 
 import com.github.streamshub.console.api.security.ConsoleAuthenticationMechanism;
+import com.github.streamshub.console.api.service.TopicService;
 import com.github.streamshub.console.api.support.Holder;
 import com.github.streamshub.console.config.ConsoleConfig;
 import com.github.streamshub.console.config.security.Decision;
@@ -1889,10 +1890,18 @@ class TopicsResourceIT {
                         .toString())
                 .post("", clusterId1)));
 
-        // Acting as Strimzi Topic Operator
-        String topicId = topicUtils.createTopics(List.of(topicName), 1).get(topicName);
+        /*
+         * Acting as Strimzi Topic Operator.
+         * 1. wait for the topic CR to be present
+         * 2. create the topic
+         * 3. update the CR's status
+         */
         var topicClient = client.resources(KafkaTopic.class).inNamespace("default").withName(topicName);
-        await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> assertNotNull(topicClient.get()));
+        await()
+            .atMost(TopicService.TOPIC_OPERATION_LIMIT + 5, TimeUnit.SECONDS)
+            .untilAsserted(() -> assertNotNull(topicClient.get()));
+
+        String topicId = topicUtils.createTopics(List.of(topicName), 1).get(topicName);
         topicClient.editStatus(t -> {
             return new KafkaTopicBuilder(t)
                     .withNewStatus()
@@ -2169,7 +2178,7 @@ class TopicsResourceIT {
 
         // check that the API has changed the KafkaTopic CR
         var topicClient = client.resources(KafkaTopic.class).inNamespace("default").withName(topicName);
-        await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
+        await().atMost(TopicService.TOPIC_OPERATION_LIMIT + 5, TimeUnit.SECONDS).untilAsserted(() -> {
             var topic = topicClient.get();
             assertNotNull(topic);
             assertEquals(2, topic.getSpec().getPartitions());

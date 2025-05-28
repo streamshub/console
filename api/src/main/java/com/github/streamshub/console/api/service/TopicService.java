@@ -60,6 +60,8 @@ import static org.apache.kafka.clients.admin.NewPartitions.increaseTo;
 @ApplicationScoped
 public class TopicService {
 
+    public static final int TOPIC_OPERATION_LIMIT = 20;
+
     @Inject
     Logger logger;
 
@@ -561,7 +563,7 @@ public class TopicService {
     abstract static class TopicCheck<T> implements Runnable {
         private final ScheduledExecutorService scheduler;
         private final Runnable task;
-        private final Instant limit = Instant.now().plusSeconds(20);
+        private final Instant limit = Instant.now().plusSeconds(TOPIC_OPERATION_LIMIT);
         protected final CompletableFuture<T> promise = new CompletableFuture<>();
 
         TopicCheck(ThreadContext threadContext, ScheduledExecutorService scheduler) {
