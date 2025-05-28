@@ -7,6 +7,7 @@ import { NoDataErrorState } from "@/components/NoDataErrorState";
 import { updateConsumerGroup } from "@/api/consumerGroups/actions";
 import { Offset } from "../../../../../consumer-groups/[groupId]/reset-offset/ResetOffset";
 import { DryrunDownloadButton } from "./DryrunDownloadButton";
+import RichText from "@/components/RichText";
 
 export default function Page({
   params: { kafkaId, groupId },
@@ -104,7 +105,9 @@ function Header({
         <Flex>
           <FlexItem>
             <Content>
-              <Content>{t.rich("dry_run_result")}</Content>
+              <Content>
+                <RichText>{(tags) => t.rich("dry_run_result", tags)}</RichText>
+              </Content>
             </Content>
           </FlexItem>
           <FlexItem>
@@ -116,7 +119,9 @@ function Header({
         decodeURIComponent(groupId) === "+" ? (
           <i>Empty Name</i>
         ) : (
-          t.rich("consumer_name", { groupId })
+          <RichText>
+            {(tags) => t.rich("consumer_name", { ...tags, groupId })}
+          </RichText>
         )
       }
     />

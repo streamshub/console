@@ -1,3 +1,4 @@
+import RichText from "@/components/RichText";
 import {
   Alert,
   Button,
@@ -90,7 +91,11 @@ export function Dryrun({
                   <SidebarPanel>
                     <JumpLinks
                       isVertical
-                      label={t.rich("jump_to_topic")}
+                      label={
+                        <RichText>
+                          {(tags) => t.rich("jump_to_topic", tags)}
+                        </RichText>
+                      }
                       offset={10}
                     >
                       {Object.keys(groupedTopics).map(

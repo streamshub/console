@@ -2,6 +2,7 @@ import { KafkaConsumerGroupMembersParams } from "@/app/[locale]/(authorized)/kaf
 import { AppHeader } from "@/components/AppHeader";
 import { Suspense } from "react";
 import { useTranslations } from "next-intl";
+import RichText from "@/components/RichText";
 
 export default function Page({
   params: { kafkaId, groupId },
@@ -37,7 +38,9 @@ function Header({
         decodeURIComponent(groupId) === "+" ? (
           <i>Empty Name</i>
         ) : (
-          t.rich("consumer_name", { groupId })
+          <RichText>
+            {(tags) => t.rich("consumer_name", { ...tags, groupId })}
+          </RichText>
         )
       }
     />

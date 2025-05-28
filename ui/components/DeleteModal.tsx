@@ -21,6 +21,7 @@ import {
   useEffect,
   useState,
 } from "react";
+import RichText from "./RichText";
 
 const ModalContext = createContext<{
   isDeleteEnabled: boolean;
@@ -252,9 +253,16 @@ export function DeleteModalConfirmation({
   return (
     <Form>
       <FormGroup
-        label={t.rich("type_value_to_confirm_html", {
-          value: requiredConfirmationValue,
-        })}
+        label={
+          <RichText>
+            {(tags) =>
+              t.rich("type_value_to_confirm_html", {
+                ...tags,
+                value: requiredConfirmationValue,
+              })
+            }
+          </RichText>
+        }
         fieldId={id}
       >
         <TextInput

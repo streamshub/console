@@ -9,6 +9,7 @@ import { HelpIcon } from "@/libs/patternfly/react-icons";
 import { Link } from "@/i18n/routing";
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
+import RichText from "@/components/RichText";
 
 export function ConsumerGroupsTable({
   kafkaId,
@@ -21,7 +22,7 @@ export function ConsumerGroupsTable({
   page: number;
   total: number;
   consumerGroups?: ConsumerGroup[];
-  refresh?: (() => Promise<ConsumerGroup[] | null>);
+  refresh?: () => Promise<ConsumerGroup[] | null>;
 }) {
   const t = useTranslations();
   const [consumerGroups, setConsumerGroups] = useState(initialData);
@@ -63,7 +64,15 @@ export function ConsumerGroupsTable({
             return (
               <Th key={key}>
                 {t("ConsumerGroupsTable.state")}{" "}
-                <Tooltip content={t.rich("ConsumerGroupsTable.state_tooltip")}>
+                <Tooltip
+                  content={
+                    <RichText>
+                      {(tags) =>
+                        t.rich("ConsumerGroupsTable.state_tooltip", tags)
+                      }
+                    </RichText>
+                  }
+                >
                   <HelpIcon />
                 </Tooltip>
               </Th>
@@ -74,7 +83,13 @@ export function ConsumerGroupsTable({
                 {t("ConsumerGroupsTable.overall_lag")}{" "}
                 <Tooltip
                   style={{ whiteSpace: "pre-line" }}
-                  content={t.rich("ConsumerGroupsTable.overall_lag_tooltip")}
+                  content={
+                    <RichText>
+                      {(tags) =>
+                        t.rich("ConsumerGroupsTable.overall_lag_tooltip", tags)
+                      }
+                    </RichText>
+                  }
                 >
                   <HelpIcon />
                 </Tooltip>
@@ -85,7 +100,13 @@ export function ConsumerGroupsTable({
               <Th key={key}>
                 {t("ConsumerGroupsTable.members")}{" "}
                 <Tooltip
-                  content={t.rich("ConsumerGroupsTable.members_tooltip")}
+                  content={
+                    <RichText>
+                      {(tags) =>
+                        t.rich("ConsumerGroupsTable.members_tooltip", tags)
+                      }
+                    </RichText>
+                  }
                 >
                   <HelpIcon />
                 </Tooltip>

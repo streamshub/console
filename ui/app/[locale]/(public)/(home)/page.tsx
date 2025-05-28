@@ -35,6 +35,7 @@ import { getServerSession } from "next-auth";
 import { stringToInt } from "@/utils/stringToInt";
 import { NoDataErrorState } from "@/components/NoDataErrorState";
 import { ConnectedClustersTable } from "./ConnectedClustersTable";
+import RichText from "@/components/RichText";
 
 const log = logger.child({ module: "home" });
 
@@ -121,7 +122,14 @@ export default async function Home({
           <div>
             <Content>
               <Title headingLevel={"h1"} size={"2xl"}>
-                {t.rich("homepage.page_header", { product: productName })}
+                <RichText>
+                  {(tags) =>
+                    t.rich("homepage.page_header", {
+                      ...tags,
+                      product: productName,
+                    })
+                  }
+                </RichText>
               </Title>
               <Content className={"pf-v6-u-color-200"}>
                 {t("homepage.page_subtitle", {
@@ -139,7 +147,11 @@ export default async function Home({
             <Card isCompact={true}>
               <CardTitle>
                 <Content>
-                  {t.rich("homepage.platform_openshift_cluster")}
+                  <RichText>
+                    {(tags) =>
+                      t.rich("homepage.platform_openshift_cluster", tags)
+                    }
+                  </RichText>
                   <Content component={"small"}>
                     <Suspense fallback={<Skeleton width={"200px"} />}>
                       <Number value={allClusters.meta.page.total} />
@@ -189,7 +201,14 @@ export default async function Home({
                   <Level>
                     <LevelItem>
                       <Content>
-                        {t.rich("homepage.recommended_learning_resources")}
+                        <RichText>
+                          {(tags) =>
+                            t.rich(
+                              "homepage.recommended_learning_resources",
+                              tags,
+                            )
+                          }
+                        </RichText>
                       </Content>
                     </LevelItem>
                   </Level>
@@ -200,7 +219,14 @@ export default async function Home({
                       <Stack>
                         <StackItem>
                           <Content>
-                            {t.rich("homepage.recommended_learning_resources")}
+                            <RichText>
+                              {(tags) =>
+                                t.rich(
+                                  "homepage.recommended_learning_resources",
+                                  tags,
+                                )
+                              }
+                            </RichText>
                           </Content>
                         </StackItem>
                         <StackItem>

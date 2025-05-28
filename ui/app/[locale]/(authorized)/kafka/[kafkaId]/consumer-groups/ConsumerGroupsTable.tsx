@@ -12,6 +12,7 @@ import { Link } from "@/i18n/routing";
 import { useTranslations } from "next-intl";
 import { ReactNode, useEffect, useState } from "react";
 import { EmptyStateNoMatchFound } from "@/components/Table/EmptyStateNoMatchFound";
+import RichText from "@/components/RichText";
 
 export const ConsumerGroupColumns = [
   "name",
@@ -113,7 +114,15 @@ export function ConsumerGroupsTable({
             return (
               <Th key={key}>
                 {t("ConsumerGroupsTable.state")}{" "}
-                <Tooltip content={t.rich("ConsumerGroupsTable.state_tooltip")}>
+                <Tooltip
+                  content={
+                    <RichText>
+                      {(tags) =>
+                        t.rich("ConsumerGroupsTable.state_tooltip", tags)
+                      }
+                    </RichText>
+                  }
+                >
                   <HelpIcon />
                 </Tooltip>
               </Th>
@@ -124,7 +133,13 @@ export function ConsumerGroupsTable({
                 {t("ConsumerGroupsTable.overall_lag")}{" "}
                 <Tooltip
                   style={{ whiteSpace: "pre-line" }}
-                  content={t.rich("ConsumerGroupsTable.overall_lag_tooltip")}
+                  content={
+                    <RichText>
+                      {(tags) =>
+                        t.rich("ConsumerGroupsTable.overall_lag_tooltip", tags)
+                      }
+                    </RichText>
+                  }
                 >
                   <HelpIcon />
                 </Tooltip>
@@ -135,7 +150,13 @@ export function ConsumerGroupsTable({
               <Th key={key}>
                 {t("ConsumerGroupsTable.members")}{" "}
                 <Tooltip
-                  content={t.rich("ConsumerGroupsTable.members_tooltip")}
+                  content={
+                    <RichText>
+                      {(tags) =>
+                        t.rich("ConsumerGroupsTable.members_tooltip", tags)
+                      }
+                    </RichText>
+                  }
                 >
                   <HelpIcon />
                 </Tooltip>
