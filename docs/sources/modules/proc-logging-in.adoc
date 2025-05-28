@@ -1,5 +1,5 @@
 [id='proc-logging-in-{context}']
-= Logging in to a Kafka cluster
+= Logging in to a Kafka cluster from the homepage
 
 [role="_abstract"]
 The console supports authenticated user login to a Kafka cluster using SCRAM-SHA-512 and OAuth 2.0 authentication mechanisms.
@@ -31,11 +31,11 @@ For more information on configuring authentication, see the link:{BookURLDeployi
 
 .Procedure
 
-. From the homepage, click *Login to cluster* for a selected Kafka cluster.
+. From the homepage, optionally filter the list of clusters by name, then click *Login to cluster* for a selected Kafka cluster.
 . Enter login credentials depending on the authentication method used.
 +
 * For SCRAM-SHA-512, enter the username and password associated with the `KafkaUser`. 
 * For OAuth 2.0, provide a client ID and client secret that is valid for the OAuth provider configured for the Kafka listener.
 
-. To end your session, click your username and then *Logout* or navigate back to the homepage. 
+. To end your session, click your username and select *Logout*, or return to the homepage. 
 
