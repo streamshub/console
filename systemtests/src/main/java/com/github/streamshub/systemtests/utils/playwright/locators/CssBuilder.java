@@ -91,6 +91,7 @@ public class CssBuilder {
     public CssBuilder withElementDl() { return withElement("dl"); }
     public CssBuilder withElementDt() { return withElement("dt"); }
     public CssBuilder withElementDd() { return withElement("dd"); }
+    public CssBuilder withElementForm() { return withElement("form"); }
     public CssBuilder withElementFooter() { return withElement("footer"); }
     public CssBuilder withElementLabel() { return withElement("label"); }
     public CssBuilder withElementThead() { return withElement("thead"); }
