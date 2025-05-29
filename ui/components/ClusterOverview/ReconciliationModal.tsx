@@ -49,11 +49,9 @@ export function ReconciliationModal({
         >
           {t("reconciliation.confirm")}
         </Button>
-        ,
         <Button key="cancel" variant="link" onClick={onClickClose}>
           {t("reconciliation.cancel")}
         </Button>
-        ,
       </ModalFooter>
     </Modal>
   );
