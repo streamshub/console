@@ -77,7 +77,7 @@ public class PwUtils {
      */
     public static String getTrimmedText(String text) {
         return text.replace("\n", "")
-            .replaceAll("[\\h\\s{2,}\\t]", " ")
+            .replaceAll("[\\h\\s\\t]", " ")
             .trim();
     }
 
@@ -92,12 +92,12 @@ public class PwUtils {
         locator.waitFor(new Locator.WaitForOptions().setTimeout(timeout).setState(WaitForSelectorState.VISIBLE));
     }
 
-    public static void waitForContainsText(TestCaseConfig tcc, Locator locator, String text) {
-        waitForContainsText(tcc.page(), locator, text, TimeConstants.COMPONENT_LOAD_TIMEOUT, true);
+    public static void waitForContainsText(TestCaseConfig tcc, Locator locator, String text, boolean reload) {
+        waitForContainsText(tcc.page(), locator, text, TimeConstants.COMPONENT_LOAD_TIMEOUT, reload);
     }
 
-    public static void waitForContainsText(TestCaseConfig tcc, String selector, String text) {
-        waitForContainsText(tcc.page(), CssSelectors.getLocator(tcc, selector), text, TimeConstants.COMPONENT_LOAD_TIMEOUT, true);
+    public static void waitForContainsText(TestCaseConfig tcc, String selector, String text, boolean reload) {
+        waitForContainsText(tcc.page(), CssSelectors.getLocator(tcc, selector), text, TimeConstants.COMPONENT_LOAD_TIMEOUT, reload);
     }
 
     /**

@@ -52,17 +52,32 @@ public class CssSelectors {
         .withElementSection().withComponentPage().withSubComponentMainSection()
         .build();
 
-    public static final String PAGES_CONTENT_HEADER = new CssBuilder(PAGES_MAIN_CONTENT)
+    public static final String PAGES_HEADER = new CssBuilder(PAGES_MAIN_CONTENT)
         .withChild()
         .withElementDiv().withComponentPage().withSubComponentMainGroup()
         .build();
 
-    public static final String PAGES_HEADER_RELOAD_BUTTON = new CssBuilder(PAGES_CONTENT_HEADER)
-        .withChild()
+    public static final String PAGES_HEADER_CONTENT = new CssBuilder(PAGES_MAIN_CONTENT)
         .withElementSection().withComponentPage().withSubComponentMainSection().withChild()
         .withElementDiv().withComponentPage().withSubComponentMainBody().withChild()
         .withElementDiv().withLayoutFlex().withChild()
         .withElementDiv().withLayoutFlex().nth(1).withChild()
+        .build();
+
+    public static final String PAGES_HEADER_BREADCRUMB = new CssBuilder(PAGES_HEADER)
+        .withChild()
+        .withElementSection().withComponentPage().withSubComponentMainBreadcrumb().withChild()
+        .withElementDiv().withComponentPage().withSubComponentMainBody().withChild()
+        .withElementNav().withComponentBreadcrumb()
+        .build();
+
+    public static final String PAGES_HEADER_BREADCRUMB_ITEMS = new CssBuilder(PAGES_HEADER_BREADCRUMB)
+        .withChild()
+        .withElementOl().withComponentBreadcrumb().withSubComponentList().withChild()
+        .withElementLi().withComponentBreadcrumb().withSubComponentItem()
+        .build();
+
+    public static final String PAGES_HEADER_RELOAD_BUTTON = new CssBuilder(PAGES_HEADER_CONTENT)
         .withElementDiv().nth(2).withChild()
         .withElementDiv().withChild()
         .withElementButton().withComponentButton()
@@ -114,6 +129,7 @@ public class CssSelectors {
         .withElementBody().withChild()
         .withElementDiv().withChild()
         .withElementDiv().withComponentPage().withChild()
+        .withElementDiv().withComponentPage().withSubComponentMainContainer().withChild()
         .withElementMain().withComponentPage().withSubComponentMain().withChild()
         .withElementDiv().withComponentBanner().withChild()
         .withElementDiv().withLayoutBullseye().withChild()
@@ -121,8 +137,6 @@ public class CssSelectors {
         .build();
 
     public static final String C_OVERVIEW_RECONCILIATION_PAUSED_NOTIFICATION_RESUME_BUTTON = new CssBuilder(C_OVERVIEW_RECONCILIATION_PAUSED_NOTIFICATION)
-        .withChild()
-        .withElementDiv().withChild()
         .withElementButton().withComponentButton()
         .build();
 
@@ -198,30 +212,81 @@ public class CssSelectors {
     // ----------------------------
     // Brokers page
     // ----------------------------
-    public static final String PAGES_CONTENT_HEADER_CONTENT_TITLE = new CssBuilder(PAGES_CONTENT_HEADER)
-        .withElementSection().withComponentPage().withSubComponentMainSection().withChild()
-        .withElementDiv().withLayoutFlex().withChild()
-        .withElementDiv().withLayoutFlex().withChild()
+    public static final String PAGES_CONTENT_HEADER_TITLE_CONTENT = new CssBuilder(PAGES_HEADER_CONTENT)
         .withElementDiv().withChild()
         .withElementH1().withComponentTitle()
         .build();
 
-    public static final String BROKERS_PAGE_HEADER_TITLE_BROKER_COUNT = new CssBuilder(PAGES_CONTENT_HEADER_CONTENT_TITLE)
+    public static final String PAGES_CONTENT_HEADER_TITLE_CONTENT_ITEMS = new CssBuilder(PAGES_CONTENT_HEADER_TITLE_CONTENT)
+        .withChild()
         .withElementDiv().withLayoutSplit().withChild()
-        .withElementDiv().withLayoutSplit().withSubComponentItem().withChild()
+        .withElementDiv().withLayoutSplit().withSubComponentItem()
+        .build();
+
+    public static final String PAGES_CONTENT_HEADER_PAGE_NAME = new CssBuilder(PAGES_CONTENT_HEADER_TITLE_CONTENT_ITEMS)
+        .nth(1).withChild()
+        .build();
+
+    public static final String NODES_PAGE_HEADER_TITLE_BADGE_TOTAL_COUNT = new CssBuilder(PAGES_CONTENT_HEADER_TITLE_CONTENT_ITEMS)
+        .nth(2).withChild()
         .withElementSpan().withComponentLabel().withChild()
         .withElementSpan().withComponentLabel().withSubComponentContent().withChild()
         .withElementSpan().withComponentLabel().withSubComponentText()
         .build();
 
-    public static final String BROKERS_PAGE_TABLE_HEADER = new CssBuilder(PAGES_CONTENT)
+    public static final String NODES_PAGE_HEADER_TITLE_BADGE_WORKING_NODES_COUNT = new CssBuilder(PAGES_CONTENT_HEADER_TITLE_CONTENT_ITEMS)
+        .nth(3).withChild()
+        .withElementDiv().withChild()
+        .withElementSpan().withComponentLabel().withChild()
+        .withElementSpan().withComponentLabel().withSubComponentContent().withChild()
+        .withElementSpan().withComponentLabel().withSubComponentText()
+        .build();
+
+    public static final String NODES_PAGE_HEADER_TITLE_BADGE_WARNING_NODES_COUNT = new CssBuilder(PAGES_CONTENT_HEADER_TITLE_CONTENT_ITEMS)
+        .nth(4).withChild()
+        .withElementDiv().withChild()
+        .withElementSpan().withComponentLabel().withChild()
+        .withElementSpan().withComponentLabel().withSubComponentContent().withChild()
+        .withElementSpan().withComponentLabel().withSubComponentText()
+        .build();
+
+    public static final String NODES_PAGE_OVERVIEW_ITEMS = new CssBuilder(PAGES_CONTENT)
+        .withChild()
+        .withElementDiv().withComponentPage().withSubComponentMainBody().withChild()
+        .withElementDiv().withLayoutGrid().withChild()
+        .withElementDiv().withLayoutGrid().withSubComponentItem().nth(1).withChild()
+        .withElementDiv().withLayoutGrid().withChild()
+        .withElementDiv().withLayoutGrid().withSubComponentItem()
+        .build();
+
+    public static final String NODES_PAGE_OVERVIEW_NODE_ITEMS = new CssBuilder(NODES_PAGE_OVERVIEW_ITEMS)
+        .nth(1).withChild()
+        .withElementDiv().withComponentCard().withChild()
+        .withElementDiv().withComponentCard().withSubComponentBody().withChild()
+        .withElementDl().withComponentDescriptionList().withChild()
+        .withElementDiv().withComponentDescriptionList().withSubComponentGroup()
+        .build();
+
+    public static final String NODES_PAGE_OVERVIEW_PARTITIONS = new CssBuilder(NODES_PAGE_OVERVIEW_ITEMS)
+        .nth(2)
+        .build();
+
+    public static final String NODES_PAGE_CONTENT = new CssBuilder(PAGES_CONTENT)
+        .withChild()
+        .withElementDiv().withComponentPage().withSubComponentMainBody().withChild()
+        .withElementDiv().withLayoutGrid().withChild()
+        .withElementDiv().withLayoutGrid().withSubComponentItem().nth(2)
+        .build();
+
+
+    public static final String NODES_PAGE_TABLE_HEADER = new CssBuilder(PAGES_CONTENT)
         .withElementTable().withComponentTable().withChild()
         .withElementThead().withComponentTable().withSubComponentThead().withChild()
         .withElementTr().withComponentTable().withSubComponentTr().withChild()
         .withElementTh().withComponentTable().withSubComponentTh()
         .build();
 
-    public static final String BROKERS_PAGE_TABLE_BODY = new CssBuilder(PAGES_CONTENT)
+    public static final String NODES_PAGE_TABLE_BODY = new CssBuilder(PAGES_CONTENT)
         .withElementTable().withComponentTable().withChild()
         .withElementTbody().withComponentTable().withSubComponentTbody()
         .build();

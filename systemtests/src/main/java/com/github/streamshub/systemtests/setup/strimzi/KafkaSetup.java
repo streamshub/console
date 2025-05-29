@@ -49,7 +49,7 @@ public class KafkaSetup {
         setupKafkaIfNeeded(
             getDefaultKafkaConfigMap(namespaceName, clusterName),
             getDefaultBrokerNodePools(namespaceName, clusterName, Constants.REGULAR_BROKER_REPLICAS),
-            getDefaultControllerNodePools(namespaceName, clusterName, Constants.REGULAR_BROKER_REPLICAS),
+            getDefaultControllerNodePools(namespaceName, clusterName, Constants.REGULAR_CONTROLLER_REPLICAS),
             getDefaultKafkaUser(namespaceName, clusterName),
             getDefaultKafka(namespaceName, clusterName, Environment.ST_KAFKA_VERSION, Constants.REGULAR_BROKER_REPLICAS)
         );
