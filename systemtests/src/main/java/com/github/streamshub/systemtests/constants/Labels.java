@@ -27,9 +27,15 @@ public class Labels {
     public static final String STRIMZI_BROKER_ROLE_LABEL = ResourceLabels.STRIMZI_DOMAIN + "broker-role";
     public static final String STRIMZI_CONTROLLER_ROLE_LABEL = ResourceLabels.STRIMZI_DOMAIN + "controller-role";
 
-    // ------------
-    // Label selectors
-    // ------------
+    /**
+     * Creates a {@link LabelSelector} for a KafkaNodePool based on cluster name, pool name, and process role.
+     *
+     * @param clusterName the name of the Kafka cluster
+     * @param poolName the KafkaNodePool name (e.g., broker or controller pool)
+     * @param processRole the {@link ProcessRoles} enum indicating the role (BROKER or CONTROLLER)
+     * @return a {@link LabelSelector} matching the specified labels
+     * @throws UnsupportedKafkaRoleException if the process role is not BROKER or CONTROLLER
+     */
     private static LabelSelector getKnpLabelSelector(String clusterName, String poolName, ProcessRoles processRole) {
         Map<String, String> matchLabels = new HashMap<>();
 
@@ -46,13 +52,32 @@ public class Labels {
         return new LabelSelectorBuilder().withMatchLabels(matchLabels).build();
     }
 
+    /**
+     * Returns a {@link LabelSelector} for the KafkaNodePool brokers of the specified cluster.
+     *
+     * @param clusterName the name of the Kafka cluster
+     * @return a {@link LabelSelector} selecting broker pods in the cluster
+     */
     public static LabelSelector getKnpBrokerLabelSelector(String clusterName) {
         return getKnpLabelSelector(clusterName, KafkaNamingUtils.brokerPoolName(clusterName), ProcessRoles.BROKER);
     }
+
+    /**
+     * Returns a {@link LabelSelector} for the KafkaNodePool controllers of the specified cluster.
+     *
+     * @param clusterName the name of the Kafka cluster
+     * @return a {@link LabelSelector} selecting controller pods in the cluster
+     */
     public static LabelSelector getKnpControllerLabelSelector(String clusterName) {
         return getKnpLabelSelector(clusterName, KafkaNamingUtils.controllerPoolName(clusterName), ProcessRoles.CONTROLLER);
     }
 
+    /**
+     * Returns a {@link LabelSelector} matching all Kafka pods belonging to the specified cluster.
+     *
+     * @param clusterName the name of the Kafka cluster
+     * @return a {@link LabelSelector} selecting all Kafka pods of the cluster
+     */
     public static LabelSelector getKafkaPodLabelSelector(String clusterName) {
         return new LabelSelectorBuilder().withMatchLabels(Map.of(
                 ResourceLabels.STRIMZI_CLUSTER_LABEL, clusterName,
@@ -60,5 +85,4 @@ public class Labels {
             ))
             .build();
     }
-
 }

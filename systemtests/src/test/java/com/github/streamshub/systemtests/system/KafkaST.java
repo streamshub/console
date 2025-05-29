@@ -33,6 +33,17 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class KafkaST extends AbstractST {
     private static final Logger LOGGER = LogWrapper.getLogger(KafkaST.class);
 
+    /**
+     * Tests the pause and resume functionality of Kafka reconciliation via the UI.
+     *
+     * <p>The test verifies the initial state where reconciliation is not paused, then pauses reconciliation using the UI modal.</p>
+     * <p>It checks that the pause notification appears and that the Kafka resource annotation reflects the paused state.</p>
+     * <p>After pausing, it attempts to scale Kafka brokers, which should not apply until reconciliation is resumed.</p>
+     * <p>Finally, the test resumes reconciliation through the UI and verifies that the annotation is cleared and scaling proceeds as expected.</p>
+     *
+     * <p>This ensures that reconciliation pause/resume works correctly, blocking changes when paused and applying them upon resuming.</p>
+     */
+
     @Test
     void testPauseAndResumeReconciliation() {
         final TestCaseConfig tcc = getTestCaseConfig();
@@ -107,6 +118,16 @@ class KafkaST extends AbstractST {
         WaitUtils.waitForPodsReady(tcc.namespace(), Labels.getKnpBrokerLabelSelector(tcc.kafkaName()), scaledBrokersCount, true);
     }
 
+    /**
+     * Tests adding and removing Kafka brokers via scaling.
+     *
+     * <p>This test verifies that the default number of brokers is displayed correctly in the UI on both the Overview and Nodes pages.</p>
+     * <p>It then scales up the broker count, waits for pods to be ready, and confirms the UI updates to show the increased broker count.</p>
+     * <p>Finally, it scales the brokers back down to the default count and verifies the UI reflects this change.</p>
+     *
+     * <p>This ensures that broker scaling changes are accurately reflected in the Console UI and that the cluster remains stable.</p>
+     */
+
     @Test
     void testAddRemoveBrokers() {
         final TestCaseConfig tcc = getTestCaseConfig();
@@ -169,6 +190,14 @@ class KafkaST extends AbstractST {
         assertEquals(Constants.REGULAR_BROKER_REPLICAS, CssSelectors.getLocator(tcc, CssSelectors.BROKERS_PAGE_TABLE_BODY).all().size());
     }
 
+    /**
+     * Tests Kafka warnings display in the Console UI.
+     *
+     * <p>Verifies that initially no warnings are shown, then injects a faulty config to trigger a warning,
+     * checks the warning appears in the UI, and finally removes the fault to confirm warnings clear.</p>
+     *
+     * <p>This ensures the UI properly reflects Kafka’s warning status changes after config updates.</p>
+     */
     @Test
     void testDisplayKafkaWarnings() {
         final TestCaseConfig tcc = getTestCaseConfig();

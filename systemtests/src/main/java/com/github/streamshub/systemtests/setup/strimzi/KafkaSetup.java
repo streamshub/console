@@ -34,7 +34,17 @@ public class KafkaSetup {
     private static final Logger LOGGER = LogWrapper.getLogger(KafkaSetup.class);
 
     private KafkaSetup() {}
-
+    /**
+     * Sets up the default Kafka deployment in the specified namespace and cluster
+     * if it does not already exist.
+     *
+     * <p>This method uses default configurations for the Kafka ConfigMap, broker node pools,
+     * controller node pools, Kafka user, and Kafka cluster resource. It delegates
+     * to {@code setupKafkaIfNeeded} with these default resources.
+     *
+     * @param namespaceName the Kubernetes namespace where Kafka should be set up
+     * @param clusterName the name of the Kafka cluster to set up
+     */
     public static void setupDefaultKafkaIfNeeded(String namespaceName, String clusterName) {
         setupKafkaIfNeeded(
             getDefaultKafkaConfigMap(namespaceName, clusterName),
@@ -45,6 +55,22 @@ public class KafkaSetup {
         );
     }
 
+    /**
+     * Sets up Kafka and its related components if the Kafka cluster does not already exist.
+     *
+     * <p>This method checks if the Kafka resource is already present in the cluster by namespace
+     * and name. If not present, it creates the provided ConfigMap, broker and controller node pools,
+     * Kafka resource, and KafkaUser resources sequentially, waiting for each creation to complete.
+     * It also waits for the KafkaUser's Secret to become ready before returning.
+     *
+     * <p>If the Kafka cluster already exists, the method logs a warning and skips deployment.
+     *
+     * @param configMap the ConfigMap resource for Kafka configuration
+     * @param brokerNodePools the KafkaNodePool resource defining the broker node pools
+     * @param controllerNodePools the KafkaNodePool resource defining the controller node pools
+     * @param kafkaUser the KafkaUser resource representing Kafka user credentials
+     * @param kafka the Kafka custom resource representing the Kafka cluster
+     */
     public static void setupKafkaIfNeeded(ConfigMap configMap, KafkaNodePool brokerNodePools, KafkaNodePool controllerNodePools, KafkaUser kafkaUser, Kafka kafka) {
         LOGGER.info("Setup test Kafka {}/{}  and it's components", kafka.getMetadata().getNamespace(), kafka.getMetadata().getName());
         if (ResourceUtils.getKubeResource(Kafka.class, kafka.getMetadata().getNamespace(), kafka.getMetadata().getName()) == null) {
@@ -59,6 +85,16 @@ public class KafkaSetup {
         }
     }
 
+    /**
+     * Returns the default Kafka metrics {@link ConfigMap} for the specified namespace and cluster.
+     *
+     * <p>The ConfigMap is created by loading a predefined YAML template and customizing its metadata
+     * with the provided namespace, cluster name, and appropriate labels.
+     *
+     * @param namespaceName the Kubernetes namespace where the ConfigMap will be created
+     * @param clusterName the name of the Kafka cluster
+     * @return a {@link ConfigMap} configured with default Kafka metrics settings
+     */
     public static ConfigMap getDefaultKafkaConfigMap(String namespaceName, String clusterName) {
         return new ConfigMapBuilder(TestFrameUtils.configFromYaml(ExampleFiles.EXAMPLES_KAFKA_METRICS_CONFIG_MAP, ConfigMap.class))
             .editMetadata()
@@ -69,6 +105,17 @@ public class KafkaSetup {
             .build();
     }
 
+    /**
+     * Creates the default {@link KafkaNodePool} for Kafka brokers with the specified configuration.
+     *
+     * <p>The node pool is configured with the given namespace, cluster name, number of replicas,
+     * broker role, and JBOD persistent storage of 10Gi per broker with claim deletion enabled.
+     *
+     * @param namespaceName the Kubernetes namespace for the KafkaNodePool resource
+     * @param clusterName the name of the Kafka cluster
+     * @param replicas the number of broker replicas to configure in the node pool
+     * @return a {@link KafkaNodePool} configured as a broker node pool with JBOD storage
+     */
     public static KafkaNodePool getDefaultBrokerNodePools(String namespaceName, String clusterName, int replicas) {
         return new KafkaNodePoolBuilder()
             .withNewMetadata()
@@ -90,6 +137,17 @@ public class KafkaSetup {
             .build();
     }
 
+    /**
+     * Creates the default {@link KafkaNodePool} for Kafka controllers with the specified configuration.
+     *
+     * <p>The node pool is configured with the given namespace, cluster name, number of replicas,
+     * controller role, and JBOD persistent storage of 10Gi per controller with claim deletion enabled.
+     *
+     * @param namespaceName the Kubernetes namespace for the KafkaNodePool resource
+     * @param clusterName the name of the Kafka cluster
+     * @param replicas the number of controller replicas to configure in the node pool
+     * @return a {@link KafkaNodePool} configured as a controller node pool with JBOD storage
+     */
     public static KafkaNodePool getDefaultControllerNodePools(String namespaceName, String clusterName, int replicas) {
         return new KafkaNodePoolBuilder()
             .withNewMetadata()
@@ -111,6 +169,17 @@ public class KafkaSetup {
             .build();
     }
 
+    /**
+     * Creates the default {@link KafkaUser} for the given Kafka cluster namespace and name.
+     *
+     * <p>The KafkaUser is configured with SCRAM-SHA-512 client authentication and simple authorization
+     * rules granting permissions to describe cluster resources, read and describe groups, and
+     * read and describe topics with literal resource patterns.
+     *
+     * @param namespaceName the Kubernetes namespace for the KafkaUser resource
+     * @param clusterName the name of the Kafka cluster to associate the user with
+     * @return a {@link KafkaUser} configured with default SCRAM-SHA-512 authentication and authorization rules
+     */
     public static KafkaUser getDefaultKafkaUser(String namespaceName, String clusterName) {
         return new KafkaUserBuilder()
             .withNewMetadata()
@@ -146,6 +215,29 @@ public class KafkaSetup {
             .build();
     }
 
+    /**
+     * Creates a default {@link Kafka} custom resource configured with standard settings.
+     *
+     * <p>This method configures the Kafka cluster with the specified namespace, cluster name,
+     * Kafka version, and number of replicas. It enables KRaft mode and node pools via annotations,
+     * sets up entity operators (user and topic operators), and configures Kafka listeners
+     * including a plain listener and a secure listener with SCRAM-SHA-512 authentication.
+     *
+     * <p>Replication factors and in-sync replica settings are automatically calculated
+     * based on the number of replicas, capped by predefined limits.
+     *
+     * <p>The secure listener type depends on whether the cluster is running on OpenShift
+     * (Route) or not (Ingress), and sets up bootstrap and broker hostnames accordingly.
+     *
+     * <p>A JMX Prometheus Exporter metrics configuration is included, referencing a ConfigMap
+     * for metrics scraping.
+     *
+     * @param namespaceName the Kubernetes namespace where the Kafka cluster will be deployed
+     * @param clusterName the name of the Kafka cluster resource
+     * @param kafkaVersion the Kafka version to use (e.g., "3.5.0")
+     * @param replicas the number of Kafka broker replicas to configure
+     * @return a fully built {@link Kafka} resource object with the default configuration
+     */
     public static Kafka getDefaultKafka(String namespaceName, String clusterName, String kafkaVersion, int replicas) {
         return new KafkaBuilder()
             .editMetadata()

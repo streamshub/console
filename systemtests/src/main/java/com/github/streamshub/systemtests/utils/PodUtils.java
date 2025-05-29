@@ -15,11 +15,32 @@ public class PodUtils {
 
     private PodUtils() {}
 
+    /**
+     * Retrieves a snapshot of the current pods in the given namespace that match the specified label selector.
+     * <p>
+     * The snapshot is represented as a map where the keys are pod names and the values are their UIDs.
+     *
+     * @param namespace   the Kubernetes namespace to search in
+     * @param podSelector the label selector to filter pods
+     * @return a map of pod names to their UIDs
+     */
     public static Map<String, String> getPodSnapshotBySelector(String namespace, LabelSelector podSelector) {
         return ResourceUtils.listKubeResourcesByLabelSelector(Pod.class, namespace, podSelector)
             .stream().collect(Collectors.toMap(pod -> pod.getMetadata().getName(), pod -> pod.getMetadata().getUid()));
     }
 
+    /**
+     * Determines whether all component pods identified by the label selector have rolled (i.e., restarted with new UIDs)
+     * compared to the previously recorded snapshot.
+     * <p>
+     * This method compares the UIDs of pods with the same names from the previous snapshot. If all such UIDs differ,
+     * it means the pods have rolled.
+     *
+     * @param namespace        the Kubernetes namespace containing the pods
+     * @param selector         the label selector to identify the component pods
+     * @param previousSnapshot a snapshot of pod names to UIDs taken before a rolling operation
+     * @return {@code true} if all relevant pods have rolled, {@code false} otherwise
+     */
     public static boolean componentPodsHaveRolled(String namespace, LabelSelector selector, Map<String, String> previousSnapshot) {
         LOGGER.debug("Previous snapshot: {}", new TreeMap<>(previousSnapshot));
         Map<String, String> currentSnapshot = PodUtils.getPodSnapshotBySelector(namespace, selector);
@@ -39,6 +60,14 @@ public class PodUtils {
         return true;
     }
 
+    /**
+     * Calculates a timeout value for operations on a specified number of pods.
+     * <p>
+     * The timeout is scaled linearly based on the number of pods and a global medium timeout constant.
+     *
+     * @param numberOfPods the number of pods the operation will act on
+     * @return the calculated timeout value in milliseconds
+     */
     public static long getTimeoutForPodOperations(int numberOfPods) {
         return TestFrameConstants.GLOBAL_TIMEOUT_MEDIUM * Math.max(1, numberOfPods);
     }
