@@ -125,6 +125,10 @@ class KafkaST extends AbstractST {
         LOGGER.debug("Verify Kafka finally scaled brokers");
         WaitUtils.waitForPodsReady(tcc.namespace(), Labels.getKnpBrokerLabelSelector(tcc.kafkaName()), scaledBrokersCount, true);
 
+        // Check UI displays the broker count change
+        PwUtils.waitForContainsText(tcc.page(), CssSelectors.getLocator(tcc, CssSelectors.C_OVERVIEW_CLUSTER_CARD_KAFKA_DATA_BROKER_COUNT),
+            scaledBrokersCount + "/" + scaledBrokersCount, PodUtils.getTimeoutForPodOperations(scaledBrokersCount - Constants.REGULAR_BROKER_REPLICAS), true);
+
         // Now verify resume from top notification and just check the annotation on Kafka cluster
         LOGGER.info("Pause Kafka reconciliation using UI");
         tcc.page().click(CssSelectors.C_OVERVIEW_KAFKA_PAUSE_RECONCILIATION_BUTTON);
@@ -164,7 +168,8 @@ class KafkaST extends AbstractST {
     void testAddRemoveKafkaNodes() {
         final TestCaseConfig tcc = getTestCaseConfig();
         final int scaledBrokersCount = 7;
-        final int scaledControllersCount = 5;
+        // Note: At this time it's supported to scale only by one controller at the time
+        final int scaledControllersCount = Constants.REGULAR_CONTROLLER_REPLICAS + 1;
 
         LOGGER.info("Verify that default Kafka broker count is {} and controller count is {}", Constants.REGULAR_BROKER_REPLICAS, Constants.REGULAR_CONTROLLER_REPLICAS);
 
@@ -273,7 +278,7 @@ class KafkaST extends AbstractST {
         assertEquals(scaledBrokersCount + scaledControllersCount, CssSelectors.getLocator(tcc, CssSelectors.NODES_PAGE_TABLE_BODY).all().size());
 
         // Scale brokers down
-        // Note: It is not possible to scale controllers from 5 to 3 due to inability to change controller quorums https://github.com/strimzi/strimzi-kafka-operator/issues/9429
+        // Note: It is not possible to scale controllers down due to inability to change dynamically quorums https://github.com/strimzi/strimzi-kafka-operator/issues/9429
         LOGGER.info("Scale Kafka brokers back to the default count of {}", Constants.REGULAR_BROKER_REPLICAS);
         KubeResourceManager.get().createOrUpdateResourceWithWait(
             new KafkaNodePoolBuilder(ResourceUtils.getKubeResource(KafkaNodePool.class, tcc.namespace(), KafkaNamingUtils.brokerPoolName(tcc.kafkaName())))
