@@ -16,6 +16,7 @@ public class TimeConstants {
     // Poll
     public static final long GLOBAL_POLL_INTERVAL_SHORT = secondsInMilis(3);
     public static final long POLL_INTERVAL_FOR_RESOURCE_READINESS = secondsInMilis(5);
+    public static final long ROLLING_UPDATE_POLL_INTERVAL = Duration.ofSeconds(5).toMillis();
 
     // Timeout
     public static final long COMPONENT_LOAD_TIMEOUT = secondsInMilis(40);
