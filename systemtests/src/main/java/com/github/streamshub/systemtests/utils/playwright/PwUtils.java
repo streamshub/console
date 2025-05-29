@@ -47,9 +47,9 @@ public class PwUtils {
     }
 
     /**
-     * Performs login to the Console UI using anonymous login for the specified test case configuration.
+     * Performs login to the Console UI for the specified test case configuration.
      *
-     * <p>Navigates to the Kafka login page, waits for UI readiness, clicks the anonymous login button,
+     * <p>Navigates to the Kafka login page, waits for UI readiness, logs in,
      * and waits until redirected to the overview page.
      *
      * @param tcc the test case configuration containing page and Kafka cluster information
@@ -169,8 +169,7 @@ public class PwUtils {
 
     /**
      * Waits for the Console UI to become ready by repeatedly checking the login page availability.
-     * It navigates to the Kafka login page and verifies if the application is up and
-     * the anonymous login button is visible.
+     * It navigates to the Kafka login page and verifies if the application is up and login elements are visible.
      *
      * @param tcc the {@link TestCaseConfig} containing the Playwright page instance used to perform the checks
      */

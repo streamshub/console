@@ -34,17 +34,7 @@ public class KafkaSetup {
     private static final Logger LOGGER = LogWrapper.getLogger(KafkaSetup.class);
 
     private KafkaSetup() {}
-    /**
-     * Sets up the default Kafka deployment in the specified namespace and cluster
-     * if it does not already exist.
-     *
-     * <p>This method uses default configurations for the Kafka ConfigMap, broker node pools,
-     * controller node pools, Kafka user, and Kafka cluster resource. It delegates
-     * to {@code setupKafkaIfNeeded} with these default resources.
-     *
-     * @param namespaceName the Kubernetes namespace where Kafka should be set up
-     * @param clusterName the name of the Kafka cluster to set up
-     */
+
     public static void setupDefaultKafkaIfNeeded(String namespaceName, String clusterName) {
         setupKafkaIfNeeded(
             getDefaultKafkaConfigMap(namespaceName, clusterName),

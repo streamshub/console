@@ -82,136 +82,7 @@ public class CssSelectors {
         .withElementDiv().withChild()
         .withElementButton().withComponentButton()
         .build();
-
-
-    // -------------
-    // Cluster Overview Page
-    // -------------
-
-    // Reconciliation
-    public static final String C_OVERVIEW_RECONCILIATION_MODAL = new CssBuilder()
-        .withElementBody().withComponentBackdrop().withSubComponentOpen().withChild()
-        .withElementDiv().withComponentBackdrop().withChild()
-        .withElementDiv().withLayoutBullseye().withChild()
-        .withElementDiv().withComponentModalBox()
-        .build();
-
-    public static final String C_OVERVIEW_RECONCILIATION_MODAL_HEADER = new CssBuilder(C_OVERVIEW_RECONCILIATION_MODAL)
-        .withChild()
-        .withElementHeader().withComponentModalBox().withSubComponentHeader()
-        .build();
-
-
-    public static final String C_OVERVIEW_RECONCILIATION_MODAL_CLOSE_BUTTON = new CssBuilder(C_OVERVIEW_RECONCILIATION_MODAL)
-        .withChild()
-        .withElementDiv().withComponentModalBox().withSubComponentClose().withChild()
-        .withElementButton().withComponentButton()
-        .build();
-
-    public static final String C_OVERVIEW_RECONCILIATION_MODAL_BODY = new CssBuilder(C_OVERVIEW_RECONCILIATION_MODAL)
-        .withChild()
-        .withElementDiv().withComponentModalBox().withSubComponentBody()
-        .build();
-
-    public static final String C_OVERVIEW_RECONCILIATION_MODAL_CONFIRM_BUTTON = new CssBuilder(C_OVERVIEW_RECONCILIATION_MODAL)
-        .withChild()
-        .withElementFooter().withComponentModalBox().withSubComponentFooter().withChild()
-        .withElementButton().withComponentButton().nth(1)
-        .build();
-
-    public static final String C_OVERVIEW_RECONCILIATION_MODAL_CANCEL_BUTTON = new CssBuilder(C_OVERVIEW_RECONCILIATION_MODAL)
-        .withChild()
-        .withElementFooter().withComponentModalBox().withSubComponentFooter().withChild()
-        .withElementButton().withComponentButton().nth(2)
-        .build();
-
-    public static final String C_OVERVIEW_RECONCILIATION_PAUSED_NOTIFICATION = new CssBuilder()
-        .withElementBody().withChild()
-        .withElementDiv().withChild()
-        .withElementDiv().withComponentPage().withChild()
-        .withElementDiv().withComponentPage().withSubComponentMainContainer().withChild()
-        .withElementMain().withComponentPage().withSubComponentMain().withChild()
-        .withElementDiv().withComponentBanner().withChild()
-        .withElementDiv().withLayoutBullseye().withChild()
-        .withElementDiv().withLayoutFlex()
-        .build();
-
-    public static final String C_OVERVIEW_RECONCILIATION_PAUSED_NOTIFICATION_RESUME_BUTTON = new CssBuilder(C_OVERVIEW_RECONCILIATION_PAUSED_NOTIFICATION)
-        .withElementButton().withComponentButton()
-        .build();
-
-    public static final String C_OVERVIEW_CLUSTER_CARDS = new CssBuilder(PAGES_CONTENT)
-        .withChild()
-        .withElementDiv().withComponentPage().withSubComponentMainBody().withChild()
-        .withElementDiv().withLayoutGrid().withChild()
-        .withElementDiv().withLayoutGrid().withSubComponentItem().nth(1).withChild()
-        .withElementDiv().withLayoutFlex()
-        .build();
-
-    public static final String C_OVERVIEW_CLUSTER_CARD_KAFKA_INFO = new CssBuilder(C_OVERVIEW_CLUSTER_CARDS)
-        .withChild()
-        .withElementDiv().nth(1).withChild()
-        .withElementDiv().withComponentCard().withChild()
-        .withElementDiv().withComponentCard().withSubComponentBody()
-        .build();
-
-    public static final String C_OVERVIEW_KAFKA_PAUSE_RECONCILIATION_BUTTON = new CssBuilder(C_OVERVIEW_CLUSTER_CARD_KAFKA_INFO)
-        .withChild()
-        .withElementDiv().withLayoutFlex().nth(1).withChild()
-        .withElementDiv().nth(2).withChild()
-        .withElementButton().withComponentButton()
-        .build();
-
-    public static final String C_OVERVIEW_CLUSTER_CARD_KAFKA_NAME = new CssBuilder(C_OVERVIEW_CLUSTER_CARD_KAFKA_INFO)
-        .withChild()
-        .withElementDiv().withLayoutFlex().nth(1).withChild()
-        .withElementDiv().withChild()
-        .withElementH2().withComponentTitle()
-        .build();
-
-    public static final String C_OVERVIEW_CLUSTER_CARD_KAFKA_WARNINGS = new CssBuilder(C_OVERVIEW_CLUSTER_CARD_KAFKA_INFO)
-        .withChild()
-        .withElementDiv().withLayoutFlex().nth(2).withChild()
-        .withElementDiv().withChild()
-        .withElementDiv().withComponentExpandableSection()
-        .build();
-
-    public static final String C_OVERVIEW_CLUSTER_CARD_KAFKA_DATA_ITEMS = new CssBuilder(C_OVERVIEW_CLUSTER_CARD_KAFKA_INFO)
-            .withElementDiv().withLayoutFlex().nth(3).withChild()
-            .withElementDiv().withLayoutGrid().withChild()
-            .withElementDiv().withLayoutGrid().withSubComponentItem()
-            .build();
-
-    public static final String C_OVERVIEW_CLUSTER_CARD_KAFKA_DATA_BROKER_COUNT = new CssBuilder(C_OVERVIEW_CLUSTER_CARD_KAFKA_DATA_ITEMS)
-            .nth(1)
-            .withElementA()
-            .build();
-
-    public static final String C_OVERVIEW_CLUSTER_CARD_KAFKA_DATA_CONSUMER_COUNT = new CssBuilder(C_OVERVIEW_CLUSTER_CARD_KAFKA_DATA_ITEMS)
-            .nth(2)
-            .withElementA()
-            .build();
-
-    public static final String C_OVERVIEW_CLUSTER_CARD_KAFKA_DATA_KAFKA_VERSION = new CssBuilder(C_OVERVIEW_CLUSTER_CARD_KAFKA_DATA_ITEMS)
-            .nth(3).withChild()
-            .withElementDiv().nth(1)
-            .build();
-
-    public static final String C_OVERVIEW_CLUSTER_CARD_KAFKA_WARNINGS_DROPDOWN_BUTTON = new CssBuilder(C_OVERVIEW_CLUSTER_CARD_KAFKA_WARNINGS)
-        .withElementDiv().withComponentExpandableSection().withSubComponentToggle().withChild()
-        .withElementButton()
-        .build();
-
-    public static final String C_OVERVIEW_CLUSTER_CARD_KAFKA_WARNING_MESSAGE_ITEMS = new CssBuilder(C_OVERVIEW_CLUSTER_CARD_KAFKA_WARNINGS)
-        .withElementDiv().withComponentExpandableSection().withSubComponentContent().withChild()
-        .withElementUl().withComponentDataList().withChild()
-        .withElementLi().withComponentDataList().withSubComponentItem()
-        .build();
-
-
-    // ----------------------------
-    // Brokers page
-    // ----------------------------
+    
     public static final String PAGES_CONTENT_HEADER_TITLE_CONTENT = new CssBuilder(PAGES_HEADER_CONTENT)
         .withElementDiv().withChild()
         .withElementH1().withComponentTitle()
@@ -227,6 +98,132 @@ public class CssSelectors {
         .nth(1).withChild()
         .build();
 
+    // -------------
+    // Cluster Overview Page
+    // -------------
+    public static final String C_OVERVIEW_PAGE_RECONCILIATION_MODAL = new CssBuilder()
+        .withElementBody().withComponentBackdrop().withSubComponentOpen().withChild()
+        .withElementDiv().withComponentBackdrop().withChild()
+        .withElementDiv().withLayoutBullseye().withChild()
+        .withElementDiv().withComponentModalBox()
+        .build();
+
+    public static final String C_OVERVIEW_PAGE_RECONCILIATION_MODAL_HEADER = new CssBuilder(C_OVERVIEW_PAGE_RECONCILIATION_MODAL)
+        .withChild()
+        .withElementHeader().withComponentModalBox().withSubComponentHeader()
+        .build();
+
+
+    public static final String C_OVERVIEW_PAGE_RECONCILIATION_MODAL_CLOSE_BUTTON = new CssBuilder(C_OVERVIEW_PAGE_RECONCILIATION_MODAL)
+        .withChild()
+        .withElementDiv().withComponentModalBox().withSubComponentClose().withChild()
+        .withElementButton().withComponentButton()
+        .build();
+
+    public static final String C_OVERVIEW_PAGE_RECONCILIATION_MODAL_BODY = new CssBuilder(C_OVERVIEW_PAGE_RECONCILIATION_MODAL)
+        .withChild()
+        .withElementDiv().withComponentModalBox().withSubComponentBody()
+        .build();
+
+    public static final String C_OVERVIEW_PAGE_RECONCILIATION_MODAL_CONFIRM_BUTTON = new CssBuilder(C_OVERVIEW_PAGE_RECONCILIATION_MODAL)
+        .withChild()
+        .withElementFooter().withComponentModalBox().withSubComponentFooter().withChild()
+        .withElementButton().withComponentButton().nth(1)
+        .build();
+
+    public static final String C_OVERVIEW_PAGE_RECONCILIATION_MODAL_CANCEL_BUTTON = new CssBuilder(C_OVERVIEW_PAGE_RECONCILIATION_MODAL)
+        .withChild()
+        .withElementFooter().withComponentModalBox().withSubComponentFooter().withChild()
+        .withElementButton().withComponentButton().nth(2)
+        .build();
+
+    public static final String C_OVERVIEW_PAGE_RECONCILIATION_PAUSED_NOTIFICATION = new CssBuilder()
+        .withElementBody().withChild()
+        .withElementDiv().withChild()
+        .withElementDiv().withComponentPage().withChild()
+        .withElementDiv().withComponentPage().withSubComponentMainContainer().withChild()
+        .withElementMain().withComponentPage().withSubComponentMain().withChild()
+        .withElementDiv().withComponentBanner().withChild()
+        .withElementDiv().withLayoutBullseye().withChild()
+        .withElementDiv().withLayoutFlex()
+        .build();
+
+    public static final String C_OVERVIEW_PAGE_RECONCILIATION_PAUSED_NOTIFICATION_RESUME_BUTTON = new CssBuilder(C_OVERVIEW_PAGE_RECONCILIATION_PAUSED_NOTIFICATION)
+        .withElementButton().withComponentButton()
+        .build();
+
+    public static final String C_OVERVIEW_PAGE_CLUSTER_CARDS = new CssBuilder(PAGES_CONTENT)
+        .withChild()
+        .withElementDiv().withComponentPage().withSubComponentMainBody().withChild()
+        .withElementDiv().withLayoutGrid().withChild()
+        .withElementDiv().withLayoutGrid().withSubComponentItem().nth(1).withChild()
+        .withElementDiv().withLayoutFlex()
+        .build();
+
+    public static final String C_OVERVIEW_PAGE_CLUSTER_CARD_KAFKA_INFO = new CssBuilder(C_OVERVIEW_PAGE_CLUSTER_CARDS)
+        .withChild()
+        .withElementDiv().nth(1).withChild()
+        .withElementDiv().withComponentCard().withChild()
+        .withElementDiv().withComponentCard().withSubComponentBody()
+        .build();
+
+    public static final String C_OVERVIEW_PAGE_KAFKA_PAUSE_RECONCILIATION_BUTTON = new CssBuilder(C_OVERVIEW_PAGE_CLUSTER_CARD_KAFKA_INFO)
+        .withChild()
+        .withElementDiv().withLayoutFlex().nth(1).withChild()
+        .withElementDiv().nth(2).withChild()
+        .withElementButton().withComponentButton()
+        .build();
+
+    public static final String C_OVERVIEW_PAGE_CLUSTER_CARD_KAFKA_NAME = new CssBuilder(C_OVERVIEW_PAGE_CLUSTER_CARD_KAFKA_INFO)
+        .withChild()
+        .withElementDiv().withLayoutFlex().nth(1).withChild()
+        .withElementDiv().withChild()
+        .withElementH2().withComponentTitle()
+        .build();
+
+    public static final String C_OVERVIEW_PAGE_CLUSTER_CARD_KAFKA_WARNINGS = new CssBuilder(C_OVERVIEW_PAGE_CLUSTER_CARD_KAFKA_INFO)
+        .withChild()
+        .withElementDiv().withLayoutFlex().nth(2).withChild()
+        .withElementDiv().withChild()
+        .withElementDiv().withComponentExpandableSection()
+        .build();
+
+    public static final String C_OVERVIEW_PAGE_CLUSTER_CARD_KAFKA_DATA_ITEMS = new CssBuilder(C_OVERVIEW_PAGE_CLUSTER_CARD_KAFKA_INFO)
+            .withElementDiv().withLayoutFlex().nth(3).withChild()
+            .withElementDiv().withLayoutGrid().withChild()
+            .withElementDiv().withLayoutGrid().withSubComponentItem()
+            .build();
+
+    public static final String C_OVERVIEW_PAGE_CLUSTER_CARD_KAFKA_DATA_BROKER_COUNT = new CssBuilder(C_OVERVIEW_PAGE_CLUSTER_CARD_KAFKA_DATA_ITEMS)
+            .nth(1)
+            .withElementA()
+            .build();
+
+    public static final String C_OVERVIEW_PAGE_CLUSTER_CARD_KAFKA_DATA_CONSUMER_COUNT = new CssBuilder(C_OVERVIEW_PAGE_CLUSTER_CARD_KAFKA_DATA_ITEMS)
+            .nth(2)
+            .withElementA()
+            .build();
+
+    public static final String C_OVERVIEW_PAGE_CLUSTER_CARD_KAFKA_DATA_KAFKA_VERSION = new CssBuilder(C_OVERVIEW_PAGE_CLUSTER_CARD_KAFKA_DATA_ITEMS)
+            .nth(3).withChild()
+            .withElementDiv().nth(1)
+            .build();
+
+    public static final String C_OVERVIEW_PAGE_CLUSTER_CARD_KAFKA_WARNINGS_DROPDOWN_BUTTON = new CssBuilder(C_OVERVIEW_PAGE_CLUSTER_CARD_KAFKA_WARNINGS)
+        .withElementDiv().withComponentExpandableSection().withSubComponentToggle().withChild()
+        .withElementButton()
+        .build();
+
+    public static final String C_OVERVIEW_PAGE_CLUSTER_CARD_KAFKA_WARNING_MESSAGE_ITEMS = new CssBuilder(C_OVERVIEW_PAGE_CLUSTER_CARD_KAFKA_WARNINGS)
+        .withElementDiv().withComponentExpandableSection().withSubComponentContent().withChild()
+        .withElementUl().withComponentDataList().withChild()
+        .withElementLi().withComponentDataList().withSubComponentItem()
+        .build();
+    
+    // ----------------------------
+    // Nodes page
+    // ----------------------------
+    
     public static final String NODES_PAGE_HEADER_TITLE_BADGE_TOTAL_COUNT = new CssBuilder(PAGES_CONTENT_HEADER_TITLE_CONTENT_ITEMS)
         .nth(2).withChild()
         .withElementSpan().withComponentLabel().withChild()
