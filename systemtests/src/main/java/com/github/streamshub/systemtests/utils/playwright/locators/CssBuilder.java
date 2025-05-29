@@ -11,7 +11,7 @@ public class CssBuilder {
     private final StringBuilder cssClass;
 
     // Page css selectors
-    private static final String PATTERNFLY = ".pf-v5";
+    private static final String PATTERNFLY = ".pf-v6";
     private static final String SUFFIX_CONTENT = "-c";
     private static final String SUFFIX_LAYOUT = "-l";
 
@@ -88,6 +88,9 @@ public class CssBuilder {
     // -------------------
     public CssBuilder withElementBody() { return withElement("body"); }
     public CssBuilder withElementDiv() { return withElement("div"); }
+    public CssBuilder withElementDl() { return withElement("dl"); }
+    public CssBuilder withElementDt() { return withElement("dt"); }
+    public CssBuilder withElementDd() { return withElement("dd"); }
     public CssBuilder withElementFooter() { return withElement("footer"); }
     public CssBuilder withElementLabel() { return withElement("label"); }
     public CssBuilder withElementThead() { return withElement("thead"); }
@@ -137,6 +140,7 @@ public class CssBuilder {
     public CssBuilder withComponentButton() { return withComponent("button"); }
     public CssBuilder withComponentCard() { return withComponent("card"); }
     public CssBuilder withComponentBackdrop() { return withComponent("backdrop"); }
+    public CssBuilder withComponentDescriptionList() { return withComponent("description-list"); }
     public CssBuilder withComponentModalBox() { return withComponent("modal-box"); }
     public CssBuilder withComponentChart() { return withComponent("chart"); }
     public CssBuilder withComponentTable() { return withComponent("table"); }
@@ -192,6 +196,7 @@ public class CssBuilder {
     public CssBuilder withSubComponentToggleText() { return withSubComponent("toggle-text"); }
     public CssBuilder withSubComponentToggleIcon() { return withSubComponent("toggle-icon"); }
     public CssBuilder withSubComponentMain() { return withSubComponent("main"); }
+    public CssBuilder withSubComponentMainContainer() { return withSubComponent("main-container"); }
     public CssBuilder withSubComponentMainBody() { return withSubComponent("main-body"); }
     public CssBuilder withSubComponentBrand() { return withSubComponent("brand"); }
     public CssBuilder withSubComponentList() { return withSubComponent("list"); }

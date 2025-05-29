@@ -9,22 +9,24 @@ import com.github.streamshub.systemtests.TestCaseConfig;
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 
-public interface CssSelectors {
+public class CssSelectors {
 
+    private CssSelectors() {}
 
-    static Locator getLocator(TestCaseConfig tcc, String selector) {
+    public static Locator getLocator(TestCaseConfig tcc, String selector) {
         return getLocator(tcc.page(), selector);
     }
 
-    static Locator getLocator(Page page, String selector) {
+    public static Locator getLocator(Page page, String selector) {
         return page.locator(selector);
     }
 
     // ----------------------------
     // Login page
     // ----------------------------
-    String LOGIN_ANONYMOUSLY_BUTTON = new CssBuilder()
-        .withElementBody().withDesc()
+    public static final String LOGIN_ANONYMOUSLY_BUTTON = new CssBuilder()
+        .withElementBody().withChild()
+        .withElementDiv().withChild()
         .withElementDiv().withComponentLogin().withChild()
         .withElementDiv().withComponentLogin().withSubComponentContainer().withChild()
         .withElementMain().withComponentLogin().withSubComponentMain().withChild()
@@ -35,8 +37,9 @@ public interface CssSelectors {
     // ----------------------------
     // Page contents
     // ----------------------------
-    String PAGES_MAIN_CONTENT = new CssBuilder()
+    public static final String PAGES_MAIN_CONTENT = new CssBuilder()
         .withElementDiv().withComponentPage().withChild()
+        .withElementDiv().withComponentPage().withSubComponentMainContainer().withChild()
         .withElementMain().withComponentPage().withSubComponentMain().withChild()
         .withElementDiv().withComponentDrawer().withChild()
         .withElementDiv().withComponentDrawer().withSubComponentMain().withChild()
@@ -44,87 +47,245 @@ public interface CssSelectors {
         .withElementDiv().withComponentDrawer().withSubComponentBody()
         .build();
 
-    String PAGES_CONTENT = new CssBuilder(PAGES_MAIN_CONTENT)
+    public static final String PAGES_CONTENT = new CssBuilder(PAGES_MAIN_CONTENT)
         .withChild()
         .withElementSection().withComponentPage().withSubComponentMainSection()
         .build();
 
+    public static final String PAGES_HEADER = new CssBuilder(PAGES_MAIN_CONTENT)
+        .withChild()
+        .withElementDiv().withComponentPage().withSubComponentMainGroup()
+        .build();
+
+    public static final String PAGES_HEADER_CONTENT = new CssBuilder(PAGES_MAIN_CONTENT)
+        .withElementSection().withComponentPage().withSubComponentMainSection().withChild()
+        .withElementDiv().withComponentPage().withSubComponentMainBody().withChild()
+        .withElementDiv().withLayoutFlex().withChild()
+        .withElementDiv().withLayoutFlex().nth(1).withChild()
+        .build();
+
+    public static final String PAGES_HEADER_BREADCRUMB = new CssBuilder(PAGES_HEADER)
+        .withChild()
+        .withElementSection().withComponentPage().withSubComponentMainBreadcrumb().withChild()
+        .withElementDiv().withComponentPage().withSubComponentMainBody().withChild()
+        .withElementNav().withComponentBreadcrumb()
+        .build();
+
+    public static final String PAGES_HEADER_BREADCRUMB_ITEMS = new CssBuilder(PAGES_HEADER_BREADCRUMB)
+        .withChild()
+        .withElementOl().withComponentBreadcrumb().withSubComponentList().withChild()
+        .withElementLi().withComponentBreadcrumb().withSubComponentItem()
+        .build();
+
+    public static final String PAGES_HEADER_RELOAD_BUTTON = new CssBuilder(PAGES_HEADER_CONTENT)
+        .withElementDiv().nth(2).withChild()
+        .withElementDiv().withChild()
+        .withElementButton().withComponentButton()
+        .build();
+    
+    public static final String PAGES_CONTENT_HEADER_TITLE_CONTENT = new CssBuilder(PAGES_HEADER_CONTENT)
+        .withElementDiv().withChild()
+        .withElementH1().withComponentTitle()
+        .build();
+
+    public static final String PAGES_CONTENT_HEADER_TITLE_CONTENT_ITEMS = new CssBuilder(PAGES_CONTENT_HEADER_TITLE_CONTENT)
+        .withChild()
+        .withElementDiv().withLayoutSplit().withChild()
+        .withElementDiv().withLayoutSplit().withSubComponentItem()
+        .build();
+
+    public static final String PAGES_CONTENT_HEADER_PAGE_NAME = new CssBuilder(PAGES_CONTENT_HEADER_TITLE_CONTENT_ITEMS)
+        .nth(1).withChild()
+        .build();
 
     // -------------
     // Cluster Overview Page
     // -------------
-
-    // Reconciliation
-    String C_OVERVIEW_RECONCILIATION_MODAL = new CssBuilder()
+    public static final String C_OVERVIEW_PAGE_RECONCILIATION_MODAL = new CssBuilder()
         .withElementBody().withComponentBackdrop().withSubComponentOpen().withChild()
         .withElementDiv().withComponentBackdrop().withChild()
         .withElementDiv().withLayoutBullseye().withChild()
         .withElementDiv().withComponentModalBox()
         .build();
 
-    String C_OVERVIEW_RECONCILIATION_MODAL_HEADER = new CssBuilder(C_OVERVIEW_RECONCILIATION_MODAL)
+    public static final String C_OVERVIEW_PAGE_RECONCILIATION_MODAL_HEADER = new CssBuilder(C_OVERVIEW_PAGE_RECONCILIATION_MODAL)
         .withChild()
         .withElementHeader().withComponentModalBox().withSubComponentHeader()
         .build();
 
 
-    String C_OVERVIEW_RECONCILIATION_MODAL_CLOSE_BUTTON = new CssBuilder(C_OVERVIEW_RECONCILIATION_MODAL)
+    public static final String C_OVERVIEW_PAGE_RECONCILIATION_MODAL_CLOSE_BUTTON = new CssBuilder(C_OVERVIEW_PAGE_RECONCILIATION_MODAL)
         .withChild()
         .withElementDiv().withComponentModalBox().withSubComponentClose().withChild()
         .withElementButton().withComponentButton()
         .build();
 
-    String C_OVERVIEW_RECONCILIATION_MODAL_BODY = new CssBuilder(C_OVERVIEW_RECONCILIATION_MODAL)
+    public static final String C_OVERVIEW_PAGE_RECONCILIATION_MODAL_BODY = new CssBuilder(C_OVERVIEW_PAGE_RECONCILIATION_MODAL)
         .withChild()
         .withElementDiv().withComponentModalBox().withSubComponentBody()
         .build();
 
-    String C_OVERVIEW_RECONCILIATION_MODAL_CONFIRM_BUTTON = new CssBuilder(C_OVERVIEW_RECONCILIATION_MODAL)
+    public static final String C_OVERVIEW_PAGE_RECONCILIATION_MODAL_CONFIRM_BUTTON = new CssBuilder(C_OVERVIEW_PAGE_RECONCILIATION_MODAL)
         .withChild()
         .withElementFooter().withComponentModalBox().withSubComponentFooter().withChild()
         .withElementButton().withComponentButton().nth(1)
         .build();
 
-    String C_OVERVIEW_RECONCILIATION_MODAL_CANCEL_BUTTON = new CssBuilder(C_OVERVIEW_RECONCILIATION_MODAL)
+    public static final String C_OVERVIEW_PAGE_RECONCILIATION_MODAL_CANCEL_BUTTON = new CssBuilder(C_OVERVIEW_PAGE_RECONCILIATION_MODAL)
         .withChild()
         .withElementFooter().withComponentModalBox().withSubComponentFooter().withChild()
         .withElementButton().withComponentButton().nth(2)
         .build();
 
-    String C_OVERVIEW_RECONCILIATION_PAUSED_NOTIFICATION = new CssBuilder()
+    public static final String C_OVERVIEW_PAGE_RECONCILIATION_PAUSED_NOTIFICATION = new CssBuilder()
         .withElementBody().withChild()
         .withElementDiv().withChild()
         .withElementDiv().withComponentPage().withChild()
+        .withElementDiv().withComponentPage().withSubComponentMainContainer().withChild()
         .withElementMain().withComponentPage().withSubComponentMain().withChild()
         .withElementDiv().withComponentBanner().withChild()
         .withElementDiv().withLayoutBullseye().withChild()
         .withElementDiv().withLayoutFlex()
         .build();
 
-    String C_OVERVIEW_RECONCILIATION_PAUSED_NOTIFICATION_RESUME_BUTTON = new CssBuilder(C_OVERVIEW_RECONCILIATION_PAUSED_NOTIFICATION)
-        .withChild()
-        .withElementDiv().withChild()
+    public static final String C_OVERVIEW_PAGE_RECONCILIATION_PAUSED_NOTIFICATION_RESUME_BUTTON = new CssBuilder(C_OVERVIEW_PAGE_RECONCILIATION_PAUSED_NOTIFICATION)
         .withElementButton().withComponentButton()
         .build();
 
-    String C_OVERVIEW_CLUSTER_CARDS = new CssBuilder(PAGES_CONTENT)
+    public static final String C_OVERVIEW_PAGE_CLUSTER_CARDS = new CssBuilder(PAGES_CONTENT)
         .withChild()
+        .withElementDiv().withComponentPage().withSubComponentMainBody().withChild()
         .withElementDiv().withLayoutGrid().withChild()
         .withElementDiv().withLayoutGrid().withSubComponentItem().nth(1).withChild()
-        .withElementDiv().withLayoutFlex().withChild()
-        .withElementDiv()
-        .build();
-
-    String C_OVERVIEW_CLUSTER_CARD_KAFKA_INFO = new CssBuilder(C_OVERVIEW_CLUSTER_CARDS)
-        .nth(1)
-        .withElementDiv().withComponentCard().withChild()
-        .withElementDiv().withComponentCard().withSubComponentBody().withChild()
         .withElementDiv().withLayoutFlex()
         .build();
 
-    String C_OVERVIEW_KAFKA_PAUSE_RECONCILIATION_BUTTON = new CssBuilder(C_OVERVIEW_CLUSTER_CARD_KAFKA_INFO)
-        .nth(1).withChild()
+    public static final String C_OVERVIEW_PAGE_CLUSTER_CARD_KAFKA_INFO = new CssBuilder(C_OVERVIEW_PAGE_CLUSTER_CARDS)
+        .withChild()
+        .withElementDiv().nth(1).withChild()
+        .withElementDiv().withComponentCard().withChild()
+        .withElementDiv().withComponentCard().withSubComponentBody()
+        .build();
+
+    public static final String C_OVERVIEW_PAGE_KAFKA_PAUSE_RECONCILIATION_BUTTON = new CssBuilder(C_OVERVIEW_PAGE_CLUSTER_CARD_KAFKA_INFO)
+        .withChild()
+        .withElementDiv().withLayoutFlex().nth(1).withChild()
         .withElementDiv().nth(2).withChild()
         .withElementButton().withComponentButton()
         .build();
+
+    public static final String C_OVERVIEW_PAGE_CLUSTER_CARD_KAFKA_NAME = new CssBuilder(C_OVERVIEW_PAGE_CLUSTER_CARD_KAFKA_INFO)
+        .withChild()
+        .withElementDiv().withLayoutFlex().nth(1).withChild()
+        .withElementDiv().withChild()
+        .withElementH2().withComponentTitle()
+        .build();
+
+    public static final String C_OVERVIEW_PAGE_CLUSTER_CARD_KAFKA_WARNINGS = new CssBuilder(C_OVERVIEW_PAGE_CLUSTER_CARD_KAFKA_INFO)
+        .withChild()
+        .withElementDiv().withLayoutFlex().nth(2).withChild()
+        .withElementDiv().withChild()
+        .withElementDiv().withComponentExpandableSection()
+        .build();
+
+    public static final String C_OVERVIEW_PAGE_CLUSTER_CARD_KAFKA_DATA_ITEMS = new CssBuilder(C_OVERVIEW_PAGE_CLUSTER_CARD_KAFKA_INFO)
+            .withElementDiv().withLayoutFlex().nth(3).withChild()
+            .withElementDiv().withLayoutGrid().withChild()
+            .withElementDiv().withLayoutGrid().withSubComponentItem()
+            .build();
+
+    public static final String C_OVERVIEW_PAGE_CLUSTER_CARD_KAFKA_DATA_BROKER_COUNT = new CssBuilder(C_OVERVIEW_PAGE_CLUSTER_CARD_KAFKA_DATA_ITEMS)
+            .nth(1)
+            .withElementA()
+            .build();
+
+    public static final String C_OVERVIEW_PAGE_CLUSTER_CARD_KAFKA_DATA_CONSUMER_COUNT = new CssBuilder(C_OVERVIEW_PAGE_CLUSTER_CARD_KAFKA_DATA_ITEMS)
+            .nth(2)
+            .withElementA()
+            .build();
+
+    public static final String C_OVERVIEW_PAGE_CLUSTER_CARD_KAFKA_DATA_KAFKA_VERSION = new CssBuilder(C_OVERVIEW_PAGE_CLUSTER_CARD_KAFKA_DATA_ITEMS)
+            .nth(3).withChild()
+            .withElementDiv().nth(1)
+            .build();
+
+    public static final String C_OVERVIEW_PAGE_CLUSTER_CARD_KAFKA_WARNINGS_DROPDOWN_BUTTON = new CssBuilder(C_OVERVIEW_PAGE_CLUSTER_CARD_KAFKA_WARNINGS)
+        .withElementDiv().withComponentExpandableSection().withSubComponentToggle().withChild()
+        .withElementButton()
+        .build();
+
+    public static final String C_OVERVIEW_PAGE_CLUSTER_CARD_KAFKA_WARNING_MESSAGE_ITEMS = new CssBuilder(C_OVERVIEW_PAGE_CLUSTER_CARD_KAFKA_WARNINGS)
+        .withElementDiv().withComponentExpandableSection().withSubComponentContent().withChild()
+        .withElementUl().withComponentDataList().withChild()
+        .withElementLi().withComponentDataList().withSubComponentItem()
+        .build();
+    
+    // ----------------------------
+    // Nodes page
+    // ----------------------------
+    
+    public static final String NODES_PAGE_HEADER_TITLE_BADGE_TOTAL_COUNT = new CssBuilder(PAGES_CONTENT_HEADER_TITLE_CONTENT_ITEMS)
+        .nth(2).withChild()
+        .withElementSpan().withComponentLabel().withChild()
+        .withElementSpan().withComponentLabel().withSubComponentContent().withChild()
+        .withElementSpan().withComponentLabel().withSubComponentText()
+        .build();
+
+    public static final String NODES_PAGE_HEADER_TITLE_BADGE_WORKING_NODES_COUNT = new CssBuilder(PAGES_CONTENT_HEADER_TITLE_CONTENT_ITEMS)
+        .nth(3).withChild()
+        .withElementDiv().withChild()
+        .withElementSpan().withComponentLabel().withChild()
+        .withElementSpan().withComponentLabel().withSubComponentContent().withChild()
+        .withElementSpan().withComponentLabel().withSubComponentText()
+        .build();
+
+    public static final String NODES_PAGE_HEADER_TITLE_BADGE_WARNING_NODES_COUNT = new CssBuilder(PAGES_CONTENT_HEADER_TITLE_CONTENT_ITEMS)
+        .nth(4).withChild()
+        .withElementDiv().withChild()
+        .withElementSpan().withComponentLabel().withChild()
+        .withElementSpan().withComponentLabel().withSubComponentContent().withChild()
+        .withElementSpan().withComponentLabel().withSubComponentText()
+        .build();
+
+    public static final String NODES_PAGE_OVERVIEW_ITEMS = new CssBuilder(PAGES_CONTENT)
+        .withChild()
+        .withElementDiv().withComponentPage().withSubComponentMainBody().withChild()
+        .withElementDiv().withLayoutGrid().withChild()
+        .withElementDiv().withLayoutGrid().withSubComponentItem().nth(1).withChild()
+        .withElementDiv().withLayoutGrid().withChild()
+        .withElementDiv().withLayoutGrid().withSubComponentItem()
+        .build();
+
+    public static final String NODES_PAGE_OVERVIEW_NODE_ITEMS = new CssBuilder(NODES_PAGE_OVERVIEW_ITEMS)
+        .nth(1).withChild()
+        .withElementDiv().withComponentCard().withChild()
+        .withElementDiv().withComponentCard().withSubComponentBody().withChild()
+        .withElementDl().withComponentDescriptionList().withChild()
+        .withElementDiv().withComponentDescriptionList().withSubComponentGroup()
+        .build();
+
+    public static final String NODES_PAGE_OVERVIEW_PARTITIONS = new CssBuilder(NODES_PAGE_OVERVIEW_ITEMS)
+        .nth(2)
+        .build();
+
+    public static final String NODES_PAGE_CONTENT = new CssBuilder(PAGES_CONTENT)
+        .withChild()
+        .withElementDiv().withComponentPage().withSubComponentMainBody().withChild()
+        .withElementDiv().withLayoutGrid().withChild()
+        .withElementDiv().withLayoutGrid().withSubComponentItem().nth(2)
+        .build();
+
+
+    public static final String NODES_PAGE_TABLE_HEADER = new CssBuilder(PAGES_CONTENT)
+        .withElementTable().withComponentTable().withChild()
+        .withElementThead().withComponentTable().withSubComponentThead().withChild()
+        .withElementTr().withComponentTable().withSubComponentTr().withChild()
+        .withElementTh().withComponentTable().withSubComponentTh()
+        .build();
+
+    public static final String NODES_PAGE_TABLE_BODY = new CssBuilder(PAGES_CONTENT)
+        .withElementTable().withComponentTable().withChild()
+        .withElementTbody().withComponentTable().withSubComponentTbody()
+        .build();
+
 }
