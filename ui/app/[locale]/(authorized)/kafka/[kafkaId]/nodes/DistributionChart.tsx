@@ -40,8 +40,14 @@ export function DistributionChart({
   data: Record<string, { leaders?: number; followers?: number }>;
   nodesCount: {
     totalNodes: number;
-    totalBrokers: number;
-    totalControllers: number;
+    brokers: {
+        total: number;
+        warning: boolean;
+    };
+    controllers: {
+        total: number;
+        warning: boolean;
+    };
     leadControllerId: string;
   };
 }) {
@@ -111,10 +117,15 @@ export function DistributionChart({
                   {t("DistributionChart.controller_role")}
                 </DescriptionListTerm>
                 <DescriptionListDescription>
-                  <Icon status={"warning"}>
-                    <ExclamationTriangleIcon />
-                  </Icon>
-                  &nbsp; {nodesCount.totalControllers}
+                  { nodesCount.controllers.warning ?
+                    <Icon status={"warning"}>
+                      <ExclamationTriangleIcon />
+                    </Icon> :
+                    <Icon status={"success"}>
+                      <CheckCircleIcon />
+                    </Icon>
+                  }
+                  &nbsp; {nodesCount.controllers.total}
                 </DescriptionListDescription>
               </DescriptionListGroup>
               <DescriptionListGroup>
@@ -122,10 +133,15 @@ export function DistributionChart({
                   {t("DistributionChart.broker_role")}
                 </DescriptionListTerm>
                 <DescriptionListDescription>
-                  <Icon status={"success"}>
-                    <CheckCircleIcon />
-                  </Icon>
-                  &nbsp; {nodesCount.totalBrokers}
+                  { nodesCount.brokers.warning ?
+                    <Icon status={"warning"}>
+                      <ExclamationTriangleIcon />
+                    </Icon> :
+                    <Icon status={"success"}>
+                      <CheckCircleIcon />
+                    </Icon>
+                  }
+                  &nbsp; {nodesCount.brokers.total}
                 </DescriptionListDescription>
               </DescriptionListGroup>
               <DescriptionListGroup>
