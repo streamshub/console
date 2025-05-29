@@ -109,8 +109,14 @@ async function AsyncNodesTable({
 } & KafkaParams) {
   const nodeCounts = {
     totalNodes: 0,
-    totalBrokers: 0,
-    totalControllers: 0,
+    brokers: {
+        total: 0,
+        warning: false
+    },
+    controllers: {
+        total: 0,
+        warning: false
+    },
     leadControllerId: "",
   };
 
@@ -156,12 +162,23 @@ async function AsyncNodesTable({
   nodeCounts.totalNodes = Object.values(
     nodes.meta.summary.statuses.combined ?? 0,
   ).reduce((tally, value) => tally + value, 0);
-  nodeCounts.totalBrokers = Object.values(
+
+  nodeCounts.brokers.total = Object.values(
     nodes.meta.summary.statuses.brokers ?? 0,
   ).reduce((tally, value) => tally + value, 0);
-  nodeCounts.totalControllers = Object.values(
+  // Set warning if any are not running
+  nodeCounts.brokers.warning = Object.keys(
+    nodes.meta.summary.statuses.brokers ?? {}
+  ).some(key => key !== "Running");
+
+  nodeCounts.controllers.total = Object.values(
     nodes.meta.summary.statuses.controllers ?? 0,
   ).reduce((tally, value) => tally + value, 0);
+  // Set warning if any are not running leader or follower (e.g. lagged or unknown)
+  nodeCounts.controllers.warning = Object.keys(
+    nodes.meta.summary.statuses.controllers ?? {}
+  ).some(key => key !== "QuorumLeader" && key !== "QuorumFollower");
+
   nodeCounts.leadControllerId = nodes.meta.summary.leaderId ?? "";
 
   return (

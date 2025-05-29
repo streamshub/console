@@ -9,8 +9,14 @@ const sampleData = {
 
 const sampleNodesCount = {
   totalNodes: 10,
-  totalBrokers: 7,
-  totalControllers: 3,
+  brokers: {
+    total: 7,
+    warning: false
+  },
+  controllers: {
+    total: 3,
+    warning: false
+  },
   leadControllerId: "1",
 };
 
