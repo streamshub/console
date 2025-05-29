@@ -170,7 +170,6 @@ public class KafkaSetup {
                     .addToConfig("transaction.state.log.replication.factor", Math.min(replicas, 3))
                     .addToConfig("default.replication.factor", Math.min(replicas, 3))
                     .addToConfig("min.insync.replicas", Math.min(Math.max(replicas - 1, 1), 2))
-                    .addToConfig("allow.everyone.if.no.acl.found", "true")
                     .addToListeners(new GenericKafkaListenerBuilder()
                         .withName(Constants.PLAIN_LISTENER_NAME)
                         .withPort(9092)

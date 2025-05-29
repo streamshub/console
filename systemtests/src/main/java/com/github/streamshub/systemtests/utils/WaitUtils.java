@@ -20,7 +20,6 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 import static com.github.streamshub.systemtests.utils.ResourceUtils.listKubeResourcesByPrefix;
 
@@ -88,23 +87,6 @@ public class WaitUtils {
                 }
                 return true;
             }, onTimeout);
-    }
-
-
-    public static void waitForPodRoll(String namespace, String podName, Map<String, String> podSnapshot) {
-        waitForPodRoll(namespace, podName, podSnapshot, TestFrameConstants.GLOBAL_POLL_INTERVAL_MEDIUM, TestFrameConstants.GLOBAL_TIMEOUT);
-    }
-
-    public static void waitForPodRoll(String namespace, String podName, Map<String, String> podSnapshots, long poll, long timeout) {
-        Wait.until("Pod to roll " + namespace + "/" + podName, poll, timeout,
-            () -> {
-                Pod pod = ResourceUtils.getKubeResource(Pod.class, namespace, podName);
-                if (pod != null) {
-                    return !Objects.equals(podSnapshots.get(podName), pod.getMetadata().getUid());
-                }
-                return false;
-            }
-        );
     }
 
     // ------------

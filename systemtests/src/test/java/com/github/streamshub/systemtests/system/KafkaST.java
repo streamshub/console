@@ -200,7 +200,8 @@ class KafkaST extends AbstractST {
                 config.put("inter.broker.protocol.version", "3.3");
             });
 
-        WaitUtils.waitForComponentPodsToRoll(tcc.namespace(), Labels.getKafkaPodLabelSelector(tcc.kafkaName()), kafkaSnapshot);
+        WaitUtils.waitForComponentPodsToRoll(tcc.namespace(), Labels.getKnpControllerLabelSelector(tcc.kafkaName()), kafkaSnapshot);
+        WaitUtils.waitForComponentPodsToRoll(tcc.namespace(), Labels.getKnpBrokerLabelSelector(tcc.kafkaName()), kafkaSnapshot);
         WaitUtils.waitForKafkaHasWarningStatus(tcc.namespace(), tcc.kafkaName());
 
         // Expect a warning message
@@ -229,7 +230,8 @@ class KafkaST extends AbstractST {
             }
         );
 
-        WaitUtils.waitForComponentPodsToRoll(tcc.namespace(), Labels.getKafkaPodLabelSelector(tcc.kafkaName()), kafkaSnapshot);
+        WaitUtils.waitForComponentPodsToRoll(tcc.namespace(), Labels.getKnpControllerLabelSelector(tcc.kafkaName()), kafkaSnapshot);
+        WaitUtils.waitForComponentPodsToRoll(tcc.namespace(), Labels.getKnpBrokerLabelSelector(tcc.kafkaName()), kafkaSnapshot);
         WaitUtils.waitForKafkaHasNoWarningStatus(tcc.namespace(), tcc.kafkaName());
 
         LOGGER.debug("Reload page and verify that there is `No messages` in the warnings list again");
