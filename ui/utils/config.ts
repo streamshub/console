@@ -106,7 +106,7 @@ async function getOrLoadConfig(): Promise<ConsoleConfig> {
                         }
                     };
                 }
-            } else {
+            } else if (trustStoreCfg?.type !== undefined) {
                 log.warn("console configuration with OIDC non-PEM truststore is not supported");
             }
 
