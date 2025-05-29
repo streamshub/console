@@ -25,6 +25,14 @@ public class PwUtils {
     private static final Logger LOGGER = LogWrapper.getLogger(PwUtils.class);
     private PwUtils() {}
 
+    /**
+     * Creates a Playwright {@link Browser} instance based on the configured browser type
+     * and headless mode.
+     *
+     * @param playwright the Playwright instance used to create browsers
+     * @return a launched {@link Browser} instance
+     * @throws SetupException if the configured browser type is not supported
+     */
     public static Browser createBrowser(Playwright playwright) {
         BrowserType.LaunchOptions options = new BrowserType.LaunchOptions().setHeadless(Environment.RUN_HEADLESS);
         BrowserTypes browserType = BrowserTypes.valueOf(Environment.BROWSER_TYPE.toUpperCase(Locale.ENGLISH));
@@ -38,6 +46,14 @@ public class PwUtils {
         };
     }
 
+    /**
+     * Performs login to the Console UI for the specified test case configuration.
+     *
+     * <p>Navigates to the Kafka login page, waits for UI readiness, logs in,
+     * and waits until redirected to the overview page.
+     *
+     * @param tcc the test case configuration containing page and Kafka cluster information
+     */
     public static void login(TestCaseConfig tcc) {
         final String loginUrl = PwPageUrls.getKafkaLoginPage(tcc, tcc.kafkaName());
         LOGGER.info("Logging in to the Console with URL: {}", loginUrl);
@@ -52,9 +68,16 @@ public class PwUtils {
         LOGGER.info("Successfully logged into Console");
     }
 
+    /**
+     * Cleans and trims a given text string by removing newline characters,
+     * replacing multiple horizontal spaces or tabs with a single space, and trimming.
+     *
+     * @param text the input string to be trimmed and cleaned
+     * @return a cleaned, single-line trimmed string
+     */
     public static String getTrimmedText(String text) {
         return text.replace("\n", "")
-            .replaceAll("[\\h\\s{2,}\\t]", " ")
+            .replaceAll("[\\h\\s\\t]", " ")
             .trim();
     }
 
@@ -69,10 +92,26 @@ public class PwUtils {
         locator.waitFor(new Locator.WaitForOptions().setTimeout(timeout).setState(WaitForSelectorState.VISIBLE));
     }
 
-    public static void waitForContainsText(TestCaseConfig tcc, String selector, String text) {
-        waitForContainsText(tcc.page(), CssSelectors.getLocator(tcc, selector), text, TimeConstants.COMPONENT_LOAD_TIMEOUT, true);
+    public static void waitForContainsText(TestCaseConfig tcc, Locator locator, String text, boolean reload) {
+        waitForContainsText(tcc.page(), locator, text, TimeConstants.COMPONENT_LOAD_TIMEOUT, reload);
     }
 
+    public static void waitForContainsText(TestCaseConfig tcc, String selector, String text, boolean reload) {
+        waitForContainsText(tcc.page(), CssSelectors.getLocator(tcc, selector), text, TimeConstants.COMPONENT_LOAD_TIMEOUT, reload);
+    }
+
+    /**
+     * Waits until the given {@link Locator} contains the specified text within the provided timeout.
+     * Optionally reloads the page if the text is not found during the wait.
+     *
+     * <p>If the locator resolves to multiple elements, their inner texts are combined and trimmed before checking.
+     *
+     * @param page the Playwright {@link Page} instance to reload if needed
+     * @param locator the {@link Locator} to check for the expected text
+     * @param text the expected substring text to wait for in the locator
+     * @param componentLoadTimeout maximum time in milliseconds to wait for the text to appear
+     * @param reload if true, reloads the page on each poll when the text is not found
+     */
     public static void waitForContainsText(Page page, Locator locator, String text, long componentLoadTimeout, boolean reload) {
         Wait.until("locator to contain text: " + text, TimeConstants.GLOBAL_POLL_INTERVAL_SHORT, componentLoadTimeout,
             () -> {
@@ -98,9 +137,42 @@ public class PwUtils {
         );
     }
 
-    // -----------------
-    // Wait for UI load
-    // -----------------
+    public static void waitForLocatorCount(TestCaseConfig tcc, int count, String selector, boolean reload) {
+        waitForLocatorCount(tcc, count, CssSelectors.getLocator(tcc, selector), reload);
+    }
+
+    /**
+     * Waits until the specified {@link Locator} has the expected number of elements.
+     * Optionally reloads the page if the count does not match during the wait.
+     *
+     * @param tcc the {@link TestCaseConfig} containing the page instance to reload if needed
+     * @param count the expected number of elements the locator should have
+     * @param locator the {@link Locator} whose elements count is checked
+     * @param reload if true, reloads the page on each poll when the count is incorrect
+     */
+    public static void waitForLocatorCount(TestCaseConfig tcc, int count, Locator locator, boolean reload) {
+        Wait.until("locator to have item count: " + count, TimeConstants.GLOBAL_POLL_INTERVAL_SHORT, TimeConstants.COMPONENT_LOAD_TIMEOUT,
+            () -> {
+                if (locator.all().size() == count) {
+                    LOGGER.debug("Locator has correct item count [{}]", count);
+                    return true;
+                }
+                LOGGER.debug("Locator has incorrect item count [{}]", locator.all().size());
+                if (reload) {
+                    tcc.page().reload(getDefaultReloadOpts());
+                }
+                return false;
+            },
+            () -> LOGGER.error("Page does not have enough locators count [{}] out of required [{}]", locator.all().size(), count)
+        );
+    }
+
+    /**
+     * Waits for the Console UI to become ready by repeatedly checking the login page availability.
+     * It navigates to the Kafka login page and verifies if the application is up and login elements are visible.
+     *
+     * @param tcc the {@link TestCaseConfig} containing the Playwright page instance used to perform the checks
+     */
     public static void waitForConsoleUiToBecomeReady(TestCaseConfig tcc) {
         LOGGER.info("============= Waiting for Console Website to be online =============");
         Wait.until("Console Web to become available", TestFrameConstants.GLOBAL_POLL_INTERVAL_SHORT, TestFrameConstants.GLOBAL_TIMEOUT_SHORT,
@@ -151,5 +223,4 @@ public class PwUtils {
             .setTimeout(TestFrameConstants.GLOBAL_TIMEOUT_SHORT)
             .setWaitUntil(WaitUntilState.LOAD);
     }
-
 }
