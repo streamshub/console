@@ -76,8 +76,10 @@ public class PwUtils {
      * @return a cleaned, single-line trimmed string
      */
     public static String getTrimmedText(String text) {
+        // Replaces newline, NBSP, horizontal whitespace, tab or whitespace with a whitespace
         return text.replace("\n", "")
-            .replaceAll("[\\h\\s\\t]", " ")
+            .replace("\u00A0", " ")
+            .replaceAll("\\s+", " ")
             .trim();
     }
 
@@ -85,7 +87,11 @@ public class PwUtils {
     // Wait for locator
     // -----------------
     public static void waitForLocatorVisible(TestCaseConfig tcc, String selector) {
-        waitForLocatorVisible(CssSelectors.getLocator(tcc, selector), TimeConstants.ELEMENT_VISIBILITY_TIMEOUT);
+        waitForLocatorVisible(CssSelectors.getLocator(tcc, selector));
+    }
+
+    public static void waitForLocatorVisible(Locator locator) {
+        waitForLocatorVisible(locator, TimeConstants.ELEMENT_VISIBILITY_TIMEOUT);
     }
 
     public static void waitForLocatorVisible(Locator locator, long timeout) {

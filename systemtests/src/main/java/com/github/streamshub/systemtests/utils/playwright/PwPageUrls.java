@@ -1,7 +1,7 @@
 package com.github.streamshub.systemtests.utils.playwright;
 
 import com.github.streamshub.systemtests.TestCaseConfig;
-import com.github.streamshub.systemtests.utils.ConsoleUtils;
+import com.github.streamshub.systemtests.utils.resourceutils.ConsoleUtils;
 
 public class PwPageUrls {
     private PwPageUrls() {}
@@ -25,5 +25,9 @@ public class PwPageUrls {
 
     public static String getNodesPage(TestCaseConfig tcc, String kafkaName) {
         return getConsoleUrl(tcc) + getKafkaBaseUrl(kafkaName) + "/nodes";
+    }
+
+    public static String getTopicsPage(TestCaseConfig tcc, String kafkaName) {
+        return getConsoleUrl(tcc) + getKafkaBaseUrl(kafkaName) + "/topics";
     }
 }

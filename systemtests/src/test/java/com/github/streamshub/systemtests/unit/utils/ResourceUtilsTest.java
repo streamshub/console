@@ -1,6 +1,6 @@
 package com.github.streamshub.systemtests.unit.utils;
 
-import com.github.streamshub.systemtests.utils.ResourceUtils;
+import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
 import io.fabric8.kubernetes.api.model.KubernetesResourceList;
 import io.fabric8.kubernetes.api.model.Namespace;
 import io.fabric8.kubernetes.api.model.Pod;

@@ -2,7 +2,7 @@ package com.github.streamshub.systemtests.setup.strimzi;
 
 import com.github.streamshub.systemtests.Environment;
 import com.github.streamshub.systemtests.logs.LogWrapper;
-import com.github.streamshub.systemtests.utils.ResourceUtils;
+import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
 import com.marcnuri.helm.Helm;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.skodjob.testframe.resources.KubeResourceManager;

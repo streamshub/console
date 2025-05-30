@@ -1,4 +1,4 @@
-package com.github.streamshub.systemtests.utils;
+package com.github.streamshub.systemtests.utils.resourceutils;
 
 import com.github.streamshub.systemtests.Environment;
 import com.github.streamshub.systemtests.exceptions.ClusterUnreachableException;

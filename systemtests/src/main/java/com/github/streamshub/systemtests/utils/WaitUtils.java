@@ -5,6 +5,9 @@ import com.github.streamshub.systemtests.constants.TimeConstants;
 import com.github.streamshub.systemtests.enums.ConditionStatus;
 import com.github.streamshub.systemtests.enums.ResourceStatus;
 import com.github.streamshub.systemtests.logs.LogWrapper;
+import com.github.streamshub.systemtests.utils.resourceutils.KafkaNamingUtils;
+import com.github.streamshub.systemtests.utils.resourceutils.PodUtils;
+import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
 import io.fabric8.kubernetes.api.model.ContainerStatus;
 import io.fabric8.kubernetes.api.model.LabelSelector;
 import io.fabric8.kubernetes.api.model.Pod;
@@ -21,7 +24,7 @@ import org.apache.logging.log4j.Logger;
 import java.util.List;
 import java.util.Map;
 
-import static com.github.streamshub.systemtests.utils.ResourceUtils.listKubeResourcesByPrefix;
+import static com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils.listKubeResourcesByPrefix;
 
 public class WaitUtils {
     private static final Logger LOGGER = LogWrapper.getLogger(WaitUtils.class);

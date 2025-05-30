@@ -174,6 +174,7 @@ public class CssBuilder {
     public CssBuilder withSubComponentMainGroup() { return withSubComponent("main-group"); }
     public CssBuilder withSubComponentMainBreadcrumb() { return withSubComponent("main-breadcrumb"); }
     public CssBuilder withSubComponentContentSection() { return withSubComponent("content-section"); }
+    public CssBuilder withSubComponentPageMenu() { return withSubComponent("page-menu"); }
     public CssBuilder withSubComponentMainSection() { return withSubComponent("main-section"); }
     public CssBuilder withSubComponentItem() { return withSubComponent("item"); }
     public CssBuilder withSubComponentOpen() { return withSubComponent("open"); }

@@ -12,8 +12,8 @@ import com.github.streamshub.systemtests.resourcetypes.KafkaType;
 import com.github.streamshub.systemtests.resourcetypes.KafkaUserType;
 import com.github.streamshub.systemtests.setup.console.ConsoleOperatorSetup;
 import com.github.streamshub.systemtests.setup.strimzi.StrimziOperatorSetup;
-import com.github.streamshub.systemtests.utils.ClusterUtils;
-import com.github.streamshub.systemtests.utils.ResourceUtils;
+import com.github.streamshub.systemtests.utils.resourceutils.ClusterUtils;
+import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.Namespace;
 import io.fabric8.kubernetes.api.model.NamespaceBuilder;
@@ -104,7 +104,7 @@ public abstract class AbstractST {
     void setupTestSuite() {
         LOGGER.info("=========== AbstractST - BeforeAll - Setup TestSuite ===========");
         if (ResourceUtils.getKubeResource(Namespace.class, Constants.CO_NAMESPACE) == null) {
-            KubeResourceManager.get().createOrUpdateResourceWithWait(new NamespaceBuilder().withNewMetadata().withName(Constants.CO_NAMESPACE).endMetadata().build());
+            KubeResourceManager.get().createResourceWithWait(new NamespaceBuilder().withNewMetadata().withName(Constants.CO_NAMESPACE).endMetadata().build());
         }
         strimziOperatorSetup.install();
         consoleOperatorSetup.install();
@@ -117,7 +117,7 @@ public abstract class AbstractST {
         // Init test case config based on the test context
         TestCaseConfig tcc = new TestCaseConfig(KubeResourceManager.get().getTestContext());
         // Create namespace
-        KubeResourceManager.get().createOrUpdateResourceWithWait(
+        KubeResourceManager.get().createResourceWithWait(
             new NamespaceBuilder().withNewMetadata().withName(tcc.namespace()).endMetadata().build());
         // Store test case config into the test context
         KubeResourceManager.get().getTestContext()

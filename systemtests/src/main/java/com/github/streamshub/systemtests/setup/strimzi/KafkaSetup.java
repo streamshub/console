@@ -4,16 +4,17 @@ import com.github.streamshub.systemtests.Environment;
 import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.constants.ExampleFiles;
 import com.github.streamshub.systemtests.logs.LogWrapper;
-import com.github.streamshub.systemtests.utils.ClusterUtils;
-import com.github.streamshub.systemtests.utils.KafkaNamingUtils;
-import com.github.streamshub.systemtests.utils.ResourceUtils;
 import com.github.streamshub.systemtests.utils.WaitUtils;
+import com.github.streamshub.systemtests.utils.resourceutils.ClusterUtils;
+import com.github.streamshub.systemtests.utils.resourceutils.KafkaNamingUtils;
+import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
 import io.fabric8.kubernetes.api.model.ConfigMap;
 import io.fabric8.kubernetes.api.model.ConfigMapBuilder;
 import io.skodjob.testframe.resources.KubeResourceManager;
 import io.skodjob.testframe.utils.TestFrameUtils;
 import io.strimzi.api.ResourceAnnotations;
 import io.strimzi.api.ResourceLabels;
+import io.strimzi.api.kafka.model.common.template.ContainerEnvVarBuilder;
 import io.strimzi.api.kafka.model.kafka.Kafka;
 import io.strimzi.api.kafka.model.kafka.KafkaBuilder;
 import io.strimzi.api.kafka.model.kafka.listener.GenericKafkaListenerBuilder;
@@ -241,7 +242,16 @@ public class KafkaSetup {
                     .withNewUserOperator()
                     .endUserOperator()
                     .withNewTopicOperator()
+                        .withReconciliationIntervalMs(20_000L)
                     .endTopicOperator()
+                .withNewTemplate()
+                    .withNewTopicOperatorContainer()
+                        .withEnv(new ContainerEnvVarBuilder()
+                            .withName("STRIMZI_USE_FINALIZERS")
+                            .withValue("false")
+                            .build())
+                    .endTopicOperatorContainer()
+                .endTemplate()
                 .endEntityOperator()
                 .editKafka()
                     .withVersion(kafkaVersion)

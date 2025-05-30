@@ -1,7 +1,7 @@
 package com.github.streamshub.systemtests.constants;
 
 import com.github.streamshub.systemtests.exceptions.UnsupportedKafkaRoleException;
-import com.github.streamshub.systemtests.utils.KafkaNamingUtils;
+import com.github.streamshub.systemtests.utils.resourceutils.KafkaNamingUtils;
 import io.fabric8.kubernetes.api.model.LabelSelector;
 import io.fabric8.kubernetes.api.model.LabelSelectorBuilder;
 import io.strimzi.api.ResourceLabels;
