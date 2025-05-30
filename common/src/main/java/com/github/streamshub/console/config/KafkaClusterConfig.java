@@ -1,6 +1,8 @@
 package com.github.streamshub.console.config;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import jakarta.validation.Valid;
@@ -31,6 +33,7 @@ public class KafkaClusterConfig implements Named {
      * Name of a configured metrics source used by this Kafka cluster
      */
     private String metricsSource;
+    private List<@NotBlank String> kafkaConnectClusters = new ArrayList<>();
     /**
      * Name of a configured schema registry that will be used to ser/des configurations
      * with this Kafka cluster.
@@ -98,6 +101,14 @@ public class KafkaClusterConfig implements Named {
 
     public void setMetricsSource(String metricsSource) {
         this.metricsSource = metricsSource;
+    }
+
+    public List<String> getKafkaConnectClusters() {
+        return kafkaConnectClusters;
+    }
+
+    public void setKafkaConnectClusters(List<String> kafkaConnectClusters) {
+        this.kafkaConnectClusters = kafkaConnectClusters;
     }
 
     public String getSchemaRegistry() {

@@ -41,7 +41,7 @@ import io.xlate.validation.constraints.Expression.ExceptionalValue;
     message = "Parameter value missing or invalid",
     payload = ErrorCategory.InvalidQueryParameter.class,
     node = ListFetchParams.PAGE_BEFORE_PARAM)
-public class ListFetchParams {
+public class ListFetchParams extends FetchParams {
 
     public static final String PAGE_SIZE_PARAM = "page[size]";
     public static final String PAGE_SORT_PARAM = "sort";
