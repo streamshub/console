@@ -1,0 +1,81 @@
+// Module included in the following assemblies:
+//
+// assembly-deploying.adoc
+
+[id='ref-schema-registries-{context}']
+= Using a schema registry with Kafka
+
+[role="_abstract"]
+Integrate a schema registry with the console to centrally manage schemas for Kafka data.
+Configure the console to integrate with an external schema registry, such as Apicurio Registry, to reference and validate schemas used in Kafka data streams. 
+You can use supported authentication methods to authenticate requests to the registry, including OIDC.
+
+You can define schema registry connections globally as part of the console configuration. 
+These connections apply across all Kafka clusters managed by the console.
+
+A placeholder for adding schema registries is provided in: `examples/console/resources/console/010-Console-example.yaml`.
+
+The configuration introduces the following additional properties for console deployment:
+
+`schemaRegistries`:: Defines external schema registries that the console can connect to for schema validation and management.
+`authentication`:: Configures access to the schema registry using `basic`, `bearer` token, or `oidc` authentication.
+`trustStore`:: (Optional) Specifies a truststore for verifying TLS certificates when connecting to the schema registry. 
+Supported formats: `JKS`, `PEM`, `PKCS12`. 
+Content may be provided using a `ConfigMap` or a `Secret`.
+
+.Example schema registry configuration with OIDC authentication
+[source,yaml]
+----
+apiVersion: console.streamshub.github.com/v1alpha1
+kind: Console
+metadata:
+  name: my-console
+spec:
+  hostname: my-console.<cluster_domain>
+  # ...
+  schemaRegistries:
+    - name: test-registry # <1>
+      url: <schema_registry_URL> # <2>
+      authentication: # <3>
+        oidc:
+          authServerUrl: <OIDC_discovery_URL>
+          clientId: <client_id>
+          clientSecret:
+            valueFrom:
+              secretKeyRef:
+                name: my-oidc-secret
+                key: client-secret
+          method: POST # <4>
+          grantType: CLIENT # <5>
+          trustStore: # <6>
+            type: JKS
+            content:
+              valueFrom:
+                configMapKeyRef:
+                  name: my-oidc-configmap
+                  key: ca.jks
+            password: # <7>
+              value: truststore-password
+      trustStore: # <8>
+        type: PEM
+        content:
+          valueFrom:
+            configMapKeyRef:
+              name: my-apicurio-configmap
+              key: cert-chain.pem
+  # ...
+----
+<1> A unique name for the schema registry connection.
+<2> Base URL of the schema registry API. This is typically the REST endpoint, such as \http://<host>/apis/registry/v2.
+<3> Authentication credentials for accessing the schema registry. You can configure one of the following authentication methods:
++
+* `basic`: Requires `username` and `password`.
+* `bearer`: Requires `token`.
+* `oidc`: See xref:ref-authentication-options-{context}[Using an OIDC provider to secure access to Kafka clusters] for details.
+<4> HTTP method used to obtain the token.
+<5> Grant type used for OIDC authentication.
+<6> Optional truststore used to validate the OIDC provider’s TLS certificate. Supported formats include `JKS`, `PEM`, and `PKCS12`. Truststore content can be provided using either a `ConfigMap` (`configMapKeyRef`) or a `Secret` (`secretKeyRef`).
+<7> Optional password for the truststore. Can be provided as a plaintext value (as shown) or via a `Secret`. Plaintext values are not recommended for production.
+<8> Optional truststore used to validate the schema registry’s TLS certificate. Configuration format and source options are the same as for the OIDC truststore.
+
+NOTE: The `grantType` and `method` fields are required for schema registries using non-interactive OIDC authentication, such as the Client Credentials flow. These fields are not needed for interactive logins, like those used to secure Kafka cluster access.

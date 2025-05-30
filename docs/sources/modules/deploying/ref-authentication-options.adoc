@@ -12,6 +12,7 @@ Also define the subjects and roles for user authorization.
 The security profiles can be configured for all Kafka cluster connections on a global level, though you can add roles and rules for specific Kafka clusters.
 
 An example configuration is provided in the following file: `examples/console/resources/console/console-security-oidc.yaml`.
+
 The configuration introduces the following additional properties for console deployment:
 
 `security`:: Properties that define the connection details for the console to connect with the OIDC provider.
@@ -36,19 +37,28 @@ spec:
           secretKeyRef:
             name: my-oidc-secret
             key: client-secret
+      trustStore: # <4>
+        type: JKS
+        content:
+          valueFrom:
+            configMapKeyRef:
+              name: my-oidc-configmap
+              key: ca.jks
+        password: # <5>
+          value: truststore-password      
     subjects:
-      - claim: groups # <4>
-        include: # <5>
+      - claim: groups # <6>
+        include: # <7>
           - <team_name_1>
           - <team_name_2>
-        roleNames: # <6>
+        roleNames: # <8>
           - developers
       - claim: groups
         include:
           - <team_name_3>
         roleNames:
           - administrators
-      - include: #<7>
+      - include: #<9>
           - <user_1>
           - <user_2>
         roleNames:
@@ -56,12 +66,12 @@ spec:
     roles:
       - name: developers
         rules:
-          - resources: # <8> 
+          - resources: # <10> 
               - kafkas
-          - resourceNames: # <9>
+          - resourceNames: # <11>
               - <dev_cluster_a>
               - <dev_cluster_b>
-          - privileges: # <10>
+          - privileges: # <12>
               - '*'
       - name: administrators
         rules:
@@ -81,13 +91,15 @@ spec:
 <1> URL for OIDC provider discovery.
 <2> Client ID for OIDC authentication to identify the client.
 <3> Client secret and client ID used for authentication.
-<4> JWT claim types or names to identify the users or groups.
-<5> Users or groups included under the specified claim.
-<6> Roles assigned to the specified users or groups.
-<7> Specific users included by name when no claim is specified.
-<8> Resources that the assigned role can access.
-<9> Specific resource names accessible by the assigned role.
-<10> Privileges granted to the assigned role for the specified resources.
+<4> Optional truststore used to validate the OIDC provider’s TLS certificate. Supported formats include `JKS`, `PEM`, and `PKCS12`. Truststore content can be provided using either a `ConfigMap` (`configMapKeyRef`) or a `Secret` (`secretKeyRef`).
+<5> Optional password for the truststore. Can be provided as a plaintext value (as shown) or more securely by reference to a `Secret`. Plaintext values are not recommended for production.
+<6> JWT claim types or names to identify the users or groups.
+<7> Users or groups included under the specified claim.
+<8> Roles assigned to the specified users or groups.
+<9> Specific users included by name when no claim is specified.
+<10> Resources that the assigned role can access.
+<11> Specific resource names accessible by the assigned role.
+<12> Privileges granted to the assigned role for the specified resources.
 
 If you want to specify roles and rules for individual Kafka clusters, add the details under `kafka.clusters[].security.roles[]`.
 In the following example, the `console-kafka` cluster allows developers to list and view selected Kafka resources.
