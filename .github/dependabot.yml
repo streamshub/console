@@ -7,7 +7,7 @@ updates:
     interval: weekly
 
 - package-ecosystem: "maven"
-  directory: "/api"
+  directory: "/"
   schedule:
     interval: weekly
   open-pull-requests-limit: 10
