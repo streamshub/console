@@ -6,7 +6,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -57,6 +56,7 @@ import com.github.streamshub.console.api.support.FetchFilterPredicate;
 import com.github.streamshub.console.api.support.KafkaContext;
 import com.github.streamshub.console.api.support.KafkaOffsetSpec;
 import com.github.streamshub.console.api.support.ListRequestContext;
+import com.github.streamshub.console.api.support.Promises;
 import com.github.streamshub.console.api.support.UnknownTopicIdPatch;
 import com.github.streamshub.console.api.support.ValidationProxy;
 import com.github.streamshub.console.config.security.Privilege;
@@ -320,7 +320,7 @@ public class ConsumerGroupService {
                     .map(e -> Map.entry(e.getKey().toKafkaModel(), e.getValue()))
                     .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
-                return allOf(pendingTopicOffsets.values())
+                return Promises.allOf(pendingTopicOffsets.values())
                     .thenRun(() ->
                         pendingTopicOffsets
                             .entrySet()
@@ -407,7 +407,7 @@ public class ConsumerGroupService {
                             })
                             .toCompletableFuture()));
 
-        return allOf(offsetResults.values());
+        return Promises.allOf(offsetResults.values());
     }
 
     private Map<TopicPartition, CompletableFuture<ListOffsetsResultInfo>> getListOffsetsResults(
@@ -421,30 +421,6 @@ public class ConsumerGroupService {
                             .toCompletionStage()
                             .toCompletableFuture()))
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-    }
-
-    static <F extends Object> CompletableFuture<Void> allOf(Collection<CompletableFuture<F>> pending) {
-        return CompletableFuture.allOf(pending.toArray(CompletableFuture[]::new))
-            .exceptionally(error -> {
-                Set<Throwable> suppressed = new LinkedHashSet<>();
-
-                pending.stream()
-                    .filter(CompletableFuture::isCompletedExceptionally)
-                    .forEach(fut -> fut.exceptionally(ex -> {
-                        if (ex instanceof CompletionException ce) {
-                            ex = ce.getCause();
-                        }
-                        suppressed.add(ex);
-                        return null;
-                    }));
-
-                CompletionException aggregator = new CompletionException(
-                        "One or more errors occurred awaiting a collection of pending results",
-                        error);
-                suppressed.forEach(aggregator::addSuppressed);
-
-                throw aggregator;
-            });
     }
 
     public CompletionStage<Void> deleteConsumerGroup(String requestGroupId) {

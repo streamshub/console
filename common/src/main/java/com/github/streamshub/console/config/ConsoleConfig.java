@@ -58,6 +58,9 @@ public class ConsoleConfig {
     @Valid
     KafkaConfig kafka = new KafkaConfig();
 
+    @Valid
+    List<KafkaConnectConfig> kafkaConnectClusters = new ArrayList<>();
+
     @JsonIgnore
     @AssertTrue(message = "Metrics source names must be unique")
     public boolean hasUniqueMetricsSourceNames() {
@@ -129,5 +132,13 @@ public class ConsoleConfig {
 
     public void setKafka(KafkaConfig kafka) {
         this.kafka = kafka;
+    }
+
+    public List<KafkaConnectConfig> getKafkaConnectClusters() {
+        return kafkaConnectClusters;
+    }
+
+    public void setKafkaConnectClusters(List<KafkaConnectConfig> kafkaConnectClusters) {
+        this.kafkaConnectClusters = kafkaConnectClusters;
     }
 }

@@ -19,7 +19,7 @@ public class JsonApiRelationshipToMany extends JsonApiData<List<Identifier>> {
         this(new ArrayList<>());
     }
 
-    protected JsonApiRelationshipToMany(List<Identifier> data) {
+    public JsonApiRelationshipToMany(List<Identifier> data) {
         super(data);
     }
 }
