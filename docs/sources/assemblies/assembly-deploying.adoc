@@ -29,3 +29,5 @@ include::../modules/deploying/proc-connecting-console.adoc[leveloffset=+1]
 include::../modules/deploying/ref-authentication-options.adoc[leveloffset=+2]
 //cluster metrics options
 include::../modules/deploying/ref-metrics-options.adoc[leveloffset=+2]
+//cluster schema registry options
+include::../modules/deploying/ref-schema-registries.adoc[leveloffset=+2]
