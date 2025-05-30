@@ -10,6 +10,7 @@ import jakarta.inject.Inject;
 import org.jboss.logging.Logger;
 
 import com.github.streamshub.console.config.ConsoleConfig;
+import com.github.streamshub.console.config.KafkaConnectConfig;
 import com.github.streamshub.console.config.PrometheusConfig;
 import com.github.streamshub.console.config.SchemaRegistryConfig;
 import com.github.streamshub.console.config.Trustable;
@@ -25,6 +26,7 @@ import io.vertx.core.Vertx;
 public class TrustStoreSupport {
 
     private static final Logger LOGGER = Logger.getLogger(TrustStoreSupport.class);
+    private static final String TRUST_PREFIX_KAFKA_CONNECT = "kafka-connect:";
     private static final String TRUST_PREFIX_METRICS = "metrics-source:";
     private static final String TRUST_PREFIX_SCHEMA_REGISTRY = "schema-registry:";
     private static final String TRUST_PREFIX_OIDC_PROVIDER = "oidc-provider:";
@@ -43,6 +45,8 @@ public class TrustStoreSupport {
 
         if (context != null) {
             return trustConfigName(context, null) + ':' + trustable.getName();
+        } else if (trustable instanceof KafkaConnectConfig) {
+            return TRUST_PREFIX_KAFKA_CONNECT + trustable.getName();
         } else if (trustable instanceof PrometheusConfig) {
             return TRUST_PREFIX_METRICS + trustable.getName();
         } else if (trustable instanceof SchemaRegistryConfig) {

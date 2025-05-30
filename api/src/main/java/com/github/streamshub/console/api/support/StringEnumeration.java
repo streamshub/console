@@ -32,16 +32,27 @@ public @interface StringEnumeration {
 
     Class<? extends Payload>[] payload() default {};
 
-    String[] allowedValues();
+    String[] allowedValues() default {};
+
+    Class<? extends Enum<?>> enumeration() default VoidEnum.class; // NOSONAR
 
     String source() default "";
+
+    enum VoidEnum {
+    }
 
     abstract static class Validator<T> implements ConstraintValidator<StringEnumeration, T> {
         final Set<String> allowedValues = new HashSet<>();
 
         @Override
         public void initialize(StringEnumeration annotation) {
-            allowedValues.addAll(Arrays.asList(annotation.allowedValues()));
+            for (Enum<?> e : annotation.enumeration().getEnumConstants()) {
+                allowedValues.add(e.toString());
+            }
+
+            if (allowedValues.isEmpty()) {
+                allowedValues.addAll(Arrays.asList(annotation.allowedValues()));
+            }
         }
     }
 
