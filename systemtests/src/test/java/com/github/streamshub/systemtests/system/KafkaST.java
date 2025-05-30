@@ -10,6 +10,7 @@ import com.github.streamshub.systemtests.setup.console.ConsoleInstanceSetup;
 import com.github.streamshub.systemtests.setup.strimzi.KafkaSetup;
 import com.github.streamshub.systemtests.utils.KafkaNamingUtils;
 import com.github.streamshub.systemtests.utils.PodUtils;
+import com.github.streamshub.systemtests.utils.KeycloakUtils;
 import com.github.streamshub.systemtests.utils.ResourceUtils;
 import com.github.streamshub.systemtests.utils.WaitUtils;
 import com.github.streamshub.systemtests.utils.playwright.PwPageUrls;
@@ -396,12 +397,12 @@ class KafkaST extends AbstractST {
         PwUtils.waitForContainsText(tcc, CssSelectors.getLocator(tcc, CssSelectors.C_OVERVIEW_PAGE_CLUSTER_CARD_KAFKA_WARNING_MESSAGE_ITEMS).nth(0), "No messages", true);
     }
 
-
     @BeforeEach
     void testCaseSetup() {
         final TestCaseConfig tcc = getTestCaseConfig();
         KafkaSetup.setupDefaultKafkaIfNeeded(tcc.namespace(), tcc.kafkaName());
-        ConsoleInstanceSetup.setupIfNeeded(ConsoleInstanceSetup.getDefaultConsoleInstance(tcc.namespace(), tcc.consoleInstanceName(), tcc.kafkaName(), tcc.kafkaUserName()));
+        ConsoleInstanceSetup.setupIfNeeded(ConsoleInstanceSetup.getDefaultConsoleInstance(tcc.namespace(), tcc.consoleInstanceName(), tcc.kafkaName(), tcc.kafkaUserName(),
+            KeycloakUtils.getClientSecret(Constants.KEYCLOAK_NAMESPACE, keycloakConfig, Constants.KEYCLOAK_REALM, Constants.KEYCLOAK_CLIENT_ID)));
         PwUtils.login(tcc);
     }
 }

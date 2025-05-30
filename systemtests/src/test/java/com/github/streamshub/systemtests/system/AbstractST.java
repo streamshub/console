@@ -11,6 +11,8 @@ import com.github.streamshub.systemtests.resourcetypes.KafkaTopicType;
 import com.github.streamshub.systemtests.resourcetypes.KafkaType;
 import com.github.streamshub.systemtests.resourcetypes.KafkaUserType;
 import com.github.streamshub.systemtests.setup.console.ConsoleOperatorSetup;
+import com.github.streamshub.systemtests.setup.keycloak.KeycloakConfig;
+import com.github.streamshub.systemtests.setup.keycloak.KeycloakSetup;
 import com.github.streamshub.systemtests.setup.strimzi.StrimziOperatorSetup;
 import com.github.streamshub.systemtests.utils.ClusterUtils;
 import com.github.streamshub.systemtests.utils.ResourceUtils;
@@ -28,6 +30,7 @@ import io.skodjob.testframe.resources.InstallPlanType;
 import io.skodjob.testframe.resources.JobType;
 import io.skodjob.testframe.resources.KubeResourceManager;
 import io.skodjob.testframe.resources.NamespaceType;
+import io.skodjob.testframe.resources.NetworkPolicyType;
 import io.skodjob.testframe.resources.OperatorGroupType;
 import io.skodjob.testframe.resources.RoleBindingType;
 import io.skodjob.testframe.resources.SecretType;
@@ -56,6 +59,10 @@ public abstract class AbstractST {
     protected final StrimziOperatorSetup strimziOperatorSetup = new StrimziOperatorSetup(Constants.CO_NAMESPACE);
     protected final ConsoleOperatorSetup consoleOperatorSetup = new ConsoleOperatorSetup();
 
+    // Keycloak
+    private final KeycloakSetup keycloakSetup = new KeycloakSetup(Constants.KEYCLOAK_NAMESPACE);
+    protected KeycloakConfig keycloakConfig;
+
     static {
         KubeResourceManager.get().setResourceTypes(
             new CustomResourceDefinitionType(),
@@ -70,6 +77,7 @@ public abstract class AbstractST {
             new KafkaTopicType(),
             new KafkaUserType(),
             new NamespaceType(),
+            new NetworkPolicyType(),
             new OperatorGroupType(),
             new RoleBindingType(),
             new SecretType(),
@@ -106,8 +114,10 @@ public abstract class AbstractST {
         if (ResourceUtils.getKubeResource(Namespace.class, Constants.CO_NAMESPACE) == null) {
             KubeResourceManager.get().createOrUpdateResourceWithWait(new NamespaceBuilder().withNewMetadata().withName(Constants.CO_NAMESPACE).endMetadata().build());
         }
+
         strimziOperatorSetup.install();
         consoleOperatorSetup.install();
+        keycloakConfig = keycloakSetup.setupKeycloakAndReturnConfig();
     }
 
     @BeforeEach

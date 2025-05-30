@@ -2,8 +2,8 @@ package com.github.streamshub.systemtests;
 
 import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.utils.KafkaNamingUtils;
-import com.github.streamshub.systemtests.utils.playwright.PwUtils;
 import com.github.streamshub.systemtests.utils.Utils;
+import com.github.streamshub.systemtests.utils.playwright.PwUtils;
 import com.microsoft.playwright.Browser;
 import com.microsoft.playwright.BrowserContext;
 import com.microsoft.playwright.Page;
@@ -39,6 +39,8 @@ public class TestCaseConfig {
         this.playwright = Playwright.create();
         this.browser = PwUtils.createBrowser(playwright);
         this.context = browser.newContext(new Browser.NewContextOptions().setIgnoreHTTPSErrors(true));
+        // To avoid unwanted oidc token session issues, clear cookies before running test
+        this.context.clearCookies();
         this.page = context.newPage();
 
         this.kafkaName = KafkaNamingUtils.kafkaClusterName(namespace);

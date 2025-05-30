@@ -13,6 +13,31 @@ public class Constants {
     public static final String OPENSHIFT_CONSOLE_ROUTE_NAME = "console";
 
     /**
+     * Labels
+     */
+    public static final String APP_POD_LABEL = "app";
+
+    /**
+     * Scraper Pod
+     */
+    public static final String SCRAPER_NAME = "scraper";
+    public static final String BASH_CMD = "/bin/bash";
+
+    /**
+     * Keycloak
+     */
+    public static final String KEYCLOAK_HOSTNAME_PREFIX = "console-oidc";
+    public static final String KEYCLOAK_NAMESPACE = "keycloak-oidc";
+    public static final String KEYCLOAK_CLIENT_ID = "console-client";
+    public static final String KEYCLOAK_TRUST_STORE_CONFIGMAP_NAME = "truststore-configmap";
+    public static final String KEYCLOAK_TRUST_STORE_ACCCESS_SECRET_NAME = "access-to-truststore";
+    public static final String PASSWORD_KEY_NAME = "password";
+    public static final String TRUST_STORE_KEY_NAME = "truststore";
+    public static final String KEYCLOAK_REALM = "console-realm";
+    public static final String TRUST_STORE_PASSWORD = "changeit";
+    public static final String TRUST_STORE_FILE_PATH = "/tmp/keycloak/keycloak-truststore.jks";
+
+    /**
      * Namespaces
      */
     public static final String CO_NAMESPACE = "co-namespace";
@@ -21,7 +46,8 @@ public class Constants {
     /**
      * Test values
      */
-    public static final String USER_USERNAME = "Anonymous";
+    public static final String USERNAME_BOB = "bob";
+    public static final String PASSWORD_BOB = "bob";
 
     /**
      * Messages

@@ -2,6 +2,7 @@ package com.github.streamshub.systemtests.utils.playwright;
 
 import com.github.streamshub.systemtests.Environment;
 import com.github.streamshub.systemtests.TestCaseConfig;
+import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.constants.TimeConstants;
 import com.github.streamshub.systemtests.enums.BrowserTypes;
 import com.github.streamshub.systemtests.exceptions.SetupException;
@@ -19,7 +20,6 @@ import io.skodjob.testframe.wait.Wait;
 import org.apache.logging.log4j.Logger;
 
 import java.util.Locale;
-import java.util.regex.Pattern;
 
 public class PwUtils {
     private static final Logger LOGGER = LogWrapper.getLogger(PwUtils.class);
@@ -55,17 +55,35 @@ public class PwUtils {
      * @param tcc the test case configuration containing page and Kafka cluster information
      */
     public static void login(TestCaseConfig tcc) {
-        final String loginUrl = PwPageUrls.getKafkaLoginPage(tcc, tcc.kafkaName());
+        final String loginUrl = PwPageUrls.getConsoleUrl(tcc);
         LOGGER.info("Logging in to the Console with URL: {}", loginUrl);
         waitForConsoleUiToBecomeReady(tcc);
         // Anonymous login
         tcc.page().navigate(loginUrl, getDefaultNavigateOpts());
-        tcc.page().waitForURL(Pattern.compile(loginUrl + ".*"), getDefaultWaitForUrlOpts());
-        waitForLocatorVisible(tcc, CssSelectors.LOGIN_ANONYMOUSLY_BUTTON);
-        tcc.page().click(CssSelectors.LOGIN_ANONYMOUSLY_BUTTON);
+        tcc.page().fill(CssSelectors.KEYCLOAK_PAGE_LOGIN_FORM_USERNAME, Constants.USERNAME_BOB);
+        tcc.page().fill(CssSelectors.KEYCLOAK_PAGE_LOGIN_FORM_PASSWORD, Constants.PASSWORD_BOB);
+        tcc.page().click(CssSelectors.KEYCLOAK_PAGE_LOGIN_BUTTON);
         // Go to overview page
-        tcc.page().waitForURL(PwPageUrls.getOverviewPage(tcc, tcc.kafkaName()), getDefaultWaitForUrlOpts());
+        waitForUrl(tcc, PwPageUrls.getConsoleUrl(tcc), false, true);
+
         LOGGER.info("Successfully logged into Console");
+    }
+
+    private static void waitForUrl(TestCaseConfig tcc, String url, boolean exact, boolean reload) {
+        Wait.until("Console Web to become available", TestFrameConstants.GLOBAL_POLL_INTERVAL_SHORT, TestFrameConstants.GLOBAL_TIMEOUT_SHORT,
+            () -> {
+                if (exact && tcc.page().url().equals(url) ||
+                    !exact && tcc.page().url().contains(url)) {
+                    return true;
+                }
+
+                if (reload) {
+                    tcc.page().reload(getDefaultReloadOpts());
+                }
+                return false;
+            },
+            () -> LOGGER.error("Console UI did not load page in time")
+        );
     }
 
     /**
@@ -113,7 +131,7 @@ public class PwUtils {
      * @param reload if true, reloads the page on each poll when the text is not found
      */
     public static void waitForContainsText(Page page, Locator locator, String text, long componentLoadTimeout, boolean reload) {
-        Wait.until("locator to contain text: " + text, TimeConstants.GLOBAL_POLL_INTERVAL_SHORT, componentLoadTimeout,
+        Wait.until("locator to contain text: " + text, TestFrameConstants.GLOBAL_POLL_INTERVAL_SHORT, componentLoadTimeout,
             () -> {
                 String innerText = "";
 
@@ -151,7 +169,7 @@ public class PwUtils {
      * @param reload if true, reloads the page on each poll when the count is incorrect
      */
     public static void waitForLocatorCount(TestCaseConfig tcc, int count, Locator locator, boolean reload) {
-        Wait.until("locator to have item count: " + count, TimeConstants.GLOBAL_POLL_INTERVAL_SHORT, TimeConstants.COMPONENT_LOAD_TIMEOUT,
+        Wait.until("locator to have item count: " + count, TestFrameConstants.GLOBAL_POLL_INTERVAL_SHORT, TimeConstants.COMPONENT_LOAD_TIMEOUT,
             () -> {
                 if (locator.all().size() == count) {
                     LOGGER.debug("Locator has correct item count [{}]", count);
@@ -181,14 +199,14 @@ public class PwUtils {
                     LOGGER.debug("Console website reach-out try");
 
                     // First test if application is fully running
-                    tcc.page().navigate(PwPageUrls.getKafkaLoginPage(tcc, tcc.kafkaName()), getDefaultNavigateOpts());
+                    tcc.page().navigate(PwPageUrls.getConsoleUrl(tcc), getDefaultNavigateOpts());
 
                     if (tcc.page().locator("body").innerText().contains("Application is not available")) {
                         return false;
                     }
 
-                    // Second test if login page is able to display a login button
-                    if (CssSelectors.getLocator(tcc.page(), CssSelectors.LOGIN_ANONYMOUSLY_BUTTON).isVisible()) {
+                    // Second test if login page is on keycloak login
+                    if (CssSelectors.getLocator(tcc, CssSelectors.KEYCLOAK_PAGE_LOGIN_FORM).isVisible()) {
                         LOGGER.info("Console website is ready");
                         return true;
                     }
@@ -209,18 +227,18 @@ public class PwUtils {
     public static Page.NavigateOptions getDefaultNavigateOpts() {
         return new Page.NavigateOptions()
             .setTimeout(TestFrameConstants.GLOBAL_TIMEOUT_SHORT)
-            .setWaitUntil(WaitUntilState.LOAD);
+            .setWaitUntil(WaitUntilState.NETWORKIDLE);
     }
 
     public static Page.ReloadOptions getDefaultReloadOpts() {
         return new Page.ReloadOptions()
             .setTimeout(TestFrameConstants.GLOBAL_TIMEOUT_SHORT)
-            .setWaitUntil(WaitUntilState.LOAD);
+            .setWaitUntil(WaitUntilState.NETWORKIDLE);
     }
 
     public static Page.WaitForURLOptions getDefaultWaitForUrlOpts() {
         return new Page.WaitForURLOptions()
             .setTimeout(TestFrameConstants.GLOBAL_TIMEOUT_SHORT)
-            .setWaitUntil(WaitUntilState.LOAD);
+            .setWaitUntil(WaitUntilState.NETWORKIDLE);
     }
 }

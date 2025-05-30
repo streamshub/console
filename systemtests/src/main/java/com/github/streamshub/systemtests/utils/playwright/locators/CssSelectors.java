@@ -34,6 +34,45 @@ public class CssSelectors {
         .withElementButton().withComponentButton()
         .build();
 
+    public static final String KEYCLOAK_PAGE = new CssBuilder()
+        .withElementBody().withId("keycloak-bg").withChild()
+        .withElementDiv().withChild()
+        .withElementDiv()
+        .build();
+
+    public static final String KEYCLOAK_PAGE_REALM_NAME = new CssBuilder(KEYCLOAK_PAGE)
+        .withElementHeader().withId("kc-header").withChild()
+        .withElementDiv().withId("kc-header-wrapper")
+        .build();
+    public static final String KEYCLOAK_PAGE_LOGIN_FORM = new CssBuilder(KEYCLOAK_PAGE)
+        .withElementMain().withChild()
+        .withElementDiv().nth(2).withChild()
+        .withElementDiv().withId("kc-form").withChild()
+        .withElementDiv().withId("kc-form-wrapper").withChild()
+        .withElementForm().withId("kc-form-login")
+        .build();
+
+    public static final String KEYCLOAK_PAGE_LOGIN_FORM_USERNAME = new CssBuilder(KEYCLOAK_PAGE_LOGIN_FORM)
+        .withChild()
+        .withElementDiv().nth(1).withChild()
+        .withElementSpan().withChild()
+        .withElementInput().withId("username")
+        .build();
+
+    public static final String KEYCLOAK_PAGE_LOGIN_FORM_PASSWORD = new CssBuilder(KEYCLOAK_PAGE_LOGIN_FORM)
+        .withChild()
+        .withElementDiv().nth(2).withChild()
+        .withElementDiv().nth(2).withChild()
+        .withElementDiv().nth(1).withChild()
+        .withElementSpan().withChild()
+        .withElementInput().withId("password")
+        .build();
+    public static final String KEYCLOAK_PAGE_LOGIN_BUTTON = new CssBuilder(KEYCLOAK_PAGE_LOGIN_FORM)
+        .withChild()
+        .withElementDiv().withChild()
+        .withElementDiv().withChild()
+        .withElementButton().withId("kc-login")
+        .build();
     // ----------------------------
     // Page contents
     // ----------------------------
