@@ -1,4 +1,4 @@
-package com.github.streamshub.systemtests.utils;
+package com.github.streamshub.systemtests.utils.resourceutils;
 
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import io.fabric8.kubernetes.api.model.LabelSelector;

@@ -22,11 +22,13 @@ public class Constants {
      * Test values
      */
     public static final String USER_USERNAME = "Anonymous";
+    public static final int SELECTOR_RETRIES = 10;
 
     /**
      * Messages
      */
-    public static final int MESSAGE_COUNT = 1000;
+    public static final int MESSAGE_COUNT = 100;
+    public static final int MESSAGE_COUNT_HIGH = 10_000;
 
     /**
      * CRDs
@@ -67,6 +69,7 @@ public class Constants {
      * Listeners
      */
     public static final String PLAIN_LISTENER_NAME = "plain";
+    public static final String SCRAMSHA_PLAIN_LISTENER_NAME = "scramplain";
     public static final String SECURE_LISTENER_NAME = "secure";
 
 

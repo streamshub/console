@@ -174,6 +174,7 @@ public class CssBuilder {
     public CssBuilder withSubComponentMainGroup() { return withSubComponent("main-group"); }
     public CssBuilder withSubComponentMainBreadcrumb() { return withSubComponent("main-breadcrumb"); }
     public CssBuilder withSubComponentContentSection() { return withSubComponent("content-section"); }
+    public CssBuilder withSubComponentPageMenu() { return withSubComponent("page-menu"); }
     public CssBuilder withSubComponentMainSection() { return withSubComponent("main-section"); }
     public CssBuilder withSubComponentItem() { return withSubComponent("item"); }
     public CssBuilder withSubComponentOpen() { return withSubComponent("open"); }
@@ -209,6 +210,8 @@ public class CssBuilder {
     public CssBuilder withSubComponentTr() { return withSubComponent("tr"); }
     public CssBuilder withSubComponentTd() { return withSubComponent("td"); }
     public CssBuilder withSubComponentTh() { return withSubComponent("th"); }
+    public CssBuilder withSubComponentButton() { return withSubComponent("button"); }
+
 
     // ------------
     // Layouts
@@ -222,8 +225,8 @@ public class CssBuilder {
     public String build() {
         // Regex pattern to match ')' not followed by a space
         String whitespaceAfterArgument = "\\)(?!\\s)";
-        // Regex pattern to replace 2 and more spaces for 1
-        String consecutiveSpaces = "\\s{2,}";
+        // Regex pattern to replace multiple spaces
+        String consecutiveSpaces = "\\s";
         // Regex pattern to remove spaces before :
         String doubleDots = "\\s++:";
 

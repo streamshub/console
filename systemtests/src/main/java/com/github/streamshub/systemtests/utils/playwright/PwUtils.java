@@ -15,9 +15,13 @@ import com.microsoft.playwright.Playwright;
 import com.microsoft.playwright.options.WaitForSelectorState;
 import com.microsoft.playwright.options.WaitUntilState;
 import io.skodjob.testframe.TestFrameConstants;
+import io.skodjob.testframe.resources.KubeResourceManager;
 import io.skodjob.testframe.wait.Wait;
 import org.apache.logging.log4j.Logger;
 
+import java.nio.file.Path;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 import java.util.regex.Pattern;
 
@@ -76,8 +80,10 @@ public class PwUtils {
      * @return a cleaned, single-line trimmed string
      */
     public static String getTrimmedText(String text) {
+        // Replaces newline, NBSP, horizontal whitespace, tab or whitespace with a whitespace
         return text.replace("\n", "")
-            .replaceAll("[\\h\\s\\t]", " ")
+            .replace("\u00A0", " ")
+            .replaceAll("\\s+", " ")
             .trim();
     }
 
@@ -85,7 +91,11 @@ public class PwUtils {
     // Wait for locator
     // -----------------
     public static void waitForLocatorVisible(TestCaseConfig tcc, String selector) {
-        waitForLocatorVisible(CssSelectors.getLocator(tcc, selector), TimeConstants.ELEMENT_VISIBILITY_TIMEOUT);
+        waitForLocatorVisible(CssSelectors.getLocator(tcc, selector));
+    }
+
+    public static void waitForLocatorVisible(Locator locator) {
+        waitForLocatorVisible(locator, TimeConstants.ELEMENT_VISIBILITY_TIMEOUT);
     }
 
     public static void waitForLocatorVisible(Locator locator, long timeout) {
@@ -154,16 +164,16 @@ public class PwUtils {
         Wait.until("locator to have item count: " + count, TimeConstants.GLOBAL_POLL_INTERVAL_SHORT, TimeConstants.COMPONENT_LOAD_TIMEOUT,
             () -> {
                 if (locator.all().size() == count) {
-                    LOGGER.debug("Locator has correct item count [{}]", count);
+                    LOGGER.debug("Locator has correct item count {}", count);
                     return true;
                 }
-                LOGGER.debug("Locator has incorrect item count [{}]", locator.all().size());
+                LOGGER.debug("Locator has incorrect item count {}, need {}", locator.all().size(), count);
                 if (reload) {
                     tcc.page().reload(getDefaultReloadOpts());
                 }
                 return false;
             },
-            () -> LOGGER.error("Page does not have enough locators count [{}] out of required [{}]", locator.all().size(), count)
+            () -> LOGGER.error("Page does not have enough locators count {} out of required {}", locator.all().size(), count)
         );
     }
 
@@ -209,18 +219,50 @@ public class PwUtils {
     public static Page.NavigateOptions getDefaultNavigateOpts() {
         return new Page.NavigateOptions()
             .setTimeout(TestFrameConstants.GLOBAL_TIMEOUT_SHORT)
-            .setWaitUntil(WaitUntilState.LOAD);
+            .setWaitUntil(WaitUntilState.NETWORKIDLE);
     }
 
     public static Page.ReloadOptions getDefaultReloadOpts() {
         return new Page.ReloadOptions()
             .setTimeout(TestFrameConstants.GLOBAL_TIMEOUT_SHORT)
-            .setWaitUntil(WaitUntilState.LOAD);
+            .setWaitUntil(WaitUntilState.NETWORKIDLE);
     }
 
     public static Page.WaitForURLOptions getDefaultWaitForUrlOpts() {
         return new Page.WaitForURLOptions()
             .setTimeout(TestFrameConstants.GLOBAL_TIMEOUT_SHORT)
-            .setWaitUntil(WaitUntilState.LOAD);
+            .setWaitUntil(WaitUntilState.NETWORKIDLE);
+    }
+
+    public static void screenshot(TestCaseConfig tcc) {
+        screenshot(tcc, tcc.kafkaName(), "");
+    }
+
+    public static void screenshot(TestCaseConfig tcc, String kafkaName, String additionalSuffix) {
+        // e.g. screenshots/testFilterTopics/topicst-33aaa/topics/screenshotname-2025-04-21__18-05-33.png
+        String pageUrl = tcc.page().url().replace(PwPageUrls.getKafkaBaseUrl(tcc, kafkaName), "");
+
+        String screenshotName = String.join("/",
+            KubeResourceManager.get().getTestContext().getDisplayName().replace("()", ""),
+            tcc.namespace(),
+            kafkaName,
+            pageUrl.contains("?") ? pageUrl.split("\\?")[0] : pageUrl,
+            additionalSuffix +
+            (additionalSuffix.isEmpty() ? "" : "-") +
+            LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd__HH-mm-ss")) +
+            ".png")
+            .replaceAll("//+", "/");
+
+        LOGGER.debug("Taking a screenshot: {}", screenshotName);
+        tcc.page().screenshot(new Page.ScreenshotOptions().setPath(Path.of(Environment.SCREENSHOTS_DIR_PATH, screenshotName)));
+    }
+
+    public static void sleepWaitForComponent(long timeInMilis) {
+        LOGGER.debug("Waiting for component");
+        try {
+            Thread.sleep(timeInMilis);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

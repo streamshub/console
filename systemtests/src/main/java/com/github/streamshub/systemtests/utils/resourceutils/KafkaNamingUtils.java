@@ -1,6 +1,7 @@
-package com.github.streamshub.systemtests.utils;
+package com.github.streamshub.systemtests.utils.resourceutils;
 
 import com.github.streamshub.systemtests.constants.Constants;
+import com.github.streamshub.systemtests.utils.Utils;
 
 import static com.github.streamshub.systemtests.utils.Utils.hashStub;
 

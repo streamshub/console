@@ -3,6 +3,8 @@ package com.github.streamshub.systemtests;
 import com.github.streamshub.systemtests.exceptions.ClusterUnreachableException;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.logs.TestLogCollector;
+import com.github.streamshub.systemtests.utils.playwright.PwUtils;
+import io.skodjob.testframe.resources.KubeResourceManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.LifecycleMethodExecutionExceptionHandler;
@@ -16,6 +18,14 @@ public class TestExecutionWatcher implements TestExecutionExceptionHandler, Life
     @Override
     public void handleTestExecutionException(ExtensionContext extensionContext, Throwable throwable) throws Throwable {
         LOGGER.error("{} - Exception {} has been thrown in @Test. Going to collect logs from components.", extensionContext.getRequiredTestClass().getSimpleName(), throwable.getMessage());
+
+        // In case of test failure, make screenshot of the last page state
+        TestCaseConfig tcc = (TestCaseConfig) KubeResourceManager.get().getTestContext()
+            .getStore(ExtensionContext.Namespace.GLOBAL)
+            .get(KubeResourceManager.get().getTestContext().getTestMethod().orElseThrow().getName());
+        LOGGER.error("Exception has been thrown on page url {}", tcc.page().url());
+        PwUtils.screenshot(tcc, tcc.kafkaName(), "during-exception");
+
         if (!(throwable instanceof TestAbortedException || throwable instanceof ClusterUnreachableException)) {
             final String testClass = extensionContext.getRequiredTestClass().getName();
             final String testMethod = extensionContext.getRequiredTestMethod().getName();

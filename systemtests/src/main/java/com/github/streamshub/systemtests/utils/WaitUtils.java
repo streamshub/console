@@ -1,15 +1,22 @@
 package com.github.streamshub.systemtests.utils;
 
+import com.github.streamshub.systemtests.clients.KafkaClients;
 import com.github.streamshub.systemtests.constants.ResourceConditions;
 import com.github.streamshub.systemtests.constants.TimeConstants;
 import com.github.streamshub.systemtests.enums.ConditionStatus;
 import com.github.streamshub.systemtests.enums.ResourceStatus;
 import com.github.streamshub.systemtests.logs.LogWrapper;
+import com.github.streamshub.systemtests.utils.resourceutils.JobUtils;
+import com.github.streamshub.systemtests.utils.resourceutils.KafkaClientsUtils;
+import com.github.streamshub.systemtests.utils.resourceutils.KafkaNamingUtils;
+import com.github.streamshub.systemtests.utils.resourceutils.PodUtils;
+import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
 import io.fabric8.kubernetes.api.model.ContainerStatus;
 import io.fabric8.kubernetes.api.model.LabelSelector;
 import io.fabric8.kubernetes.api.model.Pod;
 import io.fabric8.kubernetes.api.model.Secret;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
+import io.fabric8.kubernetes.api.model.batch.v1.Job;
 import io.fabric8.kubernetes.client.readiness.Readiness;
 import io.skodjob.testframe.TestFrameConstants;
 import io.skodjob.testframe.resources.KubeResourceManager;
@@ -21,7 +28,7 @@ import org.apache.logging.log4j.Logger;
 import java.util.List;
 import java.util.Map;
 
-import static com.github.streamshub.systemtests.utils.ResourceUtils.listKubeResourcesByPrefix;
+import static com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils.listKubeResourcesByPrefix;
 
 public class WaitUtils {
     private static final Logger LOGGER = LogWrapper.getLogger(WaitUtils.class);
@@ -159,7 +166,7 @@ public class WaitUtils {
      * @param annotationKey   the annotation key to check
      * @param annotationValue the expected value for the annotation key
      */
-    public static void waitForKafkaAnnotationWithValue(String namespaceName, String clusterName, String annotationKey, String annotationValue) {
+    public static void waitForKafkaHasAnnotationWithValue(String namespaceName, String clusterName, String annotationKey, String annotationValue) {
         Wait.until(String.format("Kafka %s/%s has annotation %s : %s", namespaceName, clusterName, annotationKey, annotationValue),
             TestFrameConstants.GLOBAL_POLL_INTERVAL_SHORT, TestFrameConstants.GLOBAL_TIMEOUT_SHORT,
             () -> {
@@ -168,6 +175,18 @@ public class WaitUtils {
                     return anno.getOrDefault(annotationKey, "nonexistent").equals(annotationValue);
                 }
                 return false;
+            });
+    }
+
+    public static void waitForKafkaHasNoAnnotationWithKey(String namespaceName, String clusterName, String annotationKey) {
+        Wait.until(String.format("Kafka %s/%s has annotation %s", namespaceName, clusterName, annotationKey),
+            TestFrameConstants.GLOBAL_POLL_INTERVAL_SHORT, TestFrameConstants.GLOBAL_TIMEOUT_SHORT,
+            () -> {
+                Map<String, String> anno = ResourceUtils.getKubeResource(Kafka.class, namespaceName, clusterName).getMetadata().getAnnotations();
+                if (anno.isEmpty()) {
+                    return true;
+                }
+                return !anno.containsKey(annotationKey);
             });
     }
 
@@ -223,5 +242,26 @@ public class WaitUtils {
                 }
                 return false;
             });
+    }
+
+    public static void waitForClientsSuccess(KafkaClients clients) {
+        waitForClientsSuccess(clients.getNamespaceName(), clients.getProducerName(), clients.getConsumerName(), clients.getMessageCount(), true);
+    }
+
+    public static void waitForClientsSuccess(String namespace, String producerName, String consumerName, int messageCount, boolean deleteAfterSuccess) {
+        LOGGER.info("Waiting for producer: {}/{} and consumer: {}/{} Jobs to finish successfully", namespace, producerName, namespace, consumerName);
+        waitForClientSuccess(namespace, producerName, messageCount, deleteAfterSuccess);
+        waitForClientSuccess(namespace, consumerName, messageCount, deleteAfterSuccess);
+    }
+
+    public static void waitForClientSuccess(String namespaceName, String jobName, int messageCount, boolean deleteAfterSuccess) {
+        LOGGER.info("Waiting for client Job: {}/{} to finish successfully", namespaceName, jobName);
+        Wait.until("client Job to finish successfully", TestFrameConstants.GLOBAL_POLL_INTERVAL_SHORT, KafkaClientsUtils.timeoutForClientFinishJob(messageCount),
+            () -> JobUtils.checkSucceededJobStatus(namespaceName, jobName, 1),
+            () -> JobUtils.logCurrentJobStatus(namespaceName, jobName));
+
+        if (deleteAfterSuccess) {
+            KubeResourceManager.get().deleteResourceWithWait(ResourceUtils.getKubeResource(Job.class, namespaceName, jobName));
+        }
     }
 }
