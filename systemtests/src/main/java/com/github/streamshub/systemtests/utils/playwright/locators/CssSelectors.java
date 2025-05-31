@@ -433,9 +433,9 @@ public class CssSelectors {
         .withElementDiv().withComponentMenu().withSubComponentContent().withChild()
         .withElementUl().withComponentMenu().withSubComponentList().withChild()
         .withElementLi().withComponentMenu().withSubComponentListItem()
-	    .build();
+        .build();
 
-	public static final String TOPICS_PAGE_TOP_PAGINATION_NAV_BUTTONS = new CssBuilder(TOPICS_PAGE_TOP_TOOLBAR)
+    public static final String TOPICS_PAGE_TOP_PAGINATION_NAV_BUTTONS = new CssBuilder(TOPICS_PAGE_TOP_TOOLBAR)
         .withChild()
         .withElementDiv().withComponentToolbar().withSubComponentContentSection().withChild()
         .withElementDiv().withComponentToolbar().withSubComponentGroup().withChild()
@@ -443,7 +443,7 @@ public class CssSelectors {
         .withElementNav().withComponentPagination().withSubComponentNav()
         .build();
 
-	public static final String TOPICS_PAGE_TOP_PAGINATION_NAV_PREV_BUTTON = new CssBuilder(TOPICS_PAGE_TOP_PAGINATION_NAV_BUTTONS)
+    public static final String TOPICS_PAGE_TOP_PAGINATION_NAV_PREV_BUTTON = new CssBuilder(TOPICS_PAGE_TOP_PAGINATION_NAV_BUTTONS)
         .withChild()
         .withElementDiv().withComponentPagination().withSubComponentNavControl().nth(1)
         .build();
@@ -476,7 +476,7 @@ public class CssSelectors {
         .withElementNav().withComponentPagination().withSubComponentNav()
         .build();
 
-	public static final String TOPICS_PAGE_BOTTOM_PAGINATION_NAV_PREV_BUTTON = new CssBuilder(TOPICS_PAGE_BOTTOM_PAGINATION_NAV_BUTTONS)
+    public static final String TOPICS_PAGE_BOTTOM_PAGINATION_NAV_PREV_BUTTON = new CssBuilder(TOPICS_PAGE_BOTTOM_PAGINATION_NAV_BUTTONS)
         .withChild()
         .withElementDiv().withComponentPagination().withSubComponentNavControl().nth(1)
         .build();
