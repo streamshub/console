@@ -151,3 +151,56 @@ spec:
               - privileges:
                   - update
 ----
+
+[discrete]
+== Optional OIDC authentication properties
+
+The following properties can be used to further configure `oidc` authentication.  
+These apply to any part of the console configuration that supports `authentication.oidc`, such as Kafka clusters, schema registries, or metrics providers.
+
+grantType::  
+Specifies the OIDC grant type to use. Required when using non-interactive authentication flows, where no user login is involved.
+Supported values:
++
+* `CLIENT`: Requires a client ID and secret.  
+* `PASSWORD`: Requires a client ID and secret, plus user credentials (`username` and `password`) provided through `grantOptions`.
+
+grantOptions::  
+Additional parameters specific to the selected grant type.  
+Use `grantOptions` to provide properties such as `username` and `password` when using the `PASSWORD` grant type.
++
+[source,yaml]
+----
+oidc:
+  grantOptions:
+    username: my-user
+    password:
+      valueFrom:
+        secretKeyRef:
+          name: my-password-secret
+          key: password
+----
+
+method::  
+Method for passing the client ID and secret to the OIDC provider.  
+Supported values:
++
+* `BASIC`: (default) Uses HTTP Basic authentication.  
+* `POST`: Sends credentials as form parameters.
+
+scopes::  
+Optional list of access token scopes to request from the OIDC provider.  
+Defaults are usually defined by the OIDC client configuration.  
+Specify this property if access to the target service requires additional or alternative scopes not granted by default.
++
+[source,yaml]
+----
+oidc:
+  scopes:
+    - openid
+    - registry:read
+    - registry:write
+----
+
+absoluteExpiresIn::  
+Optional boolean. If set to `true`, the `expires_in` token property is treated as an absolute timestamp instead of a duration.

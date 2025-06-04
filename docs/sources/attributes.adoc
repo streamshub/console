@@ -19,3 +19,5 @@
 :ReleaseDownload: https://github.com/streamshub/console/releases
 :BookURLDeploying: https://strimzi.io/docs/operators/latest/deploying
 :BookURLConfiguring: https://strimzi.io/docs/operators/latest/configuring
+//External links
+:ApicurioRegistrySite: https://www.apicur.io/[Apicurio Registry^]

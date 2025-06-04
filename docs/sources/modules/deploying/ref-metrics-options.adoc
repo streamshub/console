@@ -22,7 +22,7 @@ Example configuration for OpenShift monitoring and a standalone Prometheus insta
 * `examples/console/resources/console/console-openshift-metrics.yaml`
 * `examples/console/resources/console/console-standalone-prometheus.yaml`
 
-The configuration introduces the `metricsSources` property for defining Prometheus sources:
+You can define Prometheus sources globally as part of the console configuration using `metricsSources` properties:
 
 `metricsSources`:: Declares one or more metrics providers that the console can use to collect metrics.
 `type`:: Specifies the type of metrics source. Valid options:
@@ -30,12 +30,14 @@ The configuration introduces the `metricsSources` property for defining Promethe
   - `standalone` (external Prometheus)
   - `embedded` (console-managed Prometheus)
 `url`:: For `standalone` sources, specifies the base URL of the Prometheus instance.
-`authentication`:: (For `standalone` only) Configures access to the metrics provider using `basic`, `bearer` token, or `oidc` authentication.
+`authentication`:: (For `standalone` and `openshift-monitoring` only) Configures access to the metrics provider using `basic`, `bearer` token, or `oidc` authentication.
 `trustStore`:: (Optional, for `standalone` only) Specifies a truststore for verifying TLS certificates when connecting to the metrics provider. 
 Supported formats: `JKS`, `PEM`, `PKCS12`. 
 Content may be provided using a `ConfigMap` or a `Secret`.
 
 Assign the metrics source to a Kafka cluster using the `kafkaClusters.metricsSource` property.
+The value of `metricsSource` is the `name` of the entry in the `metricsSources` array.
+
 The configuration for `openshift-monitoring` and `embedded` requires no further configuration besides the `type`. 
 
 .Example metrics configuration for Openshift monitoring
@@ -99,7 +101,7 @@ spec:
   # ...        
 ----
 <1> URL of the standalone Prometheus instance for metrics collection.
-<2> Authentication credentials for accessing the Prometheus instance. You can configure one of the following authentication methods:
+<2> Authentication credentials for accessing the Prometheus instance. Supported authentication methods:
 +
 * `basic`: Requires `username` and `password`.
 * `bearer`: Requires `token`.
