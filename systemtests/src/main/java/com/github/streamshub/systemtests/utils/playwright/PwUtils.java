@@ -262,7 +262,8 @@ public class PwUtils {
         try {
             Thread.sleep(timeInMilis);
         } catch (InterruptedException e) {
-            throw new RuntimeException(e);
+            Thread.currentThread().interrupt();
+            LOGGER.error("Sleep was interrupted due to: {}", e.getMessage());
         }
     }
 }

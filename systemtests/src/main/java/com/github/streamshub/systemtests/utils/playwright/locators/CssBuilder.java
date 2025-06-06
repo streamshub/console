@@ -223,16 +223,12 @@ public class CssBuilder {
     public CssBuilder withLayoutFlex() { return withLayout("flex"); }
 
     public String build() {
-        // Regex pattern to match ')' not followed by a space
-        String whitespaceAfterArgument = "\\)(?!\\s)";
-        // Regex pattern to replace multiple spaces
-        String consecutiveSpaces = "\\s";
-        // Regex pattern to remove spaces before :
-        String doubleDots = "\\s++:";
-
         return this.cssClass.toString()
-            .replaceAll(consecutiveSpaces, " ")
-            .replaceAll(doubleDots, ":")
-            .replaceAll(whitespaceAfterArgument, ") ");
+            // Remove multiple whitespaces with only one
+            .replaceAll("\\s+", " ")
+            // Remove whitespace before ":" to avoid `div :nth-child(1)`
+            .replace(" :", ":")
+            // Add space after ")" if it's not there to avoid `div:nth-child(1)div`
+            .replaceAll("\\)(?!\\s)", ") ");
     }
 }

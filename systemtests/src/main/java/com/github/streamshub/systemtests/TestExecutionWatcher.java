@@ -23,8 +23,8 @@ public class TestExecutionWatcher implements TestExecutionExceptionHandler, Life
         TestCaseConfig tcc = (TestCaseConfig) KubeResourceManager.get().getTestContext()
             .getStore(ExtensionContext.Namespace.GLOBAL)
             .get(KubeResourceManager.get().getTestContext().getTestMethod().orElseThrow().getName());
-        LOGGER.error("Exception has been thrown on page url {}", tcc.page().url());
-        PwUtils.screenshot(tcc, tcc.kafkaName(), "during-exception");
+        LOGGER.error("Exception has been thrown. Last known page url {}", tcc.page().url());
+        PwUtils.screenshot(tcc, tcc.kafkaName(), "exception");
 
         if (!(throwable instanceof TestAbortedException || throwable instanceof ClusterUnreachableException)) {
             final String testClass = extensionContext.getRequiredTestClass().getName();

@@ -7,7 +7,6 @@ import com.github.streamshub.systemtests.enums.ConditionStatus;
 import com.github.streamshub.systemtests.enums.ResourceStatus;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.utils.resourceutils.JobUtils;
-import com.github.streamshub.systemtests.utils.resourceutils.KafkaClientsUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.KafkaNamingUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.PodUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
@@ -256,7 +255,7 @@ public class WaitUtils {
 
     public static void waitForClientSuccess(String namespaceName, String jobName, int messageCount, boolean deleteAfterSuccess) {
         LOGGER.info("Waiting for client Job: {}/{} to finish successfully", namespaceName, jobName);
-        Wait.until("client Job to finish successfully", TestFrameConstants.GLOBAL_POLL_INTERVAL_SHORT, KafkaClientsUtils.timeoutForClientFinishJob(messageCount),
+        Wait.until("client Job to finish successfully", TestFrameConstants.GLOBAL_POLL_INTERVAL_SHORT, TimeConstants.timeoutForClientFinishJob(messageCount),
             () -> JobUtils.checkSucceededJobStatus(namespaceName, jobName, 1),
             () -> JobUtils.logCurrentJobStatus(namespaceName, jobName));
 

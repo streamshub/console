@@ -1,5 +1,7 @@
 package com.github.streamshub.systemtests.constants;
 
+import io.skodjob.testframe.TestFrameConstants;
+
 import java.time.Duration;
 
 public class TimeConstants {
@@ -23,4 +25,9 @@ public class TimeConstants {
     // HTML elements
     public static final long ELEMENT_VISIBILITY_TIMEOUT = minutesInMilis(1);
     public static final long UI_COMPONENT_REACTION_INTERVAL_SHORT = secondsInMilis(5);
+
+    // Time values depending on variable
+    public static long timeoutForClientFinishJob(int messagesCount) {
+        return messagesCount * (TestFrameConstants.POLL_INTERVAL_FOR_RESOURCE_READINESS + TestFrameConstants.GLOBAL_TIMEOUT_MEDIUM);
+    }
 }

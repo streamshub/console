@@ -1,6 +1,7 @@
 package com.github.streamshub.systemtests.utils.resourceutils;
 
 import com.github.streamshub.systemtests.clients.KafkaClients;
+import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.constants.Labels;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.utils.WaitUtils;
@@ -145,27 +146,27 @@ public class KafkaTopicUtils {
 
         String insertPropertiesCommand = String.format("echo '%s' > %s", clients.getAdditionalConfig(), clientConfigPath);
         LOGGER.debug("Insert client config");
-        String output = KubeResourceManager.get().kubeCmdClient().inNamespace(namespaceName).execInPod(podName, "/bin/bash", "-c", insertPropertiesCommand).out().trim();
+        String output = KubeResourceManager.get().kubeCmdClient().inNamespace(namespaceName).execInPod(podName, Constants.BASH_CMD, "-c", insertPropertiesCommand).out().trim();
         LOGGER.debug("Inserting resulted in => [{}]", output);
 
         String reassignJson = String.format("echo '{\"version\":1,\"partitions\":[{\"topic\":\"%s\",\"partition\":0,\"replicas\":[%d],\"log_dirs\":[\"any\"]}]}' >> %s", topicName, newBrokerId, reassignJsonPath);
         LOGGER.debug("Insert reassign json => [{}]", reassignJson);
-        output = KubeResourceManager.get().kubeCmdClient().inNamespace(namespaceName).execInPod(podName, "/bin/bash", "-c", reassignJson).out().trim();
+        output = KubeResourceManager.get().kubeCmdClient().inNamespace(namespaceName).execInPod(podName, Constants.BASH_CMD, "-c", reassignJson).out().trim();
         LOGGER.debug("Inserting resulted in => [{}]", output);
 
         String reassignCommand = String.format("./bin/kafka-reassign-partitions.sh --bootstrap-server %s --reassignment-json-file %s --command-config %s --execute", bootstrapServer, reassignJsonPath, clientConfigPath);
         LOGGER.debug("Execute reassign command => [{}]", reassignCommand);
-        output = KubeResourceManager.get().kubeCmdClient().inNamespace(namespaceName).execInPod(podName, "/bin/bash", "-c", reassignCommand).out().trim();
+        output = KubeResourceManager.get().kubeCmdClient().inNamespace(namespaceName).execInPod(podName, Constants.BASH_CMD, "-c", reassignCommand).out().trim();
         LOGGER.debug("Execute resulted in => [{}]", output);
 
         String verifyCommand = String.format("./bin/kafka-reassign-partitions.sh --bootstrap-server %s --reassignment-json-file %s --command-config %s --verify", bootstrapServer, reassignJsonPath, clientConfigPath);
         LOGGER.debug("Verify reassign command => [{}]", verifyCommand);
-        output = KubeResourceManager.get().kubeCmdClient().inNamespace(namespaceName).execInPod(podName, "/bin/bash", "-c", verifyCommand).out().trim();
+        output = KubeResourceManager.get().kubeCmdClient().inNamespace(namespaceName).execInPod(podName, Constants.BASH_CMD, "-c", verifyCommand).out().trim();
         LOGGER.debug("Verify resulted in => [{}]", output);
 
         String removeFilesCommand = String.format("rm -f %s %s", reassignJsonPath, clientConfigPath);
         LOGGER.debug("Remove created files command => [{}]", removeFilesCommand);
-        output = KubeResourceManager.get().kubeCmdClient().inNamespace(namespaceName).execInPod(podName, "/bin/bash", "-c", removeFilesCommand).out().trim();
+        output = KubeResourceManager.get().kubeCmdClient().inNamespace(namespaceName).execInPod(podName, Constants.BASH_CMD, "-c", removeFilesCommand).out().trim();
         LOGGER.debug("Removal resulted in => [{}]", output);
     }
 

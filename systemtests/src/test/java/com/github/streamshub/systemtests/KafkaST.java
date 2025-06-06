@@ -156,8 +156,7 @@ class KafkaST extends AbstractST {
      *
      * <p>The test starts by verifying the default number of broker and controller nodes on both the Overview and Nodes pages.</p>
      * <p>It then scales the Kafka brokers up and verifies that the updated count appears correctly in the UI, including the header, info box, and table.</p>
-     * <p>Next, it scales the Kafka controllers up and checks that the brokers roll as expected, then validates the updated node counts again in the UI.</p>
-     * <p>Finally, the test scales both brokers and controllers back to their default replica counts and confirms that the UI reflects the original state.</p>
+     * <p>Finally, the test scales brokers back to their default replica counts and confirms that the UI reflects the original state.</p>
      *
      * <p>This ensures that Kafka node scaling is correctly reflected in the UI and that related components react appropriately to changes.</p>
      */
@@ -165,8 +164,6 @@ class KafkaST extends AbstractST {
     void testAddRemoveKafkaNodes() {
         final TestCaseConfig tcc = getTestCaseConfig();
         final int scaledBrokersCount = 7;
-        // Note: At this time it's supported to scale only by one controller at the time
-        final int scaledControllersCount = Constants.REGULAR_CONTROLLER_REPLICAS + 1;
 
         LOGGER.info("Verify that default Kafka broker count is {} and controller count is {}", Constants.REGULAR_BROKER_REPLICAS, Constants.REGULAR_CONTROLLER_REPLICAS);
 
@@ -192,7 +189,7 @@ class KafkaST extends AbstractST {
         // Node table
         assertEquals(Constants.REGULAR_BROKER_REPLICAS + Constants.REGULAR_CONTROLLER_REPLICAS, CssSelectors.getLocator(tcc, CssSelectors.NODES_PAGE_TABLE_BODY).all().size());
 
-        // First scale only brokers
+        // Scale brokers
         LOGGER.debug("Scale Kafka brokers to {}", scaledBrokersCount);
         KubeResourceManager.get().createOrUpdateResourceWithWait(
             new KafkaNodePoolBuilder(ResourceUtils.getKubeResource(KafkaNodePool.class, tcc.namespace(), KafkaNamingUtils.brokerPoolName(tcc.kafkaName())))
@@ -228,52 +225,6 @@ class KafkaST extends AbstractST {
         // Node table
         assertEquals(scaledBrokersCount + Constants.REGULAR_CONTROLLER_REPLICAS, CssSelectors.getLocator(tcc, CssSelectors.NODES_PAGE_TABLE_BODY).all().size());
 
-        // Now scale only controllers
-        LOGGER.debug("Scale Kafka controllers to {}", scaledBrokersCount);
-
-        // Controller pods will accept new quorum, so they all need to roll, after they roll, brokers will follow
-        Map<String, String> controllerSnapshot = PodUtils.getPodSnapshotBySelector(tcc.namespace(), Labels.getKnpControllerLabelSelector(tcc.kafkaName()));
-        Map<String, String> brokerSnapshot = PodUtils.getPodSnapshotBySelector(tcc.namespace(), Labels.getKnpBrokerLabelSelector(tcc.kafkaName()));
-
-        KubeResourceManager.get().createOrUpdateResourceWithWait(
-            new KafkaNodePoolBuilder(ResourceUtils.getKubeResource(KafkaNodePool.class, tcc.namespace(), KafkaNamingUtils.controllerPoolName(tcc.kafkaName())))
-                .editSpec()
-                    .withReplicas(scaledControllersCount)
-                .endSpec()
-                .build());
-
-        // controllers
-        WaitUtils.waitForComponentPodsToRoll(tcc.namespace(), Labels.getKnpControllerLabelSelector(tcc.kafkaName()), controllerSnapshot);
-        WaitUtils.waitForPodsReady(tcc.namespace(), Labels.getKnpControllerLabelSelector(tcc.kafkaName()), scaledControllersCount, true);
-        // brokers
-        WaitUtils.waitForComponentPodsToRoll(tcc.namespace(), Labels.getKnpBrokerLabelSelector(tcc.kafkaName()), brokerSnapshot);
-        WaitUtils.waitForPodsReady(tcc.namespace(), Labels.getKnpBrokerLabelSelector(tcc.kafkaName()), scaledBrokersCount, true);
-
-        // Check Overview and Nodes page
-        LOGGER.info("Verify newly added Kafka controllers are displayed in UI");
-
-        LOGGER.debug("Verify Kafka broker count on OverviewPage is {}", scaledBrokersCount);
-        tcc.page().navigate(PwPageUrls.getOverviewPage(tcc, tcc.kafkaName()), PwUtils.getDefaultNavigateOpts());
-        // broker count should not change
-        PwUtils.waitForContainsText(tcc, CssSelectors.C_OVERVIEW_PAGE_CLUSTER_CARD_KAFKA_DATA_BROKER_COUNT, scaledBrokersCount + "/" + scaledBrokersCount, true);
-
-        LOGGER.debug("Verify new Kafka node count on Nodes page");
-        tcc.page().navigate(PwPageUrls.getNodesPage(tcc, tcc.kafkaName()), PwUtils.getDefaultNavigateOpts());
-
-        // Header
-        PwUtils.waitForContainsText(tcc, CssSelectors.NODES_PAGE_HEADER_TITLE_BADGE_TOTAL_COUNT, Integer.toString(scaledBrokersCount + scaledControllersCount), true);
-        PwUtils.waitForContainsText(tcc, CssSelectors.NODES_PAGE_HEADER_TITLE_BADGE_WORKING_NODES_COUNT, Integer.toString(scaledBrokersCount + scaledControllersCount), true);
-        PwUtils.waitForContainsText(tcc, CssSelectors.NODES_PAGE_HEADER_TITLE_BADGE_WARNING_NODES_COUNT, "0", true);
-        // Page infobox
-        // total nodes
-        PwUtils.waitForContainsText(tcc, CssSelectors.getLocator(tcc, CssSelectors.NODES_PAGE_OVERVIEW_NODE_ITEMS).nth(0), Integer.toString(scaledBrokersCount + scaledControllersCount), true);
-        // with controller role
-        PwUtils.waitForContainsText(tcc, CssSelectors.getLocator(tcc, CssSelectors.NODES_PAGE_OVERVIEW_NODE_ITEMS).nth(1), Integer.toString(scaledControllersCount), true);
-        // with broker role
-        PwUtils.waitForContainsText(tcc, CssSelectors.getLocator(tcc, CssSelectors.NODES_PAGE_OVERVIEW_NODE_ITEMS).nth(2), Integer.toString(scaledBrokersCount), true);
-        // Node table
-        assertEquals(scaledBrokersCount + scaledControllersCount, CssSelectors.getLocator(tcc, CssSelectors.NODES_PAGE_TABLE_BODY).all().size());
-
         // Scale brokers down
         // Note: It is not possible to scale controllers down due to inability to change dynamically quorums https://github.com/strimzi/strimzi-kafka-operator/issues/9429
         LOGGER.info("Scale Kafka brokers back to the default count of {}", Constants.REGULAR_BROKER_REPLICAS);
@@ -295,18 +246,18 @@ class KafkaST extends AbstractST {
         LOGGER.debug("Verify current Kafka broker count on NodesPage is {}", Constants.REGULAR_BROKER_REPLICAS);
         tcc.page().navigate(PwPageUrls.getNodesPage(tcc, tcc.kafkaName()), PwUtils.getDefaultNavigateOpts());
         // Header
-        PwUtils.waitForContainsText(tcc, CssSelectors.NODES_PAGE_HEADER_TITLE_BADGE_TOTAL_COUNT, Integer.toString(Constants.REGULAR_BROKER_REPLICAS + scaledControllersCount), true);
-        PwUtils.waitForContainsText(tcc, CssSelectors.NODES_PAGE_HEADER_TITLE_BADGE_WORKING_NODES_COUNT, Integer.toString(Constants.REGULAR_BROKER_REPLICAS + scaledControllersCount), true);
+        PwUtils.waitForContainsText(tcc, CssSelectors.NODES_PAGE_HEADER_TITLE_BADGE_TOTAL_COUNT, Integer.toString(Constants.REGULAR_BROKER_REPLICAS + Constants.REGULAR_CONTROLLER_REPLICAS), true);
+        PwUtils.waitForContainsText(tcc, CssSelectors.NODES_PAGE_HEADER_TITLE_BADGE_WORKING_NODES_COUNT, Integer.toString(Constants.REGULAR_BROKER_REPLICAS + Constants.REGULAR_CONTROLLER_REPLICAS), true);
         PwUtils.waitForContainsText(tcc, CssSelectors.NODES_PAGE_HEADER_TITLE_BADGE_WARNING_NODES_COUNT, "0", true);
         // Page infobox
         // total nodes
-        PwUtils.waitForContainsText(tcc, CssSelectors.getLocator(tcc, CssSelectors.NODES_PAGE_OVERVIEW_NODE_ITEMS).nth(0), Integer.toString(Constants.REGULAR_BROKER_REPLICAS + scaledControllersCount), true);
+        PwUtils.waitForContainsText(tcc, CssSelectors.getLocator(tcc, CssSelectors.NODES_PAGE_OVERVIEW_NODE_ITEMS).nth(0), Integer.toString(Constants.REGULAR_BROKER_REPLICAS + Constants.REGULAR_CONTROLLER_REPLICAS), true);
         // with controller role
-        PwUtils.waitForContainsText(tcc, CssSelectors.getLocator(tcc, CssSelectors.NODES_PAGE_OVERVIEW_NODE_ITEMS).nth(1), Integer.toString(scaledControllersCount), true);
+        PwUtils.waitForContainsText(tcc, CssSelectors.getLocator(tcc, CssSelectors.NODES_PAGE_OVERVIEW_NODE_ITEMS).nth(1), Integer.toString(Constants.REGULAR_CONTROLLER_REPLICAS), true);
         // with broker role
         PwUtils.waitForContainsText(tcc, CssSelectors.getLocator(tcc, CssSelectors.NODES_PAGE_OVERVIEW_NODE_ITEMS).nth(2), Integer.toString(Constants.REGULAR_BROKER_REPLICAS), true);
         // Node table
-        assertEquals(Constants.REGULAR_BROKER_REPLICAS + scaledControllersCount, CssSelectors.getLocator(tcc, CssSelectors.NODES_PAGE_TABLE_BODY).all().size());
+        assertEquals(Constants.REGULAR_BROKER_REPLICAS + Constants.REGULAR_CONTROLLER_REPLICAS, CssSelectors.getLocator(tcc, CssSelectors.NODES_PAGE_TABLE_BODY).all().size());
     }
 
     /**

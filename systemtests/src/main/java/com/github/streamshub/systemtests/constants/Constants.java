@@ -13,6 +13,11 @@ public class Constants {
     public static final String OPENSHIFT_CONSOLE_ROUTE_NAME = "console";
 
     /**
+     * Commands
+     */
+    public static final String BASH_CMD = "/bin/bash";
+
+    /**
      * Namespaces
      */
     public static final String CO_NAMESPACE = "co-namespace";

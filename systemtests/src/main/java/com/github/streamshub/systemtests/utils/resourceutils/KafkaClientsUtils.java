@@ -4,7 +4,6 @@ import com.github.streamshub.systemtests.clients.KafkaClientsBuilder;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.utils.Utils;
 import io.fabric8.kubernetes.api.model.Secret;
-import io.skodjob.testframe.TestFrameConstants;
 import org.apache.kafka.common.security.auth.SecurityProtocol;
 import org.apache.logging.log4j.Logger;
 
@@ -15,14 +14,8 @@ public class KafkaClientsUtils {
 
     private KafkaClientsUtils() {}
 
-    public static long timeoutForClientFinishJob(int messagesCount) {
-        return (long) messagesCount * (TestFrameConstants.POLL_INTERVAL_FOR_RESOURCE_READINESS + TestFrameConstants.GLOBAL_TIMEOUT_MEDIUM);
-    }
-
     public static KafkaClientsBuilder scramShaPlainTextClientBuilder(String namespace, String kafkaName, String kafkaUser, String topicName, int messageCount) {
         KafkaClientsBuilder builder = plainClientBuilder(namespace, topicName, topicName + "-producer", topicName + "-consumer", KafkaUtils.getPlainScramShaBootstrapAddress(kafkaName), messageCount, 0);
-
-        // Add scram sha config
         return builder
             .withUsername(kafkaUser)
             .withAdditionalConfig(builder.getAdditionalConfig() + getScramShaConfig(namespace, kafkaUser, SecurityProtocol.SASL_PLAINTEXT));

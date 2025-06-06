@@ -28,7 +28,7 @@ import java.util.List;
 import static com.github.streamshub.systemtests.utils.playwright.locators.CssSelectors.getLocator;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class TopicST extends AbstractST {
+class TopicST extends AbstractST {
     private static final Logger LOGGER = LogWrapper.getLogger(TopicST.class);
 
     @Test
