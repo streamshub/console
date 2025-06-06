@@ -1,4 +1,4 @@
-package com.github.streamshub.systemtests.utils;
+package com.github.streamshub.systemtests.utils.resourceutils;
 
 import com.github.streamshub.systemtests.Environment;
 import com.github.streamshub.systemtests.exceptions.ClusterUnreachableException;
@@ -12,7 +12,7 @@ public class ClusterUtils {
     private ClusterUtils() {}
 
     public static void checkClusterHealth() {
-        ExecResult result = KubeResourceManager.get().kubeCmdClient().exec(false, "cluster-info");
+        ExecResult result = KubeResourceManager.get().kubeCmdClient().exec(false, false, "cluster-info");
         // Minikube on linux could throw ansi colors
         String output = result.out().replaceAll("\u001B\\[[;\\d]*m", "").toLowerCase(Locale.ENGLISH);
 
@@ -22,7 +22,7 @@ public class ClusterUtils {
     }
 
     public static boolean isOcp() {
-        return KubeResourceManager.get().kubeCmdClient().exec(false, "api-versions").out().contains("openshift.io");
+        return KubeResourceManager.get().kubeCmdClient().exec(false, false, "api-versions").out().contains("openshift.io");
     }
 
     public static String getClusterDomain() {
