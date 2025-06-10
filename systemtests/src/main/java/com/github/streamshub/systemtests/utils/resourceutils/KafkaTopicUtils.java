@@ -1,6 +1,7 @@
 package com.github.streamshub.systemtests.utils.resourceutils;
 
 import com.github.streamshub.systemtests.clients.KafkaClients;
+import com.github.streamshub.systemtests.clients.KafkaClientsBuilder;
 import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.constants.Labels;
 import com.github.streamshub.systemtests.logs.LogWrapper;
@@ -13,6 +14,7 @@ import io.strimzi.api.kafka.model.nodepool.KafkaNodePool;
 import io.strimzi.api.kafka.model.nodepool.KafkaNodePoolBuilder;
 import io.strimzi.api.kafka.model.topic.KafkaTopic;
 import io.strimzi.api.kafka.model.topic.KafkaTopicBuilder;
+import org.apache.kafka.common.security.auth.SecurityProtocol;
 import org.apache.logging.log4j.Logger;
 
 import java.util.List;
@@ -23,7 +25,7 @@ public class KafkaTopicUtils {
     
     private KafkaTopicUtils() {}
     
-    public static List<KafkaTopic> createTopicsAndReturn(String namespace, String kafkaName, String topicNamePrefix, int numberToCreate, boolean waitForTopics, int partitions, int replicas, int minIsr) {
+    public static List<KafkaTopic> setupTopicsAndReturn(String namespace, String kafkaName, String topicNamePrefix, int numberToCreate, boolean waitForTopics, int partitions, int replicas, int minIsr) {
         LOGGER.info("Create {} topics for cluster {} with topic name prefix {}", numberToCreate, kafkaName, topicNamePrefix);
 
         List<KafkaTopic> topics = IntStream.range(0, numberToCreate)
@@ -31,15 +33,15 @@ public class KafkaTopicUtils {
             .toList();
 
         if (waitForTopics) {
-            topics.forEach(KubeResourceManager.get()::createResourceWithWait);
+            KubeResourceManager.get().createResourceWithWait(topics.toArray(new KafkaTopic[0]));
         } else {
-            topics.forEach(KubeResourceManager.get()::createResourceWithoutWait);
+            KubeResourceManager.get().createResourceWithoutWait(topics.toArray(new KafkaTopic[0]));
         }
         return topics;
     }
 
 
-    public static List<KafkaTopic> createUnderReplicatedTopicsAndReturn(String namespace, String kafkaName, String kafkaUser, String topicNamePrefix, int numberToCreate, int messageCount, int partitions, int replicas, int minIsr) {
+    public static List<KafkaTopic> setupUnderReplicatedTopicsAndReturn(String namespace, String kafkaName, String kafkaUser, String topicNamePrefix, int numberToCreate, int messageCount, int partitions, int replicas, int minIsr) {
         LOGGER.info("Create {} underreplicated topics for cluster {} with topic name prefix {}", numberToCreate, kafkaName, topicNamePrefix);
         /*
          * Under replicated Kafka Topic is a topic that has multiple partition replicas but 1 is on a Broker that gets deleted.
@@ -58,10 +60,22 @@ public class KafkaTopicUtils {
         WaitUtils.waitForPodsReady(namespace, Labels.getKnpBrokerLabelSelector(kafkaName), knp.getSpec().getReplicas() + 1, true);
 
         // Create new topics for under replication
-        List<KafkaTopic> kafkaTopics = KafkaTopicUtils.createTopicsAndReturn(namespace, kafkaName, topicNamePrefix, numberToCreate, true, partitions, replicas, minIsr);
+        List<KafkaTopic> kafkaTopics = KafkaTopicUtils.setupTopicsAndReturn(namespace, kafkaName, topicNamePrefix, numberToCreate, true, partitions, replicas, minIsr);
 
         kafkaTopics.forEach(kt -> {
-            KafkaClients clients = KafkaClientsUtils.scramShaPlainTextClientBuilder(namespace, kafkaName, kafkaUser, kt.getMetadata().getName(), messageCount).build();
+            KafkaClients clients = new KafkaClientsBuilder()
+                .withNamespaceName(namespace)
+                .withTopicName(kt.getMetadata().getName())
+                .withMessageCount(messageCount)
+                .withDelayMs(0)
+                .withProducerName(KafkaNamingUtils.producerName(kt.getMetadata().getName()))
+                .withConsumerName(KafkaNamingUtils.consumerName(kt.getMetadata().getName()))
+                .withConsumerGroup(KafkaNamingUtils.consumerGroupName(kt.getMetadata().getName()))
+                .withBootstrapAddress(KafkaUtils.getPlainScramShaBootstrapAddress(kafkaName))
+                .withUsername(kafkaUser)
+                .withAdditionalConfig(KafkaClientsUtils.getScramShaConfig(namespace, kafkaUser, SecurityProtocol.SASL_PLAINTEXT))
+                .build();
+
             KubeResourceManager.get().createResourceWithWait(clients.producer(), clients.consumer());
             WaitUtils.waitForClientsSuccess(clients);
         });
@@ -85,7 +99,7 @@ public class KafkaTopicUtils {
         return kafkaTopics;
     }
 
-    public static List<KafkaTopic> createUnavailableTopicsAndReturn(String namespace, String kafkaName, String kafkaUser, String topicNamePrefix, int numberToCreate, int messageCount, int partitions, int replicas, int minIsr) {
+    public static List<KafkaTopic> setupUnavailableTopicsAndReturn(String namespace, String kafkaName, String kafkaUser, String topicNamePrefix, int numberToCreate, int messageCount, int partitions, int replicas, int minIsr) {
         /*
          * Unavailable Kafka Topic is a topic that has its only existing partition reassigned to a Broker that gets deleted
          */
@@ -100,7 +114,7 @@ public class KafkaTopicUtils {
                 .build());
 
         WaitUtils.waitForPodsReady(namespace, Labels.getKnpBrokerLabelSelector(kafkaName), knp.getSpec().getReplicas() + 1, true);
-        List<KafkaTopic> kafkaTopics = createTopicsAndReturn(namespace, kafkaName, topicNamePrefix, numberToCreate, true, partitions, replicas, minIsr);
+        List<KafkaTopic> kafkaTopics = setupTopicsAndReturn(namespace, kafkaName, topicNamePrefix, numberToCreate, true, partitions, replicas, minIsr);
 
         // Reassign the topic partition to last created broker that will be deleted
         // https://strimzi.io/blog/2022/09/16/reassign-partitions/
@@ -108,7 +122,18 @@ public class KafkaTopicUtils {
         int lastBrokerId = brokerIds.stream().sorted().toList().get(brokerIds.size() - 1);
 
         kafkaTopics.forEach(kt -> {
-            KafkaClients clients = KafkaClientsUtils.scramShaPlainTextClientBuilder(namespace, kafkaName, kafkaUser, kt.getMetadata().getName(), messageCount).build();
+            KafkaClients clients = new KafkaClientsBuilder()
+                .withNamespaceName(namespace)
+                .withTopicName(kt.getMetadata().getName())
+                .withMessageCount(messageCount)
+                .withDelayMs(0)
+                .withProducerName(KafkaNamingUtils.producerName(kt.getMetadata().getName()))
+                .withConsumerName(KafkaNamingUtils.consumerName(kt.getMetadata().getName()))
+                .withConsumerGroup(KafkaNamingUtils.consumerGroupName(kt.getMetadata().getName()))
+                .withBootstrapAddress(KafkaUtils.getPlainScramShaBootstrapAddress(kafkaName))
+                .withUsername(kafkaUser)
+                .withAdditionalConfig(KafkaClientsUtils.getScramShaConfig(namespace, kafkaUser, SecurityProtocol.SASL_PLAINTEXT))
+                .build();
 
             reassignTopicPartitionToAnotherBroker(namespace, kafkaName, ResourceUtils.listKubeResourcesByPrefix(Pod.class, namespace,
                 KafkaNamingUtils.brokerPodNamePrefix(kafkaName)).get(0).getMetadata().getName(), kt.getMetadata().getName(), lastBrokerId, clients);
@@ -184,13 +209,24 @@ public class KafkaTopicUtils {
             .endSpec();
     }
 
-    public static List<String> createUnmanagedTopicsAndReturn(String namespace, String kafkaName, String kafkaUser, String topicNamePrefix, int numberToCreate, int messageCount, int partitions, int replicas, int minIsr) {
+    public static List<String> setupUnmanagedTopicsAndReturnNames(String namespace, String kafkaName, String kafkaUser, String topicNamePrefix, int numberToCreate, int messageCount, int partitions, int replicas, int minIsr) {
         List<KafkaTopic> topics = IntStream.range(0, numberToCreate)
             .mapToObj(i -> defaultTopic(namespace, kafkaName, topicNamePrefix + "-" + i, partitions, replicas, minIsr).build())
             .toList();
 
         topics.forEach(kt -> {
-            KafkaClients clients = KafkaClientsUtils.scramShaPlainTextClientBuilder(namespace, kafkaName, kafkaUser, kt.getMetadata().getName(), messageCount).build();
+            KafkaClients clients =  new KafkaClientsBuilder()
+                .withNamespaceName(namespace)
+                .withTopicName(kt.getMetadata().getName())
+                .withMessageCount(messageCount)
+                .withDelayMs(0)
+                .withProducerName(KafkaNamingUtils.producerName(kt.getMetadata().getName()))
+                .withConsumerName(KafkaNamingUtils.consumerName(kt.getMetadata().getName()))
+                .withConsumerGroup(KafkaNamingUtils.consumerGroupName(kt.getMetadata().getName()))
+                .withBootstrapAddress(KafkaUtils.getPlainScramShaBootstrapAddress(kafkaName))
+                .withUsername(kafkaUser)
+                .withAdditionalConfig(KafkaClientsUtils.getScramShaConfig(namespace, kafkaUser, SecurityProtocol.SASL_PLAINTEXT))
+                .build();
             KubeResourceManager.get().createResourceWithWait(clients.producer(), clients.consumer());
             WaitUtils.waitForClientsSuccess(clients);
         });

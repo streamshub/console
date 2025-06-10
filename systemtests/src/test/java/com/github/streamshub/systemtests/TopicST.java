@@ -1,6 +1,7 @@
 package com.github.streamshub.systemtests;
 
 import com.github.streamshub.systemtests.clients.KafkaClients;
+import com.github.streamshub.systemtests.clients.KafkaClientsBuilder;
 import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.enums.FilterType;
 import com.github.streamshub.systemtests.enums.TopicStatus;
@@ -14,11 +15,13 @@ import com.github.streamshub.systemtests.utils.playwright.locators.CssSelectors;
 import com.github.streamshub.systemtests.utils.resourceutils.KafkaClientsUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.KafkaNamingUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.KafkaTopicUtils;
+import com.github.streamshub.systemtests.utils.resourceutils.KafkaUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
 import com.github.streamshub.systemtests.utils.testchecks.TopicChecks;
 import com.github.streamshub.systemtests.utils.testutils.TopicsTestUtils;
 import io.skodjob.testframe.resources.KubeResourceManager;
 import io.strimzi.api.kafka.model.topic.KafkaTopic;
+import org.apache.kafka.common.security.auth.SecurityProtocol;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -36,7 +39,7 @@ class TopicST extends AbstractST {
         final TestCaseConfig tcc = getTestCaseConfig();
         final int topicsCount = 150;
 
-        KafkaTopicUtils.createTopicsAndReturn(tcc.namespace(), tcc.kafkaName(), KafkaNamingUtils.topicPrefixName(tcc.kafkaName()), topicsCount,
+        KafkaTopicUtils.setupTopicsAndReturn(tcc.namespace(), tcc.kafkaName(), KafkaNamingUtils.topicPrefixName(tcc.kafkaName()), topicsCount,
             true, 1, 1, 1);
 
         LOGGER.info("Verify topics are present but none has been viewed just yet");
@@ -65,7 +68,7 @@ class TopicST extends AbstractST {
         final int topicsCount = 12;
 
         // Create topics
-        List<KafkaTopic> topics = KafkaTopicUtils.createTopicsAndReturn(tcc.namespace(), tcc.kafkaName(), KafkaNamingUtils.topicPrefixName(tcc.kafkaName()), topicsCount,
+        List<KafkaTopic> topics = KafkaTopicUtils.setupTopicsAndReturn(tcc.namespace(), tcc.kafkaName(), KafkaNamingUtils.topicPrefixName(tcc.kafkaName()), topicsCount,
             true, 1, 1, 1);
 
         LOGGER.info("View topics, so that they show up in overview page");
@@ -123,10 +126,10 @@ class TopicST extends AbstractST {
         TopicChecks.checkTopicsPageTopicState(tcc, tcc.kafkaName(), 0, 0, 0, 0);
 
         LOGGER.info("Create all types of topics");
-        List<KafkaTopic> replicatedTopics = KafkaTopicUtils.createTopicsAndReturn(tcc.namespace(), tcc.kafkaName(), replicatedTopicsPrefix, replicatedTopicsCount, true, 1, 1, 1);
-        List<String> unmanagedReplicatedTopics = KafkaTopicUtils.createUnmanagedTopicsAndReturn(tcc.namespace(), tcc.kafkaName(), KafkaNamingUtils.kafkaUserName(tcc.kafkaName()), unmanagedReplicatedTopicsPrefix, unmanagedReplicatedTopicsCount, tcc.messageCount(), 1, 1, 1);
-        List<KafkaTopic> underReplicatedTopics = KafkaTopicUtils.createUnderReplicatedTopicsAndReturn(tcc.namespace(), tcc.kafkaName(), KafkaNamingUtils.kafkaUserName(tcc.kafkaName()), underReplicatedTopicsPrefix, underReplicatedTopicsCount, tcc.messageCount(), 1, scaledUpBrokerReplicas, scaledUpBrokerReplicas);
-        List<KafkaTopic> unavailableTopics = KafkaTopicUtils.createUnavailableTopicsAndReturn(tcc.namespace(), tcc.kafkaName(), KafkaNamingUtils.kafkaUserName(tcc.kafkaName()), unavailableTopicsPrefix, unavailableTopicsCount, tcc.messageCount(), 1, 1, 1);
+        List<KafkaTopic> replicatedTopics = KafkaTopicUtils.setupTopicsAndReturn(tcc.namespace(), tcc.kafkaName(), replicatedTopicsPrefix, replicatedTopicsCount, true, 1, 1, 1);
+        List<String> unmanagedReplicatedTopics = KafkaTopicUtils.setupUnmanagedTopicsAndReturnNames(tcc.namespace(), tcc.kafkaName(), KafkaNamingUtils.kafkaUserName(tcc.kafkaName()), unmanagedReplicatedTopicsPrefix, unmanagedReplicatedTopicsCount, tcc.messageCount(), 1, 1, 1);
+        List<KafkaTopic> underReplicatedTopics = KafkaTopicUtils.setupUnderReplicatedTopicsAndReturn(tcc.namespace(), tcc.kafkaName(), KafkaNamingUtils.kafkaUserName(tcc.kafkaName()), underReplicatedTopicsPrefix, underReplicatedTopicsCount, tcc.messageCount(), 1, scaledUpBrokerReplicas, scaledUpBrokerReplicas);
+        List<KafkaTopic> unavailableTopics = KafkaTopicUtils.setupUnavailableTopicsAndReturn(tcc.namespace(), tcc.kafkaName(), KafkaNamingUtils.kafkaUserName(tcc.kafkaName()), unavailableTopicsPrefix, unavailableTopicsCount, tcc.messageCount(), 1, 1, 1);
 
         TopicChecks.checkOverviewPageTopicState(tcc, tcc.kafkaName(), totalTopicsCount, totalTopicsCount, replicatedTopicsCount + unmanagedReplicatedTopicsCount, underReplicatedTopicsCount, unavailableTopicsCount);
         TopicChecks.checkTopicsPageTopicState(tcc, tcc.kafkaName(), totalTopicsCount, replicatedTopicsCount + unmanagedReplicatedTopicsCount, underReplicatedTopicsCount, unavailableTopicsCount);
@@ -153,8 +156,8 @@ class TopicST extends AbstractST {
         TopicChecks.checkTopicsPageTopicState(tcc, tcc.kafkaName(), 0, 0, 0, 0);
 
         LOGGER.info("Create all types of topics");
-        List<KafkaTopic> replicatedTopics = KafkaTopicUtils.createTopicsAndReturn(tcc.namespace(), tcc.kafkaName(), replicatedTopicsPrefix, replicatedTopicsCount, true, 1, 1, 1);
-        List<KafkaTopic> unavailableTopics = KafkaTopicUtils.createUnavailableTopicsAndReturn(tcc.namespace(), tcc.kafkaName(), KafkaNamingUtils.kafkaUserName(tcc.kafkaName()), unavailableTopicsPrefix, unavailableTopicsCount, tcc.messageCount(), 1, 1, 1);
+        List<KafkaTopic> replicatedTopics = KafkaTopicUtils.setupTopicsAndReturn(tcc.namespace(), tcc.kafkaName(), replicatedTopicsPrefix, replicatedTopicsCount, true, 1, 1, 1);
+        List<KafkaTopic> unavailableTopics = KafkaTopicUtils.setupUnavailableTopicsAndReturn(tcc.namespace(), tcc.kafkaName(), KafkaNamingUtils.kafkaUserName(tcc.kafkaName()), unavailableTopicsPrefix, unavailableTopicsCount, tcc.messageCount(), 1, 1, 1);
 
         tcc.page().navigate(PwPageUrls.getTopicsPage(tcc, tcc.kafkaName()), PwUtils.getDefaultNavigateOpts());
         LOGGER.info("Sort topics offline topics by name");
@@ -171,8 +174,19 @@ class TopicST extends AbstractST {
 
         LOGGER.info("Sort replicated topics by storage");
         // Produce more messages for the last fullyReplicated topic - use higher message count number to take more storage
-        KafkaClients clients = KafkaClientsUtils.scramShaPlainTextClientBuilder(tcc.namespace(), tcc.kafkaName(), KafkaNamingUtils.kafkaUserName(tcc.kafkaName()),
-             replicatedTopics.stream().map(kt -> kt.getMetadata().getName()).sorted().toList().get(replicatedTopicsCount - 1), Constants.MESSAGE_COUNT_HIGH).build();
+        String topicWithMoreMessages = replicatedTopics.stream().map(kt -> kt.getMetadata().getName()).sorted().toList().get(replicatedTopicsCount - 1);
+        KafkaClients clients = new KafkaClientsBuilder()
+            .withNamespaceName(tcc.namespace())
+            .withTopicName(topicWithMoreMessages)
+            .withMessageCount(Constants.MESSAGE_COUNT_HIGH)
+            .withDelayMs(0)
+            .withProducerName(KafkaNamingUtils.producerName(topicWithMoreMessages))
+            .withConsumerName(KafkaNamingUtils.consumerName(topicWithMoreMessages))
+            .withConsumerGroup(KafkaNamingUtils.consumerGroupName(topicWithMoreMessages))
+            .withBootstrapAddress(KafkaUtils.getPlainScramShaBootstrapAddress(tcc.kafkaName()))
+            .withUsername(tcc.kafkaUserName())
+            .withAdditionalConfig(KafkaClientsUtils.getScramShaConfig(tcc.namespace(), tcc.kafkaUserName(), SecurityProtocol.SASL_PLAINTEXT))
+            .build();
 
         KubeResourceManager.get().createResourceWithWait(clients.producer(), clients.consumer());
         WaitUtils.waitForClientsSuccess(clients);

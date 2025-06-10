@@ -46,4 +46,18 @@ public class KafkaNamingUtils {
     public static String kafkaMetricsConfigMapName(String kafkaName) {
         return kafkaName + "-metrics";
     }
+
+    // Clients
+
+    public static String producerName(String topicName) {
+        return topicName + "-producer";
+    }
+
+    public static String consumerName(String topicName) {
+        return topicName + "-consumer";
+    }
+
+    public static String consumerGroupName(String topicName) {
+        return topicName + "-consumer-group";
+    }
 }
