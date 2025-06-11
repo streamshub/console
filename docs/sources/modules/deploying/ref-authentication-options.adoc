@@ -174,11 +174,7 @@ Use `grantOptions` to provide properties such as `username` and `password` when 
 oidc:
   grantOptions:
     username: my-user
-    password:
-      valueFrom:
-        secretKeyRef:
-          name: my-password-secret
-          key: password
+    password: <my_password>
 ----
 
 method::  
