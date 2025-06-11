@@ -156,7 +156,7 @@ spec:
 == Optional OIDC authentication properties
 
 The following properties can be used to further configure `oidc` authentication.  
-These apply to any part of the console configuration that supports `authentication.oidc`, such as Kafka clusters, schema registries, or metrics providers.
+These apply to any part of the console configuration that supports `authentication.oidc`, such as schema registries or metrics providers.
 
 grantType::  
 Specifies the OIDC grant type to use. Required when using non-interactive authentication flows, where no user login is involved.
