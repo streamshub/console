@@ -36,6 +36,7 @@ export function FilterSwitcher({
           isExpanded={isOpen}
           variant={"default"}
           icon={<FilterIcon />}
+          style={{ minWidth: "calc(0.875rem * 2.5 + 5.9375rem)" }}
         >
           {value}
         </MenuToggle>

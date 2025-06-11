@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { ReconciliationContext } from "./ReconciliationContext";
 import { getKafkaCluster } from "@/api/kafka/actions";
 
@@ -14,9 +14,9 @@ export function ReconciliationProvider({
   const [isReconciliationPaused, setIsReconciliationPaused] =
     useState<boolean>(false);
 
-  const setReconciliationPaused = (paused: boolean) => {
+  const setReconciliationPaused = useCallback((paused: boolean) => {
     setIsReconciliationPaused(paused);
-  };
+  }, []);
 
   useEffect(() => {
     if (!kafkaId) {
@@ -37,12 +37,15 @@ export function ReconciliationProvider({
     fetchReconciliationState();
     const intervalId = setInterval(fetchReconciliationState, 10000);
     return () => clearInterval(intervalId);
-  }, [kafkaId]);
+  }, [kafkaId, setReconciliationPaused]);
+
+  const contextValue = useMemo(
+    () => ({ isReconciliationPaused, setReconciliationPaused }),
+    [isReconciliationPaused, setReconciliationPaused],
+  );
 
   return (
-    <ReconciliationContext.Provider
-      value={{ isReconciliationPaused, setReconciliationPaused }}
-    >
+    <ReconciliationContext.Provider value={contextValue}>
       {children}
     </ReconciliationContext.Provider>
   );

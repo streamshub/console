@@ -283,6 +283,11 @@ public class TopicService {
                                 Collections.emptyMap(),
                                 createdTopic.configs().getPrimary()
                             );
+                            logger.debugf(
+                                    "Managed topic %s created. Resource: %s",
+                                    newTopic.name(),
+                                    managedTopic.get()
+                            );
                             promise.complete(response);
                         }
                     })

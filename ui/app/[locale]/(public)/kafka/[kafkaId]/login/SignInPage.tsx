@@ -1,6 +1,7 @@
 "use client";
 import { useDarkMode } from "@/app/[locale]/useDarkMode";
 import { ExternalLink } from "@/components/Navigation/ExternalLink";
+import RichText from "@/components/RichText";
 import { Link } from "@/i18n/routing";
 import {
   Alert,
@@ -234,9 +235,14 @@ export function SignInPage({
             <LoginMainFooterBandItem>
               <Link href={`/kafka/${previousClusterId}/overview`}>
                 <AngleLeftIcon />{" "}
-                {t.rich("login-in-page.stay_logged_in", {
-                  clustername: previousClusterName,
-                })}
+                <RichText>
+                  {(tags) =>
+                    t.rich("login-in-page.stay_logged_in", {
+                      ...tags,
+                      clustername: previousClusterName,
+                    })
+                  }
+                </RichText>
               </Link>
             </LoginMainFooterBandItem>
           )

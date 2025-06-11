@@ -58,14 +58,19 @@ import org.apache.kafka.common.config.ConfigResource;
 import org.apache.kafka.common.config.TopicConfig;
 import org.apache.kafka.common.errors.ApiException;
 import org.apache.kafka.common.internals.KafkaFutureImpl;
+import org.awaitility.core.ConditionEvaluationListener;
+import org.awaitility.core.EvaluatedCondition;
 import org.eclipse.microprofile.config.Config;
 import org.hamcrest.Description;
 import org.hamcrest.TypeSafeMatcher;
+import org.jboss.logging.Logger;
 import org.json.JSONException;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.aggregator.AggregateWith;
 import org.junit.jupiter.params.provider.CsvFileSource;
@@ -78,6 +83,7 @@ import org.skyscreamer.jsonassert.JSONCompareMode;
 import com.github.streamshub.console.api.security.ConsoleAuthenticationMechanism;
 import com.github.streamshub.console.api.service.TopicService;
 import com.github.streamshub.console.api.support.Holder;
+import com.github.streamshub.console.api.support.KafkaContext;
 import com.github.streamshub.console.config.ConsoleConfig;
 import com.github.streamshub.console.config.security.Decision;
 import com.github.streamshub.console.config.security.KafkaSecurityConfigBuilder;
@@ -101,6 +107,8 @@ import io.quarkus.test.junit.TestProfile;
 import io.strimzi.api.ResourceLabels;
 import io.strimzi.api.kafka.model.kafka.Kafka;
 import io.strimzi.api.kafka.model.kafka.KafkaBuilder;
+import io.strimzi.api.kafka.model.kafka.KafkaSpec;
+import io.strimzi.api.kafka.model.kafka.entityoperator.EntityOperatorSpec;
 import io.strimzi.api.kafka.model.topic.KafkaTopic;
 import io.strimzi.api.kafka.model.topic.KafkaTopicBuilder;
 
@@ -141,6 +149,8 @@ import static org.mockito.Mockito.doAnswer;
 @TestProfile(TestPlainProfile.class)
 class TopicsResourceIT {
 
+    static final Logger LOGGER = Logger.getLogger(TopicsResourceIT.class);
+
     static LogCapture auditLogCapture = LogCapture.with(logRecord -> logRecord
             .getLoggerName()
             .equals(ConsoleAuthenticationMechanism.class.getName()),
@@ -157,6 +167,9 @@ class TopicsResourceIT {
 
     @Inject
     Holder<SharedIndexInformer<Kafka>> kafkaInformer;
+
+    @Inject
+    Map<String, KafkaContext> configuredContexts;
 
     @Inject
     @Named("KafkaTopics")
@@ -184,7 +197,12 @@ class TopicsResourceIT {
     }
 
     @BeforeEach
-    void setup() {
+    void setup(TestInfo testInfo) {
+        LOGGER.infof("Before test %s.%s (%s)",
+            testInfo.getTestClass().orElseThrow().getName(),
+            testInfo.getTestMethod().orElseThrow().getName(),
+            testInfo.getDisplayName()
+        );
         bootstrapServers1 = URI.create(deployments.getExternalBootstrapServers());
         URI randomBootstrapServers = URI.create(consoleConfig.getKafka()
                 .getCluster("default/test-kafka2")
@@ -214,6 +232,15 @@ class TopicsResourceIT {
 
         clusterId1 = consoleConfig.getKafka().getCluster("default/test-kafka1").get().getId();
         clusterId2 = consoleConfig.getKafka().getCluster("default/test-kafka2").get().getId();
+    }
+
+    @AfterEach
+    void teardown(TestInfo testInfo) {
+        LOGGER.infof("After test %s.%s (%s)",
+            testInfo.getTestClass().orElseThrow().getName(),
+            testInfo.getTestMethod().orElseThrow().getName(),
+            testInfo.getDisplayName()
+        );
     }
 
     @Test
@@ -1876,6 +1903,16 @@ class TopicsResourceIT {
                 .build();
         });
 
+        // Wait for the modified cluster to be updated in the context map
+        await().atMost(10, TimeUnit.SECONDS)
+            .until(() -> Optional.of(configuredContexts.get(clusterId1))
+                    .map(KafkaContext::resource)
+                    .map(Kafka::getSpec)
+                    .map(KafkaSpec::getEntityOperator)
+                    .map(EntityOperatorSpec::getTopicOperator)
+                    .map(Objects::nonNull)
+                    .orElse(Boolean.FALSE));
+
         String topicName = "t-" + UUID.randomUUID().toString();
 
         var response = CompletableFuture.supplyAsync(() ->
@@ -1898,8 +1935,20 @@ class TopicsResourceIT {
          */
         var topicClient = client.resources(KafkaTopic.class).inNamespace("default").withName(topicName);
         await()
-            .atMost(TopicService.TOPIC_OPERATION_LIMIT + 5, TimeUnit.SECONDS)
-            .untilAsserted(() -> assertNotNull(topicClient.get()));
+            .atMost(TopicService.TOPIC_OPERATION_LIMIT, TimeUnit.SECONDS)
+            .conditionEvaluationListener(new ConditionEvaluationListener<Object>() {
+                @Override
+                public void conditionEvaluated(EvaluatedCondition<Object> condition) {
+                    // No-op
+                }
+
+                @Override
+                public void onTimeout(org.awaitility.core.TimeoutEvent timeoutEvent) {
+                    LOGGER.infof("Timeout creating topic %s", topicName);
+                    response.join().log().all();
+                }
+            })
+            .until(() -> topicClient.get() != null);
 
         String topicId = topicUtils.createTopics(List.of(topicName), 1).get(topicName);
         topicClient.editStatus(t -> {
