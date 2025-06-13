@@ -300,7 +300,7 @@ public class TopicsResource {
     @Path("{topicId}/consumerGroups")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    @APIResponseSchema(ConsumerGroup.ListResponse.class)
+    @APIResponseSchema(ConsumerGroup.DataList.class)
     @APIResponse(responseCode = "500", ref = "ServerError")
     @APIResponse(responseCode = "504", ref = "ServerTimeout")
     // authorization checked by ConsumerGroupService
@@ -353,7 +353,7 @@ public class TopicsResource {
         ListRequestContext<ConsumerGroup> listSupport = new ListRequestContext<>(ConsumerGroup.Fields.COMPARATOR_BUILDER, uriInfo.getRequestUri(), listParams, ConsumerGroup::fromCursor);
 
         return consumerGroupService.listConsumerGroups(topicId, fields, listSupport)
-                .thenApply(groups -> new ConsumerGroup.ListResponse(groups, listSupport))
+                .thenApply(groups -> new ConsumerGroup.DataList(groups, listSupport))
                 .thenApply(Response::ok)
                 .thenApply(Response.ResponseBuilder::build);
     }

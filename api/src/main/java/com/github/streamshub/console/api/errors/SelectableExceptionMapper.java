@@ -4,7 +4,7 @@ import java.util.List;
 
 import jakarta.ws.rs.ext.ExceptionMapper;
 
-import com.github.streamshub.console.api.model.Error;
+import com.github.streamshub.console.api.model.jsonapi.JsonApiError;
 
 /**
  * Custom interface used to select CDI bean instances of ExceptionMapper.
@@ -30,6 +30,6 @@ public interface SelectableExceptionMapper<E extends Throwable> extends Exceptio
      * @param exception the exception thrown by the application
      * @return list of errors derived from the exception/throwable
      */
-    List<Error> buildErrors(E exception);
+    List<JsonApiError> buildErrors(E exception);
 
 }

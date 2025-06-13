@@ -41,12 +41,12 @@ import org.eclipse.microprofile.context.ThreadContext;
 import org.jboss.logging.Logger;
 
 import com.github.streamshub.console.api.model.Either;
-import com.github.streamshub.console.api.model.Identifier;
 import com.github.streamshub.console.api.model.OffsetInfo;
 import com.github.streamshub.console.api.model.PartitionId;
 import com.github.streamshub.console.api.model.PartitionInfo;
 import com.github.streamshub.console.api.model.ReplicaLocalStorage;
 import com.github.streamshub.console.api.model.Topic;
+import com.github.streamshub.console.api.model.jsonapi.Identifier;
 import com.github.streamshub.console.api.security.PermissionService;
 import com.github.streamshub.console.api.support.KafkaContext;
 import com.github.streamshub.console.api.support.KafkaOffsetSpec;
@@ -312,7 +312,7 @@ public class TopicDescribeService {
                         if (searchTopics.contains(idString)) {
                             var topicGroups = consumerGroups.getOrDefault(idString, Collections.emptyList());
                             var identifiers = topicGroups.stream().map(g -> new Identifier("consumerGroups", g)).toList();
-                            topic.consumerGroups().data().addAll(identifiers);
+                            topic.consumerGroups().getData().addAll(identifiers);
                             topic.consumerGroups().addMeta("count", identifiers.size());
                         } else {
                             topic.consumerGroups(null);

@@ -8,8 +8,8 @@ import java.util.stream.Collectors;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.Response.Status;
 
-import com.github.streamshub.console.api.model.Error;
-import com.github.streamshub.console.api.model.ErrorResponse;
+import com.github.streamshub.console.api.model.jsonapi.JsonApiError;
+import com.github.streamshub.console.api.model.jsonapi.JsonApiErrors;
 import com.github.streamshub.console.api.support.ErrorCategory;
 
 public abstract class AbstractExceptionHandler<T extends Throwable> implements SelectableExceptionMapper<T> {
@@ -28,9 +28,9 @@ public abstract class AbstractExceptionHandler<T extends Throwable> implements S
      *                      list
      * @return the most frequently occurring status or the default
      */
-    public static Status maxOccurringStatus(List<Error> errors, Supplier<Status> defaultStatus) {
+    public static Status maxOccurringStatus(List<JsonApiError> errors, Supplier<Status> defaultStatus) {
         return errors.stream()
-            .collect(Collectors.groupingBy(Error::getStatus, Collectors.counting()))
+            .collect(Collectors.groupingBy(JsonApiError::getStatus, Collectors.counting()))
             .entrySet()
             .stream()
             .max(Map.Entry.comparingByValue())
@@ -42,12 +42,12 @@ public abstract class AbstractExceptionHandler<T extends Throwable> implements S
 
     @Override
     public Response toResponse(T exception) {
-        List<Error> errors = buildErrors(exception);
+        List<JsonApiError> errors = buildErrors(exception);
 
         Status status = maxOccurringStatus(errors, category::getHttpStatus);
 
         return Response.status(status)
-                .entity(new ErrorResponse(errors))
+                .entity(new JsonApiErrors(errors))
                 .build();
     }
 

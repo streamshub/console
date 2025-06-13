@@ -1,28 +1,27 @@
-package com.github.streamshub.console.api.model;
-
-import java.util.LinkedHashMap;
-import java.util.Map;
+package com.github.streamshub.console.api.model.jsonapi;
 
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
+import org.eclipse.microprofile.openapi.annotations.media.SchemaProperty;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 
 @JsonInclude(value = Include.NON_NULL)
-public class Error {
-
-    @Schema(
-            description = "A meta object containing non-standard meta-information about the error",
-            implementation = JsonApiMeta.class)
-    JsonApiMeta meta;
-
-    @Schema(description = """
-            a links object that MAY contain the following members:
-            * `about`: a link that leads to further details about this particular occurrence of the problem.
-            * `type`: a link that identifies the type of error that this particular error is an instance of.
-            """)
-    Map<String, String> links;
+@Schema(
+    properties = {
+        @SchemaProperty(
+            name = "meta",
+            description = "A meta object containing non-standard meta-information about the error."),
+        @SchemaProperty(
+            name = "links",
+            description = """
+                a links object that MAY contain the following members:
+                * `about`: a link that leads to further details about this particular occurrence of the problem.
+                * `type`: a link that identifies the type of error that this particular error is an instance of."""),
+    }
+)
+public class JsonApiError extends JsonApiBase {
 
     @Schema(description = "A unique identifier for this particular occurrence of the problem.")
     String id;
@@ -48,37 +47,16 @@ public class Error {
     @JsonIgnore
     Throwable cause;
 
-    public static Error forThrowable(Throwable thrown, String message) {
-        Error error = new Error(message, thrown.getMessage(), thrown);
+    public static JsonApiError forThrowable(Throwable thrown, String message) {
+        JsonApiError error = new JsonApiError(message, thrown.getMessage(), thrown);
         error.addMeta("type", "error");
         return error;
     }
 
-    public Error(String title, String detail, Throwable cause) {
+    public JsonApiError(String title, String detail, Throwable cause) {
         this.title = title;
         this.detail = detail;
         this.cause = cause;
-    }
-
-    public JsonApiMeta getMeta() {
-        return meta;
-    }
-
-    public Error addMeta(String key, Object value) {
-        meta = JsonApiMeta.put(meta, key, value);
-        return this;
-    }
-
-    public Map<String, String> getLinks() {
-        return links;
-    }
-
-    public Error addLink(String key, String value) {
-        if (links == null) {
-            links = new LinkedHashMap<>();
-        }
-        links.put(key, value);
-        return this;
     }
 
     public String getId() {

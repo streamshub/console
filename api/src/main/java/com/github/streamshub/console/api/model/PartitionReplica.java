@@ -7,6 +7,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.github.streamshub.console.api.model.jsonapi.JsonApiError;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 @JsonInclude(value = Include.NON_NULL)
@@ -16,8 +17,8 @@ public class PartitionReplica {
     private final String nodeRack;
     private final boolean inSync;
 
-    @Schema(implementation = Object.class, oneOf = { ReplicaLocalStorage.class, Error.class })
-    private Either<ReplicaLocalStorage, Error> localStorage;
+    @Schema(implementation = Object.class, oneOf = { ReplicaLocalStorage.class, JsonApiError.class })
+    private Either<ReplicaLocalStorage, JsonApiError> localStorage;
 
     public PartitionReplica(int nodeId, String nodeRack, boolean inSync) {
         this.nodeId = nodeId;
@@ -45,11 +46,11 @@ public class PartitionReplica {
     }
 
     @JsonProperty
-    public Either<ReplicaLocalStorage, Error> localStorage() {
+    public Either<ReplicaLocalStorage, JsonApiError> localStorage() {
         return localStorage;
     }
 
-    public void localStorage(Either<ReplicaLocalStorage, Error> localStorage) {
+    public void localStorage(Either<ReplicaLocalStorage, JsonApiError> localStorage) {
         this.localStorage = localStorage;
     }
 }

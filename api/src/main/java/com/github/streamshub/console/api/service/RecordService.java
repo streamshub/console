@@ -40,9 +40,9 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.context.ThreadContext;
 import org.jboss.logging.Logger;
 
-import com.github.streamshub.console.api.model.Identifier;
-import com.github.streamshub.console.api.model.JsonApiRelationship;
 import com.github.streamshub.console.api.model.KafkaRecord;
+import com.github.streamshub.console.api.model.jsonapi.Identifier;
+import com.github.streamshub.console.api.model.jsonapi.JsonApiRelationshipToOne;
 import com.github.streamshub.console.api.support.KafkaContext;
 import com.github.streamshub.console.api.support.SizeLimitedSortedSet;
 import com.github.streamshub.console.api.support.serdes.RecordData;
@@ -224,14 +224,14 @@ public class RecordService {
         return result;
     }
 
-    void setSchemaMeta(JsonApiRelationship schemaRelationship, RecordData data) {
+    void setSchemaMeta(JsonApiRelationshipToOne schemaRelationship, RecordData data) {
         schemaMeta(schemaRelationship, "coordinates").ifPresent(gav -> data.meta.put("schema-gav", gav));
         schemaMeta(schemaRelationship, "messageType").ifPresent(type -> data.meta.put("message-type", type));
     }
 
-    Optional<String> schemaMeta(JsonApiRelationship schemaRelationship, String key) {
+    Optional<String> schemaMeta(JsonApiRelationshipToOne schemaRelationship, String key) {
         return Optional.ofNullable(schemaRelationship)
-                .map(JsonApiRelationship::meta)
+                .map(JsonApiRelationshipToOne::meta)
                 .map(meta -> {
                     Object value = meta.get(key);
                     return (value instanceof String stringValue) ? stringValue : null;
@@ -336,7 +336,7 @@ public class RecordService {
         return item;
     }
 
-    Optional<JsonApiRelationship> schemaRelationship(RecordData data) {
+    Optional<JsonApiRelationshipToOne> schemaRelationship(RecordData data) {
         return Optional.ofNullable(data)
                 .map(d -> d.meta)
                 .filter(recordMeta -> recordMeta.containsKey("schema-id"))
@@ -347,10 +347,9 @@ public class RecordService {
                     String schemaId = recordMeta.get("schema-id");
                     String name = recordMeta.get("schema-name");
 
-                    var relationship = new JsonApiRelationship();
+                    var relationship = new JsonApiRelationshipToOne(new Identifier("schemas", schemaId));
                     relationship.addMeta("artifactType", artifactType);
                     relationship.addMeta("name", name);
-                    relationship.data(new Identifier("schemas", schemaId));
                     relationship.addLink("content", "/api/registries/%s/schemas/%s".formatted(registryId, schemaId));
 
                     schemaError(data).ifPresent(error -> relationship.addMeta("errors", List.of(error)));
@@ -358,13 +357,13 @@ public class RecordService {
                     return relationship;
                 })
                 .or(() -> schemaError(data).map(error -> {
-                    var relationship = new JsonApiRelationship();
+                    var relationship = new JsonApiRelationshipToOne(null);
                     relationship.addMeta("errors", List.of(error));
                     return relationship;
                 }));
     }
 
-    Optional<com.github.streamshub.console.api.model.Error> schemaError(RecordData data) {
+    Optional<com.github.streamshub.console.api.model.jsonapi.JsonApiError> schemaError(RecordData data) {
         return Optional.ofNullable(data).map(RecordData::error);
     }
 

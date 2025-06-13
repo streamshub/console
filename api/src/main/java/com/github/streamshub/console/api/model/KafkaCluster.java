@@ -17,6 +17,11 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.github.streamshub.console.api.model.jsonapi.JsonApiMeta;
+import com.github.streamshub.console.api.model.jsonapi.JsonApiRelationshipToMany;
+import com.github.streamshub.console.api.model.jsonapi.JsonApiResource;
+import com.github.streamshub.console.api.model.jsonapi.JsonApiRootData;
+import com.github.streamshub.console.api.model.jsonapi.JsonApiRootDataList;
 import com.github.streamshub.console.api.support.ComparatorBuilder;
 import com.github.streamshub.console.api.support.ErrorCategory;
 import com.github.streamshub.console.api.support.ListRequestContext;
@@ -43,7 +48,7 @@ import static java.util.Comparator.nullsLast;
     message = "resource type conflicts with operation",
     node = "type",
     payload = ErrorCategory.ResourceConflict.class)
-public class KafkaCluster extends RelatableResource<KafkaCluster.Attributes, KafkaCluster.Relationships> implements PaginatedKubeResource {
+public class KafkaCluster extends JsonApiResource<KafkaCluster.Attributes, KafkaCluster.Relationships> implements PaginatedKubeResource {
 
     public static final String API_TYPE = "kafkas";
     public static final String FIELDS_PARAM = "fields[" + API_TYPE + "]";
@@ -112,7 +117,7 @@ public class KafkaCluster extends RelatableResource<KafkaCluster.Attributes, Kaf
     }
 
     @Schema(name = "KafkaClusterDataList")
-    public static final class KafkaClusterDataList extends DataList<KafkaCluster> {
+    public static final class KafkaClusterDataList extends JsonApiRootDataList<KafkaCluster> {
         public KafkaClusterDataList(List<KafkaCluster> data, ListRequestContext<KafkaCluster> listSupport) {
             super(data.stream()
                     .map(entry -> {
@@ -126,7 +131,7 @@ public class KafkaCluster extends RelatableResource<KafkaCluster.Attributes, Kaf
     }
 
     @Schema(name = "KafkaClusterData")
-    public static final class KafkaClusterData extends DataSingleton<KafkaCluster> {
+    public static final class KafkaClusterData extends JsonApiRootData<KafkaCluster> {
         @JsonCreator
         public KafkaClusterData(@JsonProperty("data") KafkaCluster data) {
             super(data);
@@ -189,7 +194,7 @@ public class KafkaCluster extends RelatableResource<KafkaCluster.Attributes, Kaf
     @JsonFilter("fieldFilter")
     static class Relationships {
         @JsonProperty
-        DataList<Identifier> nodes = new DataList<>();
+        JsonApiRelationshipToMany nodes = new JsonApiRelationshipToMany();
     }
 
     public KafkaCluster(String id, List<String> authorizedOperations) {
@@ -263,7 +268,7 @@ public class KafkaCluster extends RelatableResource<KafkaCluster.Attributes, Kaf
         this.id = id;
     }
 
-    public DataList<Identifier> nodes() {
+    public JsonApiRelationshipToMany nodes() {
         return relationships.nodes;
     }
 

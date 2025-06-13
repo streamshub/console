@@ -21,6 +21,11 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonFilter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.github.streamshub.console.api.model.jsonapi.JsonApiError;
+import com.github.streamshub.console.api.model.jsonapi.JsonApiResource;
+import com.github.streamshub.console.api.model.jsonapi.JsonApiRootData;
+import com.github.streamshub.console.api.model.jsonapi.JsonApiRootDataList;
+import com.github.streamshub.console.api.model.jsonapi.None;
 import com.github.streamshub.console.api.support.ComparatorBuilder;
 import com.github.streamshub.console.api.support.ErrorCategory;
 import com.github.streamshub.console.api.support.ListRequestContext;
@@ -78,9 +83,9 @@ public class ConsumerGroup {
         }
     }
 
-    @Schema(name = "ConsumerGroupListDocument")
-    public static final class ListResponse extends DataList<ConsumerGroupResource> {
-        public ListResponse(List<ConsumerGroup> data, ListRequestContext<ConsumerGroup> listSupport) {
+    @Schema(name = "ConsumerGroupDataList")
+    public static final class DataList extends JsonApiRootDataList<ConsumerGroupResource> {
+        public DataList(List<ConsumerGroup> data, ListRequestContext<ConsumerGroup> listSupport) {
             super(data.stream()
                     .map(entry -> {
                         var rsrc = new ConsumerGroupResource(entry);
@@ -93,20 +98,20 @@ public class ConsumerGroup {
         }
     }
 
-    @Schema(name = "ConsumerGroupDocument")
-    public static final class ConsumerGroupDocument extends DataSingleton<ConsumerGroupResource> {
+    @Schema(name = "ConsumerGroupData")
+    public static final class Data extends JsonApiRootData<ConsumerGroupResource> {
         /**
          * Used by patch
          */
         @JsonCreator
-        public ConsumerGroupDocument(@JsonProperty("data") ConsumerGroupResource data) {
+        public Data(@JsonProperty("data") ConsumerGroupResource data) {
             super(data);
         }
 
         /**
          * Used by list and describe
          */
-        public ConsumerGroupDocument(ConsumerGroup attributes) {
+        public Data(ConsumerGroup attributes) {
             super(new ConsumerGroupResource(attributes));
         }
     }
@@ -123,7 +128,7 @@ public class ConsumerGroup {
         message = "resource type conflicts with operation",
         node = "type",
         payload = ErrorCategory.ResourceConflict.class)
-    public static final class ConsumerGroupResource extends Resource<ConsumerGroup> {
+    public static final class ConsumerGroupResource extends JsonApiResource<ConsumerGroup, None> {
         /**
          * Used by patch
          */
@@ -162,7 +167,7 @@ public class ConsumerGroup {
     private List<@Valid OffsetAndMetadata> offsets = Collections.emptyList();
 
     // When a describe error occurs
-    private List<Error> errors;
+    private List<JsonApiError> errors;
 
     private ConsumerGroup(String id, ConsumerGroup other) {
         this(id,
@@ -218,7 +223,7 @@ public class ConsumerGroup {
         return group;
     }
 
-    public void addError(Error error) {
+    public void addError(JsonApiError error) {
         if (errors == null) {
             errors = new ArrayList<>();
         }

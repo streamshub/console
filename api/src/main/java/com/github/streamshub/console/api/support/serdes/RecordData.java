@@ -23,7 +23,7 @@ public class RecordData {
 
     public final Map<String, String> meta = new LinkedHashMap<>(1);
     byte[] data;
-    com.github.streamshub.console.api.model.Error error;
+    com.github.streamshub.console.api.model.jsonapi.JsonApiError error;
 
     public RecordData(byte[] data) {
         super();
@@ -34,7 +34,7 @@ public class RecordData {
         this(data != null ? data.getBytes(StandardCharsets.UTF_8) : null);
     }
 
-    public com.github.streamshub.console.api.model.Error error() {
+    public com.github.streamshub.console.api.model.jsonapi.JsonApiError error() {
         return error;
     }
 

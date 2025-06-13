@@ -17,7 +17,7 @@
                             description = "Bad request",
                             content = @Content(
                                     mediaType = MediaType.APPLICATION_JSON,
-                                    schema = @Schema(implementation = ErrorResponse.class),
+                                    schema = @Schema(implementation = JsonApiErrors.class),
                                     examples = @ExampleObject(name = "Invalid query parameter", value = """
                                             {
                                               "errors": [
@@ -39,17 +39,17 @@
                             description = "Client request has not been completed because it lacks valid authentication credentials for the requested resource",
                             content = @Content(
                                     mediaType = MediaType.APPLICATION_JSON,
-                                    schema = @Schema(implementation = ErrorResponse.class))),
+                                    schema = @Schema(implementation = JsonApiErrors.class))),
                     @APIResponse(name = "NotAuthorized",
                             description = "The server understands the request but refuses to authorize it.",
                             content = @Content(
                                     mediaType = MediaType.APPLICATION_JSON,
-                                    schema = @Schema(implementation = ErrorResponse.class))),
+                                    schema = @Schema(implementation = JsonApiErrors.class))),
                     @APIResponse(name = "NotFound",
                             description = "Requested resource not found",
                             content = @Content(
                                     mediaType = MediaType.APPLICATION_JSON,
-                                    schema = @Schema(implementation = ErrorResponse.class),
+                                    schema = @Schema(implementation = JsonApiErrors.class),
                                     examples = @ExampleObject(name = "Invalid URL", value = """
                                             {
                                               "errors": [
@@ -68,7 +68,7 @@
                             description = "Internal server error",
                             content = @Content(
                                     mediaType = MediaType.APPLICATION_JSON,
-                                    schema = @Schema(implementation = ErrorResponse.class),
+                                    schema = @Schema(implementation = JsonApiErrors.class),
                                     examples = @ExampleObject(name = "Internal Server Error", value = """
                                             {
                                               "errors": [
@@ -87,7 +87,7 @@
                             description = "Backend service timeout",
                             content = @Content(
                                     mediaType = MediaType.APPLICATION_JSON,
-                                    schema = @Schema(implementation = ErrorResponse.class),
+                                    schema = @Schema(implementation = JsonApiErrors.class),
                                     examples = @ExampleObject(name = "Backend Service Timeout", value = """
                                             {
                                               "errors": [
@@ -140,4 +140,4 @@ import org.eclipse.microprofile.openapi.annotations.security.SecurityRequirement
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 import com.github.streamshub.console.api.model.ConfigEntry;
-import com.github.streamshub.console.api.model.ErrorResponse;
+import com.github.streamshub.console.api.model.jsonapi.JsonApiErrors;

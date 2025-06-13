@@ -1,4 +1,4 @@
-package com.github.streamshub.console.api.model;
+package com.github.streamshub.console.api.model.jsonapi;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
