@@ -66,20 +66,22 @@ public class TopicChecks {
             CssSelectors.getLocator(tcc, dropdownItemsSelector).nth(perPageItemIndex).click();
 
             // Check pages
-            int numOfPages = (topicsCount / topicsPerPage) + ((topicsCount % topicsPerPage) > 0 ? 1 : 0);
+            int pageOverflow = topicsCount % topicsPerPage;
+            int numOfPages = (topicsCount / topicsPerPage) + (pageOverflow > 0 ? 1 : 0);
+            int finalPageSize = pageOverflow > 0 ? pageOverflow : topicsPerPage;
+
             // Forward movement
             for (int pageNum = 1; pageNum <= numOfPages; pageNum++) {
                 lowBoundary = (topicsPerPage * (pageNum - 1)) + 1;
                 highBoundary = Integer.min(topicsPerPage * pageNum, topicsCount);
-                topicsOnPage = pageNum == numOfPages ? ((topicsCount % topicsPerPage) == 0 ? topicsPerPage : (topicsCount % topicsPerPage)) : topicsPerPage;
+                topicsOnPage = pageNum == numOfPages ? finalPageSize : topicsPerPage;
                 checkPaginationContent(tcc, pageNum, numOfPages, topicsOnPage, lowBoundary, highBoundary, topicsCount, paginationTextSelector, nextButtonSelector);
             }
-
             // Backwards movement
             for (int pageNum = numOfPages; pageNum >= 1; pageNum--) {
                 lowBoundary = (topicsPerPage * (pageNum - 1)) + 1;
                 highBoundary = Integer.min(topicsPerPage * pageNum, topicsCount);
-                topicsOnPage = pageNum == numOfPages ? ((topicsCount % topicsPerPage) == 0 ? topicsPerPage : (topicsCount % topicsPerPage)) : topicsPerPage;
+                topicsOnPage = pageNum == numOfPages ? finalPageSize : topicsPerPage;
                 checkPaginationContent(tcc, pageNum, 1, topicsOnPage, lowBoundary, highBoundary, topicsCount, paginationTextSelector, previousButtonSelector);
             }
         }

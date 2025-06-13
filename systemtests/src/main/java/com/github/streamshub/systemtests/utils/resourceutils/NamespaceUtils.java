@@ -6,6 +6,8 @@ import io.skodjob.testframe.resources.KubeResourceManager;
 
 public class NamespaceUtils {
 
+    private NamespaceUtils() {}
+
     public static void prepareNamespace(String namespaceName) {
         Namespace namespace = ResourceUtils.getKubeResource(Namespace.class, namespaceName);
         if (namespace == null) {

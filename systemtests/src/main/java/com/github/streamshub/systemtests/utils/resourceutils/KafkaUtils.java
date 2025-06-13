@@ -30,7 +30,7 @@ public class KafkaUtils {
         LOGGER.info("Adding annotation: {}:{} to Kafka: {}/{}", annoKey, annoVal, namespace, kafkaName);
         Kafka oldKafka = ResourceUtils.getKubeResource(Kafka.class, namespace, kafkaName);
         Map<String, String> anno = oldKafka.getMetadata().getAnnotations();
-        if (!anno.containsKey(annoKey) || anno.containsKey(annoKey) && !anno.get(annoKey).equals(annoVal)) {
+        if (!java.util.Objects.equals(anno.get(annoKey), annoVal)) {
             anno.put(annoKey, annoVal);
             KubeResourceManager.get().createOrUpdateResourceWithWait(
                 new KafkaBuilder(oldKafka)
