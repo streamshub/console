@@ -6,6 +6,7 @@ import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Base64;
 
 public class Utils {
 
@@ -19,5 +20,9 @@ public class Utils {
         } catch (NoSuchAlgorithmException e) {
             throw new SetupException("Failed to hash:", e);
         }
+    }
+
+    public static String decodeFromBase64(String data)  {
+        return new String(Base64.getDecoder().decode(data), StandardCharsets.US_ASCII);
     }
 }

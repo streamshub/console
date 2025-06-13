@@ -6,7 +6,7 @@
     <parent>
         <groupId>com.github.streamshub</groupId>
         <artifactId>console</artifactId>
-        <version>0.7.1-SNAPSHOT</version>
+        <version>0.8.3-SNAPSHOT</version>
     </parent>
 
     <artifactId>console-systemtests</artifactId>
@@ -27,7 +27,7 @@
         <mockito.version>5.15.2</mockito.version>
         <powermock.version>2.0.9</powermock.version>
         <!-- Used for test-frame -->
-        <test-frame.version>0.13.0</test-frame.version>
+        <test-frame.version>0.14.1</test-frame.version>
         <!-- Allows skipping tests - unit, system or both types -->
         <skipTests>false</skipTests>
         <skipUTs>${skipTests}</skipUTs>
@@ -145,6 +145,10 @@
             <groupId>com.marcnuri.helm-java</groupId>
             <artifactId>helm-java</artifactId>
             <version>${helm-client.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.kafka</groupId>
+            <artifactId>kafka-clients</artifactId>
         </dependency>
     </dependencies>
 

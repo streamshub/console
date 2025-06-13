@@ -1,7 +1,7 @@
 package com.github.streamshub.systemtests;
 
 import com.github.streamshub.systemtests.constants.Constants;
-import com.github.streamshub.systemtests.utils.KafkaNamingUtils;
+import com.github.streamshub.systemtests.utils.resourceutils.KafkaNamingUtils;
 import com.github.streamshub.systemtests.utils.playwright.PwUtils;
 import com.github.streamshub.systemtests.utils.Utils;
 import com.microsoft.playwright.Browser;
@@ -20,6 +20,7 @@ public class TestCaseConfig {
     private final Browser browser;
     private final BrowserContext context;
     private final Page page;
+    private int messageCount;
 
     // Default
     private final String kafkaName;
@@ -44,6 +45,8 @@ public class TestCaseConfig {
         this.kafkaName = KafkaNamingUtils.kafkaClusterName(namespace);
         this.kafkaUserName =  KafkaNamingUtils.kafkaUserName(kafkaName);
         this.consoleInstanceName = Constants.CONSOLE_INSTANCE + "-" + Utils.hashStub(namespace);
+
+        this.messageCount = Constants.MESSAGE_COUNT;
     }
 
     // ----------
@@ -75,5 +78,9 @@ public class TestCaseConfig {
 
     public String consoleInstanceName() {
         return consoleInstanceName;
+    }
+
+    public int messageCount() {
+        return messageCount;
     }
 }

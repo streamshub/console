@@ -174,6 +174,7 @@ public class CssBuilder {
     public CssBuilder withSubComponentMainGroup() { return withSubComponent("main-group"); }
     public CssBuilder withSubComponentMainBreadcrumb() { return withSubComponent("main-breadcrumb"); }
     public CssBuilder withSubComponentContentSection() { return withSubComponent("content-section"); }
+    public CssBuilder withSubComponentPageMenu() { return withSubComponent("page-menu"); }
     public CssBuilder withSubComponentMainSection() { return withSubComponent("main-section"); }
     public CssBuilder withSubComponentItem() { return withSubComponent("item"); }
     public CssBuilder withSubComponentOpen() { return withSubComponent("open"); }
@@ -209,6 +210,8 @@ public class CssBuilder {
     public CssBuilder withSubComponentTr() { return withSubComponent("tr"); }
     public CssBuilder withSubComponentTd() { return withSubComponent("td"); }
     public CssBuilder withSubComponentTh() { return withSubComponent("th"); }
+    public CssBuilder withSubComponentButton() { return withSubComponent("button"); }
+
 
     // ------------
     // Layouts
@@ -220,16 +223,12 @@ public class CssBuilder {
     public CssBuilder withLayoutFlex() { return withLayout("flex"); }
 
     public String build() {
-        // Regex pattern to match ')' not followed by a space
-        String whitespaceAfterArgument = "\\)(?!\\s)";
-        // Regex pattern to replace 2 and more spaces for 1
-        String consecutiveSpaces = "\\s{2,}";
-        // Regex pattern to remove spaces before :
-        String doubleDots = "\\s++:";
-
         return this.cssClass.toString()
-            .replaceAll(consecutiveSpaces, " ")
-            .replaceAll(doubleDots, ":")
-            .replaceAll(whitespaceAfterArgument, ") ");
+            // Remove multiple whitespaces with only one
+            .replaceAll("\\s+", " ")
+            // Remove whitespace before ":" to avoid `div :nth-child(1)`
+            .replace(" :", ":")
+            // Add space after ")" if it's not there to avoid `div:nth-child(1)div`
+            .replaceAll("\\)(?!\\s)", ") ");
     }
 }
