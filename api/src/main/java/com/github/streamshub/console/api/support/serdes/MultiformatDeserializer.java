@@ -146,7 +146,7 @@ public class MultiformatDeserializer extends AbstractKafkaDeserializer<Object, R
             result.meta.put("schema-name", avroSchema.getFullName());
         } catch (Exception e) {
             result = new RecordData((byte[]) null);
-            result.error = com.github.streamshub.console.api.model.Error.forThrowable(e, "Error deserializing Avro data");
+            result.error = com.github.streamshub.console.api.model.jsonapi.JsonApiError.forThrowable(e, "Error deserializing Avro data");
         }
 
         return result;
@@ -173,7 +173,7 @@ public class MultiformatDeserializer extends AbstractKafkaDeserializer<Object, R
             result.meta.put("schema-name", msg.getDescriptorForType().getFullName());
         } catch (Exception e) {
             result = new RecordData((byte[]) null);
-            result.error = com.github.streamshub.console.api.model.Error.forThrowable(e, "Error deserializing Protobuf data");
+            result.error = com.github.streamshub.console.api.model.jsonapi.JsonApiError.forThrowable(e, "Error deserializing Protobuf data");
         }
 
         return result;
@@ -185,13 +185,13 @@ public class MultiformatDeserializer extends AbstractKafkaDeserializer<Object, R
         RecordData result = new RecordData(bytes);
 
         if (schemaResult == RESOLVER_MISSING) {
-            result.error = new com.github.streamshub.console.api.model.Error(
+            result.error = new com.github.streamshub.console.api.model.jsonapi.JsonApiError(
                     "Schema resolution error",
                     "%s encoded, but no schema registry is configured"
                         .formatted(isKey() ? "Key" : "Value"),
                     null);
         } else if (schemaResult == LOOKUP_FAILURE) {
-            result.error = new com.github.streamshub.console.api.model.Error(
+            result.error = new com.github.streamshub.console.api.model.jsonapi.JsonApiError(
                     "Schema resolution error",
                     "Schema could not be retrieved from registry to decode %s"
                         .formatted(isKey() ? "Key" : "Value"),

@@ -11,12 +11,15 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.github.streamshub.console.api.model.jsonapi.JsonApiResource;
+import com.github.streamshub.console.api.model.jsonapi.JsonApiRootData;
+import com.github.streamshub.console.api.model.jsonapi.None;
 
 @Schema(name = "ConfigAttributes")
 @JsonInclude(Include.NON_NULL)
 public class ConfigEntry {
 
-    public static class ConfigResponse extends DataSingleton<ConfigResource> {
+    public static class ConfigResponse extends JsonApiRootData<ConfigResource> {
         public ConfigResponse(Map<String, ConfigEntry> data) {
             super(new ConfigResource(data));
         }
@@ -26,7 +29,7 @@ public class ConfigEntry {
     }
 
     @Schema(name = "Config")
-    public static final class ConfigResource extends Resource<Map<String, ConfigEntry>> {
+    public static final class ConfigResource extends JsonApiResource<Map<String, ConfigEntry>, None> {
         public ConfigResource(Map<String, ConfigEntry> data) {
             super(null, "configs", data);
         }

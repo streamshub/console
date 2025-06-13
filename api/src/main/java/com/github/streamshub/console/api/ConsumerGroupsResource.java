@@ -67,7 +67,7 @@ public class ConsumerGroupsResource {
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    @APIResponseSchema(ConsumerGroup.ListResponse.class)
+    @APIResponseSchema(ConsumerGroup.DataList.class)
     @APIResponse(responseCode = "500", ref = "ServerError")
     @APIResponse(responseCode = "504", ref = "ServerTimeout")
     @Authorized
@@ -125,7 +125,7 @@ public class ConsumerGroupsResource {
                 ConsumerGroup::fromCursor);
 
         return consumerGroupService.listConsumerGroups(fields, listSupport)
-                .thenApply(groups -> new ConsumerGroup.ListResponse(groups, listSupport))
+                .thenApply(groups -> new ConsumerGroup.DataList(groups, listSupport))
                 .thenApply(Response::ok)
                 .thenApply(Response.ResponseBuilder::build);
     }
@@ -133,7 +133,7 @@ public class ConsumerGroupsResource {
     @Path("{groupId}")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    @APIResponseSchema(ConsumerGroup.ConsumerGroupDocument.class)
+    @APIResponseSchema(ConsumerGroup.Data.class)
     @APIResponse(responseCode = "404", ref = "NotFound")
     @APIResponse(responseCode = "500", ref = "ServerError")
     @APIResponse(responseCode = "504", ref = "ServerTimeout")
@@ -182,7 +182,7 @@ public class ConsumerGroupsResource {
         requestedFields.accept(fields);
 
         return consumerGroupService.describeConsumerGroup(groupId, fields)
-                .thenApply(ConsumerGroup.ConsumerGroupDocument::new)
+                .thenApply(ConsumerGroup.Data::new)
                 .thenApply(Response::ok)
                 .thenApply(Response.ResponseBuilder::build);
     }
@@ -193,7 +193,7 @@ public class ConsumerGroupsResource {
     @Produces(MediaType.APPLICATION_JSON)
     @APIResponse(responseCode = "200",
         description = "Consumer group patch dry run successful, nothing was applied",
-        content = @Content(schema = @Schema(implementation = ConsumerGroup.ConsumerGroupDocument.class)))
+        content = @Content(schema = @Schema(implementation = ConsumerGroup.Data.class)))
     @APIResponse(responseCode = "204",
         description = "Consumer group patch successful, changes applied")
     @Expression(
@@ -219,7 +219,7 @@ public class ConsumerGroupsResource {
 
             @Valid
             @RequestBody(content = @Content(
-                    schema = @Schema(implementation = ConsumerGroup.ConsumerGroupDocument.class),
+                    schema = @Schema(implementation = ConsumerGroup.Data.class),
                     examples = {
                         @ExampleObject(
                             name = "patchConsumerGroup-allPartitions",
@@ -229,7 +229,7 @@ public class ConsumerGroupsResource {
                             externalValue = "/openapi/examples/patchConsumerGroup-byPartition.json"),
                     })
             )
-            ConsumerGroup.ConsumerGroupDocument patch) {
+            ConsumerGroup.Data patch) {
 
         final boolean dryRun = Boolean.TRUE.equals(patch.meta("dryRun"));
 
@@ -243,7 +243,7 @@ public class ConsumerGroupsResource {
 
         return consumerGroupService.patchConsumerGroup(patch.getData().getAttributes(), dryRun)
                 .thenApply(optionalGroup -> optionalGroup
-                        .map(ConsumerGroup.ConsumerGroupDocument::new)
+                        .map(ConsumerGroup.Data::new)
                         .map(Response::ok)
                         .orElseGet(Response::noContent))
                 .thenApply(Response.ResponseBuilder::build);

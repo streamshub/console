@@ -6,7 +6,7 @@ import java.util.function.Function;
 import org.jboss.logging.Logger;
 
 import com.github.streamshub.console.api.errors.AbstractExceptionHandler;
-import com.github.streamshub.console.api.model.Error;
+import com.github.streamshub.console.api.model.jsonapi.JsonApiError;
 import com.github.streamshub.console.api.support.ErrorCategory;
 
 import static java.util.Objects.requireNonNullElseGet;
@@ -29,9 +29,9 @@ abstract class AbstractClientExceptionHandler<T extends Throwable> extends Abstr
     }
 
     @Override
-    public List<Error> buildErrors(T exception) {
+    public List<JsonApiError> buildErrors(T exception) {
         String property = propertyMapper.apply(exception);
-        Error error = category.createError(requireNonNullElseGet(message, exception::getMessage), exception, property);
+        JsonApiError error = category.createError(requireNonNullElseGet(message, exception::getMessage), exception, property);
         LOGGER.debugf("error=%s", error);
         return List.of(error);
     }

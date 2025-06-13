@@ -31,9 +31,9 @@ import org.jboss.logging.Logger;
 import com.github.streamshub.console.api.Annotations;
 import com.github.streamshub.console.api.ClientFactory;
 import com.github.streamshub.console.api.model.Condition;
-import com.github.streamshub.console.api.model.Identifier;
 import com.github.streamshub.console.api.model.KafkaCluster;
 import com.github.streamshub.console.api.model.KafkaListener;
+import com.github.streamshub.console.api.model.jsonapi.Identifier;
 import com.github.streamshub.console.api.security.PermissionService;
 import com.github.streamshub.console.api.support.Holder;
 import com.github.streamshub.console.api.support.KafkaContext;
@@ -171,7 +171,7 @@ public class KafkaClusterService {
             .thenAccept(nodes -> {
                 var identifiers = nodes.stream().map(n -> new Identifier("nodes", n.getId())).toList();
                 var nodesRelationship = cluster.nodes();
-                nodesRelationship.data().addAll(identifiers);
+                nodesRelationship.getData().addAll(identifiers);
                 nodesRelationship.addMeta("summary", nodeService.summarize(nodes));
                 nodesRelationship.addMeta("count", identifiers.size());
             })

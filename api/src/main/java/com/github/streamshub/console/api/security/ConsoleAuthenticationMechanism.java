@@ -34,13 +34,13 @@ import org.jose4j.jwt.JwtClaims;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.streamshub.console.api.ClientFactory;
-import com.github.streamshub.console.api.model.Error;
-import com.github.streamshub.console.api.model.ErrorResponse;
+import com.github.streamshub.console.api.model.jsonapi.JsonApiError;
+import com.github.streamshub.console.api.model.jsonapi.JsonApiErrors;
 import com.github.streamshub.console.api.support.ErrorCategory;
 import com.github.streamshub.console.api.support.KafkaContext;
 import com.github.streamshub.console.config.ConsoleConfig;
-import com.github.streamshub.console.config.security.Decision;
 import com.github.streamshub.console.config.security.AuditConfig;
+import com.github.streamshub.console.config.security.Decision;
 import com.github.streamshub.console.config.security.Privilege;
 import com.github.streamshub.console.config.security.SecurityConfig;
 import com.github.streamshub.console.config.security.SubjectConfig;
@@ -177,14 +177,14 @@ public class ConsoleAuthenticationMechanism implements HttpAuthenticationMechani
             return oidc.getChallenge(context)
                     .map(data -> {
                         var category = ErrorCategory.get(ErrorCategory.NotAuthenticated.class);
-                        Error error = category.createError("Authentication credentials missing or invalid", null, null);
-                        var responseBody = new ErrorResponse(List.of(error));
+                        JsonApiError error = category.createError("Authentication credentials missing or invalid", null, null);
+                        var responseBody = new JsonApiErrors(List.of(error));
                         return (ChallengeData) new PayloadChallengeData(data, responseBody);
                     })
                     .onFailure().recoverWithItem(t -> {
                         var category = ErrorCategory.get(ErrorCategory.ServerError.class);
-                        Error error = category.createError("Authentication failed due to internal server error", null, null);
-                        var responseBody = new ErrorResponse(List.of(error));
+                        JsonApiError error = category.createError("Authentication failed due to internal server error", null, null);
+                        var responseBody = new JsonApiErrors(List.of(error));
                         return new PayloadChallengeData(500, null, null, responseBody);
                     });
         }
@@ -207,15 +207,15 @@ public class ConsoleAuthenticationMechanism implements HttpAuthenticationMechani
 
         if (scheme != null) {
             var category = ErrorCategory.get(ErrorCategory.NotAuthenticated.class);
-            Error error = category.createError("Authentication credentials missing or invalid", null, null);
-            var responseBody = new ErrorResponse(List.of(error));
+            JsonApiError error = category.createError("Authentication credentials missing or invalid", null, null);
+            var responseBody = new JsonApiErrors(List.of(error));
             challenge = new PayloadChallengeData(401, "WWW-Authenticate", scheme, responseBody);
         } else {
             log.warnf("Access not permitted to cluster %s with unknown SASL mechanism '%s'",
                     clusterId, saslMechanism);
             var category = ErrorCategory.get(ErrorCategory.ResourceNotFound.class);
-            Error error = category.createError(ClientFactory.NO_SUCH_KAFKA_MESSAGE.formatted(clusterId), null, null);
-            var responseBody = new ErrorResponse(List.of(error));
+            JsonApiError error = category.createError(ClientFactory.NO_SUCH_KAFKA_MESSAGE.formatted(clusterId), null, null);
+            var responseBody = new JsonApiErrors(List.of(error));
             challenge = new PayloadChallengeData(404, null, null, responseBody);
         }
 

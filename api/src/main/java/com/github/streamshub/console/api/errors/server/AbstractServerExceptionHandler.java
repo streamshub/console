@@ -5,7 +5,7 @@ import java.util.List;
 import org.jboss.logging.Logger;
 
 import com.github.streamshub.console.api.errors.AbstractExceptionHandler;
-import com.github.streamshub.console.api.model.Error;
+import com.github.streamshub.console.api.model.jsonapi.JsonApiError;
 import com.github.streamshub.console.api.support.ErrorCategory;
 
 abstract class AbstractServerExceptionHandler<T extends Throwable> extends AbstractExceptionHandler<T> {
@@ -17,8 +17,8 @@ abstract class AbstractServerExceptionHandler<T extends Throwable> extends Abstr
     }
 
     @Override
-    public List<Error> buildErrors(T exception) {
-        Error error = category.createError(exception.getMessage(), exception, null);
+    public List<JsonApiError> buildErrors(T exception) {
+        JsonApiError error = category.createError(exception.getMessage(), exception, null);
         LOGGER.warnf(exception, "error=%s", error);
         return List.of(error);
     }

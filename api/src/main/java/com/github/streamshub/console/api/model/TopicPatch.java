@@ -16,8 +16,11 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.github.streamshub.console.api.support.ErrorCategory;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.github.streamshub.console.api.model.jsonapi.JsonApiResource;
+import com.github.streamshub.console.api.model.jsonapi.JsonApiRootData;
+import com.github.streamshub.console.api.model.jsonapi.None;
+import com.github.streamshub.console.api.support.ErrorCategory;
 
 import io.xlate.validation.constraints.Expression;
 
@@ -46,8 +49,8 @@ public record TopicPatch(
         Map<String, ConfigEntry> configs
 ) implements ReplicaAssignment {
 
-    @Schema(name = "TopicPatchDocument")
-    public static final class TopicPatchDocument extends DataSingleton<TopicPatchResource> {
+    @Schema(name = "TopicPatchData")
+    public static final class TopicPatchDocument extends JsonApiRootData<TopicPatchResource> {
         @JsonCreator
         public TopicPatchDocument(@JsonProperty("data") TopicPatchResource data) {
             super(data);
@@ -66,7 +69,7 @@ public record TopicPatch(
         message = "resource type conflicts with operation",
         node = "type",
         payload = ErrorCategory.ResourceConflict.class)
-    public static final class TopicPatchResource extends Resource<TopicPatch> {
+    public static final class TopicPatchResource extends JsonApiResource<TopicPatch, None> {
         @JsonCreator
         public TopicPatchResource(String id, String type, TopicPatch attributes) {
             super(id, type, new TopicPatch(id, attributes));
