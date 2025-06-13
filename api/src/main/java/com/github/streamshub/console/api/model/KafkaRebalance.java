@@ -18,6 +18,11 @@ import com.fasterxml.jackson.annotation.JsonFilter;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.github.streamshub.console.api.model.jsonapi.JsonApiMeta;
+import com.github.streamshub.console.api.model.jsonapi.JsonApiResource;
+import com.github.streamshub.console.api.model.jsonapi.JsonApiRootData;
+import com.github.streamshub.console.api.model.jsonapi.JsonApiRootDataList;
+import com.github.streamshub.console.api.model.jsonapi.None;
 import com.github.streamshub.console.api.support.ComparatorBuilder;
 import com.github.streamshub.console.api.support.ErrorCategory;
 import com.github.streamshub.console.api.support.ListRequestContext;
@@ -45,7 +50,7 @@ import static java.util.Comparator.nullsLast;
     message = "resource type conflicts with operation",
     node = "type",
     payload = ErrorCategory.ResourceConflict.class)
-public class KafkaRebalance extends Resource<KafkaRebalance.Attributes> implements PaginatedKubeResource {
+public class KafkaRebalance extends JsonApiResource<KafkaRebalance.Attributes, None> implements PaginatedKubeResource {
 
     public static final String API_TYPE = "kafkaRebalances";
     public static final String FIELDS_PARAM = "fields[" + API_TYPE + "]";
@@ -125,7 +130,7 @@ public class KafkaRebalance extends Resource<KafkaRebalance.Attributes> implemen
     }
 
     @Schema(name = "KafkaRebalanceDataList")
-    public static final class RebalanceDataList extends DataList<KafkaRebalance> {
+    public static final class RebalanceDataList extends JsonApiRootDataList<KafkaRebalance> {
         public RebalanceDataList(List<KafkaRebalance> data, ListRequestContext<KafkaRebalance> listSupport) {
             super(data.stream()
                     .map(entry -> {
@@ -139,7 +144,7 @@ public class KafkaRebalance extends Resource<KafkaRebalance.Attributes> implemen
     }
 
     @Schema(name = "KafkaRebalanceData")
-    public static final class RebalanceData extends DataSingleton<KafkaRebalance> {
+    public static final class RebalanceData extends JsonApiRootData<KafkaRebalance> {
         @JsonCreator
         public RebalanceData(@JsonProperty("data") KafkaRebalance data) {
             super(data);

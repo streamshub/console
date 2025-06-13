@@ -37,6 +37,8 @@ import io.smallrye.openapi.api.util.UnusedSchemaFilter;
 
 public class OASModelFilter extends AbstractOperationFilter implements OASFilter {
 
+    public static final String REMOVE = "x-streamshub-remove";
+
     private static final Logger LOGGER = Logger.getLogger(OASModelFilter.class);
     private Map<Schema, Schema> dereferencedSchemas = new IdentityHashMap<>();
 
@@ -80,6 +82,17 @@ public class OASModelFilter extends AbstractOperationFilter implements OASFilter
                 schema.setEnumeration(null);
             }
         }
+
+        // Remove properties marked for removal by name
+        Optional.ofNullable(schema.get(REMOVE))
+            .filter(Collection.class::isInstance)
+            .map(ext -> (Collection<?>) ext)
+            .ifPresent(removed -> {
+                for (var propertyName : removed) {
+                    schema.removeProperty((String) propertyName);
+                }
+                schema.set(REMOVE, null);
+            });
 
         maybeSaveReference(schema, "meta");
         maybeSaveReference(schema, "attributes");
@@ -163,7 +176,12 @@ public class OASModelFilter extends AbstractOperationFilter implements OASFilter
             String reference = propertySchema.getRef();
             String schemaName = reference.replace("#/components/schemas/", "");
             Schema target = openAPI.getComponents().getSchemas().get(schemaName);
-            schema.addProperty(propertyName, target);
+
+            if (Boolean.TRUE.equals(target.get(REMOVE))) {
+                schema.removeProperty(propertyName);
+            } else {
+                schema.addProperty(propertyName, target);
+            }
         });
     }
 }

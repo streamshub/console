@@ -29,6 +29,12 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.github.streamshub.console.api.model.jsonapi.JsonApiBase;
+import com.github.streamshub.console.api.model.jsonapi.JsonApiMeta;
+import com.github.streamshub.console.api.model.jsonapi.JsonApiResource;
+import com.github.streamshub.console.api.model.jsonapi.JsonApiRootData;
+import com.github.streamshub.console.api.model.jsonapi.JsonApiRootDataList;
+import com.github.streamshub.console.api.model.jsonapi.None;
 import com.github.streamshub.console.api.support.ComparatorBuilder;
 import com.github.streamshub.console.api.support.ListRequestContext;
 
@@ -42,7 +48,7 @@ import static java.util.Comparator.nullsLast;
             @SchemaProperty(name = "meta", implementation = Node.Meta.class)
         })
 @JsonInclude(value = Include.NON_NULL)
-public class Node extends Resource<Node.Attributes> {
+public class Node extends JsonApiResource<Node.Attributes, None> {
 
     public static final String API_TYPE = "nodes";
     public static final String FIELDS_PARAM = "fields[" + API_TYPE + "]";
@@ -119,7 +125,7 @@ public class Node extends Resource<Node.Attributes> {
         properties = {
             @SchemaProperty(name = "meta", implementation = NodeDataList.Meta.class)
         })
-    public static final class NodeDataList extends DataList<Node> {
+    public static final class NodeDataList extends JsonApiRootDataList<Node> {
         @Schema(name = "NodeDataListMeta", additionalProperties = Object.class)
         @JsonInclude(value = Include.NON_NULL)
         public static final class Meta extends JsonApiMeta {
@@ -136,7 +142,7 @@ public class Node extends Resource<Node.Attributes> {
         }
 
         @Override
-        public JsonApiDocument addMeta(String key, Object value) {
+        public JsonApiBase addMeta(String key, Object value) {
             if (value instanceof NodeSummary summary) {
                 ((Meta) getOrCreateMeta()).summary = summary;
             } else {
@@ -159,7 +165,7 @@ public class Node extends Resource<Node.Attributes> {
     }
 
     @Schema(name = "NodeData")
-    public static final class NodeData extends DataSingleton<Node> {
+    public static final class NodeData extends JsonApiRootData<Node> {
         @JsonCreator
         public NodeData(@JsonProperty("data") Node data) {
             super(data);

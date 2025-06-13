@@ -8,9 +8,9 @@ import jakarta.inject.Singleton;
 import jakarta.validation.Payload;
 import jakarta.ws.rs.core.Response.Status;
 
-import com.github.streamshub.console.api.model.Error;
-import com.github.streamshub.console.api.model.ErrorSource;
 import com.github.streamshub.console.api.model.ListFetchParams;
+import com.github.streamshub.console.api.model.jsonapi.ErrorSource;
+import com.github.streamshub.console.api.model.jsonapi.JsonApiError;
 
 public abstract class ErrorCategory implements Payload {
 
@@ -43,8 +43,8 @@ public abstract class ErrorCategory implements Payload {
         }
 
         @Override
-        public Error createError(String message, Throwable cause, String property) {
-            Error error = super.createError(message, cause, property);
+        public JsonApiError createError(String message, Throwable cause, String property) {
+            JsonApiError error = super.createError(message, cause, property);
             error.addMeta("page", Map.of("maxSize", ListFetchParams.PAGE_SIZE_MAX));
             error.addLink("type", TYPE_LINK);
             return error;
@@ -182,8 +182,8 @@ public abstract class ErrorCategory implements Payload {
         return source;
     }
 
-    public Error createError(String message, Throwable cause, String property) {
-        Error error = new Error(getTitle(), message, cause);
+    public JsonApiError createError(String message, Throwable cause, String property) {
+        JsonApiError error = new JsonApiError(getTitle(), message, cause);
         error.setStatus(String.valueOf(getHttpStatus().getStatusCode()));
         error.setCode(getCode());
         if (property != null) {

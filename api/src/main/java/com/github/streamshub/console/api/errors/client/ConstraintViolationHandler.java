@@ -17,7 +17,7 @@ import jakarta.ws.rs.ext.Provider;
 
 import org.jboss.logging.Logger;
 
-import com.github.streamshub.console.api.model.Error;
+import com.github.streamshub.console.api.model.jsonapi.JsonApiError;
 import com.github.streamshub.console.api.support.ErrorCategory;
 import com.github.streamshub.console.api.support.ErrorCategory.Source;
 
@@ -37,11 +37,11 @@ public class ConstraintViolationHandler extends AbstractClientExceptionHandler<C
     }
 
     @Override
-    public List<Error> buildErrors(ConstraintViolationException exception) {
+    public List<JsonApiError> buildErrors(ConstraintViolationException exception) {
         return exception.getConstraintViolations()
             .stream()
             .map(violation -> {
-                Error error = getCategory(violation)
+                JsonApiError error = getCategory(violation)
                     .map(category -> category.createError(violation.getMessage(), null, getSourceProperty(violation, category)))
                     .orElseGet(() -> super.category.createError(violation.getMessage(), null, null));
 

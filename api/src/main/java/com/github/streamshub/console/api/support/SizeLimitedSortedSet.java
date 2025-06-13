@@ -1,6 +1,7 @@
 package com.github.streamshub.console.api.support;
 
 import java.util.Comparator;
+import java.util.Objects;
 import java.util.TreeSet;
 
 /**
@@ -23,8 +24,6 @@ import java.util.TreeSet;
  *
  * @param <E> the type of elements maintained by this set
  */
-@SuppressWarnings("java:S2160")
-// Ignore Sonar warning about missing equals override, not necessary for the intended use of this class
 public class SizeLimitedSortedSet<E> extends TreeSet<E> {
 
     private static final long serialVersionUID = 1L;
@@ -34,6 +33,29 @@ public class SizeLimitedSortedSet<E> extends TreeSet<E> {
     public SizeLimitedSortedSet(Comparator<E> order, int limit) {
         super(order);
         this.limit = limit;
+    }
+
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = super.hashCode();
+        result = prime * result + Objects.hash(limit);
+        return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (!super.equals(obj)) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        SizeLimitedSortedSet<?> other = (SizeLimitedSortedSet<?>) obj;
+        return limit == other.limit;
     }
 
     @Override

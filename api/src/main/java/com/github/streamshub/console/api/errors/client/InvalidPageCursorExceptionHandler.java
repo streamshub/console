@@ -7,7 +7,7 @@ import jakarta.ws.rs.ext.Provider;
 
 import org.jboss.logging.Logger;
 
-import com.github.streamshub.console.api.model.Error;
+import com.github.streamshub.console.api.model.jsonapi.JsonApiError;
 import com.github.streamshub.console.api.support.ErrorCategory;
 
 @Provider
@@ -26,11 +26,11 @@ public class InvalidPageCursorExceptionHandler extends AbstractClientExceptionHa
     }
 
     @Override
-    public List<Error> buildErrors(InvalidPageCursorException exception) {
+    public List<JsonApiError> buildErrors(InvalidPageCursorException exception) {
         return exception.getSources()
             .stream()
             .map(source -> {
-                Error error = category.createError(exception.getMessage(), exception, source);
+                JsonApiError error = category.createError(exception.getMessage(), exception, source);
                 LOGGER.debugf(exception, "error=%s", error);
                 return error;
             })
