@@ -36,16 +36,16 @@ public class JsonApiError extends JsonApiBase {
             A short, human-readable summary of the problem that does not change from
             occurrence to occurrence of the problem
             """)
-    String title;
+    final String title;
 
     @Schema(description = "A human-readable explanation specific to this occurrence of the problem.")
-    String detail;
+    final String detail;
 
     @Schema(nullable = true, description = "Reference to the primary source of the error")
     ErrorSource source;
 
     @JsonIgnore
-    Throwable cause;
+    final Throwable cause;
 
     public static JsonApiError forThrowable(Throwable thrown, String message) {
         JsonApiError error = new JsonApiError(message, thrown.getMessage(), thrown);
@@ -87,16 +87,8 @@ public class JsonApiError extends JsonApiBase {
         return title;
     }
 
-    public void setTitle(String title) {
-        this.title = title;
-    }
-
     public String getDetail() {
         return detail;
-    }
-
-    public void setDetail(String detail) {
-        this.detail = detail;
     }
 
     public ErrorSource getSource() {
