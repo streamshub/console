@@ -19,8 +19,11 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.github.streamshub.console.api.support.ErrorCategory;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.github.streamshub.console.api.model.jsonapi.JsonApiResource;
+import com.github.streamshub.console.api.model.jsonapi.JsonApiRootData;
+import com.github.streamshub.console.api.model.jsonapi.None;
+import com.github.streamshub.console.api.support.ErrorCategory;
 
 import io.xlate.validation.constraints.Expression;
 
@@ -74,7 +77,7 @@ public record NewTopic(
 ) implements ReplicaAssignment {
 
     @Schema(name = "NewTopicDocument")
-    public static final class NewTopicDocument extends DataSingleton<NewTopicResource> {
+    public static final class NewTopicDocument extends JsonApiRootData<NewTopicResource> {
         @JsonCreator
         public NewTopicDocument(@JsonProperty("data") NewTopicResource data) {
             super(data);
@@ -93,7 +96,7 @@ public record NewTopic(
         node = "type",
         payload = ErrorCategory.ResourceConflict.class
     )
-    public static final class NewTopicResource extends Resource<NewTopic> {
+    public static final class NewTopicResource extends JsonApiResource<NewTopic, None> {
         @JsonCreator
         public NewTopicResource(String type, NewTopic attributes) {
             super(null, type, attributes);

@@ -23,8 +23,6 @@ import java.util.TreeSet;
  *
  * @param <E> the type of elements maintained by this set
  */
-@SuppressWarnings("java:S2160")
-// Ignore Sonar warning about missing equals override, not necessary for the intended use of this class
 public class SizeLimitedSortedSet<E> extends TreeSet<E> {
 
     private static final long serialVersionUID = 1L;
@@ -34,6 +32,16 @@ public class SizeLimitedSortedSet<E> extends TreeSet<E> {
     public SizeLimitedSortedSet(Comparator<E> order, int limit) {
         super(order);
         this.limit = limit;
+    }
+
+    @Override
+    public int hashCode() {
+        return super.hashCode();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        return super.equals(obj);
     }
 
     @Override

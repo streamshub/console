@@ -13,6 +13,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.github.streamshub.console.api.model.jsonapi.JsonApiError;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 @JsonInclude(value = Include.NON_NULL)
@@ -22,12 +23,12 @@ public class PartitionInfo {
     final List<PartitionReplica> replicas;
     final Integer leaderId;
 
-    @Schema(implementation = Object.class, oneOf = { OffsetInfo.class, Error.class })
+    @Schema(implementation = Object.class, oneOf = { OffsetInfo.class, JsonApiError.class })
     private static final class OffsetInfoOrError {
     }
 
     @Schema(additionalProperties = OffsetInfoOrError.class)
-    Map<String, Either<OffsetInfo, Error>> offsets;
+    Map<String, Either<OffsetInfo, JsonApiError>> offsets;
 
     public PartitionInfo(int partition, List<PartitionReplica> replicas, Integer leaderId) {
         super();
@@ -46,10 +47,10 @@ public class PartitionInfo {
         return new PartitionInfo(info.partition(), replicas, leaderId);
     }
 
-    static <P> Either<P, Error> primaryOrError(Either<P, Throwable> either, String message) {
+    static <P> Either<P, JsonApiError> primaryOrError(Either<P, Throwable> either, String message) {
         return either.ifPrimaryOrElse(
                 Either::of,
-                thrown -> Error.forThrowable(thrown, message));
+                thrown -> JsonApiError.forThrowable(thrown, message));
     }
 
     public void addOffset(String key, Either<OffsetInfo, Throwable> offset) {
@@ -77,7 +78,7 @@ public class PartitionInfo {
         return replicas;
     }
 
-    public Map<String, Either<OffsetInfo, Error>> getOffsets() {
+    public Map<String, Either<OffsetInfo, JsonApiError>> getOffsets() {
         return offsets;
     }
 

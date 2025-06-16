@@ -1,4 +1,4 @@
-package com.github.streamshub.console.api.model;
+package com.github.streamshub.console.api.model.jsonapi;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -16,14 +16,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
  */
 @Schema(additionalProperties = Object.class)
 public class JsonApiMeta {
-
-    public static JsonApiMeta put(JsonApiMeta meta, String key, Object value) {
-        if (meta == null) {
-            meta = new JsonApiMeta();
-        }
-        meta.put(key, value);
-        return meta;
-    }
 
     @JsonIgnore
     private Map<String, Object> meta;

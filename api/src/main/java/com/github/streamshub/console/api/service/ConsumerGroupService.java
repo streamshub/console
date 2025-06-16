@@ -45,12 +45,12 @@ import org.eclipse.microprofile.context.ThreadContext;
 
 import com.github.streamshub.console.api.model.ConsumerGroup;
 import com.github.streamshub.console.api.model.Either;
-import com.github.streamshub.console.api.model.Error;
 import com.github.streamshub.console.api.model.MemberDescription;
 import com.github.streamshub.console.api.model.OffsetAndMetadata;
 import com.github.streamshub.console.api.model.PartitionId;
 import com.github.streamshub.console.api.model.PartitionInfo;
 import com.github.streamshub.console.api.model.Topic;
+import com.github.streamshub.console.api.model.jsonapi.JsonApiError;
 import com.github.streamshub.console.api.security.PermissionService;
 import com.github.streamshub.console.api.support.ConsumerGroupValidation;
 import com.github.streamshub.console.api.support.FetchFilterPredicate;
@@ -476,7 +476,7 @@ public class ConsumerGroupService {
     private void mergeDescriptions(ConsumerGroup group, Either<ConsumerGroup, Throwable> description) {
         if (description.isPrimaryEmpty()) {
             Throwable thrown = description.getAlternate();
-            Error error = new Error("Unable to describe consumer group", thrown.getMessage(), thrown);
+            JsonApiError error = new JsonApiError("Unable to describe consumer group", thrown.getMessage(), thrown);
             group.addError(error);
             group.setMembers(null);
             group.setOffsets(null);
@@ -609,7 +609,7 @@ public class ConsumerGroupService {
             Throwable thrown) {
 
         if (thrown != null) {
-            group.addError(new Error("Unable to list consumer group offsets", thrown.getMessage(), thrown));
+            group.addError(new JsonApiError("Unable to list consumer group offsets", thrown.getMessage(), thrown));
         } else {
             List<OffsetAndMetadata> offsets = new ArrayList<>();
 
@@ -624,7 +624,7 @@ public class ConsumerGroupService {
                             Throwable listOffsetsError = offsetOrError.getAlternate();
                             String msg = "Unable to list offsets for topic/partition %s-%d"
                                     .formatted(topicPartition.topic(), topicPartition.partition());
-                            group.addError(new Error(msg, listOffsetsError.getMessage(), listOffsetsError));
+                            group.addError(new JsonApiError(msg, listOffsetsError.getMessage(), listOffsetsError));
                             return null;
                         });
 

@@ -14,8 +14,8 @@ import jakarta.ws.rs.ext.Provider;
 import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.jboss.logging.Logger;
 
-import com.github.streamshub.console.api.model.Error;
-import com.github.streamshub.console.api.model.ErrorResponse;
+import com.github.streamshub.console.api.model.jsonapi.JsonApiError;
+import com.github.streamshub.console.api.model.jsonapi.JsonApiErrors;
 
 @Provider
 public class EnabledOperationFilter extends AbstractOperationFilter implements ContainerRequestFilter {
@@ -34,13 +34,13 @@ public class EnabledOperationFilter extends AbstractOperationFilter implements C
     }
 
     void rejectRequest(ContainerRequestContext requestContext) {
-        Error error = CATEGORY.createError(
+        JsonApiError error = CATEGORY.createError(
                 "Method '%s' is not allowed for the requested resource".formatted(requestContext.getMethod()),
                 null, null);
         LOGGER.debugf("error=%s", error);
 
         requestContext.abortWith(Response.status(CATEGORY.getHttpStatus())
-                .entity(new ErrorResponse(List.of(error)))
+                .entity(new JsonApiErrors(List.of(error)))
                 .build());
     }
 

@@ -15,6 +15,10 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonFilter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.github.streamshub.console.api.model.jsonapi.JsonApiRelationshipToOne;
+import com.github.streamshub.console.api.model.jsonapi.JsonApiResource;
+import com.github.streamshub.console.api.model.jsonapi.JsonApiRootData;
+import com.github.streamshub.console.api.model.jsonapi.JsonApiRootDataList;
 import com.github.streamshub.console.api.support.ErrorCategory;
 
 import io.xlate.validation.constraints.Expression;
@@ -26,7 +30,7 @@ import io.xlate.validation.constraints.Expression;
     message = "resource type conflicts with operation",
     node = "type",
     payload = ErrorCategory.ResourceConflict.class)
-public class KafkaRecord extends RelatableResource<KafkaRecord.Attributes, KafkaRecord.Relationships> {
+public class KafkaRecord extends JsonApiResource<KafkaRecord.Attributes, KafkaRecord.Relationships> {
 
     public static final String API_TYPE = "records";
     public static final String FIELDS_PARAM = "fields[" + API_TYPE + "]";
@@ -73,14 +77,14 @@ public class KafkaRecord extends RelatableResource<KafkaRecord.Attributes, Kafka
     }
 
     @Schema(name = "KafkaRecordDataList")
-    public static final class KafkaRecordDataList extends DataList<KafkaRecord> {
+    public static final class KafkaRecordDataList extends JsonApiRootDataList<KafkaRecord> {
         public KafkaRecordDataList(List<KafkaRecord> data) {
             super(data);
         }
     }
 
     @Schema(name = "KafkaRecordData")
-    public static final class KafkaRecordData extends DataSingleton<KafkaRecord> {
+    public static final class KafkaRecordData extends JsonApiRootData<KafkaRecord> {
         @JsonCreator
         public KafkaRecordData(@JsonProperty("data") KafkaRecord data) {
             super(data);
@@ -130,10 +134,10 @@ public class KafkaRecord extends RelatableResource<KafkaRecord.Attributes, Kafka
     @JsonFilter("fieldFilter")
     static class Relationships {
         @JsonProperty
-        JsonApiRelationship keySchema;
+        JsonApiRelationshipToOne keySchema;
 
         @JsonProperty
-        JsonApiRelationship valueSchema;
+        JsonApiRelationshipToOne valueSchema;
     }
 
     @JsonCreator
@@ -241,19 +245,19 @@ public class KafkaRecord extends RelatableResource<KafkaRecord.Attributes, Kafka
         attributes.size = size;
     }
 
-    public JsonApiRelationship keySchema() {
+    public JsonApiRelationshipToOne keySchema() {
         return relationships.keySchema;
     }
 
-    public void keySchema(JsonApiRelationship keySchema) {
+    public void keySchema(JsonApiRelationshipToOne keySchema) {
         relationships.keySchema = keySchema;
     }
 
-    public JsonApiRelationship valueSchema() {
+    public JsonApiRelationshipToOne valueSchema() {
         return relationships.valueSchema;
     }
 
-    public void valueSchema(JsonApiRelationship valueSchema) {
+    public void valueSchema(JsonApiRelationshipToOne valueSchema) {
         relationships.valueSchema = valueSchema;
     }
 }

@@ -26,6 +26,11 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import com.fasterxml.jackson.annotation.JsonFilter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.github.streamshub.console.api.model.jsonapi.JsonApiError;
+import com.github.streamshub.console.api.model.jsonapi.JsonApiRelationshipToMany;
+import com.github.streamshub.console.api.model.jsonapi.JsonApiResource;
+import com.github.streamshub.console.api.model.jsonapi.JsonApiRootData;
+import com.github.streamshub.console.api.model.jsonapi.JsonApiRootDataList;
 import com.github.streamshub.console.api.support.ComparatorBuilder;
 import com.github.streamshub.console.api.support.ListRequestContext;
 
@@ -33,7 +38,7 @@ import static java.util.Comparator.comparing;
 import static java.util.Comparator.nullsLast;
 
 @Schema(name = "Topic")
-public class Topic extends RelatableResource<Topic.Attributes, Topic.Relationships> {
+public class Topic extends JsonApiResource<Topic.Attributes, Topic.Relationships> {
 
     public static final String API_TYPE = "topics";
     public static final String FIELDS_PARAM = "fields[" + API_TYPE + "]";
@@ -109,8 +114,8 @@ public class Topic extends RelatableResource<Topic.Attributes, Topic.Relationshi
         }
     }
 
-    @Schema(name = "TopicListResponse")
-    public static final class ListResponse extends DataList<Topic> {
+    @Schema(name = "TopicDataList")
+    public static final class ListResponse extends JsonApiRootDataList<Topic> {
         public ListResponse(List<Topic> data, ListRequestContext<Topic> listSupport) {
             super(data.stream()
                     .map(entry -> {
@@ -124,8 +129,8 @@ public class Topic extends RelatableResource<Topic.Attributes, Topic.Relationshi
         }
     }
 
-    @Schema(name = "TopicResponse")
-    public static final class SingleResponse extends DataSingleton<Topic> {
+    @Schema(name = "TopicData")
+    public static final class SingleResponse extends JsonApiRootData<Topic> {
         public SingleResponse(Topic data) {
             super(data);
         }
@@ -140,16 +145,16 @@ public class Topic extends RelatableResource<Topic.Attributes, Topic.Relationshi
         boolean internal;
 
         @JsonProperty
-        @Schema(implementation = Object.class, oneOf = { PartitionInfo[].class, Error.class })
-        Either<List<PartitionInfo>, Error> partitions;
+        @Schema(implementation = Object.class, oneOf = { PartitionInfo[].class, JsonApiError.class })
+        Either<List<PartitionInfo>, JsonApiError> partitions;
 
         @JsonProperty
-        @Schema(implementation = Object.class, oneOf = { String[].class, Error.class })
-        Either<List<String>, Error> authorizedOperations;
+        @Schema(implementation = Object.class, oneOf = { String[].class, JsonApiError.class })
+        Either<List<String>, JsonApiError> authorizedOperations;
 
         @JsonProperty
-        @Schema(implementation = Object.class, oneOf = { ConfigEntry.ConfigEntryMap.class, Error.class })
-        Either<Map<String, ConfigEntry>, Error> configs;
+        @Schema(implementation = Object.class, oneOf = { ConfigEntry.ConfigEntryMap.class, JsonApiError.class })
+        Either<Map<String, ConfigEntry>, JsonApiError> configs;
 
         Attributes(String name, boolean internal) {
             this.name = name;
@@ -232,7 +237,7 @@ public class Topic extends RelatableResource<Topic.Attributes, Topic.Relationshi
     @JsonFilter("fieldFilter")
     static class Relationships {
         @JsonProperty
-        DataList<Identifier> consumerGroups = new DataList<>();
+        JsonApiRelationshipToMany consumerGroups = new JsonApiRelationshipToMany();
     }
 
     public Topic(String name, boolean internal, String id) {
@@ -349,19 +354,19 @@ public class Topic extends RelatableResource<Topic.Attributes, Topic.Relationshi
     public void addPartitions(Either<Topic, Throwable> description) {
         attributes.partitions = description.ifPrimaryOrElse(
                 Topic::partitions,
-                thrown -> Error.forThrowable(thrown, "Unable to describe topic"));
+                thrown -> JsonApiError.forThrowable(thrown, "Unable to describe topic"));
     }
 
     public void addAuthorizedOperations(Either<Topic, Throwable> description) {
         attributes.authorizedOperations = description.ifPrimaryOrElse(
                 Topic::authorizedOperations,
-                thrown -> Error.forThrowable(thrown, "Unable to describe topic"));
+                thrown -> JsonApiError.forThrowable(thrown, "Unable to describe topic"));
     }
 
     public void addConfigs(Either<Map<String, ConfigEntry>, Throwable> configs) {
         attributes.configs = configs.ifPrimaryOrElse(
                 Either::of,
-                thrown -> Error.forThrowable(thrown, "Unable to describe topic configs"));
+                thrown -> JsonApiError.forThrowable(thrown, "Unable to describe topic configs"));
     }
 
     public String name() {
@@ -376,23 +381,23 @@ public class Topic extends RelatableResource<Topic.Attributes, Topic.Relationshi
         return attributes.status();
     }
 
-    public Either<List<PartitionInfo>, Error> partitions() {
+    public Either<List<PartitionInfo>, JsonApiError> partitions() {
         return attributes.partitions;
     }
 
-    public Either<List<String>, Error> authorizedOperations() {
+    public Either<List<String>, JsonApiError> authorizedOperations() {
         return attributes.authorizedOperations;
     }
 
-    public Either<Map<String, ConfigEntry>, Error> configs() {
+    public Either<Map<String, ConfigEntry>, JsonApiError> configs() {
         return attributes.configs;
     }
 
-    public DataList<Identifier> consumerGroups() {
+    public JsonApiRelationshipToMany consumerGroups() {
         return relationships.consumerGroups;
     }
 
-    public void consumerGroups(DataList<Identifier> consumerGroups) {
+    public void consumerGroups(JsonApiRelationshipToMany consumerGroups) {
         relationships.consumerGroups = consumerGroups;
     }
 

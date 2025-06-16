@@ -12,8 +12,8 @@ import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.Response.Status;
 import jakarta.ws.rs.ext.ExceptionMapper;
 
-import com.github.streamshub.console.api.model.Error;
-import com.github.streamshub.console.api.model.ErrorResponse;
+import com.github.streamshub.console.api.model.jsonapi.JsonApiError;
+import com.github.streamshub.console.api.model.jsonapi.JsonApiErrors;
 
 import static com.github.streamshub.console.api.errors.AbstractExceptionHandler.maxOccurringStatus;
 
@@ -43,7 +43,7 @@ abstract class UnwrappingExceptionHandler<T extends Throwable> implements Except
             return selectMapper(cause).toResponse(cause);
         }
 
-        List<Error> errors = suppressed.stream()
+        List<JsonApiError> errors = suppressed.stream()
             .map(error -> selectMapper(error).buildErrors(error))
             .flatMap(Collection::stream)
             .toList();
@@ -51,7 +51,7 @@ abstract class UnwrappingExceptionHandler<T extends Throwable> implements Except
         Status status = maxOccurringStatus(errors, () -> Status.INTERNAL_SERVER_ERROR);
 
         return Response.status(status)
-                .entity(new ErrorResponse(errors))
+                .entity(new JsonApiErrors(errors))
                 .build();
     }
 
