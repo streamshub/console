@@ -1,7 +1,6 @@
 package com.github.streamshub.console.api.support;
 
 import java.util.Comparator;
-import java.util.Objects;
 import java.util.TreeSet;
 
 /**
@@ -37,25 +36,12 @@ public class SizeLimitedSortedSet<E> extends TreeSet<E> {
 
     @Override
     public int hashCode() {
-        final int prime = 31;
-        int result = super.hashCode();
-        result = prime * result + Objects.hash(limit);
-        return result;
+        return super.hashCode();
     }
 
     @Override
     public boolean equals(Object obj) {
-        if (this == obj) {
-            return true;
-        }
-        if (!super.equals(obj)) {
-            return false;
-        }
-        if (getClass() != obj.getClass()) {
-            return false;
-        }
-        SizeLimitedSortedSet<?> other = (SizeLimitedSortedSet<?>) obj;
-        return limit == other.limit;
+        return super.equals(obj);
     }
 
     @Override

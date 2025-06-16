@@ -1,10 +1,5 @@
 package com.github.streamshub.console.api.model.jsonapi;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import org.eclipse.microprofile.openapi.annotations.media.Schema;
-
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 
@@ -15,18 +10,4 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
  */
 @JsonInclude(value = Include.NON_NULL)
 public abstract class JsonApiRoot extends JsonApiBase {
-
-    @Schema(hidden = true) // for future use
-    private List<JsonApiResource<?, ?>> included;
-
-    public List<JsonApiResource<?, ?>> included() { // NOSONAR - wild-card response is necessary
-        return included;
-    }
-
-    public void addIncluded(JsonApiResource<?, ?> resource) {
-        if (included == null) {
-            included = new ArrayList<>();
-        }
-        included.add(resource);
-    }
 }
