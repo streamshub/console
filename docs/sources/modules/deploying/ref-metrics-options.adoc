@@ -19,8 +19,8 @@ Using embedded metrics is intended for development and evaluation only, not prod
 
 Example configuration for OpenShift monitoring and a standalone Prometheus instance is provided in the following files: 
 
-* `examples/console/resources/console/console-openshift-metrics.yaml`
-* `examples/console/resources/console/console-standalone-prometheus.yaml`
+* `examples/console/console-openshift-metrics.yaml`
+* `examples/console/console-standalone-prometheus.yaml`
 
 You can define Prometheus sources globally as part of the console configuration using `metricsSources` properties:
 
