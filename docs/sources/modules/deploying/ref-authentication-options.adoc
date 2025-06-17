@@ -11,7 +11,7 @@ Configure the console deployment to configure connections to any Identity Provid
 Also define the subjects and roles for user authorization.
 The security profiles can be configured for all Kafka cluster connections on a global level, though you can add roles and rules for specific Kafka clusters.
 
-An example configuration is provided in the following file: `examples/console/resources/console/console-security-oidc.yaml`.
+An example configuration is provided in the following file: `examples/console/console-security-oidc.yaml`.
 
 The configuration introduces the following additional properties for console deployment:
 

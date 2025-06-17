@@ -10,7 +10,7 @@ Integrate a schema registry with the console to centrally manage schemas for Kaf
 The console currently supports integration with {ApicurioRegistrySite} to reference and validate schemas used in Kafka data streams.
 Requests to the registry can be authenticated using supported methods, including OIDC.
 
-A placeholder for adding schema registries is provided in: `examples/console/resources/console/010-Console-example.yaml`.
+A placeholder for adding schema registries is provided in: `examples/console/010-Console-example.yaml`.
 
 You can define schema registry connections globally as part of the console configuration using `schemaRegistries` properties:
 
