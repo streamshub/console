@@ -14,6 +14,7 @@ jobs:
     name: snapshot
     env:
       PLATFORMS: linux/amd64,linux/arm64,linux/ppc64le,linux/s390x
+      QUAY_EXPIRES_AFTER_LABEL: "quay.expires-after=20h"
     steps:
       # ==================== Setup ====================
       - name: Checkout
@@ -77,6 +78,8 @@ jobs:
           tags: |
             ${{ secrets.IMAGE_REPO_HOSTNAME }}/${{ secrets.IMAGE_REPO_NAMESPACE }}/console-ui:${{ env.NEXT_VERSION }}
             ${{ secrets.IMAGE_REPO_HOSTNAME }}/${{ secrets.IMAGE_REPO_NAMESPACE }}/console-ui:snapshot-${{github.ref_name}}
+          labels: |
+            ${{ env.QUAY_EXPIRES_AFTER_LABEL }}
 
       # ==================== API & Operator ====================
       - name: Build and Push API and Operator Image
@@ -90,6 +93,7 @@ jobs:
           export QUARKUS_CONTAINER_IMAGE_ADDITIONAL_TAGS=snapshot-${{github.ref_name}}
           export QUARKUS_KUBERNETES_VERSION="${{ env.NEXT_VERSION }}"
           export GIT_REVISION=$(git rev-parse --short HEAD)
+          export QUARKUS_CONTAINER_IMAGE_LABELS="${{ env.QUAY_EXPIRES_AFTER_LABEL }}"
           # Build and push the snapshot images
           mvn -B -P container-image verify --no-transfer-progress -DskipTests \
             -Dquarkus.kubernetes.namespace='$${NAMESPACE}' \
@@ -110,7 +114,9 @@ jobs:
           tags: |
             ${{ secrets.IMAGE_REPO_HOSTNAME }}/${{ secrets.IMAGE_REPO_NAMESPACE }}/console-operator-bundle:${{ env.NEXT_VERSION }}
             ${{ secrets.IMAGE_REPO_HOSTNAME }}/${{ secrets.IMAGE_REPO_NAMESPACE }}/console-operator-bundle:snapshot-${{github.ref_name}}
-
+          labels: |
+            ${{ env.QUAY_EXPIRES_AFTER_LABEL }}
+         
       # ==================== Operator-Catalog ====================
       - name: Generate Operator Catalog Config
         run: |
@@ -129,6 +135,8 @@ jobs:
           tags: |
             ${{ secrets.IMAGE_REPO_HOSTNAME }}/${{ secrets.IMAGE_REPO_NAMESPACE }}/console-operator-catalog:${{ env.NEXT_VERSION }}
             ${{ secrets.IMAGE_REPO_HOSTNAME }}/${{ secrets.IMAGE_REPO_NAMESPACE }}/console-operator-catalog:snapshot-${{github.ref_name}}
+          labels: |
+            ${{ env.QUAY_EXPIRES_AFTER_LABEL }}
 
       # ==================== Archive artifacts ====================
       - name: Attach Kubernetes Resources
