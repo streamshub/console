@@ -1,4 +1,4 @@
-package com.github.streamshub.systemtests.utils;
+package com.github.streamshub.systemtests.utils.resourceutils;
 
 import io.fabric8.openshift.api.model.Route;
 
