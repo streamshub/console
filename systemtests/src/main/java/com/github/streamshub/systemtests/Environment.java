@@ -37,6 +37,7 @@ public class Environment {
     public static final String CONSOLE_OLM_CATALOG_SOURCE_NAMESPACE = ENVS.getOrDefault("CONSOLE_OLM_CATALOG_SOURCE_NAMESPACE", Constants.OPENSHIFT_MARKETPLACE_NAMESPACE);
 
     // Logs and debug
+    public static final boolean CLEANUP_ENVIRONMENT = ENVS.getOrDefault("CLEANUP_ENVIRONMENT", Boolean::parseBoolean, true);
     public static final String BUILD_ID = ENVS.getOrDefault("BUILD_ID", "0");
     public static final String TEST_LOG_DIR = ENVS.getOrDefault("TEST_LOG_DIR",  USER_PATH + "/target/logs/");
     public static final String TEST_FILE_LOG_LEVEL = ENVS.getOrDefault("TEST_FILE_LOG_LEVEL",  "INFO");

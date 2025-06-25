@@ -1,7 +1,7 @@
 package com.github.streamshub.systemtests.constants;
 
 import com.github.streamshub.systemtests.exceptions.UnsupportedKafkaRoleException;
-import com.github.streamshub.systemtests.utils.KafkaNamingUtils;
+import com.github.streamshub.systemtests.utils.resourceutils.KafkaNamingUtils;
 import io.fabric8.kubernetes.api.model.LabelSelector;
 import io.fabric8.kubernetes.api.model.LabelSelectorBuilder;
 import io.strimzi.api.ResourceLabels;
@@ -19,6 +19,8 @@ public class Labels {
     // General
     // ------------
     public static final String COLLECT_ST_LOGS = "streamshub-st";
+    public static final String APP = "app";
+
 
     // ------------
     // Strimzi
@@ -26,6 +28,19 @@ public class Labels {
     public static final String STRIMZI_POOL_NAME_LABEL = ResourceLabels.STRIMZI_DOMAIN + "pool-name";
     public static final String STRIMZI_BROKER_ROLE_LABEL = ResourceLabels.STRIMZI_DOMAIN + "broker-role";
     public static final String STRIMZI_CONTROLLER_ROLE_LABEL = ResourceLabels.STRIMZI_DOMAIN + "controller-role";
+
+    // ------------
+    // Kafka
+    // ------------
+    public static final String KAFKA_CLIENTS_LABEL_KEY = "user-test-app";
+    public static final String KAFKA_CLIENTS_LABEL_VALUE = "kafka-clients";
+
+    public static Map<String, String> getClientsLabels(String clientName) {
+        Map<String, String> matchLabels = new HashMap<>();
+        matchLabels.put(APP, clientName);
+        matchLabels.put(KAFKA_CLIENTS_LABEL_KEY, KAFKA_CLIENTS_LABEL_VALUE);
+        return matchLabels;
+    }
 
     /**
      * Creates a {@link LabelSelector} for a KafkaNodePool based on cluster name, pool name, and process role.

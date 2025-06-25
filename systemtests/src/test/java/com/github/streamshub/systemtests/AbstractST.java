@@ -1,8 +1,5 @@
-package com.github.streamshub.systemtests.system;
+package com.github.streamshub.systemtests;
 
-import com.github.streamshub.systemtests.Environment;
-import com.github.streamshub.systemtests.TestCaseConfig;
-import com.github.streamshub.systemtests.TestExecutionWatcher;
 import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.constants.Labels;
 import com.github.streamshub.systemtests.logs.LogWrapper;
@@ -12,11 +9,10 @@ import com.github.streamshub.systemtests.resourcetypes.KafkaType;
 import com.github.streamshub.systemtests.resourcetypes.KafkaUserType;
 import com.github.streamshub.systemtests.setup.console.ConsoleOperatorSetup;
 import com.github.streamshub.systemtests.setup.strimzi.StrimziOperatorSetup;
-import com.github.streamshub.systemtests.utils.ClusterUtils;
-import com.github.streamshub.systemtests.utils.ResourceUtils;
+import com.github.streamshub.systemtests.utils.resourceutils.ClusterUtils;
+import com.github.streamshub.systemtests.utils.resourceutils.NamespaceUtils;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.Namespace;
-import io.fabric8.kubernetes.api.model.NamespaceBuilder;
 import io.skodjob.testframe.annotations.ResourceManager;
 import io.skodjob.testframe.annotations.TestVisualSeparator;
 import io.skodjob.testframe.resources.ClusterRoleBindingType;
@@ -36,6 +32,7 @@ import io.skodjob.testframe.resources.ServiceType;
 import io.skodjob.testframe.resources.SubscriptionType;
 import io.skodjob.testframe.utils.KubeUtils;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -47,7 +44,7 @@ import java.io.IOException;
 
 @TestVisualSeparator
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-@ResourceManager(asyncDeletion = false)
+@ResourceManager(asyncDeletion = false, cleanResources = false)
 @SuppressWarnings("ClassDataAbstractionCoupling")
 @ExtendWith({TestExecutionWatcher.class})
 public abstract class AbstractST {
@@ -103,9 +100,7 @@ public abstract class AbstractST {
     @BeforeAll
     void setupTestSuite() {
         LOGGER.info("=========== AbstractST - BeforeAll - Setup TestSuite ===========");
-        if (ResourceUtils.getKubeResource(Namespace.class, Constants.CO_NAMESPACE) == null) {
-            KubeResourceManager.get().createOrUpdateResourceWithWait(new NamespaceBuilder().withNewMetadata().withName(Constants.CO_NAMESPACE).endMetadata().build());
-        }
+        NamespaceUtils.prepareNamespace(Constants.CO_NAMESPACE);
         strimziOperatorSetup.install();
         consoleOperatorSetup.install();
     }
@@ -117,8 +112,7 @@ public abstract class AbstractST {
         // Init test case config based on the test context
         TestCaseConfig tcc = new TestCaseConfig(KubeResourceManager.get().getTestContext());
         // Create namespace
-        KubeResourceManager.get().createOrUpdateResourceWithWait(
-            new NamespaceBuilder().withNewMetadata().withName(tcc.namespace()).endMetadata().build());
+        NamespaceUtils.prepareNamespace(tcc.namespace());
         // Store test case config into the test context
         KubeResourceManager.get().getTestContext()
             .getStore(ExtensionContext.Namespace.GLOBAL)
@@ -128,5 +122,15 @@ public abstract class AbstractST {
     @AfterEach
     void teardownTestCase() {
         getTestCaseConfig().playwright().close();
+        if (Environment.CLEANUP_ENVIRONMENT) {
+            KubeResourceManager.get().deleteResources();
+        }
+    }
+
+    @AfterAll
+    void teardownTestSuit() {
+        if (Environment.CLEANUP_ENVIRONMENT) {
+            KubeResourceManager.get().deleteResources();
+        }
     }
 }
