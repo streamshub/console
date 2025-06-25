@@ -24,7 +24,24 @@ public class KafkaTopicUtils {
     private static final Logger LOGGER = LogWrapper.getLogger(KafkaTopicUtils.class);
     
     private KafkaTopicUtils() {}
-    
+
+    /**
+     * Creates multiple Kafka topics with a specified prefix and returns the list of created {@link KafkaTopic} resources.
+     *
+     * <p>This method generates topic names using the provided {@code topicNamePrefix} followed by an index (e.g., {@code my-topic-0}, {@code my-topic-1}, etc.).</p>
+     * <p>Each topic is configured with the specified number of {@code partitions}, {@code replicas}, and {@code minIsr} (minimum in-sync replicas).</p>
+     * <p>Depending on the {@code waitForTopics} flag, the method either waits for the topics to be fully created or proceeds without waiting.</p>
+     *
+     * @param namespace the namespace in which the topics will be created
+     * @param kafkaName the name of the Kafka cluster these topics belong to
+     * @param topicNamePrefix the prefix used to generate topic names
+     * @param numberToCreate the number of topics to create
+     * @param waitForTopics whether to wait for the topics to become ready
+     * @param partitions the number of partitions for each topic
+     * @param replicas the replication factor for each topic
+     * @param minIsr the minimum number of in-sync replicas required for writes
+     * @return a list of {@link KafkaTopic} objects representing the created topics
+     */
     public static List<KafkaTopic> setupTopicsAndReturn(String namespace, String kafkaName, String topicNamePrefix, int numberToCreate, boolean waitForTopics, int partitions, int replicas, int minIsr) {
         LOGGER.info("Create {} topics for cluster {} with topic name prefix {}", numberToCreate, kafkaName, topicNamePrefix);
 
@@ -40,7 +57,25 @@ public class KafkaTopicUtils {
         return topics;
     }
 
-
+    /**
+     * Sets up a list of Kafka topics that will become under-replicated by intentionally scaling down brokers.
+     *
+     * <p>The method simulates an under-replicated scenario by first scaling up the broker pool to allow distribution of partition replicas across more brokers.</p>
+     * <p>It creates the specified number of topics with given configurations, sends messages to each topic using a Kafka client, and then scales the broker pool down again, removing a broker that holds replicas.</p>
+     * <p>To allow this behavior, it temporarily annotates the Kafka resource to bypass Strimzi's broker scaledown check.</p>
+     * <p>This setup is useful for testing Kafka behavior and UI under under-replication conditions.</p>
+     *
+     * @param namespace the namespace where the Kafka cluster and topics are located
+     * @param kafkaName the name of the Kafka cluster
+     * @param kafkaUser the Kafka user used for authentication and producing/consuming messages
+     * @param topicNamePrefix the prefix for generating topic names
+     * @param numberToCreate the number of topics to create
+     * @param messageCount the number of messages to produce and consume per topic
+     * @param partitions the number of partitions per topic
+     * @param replicas the replication factor for each topic
+     * @param minIsr the minimum number of in-sync replicas required for write operations
+     * @return a list of created {@link KafkaTopic} resources that are now under-replicated
+     */
     public static List<KafkaTopic> setupUnderReplicatedTopicsAndReturn(String namespace, String kafkaName, String kafkaUser, String topicNamePrefix, int numberToCreate, int messageCount, int partitions, int replicas, int minIsr) {
         LOGGER.info("Create {} underreplicated topics for cluster {} with topic name prefix {}", numberToCreate, kafkaName, topicNamePrefix);
         /*
@@ -99,6 +134,26 @@ public class KafkaTopicUtils {
         return kafkaTopics;
     }
 
+    /**
+     * Sets up Kafka topics that will become unavailable by intentionally assigning their only partition to a broker that is later removed.
+     *
+     * <p>This simulates an unavailable topic scenario where each topic has a single partition and its only replica is moved to a broker that will be deleted.</p>
+     * <p>The method first scales up the broker pool to introduce an additional broker, then creates the topics and reassigns their partitions to this new broker.</p>
+     * <p>Kafka clients produce and consume messages to ensure topics are operational before the broker is removed.</p>
+     * <p>After partition reassignment, the Kafka resource is annotated to allow Strimzi to bypass the partition check, and the broker hosting the partition is scaled down.</p>
+     * <p>This leads to topics becoming unavailable, which is useful for testing failure handling in Kafka or UI indicators.</p>
+     *
+     * @param namespace the namespace where the Kafka cluster and topics exist
+     * @param kafkaName the name of the Kafka cluster
+     * @param kafkaUser the Kafka user used for SCRAM-SHA authentication and client operations
+     * @param topicNamePrefix the prefix for naming the created topics
+     * @param numberToCreate the number of unavailable topics to create
+     * @param messageCount the number of messages to produce and consume per topic
+     * @param partitions the number of partitions per topic (should typically be 1 for this scenario)
+     * @param replicas the replication factor per topic (should typically be 1 for unavailability)
+     * @param minIsr the minimum number of in-sync replicas
+     * @return a list of created {@link KafkaTopic} resources that are now unavailable due to broker deletion
+     */
     public static List<KafkaTopic> setupUnavailableTopicsAndReturn(String namespace, String kafkaName, String kafkaUser, String topicNamePrefix, int numberToCreate, int messageCount, int partitions, int replicas, int minIsr) {
         /*
          * Unavailable Kafka Topic is a topic that has its only existing partition reassigned to a Broker that gets deleted
@@ -162,6 +217,31 @@ public class KafkaTopicUtils {
         return kafkaTopics;
     }
 
+    /**
+     * Reassigns a Kafka topic partition to a different broker using the Kafka reassignment tool inside a Kafka broker pod.
+     *
+     * <p>This method creates the necessary client properties and reassignment JSON files inside the target pod, executes
+     * the reassignment, verifies its success, and cleans up temporary files afterwards.</p>
+     *
+     * <p>It is primarily used to simulate partition placement on a specific broker, which is useful when testing topic availability
+     * scenarios such as deleting the broker holding the only replica.</p>
+     *
+     * <p>The following steps are performed inside the given pod:</p>
+     * <ol>
+     *   <li>Create a `client.properties` file using the provided SCRAM-SHA client configuration.</li>
+     *   <li>Create a reassignment JSON file assigning the specified topic's partition to the target broker ID.</li>
+     *   <li>Execute the Kafka partition reassignment using `kafka-reassign-partitions.sh`.</li>
+     *   <li>Verify the reassignment.</li>
+     *   <li>Remove the created files to clean up the environment.</li>
+     * </ol>
+     *
+     * @param namespaceName the namespace where the Kafka cluster and pod are running
+     * @param kafkaName the name of the Kafka cluster (used to derive the bootstrap address)
+     * @param podName the name of the Kafka broker pod in which commands are executed
+     * @param topicName the name of the Kafka topic whose partition is being reassigned
+     * @param newBrokerId the broker ID to which the partition will be reassigned
+     * @param clients the {@link KafkaClients} instance containing configuration used for authentication
+     */
     public static void reassignTopicPartitionToAnotherBroker(String namespaceName, String kafkaName, String podName, String topicName, int newBrokerId, KafkaClients clients) {
         String bootstrapServer = KafkaUtils.getPlainScramShaBootstrapAddress(kafkaName);
 
@@ -209,6 +289,31 @@ public class KafkaTopicUtils {
             .endSpec();
     }
 
+    /**
+     * Creates a list of Kafka topics by producing and consuming messages directly to them without creating corresponding
+     * {@code KafkaTopic} custom resources in the Kubernetes cluster (i.e., the topics remain unmanaged by Strimzi).
+     *
+     * <p>This method is useful for testing scenarios where topics are created dynamically by clients
+     * (outside the control of Strimzi Topic Operator), for example to test how the system handles unmanaged topics.</p>
+     *
+     * <p>The following actions are performed for each topic:</p>
+     * <ol>
+     *   <li>Builds a {@code KafkaTopic} definition (not applied to the cluster).</li>
+     *   <li>Creates Kafka clients (producer and consumer) with SCRAM-SHA authentication.</li>
+     *   <li>Produces and consumes messages to ensure the topic exists on the Kafka broker.</li>
+     * </ol>
+     *
+     * @param namespace the Kubernetes namespace where the Kafka cluster is running
+     * @param kafkaName the name of the Kafka cluster
+     * @param kafkaUser the name of the KafkaUser resource for SCRAM-SHA authentication
+     * @param topicNamePrefix the prefix to use for the topic names
+     * @param numberToCreate the number of topics to create
+     * @param messageCount the number of messages to produce and consume for each topic
+     * @param partitions the number of partitions per topic
+     * @param replicas the number of replicas per topic
+     * @param minIsr the minimum number of in-sync replicas for the topic
+     * @return a list of topic names that were created and used, but not managed by the Topic Operator
+     */
     public static List<String> setupUnmanagedTopicsAndReturnNames(String namespace, String kafkaName, String kafkaUser, String topicNamePrefix, int numberToCreate, int messageCount, int partitions, int replicas, int minIsr) {
         List<KafkaTopic> topics = IntStream.range(0, numberToCreate)
             .mapToObj(i -> defaultTopic(namespace, kafkaName, topicNamePrefix + "-" + i, partitions, replicas, minIsr).build())
