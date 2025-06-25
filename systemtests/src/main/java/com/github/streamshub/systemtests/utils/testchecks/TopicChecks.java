@@ -21,6 +21,19 @@ public class TopicChecks {
     private static final Logger LOGGER = LogWrapper.getLogger(TopicChecks.class);
     private TopicChecks() {}
 
+    /**
+     * Verifies the topic state metrics displayed on the Kafka Overview page.
+     * It navigates to the overview page for the specified Kafka cluster and
+     * waits for the expected counts of total topics, partitions, and their replication statuses.
+     *
+     * @param tcc           the test case configuration holding the Playwright page context
+     * @param kafkaName     the name of the Kafka cluster
+     * @param total         the expected total number of topics
+     * @param partitions    the expected total number of partitions across all topics
+     * @param fullyReplicated the expected count of fully replicated partitions
+     * @param underReplicated the expected count of under-replicated partitions
+     * @param unavailable   the expected count of unavailable partitions
+     */
     public static void checkOverviewPageTopicState(TestCaseConfig tcc, String kafkaName, int total, int partitions, int fullyReplicated, int underReplicated, int unavailable) {
         LOGGER.info("Verify Overview Page topic status [{} total topics] [{} Partitions]", total, partitions);
         tcc.page().navigate(PwPageUrls.getOverviewPage(tcc, kafkaName), PwUtils.getDefaultNavigateOpts());
@@ -34,6 +47,18 @@ public class TopicChecks {
         PwUtils.waitForContainsText(tcc, CssSelectors.C_OVERVIEW_PAGE_TOPICS_CARD_UNAVAILABLE, unavailable + " Unavailable", true);
     }
 
+    /**
+     * Verifies the topic state metrics displayed on the Kafka Topics page.
+     * It navigates to the topics page for the specified Kafka cluster and
+     * waits for the expected counts of total topics and their replication statuses.
+     *
+     * @param tcc            the test case configuration holding the Playwright page context
+     * @param kafkaName      the name of the Kafka cluster
+     * @param total          the expected total number of topics
+     * @param fullyReplicated the expected count of fully replicated partitions
+     * @param underReplicated the expected count of under-replicated partitions
+     * @param unavailable    the expected count of unavailable partitions
+     */
     public static void checkTopicsPageTopicState(TestCaseConfig tcc, String kafkaName, int total, int fullyReplicated, int underReplicated, int unavailable) {
         LOGGER.info("Verify Overview Page topic status [{} total topics] [FullyReplicated: {}] [UnderReplicated: {}] [Unavailabe: {}]", total, fullyReplicated, underReplicated, unavailable);
         // Total topic count
@@ -45,6 +70,26 @@ public class TopicChecks {
         PwUtils.waitForContainsText(tcc, CssSelectors.getLocator(tcc, CssSelectors.TOPICS_PAGE_HEADER_BADGE_STATUS_ERROR), Integer.toString(unavailable), true);
     }
 
+    /**
+     * Checks the pagination functionality on the topics page for different
+     * "topics per page" settings. It verifies that navigating forward and backward
+     * through the pages displays the correct range of topics and pagination text.
+     *
+     * For each configured topics per page value, the method:
+     *  - Navigates to the topics page
+     *  - Selects the topics per page dropdown value
+     *  - Iterates forward through all pages, verifying content and pagination info
+     *  - Iterates backward through all pages, verifying content and pagination info
+     *
+     * @param tcc                     the test case configuration with page context
+     * @param topicsCount             the total number of topics present
+     * @param topicsPerPageList       list of integers specifying topics per page options to test
+     * @param dropdownButtonSelector  CSS selector for the dropdown button controlling topics per page
+     * @param dropdownItemsSelector   CSS selector for the dropdown items in the topics per page selector
+     * @param paginationTextSelector  CSS selector for the pagination summary text (e.g., "1-10 of 57")
+     * @param previousButtonSelector  CSS selector for the pagination "previous page" button
+     * @param nextButtonSelector      CSS selector for the pagination "next page" button
+     */
     public static void checkPaginationPage(TestCaseConfig tcc, int topicsCount, List<Integer> topicsPerPageList,
         String dropdownButtonSelector, String dropdownItemsSelector, String paginationTextSelector, String previousButtonSelector, String nextButtonSelector) {
         for (Integer topicsPerPage : topicsPerPageList) {
@@ -87,6 +132,21 @@ public class TopicChecks {
         }
     }
 
+    /**
+     * Helper method to check the pagination content on a specific page.
+     * It verifies the number of topics shown on the page, the pagination summary text,
+     * and clicks the button to move forward or backward unless on the last page.
+     *
+     * @param tcc                   the test case configuration with page context
+     * @param pageNum               the current page number being checked
+     * @param numOfFinalPage        the total number of pages in the current direction (forward or backward)
+     * @param topicsOnPage          the expected number of topics displayed on the current page
+     * @param lowBoundary           the lowest topic index shown on the current page (1-based)
+     * @param highBoundary          the highest topic index shown on the current page
+     * @param topicsCount           the total number of topics in all pages
+     * @param paginationTextSelector CSS selector for the pagination summary text element
+     * @param moveButtonSelector    CSS selector for the button used to navigate to the next/previous page
+     */
     private static void checkPaginationContent(TestCaseConfig tcc, int pageNum, int numOfFinalPage, int topicsOnPage, int lowBoundary, int highBoundary, int topicsCount, String paginationTextSelector, String moveButtonSelector) {
         LOGGER.debug("Checking page {}/{}", pageNum, numOfFinalPage);
         // Check that correct number of topics is displayed
@@ -109,7 +169,15 @@ public class TopicChecks {
         tcc.page().click(moveButtonSelector);
     }
 
-
+    /**
+     * Checks the filtering functionality on the topics page by topic name.
+     * For each topic name in the list, this method applies the name filter,
+     * searches for the topic, and verifies that the first table row contains the expected topic name.
+     * After all checks, it clears all filters.
+     *
+     * @param tcc         the test case configuration with page context
+     * @param topicNames  a list of topic names to filter and verify
+     */
     public static void checkTopicsFilterByName(TestCaseConfig tcc, List<String> topicNames) {
         LOGGER.info("Filter topics by name");
         TopicsTestUtils.selectFilter(tcc, FilterType.NAME);
@@ -123,6 +191,15 @@ public class TopicChecks {
         tcc.page().click(CssSelectors.TOPICS_PAGE_TOP_TOOLBAR_SEARCH_CLEAR_ALL_FILTERS);
     }
 
+    /**
+     * Checks the filtering functionality on the topics page by topic ID.
+     * For each topic name, it retrieves the corresponding topic ID from the cluster,
+     * applies the ID filter, searches using the topic ID, and verifies that the first table row
+     * contains the expected topic name. After all checks, it clears all filters.
+     *
+     * @param tcc         the test case configuration with page context
+     * @param topicNames  a list of topic names whose IDs will be used for filtering and verification
+     */
     public static void checkTopicsFilterById(TestCaseConfig tcc, List<String> topicNames) {
         LOGGER.info("Filter topics by id");
         TopicsTestUtils.selectFilter(tcc, FilterType.TOPIC_ID);
@@ -137,6 +214,16 @@ public class TopicChecks {
         tcc.page().click(CssSelectors.TOPICS_PAGE_TOP_TOOLBAR_SEARCH_CLEAR_ALL_FILTERS);
     }
 
+    /**
+     * Checks the filtering functionality on the topics page by topic status.
+     * Applies the status filter and verifies that the filtered topics match the expected list of topic names.
+     * Waits until the number of displayed topic rows matches the expected count before verification.
+     * After verification, clears all applied filters.
+     *
+     * @param tcc         the test case configuration providing page context
+     * @param topicNames  the list of topic names expected to be visible after filtering by status
+     * @param status      the {@link TopicStatus} to filter topics by
+     */
     public static void checkTopicsFilterByStatus(TestCaseConfig tcc, List<String> topicNames, TopicStatus status) {
         LOGGER.info("Filter topics by status");
         TopicsTestUtils.selectFilter(tcc, FilterType.STATUS);

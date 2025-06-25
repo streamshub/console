@@ -34,6 +34,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class TopicST extends AbstractST {
     private static final Logger LOGGER = LogWrapper.getLogger(TopicST.class);
 
+    /**
+     * Tests the pagination functionality on the topics page when a large number of topics are present.
+     *
+     * <p>The test creates 150 Kafka topics and verifies their presence on both the overview and topics pages.</p>
+     * <p>It then tests the pagination UI components (both top and bottom), using various pagination sizes (10, 20, 50, 100 topics per page).</p>
+     * <p>Navigation buttons and dropdowns are validated to ensure correct page transitions and content display.</p>
+     *
+     * <p>This ensures that the pagination mechanism in the topics page works correctly and is user-friendly at scale.</p>
+     */
     @Test
     void testPaginationWithManyTopics() {
         final TestCaseConfig tcc = getTestCaseConfig();
@@ -62,6 +71,16 @@ class TopicST extends AbstractST {
             CssSelectors.TOPICS_PAGE_BOTTOM_PAGINATION_NAV_PREV_BUTTON, CssSelectors.TOPICS_PAGE_BOTTOM_PAGINATION_NAV_NEXT_BUTTON);
     }
 
+    /**
+     * Tests the "Recently Viewed Topics" feature on the Kafka overview page.
+     *
+     * <p>The test opens a subset of created topics to simulate recent activity, then navigates to the overview page to validate that
+     * the recently viewed topics are correctly displayed in the UI card.</p>
+     * <p>It also verifies that the entries persist even after the topics are deleted, and that clicking on a deleted topic leads to
+     * a "Resource not found" message on the messages page.</p>
+     *
+     * <p>This ensures proper tracking, rendering, and graceful fallback behavior for recently viewed topics in the UI.</p>
+     */
     @Test
     void testRecentlyViewedTopics() {
         final TestCaseConfig tcc = getTestCaseConfig();
@@ -105,6 +124,15 @@ class TopicST extends AbstractST {
         assertTrue(getLocator(tcc, CssSelectors.MESSAGES_PAGE_EMPTY_BODY_CONTENT).innerText().contains("Resource not found"));
     }
 
+    /**
+     * Tests display and filtering of topics in various replication states.
+     *
+     * <p>The test creates four categories of topics: fully replicated, unmanaged replicated, under-replicated, and unavailable.</p>
+     * <p>It verifies that the UI displays correct topic counts for each state on the overview and topics pages.</p>
+     * <p>Filtering capabilities are tested by filtering topics by name, ID, and replication status to ensure accurate and expected results.</p>
+     *
+     * <p>This confirms that all topic states are properly represented and filterable in the UI.</p>
+     */
     @Test
     void testDisplayAndFilterAllTopicStates() {
         final TestCaseConfig tcc = getTestCaseConfig();
@@ -142,6 +170,15 @@ class TopicST extends AbstractST {
         TopicChecks.checkTopicsFilterByStatus(tcc, unavailableTopics.stream().map(kt -> kt.getMetadata().getName()).toList(), TopicStatus.OFFLINE);
     }
 
+    /**
+     * Tests the sorting functionality for Kafka topics based on name and storage usage.
+     *
+     * <p>The test first filters topics by the "Offline" status and verifies sorting by name in descending order.</p>
+     * <p>Then it filters for "Fully Replicated" topics and simulates message production to increase storage for one topic.</p>
+     * <p>It verifies that sorting by storage usage places the topic with the highest usage at the top of the list.</p>
+     *
+     * <p>This ensures that sorting logic is correctly implemented and provides meaningful ordering to users.</p>
+     */
     @Test
     void testSortTopics() {
         final TestCaseConfig tcc = getTestCaseConfig();
