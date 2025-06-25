@@ -4,16 +4,17 @@ import com.github.streamshub.systemtests.Environment;
 import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.constants.ExampleFiles;
 import com.github.streamshub.systemtests.logs.LogWrapper;
-import com.github.streamshub.systemtests.utils.ClusterUtils;
-import com.github.streamshub.systemtests.utils.KafkaNamingUtils;
-import com.github.streamshub.systemtests.utils.ResourceUtils;
 import com.github.streamshub.systemtests.utils.WaitUtils;
+import com.github.streamshub.systemtests.utils.resourceutils.ClusterUtils;
+import com.github.streamshub.systemtests.utils.resourceutils.KafkaNamingUtils;
+import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
 import io.fabric8.kubernetes.api.model.ConfigMap;
 import io.fabric8.kubernetes.api.model.ConfigMapBuilder;
 import io.skodjob.testframe.resources.KubeResourceManager;
 import io.skodjob.testframe.utils.TestFrameUtils;
 import io.strimzi.api.ResourceAnnotations;
 import io.strimzi.api.ResourceLabels;
+import io.strimzi.api.kafka.model.common.template.ContainerEnvVarBuilder;
 import io.strimzi.api.kafka.model.kafka.Kafka;
 import io.strimzi.api.kafka.model.kafka.KafkaBuilder;
 import io.strimzi.api.kafka.model.kafka.listener.GenericKafkaListenerBuilder;
@@ -184,21 +185,21 @@ public class KafkaSetup {
                 .addNewAcl()
                     .withNewAclRuleClusterResource()
                     .endAclRuleClusterResource()
-                    .withOperations(AclOperation.DESCRIBE, AclOperation.DESCRIBECONFIGS)
+                    .withOperations(AclOperation.ALL)
                 .endAcl()
                 .addNewAcl()
                     .withNewAclRuleGroupResource()
                         .withName("*")
                         .withPatternType(AclResourcePatternType.LITERAL)
                     .endAclRuleGroupResource()
-                    .withOperations(AclOperation.READ, AclOperation.DESCRIBE)
+                    .withOperations(AclOperation.ALL)
                 .endAcl()
                 .addNewAcl()
                     .withNewAclRuleTopicResource()
                         .withName("*")
                         .withPatternType(AclResourcePatternType.LITERAL)
                     .endAclRuleTopicResource()
-                    .withOperations(AclOperation.READ, AclOperation.DESCRIBE, AclOperation.DESCRIBECONFIGS)
+                    .withOperations(AclOperation.ALL)
                 .endAcl()
             .endKafkaUserAuthorizationSimple()
             .endSpec()
@@ -241,7 +242,16 @@ public class KafkaSetup {
                     .withNewUserOperator()
                     .endUserOperator()
                     .withNewTopicOperator()
+                        .withReconciliationIntervalMs(20_000L)
                     .endTopicOperator()
+                .withNewTemplate()
+                    .withNewTopicOperatorContainer()
+                        .withEnv(new ContainerEnvVarBuilder()
+                            .withName("STRIMZI_USE_FINALIZERS")
+                            .withValue("false")
+                            .build())
+                    .endTopicOperatorContainer()
+                .endTemplate()
                 .endEntityOperator()
                 .editKafka()
                     .withVersion(kafkaVersion)
@@ -257,6 +267,14 @@ public class KafkaSetup {
                         .withPort(9092)
                         .withType(KafkaListenerType.INTERNAL)
                         .withTls(false)
+                        .build())
+                    .addToListeners(new GenericKafkaListenerBuilder()
+                        .withName(Constants.SCRAMSHA_PLAIN_LISTENER_NAME)
+                        .withPort(9095)
+                        .withType(KafkaListenerType.INTERNAL)
+                        .withTls(false)
+                        .withNewKafkaListenerAuthenticationScramSha512Auth()
+                        .endKafkaListenerAuthenticationScramSha512Auth()
                         .build())
                     .addToListeners(new GenericKafkaListenerBuilder()
                         .withName(Constants.SECURE_LISTENER_NAME)

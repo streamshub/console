@@ -2,6 +2,8 @@
 # -------------------------------------------
 # Common
 # -------------------------------------------
+# Cleanup environment after test. In case of debugging, this env lets you skip afterEach and afterAll.
+CLEANUP_ENVIRONMENT: true
 # Log level used in file output
 TEST_FILE_LOG_LEVEL: DEBUG
 # Log level used in console output
