@@ -15,6 +15,19 @@ public class TopicsTestUtils {
     private static final Logger LOGGER = LogWrapper.getLogger(TopicsTestUtils.class);
     private TopicsTestUtils() {}
 
+    /**
+     * Attempts to select a sorting option on the page by repeatedly checking and clicking until the
+     * element identified by {@code selectorWithAttribute} has the specified {@code aria-sort} attribute value.
+     *
+     * The method tries up to {@link Constants#SELECTOR_RETRIES} times, waiting a short interval between attempts.
+     * It clicks the element identified by {@code selectorSortButton} to change the sort order if the
+     * current attribute does not match the desired {@code attributeVal}.
+     *
+     * @param tcc                   the test case configuration containing the page context
+     * @param selectorWithAttribute CSS selector to locate the element whose 'aria-sort' attribute is checked
+     * @param selectorSortButton    CSS selector to locate the button that triggers sorting when clicked
+     * @param attributeVal          the desired value of the 'aria-sort' attribute to confirm selection
+     */
     public static void selectSortBy(TestCaseConfig tcc, String selectorWithAttribute, String selectorSortButton, String attributeVal) {
         LOGGER.info("Select sort by with value {}", attributeVal);
         for (int i = 0; i < Constants.SELECTOR_RETRIES; i++) {
@@ -40,6 +53,17 @@ public class TopicsTestUtils {
         }
     }
 
+    /**
+     * Selects a topic filter type from the filter dropdown in the UI.
+     *
+     * This method repeatedly attempts (up to {@link Constants#SELECTOR_RETRIES} times) to select the filter type
+     * specified by {@code filterType}. It first checks if the desired filter is already selected by inspecting
+     * the current dropdown text. If not selected, it opens the dropdown, waits for the desired filter option to be visible,
+     * and clicks it.
+     *
+     * @param tcc         the test case configuration containing the page and context
+     * @param filterType  the {@link FilterType} to select from the filter dropdown
+     */
     public static void selectFilter(TestCaseConfig tcc, FilterType filterType) {
         LOGGER.debug("Selecting topic filter type [{}]", filterType.getName());
         PwUtils.waitForLocatorVisible(tcc, CssSelectors.TOPICS_PAGE_TOP_TOOLBAR_FILTER_TYPE_DROPDOWN);
@@ -70,6 +94,17 @@ public class TopicsTestUtils {
         }
     }
 
+    /**
+     * Selects a topic status filter from the status dropdown in the UI.
+     *
+     * This method tries up to {@link Constants#SELECTOR_RETRIES} times to ensure the given
+     * {@code topicStatus} is selected. It first checks the currently applied status filters,
+     * and if the desired status is not selected, it opens the status dropdown,
+     * waits for the corresponding item to be visible, and clicks it.
+     *
+     * @param tcc          the test case configuration with page and context information
+     * @param topicStatus  the {@link TopicStatus} enum value representing the desired status to filter by
+     */
     public static void selectTopicStatus(TestCaseConfig tcc, TopicStatus topicStatus) {
         LOGGER.debug("Selecting topic status [{}]", topicStatus.getName());
         PwUtils.waitForLocatorVisible(tcc, CssSelectors.TOPICS_PAGE_TOP_TOOLBAR_FILTER_BY_STATUS_DROPDOWN);
