@@ -32,6 +32,21 @@ jobs:
       - name: Set Image Tag Env
         run: echo "NEXT_VERSION=$(echo ${{steps.metadata.outputs.next-version}} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
 
+      - name: Determine Additional Tags
+        id: additional_tags
+        run: |
+          LATEST_TAG=""
+          if [[ "${{ github.ref_name }}" == "main" ]]; then
+            LATEST_TAG="latest"
+          fi
+          echo "LATEST_TAG=$LATEST_TAG" >> $GITHUB_ENV
+
+          MAJOR_MINOR_TAG=""
+          if [[ "${{ github.ref_name }}" =~ ^[0-9]+\.[0-9]+\.x$ ]]; then
+            MAJOR_MINOR_TAG=$(echo "${{ env.NEXT_VERSION }}" | grep -oE '^[0-9]+\.[0-9]+')
+          fi
+          echo "MAJOR_MINOR_TAG=$MAJOR_MINOR_TAG" >> $GITHUB_ENV
+
       - name: Fetch Operator Framework Utilities
         run: ./operator/bin/fetch-operator-utilities.sh
 
@@ -81,6 +96,8 @@ jobs:
             ${{ secrets.IMAGE_REPO_HOSTNAME }}/${{ secrets.IMAGE_REPO_NAMESPACE }}/console-ui:snapshot-${{github.ref_name}}
           labels: |
             ${{ env.QUAY_EXPIRES_AFTER_LABEL }}
+            ${{ env.LATEST_TAG != '' && format('{0}/{1}/console-ui:{2}', secrets.IMAGE_REPO_HOSTNAME, secrets.IMAGE_REPO_NAMESPACE, env.LATEST_TAG) || '' }}
+            ${{ env.MAJOR_MINOR_TAG != '' && format('{0}/{1}/console-ui:{2}', secrets.IMAGE_REPO_HOSTNAME, secrets.IMAGE_REPO_NAMESPACE, env.MAJOR_MINOR_TAG) || '' }}
 
       # ==================== API & Operator ====================
       - name: Build and Push API and Operator Image
@@ -91,6 +108,13 @@ jobs:
           export QUARKUS_CONTAINER_IMAGE_PASSWORD="${{ secrets.IMAGE_REPO_PASSWORD }}"
           export QUARKUS_CONTAINER_IMAGE_PUSH="true"
           export QUARKUS_CONTAINER_IMAGE_TAG="${{ env.NEXT_VERSION }}"
+          ADDITIONAL_TAGS="snapshot-${{github.ref_name}}"
+          if [ "${{ env.LATEST_TAG }}" != "" ]; then
+            ADDITIONAL_TAGS="$ADDITIONAL_TAGS,${{ env.LATEST_TAG }}"
+          fi
+          if [ "${{ env.MAJOR_MINOR_TAG }}" != "" ]; then
+            ADDITIONAL_TAGS="$ADDITIONAL_TAGS,${{ env.MAJOR_MINOR_TAG }}"
+          fi
           export QUARKUS_CONTAINER_IMAGE_ADDITIONAL_TAGS=snapshot-${{github.ref_name}}
           export QUARKUS_KUBERNETES_VERSION="${{ env.NEXT_VERSION }}"
           export GIT_REVISION=$(git rev-parse --short HEAD)
@@ -118,6 +142,9 @@ jobs:
           labels: |
             ${{ env.QUAY_EXPIRES_AFTER_LABEL }}
          
+            ${{ env.LATEST_TAG != '' && format('{0}/{1}/console-operator-bundle:{2}', secrets.IMAGE_REPO_HOSTNAME, secrets.IMAGE_REPO_NAMESPACE, env.LATEST_TAG) || '' }}
+            ${{ env.MAJOR_MINOR_TAG != '' && format('{0}/{1}/console-operator-bundle:{2}', secrets.IMAGE_REPO_HOSTNAME, secrets.IMAGE_REPO_NAMESPACE, env.MAJOR_MINOR_TAG) || '' }}
+
       # ==================== Operator-Catalog ====================
       - name: Generate Operator Catalog Config
         run: |
@@ -138,6 +165,8 @@ jobs:
             ${{ secrets.IMAGE_REPO_HOSTNAME }}/${{ secrets.IMAGE_REPO_NAMESPACE }}/console-operator-catalog:snapshot-${{github.ref_name}}
           labels: |
             ${{ env.QUAY_EXPIRES_AFTER_LABEL }}
+            ${{ env.LATEST_TAG != '' && format('{0}/{1}/console-operator-bundle:{2}', secrets.IMAGE_REPO_HOSTNAME, secrets.IMAGE_REPO_NAMESPACE, env.LATEST_TAG) || '' }}
+            ${{ env.MAJOR_MINOR_TAG != '' && format('{0}/{1}/console-operator-bundle:{2}', secrets.IMAGE_REPO_HOSTNAME, secrets.IMAGE_REPO_NAMESPACE, env.MAJOR_MINOR_TAG) || '' }}
 
       # ==================== Archive artifacts ====================
       - name: Attach Kubernetes Resources
