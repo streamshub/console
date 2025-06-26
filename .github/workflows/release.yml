@@ -31,6 +31,19 @@ jobs:
         with:
           github-token: ${{secrets.GITHUB_TOKEN}}
           metadata-file-path: '.github/project.yml'
+      
+      - name: Determine Additional Tags
+        run: |
+          RELEASE_VERSION="${{steps.metadata.outputs.current-version}}"
+
+          echo "MAJOR_MINOR_TAG=$(echo "${RELEASE_VERSION}" | grep -oE '^[0-9]+\.[0-9]+')" >> $GITHUB_ENV
+
+          LATEST_TAG=""
+          git fetch --tags --prune
+          if [ "$((printf "${RELEASE_VERSION}\n" && git tag) | sort -V | tail -1)" == "${RELEASE_VERSION}" ] ; then
+              LATEST_TAG="latest"
+          fi
+          echo "LATEST_TAG=${LATEST_TAG}" >> $GITHUB_ENV
 
       - name: Fetch Operator Framework Utilities
         run: ./operator/bin/fetch-operator-utilities.sh
@@ -66,7 +79,19 @@ jobs:
           export QUARKUS_CONTAINER_IMAGE_USERNAME="${{ secrets.IMAGE_REPO_USERNAME }}"
           export QUARKUS_CONTAINER_IMAGE_PASSWORD="${{ secrets.IMAGE_REPO_PASSWORD }}"
           export QUARKUS_CONTAINER_IMAGE_PUSH="true"
-          export QUARKUS_CONTAINER_IMAGE_ADDITIONAL_TAGS=latest
+          ADDITIONAL_TAGS=""
+          if [ "${{ env.LATEST_TAG }}" != "" ]; then
+            ADDITIONAL_TAGS="$ADDITIONAL_TAGS,${{ env.LATEST_TAG }}"
+          fi
+          if [ "${{ env.MAJOR_MINOR_TAG }}" != "" ]; then
+            # Avoid leading comma if ADDITIONAL_TAGS is empty
+            if [ -z "$ADDITIONAL_TAGS" ]; then
+              ADDITIONAL_TAGS="${{ env.MAJOR_MINOR_TAG }}"
+            else
+              ADDITIONAL_TAGS="$ADDITIONAL_TAGS,${{ env.MAJOR_MINOR_TAG }}"
+            fi
+          fi
+          export QUARKUS_CONTAINER_IMAGE_ADDITIONAL_TAGS="$ADDITIONAL_TAGS"
           export QUARKUS_KUBERNETES_NAMESPACE='$${NAMESPACE}'
 
           mvn -B release:prepare \
@@ -99,7 +124,8 @@ jobs:
           push: true
           tags: |
             ${{ secrets.IMAGE_REPO_HOSTNAME }}/${{ secrets.IMAGE_REPO_NAMESPACE }}/console-ui:${{steps.metadata.outputs.current-version}}
-            ${{ secrets.IMAGE_REPO_HOSTNAME }}/${{ secrets.IMAGE_REPO_NAMESPACE }}/console-ui:latest
+            ${{ env.LATEST_TAG != '' && format('{0}/{1}/console-ui:{2}', secrets.IMAGE_REPO_HOSTNAME, secrets.IMAGE_REPO_NAMESPACE, env.LATEST_TAG) || '' }}
+            ${{ env.MAJOR_MINOR_TAG != '' && format('{0}/{1}/console-ui:{2}', secrets.IMAGE_REPO_HOSTNAME, secrets.IMAGE_REPO_NAMESPACE, env.MAJOR_MINOR_TAG) || '' }}
 
       # ==================== Operator-Bundle ====================
       - name: Modify Bundle CSV Metadata
@@ -116,7 +142,8 @@ jobs:
           file: target/checkout/operator/target/bundle/streamshub-console-operator/bundle.Dockerfile
           tags: |
             ${{ secrets.IMAGE_REPO_HOSTNAME }}/${{ secrets.IMAGE_REPO_NAMESPACE }}/console-operator-bundle:${{steps.metadata.outputs.current-version}}
-            ${{ secrets.IMAGE_REPO_HOSTNAME }}/${{ secrets.IMAGE_REPO_NAMESPACE }}/console-operator-bundle:latest
+            ${{ env.LATEST_TAG != '' && format('{0}/{1}/console-operator-bundle:{2}', secrets.IMAGE_REPO_HOSTNAME, secrets.IMAGE_REPO_NAMESPACE, env.LATEST_TAG) || '' }}
+            ${{ env.MAJOR_MINOR_TAG != '' && format('{0}/{1}/console-operator-bundle:{2}', secrets.IMAGE_REPO_HOSTNAME, secrets.IMAGE_REPO_NAMESPACE, env.MAJOR_MINOR_TAG) || '' }}
 
       # ==================== Operator-Catalog ====================
       - name: Generate Operator Catalog Config
@@ -144,7 +171,8 @@ jobs:
           file: target/checkout/operator/src/main/docker/catalog.Dockerfile
           tags: |
             ${{ secrets.IMAGE_REPO_HOSTNAME }}/${{ secrets.IMAGE_REPO_NAMESPACE }}/console-operator-catalog:${{steps.metadata.outputs.current-version}}
-            ${{ secrets.IMAGE_REPO_HOSTNAME }}/${{ secrets.IMAGE_REPO_NAMESPACE }}/console-operator-catalog:latest
+            ${{ env.LATEST_TAG != '' && format('{0}/{1}/console-operator-catalog:{2}', secrets.IMAGE_REPO_HOSTNAME, secrets.IMAGE_REPO_NAMESPACE, env.LATEST_TAG) || '' }}
+            ${{ env.MAJOR_MINOR_TAG != '' && format('{0}/{1}/console-operator-catalog:{2}', secrets.IMAGE_REPO_HOSTNAME, secrets.IMAGE_REPO_NAMESPACE, env.MAJOR_MINOR_TAG) || '' }}
 
       # ==================== GitHub Release ====================
       - name: Prepare Operator Resources
