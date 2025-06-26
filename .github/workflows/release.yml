@@ -163,9 +163,9 @@ jobs:
           file: target/checkout/operator/src/main/docker/catalog.Dockerfile
           tags: |
             ${{ secrets.IMAGE_REPO_HOSTNAME }}/${{ secrets.IMAGE_REPO_NAMESPACE }}/console-operator-catalog:${{steps.metadata.outputs.current-version}}
-            ${{ secrets.IMAGE_REPO_HOSTNAME }}/${{ secrets.IMAGE_REPO_NAMESPACE }}/console-operator-bundle:${{env.MAJOR_MINOR_TAG}}
-            ${{ env.LATEST_TAG != '' && format('{0}/{1}/console-operator-bundle:{2}', secrets.IMAGE_REPO_HOSTNAME, secrets.IMAGE_REPO_NAMESPACE, env.LATEST_TAG) || '' }}
-
+            ${{ secrets.IMAGE_REPO_HOSTNAME }}/${{ secrets.IMAGE_REPO_NAMESPACE }}/console-operator-catalog:${{env.MAJOR_MINOR_TAG}}
+            ${{ env.LATEST_TAG != '' && format('{0}/{1}/console-operator-catalog:{2}', secrets.IMAGE_REPO_HOSTNAME, secrets.IMAGE_REPO_NAMESPACE, env.LATEST_TAG) || '' }}
+            
       # ==================== GitHub Release ====================
       - name: Prepare Operator Resources
         run: |
