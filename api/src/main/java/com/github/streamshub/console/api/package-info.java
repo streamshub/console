@@ -7,6 +7,26 @@
         },
         security = @SecurityRequirement(name = "ConsoleSecurity"),
         components = @Components(
+                parameters = {
+                    @Parameter(name = ConnectCluster.FIELDS_PARAM,
+                            in = ParameterIn.QUERY,
+                            description = FieldFilter.FIELDS_DESCR,
+                            explode = Explode.FALSE,
+                            allowEmptyValue = true,
+                            schema = @Schema(implementation = ConnectCluster.Fields[].class)),
+                    @Parameter(name = Connector.FIELDS_PARAM,
+                            in = ParameterIn.QUERY,
+                            description = FieldFilter.FIELDS_DESCR,
+                            explode = Explode.FALSE,
+                            allowEmptyValue = true,
+                            schema = @Schema(implementation = Connector.Fields[].class)),
+                    @Parameter(name = ConnectorTask.FIELDS_PARAM,
+                            in = ParameterIn.QUERY,
+                            description = FieldFilter.FIELDS_DESCR,
+                            explode = Explode.FALSE,
+                            allowEmptyValue = true,
+                            schema = @Schema(implementation = ConnectorTask.Fields[].class))
+                },
                 responses = {
                     @APIResponse(name = "Configurations",
                             description = "Configurations successfully retrieved",
@@ -131,13 +151,20 @@ import jakarta.ws.rs.core.MediaType;
 
 import org.eclipse.microprofile.openapi.annotations.Components;
 import org.eclipse.microprofile.openapi.annotations.OpenAPIDefinition;
+import org.eclipse.microprofile.openapi.annotations.enums.Explode;
+import org.eclipse.microprofile.openapi.annotations.enums.ParameterIn;
 import org.eclipse.microprofile.openapi.annotations.info.Info;
 import org.eclipse.microprofile.openapi.annotations.media.Content;
 import org.eclipse.microprofile.openapi.annotations.media.ExampleObject;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
+import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.security.SecurityRequirement;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 import com.github.streamshub.console.api.model.ConfigEntry;
+import com.github.streamshub.console.api.model.connect.ConnectCluster;
+import com.github.streamshub.console.api.model.connect.Connector;
+import com.github.streamshub.console.api.model.connect.ConnectorTask;
 import com.github.streamshub.console.api.model.jsonapi.JsonApiErrors;
+import com.github.streamshub.console.api.support.FieldFilter;

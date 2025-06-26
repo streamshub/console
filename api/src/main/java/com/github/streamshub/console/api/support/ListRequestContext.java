@@ -17,6 +17,7 @@ import jakarta.json.JsonObject;
 import jakarta.ws.rs.core.UriBuilder;
 
 import com.github.streamshub.console.api.errors.client.InvalidPageCursorException;
+import com.github.streamshub.console.api.model.FetchParams;
 import com.github.streamshub.console.api.model.ListFetchParams;
 
 public class ListRequestContext<T> implements Predicate<T> {
@@ -108,6 +109,10 @@ public class ListRequestContext<T> implements Predicate<T> {
     public T tally(T item) {
         totalRecords++;
         return item;
+    }
+
+    public FetchParams getFetchParams() {
+        return listParams;
     }
 
     public Comparator<T> getSortComparator() {
