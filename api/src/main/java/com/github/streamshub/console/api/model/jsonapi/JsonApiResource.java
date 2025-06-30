@@ -63,6 +63,10 @@ public abstract class JsonApiResource<A, R> extends JsonApiBase {
         return type;
     }
 
+    public Identifier identifier() {
+        return new Identifier(id, type);
+    }
+
     public A getAttributes() {
         return attributes;
     }
