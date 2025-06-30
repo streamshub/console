@@ -61,7 +61,7 @@ public class CssSelectors {
         .withElementSection().withComponentPage().withSubComponentMainSection().withChild()
         .withElementDiv().withComponentPage().withSubComponentMainBody().withChild()
         .withElementDiv().withLayoutFlex().withChild()
-        .withElementDiv().withLayoutFlex().nth(1).withChild()
+        .withElementDiv().withLayoutFlex().nth(1)
         .build();
 
     public static final String PAGES_HEADER_BREADCRUMB = new CssBuilder(PAGES_HEADER)
@@ -622,4 +622,75 @@ public class CssSelectors {
         .withChild()
         .withElementDiv().withComponentEmptyState()
         .build();
+
+    public static final String MESSAGES_PAGE_BODY_CONTENT = new CssBuilder(PAGES_MAIN_CONTENT)
+        .withElementSection().withComponentPage().withSubComponentMainSection().withChild()
+        .withElementDiv().withComponentPage().withSubComponentMainBody().withChild()
+        .withElementDiv().withComponentDrawer().withChild()
+        .withElementDiv().withComponentDrawer().withSubComponentMain().withChild()
+        .withElementDiv().withComponentDrawer().withSubComponentContent().withChild()
+        .withElementDiv().withComponentScrollOuterWrapper()
+        .build();
+
+    public static final String MESSAGES_PAGE_SEARCH_TOOLBAR = new CssBuilder(MESSAGES_PAGE_BODY_CONTENT)
+        .withChild()
+        .withElementDiv().withComponentToolbar().withChild()
+        .withElementDiv().withComponentToolbar().withSubComponentContent().withChild()
+        .withElementDiv().withComponentToolbar().withSubComponentContentSection()
+        .build();
+
+    public static final String MESSAGES_PAGE_SEARCH_TOOLBAR_INPUT_GROUP = new CssBuilder(MESSAGES_PAGE_SEARCH_TOOLBAR)
+        .withChild()
+        .withElementDiv().withComponentToolbar().withSubComponentItem().withChild()
+        .withElementDiv().withComponentInputGroup()
+        .build();
+
+    public static final String MESSAGES_PAGE_SEARCH_TOOLBAR_SEARCH_TEXT = new CssBuilder(MESSAGES_PAGE_SEARCH_TOOLBAR_INPUT_GROUP)
+        .withChild()
+        .withElementDiv().withComponentInputGroup().withSubComponentItem().nth(1).withChild()
+        .withElementDiv().withComponentTextInputGroup().withChild()
+        .withElementDiv().withComponentTextInputGroup().withSubComponentMain().withChild()
+        .withElementSpan().withComponentTextInputGroup().withSubComponentText().withChild()
+        .withElementInput().withComponentTextInputGroup().withSubComponentTextInput()
+        .build();
+
+    public static final String MESSAGES_PAGE_SEARCH_TOOLBAR_FILTER_BUTTON = new CssBuilder(MESSAGES_PAGE_SEARCH_TOOLBAR_INPUT_GROUP)
+        .withChild()
+        .withElementDiv().withComponentInputGroup().withSubComponentItem().nth(2).withDesc()
+        .build();
+
+    public static final String MESSAGES_PAGE_SEARCH_TOOLBAR_SEARCH_BUTTON = new CssBuilder(MESSAGES_PAGE_SEARCH_TOOLBAR_INPUT_GROUP)
+        .withChild()
+        .withElementDiv().withComponentInputGroup().withSubComponentItem().nth(3).withDesc()
+        .withElementButton().withComponentButton()
+        .build();
+
+    public static final String MESSAGES_PAGE_TABLE_SEARCH_TABLE = new CssBuilder(MESSAGES_PAGE_BODY_CONTENT)
+        .withChild()
+        .withElementDiv().withComponentScrollInnerWrapper().withChild()
+        .withElementDiv().withChild()
+        .withElementTable().withComponentTable()
+        .build();
+
+    public static final String MESSAGES_PAGE_TABLE_SEARCH_TABLE_HEADER_ITEMS = new CssBuilder(MESSAGES_PAGE_TABLE_SEARCH_TABLE)
+        .withChild()
+        .withElementThead().withComponentTable().withSubComponentThead().withChild()
+        .withElementTr().withComponentTable().withSubComponentTr().withChild()
+        .withElementTh().withComponentTable().withSubComponentTh()
+        .build();
+
+    public static final String MESSAGES_PAGE_TABLE_SEARCH_TABLE_ITEMS = new CssBuilder(MESSAGES_PAGE_TABLE_SEARCH_TABLE)
+        .withChild()
+        .withElementTbody().withComponentTable().withSubComponentTbody()
+        .build();
+
+    public static String getMessagesPageTableRowItems(int nth) {
+        // need to shift +2 due to thead and caption elements being children too
+        return CssBuilder.joinLocators(new CssBuilder(MESSAGES_PAGE_TABLE_SEARCH_TABLE_ITEMS).nth(nth + 2).build(), AD_TOPICS_PAGE_TOPIC_ROW_ITEMS);
+    }
+
+    public static String getMessagesPageTableRowItem(int nthRow, int nthColumn) {
+        // need to shift +2 due to thead and caption elements being children too
+        return new CssBuilder(getMessagesPageTableRowItems(nthRow)).nth(nthColumn).build();
+    }
 }
