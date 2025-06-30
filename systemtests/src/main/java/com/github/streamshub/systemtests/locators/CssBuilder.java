@@ -3,7 +3,7 @@
  * Licensed under the Apache Software License version 2.0, available at http://www.apache.org/licenses/LICENSE-2.0
  */
 
-package com.github.streamshub.systemtests.utils.playwright.locators;
+package com.github.streamshub.systemtests.locators;
 
 // To ignore checkstyle that would make this file twice as long because of the breaks after curly brackets
 @SuppressWarnings("LeftCurly")
@@ -52,7 +52,7 @@ public class CssBuilder {
 
     public CssBuilder nth(int nth) {
         // Append nothing to make the element with class
-        this.cssClass.append(":nth-child(" + nth + ")");
+        this.cssClass.append(":nth-of-type(" + nth + ")");
         return this;
     }
 
@@ -117,6 +117,7 @@ public class CssBuilder {
     public CssBuilder withElementLi() { return withElement("li"); }
     public CssBuilder withElementTable() { return withElement("table"); }
     public CssBuilder withElementButton() { return withElement("button"); }
+    public CssBuilder withElementForm() { return withElement("form"); }
 
     // -------------------
     // Components
@@ -159,6 +160,9 @@ public class CssBuilder {
     public CssBuilder withComponentMenu() { return withComponent("menu"); }
     public CssBuilder withComponentCheck() { return withComponent("check"); }
     public CssBuilder withComponentMenuToggle() { return withComponent("menu-toggle"); }
+    public CssBuilder withComponentPanel() { return withComponent("panel"); }
+    public CssBuilder withComponentForm() { return withComponent("form"); }
+
 
     // ----------------
     // Sub-components
@@ -177,6 +181,8 @@ public class CssBuilder {
     public CssBuilder withSubComponentPageMenu() { return withSubComponent("page-menu"); }
     public CssBuilder withSubComponentMainSection() { return withSubComponent("main-section"); }
     public CssBuilder withSubComponentItem() { return withSubComponent("item"); }
+    public CssBuilder withSubComponentItemRow() { return withSubComponent("item-row"); }
+    public CssBuilder withSubComponentItemControl() { return withSubComponent("item-control"); }
     public CssBuilder withSubComponentOpen() { return withSubComponent("open"); }
     public CssBuilder withSubComponentItemMain() { return withSubComponent("item-main"); }
     public CssBuilder withSubComponentItemCheck() { return withSubComponent("item-check"); }
@@ -211,7 +217,11 @@ public class CssBuilder {
     public CssBuilder withSubComponentTd() { return withSubComponent("td"); }
     public CssBuilder withSubComponentTh() { return withSubComponent("th"); }
     public CssBuilder withSubComponentButton() { return withSubComponent("button"); }
-
+    public CssBuilder withSubComponentSection() { return withSubComponent("section"); }
+    public CssBuilder withSubComponentGroupControl() { return withSubComponent("group-control"); }
+    public CssBuilder withSubComponentCheck() { return withSubComponent("check"); }
+    public CssBuilder withSubComponentSort() { return withSubComponent("sort"); }
+    public CssBuilder withSubComponentButtonContent() { return withSubComponent("button-content"); }
 
     // ------------
     // Layouts

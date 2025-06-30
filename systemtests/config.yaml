@@ -12,8 +12,6 @@ TEST_CONSOLE_LOG_LEVEL: INFO
 TEST_LOG_DIR: target/logs
 # Run Playwright tests in headless mode without browser popping up
 RUN_HEADLESS: true
-# Keep test resources after execution (false = delete resources)
-SKIP_TEARDOWN: false
 # Directory to store screenshots from tests. Relative to systemtests dir ["screenshots"]
 SCREENSHOTS_DIR_PATH: screenshots
 # Skip Strimzi installation if it's installed externally. Otherwise, system tests will install strimzi
@@ -27,7 +25,7 @@ CONSOLE_INSTALL_TYPE: olm
 # Kubernetes client type used to execute cmd [oc, kubectl]
 CLIENT_TYPE: kubectl
 # Cluster domain required for k8s clusters except OpenShift.
-CLUSTER_DOMAIN: "192.168.49.2.nip.io"
+CONSOLE_CLUSTER_DOMAIN: "192.168.49.2.nip.io"
 # -------------------------------------------
 # OLM
 # -------------------------------------------
@@ -43,11 +41,11 @@ CONSOLE_OLM_CHANNEL_NAME: alpha
 # YAML
 # -------------------------------------------
 # Which released version of Strimzi Cluster Operator to install
-STRIMZI_OPERATOR_VERSION: 0.45.0
+STRIMZI_OPERATOR_VERSION: 0.46.1
 # URL or local path for Console Operator installation
 # 1. URL - released console-operator.yaml
 # 2. Local path relative to systemtests dir
-CONSOLE_OPERATOR_BUNDLE_URL: https://github.com/streamshub/console/releases/download/0.6.4/streamshub-console-operator.yaml
+CONSOLE_OPERATOR_BUNDLE_URL: https://github.com/streamshub/console/releases/download/0.8.4/streamshub-console-operator.yaml
 # Custom Console Operator image. Overrides default image used in bundle yaml
 CONSOLE_OPERATOR_IMAGE:
 # -------------------------------------------
@@ -61,6 +59,6 @@ CONSOLE_UI_IMAGE:
 # Kafka
 # -------------------------------------------
 # Kafka version used in system tests
-ST_KAFKA_VERSION: 3.9.0
+ST_KAFKA_VERSION: 4.0.0
 # Image for test client containers in system tests
-TEST_CLIENTS_IMAGE: quay.io/strimzi-test-clients/test-clients:0.10.0-kafka-3.9.0
+TEST_CLIENTS_IMAGE: quay.io/strimzi-test-clients/test-clients:0.11.0-kafka-4.0.0

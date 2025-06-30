@@ -5,18 +5,21 @@ import com.github.streamshub.systemtests.clients.KafkaClientsBuilder;
 import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.enums.FilterType;
 import com.github.streamshub.systemtests.enums.TopicStatus;
+import com.github.streamshub.systemtests.locators.ClusterOverviewPageSelectors;
+import com.github.streamshub.systemtests.locators.CssBuilder;
+import com.github.streamshub.systemtests.locators.CssSelectors;
+import com.github.streamshub.systemtests.locators.MessagesPageSelectors;
+import com.github.streamshub.systemtests.locators.TopicsPageSelectors;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.setup.console.ConsoleInstanceSetup;
 import com.github.streamshub.systemtests.setup.strimzi.KafkaSetup;
 import com.github.streamshub.systemtests.utils.WaitUtils;
 import com.github.streamshub.systemtests.utils.playwright.PwPageUrls;
 import com.github.streamshub.systemtests.utils.playwright.PwUtils;
-import com.github.streamshub.systemtests.utils.playwright.locators.CssSelectors;
 import com.github.streamshub.systemtests.utils.resourceutils.KafkaClientsUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.KafkaNamingUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.KafkaTopicUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.KafkaUtils;
-import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
 import com.github.streamshub.systemtests.utils.testchecks.TopicChecks;
 import com.github.streamshub.systemtests.utils.testutils.TopicsTestUtils;
 import io.skodjob.testframe.resources.KubeResourceManager;
@@ -28,7 +31,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
-import static com.github.streamshub.systemtests.utils.playwright.locators.CssSelectors.getLocator;
+import static com.github.streamshub.systemtests.locators.CssSelectors.getLocator;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class TopicST extends AbstractST {
@@ -60,15 +63,15 @@ class TopicST extends AbstractST {
 
         LOGGER.info("Verify top navigation");
         TopicChecks.checkPaginationPage(tcc, topicsCount, topicsPerPageList,
-            CssSelectors.TOPICS_PAGE_TOP_PAGINATION_DROPDOWN_BUTTON, CssSelectors.TOPICS_PAGE_PAGINATION_DROPDOWN_ITEMS,
-            CssSelectors.TOPICS_PAGE_TOP_PAGINATION_DROPDOWN_BUTTON_TEXT,
-            CssSelectors.TOPICS_PAGE_TOP_PAGINATION_NAV_PREV_BUTTON, CssSelectors.TOPICS_PAGE_TOP_PAGINATION_NAV_NEXT_BUTTON);
+            TopicsPageSelectors.TPS_TOP_PAGINATION_DROPDOWN_BUTTON, TopicsPageSelectors.TPS_PAGINATION_DROPDOWN_ITEMS,
+            TopicsPageSelectors.TPS_TOP_PAGINATION_DROPDOWN_BUTTON_TEXT,
+            TopicsPageSelectors.TPS_TOP_PAGINATION_NAV_PREV_BUTTON, TopicsPageSelectors.TPS_TOP_PAGINATION_NAV_NEXT_BUTTON);
 
         LOGGER.info("Verify bottom navigation");
         TopicChecks.checkPaginationPage(tcc, topicsCount, topicsPerPageList,
-            CssSelectors.TOPICS_PAGE_BOTTOM_PAGINATION_DROPDOWN_BUTTON, CssSelectors.TOPICS_PAGE_PAGINATION_DROPDOWN_ITEMS,
-            CssSelectors.TOPICS_PAGE_BOTTOM_PAGINATION_DROPDOWN_BUTTON_TEXT,
-            CssSelectors.TOPICS_PAGE_BOTTOM_PAGINATION_NAV_PREV_BUTTON, CssSelectors.TOPICS_PAGE_BOTTOM_PAGINATION_NAV_NEXT_BUTTON);
+            TopicsPageSelectors.TPS_BOTTOM_PAGINATION_DROPDOWN_BUTTON, TopicsPageSelectors.TPS_PAGINATION_DROPDOWN_ITEMS,
+            TopicsPageSelectors.TPS_BOTTOM_PAGINATION_DROPDOWN_BUTTON_TEXT,
+            TopicsPageSelectors.TPS_BOTTOM_PAGINATION_NAV_PREV_BUTTON, TopicsPageSelectors.TPS_BOTTOM_PAGINATION_NAV_NEXT_BUTTON);
     }
 
     /**
@@ -95,33 +98,34 @@ class TopicST extends AbstractST {
         List<String> topicNames = topics.stream().map(kt -> kt.getMetadata().getName()).sorted().toList().subList(0, 3);
 
         for (String topicName : topicNames) {
-            String topicId = ResourceUtils.getKubeResource(KafkaTopic.class, tcc.namespace(), topicName).getStatus().getTopicId();
+            String topicId = WaitUtils.waitForKafkaTopicToHaveIdAndReturn(tcc.namespace(), topicName);
             tcc.page().navigate(PwPageUrls.getMessagesPage(tcc, tcc.kafkaName(), topicId), PwUtils.getDefaultNavigateOpts());
             tcc.page().waitForURL(PwPageUrls.getMessagesPage(tcc, tcc.kafkaName(), topicId), PwUtils.getDefaultWaitForUrlOpts());
-            PwUtils.waitForLocatorVisible(tcc, CssSelectors.MESSAGES_PAGE_EMPTY_BODY_CONTENT);
-            assertTrue(CssSelectors.getLocator(tcc, CssSelectors.MESSAGES_PAGE_EMPTY_BODY_CONTENT).allInnerTexts().toString().contains(MessageStore.noDataTitle()));
+            PwUtils.waitForLocatorVisible(tcc, MessagesPageSelectors.MPS_EMPTY_BODY_CONTENT);
+            PwUtils.waitForContainsText(tcc, MessagesPageSelectors.MPS_EMPTY_BODY_CONTENT, MessageStore.noDataTitle(), true);
+            assertTrue(CssSelectors.getLocator(tcc, MessagesPageSelectors.MPS_EMPTY_BODY_CONTENT).allInnerTexts().toString().contains(MessageStore.noDataBody()));
         }
 
         LOGGER.info("Go to homepage and check the recently viewed card is not empty");
         tcc.page().navigate(PwPageUrls.getOverviewPage(tcc, tcc.kafkaName()), PwUtils.getDefaultNavigateOpts());
 
         LOGGER.info("Check topics table for recently visited topics");
-        PwUtils.waitForContainsText(tcc, getLocator(tcc, CssSelectors.C_OVERVIEW_PAGE_RECENT_TOPICS_CARD_TABLE_ITEMS).nth(0), topicNames.get(2), false);
-        PwUtils.waitForContainsText(tcc, getLocator(tcc, CssSelectors.C_OVERVIEW_PAGE_RECENT_TOPICS_CARD_TABLE_ITEMS).nth(1), topicNames.get(1), false);
-        PwUtils.waitForContainsText(tcc, getLocator(tcc, CssSelectors.C_OVERVIEW_PAGE_RECENT_TOPICS_CARD_TABLE_ITEMS).nth(2), topicNames.get(0), false);
+        PwUtils.waitForContainsText(tcc, new CssBuilder(ClusterOverviewPageSelectors.COPS_RECENT_TOPICS_CARD_TABLE_ITEMS).nth(1).build(), topicNames.get(2), false);
+        PwUtils.waitForContainsText(tcc, new CssBuilder(ClusterOverviewPageSelectors.COPS_RECENT_TOPICS_CARD_TABLE_ITEMS).nth(2).build(), topicNames.get(1), false);
+        PwUtils.waitForContainsText(tcc, new CssBuilder(ClusterOverviewPageSelectors.COPS_RECENT_TOPICS_CARD_TABLE_ITEMS).nth(3).build(), topicNames.get(0), false);
 
         LOGGER.info("Delete topics");
         KubeResourceManager.get().deleteResourceWithWait(topics.toArray(new KafkaTopic[0]));
 
         LOGGER.info("Check that in recently visited topics table topics are still present");
-        PwUtils.waitForContainsText(tcc, getLocator(tcc, CssSelectors.C_OVERVIEW_PAGE_RECENT_TOPICS_CARD_TABLE_ITEMS).nth(0), topicNames.get(2), false);
-        PwUtils.waitForContainsText(tcc, getLocator(tcc, CssSelectors.C_OVERVIEW_PAGE_RECENT_TOPICS_CARD_TABLE_ITEMS).nth(1), topicNames.get(1), false);
-        PwUtils.waitForContainsText(tcc, getLocator(tcc, CssSelectors.C_OVERVIEW_PAGE_RECENT_TOPICS_CARD_TABLE_ITEMS).nth(2), topicNames.get(0), false);
+        PwUtils.waitForContainsText(tcc, new CssBuilder(ClusterOverviewPageSelectors.COPS_RECENT_TOPICS_CARD_TABLE_ITEMS).nth(1).build(), topicNames.get(2), false);
+        PwUtils.waitForContainsText(tcc, new CssBuilder(ClusterOverviewPageSelectors.COPS_RECENT_TOPICS_CARD_TABLE_ITEMS).nth(2).build(), topicNames.get(1), false);
+        PwUtils.waitForContainsText(tcc, new CssBuilder(ClusterOverviewPageSelectors.COPS_RECENT_TOPICS_CARD_TABLE_ITEMS).nth(3).build(), topicNames.get(0), false);
 
         LOGGER.info("Check that one of the recently viewed topics page cannot be found as it's deleted");
-        getLocator(tcc, CssSelectors.C_OVERVIEW_PAGE_RECENT_TOPICS_CARD_TABLE_ITEMS).nth(0).click();
+        PwUtils.waitForLocatorAndClick(tcc, new CssBuilder(ClusterOverviewPageSelectors.COPS_RECENT_TOPICS_CARD_TABLE_ITEMS).nth(1).build());
         // Verify empty body message
-        assertTrue(getLocator(tcc, CssSelectors.MESSAGES_PAGE_EMPTY_BODY_CONTENT).innerText().contains("Resource not found"));
+        assertTrue(getLocator(tcc, MessagesPageSelectors.MPS_EMPTY_BODY_CONTENT).innerText().contains("Resource not found"));
     }
 
     /**
@@ -200,14 +204,14 @@ class TopicST extends AbstractST {
         LOGGER.info("Sort topics offline topics by name");
         TopicsTestUtils.selectFilter(tcc, FilterType.STATUS);
         TopicsTestUtils.selectTopicStatus(tcc, TopicStatus.OFFLINE);
-        PwUtils.waitForLocatorCount(tcc, unavailableTopicsCount, CssSelectors.TOPICS_PAGE_TABLE_ROWS, false);
+        PwUtils.waitForLocatorCount(tcc, unavailableTopicsCount, TopicsPageSelectors.TPS_TABLE_ROWS, false);
         // Sort by name
-        TopicsTestUtils.selectSortBy(tcc, CssSelectors.TOPICS_PAGE_TABLE_HEADER_SORT_BY_NAME, CssSelectors.TOPICS_PAGE_TABLE_HEADER_SORT_BY_NAME_BUTTON, "descending");
-        PwUtils.waitForLocatorCount(tcc, unavailableTopicsCount, CssSelectors.TOPICS_PAGE_TABLE_ROWS, false);
-        assertTrue(CssSelectors.getLocator(tcc, CssSelectors.getTopicsPageTableRowItems(0)).allInnerTexts().toString()
+        TopicsTestUtils.selectSortBy(tcc, TopicsPageSelectors.TPS_TABLE_HEADER_SORT_BY_NAME, TopicsPageSelectors.TPS_TABLE_HEADER_SORT_BY_NAME_BUTTON, "descending");
+        PwUtils.waitForLocatorCount(tcc, unavailableTopicsCount, TopicsPageSelectors.TPS_TABLE_ROWS, false);
+        assertTrue(CssSelectors.getLocator(tcc, TopicsPageSelectors.getTableRowItems(1)).allInnerTexts().toString()
             .contains(unavailableTopics.stream().map(kt -> kt.getMetadata().getName()).sorted().toList().get(unavailableTopicsCount - 1)));
 
-        tcc.page().click(CssSelectors.TOPICS_PAGE_TOP_TOOLBAR_SEARCH_CLEAR_ALL_FILTERS);
+        PwUtils.waitForLocatorAndClick(tcc, TopicsPageSelectors.TPS_TOP_TOOLBAR_SEARCH_CLEAR_ALL_FILTERS);
 
         LOGGER.info("Sort replicated topics by storage");
         // Produce more messages for the last fullyReplicated topic - use higher message count number to take more storage
@@ -230,11 +234,11 @@ class TopicST extends AbstractST {
         // Filter
         TopicsTestUtils.selectFilter(tcc, FilterType.STATUS);
         TopicsTestUtils.selectTopicStatus(tcc, TopicStatus.FULLY_REPLICATED);
-        PwUtils.waitForLocatorCount(tcc, replicatedTopicsCount, CssSelectors.TOPICS_PAGE_TABLE_ROWS, false);
+        PwUtils.waitForLocatorCount(tcc, replicatedTopicsCount, TopicsPageSelectors.TPS_TABLE_ROWS, false);
         // Sort by storage
-        TopicsTestUtils.selectSortBy(tcc, CssSelectors.TOPICS_PAGE_TABLE_HEADER_SORT_BY_STORAGE, CssSelectors.TOPICS_PAGE_TABLE_HEADER_SORT_BY_STORAGE_BUTTON, "descending");
-        PwUtils.waitForLocatorCount(tcc, replicatedTopicsCount, CssSelectors.TOPICS_PAGE_TABLE_ROWS, false);
-        assertTrue(CssSelectors.getLocator(tcc, CssSelectors.getTopicsPageTableRowItems(0)).allInnerTexts().toString()
+        TopicsTestUtils.selectSortBy(tcc, TopicsPageSelectors.TPS_TABLE_HEADER_SORT_BY_STORAGE, TopicsPageSelectors.TPS_TABLE_HEADER_SORT_BY_STORAGE_BUTTON, "descending");
+        PwUtils.waitForLocatorCount(tcc, replicatedTopicsCount, TopicsPageSelectors.TPS_TABLE_ROWS, false);
+        assertTrue(CssSelectors.getLocator(tcc, TopicsPageSelectors.getTableRowItems(1)).allInnerTexts().toString()
             .contains(replicatedTopics.stream().map(kt -> kt.getMetadata().getName()).sorted().toList().get(replicatedTopicsCount - 1)));
     }
 

@@ -2,11 +2,12 @@ package com.github.streamshub.systemtests.utils.playwright;
 
 import com.github.streamshub.systemtests.Environment;
 import com.github.streamshub.systemtests.TestCaseConfig;
+import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.constants.TimeConstants;
 import com.github.streamshub.systemtests.enums.BrowserTypes;
 import com.github.streamshub.systemtests.exceptions.SetupException;
+import com.github.streamshub.systemtests.locators.CssSelectors;
 import com.github.streamshub.systemtests.logs.LogWrapper;
-import com.github.streamshub.systemtests.utils.playwright.locators.CssSelectors;
 import com.microsoft.playwright.Browser;
 import com.microsoft.playwright.BrowserType;
 import com.microsoft.playwright.Locator;
@@ -65,8 +66,7 @@ public class PwUtils {
         // Anonymous login
         tcc.page().navigate(loginUrl, getDefaultNavigateOpts());
         tcc.page().waitForURL(Pattern.compile(loginUrl + ".*"), getDefaultWaitForUrlOpts());
-        waitForLocatorVisible(tcc, CssSelectors.LOGIN_ANONYMOUSLY_BUTTON);
-        tcc.page().click(CssSelectors.LOGIN_ANONYMOUSLY_BUTTON);
+        waitForLocatorAndClick(tcc, CssSelectors.LOGIN_ANONYMOUSLY_BUTTON);
         // Go to overview page
         tcc.page().waitForURL(PwPageUrls.getOverviewPage(tcc, tcc.kafkaName()), getDefaultWaitForUrlOpts());
         LOGGER.info("Successfully logged into Console");
@@ -99,6 +99,7 @@ public class PwUtils {
     }
 
     public static void waitForLocatorVisible(Locator locator, long timeout) {
+        LOGGER.debug("Waiting for locator to be visible without reloading [{}]", locator.toString());
         locator.waitFor(new Locator.WaitForOptions().setTimeout(timeout).setState(WaitForSelectorState.VISIBLE));
     }
 
@@ -109,6 +110,104 @@ public class PwUtils {
     public static void waitForContainsText(TestCaseConfig tcc, String selector, String text, boolean reload) {
         waitForContainsText(tcc.page(), CssSelectors.getLocator(tcc, selector), text, TimeConstants.COMPONENT_LOAD_TIMEOUT, reload);
     }
+
+    public static void waitForContainsAttribute(TestCaseConfig tcc, String selector, String text, String attribute, boolean reload) {
+        waitForContainsAttribute(tcc.page(), CssSelectors.getLocator(tcc, selector), text, attribute, TimeConstants.COMPONENT_LOAD_TIMEOUT, reload);
+    }
+
+    // --------------------------
+    // Wait for locator and act
+    // --------------------------
+    public static void waitForLocatorAndClick(TestCaseConfig tcc, String selector) {
+        waitForLocatorAndClick(tcc.page().locator(selector));
+    }
+
+    public static void waitForLocatorAndClick(Locator locator) {
+        waitForLocatorVisible(locator);
+        clickWithRetry(locator);
+    }
+
+    public static void waitForLocatorAndFill(TestCaseConfig tcc, String selector, String fillText) {
+        waitForLocatorAndFill(tcc.page().locator(selector), fillText);
+    }
+
+    public static void waitForLocatorAndFill(Locator locator, String fillText) {
+        waitForLocatorVisible(locator);
+        fillWithRetry(locator, fillText);
+    }
+
+    // --------------------------
+    // Click and Fill actions
+    // --------------------------
+    // Due to https://github.com/microsoft/playwright/issues/14946
+    // some buttons or elements that change their visibility might throw errors onclick action
+    public static void clickWithRetry(Locator locator) {
+        retryAction("click on locator", () -> click(locator), Constants.MAX_ACTION_RETRIES);
+    }
+
+    public static void click(TestCaseConfig tcc, String selector) {
+        click(tcc.page().locator(selector));
+    }
+
+    public static void click(Locator locator) {
+        LOGGER.debug("Clicking on locator [{}]", locator.toString());
+        sleepWaitForComponent(TimeConstants.UI_COMPONENT_REACTION_INTERVAL_SHORT);
+        locator.click(new Locator.ClickOptions().setForce(true).setTimeout(TimeConstants.COMPONENT_LOAD_TIMEOUT));
+        sleepWaitForComponent(TimeConstants.UI_COMPONENT_REACTION_INTERVAL_SHORT);
+    }
+
+    public static void fillWithRetry(Locator locator, String text) {
+        retryAction("fill locator", () -> fill(locator, text), Constants.MAX_ACTION_RETRIES);
+    }
+
+    public static void fill(TestCaseConfig tcc, String selector, String text) {
+        fill(tcc.page().locator(selector), text);
+    }
+
+    public static void fill(Locator locator, String text) {
+        LOGGER.debug("Fill locator [{}] with text [{}]", locator.toString(), text);
+        sleepWaitForComponent(TimeConstants.UI_COMPONENT_REACTION_INTERVAL_SHORT);
+        locator.fill(text, new Locator.FillOptions().setForce(true).setTimeout(TimeConstants.COMPONENT_LOAD_TIMEOUT));
+        sleepWaitForComponent(TimeConstants.UI_COMPONENT_REACTION_INTERVAL_SHORT);
+    }
+
+    /**
+     * Executes the given action with retry logic in case of failure.
+     * <p>
+     * This method attempts to run the provided {@link Runnable} action up to a maximum number of retries.
+     * If the action throws an exception, it will retry the execution after a short wait interval.
+     * If all attempts fail, a {@link RuntimeException} is thrown with the last encountered exception as the cause.
+     * </p>
+     *
+     * @param actionName a descriptive name for the action, used in logging to identify what is being retried
+     * @param action     the {@link Runnable} task to execute
+     * @param maxRetries the maximum number of retry attempts before failing the execution
+     *
+     * @throws RuntimeException if the action fails after the specified number of retries
+     */
+    public static void retryAction(String actionName, Runnable action, int maxRetries) {
+        int attempts = 1;
+        while (attempts < Constants.MAX_ACTION_RETRIES) {
+            try {
+                LOGGER.debug("Trying to run an action {} - {}/{}", actionName, attempts, Constants.MAX_ACTION_RETRIES);
+                action.run();
+                LOGGER.debug("Action {} was successful on attempt {}/{}", actionName, attempts, Constants.MAX_ACTION_RETRIES);
+                return;
+            } catch (Exception e) {
+                if (attempts >= maxRetries) {
+                    throw new RuntimeException("Action " + actionName + " failed after retries", e);
+                }
+                LOGGER.debug("Action {} failed, trying again", actionName);
+                attempts++;
+                try {
+                    Thread.sleep(TimeConstants.UI_COMPONENT_REACTION_INTERVAL_SHORT);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                }
+            }
+        }
+    }
+
 
     /**
      * Waits until the given {@link Locator} contains the specified text within the provided timeout.
@@ -123,6 +222,7 @@ public class PwUtils {
      * @param reload if true, reloads the page on each poll when the text is not found
      */
     public static void waitForContainsText(Page page, Locator locator, String text, long componentLoadTimeout, boolean reload) {
+        LOGGER.debug("Waiting for locator [{}] to contain text [{}]", locator.toString(), text);
         Wait.until("locator to contain text: " + text, TimeConstants.GLOBAL_POLL_INTERVAL_SHORT, componentLoadTimeout,
             () -> {
                 String innerText = "";
@@ -147,6 +247,44 @@ public class PwUtils {
         );
     }
 
+
+    /**
+     * Waits until a specified attribute of a locator contains an expected value.
+     * <p>
+     * This method periodically polls the given attribute of the provided {@link Locator}
+     * until it matches the expected text, or a timeout is reached. Optionally reloads
+     * the page during retries if the expected value is not yet present.
+     * </p>
+     *
+     * @param page                 the Playwright {@link Page} object representing the current browser page
+     * @param locator              the {@link Locator} whose attribute is being checked
+     * @param text                 the expected value to be matched in the attribute
+     * @param attribute            the name of the attribute to inspect (e.g., "value", "aria-label")
+     * @param componentLoadTimeout the maximum time (in milliseconds) to wait before failing
+     * @param reload               if {@code true}, the page will be reloaded between polling attempts
+     *
+     * @throws AssertionError if the attribute value does not match the expected text within the timeout
+     */
+    public static void waitForContainsAttribute(Page page, Locator locator, String text, String attribute, long componentLoadTimeout, boolean reload) {
+        LOGGER.debug("Waiting for locator [{}] to contain value [{}]", locator.toString(), text);
+        Wait.until("locator to contain text: " + text, TimeConstants.GLOBAL_POLL_INTERVAL_SHORT, componentLoadTimeout,
+            () -> {
+                String valueText = getTrimmedText(locator.getAttribute(attribute).toString());
+
+                LOGGER.debug("Current locator value [{}], should contain [{}]", valueText, text);
+                if (valueText.equals(text)) {
+                    return true;
+                }
+
+                if (reload) {
+                    page.reload(getDefaultReloadOpts());
+                }
+                return false;
+            },
+            () -> LOGGER.error("Locator does not contain value [{}], instead it contains [{}]", text, getTrimmedText(locator.textContent()))
+        );
+    }
+
     public static void waitForLocatorCount(TestCaseConfig tcc, int count, String selector, boolean reload) {
         waitForLocatorCount(tcc, count, CssSelectors.getLocator(tcc, selector), reload);
     }
@@ -161,6 +299,7 @@ public class PwUtils {
      * @param reload if true, reloads the page on each poll when the count is incorrect
      */
     public static void waitForLocatorCount(TestCaseConfig tcc, int count, Locator locator, boolean reload) {
+        LOGGER.debug("Waiting for locator [{}] to contain item count [{}] reload={}", locator.toString(), count, reload);
         Wait.until("locator to have item count: " + count, TimeConstants.GLOBAL_POLL_INTERVAL_SHORT, TimeConstants.COMPONENT_LOAD_TIMEOUT,
             () -> {
                 if (locator.all().size() == count) {
@@ -242,7 +381,7 @@ public class PwUtils {
         // e.g. screenshots/testFilterTopics/topicst-33aaa/topics/screenshotname-2025-04-21__18-05-33.png
         String pageUrl = tcc.page().url().replace(PwPageUrls.getKafkaBaseUrl(tcc, kafkaName), "");
 
-        String screenshotName = String.join("/",
+        String screenshotName = java.lang.String.join("/",
             KubeResourceManager.get().getTestContext().getDisplayName().replace("()", ""),
             tcc.namespace(),
             kafkaName,
@@ -258,7 +397,7 @@ public class PwUtils {
     }
 
     public static void sleepWaitForComponent(long timeInMilis) {
-        LOGGER.debug("Waiting for component");
+        LOGGER.debug("Giving component time to stabilize");
         try {
             Thread.sleep(timeInMilis);
         } catch (InterruptedException e) {

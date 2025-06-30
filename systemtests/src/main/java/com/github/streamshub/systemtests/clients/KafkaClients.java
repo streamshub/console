@@ -16,6 +16,7 @@ public class KafkaClients {
     private String producerName;
     private String consumerName;
     private String message;
+    private String messageKey;
     private int messageCount;
     private String consumerGroup;
     private long delayMs;
@@ -35,6 +36,9 @@ public class KafkaClients {
 
     public String getMessage() {
         return message;
+    }
+    public String getMessageKey() {
+        return messageKey;
     }
 
     public int getMessageCount() {
@@ -85,6 +89,13 @@ public class KafkaClients {
             message = "Hello-world";
         }
         this.message = message;
+    }
+
+    public void setMessageKey(String messageKey) {
+        if (messageKey == null || messageKey.isEmpty()) {
+            messageKey = "DefaultKey";
+        }
+        this.messageKey = messageKey;
     }
 
     public void setMessageCount(int messageCount) {
@@ -203,6 +214,10 @@ public class KafkaClients {
                             .addNewEnv()
                                 .withName("MESSAGE")
                                 .withValue(message)
+                            .endEnv()
+                            .addNewEnv()
+                                .withName("MESSAGE_KEY")
+                                .withValue(messageKey)
                             .endEnv()
                             .addNewEnv()
                                 .withName("PRODUCER_ACKS")

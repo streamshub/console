@@ -6,6 +6,7 @@ public class Constants {
     // --------------------------------
     // ------------ General -----------
     // --------------------------------
+    public static final int MAX_ACTION_RETRIES = 10;
     /**
      * Cluster
      */
@@ -28,6 +29,7 @@ public class Constants {
      */
     public static final String USER_USERNAME = "Anonymous";
     public static final int SELECTOR_RETRIES = 10;
+    public static final String VALUE_ATTRIBUTE = "value";
 
     /**
      * Messages
