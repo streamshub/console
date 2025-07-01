@@ -313,29 +313,29 @@ public class KafkaClusterService {
         setKafkaClusterStatus(cluster, kafka);
     }
 
-	void setKafkaClusterStatus(KafkaCluster cluster, Kafka kafka) {
-		Optional.ofNullable(kafka.getStatus()).ifPresentOrElse(status -> {
-			String kafkaVersion = Optional.ofNullable(status.getKafkaVersion()).orElseGet(() -> {
-				if (kafka.getSpec() != null && kafka.getSpec().getKafka() != null) {
-					return kafka.getSpec().getKafka().getVersion();
-				}
-				return null;
-			});
-			cluster.kafkaVersion(kafkaVersion);
-			Optional.ofNullable(status.getConditions()).ifPresent(conditions -> {
-				cluster.conditions(conditions.stream().map(Condition::new).toList());
+    void setKafkaClusterStatus(KafkaCluster cluster, Kafka kafka) {
+        Optional.ofNullable(kafka.getStatus()).ifPresentOrElse(status -> {
+            String kafkaVersion = Optional.ofNullable(status.getKafkaVersion()).orElseGet(() -> {
+                if (kafka.getSpec() != null && kafka.getSpec().getKafka() != null) {
+                    return kafka.getSpec().getKafka().getVersion();
+                }
+                return null;
+            });
+            cluster.kafkaVersion(kafkaVersion);
+            Optional.ofNullable(status.getConditions()).ifPresent(conditions -> {
+                cluster.conditions(conditions.stream().map(Condition::new).toList());
 
-				conditions.stream().filter(c -> "NotReady".equals(c.getType()) && "True".equals(c.getStatus()))
-						.findFirst().ifPresentOrElse(c -> cluster.status("NotReady"), () -> cluster.status("Ready"));
-			});
-			Optional.ofNullable(status.getKafkaNodePools())
-					.ifPresent(pools -> cluster.nodePools(pools.stream().map(pool -> pool.getName()).toList()));
-		}, () -> {
-			if (kafka.getSpec() != null && kafka.getSpec().getKafka() != null) {
-				cluster.kafkaVersion(kafka.getSpec().getKafka().getVersion());
-			}
-		});
-	}
+                conditions.stream().filter(c -> "NotReady".equals(c.getType()) && "True".equals(c.getStatus()))
+                        .findFirst().ifPresentOrElse(c -> cluster.status("NotReady"), () -> cluster.status("Ready"));
+            });
+            Optional.ofNullable(status.getKafkaNodePools())
+                    .ifPresent(pools -> cluster.nodePools(pools.stream().map(pool -> pool.getName()).toList()));
+        }, () -> {
+            if (kafka.getSpec() != null && kafka.getSpec().getKafka() != null) {
+                cluster.kafkaVersion(kafka.getSpec().getKafka().getVersion());
+            }
+        });
+    }
 
     KafkaCluster setManaged(KafkaCluster cluster) {
         cluster.addMeta("managed", findCluster(cluster)
