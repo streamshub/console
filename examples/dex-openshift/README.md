@@ -4,7 +4,7 @@ This directory contains resources to deploy a [dex](https://dexidp.io/) server t
 using OpenShift's platform identity provider. Other identity providers [supported by dex](https://dexidp.io/docs/connectors/)
 may also work and require modification to the `[040-Secret-console-dex.yaml](./040-Secret-console-dex.yaml)` file.
 
-Deploying these requires requires several parameters set in the environment
+Deploying these requires several parameters set in the environment
 - `NAMESPACE` to deploy dex (may be the same namespace used for the console deployment)
 - `CLUSTER_DOMAIN`: base domain used by your Kubernetes cluster. This will be used to configure dex's JWT issuer, dex's own ingress domain name, and the redirect URL to the console application. The example resources assume that a console instance is hosted at `https://example-console.${CLUSTER_DOMAIN}/api/auth/callback/oidc`.
 - `CLUSTER_APISERVER`: API server end-point for the Kubernetes cluster
