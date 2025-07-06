@@ -226,4 +226,24 @@
             </resource>
         </resources>
     </build>
+
+
+    <profiles>
+        <profile>
+            <id>none</id>
+            <properties>
+                <skipTests>true</skipTests>
+            </properties>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+        </profile>
+
+        <profile>
+            <id>regression</id>
+            <properties>
+                <skipTests>false</skipTests>
+            </properties>
+        </profile>
+    </profiles>
 </project>
