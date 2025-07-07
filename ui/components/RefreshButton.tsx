@@ -4,37 +4,36 @@ import { SyncAltIcon } from "@/libs/patternfly/react-icons";
 import { useRouter } from "@/i18n/routing";
 import { ButtonProps } from "@/libs/patternfly/react-core";
 import { useTranslations } from "next-intl";
-import { useState } from "react";
+import { useTransition } from "react";
 
 export type RefreshButtonProps = {
-  lastRefresh: Date;
   tooltip?: string;
   ariaLabel?: string;
   onClick?: () => void;
 };
 
 export function RefreshButton({
-  lastRefresh,
   ariaLabel,
   onClick,
   tooltip,
 }: RefreshButtonProps) {
   const t = useTranslations();
   const router = useRouter();
-  const [refreshTs, setRefreshTs] = useState<Date | undefined>();
+  const [isRefreshing, startTransition] = useTransition();
+
   const handleClick: ButtonProps["onClick"] =
     onClick ??
     ((e) => {
       e.preventDefault();
-      setRefreshTs(new Date());
-      router.refresh();
+      startTransition(() => {
+        router.refresh();
+      });
     });
-
-  const isRefreshing = refreshTs !== undefined && refreshTs >= lastRefresh;
 
   const defaultTooltip = isRefreshing
     ? t("RefreshButton.refreshing_tooltip")
     : t("RefreshButton.refresh_description");
+
   return (
     <Tooltip content={tooltip || defaultTooltip}>
       <Button
@@ -42,10 +41,8 @@ export function RefreshButton({
         variant="plain"
         aria-label={ariaLabel || t("RefreshButton.refresh_button_label")}
         isDisabled={isRefreshing}
-        onClick={isRefreshing === true ? undefined : handleClick}
-        icon={
-          isRefreshing === false ? <SyncAltIcon /> : <Spinner size={"md"} />
-        }
+        onClick={handleClick}
+        icon={isRefreshing ? <Spinner size={"md"} /> : <SyncAltIcon />}
       />
     </Tooltip>
   );
