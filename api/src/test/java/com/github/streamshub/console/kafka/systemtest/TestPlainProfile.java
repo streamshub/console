@@ -154,6 +154,7 @@ public class TestPlainProfile implements QuarkusTestProfile {
                         sasl.jaas.config: something
 
                     - name: test-kafkaY
+                      id: test-kafkaY
                       properties:
                         bootstrap.servers: ${console.test.external-bootstrap}
                 """);

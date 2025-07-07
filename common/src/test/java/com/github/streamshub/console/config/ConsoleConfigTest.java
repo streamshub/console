@@ -89,7 +89,7 @@ class ConsoleConfigTest {
         var violations = validator.validate(config);
 
         assertEquals(1, violations.size());
-        assertEquals("Kafka cluster names must be unique", violations.iterator().next().getMessage());
+        assertEquals(KafkaConfig.UNIQUE_NAMES_MESSAGE, violations.iterator().next().getMessage());
     }
 
     @Test
