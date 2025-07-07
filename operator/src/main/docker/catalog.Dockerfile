@@ -1,6 +1,6 @@
 # The base image is expected to contain
 # /bin/opm (with a serve subcommand) and /bin/grpc_health_probe
-FROM quay.io/operator-framework/opm:v1.55.0
+FROM quay.io/operator-framework/opm:v1.56.0
 
 # Configure the entrypoint and command
 ENTRYPOINT ["/bin/opm"]
