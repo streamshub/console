@@ -60,7 +60,7 @@ import io.quarkus.test.junit.TestProfile;
 import io.strimzi.api.ResourceAnnotations;
 import io.strimzi.api.kafka.model.kafka.Kafka;
 import io.strimzi.api.kafka.model.kafka.KafkaBuilder;
-import io.strimzi.api.kafka.model.kafka.KafkaStatus;
+import io.strimzi.api.kafka.model.kafka.KafkaStatusBuilder;
 import io.strimzi.api.kafka.model.kafka.listener.KafkaListenerAuthenticationCustomBuilder;
 import io.strimzi.api.kafka.model.kafka.listener.KafkaListenerAuthenticationOAuthBuilder;
 import io.strimzi.api.kafka.model.kafka.listener.KafkaListenerAuthenticationScramSha512Builder;
@@ -806,9 +806,8 @@ class KafkaClustersResourceIT {
                     .withVersion(specKafkaVersion)
                 .endKafka()
             .endSpec()
-            .withStatus("null".equals(statusKafkaVersion) ? null : new KafkaStatus() {{
-            setKafkaVersion(statusKafkaVersion);
-        }}).build();
+            .withStatus("null".equals(statusKafkaVersion) ? null : new KafkaStatusBuilder().withKafkaVersion(statusKafkaVersion).build())
+            .build();
         client.resource(kafka).inNamespace("default");
 
         whenRequesting(req -> req
