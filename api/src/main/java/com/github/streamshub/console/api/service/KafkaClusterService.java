@@ -315,12 +315,8 @@ public class KafkaClusterService {
 
     void setKafkaClusterStatus(KafkaCluster cluster, Kafka kafka) {
         Optional.ofNullable(kafka.getStatus()).ifPresentOrElse(status -> {
-            String kafkaVersion = Optional.ofNullable(status.getKafkaVersion()).orElseGet(() -> {
-                if (kafka.getSpec() != null && kafka.getSpec().getKafka() != null) {
-                    return kafka.getSpec().getKafka().getVersion();
-                }
-                return null;
-            });
+            String kafkaVersion = Optional.ofNullable(status.getKafkaVersion())
+                                        .orElseGet(() -> getKafkaVersionFromSpec(kafka));
             cluster.kafkaVersion(kafkaVersion);
             Optional.ofNullable(status.getConditions()).ifPresent(conditions -> {
                 cluster.conditions(conditions.stream().map(Condition::new).toList());
@@ -331,9 +327,7 @@ public class KafkaClusterService {
             Optional.ofNullable(status.getKafkaNodePools())
                     .ifPresent(pools -> cluster.nodePools(pools.stream().map(pool -> pool.getName()).toList()));
         }, () -> {
-            if (kafka.getSpec() != null && kafka.getSpec().getKafka() != null) {
-                cluster.kafkaVersion(kafka.getSpec().getKafka().getVersion());
-            }
+            cluster.kafkaVersion(getKafkaVersionFromSpec(kafka));
         });
     }
 
@@ -378,6 +372,14 @@ public class KafkaClusterService {
                 valueResults.thenAccept(cluster.metrics().values()::putAll))
             .thenApply(nothing -> cluster);
     }
+
+    private String getKafkaVersionFromSpec(Kafka kafka) {
+        if (kafka.getSpec() != null && kafka.getSpec().getKafka() != null) {
+            return kafka.getSpec().getKafka().getVersion();
+        }
+        return null;
+    }
+
 
     private Optional<Kafka> findCluster(KafkaCluster cluster) {
         return findCluster(Cache.namespaceKeyFunc(cluster.namespace(), cluster.name()));
