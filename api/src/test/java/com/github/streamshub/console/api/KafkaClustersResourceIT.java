@@ -787,10 +787,72 @@ class KafkaClustersResourceIT {
 
     @ParameterizedTest
     @CsvSource({
+        "true",
+        "false"
+    })
+    void testPatchClusterReconciliationPaused(Boolean paused) {
+        whenRequesting(req -> req.get("{clusterId}", clusterId1))
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()))
+            .body("data.attributes.name", is("test-kafka1"))
+            .body("data.meta", not(hasKey("reconciliationPaused")));
+
+        whenRequesting(req -> req
+                .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
+                .body(Json.createObjectBuilder()
+                        .add("data", Json.createObjectBuilder()
+                                .add("id", clusterId1)
+                                .add("type", com.github.streamshub.console.api.model.KafkaCluster.API_TYPE)
+                                .add("meta", Json.createObjectBuilder()
+                                        .add("reconciliationPaused", paused))
+                                .add("attributes", Json.createObjectBuilder()))
+                        .build()
+                        .toString())
+                .patch("{clusterId1}", clusterId1))
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()))
+            .body("data.meta.reconciliationPaused", is(paused));
+
+        Kafka kafkaCR = client.resources(Kafka.class)
+            .inNamespace("default")
+            .withName("test-kafka1")
+            .get();
+
+        assertEquals(paused.toString(), kafkaCR.getMetadata().getAnnotations().get(ResourceAnnotations.ANNO_STRIMZI_IO_PAUSE_RECONCILIATION));
+        // Test custom annotation was untouched
+        assertEquals("value-1", kafkaCR.getMetadata().getAnnotations().get("x-custom-annotation"));
+
+        whenRequesting(req -> req
+                .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
+                .body(Json.createObjectBuilder()
+                        .add("data", Json.createObjectBuilder()
+                                .add("id", clusterId1)
+                                .add("type", com.github.streamshub.console.api.model.KafkaCluster.API_TYPE)
+                                .add("meta", Json.createObjectBuilder()) // reconciliationPaused is omitted
+                                .add("attributes", Json.createObjectBuilder()))
+                        .build()
+                        .toString())
+                .patch("{clusterId1}", clusterId1))
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()))
+            .body("data.meta", not(hasKey("reconciliationPaused")));
+
+        kafkaCR = client.resources(Kafka.class)
+                .inNamespace("default")
+                .withName("test-kafka1")
+                .get();
+
+        assertNull(kafkaCR.getMetadata().getAnnotations().get(ResourceAnnotations.ANNO_STRIMZI_IO_PAUSE_RECONCILIATION));
+        // Test custom annotation was untouched
+        assertEquals("value-1", kafkaCR.getMetadata().getAnnotations().get("x-custom-annotation"));
+    }
+
+    @ParameterizedTest
+    @CsvSource({
         "true, null, 3.6.0, 3.6.0",  // status is null due to paused reconciliation, fallback to spec
         "false, 3.5.0, 3.6.0, 3.5.0" // status is present, use it
     })
-    void testPatchClusterReconciliationPaused(
+    void testKafkaVersionWhenReconciliationPaused(
             boolean paused,
             String statusKafkaVersion,
             String specKafkaVersion,
@@ -799,51 +861,37 @@ class KafkaClustersResourceIT {
             .withNewMetadata()
                 .withName("test-kafka1")
                 .withNamespace("default")
-                .withAnnotations(Map.of("x-custom-annotation", "value-1"))
             .endMetadata()
             .withNewSpec()
                 .withNewKafka()
                     .withVersion(specKafkaVersion)
                 .endKafka()
             .endSpec()
-            .withStatus("null".equals(statusKafkaVersion) ? null : new KafkaStatusBuilder().withKafkaVersion(statusKafkaVersion).build())
-            .build();
-        client.resource(kafka).inNamespace("default");
+            .withStatus("null".equals(statusKafkaVersion) ? null : new KafkaStatusBuilder().withKafkaVersion(statusKafkaVersion).build()).build();
+        client.resource(kafka).inNamespace("default").serverSideApply();
 
         whenRequesting(req -> req
             .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
             .body(Json.createObjectBuilder()
                     .add("data", Json.createObjectBuilder()
-                            .add("id", "default/test-kafka1")
+                             .add("id", clusterId1)
                             .add("type", com.github.streamshub.console.api.model.KafkaCluster.API_TYPE)
                             .add("meta", Json.createObjectBuilder()
                                     .add("reconciliationPaused", paused))
                             .add("attributes", Json.createObjectBuilder()))
                     .build()
                     .toString())
-            .patch("{clusterId1}", "default/test-kafka1"))
+            .patch("{clusterId1}", clusterId1))
         .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
             .body("data.meta.reconciliationPaused", is(paused));
 
-        whenRequesting(req -> req.get("{clusterId}", "default/test-kafka1"))
+        whenRequesting(req -> req.get("{clusterId}", clusterId1))
         .assertThat() 
             .statusCode(is(Status.OK.getStatusCode()))
             .body("data.attributes.kafkaVersion", is(expectedVersion));
-        
-        Kafka kafkaCR = client.resources(Kafka.class)
-            .inNamespace("default")
-            .withName("test-kafka1")
-            .get();
-
-        if (paused) {
-            assertEquals("true", kafkaCR.getMetadata().getAnnotations().get(ResourceAnnotations.ANNO_STRIMZI_IO_PAUSE_RECONCILIATION));
-        } else {
-            assertNull(kafkaCR.getMetadata().getAnnotations().get(ResourceAnnotations.ANNO_STRIMZI_IO_PAUSE_RECONCILIATION));
-        }
-        // Test custom annotation was untouched
-        assertEquals("value-1", kafkaCR.getMetadata().getAnnotations().get("x-custom-annotation"));
     }
+
     // Helper methods
 
     static Map<String, Object> mockAdminClient() {
