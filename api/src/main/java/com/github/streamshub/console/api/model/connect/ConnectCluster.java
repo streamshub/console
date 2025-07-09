@@ -66,9 +66,10 @@ public class ConnectCluster extends JsonApiResource<ConnectCluster.Attributes, C
         KAFKA_CLUSTER_ID("kafkaClusterId"),
         VERSION("version"),
         PLUGINS("plugins"),
+        KAFKA_CLUSTERS("kafkaClusters"),
         CONNECTORS("connectors");
 
-        public static final String LIST_DEFAULT = "name,namespace,creationTimestamp,commit,kafkaClusterId,version";
+        public static final String LIST_DEFAULT = "name,namespace,creationTimestamp,commit,kafkaClusterId,version,kafkaClusters";
 
         private final String value;
 
@@ -161,6 +162,9 @@ public class ConnectCluster extends JsonApiResource<ConnectCluster.Attributes, C
 
         @JsonProperty
         List<ConnectorPlugin> plugins;
+
+        @JsonProperty
+        List<String> kafkaClusters;
 
         @JsonProperty
         Metrics metrics;
@@ -269,5 +273,9 @@ public class ConnectCluster extends JsonApiResource<ConnectCluster.Attributes, C
 
     public void metrics(Metrics metrics) {
         attributes.metrics = metrics;
+    }
+
+    public void kafkaClusters(List<String> kafkaClusters) {
+        attributes.kafkaClusters = kafkaClusters;
     }
 }
