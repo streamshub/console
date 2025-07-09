@@ -5,6 +5,7 @@ import java.util.List;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
@@ -29,6 +30,7 @@ public class KafkaConnectConfig implements Authenticated, Trustable {
     @Valid
     private TrustStoreConfig trustStore;
 
+    @NotEmpty(message = "Kafka Connect `kafkaClusters` must contain at least 1 entry")
     private List<@NotBlank String> kafkaClusters = new ArrayList<>();
 
     @Override
