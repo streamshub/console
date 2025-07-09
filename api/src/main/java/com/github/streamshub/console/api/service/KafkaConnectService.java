@@ -119,6 +119,7 @@ public class KafkaConnectService {
     public CompletionStage<List<ConnectCluster>> listClusters(FieldFilter fields, ListRequestContext<ConnectCluster> listSupport) {
         var pendingServerInfo = consoleConfig.getKafkaConnectClusters()
                 .stream()
+                .filter(listSupport.filter(KafkaConnectConfig.class))
                 .map(KafkaConnectConfig::getName)
                 .filter(permissionService.permitted(ConnectCluster.API_TYPE, Privilege.LIST, Function.identity()))
                 .map(clusterName -> describeCluster(clusterName, fields, listSupport.getFetchParams()))
@@ -157,6 +158,7 @@ public class KafkaConnectService {
                     cluster.commit(server.commit());
                     cluster.kafkaClusterId(server.kafkaClusterId());
                     cluster.version(server.version());
+                    cluster.kafkaClusters(consoleConfig.getKafkaConnectCluster(clusterName).getKafkaClusters());
                     return cluster;
                 })
                 .thenCombine(pluginPromise, ConnectCluster::plugins)
@@ -166,6 +168,7 @@ public class KafkaConnectService {
     public CompletionStage<List<Connector>> listConnectors(FieldFilter fields, ListRequestContext<Connector> listSupport) {
         var pendingClusterResults = consoleConfig.getKafkaConnectClusters()
                 .stream()
+                .filter(listSupport.filter(KafkaConnectConfig.class))
                 .map(KafkaConnectConfig::getName)
                 .map(clusterName -> listConnectors(clusterName, fields, listSupport.getFetchParams()))
                 .toList();

@@ -138,6 +138,11 @@ public class ConsoleConfig {
         return kafkaConnectClusters;
     }
 
+    @JsonIgnore
+    public KafkaConnectConfig getKafkaConnectCluster(String name) {
+        return kafkaConnectClusters.stream().filter(c -> c.getName().equals(name)).findFirst().orElseThrow();
+    }
+
     public void setKafkaConnectClusters(List<KafkaConnectConfig> kafkaConnectClusters) {
         this.kafkaConnectClusters = kafkaConnectClusters;
     }
