@@ -53,7 +53,7 @@ export function AppHeader({
                   timeStyle={"medium"}
                   tz={"local"}
                 />
-                <RefreshButton lastRefresh={lastRefresh} />
+                <RefreshButton />
               </FlexItem>
             )}
           </Flex>
