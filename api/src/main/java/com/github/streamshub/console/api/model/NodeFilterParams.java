@@ -1,7 +1,5 @@
 package com.github.streamshub.console.api.model;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
 import java.util.function.Predicate;
 
@@ -16,7 +14,7 @@ import com.github.streamshub.console.api.support.FetchFilterPredicate;
 
 import io.xlate.validation.constraints.Expression;
 
-public class NodeFilterParams {
+public class NodeFilterParams extends FilterParams {
 
     @QueryParam("filter[nodePool]")
     @Parameter(
@@ -94,23 +92,14 @@ public class NodeFilterParams {
         node = "filter[controller.status]")
     FetchFilter controllerStatusFilter;
 
-    public List<Predicate<Node>> buildPredicates() {
-        List<Predicate<Node>> predicates = new ArrayList<>(3);
-
-        if (nodePoolFilter != null) {
-            predicates.add(new FetchFilterPredicate<>(nodePoolFilter, Node::nodePool));
-        }
-
-        if (roleFilter != null) {
-            predicates.add(new FetchFilterPredicate<>(roleFilter, Node.Role::fromValue, Node::roles));
-        }
-
-        maybeAddStatusFilters(predicates);
-
-        return predicates;
+    @Override
+    protected void buildPredicates() {
+        maybeAddPredicate(nodePoolFilter, Node.class, Node::nodePool);
+        maybeAddPredicate(roleFilter, Node.class, Node.Role::fromValue, Node::roles);
+        maybeAddStatusFilters();
     }
 
-    private void maybeAddStatusFilters(List<Predicate<Node>> predicates) {
+    private void maybeAddStatusFilters() {
         Predicate<Node> brokerPredicate = brokerStatusFilter != null
                 ? new FetchFilterPredicate<>(
                         brokerStatusFilter,
@@ -129,11 +118,11 @@ public class NodeFilterParams {
                 : null;
 
         if (brokerPredicate != null && controllerPredicate != null) {
-            predicates.add(brokerPredicate.or(controllerPredicate));
+            addPredicate(Node.class, brokerPredicate.or(controllerPredicate));
         } else if (brokerPredicate != null) {
-            predicates.add(brokerPredicate);
+            addPredicate(Node.class, brokerPredicate);
         } else if (controllerPredicate != null) {
-            predicates.add(controllerPredicate);
+            addPredicate(Node.class, controllerPredicate);
         }
     }
 }

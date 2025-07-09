@@ -1,9 +1,5 @@
 package com.github.streamshub.console.api.model;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.function.Predicate;
-
 import jakarta.ws.rs.QueryParam;
 
 import org.eclipse.microprofile.openapi.annotations.enums.Explode;
@@ -11,12 +7,11 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
 
 import com.github.streamshub.console.api.support.ErrorCategory;
-import com.github.streamshub.console.api.support.FetchFilterPredicate;
 
 import io.xlate.validation.constraints.Expression;
 import io.xlate.validation.constraints.Expression.ExceptionalValue;
 
-public class ConsumerGroupFilterParams {
+public class ConsumerGroupFilterParams extends FilterParams {
 
     @QueryParam("filter[id]")
     @Parameter(
@@ -68,18 +63,9 @@ public class ConsumerGroupFilterParams {
         node = "filter[state]")
     FetchFilter stateFilter;
 
-    public List<Predicate<ConsumerGroup>> buildPredicates() {
-        List<Predicate<ConsumerGroup>> predicates = new ArrayList<>(2);
-
-        if (idFilter != null) {
-            predicates.add(new FetchFilterPredicate<>(idFilter, ConsumerGroup::getGroupId));
-        }
-
-        if (stateFilter != null) {
-            predicates.add(new FetchFilterPredicate<>("filter[state]", stateFilter, ConsumerGroup::getState));
-        }
-
-        return predicates;
+    @Override
+    protected void buildPredicates() {
+        maybeAddPredicate(idFilter, ConsumerGroup.class, ConsumerGroup::getGroupId);
+        maybeAddPredicate("filter[state]", stateFilter, ConsumerGroup.class, ConsumerGroup::getState);
     }
-
 }

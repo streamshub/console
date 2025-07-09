@@ -1,9 +1,5 @@
 package com.github.streamshub.console.api.model;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.function.Predicate;
-
 import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.QueryParam;
 
@@ -16,7 +12,7 @@ import com.github.streamshub.console.api.support.FetchFilterPredicate;
 
 import io.xlate.validation.constraints.Expression;
 
-public class TopicFilterParams {
+public class TopicFilterParams extends FilterParams {
 
     @QueryParam("filter[id]")
     @Parameter(
@@ -95,24 +91,11 @@ public class TopicFilterParams {
         node = "filter[status]")
     FetchFilter statusFilter;
 
-    public List<Predicate<Topic>> buildPredicates() {
-        List<Predicate<Topic>> predicates = new ArrayList<>(3);
-
-        predicates.add(new FetchFilterPredicate<>(visibilityFilter, Topic::visibility));
-
-        if (nameFilter != null) {
-            predicates.add(new FetchFilterPredicate<>(nameFilter, Topic::name));
-        }
-
-        if (idFilter != null) {
-            predicates.add(new FetchFilterPredicate<>(idFilter, Topic::getId));
-        }
-
-        if (statusFilter != null) {
-            predicates.add(new FetchFilterPredicate<>(statusFilter, Topic::status));
-        }
-
-        return predicates;
+    @Override
+    protected void buildPredicates() {
+        addPredicate(Topic.class, new FetchFilterPredicate<>(visibilityFilter, Topic::visibility));
+        maybeAddPredicate(nameFilter, Topic.class, Topic::name);
+        maybeAddPredicate(idFilter, Topic.class, Topic::getId);
+        maybeAddPredicate(statusFilter, Topic.class, Topic::status);
     }
-
 }

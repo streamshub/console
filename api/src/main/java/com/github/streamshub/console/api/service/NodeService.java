@@ -106,7 +106,7 @@ public class NodeService {
         return listNodes()
             .thenApply(nodes -> nodes.stream()
                     .map(node -> tallySummary(node, summary))
-                    .filter(listSupport)
+                    .filter(listSupport.filter(Node.class))
                     .map(listSupport::tally)
                     .filter(listSupport::betweenCursors)
                     .sorted(listSupport.getSortComparator())

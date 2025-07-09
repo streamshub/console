@@ -65,7 +65,7 @@ public class KafkaRebalanceService {
                         r -> r.getMetadata().getName()))
                 .map(this::toKafkaRebalance)
                 .map(rebalance -> tallyStatus(statuses, rebalance))
-                .filter(listSupport)
+                .filter(listSupport.filter(KafkaRebalance.class))
                 .map(listSupport::tally)
                 .filter(listSupport::betweenCursors)
                 .sorted(listSupport.getSortComparator())

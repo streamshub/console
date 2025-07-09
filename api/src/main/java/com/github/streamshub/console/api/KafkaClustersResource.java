@@ -117,7 +117,13 @@ public class KafkaClustersResource {
 
         requestedFields.accept(fields);
 
-        ListRequestContext<KafkaCluster> listSupport = new ListRequestContext<>(filters.buildPredicates(), KafkaCluster.Fields.COMPARATOR_BUILDER, uriInfo.getRequestUri(), listParams, KafkaCluster::fromCursor);
+        ListRequestContext<KafkaCluster> listSupport = new ListRequestContext<>(
+                filters,
+                KafkaCluster.Fields.COMPARATOR_BUILDER,
+                uriInfo.getRequestUri(),
+                listParams,
+                KafkaCluster::fromCursor);
+
         var clusterList = clusterService.listClusters(listSupport);
         var responseEntity = new KafkaCluster.KafkaClusterDataList(clusterList, listSupport);
 

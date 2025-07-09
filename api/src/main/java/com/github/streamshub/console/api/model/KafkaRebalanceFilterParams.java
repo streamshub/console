@@ -1,9 +1,5 @@
 package com.github.streamshub.console.api.model;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.function.Predicate;
-
 import jakarta.ws.rs.QueryParam;
 
 import org.eclipse.microprofile.openapi.annotations.enums.Explode;
@@ -11,11 +7,10 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
 
 import com.github.streamshub.console.api.support.ErrorCategory;
-import com.github.streamshub.console.api.support.FetchFilterPredicate;
 
 import io.xlate.validation.constraints.Expression;
 
-public class KafkaRebalanceFilterParams {
+public class KafkaRebalanceFilterParams extends FilterParams {
 
     @QueryParam("filter[name]")
     @Parameter(
@@ -74,22 +69,10 @@ public class KafkaRebalanceFilterParams {
         node = "filter[mode]")
     FetchFilter modeFilter;
 
-    public List<Predicate<KafkaRebalance>> buildPredicates() {
-        List<Predicate<KafkaRebalance>> predicates = new ArrayList<>(3);
-
-        if (nameFilter != null) {
-            predicates.add(new FetchFilterPredicate<>(nameFilter, KafkaRebalance::name));
-        }
-
-        if (statusFilter != null) {
-            predicates.add(new FetchFilterPredicate<>(statusFilter, KafkaRebalance::status));
-        }
-
-        if (modeFilter != null) {
-            predicates.add(new FetchFilterPredicate<>(modeFilter, KafkaRebalance::mode));
-        }
-
-        return predicates;
+    @Override
+    protected void buildPredicates() {
+        maybeAddPredicate(nameFilter, KafkaRebalance.class, KafkaRebalance::name);
+        maybeAddPredicate(statusFilter, KafkaRebalance.class, KafkaRebalance::status);
+        maybeAddPredicate(modeFilter, KafkaRebalance.class, KafkaRebalance::mode);
     }
-
 }

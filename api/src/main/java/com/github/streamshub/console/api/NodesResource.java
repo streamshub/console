@@ -123,7 +123,7 @@ public class NodesResource {
         requestedFields.accept(fields);
 
         ListRequestContext<Node> listSupport = new ListRequestContext<>(
-                filters.buildPredicates(),
+                filters,
                 Node.Fields.COMPARATOR_BUILDER,
                 uriInfo.getRequestUri(),
                 listParams,

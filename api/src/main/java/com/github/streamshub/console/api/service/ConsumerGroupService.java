@@ -133,7 +133,7 @@ public class ConsumerGroupService {
 
         Admin adminClient = kafkaContext.admin();
 
-        Set<ConsumerGroupState> states = listSupport.filters()
+        Set<ConsumerGroupState> states = listSupport.filters(ConsumerGroup.class)
             .stream()
             .filter(FetchFilterPredicate.class::isInstance)
             .map(FetchFilterPredicate.class::cast)
@@ -158,7 +158,7 @@ public class ConsumerGroupService {
                     .map(ConsumerGroup::fromKafkaModel),
                     threadContext.currentContextExecutor())
             .thenApply(groups -> groups
-                    .filter(listSupport)
+                    .filter(listSupport.filter(ConsumerGroup.class))
                     .map(listSupport::tally)
                     .filter(listSupport::betweenCursors)
                     .sorted(listSupport.getSortComparator())
