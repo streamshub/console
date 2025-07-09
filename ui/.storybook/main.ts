@@ -12,26 +12,26 @@ const config: StorybookConfig = {
       titlePrefix: "Pages",
     },
   ],
+
   addons: [
     "@storybook/addon-links",
-    "@storybook/addon-essentials",
     "@storybook/addon-onboarding",
-    "@storybook/addon-interactions",
+    "@storybook/addon-docs"
   ],
+
   features: {
     experimentalRSC: true,
   },
+
   framework: {
     name: "@storybook/nextjs",
     options: {},
   },
-  docs: {
-    autodocs: "tag",
-  },
+
   webpackFinal: async (config) => {
     // @ts-ignore
     config.resolve.plugins = [new TsconfigPathsPlugin()];
     return config;
-  },
+  }
 };
 export default config;

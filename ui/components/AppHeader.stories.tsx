@@ -3,7 +3,7 @@ import {
   BreadcrumbItem,
   Button,
 } from "@/libs/patternfly/react-core";
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/nextjs";
 import { AppHeader } from "./AppHeader";
 
 const fixedDate = new Date(Date.UTC(2024, 11, 31, 23, 59, 59, 999));

@@ -1,6 +1,6 @@
 // AppDropdown.stories.tsx
 
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/nextjs";
 import { AppDropdown } from "./AppDropdown";
 
 const kafkaClusters = [
