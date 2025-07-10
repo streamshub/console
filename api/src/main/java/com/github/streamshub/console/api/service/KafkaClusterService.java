@@ -49,6 +49,8 @@ import io.fabric8.kubernetes.client.informers.cache.Cache;
 import io.strimzi.api.ResourceAnnotations;
 import io.strimzi.api.kafka.model.kafka.Kafka;
 import io.strimzi.api.kafka.model.kafka.KafkaBuilder;
+import io.strimzi.api.kafka.model.kafka.KafkaClusterSpec;
+import io.strimzi.api.kafka.model.kafka.KafkaSpec;
 import io.strimzi.api.kafka.model.kafka.KafkaStatus;
 import io.strimzi.api.kafka.model.kafka.listener.GenericKafkaListener;
 import io.strimzi.api.kafka.model.kafka.listener.GenericKafkaListenerConfiguration;
@@ -314,23 +316,23 @@ public class KafkaClusterService {
     }
 
     void setKafkaClusterStatus(KafkaCluster cluster, Kafka kafka) {
-        Optional.ofNullable(kafka.getStatus())
-            .ifPresent(status -> {
-                cluster.kafkaVersion(status.getKafkaVersion());
-                Optional.ofNullable(status.getConditions())
-                    .ifPresent(conditions -> {
-                        cluster.conditions(conditions.stream().map(Condition::new).toList());
+        Optional.ofNullable(kafka.getStatus()).ifPresentOrElse(status -> {
+            String kafkaVersion = Optional.ofNullable(status.getKafkaVersion())
+                                        .orElseGet(() -> getKafkaVersionFromSpec(kafka));
+            cluster.kafkaVersion(kafkaVersion);
+            Optional.ofNullable(status.getConditions()).ifPresent(conditions -> {
+                cluster.conditions(conditions.stream().map(Condition::new).toList());
 
-                        conditions.stream()
-                            .filter(c -> "NotReady".equals(c.getType()) && "True".equals(c.getStatus()))
-                            .findFirst()
-                            .ifPresentOrElse(
-                                    c -> cluster.status("NotReady"),
-                                    () -> cluster.status("Ready"));
-                    });
-                Optional.ofNullable(status.getKafkaNodePools())
-                    .ifPresent(pools -> cluster.nodePools(pools.stream().map(pool -> pool.getName()).toList()));
+                conditions.stream()
+                    .filter(c -> "NotReady".equals(c.getType()) && "True".equals(c.getStatus()))
+                    .findFirst()
+                    .ifPresentOrElse(
+                            c -> cluster.status("NotReady"),
+                            () -> cluster.status("Ready"));
             });
+            Optional.ofNullable(status.getKafkaNodePools())
+                    .ifPresent(pools -> cluster.nodePools(pools.stream().map(pool -> pool.getName()).toList()));
+        }, () -> cluster.kafkaVersion(getKafkaVersionFromSpec(kafka)));
     }
 
     KafkaCluster setManaged(KafkaCluster cluster) {
@@ -374,6 +376,14 @@ public class KafkaClusterService {
                 valueResults.thenAccept(cluster.metrics().values()::putAll))
             .thenApply(nothing -> cluster);
     }
+
+    private String getKafkaVersionFromSpec(Kafka kafka) {
+        return Optional.ofNullable(kafka.getSpec())
+                .map(KafkaSpec::getKafka)
+                .map(KafkaClusterSpec::getVersion)
+                .orElse(null);
+    }
+
 
     private Optional<Kafka> findCluster(KafkaCluster cluster) {
         return findCluster(Cache.namespaceKeyFunc(cluster.namespace(), cluster.name()));

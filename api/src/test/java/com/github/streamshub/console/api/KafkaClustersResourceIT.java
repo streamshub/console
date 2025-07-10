@@ -846,6 +846,61 @@ class KafkaClustersResourceIT {
         assertEquals("value-1", kafkaCR.getMetadata().getAnnotations().get("x-custom-annotation"));
     }
 
+    @ParameterizedTest
+    @CsvSource({
+        "true ,      , 3.6.0, 3.6.0",  // status is null due to paused reconciliation, fallback to spec
+        "false, 3.5.0, 3.6.0, 3.5.0" // status is present, use it
+    })
+    void testKafkaVersionWhenReconciliationPaused(
+            boolean paused,
+            String statusKafkaVersion,
+            String specKafkaVersion,
+            String expectedVersion) {
+        String clusterId = UUID.randomUUID().toString();
+
+        /*
+         * Create a Kafka CR that proxies to kafka1.
+         * test-kafka3 is predefined in KafkaUnsecuredResourceManager
+         */
+        Kafka kafka = new KafkaBuilder(utils.buildKafkaResource("test-kafka3", clusterId, bootstrapServers))
+                .editSpec()
+                    .editKafka()
+                        .withVersion(specKafkaVersion)
+                    .endKafka()
+                .endSpec()
+                .editStatus()
+                    .withKafkaVersion(statusKafkaVersion)
+                .endStatus()
+                .build();
+        utils.apply(client, kafka);
+        // Wait for the added cluster to be configured in the context map
+        await().atMost(10, TimeUnit.SECONDS)
+            .until(() -> configuredContexts.values()
+                    .stream()
+                    .map(KafkaContext::clusterConfig)
+                    .map(KafkaClusterConfig::clusterKey)
+                    .anyMatch(Cache.metaNamespaceKeyFunc(kafka)::equals));
+        whenRequesting(req -> req
+            .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
+            .body(Json.createObjectBuilder()
+                    .add("data", Json.createObjectBuilder()
+                             .add("id", clusterId)
+                            .add("type", com.github.streamshub.console.api.model.KafkaCluster.API_TYPE)
+                            .add("meta", Json.createObjectBuilder()
+                                    .add("reconciliationPaused", paused))
+                            .add("attributes", Json.createObjectBuilder()))
+                    .build()
+                    .toString())
+            .patch("{clusterId1}", clusterId))
+        .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()))
+            .body("data.meta.reconciliationPaused", is(paused));
+        whenRequesting(req -> req.get("{clusterId}", clusterId))
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()))
+            .body("data.attributes.kafkaVersion", is(expectedVersion));
+    }
+
     // Helper methods
 
     static Map<String, Object> mockAdminClient() {
