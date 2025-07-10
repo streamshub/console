@@ -60,7 +60,6 @@ import io.quarkus.test.junit.TestProfile;
 import io.strimzi.api.ResourceAnnotations;
 import io.strimzi.api.kafka.model.kafka.Kafka;
 import io.strimzi.api.kafka.model.kafka.KafkaBuilder;
-import io.strimzi.api.kafka.model.kafka.KafkaStatusBuilder;
 import io.strimzi.api.kafka.model.kafka.listener.KafkaListenerAuthenticationCustomBuilder;
 import io.strimzi.api.kafka.model.kafka.listener.KafkaListenerAuthenticationOAuthBuilder;
 import io.strimzi.api.kafka.model.kafka.listener.KafkaListenerAuthenticationScramSha512Builder;
@@ -849,7 +848,7 @@ class KafkaClustersResourceIT {
 
     @ParameterizedTest
     @CsvSource({
-        "true, null, 3.6.0, 3.6.0",  // status is null due to paused reconciliation, fallback to spec
+        "true ,      , 3.6.0, 3.6.0",  // status is null due to paused reconciliation, fallback to spec
         "false, 3.5.0, 3.6.0, 3.5.0" // status is present, use it
     })
     void testKafkaVersionWhenReconciliationPaused(
@@ -857,37 +856,47 @@ class KafkaClustersResourceIT {
             String statusKafkaVersion,
             String specKafkaVersion,
             String expectedVersion) {
-        Kafka kafka = new KafkaBuilder()
-            .withNewMetadata()
-                .withName("test-kafka1")
-                .withNamespace("default")
-            .endMetadata()
-            .withNewSpec()
-                .withNewKafka()
-                    .withVersion(specKafkaVersion)
-                .endKafka()
-            .endSpec()
-            .withStatus("null".equals(statusKafkaVersion) ? null : new KafkaStatusBuilder().withKafkaVersion(statusKafkaVersion).build()).build();
-        client.resource(kafka).inNamespace("default").serverSideApply();
+        String clusterId = UUID.randomUUID().toString();
 
+        /*
+         * Create a Kafka CR that proxies to kafka1.
+         * test-kafka3 is predefined in KafkaUnsecuredResourceManager
+         */
+        Kafka kafka = new KafkaBuilder(utils.buildKafkaResource("test-kafka3", clusterId, bootstrapServers))
+                .editSpec()
+                    .editKafka()
+                        .withVersion(specKafkaVersion)
+                    .endKafka()
+                .endSpec()
+                .editStatus()
+                    .withKafkaVersion(statusKafkaVersion)
+                .endStatus()
+                .build();
+        utils.apply(client, kafka);
+        // Wait for the added cluster to be configured in the context map
+        await().atMost(10, TimeUnit.SECONDS)
+            .until(() -> configuredContexts.values()
+                    .stream()
+                    .map(KafkaContext::clusterConfig)
+                    .map(KafkaClusterConfig::clusterKey)
+                    .anyMatch(Cache.metaNamespaceKeyFunc(kafka)::equals));
         whenRequesting(req -> req
             .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
             .body(Json.createObjectBuilder()
                     .add("data", Json.createObjectBuilder()
-                             .add("id", clusterId1)
+                             .add("id", clusterId)
                             .add("type", com.github.streamshub.console.api.model.KafkaCluster.API_TYPE)
                             .add("meta", Json.createObjectBuilder()
                                     .add("reconciliationPaused", paused))
                             .add("attributes", Json.createObjectBuilder()))
                     .build()
                     .toString())
-            .patch("{clusterId1}", clusterId1))
+            .patch("{clusterId1}", clusterId))
         .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
             .body("data.meta.reconciliationPaused", is(paused));
-
-        whenRequesting(req -> req.get("{clusterId}", clusterId1))
-        .assertThat() 
+        whenRequesting(req -> req.get("{clusterId}", clusterId))
+            .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
             .body("data.attributes.kafkaVersion", is(expectedVersion));
     }
