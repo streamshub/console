@@ -49,6 +49,8 @@ import io.fabric8.kubernetes.client.informers.cache.Cache;
 import io.strimzi.api.ResourceAnnotations;
 import io.strimzi.api.kafka.model.kafka.Kafka;
 import io.strimzi.api.kafka.model.kafka.KafkaBuilder;
+import io.strimzi.api.kafka.model.kafka.KafkaClusterSpec;
+import io.strimzi.api.kafka.model.kafka.KafkaSpec;
 import io.strimzi.api.kafka.model.kafka.KafkaStatus;
 import io.strimzi.api.kafka.model.kafka.listener.GenericKafkaListener;
 import io.strimzi.api.kafka.model.kafka.listener.GenericKafkaListenerConfiguration;
@@ -321,14 +323,16 @@ public class KafkaClusterService {
             Optional.ofNullable(status.getConditions()).ifPresent(conditions -> {
                 cluster.conditions(conditions.stream().map(Condition::new).toList());
 
-                conditions.stream().filter(c -> "NotReady".equals(c.getType()) && "True".equals(c.getStatus()))
-                        .findFirst().ifPresentOrElse(c -> cluster.status("NotReady"), () -> cluster.status("Ready"));
+                conditions.stream()
+                    .filter(c -> "NotReady".equals(c.getType()) && "True".equals(c.getStatus()))
+                    .findFirst()
+                    .ifPresentOrElse(
+                            c -> cluster.status("NotReady"),
+                            () -> cluster.status("Ready"));
             });
             Optional.ofNullable(status.getKafkaNodePools())
                     .ifPresent(pools -> cluster.nodePools(pools.stream().map(pool -> pool.getName()).toList()));
-        }, () -> {
-            cluster.kafkaVersion(getKafkaVersionFromSpec(kafka));
-        });
+        }, () -> cluster.kafkaVersion(getKafkaVersionFromSpec(kafka)));
     }
 
     KafkaCluster setManaged(KafkaCluster cluster) {
@@ -374,10 +378,10 @@ public class KafkaClusterService {
     }
 
     private String getKafkaVersionFromSpec(Kafka kafka) {
-        if (kafka.getSpec() != null && kafka.getSpec().getKafka() != null) {
-            return kafka.getSpec().getKafka().getVersion();
-        }
-        return null;
+        return Optional.ofNullable(kafka.getSpec())
+                .map(KafkaSpec::getKafka)
+                .map(KafkaClusterSpec::getVersion)
+                .orElse(null);
     }
 
 
