@@ -1,6 +1,6 @@
 import NextIntlProvider from "@/app/[locale]/NextIntlProvider";
 import { Page } from "@patternfly/react-core";
-import type { Preview } from "@storybook/react";
+import type { Preview } from "@storybook/nextjs";
 import "../app/globals.css";
 import messages from "../messages/en.json";
 

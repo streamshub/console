@@ -1,4 +1,4 @@
-import { Meta, StoryObj } from "@storybook/react";
+import { Meta, StoryObj } from "@storybook/nextjs";
 import { FieldReplicas } from "./FieldReplicas";;
 
 const meta: Meta<typeof FieldReplicas> = {

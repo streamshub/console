@@ -1,6 +1,6 @@
 import { Toolbar, ToolbarContent } from "@patternfly/react-core";
-import type { Meta, StoryObj } from "@storybook/react";
-import { expect, userEvent, within } from "@storybook/test";
+import type { Meta, StoryObj } from "@storybook/nextjs";
+import { expect, userEvent, within } from "storybook/test";
 
 import { ChipFilter } from "./ChipFilter";
 import {

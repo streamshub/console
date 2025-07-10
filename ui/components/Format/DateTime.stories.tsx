@@ -1,5 +1,5 @@
-import type { Meta, StoryObj } from "@storybook/react";
-import { expect, waitFor, within } from "@storybook/test";
+import type { Meta, StoryObj } from "@storybook/nextjs";
+import { expect, waitFor, within } from "storybook/test";
 import { DateTime } from "./DateTime";
 
 const meta: Meta<typeof DateTime> = {

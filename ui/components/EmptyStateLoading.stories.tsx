@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/nextjs";
 import { EmptyStateLoading as Comp } from "./EmptyStateLoading";
 
 const meta: Meta<typeof Comp> = {

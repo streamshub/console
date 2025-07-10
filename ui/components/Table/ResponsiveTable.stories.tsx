@@ -1,7 +1,7 @@
 import { EmptyState, EmptyStateBody, Title } from "@patternfly/react-core";
 import { InfoIcon } from "@patternfly/react-icons";
-import type { Meta, StoryObj } from "@storybook/react";
-import { expect, fn, userEvent, within } from "@storybook/test";
+import type { Meta, StoryObj } from "@storybook/nextjs";
+import { expect, fn, userEvent, within } from "storybook/test";
 import type { ResponsiveTableProps } from "./ResponsiveTable";
 import { ResponsiveTable } from "./ResponsiveTable";
 import {

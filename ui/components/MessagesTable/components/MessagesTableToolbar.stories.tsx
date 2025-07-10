@@ -1,5 +1,5 @@
-import type { Meta, StoryObj } from "@storybook/react";
-import { expect, fn, userEvent, within } from "@storybook/test";
+import type { Meta, StoryObj } from "@storybook/nextjs";
+import { expect, fn, userEvent, within } from "storybook/test";
 import { MessagesTableToolbar as Comp } from "./MessagesTableToolbar";
 
 const meta: Meta<typeof Comp> = {

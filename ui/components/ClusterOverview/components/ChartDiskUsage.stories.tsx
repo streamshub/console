@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/nextjs";
 import { ChartDiskUsage } from "./ChartDiskUsage";
 
 const meta: Meta<typeof ChartDiskUsage> = {
