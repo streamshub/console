@@ -288,7 +288,7 @@ export function AdvancedSearch({
                   <GridItem>
                     <FormGroup label={"Retrieve"}>
                       <UntilGroup
-                        limit={limit ?? 50}
+                        limit={limit ?? DEFAULT_LIMIT}
                         onLimitChange={(newLimit) => {
                           if (typeof newLimit === "number" && newLimit >= 0) {
                             previousLimitRef.current = newLimit;
