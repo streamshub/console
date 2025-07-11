@@ -64,7 +64,7 @@ public class KafkaContext implements Closeable {
     public static String clusterId(KafkaClusterConfig clusterConfig, Optional<Kafka> kafkaResource) {
         return Optional.ofNullable(clusterConfig.getId())
                 .or(() -> kafkaResource.map(Kafka::getStatus).map(KafkaStatus::getClusterId))
-                .orElseGet(clusterConfig::getName);
+                .orElseGet(clusterConfig::clusterKeyEncoded);
     }
 
     @Override

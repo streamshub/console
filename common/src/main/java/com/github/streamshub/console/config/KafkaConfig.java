@@ -17,13 +17,22 @@ import io.sundr.builder.annotations.Buildable;
 @Buildable(editableEnabled = false)
 public class KafkaConfig {
 
+    static final String UNIQUE_NAMES_MESSAGE = "Kafka cluster name and namespace combinations must be unique";
+
     @Valid
     List<KafkaClusterConfig> clusters = new ArrayList<>();
 
+    private boolean uniqueNames() {
+        if (clusters == null) {
+            return true;
+        }
+        return clusters.stream().map(KafkaClusterConfig::clusterKey).distinct().count() == clusters.size();
+    }
+
     @JsonIgnore
-    @AssertTrue(message = "Kafka cluster names must be unique")
+    @AssertTrue(message = UNIQUE_NAMES_MESSAGE)
     public boolean hasUniqueClusterNames() {
-        return Named.uniqueNames(clusters);
+        return uniqueNames();
     }
 
     @JsonIgnore
