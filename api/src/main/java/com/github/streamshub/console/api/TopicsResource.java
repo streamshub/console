@@ -210,7 +210,7 @@ public class TopicsResource {
         requestedFields.accept(fields);
 
         ListRequestContext<Topic> listSupport = new ListRequestContext<>(
-                filters.buildPredicates(),
+                filters,
                 Topic.Fields.COMPARATOR_BUILDER,
                 uriInfo.getRequestUri(),
                 listParams,

@@ -1,9 +1,5 @@
 package com.github.streamshub.console.api.model;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.function.Predicate;
-
 import jakarta.ws.rs.QueryParam;
 
 import org.eclipse.microprofile.openapi.annotations.enums.Explode;
@@ -11,11 +7,10 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
 
 import com.github.streamshub.console.api.support.ErrorCategory;
-import com.github.streamshub.console.api.support.FetchFilterPredicate;
 
 import io.xlate.validation.constraints.Expression;
 
-public class KafkaClusterFilterParams {
+public class KafkaClusterFilterParams extends FilterParams {
 
     @QueryParam("filter[name]")
     @Parameter(
@@ -36,13 +31,8 @@ public class KafkaClusterFilterParams {
         node = "filter[name]")
     FetchFilter nameFilter;
 
-    public List<Predicate<KafkaCluster>> buildPredicates() {
-        List<Predicate<KafkaCluster>> predicates = new ArrayList<>();
-        
-        if (nameFilter != null) {
-            predicates.add(new FetchFilterPredicate<>(nameFilter, KafkaCluster::name));
-        }
-
-        return predicates;
+    @Override
+    protected void buildPredicates() {
+        maybeAddPredicate(nameFilter, KafkaCluster.class, KafkaCluster::name);
     }
 }

@@ -136,7 +136,7 @@ public class KafkaRebalancesResource {
         requestedFields.accept(fields);
 
         ListRequestContext<KafkaRebalance> listSupport = new ListRequestContext<>(
-                filters.buildPredicates(),
+                filters,
                 KafkaRebalance.Fields.COMPARATOR_BUILDER,
                 uriInfo.getRequestUri(),
                 listParams,

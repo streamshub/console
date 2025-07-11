@@ -139,7 +139,7 @@ public class KafkaClusterService {
 
         return Stream.concat(configuredClusters.values().stream(), otherClusters.stream())
                 .filter(permissionService.permitted(KafkaCluster.API_TYPE, Privilege.LIST, KafkaCluster::name))
-                .filter(listSupport)
+                .filter(listSupport.filter(KafkaCluster.class))
                 .map(listSupport::tally)
                 .filter(listSupport::betweenCursors)
                 .sorted(listSupport.getSortComparator())

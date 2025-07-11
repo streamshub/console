@@ -118,7 +118,7 @@ public class ConsumerGroupsResource {
 
         requestedFields.accept(fields);
         ListRequestContext<ConsumerGroup> listSupport = new ListRequestContext<>(
-                filters.buildPredicates(),
+                filters,
                 ConsumerGroup.Fields.COMPARATOR_BUILDER,
                 uriInfo.getRequestUri(),
                 listParams,

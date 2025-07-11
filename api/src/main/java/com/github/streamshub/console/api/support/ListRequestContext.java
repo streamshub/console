@@ -2,7 +2,6 @@ package com.github.streamshub.console.api.support;
 
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -17,11 +16,12 @@ import jakarta.json.JsonObject;
 import jakarta.ws.rs.core.UriBuilder;
 
 import com.github.streamshub.console.api.errors.client.InvalidPageCursorException;
+import com.github.streamshub.console.api.model.FilterParams;
 import com.github.streamshub.console.api.model.ListFetchParams;
 
-public class ListRequestContext<T> implements Predicate<T> {
+public class ListRequestContext<T> {
 
-    List<Predicate<T>> filters;
+    final FilterParams filters;
     final ComparatorBuilder<T> comparatorBuilder;
     final URI requestUri;
     final ListFetchParams listParams;
@@ -51,7 +51,7 @@ public class ListRequestContext<T> implements Predicate<T> {
     T firstPageEntry;
     T finalPageEntry;
 
-    public ListRequestContext(List<Predicate<T>> filters, ComparatorBuilder<T> comparatorBuilder, URI requestUri, ListFetchParams listParams, Function<JsonObject, T> cursorMapper) {
+    public ListRequestContext(FilterParams filters, ComparatorBuilder<T> comparatorBuilder, URI requestUri, ListFetchParams listParams, Function<JsonObject, T> cursorMapper) {
         this.filters = Objects.requireNonNull(filters);
         this.comparatorBuilder = comparatorBuilder;
         this.requestUri = requestUri;
@@ -84,7 +84,7 @@ public class ListRequestContext<T> implements Predicate<T> {
     }
 
     public ListRequestContext(ComparatorBuilder<T> comparatorBuilder, URI requestUri, ListFetchParams listParams, Function<JsonObject, T> cursorMapper) {
-        this(Collections.emptyList(), comparatorBuilder, requestUri, listParams, cursorMapper);
+        this(FilterParams.none(), comparatorBuilder, requestUri, listParams, cursorMapper);
     }
 
     static <C> C mapCursor(String name, JsonObject source, Function<JsonObject, C> mapper, List<String> badCursors) {
@@ -96,13 +96,16 @@ public class ListRequestContext<T> implements Predicate<T> {
         }
     }
 
-    public List<Predicate<T>> filters() {
-        return Collections.unmodifiableList(filters);
+    public <P> List<Predicate<P>> filters(Class<P> type) {
+        return filters.getPredicates(type);
     }
 
-    @Override
-    public boolean test(T t) {
-        return filters.isEmpty() || filters.stream().allMatch(filter -> filter.test(t));
+    public <P> Predicate<P> filter(Class<P> type) {
+        var predicates = filters(type);
+        if (predicates.isEmpty()) {
+            return value -> true;
+        }
+        return value -> predicates.stream().allMatch(filter -> filter.test(value));
     }
 
     public T tally(T item) {

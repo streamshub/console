@@ -134,7 +134,7 @@ public class TopicDescribeService {
                     list -> augmentList(adminClient, list, new ArrayList<>(fetchList), offsetSpec),
                     threadContext.currentContextExecutor())
             .thenApply(list -> list.stream()
-                    .filter(listSupport)
+                    .filter(listSupport.filter(Topic.class))
                     .map(topic -> tallySummary(statuses, partitionCount, topic))
                     .map(listSupport::tally)
                     .filter(listSupport::betweenCursors)
