@@ -157,6 +157,21 @@ public class TestPlainProfile implements QuarkusTestProfile {
                       id: test-kafkaY
                       properties:
                         bootstrap.servers: ${console.test.external-bootstrap}
+
+                # Like metricsSources, REST calls to the connect clusters is mocked in the test cases
+                kafkaConnectClusters:
+                  - name: test-connect1
+                    namespace: default
+                    url: http://test-connect1.example.com
+                    kafkaClusters:
+                      - default/test-kafka1
+
+                  - name: test-connect2
+                    namespace: default
+                    url: http://test-connect2.example.com
+                    kafkaClusters:
+                      - default/test-kafka2
+
                 """);
 
         return Map.of("console.config-path", configFile.getAbsolutePath());

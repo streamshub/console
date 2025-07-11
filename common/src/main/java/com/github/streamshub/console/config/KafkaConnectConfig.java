@@ -21,6 +21,8 @@ public class KafkaConnectConfig implements Authenticated, Trustable {
     @NotBlank(message = "Kafka Connect `name` is required")
     private String name;
 
+    private String namespace;
+
     @NotBlank(message = "Kafka Connect `url` is required")
     private String url;
 
@@ -40,6 +42,14 @@ public class KafkaConnectConfig implements Authenticated, Trustable {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public String getNamespace() {
+        return namespace;
+    }
+
+    public void setNamespace(String namespace) {
+        this.namespace = namespace;
     }
 
     public String getUrl() {

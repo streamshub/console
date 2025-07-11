@@ -1,5 +1,6 @@
 package com.github.streamshub.console.api.service;
 
+import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -15,8 +16,8 @@ import java.util.stream.Collectors;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Inject;
+import jakarta.ws.rs.client.ClientRequestContext;
 import jakarta.ws.rs.client.ClientRequestFilter;
 import jakarta.ws.rs.core.HttpHeaders;
 
@@ -34,7 +35,6 @@ import com.github.streamshub.console.api.support.AuthenticationSupport;
 import com.github.streamshub.console.api.support.FieldFilter;
 import com.github.streamshub.console.api.support.KafkaConnectAPI;
 import com.github.streamshub.console.api.support.KafkaConnectAPI.ConnectorOffsets;
-import com.github.streamshub.console.api.support.KafkaContext;
 import com.github.streamshub.console.api.support.ListRequestContext;
 import com.github.streamshub.console.api.support.Promises;
 import com.github.streamshub.console.api.support.TrustStoreSupport;
@@ -72,19 +72,23 @@ public class KafkaConnectService {
     ConsoleConfig consoleConfig;
 
     @Inject
-    KafkaContext kafkaContext;
-
-    @Inject
     PermissionService permissionService;
 
-    @Produces
-    @ApplicationScoped
     Map<String, KafkaConnectAPI> kafkaConnectClients;
 
     Optional<ClientRequestFilter> additionalFilter = Optional.empty();
 
     public /* test */ void setAdditionalFilter(Optional<ClientRequestFilter> additionalFilter) {
         this.additionalFilter = additionalFilter;
+    }
+
+    private class ProxyRequestFilter implements ClientRequestFilter {
+        @Override
+        public void filter(ClientRequestContext requestContext) throws IOException {
+            if (additionalFilter.isPresent()) {
+                additionalFilter.get().filter(requestContext);
+            }
+        }
     }
 
     @PostConstruct
@@ -102,9 +106,8 @@ public class KafkaConnectService {
         RestClientBuilder builder = RestClientBuilder.newBuilder()
                 .baseUri(URI.create(config.getUrl()))
                 .trustStore(trustStore)
-                .register(createAuthenticationFilter(config));
-
-        additionalFilter.ifPresent(builder::register);
+                .register(createAuthenticationFilter(config))
+                .register(new ProxyRequestFilter());
 
         return builder.build(KafkaConnectAPI.class);
     }
@@ -225,8 +228,8 @@ public class KafkaConnectService {
         var clusterPromise = includeCluster ? describeCluster(clusterName, fields, fetchParams) : PROMISE_NULL_CLUSTER;
 
         var topicsPromise = includeTopics
-                ? describeConnectorTopics(clusterName, connectorName)
-               : PROMISE_NULL_TOPICS;
+            ? describeConnectorTopics(clusterName, connectorName)
+            : PROMISE_NULL_TOPICS;
 
         var offsetPromise = includeOffsets
             ? describeConnectorOffsets(clusterName, connectorName)

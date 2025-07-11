@@ -1,0 +1,89 @@
+test-connect1.example.com:
+  "":
+    commit: abc123d
+    kafka_cluster_id: k1-id
+    version: 4.0.0
+  "/connector-plugins":
+    - class: org.apache.kafka.connect.mirror.MirrorCheckpointConnector
+      type: source
+      version: 4.0.0
+    - class: org.apache.kafka.connect.mirror.MirrorHeartbeatConnector
+      type: source
+      version: 4.0.0
+    - class: org.apache.kafka.connect.mirror.MirrorSourceConnector
+      type: source
+      version: 4.0.0
+  "/connectors":
+    - connect1-connector1
+    - connect1-connector2
+  "/connectors/connect1-connector1":
+    config: {}
+    name: connect1-connector1
+    tasks: []
+    type: source
+  "/connectors/connect1-connector1/status":
+    name: connect1-connector1
+    tasks: []
+    type: source
+    connector:
+      state: running
+      trace: null
+      worker_id: node1.test-cluster.example.com
+  "/connectors/connect1-connector2":
+    config: {}
+    name: connect1-connector2
+    tasks: []
+    type: source
+  "/connectors/connect1-connector2/status":
+    name: connect1-connector2
+    tasks: []
+    type: source
+    connector:
+      state: running
+      trace: null
+      worker_id: node2.test-cluster.example.com
+
+test-connect2.example.com:
+  "":
+    commit: zyx987w
+    kafka_cluster_id: k2-id
+    version: 4.0.1
+  "/connector-plugins":
+    - class: org.apache.kafka.connect.mirror.MirrorCheckpointConnector
+      type: source
+      version: 4.0.1
+    - class: org.apache.kafka.connect.mirror.MirrorHeartbeatConnector
+      type: source
+      version: 4.0.1
+    - class: org.apache.kafka.connect.mirror.MirrorSourceConnector
+      type: source
+      version: 4.0.1
+  "/connectors":
+    - connect2-connector1
+    - connect2-connector2
+  "/connectors/connect2-connector1":
+    config: {}
+    name: connect2-connector1
+    tasks: []
+    type: source
+  "/connectors/connect2-connector1/status":
+    name: connect2-connector1
+    tasks: []
+    type: source
+    connector:
+      state: running
+      trace: null
+      worker_id: node1.test-cluster.example.com
+  "/connectors/connect2-connector2":
+    config: {}
+    name: connect2-connector2
+    tasks: []
+    type: source
+  "/connectors/connect2-connector2/status":
+    name: connect2-connector2
+    tasks: []
+    type: source
+    connector:
+      state: running
+      trace: null
+      worker_id: node1.test-cluster.example.com
