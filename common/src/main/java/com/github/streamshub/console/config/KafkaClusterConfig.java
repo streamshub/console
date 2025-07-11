@@ -1,5 +1,6 @@
 package com.github.streamshub.console.config;
 
+import java.util.Base64;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -44,6 +45,11 @@ public class KafkaClusterConfig implements Named {
     @JsonIgnore
     public String clusterKey() {
         return hasNamespace() ? "%s/%s".formatted(namespace, name) : name;
+    }
+
+    @JsonIgnore
+    public String clusterKeyEncoded() {
+        return Base64.getUrlEncoder().encodeToString(clusterKey().getBytes());
     }
 
     @JsonIgnore
