@@ -2,6 +2,7 @@ package com.github.streamshub.console.config;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.UUID;
 
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
@@ -89,7 +90,21 @@ class ConsoleConfigTest {
         var violations = validator.validate(config);
 
         assertEquals(1, violations.size());
-        assertEquals("Kafka cluster names must be unique", violations.iterator().next().getMessage());
+        assertEquals(KafkaConfig.UNIQUE_NAMES_MESSAGE, violations.iterator().next().getMessage());
+    }
+
+    @Test
+    void testKafkaNamesWithUniqueNamespacesPassValidation() {
+        for (String name : List.of("name1", "name2", "name1")) {
+            KafkaClusterConfig cluster = new KafkaClusterConfig();
+            cluster.setName(name);
+            cluster.setNamespace(UUID.randomUUID().toString());
+            config.getKafka().getClusters().add(cluster);
+        }
+
+        var violations = validator.validate(config);
+
+        assertTrue(violations.isEmpty());
     }
 
     @Test
