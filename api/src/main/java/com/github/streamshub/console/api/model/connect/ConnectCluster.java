@@ -90,7 +90,8 @@ public class ConnectCluster extends JsonApiResource<ConnectCluster.Attributes, C
                         Map.of("id", ID_COMPARATOR,
                                 NAME.value, comparing(ConnectCluster::name),
                                 NAMESPACE.value, nullable(ConnectCluster::namespace),
-                                CREATION_TIMESTAMP.value, nullable(ConnectCluster::creationTimestamp)));
+                                CREATION_TIMESTAMP.value, nullable(ConnectCluster::creationTimestamp),
+                                VERSION.value, nullable(ConnectCluster::version)));
 
         public static final ComparatorBuilder<ConnectCluster> COMPARATOR_BUILDER =
                 new ComparatorBuilder<>(ConnectCluster.Fields::comparator, ConnectCluster.Fields.defaultComparator());
@@ -246,6 +247,10 @@ public class ConnectCluster extends JsonApiResource<ConnectCluster.Attributes, C
 
     public void kafkaClusterId(String kafkaClusterId) {
         attributes.kafkaClusterId = kafkaClusterId;
+    }
+
+    public String version() {
+        return attributes.version;
     }
 
     public void version(String version) {
