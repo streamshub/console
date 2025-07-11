@@ -86,7 +86,7 @@ const TopicSchema = z.object({
   }),
   relationships: z.object({
     consumerGroups: z.object({
-      meta: z.record(z.any()).optional(),
+      meta: z.record(z.string(), z.any()).optional(),
       data: z.array(z.any()),
     }).optional().nullable(),
   }),

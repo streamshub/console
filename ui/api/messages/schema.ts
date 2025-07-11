@@ -23,7 +23,7 @@ export const MessageSchema = z.object({
     offset: z.number(),
     timestamp: z.string(),
     timestampType: z.string(),
-    headers: z.record(z.any()),
+    headers: z.record(z.string(), z.any()),
     key: z.string().nullable(),
     value: z.string().nullable(),
     size: z.number().optional(),
