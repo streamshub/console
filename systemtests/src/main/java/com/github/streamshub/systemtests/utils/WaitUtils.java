@@ -87,35 +87,79 @@ public class WaitUtils {
      * @param namespaceName the namespace in which the pods should exist
      * @param selector      the label selector used to find matching pods
      * @param expectPods    the expected number of pods
-     * @param containers    whether to verify that all containers are also ready
+     * @param checkContainers    whether to verify that all containers are also ready
      * @param onTimeout     a runnable to invoke if the readiness check times out
      */
-    public static void waitForPodsReady(String namespaceName, LabelSelector selector, int expectPods, boolean containers, Runnable onTimeout) {
+    public static void waitForPodsReady(String namespaceName, LabelSelector selector, int expectPods, boolean checkContainers, Runnable onTimeout) {
         Wait.until("readiness of all Pods matching: " + selector,
             TimeConstants.POLL_INTERVAL_FOR_RESOURCE_READINESS, TestFrameConstants.GLOBAL_TIMEOUT_MEDIUM,
-            () -> {
-                List<Pod> pods = ResourceUtils.listKubeResourcesByLabelSelector(Pod.class, namespaceName, selector);
-                if (pods.isEmpty() || pods.size() != expectPods) {
-                    LOGGER.debug("Expected pods: {}/{} are not ready", namespaceName, selector);
+            () -> arePodsReady(namespaceName, selector, expectPods, checkContainers),
+            onTimeout
+        );
+    }
+
+    /**
+     * Checks if the expected number of Pods in the given namespace are ready, based on the provided label selector.
+     * <p>
+     * This method retrieves all Pods matching the label selector and verifies:
+     * <ul>
+     *     <li>The total number of Pods matches the expected count.</li>
+     *     <li>Each Pod is in the Ready state.</li>
+     *     <li>If {@code checkContainers} is true, it also verifies that all containers in each Pod are ready.</li>
+     * </ul>
+     * </p>
+     *
+     * @param namespaceName   the namespace in which to look for Pods
+     * @param selector        the label selector used to filter the Pods
+     * @param expectPods      the expected number of Pods
+     * @param checkContainers whether to also check if all containers inside the Pods are ready
+     * @return {@code true} if all expected Pods are ready (and containers, if checked), {@code false} otherwise
+     */
+    private static boolean arePodsReady(String namespaceName, LabelSelector selector, int expectPods, boolean checkContainers) {
+        List<Pod> pods = ResourceUtils.listKubeResourcesByLabelSelector(Pod.class, namespaceName, selector);
+        if (pods.isEmpty() && pods.size() != expectPods) {
+            LOGGER.debug("Expected pods: {}/{} are not ready", namespaceName, selector);
+            return false;
+        }
+
+        for (Pod pod : pods) {
+            if (!isPodAndContainersReady(pod, namespaceName, checkContainers)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Checks whether the given Pod is ready, and optionally verifies that all containers within the Pod are ready.
+     * <p>
+     * The readiness of the Pod itself is checked first using {@link Readiness#isPodReady(Pod)}.
+     * If {@code checkContainers} is {@code true}, the readiness of each container within the Pod
+     * is also validated.
+     * </p>
+     *
+     * @param pod             the Pod object to check
+     * @param namespaceName   the namespace of the Pod, used for logging purposes
+     * @param checkContainers if {@code true}, also checks readiness of each container inside the Pod
+     * @return {@code true} if the Pod (and optionally all containers) are ready, {@code false} otherwise
+     */
+    private static boolean isPodAndContainersReady(Pod pod, String namespaceName, boolean checkContainers) {
+        if (!Readiness.isPodReady(pod)) {
+            LOGGER.debug("Pod not ready: {}/{}", namespaceName, pod.getMetadata().getName());
+            return false;
+        }
+
+        if (checkContainers) {
+            for (ContainerStatus cs : pod.getStatus().getContainerStatuses()) {
+                if (Boolean.FALSE.equals(cs.getReady())) {
+                    LOGGER.debug("Container: {} of Pod: {}/{} not ready", namespaceName, pod.getMetadata().getName(), cs.getName());
                     return false;
                 }
-                for (Pod pod : pods) {
-                    if (!Readiness.isPodReady(pod)) {
-                        LOGGER.debug("Pod not ready: {}/{}", namespaceName, pod.getMetadata().getName());
-                        return false;
-                    }
+            }
+        }
 
-                    if (containers) {
-                        for (ContainerStatus cs : pod.getStatus().getContainerStatuses()) {
-                            if (Boolean.FALSE.equals(cs.getReady())) {
-                                LOGGER.debug("Container: {} of Pod: {}/{} not ready", namespaceName, pod.getMetadata().getName(), cs.getName());
-                                return false;
-                            }
-                        }
-                    }
-                }
-                return true;
-            }, onTimeout);
+        return true;
     }
 
     /**
