@@ -93,7 +93,7 @@ export function AdvancedSearch({
 
   const getParameters = useCallback((): SearchParams => {
     const from = ((): SearchParams["from"] => {
-      if (fromOffset) {
+      if (fromOffset !== undefined) {
         return { type: "offset", value: fromOffset };
       } else if (fromEpoch) {
         return { type: "epoch", value: fromEpoch };
