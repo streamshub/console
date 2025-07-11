@@ -29,6 +29,6 @@ public class ClusterUtils {
         if (isOcp()) {
             return "apps." + ResourceUtils.getKubeResource(DNS.class, "cluster").getSpec().getBaseDomain();
         }
-        return Environment.CLUSTER_DOMAIN;
+        return Environment.CONSOLE_CLUSTER_DOMAIN;
     }
 }

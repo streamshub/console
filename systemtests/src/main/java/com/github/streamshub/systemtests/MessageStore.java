@@ -114,4 +114,9 @@ public class MessageStore {
     public static String noDataTitle() {
         return jsonResources.get(MESSAGE_BROWSER).get("no_data_title").textValue();
     }
+    public static String noDataBody() {
+        return jsonResources.get(MESSAGE_BROWSER).get("no_data_title").textValue();
+    }
+
+
 }

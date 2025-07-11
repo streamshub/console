@@ -51,12 +51,12 @@ public class YamlConfig extends InstallConfig {
 
     @Override
     public void install() {
-        KubeResourceManager.get().createResourceWithoutWait(getBundleCrds());
-        KubeResourceManager.get().createResourceWithoutWait(getBundleServiceAccount());
-        KubeResourceManager.get().createResourceWithoutWait(getBundleClusterRoles());
-        KubeResourceManager.get().createResourceWithoutWait(getBundleClusterRoleBindings());
-        KubeResourceManager.get().createResourceWithoutWait(getBundleRoleBindings());
-        KubeResourceManager.get().createResourceWithWait(getBundleDeployment());
+        KubeResourceManager.get().createOrUpdateResourceWithWait(getBundleCrds());
+        KubeResourceManager.get().createOrUpdateResourceWithWait(getBundleServiceAccount());
+        KubeResourceManager.get().createOrUpdateResourceWithWait(getBundleClusterRoles());
+        KubeResourceManager.get().createOrUpdateResourceWithWait(getBundleClusterRoleBindings());
+        KubeResourceManager.get().createOrUpdateResourceWithWait(getBundleRoleBindings());
+        KubeResourceManager.get().createOrUpdateResourceWithWait(getBundleDeployment());
     }
 
     private CustomResourceDefinition[] getBundleCrds() {

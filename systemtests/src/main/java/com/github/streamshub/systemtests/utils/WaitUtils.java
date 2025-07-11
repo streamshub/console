@@ -22,6 +22,7 @@ import io.skodjob.testframe.resources.KubeResourceManager;
 import io.skodjob.testframe.wait.Wait;
 import io.strimzi.api.kafka.model.kafka.Kafka;
 import io.strimzi.api.kafka.model.nodepool.KafkaNodePool;
+import io.strimzi.api.kafka.model.topic.KafkaTopic;
 import org.apache.logging.log4j.Logger;
 
 import java.util.List;
@@ -86,35 +87,79 @@ public class WaitUtils {
      * @param namespaceName the namespace in which the pods should exist
      * @param selector      the label selector used to find matching pods
      * @param expectPods    the expected number of pods
-     * @param containers    whether to verify that all containers are also ready
+     * @param checkContainers    whether to verify that all containers are also ready
      * @param onTimeout     a runnable to invoke if the readiness check times out
      */
-    public static void waitForPodsReady(String namespaceName, LabelSelector selector, int expectPods, boolean containers, Runnable onTimeout) {
+    public static void waitForPodsReady(String namespaceName, LabelSelector selector, int expectPods, boolean checkContainers, Runnable onTimeout) {
         Wait.until("readiness of all Pods matching: " + selector,
             TimeConstants.POLL_INTERVAL_FOR_RESOURCE_READINESS, TestFrameConstants.GLOBAL_TIMEOUT_MEDIUM,
-            () -> {
-                List<Pod> pods = ResourceUtils.listKubeResourcesByLabelSelector(Pod.class, namespaceName, selector);
-                if (pods.isEmpty() || pods.size() != expectPods) {
-                    LOGGER.debug("Expected pods: {}/{} are not ready", namespaceName, selector);
+            () -> arePodsReady(namespaceName, selector, expectPods, checkContainers),
+            onTimeout
+        );
+    }
+
+    /**
+     * Checks if the expected number of Pods in the given namespace are ready, based on the provided label selector.
+     * <p>
+     * This method retrieves all Pods matching the label selector and verifies:
+     * <ul>
+     *     <li>The total number of Pods matches the expected count.</li>
+     *     <li>Each Pod is in the Ready state.</li>
+     *     <li>If {@code checkContainers} is true, it also verifies that all containers in each Pod are ready.</li>
+     * </ul>
+     * </p>
+     *
+     * @param namespaceName   the namespace in which to look for Pods
+     * @param selector        the label selector used to filter the Pods
+     * @param expectPods      the expected number of Pods
+     * @param checkContainers whether to also check if all containers inside the Pods are ready
+     * @return {@code true} if all expected Pods are ready (and containers, if checked), {@code false} otherwise
+     */
+    private static boolean arePodsReady(String namespaceName, LabelSelector selector, int expectPods, boolean checkContainers) {
+        List<Pod> pods = ResourceUtils.listKubeResourcesByLabelSelector(Pod.class, namespaceName, selector);
+        if (pods.isEmpty() && pods.size() != expectPods) {
+            LOGGER.debug("Expected pods: {}/{} are not ready", namespaceName, selector);
+            return false;
+        }
+
+        for (Pod pod : pods) {
+            if (!isPodAndContainersReady(pod, namespaceName, checkContainers)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Checks whether the given Pod is ready, and optionally verifies that all containers within the Pod are ready.
+     * <p>
+     * The readiness of the Pod itself is checked first using {@link Readiness#isPodReady(Pod)}.
+     * If {@code checkContainers} is {@code true}, the readiness of each container within the Pod
+     * is also validated.
+     * </p>
+     *
+     * @param pod             the Pod object to check
+     * @param namespaceName   the namespace of the Pod, used for logging purposes
+     * @param checkContainers if {@code true}, also checks readiness of each container inside the Pod
+     * @return {@code true} if the Pod (and optionally all containers) are ready, {@code false} otherwise
+     */
+    private static boolean isPodAndContainersReady(Pod pod, String namespaceName, boolean checkContainers) {
+        if (!Readiness.isPodReady(pod)) {
+            LOGGER.debug("Pod not ready: {}/{}", namespaceName, pod.getMetadata().getName());
+            return false;
+        }
+
+        if (checkContainers) {
+            for (ContainerStatus cs : pod.getStatus().getContainerStatuses()) {
+                if (Boolean.FALSE.equals(cs.getReady())) {
+                    LOGGER.debug("Container: {} of Pod: {}/{} not ready", namespaceName, pod.getMetadata().getName(), cs.getName());
                     return false;
                 }
-                for (Pod pod : pods) {
-                    if (!Readiness.isPodReady(pod)) {
-                        LOGGER.debug("Pod not ready: {}/{}", namespaceName, pod.getMetadata().getName());
-                        return false;
-                    }
+            }
+        }
 
-                    if (containers) {
-                        for (ContainerStatus cs : pod.getStatus().getContainerStatuses()) {
-                            if (Boolean.FALSE.equals(cs.getReady())) {
-                                LOGGER.debug("Container: {} of Pod: {}/{} not ready", namespaceName, pod.getMetadata().getName(), cs.getName());
-                                return false;
-                            }
-                        }
-                    }
-                }
-                return true;
-            }, onTimeout);
+        return true;
     }
 
     /**
@@ -177,6 +222,20 @@ public class WaitUtils {
             });
     }
 
+    /**
+     * Waits until a Kafka custom resource in the given namespace no longer has the specified annotation key.
+     * <p>
+     * This method polls the Kafka resource's annotations at regular intervals and completes
+     * when the annotation key is no longer present or the annotations are empty.
+     * It uses a short global timeout and polling interval.
+     * </p>
+     *
+     * @param namespaceName the namespace where the Kafka cluster resides
+     * @param clusterName   the name of the Kafka cluster
+     * @param annotationKey the annotation key to check for removal
+     *
+     * @throws AssertionError if the annotation key still exists after the timeout
+     */
     public static void waitForKafkaHasNoAnnotationWithKey(String namespaceName, String clusterName, String annotationKey) {
         Wait.until(String.format("Kafka %s/%s has annotation %s", namespaceName, clusterName, annotationKey),
             TestFrameConstants.GLOBAL_POLL_INTERVAL_SHORT, TestFrameConstants.GLOBAL_TIMEOUT_SHORT,
@@ -253,6 +312,22 @@ public class WaitUtils {
         waitForClientSuccess(namespace, consumerName, messageCount, deleteAfterSuccess);
     }
 
+    /**
+     * Waits for a Kubernetes Job (representing a Kafka client) to complete successfully,
+     * and optionally deletes the Job resource after successful completion.
+     * <p>
+     * This method polls the Job status periodically using {@code JobUtils.checkSucceededJobStatus}
+     * until the Job has succeeded or the timeout (based on message count) is reached.
+     * Logs the current Job status during waiting via {@code JobUtils.logCurrentJobStatus}.
+     * </p>
+     *
+     * @param namespaceName       the namespace in which the Job is deployed
+     * @param jobName             the name of the Job resource
+     * @param messageCount        the expected number of messages (used to calculate the timeout duration)
+     * @param deleteAfterSuccess  if true, deletes the Job resource after successful completion
+     *
+     * @throws AssertionError if the Job does not succeed within the timeout window
+     */
     public static void waitForClientSuccess(String namespaceName, String jobName, int messageCount, boolean deleteAfterSuccess) {
         LOGGER.info("Waiting for client Job: {}/{} to finish successfully", namespaceName, jobName);
         Wait.until("client Job to finish successfully", TestFrameConstants.GLOBAL_POLL_INTERVAL_SHORT, TimeConstants.timeoutForClientFinishJob(messageCount),
@@ -262,5 +337,30 @@ public class WaitUtils {
         if (deleteAfterSuccess) {
             KubeResourceManager.get().deleteResourceWithWait(ResourceUtils.getKubeResource(Job.class, namespaceName, jobName));
         }
+    }
+
+    /**
+     * Waits until the specified KafkaTopic resource in the given namespace has a non-null Topic ID,
+     * then returns that ID.
+     * <p>
+     * This method continuously polls the KafkaTopic resource using {@code ResourceUtils.getKubeResource}
+     * until the {@code status.topicId} field is populated or a timeout is reached.
+     * </p>
+     *
+     * @param namespace the Kubernetes namespace where the KafkaTopic resides
+     * @param topicName the name of the KafkaTopic resource to monitor
+     * @return the {@code topicId} from the KafkaTopic's status once it becomes available
+     *
+     * @throws AssertionError if the topic ID is not available within the configured timeout
+     */
+    public static String waitForKafkaTopicToHaveIdAndReturn(String namespace, String topicName) {
+        Wait.until(String.format("KafkaTopic %s/%s has an ID", namespace, topicName),
+            TimeConstants.POLL_INTERVAL_FOR_RESOURCE_READINESS, TimeConstants.GLOBAL_STATUS_TIMEOUT,
+            () -> {
+                KafkaTopic topic = ResourceUtils.getKubeResource(KafkaTopic.class, namespace, topicName);
+                return topic != null && topic.getStatus() != null && topic.getStatus().getTopicId() != null;
+            });
+
+        return ResourceUtils.getKubeResource(KafkaTopic.class, namespace, topicName).getStatus().getTopicId();
     }
 }

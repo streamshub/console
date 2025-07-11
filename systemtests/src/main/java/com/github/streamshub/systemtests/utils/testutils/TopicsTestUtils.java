@@ -7,7 +7,8 @@ import com.github.streamshub.systemtests.enums.FilterType;
 import com.github.streamshub.systemtests.enums.TopicStatus;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.utils.playwright.PwUtils;
-import com.github.streamshub.systemtests.utils.playwright.locators.CssSelectors;
+import com.github.streamshub.systemtests.locators.CssSelectors;
+import com.github.streamshub.systemtests.locators.TopicsPageSelectors;
 import com.microsoft.playwright.Locator;
 import org.apache.logging.log4j.Logger;
 
@@ -43,7 +44,7 @@ public class TopicsTestUtils {
             String currentAttribute = locator.getAttribute("aria-sort");
             if (currentAttribute == null || !currentAttribute.equals(attributeVal)) {
                 LOGGER.warn("Locator is present, but its attribute is not equal to {}", attributeVal);
-                tcc.page().click(selectorSortButton);
+                PwUtils.waitForLocatorAndClick(tcc, selectorSortButton);
                 PwUtils.sleepWaitForComponent(TimeConstants.UI_COMPONENT_REACTION_INTERVAL_SHORT);
                 continue;
             }
@@ -66,10 +67,10 @@ public class TopicsTestUtils {
      */
     public static void selectFilter(TestCaseConfig tcc, FilterType filterType) {
         LOGGER.debug("Selecting topic filter type [{}]", filterType.getName());
-        PwUtils.waitForLocatorVisible(tcc, CssSelectors.TOPICS_PAGE_TOP_TOOLBAR_FILTER_TYPE_DROPDOWN);
+        PwUtils.waitForLocatorVisible(tcc, TopicsPageSelectors.TPS_TOP_TOOLBAR_FILTER_TYPE_DROPDOWN);
 
         for (int i = 0; i < Constants.SELECTOR_RETRIES; i++) {
-            String currentText = CssSelectors.getLocator(tcc, CssSelectors.TOPICS_PAGE_TOP_TOOLBAR_FILTER_TYPE_DROPDOWN).innerText();
+            String currentText = CssSelectors.getLocator(tcc, TopicsPageSelectors.TPS_TOP_TOOLBAR_FILTER_TYPE_DROPDOWN).innerText();
 
             LOGGER.debug("Filter type contains [{}]", currentText);
 
@@ -80,14 +81,14 @@ public class TopicsTestUtils {
             }
 
             // Attempt to open the dropdown
-            tcc.page().focus(CssSelectors.TOPICS_PAGE_TOP_TOOLBAR_FILTER_TYPE_DROPDOWN);
-            tcc.page().click(CssSelectors.TOPICS_PAGE_TOP_TOOLBAR_FILTER_TYPE_DROPDOWN);
+            tcc.page().focus(TopicsPageSelectors.TPS_TOP_TOOLBAR_FILTER_TYPE_DROPDOWN);
+            PwUtils.waitForLocatorAndClick(tcc, TopicsPageSelectors.TPS_TOP_TOOLBAR_FILTER_TYPE_DROPDOWN);
 
             // Select the item if it's visible
-            Locator dropdownItem = CssSelectors.getLocator(tcc, CssSelectors.TOPICS_PAGE_TOP_TOOLBAR_FILTER_TYPE_DROPDOWN_ITEMS).nth(filterType.getPosition());
+            Locator dropdownItem = CssSelectors.getLocator(tcc, TopicsPageSelectors.TPS_TOP_TOOLBAR_FILTER_TYPE_DROPDOWN_ITEMS).nth(filterType.getPosition());
 
             if (dropdownItem.isVisible()) {
-                dropdownItem.click();
+                PwUtils.clickWithRetry(dropdownItem);
             } else {
                 LOGGER.warn("Filter type in dropdown [{}] not visible", filterType.getName());
             }
@@ -107,9 +108,9 @@ public class TopicsTestUtils {
      */
     public static void selectTopicStatus(TestCaseConfig tcc, TopicStatus topicStatus) {
         LOGGER.debug("Selecting topic status [{}]", topicStatus.getName());
-        PwUtils.waitForLocatorVisible(tcc, CssSelectors.TOPICS_PAGE_TOP_TOOLBAR_FILTER_BY_STATUS_DROPDOWN);
+        PwUtils.waitForLocatorVisible(tcc, TopicsPageSelectors.TPS_TOP_TOOLBAR_FILTER_BY_STATUS_DROPDOWN);
         for (int i = 0; i < Constants.SELECTOR_RETRIES; i++) {
-            String currentFilters = CssSelectors.getLocator(tcc, CssSelectors.TOPICS_PAGE_TOP_TOOLBAR_SEARCH_CURRENT_STATUS_ITEMS).allInnerTexts().toString();
+            String currentFilters = CssSelectors.getLocator(tcc, TopicsPageSelectors.TPS_TOP_TOOLBAR_SEARCH_CURRENT_STATUS_ITEMS).allInnerTexts().toString();
 
             LOGGER.debug("Locator contains {}", currentFilters);
             // Break the loop if the expected status is present
@@ -119,15 +120,15 @@ public class TopicsTestUtils {
             }
 
             // Open status dropdown
-            tcc.page().focus(CssSelectors.TOPICS_PAGE_TOP_TOOLBAR_FILTER_BY_STATUS_DROPDOWN);
-            tcc.page().click(CssSelectors.TOPICS_PAGE_TOP_TOOLBAR_FILTER_BY_STATUS_DROPDOWN);
+            tcc.page().focus(TopicsPageSelectors.TPS_TOP_TOOLBAR_FILTER_BY_STATUS_DROPDOWN);
+            PwUtils.waitForLocatorAndClick(tcc, TopicsPageSelectors.TPS_TOP_TOOLBAR_FILTER_BY_STATUS_DROPDOWN);
             PwUtils.sleepWaitForComponent(TimeConstants.UI_COMPONENT_REACTION_INTERVAL_SHORT);
 
             // Wait for dropdown item and click
-            Locator dropdownItem = CssSelectors.getLocator(tcc, CssSelectors.TOPICS_PAGE_TOP_TOOLBAR_FILTER_BY_STATUS_DROPDOWN_ITEMS).nth(topicStatus.getPosition());
+            Locator dropdownItem = CssSelectors.getLocator(tcc, TopicsPageSelectors.TPS_TOP_TOOLBAR_FILTER_BY_STATUS_DROPDOWN_ITEMS).nth(topicStatus.getPosition());
 
             if (dropdownItem.isVisible()) {
-                dropdownItem.click();
+                PwUtils.clickWithRetry(dropdownItem);
                 PwUtils.sleepWaitForComponent(TimeConstants.UI_COMPONENT_REACTION_INTERVAL_SHORT);
             } else {
                 LOGGER.warn("Dropdown item topic status [{}] not visible", topicStatus.getName());
