@@ -166,6 +166,14 @@ export function AdvancedSearch({
     }
   }, [doSubmit, shouldSubmit]);
 
+  function setLiveMode(enabled: boolean) {
+    if (enabled) {
+      setLimit("continuously");
+    } else {
+      setLimit(50); // or restore previous limit if available
+    }
+  }
+
   const searchInput = (
     <SearchInput
       value={searchInputValue}
@@ -270,9 +278,7 @@ export function AdvancedSearch({
                               : limit;
                           setLimit(validatedLimit);
                         }}
-                        onLive={() => {
-                          setLimit("continuously");
-                        }}
+                        onLive={setLiveMode}
                       />
                     </FormGroup>
                   </GridItem>
