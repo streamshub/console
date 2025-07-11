@@ -215,6 +215,7 @@ class KafkaConnectsResourceIT implements ClientRequestFilter {
         whenRequesting(req -> req
                 .param("filter[kafkaClusters]", "in," + kafkaCluster)
                 .param("fields[connects]", "connectors")
+                .param("include", "connectors")
                 .get())
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
