@@ -102,8 +102,9 @@ export type NodeListResponse = z.infer<typeof NodeSchema>;
 const ConfigSchema = z.object({
   id: z.string().optional(),
   type: z.string(),
-  meta: z.record(z.any()).optional(),
+  meta: z.record(z.string(), z.any()).optional(),
   attributes: z.record(
+    z.string(),
     z.object({
       value: z.string().optional(),
       source: z.string().readonly(),

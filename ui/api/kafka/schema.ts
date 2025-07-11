@@ -92,6 +92,7 @@ const ClusterDetailSchema = z.object({
     metrics: z
       .object({
         values: z.record(
+          z.string(),
           z.array(
             z.object({
               value: z.string(),
@@ -100,9 +101,10 @@ const ClusterDetailSchema = z.object({
           ),
         ),
         ranges: z.record(
+          z.string(),
           z.array(
             z.object({
-              range: z.array(z.array(z.string(), z.string())),
+              range: z.array(z.tuple([z.string(), z.string()])),
               nodeId: z.string().optional(),
             }),
           ),
