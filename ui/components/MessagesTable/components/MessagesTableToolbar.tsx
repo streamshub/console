@@ -96,7 +96,7 @@ export function MessagesTableToolbar({
         <ToolbarItem
           variant={"label"}
           style={{
-            maxWidth: 700,
+            width: "700px",
           }}
         >
           <AdvancedSearch

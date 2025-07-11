@@ -9,6 +9,8 @@ import {
 } from "@/libs/patternfly/react-core";
 import { useState } from "react";
 
+const DEFAULT_LIMIT_FOR_UNTIL_GROUP = 50;
+
 type Category = "limit" | "live";
 export type UntilGroupProps = {
   limit?: number | "continuously";
@@ -17,7 +19,7 @@ export type UntilGroupProps = {
 };
 
 export function UntilGroup({
-  limit = 50,
+  limit = DEFAULT_LIMIT_FOR_UNTIL_GROUP,
   onLimitChange,
   onLive,
 }: UntilGroupProps) {
@@ -33,7 +35,7 @@ export function UntilGroup({
   function handleLimit() {
     setCategory("limit");
     setIsCategoryMenuOpen(false);
-    onLimitChange(50);
+    onLimitChange(DEFAULT_LIMIT_FOR_UNTIL_GROUP);
     onLive(false);
   }
 
@@ -74,7 +76,9 @@ export function UntilGroup({
       {category === "limit" && (
         <FlexItem>
           <LimitSelector
-            value={limit !== "continuously" ? limit : 50}
+            value={
+              limit !== "continuously" ? limit : DEFAULT_LIMIT_FOR_UNTIL_GROUP
+            }
             onChange={onLimitChange}
           />
         </FlexItem>

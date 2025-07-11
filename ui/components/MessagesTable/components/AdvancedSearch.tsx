@@ -57,13 +57,19 @@ export function AdvancedSearch({
   | "partitions"
 >) {
   const t = useTranslations();
+  const DEFAULT_LIMIT = 50;
   const searchInputRef = useRef<HTMLInputElement>(null);
   const paneRef = useRef(null);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [query, setQuery] = useState(filterQuery);
   const [where, setWhere] = useState(filterWhere);
   const [partition, setPartition] = useState(filterPartition);
-  const [limit, setLimit] = useState(filterLimit);
+  const [limit, setLimit] = useState<number | "continuously">(
+    filterLimit ?? DEFAULT_LIMIT,
+  );
+  const previousLimitRef = useRef<number | "continuously">(
+    filterLimit ?? DEFAULT_LIMIT,
+  );
   const [fromEpoch, setFromEpoch] = useState(filterEpoch);
   const [fromTimestamp, setFromTimestamp] = useState(filterTimestamp);
   const [fromOffset, setFromOffset] = useState(filterOffset);
@@ -80,7 +86,7 @@ export function AdvancedSearch({
     setQuery(undefined);
     setLatest();
     setPartition(undefined);
-    setLimit(50);
+    setLimit(DEFAULT_LIMIT);
     setShouldSubmit(true);
   }
 
@@ -93,7 +99,7 @@ export function AdvancedSearch({
 
   const getParameters = useCallback((): SearchParams => {
     const from = ((): SearchParams["from"] => {
-      if (fromOffset) {
+      if (fromOffset !== undefined) {
         return { type: "offset", value: fromOffset };
       } else if (fromEpoch) {
         return { type: "epoch", value: fromEpoch };
@@ -112,7 +118,7 @@ export function AdvancedSearch({
         : undefined,
       partition,
       from,
-      limit: limit ?? 50,
+      limit: limit ?? DEFAULT_LIMIT,
     };
   }, [query, where, partition, limit, fromOffset, fromEpoch, fromTimestamp]);
 
@@ -165,6 +171,26 @@ export function AdvancedSearch({
       void doSubmit();
     }
   }, [doSubmit, shouldSubmit]);
+
+  function setLiveMode(enabled: boolean) {
+    if (enabled) {
+      if (typeof limit === "number") {
+        previousLimitRef.current = limit;
+      }
+      setLimit("continuously");
+    } else {
+      // Fallback to DEFAULT_LIMIT if previousLimitRef.current is not a number
+      setLimit(
+        typeof previousLimitRef.current === "number"
+          ? previousLimitRef.current
+          : DEFAULT_LIMIT,
+      );
+    }
+  }
+
+  useEffect(() => {
+    setSearchInputValue(getSearchInputValue());
+  }, [getSearchInputValue]);
 
   const searchInput = (
     <SearchInput
@@ -262,17 +288,14 @@ export function AdvancedSearch({
                   <GridItem>
                     <FormGroup label={"Retrieve"}>
                       <UntilGroup
-                        limit={limit ?? 50}
+                        limit={limit ?? DEFAULT_LIMIT}
                         onLimitChange={(newLimit) => {
-                          const validatedLimit =
-                            newLimit !== undefined && newLimit >= 0
-                              ? newLimit
-                              : limit;
-                          setLimit(validatedLimit);
+                          if (typeof newLimit === "number" && newLimit >= 0) {
+                            previousLimitRef.current = newLimit;
+                            setLimit(newLimit);
+                          }
                         }}
-                        onLive={() => {
-                          setLimit("continuously");
-                        }}
+                        onLive={setLiveMode}
                       />
                     </FormGroup>
                   </GridItem>

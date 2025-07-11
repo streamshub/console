@@ -80,7 +80,13 @@ export function FromGroup({
 
   useEffect(() => {
     setCurrentCategory(
-      offset ? "offset" : timestamp ? "timestamp" : epoch ? "epoch" : "latest",
+      offset !== undefined
+        ? "offset"
+        : timestamp !== undefined
+          ? "timestamp"
+          : epoch !== undefined
+            ? "epoch"
+            : "latest",
     );
   }, [epoch, offset, timestamp]);
 
