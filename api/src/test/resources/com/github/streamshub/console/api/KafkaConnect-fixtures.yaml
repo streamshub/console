@@ -17,26 +17,54 @@ test-connect1.example.com:
     - connect1-connector1
     - connect1-connector2
   "/connectors/connect1-connector1":
-    config: {}
     name: connect1-connector1
-    tasks: []
+    config: {}
+    tasks:
+      - connector: connect1-connector1
+        task: 0
+      - connector: connect1-connector1
+        task: 1
     type: source
+  "/connectors/connect1-connector1/topics":
+    connect1-connector1:
+      topics:
+        - topic1
+        - topic2
   "/connectors/connect1-connector1/status":
     name: connect1-connector1
-    tasks: []
+    tasks:
+      - id: 0
+        state: running
+        trace: task-0-trace
+        worker_id: node1.test-cluster.example.com
+      - id: 1
+        state: running
+        trace: task-1-trace
+        worker_id: node1.test-cluster.example.com
     type: source
     connector:
       state: running
       trace: null
       worker_id: node1.test-cluster.example.com
   "/connectors/connect1-connector2":
-    config: {}
     name: connect1-connector2
-    tasks: []
+    config: {}
+    tasks:
+      - connector: connect1-connector2
+        task: 0
     type: source
+  "/connectors/connect1-connector2/topics":
+    connect1-connector2:
+      topics:
+        - topic3
+        - topic4
   "/connectors/connect1-connector2/status":
     name: connect1-connector2
-    tasks: []
+    tasks:
+      - id: 0
+        state: running
+        trace: task-0-trace
+        worker_id: node2.test-cluster.example.com
     type: source
     connector:
       state: running
@@ -62,26 +90,54 @@ test-connect2.example.com:
     - connect2-connector1
     - connect2-connector2
   "/connectors/connect2-connector1":
-    config: {}
     name: connect2-connector1
-    tasks: []
+    config: {}
+    tasks:
+      - connector: connect2-connector1
+        task: 0
     type: source
+  "/connectors/connect2-connector1/topics":
+    connect2-connector1:
+      topics:
+        - topic5
+        - topic6
   "/connectors/connect2-connector1/status":
     name: connect2-connector1
-    tasks: []
+    tasks:
+      - id: 0
+        state: running
+        trace: task-0-trace
+        worker_id: node1.test-cluster.example.com
     type: source
     connector:
       state: running
       trace: null
       worker_id: node1.test-cluster.example.com
   "/connectors/connect2-connector2":
-    config: {}
     name: connect2-connector2
-    tasks: []
+    config: {}
+    tasks:
+      - connector: connect2-connector2
+        task: 0
+      - connector: connect2-connector2
+        task: 1
     type: source
+  "/connectors/connect2-connector2/topics":
+    connect2-connector2:
+      topics:
+        - topic7
+        - topic8
   "/connectors/connect2-connector2/status":
     name: connect2-connector2
-    tasks: []
+    tasks:
+      - id: 0
+        state: running
+        trace: task-0-trace
+        worker_id: node1.test-cluster.example.com
+      - id: 1
+        state: running
+        trace: task-1-trace
+        worker_id: node1.test-cluster.example.com
     type: source
     connector:
       state: running

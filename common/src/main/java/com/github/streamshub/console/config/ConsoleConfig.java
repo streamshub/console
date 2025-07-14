@@ -139,8 +139,8 @@ public class ConsoleConfig {
     }
 
     @JsonIgnore
-    public KafkaConnectConfig getKafkaConnectCluster(String name) {
-        return kafkaConnectClusters.stream().filter(c -> c.getName().equals(name)).findFirst().orElseThrow();
+    public KafkaConnectConfig getKafkaConnectCluster(String clusterKey) {
+        return kafkaConnectClusters.stream().filter(c -> c.clusterKey().equals(clusterKey)).findFirst().orElseThrow();
     }
 
     public void setKafkaConnectClusters(List<KafkaConnectConfig> kafkaConnectClusters) {

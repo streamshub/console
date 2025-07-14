@@ -95,8 +95,8 @@ public class KafkaConnectsResource {
             @Expression(
                     when = "self.rawInclude != null",
                     staticImports = "java.util.Arrays.asList",
-                    value = "self.includeEntries.stream().allMatch(i -> asList('connectors','plugins').contains(i))",
-                    message = "invalid include, supported values: [ 'connectors', 'plugins' ]",
+                    value = "self.includeEntries.stream().allMatch(i -> asList('connectors','tasks').contains(i))",
+                    message = "invalid include, supported values: [ 'connectors', 'tasks' ]",
                     payload = ErrorCategory.InvalidQueryParameter.class,
                     node = FetchParams.INCLUDE_PARAM)
             ListFetchParams listParams,

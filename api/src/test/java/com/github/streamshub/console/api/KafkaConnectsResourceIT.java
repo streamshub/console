@@ -48,8 +48,12 @@ import io.strimzi.test.container.StrimziKafkaContainer;
 
 import static com.github.streamshub.console.test.TestHelper.whenRequesting;
 import static org.awaitility.Awaitility.await;
+import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.everyItem;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 
 @QuarkusTest
 @TestHTTPEndpoint(KafkaConnectsResource.class)
@@ -156,11 +160,11 @@ class KafkaConnectsResourceIT implements ClientRequestFilter {
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
             .body("data.size()", is(2))
-            .body("data[0].id", is(Base64.getUrlEncoder().encodeToString("test-connect1".getBytes())))
+            .body("data[0].id", is(Base64.getUrlEncoder().encodeToString("default/test-connect1".getBytes())))
             .body("data[0].attributes.commit", is("abc123d"))
             .body("data[0].attributes.kafkaClusterId", is(clusterId1))
             .body("data[0].attributes.version", is("4.0.0"))
-            .body("data[1].id", is(Base64.getUrlEncoder().encodeToString("test-connect2".getBytes())))
+            .body("data[1].id", is(Base64.getUrlEncoder().encodeToString("default/test-connect2".getBytes())))
             .body("data[1].attributes.commit", is("zyx987w"))
             .body("data[1].attributes.kafkaClusterId", is("k2-id"))
             .body("data[1].attributes.version", is("4.0.1"));
@@ -172,13 +176,15 @@ class KafkaConnectsResourceIT implements ClientRequestFilter {
         "default/test-kafka2, test-connect2, zyx987w, k2-id, 4.0.1",
     })
     void testListConnectClustersFilteredByKafkaCluster(String kafkaCluster,
-            String expectedId, String expectedCommit, String expectedKafkaId, String expectedVersion) {
+            String expectedName, String expectedCommit, String expectedKafkaId, String expectedVersion) {
 
         whenRequesting(req -> req.param("filter[kafkaClusters]", "in," + kafkaCluster).get())
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
             .body("data.size()", is(1))
-            .body("data[0].id", is(Base64.getUrlEncoder().encodeToString(expectedId.getBytes())))
+            .body("data[0].id", is(Base64.getUrlEncoder().encodeToString(("default/" + expectedName).getBytes())))
+            .body("data[0].attributes.namespace", is("default"))
+            .body("data[0].attributes.name", is(expectedName))
             .body("data[0].attributes.commit", is(expectedCommit))
             .body("data[0].attributes.kafkaClusterId", is(expectedKafkaId))
             .body("data[0].attributes.version", is(expectedVersion));
@@ -190,16 +196,17 @@ class KafkaConnectsResourceIT implements ClientRequestFilter {
         "default/test-kafka2, test-connect2, zyx987w, k2-id, 4.0.1",
     })
     void testListConnectClustersWithPlugins(String kafkaCluster,
-            String expectedId, String expectedCommit, String expectedKafkaId, String expectedVersion) {
+            String expectedName, String expectedCommit, String expectedKafkaId, String expectedVersion) {
 
         whenRequesting(req -> req
                 .param("filter[kafkaClusters]", "in," + kafkaCluster)
-                .param("fields[connects]", "commit,kafkaClusterId,version,plugins")
+                .param("fields[connects]", "commit,kafkaClusterId,version,plugins,namespace")
                 .get())
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
             .body("data.size()", is(1))
-            .body("data[0].id", is(Base64.getUrlEncoder().encodeToString(expectedId.getBytes())))
+            .body("data[0].id", is(Base64.getUrlEncoder().encodeToString(("default/" + expectedName).getBytes())))
+            .body("data[0].attributes.namespace", is("default"))
             .body("data[0].attributes.commit", is(expectedCommit))
             .body("data[0].attributes.kafkaClusterId", is(expectedKafkaId))
             .body("data[0].attributes.version", is(expectedVersion))
@@ -211,7 +218,7 @@ class KafkaConnectsResourceIT implements ClientRequestFilter {
         "default/test-kafka1, test-connect1",
         "default/test-kafka2, test-connect2",
     })
-    void testListConnectClustersWithConnectors(String kafkaCluster, String expectedId) {
+    void testListConnectClustersWithConnectors(String kafkaCluster, String expectedName) {
         whenRequesting(req -> req
                 .param("filter[kafkaClusters]", "in," + kafkaCluster)
                 .param("fields[connects]", "connectors")
@@ -220,9 +227,73 @@ class KafkaConnectsResourceIT implements ClientRequestFilter {
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
             .body("data.size()", is(1))
-            .body("data[0].id", is(Base64.getUrlEncoder().encodeToString(expectedId.getBytes())))
+            .body("data[0].id", is(Base64.getUrlEncoder().encodeToString(("default/" + expectedName).getBytes())))
             .body("data[0].relationships.connectors.data.size()", is(2))
             .body("included.size()", is(2));
     }
 
+    @ParameterizedTest
+    @CsvSource({
+        "default/test-kafka1, test-connect1",
+        "default/test-kafka2, test-connect2",
+    })
+    void testListConnectClustersWithConnectorsNotIncluded(String kafkaCluster, String expectedName) {
+        whenRequesting(req -> req
+                .param("filter[kafkaClusters]", "in," + kafkaCluster)
+                .param("fields[connects]", "connectors")
+                .get())
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()))
+            .body("data.size()", is(1))
+            .body("data[0].id", is(Base64.getUrlEncoder().encodeToString(("default/" + expectedName).getBytes())))
+            .body("data[0].relationships.connectors.data.size()", is(2))
+            .body("included", anyOf(nullValue(), hasSize(0))); // included is either missing or empty
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        "default/test-kafka1, test-connect1",
+        "default/test-kafka2, test-connect2",
+    })
+    void testListConnectClustersWithConnectorTasks(String kafkaCluster, String expectedName) {
+        whenRequesting(req -> req
+                .param("filter[kafkaClusters]", "in," + kafkaCluster)
+                .param("fields[connects]", "connectors")
+                .param("fields[connectors]", "tasks")
+                .param("include", "connectors,tasks")
+                .get())
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()))
+            .body("data.size()", is(1))
+            .body("data[0].id", is(Base64.getUrlEncoder().encodeToString(("default/" + expectedName).getBytes())))
+            .body("included.size()", is(5)) // 2 connectors + 3 tasks
+            .body("included.findAll { it.type == 'connectors' }.size()", is(2))
+            .body("included.findAll { it.type == 'connectors' }.relationships.tasks.data", containsInAnyOrder(hasSize(1), hasSize(2)))
+            .body("included.findAll { it.type == 'connectors' }.relationships.tasks.data.type.flatten()", everyItem(is("connectorTasks")))
+            .body("included.findAll { it.type == 'connectorTasks' }.size()", is(3))
+            .body("included.findAll { it.type == 'connectorTasks' }.relationships.connector.data.type.flatten()", everyItem(is("connectors")));
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        "default/test-kafka1, test-connect1",
+        "default/test-kafka2, test-connect2",
+    })
+    void testListConnectClustersWithConnectorTasksNotIncluded(String kafkaCluster, String expectedName) {
+        // Tests that the connectorTasks relationships are returned, but the resources themselves are not included
+        whenRequesting(req -> req
+                .param("filter[kafkaClusters]", "in," + kafkaCluster)
+                .param("fields[connects]", "connectors")
+                .param("fields[connectors]", "tasks")
+                .param("include", "connectors")
+                .get())
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()))
+            .body("data.size()", is(1))
+            .body("data[0].id", is(Base64.getUrlEncoder().encodeToString(("default/" + expectedName).getBytes())))
+            .body("included.size()", is(2)) // 2 connectors + no tasks
+            .body("included.type", everyItem(is("connectors")))
+            .body("included.relationships.tasks.data", containsInAnyOrder(hasSize(1), hasSize(2)))
+            .body("included.relationships.tasks.data.type.flatten()", everyItem(is("connectorTasks")));
+    }
 }

@@ -94,7 +94,7 @@ public class KafkaConnectService {
     @PostConstruct
     public void initialize() {
         this.kafkaConnectClients = consoleConfig.getKafkaConnectClusters().stream()
-                .map(cluster -> Map.entry(cluster.getName(), createClient(cluster)))
+                .map(cluster -> Map.entry(cluster.clusterKey(), createClient(cluster)))
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
@@ -123,9 +123,8 @@ public class KafkaConnectService {
         var pendingServerInfo = consoleConfig.getKafkaConnectClusters()
                 .stream()
                 .filter(listSupport.filter(KafkaConnectConfig.class))
-                .map(KafkaConnectConfig::getName)
-                .filter(permissionService.permitted(ConnectCluster.API_TYPE, Privilege.LIST, Function.identity()))
-                .map(clusterName -> describeCluster(clusterName, fields, listSupport.getFetchParams()))
+                .filter(config -> permissionService.permitted(ConnectCluster.API_TYPE, Privilege.LIST, config.clusterKey()))
+                .map(config -> describeCluster(config, fields, listSupport.getFetchParams()))
                 .toList();
 
         return Promises.joinStages(pendingServerInfo)
@@ -139,29 +138,30 @@ public class KafkaConnectService {
                         .toList());
     }
 
-    public CompletionStage<ConnectCluster> describeCluster(String clusterName, FieldFilter fields, FetchParams fetchParams) {
-        var client = kafkaConnectClients.get(clusterName);
+    public CompletionStage<ConnectCluster> describeCluster(KafkaConnectConfig clusterConfig, FieldFilter fields, FetchParams fetchParams) {
+        var client = kafkaConnectClients.get(clusterConfig.clusterKey());
+
 
         var includePlugins = fields.isIncluded(ConnectCluster.FIELDS_PARAM, ConnectCluster.Fields.PLUGINS.toString());
         var pluginPromise = includePlugins
-                ? client.getConnectorPlugins()
-                        .thenApply(plugins -> plugins.stream().map(ConnectorPlugin::new).toList())
-                : PROMISE_NULL_PLUGINS;
+            ? client.getConnectorPlugins().thenApply(plugins -> plugins.stream().map(ConnectorPlugin::new).toList())
+            : PROMISE_NULL_PLUGINS;
 
         var includeConnectors = fetchParams.includes(ConnectCluster.Fields.CONNECTORS.toString());
         var fetchConnectors = includeConnectors || fields.isIncluded(ConnectCluster.FIELDS_PARAM, ConnectCluster.Fields.CONNECTORS.toString());
         var connectorPromise = fetchConnectors
-                ? listConnectors(clusterName, fields, fetchParams)
-                : PROMISE_EMPTY_CONNECTORS;
+            ? listConnectors(clusterConfig, fields, fetchParams)
+            : PROMISE_EMPTY_CONNECTORS;
 
         return client.getWorkerDetails()
                 .thenApply(server -> {
-                    var cluster = new ConnectCluster(encode("", clusterName));
-                    cluster.name(clusterName);
+                    var cluster = new ConnectCluster(encode("", clusterConfig.clusterKey()));
+                    cluster.name(clusterConfig.getName());
+                    cluster.namespace(clusterConfig.getNamespace());
                     cluster.commit(server.commit());
                     cluster.kafkaClusterId(server.kafkaClusterId());
                     cluster.version(server.version());
-                    cluster.kafkaClusters(consoleConfig.getKafkaConnectCluster(clusterName).getKafkaClusters());
+                    cluster.kafkaClusters(clusterConfig.getKafkaClusters());
                     return cluster;
                 })
                 .thenCombine(pluginPromise, ConnectCluster::plugins)
@@ -172,8 +172,7 @@ public class KafkaConnectService {
         var pendingClusterResults = consoleConfig.getKafkaConnectClusters()
                 .stream()
                 .filter(listSupport.filter(KafkaConnectConfig.class))
-                .map(KafkaConnectConfig::getName)
-                .map(clusterName -> listConnectors(clusterName, fields, listSupport.getFetchParams()))
+                .map(clusterConfig -> listConnectors(clusterConfig, fields, listSupport.getFetchParams()))
                 .toList();
 
         return Promises.joinStages(pendingClusterResults)
@@ -193,29 +192,30 @@ public class KafkaConnectService {
             FieldFilter fields,
             FetchParams fetchParams) {
         String[] idParts = decode(connectorId);
-        return describeConnector(idParts[0], idParts[1], fields, fetchParams);
+        KafkaConnectConfig clusterConfig = consoleConfig.getKafkaConnectCluster(idParts[0]);
+        return describeConnector(clusterConfig, idParts[1], fields, fetchParams);
     }
 
     private CompletionStage<List<Connector>> listConnectors(
-            String clusterName,
+            KafkaConnectConfig clusterConfig,
             FieldFilter fields,
             FetchParams fetchParams) {
 
-        return kafkaConnectClients.get(clusterName).getConnectors()
+        return kafkaConnectClients.get(clusterConfig.clusterKey()).getConnectors()
                 .thenApplyAsync(names -> names.stream()
                         .filter(permissionService.permitted(Connector.API_TYPE, Privilege.LIST, Function.identity()))
-                        .map(name -> describeConnector(clusterName, name, fields, fetchParams)),
+                        .map(name -> describeConnector(clusterConfig, name, fields, fetchParams)),
                         threadContext.currentContextExecutor())
                 .thenCompose(Promises::joinStages);
     }
 
     private CompletionStage<Connector> describeConnector(
-            String clusterName,
+            KafkaConnectConfig clusterConfig,
             String connectorName,
             FieldFilter fields,
             FetchParams fetchParams) {
 
-        var client = kafkaConnectClients.get(clusterName);
+        var client = kafkaConnectClients.get(clusterConfig.clusterKey());
 
         var includeTopics = fields.isIncluded(Connector.FIELDS_PARAM, Connector.Fields.TOPICS.toString());
         var includeOffsets = fields.isIncluded(Connector.FIELDS_PARAM, Connector.Fields.OFFSETS.toString());
@@ -225,25 +225,25 @@ public class KafkaConnectService {
         var includeTaskConfigs = includeTasks && fields.isIncluded(ConnectorTask.FIELDS_PARAM, ConnectorTask.Fields.CONFIG.toString());
 
         var includeCluster = fetchParams.includes(Connector.Fields.CONNECT_CLUSTER.toString());
-        var clusterPromise = includeCluster ? describeCluster(clusterName, fields, fetchParams) : PROMISE_NULL_CLUSTER;
+        var clusterPromise = includeCluster ? describeCluster(clusterConfig, fields, fetchParams) : PROMISE_NULL_CLUSTER;
 
         var topicsPromise = includeTopics
-            ? describeConnectorTopics(clusterName, connectorName)
+            ? describeConnectorTopics(clusterConfig, connectorName)
             : PROMISE_NULL_TOPICS;
 
         var offsetPromise = includeOffsets
-            ? describeConnectorOffsets(clusterName, connectorName)
+            ? describeConnectorOffsets(clusterConfig, connectorName)
             : PROMISE_NULL_OFFSETS;
 
         var taskConfigPromise = includeTaskConfigs
-            ? describeConnectorTasks(clusterName, connectorName)
+            ? describeConnectorTasks(clusterConfig, connectorName)
             : PROMISE_EMPTY_CONFIG;
 
         return client.getConnector(connectorName)
             .thenCombine(
                 client.getConnectorStatus(connectorName),
                 (info, state) -> {
-                    Connector connector = new Connector(encode("", clusterName, connectorName));
+                    Connector connector = new Connector(encode("", clusterConfig.clusterKey(), connectorName));
                     connector.name(connectorName);
                     connector.type(info.type());
                     connector.config(info.config());
@@ -303,16 +303,16 @@ public class KafkaConnectService {
         return connector;
     }
 
-    private CompletionStage<List<String>> describeConnectorTopics(String clusterName, String connectorName) {
-        return kafkaConnectClients.get(clusterName)
+    private CompletionStage<List<String>> describeConnectorTopics(KafkaConnectConfig clusterConfig, String connectorName) {
+        return kafkaConnectClients.get(clusterConfig.clusterKey())
                 .getConnectorTopics(connectorName)
                 .thenApply(topics -> Optional.ofNullable(topics.get(connectorName))
                         .map(KafkaConnectAPI.TopicInfo::topics)
                         .orElse(null));
     }
 
-    private CompletionStage<List<Connector.ConnectorOffset>> describeConnectorOffsets(String clusterName, String connectorName) {
-        return kafkaConnectClients.get(clusterName)
+    private CompletionStage<List<Connector.ConnectorOffset>> describeConnectorOffsets(KafkaConnectConfig clusterConfig, String connectorName) {
+        return kafkaConnectClients.get(clusterConfig.clusterKey())
                 .getConnectorOffsets(connectorName)
                 .thenApply(ConnectorOffsets::offsets)
                 .thenApply(offsets -> offsets.stream()
@@ -320,8 +320,8 @@ public class KafkaConnectService {
                         .toList());
     }
 
-    private CompletionStage<Map<Integer, Map<String, String>>> describeConnectorTasks(String clusterName, String connectorName) {
-        return kafkaConnectClients.get(clusterName)
+    private CompletionStage<Map<Integer, Map<String, String>>> describeConnectorTasks(KafkaConnectConfig clusterConfig, String connectorName) {
+        return kafkaConnectClients.get(clusterConfig.clusterKey())
                 .getConnectorTasks(connectorName)
                 .thenApply(tasks -> tasks.stream()
                         .map(t -> Map.entry(t.id().task(), t.config()))
