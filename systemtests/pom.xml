@@ -24,7 +24,7 @@
         <!-- Playwright -->
         <playwright.version>1.53.0</playwright.version>
         <!-- Mocking environment -->
-        <mockito.version>5.15.2</mockito.version>
+        <mockito.version>5.18.0</mockito.version>
         <powermock.version>2.0.9</powermock.version>
         <!-- Used for test-frame -->
         <test-frame.version>0.14.1</test-frame.version>
