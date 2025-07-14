@@ -6,6 +6,8 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.stream.Stream;
 
 import jakarta.json.JsonObject;
 
@@ -123,7 +125,16 @@ public class ConnectCluster extends JsonApiResource<ConnectCluster.Attributes, C
                     .map(c -> c.relationships.connectorResources)
                     .filter(Objects::nonNull)
                     .flatMap(Collection::stream)
-                    .forEach(this::addIncluded);
+                    .forEach(connector -> {
+                        addIncluded(connector);
+
+                        if (listSupport.getFetchParams().includes(Connector.Fields.TASKS.toString())) {
+                            Optional.ofNullable(connector.getRelationships().taskResources)
+                                .map(Collection::stream)
+                                .orElseGet(Stream::empty)
+                                .forEach(this::addIncluded);
+                        }
+                    });
             }
         }
     }
