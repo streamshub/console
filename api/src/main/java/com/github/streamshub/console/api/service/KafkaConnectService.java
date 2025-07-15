@@ -67,7 +67,7 @@ public class KafkaConnectService {
                 .stream()
                 .filter(listSupport.filter(KafkaConnectConfig.class))
                 .filter(config -> permissionService.permitted(ConnectCluster.API_TYPE, Privilege.LIST, config.clusterKey()))
-                .map(config -> describeCluster(config, fields, listSupport.getFetchParams()))
+                .map(config -> describeCluster(config, fields, listSupport.getFetchParams(), true))
                 .toList();
 
         return Promises.joinStages(pendingServerInfo)
@@ -81,10 +81,8 @@ public class KafkaConnectService {
                         .toList());
     }
 
-    public CompletionStage<ConnectCluster> describeCluster(KafkaConnectConfig clusterConfig, FieldFilter fields, FetchParams fetchParams) {
+    private CompletionStage<ConnectCluster> describeCluster(KafkaConnectConfig clusterConfig, FieldFilter fields, FetchParams fetchParams, boolean primaryResource) {
         var clusterKey = clusterConfig.clusterKey();
-
-
         var includePlugins = fields.isIncluded(ConnectCluster.FIELDS_PARAM, ConnectCluster.Fields.PLUGINS.toString());
         var pluginPromise = includePlugins
             ? connectClient.getConnectorPlugins(clusterKey).thenApply(plugins -> plugins.stream().map(ConnectorPlugin::new).toList())
@@ -92,7 +90,7 @@ public class KafkaConnectService {
 
         var includeConnectors = fetchParams.includes(ConnectCluster.Fields.CONNECTORS.toString());
         var fetchConnectors = includeConnectors || fields.isIncluded(ConnectCluster.FIELDS_PARAM, ConnectCluster.Fields.CONNECTORS.toString());
-        var connectorPromise = fetchConnectors
+        var connectorPromise = primaryResource && fetchConnectors
             ? listConnectors(clusterConfig, fields, fetchParams)
             : PROMISE_EMPTY_CONNECTORS;
 
@@ -166,7 +164,7 @@ public class KafkaConnectService {
         var includeTaskConfigs = includeTasks && fields.isIncluded(ConnectorTask.FIELDS_PARAM, ConnectorTask.Fields.CONFIG.toString());
 
         var includeCluster = fetchParams.includes(Connector.Fields.CONNECT_CLUSTER.toString());
-        var clusterPromise = includeCluster ? describeCluster(clusterConfig, fields, fetchParams) : PROMISE_NULL_CLUSTER;
+        var clusterPromise = includeCluster ? describeCluster(clusterConfig, fields, fetchParams, false) : PROMISE_NULL_CLUSTER;
 
         var topicsPromise = includeTopics
             ? describeConnectorTopics(clusterConfig, connectorName)
@@ -186,6 +184,7 @@ public class KafkaConnectService {
                 (info, state) -> {
                     Connector connector = new Connector(encode("", clusterConfig.clusterKey(), connectorName));
                     connector.name(connectorName);
+                    connector.namespace(clusterConfig.getNamespace());
                     connector.type(info.type());
                     connector.config(info.config());
                     connector.state(state.connector().state());

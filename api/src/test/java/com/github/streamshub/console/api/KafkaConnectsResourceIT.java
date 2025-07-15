@@ -5,13 +5,12 @@ import java.io.InputStream;
 import java.net.URI;
 import java.util.Base64;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 import jakarta.inject.Inject;
-import jakarta.json.Json;
-import jakarta.json.JsonObject;
 import jakarta.ws.rs.client.ClientRequestContext;
 import jakarta.ws.rs.client.ClientRequestFilter;
 import jakarta.ws.rs.core.MediaType;
@@ -60,11 +59,6 @@ import static org.hamcrest.Matchers.nullValue;
 @TestProfile(TestPlainProfile.class)
 class KafkaConnectsResourceIT implements ClientRequestFilter {
 
-    static final JsonObject EMPTY_METRICS = Json.createObjectBuilder()
-            .add("data", Json.createObjectBuilder()
-                    .add("result", Json.createArrayBuilder()))
-            .build();
-
     @Inject
     Config config;
 
@@ -109,7 +103,10 @@ class KafkaConnectsResourceIT implements ClientRequestFilter {
     void setup() {
         filterRequest = ctx -> {
             var uri = ctx.getUri();
-            var fixture = fixtures.get(uri.getHost()).get(uri.getPath());
+            String host = uri.getHost();
+            String path = uri.getPath();
+            var fixture = fixtures.get(host).get(path);
+            Objects.requireNonNull(fixture, "Kafka Connect fixture not found for host " + host + "; path " + path);
 
             ctx.abortWith(Response.ok(fixture)
                     .type(MediaType.APPLICATION_JSON)
