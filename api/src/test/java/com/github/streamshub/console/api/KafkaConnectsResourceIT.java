@@ -29,7 +29,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import com.github.streamshub.console.api.service.KafkaConnectService;
+import com.github.streamshub.console.api.support.KafkaConnectAPI;
 import com.github.streamshub.console.api.support.KafkaContext;
 import com.github.streamshub.console.config.ConsoleConfig;
 import com.github.streamshub.console.config.KafkaClusterConfig;
@@ -78,7 +78,7 @@ class KafkaConnectsResourceIT implements ClientRequestFilter {
     ConsoleConfig consoleConfig;
 
     @Inject
-    KafkaConnectService connectService;
+    KafkaConnectAPI.Client connectClient;
 
     @DeploymentManager.InjectDeploymentManager
     DeploymentManager deployments;
@@ -115,7 +115,7 @@ class KafkaConnectsResourceIT implements ClientRequestFilter {
                     .type(MediaType.APPLICATION_JSON)
                     .build());
         };
-        connectService.setAdditionalFilter(Optional.of(this));
+        connectClient.setAdditionalFilter(Optional.of(this));
         kafkaContainer = deployments.getKafkaContainer();
         bootstrapServers = URI.create(kafkaContainer.getBootstrapServers());
 
