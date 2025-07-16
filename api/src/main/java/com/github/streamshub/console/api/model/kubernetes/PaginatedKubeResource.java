@@ -1,4 +1,4 @@
-package com.github.streamshub.console.api.model;
+package com.github.streamshub.console.api.model.kubernetes;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;

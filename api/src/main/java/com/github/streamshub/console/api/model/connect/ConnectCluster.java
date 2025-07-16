@@ -22,12 +22,14 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.github.streamshub.console.api.model.Metrics;
-import com.github.streamshub.console.api.model.PaginatedKubeResource;
 import com.github.streamshub.console.api.model.jsonapi.JsonApiMeta;
 import com.github.streamshub.console.api.model.jsonapi.JsonApiRelationshipToMany;
 import com.github.streamshub.console.api.model.jsonapi.JsonApiResource;
 import com.github.streamshub.console.api.model.jsonapi.JsonApiRootData;
 import com.github.streamshub.console.api.model.jsonapi.JsonApiRootDataList;
+import com.github.streamshub.console.api.model.kubernetes.KubeApiResource;
+import com.github.streamshub.console.api.model.kubernetes.KubeAttributes;
+import com.github.streamshub.console.api.model.kubernetes.PaginatedKubeResource;
 import com.github.streamshub.console.api.support.ComparatorBuilder;
 import com.github.streamshub.console.api.support.ErrorCategory;
 import com.github.streamshub.console.api.support.ListRequestContext;
@@ -54,7 +56,7 @@ import static java.util.Comparator.comparing;
     message = "resource type conflicts with operation",
     node = "type",
     payload = ErrorCategory.ResourceConflict.class)
-public class ConnectCluster extends JsonApiResource<ConnectCluster.Attributes, ConnectCluster.Relationships> implements PaginatedKubeResource {
+public class ConnectCluster extends KubeApiResource<ConnectCluster.Attributes, ConnectCluster.Relationships> implements PaginatedKubeResource {
 
     public static final String API_TYPE = "connects";
     public static final String FIELDS_PARAM = "fields[" + API_TYPE + "]";
@@ -153,16 +155,7 @@ public class ConnectCluster extends JsonApiResource<ConnectCluster.Attributes, C
     }
 
     @JsonFilter(FIELDS_PARAM)
-    static class Attributes {
-        @JsonProperty
-        String name;
-
-        @JsonProperty
-        String namespace; // Strimzi KafkaConnect CR only
-
-        @JsonProperty
-        String creationTimestamp; // Strimzi KafkaConnect CR only
-
+    static class Attributes extends KubeAttributes {
         @JsonProperty
         String commit;
 
@@ -196,11 +189,6 @@ public class ConnectCluster extends JsonApiResource<ConnectCluster.Attributes, C
         super(id, API_TYPE, new Attributes(), new Relationships());
     }
 
-    @JsonCreator
-    public ConnectCluster(String id, String type, Meta meta, Attributes attributes, Relationships relationships) {
-        super(id, type, meta, attributes, relationships);
-    }
-
     public static ConnectCluster fromId(String id) {
         return new ConnectCluster(id);
     }
@@ -216,40 +204,6 @@ public class ConnectCluster extends JsonApiResource<ConnectCluster.Attributes, C
     @Override
     public JsonApiMeta metaFactory() {
         return new Meta();
-    }
-
-    @Override
-    public String name() {
-        return attributes.name;
-    }
-
-    @Override
-    public void name(String name) {
-        attributes.name = name;
-    }
-
-    @Override
-    public String namespace() {
-        return attributes.namespace;
-    }
-
-    @Override
-    public void namespace(String namespace) {
-        attributes.namespace = namespace;
-    }
-
-    @Override
-    public String creationTimestamp() {
-        return attributes.creationTimestamp;
-    }
-
-    @Override
-    public void creationTimestamp(String creationTimestamp) {
-        attributes.creationTimestamp = creationTimestamp;
-    }
-
-    public void setId(String id) {
-        this.id = id;
     }
 
     public void commit(String commit) {

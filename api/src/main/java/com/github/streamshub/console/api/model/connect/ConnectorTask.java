@@ -201,10 +201,6 @@ public class ConnectorTask extends JsonApiResource<ConnectorTask.Attributes, Con
         return new Meta();
     }
 
-    public void setId(String id) {
-        this.id = id;
-    }
-
     public Metrics metrics() {
         return attributes.metrics;
     }
