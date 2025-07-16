@@ -19,10 +19,12 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.github.streamshub.console.api.model.jsonapi.JsonApiMeta;
-import com.github.streamshub.console.api.model.jsonapi.JsonApiResource;
 import com.github.streamshub.console.api.model.jsonapi.JsonApiRootData;
 import com.github.streamshub.console.api.model.jsonapi.JsonApiRootDataList;
 import com.github.streamshub.console.api.model.jsonapi.None;
+import com.github.streamshub.console.api.model.kubernetes.KubeApiResource;
+import com.github.streamshub.console.api.model.kubernetes.KubeAttributes;
+import com.github.streamshub.console.api.model.kubernetes.PaginatedKubeResource;
 import com.github.streamshub.console.api.support.ComparatorBuilder;
 import com.github.streamshub.console.api.support.ErrorCategory;
 import com.github.streamshub.console.api.support.ListRequestContext;
@@ -50,7 +52,7 @@ import static java.util.Comparator.nullsLast;
     message = "resource type conflicts with operation",
     node = "type",
     payload = ErrorCategory.ResourceConflict.class)
-public class KafkaRebalance extends JsonApiResource<KafkaRebalance.Attributes, None> implements PaginatedKubeResource {
+public class KafkaRebalance extends KubeApiResource<KafkaRebalance.Attributes, None> implements PaginatedKubeResource {
 
     public static final String API_TYPE = "kafkaRebalances";
     public static final String FIELDS_PARAM = "fields[" + API_TYPE + "]";
@@ -195,19 +197,7 @@ public class KafkaRebalance extends JsonApiResource<KafkaRebalance.Attributes, N
 
     @JsonFilter("fieldFilter")
     @Schema(name = "KafkaRebalanceAttributes")
-    static class Attributes {
-        @JsonProperty
-        @Schema(readOnly = true)
-        String name;
-
-        @JsonProperty
-        @Schema(readOnly = true)
-        String namespace;
-
-        @JsonProperty
-        @Schema(readOnly = true)
-        String creationTimestamp;
-
+    static class Attributes extends KubeAttributes {
         @JsonProperty
         @Schema(readOnly = true, nullable = true)
         String status;
@@ -304,40 +294,6 @@ public class KafkaRebalance extends JsonApiResource<KafkaRebalance.Attributes, N
                 .map(Meta.class::cast)
                 .map(meta -> meta.action)
                 .orElse(null);
-    }
-
-    @Override
-    public String name() {
-        return attributes.name;
-    }
-
-    @Override
-    public void name(String name) {
-        attributes.name = name;
-    }
-
-    @Override
-    public String namespace() {
-        return attributes.namespace;
-    }
-
-    @Override
-    public void namespace(String namespace) {
-        attributes.namespace = namespace;
-    }
-
-    @Override
-    public String creationTimestamp() {
-        return attributes.creationTimestamp;
-    }
-
-    @Override
-    public void creationTimestamp(String creationTimestamp) {
-        attributes.creationTimestamp = creationTimestamp;
-    }
-
-    public void setId(String id) {
-        this.id = id;
     }
 
     public String status() {

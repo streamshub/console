@@ -3,6 +3,7 @@ package com.github.streamshub.console.api.model.jsonapi;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -17,7 +18,11 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 @JsonInclude(value = Include.NON_NULL)
 public abstract class JsonApiRoot extends JsonApiBase {
 
-    @Schema(implementation = JsonApiResource[].class, requiredProperties = { "type", "id" })
+    @Schema(
+        type = SchemaType.ARRAY,
+        implementation = JsonApiResource.class,
+        requiredProperties = { "type", "id" }
+    )
     private List<JsonApiResource<?, ?>> included;
 
     @JsonProperty

@@ -19,9 +19,11 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.github.streamshub.console.api.model.jsonapi.JsonApiMeta;
 import com.github.streamshub.console.api.model.jsonapi.JsonApiRelationshipToMany;
-import com.github.streamshub.console.api.model.jsonapi.JsonApiResource;
 import com.github.streamshub.console.api.model.jsonapi.JsonApiRootData;
 import com.github.streamshub.console.api.model.jsonapi.JsonApiRootDataList;
+import com.github.streamshub.console.api.model.kubernetes.KubeApiResource;
+import com.github.streamshub.console.api.model.kubernetes.KubeAttributes;
+import com.github.streamshub.console.api.model.kubernetes.PaginatedKubeResource;
 import com.github.streamshub.console.api.support.ComparatorBuilder;
 import com.github.streamshub.console.api.support.ErrorCategory;
 import com.github.streamshub.console.api.support.ListRequestContext;
@@ -48,7 +50,7 @@ import static java.util.Comparator.nullsLast;
     message = "resource type conflicts with operation",
     node = "type",
     payload = ErrorCategory.ResourceConflict.class)
-public class KafkaCluster extends JsonApiResource<KafkaCluster.Attributes, KafkaCluster.Relationships> implements PaginatedKubeResource {
+public class KafkaCluster extends KubeApiResource<KafkaCluster.Attributes, KafkaCluster.Relationships> implements PaginatedKubeResource {
 
     public static final String API_TYPE = "kafkas";
     public static final String FIELDS_PARAM = "fields[" + API_TYPE + "]";
@@ -151,16 +153,7 @@ public class KafkaCluster extends JsonApiResource<KafkaCluster.Attributes, Kafka
     }
 
     @JsonFilter("fieldFilter")
-    static class Attributes {
-        @JsonProperty
-        String name; // Strimzi Kafka CR only
-
-        @JsonProperty
-        String namespace; // Strimzi Kafka CR only
-
-        @JsonProperty
-        String creationTimestamp; // Strimzi Kafka CR only
-
+    static class Attributes extends KubeAttributes {
         @JsonProperty
         final List<String> authorizedOperations;
 
@@ -232,40 +225,6 @@ public class KafkaCluster extends JsonApiResource<KafkaCluster.Attributes, Kafka
                 .map(Meta.class::cast)
                 .map(meta -> meta.reconciliationPaused)
                 .orElse(null);
-    }
-
-    @Override
-    public String name() {
-        return attributes.name;
-    }
-
-    @Override
-    public void name(String name) {
-        attributes.name = name;
-    }
-
-    @Override
-    public String namespace() {
-        return attributes.namespace;
-    }
-
-    @Override
-    public void namespace(String namespace) {
-        attributes.namespace = namespace;
-    }
-
-    @Override
-    public String creationTimestamp() {
-        return attributes.creationTimestamp;
-    }
-
-    @Override
-    public void creationTimestamp(String creationTimestamp) {
-        attributes.creationTimestamp = creationTimestamp;
-    }
-
-    public void setId(String id) {
-        this.id = id;
     }
 
     public JsonApiRelationshipToMany nodes() {
