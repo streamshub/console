@@ -2,12 +2,15 @@ package com.github.streamshub.systemtests.clients;
 
 import com.github.streamshub.systemtests.Environment;
 import com.github.streamshub.systemtests.constants.Labels;
+import io.fabric8.kubernetes.api.model.LocalObjectReference;
 import io.fabric8.kubernetes.api.model.batch.v1.Job;
 import io.fabric8.kubernetes.api.model.batch.v1.JobBuilder;
 import io.sundr.builder.annotations.Buildable;
 
 import java.security.InvalidParameterException;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Buildable(editableEnabled = false)
@@ -161,6 +164,10 @@ public class KafkaClients {
             .build();
     }
 
+    public List<LocalObjectReference> getClientsPullSecret() {
+        return Collections.singletonList(new LocalObjectReference(Environment.TEST_CLIENTS_PULL_SECRET));
+    }
+
     public JobBuilder defaultProducer() {
         if (producerName == null || producerName.isEmpty()) {
             throw new InvalidParameterException("Producer name is not set.");
@@ -185,6 +192,7 @@ public class KafkaClients {
                         .withLabels(producerLabels)
                     .endMetadata()
                     .withNewSpec()
+                        .withImagePullSecrets(Environment.isTestClientsPullSecretPresent() ? getClientsPullSecret() : null)
                         .withRestartPolicy("Never")
                         .withContainers()
                             .addNewContainer()
@@ -279,6 +287,7 @@ public class KafkaClients {
                         .withName(consumerName)
                     .endMetadata()
                     .withNewSpec()
+                        .withImagePullSecrets(Environment.isTestClientsPullSecretPresent() ? getClientsPullSecret() : null)
                         .withRestartPolicy("Never")
                         .withContainers()
                             .addNewContainer()
