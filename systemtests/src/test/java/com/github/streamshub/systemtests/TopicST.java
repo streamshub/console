@@ -7,7 +7,6 @@ import com.github.streamshub.systemtests.enums.FilterType;
 import com.github.streamshub.systemtests.enums.TopicStatus;
 import com.github.streamshub.systemtests.locators.ClusterOverviewPageSelectors;
 import com.github.streamshub.systemtests.locators.CssBuilder;
-import com.github.streamshub.systemtests.locators.CssSelectors;
 import com.github.streamshub.systemtests.locators.MessagesPageSelectors;
 import com.github.streamshub.systemtests.locators.TopicsPageSelectors;
 import com.github.streamshub.systemtests.logs.LogWrapper;
@@ -30,9 +29,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
-
-import static com.github.streamshub.systemtests.locators.CssSelectors.getLocator;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class TopicST extends AbstractST {
     private static final Logger LOGGER = LogWrapper.getLogger(TopicST.class);
@@ -103,7 +99,7 @@ class TopicST extends AbstractST {
             tcc.page().waitForURL(PwPageUrls.getMessagesPage(tcc, tcc.kafkaName(), topicId), PwUtils.getDefaultWaitForUrlOpts());
             PwUtils.waitForLocatorVisible(tcc, MessagesPageSelectors.MPS_EMPTY_BODY_CONTENT);
             PwUtils.waitForContainsText(tcc, MessagesPageSelectors.MPS_EMPTY_BODY_CONTENT, MessageStore.noDataTitle(), true);
-            assertTrue(CssSelectors.getLocator(tcc, MessagesPageSelectors.MPS_EMPTY_BODY_CONTENT).allInnerTexts().toString().contains(MessageStore.noDataBody()));
+            PwUtils.waitForContainsText(tcc, MessagesPageSelectors.MPS_EMPTY_BODY_CONTENT, MessageStore.noDataBody(), true);
         }
 
         LOGGER.info("Go to homepage and check the recently viewed card is not empty");
@@ -125,7 +121,7 @@ class TopicST extends AbstractST {
         LOGGER.info("Check that one of the recently viewed topics page cannot be found as it's deleted");
         PwUtils.waitForLocatorAndClick(tcc, new CssBuilder(ClusterOverviewPageSelectors.COPS_RECENT_TOPICS_CARD_TABLE_ITEMS).nth(1).build());
         // Verify empty body message
-        assertTrue(getLocator(tcc, MessagesPageSelectors.MPS_EMPTY_BODY_CONTENT).innerText().contains("Resource not found"));
+        PwUtils.waitForContainsText(tcc, MessagesPageSelectors.MPS_EMPTY_BODY_CONTENT, "Resource not found", true);
     }
 
     /**
@@ -208,8 +204,7 @@ class TopicST extends AbstractST {
         // Sort by name
         TopicsTestUtils.selectSortBy(tcc, TopicsPageSelectors.TPS_TABLE_HEADER_SORT_BY_NAME, TopicsPageSelectors.TPS_TABLE_HEADER_SORT_BY_NAME_BUTTON, "descending");
         PwUtils.waitForLocatorCount(tcc, unavailableTopicsCount, TopicsPageSelectors.TPS_TABLE_ROWS, false);
-        assertTrue(CssSelectors.getLocator(tcc, TopicsPageSelectors.getTableRowItems(1)).allInnerTexts().toString()
-            .contains(unavailableTopics.stream().map(kt -> kt.getMetadata().getName()).sorted().toList().get(unavailableTopicsCount - 1)));
+        PwUtils.waitForContainsText(tcc, TopicsPageSelectors.getTableRowItems(1), unavailableTopics.stream().map(kt -> kt.getMetadata().getName()).sorted().toList().get(unavailableTopicsCount - 1), true);
 
         PwUtils.waitForLocatorAndClick(tcc, TopicsPageSelectors.TPS_TOP_TOOLBAR_SEARCH_CLEAR_ALL_FILTERS);
 
@@ -238,8 +233,7 @@ class TopicST extends AbstractST {
         // Sort by storage
         TopicsTestUtils.selectSortBy(tcc, TopicsPageSelectors.TPS_TABLE_HEADER_SORT_BY_STORAGE, TopicsPageSelectors.TPS_TABLE_HEADER_SORT_BY_STORAGE_BUTTON, "descending");
         PwUtils.waitForLocatorCount(tcc, replicatedTopicsCount, TopicsPageSelectors.TPS_TABLE_ROWS, false);
-        assertTrue(CssSelectors.getLocator(tcc, TopicsPageSelectors.getTableRowItems(1)).allInnerTexts().toString()
-            .contains(replicatedTopics.stream().map(kt -> kt.getMetadata().getName()).sorted().toList().get(replicatedTopicsCount - 1)));
+        PwUtils.waitForContainsText(tcc, TopicsPageSelectors.getTableRowItems(1), replicatedTopics.stream().map(kt -> kt.getMetadata().getName()).sorted().toList().get(replicatedTopicsCount - 1), true);
     }
 
     @BeforeEach

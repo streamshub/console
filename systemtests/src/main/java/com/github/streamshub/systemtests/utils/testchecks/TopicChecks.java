@@ -3,12 +3,12 @@ package com.github.streamshub.systemtests.utils.testchecks;
 import com.github.streamshub.systemtests.TestCaseConfig;
 import com.github.streamshub.systemtests.enums.FilterType;
 import com.github.streamshub.systemtests.enums.TopicStatus;
-import com.github.streamshub.systemtests.logs.LogWrapper;
-import com.github.streamshub.systemtests.utils.playwright.PwPageUrls;
-import com.github.streamshub.systemtests.utils.playwright.PwUtils;
 import com.github.streamshub.systemtests.locators.ClusterOverviewPageSelectors;
 import com.github.streamshub.systemtests.locators.CssSelectors;
 import com.github.streamshub.systemtests.locators.TopicsPageSelectors;
+import com.github.streamshub.systemtests.logs.LogWrapper;
+import com.github.streamshub.systemtests.utils.playwright.PwPageUrls;
+import com.github.streamshub.systemtests.utils.playwright.PwUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
 import com.github.streamshub.systemtests.utils.testutils.TopicsTestUtils;
 import io.strimzi.api.kafka.model.topic.KafkaTopic;
@@ -17,7 +17,6 @@ import org.apache.logging.log4j.Logger;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TopicChecks {
     private static final Logger LOGGER = LogWrapper.getLogger(TopicChecks.class);
@@ -230,7 +229,7 @@ public class TopicChecks {
 
         for (String topicName : topicNames) {
             LOGGER.debug("Verify topic {} status {}", topicName, status.getName());
-            assertTrue(CssSelectors.getLocator(tcc, TopicsPageSelectors.TPS_TABLE_ROWS).allInnerTexts().toString().contains(topicName));
+            PwUtils.waitForContainsText(tcc, TopicsPageSelectors.TPS_TABLE_ROWS, topicName, true);
         }
 
         PwUtils.waitForLocatorAndClick(tcc, TopicsPageSelectors.TPS_TOP_TOOLBAR_SEARCH_CLEAR_ALL_FILTERS);

@@ -29,10 +29,7 @@ import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.Map;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class KafkaST extends AbstractST {
     private static final Logger LOGGER = LogWrapper.getLogger(KafkaST.class);
@@ -265,7 +262,7 @@ class KafkaST extends AbstractST {
     /**
      * Tests Kafka warnings display in the Console UI.
      *
-     * <p>Verifies that initially no warnings are shown, then injects a depricated config to trigger a warning,
+     * <p>Verifies that initially no warnings are shown, then injects a faulty config to trigger a warning,
      * checks the warning appears in the UI, and finally removes the fault to confirm warnings clear.</p>
      *
      * <p>This ensures the UI properly reflects Kafka’s warning status changes after config updates.</p>
@@ -284,11 +281,7 @@ class KafkaST extends AbstractST {
         LOGGER.debug("Verify warnings list contains only one row with `No messages` text");
         PwUtils.waitForLocatorVisible(tcc, ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_WARNING_MESSAGE_ITEMS);
         PwUtils.waitForLocatorCount(tcc, 1,  CssSelectors.getLocator(tcc, ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_WARNING_MESSAGE_ITEMS), true);
-        assertTrue(PwUtils.getTrimmedText(CssSelectors.getLocator(tcc,
-            new CssBuilder(ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_WARNING_MESSAGE_ITEMS).nth(1).build()).allInnerTexts().toString())
-            .contains(MessageStore.clusterCardNoMessages()));
-
-        Map<String, String> kafkaSnapshot = PodUtils.getPodSnapshotBySelector(tcc.namespace(), Labels.getKafkaPodLabelSelector(tcc.kafkaName()));
+        PwUtils.waitForContainsText(tcc, new CssBuilder(ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_WARNING_MESSAGE_ITEMS).nth(1).build(), MessageStore.clusterCardNoMessages(), true);
 
         // Make kafka fail
         LOGGER.info("Cause Kafka status to display Warning state by setting DeprecatedFields");
@@ -316,9 +309,6 @@ class KafkaST extends AbstractST {
         PwUtils.waitForLocatorVisible(tcc, ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_WARNING_MESSAGE_ITEMS);
         PwUtils.waitForLocatorCount(tcc, 1,  ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_WARNING_MESSAGE_ITEMS, true);
         PwUtils.waitForContainsText(tcc, new CssBuilder(ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_WARNING_MESSAGE_ITEMS).nth(1).build(), warningMessage, true);
-
-        // Update snapshot
-        kafkaSnapshot = PodUtils.getPodSnapshotBySelector(tcc.namespace(), Labels.getKafkaPodLabelSelector(tcc.kafkaName()));
 
         // Remove wrong config
         LOGGER.info("Remove incorrect Kafka config to get rid off the warning from UI status");
