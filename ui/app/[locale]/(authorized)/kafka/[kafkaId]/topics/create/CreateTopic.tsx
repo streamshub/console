@@ -110,7 +110,7 @@ export function CreateTopic({
   const formInvalid = errors !== undefined;
 
   return (
-    <Wizard title={t("CreateTopic.title")} onClose={() => router.back()}>
+    <Wizard navAriaLabel={t("CreateTopic.title")} onClose={() => router.back()}>
       <WizardStep
         name={t("CreateTopic.topic_details")}
         id="step-details"
