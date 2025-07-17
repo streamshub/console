@@ -1,0 +1,245 @@
+test-connect1.example.com:
+  "":
+    commit: abc123d
+    kafka_cluster_id: k1-id
+    version: 4.0.0
+
+  "/connector-plugins":
+    - class: org.apache.kafka.connect.mirror.MirrorCheckpointConnector
+      type: source
+      version: 4.0.0
+    - class: org.apache.kafka.connect.mirror.MirrorHeartbeatConnector
+      type: source
+      version: 4.0.0
+    - class: org.apache.kafka.connect.mirror.MirrorSourceConnector
+      type: source
+      version: 4.0.0
+
+  "/connectors":
+    - connect1-connector1
+    - connect1-connector2
+
+  "/connectors/connect1-connector1":
+    name: connect1-connector1
+    config: {}
+    tasks:
+      - connector: connect1-connector1
+        task: 0
+      - connector: connect1-connector1
+        task: 1
+    type: source
+
+  "/connectors/connect1-connector1/topics":
+    connect1-connector1:
+      topics:
+        - topic1
+        - topic2
+
+  "/connectors/connect1-connector1/offsets":
+    offsets:
+      - partition:
+          filename: /opt/kafka/LICENSE
+        offset:
+          position: 11111
+
+  "/connectors/connect1-connector1/status":
+    name: connect1-connector1
+    tasks:
+      - id: 0
+        state: running
+        trace: task-0-trace
+        worker_id: node1.test-cluster.example.com
+      - id: 1
+        state: running
+        trace: task-1-trace
+        worker_id: node1.test-cluster.example.com
+    type: source
+    connector:
+      state: running
+      trace: null
+      worker_id: node1.test-cluster.example.com
+
+  "/connectors/connect1-connector1/tasks":
+    - id:
+        connector: connect1-connector1
+        task: 0
+      config:
+        task-1-1-0-key1: value1
+        task-1-1-0-key2: value2
+    - id:
+        connector: connect1-connector1
+        task: 1
+      config:
+        task-1-1-1-key1: value1
+        task-1-1-1-key2: value2
+
+  "/connectors/connect1-connector2":
+    name: connect1-connector2
+    config: {}
+    tasks:
+      - connector: connect1-connector2
+        task: 0
+    type: source
+
+  "/connectors/connect1-connector2/topics":
+    connect1-connector2:
+      topics:
+        - topic3
+        - topic4
+
+  "/connectors/connect1-connector2/offsets":
+    offsets:
+      - partition:
+          filename: /opt/kafka/LICENSE
+        offset:
+          position: 22222
+
+  "/connectors/connect1-connector2/status":
+    name: connect1-connector2
+    tasks:
+      - id: 0
+        state: running
+        trace: task-0-trace
+        worker_id: node2.test-cluster.example.com
+    type: source
+    connector:
+      state: running
+      trace: null
+      worker_id: node2.test-cluster.example.com
+
+  "/connectors/connect1-connector2/tasks":
+    - id:
+        connector: connect1-connector2
+        task: 0
+      config:
+        task-1-2-0-key1: value1
+        task-1-2-0-key2: value2
+    - id:
+        connector: connect1-connector2
+        task: 1
+      config:
+        task-1-2-1-key1: value1
+        task-1-2-1-key2: value2
+
+test-connect2.example.com:
+  "":
+    commit: zyx987w
+    kafka_cluster_id: k2-id
+    version: 4.0.1
+
+  "/connector-plugins":
+    - class: org.apache.kafka.connect.mirror.MirrorCheckpointConnector
+      type: source
+      version: 4.0.1
+    - class: org.apache.kafka.connect.mirror.MirrorHeartbeatConnector
+      type: source
+      version: 4.0.1
+    - class: org.apache.kafka.connect.mirror.MirrorSourceConnector
+      type: source
+      version: 4.0.1
+
+  "/connectors":
+    - connect2-connector1
+    - connect2-connector2
+
+  "/connectors/connect2-connector1":
+    name: connect2-connector1
+    config: {}
+    tasks:
+      - connector: connect2-connector1
+        task: 0
+    type: source
+
+  "/connectors/connect2-connector1/topics":
+    connect2-connector1:
+      topics:
+        - topic5
+        - topic6
+
+  "/connectors/connect2-connector1/offsets":
+    offsets:
+      - partition:
+          filename: /opt/kafka/LICENSE
+        offset:
+          position: 333333
+
+  "/connectors/connect2-connector1/status":
+    name: connect2-connector1
+    tasks:
+      - id: 0
+        state: running
+        trace: task-0-trace
+        worker_id: node1.test-cluster.example.com
+    type: source
+    connector:
+      state: running
+      trace: null
+      worker_id: node1.test-cluster.example.com
+
+  "/connectors/connect2-connector1/tasks":
+    - id:
+        connector: connect2-connector1
+        task: 0
+      config:
+        task-2-1-0-key1: value1
+        task-2-1-0-key2: value2
+    - id:
+        connector: connect2-connector1
+        task: 1
+      config:
+        task-2-1-1-key1: value1
+        task-2-1-1-key2: value2
+
+  "/connectors/connect2-connector2":
+    name: connect2-connector2
+    config: {}
+    tasks:
+      - connector: connect2-connector2
+        task: 0
+      - connector: connect2-connector2
+        task: 1
+    type: source
+
+  "/connectors/connect2-connector2/topics":
+    connect2-connector2:
+      topics:
+        - topic7
+        - topic8
+
+  "/connectors/connect2-connector2/offsets":
+    offsets:
+      - partition:
+          filename: /opt/kafka/LICENSE
+        offset:
+          position: 44444
+
+  "/connectors/connect2-connector2/status":
+    name: connect2-connector2
+    tasks:
+      - id: 0
+        state: running
+        trace: task-0-trace
+        worker_id: node1.test-cluster.example.com
+      - id: 1
+        state: running
+        trace: task-1-trace
+        worker_id: node1.test-cluster.example.com
+    type: source
+    connector:
+      state: running
+      trace: null
+      worker_id: node1.test-cluster.example.com
+
+  "/connectors/connect2-connector2/tasks":
+    - id:
+        connector: connect2-connector2
+        task: 0
+      config:
+        task-2-2-0-key1: value1
+        task-2-2-0-key2: value2
+    - id:
+        connector: connect2-connector2
+        task: 1
+      config:
+        task-2-2-1-key1: value1
+        task-2-2-1-key2: value2
