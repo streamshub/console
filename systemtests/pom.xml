@@ -23,9 +23,6 @@
         <helm-client.version>0.0.15</helm-client.version>
         <!-- Playwright -->
         <playwright.version>1.53.0</playwright.version>
-        <!-- Mocking environment -->
-        <mockito.version>5.18.0</mockito.version>
-        <powermock.version>2.0.9</powermock.version>
         <!-- Used for test-frame -->
         <test-frame.version>0.14.1</test-frame.version>
         <!-- Allows skipping tests - unit, system or both types -->
@@ -40,13 +37,6 @@
                 <groupId>org.apache.logging.log4j</groupId>
                 <artifactId>log4j-bom</artifactId>
                 <version>${log4j.version}</version>
-                <scope>import</scope>
-                <type>pom</type>
-            </dependency>
-            <dependency>
-                <groupId>org.mockito</groupId>
-                <artifactId>mockito-bom</artifactId>
-                <version>${mockito.version}</version>
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>
@@ -130,19 +120,6 @@
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-params</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <!-- Mocking environment -->
-        <dependency>
-            <groupId>org.mockito</groupId>
-            <artifactId>mockito-junit-jupiter</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <!-- Allows final static field reflection -->
-        <dependency>
-            <groupId>org.powermock</groupId>
-            <artifactId>powermock-reflect</artifactId>
-            <version>${powermock.version}</version>
             <scope>test</scope>
         </dependency>
         <!-- Logger -->
