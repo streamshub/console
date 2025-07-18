@@ -24,8 +24,6 @@ import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 public class MessagesST extends AbstractST {
     private static final Logger LOGGER = LogWrapper.getLogger(MessagesST.class);
 
@@ -43,7 +41,7 @@ public class MessagesST extends AbstractST {
      *     <li>Tests the fallback behavior when an invalid retrieve value is provided.</li>
      * </ul>
      *
-     * <p>Assertions are performed on both message content and the number of results returned.
+     * <p>Checks are performed on both message content and the number of results returned.
      */
     @Test
     void testMessageSearchUsingQueries() {
@@ -79,7 +77,7 @@ public class MessagesST extends AbstractST {
         LOGGER.info("Verify default order and number of displayed messages");
         PwUtils.waitForLocatorCount(tcc, 50, MessagesPageSelectors.MPS_SEARCH_RESULTS_TABLE_ITEMS, true);
         PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItems(1), "Hello-world - 9999", true);
-        assertTrue(CssSelectors.getLocator(tcc, MessagesPageSelectors.getTableRowItem(1, 1)).allInnerTexts().toString().contains("9,999"));
+        PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItem(1, 1), "9,999", true);
 
         LOGGER.info("Start filtering messages by input text");
 
@@ -88,21 +86,21 @@ public class MessagesST extends AbstractST {
         PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_ENTER_BUTTON);
         PwUtils.waitForLocatorCount(tcc, 2, MessagesPageSelectors.MPS_SEARCH_RESULTS_TABLE_ITEMS, true);
         PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItems(1), "Hello-world - 9999", true);
-        assertTrue(CssSelectors.getLocator(tcc, MessagesPageSelectors.getTableRowItems(2)).allInnerTexts().toString().contains("Hello-world - 9998"));
+        PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItems(2), "Hello-world - 9998", true);
 
         LOGGER.info("Get 20 messages from offset 365");
         PwUtils.fill(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT, "messages=offset:365 retrieve=20");
         PwUtils.click(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_ENTER_BUTTON);
         PwUtils.waitForLocatorCount(tcc, 20, MessagesPageSelectors.MPS_SEARCH_RESULTS_TABLE_ITEMS, true);
         PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItem(1, 5), "Hello-world - 365", true);
-        assertTrue(CssSelectors.getLocator(tcc, MessagesPageSelectors.getTableRowItem(1, 1)).allInnerTexts().toString().contains("365"));
+        PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItem(1, 1), "365", true);
 
         LOGGER.info("Get message containing word from all messages");
         PwUtils.fill(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT, "messages=offset:1 retrieve=100 world - 42");
         PwUtils.click(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_ENTER_BUTTON);
         PwUtils.waitForLocatorCount(tcc, 1, MessagesPageSelectors.MPS_SEARCH_RESULTS_TABLE_ITEMS, true);
         PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItem(1, 5), "Hello-world - 42", true);
-        assertTrue(CssSelectors.getLocator(tcc, MessagesPageSelectors.getTableRowItem(1, 1)).allInnerTexts().toString().contains("42"));
+        PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItem(1, 1), "42", true);
 
         LOGGER.info("Get NONE message containing word from different messages while fetching another message");
         PwUtils.fill(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT, "messages=latest retrieve=40 world - 42");
@@ -115,7 +113,7 @@ public class MessagesST extends AbstractST {
         PwUtils.click(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_ENTER_BUTTON);
         PwUtils.waitForLocatorCount(tcc, 50, MessagesPageSelectors.MPS_SEARCH_RESULTS_TABLE_ITEMS, true);
         PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItems(1), "Hello-world - 9999", true);
-        assertTrue(CssSelectors.getLocator(tcc, MessagesPageSelectors.getTableRowItems(2)).allInnerTexts().toString().contains("Hello-world - 9998"));
+        PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItems(2), "Hello-world - 9998", true);
     }
 
 
@@ -139,7 +137,7 @@ public class MessagesST extends AbstractST {
      *     <li>Performs filter reset between each filtering step and verifies table content.</li>
      * </ul>
      *
-     * <p>Assertions are made on message content, offsets, keys, headers, and values to ensure correctness of filtering logic.
+     * <p>Checks are made on message content, offsets, keys, headers, and values to ensure correctness of filtering logic.
      */
     @Test
     void testFilterMessagesUsingUIForm() {
@@ -199,7 +197,7 @@ public class MessagesST extends AbstractST {
         LOGGER.info("Verify default state of displayed messages");
         PwUtils.waitForLocatorCount(tcc, 50, MessagesPageSelectors.MPS_SEARCH_RESULTS_TABLE_ITEMS, true);
         PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItems(1), valueFilter + " - 99", true);
-        assertTrue(CssSelectors.getLocator(tcc, MessagesPageSelectors.getTableRowItem(1, 1)).allInnerTexts().toString().contains("299"));
+        PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItem(1, 1), "299", true);
         PwUtils.waitForContainsAttribute(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT, "messages=latest retrieve=50", Constants.VALUE_ATTRIBUTE, true);
 
         LOGGER.info("Filter messages by key - because no offset is specified, first `No message data` should appear");
@@ -221,8 +219,8 @@ public class MessagesST extends AbstractST {
         // Order is ASC
         LOGGER.debug("Verify filtered messages with specific key");
         PwUtils.waitForLocatorCount(tcc, 5, MessagesPageSelectors.MPS_SEARCH_RESULTS_TABLE_ITEMS, true);
-        assertTrue(CssSelectors.getLocator(tcc, MessagesPageSelectors.getTableRowItem(1, 1)).allInnerTexts().toString().contains("95"));
-        assertTrue(CssSelectors.getLocator(tcc, MessagesPageSelectors.getTableRowItem(1, 3)).allInnerTexts().toString().contains(keyFilter));
+        PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItem(1, 1), "95", true);
+        PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItem(1, 3), keyFilter, true);
 
         LOGGER.debug("Reset messages filter");
         PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_OPEN_POPOVER_FORM_BUTTON);
@@ -245,9 +243,9 @@ public class MessagesST extends AbstractST {
         // Order is ASC
         LOGGER.debug("Verify filtered messages with specific header");
         PwUtils.waitForLocatorCount(tcc, 45, MessagesPageSelectors.MPS_SEARCH_RESULTS_TABLE_ITEMS, true);
-        assertTrue(CssSelectors.getLocator(tcc, MessagesPageSelectors.getTableRowItem(1, 1)).allInnerTexts().toString().contains("100"));
-        assertTrue(CssSelectors.getLocator(tcc, MessagesPageSelectors.getTableRowItem(1, 4)).allInnerTexts().toString().contains(headerFilterLookUpText));
-        assertTrue(CssSelectors.getLocator(tcc, MessagesPageSelectors.getTableRowItem(1, 5)).allInnerTexts().toString().contains(headerFilterMessage + " - 0"));
+        PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItem(1, 1), "100", true);
+        PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItem(1, 4), headerFilterLookUpText, true);
+        PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItem(1, 5), headerFilterMessage + " - 0", true);
 
         LOGGER.debug("Reset messages filter");
         PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_OPEN_POPOVER_FORM_BUTTON);
@@ -271,8 +269,8 @@ public class MessagesST extends AbstractST {
         // Order is ASC
         LOGGER.debug("Verify filtered messages with specific message value");
         PwUtils.waitForLocatorCount(tcc, 45, MessagesPageSelectors.MPS_SEARCH_RESULTS_TABLE_ITEMS, true);
-        assertTrue(CssSelectors.getLocator(tcc, MessagesPageSelectors.getTableRowItem(1, 1)).allInnerTexts().toString().contains("200"));
-        assertTrue(CssSelectors.getLocator(tcc, MessagesPageSelectors.getTableRowItem(1, 5)).allInnerTexts().toString().contains(valueFilter + " - 0"));
+        PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItem(1, 1), "200", true);
+        PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItem(1, 5), valueFilter + " - 0", true);
     }
 
 
