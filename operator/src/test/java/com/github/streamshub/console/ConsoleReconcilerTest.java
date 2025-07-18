@@ -5,7 +5,9 @@ import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
 
 import org.apache.kafka.common.config.SaslConfigs;
 import org.junit.jupiter.api.Test;
@@ -25,9 +27,13 @@ import com.github.streamshub.console.config.PrometheusConfig;
 import com.github.streamshub.console.config.TrustStoreConfig;
 import com.github.streamshub.console.config.authentication.Basic;
 import com.github.streamshub.console.config.authentication.Bearer;
+import com.github.streamshub.console.dependents.ConsoleClusterRole;
+import com.github.streamshub.console.dependents.ConsoleClusterRoleBinding;
 import com.github.streamshub.console.dependents.ConsoleDeployment;
 import com.github.streamshub.console.dependents.ConsoleResource;
 import com.github.streamshub.console.dependents.ConsoleSecret;
+import com.github.streamshub.console.dependents.PrometheusClusterRole;
+import com.github.streamshub.console.dependents.PrometheusClusterRoleBinding;
 import com.github.streamshub.console.dependents.PrometheusDeployment;
 
 import io.fabric8.kubernetes.api.model.ConfigMap;
@@ -40,6 +46,8 @@ import io.fabric8.kubernetes.api.model.Quantity;
 import io.fabric8.kubernetes.api.model.ResourceRequirementsBuilder;
 import io.fabric8.kubernetes.api.model.Secret;
 import io.fabric8.kubernetes.api.model.SecretBuilder;
+import io.fabric8.kubernetes.api.model.rbac.ClusterRole;
+import io.fabric8.kubernetes.api.model.rbac.ClusterRoleBinding;
 import io.fabric8.kubernetes.client.KubernetesClientException;
 import io.fabric8.openshift.api.model.Route;
 import io.fabric8.openshift.api.model.RouteBuilder;
@@ -1048,5 +1056,55 @@ class ConsoleReconcilerTest extends ConsoleReconcilerTestBase {
             assertEquals(initialError.get(), errorCondition);
             assertEquals(initialError.get().getLastTransitionTime(), errorCondition.getLastTransitionTime());
         });
+    }
+
+    @Test
+    void testMultipleConsoleReconciliationsWithSameName() {
+        Console consoleCR1 = createConsole(new ConsoleBuilder()
+                .withNewSpec()
+                    .withHostname("console1.example.com")
+                    .addNewKafkaCluster()
+                        .withName(kafkaCR.getMetadata().getName())
+                        .withNamespace(kafkaCR.getMetadata().getNamespace())
+                        .withListener(kafkaCR.getSpec().getKafka().getListeners().get(0).getName())
+                    .endKafkaCluster()
+                .endSpec());
+
+        createNamespace("ns3");
+
+        Console consoleCR2 = createConsole(new ConsoleBuilder()
+                .withNewSpec()
+                    .withHostname("console2.example.com")
+                    .addNewKafkaCluster()
+                        .withName(kafkaCR.getMetadata().getName())
+                        .withNamespace(kafkaCR.getMetadata().getNamespace())
+                        .withListener(kafkaCR.getSpec().getKafka().getListeners().get(0).getName())
+                    .endKafkaCluster()
+                .endSpec(), "ns3");
+
+        Stream.of(consoleCR1, consoleCR2)
+            .map(cr -> {
+                return CompletableFuture.runAsync(() -> {
+                    awaitDependentsNotReady(cr, "ConsoleIngress", "PrometheusDeployment");
+                    setConsoleIngressReady(cr);
+                    setDeploymentReady(cr, PrometheusDeployment.NAME);
+                    awaitDependentsNotReady(cr, "ConsoleDeployment");
+                    setDeploymentReady(cr, ConsoleDeployment.NAME);
+                    awaitReady(cr);
+                }).thenRunAsync(() -> {
+                    String prefix = cr.optionalMetadata()
+                            .map(meta -> String.format("%s-%s-", meta.getNamespace(), meta.getName()))
+                            .orElseThrow();
+                    assertNotNull(client.resources(ClusterRole.class)
+                            .withName(prefix + ConsoleClusterRole.NAME).get());
+                    assertNotNull(client.resources(ClusterRoleBinding.class)
+                            .withName(prefix + ConsoleClusterRoleBinding.NAME).get());
+                    assertNotNull(client.resources(ClusterRole.class)
+                            .withName(prefix + PrometheusClusterRole.NAME).get());
+                    assertNotNull(client.resources(ClusterRoleBinding.class)
+                            .withName(prefix + PrometheusClusterRoleBinding.NAME).get());
+                });
+            })
+            .forEach(CompletableFuture::join);
     }
 }

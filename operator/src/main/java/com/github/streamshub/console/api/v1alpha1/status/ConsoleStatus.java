@@ -42,6 +42,11 @@ public class ConsoleStatus {
     }
 
     @JsonIgnore
+    public boolean hasActiveCondition(String type) {
+        return conditions.stream().filter(Condition::isActive).anyMatch(c -> type.equals(c.getType()));
+    }
+
+    @JsonIgnore
     public Condition getCondition(String type) {
         return conditions.stream()
             .filter(c -> type.equals(c.getType()))

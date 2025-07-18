@@ -34,6 +34,11 @@ abstract class BaseClusterRoleBinding extends KubernetesDependentResource<Cluste
     }
 
     @Override
+    public String instanceName(Console primary) {
+        return primary.getMetadata().getNamespace() + "-" + ConsoleResource.super.instanceName(primary);
+    }
+
+    @Override
     public Optional<ClusterRoleBinding> getSecondaryResource(Console primary, Context<Console> context) {
         return ConsoleResource.super.getSecondaryResource(primary, context);
     }
