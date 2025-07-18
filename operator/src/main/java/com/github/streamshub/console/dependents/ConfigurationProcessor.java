@@ -145,10 +145,13 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
     @Override
     public ReconcileResult<HasMetadata> reconcile(Console primary, Context<Console> context) {
         if (buildSecretData(primary, context)) {
-            LOGGER.debugf("Validation gate passed: %s", primary.getMetadata().getName());
+            LOGGER.debugf("Validation gate passed: %s/%s",
+                    primary.getMetadata().getNamespace(),
+                    primary.getMetadata().getName());
             context.managedWorkflowAndDependentResourceContext().put(NAME, Boolean.TRUE);
         } else {
-            LOGGER.debugf("Validation gate failed: %s; %s",
+            LOGGER.debugf("Validation gate failed: %s/%s; %s",
+                    primary.getMetadata().getNamespace(),
                     primary.getMetadata().getName(),
                     primary.getStatus().getCondition(Types.ERROR).getMessage());
             context.managedWorkflowAndDependentResourceContext().put(NAME, Boolean.FALSE);
@@ -192,7 +195,7 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
         }
 
         context.managedWorkflowAndDependentResourceContext().put("ConsoleSecretData", data);
-        return !status.hasCondition(Types.ERROR);
+        return !status.hasActiveCondition(Types.ERROR);
     }
 
     private void buildConsoleConfig(Console primary, Context<Console> context,
