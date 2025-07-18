@@ -30,6 +30,7 @@ import com.github.streamshub.console.config.authentication.Bearer;
 import com.github.streamshub.console.dependents.ConsoleClusterRole;
 import com.github.streamshub.console.dependents.ConsoleClusterRoleBinding;
 import com.github.streamshub.console.dependents.ConsoleDeployment;
+import com.github.streamshub.console.dependents.ConsoleIngress;
 import com.github.streamshub.console.dependents.ConsoleResource;
 import com.github.streamshub.console.dependents.ConsoleSecret;
 import com.github.streamshub.console.dependents.PrometheusClusterRole;
@@ -46,6 +47,8 @@ import io.fabric8.kubernetes.api.model.Quantity;
 import io.fabric8.kubernetes.api.model.ResourceRequirementsBuilder;
 import io.fabric8.kubernetes.api.model.Secret;
 import io.fabric8.kubernetes.api.model.SecretBuilder;
+import io.fabric8.kubernetes.api.model.apps.DeploymentBuilder;
+import io.fabric8.kubernetes.api.model.networking.v1.IngressBuilder;
 import io.fabric8.kubernetes.api.model.rbac.ClusterRole;
 import io.fabric8.kubernetes.api.model.rbac.ClusterRoleBinding;
 import io.fabric8.kubernetes.client.KubernetesClientException;
@@ -57,6 +60,9 @@ import io.strimzi.api.kafka.model.user.KafkaUserBuilder;
 import io.strimzi.api.kafka.model.user.KafkaUserScramSha512ClientAuthentication;
 
 import static org.awaitility.Awaitility.await;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.hasItem;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -1106,5 +1112,99 @@ class ConsoleReconcilerTest extends ConsoleReconcilerTestBase {
                 });
             })
             .forEach(CompletableFuture::join);
+    }
+
+    @Test
+    void testConsoleReconciliationWithResourceConflicts() {
+        client.resource(new IngressBuilder()
+                .withNewMetadata()
+                    .withNamespace(CONSOLE_NS)
+                    .withName(CONSOLE_NAME + '-' + ConsoleIngress.NAME)
+                    .withNamespace(CONSOLE_NS)
+                    .withLabels(ConsoleResource.MANAGEMENT_LABEL)
+                .endMetadata()
+                .withNewSpec()
+                    .withNewDefaultBackend()
+                        .withNewService()
+                            .withName("fake-service")
+                            .withNewPort()
+                                .withNumber(8080)
+                            .endPort()
+                        .endService()
+                    .endDefaultBackend()
+                .endSpec()
+                .build())
+            .serverSideApply();
+
+        client.resource(new DeploymentBuilder()
+                .withNewMetadata()
+                    .withNamespace(CONSOLE_NS)
+                    .withName(CONSOLE_NAME + '-' + PrometheusDeployment.NAME)
+                    .withNamespace(CONSOLE_NS)
+                    .withLabels(ConsoleResource.MANAGEMENT_LABEL)
+                .endMetadata()
+                .withNewSpec()
+                    .withNewSelector()
+                        .addToMatchLabels("app", "pause")
+                    .endSelector()
+                    .withNewTemplate()
+                        .withNewMetadata()
+                            .addToLabels("app", "pause")
+                        .endMetadata()
+                        .withNewSpec()
+                            .addNewContainer()
+                                .withName("pause")
+                                .withImage("k8s.gcr.io/pause:3.1")
+                                .withImagePullPolicy("IfNotPresent")
+                            .endContainer()
+                        .endSpec()
+                    .endTemplate()
+                .endSpec()
+                .build())
+            .serverSideApply();
+
+        Console consoleCR = new ConsoleBuilder()
+                .withMetadata(new ObjectMetaBuilder()
+                        .withName(CONSOLE_NAME)
+                        .withNamespace(CONSOLE_NS)
+                        .build())
+                .withNewSpec()
+                    .withHostname("example.com")
+                    .addNewKafkaCluster()
+                        .withName(kafkaCR.getMetadata().getName())
+                        .withNamespace(kafkaCR.getMetadata().getNamespace())
+                        .withListener(kafkaCR.getSpec().getKafka().getListeners().get(0).getName())
+                    .endKafkaCluster()
+                .endSpec()
+                .build();
+
+        client.resource(consoleCR).serverSideApply();
+
+        await().ignoreException(NullPointerException.class).atMost(LIMIT).untilAsserted(() -> {
+            var console = client.resources(Console.class)
+                    .inNamespace(consoleCR.getMetadata().getNamespace())
+                    .withName(consoleCR.getMetadata().getName())
+                    .get();
+            List<Condition> conditions = new ArrayList<>(console.getStatus().getConditions());
+            assertEquals(3, conditions.size());
+
+            var ready = conditions.get(0);
+            assertEquals(Condition.Types.READY, ready.getType());
+            assertEquals("False", ready.getStatus());
+            assertEquals(Condition.Reasons.RECONCILIATION_EXCEPTION, ready.getReason());
+
+            var errors = conditions.subList(1, conditions.size());
+
+            for (var error : errors) {
+                assertEquals(Condition.Types.ERROR, error.getType());
+                assertEquals("True", error.getStatus());
+                assertEquals(Condition.Reasons.RECONCILIATION_EXCEPTION, error.getReason());
+                assertThat(error.getMessage(), containsString("code=409"));
+            }
+
+            var errorMessages = errors.stream().map(Condition::getMessage).toList();
+            assertThat(errorMessages, hasItem(containsString(CONSOLE_NAME + '-' + ConsoleIngress.NAME)));
+            assertThat(errorMessages, hasItem(containsString(CONSOLE_NAME + '-' + PrometheusDeployment.NAME)));
+        });
     }
 }
