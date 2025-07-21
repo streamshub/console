@@ -1,8 +1,13 @@
 package com.github.streamshub.console;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -41,6 +46,7 @@ import io.javaoperatorsdk.operator.api.reconciler.Reconciler;
 import io.javaoperatorsdk.operator.api.reconciler.UpdateControl;
 import io.javaoperatorsdk.operator.api.reconciler.Workflow;
 import io.javaoperatorsdk.operator.api.reconciler.dependent.Dependent;
+import io.javaoperatorsdk.operator.processing.dependent.workflow.WorkflowReconcileResult;
 import io.quarkiverse.operatorsdk.annotations.CSVMetadata;
 import io.quarkiverse.operatorsdk.annotations.CSVMetadata.Annotations;
 import io.quarkiverse.operatorsdk.annotations.CSVMetadata.Annotations.Annotation;
@@ -199,8 +205,8 @@ public class ConsoleReconciler implements Reconciler<Console>, Cleaner<Console> 
 
     @Override
     public UpdateControl<Console> reconcile(Console resource, Context<Console> context) {
-        determineReadyCondition(resource, context);
-        resource.getStatus().clearStaleConditions();
+        var result = context.managedWorkflowAndDependentResourceContext().getWorkflowReconcileResult();
+        determineConditions(resource, result, null);
 
         Long generation = resource.getMetadata().getGeneration();
 
@@ -216,37 +222,11 @@ public class ConsoleReconciler implements Reconciler<Console>, Cleaner<Console> 
             Context<Console> context,
             Exception e) {
 
-        determineReadyCondition(resource, context);
+        var result = context.managedWorkflowAndDependentResourceContext().getWorkflowReconcileResult();
+        determineConditions(resource, result, e);
 
-        Throwable rootCause = e;
-
-        while (rootCause.getCause() != null && rootCause.getCause() != rootCause) {
-            rootCause = rootCause.getCause();
-        }
-
-        String message;
-
-        if (rootCause instanceof AggregatedOperatorException aggregated) {
-            message = aggregated.getAggregatedExceptions().values().stream()
-                .map(Exception::getMessage)
-                .collect(Collectors.joining("; "));
-        } else {
-            message = rootCause.getMessage();
-        }
-
-        var status = resource.getStatus();
-
-        status.updateCondition(new ConditionBuilder()
-                .withType(Condition.Types.ERROR)
-                .withStatus("True")
-                .withLastTransitionTime(Instant.now().toString())
-                .withReason(Condition.Reasons.RECONCILIATION_EXCEPTION)
-                .withMessage(message)
-                .build());
-
-        status.clearStaleConditions();
-
-        return ErrorStatusUpdateControl.patchStatus(resource);
+        return ErrorStatusUpdateControl.patchStatus(resource)
+                .rescheduleAfter(Duration.ofSeconds(10));
     }
 
     @Override
@@ -254,12 +234,16 @@ public class ConsoleReconciler implements Reconciler<Console>, Cleaner<Console> 
         return DeleteControl.defaultDelete();
     }
 
-    private void determineReadyCondition(Console resource, Context<Console> context) {
-        var result = context.managedWorkflowAndDependentResourceContext().getWorkflowReconcileResult();
+    /**
+     * Sets the "Ready" condition as well as any "Error" conditions if applicable to the result of the
+     * workflow reconcile processing.
+     */
+    private void determineConditions(Console resource, Optional<WorkflowReconcileResult> result, Exception e) {
         var status = resource.getOrCreateStatus();
         var readyCondition = status.getCondition("Ready");
         var notReady = result.map(r -> r.getNotReadyDependents()).filter(Predicate.not(Collection::isEmpty));
-        boolean isReady = notReady.isEmpty();
+        var errored = result.map(r -> r.getErroredDependents()).filter(Predicate.not(Map::isEmpty));
+        boolean isReady = notReady.isEmpty() && errored.isEmpty();
 
         String readyStatus = isReady ? "True" : "False";
         readyCondition.setActive(true);
@@ -269,13 +253,18 @@ public class ConsoleReconciler implements Reconciler<Console>, Cleaner<Console> 
             readyCondition.setLastTransitionTime(Instant.now().toString());
         }
 
+        var erroredResources = errored.orElseGet(Collections::emptyMap);
+
         if (isReady) {
             readyCondition.setReason(null);
             readyCondition.setMessage("All resources ready");
         } else {
-            var notReadyResources = notReady.get();
+            var notReadyResources = notReady.orElseGet(Collections::emptyList);
 
-            if (notReadyResources.stream().anyMatch(ConfigurationProcessor.class::isInstance)) {
+            if (notReadyResources.isEmpty()) {
+                readyCondition.setReason(Condition.Reasons.RECONCILIATION_EXCEPTION);
+                readyCondition.setMessage("One or more exceptions occurred during Console reconciliation");
+            } else if (notReadyResources.stream().anyMatch(ConfigurationProcessor.class::isInstance)) {
                 readyCondition.setReason(Condition.Reasons.INVALID_CONFIGURATION);
                 readyCondition.setMessage("Console resource configuration is invalid");
             } else {
@@ -286,6 +275,88 @@ public class ConsoleReconciler implements Reconciler<Console>, Cleaner<Console> 
                                 .map(r -> "%s[%s]".formatted(r.getClass().getSimpleName(), r.instanceName(resource)))
                                 .collect(Collectors.joining("; "))));
             }
+
+            for (var entry : erroredResources.entrySet()) {
+                var erroredResource = (ConsoleResource<?>) entry.getKey();
+                var exception = entry.getValue();
+
+                var message = "%s[%s] exception: %s".formatted(
+                        erroredResource.getClass().getSimpleName(),
+                        erroredResource.instanceName(resource),
+                        exception.getMessage());
+
+                status.updateCondition(new ConditionBuilder()
+                        .withType(Condition.Types.ERROR)
+                        .withStatus("True")
+                        .withLastTransitionTime(Instant.now().toString())
+                        .withReason(Condition.Reasons.RECONCILIATION_EXCEPTION)
+                        .withMessage(message)
+                        .build());
+            }
         }
+
+        /*
+         * Only report the main exception if it is different than the exception already reported
+         * for an "errored" resource.
+         */
+        rootCause(e).filter(hasDistinct(erroredResources.values())).ifPresent(rootCause ->
+            status.updateCondition(new ConditionBuilder()
+                    .withType(Condition.Types.ERROR)
+                    .withStatus("True")
+                    .withLastTransitionTime(Instant.now().toString())
+                    .withReason(Condition.Reasons.RECONCILIATION_EXCEPTION)
+                    .withMessage(getMessage(rootCause))
+                    .build())
+        );
+
+        status.clearStaleConditions();
+    }
+
+    private Optional<Throwable> rootCause(Exception e) {
+        if (e == null) {
+            return Optional.empty();
+        }
+
+        Throwable rootCause = e;
+
+        while (rootCause.getCause() != null && rootCause.getCause() != rootCause) {
+            rootCause = rootCause.getCause();
+        }
+
+        return Optional.of(rootCause);
+    }
+
+    /**
+     * Provides a predicate that determines whether the tested throwable is itself
+     * distinct from any of the provided exceptions, or in the case of an aggregated
+     * exception, whether any of the nested exceptions are distinct from the
+     * provided exceptions.
+     */
+    private Predicate<Throwable> hasDistinct(Collection<Exception> exceptions) {
+        return rootCause -> {
+            Collection<? extends Throwable> causes;
+
+            if (rootCause instanceof AggregatedOperatorException aggregated) {
+                causes = aggregated.getAggregatedExceptions().values();
+            } else {
+                causes = List.of(rootCause);
+            }
+
+            return !exceptions.containsAll(causes);
+        };
+    }
+
+    private String getMessage(Throwable rootCause) {
+        String message;
+
+        if (rootCause instanceof AggregatedOperatorException aggregated) {
+            message = aggregated.getAggregatedExceptions().values().stream()
+                .map(Exception::getMessage)
+                .collect(Collectors.joining("; "));
+        } else {
+            message = rootCause.getMessage();
+        }
+
+        return message;
     }
 }
