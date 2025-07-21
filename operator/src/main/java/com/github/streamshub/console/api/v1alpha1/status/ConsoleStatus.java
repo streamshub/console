@@ -36,9 +36,23 @@ public class ConsoleStatus {
         return conditions;
     }
 
+    /*
+     * Setter used by Jackson. Without this the field is replaced with an unsorted
+     * HashSet by Jackson using reflection.
+     */
+    public void setConditions(Set<Condition> conditions) {
+        this.conditions.clear();
+        this.conditions.addAll(conditions);
+    }
+
     @JsonIgnore
     public boolean hasCondition(String type) {
         return conditions.stream().anyMatch(c -> type.equals(c.getType()));
+    }
+
+    @JsonIgnore
+    public boolean hasActiveCondition(String type) {
+        return conditions.stream().filter(Condition::isActive).anyMatch(c -> type.equals(c.getType()));
     }
 
     @JsonIgnore
