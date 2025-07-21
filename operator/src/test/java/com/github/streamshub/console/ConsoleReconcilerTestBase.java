@@ -28,6 +28,7 @@ import com.github.streamshub.console.dependents.ConsoleSecret;
 import io.fabric8.kubernetes.api.model.ConfigMap;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.KubernetesResourceList;
+import io.fabric8.kubernetes.api.model.Namespace;
 import io.fabric8.kubernetes.api.model.NamespaceBuilder;
 import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
 import io.fabric8.kubernetes.api.model.Secret;
@@ -78,6 +79,21 @@ abstract class ConsoleReconcilerTestBase {
     public static <T extends HasMetadata> T apply(KubernetesClient client, T resource) {
         client.resource(resource).serverSideApply();
         return client.resource(resource).patchStatus();
+    }
+
+    Namespace createNamespace(String name) {
+        Namespace ns = client.resource(new NamespaceBuilder()
+                .withNewMetadata()
+                    .withName(name)
+                    .withLabels(Map.of("streamshub-operator/test", "true"))
+                .endMetadata()
+                .build())
+            .serverSideApply();
+
+        ns.getSpec().setFinalizers(null);
+        ns.getMetadata().setFinalizers(null);
+
+        return client.resource(ns).update();
     }
 
     @SafeVarargs
@@ -151,13 +167,7 @@ abstract class ConsoleReconcilerTestBase {
 
         operator.start();
 
-        client.resource(new NamespaceBuilder()
-                .withNewMetadata()
-                    .withName(KAFKA_NS)
-                    .withLabels(Map.of("streamshub-operator/test", "true"))
-                .endMetadata()
-                .build())
-            .serverSideApply();
+        createNamespace(KAFKA_NS);
 
         kafkaCR = new KafkaBuilder()
                 .withNewMetadata()
@@ -189,24 +199,22 @@ abstract class ConsoleReconcilerTestBase {
 
         kafkaCR = apply(client, kafkaCR);
 
-        client.resource(new NamespaceBuilder()
-                .withNewMetadata()
-                    .withName(CONSOLE_NS)
-                    .withLabels(Map.of("streamshub-operator/test", "true"))
-                .endMetadata()
-                .build())
-            .serverSideApply();
+        createNamespace(CONSOLE_NS);
     }
 
-    Console createConsole(ConsoleBuilder builder) {
+    Console createConsole(ConsoleBuilder builder, String namespace) {
         var meta = new ObjectMetaBuilder(builder.getMetadata())
-                .withNamespace(CONSOLE_NS)
+                .withNamespace(namespace)
                 .withName(CONSOLE_NAME)
                 .build();
 
         builder = builder.withMetadata(meta);
 
         return client.resource(builder.build()).create();
+    }
+
+    Console createConsole(ConsoleBuilder builder) {
+        return createConsole(builder, CONSOLE_NS);
     }
 
     void awaitReady(Console resource) {
@@ -310,7 +318,12 @@ abstract class ConsoleReconcilerTestBase {
         var deployment = client.apps().deployments()
             .inNamespace(consoleCR.getMetadata().getNamespace())
             .withName("%s-%s".formatted(consoleCR.getMetadata().getName(), deploymentName))
-            .editStatus(this::setReady);
+            .get();
+
+        deployment.getMetadata().setResourceVersion(null);
+        deployment = client.resource(setReady(deployment))
+            .patchStatus();
+
         LOGGER.infof("Set ready replicas for deployment: %s", deploymentName);
         return deployment;
     }
