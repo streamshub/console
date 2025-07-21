@@ -84,11 +84,23 @@
 
     <dependencyManagement>
         <dependencies>
-            <!-- Manage kafka-clients for CVE-2024-56128 -->
             <dependency>
+                <!-- Managed for CVE-2025-48924 -->
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-lang3</artifactId>
+                <version>3.18.0</version>
+            </dependency>
+            <dependency>
+                <!-- Managed for CVE-2024-56128 -->
                 <groupId>org.apache.kafka</groupId>
                 <artifactId>kafka-clients</artifactId>
                 <version>3.9.1</version>
+            </dependency>
+            <dependency>
+                <!-- Managed for CVE-2025-53864 -->
+                <groupId>com.nimbusds</groupId>
+                <artifactId>nimbus-jose-jwt</artifactId>
+                <version>10.0.2</version>
             </dependency>
             <dependency>
                 <groupId>io.strimzi</groupId>
