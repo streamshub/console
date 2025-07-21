@@ -318,7 +318,11 @@ abstract class ConsoleReconcilerTestBase {
         var deployment = client.apps().deployments()
             .inNamespace(consoleCR.getMetadata().getNamespace())
             .withName("%s-%s".formatted(consoleCR.getMetadata().getName(), deploymentName))
-            .editStatus(this::setReady);
+            .get();
+
+        deployment = client.resource(setReady(deployment))
+            .patchStatus();
+
         LOGGER.infof("Set ready replicas for deployment: %s", deploymentName);
         return deployment;
     }
