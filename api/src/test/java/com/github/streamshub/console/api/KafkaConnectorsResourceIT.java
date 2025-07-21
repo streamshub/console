@@ -75,7 +75,6 @@ class KafkaConnectorsResourceIT implements ClientRequestFilter {
     TestHelper utils;
 
     StrimziKafkaContainer kafkaContainer;
-    String clusterId1;
     URI bootstrapServers;
 
     Consumer<ClientRequestContext> filterRequest;
@@ -137,8 +136,6 @@ class KafkaConnectorsResourceIT implements ClientRequestFilter {
                     .map(KafkaContext::clusterConfig)
                     .map(KafkaClusterConfig::clusterKey)
                     .anyMatch(Cache.metaNamespaceKeyFunc(kafka1)::equals));
-
-        clusterId1 = consoleConfig.getKafka().getCluster("default/test-kafka1").get().getId();
     }
 
     @AfterEach

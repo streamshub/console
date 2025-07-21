@@ -27,6 +27,7 @@ import com.github.streamshub.console.api.security.PermissionService;
 import com.github.streamshub.console.api.support.FieldFilter;
 import com.github.streamshub.console.api.support.KafkaConnectAPI;
 import com.github.streamshub.console.api.support.KafkaConnectAPI.ConnectorOffsets;
+import com.github.streamshub.console.api.support.KafkaContext;
 import com.github.streamshub.console.api.support.ListRequestContext;
 import com.github.streamshub.console.api.support.Promises;
 import com.github.streamshub.console.config.ConsoleConfig;
@@ -55,6 +56,12 @@ public class KafkaConnectService {
 
     @Inject
     ConsoleConfig consoleConfig;
+
+    @Inject
+    /**
+     * All Kafka contexts known to the application
+     */
+    Map<String, KafkaContext> kafkaContexts;
 
     @Inject
     KafkaConnectAPI.Client connectClient;
@@ -93,6 +100,7 @@ public class KafkaConnectService {
         var connectorPromise = primaryResource && fetchConnectors
             ? listConnectors(clusterConfig, fields, fetchParams)
             : PROMISE_EMPTY_CONNECTORS;
+        var kafkaIdentifiers = mapKafkaIdentifiers(clusterConfig);
 
         return connectClient.getWorkerDetails(clusterKey)
                 .thenApply(server -> {
@@ -102,11 +110,27 @@ public class KafkaConnectService {
                     cluster.commit(server.commit());
                     cluster.kafkaClusterId(server.kafkaClusterId());
                     cluster.version(server.version());
-                    cluster.kafkaClusters(clusterConfig.getKafkaClusters());
+                    cluster.kafkaClusters(kafkaIdentifiers);
                     return cluster;
                 })
                 .thenCombine(pluginPromise, ConnectCluster::plugins)
                 .thenCombine(connectorPromise, (cluster, connectors) -> cluster.connectors(connectors, includeConnectors));
+    }
+
+    public List<String> mapKafkaIdentifiers(KafkaConnectConfig clusterConfig) {
+        return clusterConfig.getKafkaClusters()
+                .stream()
+                .map(consoleConfig.getKafka()::getCluster)
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .map(kafkaConfig -> kafkaContexts.values()
+                        .stream()
+                        .filter(ctx -> ctx.clusterConfig().clusterKey().equals(kafkaConfig.clusterKey()))
+                        .findFirst()
+                        .orElse(null))
+                .filter(Objects::nonNull)
+                .map(ctx -> ctx.clusterId())
+                .toList();
     }
 
     public CompletionStage<List<Connector>> listConnectors(FieldFilter fields, ListRequestContext<Connector> listSupport) {

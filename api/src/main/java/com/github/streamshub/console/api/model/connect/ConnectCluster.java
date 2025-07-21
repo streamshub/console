@@ -21,7 +21,9 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.github.streamshub.console.api.model.KafkaCluster;
 import com.github.streamshub.console.api.model.Metrics;
+import com.github.streamshub.console.api.model.jsonapi.Identifier;
 import com.github.streamshub.console.api.model.jsonapi.JsonApiMeta;
 import com.github.streamshub.console.api.model.jsonapi.JsonApiRelationshipToMany;
 import com.github.streamshub.console.api.model.jsonapi.JsonApiResource;
@@ -169,14 +171,14 @@ public class ConnectCluster extends KubeApiResource<ConnectCluster.Attributes, C
         List<ConnectorPlugin> plugins;
 
         @JsonProperty
-        List<String> kafkaClusters;
-
-        @JsonProperty
         Metrics metrics;
     }
 
     @JsonFilter(FIELDS_PARAM)
     static class Relationships {
+        @JsonProperty
+        JsonApiRelationshipToMany kafkaClusters;
+
         @JsonProperty
         JsonApiRelationshipToMany connectors;
 
@@ -227,6 +229,12 @@ public class ConnectCluster extends KubeApiResource<ConnectCluster.Attributes, C
         return this;
     }
 
+    public void kafkaClusters(List<String> clusterIds) {
+        relationships.kafkaClusters = new JsonApiRelationshipToMany(clusterIds.stream()
+                .map(id -> new Identifier(KafkaCluster.API_TYPE, id))
+                .toList());
+    }
+
     public ConnectCluster connectors(List<Connector> connectors, boolean include) {
         if (include) {
             relationships.connectorResources = connectors;
@@ -243,9 +251,5 @@ public class ConnectCluster extends KubeApiResource<ConnectCluster.Attributes, C
 
     public void metrics(Metrics metrics) {
         attributes.metrics = metrics;
-    }
-
-    public void kafkaClusters(List<String> kafkaClusters) {
-        attributes.kafkaClusters = kafkaClusters;
     }
 }

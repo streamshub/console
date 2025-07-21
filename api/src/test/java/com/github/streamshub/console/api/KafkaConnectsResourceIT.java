@@ -4,11 +4,14 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.util.Base64;
+import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 import jakarta.inject.Inject;
 import jakarta.ws.rs.client.ClientRequestContext;
@@ -80,7 +83,6 @@ class KafkaConnectsResourceIT implements ClientRequestFilter {
     TestHelper utils;
 
     StrimziKafkaContainer kafkaContainer;
-    String clusterId1;
     URI bootstrapServers;
 
     Consumer<ClientRequestContext> filterRequest;
@@ -121,34 +123,44 @@ class KafkaConnectsResourceIT implements ClientRequestFilter {
 
         client.resources(Kafka.class).inAnyNamespace().delete();
 
-        Kafka kafka1 = new KafkaBuilder(utils.buildKafkaResource("test-kafka1", utils.getClusterId(), bootstrapServers))
-            .editOrNewStatus()
-                .addNewCondition()
-                    .withType("Ready")
-                    .withStatus("True")
-                .endCondition()
-                .addNewKafkaNodePool()
-                    .withName("my-node-pool")
-                .endKafkaNodePool()
-            .endStatus()
-            .build();
+        List<Kafka> kafkaClusters = Stream.of(1, 2).map(kid -> {
+            Kafka k = new KafkaBuilder(utils.buildKafkaResource("test-kafka" + kid, utils.getClusterId(), bootstrapServers))
+                    .editOrNewStatus()
+                        .addNewCondition()
+                            .withType("Ready")
+                            .withStatus("True")
+                        .endCondition()
+                        .addNewKafkaNodePool()
+                            .withName("my-node-pool" + kid)
+                        .endKafkaNodePool()
+                    .endStatus()
+                    .build();
 
-        utils.apply(client, kafka1);
+            return utils.apply(client, k);
+        }).toList();
 
-        // Wait for the added cluster to be configured in the context map
+        // Wait for the added clusters to be configured in the context map
         await().atMost(10, TimeUnit.SECONDS)
-            .until(() -> configuredContexts.values()
-                    .stream()
-                    .map(KafkaContext::clusterConfig)
-                    .map(KafkaClusterConfig::clusterKey)
-                    .anyMatch(Cache.metaNamespaceKeyFunc(kafka1)::equals));
-
-        clusterId1 = consoleConfig.getKafka().getCluster("default/test-kafka1").get().getId();
+            .until(() -> kafkaClusters.stream()
+                    .allMatch(k -> configuredContexts.values()
+                        .stream()
+                        .map(KafkaContext::clusterConfig)
+                        .map(KafkaClusterConfig::clusterKey)
+                        .anyMatch(Cache.metaNamespaceKeyFunc(k)::equals)));
     }
 
     @AfterEach
     void teardown() {
         client.resources(Kafka.class).inAnyNamespace().delete();
+    }
+
+    String kafkaClusterId(String clusterKey) {
+        return configuredContexts.values()
+                .stream()
+                .filter(ctx -> ctx.clusterConfig().clusterKey().equals(clusterKey))
+                .map(ctx -> ctx.clusterId())
+                .findFirst()
+                .orElseThrow(() -> new NoSuchElementException(clusterKey));
     }
 
     @Test
@@ -159,7 +171,7 @@ class KafkaConnectsResourceIT implements ClientRequestFilter {
             .body("data.size()", is(2))
             .body("data[0].id", is(Base64.getUrlEncoder().encodeToString("default/test-connect1".getBytes())))
             .body("data[0].attributes.commit", is("abc123d"))
-            .body("data[0].attributes.kafkaClusterId", is(clusterId1))
+            .body("data[0].attributes.kafkaClusterId", is(consoleConfig.getKafka().getCluster("default/test-kafka1").get().getId()))
             .body("data[0].attributes.version", is("4.0.0"))
             .body("data[1].id", is(Base64.getUrlEncoder().encodeToString("default/test-connect2".getBytes())))
             .body("data[1].attributes.commit", is("zyx987w"))
@@ -175,7 +187,7 @@ class KafkaConnectsResourceIT implements ClientRequestFilter {
     void testListConnectClustersFilteredByKafkaCluster(String kafkaCluster,
             String expectedName, String expectedCommit, String expectedKafkaId, String expectedVersion) {
 
-        whenRequesting(req -> req.param("filter[kafkaClusters]", "in," + kafkaCluster).get())
+        whenRequesting(req -> req.param("filter[kafkaClusters]", "in," + kafkaClusterId(kafkaCluster)).get())
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
             .body("data.size()", is(1))
@@ -196,7 +208,7 @@ class KafkaConnectsResourceIT implements ClientRequestFilter {
             String expectedName, String expectedCommit, String expectedKafkaId, String expectedVersion) {
 
         whenRequesting(req -> req
-                .param("filter[kafkaClusters]", "in," + kafkaCluster)
+                .param("filter[kafkaClusters]", "in," + kafkaClusterId(kafkaCluster))
                 .param("fields[connects]", "commit,kafkaClusterId,version,plugins,namespace")
                 .get())
             .assertThat()
@@ -217,7 +229,7 @@ class KafkaConnectsResourceIT implements ClientRequestFilter {
     })
     void testListConnectClustersWithConnectors(String kafkaCluster, String expectedName) {
         whenRequesting(req -> req
-                .param("filter[kafkaClusters]", "in," + kafkaCluster)
+                .param("filter[kafkaClusters]", "in," + kafkaClusterId(kafkaCluster))
                 .param("fields[connects]", "connectors")
                 .param("include", "connectors")
                 .get())
@@ -236,7 +248,7 @@ class KafkaConnectsResourceIT implements ClientRequestFilter {
     })
     void testListConnectClustersWithConnectorsNotIncluded(String kafkaCluster, String expectedName) {
         whenRequesting(req -> req
-                .param("filter[kafkaClusters]", "in," + kafkaCluster)
+                .param("filter[kafkaClusters]", "in," + kafkaClusterId(kafkaCluster))
                 .param("fields[connects]", "connectors")
                 .get())
             .assertThat()
@@ -254,7 +266,7 @@ class KafkaConnectsResourceIT implements ClientRequestFilter {
     })
     void testListConnectClustersWithConnectorTasks(String kafkaCluster, String expectedName) {
         whenRequesting(req -> req
-                .param("filter[kafkaClusters]", "in," + kafkaCluster)
+                .param("filter[kafkaClusters]", "in," + kafkaClusterId(kafkaCluster))
                 .param("fields[connects]", "connectors")
                 .param("fields[connectors]", "tasks")
                 .param("include", "connectors,tasks")
@@ -279,7 +291,7 @@ class KafkaConnectsResourceIT implements ClientRequestFilter {
     void testListConnectClustersWithConnectorTasksNotIncluded(String kafkaCluster, String expectedName) {
         // Tests that the connectorTasks relationships are returned, but the resources themselves are not included
         whenRequesting(req -> req
-                .param("filter[kafkaClusters]", "in," + kafkaCluster)
+                .param("filter[kafkaClusters]", "in," + kafkaClusterId(kafkaCluster))
                 .param("fields[connects]", "connectors")
                 .param("fields[connectors]", "tasks")
                 .param("include", "connectors")
