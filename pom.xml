@@ -17,9 +17,9 @@
         <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
         <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
         <quarkus.platform.version>3.20.1</quarkus.platform.version>
-        <strimzi-api.version>0.46.1</strimzi-api.version>
+        <strimzi-api.version>0.47.0</strimzi-api.version>
         <strimzi-oauth.version>0.16.2</strimzi-oauth.version>
-        <apicurio-registry.version>2.6.12.Final</apicurio-registry.version>
+        <apicurio-registry.version>2.6.13.Final</apicurio-registry.version>
 
         <!-- Test Dependencies -->
         <hamcrest.version>3.0</hamcrest.version>
@@ -30,7 +30,7 @@
         <maven.dependency.version>3.8.1</maven.dependency.version>
         <maven.checkstyle.version>3.6.0</maven.checkstyle.version>
         <jacoco-maven-plugin.version>0.8.13</jacoco-maven-plugin.version>
-        <jandex-maven-plugin.version>3.3.2</jandex-maven-plugin.version>
+        <jandex-maven-plugin.version>3.4.0</jandex-maven-plugin.version>
         <spotbugs.version>4.9.3</spotbugs.version>
         <surefire-plugin.version>3.5.3</surefire-plugin.version>
 
