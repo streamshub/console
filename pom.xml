@@ -17,7 +17,7 @@
         <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
         <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
         <quarkus.platform.version>3.20.1</quarkus.platform.version>
-        <strimzi-api.version>0.46.1</strimzi-api.version>
+        <strimzi-api.version>0.47.0</strimzi-api.version>
         <strimzi-oauth.version>0.16.2</strimzi-oauth.version>
         <apicurio-registry.version>2.6.13.Final</apicurio-registry.version>
 
