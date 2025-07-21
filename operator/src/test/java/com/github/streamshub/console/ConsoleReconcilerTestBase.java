@@ -320,6 +320,7 @@ abstract class ConsoleReconcilerTestBase {
             .withName("%s-%s".formatted(consoleCR.getMetadata().getName(), deploymentName))
             .get();
 
+        deployment.getMetadata().setResourceVersion(null);
         deployment = client.resource(setReady(deployment))
             .patchStatus();
 
