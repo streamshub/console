@@ -51,7 +51,6 @@
                                 <exclude>**/com/github/streamshub/console/api/v1alpha1/**/*Builder.class</exclude>
                                 <exclude>**/com/github/streamshub/console/api/v1alpha1/**/*Fluent.class</exclude>
                                 <exclude>**/com/github/streamshub/console/api/v1alpha1/**/*Nested.class</exclude>
-                                <exclude>**/com/github/streamshub/systemtests/**/*.class</exclude>
                             </excludes>
                             <outputDirectory>${project.build.directory}/coverage</outputDirectory>
                         </configuration>

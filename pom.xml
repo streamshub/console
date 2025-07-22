@@ -44,6 +44,9 @@
             common/src/main/java/com/github/streamshub/console/config/*.java,
             operator/src/main/java/com/github/streamshub/console/api/v1alpha1/**/*.java
         </sonar.cpd.exclusions>
+        <sonar.coverage.exclusions>
+            systemtests/**
+        </sonar.coverage.exclusions>
         <sonar.issue.ignore.multicriteria>e1,e2</sonar.issue.ignore.multicriteria>
         <!-- Ignore rule java:S6813 about avoidance of field injection -->
         <sonar.issue.ignore.multicriteria.e1.ruleKey>java:S6813</sonar.issue.ignore.multicriteria.e1.ruleKey>
