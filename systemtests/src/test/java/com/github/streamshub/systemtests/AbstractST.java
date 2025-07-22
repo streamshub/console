@@ -2,6 +2,7 @@ package com.github.streamshub.systemtests;
 
 import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.constants.Labels;
+import com.github.streamshub.systemtests.interfaces.ExtensionContextParameterResolver;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.resourcetypes.ConsoleType;
 import com.github.streamshub.systemtests.resourcetypes.KafkaTopicType;
@@ -47,6 +48,7 @@ import java.io.IOException;
 @ResourceManager(asyncDeletion = false, cleanResources = false)
 @SuppressWarnings("ClassDataAbstractionCoupling")
 @ExtendWith({TestExecutionWatcher.class})
+@ExtendWith(ExtensionContextParameterResolver.class)
 public abstract class AbstractST {
     private static final Logger LOGGER = LogWrapper.getLogger(AbstractST.class);
     // Operators
@@ -120,7 +122,8 @@ public abstract class AbstractST {
     }
 
     @AfterEach
-    void teardownTestCase() {
+    void teardownTestCase(ExtensionContext extensionContext) {
+        KubeResourceManager.get().setTestContext(extensionContext);
         getTestCaseConfig().playwright().close();
         if (Environment.CLEANUP_ENVIRONMENT) {
             KubeResourceManager.get().deleteResources();
@@ -128,7 +131,8 @@ public abstract class AbstractST {
     }
 
     @AfterAll
-    void teardownTestSuit() {
+    void teardownTestSuit(ExtensionContext extensionContext) {
+        KubeResourceManager.get().setTestContext(extensionContext);
         if (Environment.CLEANUP_ENVIRONMENT) {
             KubeResourceManager.get().deleteResources();
         }

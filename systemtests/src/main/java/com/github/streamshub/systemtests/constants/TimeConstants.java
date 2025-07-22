@@ -22,6 +22,7 @@ public class TimeConstants {
     // Timeout
     public static final long COMPONENT_LOAD_TIMEOUT = secondsInMilis(40);
     public static final long GLOBAL_STATUS_TIMEOUT = minutesInMilis(3);
+    public static final int GLOBAL_STABILITY_OFFSET_TIME = 20;
     // HTML elements
     public static final long ELEMENT_VISIBILITY_TIMEOUT = minutesInMilis(1);
     public static final long UI_COMPONENT_REACTION_INTERVAL_SHORT = secondsInMilis(5);
