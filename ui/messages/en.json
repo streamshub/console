@@ -692,5 +692,14 @@
     "create_topic": "Create topic",
     "consumer_groups": "Consumer groups",
     "view_all_kafka_clusters": "View all Kafka clusters"
+  },
+  "KafkaConnect": {
+    "connectors": {
+      "name": "Name",
+      "connect_cluster": "Connect cluster",
+      "type": "Type",
+      "state": "State",
+      "tasks": "Tasks"
+    }
   }
 }
