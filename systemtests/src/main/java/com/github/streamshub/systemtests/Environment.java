@@ -69,7 +69,6 @@ public class Environment {
     }
 
     public static boolean isTestClientsPullSecretPresent() {
-        return Environment.TEST_CLIENTS_PULL_SECRET != null && !Environment.TEST_CLIENTS_PULL_SECRET.isEmpty();
+        return !Environment.TEST_CLIENTS_PULL_SECRET.isEmpty();
     }
-
 }
