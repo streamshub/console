@@ -162,7 +162,7 @@ public class CssBuilder {
     public CssBuilder withComponentMenuToggle() { return withComponent("menu-toggle"); }
     public CssBuilder withComponentPanel() { return withComponent("panel"); }
     public CssBuilder withComponentForm() { return withComponent("form"); }
-
+    public CssBuilder withComponentRadio() { return withComponent("radio"); }
 
     // ----------------
     // Sub-components
@@ -185,6 +185,7 @@ public class CssBuilder {
     public CssBuilder withSubComponentItemControl() { return withSubComponent("item-control"); }
     public CssBuilder withSubComponentOpen() { return withSubComponent("open"); }
     public CssBuilder withSubComponentItemMain() { return withSubComponent("item-main"); }
+    public CssBuilder withSubComponentItemText() { return withSubComponent("item-text"); }
     public CssBuilder withSubComponentItemCheck() { return withSubComponent("item-check"); }
     public CssBuilder withSubComponentInput() { return withSubComponent("input"); }
     public CssBuilder withSubComponentControls() { return withSubComponent("controls"); }
@@ -222,6 +223,7 @@ public class CssBuilder {
     public CssBuilder withSubComponentCheck() { return withSubComponent("check"); }
     public CssBuilder withSubComponentSort() { return withSubComponent("sort"); }
     public CssBuilder withSubComponentButtonContent() { return withSubComponent("button-content"); }
+    public CssBuilder withSubComponentLabel() { return withSubComponent("label"); }
 
     // ------------
     // Layouts
