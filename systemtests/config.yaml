@@ -19,7 +19,7 @@ SKIP_STRIMZI_INSTALLATION: false
 # Deployment name of the Strimzi Operator. Need to set this when Strimzi is installed externally
 STRIMZI_OPERATOR_NAME: strimzi-cluster-operator
 # Deployment name of the Console instance
-CONSOLE_DEPLOYMENT_NAME: amq-streams-console
+CONSOLE_DEPLOYMENT_NAME: streamshub-console
 # Install type for Console Operator [OLM; YAML]
 CONSOLE_INSTALL_TYPE: olm
 # Kubernetes client type used to execute cmd [oc, kubectl]
@@ -34,7 +34,7 @@ CONSOLE_OLM_CATALOG_SOURCE_NAME: console-source
 # Namespace where lies the CatalogSource for Console Operator
 CONSOLE_OLM_CATALOG_SOURCE_NAMESPACE: openshift-marketplace
 # Package name of the console operator
-CONSOLE_OLM_PACKAGE_NAME: amq-streams-console
+CONSOLE_OLM_PACKAGE_NAME: streamshub-console-operator
 # OLM channel for selecting the Operator version
 CONSOLE_OLM_CHANNEL_NAME: alpha
 # -------------------------------------------

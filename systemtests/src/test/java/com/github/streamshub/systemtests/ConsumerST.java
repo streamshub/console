@@ -28,7 +28,7 @@ public class ConsumerST extends AbstractST {
         final TestCaseConfig tcc = getTestCaseConfig();
         final String topicPrefix = "offset-reset";
 
-[]        LOGGER.info("Create topic and produce messages for filtering test");
+        LOGGER.info("Create topic and produce messages for filtering test");
         String kafkaTopicName = KafkaTopicUtils.setupTopicsAndReturn(tcc.namespace(), tcc.kafkaName(), topicPrefix, 1, true, 1, 1, 1)
             .get(0).getMetadata().getName();
 
