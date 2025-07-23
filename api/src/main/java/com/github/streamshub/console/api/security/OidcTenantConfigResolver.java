@@ -1,7 +1,5 @@
 package com.github.streamshub.console.api.security;
 
-import java.util.List;
-
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
