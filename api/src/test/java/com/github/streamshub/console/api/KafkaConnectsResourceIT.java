@@ -187,7 +187,7 @@ class KafkaConnectsResourceIT implements ClientRequestFilter {
     void testListConnectClustersFilteredByKafkaCluster(String kafkaCluster,
             String expectedName, String expectedCommit, String expectedKafkaId, String expectedVersion) {
 
-        whenRequesting(req -> req.param("filter[kafkaClusters]", "in," + kafkaClusterId(kafkaCluster)).get())
+        whenRequesting(req -> req.param("filter[kafkaClusters]", "contains," + kafkaClusterId(kafkaCluster)).get())
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
             .body("data.size()", is(1))
@@ -229,7 +229,7 @@ class KafkaConnectsResourceIT implements ClientRequestFilter {
     })
     void testListConnectClustersWithConnectors(String kafkaCluster, String expectedName) {
         whenRequesting(req -> req
-                .param("filter[kafkaClusters]", "in," + kafkaClusterId(kafkaCluster))
+                .param("filter[kafkaClusters]", "contains," + kafkaClusterId(kafkaCluster))
                 .param("fields[connects]", "connectors")
                 .param("include", "connectors")
                 .get())
@@ -266,7 +266,7 @@ class KafkaConnectsResourceIT implements ClientRequestFilter {
     })
     void testListConnectClustersWithConnectorTasks(String kafkaCluster, String expectedName) {
         whenRequesting(req -> req
-                .param("filter[kafkaClusters]", "in," + kafkaClusterId(kafkaCluster))
+                .param("filter[kafkaClusters]", "contains," + kafkaClusterId(kafkaCluster))
                 .param("fields[connects]", "connectors")
                 .param("fields[connectors]", "tasks")
                 .param("include", "connectors,tasks")

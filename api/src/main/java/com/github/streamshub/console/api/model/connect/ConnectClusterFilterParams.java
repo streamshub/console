@@ -46,8 +46,8 @@ public class ConnectClusterFilterParams extends FilterParams {
         explode = Explode.FALSE)
     @Expression(
         when = "self != null",
-        value = "self.operator == 'eq' || self.operator == 'in'",
-        message = "unsupported filter operator, supported values: [ 'eq', 'in' ]",
+        value = "self.operator == 'contains' || self.operator == 'in'",
+        message = "unsupported filter operator, supported values: [ 'contains', 'in' ]",
         payload = ErrorCategory.InvalidQueryParameter.class,
         node = "filter[kafkaClusters]")
     @Expression(
