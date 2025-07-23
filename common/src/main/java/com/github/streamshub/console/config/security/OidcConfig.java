@@ -22,6 +22,8 @@ public class OidcConfig implements Trustable {
     private String clientId;
     @NotBlank
     private String clientSecret;
+    @NotBlank
+    private String rolesClaimPath = "groups"; 
     @Valid
     private TrustStoreConfig trustStore;
 
@@ -71,6 +73,14 @@ public class OidcConfig implements Trustable {
 
     public void setClientSecret(String clientSecret) {
         this.clientSecret = clientSecret;
+    }
+
+    public String getRolesClaimPath() {
+        return rolesClaimPath;
+    }
+
+    public void setRolesClaimPath(String rolesClaimPath) {
+        this.rolesClaimPath = rolesClaimPath;
     }
 
     public TrustStoreConfig getTrustStore() {

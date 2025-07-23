@@ -16,7 +16,7 @@ class OpenIdConnect {
     truststore: string | null,
     scopes: string | null,
   ) {
-    if (clientId && clientSecret && authServerUrl && scopes) {
+    if (clientId && clientSecret && authServerUrl) {
       this.provider = {
         id: "oidc",
         name: "OpenID Connect Provider",
@@ -24,7 +24,9 @@ class OpenIdConnect {
         clientId: clientId,
         clientSecret: clientSecret,
         wellKnown: `${authServerUrl}/.well-known/openid-configuration`,
-        authorization: { params: { scope: scopes } },
+        authorization: {
+          params: { scope: scopes || "openid email profile groups" },
+        },
         idToken: true,
         profile(profile) {
           return {

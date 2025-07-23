@@ -40,12 +40,14 @@ public class OidcTenantConfigResolver implements TenantConfigResolver {
     void initialize() {
         var oidc = consoleConfig.getSecurity().getOidc();
 
+         List<String> pathList = List.of(oidc.getRolesClaimPath().split("/"));
+
         final var builder = OidcTenantConfig.builder()
                 .tenantId(oidc.getTenantId())
                 .discoveryEnabled(true)
                 .authServerUrl(oidc.getAuthServerUrl())
                 .roles()
-                    .roleClaimPath(List.of("groups"))
+                    .roleClaimPath(pathList)
                 .end();
 
         if (oidc.getIssuer() != null) {
