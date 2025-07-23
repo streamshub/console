@@ -3,6 +3,8 @@ package com.github.streamshub.console.config.security;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 
+import java.util.List;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.github.streamshub.console.config.TrustStoreConfig;
 import com.github.streamshub.console.config.Trustable;
@@ -23,7 +25,7 @@ public class OidcConfig implements Trustable {
     @NotBlank
     private String clientSecret;
     @NotBlank
-    private String rolesClaimPath = "groups"; 
+    private List<String> roleClaimPath = List.of("groups"); 
     @Valid
     private TrustStoreConfig trustStore;
 
@@ -75,12 +77,12 @@ public class OidcConfig implements Trustable {
         this.clientSecret = clientSecret;
     }
 
-    public String getRolesClaimPath() {
-        return rolesClaimPath;
+    public List<String> getRoleClaimPath() {
+        return roleClaimPath;
     }
 
-    public void setRolesClaimPath(String rolesClaimPath) {
-        this.rolesClaimPath = rolesClaimPath;
+    public void setRoleClaimPath(List<String> roleClaimPath) {
+        this.roleClaimPath = roleClaimPath;
     }
 
     public TrustStoreConfig getTrustStore() {
