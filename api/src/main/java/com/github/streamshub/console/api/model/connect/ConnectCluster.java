@@ -14,13 +14,13 @@ import jakarta.json.JsonObject;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.media.SchemaProperty;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonFilter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.github.streamshub.console.api.model.FetchParams;
 import com.github.streamshub.console.api.model.KafkaCluster;
 import com.github.streamshub.console.api.model.Metrics;
 import com.github.streamshub.console.api.model.jsonapi.Identifier;
@@ -71,11 +71,13 @@ public class ConnectCluster extends KubeApiResource<ConnectCluster.Attributes, C
         COMMIT("commit"),
         KAFKA_CLUSTER_ID("kafkaClusterId"),
         VERSION("version"),
+        REPLICAS("replicas"),
         PLUGINS("plugins"),
         KAFKA_CLUSTERS("kafkaClusters"),
         CONNECTORS("connectors");
 
-        public static final String LIST_DEFAULT = "name,namespace,creationTimestamp,commit,kafkaClusterId,version,kafkaClusters";
+        public static final String LIST_DEFAULT = "name,namespace,creationTimestamp,commit,kafkaClusterId,version,replicas,kafkaClusters";
+        public static final String DESCRIBE_DEFAULT = "name,namespace,creationTimestamp,commit,kafkaClusterId,version,replicas,kafkaClusters,connectors";
 
         private final String value;
 
@@ -145,9 +147,22 @@ public class ConnectCluster extends KubeApiResource<ConnectCluster.Attributes, C
 
     @Schema(name = "KafkaConnectClusterData")
     public static final class Data extends JsonApiRootData<ConnectCluster> {
-        @JsonCreator
-        public Data(@JsonProperty("data") ConnectCluster data) {
+        public Data(ConnectCluster data, FetchParams fetchParams) {
             super(data);
+
+            Optional.ofNullable(data.relationships.connectorResources)
+                .map(Collection::stream)
+                .orElseGet(Stream::empty)
+                .forEach(connector -> {
+                    addIncluded(connector);
+
+                    if (fetchParams.includes(Connector.Fields.TASKS.toString())) {
+                        Optional.ofNullable(connector.getRelationships().taskResources)
+                            .map(Collection::stream)
+                            .orElseGet(Stream::empty)
+                            .forEach(this::addIncluded);
+                    }
+                });
         }
     }
 
@@ -166,6 +181,9 @@ public class ConnectCluster extends KubeApiResource<ConnectCluster.Attributes, C
 
         @JsonProperty
         String version;
+
+        @JsonProperty
+        Integer replicas;
 
         @JsonProperty
         List<ConnectorPlugin> plugins;
@@ -191,16 +209,12 @@ public class ConnectCluster extends KubeApiResource<ConnectCluster.Attributes, C
         super(id, API_TYPE, new Attributes(), new Relationships());
     }
 
-    public static ConnectCluster fromId(String id) {
-        return new ConnectCluster(id);
-    }
-
     /**
      * Constructs a "cursor" Topic from the encoded string representation of the subset
      * of Topic fields used to compare entities for pagination/sorting.
      */
     public static ConnectCluster fromCursor(JsonObject cursor) {
-        return PaginatedKubeResource.fromCursor(cursor, ConnectCluster::fromId);
+        return PaginatedKubeResource.fromCursor(cursor, ConnectCluster::new);
     }
 
     @Override
@@ -222,6 +236,10 @@ public class ConnectCluster extends KubeApiResource<ConnectCluster.Attributes, C
 
     public void version(String version) {
         attributes.version = version;
+    }
+
+    public void replicas(Integer replicas) {
+        attributes.replicas = replicas;
     }
 
     public ConnectCluster plugins(List<ConnectorPlugin> plugins) {

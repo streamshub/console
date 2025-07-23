@@ -34,6 +34,9 @@ import com.github.streamshub.console.config.ConsoleConfig;
 import com.github.streamshub.console.config.KafkaConnectConfig;
 import com.github.streamshub.console.config.security.Privilege;
 
+import io.strimzi.api.kafka.model.connect.KafkaConnect;
+import io.strimzi.api.kafka.model.connect.KafkaConnectStatus;
+
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static java.util.concurrent.CompletableFuture.completedStage;
@@ -88,6 +91,12 @@ public class KafkaConnectService {
                         .toList());
     }
 
+    public CompletionStage<ConnectCluster> describeCluster(String clusterId, FieldFilter fields, FetchParams fetchParams) {
+        String[] idParts = decode(clusterId);
+        KafkaConnectConfig clusterConfig = consoleConfig.getKafkaConnectCluster(idParts[0]);
+        return describeCluster(clusterConfig, fields, fetchParams, true);
+    }
+
     private CompletionStage<ConnectCluster> describeCluster(KafkaConnectConfig clusterConfig, FieldFilter fields, FetchParams fetchParams, boolean primaryResource) {
         var clusterKey = clusterConfig.clusterKey();
         var includePlugins = fields.isIncluded(ConnectCluster.FIELDS_PARAM, ConnectCluster.Fields.PLUGINS.toString());
@@ -102,6 +111,11 @@ public class KafkaConnectService {
             : PROMISE_EMPTY_CONNECTORS;
         var kafkaIdentifiers = mapKafkaIdentifiers(clusterConfig);
 
+        var customResourcePromise = connectClient.getKafkaConnectResource(
+                clusterConfig.getNamespace(),
+                clusterConfig.getName()
+        );
+
         return connectClient.getWorkerDetails(clusterKey)
                 .thenApply(server -> {
                     var cluster = new ConnectCluster(encode("", clusterConfig.clusterKey()));
@@ -114,7 +128,14 @@ public class KafkaConnectService {
                     return cluster;
                 })
                 .thenCombine(pluginPromise, ConnectCluster::plugins)
-                .thenCombine(connectorPromise, (cluster, connectors) -> cluster.connectors(connectors, includeConnectors));
+                .thenCombine(connectorPromise, (cluster, connectors) -> cluster.connectors(connectors, includeConnectors))
+                .thenCombine(customResourcePromise, (cluster, connectCR) -> {
+                    cluster.addMeta("managed", Boolean.valueOf(connectCR.isPresent()));
+                    connectCR.map(KafkaConnect::getStatus)
+                        .map(KafkaConnectStatus::getReplicas)
+                        .ifPresent(cluster::replicas);
+                    return cluster;
+                });
     }
 
     public List<String> mapKafkaIdentifiers(KafkaConnectConfig clusterConfig) {
@@ -202,6 +223,11 @@ public class KafkaConnectService {
             ? describeConnectorTasks(clusterConfig, connectorName)
             : PROMISE_EMPTY_CONFIG;
 
+        var customResourcePromise = connectClient.getKafkaConnectorResource(
+                clusterConfig.getNamespace(),
+                connectorName
+        );
+
         return connectClient.getConnector(clusterConfig.clusterKey(), connectorName)
             .thenCombine(
                 connectClient.getConnectorStatus(clusterConfig.clusterKey(), connectorName),
@@ -228,7 +254,11 @@ public class KafkaConnectService {
             .thenCombine(
                 clusterPromise,
                 (connector, cluster) -> connector.connectCluster(cluster, includeCluster)
-            );
+            )
+            .thenCombine(customResourcePromise, (connector, customResource) -> {
+                connector.addMeta("managed", Boolean.valueOf(customResource.isPresent()));
+                return connector;
+            });
     }
 
     private void mapTasks(Connector connector, KafkaConnectAPI.ConnectorInfo info, KafkaConnectAPI.ConnectorStateInfo state, boolean include) {

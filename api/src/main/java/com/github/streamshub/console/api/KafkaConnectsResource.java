@@ -10,6 +10,7 @@ import jakarta.ws.rs.BeanParam;
 import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
@@ -124,4 +125,72 @@ public class KafkaConnectsResource {
             .thenApply(Response::ok)
             .thenApply(ResponseBuilder::build);
     }
+
+
+    @GET
+    @Path("{clusterId}")
+    @Produces(MediaType.APPLICATION_JSON)
+    @APIResponseSchema(ConnectCluster.Data.class)
+    @APIResponse(responseCode = "500", ref = "ServerError")
+    @APIResponse(responseCode = "504", ref = "ServerTimeout")
+    @Authorized
+    @ResourcePrivilege(Privilege.LIST)
+    public CompletionStage<Response> describeConnectCluster(
+            @Parameter(description = "Cluster identifier")
+            @PathParam("clusterId")
+            String clusterId,
+
+            @QueryParam(ConnectCluster.FIELDS_PARAM)
+            @DefaultValue(ConnectCluster.Fields.DESCRIBE_DEFAULT)
+            @StringEnumeration(
+                    source = ConnectCluster.FIELDS_PARAM,
+                    enumeration = ConnectCluster.Fields.class,
+                    message = "list contains a value that is not valid or not available for the operation",
+                    payload = ErrorCategory.InvalidQueryParameter.class)
+            @Parameter(ref = ConnectCluster.FIELDS_PARAM)
+            List<String> connectFields,
+
+            @QueryParam(Connector.FIELDS_PARAM)
+            @DefaultValue(Connector.Fields.LIST_DEFAULT)
+            @StringEnumeration(
+                    source = Connector.FIELDS_PARAM,
+                    enumeration = Connector.Fields.class,
+                    message = "list contains a value that is not valid or not available for the operation",
+                    payload = ErrorCategory.InvalidQueryParameter.class)
+            @Parameter(ref = Connector.FIELDS_PARAM)
+            List<String> connectorFields,
+
+            @QueryParam(ConnectorTask.FIELDS_PARAM)
+            @DefaultValue(ConnectorTask.Fields.LIST_DEFAULT)
+            @StringEnumeration(
+                    source = ConnectorTask.FIELDS_PARAM,
+                    enumeration = ConnectorTask.Fields.class,
+                    message = "list contains a value that is not valid or not available for the operation",
+                    payload = ErrorCategory.InvalidQueryParameter.class)
+            @Parameter(ref = ConnectorTask.FIELDS_PARAM)
+            List<String> taskFields,
+
+            @Valid
+            @BeanParam
+            @Expression(
+                    when = "self.rawInclude != null",
+                    staticImports = "java.util.Arrays.asList",
+                    value = "self.includeEntries.stream().allMatch(i -> asList('connectors','tasks').contains(i))",
+                    message = "invalid include, supported values: [ 'connectors', 'tasks' ]",
+                    payload = ErrorCategory.InvalidQueryParameter.class,
+                    node = FetchParams.INCLUDE_PARAM)
+            FetchParams describeParams) {
+
+        fieldFilter.setTypedFields(Map.of(
+                Connector.FIELDS_PARAM, connectorFields,
+                ConnectCluster.FIELDS_PARAM, connectFields,
+                ConnectorTask.FIELDS_PARAM, taskFields
+        ));
+
+        return connectService.describeCluster(clusterId, fieldFilter, describeParams)
+            .thenApply(cluster -> new ConnectCluster.Data(cluster, describeParams))
+            .thenApply(Response::ok)
+            .thenApply(ResponseBuilder::build);
+    }
+
 }
