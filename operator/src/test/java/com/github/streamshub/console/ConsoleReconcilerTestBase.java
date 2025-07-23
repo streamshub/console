@@ -1,10 +1,12 @@
 package com.github.streamshub.console;
 
+import java.lang.reflect.Method;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Consumer;
@@ -35,6 +37,7 @@ import io.fabric8.kubernetes.api.model.Secret;
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinitionBuilder;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.kubernetes.api.model.networking.v1.Ingress;
+import io.fabric8.kubernetes.client.CustomResource;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.dsl.Deletable;
 import io.fabric8.kubernetes.client.dsl.FilterWatchListDeletable;
@@ -43,6 +46,7 @@ import io.strimzi.api.kafka.Crds;
 import io.strimzi.api.kafka.model.kafka.Kafka;
 import io.strimzi.api.kafka.model.kafka.KafkaBuilder;
 import io.strimzi.api.kafka.model.kafka.listener.KafkaListenerAuthenticationScramSha512;
+import io.strimzi.api.kafka.model.kafka.listener.KafkaListenerAuthenticationTls;
 import io.strimzi.api.kafka.model.kafka.listener.KafkaListenerType;
 import io.strimzi.api.kafka.model.user.KafkaUser;
 
@@ -76,9 +80,24 @@ abstract class ConsoleReconcilerTestBase {
 
     Kafka kafkaCR;
 
-    public static <T extends HasMetadata> T apply(KubernetesClient client, T resource) {
-        client.resource(resource).serverSideApply();
-        return client.resource(resource).patchStatus();
+    public <T extends HasMetadata> T apply(KubernetesClient client, T resource) {
+        var resourceClient = client.resource(resource);
+        resourceClient.serverSideApply();
+
+        if (resource instanceof CustomResource<?, ?> || hasStatus(resource)) {
+            resource = resourceClient.patchStatus();
+        }
+
+        return resource;
+    }
+
+    private static boolean hasStatus(Object resource) {
+        try {
+            Method getStatus = resource.getClass().getMethod("getStatus");
+            return Objects.nonNull(getStatus.invoke(resource));
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     Namespace createNamespace(String name) {
@@ -183,6 +202,13 @@ abstract class ConsoleReconcilerTestBase {
                             .withTls(true)
                             .withAuth(new KafkaListenerAuthenticationScramSha512())
                         .endListener()
+                        .addNewListener()
+                            .withName("tls-auth-listener")
+                            .withType(KafkaListenerType.INGRESS)
+                            .withPort(9094)
+                            .withTls(true)
+                            .withAuth(new KafkaListenerAuthenticationTls())
+                        .endListener()
                     .endKafka()
                 .endSpec()
                 .withNewStatus()
@@ -192,6 +218,13 @@ abstract class ConsoleReconcilerTestBase {
                         .addNewAddress()
                             .withHost("kafka-bootstrap.example.com")
                             .withPort(9093)
+                        .endAddress()
+                    .endListener()
+                    .addNewListener()
+                        .withName("tls-auth-listener")
+                        .addNewAddress()
+                            .withHost("kafka-bootstrap.example.com")
+                            .withPort(9094)
                         .endAddress()
                     .endListener()
                 .endStatus()

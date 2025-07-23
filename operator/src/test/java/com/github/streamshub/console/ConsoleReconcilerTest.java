@@ -10,6 +10,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
 import org.apache.kafka.common.config.SaslConfigs;
+import org.apache.kafka.common.config.SslConfigs;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -58,6 +59,7 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.strimzi.api.kafka.model.user.KafkaUser;
 import io.strimzi.api.kafka.model.user.KafkaUserBuilder;
 import io.strimzi.api.kafka.model.user.KafkaUserScramSha512ClientAuthentication;
+import io.strimzi.api.kafka.model.user.KafkaUserTlsClientAuthentication;
 
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -399,7 +401,7 @@ class ConsoleReconcilerTest extends ConsoleReconcilerTestBase {
     }
 
     @Test
-    void testConsoleReconciliationWithValidKafkaUser() {
+    void testConsoleReconciliationWithValidScramKafkaUser() {
         KafkaUser userCR = new KafkaUserBuilder()
                 .withNewMetadata()
                     .withName("ku1")
@@ -408,14 +410,12 @@ class ConsoleReconcilerTest extends ConsoleReconcilerTestBase {
                 .withNewSpec()
                     .withAuthentication(new KafkaUserScramSha512ClientAuthentication())
                 .endSpec()
-                .build();
-
-        userCR = client.resource(userCR).create();
-        client.resource(userCR).editStatus(user -> new KafkaUserBuilder(user)
                 .withNewStatus()
                     .withSecret("ku1")
                 .endStatus()
-                .build());
+                .build();
+
+        userCR = apply(client, userCR);
 
         Secret userSecret = new SecretBuilder()
                 .withNewMetadata()
@@ -468,6 +468,82 @@ class ConsoleReconcilerTest extends ConsoleReconcilerTestBase {
             ConsoleConfig consoleConfig = YAML.readValue(configDecoded, ConsoleConfig.class);
             assertEquals("jaas-config-value",
                     consoleConfig.getKafka().getClusters().get(0).getProperties().get(SaslConfigs.SASL_JAAS_CONFIG));
+        });
+    }
+
+    @Test
+    void testConsoleReconciliationWithValidMutualTlsKafkaUser() {
+        KafkaUser userCR = new KafkaUserBuilder()
+                .withNewMetadata()
+                    .withName("ku1")
+                    .withNamespace("ns1")
+                .endMetadata()
+                .withNewSpec()
+                    .withAuthentication(new KafkaUserTlsClientAuthentication())
+                .endSpec()
+                .withNewStatus()
+                    .withSecret("ku1")
+                .endStatus()
+                .build();
+
+        userCR = apply(client, userCR);
+
+        Secret userSecret = new SecretBuilder()
+                .withNewMetadata()
+                    .withName("ku1")
+                    .withNamespace("ns1")
+                    .addToLabels(ConsoleResource.MANAGEMENT_LABEL)
+                .endMetadata()
+                .addToData("ca.crt", Base64.getEncoder().encodeToString("cert-chain-value".getBytes()))
+                .addToData("user.key", Base64.getEncoder().encodeToString("keystore-key-value".getBytes()))
+                .addToData("user.crt", Base64.getEncoder().encodeToString("keystore-certs-value".getBytes()))
+                .build();
+
+        client.resource(userSecret).create();
+
+        Console consoleCR = new ConsoleBuilder()
+                .withMetadata(new ObjectMetaBuilder()
+                        .withName("console-1")
+                        .withNamespace("ns2")
+                        .build())
+                .withNewSpec()
+                    .withHostname("example.com")
+                    .addNewKafkaCluster()
+                        .withName(kafkaCR.getMetadata().getName())
+                        .withNamespace(kafkaCR.getMetadata().getNamespace())
+                        .withListener("tls-auth-listener")
+                        .withNewCredentials()
+                            .withNewKafkaUser()
+                                .withName(userCR.getMetadata().getName())
+                            .endKafkaUser()
+                        .endCredentials()
+                    .endKafkaCluster()
+                .endSpec()
+                .build();
+
+        client.resource(consoleCR).create();
+
+        await().ignoreException(NullPointerException.class).atMost(LIMIT).untilAsserted(() -> {
+            var console = client.resources(Console.class)
+                    .inNamespace(consoleCR.getMetadata().getNamespace())
+                    .withName(consoleCR.getMetadata().getName())
+                    .get();
+            assertEquals(1, console.getStatus().getConditions().size(), () -> "Unexpected conditions: " + console.getStatus().getConditions());
+            var ready = console.getStatus().getConditions().iterator().next();
+            assertEquals(Condition.Types.READY, ready.getType(), ready::toString);
+            assertEquals("False", ready.getStatus(), ready::toString);
+            assertEquals("DependentsNotReady", ready.getReason(), ready::toString);
+
+            var consoleSecret = client.secrets().inNamespace("ns2").withName("console-1-" + ConsoleSecret.NAME).get();
+            assertNotNull(consoleSecret);
+            String configEncoded = consoleSecret.getData().get("console-config.yaml");
+            byte[] configDecoded = Base64.getDecoder().decode(configEncoded);
+            ConsoleConfig consoleConfig = YAML.readValue(configDecoded, ConsoleConfig.class);
+            Map<String, String> properties = consoleConfig.getKafka().getClusters().get(0).getProperties();
+            assertEquals("cert-chain-value", properties.get(SslConfigs.SSL_TRUSTSTORE_CERTIFICATES_CONFIG));
+            assertEquals("PEM", properties.get(SslConfigs.SSL_KEYSTORE_TYPE_CONFIG));
+            assertEquals("keystore-key-value", properties.get(SslConfigs.SSL_KEYSTORE_KEY_CONFIG));
+            assertEquals("keystore-certs-value", properties.get(SslConfigs.SSL_KEYSTORE_CERTIFICATE_CHAIN_CONFIG));
         });
     }
 
