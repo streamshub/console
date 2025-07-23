@@ -24,14 +24,19 @@ public class ConsumerGroupsPageSelectors {
         .withElementButton().withComponentButton()
         .build();
 
-    public static final String CGPS_FORM = new CssBuilder(CssSelectors.PAGES_CONTENT)
+    public static String CGPS_PAGE = new CssBuilder(CssSelectors.PAGES_CONTENT)
         .withChild()
         .withElementDiv().withComponentPage().withSubComponentMainBody().withChild()
         .withElementDiv().withComponentPanel().withChild()
         .withElementDiv().withComponentPanel().withSubComponentMain().withChild()
-        .withElementDiv().withComponentPanel().withSubComponentMainBody().withChild()
-        .withElementForm().withComponentForm()
+        .withElementDiv().withComponentPanel().withSubComponentMainBody()
         .build();
+
+    public static final String CGPS_FORM = new CssBuilder(CGPS_PAGE)
+        .withChild()
+        .withComponentForm()
+        .build();
+
     public static final String CGPS_CONSUMER_GROUPS_TABLE = new CssBuilder(CssSelectors.PAGES_CONTENT)
         .withChild()
         .withElementDiv().withComponentPage().withSubComponentMainBody().withChild()
@@ -63,7 +68,7 @@ public class ConsumerGroupsPageSelectors {
 
     public static final String CGPS_RESET_PAGE_CONSUMER_GROUP_NAME = new CssBuilder(CGPS_PAGE_HEADER)
         .withChild()
-        .withElementDiv().withLayoutFlex().nth(2).withChild()
+        .withElementDiv().withLayoutFlex().nth(1).withChild()
         .withElementDiv().withChild()
         .withElementSpan().withChild()
         .withElementB()
@@ -257,6 +262,28 @@ public class ConsumerGroupsPageSelectors {
     public static final String CGPS_RESET_PAGE_OFFSET_CANCEL_BUTTON = new CssBuilder(CGPS_RESET_PAGE_RESET_BUTTONS)
         .withChild()
         .withElementButton().withComponentButton().nth(2).withChild()
+        .withElementSpan().withComponentButton().withSubComponentText()
+        .build();
+
+    public static final String CGPS_DRY_RUN_COMMAND = new CssBuilder(CGPS_PAGE)
+        .withChild()
+        .withElementDiv().withLayoutStack().withChild()
+        .withElementDiv().withLayoutStack().withSubComponentItem().nth(1).withChild()
+        .withElementDiv().withComponentClipboardCopy().withChild()
+        .withElementDiv().withComponentClipboardCopy().withSubComponentGroup().withChild()
+        .withElementSpan().withComponentFormControl().withChild()
+        .withElementInput()
+        .build();
+
+    public static final String CGPS_BACK_TO_EDIT_OFFSET_BUTTON = new CssBuilder(CssSelectors.PAGES_CONTENT)
+        .withChild()
+        .withElementDiv().withComponentPage().withSubComponentMainBody().withChild()
+        .withElementDiv().withComponentPanel().withChild()
+        .withElementDiv().withComponentPanel().withSubComponentMain().withChild()
+        .withElementDiv().withComponentPanel().withSubComponentMainBody().withChild()
+        .withElementDiv().withLayoutStack().withChild()
+        .withElementDiv().withLayoutStack().withSubComponentItem().nth(4).withChild()
+        .withElementButton().withComponentButton().withChild()
         .withElementSpan().withComponentButton().withSubComponentText()
         .build();
 }
