@@ -9,6 +9,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
+import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.common.config.SaslConfigs;
 import org.apache.kafka.common.config.SslConfigs;
 import org.junit.jupiter.api.Test;
@@ -60,6 +61,7 @@ import io.strimzi.api.kafka.model.user.KafkaUser;
 import io.strimzi.api.kafka.model.user.KafkaUserBuilder;
 import io.strimzi.api.kafka.model.user.KafkaUserScramSha512ClientAuthentication;
 import io.strimzi.api.kafka.model.user.KafkaUserTlsClientAuthentication;
+import io.strimzi.api.kafka.model.user.KafkaUserTlsExternalClientAuthentication;
 
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -101,6 +103,39 @@ class ConsoleReconcilerTest extends ConsoleReconcilerTestBase {
                 consoleContainers.get(1).getImage());
 
         awaitReady(consoleCR);
+    }
+
+    @Test
+    void testConsoleReconciliationWithOAuthBearerPlaintext() {
+        Console consoleCR = createConsole(new ConsoleBuilder()
+                .withNewSpec()
+                    .withHostname("example.com")
+                    .addNewKafkaCluster()
+                        .withName(kafkaCR.getMetadata().getName())
+                        .withNamespace(kafkaCR.getMetadata().getNamespace())
+                        // reference oauthbearer listener
+                        .withListener(kafkaCR.getSpec().getKafka().getListeners().get(2).getName())
+                    .endKafkaCluster()
+                .endSpec());
+
+        awaitDependentsNotReady(consoleCR, "ConsoleIngress", "PrometheusDeployment");
+        setConsoleIngressReady(consoleCR);
+        setDeploymentReady(consoleCR, PrometheusDeployment.NAME);
+        awaitDependentsNotReady(consoleCR, "ConsoleDeployment");
+        setDeploymentReady(consoleCR, ConsoleDeployment.NAME);
+        awaitReady(consoleCR);
+
+        await().ignoreException(NullPointerException.class).atMost(LIMIT).untilAsserted(() -> {
+            var consoleSecret = client.secrets().inNamespace(CONSOLE_NS)
+                    .withName(CONSOLE_NAME + "-" + ConsoleSecret.NAME).get();
+            assertNotNull(consoleSecret);
+            String configEncoded = consoleSecret.getData().get("console-config.yaml");
+            byte[] configDecoded = Base64.getDecoder().decode(configEncoded);
+            ConsoleConfig consoleConfig = YAML.readValue(configDecoded, ConsoleConfig.class);
+            var properties = consoleConfig.getKafka().getClusters().get(0).getProperties();
+            assertEquals("SASL_PLAINTEXT", properties.get(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG));
+            assertEquals("OAUTHBEARER", properties.get(SaslConfigs.SASL_MECHANISM));
+        });
     }
 
     @Test
@@ -540,10 +575,73 @@ class ConsoleReconcilerTest extends ConsoleReconcilerTestBase {
             byte[] configDecoded = Base64.getDecoder().decode(configEncoded);
             ConsoleConfig consoleConfig = YAML.readValue(configDecoded, ConsoleConfig.class);
             Map<String, String> properties = consoleConfig.getKafka().getClusters().get(0).getProperties();
-            assertEquals("cert-chain-value", properties.get(SslConfigs.SSL_TRUSTSTORE_CERTIFICATES_CONFIG));
+
+            // certificate from Kafka CR status overrides the value in the KafkaUser CR's secret
+            assertEquals("PEM", properties.get(SslConfigs.SSL_TRUSTSTORE_TYPE_CONFIG));
+            assertEquals("--tls-auth-listener-certificate-chain--", properties.get(SslConfigs.SSL_TRUSTSTORE_CERTIFICATES_CONFIG));
+
             assertEquals("PEM", properties.get(SslConfigs.SSL_KEYSTORE_TYPE_CONFIG));
             assertEquals("keystore-key-value", properties.get(SslConfigs.SSL_KEYSTORE_KEY_CONFIG));
+
             assertEquals("keystore-certs-value", properties.get(SslConfigs.SSL_KEYSTORE_CERTIFICATE_CHAIN_CONFIG));
+        });
+    }
+
+    @Test
+    void testConsoleReconciliationWithUnsupportedKafkaUserAuthentication() {
+        KafkaUser userCR = new KafkaUserBuilder()
+                .withNewMetadata()
+                    .withName("ku1")
+                    .withNamespace(KAFKA_NS)
+                .endMetadata()
+                .withNewSpec()
+                    .withAuthentication(new KafkaUserTlsExternalClientAuthentication())
+                .endSpec()
+                .withNewStatus()
+                    .withSecret("ku1")
+                .endStatus()
+                .build();
+
+        userCR = apply(client, userCR);
+
+        Console consoleCR = new ConsoleBuilder()
+                .withMetadata(new ObjectMetaBuilder()
+                        .withName(CONSOLE_NAME)
+                        .withNamespace(CONSOLE_NS)
+                        .build())
+                .withNewSpec()
+                    .withHostname("example.com")
+                    .addNewKafkaCluster()
+                        .withName(kafkaCR.getMetadata().getName())
+                        .withNamespace(kafkaCR.getMetadata().getNamespace())
+                        .withListener("tls-auth-listener")
+                        .withNewCredentials()
+                            .withNewKafkaUser()
+                                .withName(userCR.getMetadata().getName())
+                            .endKafkaUser()
+                        .endCredentials()
+                    .endKafkaCluster()
+                .endSpec()
+                .build();
+
+        client.resource(consoleCR).create();
+
+        await().ignoreException(NullPointerException.class).atMost(LIMIT).untilAsserted(() -> {
+            var console = client.resources(Console.class)
+                    .inNamespace(consoleCR.getMetadata().getNamespace())
+                    .withName(consoleCR.getMetadata().getName())
+                    .get();
+            List<Condition> conditions = new ArrayList<>(console.getStatus().getConditions());
+            assertEquals(2, conditions.size());
+            var ready = conditions.get(0);
+            assertEquals(Condition.Types.READY, ready.getType());
+            assertEquals("False", ready.getStatus());
+            assertEquals(Condition.Reasons.INVALID_CONFIGURATION, ready.getReason());
+            var warning = conditions.get(1);
+            assertEquals(Condition.Types.ERROR, warning.getType());
+            assertEquals("True", warning.getStatus());
+            assertEquals(Condition.Reasons.RECONCILIATION_EXCEPTION, warning.getReason());
+            assertEquals("Unsupported authentication type for KafkaUser ns1/ku1: 'tls-external'", warning.getMessage());
         });
     }
 

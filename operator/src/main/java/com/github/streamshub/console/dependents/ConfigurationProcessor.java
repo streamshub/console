@@ -88,6 +88,10 @@ import io.strimzi.api.kafka.model.kafka.Kafka;
 import io.strimzi.api.kafka.model.kafka.KafkaStatus;
 import io.strimzi.api.kafka.model.kafka.listener.GenericKafkaListener;
 import io.strimzi.api.kafka.model.kafka.listener.KafkaListenerAuthentication;
+import io.strimzi.api.kafka.model.kafka.listener.KafkaListenerAuthenticationCustom;
+import io.strimzi.api.kafka.model.kafka.listener.KafkaListenerAuthenticationOAuth;
+import io.strimzi.api.kafka.model.kafka.listener.KafkaListenerAuthenticationScramSha512;
+import io.strimzi.api.kafka.model.kafka.listener.KafkaListenerAuthenticationTls;
 import io.strimzi.api.kafka.model.kafka.listener.ListenerStatus;
 import io.strimzi.api.kafka.model.user.KafkaUser;
 import io.strimzi.api.kafka.model.user.KafkaUserAuthentication;
@@ -757,18 +761,18 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
                 .orElse("");
 
         switch (authenticationType) {
-            case "oauth":
+            case KafkaListenerAuthenticationOAuth.TYPE_OAUTH:
                 properties.putIfAbsent(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, "SASL_" + saslType(listenerSpec));
                 properties.putIfAbsent(SaslConfigs.SASL_MECHANISM, "OAUTHBEARER");
                 break;
-            case "scram-sha-512":
+            case KafkaListenerAuthenticationScramSha512.SCRAM_SHA_512:
                 properties.putIfAbsent(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, "SASL_" + saslType(listenerSpec));
                 properties.putIfAbsent(SaslConfigs.SASL_MECHANISM, "SCRAM-SHA-512");
                 break;
-            case "tls":
+            case KafkaListenerAuthenticationTls.TYPE_TLS:
                 properties.putIfAbsent(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, "SSL");
                 break;
-            case "custom":
+            case KafkaListenerAuthenticationCustom.TYPE_CUSTOM:
             default:
                 // Nothing yet
                 break;
@@ -817,25 +821,24 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
                 .orElse("");
 
         // Changes in the KafkaUser resource and referenced Secret picked up during periodic reconciliation
-        var secretName = Optional.ofNullable(user.getStatus())
-                .map(KafkaUserStatus::getSecret)
-                .orElseThrow(() -> new ReconciliationException("KafkaUser %s/%s missing .status.secret"
-                        .formatted(user.getMetadata().getNamespace(), user.getMetadata().getName())));
-
-        String secretNs = user.getMetadata().getNamespace();
-        Secret userSecret = getResource(context, Secret.class, secretNs, secretName);
-        var secretData = userSecret.getData();
 
         switch (authenticationType) {
-            case KafkaUserScramSha512ClientAuthentication.TYPE_SCRAM_SHA_512:
+            case KafkaUserScramSha512ClientAuthentication.TYPE_SCRAM_SHA_512: {
+                String secretNs = user.getMetadata().getNamespace();
+                String secretName = getSecretName(user);
+                var secretData = getResource(context, Secret.class, secretNs, secretName).getData();
                 String jaasConfig = getDataEntry(secretData, SaslConfigs.SASL_JAAS_CONFIG, secretNs, secretName);
                 properties.putIfAbsent(SaslConfigs.SASL_JAAS_CONFIG, jaasConfig);
                 break;
+            }
 
-            case KafkaUserTlsClientAuthentication.TYPE_TLS:
+            case KafkaUserTlsClientAuthentication.TYPE_TLS: {
                 if (hasNone(properties, SslConfigs.SSL_KEYSTORE_CERTIFICATE_CHAIN_CONFIG,
                         SslConfigs.SSL_KEYSTORE_TYPE_CONFIG,
                         SslConfigs.SSL_KEYSTORE_KEY_CONFIG)) {
+                    String secretNs = user.getMetadata().getNamespace();
+                    String secretName = getSecretName(user);
+                    var secretData = getResource(context, Secret.class, secretNs, secretName).getData();
                     String truststore = getDataEntry(secretData, "ca.crt", secretNs, secretName);
                     String userKey = getDataEntry(secretData, "user.key", secretNs, secretName);
                     String userCertificates = getDataEntry(secretData, "user.crt", secretNs, secretName);
@@ -849,13 +852,22 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
 
                 properties.putIfAbsent(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, "SSL");
                 break;
+            }
 
             default:
-                break;
+                throw new ReconciliationException("Unsupported authentication type for KafkaUser %s/%s: '%s'"
+                        .formatted(user.getMetadata().getNamespace(), user.getMetadata().getName(), authenticationType));
         }
     }
 
-    String getDataEntry(Map<String, String> secretData, String key, String secretNs, String secretName) {
+    private String getSecretName(KafkaUser user) {
+        return Optional.ofNullable(user.getStatus())
+            .map(KafkaUserStatus::getSecret)
+            .orElseThrow(() -> new ReconciliationException("KafkaUser %s/%s missing .status.secret"
+                    .formatted(user.getMetadata().getNamespace(), user.getMetadata().getName())));
+    }
+
+    private String getDataEntry(Map<String, String> secretData, String key, String secretNs, String secretName) {
         String value = secretData.get(key);
 
         if (value == null) {
@@ -866,7 +878,7 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
         return decodeString(value);
     }
 
-    static boolean hasNone(Map<String, String> properties, String... keys) {
+    private static boolean hasNone(Map<String, String> properties, String... keys) {
         return Arrays.stream(keys).noneMatch(properties::containsKey);
     }
 }

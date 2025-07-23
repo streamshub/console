@@ -45,6 +45,7 @@ import io.javaoperatorsdk.operator.Operator;
 import io.strimzi.api.kafka.Crds;
 import io.strimzi.api.kafka.model.kafka.Kafka;
 import io.strimzi.api.kafka.model.kafka.KafkaBuilder;
+import io.strimzi.api.kafka.model.kafka.listener.KafkaListenerAuthenticationOAuth;
 import io.strimzi.api.kafka.model.kafka.listener.KafkaListenerAuthenticationScramSha512;
 import io.strimzi.api.kafka.model.kafka.listener.KafkaListenerAuthenticationTls;
 import io.strimzi.api.kafka.model.kafka.listener.KafkaListenerType;
@@ -209,6 +210,13 @@ abstract class ConsoleReconcilerTestBase {
                             .withTls(true)
                             .withAuth(new KafkaListenerAuthenticationTls())
                         .endListener()
+                        .addNewListener()
+                            .withName("oauth-auth-listener")
+                            .withType(KafkaListenerType.INGRESS)
+                            .withPort(9095)
+                            .withTls(false)
+                            .withAuth(new KafkaListenerAuthenticationOAuth())
+                        .endListener()
                     .endKafka()
                 .endSpec()
                 .withNewStatus()
@@ -219,12 +227,21 @@ abstract class ConsoleReconcilerTestBase {
                             .withHost("kafka-bootstrap.example.com")
                             .withPort(9093)
                         .endAddress()
+                        .addToCertificates("--listener1-certificate-chain--")
                     .endListener()
                     .addNewListener()
                         .withName("tls-auth-listener")
                         .addNewAddress()
-                            .withHost("kafka-bootstrap.example.com")
+                            .withHost("kafka-bootstrap-tls.example.com")
                             .withPort(9094)
+                        .endAddress()
+                        .addToCertificates("--tls-auth-listener-certificate-chain--")
+                    .endListener()
+                    .addNewListener()
+                        .withName("oauth-auth-listener")
+                        .addNewAddress()
+                            .withHost("kafka-bootstrap-oauth.example.com")
+                            .withPort(9095)
                         .endAddress()
                     .endListener()
                 .endStatus()
