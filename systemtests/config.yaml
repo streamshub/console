@@ -7,11 +7,11 @@ CLEANUP_ENVIRONMENT: true
 # Log level used in file output
 TEST_FILE_LOG_LEVEL: DEBUG
 # Log level used in console output
-TEST_CONSOLE_LOG_LEVEL: INFO
+TEST_CONSOLE_LOG_LEVEL: DEBUG
 # Path for log output
 TEST_LOG_DIR: target/logs
 # Run Playwright tests in headless mode without browser popping up
-RUN_HEADLESS: true
+RUN_HEADLESS: false
 # Directory to store screenshots from tests. Relative to systemtests dir ["screenshots"]
 SCREENSHOTS_DIR_PATH: screenshots
 # Skip Strimzi installation if it's installed externally. Otherwise, system tests will install strimzi
@@ -19,7 +19,7 @@ SKIP_STRIMZI_INSTALLATION: false
 # Deployment name of the Strimzi Operator. Need to set this when Strimzi is installed externally
 STRIMZI_OPERATOR_NAME: strimzi-cluster-operator
 # Deployment name of the Console instance
-CONSOLE_DEPLOYMENT_NAME: streamshub-console
+CONSOLE_DEPLOYMENT_NAME: amq-streams-console
 # Install type for Console Operator [OLM; YAML]
 CONSOLE_INSTALL_TYPE: olm
 # Kubernetes client type used to execute cmd [oc, kubectl]
@@ -34,14 +34,14 @@ CONSOLE_OLM_CATALOG_SOURCE_NAME: console-source
 # Namespace where lies the CatalogSource for Console Operator
 CONSOLE_OLM_CATALOG_SOURCE_NAMESPACE: openshift-marketplace
 # Package name of the console operator
-CONSOLE_OLM_PACKAGE_NAME: streamshub-console-operator
+CONSOLE_OLM_PACKAGE_NAME: amq-streams-console
 # OLM channel for selecting the Operator version
 CONSOLE_OLM_CHANNEL_NAME: alpha
 # -------------------------------------------
 # YAML
 # -------------------------------------------
 # Which released version of Strimzi Cluster Operator to install
-STRIMZI_OPERATOR_VERSION: 0.46.1
+STRIMZI_OPERATOR_VERSION: 0.47.0
 # URL or local path for Console Operator installation
 # 1. URL - released console-operator.yaml
 # 2. Local path that is relative to the root project dir

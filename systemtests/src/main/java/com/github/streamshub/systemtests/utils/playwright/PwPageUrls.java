@@ -34,4 +34,8 @@ public class PwPageUrls {
     public static String getMessagesPage(TestCaseConfig tcc, String kafkaName, String topicId) {
         return getTopicsPage(tcc, kafkaName) + "/" + topicId + "/messages";
     }
+
+    public static String getConsumerGroupsPage(TestCaseConfig tcc, String kafkaName, String consumerGroupName) {
+        return getKafkaBaseUrl(tcc, kafkaName) + "/consumer-groups/" + consumerGroupName;
+    }
 }
