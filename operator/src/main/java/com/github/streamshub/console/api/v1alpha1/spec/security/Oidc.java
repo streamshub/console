@@ -20,6 +20,7 @@ public class Oidc {
     @Required
     private Value clientSecret;
     private List<String> roleClaimPath;
+    private String scopes; 
 
     @JsonPropertyDescription("""
             Trust store configuration for when the OIDC provider uses \
@@ -65,6 +66,14 @@ public class Oidc {
 
     public void setRoleClaimPath(List<String> roleClaimPath) {
         this.roleClaimPath = roleClaimPath;
+    }
+
+    public String getScopes() {
+        return scopes;
+    }
+
+    public void setScopes(String scopes) {
+        this.scopes = scopes;
     }
 
     public TrustStore getTrustStore() {

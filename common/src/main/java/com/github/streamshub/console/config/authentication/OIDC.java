@@ -48,7 +48,6 @@ public class OIDC implements Trustable {
     private Boolean absoluteExpiresIn;
     private GrantType grantType = GrantType.CLIENT;
     private Map<String, String> grantOptions;
-    private List<String> roleClaimPath;
     private TrustStoreConfig trustStore;
 
     @Override
@@ -127,14 +126,6 @@ public class OIDC implements Trustable {
 
     public void setGrantOptions(Map<String, String> grantOptions) {
         this.grantOptions = grantOptions;
-    }
-
-    public List<String> getRoleClaimPath() {
-        return roleClaimPath;
-    }
-
-    public void setRoleClaimPath(List<String> roleClaimPath) {
-        this.roleClaimPath = roleClaimPath;
     }
 
     @Override

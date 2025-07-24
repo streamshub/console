@@ -443,6 +443,7 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
                     .withClientId(oidc.getClientId())
                     .withClientSecret(clientSecret)
                     .withRoleClaimPath(oidc.getRoleClaimPath())
+                    .withScopes(oidc.getScopes())
                     .withTrustStore(buildTrustStoreConfig(oidc.getTrustStore(), OIDC_PROVIDER_TRUST_NAME))
                     .build());
         }
