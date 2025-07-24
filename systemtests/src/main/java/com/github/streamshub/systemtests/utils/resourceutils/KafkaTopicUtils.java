@@ -92,7 +92,7 @@ public class KafkaTopicUtils {
                 .endSpec()
                 .build());
 
-        WaitUtils.waitForPodsReady(namespace, Labels.getKnpBrokerLabelSelector(kafkaName), knp.getSpec().getReplicas() + 1, true);
+        WaitUtils.waitForPodsReadyAndStable(namespace, Labels.getKnpBrokerLabelSelector(kafkaName), knp.getSpec().getReplicas() + 1, true);
 
         // Create new topics for under replication
         List<KafkaTopic> kafkaTopics = KafkaTopicUtils.setupTopicsAndReturn(namespace, kafkaName, topicNamePrefix, numberToCreate, true, partitions, replicas, minIsr);
@@ -128,7 +128,7 @@ public class KafkaTopicUtils {
                 .endSpec()
                 .build());
 
-        WaitUtils.waitForPodsReady(namespace, Labels.getKnpBrokerLabelSelector(kafkaName), knp.getSpec().getReplicas() - 1, true);
+        WaitUtils.waitForPodsReadyAndStable(namespace, Labels.getKnpBrokerLabelSelector(kafkaName), knp.getSpec().getReplicas() - 1, true);
 
         KafkaUtils.removeAnnotation(namespace, kafkaName, ResourceAnnotations.ANNO_STRIMZI_IO_SKIP_BROKER_SCALEDOWN_CHECK, true);
         return kafkaTopics;
@@ -168,7 +168,7 @@ public class KafkaTopicUtils {
                 .endSpec()
                 .build());
 
-        WaitUtils.waitForPodsReady(namespace, Labels.getKnpBrokerLabelSelector(kafkaName), knp.getSpec().getReplicas() + 1, true);
+        WaitUtils.waitForPodsReadyAndStable(namespace, Labels.getKnpBrokerLabelSelector(kafkaName), knp.getSpec().getReplicas() + 1, true);
         List<KafkaTopic> kafkaTopics = setupTopicsAndReturn(namespace, kafkaName, topicNamePrefix, numberToCreate, true, partitions, replicas, minIsr);
 
         // Reassign the topic partition to last created broker that will be deleted
@@ -211,7 +211,7 @@ public class KafkaTopicUtils {
                 .endSpec()
                 .build());
 
-        WaitUtils.waitForPodsReady(namespace, Labels.getKnpBrokerLabelSelector(kafkaName), knp.getSpec().getReplicas() - 1, true);
+        WaitUtils.waitForPodsReadyAndStable(namespace, Labels.getKnpBrokerLabelSelector(kafkaName), knp.getSpec().getReplicas() - 1, true);
 
         KafkaUtils.removeAnnotation(namespace, kafkaName, ResourceAnnotations.ANNO_STRIMZI_IO_SKIP_BROKER_SCALEDOWN_CHECK, true);
         return kafkaTopics;

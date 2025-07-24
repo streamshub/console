@@ -225,22 +225,19 @@ public class PwUtils {
         LOGGER.debug("Waiting for locator [{}] to contain text [{}]", locator.toString(), text);
         Wait.until("locator to contain text: " + text, TimeConstants.GLOBAL_POLL_INTERVAL_SHORT, componentLoadTimeout,
             () -> {
-                String innerText = "";
-
-                if (locator.all().size() > 1) {
-                    innerText = getTrimmedText(locator.allInnerTexts().toString());
-                } else {
-                    innerText = getTrimmedText(locator.textContent());
-                }
-
+                String innerText = getTrimmedText(locator.allInnerTexts().toString());
                 LOGGER.debug("Current locator text [{}], should contain [{}]", innerText, text);
                 if (innerText.contains(text)) {
+                    LOGGER.debug("Current locator text [{}] contains correct text [{}]", innerText, text);
                     return true;
                 }
 
                 if (reload) {
                     page.reload(getDefaultReloadOpts());
                 }
+
+                LOGGER.debug("Current locator text [{}] does not contain [{}]", innerText, text);
+
                 return false;
             },
             () -> LOGGER.error("Locator does not contain text [{}], instead it contains [{}]", text, getTrimmedText(locator.textContent()))

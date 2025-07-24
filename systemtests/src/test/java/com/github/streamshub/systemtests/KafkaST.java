@@ -29,10 +29,7 @@ import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.Map;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class KafkaST extends AbstractST {
     private static final Logger LOGGER = LogWrapper.getLogger(KafkaST.class);
@@ -103,7 +100,7 @@ class KafkaST extends AbstractST {
         // Kafka should have original Broker Pod count, but in spec there should be the new count
         LOGGER.debug("Verify UI displays old broker count of {}", Constants.REGULAR_BROKER_REPLICAS);
         WaitUtils.waitForKafkaBrokerNodePoolReplicasInSpec(tcc.namespace(), tcc.kafkaName(), scaledBrokersCount);
-        WaitUtils.waitForPodsReady(tcc.namespace(), Labels.getKnpBrokerLabelSelector(tcc.kafkaName()), Constants.REGULAR_BROKER_REPLICAS, true);
+        WaitUtils.waitForPodsReadyAndStable(tcc.namespace(), Labels.getKnpBrokerLabelSelector(tcc.kafkaName()), Constants.REGULAR_BROKER_REPLICAS, true);
 
         LOGGER.info("Resume Kafka reconciliation using UI");
         PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_KAFKA_PAUSE_RECONCILIATION_BUTTON, MessageStore.resumeReconciliation(), true);
@@ -123,7 +120,7 @@ class KafkaST extends AbstractST {
         WaitUtils.waitForKafkaHasAnnotationWithValue(tcc.namespace(), tcc.kafkaName(), ResourceAnnotations.ANNO_STRIMZI_IO_PAUSE_RECONCILIATION, "false");
         // Resuming reconciliation should trigger scaling
         LOGGER.debug("Verify Kafka finally scaled brokers");
-        WaitUtils.waitForPodsReady(tcc.namespace(), Labels.getKnpBrokerLabelSelector(tcc.kafkaName()), scaledBrokersCount, true);
+        WaitUtils.waitForPodsReadyAndStable(tcc.namespace(), Labels.getKnpBrokerLabelSelector(tcc.kafkaName()), scaledBrokersCount, true);
 
         // Check UI displays the broker count change
         PwUtils.waitForContainsText(tcc.page(), CssSelectors.getLocator(tcc, ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_DATA_BROKER_COUNT),
@@ -200,7 +197,7 @@ class KafkaST extends AbstractST {
                 .endSpec()
                 .build());
 
-        WaitUtils.waitForPodsReady(tcc.namespace(), Labels.getKnpBrokerLabelSelector(tcc.kafkaName()), scaledBrokersCount, true);
+        WaitUtils.waitForPodsReadyAndStable(tcc.namespace(), Labels.getKnpBrokerLabelSelector(tcc.kafkaName()), scaledBrokersCount, true);
 
         // Check Overview and Nodes page
         LOGGER.info("Verify newly added Kafka brokers are displayed in UI");
@@ -237,7 +234,7 @@ class KafkaST extends AbstractST {
                 .endSpec()
                 .build());
 
-        WaitUtils.waitForPodsReady(tcc.namespace(), Labels.getKnpBrokerLabelSelector(tcc.kafkaName()), Constants.REGULAR_BROKER_REPLICAS, true);
+        WaitUtils.waitForPodsReadyAndStable(tcc.namespace(), Labels.getKnpBrokerLabelSelector(tcc.kafkaName()), Constants.REGULAR_BROKER_REPLICAS, true);
 
         LOGGER.debug("Verify current Kafka broker count on OverviewPage is {}", Constants.REGULAR_BROKER_REPLICAS);
         tcc.page().navigate(PwPageUrls.getOverviewPage(tcc, tcc.kafkaName()), PwUtils.getDefaultNavigateOpts());
@@ -265,7 +262,7 @@ class KafkaST extends AbstractST {
     /**
      * Tests Kafka warnings display in the Console UI.
      *
-     * <p>Verifies that initially no warnings are shown, then injects a depricated config to trigger a warning,
+     * <p>Verifies that initially no warnings are shown, then injects a faulty config to trigger a warning,
      * checks the warning appears in the UI, and finally removes the fault to confirm warnings clear.</p>
      *
      * <p>This ensures the UI properly reflects Kafka’s warning status changes after config updates.</p>
@@ -284,11 +281,7 @@ class KafkaST extends AbstractST {
         LOGGER.debug("Verify warnings list contains only one row with `No messages` text");
         PwUtils.waitForLocatorVisible(tcc, ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_WARNING_MESSAGE_ITEMS);
         PwUtils.waitForLocatorCount(tcc, 1,  CssSelectors.getLocator(tcc, ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_WARNING_MESSAGE_ITEMS), true);
-        assertTrue(PwUtils.getTrimmedText(CssSelectors.getLocator(tcc,
-            new CssBuilder(ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_WARNING_MESSAGE_ITEMS).nth(1).build()).allInnerTexts().toString())
-            .contains(MessageStore.clusterCardNoMessages()));
-
-        Map<String, String> kafkaSnapshot = PodUtils.getPodSnapshotBySelector(tcc.namespace(), Labels.getKafkaPodLabelSelector(tcc.kafkaName()));
+        PwUtils.waitForContainsText(tcc, new CssBuilder(ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_WARNING_MESSAGE_ITEMS).nth(1).build(), MessageStore.clusterCardNoMessages(), true);
 
         // Make kafka fail
         LOGGER.info("Cause Kafka status to display Warning state by setting DeprecatedFields");
@@ -316,9 +309,6 @@ class KafkaST extends AbstractST {
         PwUtils.waitForLocatorVisible(tcc, ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_WARNING_MESSAGE_ITEMS);
         PwUtils.waitForLocatorCount(tcc, 1,  ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_WARNING_MESSAGE_ITEMS, true);
         PwUtils.waitForContainsText(tcc, new CssBuilder(ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_WARNING_MESSAGE_ITEMS).nth(1).build(), warningMessage, true);
-
-        // Update snapshot
-        kafkaSnapshot = PodUtils.getPodSnapshotBySelector(tcc.namespace(), Labels.getKafkaPodLabelSelector(tcc.kafkaName()));
 
         // Remove wrong config
         LOGGER.info("Remove incorrect Kafka config to get rid off the warning from UI status");

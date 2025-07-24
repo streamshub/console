@@ -76,8 +76,9 @@ public class WaitUtils {
      * @param expectPods    the expected number of pods
      * @param containers    whether to check container readiness (not used in this overload)
      */
-    public static void waitForPodsReady(String namespaceName, LabelSelector selector, int expectPods, boolean containers) {
+    public static void waitForPodsReadyAndStable(String namespaceName, LabelSelector selector, int expectPods, boolean containers) {
         waitForPodsReady(namespaceName, selector, expectPods, containers, () -> { });
+        waitForPodStability(namespaceName, selector, expectPods);
     }
 
     /**
@@ -96,6 +97,29 @@ public class WaitUtils {
             () -> arePodsReady(namespaceName, selector, expectPods, checkContainers),
             onTimeout
         );
+    }
+
+    public static void waitForPodStability(String namespaceName, LabelSelector selector, int expectedPods) {
+        LOGGER.info("Waiting for Pod in namespace {} with selector {} to have {} stable replicas", namespaceName, selector, expectedPods);
+        int[] stableCounter = {0};
+        Wait.until("Pod: " + namespaceName + " with selector" + selector + " to be stable",
+            TestFrameConstants.GLOBAL_POLL_INTERVAL_SHORT, TestFrameConstants.GLOBAL_TIMEOUT,
+            () -> {
+                if (ResourceUtils.listKubeResourcesByLabelSelector(Pod.class, namespaceName, selector).size() == expectedPods &&
+                    arePodsReady(namespaceName, selector, expectedPods, true)) {
+                    stableCounter[0]++;
+                    if (stableCounter[0] == TimeConstants.GLOBAL_STABILITY_OFFSET_TIME) {
+                        LOGGER.info("Pod replicas are stable for {} poll intervals", stableCounter[0]);
+                        return true;
+                    }
+                } else {
+                    LOGGER.info("Pod replicas are not stable. Resetting counter to zero");
+                    stableCounter[0] = 0;
+                    return false;
+                }
+                LOGGER.info("Pod replicas will be assumed stable in {} polls", TimeConstants.GLOBAL_STABILITY_OFFSET_TIME - stableCounter[0]);
+                return false;
+            });
     }
 
     /**
