@@ -48,6 +48,7 @@ public class OIDC {
     private Boolean absoluteExpiresIn;
     private GrantType grantType;
     private Map<String, String> grantOptions;
+    private List<String> roleClaimPath;
     private TrustStore trustStore;
 
     public String getAuthServerUrl() {
@@ -120,6 +121,14 @@ public class OIDC {
 
     public void setGrantOptions(Map<String, String> grantOptions) {
         this.grantOptions = grantOptions;
+    }
+
+    public List<String> getRoleClaimPath() {
+        return roleClaimPath;
+    }
+
+    public void setRoleClaimPath(List<String> roleClaimPath) {
+        this.roleClaimPath = roleClaimPath;
     }
 
     public TrustStore getTrustStore() {

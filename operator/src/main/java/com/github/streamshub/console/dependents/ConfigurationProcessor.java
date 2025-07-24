@@ -442,6 +442,7 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
                     .withIssuer(oidc.getIssuer())
                     .withClientId(oidc.getClientId())
                     .withClientSecret(clientSecret)
+                    .withRoleClaimPath(oidc.getRoleClaimPath())
                     .withTrustStore(buildTrustStoreConfig(oidc.getTrustStore(), OIDC_PROVIDER_TRUST_NAME))
                     .build());
         }
@@ -674,6 +675,7 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
                     .withAbsoluteExpiresIn(oidc.isAbsoluteExpiresIn())
                     .withGrantType(mapEnumByName(oidc.getGrantType(), OIDC.GrantType::valueOf, OIDC.GrantType.CLIENT))
                     .withGrantOptions(oidc.getGrantOptions())
+                    .withRoleClaimPath(oidc.getRoleClaimPath()) 
                     .withTrustStore(buildTrustStoreConfig(oidc.getTrustStore(), name + "-oidc"))
                 .endOidc()
                 .build());

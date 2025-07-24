@@ -1,5 +1,7 @@
 package com.github.streamshub.console.api.v1alpha1.spec.security;
 
+import java.util.List;
+
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.github.streamshub.console.api.v1alpha1.spec.TrustStore;
 import com.github.streamshub.console.api.v1alpha1.spec.Value;
@@ -17,6 +19,7 @@ public class Oidc {
     private String clientId;
     @Required
     private Value clientSecret;
+    private List<String> roleClaimPath;
 
     @JsonPropertyDescription("""
             Trust store configuration for when the OIDC provider uses \
@@ -54,6 +57,14 @@ public class Oidc {
 
     public void setClientSecret(Value clientSecret) {
         this.clientSecret = clientSecret;
+    }
+
+    public List<String> getRoleClaimPath() {
+        return roleClaimPath;
+    }
+
+    public void setRoleClaimPath(List<String> roleClaimPath) {
+        this.roleClaimPath = roleClaimPath;
     }
 
     public TrustStore getTrustStore() {
