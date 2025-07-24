@@ -24,8 +24,7 @@ public class OidcConfig implements Trustable {
     private String clientId;
     @NotBlank
     private String clientSecret;
-    @NotBlank
-    private List<String> roleClaimPath = List.of("groups"); 
+    private List<@NotBlank String> roleClaimPath; 
     @Valid
     private TrustStoreConfig trustStore;
 
