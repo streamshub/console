@@ -41,10 +41,7 @@ public class OidcTenantConfigResolver implements TenantConfigResolver {
         final var builder = OidcTenantConfig.builder()
                 .tenantId(oidc.getTenantId())
                 .discoveryEnabled(true)
-                .authServerUrl(oidc.getAuthServerUrl())
-                .roles()
-                    .roleClaimPath(oidc.getRoleClaimPath())
-                .end();
+                .authServerUrl(oidc.getAuthServerUrl());
 
         if (oidc.getIssuer() != null) {
             builder.token()

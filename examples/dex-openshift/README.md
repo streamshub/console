@@ -51,7 +51,5 @@ security:
     clientId: ${console.security.oidc.client-id}
     clientSecret: ${console.security.oidc.client-secret}
     scopes: "openid email profile groups"
-    roleClaimPath:
-      - "groups"
 # ... remainder of console configurations
 ```
