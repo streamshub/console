@@ -25,6 +25,7 @@ public class OidcConfig implements Trustable {
     @NotBlank
     private String clientSecret;
     private List<@NotBlank String> roleClaimPath; 
+    private String scopes;
     @Valid
     private TrustStoreConfig trustStore;
 
@@ -82,6 +83,14 @@ public class OidcConfig implements Trustable {
 
     public void setRoleClaimPath(List<String> roleClaimPath) {
         this.roleClaimPath = roleClaimPath;
+    }
+
+    public String getScopes() {
+        return scopes;
+    }
+
+    public void setScopes(String scopes) {
+        this.scopes = scopes;
     }
 
     public TrustStoreConfig getTrustStore() {
