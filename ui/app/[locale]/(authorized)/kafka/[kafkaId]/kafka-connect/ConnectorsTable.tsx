@@ -21,6 +21,8 @@ export function ConnectorsTable({
   page,
   perPage,
   total,
+  filterName,
+  onFilterNameChange,
   onPageChange,
   isColumnSortable,
   onClearAllFilters,
@@ -29,6 +31,8 @@ export function ConnectorsTable({
   page: number;
   perPage: number;
   total: number;
+  filterName: string | undefined;
+  onFilterNameChange: (name: string | undefined) => void;
 } & Pick<
   TableViewProps<Connectors, ConnectorsTableColumn>,
   "isColumnSortable" | "onPageChange" | "onClearAllFilters"
@@ -102,6 +106,21 @@ export function ConnectorsTable({
               </Td>
             );
         }
+      }}
+      filters={{
+        Name: {
+          type: "search",
+          chips: filterName ? [filterName] : [],
+          onSearch: onFilterNameChange,
+          onRemoveChip: () => {
+            onFilterNameChange(undefined);
+          },
+          onRemoveGroup: () => {
+            onFilterNameChange(undefined);
+          },
+          validate: () => true,
+          errorMessage: "",
+        },
       }}
     />
   );
