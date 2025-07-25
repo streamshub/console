@@ -40,3 +40,5 @@ export const ConnectorsResponseSchema = z.object({
 });
 
 export type Connectors = z.infer<typeof ConnectorsSchema>;
+
+export type ConnectorsResponse = z.infer<typeof ConnectorsResponseSchema>;
