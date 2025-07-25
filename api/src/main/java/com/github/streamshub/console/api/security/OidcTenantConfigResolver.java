@@ -1,7 +1,5 @@
 package com.github.streamshub.console.api.security;
 
-import java.util.List;
-
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -43,10 +41,7 @@ public class OidcTenantConfigResolver implements TenantConfigResolver {
         final var builder = OidcTenantConfig.builder()
                 .tenantId(oidc.getTenantId())
                 .discoveryEnabled(true)
-                .authServerUrl(oidc.getAuthServerUrl())
-                .roles()
-                    .roleClaimPath(List.of("groups"))
-                .end();
+                .authServerUrl(oidc.getAuthServerUrl());
 
         if (oidc.getIssuer() != null) {
             builder.token()
