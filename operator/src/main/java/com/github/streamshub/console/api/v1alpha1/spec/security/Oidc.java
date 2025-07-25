@@ -17,6 +17,7 @@ public class Oidc {
     private String clientId;
     @Required
     private Value clientSecret;
+    private String scopes; 
 
     @JsonPropertyDescription("""
             Trust store configuration for when the OIDC provider uses \
@@ -54,6 +55,14 @@ public class Oidc {
 
     public void setClientSecret(Value clientSecret) {
         this.clientSecret = clientSecret;
+    }
+
+    public String getScopes() {
+        return scopes;
+    }
+
+    public void setScopes(String scopes) {
+        this.scopes = scopes;
     }
 
     public TrustStore getTrustStore() {

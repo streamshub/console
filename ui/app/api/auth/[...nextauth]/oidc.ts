@@ -2,12 +2,11 @@ import { logger } from "@/utils/logger";
 import { Session, TokenSet } from "next-auth";
 import { JWT } from "next-auth/jwt";
 import { OAuthConfig } from "next-auth/providers/index";
-import config from '@/utils/config';
+import config from "@/utils/config";
 
 const log = logger.child({ module: "oidc" });
 
 class OpenIdConnect {
-
   provider: OAuthConfig<any> | null;
 
   constructor(
@@ -15,6 +14,7 @@ class OpenIdConnect {
     clientId: string | null,
     clientSecret: string | null,
     truststore: string | null,
+    scopes: string | null,
   ) {
     if (clientId && clientSecret && authServerUrl) {
       this.provider = {
@@ -24,7 +24,9 @@ class OpenIdConnect {
         clientId: clientId,
         clientSecret: clientSecret,
         wellKnown: `${authServerUrl}/.well-known/openid-configuration`,
-        authorization: { params: { scope: "openid email profile groups" } },
+        authorization: {
+          params: { scope: scopes || "openid email profile groups" },
+        },
         idToken: true,
         profile(profile) {
           return {
@@ -32,12 +34,12 @@ class OpenIdConnect {
             name: profile.name ?? profile.preferred_username,
             email: profile.email,
             image: profile.image,
-          }
+          };
         },
         httpOptions: {
-          ca: truststore ?? undefined
-        }
-      }
+          ca: truststore ?? undefined,
+        },
+      };
     } else {
       this.provider = null;
     }
@@ -69,12 +71,16 @@ class OpenIdConnect {
     let remainingMs = tokenExpiration.getTime() - Date.now();
 
     if (remainingMs > 30000) {
-      log.trace(`Token expires at ${tokenExpiration.toISOString()}, time remaining: ${remainingMs}ms`);
+      log.trace(
+        `Token expires at ${tokenExpiration.toISOString()}, time remaining: ${remainingMs}ms`,
+      );
       return false;
     }
 
     if (remainingMs > 0) {
-      log.trace(`Token expires at ${tokenExpiration.toISOString()}, time remaining: ${remainingMs}ms (less than 30s)`);
+      log.trace(
+        `Token expires at ${tokenExpiration.toISOString()}, time remaining: ${remainingMs}ms (less than 30s)`,
+      );
     } else {
       log.trace(`Token expired at ${tokenExpiration.toISOString()}`);
     }
@@ -83,14 +89,13 @@ class OpenIdConnect {
   }
 
   async refreshToken(token: JWT): Promise<JWT> {
-    let refresh_token = typeof token.refresh_token === "string"
-      ? token.refresh_token
-      : undefined;
+    let refresh_token =
+      typeof token.refresh_token === "string" ? token.refresh_token : undefined;
 
     if (refresh_token === undefined) {
       return {
-        error: "Refresh token not available, expiring session"
-      }
+        error: "Refresh token not available, expiring session",
+      };
     }
 
     const params = {
@@ -104,11 +109,14 @@ class OpenIdConnect {
 
     if (!tokenEndpoint) {
       return {
-        error: "Invalid OIDC wellKnown"
-      }
+        error: "Invalid OIDC wellKnown",
+      };
     }
 
-    log.trace({ url: tokenEndpoint, params: JSON.stringify(params) }, "Refreshing token");
+    log.trace(
+      { url: tokenEndpoint, params: JSON.stringify(params) },
+      "Refreshing token",
+    );
 
     const response = await fetch(tokenEndpoint, {
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -121,8 +129,8 @@ class OpenIdConnect {
     if (!response.ok) {
       log.debug(responseBody, "Bad token response");
       return {
-        error: responseBody
-      }
+        error: responseBody,
+      };
     }
 
     const refreshToken: TokenSet = JSON.parse(responseBody);
@@ -146,12 +154,14 @@ class OpenIdConnect {
     return newToken;
   }
 
-  async jwt({ token, account }: { token: JWT, account: any }) {
+  async jwt({ token, account }: { token: JWT; account: any }) {
     // Persist the OAuth access_token and or the user id to the token right after signin
-    log.trace("jwt callback invoked")
+    log.trace("jwt callback invoked");
 
     if (account) {
-      log.trace(`account ${JSON.stringify(account)} present, saving new token: ${JSON.stringify(token)}`);
+      log.trace(
+        `account ${JSON.stringify(account)} present, saving new token: ${JSON.stringify(token)}`,
+      );
       // Save the access token and refresh token in the JWT on the initial login
       return {
         access_token: account.access_token,
@@ -169,9 +179,9 @@ class OpenIdConnect {
     }
 
     return token;
-  };
+  }
 
-  async session({ session, token }: { session: Session, token: JWT }) {
+  async session({ session, token }: { session: Session; token: JWT }) {
     if (token.error) {
       session.expires = new Date(0).toISOString();
       return session;
@@ -184,16 +194,17 @@ class OpenIdConnect {
       accessToken: token.access_token,
       authorization: `Bearer ${token.access_token}`,
     };
-  };
+  }
 }
 
 export default async function oidcSource() {
-    let oidcConfig = (await config())?.security?.oidc;
+  let oidcConfig = (await config())?.security?.oidc;
 
-    return new OpenIdConnect(
-      oidcConfig?.authServerUrl ?? null,
-      oidcConfig?.clientId ?? null,
-      oidcConfig?.clientSecret ?? null,
-      oidcConfig?.trustStore?.content?.value ?? null,
-    );
-};
+  return new OpenIdConnect(
+    oidcConfig?.authServerUrl ?? null,
+    oidcConfig?.clientId ?? null,
+    oidcConfig?.clientSecret ?? null,
+    oidcConfig?.trustStore?.content?.value ?? null,
+    oidcConfig?.scopes ?? null,
+  );
+}

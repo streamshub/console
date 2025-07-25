@@ -22,6 +22,7 @@ public class OidcConfig implements Trustable {
     private String clientId;
     @NotBlank
     private String clientSecret;
+    private String scopes;
     @Valid
     private TrustStoreConfig trustStore;
 
@@ -71,6 +72,14 @@ public class OidcConfig implements Trustable {
 
     public void setClientSecret(String clientSecret) {
         this.clientSecret = clientSecret;
+    }
+
+    public String getScopes() {
+        return scopes;
+    }
+
+    public void setScopes(String scopes) {
+        this.scopes = scopes;
     }
 
     public TrustStoreConfig getTrustStore() {
