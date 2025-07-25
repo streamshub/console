@@ -341,7 +341,8 @@
     "cluster_overview": "Cluster overview",
     "topics": "Topics",
     "brokers": "Kafka nodes",
-    "consumer_groups": "Consumer groups"
+    "consumer_groups": "Consumer groups",
+    "kafka_connect": "Kafka connect"
   },
   "AppMasthead": {
     "global_navigation": "Global navigation",
@@ -694,6 +695,7 @@
     "view_all_kafka_clusters": "View all Kafka clusters"
   },
   "KafkaConnect": {
+    "connectors_title": "Connectors",
     "connectors": {
       "name": "Name",
       "connect_cluster": "Connect cluster",
