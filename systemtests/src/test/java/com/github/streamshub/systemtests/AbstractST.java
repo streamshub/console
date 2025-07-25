@@ -8,6 +8,8 @@ import com.github.streamshub.systemtests.resourcetypes.KafkaTopicType;
 import com.github.streamshub.systemtests.resourcetypes.KafkaType;
 import com.github.streamshub.systemtests.resourcetypes.KafkaUserType;
 import com.github.streamshub.systemtests.setup.console.ConsoleOperatorSetup;
+import com.github.streamshub.systemtests.setup.keycloak.KeycloakConfig;
+import com.github.streamshub.systemtests.setup.keycloak.KeycloakSetup;
 import com.github.streamshub.systemtests.setup.strimzi.StrimziOperatorSetup;
 import com.github.streamshub.systemtests.utils.resourceutils.ClusterUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.NamespaceUtils;
@@ -52,6 +54,10 @@ public abstract class AbstractST {
     // Operators
     protected final StrimziOperatorSetup strimziOperatorSetup = new StrimziOperatorSetup(Constants.CO_NAMESPACE);
     protected final ConsoleOperatorSetup consoleOperatorSetup = new ConsoleOperatorSetup();
+
+    // Keycloak
+    private final KeycloakSetup keycloakSetup = new KeycloakSetup(Constants.KEYCLOAK_NAMESPACE);
+    protected KeycloakConfig keycloakConfig;
 
     static {
         KubeResourceManager.get().setResourceTypes(
@@ -103,6 +109,7 @@ public abstract class AbstractST {
         NamespaceUtils.prepareNamespace(Constants.CO_NAMESPACE);
         strimziOperatorSetup.install();
         consoleOperatorSetup.install();
+        keycloakConfig = keycloakSetup.setupKeycloakAndReturnConfig();
     }
 
     @BeforeEach

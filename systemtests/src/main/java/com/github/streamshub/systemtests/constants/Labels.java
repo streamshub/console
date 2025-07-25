@@ -21,7 +21,6 @@ public class Labels {
     public static final String COLLECT_ST_LOGS = "streamshub-st";
     public static final String APP = "app";
 
-
     // ------------
     // Strimzi
     // ------------
