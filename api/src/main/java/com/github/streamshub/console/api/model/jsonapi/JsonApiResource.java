@@ -59,8 +59,20 @@ public abstract class JsonApiResource<A, R> extends JsonApiBase {
         return id;
     }
 
+    public void setId(String id) {
+        this.id = id;
+    }
+
     public String getType() {
         return type;
+    }
+
+    public Identifier identifier() {
+        return new Identifier(type, id);
+    }
+
+    public boolean hasIdentifier(Identifier identifier) {
+        return identifier.equals(type, id);
     }
 
     public A getAttributes() {

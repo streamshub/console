@@ -5,7 +5,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import static java.util.Comparator.comparing;
 
 public class ComparatorBuilder<T> {
 
@@ -57,5 +60,9 @@ public class ComparatorBuilder<T> {
                     entry -> Map.ofEntries(
                         Map.entry(Boolean.FALSE, entry.getValue()),
                         Map.entry(Boolean.TRUE, entry.getValue().reversed()))));
+    }
+
+    public static <T, U extends Comparable<U>> Comparator<T> nullable(Function<T, U> source) {
+        return comparing(source, Comparator.nullsLast(Comparable::compareTo));
     }
 }

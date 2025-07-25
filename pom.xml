@@ -39,8 +39,9 @@
         <sonar.organization>streamshub</sonar.organization>
         <sonar.coverage.jacoco.xmlReportPaths>${project.basedir}/../coverage/target/coverage/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
         <sonar.exclusions>api/src/main/java/com/github/streamshub/console/api/support/TrustAllCertificateManager.java</sonar.exclusions>
-        <!-- Ignore duplicates in configuration model classes -->
+        <!-- Ignore duplicates in configuration and model classes -->
         <sonar.cpd.exclusions>
+            api/src/main/java/com/github/streamshub/console/api/model/**/*.java,
             common/src/main/java/com/github/streamshub/console/config/*.java,
             operator/src/main/java/com/github/streamshub/console/api/v1alpha1/**/*.java
         </sonar.cpd.exclusions>

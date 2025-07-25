@@ -95,40 +95,23 @@ public class AuthorizationInterceptor {
      */
     private void setResource(StringBuilder resource, List<String> resourceNames) {
         var segments = requestUri.getPathSegments();
-        var segmentCount = segments.size();
 
         // skip the first segment `/api`
-        String kafkas = segments.get(1).getPath();
-        resource.append(kafkas);
+        String rootResource = segments.get(1).getPath();
+        resource.append(rootResource);
 
-        if (segmentCount > 2) {
-            String kafkaId = segments.get(2).getPath();
-            String kafkaName = Optional.ofNullable(contexts.get(kafkaId))
-                    .map(KafkaContext::clusterConfig)
-                    .map(KafkaClusterConfig::getName)
-                    .orElseThrow(() -> ClientFactory.NO_SUCH_KAFKA.apply(kafkaId));
-
-            /*
-             * For URLs like `/api/kafkas/123`, the Kafka ID is the resource name
-             * and is configured at the top-level `security` key in the console's
-             * configuration. Otherwise, the Kafka ID is appended to the resource
-             * path and the configuration originates from the Kafka-level `security`
-             * key, scoped to the Kafka cluster under which it is specified.
-             */
-
-            if (segmentCount > 3) {
-                resource.append('/');
-                resource.append(kafkaName);
-            } else {
-                resourceNames.add(kafkaName);
-            }
+        if (ResourceTypes.Global.KAFKAS.value().equals(rootResource)) {
+            setKafkaResource(resource, resourceNames, segments);
         }
-
-        setKafkaResource(resource, resourceNames, segments);
     }
 
     private void setKafkaResource(StringBuilder resource, List<String> resourceNames, List<PathSegment> segments) {
-        int segmentCount = segments.size();
+        var segmentCount = segments.size();
+
+        if (segmentCount > 2) {
+            addKafkaName(resource, resourceNames, segments);
+        }
+
         UnaryOperator<String> converter = UnaryOperator.identity();
 
         for (int s = 3; s < segmentCount; s++) {
@@ -147,6 +130,29 @@ public class AuthorizationInterceptor {
                 resource.append('/');
                 resource.append(segment);
             }
+        }
+    }
+
+    private void addKafkaName(StringBuilder resource, List<String> resourceNames, List<PathSegment> segments) {
+        String kafkaId = segments.get(2).getPath();
+        String kafkaName = Optional.ofNullable(contexts.get(kafkaId))
+                .map(KafkaContext::clusterConfig)
+                .map(KafkaClusterConfig::getName)
+                .orElseThrow(() -> ClientFactory.NO_SUCH_KAFKA.apply(kafkaId));
+
+        /*
+         * For URLs like `/api/kafkas/123`, the Kafka ID is the resource name
+         * and is configured at the top-level `security` key in the console's
+         * configuration. Otherwise, the Kafka ID is appended to the resource
+         * path and the configuration originates from the Kafka-level `security`
+         * key, scoped to the Kafka cluster under which it is specified.
+         */
+
+        if (segments.size() > 3) {
+            resource.append('/');
+            resource.append(kafkaName);
+        } else {
+            resourceNames.add(kafkaName);
         }
     }
 

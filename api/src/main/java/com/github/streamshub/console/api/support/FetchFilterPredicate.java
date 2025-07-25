@@ -15,7 +15,8 @@ public class FetchFilterPredicate<B, F> implements Predicate<B> {
         IN_LIST("in"),
         GREATER_THAN_OR_EQUAL_TO("gte"),
         LIKE_PATTERN("like"),
-        EQUAL_TO("eq");
+        EQUAL_TO("eq"),
+        CONTAINS("contains");
 
         private final String value;
 
@@ -54,7 +55,7 @@ public class FetchFilterPredicate<B, F> implements Predicate<B> {
             StringBuilder pattern = new StringBuilder();
             StringBuilder quoted = new StringBuilder();
             Runnable appendQuoted = () -> {
-                if (quoted.length() > 0) {
+                if (!quoted.isEmpty()) {
                     pattern.append(Pattern.quote(quoted.toString()));
                     quoted.setLength(0);
                 }
@@ -155,6 +156,14 @@ public class FetchFilterPredicate<B, F> implements Predicate<B> {
 
             case EQUAL_TO:
                 return firstOperand().equals(field);
+
+            case CONTAINS:
+                if (field instanceof Collection<?> values) {
+                    // All of the requested operands must be present
+                    return operands.stream().allMatch(values::contains);
+                }
+
+                return false;
 
             default:
                 /*

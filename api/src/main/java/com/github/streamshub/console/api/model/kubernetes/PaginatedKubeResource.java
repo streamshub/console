@@ -1,4 +1,4 @@
-package com.github.streamshub.console.api.model;
+package com.github.streamshub.console.api.model.kubernetes;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
@@ -10,13 +10,21 @@ import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 import jakarta.json.JsonValue;
 
-import com.github.streamshub.console.api.model.KafkaRebalance.Fields;
-
 /**
  * Common interface to parse and generate pagination cursors for Kube resources
  * having the common fields id, name, namespace, and creationTimestamp.
  */
-interface PaginatedKubeResource {
+public interface PaginatedKubeResource {
+
+    static class Fields {
+        static final String NAME = "name";
+        static final String NAMESPACE = "namespace";
+        static final String CREATION_TIMESTAMP = "creationTimestamp";
+
+        private Fields() {
+            // Prevent instances
+        }
+    }
 
     // Use getId to match Resource method.
     // May rename later, see https://github.com/streamshub/console/issues/43
