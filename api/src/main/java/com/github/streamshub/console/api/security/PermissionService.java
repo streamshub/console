@@ -1,5 +1,6 @@
 package com.github.streamshub.console.api.security;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
@@ -32,7 +33,14 @@ public class PermissionService {
 
     private String resolveResource(String resource) {
         if (KAFKA_SUBRESOURCES.contains(resource)) {
-            resource = "kafkas/" + kafkaContext.clusterConfig().getName() + '/' + resource;
+            resource = kafkaContext.securityResourcePath(resource);
+        }
+        return resource;
+    }
+
+    private String resolveResourceAudit(String resource) {
+        if (KAFKA_SUBRESOURCES.contains(resource)) {
+            resource = kafkaContext.auditDisplayResourcePath(resource);
         }
         return resource;
     }
@@ -44,7 +52,11 @@ public class PermissionService {
     }
 
     public <T> Predicate<T> permitted(String resource, Privilege privilege, Function<T, String> name) {
-        ConsolePermission required = new ConsolePermission(resolveResource(resource), privilege);
+        ConsolePermission required = new ConsolePermission(
+                resolveResource(resource),
+                resolveResourceAudit(resource),
+                Collections.emptyList(),
+                privilege);
 
         return (T item) -> {
             required.resourceName(name.apply(item));
@@ -53,7 +65,11 @@ public class PermissionService {
     }
 
     public boolean permitted(String resource, Privilege privilege, String name) {
-        return checkPermission(new ConsolePermission(resolveResource(resource), List.of(name), privilege));
+        return checkPermission(new ConsolePermission(
+                resolveResource(resource),
+                resolveResourceAudit(resource),
+                List.of(name),
+                privilege));
     }
 
     public void assertPermitted(String resource, Privilege privilege, String name) {

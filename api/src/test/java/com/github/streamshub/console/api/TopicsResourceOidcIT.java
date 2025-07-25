@@ -321,7 +321,7 @@ class TopicsResourceOidcIT {
             .body("data.size()", equalTo(1));
 
         var auditLogs = auditLogCapture.records();
-        final String auditTmpl = "alice %s console:kafkas/test-kafka1/topics:[%s]:[%s]";
+        final String auditTmpl = "alice %s console:kafkas/[default/test-kafka1]/topics:[%s]:[%s]";
 
         assertThat(auditLogs, hasItem(both(hasProperty("message", containsString(
                     auditTmpl.formatted("allowed", "", Privilege.LIST))))

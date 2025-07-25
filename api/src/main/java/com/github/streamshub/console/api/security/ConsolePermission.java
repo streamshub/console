@@ -17,22 +17,25 @@ public class ConsolePermission extends Permission {
     private static final long serialVersionUID = 1L;
     public static final String ACTIONS_SEPARATOR = ",";
 
-    private String resource;
+    private final String resource;
+    private final String resourceAuditDisplay;
     private Collection<String> resourceNames;
     private final Set<Privilege> actions;
 
-    public ConsolePermission(String resource, Privilege... actions) {
+    public ConsolePermission(String resource, String resourceAuditDisplay, Collection<String> resourceNames, Privilege... actions) {
         super("console");
         this.resource = resource;
-        this.resourceNames = Collections.emptySet();
+        this.resourceAuditDisplay = resourceAuditDisplay;
+        this.resourceNames = resourceNames;
         this.actions = checkActions(actions);
     }
 
     public ConsolePermission(String resource, Collection<String> resourceNames, Privilege... actions) {
-        super("console");
-        this.resource = resource;
-        this.resourceNames = resourceNames;
-        this.actions = checkActions(actions);
+        this(resource, null, resourceNames, actions);
+    }
+
+    public ConsolePermission(String resource, Privilege... actions) {
+        this(resource, null, Collections.emptySet(), actions);
     }
 
     private static Set<Privilege> checkActions(Privilege[] actions) {
@@ -156,7 +159,8 @@ public class ConsolePermission extends Permission {
 
     @Override
     public String toString() {
-        return getName() + ":" + resource + ":" + resourceNames + ":" + actions;
+        String rsrc = resourceAuditDisplay != null ? resourceAuditDisplay : resource;
+        return getName() + ":" + rsrc + ":" + resourceNames + ":" + actions;
     }
 
     /**
