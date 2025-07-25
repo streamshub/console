@@ -931,7 +931,7 @@ class TopicsResourceIT {
             .body("data.size()", equalTo(1));
 
         var auditLogs = auditLogCapture.records();
-        final String auditTmpl = "ANONYMOUS allowed console:kafkas/test-kafka1/topics:[%s]:[%s]";
+        final String auditTmpl = "ANONYMOUS allowed console:kafkas/[default/test-kafka1]/topics:[%s]:[%s]";
 
         assertThat(auditLogs, not(hasItem(hasProperty("message", containsString("denied")))));
         assertThat(auditLogs, hasItem(both(hasProperty("message", containsString(auditTmpl.formatted("", Privilege.LIST))))
