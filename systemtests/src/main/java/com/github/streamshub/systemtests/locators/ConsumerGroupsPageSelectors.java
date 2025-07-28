@@ -68,7 +68,7 @@ public class ConsumerGroupsPageSelectors {
 
     public static final String CGPS_RESET_PAGE_CONSUMER_GROUP_NAME = new CssBuilder(CGPS_PAGE_HEADER)
         .withChild()
-        .withElementDiv().withLayoutFlex().nth(1).withChild()
+        .withElementDiv().withLayoutFlex().nth(2).withChild()
         .withElementDiv().withChild()
         .withElementSpan().withChild()
         .withElementB()
