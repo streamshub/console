@@ -4,6 +4,7 @@ import com.github.streamshub.systemtests.Environment;
 import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.constants.ExampleFiles;
 import com.github.streamshub.systemtests.logs.LogWrapper;
+import com.github.streamshub.systemtests.utils.Utils;
 import com.github.streamshub.systemtests.utils.WaitUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.ClusterUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.KafkaNamingUtils;
@@ -230,6 +231,8 @@ public class KafkaSetup {
      * @return a fully built {@link Kafka} resource object with the default configuration
      */
     public static Kafka getDefaultKafka(String namespaceName, String clusterName, String kafkaVersion, int replicas) {
+        // This helps to avoid issues with same-name kafka in different namespace exposing the same hostname
+        String hashedNamespace = Utils.hashStub(namespaceName);
         return new KafkaBuilder()
             .editMetadata()
                 .withNamespace(namespaceName)
@@ -285,20 +288,20 @@ public class KafkaSetup {
                         .endKafkaListenerAuthenticationScramSha512Auth()
                         .withNewConfiguration()
                             .withNewBootstrap()
-                                .withHost(String.join(".", "bootstrap", clusterName, ClusterUtils.getClusterDomain()))
+                                .withHost(String.join(".", "bootstrap", hashedNamespace, clusterName, ClusterUtils.getClusterDomain()))
                             .endBootstrap()
                             .withBrokers(
                                 new GenericKafkaListenerConfigurationBrokerBuilder()
                                     .withBroker(0)
-                                    .withHost(String.join(".", "broker-0", clusterName, ClusterUtils.getClusterDomain()))
+                                    .withHost(String.join(".", "broker-0", hashedNamespace, clusterName, ClusterUtils.getClusterDomain()))
                                 .build(),
                                 new GenericKafkaListenerConfigurationBrokerBuilder()
                                     .withBroker(1)
-                                    .withHost(String.join(".", "broker-1", clusterName, ClusterUtils.getClusterDomain()))
+                                    .withHost(String.join(".", "broker-1", hashedNamespace, clusterName, ClusterUtils.getClusterDomain()))
                                 .build(),
                                 new GenericKafkaListenerConfigurationBrokerBuilder()
                                     .withBroker(2)
-                                    .withHost(String.join(".", "broker-2", clusterName, ClusterUtils.getClusterDomain()))
+                                    .withHost(String.join(".", "broker-2", hashedNamespace, clusterName, ClusterUtils.getClusterDomain()))
                                 .build())
                         .endConfiguration()
                         .build())
