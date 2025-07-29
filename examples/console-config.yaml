@@ -60,17 +60,17 @@ security:
       rules:
         - resources:
             - kafkas
-        - resourceNames:
+          resourceNames:
             - dev-cluster-a
             - dev-cluster-b
-        - privileges:
+          privileges:
             - '*'
     # administrators may operate on any (unspecified) Kafka clusters
     - name: administrators
       rules:
         - resources:
             - kafkas
-        - privileges:
+          privileges:
             - '*'
 
 kafka:
@@ -106,7 +106,7 @@ kafka:
                   - topics/records
                   - consumerGroups
                   - rebalances
-              - privileges:
+                privileges:
                   - get
                   - list
 
@@ -119,13 +119,13 @@ kafka:
                   - consumerGroups
                   - rebalances
                   - nodes/configs
-              - privileges:
+                privileges:
                   - get
                   - list
               - resources:
                   - consumerGroups
                   - rebalances
-              - privileges:
+                privileges:
                   - update
 
     - name: my-kafka2
