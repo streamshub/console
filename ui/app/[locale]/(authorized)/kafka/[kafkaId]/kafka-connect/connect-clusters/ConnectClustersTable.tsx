@@ -44,7 +44,8 @@ export function ConnectClustersTable({
       itemCount={total}
       onPageChange={onPageChange}
       isColumnSortable={isColumnSortable}
-      emptyStateNoData={<div>{t("connectors.no_data")}</div>}
+      isFiltered={filterName?.length !== 0}
+      emptyStateNoData={<></>}
       emptyStateNoResults={
         <EmptyStateNoMatchFound onClear={onClearAllFilters!} />
       }

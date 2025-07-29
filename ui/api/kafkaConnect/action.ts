@@ -69,7 +69,7 @@ export async function getKafkaConnectClusters(params: {
       sort: sortParam(params.sort, params.sortDir),
 
       include: "connectors",
-      "fields[connects]": "name,version,connectors", // ✅ correct key
+      "fields[connects]": "name,version,connectors",
     }),
   );
 
