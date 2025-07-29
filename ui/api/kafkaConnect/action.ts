@@ -8,7 +8,12 @@ import {
   filterLike,
   sortParam,
 } from "../api";
-import { ConnectorsResponse, ConnectorsResponseSchema } from "./schema";
+import {
+  ConnectorsResponse,
+  ConnectorsResponseSchema,
+  ConnectClustersResponse,
+  ConnectClustersResponseSchema,
+} from "./schema";
 
 export async function getKafkaConnectors(params: {
   kafkaId: string;
@@ -30,10 +35,46 @@ export async function getKafkaConnectors(params: {
         ? params.pageCursor.slice(7)
         : undefined,
       sort: sortParam(params.sort, params.sortDir),
+
+      include: "connectCluster",
+      "fields[connectors]": "name,type,state,connectCluster",
     }),
   );
 
-  return fetchData(`/api/connectors`, sp, (rawData) =>
-    ConnectorsResponseSchema.parse(rawData),
+  return fetchData(`/api/connectors`, sp, (rawData) => {
+    console.log("Raw API response:", rawData);
+    return ConnectorsResponseSchema.parse(rawData);
+  });
+}
+
+export async function getKafkaConnectClusters(params: {
+  kafkaId: string;
+  name?: string;
+  pageSize?: number;
+  pageCursor?: string;
+  sort?: string;
+  sortDir?: string;
+}): Promise<ApiResponse<ConnectClustersResponse>> {
+  const sp = new URLSearchParams(
+    filterUndefinedFromObj({
+      "filter[kafkaClusters]": filterLike(params.kafkaId),
+      "filter[name]": filterLike(params.name),
+      "page[size]": params.pageSize,
+      "page[after]": params.pageCursor?.startsWith("after:")
+        ? params.pageCursor.slice(6)
+        : undefined,
+      "page[before]": params.pageCursor?.startsWith("before:")
+        ? params.pageCursor.slice(7)
+        : undefined,
+      sort: sortParam(params.sort, params.sortDir),
+
+      include: "connectors",
+      "fields[connects]": "name,version,connectors", // ✅ correct key
+    }),
   );
+
+  return fetchData(`/api/connects`, sp, (rawData) => {
+    console.log("Raw API response:", rawData);
+    return ConnectClustersResponseSchema.parse(rawData);
+  });
 }

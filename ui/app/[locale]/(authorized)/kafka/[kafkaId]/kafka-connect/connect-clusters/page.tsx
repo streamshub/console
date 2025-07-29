@@ -4,42 +4,19 @@ import { PageSection } from "@/libs/patternfly/react-core";
 import { Suspense } from "react";
 import { stringToInt } from "@/utils/stringToInt";
 import { NoDataErrorState } from "@/components/NoDataErrorState";
-import { ConnectedConnectorsTable } from "./ConnectedConnectorsTable";
-import { ConnectorsTableColumn } from "./ConnectorsTable";
-import { getKafkaConnectors } from "@/api/kafkaConnect/action";
-import {
-  Connectors,
-  ConnectorsResponse,
-  EnrichedConnector,
-} from "@/api/kafkaConnect/schema";
-
-function enrichConnectorsData(
-  connectors: Connectors[],
-  included: ConnectorsResponse["included"],
-): EnrichedConnector[] {
-  const clusterMap = new Map((included ?? []).map((item) => [item.id, item]));
-
-  return connectors.map((connector) => {
-    const connectClusterId = connector.relationships?.connectCluster?.data?.id;
-    const cluster = connectClusterId ? clusterMap.get(connectClusterId) : null;
-
-    return {
-      ...connector,
-      connectClusterName: cluster?.attributes?.name ?? null,
-      replicas: cluster?.attributes?.replicas ?? null,
-    };
-  });
-}
+import { ConnectedConnectClustersTable } from "./ConnectedConnectClustersTable";
+import { ConnectClustersTableColumn } from "./ConnectClustersTable";
+import { getKafkaConnectClusters } from "@/api/kafkaConnect/action";
 
 export async function generateMetadata() {
   const t = await getTranslations();
 
   return {
-    title: `${t("KafkaConnect.connectors_title")} | ${t("common.title")}`,
+    title: `${t("KafkaConnect.connect_clusters_title")} | ${t("common.title")}`,
   };
 }
 
-export default function ConnectorsPage({
+export default function ConnectClustersPage({
   searchParams,
 }: {
   searchParams: {
@@ -54,15 +31,15 @@ export default function ConnectorsPage({
   const kafkaId = searchParams["kafkaId"];
   const name = searchParams["name"];
   const pageSize = stringToInt(searchParams.perPage) || 20;
-  const sort = (searchParams["sort"] || "name") as ConnectorsTableColumn;
+  const sort = (searchParams["sort"] || "name") as ConnectClustersTableColumn;
   const sortDir = (searchParams["sortDir"] || "asc") as "asc" | "desc";
   const pageCursor = searchParams["page"];
   return (
     <PageSection isFilled={true}>
       <Suspense
         fallback={
-          <ConnectedConnectorsTable
-            connectors={undefined}
+          <ConnectedConnectClustersTable
+            connectClusters={undefined}
             name={name}
             perPage={pageSize}
             sort={sort}
@@ -70,11 +47,11 @@ export default function ConnectorsPage({
             page={1}
             nextPageCursor={undefined}
             prevPageCursor={undefined}
-            connectorsCount={0}
+            connectClustersCount={0}
           />
         }
       >
-        <AsyncConnectorsTable
+        <AsyncConnectClustersTable
           sort={sort}
           name={name}
           sortDir={sortDir}
@@ -87,7 +64,7 @@ export default function ConnectorsPage({
   );
 }
 
-async function AsyncConnectorsTable({
+async function AsyncConnectClustersTable({
   kafkaId,
   name,
   sortDir,
@@ -95,13 +72,13 @@ async function AsyncConnectorsTable({
   pageCursor,
   pageSize,
 }: {
-  sort: ConnectorsTableColumn;
+  sort: ConnectClustersTableColumn;
   name: string | undefined;
   sortDir: "asc" | "desc";
   pageSize: number;
   pageCursor: string | undefined;
 } & KafkaParams) {
-  const response = await getKafkaConnectors({
+  const response = await getKafkaConnectClusters({
     kafkaId,
     name,
     sort: sort,
@@ -114,32 +91,27 @@ async function AsyncConnectorsTable({
     return <NoDataErrorState errors={response.errors!} />;
   }
 
-  const connectors = response.payload!;
+  const connectClusters = response.payload!;
 
-  const enrichedConnectors = enrichConnectorsData(
-    connectors.data,
-    connectors.included,
-  );
-
-  const nextPageCursor = connectors.links.next
-    ? `after:${new URLSearchParams(connectors.links.next).get("page[after]")}`
+  const nextPageCursor = connectClusters.links.next
+    ? `after:${new URLSearchParams(connectClusters.links.next).get("page[after]")}`
     : undefined;
 
-  const prevPageCursor = connectors.links.prev
-    ? `before:${new URLSearchParams(connectors.links.prev).get("page[before]")}`
+  const prevPageCursor = connectClusters.links.prev
+    ? `before:${new URLSearchParams(connectClusters.links.prev).get("page[before]")}`
     : undefined;
 
   return (
-    <ConnectedConnectorsTable
+    <ConnectedConnectClustersTable
       sort={sort}
       sortDir={sortDir}
-      page={connectors.meta.page.pageNumber || 0}
+      page={connectClusters.meta.page.pageNumber || 0}
       perPage={pageSize}
       name={name}
       nextPageCursor={nextPageCursor}
       prevPageCursor={prevPageCursor}
-      connectors={enrichedConnectors}
-      connectorsCount={connectors.meta.page.total || 0}
+      connectClusters={connectClusters.data}
+      connectClustersCount={connectClusters.meta.page.total || 0}
     />
   );
 }
