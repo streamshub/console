@@ -46,8 +46,9 @@ export function ConnectorsTable({
       itemCount={total}
       onPageChange={onPageChange}
       isColumnSortable={isColumnSortable}
+      isFiltered={filterName?.length !== 0}
       onClearAllFilters={onClearAllFilters}
-      emptyStateNoData={<div>{t("connectors.no_data")}</div>}
+      emptyStateNoData={<></>}
       emptyStateNoResults={
         <EmptyStateNoMatchFound onClear={onClearAllFilters!} />
       }

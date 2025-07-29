@@ -66,8 +66,8 @@ export const ConnectorsResponseSchema = z.object({
   data: z.array(ConnectorsSchema),
   meta: z.object({
     page: z.object({
-      total: z.number(),
-      pageNumber: z.number(),
+      total: z.number().optional(),
+      pageNumber: z.number().optional(),
     }),
   }),
   links: z.object({
@@ -129,8 +129,8 @@ export const ConnectClustersResponseSchema = z.object({
   data: z.array(ConnectClusters),
   meta: z.object({
     page: z.object({
-      total: z.number(),
-      pageNumber: z.number(),
+      total: z.number().optional(),
+      pageNumber: z.number().optional(),
     }),
   }),
   links: z.object({
