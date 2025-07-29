@@ -1,17 +1,20 @@
 "use client";
 
-import { EnrichedConnector } from "@/api/kafkaConnect/schema";
-import { ConnectorsTable, ConnectorsTableColumn } from "./ConnectorsTable";
+import { ConnectClusters } from "@/api/kafkaConnect/schema";
+import {
+  ConnectClustersTable,
+  ConnectClustersTableColumn,
+} from "./ConnectClustersTable";
 import { useRouter } from "@/i18n/routing";
 import { useFilterParams } from "@/utils/useFilterParams";
 import { useOptimistic, useTransition } from "react";
 
-export type ConnectedConnectorsTableProps = {
-  connectors: EnrichedConnector[] | undefined;
-  connectorsCount: number;
+export type ConnectedConnectClustersTableProps = {
+  connectClusters: ConnectClusters[] | undefined;
+  connectClustersCount: number;
   page: number;
   perPage: number;
-  sort: ConnectorsTableColumn;
+  sort: ConnectClustersTableColumn;
   name: string | undefined;
   sortDir: "asc" | "desc";
   nextPageCursor: string | null | undefined;
@@ -20,15 +23,15 @@ export type ConnectedConnectorsTableProps = {
 
 type State = {
   name: string | undefined;
-  connectors: EnrichedConnector[] | undefined;
+  connectClusters: ConnectClusters[] | undefined;
   perPage: number;
-  sort: ConnectorsTableColumn;
+  sort: ConnectClustersTableColumn;
   sortDir: "asc" | "desc";
 };
 
-export function ConnectedConnectorsTable({
-  connectors,
-  connectorsCount,
+export function ConnectedConnectClustersTable({
+  connectClusters,
+  connectClustersCount,
   page,
   perPage,
   name,
@@ -36,7 +39,7 @@ export function ConnectedConnectorsTable({
   sortDir,
   nextPageCursor,
   prevPageCursor,
-}: ConnectedConnectorsTableProps) {
+}: ConnectedConnectClustersTableProps) {
   const router = useRouter();
 
   const _updateUrl = useFilterParams({ perPage, sort, sortDir });
@@ -46,17 +49,17 @@ export function ConnectedConnectorsTable({
     Partial<Omit<State, "ConsumerGroups">>
   >(
     {
-      connectors,
+      connectClusters,
       name,
       perPage,
       sort,
       sortDir,
     },
-    (state, options) => ({ ...state, ...options, connectors: undefined }),
+    (state, options) => ({ ...state, ...options, connectClusters: undefined }),
   );
 
   const updateUrl: typeof _updateUrl = (newParams) => {
-    const { connectors, ...s } = state;
+    const { connectClusters, ...s } = state;
     _updateUrl({
       ...s,
       ...newParams,
@@ -73,11 +76,11 @@ export function ConnectedConnectorsTable({
   }
 
   return (
-    <ConnectorsTable
-      connectors={state.connectors}
+    <ConnectClustersTable
+      connectClusters={state.connectClusters}
       page={page}
       perPage={state.perPage}
-      total={connectorsCount}
+      total={connectClustersCount}
       onClearAllFilters={clearFilters}
       onPageChange={(newPage, perPage) => {
         startTransition(() => {

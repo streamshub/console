@@ -1,22 +1,20 @@
-import { Connectors, EnrichedConnector } from "@/api/kafkaConnect/schema";
+import { ConnectClusters } from "@/api/kafkaConnect/schema";
 import { TableView, TableViewProps } from "@/components/Table";
 import { useTranslations } from "next-intl";
-import { Label } from "@/libs/patternfly/react-core";
 import { EmptyStateNoMatchFound } from "@/components/Table/EmptyStateNoMatchFound";
 import Link from "next/link";
 
-export const ConnectorsTableColumns = [
+export const ConnectClustersTableColumns = [
   "name",
-  "connect-cluster",
-  "type",
-  "state",
-  "tasks",
+  "version",
+  "workers",
 ] as const;
 
-export type ConnectorsTableColumn = (typeof ConnectorsTableColumns)[number];
+export type ConnectClustersTableColumn =
+  (typeof ConnectClustersTableColumns)[number];
 
-export function ConnectorsTable({
-  connectors,
+export function ConnectClustersTable({
+  connectClusters,
   page,
   perPage,
   total,
@@ -26,45 +24,41 @@ export function ConnectorsTable({
   isColumnSortable,
   onClearAllFilters,
 }: {
-  connectors: EnrichedConnector[] | undefined;
+  connectClusters: ConnectClusters[] | undefined;
   page: number;
   perPage: number;
   total: number;
   filterName: string | undefined;
   onFilterNameChange: (name: string | undefined) => void;
 } & Pick<
-  TableViewProps<Connectors, ConnectorsTableColumn>,
+  TableViewProps<ConnectClusters, ConnectClustersTableColumn>,
   "isColumnSortable" | "onPageChange" | "onClearAllFilters"
 >) {
   const t = useTranslations("KafkaConnect");
 
   return (
     <TableView
-      data={connectors}
+      data={connectClusters}
       page={page}
       perPage={perPage}
       itemCount={total}
       onPageChange={onPageChange}
       isColumnSortable={isColumnSortable}
-      onClearAllFilters={onClearAllFilters}
       emptyStateNoData={<div>{t("connectors.no_data")}</div>}
       emptyStateNoResults={
         <EmptyStateNoMatchFound onClear={onClearAllFilters!} />
       }
-      ariaLabel={t("connectors.title")}
-      columns={ConnectorsTableColumns}
+      ariaLabel={t("connect_clusters_title")}
+      columns={ConnectClustersTableColumns}
+      onClearAllFilters={onClearAllFilters}
       renderHeader={({ column, key, Th }) => {
         switch (column) {
           case "name":
-            return <Th key={key}>{t("connectors.name")}</Th>;
-          case "connect-cluster":
-            return <Th key={key}>{t("connectors.connect_cluster")}</Th>;
-          case "type":
-            return <Th key={key}>{t("connectors.type")}</Th>;
-          case "state":
-            return <Th key={key}>{t("connectors.state")}</Th>;
-          case "tasks":
-            return <Th key={key}>{t("connectors.tasks")}</Th>;
+            return <Th key={key}>{t("connect_clusters.name")}</Th>;
+          case "version":
+            return <Th key={key}>{t("connect_clusters.version")}</Th>;
+          case "workers":
+            return <Th key={key}>{t("connect_clusters.workers")}</Th>;
         }
       }}
       renderCell={({ row, column, key, Td }) => {
@@ -75,34 +69,16 @@ export function ConnectorsTable({
                 <Link href="/">{row.attributes.name}</Link>
               </Td>
             );
-          case "connect-cluster":
+          case "version":
             return (
               <Td key={key} dataLabel={t("connectors.connect_cluster")}>
-                <Link href="/">{row.connectClusterName}</Link>
+                <Link href="/">{row.attributes.version}</Link>
               </Td>
             );
-          case "type":
+          case "workers":
             return (
               <Td key={key} dataLabel={t("connectors.type")}>
-                {row.attributes.type}
-              </Td>
-            );
-          case "state":
-            return (
-              <Td key={key} dataLabel={t("connectors.state")}>
-                <Label
-                  color={
-                    row.attributes.state === "RUNNING" ? "green" : "orange"
-                  }
-                >
-                  {row.attributes.state}
-                </Label>
-              </Td>
-            );
-          case "tasks":
-            return (
-              <Td key={key} dataLabel={t("connectors.tasks")}>
-                {row.replicas}
+                {row.attributes.name}
               </Td>
             );
         }
