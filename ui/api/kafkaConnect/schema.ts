@@ -104,6 +104,7 @@ export const ConnectClusters = z.object({
   attributes: z.object({
     name: z.string(),
     version: z.string(),
+    replicas: z.any().nullable().optional(),
   }),
   relationships: ConnectClusterRelationshipsSchema,
 });

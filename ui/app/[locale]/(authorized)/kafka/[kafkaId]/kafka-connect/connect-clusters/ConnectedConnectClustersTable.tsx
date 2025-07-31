@@ -46,7 +46,7 @@ export function ConnectedConnectClustersTable({
   const [_, startTransition] = useTransition();
   const [state, addOptimistic] = useOptimistic<
     State,
-    Partial<Omit<State, "ConsumerGroups">>
+    Partial<Omit<State, "connectCluster">>
   >(
     {
       connectClusters,
