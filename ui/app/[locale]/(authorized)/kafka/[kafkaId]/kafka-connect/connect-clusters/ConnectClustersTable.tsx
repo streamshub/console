@@ -73,13 +73,13 @@ export function ConnectClustersTable({
           case "version":
             return (
               <Td key={key} dataLabel={t("connectors.connect_cluster")}>
-                <Link href="/">{row.attributes.version}</Link>
+                {row.attributes.version}
               </Td>
             );
           case "workers":
             return (
               <Td key={key} dataLabel={t("connectors.type")}>
-                {row.attributes.name}
+                {row.attributes.replicas}
               </Td>
             );
         }
