@@ -2,7 +2,6 @@ import { ConnectClusters } from "@/api/kafkaConnect/schema";
 import { TableView, TableViewProps } from "@/components/Table";
 import { useTranslations } from "next-intl";
 import { EmptyStateNoMatchFound } from "@/components/Table/EmptyStateNoMatchFound";
-import Link from "next/link";
 
 export const ConnectClustersTableColumns = [
   "name",
@@ -66,19 +65,19 @@ export function ConnectClustersTable({
         switch (column) {
           case "name":
             return (
-              <Td key={key} dataLabel={t("connectors.name")}>
-                <Link href="/">{row.attributes.name}</Link>
+              <Td key={key} dataLabel={t("connect_clusters.name")}>
+                {row.attributes.name}
               </Td>
             );
           case "version":
             return (
-              <Td key={key} dataLabel={t("connectors.connect_cluster")}>
+              <Td key={key} dataLabel={t("connect_clusters.version")}>
                 {row.attributes.version}
               </Td>
             );
           case "workers":
             return (
-              <Td key={key} dataLabel={t("connectors.type")}>
+              <Td key={key} dataLabel={t("connect_clusters.type")}>
                 {row.attributes.replicas}
               </Td>
             );
