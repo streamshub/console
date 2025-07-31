@@ -123,7 +123,6 @@ class PermissionCache {
                     Collection<String> resourceNames = rule.getResourceNames();
                     rulePermissions.add(new ConsolePermission(
                             kafkaContext.securityResourcePath(resource),
-                            kafkaContext.auditDisplayResourcePath(resource),
                             resourceNames,
                             actions));
                 }
@@ -156,33 +155,14 @@ class PermissionCache {
     private void buildGlobalAuditRules(Map<Permission, Decision> auditRules) {
         for (var auditRule : consoleConfig.getSecurity().getAudit()) {
             Set<Privilege> actions = auditActions(auditRule);
+            Collection<String> resourceNames = auditRule.getResourceNames();
 
-            for (var action : actions) {
-                for (var resource : auditRule.getResources()) {
-                    Collection<String> resourceNames = auditRule.getResourceNames();
-
-                    if (resourceNames.isEmpty()) {
-                        auditRules.put(
-                                new ConsolePermission(
-                                        resource,
-                                        Collections.emptySet(),
-                                        action),
-                                auditRule.getDecision());
-                    } else {
-                        if ("kafkas".equals(resource)) {
-                            resourceNames = mapKafkaClusterIds(resourceNames);
-                        }
-
-                        for (String name : resourceNames) {
-                            auditRules.put(
-                                    new ConsolePermission(
-                                            resource,
-                                            List.of(name),
-                                            action),
-                                    auditRule.getDecision());
-                        }
-                    }
+            for (var resource : auditRule.getResources()) {
+                if ("kafkas".equals(resource)) {
+                    resourceNames = mapKafkaClusterIds(resourceNames);
                 }
+
+                buildAuditRules(auditRules, resource, resourceNames, actions, auditRule.getDecision());
             }
         }
     }
@@ -192,22 +172,25 @@ class PermissionCache {
 
         for (var auditRule : kafkaCluster.getSecurity().getAudit()) {
             Set<Privilege> actions = auditActions(auditRule);
+            Collection<String> resourceNames = auditRule.getResourceNames();
 
-            for (var action : actions) {
-                for (var resource : auditRule.getResources()) {
-                    String securityPath = kafkaContext.securityResourcePath(resource);
+            for (var resource : auditRule.getResources()) {
+                resource = kafkaContext.securityResourcePath(resource);
 
-                    if (auditRule.getResourceNames().isEmpty()) {
-                        auditRules.put(
-                                new ConsolePermission(securityPath, Collections.emptySet(), action),
-                                auditRule.getDecision());
-                    } else {
-                        for (String name : auditRule.getResourceNames()) {
-                            auditRules.put(
-                                    new ConsolePermission(securityPath, List.of(name), action),
-                                    auditRule.getDecision());
-                        }
-                    }
+                buildAuditRules(auditRules, resource, resourceNames, actions, auditRule.getDecision());
+            }
+        }
+    }
+
+    private void buildAuditRules(Map<Permission, Decision> auditRules,
+            String resource, Collection<String> resourceNames, Set<Privilege> actions, Decision decision) {
+
+        for (var action : actions) {
+            if (resourceNames.isEmpty()) {
+                auditRules.put(new ConsolePermission(resource, Collections.emptySet(), action), decision);
+            } else {
+                for (String name : resourceNames) {
+                    auditRules.put(new ConsolePermission(resource, List.of(name), action), decision);
                 }
             }
         }

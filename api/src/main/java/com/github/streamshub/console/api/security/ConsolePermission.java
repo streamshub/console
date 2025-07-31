@@ -5,6 +5,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -12,30 +13,27 @@ import com.github.streamshub.console.config.security.Privilege;
 
 import static java.util.function.Predicate.not;
 
-public class ConsolePermission extends Permission {
+public final class ConsolePermission extends Permission {
 
     private static final long serialVersionUID = 1L;
     public static final String ACTIONS_SEPARATOR = ",";
 
     private final String resource;
-    private final String resourceAuditDisplay;
+    private final transient Optional<String> resourceDisplay;
     private Collection<String> resourceNames;
+    private transient Optional<Collection<String>> resourceNamesDisplay = Optional.empty();
     private final Set<Privilege> actions;
 
-    public ConsolePermission(String resource, String resourceAuditDisplay, Collection<String> resourceNames, Privilege... actions) {
+    public ConsolePermission(String resource, String resourceDisplay, Collection<String> resourceNames, Privilege... actions) {
         super("console");
         this.resource = resource;
-        this.resourceAuditDisplay = resourceAuditDisplay;
+        this.resourceDisplay = Optional.ofNullable(resourceDisplay);
         this.resourceNames = resourceNames;
         this.actions = checkActions(actions);
     }
 
     public ConsolePermission(String resource, Collection<String> resourceNames, Privilege... actions) {
         this(resource, null, resourceNames, actions);
-    }
-
-    public ConsolePermission(String resource, Privilege... actions) {
-        this(resource, null, Collections.emptySet(), actions);
     }
 
     private static Set<Privilege> checkActions(Privilege[] actions) {
@@ -59,17 +57,15 @@ public class ConsolePermission extends Permission {
         return this;
     }
 
+    ConsolePermission resourceNamesDisplay(Collection<String> resourceNamesDisplay) {
+        this.resourceNamesDisplay = Optional.ofNullable(resourceNamesDisplay);
+        return this;
+    }
+
     @Override
     public boolean implies(Permission other) {
-        if (other instanceof ConsolePermission requiredPermission) {
-            if (!getName().equals(requiredPermission.getName())) {
-                return false;
-            }
-
-            return implies(requiredPermission);
-        } else {
-            return false;
-        }
+        return other instanceof ConsolePermission requiredPermission
+                && implies(requiredPermission);
     }
 
     boolean implies(ConsolePermission requiredPermission) {
@@ -147,20 +143,19 @@ public class ConsolePermission extends Permission {
             return false;
         }
 
-        return getName().equals(other.getName())
-                && resource.equals(other.resource)
-                && actions.equals(other.actions);
+        return resource.equals(other.resource)
+                && actions.equals(other.actions)
+                && Objects.equals(resourceNames, other.resourceNames);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(getName(), resource, actions);
+        return Objects.hash(resource, actions, resourceNames);
     }
 
     @Override
     public String toString() {
-        String rsrc = resourceAuditDisplay != null ? resourceAuditDisplay : resource;
-        return getName() + ":" + rsrc + ":" + resourceNames + ":" + actions;
+        return getName() + ":" + resourceDisplay.orElse(resource) + ":" + resourceNamesDisplay.orElse(resourceNames) + ":" + actions;
     }
 
     /**
