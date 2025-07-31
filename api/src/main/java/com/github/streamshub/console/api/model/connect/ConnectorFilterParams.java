@@ -60,7 +60,7 @@ public class ConnectorFilterParams extends FilterParams {
 
     @Override
     protected void buildPredicates() {
-        maybeAddPredicate(nameFilter, ConnectCluster.class, ConnectCluster::name);
+        maybeAddPredicate(nameFilter, Connector.class, Connector::name);
         maybeAddPredicate(kafkaClusterFilter, KafkaConnectConfig.class, connectService::mapKafkaIdentifiers);
     }
 }

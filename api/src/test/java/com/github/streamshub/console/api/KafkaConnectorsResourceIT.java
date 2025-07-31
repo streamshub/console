@@ -22,6 +22,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -144,7 +146,7 @@ class KafkaConnectorsResourceIT implements ClientRequestFilter {
     }
 
     @Test
-    void testListConnectClustersSortedByNameDesc() {
+    void testListConnectorsSortedByNameDesc() {
         whenRequesting(req -> req.param("sort", "-name").get())
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
@@ -158,7 +160,7 @@ class KafkaConnectorsResourceIT implements ClientRequestFilter {
     }
 
     @Test
-    void testListConnectClustersWithAllIncluded() {
+    void testListConnectorsWithAllIncluded() {
         whenRequesting(req -> req
                 .param("fields[connectors]", "name,namespace,config,offsets,topics,connectCluster,tasks")
                 .param("fields[connects]", "name,namespace,connectors")
@@ -174,6 +176,26 @@ class KafkaConnectorsResourceIT implements ClientRequestFilter {
             .body("included.findAll { it.type == 'connects' }.relationships.connectors.data.type.flatten()", everyItem(is("connects")))
             .body("included.findAll { it.type == 'connectorTasks' }.size()", is(6))
             .body("included.findAll { it.type == 'connectorTasks' }.relationships.connector.data.type.flatten()", everyItem(is("connectors")));
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        "'like,connect1-*', 'connect1-connector1,connect1-connector2'",
+        "'like,connect2-*', 'connect2-connector1,connect2-connector2'",
+        "'like,*-connector1', 'connect1-connector1,connect2-connector1'",
+        "'like,*-connector2', 'connect1-connector2,connect2-connector2'",
+        "'in,connect1-connector1,connect2-connector2', 'connect1-connector1,connect2-connector2'"
+    })
+    void testListConnectorsFilteredByName(String filter, String expected) {
+        String[] expectedNames = expected.split(",");
+
+        whenRequesting(req -> req
+                .param("filter[name]", filter)
+                .param("sort", "name")
+                .get())
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()))
+            .body("data.attributes.name", Matchers.contains(expectedNames));
     }
 
 }
