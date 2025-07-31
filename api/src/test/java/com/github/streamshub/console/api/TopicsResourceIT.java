@@ -902,7 +902,6 @@ class TopicsResourceIT {
             .body("data.attributes.numPartitions", containsInAnyOrder(1, 2, 3, 4, 5, 6, 7, 8, 9));
     }
 
-
     @ParameterizedTest
     @CsvSource({
         "name, LIST",
@@ -910,14 +909,23 @@ class TopicsResourceIT {
         "'name,numPartitions', LIST, GET"
     })
     void testListTopicsWithAuditLogging(String fields, @AggregateWith(VarargsAggregator.class) Privilege... privilegesAudited) {
-        String topicName = UUID.randomUUID().toString();
-        topicUtils.createTopics(List.of(topicName), 1);
+        String topicName1 = UUID.randomUUID().toString();
+        String topicName2 = UUID.randomUUID().toString();
+        String topicName3 = UUID.randomUUID().toString();
+        topicUtils.createTopics(List.of(topicName1, topicName2, topicName3), 1);
 
         consoleConfig.getKafka().getClusterById(clusterId1).ifPresent(clusterConfig -> {
             clusterConfig.setSecurity(new KafkaSecurityConfigBuilder()
                     .addNewAudit()
                         .withDecision(Decision.ALL)
                         .withResources(ResourceTypes.Kafka.TOPICS.value())
+                        .addToResourceNames(topicName1)
+                        .withPrivileges(privilegesAudited)
+                    .endAudit()
+                    .addNewAudit()
+                        .withDecision(Decision.ALL)
+                        .withResources(ResourceTypes.Kafka.TOPICS.value())
+                        .addToResourceNames(topicName2)
                         .withPrivileges(privilegesAudited)
                     .endAudit()
                     .build());
@@ -928,7 +936,7 @@ class TopicsResourceIT {
                 .get("", clusterId1))
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
-            .body("data.size()", equalTo(1));
+            .body("data.size()", equalTo(3));
 
         var auditLogs = auditLogCapture.records();
         final String auditTmpl = "ANONYMOUS allowed console:kafkas/[default/test-kafka1]/topics:[%s]:[%s]";
@@ -938,8 +946,11 @@ class TopicsResourceIT {
                 .and(hasProperty("level", equalTo(Level.INFO)))));
 
         for (var p : privilegesAudited) {
-            assertThat(auditLogs, hasItem(both(hasProperty("message", containsString(auditTmpl.formatted(topicName, p))))
+            assertThat(auditLogs, hasItem(both(hasProperty("message", containsString(auditTmpl.formatted(topicName1, p))))
                     .and(hasProperty("level", equalTo(Level.INFO)))));
+            assertThat(auditLogs, hasItem(both(hasProperty("message", containsString(auditTmpl.formatted(topicName2, p))))
+                    .and(hasProperty("level", equalTo(Level.INFO)))));
+            assertThat(auditLogs, not(hasItem(hasProperty("message", containsString(auditTmpl.formatted(topicName3, p))))));
         }
     }
 

@@ -328,7 +328,7 @@ public class ConsoleAuthenticationMechanism implements HttpAuthenticationMechani
         if (applicationPermissions.isEmpty()) {
             // No roles are defined - allow everything
             builder.addPermissionChecker(requiredPermission -> {
-                auditLog(principal, requiredPermission, true, auditRules.get(requiredPermission));
+                auditLog(principal, requiredPermission, true, auditRules);
                 return Uni.createFrom().item(true);
             });
 
@@ -353,7 +353,7 @@ public class ConsoleAuthenticationMechanism implements HttpAuthenticationMechani
 
             boolean allowed = grantingPermission.isPresent();
 
-            auditLog(principal, requiredPermission, allowed, auditRules.get(requiredPermission));
+            auditLog(principal, requiredPermission, allowed, auditRules);
             return Uni.createFrom().item(allowed);
         });
     }
@@ -379,12 +379,15 @@ public class ConsoleAuthenticationMechanism implements HttpAuthenticationMechani
                 .collect(Collectors.toSet());
     }
 
-    private void auditLog(Principal principal, Permission required, boolean allowed, Decision audit) {
-        if (audit != null && audit.logResult(allowed)) {
-            log.infof("%s %s %s", principal.getName(), allowed ? "allowed" : "denied", required);
-        } else {
-            log.tracef("%s %s %s", principal.getName(), allowed ? "allowed" : "denied", required);
+    private void auditLog(Principal principal, Permission required, boolean allowed, Map<Permission, Decision> auditRules) {
+        for (Map.Entry<Permission, Decision> entry : auditRules.entrySet()) {
+            if (entry.getValue().logResult(allowed) && entry.getKey().implies(required)) {
+                log.infof("%s %s %s", principal.getName(), allowed ? "allowed" : "denied", required);
+                return;
+            }
         }
+
+        log.tracef("%s %s %s", principal.getName(), allowed ? "allowed" : "denied", required);
     }
 
     private void maybeLogAuthenticationFailure(Throwable t) {

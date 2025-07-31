@@ -56,7 +56,7 @@ public class AuthorizationInterceptor {
 
         boolean allow = securityIdentity.checkPermission(requiredPermission)
                 .subscribeAsCompletionStage()
-                .get();
+                .join();
 
         if (!allow) {
             throw new ForbiddenException("Access denied");
@@ -88,17 +88,23 @@ public class AuthorizationInterceptor {
      * @param resourceNames collection to hold the resource name
      */
     private ConsolePermission getRequiredPermission(ResourcePrivilege authz) {
-        List<String> resourceNames = new ArrayList<>(1);
-
         var segments = requestUri.getPathSegments();
         var segmentCount = segments.size();
 
         // skip the first segment `/api`
         String rootResource = segments.get(1).getPath();
 
+        String resource = rootResource;
+        String resourceDisplay = null;
+        List<String> resourceNames = new ArrayList<>(1);
+        List<String> resourceNamesDisplay = null;
+
         if (ResourceTypes.Global.KAFKAS.value().equals(rootResource)) {
             if (segmentCount > 2) {
                 String kafkaId = segments.get(2).getPath();
+                KafkaContext ctx = Optional.ofNullable(contexts.get(kafkaId))
+                        .orElseThrow(() -> ClientFactory.NO_SUCH_KAFKA.apply(kafkaId));
+
                 /*
                  * For URLs like `/api/kafkas/123`, the Kafka ID is the resource name
                  * and is configured at the top-level `security` key in the console's
@@ -107,21 +113,14 @@ public class AuthorizationInterceptor {
                  * key, scoped to the Kafka cluster under which it is specified.
                  */
                 if (segmentCount > 3) {
-                    return Optional.ofNullable(contexts.get(kafkaId))
-                        .map(ctx -> {
-                            StringBuilder resource = new StringBuilder();
-                            setKafkaResource(resource, resourceNames, segments);
-
-                            return new ConsolePermission(
-                                    ctx.securityResourcePath(resource.toString()),
-                                    ctx.auditDisplayResourcePath(resource.toString()),
-                                    resourceNames,
-                                    authz.value());
-                        })
-                        .orElseThrow(() -> ClientFactory.NO_SUCH_KAFKA.apply(kafkaId));
-
+                    StringBuilder resourceBuilder = new StringBuilder();
+                    setKafkaResource(resourceBuilder, resourceNames, segments);
+                    String rawResource = resourceBuilder.toString();
+                    resource = ctx.securityResourcePath(rawResource);
+                    resourceDisplay = ctx.auditDisplayResourcePath(rawResource);
                 } else {
                     resourceNames.add(kafkaId);
+                    resourceNamesDisplay = List.of(ctx.clusterConfig().clusterKey());
                 }
             }
         } else {
@@ -130,10 +129,8 @@ public class AuthorizationInterceptor {
             }
         }
 
-        return new ConsolePermission(
-                rootResource,
-                resourceNames,
-                authz.value());
+        return new ConsolePermission(resource, resourceDisplay, resourceNames, authz.value())
+                .resourceNamesDisplay(resourceNamesDisplay);
     }
 
     private void setKafkaResource(StringBuilder resource, List<String> resourceNames, List<PathSegment> segments) {
