@@ -1,9 +1,8 @@
-import { Connectors, EnrichedConnector } from "@/api/kafkaConnect/schema";
+import { EnrichedConnector } from "@/api/kafkaConnect/schema";
 import { TableView, TableViewProps } from "@/components/Table";
 import { useTranslations } from "next-intl";
 import { Label } from "@/libs/patternfly/react-core";
 import { EmptyStateNoMatchFound } from "@/components/Table/EmptyStateNoMatchFound";
-import Link from "next/link";
 
 export const ConnectorsTableColumns = [
   "name",
@@ -33,7 +32,7 @@ export function ConnectorsTable({
   filterName: string | undefined;
   onFilterNameChange: (name: string | undefined) => void;
 } & Pick<
-  TableViewProps<Connectors, ConnectorsTableColumn>,
+  TableViewProps<EnrichedConnector, ConnectorsTableColumn>,
   "isColumnSortable" | "onPageChange" | "onClearAllFilters"
 >) {
   const t = useTranslations("KafkaConnect");
@@ -73,13 +72,13 @@ export function ConnectorsTable({
           case "name":
             return (
               <Td key={key} dataLabel={t("connectors.name")}>
-                <Link href="/">{row.attributes.name}</Link>
+                {row.attributes.name}
               </Td>
             );
           case "connect-cluster":
             return (
               <Td key={key} dataLabel={t("connectors.connect_cluster")}>
-                <Link href="/">{row.connectClusterName}</Link>
+                {row.connectClusterName}
               </Td>
             );
           case "type":

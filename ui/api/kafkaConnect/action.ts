@@ -41,10 +41,9 @@ export async function getKafkaConnectors(params: {
     }),
   );
 
-  return fetchData(`/api/connectors`, sp, (rawData) => {
-    console.log("Raw API response:", rawData);
-    return ConnectorsResponseSchema.parse(rawData);
-  });
+  return fetchData(`/api/connectors`, sp, (rawData) =>
+    ConnectorsResponseSchema.parse(rawData),
+  );
 }
 
 export async function getKafkaConnectClusters(params: {
@@ -69,12 +68,11 @@ export async function getKafkaConnectClusters(params: {
       sort: sortParam(params.sort, params.sortDir),
 
       include: "connectors",
-      "fields[connects]": "name,version,connectors",
+      "fields[connects]": "name,version,replicas,connectors,",
     }),
   );
 
-  return fetchData(`/api/connects`, sp, (rawData) => {
-    console.log("Raw API response:", rawData);
-    return ConnectClustersResponseSchema.parse(rawData);
-  });
+  return fetchData(`/api/connects`, sp, (rawData) =>
+    ConnectClustersResponseSchema.parse(rawData),
+  );
 }
