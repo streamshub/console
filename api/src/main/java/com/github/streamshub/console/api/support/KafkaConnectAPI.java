@@ -28,6 +28,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.github.streamshub.console.config.ConsoleConfig;
 import com.github.streamshub.console.config.KafkaConnectConfig;
 import com.github.streamshub.console.config.authentication.Authenticated;
+import com.github.streamshub.console.support.RootCause;
 
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.client.KubernetesClient;
@@ -36,6 +37,7 @@ import io.quarkus.cache.CacheResult;
 import io.quarkus.tls.TlsConfiguration;
 import io.strimzi.api.kafka.model.connect.KafkaConnect;
 import io.strimzi.api.kafka.model.connector.KafkaConnector;
+import io.strimzi.api.kafka.model.mirrormaker2.KafkaMirrorMaker2;
 
 @Path("/")
 public interface KafkaConnectAPI {
@@ -281,8 +283,13 @@ public interface KafkaConnectAPI {
             return getResource(KafkaConnector.class, namespace, name);
         }
 
+        @CacheResult(cacheName = "kafka-mm2-custom-resource")
+        public CompletionStage<Optional<KafkaMirrorMaker2>> getKafkaMirrorMaker2Resource(String namespace, String name) {
+            return getResource(KafkaMirrorMaker2.class, namespace, name);
+        }
+
         private <C extends HasMetadata> CompletionStage<Optional<C>> getResource(Class<C> type, String namespace, String name) {
-            if (!consoleConfig.getKubernetes().isEnabled()) {
+            if (!consoleConfig.getKubernetes().isEnabled() || namespace == null) {
                 return CompletableFuture.completedStage(Optional.empty());
             }
 
@@ -296,7 +303,11 @@ public interface KafkaConnectAPI {
 
                         return Optional.ofNullable(resource);
                     } catch (KubernetesClientException e) {
-                        logger.infof(e, "Failed to fetch Strimzi %s resource %s/%s", type.getSimpleName(), namespace, name);
+                        logger.warnf("Failed to fetch Strimzi %s resource %s/%s: %s",
+                                type.getSimpleName(),
+                                namespace,
+                                name,
+                                RootCause.of(e).orElse(e));
                     }
 
                     return Optional.empty();

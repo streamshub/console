@@ -3,6 +3,7 @@ package com.github.streamshub.console.api;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -41,12 +42,15 @@ import io.fabric8.kubernetes.client.informers.cache.Cache;
 import io.quarkus.test.common.http.TestHTTPEndpoint;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
+import io.strimzi.api.kafka.model.connector.KafkaConnectorBuilder;
 import io.strimzi.api.kafka.model.kafka.Kafka;
 import io.strimzi.api.kafka.model.kafka.KafkaBuilder;
+import io.strimzi.api.kafka.model.mirrormaker2.KafkaMirrorMaker2Builder;
 import io.strimzi.test.container.StrimziKafkaContainer;
 
 import static com.github.streamshub.console.test.TestHelper.whenRequesting;
 import static org.awaitility.Awaitility.await;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.everyItem;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
@@ -131,6 +135,31 @@ class KafkaConnectorsResourceIT implements ClientRequestFilter {
 
         utils.apply(client, kafka1);
 
+        utils.apply(client, new KafkaConnectorBuilder()
+                .withNewMetadata()
+                    .withNamespace("default")
+                    .withName("test-connect1")
+                .endMetadata()
+                .withNewSpec()
+                .endSpec()
+                .withNewStatus()
+                .endStatus()
+                .build());
+
+        utils.apply(client, new KafkaMirrorMaker2Builder()
+                .withNewMetadata()
+                    .withNamespace("default")
+                    .withName("test-connect2")
+                .endMetadata()
+                .withNewSpec()
+                .endSpec()
+                .withNewStatus()
+                    .withReplicas(4)
+                    // connector1 will not be managed
+                    .withConnectors(List.of(Map.of("name", "connect2-connector2")))
+                .endStatus()
+                .build());
+
         // Wait for the added cluster to be configured in the context map
         await().atMost(10, TimeUnit.SECONDS)
             .until(() -> configuredContexts.values()
@@ -151,7 +180,8 @@ class KafkaConnectorsResourceIT implements ClientRequestFilter {
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
             .body("data.size()", is(4))
-            .body("data.attributes.name", Matchers.contains(
+            .body("data.meta.managed", contains(true, false, true, true))
+            .body("data.attributes.name", contains(
                 "connect2-connector2",
                 "connect2-connector1",
                 "connect1-connector2",

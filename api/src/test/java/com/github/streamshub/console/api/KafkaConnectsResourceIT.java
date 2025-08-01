@@ -44,8 +44,10 @@ import io.fabric8.kubernetes.client.informers.cache.Cache;
 import io.quarkus.test.common.http.TestHTTPEndpoint;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
+import io.strimzi.api.kafka.model.connect.KafkaConnectBuilder;
 import io.strimzi.api.kafka.model.kafka.Kafka;
 import io.strimzi.api.kafka.model.kafka.KafkaBuilder;
+import io.strimzi.api.kafka.model.mirrormaker2.KafkaMirrorMaker2Builder;
 import io.strimzi.test.container.StrimziKafkaContainer;
 
 import static com.github.streamshub.console.test.TestHelper.whenRequesting;
@@ -139,6 +141,30 @@ class KafkaConnectsResourceIT implements ClientRequestFilter {
             return utils.apply(client, k);
         }).toList();
 
+        utils.apply(client, new KafkaConnectBuilder()
+                .withNewMetadata()
+                    .withNamespace("default")
+                    .withName("test-connect1")
+                .endMetadata()
+                .withNewSpec()
+                .endSpec()
+                .withNewStatus()
+                    .withReplicas(2)
+                .endStatus()
+                .build());
+
+        utils.apply(client, new KafkaMirrorMaker2Builder()
+                .withNewMetadata()
+                    .withNamespace("default")
+                    .withName("test-connect2")
+                .endMetadata()
+                .withNewSpec()
+                .endSpec()
+                .withNewStatus()
+                    .withReplicas(4)
+                .endStatus()
+                .build());
+
         // Wait for the added clusters to be configured in the context map
         await().atMost(10, TimeUnit.SECONDS)
             .until(() -> kafkaClusters.stream()
@@ -169,14 +195,17 @@ class KafkaConnectsResourceIT implements ClientRequestFilter {
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
             .body("data.size()", is(2))
+            .body("data.meta.managed", everyItem(is(true)))
             .body("data[0].id", is(Base64.getUrlEncoder().encodeToString("default/test-connect1".getBytes())))
             .body("data[0].attributes.commit", is("abc123d"))
             .body("data[0].attributes.kafkaClusterId", is(consoleConfig.getKafka().getCluster("default/test-kafka1").get().getId()))
             .body("data[0].attributes.version", is("4.0.0"))
+            .body("data[0].attributes.replicas", is(2))
             .body("data[1].id", is(Base64.getUrlEncoder().encodeToString("default/test-connect2".getBytes())))
             .body("data[1].attributes.commit", is("zyx987w"))
             .body("data[1].attributes.kafkaClusterId", is("k2-id"))
-            .body("data[1].attributes.version", is("4.0.1"));
+            .body("data[1].attributes.version", is("4.0.1"))
+            .body("data[1].attributes.replicas", is(4));
     }
 
     @ParameterizedTest

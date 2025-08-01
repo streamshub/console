@@ -163,12 +163,14 @@ public class TestPlainProfile implements QuarkusTestProfile {
                   - name: test-connect1
                     namespace: default
                     url: http://test-connect1.example.com
+                    mirrorMaker: false
                     kafkaClusters:
                       - default/test-kafka1
 
                   - name: test-connect2
                     namespace: default
                     url: http://test-connect2.example.com
+                    mirrorMaker: true
                     kafkaClusters:
                       - default/test-kafka2
 

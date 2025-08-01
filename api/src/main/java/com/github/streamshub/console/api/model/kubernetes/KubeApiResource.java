@@ -21,6 +21,10 @@ public abstract class KubeApiResource<A extends KubeAttributes, R> extends JsonA
         super(id, type, attributes);
     }
 
+    public void setManaged(Boolean managed) {
+        addMeta("managed", managed);
+    }
+
     public String name() {
         return getAttributes().getName();
     }
