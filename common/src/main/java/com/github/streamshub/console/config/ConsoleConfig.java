@@ -2,6 +2,7 @@ package com.github.streamshub.console.config;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.AssertTrue;
@@ -139,8 +140,10 @@ public class ConsoleConfig {
     }
 
     @JsonIgnore
-    public KafkaConnectConfig getKafkaConnectCluster(String clusterKey) {
-        return kafkaConnectClusters.stream().filter(c -> c.clusterKey().equals(clusterKey)).findFirst().orElseThrow();
+    public Optional<KafkaConnectConfig> getKafkaConnectCluster(String clusterKey) {
+        return getKafkaConnectClusters().stream()
+                .filter(c -> c.clusterKey().equals(clusterKey))
+                .findFirst();
     }
 
     public void setKafkaConnectClusters(List<KafkaConnectConfig> kafkaConnectClusters) {

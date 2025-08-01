@@ -11,6 +11,9 @@ rules:
       - kafka.strimzi.io
     resources:
       - kafkas
+      - kafkaconnectors
+      - kafkaconnects
+      - kafkamirrormaker2s
       - kafkanodepools
       - kafkarebalances
       - kafkatopics
