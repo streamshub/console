@@ -1,0 +1,59 @@
+#
+# This example demonstrates a connection to a remote Kafka cluster for which
+# there is no Strimzi Kafka custom resource present (or available) to derive
+# the connection details.
+#
+# The connection credentials are stored in a separate Secret resource (first)
+# which is added to the `api` container's environment in the `Console` spec.
+# Finally, the environment name is referenced as from the Kafka connection property
+# with name `sasl.jaas.config`.
+#
+---
+kind: Secret
+apiVersion: v1
+metadata:
+  name: remote-kafka-secrets
+stringData:
+  REMOTE_KAFKA_SASL_JAAS_CONFIG: 'org.apache.kafka.common.security.scram.ScramLoginModule required username="my-kafka-user" password="my-kafka-password";'
+type: Opaque
+
+---
+apiVersion: console.streamshub.github.com/v1alpha1
+kind: Console
+metadata:
+  name: example
+spec:
+  hostname: example-console.${CLUSTER_DOMAIN}
+
+  containers:
+    api:
+      spec:
+        env:
+          - name: REMOTE_KAFKA_SASL_JAAS_CONFIG
+            valueFrom:
+              secretKeyRef:
+                key: REMOTE_KAFKA_SASL_JAAS_CONFIG
+                name: remote-kafka-secrets
+
+  kafkaClusters:
+    # Kafka cluster configuration using SASL SCRAM-SHA-512, but any property can be set.
+    - name: remote-kafka               # Name of the Kafka cluster as it will appear in the UI
+      properties:
+        values:
+          - name: bootstrap.servers
+            value: '<bootstrap host and port>'
+          - name: security.protocol
+            value: SASL_SSL
+          - name: sasl.mechanism
+            value: SCRAM-SHA-512
+          - name: sasl.jaas.config
+            # the property reference is converted to an env name by replacing non-alphanumeric charaters to `_` and
+            # performing an upper-case conversion on the alpha characters.
+            value: "${remote.kafka.sasl.jaas.config}"
+          - name: ssl.truststore.type
+            value: PEM
+          - name: ssl.truststore.certificates
+            value: |
+              -----BEGIN CERTIFICATE-----
+              PEM CA cert content when using self-signed certificates
+              -----END CERTIFICATE-----
