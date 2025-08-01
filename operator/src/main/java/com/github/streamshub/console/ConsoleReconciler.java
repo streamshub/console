@@ -34,6 +34,7 @@ import com.github.streamshub.console.dependents.PrometheusServiceAccount;
 import com.github.streamshub.console.dependents.conditions.DeploymentReadyCondition;
 import com.github.streamshub.console.dependents.conditions.IngressReadyCondition;
 import com.github.streamshub.console.dependents.conditions.PrometheusPrecondition;
+import com.github.streamshub.console.support.RootCause;
 
 import io.javaoperatorsdk.operator.AggregatedOperatorException;
 import io.javaoperatorsdk.operator.api.reconciler.Cleaner;
@@ -299,7 +300,7 @@ public class ConsoleReconciler implements Reconciler<Console>, Cleaner<Console> 
          * Only report the main exception if it is different than the exception already reported
          * for an "errored" resource.
          */
-        rootCause(e).filter(hasDistinct(erroredResources.values())).ifPresent(rootCause ->
+        RootCause.of(e).filter(hasDistinct(erroredResources.values())).ifPresent(rootCause ->
             status.updateCondition(new ConditionBuilder()
                     .withType(Condition.Types.ERROR)
                     .withStatus("True")
@@ -310,20 +311,6 @@ public class ConsoleReconciler implements Reconciler<Console>, Cleaner<Console> 
         );
 
         status.clearStaleConditions();
-    }
-
-    private Optional<Throwable> rootCause(Exception e) {
-        if (e == null) {
-            return Optional.empty();
-        }
-
-        Throwable rootCause = e;
-
-        while (rootCause.getCause() != null && rootCause.getCause() != rootCause) {
-            rootCause = rootCause.getCause();
-        }
-
-        return Optional.of(rootCause);
     }
 
     /**

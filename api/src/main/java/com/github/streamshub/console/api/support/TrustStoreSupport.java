@@ -66,6 +66,7 @@ public class TrustStoreSupport {
      * Extract trust store configuration and register with the TLS registry.
      */
     public ConsoleConfig registerTrustStores(ConsoleConfig config) {
+        registerTrustStores(config.getKafkaConnectClusters(), null);
         registerTrustStores(config.getMetricsSources(), null);
         registerTrustStores(config.getSchemaRegistries(), null);
 
