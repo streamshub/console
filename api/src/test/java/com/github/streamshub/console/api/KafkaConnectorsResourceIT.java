@@ -201,10 +201,10 @@ class KafkaConnectorsResourceIT implements ClientRequestFilter {
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
             .body("data.size()", is(4))
-            .body("included.size()", is(8)) // 2 clusters + 3 tasks each
+            .body("included.size()", is(8)) // 2 clusters + 6 tasks
             .body("included.findAll { it.type == 'connects' }.size()", is(2))
             .body("included.findAll { it.type == 'connects' }.relationships.connectors.data", hasSize(2))
-            .body("included.findAll { it.type == 'connects' }.relationships.connectors.data.type.flatten()", everyItem(is("connects")))
+            .body("included.findAll { it.type == 'connects' }.relationships.connectors.data.type.flatten()", everyItem(is("connectors")))
             .body("included.findAll { it.type == 'connectorTasks' }.size()", is(6))
             .body("included.findAll { it.type == 'connectorTasks' }.relationships.connector.data.type.flatten()", everyItem(is("connectors")));
     }
@@ -247,4 +247,34 @@ class KafkaConnectorsResourceIT implements ClientRequestFilter {
             .statusCode(is(Status.OK.getStatusCode()))
             .body("data.attributes.name", is(connectorName));
     }
+
+    @ParameterizedTest
+    @CsvSource({
+        "default/test-connect1, connect1-connector1, 2",
+        "default/test-connect1, connect1-connector2, 1",
+        "default/test-connect2, connect2-connector1, 1",
+        "default/test-connect2, connect2-connector2, 2"
+    })
+    void testDescribeConnectorWithAllIncluded(String connectCluster, String connectorName, int taskCount) {
+        var enc = Base64.getUrlEncoder();
+        String connectorID = enc.encodeToString(connectCluster.getBytes()) +
+                '.' +
+                enc.encodeToString(connectorName.getBytes());
+
+        whenRequesting(req -> req
+                .param("fields[connectors]", "name,namespace,config,offsets,topics,connectCluster,tasks")
+                .param("fields[connects]", "name,namespace,connectors")
+                .param("fields[connectorTasks]", "taskId,config,state,connector")
+                .param("include", "connectCluster,tasks")
+                .get(connectorID))
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()))
+            .body("data.relationships.connectCluster.data.type", is("connects"))
+            .body("data.relationships.tasks.data.type.flatten()", everyItem(is("connectorTasks")))
+            .body("included.size()", is(1 + taskCount))
+            .body("included.findAll { it.type == 'connects' }.size()", is(1))
+            .body("included.findAll { it.type == 'connectorTasks' }.size()", is(taskCount))
+            .body("included.findAll { it.type == 'connectorTasks' }.relationships.connector.data.id.flatten()", everyItem(is(connectorID)));
+    }
+
 }

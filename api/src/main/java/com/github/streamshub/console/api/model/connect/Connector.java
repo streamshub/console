@@ -146,8 +146,10 @@ public class Connector extends KubeApiResource<Connector.Attributes, Connector.R
         public Data(Connector data, FetchParams fetchParams) {
             super(data);
 
-            Optional.ofNullable(data.relationships.connectClusterResource)
-                .ifPresent(this::addIncluded);
+            if (fetchParams.includes(Connector.Fields.CONNECT_CLUSTER.toString())) {
+                Optional.ofNullable(data.relationships.connectClusterResource)
+                    .ifPresent(this::addIncluded);
+            }
 
             if (fetchParams.includes(Connector.Fields.TASKS.toString())) {
                 Optional.ofNullable(data.relationships.taskResources)

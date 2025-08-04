@@ -114,12 +114,6 @@ test-connect1.example.com:
       config:
         task-1-2-0-key1: value1
         task-1-2-0-key2: value2
-    - id:
-        connector: connect1-connector2
-        task: 1
-      config:
-        task-1-2-1-key1: value1
-        task-1-2-1-key2: value2
 
 test-connect2.example.com:
   "":
@@ -183,12 +177,6 @@ test-connect2.example.com:
       config:
         task-2-1-0-key1: value1
         task-2-1-0-key2: value2
-    - id:
-        connector: connect2-connector1
-        task: 1
-      config:
-        task-2-1-1-key1: value1
-        task-2-1-1-key2: value2
 
   "/connectors/connect2-connector2":
     name: connect2-connector2
