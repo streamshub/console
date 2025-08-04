@@ -24,7 +24,6 @@ import org.jboss.logging.Logger;
 import com.github.streamshub.console.api.ClientFactory;
 import com.github.streamshub.console.api.service.TopicDescribeService;
 import com.github.streamshub.console.api.support.KafkaContext;
-import com.github.streamshub.console.config.KafkaClusterConfig;
 import com.github.streamshub.console.config.security.ResourceTypes;
 
 import io.quarkus.security.identity.SecurityIdentity;
@@ -53,16 +52,11 @@ public class AuthorizationInterceptor {
     @AroundInvoke
     Object authorize(InvocationContext context) throws Exception {
         ResourcePrivilege authz = context.getMethod().getAnnotation(ResourcePrivilege.class);
-        StringBuilder resource = new StringBuilder();
-        List<String> resourceNames = new ArrayList<>(1);
-
-        setResource(resource, resourceNames);
-
-        var requiredPermission = new ConsolePermission(resource.toString(), resourceNames, authz.value());
+        var requiredPermission = getRequiredPermission(authz);
 
         boolean allow = securityIdentity.checkPermission(requiredPermission)
                 .subscribeAsCompletionStage()
-                .get();
+                .join();
 
         if (!allow) {
             throw new ForbiddenException("Access denied");
@@ -93,42 +87,54 @@ public class AuthorizationInterceptor {
      * @param resource target resource type builder
      * @param resourceNames collection to hold the resource name
      */
-    private void setResource(StringBuilder resource, List<String> resourceNames) {
+    private ConsolePermission getRequiredPermission(ResourcePrivilege authz) {
         var segments = requestUri.getPathSegments();
         var segmentCount = segments.size();
 
         // skip the first segment `/api`
-        String kafkas = segments.get(1).getPath();
-        resource.append(kafkas);
+        String rootResource = segments.get(1).getPath();
 
-        if (segmentCount > 2) {
-            String kafkaId = segments.get(2).getPath();
-            String kafkaName = Optional.ofNullable(contexts.get(kafkaId))
-                    .map(KafkaContext::clusterConfig)
-                    .map(KafkaClusterConfig::getName)
-                    .orElseThrow(() -> ClientFactory.NO_SUCH_KAFKA.apply(kafkaId));
+        String resource = rootResource;
+        String resourceDisplay = null;
+        List<String> resourceNames = new ArrayList<>(1);
+        List<String> resourceNamesDisplay = null;
 
-            /*
-             * For URLs like `/api/kafkas/123`, the Kafka ID is the resource name
-             * and is configured at the top-level `security` key in the console's
-             * configuration. Otherwise, the Kafka ID is appended to the resource
-             * path and the configuration originates from the Kafka-level `security`
-             * key, scoped to the Kafka cluster under which it is specified.
-             */
+        if (ResourceTypes.Global.KAFKAS.value().equals(rootResource)) {
+            if (segmentCount > 2) {
+                String kafkaId = segments.get(2).getPath();
+                KafkaContext ctx = Optional.ofNullable(contexts.get(kafkaId))
+                        .orElseThrow(() -> ClientFactory.NO_SUCH_KAFKA.apply(kafkaId));
 
-            if (segmentCount > 3) {
-                resource.append('/');
-                resource.append(kafkaName);
-            } else {
-                resourceNames.add(kafkaName);
+                /*
+                 * For URLs like `/api/kafkas/123`, the Kafka ID is the resource name
+                 * and is configured at the top-level `security` key in the console's
+                 * configuration. Otherwise, the Kafka ID is appended to the resource
+                 * path and the configuration originates from the Kafka-level `security`
+                 * key, scoped to the Kafka cluster under which it is specified.
+                 */
+                if (segmentCount > 3) {
+                    StringBuilder resourceBuilder = new StringBuilder();
+                    setKafkaResource(resourceBuilder, resourceNames, segments);
+                    String rawResource = resourceBuilder.toString();
+                    resource = ctx.securityResourcePath(rawResource);
+                    resourceDisplay = ctx.auditDisplayResourcePath(rawResource);
+                } else {
+                    resourceNames.add(kafkaId);
+                    resourceNamesDisplay = List.of(ctx.clusterConfig().clusterKey());
+                }
+            }
+        } else {
+            if (segmentCount > 2) {
+                resourceNames.add(segments.get(2).getPath());
             }
         }
 
-        setKafkaResource(resource, resourceNames, segments);
+        return new ConsolePermission(resource, resourceDisplay, resourceNames, authz.value())
+                .resourceNamesDisplay(resourceNamesDisplay);
     }
 
     private void setKafkaResource(StringBuilder resource, List<String> resourceNames, List<PathSegment> segments) {
-        int segmentCount = segments.size();
+        var segmentCount = segments.size();
         UnaryOperator<String> converter = UnaryOperator.identity();
 
         for (int s = 3; s < segmentCount; s++) {
@@ -144,7 +150,9 @@ public class AuthorizationInterceptor {
                         converter = this::rebalanceName;
                     }
                 }
-                resource.append('/');
+                if (!resource.isEmpty()) {
+                    resource.append('/');
+                }
                 resource.append(segment);
             }
         }
