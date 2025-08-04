@@ -126,7 +126,6 @@ public class KafkaConnectsResource {
             .thenApply(ResponseBuilder::build);
     }
 
-
     @GET
     @Path("{clusterId}")
     @Produces(MediaType.APPLICATION_JSON)
@@ -192,5 +191,4 @@ public class KafkaConnectsResource {
             .thenApply(Response::ok)
             .thenApply(ResponseBuilder::build);
     }
-
 }

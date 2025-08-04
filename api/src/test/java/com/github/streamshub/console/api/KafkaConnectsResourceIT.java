@@ -53,6 +53,7 @@ import io.strimzi.test.container.StrimziKafkaContainer;
 import static com.github.streamshub.console.test.TestHelper.whenRequesting;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.everyItem;
 import static org.hamcrest.Matchers.hasSize;
@@ -333,5 +334,23 @@ class KafkaConnectsResourceIT implements ClientRequestFilter {
             .body("included.type", everyItem(is("connectors")))
             .body("included.relationships.tasks.data", containsInAnyOrder(hasSize(1), hasSize(2)))
             .body("included.relationships.tasks.data.type.flatten()", everyItem(is("connectorTasks")));
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        "default/test-connect1, default/test-kafka1",
+        "default/test-connect2, default/test-kafka2",
+    })
+    void testDescribeConnectCluster(String connectClusterKey, String kafkaClusterKey) {
+        String connectClusterID = Base64.getUrlEncoder().encodeToString(connectClusterKey.getBytes());
+        // Tests that the connectorTasks relationships are returned, but the resources themselves are not included
+        whenRequesting(req -> req
+                .param("fields[connects]", "name,kafkaClusters")
+                .get(connectClusterID))
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()))
+            .body("data.id", is(connectClusterID))
+            .body("data.attributes.name", is(connectClusterKey.substring(connectClusterKey.indexOf('/') + 1)))
+            .body("data.relationships.kafkaClusters.data.id", contains(kafkaClusterId(kafkaClusterKey)));
     }
 }

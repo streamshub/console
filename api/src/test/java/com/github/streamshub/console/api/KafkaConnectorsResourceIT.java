@@ -3,6 +3,7 @@ package com.github.streamshub.console.api;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -228,4 +229,22 @@ class KafkaConnectorsResourceIT implements ClientRequestFilter {
             .body("data.attributes.name", Matchers.contains(expectedNames));
     }
 
+    @ParameterizedTest
+    @CsvSource({
+        "default/test-connect1, connect1-connector1",
+        "default/test-connect1, connect1-connector2",
+        "default/test-connect2, connect2-connector1",
+        "default/test-connect2, connect2-connector2"
+    })
+    void testDescribeConnector(String connectCluster, String connectorName) {
+        var enc = Base64.getUrlEncoder();
+        String connectorID = enc.encodeToString(connectCluster.getBytes()) +
+                '.' +
+                enc.encodeToString(connectorName.getBytes());
+
+        whenRequesting(req -> req.get(connectorID))
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()))
+            .body("data.attributes.name", is(connectorName));
+    }
 }
