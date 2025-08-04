@@ -174,6 +174,12 @@ public class TestPlainProfile implements QuarkusTestProfile {
                     kafkaClusters:
                       - default/test-kafka2
 
+                  - name: test-connect3
+                    url: http://test-connect3.example.com
+                    mirrorMaker: false
+                    kafkaClusters:
+                      - test-kafkaY
+
                 """);
 
         return Map.of("console.config-path", configFile.getAbsolutePath());

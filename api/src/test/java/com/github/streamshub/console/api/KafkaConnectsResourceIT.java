@@ -195,8 +195,8 @@ class KafkaConnectsResourceIT implements ClientRequestFilter {
         whenRequesting(req -> req.param("sort", "version").get())
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
-            .body("data.size()", is(2))
-            .body("data.meta.managed", everyItem(is(true)))
+            .body("data.size()", is(3))
+            .body("data.meta.managed", contains(true, true, false))
             .body("data[0].id", is(Base64.getUrlEncoder().encodeToString("default/test-connect1".getBytes())))
             .body("data[0].attributes.commit", is("abc123d"))
             .body("data[0].attributes.kafkaClusterId", is(consoleConfig.getKafka().getCluster("default/test-kafka1").get().getId()))
@@ -206,7 +206,12 @@ class KafkaConnectsResourceIT implements ClientRequestFilter {
             .body("data[1].attributes.commit", is("zyx987w"))
             .body("data[1].attributes.kafkaClusterId", is("k2-id"))
             .body("data[1].attributes.version", is("4.0.1"))
-            .body("data[1].attributes.replicas", is(4));
+            .body("data[1].attributes.replicas", is(4))
+            .body("data[2].id", is(Base64.getUrlEncoder().encodeToString("test-connect3".getBytes())))
+            .body("data[2].attributes.commit", is("yyy777x"))
+            .body("data[2].attributes.kafkaClusterId", is("test-kafkaY"))
+            .body("data[2].attributes.version", is("4.0.2"))
+            .body("data[2].attributes.replicas", is(nullValue()));
     }
 
     @ParameterizedTest

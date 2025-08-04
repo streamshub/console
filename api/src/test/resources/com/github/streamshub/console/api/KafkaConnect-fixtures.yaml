@@ -231,3 +231,22 @@ test-connect2.example.com:
       config:
         task-2-2-1-key1: value1
         task-2-2-1-key2: value2
+
+test-connect3.example.com:
+  "":
+    commit: yyy777x
+    kafka_cluster_id: test-kafkaY
+    version: 4.0.2
+
+  "/connector-plugins":
+    - class: org.apache.kafka.connect.mirror.MirrorCheckpointConnector
+      type: source
+      version: 4.0.0
+    - class: org.apache.kafka.connect.mirror.MirrorHeartbeatConnector
+      type: source
+      version: 4.0.0
+    - class: org.apache.kafka.connect.mirror.MirrorSourceConnector
+      type: source
+      version: 4.0.0
+
+  "/connectors": []
