@@ -40,7 +40,7 @@
     "eslint-config-next": "14.2.31",
     "eslint-config-prettier": "^10.1.8",
     "eslint-import-resolver-typescript": "^4.4.4",
-    "eslint-plugin-storybook": "^9.1.0",
+    "eslint-plugin-storybook": "^9.1.1",
     "iron-session": "^8.0.4",
     "js-yaml": "^4.1.0",
     "next": "^14.2.31",
@@ -52,7 +52,7 @@
     "react-csv-downloader": "^3.3.0",
     "react-dom": "18.3.1",
     "react-highlight-words": "^0.21.0",
-    "react-json-view-lite": "^2.4.1",
+    "react-json-view-lite": "^2.4.2",
     "typescript": "5.9.2",
     "use-debounce": "^10.0.5",
     "use-resize-observer": "^9.1.0",
@@ -60,15 +60,15 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.54.2",
-    "@storybook/addon-links": "^9.1.0",
-    "@storybook/nextjs": "^9.1.0",
+    "@storybook/addon-links": "^9.1.1",
+    "@storybook/nextjs": "^9.1.1",
     "@storybook/test-runner": "^0.23.0",
     "pino-pretty": "^13.1.1",
     "playwright": "^1.45.2",
     "prettier": "^3.6.2",
     "storybook": "^9.0.16",
     "tsconfig-paths-webpack-plugin": "^4.2.0",
-    "@storybook/addon-docs": "^9.1.0"
+    "@storybook/addon-docs": "^9.1.1"
   },
   "overrides": {
     "eslint-plugin-storybook": {
