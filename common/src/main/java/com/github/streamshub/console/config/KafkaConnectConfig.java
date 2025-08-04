@@ -7,6 +7,7 @@ import java.util.List;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -27,6 +28,9 @@ public class KafkaConnectConfig implements Authenticated, Trustable {
 
     @NotBlank(message = "Kafka Connect `url` is required")
     private String url;
+
+    @NotNull(message = "Kafka Connect `mirrorMaker` indicator is required")
+    private Boolean mirrorMaker = Boolean.FALSE;
 
     @Valid
     private AuthenticationConfig authentication;
@@ -75,6 +79,14 @@ public class KafkaConnectConfig implements Authenticated, Trustable {
 
     public void setUrl(String url) {
         this.url = url;
+    }
+
+    public Boolean isMirrorMaker() {
+        return mirrorMaker;
+    }
+
+    public void setMirrorMaker(Boolean mirrorMaker) {
+        this.mirrorMaker = mirrorMaker;
     }
 
     @Override

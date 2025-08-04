@@ -336,7 +336,7 @@ public class KafkaClusterService {
     }
 
     KafkaCluster setManaged(KafkaCluster cluster) {
-        cluster.addMeta("managed", findCluster(cluster)
+        cluster.setManaged(findCluster(cluster)
                 .map(kafkaTopic -> Boolean.TRUE)
                 .orElse(Boolean.FALSE));
         return cluster;

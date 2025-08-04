@@ -6,19 +6,21 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.stream.Stream;
 
 import jakarta.json.JsonObject;
 
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.media.SchemaProperty;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonFilter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.github.streamshub.console.api.model.FetchParams;
 import com.github.streamshub.console.api.model.Metrics;
 import com.github.streamshub.console.api.model.jsonapi.JsonApiMeta;
 import com.github.streamshub.console.api.model.jsonapi.JsonApiRelationshipToMany;
@@ -141,9 +143,20 @@ public class Connector extends KubeApiResource<Connector.Attributes, Connector.R
 
     @Schema(name = "KafkaConnectorData")
     public static final class Data extends JsonApiRootData<Connector> {
-        @JsonCreator
-        public Data(@JsonProperty("data") Connector data) {
+        public Data(Connector data, FetchParams fetchParams) {
             super(data);
+
+            if (fetchParams.includes(Connector.Fields.CONNECT_CLUSTER.toString())) {
+                Optional.ofNullable(data.relationships.connectClusterResource)
+                    .ifPresent(this::addIncluded);
+            }
+
+            if (fetchParams.includes(Connector.Fields.TASKS.toString())) {
+                Optional.ofNullable(data.relationships.taskResources)
+                    .map(Collection::stream)
+                    .orElseGet(Stream::empty)
+                    .forEach(this::addIncluded);
+            }
         }
     }
 

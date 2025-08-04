@@ -8,12 +8,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.ws.rs.NotFoundException;
 
 import org.eclipse.microprofile.context.ThreadContext;
 import org.jboss.logging.Logger;
@@ -34,8 +37,11 @@ import com.github.streamshub.console.config.ConsoleConfig;
 import com.github.streamshub.console.config.KafkaConnectConfig;
 import com.github.streamshub.console.config.security.Privilege;
 
+import io.fabric8.kubernetes.client.CustomResource;
 import io.strimzi.api.kafka.model.connect.KafkaConnect;
 import io.strimzi.api.kafka.model.connect.KafkaConnectStatus;
+import io.strimzi.api.kafka.model.mirrormaker2.KafkaMirrorMaker2;
+import io.strimzi.api.kafka.model.mirrormaker2.KafkaMirrorMaker2Status;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
@@ -70,6 +76,9 @@ public class KafkaConnectService {
     KafkaConnectAPI.Client connectClient;
 
     @Inject
+    StrimziResourceService strimziService;
+
+    @Inject
     PermissionService permissionService;
 
     public CompletionStage<List<ConnectCluster>> listClusters(FieldFilter fields, ListRequestContext<ConnectCluster> listSupport) {
@@ -93,7 +102,8 @@ public class KafkaConnectService {
 
     public CompletionStage<ConnectCluster> describeCluster(String clusterId, FieldFilter fields, FetchParams fetchParams) {
         String[] idParts = decode(clusterId);
-        KafkaConnectConfig clusterConfig = consoleConfig.getKafkaConnectCluster(idParts[0]);
+        KafkaConnectConfig clusterConfig = consoleConfig.getKafkaConnectCluster(idParts[0])
+                .orElseThrow(() -> new NotFoundException("Unknown Kafka Connect cluster"));
         return describeCluster(clusterConfig, fields, fetchParams, true);
     }
 
@@ -111,10 +121,7 @@ public class KafkaConnectService {
             : PROMISE_EMPTY_CONNECTORS;
         var kafkaIdentifiers = mapKafkaIdentifiers(clusterConfig);
 
-        var customResourcePromise = connectClient.getKafkaConnectResource(
-                clusterConfig.getNamespace(),
-                clusterConfig.getName()
-        );
+        var customResourcePromise = getConnectResource(clusterConfig);
 
         return connectClient.getWorkerDetails(clusterKey)
                 .thenApply(server -> {
@@ -129,11 +136,20 @@ public class KafkaConnectService {
                 })
                 .thenCombine(pluginPromise, ConnectCluster::plugins)
                 .thenCombine(connectorPromise, (cluster, connectors) -> cluster.connectors(connectors, includeConnectors))
-                .thenCombine(customResourcePromise, (cluster, connectCR) -> {
-                    cluster.addMeta("managed", Boolean.valueOf(connectCR.isPresent()));
-                    connectCR.map(KafkaConnect::getStatus)
-                        .map(KafkaConnectStatus::getReplicas)
-                        .ifPresent(cluster::replicas);
+                .thenCombine(customResourcePromise, (cluster, customResource) -> {
+                    if (clusterConfig.isMirrorMaker().booleanValue()) {
+                        var mmCR = customResource.map(KafkaMirrorMaker2.class::cast);
+                        cluster.setManaged(Boolean.valueOf(mmCR.isPresent()));
+                        mmCR.map(KafkaMirrorMaker2::getStatus)
+                            .map(KafkaConnectStatus::getReplicas)
+                            .ifPresent(cluster::replicas);
+                    } else {
+                        var connectCR = customResource.map(KafkaConnect.class::cast);
+                        cluster.setManaged(Boolean.valueOf(connectCR.isPresent()));
+                        connectCR.map(KafkaConnect::getStatus)
+                            .map(KafkaConnectStatus::getReplicas)
+                            .ifPresent(cluster::replicas);
+                    }
                     return cluster;
                 });
     }
@@ -178,7 +194,8 @@ public class KafkaConnectService {
             FieldFilter fields,
             FetchParams fetchParams) {
         String[] idParts = decode(connectorId);
-        KafkaConnectConfig clusterConfig = consoleConfig.getKafkaConnectCluster(idParts[0]);
+        KafkaConnectConfig clusterConfig = consoleConfig.getKafkaConnectCluster(idParts[0])
+                .orElseThrow(() -> new NotFoundException("Unknown Kafka Connect connector"));
         return describeConnector(clusterConfig, idParts[1], fields, fetchParams);
     }
 
@@ -223,10 +240,7 @@ public class KafkaConnectService {
             ? describeConnectorTasks(clusterConfig, connectorName)
             : PROMISE_EMPTY_CONFIG;
 
-        var customResourcePromise = connectClient.getKafkaConnectorResource(
-                clusterConfig.getNamespace(),
-                connectorName
-        );
+        var customResourcePromise = getConnectorResource(clusterConfig);
 
         return connectClient.getConnector(clusterConfig.clusterKey(), connectorName)
             .thenCombine(
@@ -256,7 +270,21 @@ public class KafkaConnectService {
                 (connector, cluster) -> connector.connectCluster(cluster, includeCluster)
             )
             .thenCombine(customResourcePromise, (connector, customResource) -> {
-                connector.addMeta("managed", Boolean.valueOf(customResource.isPresent()));
+                if (clusterConfig.isMirrorMaker().booleanValue()) {
+                    customResource.map(KafkaMirrorMaker2.class::cast)
+                        .map(KafkaMirrorMaker2::getStatus)
+                        .map(KafkaMirrorMaker2Status::getConnectors)
+                        .map(Collection::stream)
+                        .orElseGet(Stream::empty)
+                        .filter(entry -> connectorName.equals(entry.get("name")))
+                        .findFirst()
+                        .ifPresentOrElse(
+                            entry -> connector.setManaged(Boolean.TRUE),
+                            () -> connector.setManaged(Boolean.FALSE)
+                        );
+                } else {
+                    connector.setManaged(Boolean.valueOf(customResource.isPresent()));
+                }
                 return connector;
             });
     }
@@ -317,6 +345,34 @@ public class KafkaConnectService {
                 .thenApply(tasks -> tasks.stream()
                         .map(t -> Map.entry(t.id().task(), t.config()))
                         .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
+    }
+
+    private CompletionStage<Optional<? extends CustomResource<?, ?>>> getConnectResource(KafkaConnectConfig clusterConfig) {
+        String namespace = clusterConfig.getNamespace();
+        String name = clusterConfig.getName();
+        CompletableFuture<Optional<? extends CustomResource<?, ?>>> promise = new CompletableFuture<>();
+
+        if (clusterConfig.isMirrorMaker().booleanValue()) {
+            strimziService.getKafkaMirrorMaker2(namespace, name).thenApply(promise::complete);
+        } else {
+            strimziService.getKafkaConnect(namespace, name).thenApply(promise::complete);
+        }
+
+        return promise;
+    }
+
+    private CompletionStage<Optional<? extends CustomResource<?, ?>>> getConnectorResource(KafkaConnectConfig clusterConfig) {
+        String namespace = clusterConfig.getNamespace();
+        String name = clusterConfig.getName();
+        CompletableFuture<Optional<? extends CustomResource<?, ?>>> promise = new CompletableFuture<>();
+
+        if (clusterConfig.isMirrorMaker().booleanValue()) {
+            strimziService.getKafkaMirrorMaker2(namespace, name).thenApply(promise::complete);
+        } else {
+            strimziService.getKafkaConnector(namespace, name).thenApply(promise::complete);
+        }
+
+        return promise;
     }
 
     /**

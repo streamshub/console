@@ -44,13 +44,16 @@ import io.fabric8.kubernetes.client.informers.cache.Cache;
 import io.quarkus.test.common.http.TestHTTPEndpoint;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
+import io.strimzi.api.kafka.model.connect.KafkaConnectBuilder;
 import io.strimzi.api.kafka.model.kafka.Kafka;
 import io.strimzi.api.kafka.model.kafka.KafkaBuilder;
+import io.strimzi.api.kafka.model.mirrormaker2.KafkaMirrorMaker2Builder;
 import io.strimzi.test.container.StrimziKafkaContainer;
 
 import static com.github.streamshub.console.test.TestHelper.whenRequesting;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.everyItem;
 import static org.hamcrest.Matchers.hasSize;
@@ -139,6 +142,30 @@ class KafkaConnectsResourceIT implements ClientRequestFilter {
             return utils.apply(client, k);
         }).toList();
 
+        utils.apply(client, new KafkaConnectBuilder()
+                .withNewMetadata()
+                    .withNamespace("default")
+                    .withName("test-connect1")
+                .endMetadata()
+                .withNewSpec()
+                .endSpec()
+                .withNewStatus()
+                    .withReplicas(2)
+                .endStatus()
+                .build());
+
+        utils.apply(client, new KafkaMirrorMaker2Builder()
+                .withNewMetadata()
+                    .withNamespace("default")
+                    .withName("test-connect2")
+                .endMetadata()
+                .withNewSpec()
+                .endSpec()
+                .withNewStatus()
+                    .withReplicas(4)
+                .endStatus()
+                .build());
+
         // Wait for the added clusters to be configured in the context map
         await().atMost(10, TimeUnit.SECONDS)
             .until(() -> kafkaClusters.stream()
@@ -168,15 +195,23 @@ class KafkaConnectsResourceIT implements ClientRequestFilter {
         whenRequesting(req -> req.param("sort", "version").get())
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
-            .body("data.size()", is(2))
+            .body("data.size()", is(3))
+            .body("data.meta.managed", contains(true, true, false))
             .body("data[0].id", is(Base64.getUrlEncoder().encodeToString("default/test-connect1".getBytes())))
             .body("data[0].attributes.commit", is("abc123d"))
             .body("data[0].attributes.kafkaClusterId", is(consoleConfig.getKafka().getCluster("default/test-kafka1").get().getId()))
             .body("data[0].attributes.version", is("4.0.0"))
+            .body("data[0].attributes.replicas", is(2))
             .body("data[1].id", is(Base64.getUrlEncoder().encodeToString("default/test-connect2".getBytes())))
             .body("data[1].attributes.commit", is("zyx987w"))
             .body("data[1].attributes.kafkaClusterId", is("k2-id"))
-            .body("data[1].attributes.version", is("4.0.1"));
+            .body("data[1].attributes.version", is("4.0.1"))
+            .body("data[1].attributes.replicas", is(4))
+            .body("data[2].id", is(Base64.getUrlEncoder().encodeToString("test-connect3".getBytes())))
+            .body("data[2].attributes.commit", is("yyy777x"))
+            .body("data[2].attributes.kafkaClusterId", is("test-kafkaY"))
+            .body("data[2].attributes.version", is("4.0.2"))
+            .body("data[2].attributes.replicas", is(nullValue()));
     }
 
     @ParameterizedTest
@@ -304,5 +339,23 @@ class KafkaConnectsResourceIT implements ClientRequestFilter {
             .body("included.type", everyItem(is("connectors")))
             .body("included.relationships.tasks.data", containsInAnyOrder(hasSize(1), hasSize(2)))
             .body("included.relationships.tasks.data.type.flatten()", everyItem(is("connectorTasks")));
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        "default/test-connect1, default/test-kafka1",
+        "default/test-connect2, default/test-kafka2",
+    })
+    void testDescribeConnectCluster(String connectClusterKey, String kafkaClusterKey) {
+        String connectClusterID = Base64.getUrlEncoder().encodeToString(connectClusterKey.getBytes());
+        // Tests that the connectorTasks relationships are returned, but the resources themselves are not included
+        whenRequesting(req -> req
+                .param("fields[connects]", "name,kafkaClusters")
+                .get(connectClusterID))
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()))
+            .body("data.id", is(connectClusterID))
+            .body("data.attributes.name", is(connectClusterKey.substring(connectClusterKey.indexOf('/') + 1)))
+            .body("data.relationships.kafkaClusters.data.id", contains(kafkaClusterId(kafkaClusterKey)));
     }
 }
