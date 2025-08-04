@@ -134,7 +134,7 @@ public class KafkaConnectorsResource {
     @APIResponse(responseCode = "504", ref = "ServerTimeout")
     @Authorized
     @ResourcePrivilege(Privilege.LIST)
-    public CompletionStage<Response> describeConnectCluster(
+    public CompletionStage<Response> describeConnector(
             @Parameter(description = "Connector identifier")
             @PathParam("connectorId")
             String connectorId,
