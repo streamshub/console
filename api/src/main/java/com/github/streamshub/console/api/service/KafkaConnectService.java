@@ -76,6 +76,9 @@ public class KafkaConnectService {
     KafkaConnectAPI.Client connectClient;
 
     @Inject
+    StrimziResourceService strimziService;
+
+    @Inject
     PermissionService permissionService;
 
     public CompletionStage<List<ConnectCluster>> listClusters(FieldFilter fields, ListRequestContext<ConnectCluster> listSupport) {
@@ -350,9 +353,9 @@ public class KafkaConnectService {
         CompletableFuture<Optional<? extends CustomResource<?, ?>>> promise = new CompletableFuture<>();
 
         if (clusterConfig.isMirrorMaker().booleanValue()) {
-            connectClient.getKafkaMirrorMaker2Resource(namespace, name).thenApply(promise::complete);
+            strimziService.getKafkaMirrorMaker2(namespace, name).thenApply(promise::complete);
         } else {
-            connectClient.getKafkaConnectResource(namespace, name).thenApply(promise::complete);
+            strimziService.getKafkaConnect(namespace, name).thenApply(promise::complete);
         }
 
         return promise;
@@ -364,9 +367,9 @@ public class KafkaConnectService {
         CompletableFuture<Optional<? extends CustomResource<?, ?>>> promise = new CompletableFuture<>();
 
         if (clusterConfig.isMirrorMaker().booleanValue()) {
-            connectClient.getKafkaMirrorMaker2Resource(namespace, name).thenApply(promise::complete);
+            strimziService.getKafkaMirrorMaker2(namespace, name).thenApply(promise::complete);
         } else {
-            connectClient.getKafkaConnectorResource(namespace, name).thenApply(promise::complete);
+            strimziService.getKafkaConnector(namespace, name).thenApply(promise::complete);
         }
 
         return promise;

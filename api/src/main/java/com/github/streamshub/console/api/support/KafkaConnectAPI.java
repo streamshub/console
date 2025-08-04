@@ -5,7 +5,6 @@ import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
 
@@ -22,22 +21,14 @@ import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MediaType;
 
 import org.eclipse.microprofile.rest.client.RestClientBuilder;
-import org.jboss.logging.Logger;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.github.streamshub.console.config.ConsoleConfig;
 import com.github.streamshub.console.config.KafkaConnectConfig;
 import com.github.streamshub.console.config.authentication.Authenticated;
-import com.github.streamshub.console.support.RootCause;
 
-import io.fabric8.kubernetes.api.model.HasMetadata;
-import io.fabric8.kubernetes.client.KubernetesClient;
-import io.fabric8.kubernetes.client.KubernetesClientException;
 import io.quarkus.cache.CacheResult;
 import io.quarkus.tls.TlsConfiguration;
-import io.strimzi.api.kafka.model.connect.KafkaConnect;
-import io.strimzi.api.kafka.model.connector.KafkaConnector;
-import io.strimzi.api.kafka.model.mirrormaker2.KafkaMirrorMaker2;
 
 @Path("/")
 public interface KafkaConnectAPI {
@@ -172,16 +163,10 @@ public interface KafkaConnectAPI {
     public static class Client {
 
         @Inject
-        Logger logger;
-
-        @Inject
         ConsoleConfig consoleConfig;
 
         @Inject
         TrustStoreSupport trustStores;
-
-        @Inject
-        KubernetesClient k8s;
 
         Map<String, KafkaConnectAPI> clients;
 
@@ -271,47 +256,6 @@ public interface KafkaConnectAPI {
         @CacheResult(cacheName = "kafka-connect-connector-topics")
         public CompletionStage<Map<String, TopicInfo>> getConnectorTopics(String clusterKey, String connectorName) {
             return clients.get(clusterKey).getConnectorTopics(connectorName);
-        }
-
-        @CacheResult(cacheName = "kafka-connect-custom-resource")
-        public CompletionStage<Optional<KafkaConnect>> getKafkaConnectResource(String namespace, String name) {
-            return getResource(KafkaConnect.class, namespace, name);
-        }
-
-        @CacheResult(cacheName = "kafka-connector-custom-resource")
-        public CompletionStage<Optional<KafkaConnector>> getKafkaConnectorResource(String namespace, String name) {
-            return getResource(KafkaConnector.class, namespace, name);
-        }
-
-        @CacheResult(cacheName = "kafka-mm2-custom-resource")
-        public CompletionStage<Optional<KafkaMirrorMaker2>> getKafkaMirrorMaker2Resource(String namespace, String name) {
-            return getResource(KafkaMirrorMaker2.class, namespace, name);
-        }
-
-        private <C extends HasMetadata> CompletionStage<Optional<C>> getResource(Class<C> type, String namespace, String name) {
-            if (!consoleConfig.getKubernetes().isEnabled() || namespace == null) {
-                return CompletableFuture.completedStage(Optional.empty());
-            }
-
-            return CompletableFuture.completedStage(null)
-                .thenApplyAsync(nothing -> {
-                    try {
-                        C resource = k8s.resources(type)
-                                .inNamespace(namespace)
-                                .withName(name)
-                                .get();
-
-                        return Optional.ofNullable(resource);
-                    } catch (KubernetesClientException e) {
-                        logger.warnf("Failed to fetch Strimzi %s resource %s/%s: %s",
-                                type.getSimpleName(),
-                                namespace,
-                                name,
-                                RootCause.of(e).orElse(e));
-                    }
-
-                    return Optional.empty();
-                });
         }
     }
 }
