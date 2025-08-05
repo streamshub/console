@@ -1,8 +1,17 @@
-import { EnrichedConnector } from "@/api/kafkaConnect/schema";
+import { ConnectorState, EnrichedConnector } from "@/api/kafkaConnect/schema";
 import { TableView, TableViewProps } from "@/components/Table";
 import { useTranslations } from "next-intl";
-import { Label } from "@/libs/patternfly/react-core";
+import { Icon } from "@/libs/patternfly/react-core";
 import { EmptyStateNoMatchFound } from "@/components/Table/EmptyStateNoMatchFound";
+import {
+  CheckCircleIcon,
+  ExclamationCircleIcon,
+  HistoryIcon,
+  PauseCircleIcon,
+  PendingIcon,
+} from "@patternfly/react-icons";
+import { ReactNode } from "react";
+import Image from "next/image";
 
 export const ConnectorsTableColumns = [
   "name",
@@ -13,6 +22,74 @@ export const ConnectorsTableColumns = [
 ] as const;
 
 export type ConnectorsTableColumn = (typeof ConnectorsTableColumns)[number];
+
+const StateLabel: Record<ConnectorState, { label: ReactNode }> = {
+  unassigned: {
+    label: (
+      <>
+        <Icon>
+          <PendingIcon />
+        </Icon>
+        &nbsp; unassigned
+      </>
+    ),
+  },
+  running: {
+    label: (
+      <>
+        <Icon status="success">
+          <CheckCircleIcon />
+        </Icon>
+        &nbsp;running
+      </>
+    ),
+  },
+  paused: {
+    label: (
+      <>
+        <Icon>
+          <PauseCircleIcon />
+        </Icon>
+        &nbsp;paused
+      </>
+    ),
+  },
+  stopped: {
+    label: (
+      <>
+        <Icon>
+          <Image
+            src={"/stop-icon.svg"}
+            alt="stop icon"
+            width={100}
+            height={100}
+          />
+        </Icon>
+        &nbsp;stopped
+      </>
+    ),
+  },
+  failed: {
+    label: (
+      <>
+        <Icon status="danger">
+          <ExclamationCircleIcon />
+        </Icon>
+        &nbsp;failed
+      </>
+    ),
+  },
+  restarting: {
+    label: (
+      <>
+        <Icon>
+          <HistoryIcon />
+        </Icon>
+        &nbsp;restarting
+      </>
+    ),
+  },
+};
 
 export function ConnectorsTable({
   connectors,
@@ -90,13 +167,7 @@ export function ConnectorsTable({
           case "state":
             return (
               <Td key={key} dataLabel={t("connectors.state")}>
-                <Label
-                  color={
-                    row.attributes.state === "RUNNING" ? "green" : "orange"
-                  }
-                >
-                  {row.attributes.state}
-                </Label>
+                {StateLabel[row.attributes.state]?.label}
               </Td>
             );
           case "tasks":

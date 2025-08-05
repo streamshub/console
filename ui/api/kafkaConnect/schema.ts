@@ -1,5 +1,14 @@
 import { z } from "zod";
 
+const ConnectorStateSchema = z.union([
+  z.literal("unassigned"),
+  z.literal("running"),
+  z.literal("paused"),
+  z.literal("stopped"),
+  z.literal("failed"),
+  z.literal("restarting"),
+]);
+
 const IncludedConnectClusterSchema = z.object({
   id: z.string(),
   type: z.literal("connects"),
@@ -34,7 +43,7 @@ const IncludedConnectClusterSchema = z.object({
 export const ConnectorSchema = z.object({
   name: z.string(),
   type: z.enum(["source", "sink"]),
-  state: z.string(),
+  state: ConnectorStateSchema,
 });
 
 export const ConnectorsSchema = z.object({
@@ -120,7 +129,7 @@ export const IncludedConnectorSchema = z.object({
     namespace: z.string().nullable(),
     creationTimestamp: z.string().nullable(),
     type: z.enum(["source", "sink"]),
-    state: z.string(),
+    state: ConnectorStateSchema,
     trace: z.string().nullable(),
     workerId: z.string(),
   }),
@@ -157,3 +166,5 @@ export type EnrichedConnector = z.infer<typeof ConnectorsSchema> & {
   connectClusterName: string | null;
   replicas: number | null;
 };
+
+export type ConnectorState = z.infer<typeof ConnectorStateSchema>;
