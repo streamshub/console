@@ -18,9 +18,12 @@ import {
   Flex,
   FlexItem,
   Icon,
+  Tab,
+  Tabs,
+  TabTitleText,
 } from "@patternfly/react-core";
 import { useTranslations } from "next-intl";
-import { ReactNode } from "react";
+import { ReactNode, useState } from "react";
 import Image from "next/image";
 
 const StateLabel: Record<ConnectorState, { label: ReactNode }> = {
@@ -106,45 +109,74 @@ export function ConnectClusterDetails({
   }[];
 }) {
   const t = useTranslations("KafkaConnect");
+
+  const [activeTabKey, setActiveTabKey] = useState<string | number>(0);
+
+  const handleTabClick = (
+    event: React.MouseEvent<any> | React.KeyboardEvent | MouseEvent,
+    tabIndex: string | number,
+  ) => {
+    setActiveTabKey(tabIndex);
+  };
+
   return (
-    <>
-      <DescriptionList isHorizontal columnModifier={{ default: "2Col" }}>
-        <DescriptionListGroup>
-          <DescriptionListTerm>
-            {t("connect_clusters.version")}
-          </DescriptionListTerm>
-          <DescriptionListDescription>
-            {connectVersion}
-          </DescriptionListDescription>
-        </DescriptionListGroup>
-        <DescriptionListGroup>
-          <DescriptionListTerm>
-            {t("connect_clusters.workers")}
-          </DescriptionListTerm>
-          <DescriptionListDescription>{workers}</DescriptionListDescription>
-        </DescriptionListGroup>
-      </DescriptionList>
-      <ResponsiveTable
-        ariaLabel="Kafka connectors"
-        variant={TableVariant.compact}
-        columns={["name", "type", "state", "replicas"] as const}
-        data={data}
-        renderHeader={({ column, key, Th }) => (
-          <Th key={key}>{column.charAt(0).toUpperCase() + column.slice(1)}</Th>
-        )}
-        renderCell={({ column, key, row, Td }) => {
-          switch (column) {
-            case "name":
-              return <Td key={key}>{row.name}</Td>;
-            case "type":
-              return <Td key={key}>{row.type}</Td>;
-            case "state":
-              return <Td key={key}>{StateLabel[row.state].label}</Td>;
-            case "replicas":
-              return <Td key={key}>{row.replicas ?? "N/A"}</Td>;
-          }
-        }}
-      />
-    </>
+    <Flex direction={{ default: "column" }} gap={{ default: "gap2xl" }}>
+      <FlexItem>
+        <DescriptionList isHorizontal columnModifier={{ default: "2Col" }}>
+          <DescriptionListGroup>
+            <DescriptionListTerm>
+              {t("connect_clusters.version")}
+            </DescriptionListTerm>
+            <DescriptionListDescription>
+              {connectVersion}
+            </DescriptionListDescription>
+          </DescriptionListGroup>
+          <DescriptionListGroup>
+            <DescriptionListTerm>
+              {t("connect_clusters.workers")}
+            </DescriptionListTerm>
+            <DescriptionListDescription>{workers}</DescriptionListDescription>
+          </DescriptionListGroup>
+        </DescriptionList>
+      </FlexItem>
+      <FlexItem>
+        <Tabs
+          activeKey={activeTabKey}
+          onSelect={handleTabClick}
+          aria-label="Kafka Connect Tabs"
+          role="region"
+        >
+          <Tab
+            eventKey={0}
+            title={<TabTitleText>Connectors</TabTitleText>}
+            aria-label="Connectors Tab"
+          >
+            <ResponsiveTable
+              ariaLabel="Kafka connectors"
+              variant={TableVariant.compact}
+              columns={["name", "type", "state", "replicas"] as const}
+              data={data}
+              renderHeader={({ column, key, Th }) => (
+                <Th key={key}>
+                  {column.charAt(0).toUpperCase() + column.slice(1)}
+                </Th>
+              )}
+              renderCell={({ column, key, row, Td }) => {
+                switch (column) {
+                  case "name":
+                    return <Td key={key}>{row.name}</Td>;
+                  case "type":
+                    return <Td key={key}>{row.type}</Td>;
+                  case "state":
+                    return <Td key={key}>{StateLabel[row.state].label}</Td>;
+                  case "replicas":
+                    return <Td key={key}>{row.replicas ?? "N/A"}</Td>;
+                }
+              }}
+            />
+          </Tab>
+        </Tabs>
+      </FlexItem>
+    </Flex>
   );
 }

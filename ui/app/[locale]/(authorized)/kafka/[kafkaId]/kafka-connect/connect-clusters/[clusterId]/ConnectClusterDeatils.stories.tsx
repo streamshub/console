@@ -6,6 +6,20 @@ const meta: Meta<typeof ConnectClusterDetails> = {
   args: {
     connectVersion: "4.0.0",
     workers: 3,
+    data: [
+      {
+        name: "my-connector-cluster",
+        type: "sink",
+        state: "RUNNING",
+        replicas: 2,
+      },
+      {
+        name: "another-connector",
+        type: "source",
+        state: "PAUSED",
+        replicas: 1,
+      },
+    ],
   },
 };
 
