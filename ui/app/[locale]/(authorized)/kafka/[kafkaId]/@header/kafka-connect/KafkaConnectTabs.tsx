@@ -36,7 +36,10 @@ export function KafkaConnectTabs({ kafkaId }: KafkaConnectTabsProps) {
   }, [kafkaId]);
 
   const activeTabKey =
-    tabsConfig.find((tab) => pathname === tab.path)?.key ?? tabsConfig[0]?.key;
+    tabsConfig
+      .slice()
+      .sort((a, b) => b.path.length - a.path.length)
+      .find((tab) => pathname.startsWith(tab.path))?.key ?? tabsConfig[0]?.key;
 
   const handleTabClick = useCallback(
     (_: React.MouseEvent<HTMLElement>, eventKey: string | number) => {

@@ -54,7 +54,7 @@ function KafkaConnectClustersActiveBreadcrumb({
       </BreadcrumbItem>
       <BreadcrumbItem
         key="connect-cluster"
-        to={`/kafka/${kafkaId}/kafka-connect/connect-cluster`}
+        to={`/kafka/${kafkaId}/kafka-connect/connect-clusters`}
         showDivider
       >
         {t("breadcrumbs.connect_cluster")}
