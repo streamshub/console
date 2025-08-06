@@ -17,10 +17,12 @@ export async function generateMetadata() {
 }
 
 export default function ConnectClustersPage({
+  params,
   searchParams,
 }: {
+  params: KafkaParams;
   searchParams: {
-    kafkaId: string;
+    kafkaClusters: string | undefined;
     name: string | undefined;
     perPage: string | undefined;
     sort: string | undefined;
@@ -28,7 +30,7 @@ export default function ConnectClustersPage({
     page: string | undefined;
   };
 }) {
-  const kafkaId = searchParams["kafkaId"];
+  const kafkaId = searchParams["kafkaClusters"] || params.kafkaId;
   const name = searchParams["name"];
   const pageSize = stringToInt(searchParams.perPage) || 20;
   const sort = (searchParams["sort"] || "name") as ConnectClustersTableColumn;
@@ -39,6 +41,7 @@ export default function ConnectClustersPage({
       <Suspense
         fallback={
           <ConnectedConnectClustersTable
+            kafkaId={kafkaId}
             connectClusters={undefined}
             name={name}
             perPage={pageSize}
@@ -112,6 +115,7 @@ async function AsyncConnectClustersTable({
       prevPageCursor={prevPageCursor}
       connectClusters={connectClusters.data}
       connectClustersCount={connectClusters.meta.page.total || 0}
+      kafkaId={kafkaId}
     />
   );
 }

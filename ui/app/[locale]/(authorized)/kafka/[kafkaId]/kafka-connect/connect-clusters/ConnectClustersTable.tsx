@@ -2,6 +2,7 @@ import { ConnectClusters } from "@/api/kafkaConnect/schema";
 import { TableView, TableViewProps } from "@/components/Table";
 import { useTranslations } from "next-intl";
 import { EmptyStateNoMatchFound } from "@/components/Table/EmptyStateNoMatchFound";
+import Link from "next/link";
 
 export const ConnectClustersTableColumns = [
   "name",
@@ -13,6 +14,7 @@ export type ConnectClustersTableColumn =
   (typeof ConnectClustersTableColumns)[number];
 
 export function ConnectClustersTable({
+  kafkaId,
   connectClusters,
   page,
   perPage,
@@ -23,6 +25,7 @@ export function ConnectClustersTable({
   isColumnSortable,
   onClearAllFilters,
 }: {
+  kafkaId: string | undefined;
   connectClusters: ConnectClusters[] | undefined;
   page: number;
   perPage: number;
@@ -66,7 +69,11 @@ export function ConnectClustersTable({
           case "name":
             return (
               <Td key={key} dataLabel={t("connect_clusters.name")}>
-                {row.attributes.name}
+                <Link
+                  href={`/kafka/${kafkaId}/kafka-connect/connect-clusters/${row.id}`}
+                >
+                  {row.attributes.name}
+                </Link>
               </Td>
             );
           case "version":

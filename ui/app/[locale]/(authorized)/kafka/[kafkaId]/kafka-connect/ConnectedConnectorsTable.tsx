@@ -16,6 +16,7 @@ export type ConnectedConnectorsTableProps = {
   sortDir: "asc" | "desc";
   nextPageCursor: string | null | undefined;
   prevPageCursor: string | null | undefined;
+  kafkaId: string;
 };
 
 type State = {
@@ -36,6 +37,7 @@ export function ConnectedConnectorsTable({
   sortDir,
   nextPageCursor,
   prevPageCursor,
+  kafkaId,
 }: ConnectedConnectorsTableProps) {
   const router = useRouter();
 
@@ -74,6 +76,7 @@ export function ConnectedConnectorsTable({
 
   return (
     <ConnectorsTable
+      kafkaId={kafkaId}
       connectors={state.connectors}
       page={page}
       perPage={state.perPage}
