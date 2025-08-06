@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/nextjs";
 import { ConnectorsTable } from "./ConnectorsTable";
 
-const allStates = ["unassigned", "running", "paused", "failed", "restarting"];
+const allStates = ["UNASSIGNED", "RUNNING", "PAUSED", "FAILED", "RESTARTING"];
 
 const mockConnectors = allStates.map((state, index) => ({
   id: `connector-${index + 1}`,

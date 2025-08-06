@@ -12,6 +12,7 @@ import {
 } from "@patternfly/react-icons";
 import { ReactNode } from "react";
 import Image from "next/image";
+import Link from "next/link";
 
 export const ConnectorsTableColumns = [
   "name",
@@ -24,37 +25,37 @@ export const ConnectorsTableColumns = [
 export type ConnectorsTableColumn = (typeof ConnectorsTableColumns)[number];
 
 const StateLabel: Record<ConnectorState, { label: ReactNode }> = {
-  unassigned: {
+  UNASSIGNED: {
     label: (
       <>
         <Icon>
           <PendingIcon />
         </Icon>
-        &nbsp; unassigned
+        &nbsp; Unassigned
       </>
     ),
   },
-  running: {
+  RUNNING: {
     label: (
       <>
         <Icon status="success">
           <CheckCircleIcon />
         </Icon>
-        &nbsp;running
+        &nbsp;Running
       </>
     ),
   },
-  paused: {
+  PAUSED: {
     label: (
       <>
         <Icon>
           <PauseCircleIcon />
         </Icon>
-        &nbsp;paused
+        &nbsp;Paused
       </>
     ),
   },
-  stopped: {
+  STOPPED: {
     label: (
       <>
         <Icon>
@@ -65,27 +66,27 @@ const StateLabel: Record<ConnectorState, { label: ReactNode }> = {
             height={100}
           />
         </Icon>
-        &nbsp;stopped
+        &nbsp;Stopped
       </>
     ),
   },
-  failed: {
+  FAILED: {
     label: (
       <>
         <Icon status="danger">
           <ExclamationCircleIcon />
         </Icon>
-        &nbsp;failed
+        &nbsp;Failed
       </>
     ),
   },
-  restarting: {
+  RESTARTING: {
     label: (
       <>
         <Icon>
           <HistoryIcon />
         </Icon>
-        &nbsp;restarting
+        &nbsp;Restarting
       </>
     ),
   },
@@ -101,6 +102,7 @@ export function ConnectorsTable({
   onPageChange,
   isColumnSortable,
   onClearAllFilters,
+  kafkaId,
 }: {
   connectors: EnrichedConnector[] | undefined;
   page: number;
@@ -108,6 +110,7 @@ export function ConnectorsTable({
   total: number;
   filterName: string | undefined;
   onFilterNameChange: (name: string | undefined) => void;
+  kafkaId: string;
 } & Pick<
   TableViewProps<EnrichedConnector, ConnectorsTableColumn>,
   "isColumnSortable" | "onPageChange" | "onClearAllFilters"
@@ -155,7 +158,11 @@ export function ConnectorsTable({
           case "connect-cluster":
             return (
               <Td key={key} dataLabel={t("connectors.connect_cluster")}>
-                {row.connectClusterName}
+                <Link
+                  href={`/kafka/${kafkaId}/kafka-connect/connect-clusters/${row.connectClusterId}`}
+                >
+                  {row.connectClusterName}
+                </Link>
               </Td>
             );
           case "type":

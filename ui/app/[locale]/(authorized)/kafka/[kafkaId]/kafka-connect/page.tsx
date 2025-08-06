@@ -25,6 +25,7 @@ function enrichConnectorsData(
 
     return {
       ...connector,
+      connectClusterId: connectClusterId ?? null,
       connectClusterName: cluster?.attributes?.name ?? null,
       replicas: cluster?.attributes?.replicas ?? null,
     };
@@ -40,10 +41,12 @@ export async function generateMetadata() {
 }
 
 export default function ConnectorsPage({
+  params,
   searchParams,
 }: {
+  params: KafkaParams;
   searchParams: {
-    kafkaId: string;
+    kafkaClusters: string | undefined;
     name: string | undefined;
     perPage: string | undefined;
     sort: string | undefined;
@@ -51,12 +54,13 @@ export default function ConnectorsPage({
     page: string | undefined;
   };
 }) {
-  const kafkaId = searchParams["kafkaId"];
+  const kafkaId = searchParams["kafkaClusters"] || params.kafkaId;
   const name = searchParams["name"];
   const pageSize = stringToInt(searchParams.perPage) || 20;
   const sort = (searchParams["sort"] || "name") as ConnectorsTableColumn;
   const sortDir = (searchParams["sortDir"] || "asc") as "asc" | "desc";
   const pageCursor = searchParams["page"];
+
   return (
     <PageSection isFilled={true}>
       <Suspense
@@ -71,6 +75,7 @@ export default function ConnectorsPage({
             nextPageCursor={undefined}
             prevPageCursor={undefined}
             connectorsCount={0}
+            kafkaId={kafkaId}
           />
         }
       >
@@ -140,6 +145,7 @@ async function AsyncConnectorsTable({
       prevPageCursor={prevPageCursor}
       connectors={enrichedConnectors}
       connectorsCount={connectors.meta.page.total || 0}
+      kafkaId={kafkaId}
     />
   );
 }

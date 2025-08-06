@@ -13,6 +13,8 @@ import {
   ConnectorsResponseSchema,
   ConnectClustersResponse,
   ConnectClustersResponseSchema,
+  ConnectCluster,
+  ConnectClusterDetailResponseSchema,
 } from "./schema";
 
 export async function getKafkaConnectors(params: {
@@ -25,7 +27,7 @@ export async function getKafkaConnectors(params: {
 }): Promise<ApiResponse<ConnectorsResponse>> {
   const sp = new URLSearchParams(
     filterUndefinedFromObj({
-      "filter[connectCluster.kafkaClusters]": filterLike(params.kafkaId),
+      "filter[connectCluster.kafkaClusters]": filterIn([params.kafkaId]),
       "filter[name]": filterLike(params.name),
       "page[size]": params.pageSize,
       "page[after]": params.pageCursor?.startsWith("after:")
@@ -56,7 +58,7 @@ export async function getKafkaConnectClusters(params: {
 }): Promise<ApiResponse<ConnectClustersResponse>> {
   const sp = new URLSearchParams(
     filterUndefinedFromObj({
-      "filter[kafkaClusters]": filterLike(params.kafkaId),
+      "filter[kafkaClusters]": filterIn([params.kafkaId]),
       "filter[name]": filterLike(params.name),
       "page[size]": params.pageSize,
       "page[after]": params.pageCursor?.startsWith("after:")
@@ -74,5 +76,19 @@ export async function getKafkaConnectClusters(params: {
 
   return fetchData(`/api/connects`, sp, (rawData) =>
     ConnectClustersResponseSchema.parse(rawData),
+  );
+}
+
+export async function getConnectCluster(
+  clusterId: string,
+): Promise<ApiResponse<ConnectCluster>> {
+  const sp = new URLSearchParams(
+    filterUndefinedFromObj({
+      include: "connectors",
+      "fields[connects]": "name,version,replicas,connectors,",
+    }),
+  );
+  return fetchData(`/api/connects/${clusterId}`, sp, (rawData) =>
+    ConnectClusterDetailResponseSchema.parse(rawData),
   );
 }

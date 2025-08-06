@@ -693,7 +693,8 @@
     "create_topic": "Create topic",
     "consumer_groups": "Consumer groups",
     "view_all_kafka_clusters": "View all Kafka clusters",
-    "Kafka_connect": "Kafka connect"
+    "Kafka_connect": "Kafka connect",
+    "connect_cluster": "Connect cluster"
   },
   "KafkaConnect": {
     "connectors_title": "Connectors",
@@ -706,9 +707,9 @@
     },
     "connect_clusters_title": "Connect clusters",
     "connect_clusters": {
-        "name": "Name",
-        "version": "Version",
-        "workers": "Workers"
+      "name": "Name",
+      "version": "Connect Version",
+      "workers": "Workers"
     }
   }
 }
