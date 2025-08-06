@@ -19,6 +19,7 @@ export type ConnectedConnectClustersTableProps = {
   sortDir: "asc" | "desc";
   nextPageCursor: string | null | undefined;
   prevPageCursor: string | null | undefined;
+  kafkaId: string | undefined;
 };
 
 type State = {
@@ -39,9 +40,8 @@ export function ConnectedConnectClustersTable({
   sortDir,
   nextPageCursor,
   prevPageCursor,
+  kafkaId,
 }: ConnectedConnectClustersTableProps) {
-  const router = useRouter();
-
   const _updateUrl = useFilterParams({ perPage, sort, sortDir });
   const [_, startTransition] = useTransition();
   const [state, addOptimistic] = useOptimistic<
@@ -77,6 +77,7 @@ export function ConnectedConnectClustersTable({
 
   return (
     <ConnectClustersTable
+      kafkaId={kafkaId}
       connectClusters={state.connectClusters}
       page={page}
       perPage={state.perPage}
