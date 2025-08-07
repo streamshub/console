@@ -218,6 +218,14 @@ class PermissionCache {
         Set<String> updatedNames = new LinkedHashSet<>(kafkaClusterNames.size());
 
         for (String name : kafkaClusterNames) {
+            if ("*".equals(name)) {
+                if (log.isDebugEnabled()) {
+                    log.debugf("Expanding wildcard to include all Kafka clusters: %s", clusterKeyIds.values());
+                }
+                updatedNames.addAll(clusterKeyIds.values());
+                continue;
+            }
+
             var clusterIdFromKey = clusterKeyIds.get(name);
             var clusterIdsFromName = clusterNameIds.get(name);
 
@@ -232,7 +240,7 @@ class PermissionCache {
                     updatedNames.add(clusterIdsFromName.get(0));
                 } else {
                     log.warnf("""
-                            Kafka cluster '%' in security rule resolves to multiple cluster \
+                            Kafka cluster '%s' in security rule resolves to multiple cluster \
                             configurations. Clusters with a namespace must prefix the name \
                             with the namespace value. Possible Kafka clusters: %s""",
                             name,
@@ -240,7 +248,7 @@ class PermissionCache {
                 }
             } else {
                 log.warnf("""
-                        Unknown Kafka cluster '%' in security rule. \
+                        Unknown Kafka cluster '%s' in security rule. \
                         Clusters with a namespace must prefix the name with the namespace \
                         value. Known Kafka clusters: %s""", name, clusterKeyIds.keySet());
             }
