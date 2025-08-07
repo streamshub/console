@@ -65,6 +65,7 @@ public class ResourceTypes {
     public enum Kafka implements ResourceType<Kafka> {
         CONSUMER_GROUPS("consumerGroups"),
         NODE_CONFIGS("nodes/configs"),
+        NODES("nodes"),
         REBALANCES("rebalances"),
         TOPICS("topics"),
         TOPIC_RECORDS("topics/records"),
