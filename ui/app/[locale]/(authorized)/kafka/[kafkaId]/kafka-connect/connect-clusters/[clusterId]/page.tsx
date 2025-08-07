@@ -25,7 +25,12 @@ export default function ConnectClusterPage({
     <PageSection>
       <Suspense
         fallback={
-          <ConnectClusterDetails connectVersion={""} workers={0} data={[]} />
+          <ConnectClusterDetails
+            connectVersion={""}
+            workers={0}
+            data={[]}
+            plugins={[]}
+          />
         }
       >
         <ConnectedConnectClusterDetails clusterId={params.clusterId} />
@@ -50,6 +55,8 @@ async function ConnectedConnectClusterDetails({
   const version = connectCluster.data.attributes.version;
   const workers = connectCluster.data.attributes.replicas;
 
+  const plugins = connectCluster.data.attributes.plugins || [];
+
   const connectorData = (connectCluster.included ?? []).map((connector) => ({
     name: connector.attributes.name,
     type: connector.attributes.type as "source" | "sink",
@@ -62,6 +69,7 @@ async function ConnectedConnectClusterDetails({
       connectVersion={version ?? ""}
       workers={workers}
       data={connectorData}
+      plugins={plugins}
     />
   );
 }

@@ -4,14 +4,14 @@ import { PageSection } from "@/libs/patternfly/react-core";
 import { Suspense } from "react";
 import { stringToInt } from "@/utils/stringToInt";
 import { NoDataErrorState } from "@/components/NoDataErrorState";
-import { ConnectedConnectorsTable } from "./connectors/ConnectedConnectorsTable";
-import { ConnectorsTableColumn } from "./connectors/ConnectorsTable";
 import { getKafkaConnectors } from "@/api/kafkaConnect/action";
 import {
   Connectors,
   ConnectorsResponse,
   EnrichedConnector,
 } from "@/api/kafkaConnect/schema";
+import { ConnectedConnectorsTable } from "./ConnectedConnectorsTable";
+import { ConnectorsTableColumn } from "./ConnectorsTable";
 
 function enrichConnectorsData(
   connectors: Connectors[],

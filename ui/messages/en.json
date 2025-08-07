@@ -703,13 +703,20 @@
       "connect_cluster": "Connect cluster",
       "type": "Type",
       "state": "State",
-      "tasks": "Tasks"
+      "tasks": "Tasks",
+      "connector_worker_id": "Connector Worker ID",
+      "topics": "Topics",
+      "max_tasks": "Max Tasks",
+      "class": "Class",
+      "taskId": "Task ID",
+      "workerId": "Worker ID"
     },
     "connect_clusters_title": "Connect clusters",
     "connect_clusters": {
       "name": "Name",
       "version": "Connect Version",
-      "workers": "Workers"
+      "workers": "Workers",
+      "plugins": "Plugins"
     }
   }
 }
