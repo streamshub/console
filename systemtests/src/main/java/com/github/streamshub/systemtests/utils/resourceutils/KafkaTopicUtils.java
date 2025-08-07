@@ -2,7 +2,6 @@ package com.github.streamshub.systemtests.utils.resourceutils;
 
 import com.github.streamshub.systemtests.clients.KafkaClients;
 import com.github.streamshub.systemtests.clients.KafkaClientsBuilder;
-import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.constants.Labels;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.utils.WaitUtils;
@@ -190,7 +189,7 @@ public class KafkaTopicUtils {
                 .withAdditionalConfig(KafkaClientsUtils.getScramShaConfig(namespace, kafkaUser, SecurityProtocol.SASL_PLAINTEXT))
                 .build();
 
-            reassignTopicPartitionToAnotherBroker(namespace, kafkaName, ResourceUtils.listKubeResourcesByPrefix(Pod.class, namespace,
+            KafkaCmdUtils.reassignTopicPartitionToAnotherBroker(namespace, kafkaName, ResourceUtils.listKubeResourcesByPrefix(Pod.class, namespace,
                 KafkaNamingUtils.brokerPodNamePrefix(kafkaName)).get(0).getMetadata().getName(), kt.getMetadata().getName(), lastBrokerId, clients);
 
             // Produce + consume messages
@@ -215,64 +214,6 @@ public class KafkaTopicUtils {
 
         KafkaUtils.removeAnnotation(namespace, kafkaName, ResourceAnnotations.ANNO_STRIMZI_IO_SKIP_BROKER_SCALEDOWN_CHECK, true);
         return kafkaTopics;
-    }
-
-    /**
-     * Reassigns a Kafka topic partition to a different broker using the Kafka reassignment tool inside a Kafka broker pod.
-     *
-     * <p>This method creates the necessary client properties and reassignment JSON files inside the target pod, executes
-     * the reassignment, verifies its success, and cleans up temporary files afterwards.</p>
-     *
-     * <p>It is primarily used to simulate partition placement on a specific broker, which is useful when testing topic availability
-     * scenarios such as deleting the broker holding the only replica.</p>
-     *
-     * <p>The following steps are performed inside the given pod:</p>
-     * <ol>
-     *   <li>Create a `client.properties` file using the provided SCRAM-SHA client configuration.</li>
-     *   <li>Create a reassignment JSON file assigning the specified topic's partition to the target broker ID.</li>
-     *   <li>Execute the Kafka partition reassignment using `kafka-reassign-partitions.sh`.</li>
-     *   <li>Verify the reassignment.</li>
-     *   <li>Remove the created files to clean up the environment.</li>
-     * </ol>
-     *
-     * @param namespaceName the namespace where the Kafka cluster and pod are running
-     * @param kafkaName the name of the Kafka cluster (used to derive the bootstrap address)
-     * @param podName the name of the Kafka broker pod in which commands are executed
-     * @param topicName the name of the Kafka topic whose partition is being reassigned
-     * @param newBrokerId the broker ID to which the partition will be reassigned
-     * @param clients the {@link KafkaClients} instance containing configuration used for authentication
-     */
-    public static void reassignTopicPartitionToAnotherBroker(String namespaceName, String kafkaName, String podName, String topicName, int newBrokerId, KafkaClients clients) {
-        String bootstrapServer = KafkaUtils.getPlainScramShaBootstrapAddress(kafkaName);
-
-        LOGGER.debug("Reassigning KafkaTopic {} ", topicName);
-        String reassignJsonPath = String.format("/tmp/reassign-%s.json", topicName);
-        String clientConfigPath = "/tmp/client.properties";
-
-        String insertPropertiesCommand = String.format("echo '%s' > %s", clients.getAdditionalConfig(), clientConfigPath);
-        LOGGER.debug("Insert client config");
-        String output = KubeResourceManager.get().kubeCmdClient().inNamespace(namespaceName).execInPod(podName, Constants.BASH_CMD, "-c", insertPropertiesCommand).out().trim();
-        LOGGER.debug("Inserting resulted in => [{}]", output);
-
-        String reassignJson = String.format("echo '{\"version\":1,\"partitions\":[{\"topic\":\"%s\",\"partition\":0,\"replicas\":[%d],\"log_dirs\":[\"any\"]}]}' >> %s", topicName, newBrokerId, reassignJsonPath);
-        LOGGER.debug("Insert reassign json => [{}]", reassignJson);
-        output = KubeResourceManager.get().kubeCmdClient().inNamespace(namespaceName).execInPod(podName, Constants.BASH_CMD, "-c", reassignJson).out().trim();
-        LOGGER.debug("Inserting resulted in => [{}]", output);
-
-        String reassignCommand = String.format("./bin/kafka-reassign-partitions.sh --bootstrap-server %s --reassignment-json-file %s --command-config %s --execute", bootstrapServer, reassignJsonPath, clientConfigPath);
-        LOGGER.debug("Execute reassign command => [{}]", reassignCommand);
-        output = KubeResourceManager.get().kubeCmdClient().inNamespace(namespaceName).execInPod(podName, Constants.BASH_CMD, "-c", reassignCommand).out().trim();
-        LOGGER.debug("Execute resulted in => [{}]", output);
-
-        String verifyCommand = String.format("./bin/kafka-reassign-partitions.sh --bootstrap-server %s --reassignment-json-file %s --command-config %s --verify", bootstrapServer, reassignJsonPath, clientConfigPath);
-        LOGGER.debug("Verify reassign command => [{}]", verifyCommand);
-        output = KubeResourceManager.get().kubeCmdClient().inNamespace(namespaceName).execInPod(podName, Constants.BASH_CMD, "-c", verifyCommand).out().trim();
-        LOGGER.debug("Verify resulted in => [{}]", output);
-
-        String removeFilesCommand = String.format("rm -f %s %s", reassignJsonPath, clientConfigPath);
-        LOGGER.debug("Remove created files command => [{}]", removeFilesCommand);
-        output = KubeResourceManager.get().kubeCmdClient().inNamespace(namespaceName).execInPod(podName, Constants.BASH_CMD, "-c", removeFilesCommand).out().trim();
-        LOGGER.debug("Removal resulted in => [{}]", output);
     }
 
     public static KafkaTopicBuilder defaultTopic(String topicNamespace, String clusterName, String topicName, int partitions, int replicas, int minIsr) {
@@ -338,23 +279,5 @@ public class KafkaTopicUtils {
 
         // returning names, since no CR is created on cluster side
         return topics.stream().map(kt -> kt.getMetadata().getName()).toList();
-    }
-
-    public static String getConsumerOffsetTimestampFromOffset(String namespaceName, String kafkaName, String podName, String topicName, String clientsConfig, String offset, int partition, int maxMessages) {
-        String bootstrapServer = KafkaUtils.getPlainScramShaBootstrapAddress(kafkaName);
-        String clientConfigPath = "/tmp/client.properties";
-
-        String insertPropertiesCommand = String.format("echo '%s' > %s", clientsConfig, clientConfigPath);
-        LOGGER.debug("Insert client config");
-        String output = KubeResourceManager.get().kubeCmdClient().inNamespace(namespaceName).execInPod(podName, Constants.BASH_CMD, "-c", insertPropertiesCommand).out().trim();
-        LOGGER.debug("Inserting resulted in => [{}]", output);
-
-        String getOffsetCommand = String.format("./bin/kafka-console-consumer.sh --bootstrap-server=%s --consumer.config=%s --topic=%s --offset=%s --partition=%d --max-messages=%d --property=print.timestamp=true 2>/dev/null" +
-                                                " | awk -F'[:\\t]' '/CreateTime:/ {print $2}'", bootstrapServer, clientConfigPath, topicName, offset, partition, maxMessages);
-        LOGGER.debug("Execute get offset command");
-        output = KubeResourceManager.get().kubeCmdClient().inNamespace(namespaceName).execInPod(podName, Constants.BASH_CMD, "-c", getOffsetCommand).out().trim();
-        LOGGER.debug("Execution resulted in => [{}]", output);
-
-        return output;
     }
 }

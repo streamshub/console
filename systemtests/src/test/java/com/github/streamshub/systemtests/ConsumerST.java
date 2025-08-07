@@ -10,9 +10,8 @@ import com.github.streamshub.systemtests.setup.strimzi.KafkaSetup;
 import com.github.streamshub.systemtests.utils.playwright.PwPageUrls;
 import com.github.streamshub.systemtests.utils.playwright.PwUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.KafkaClientsUtils;
-import com.github.streamshub.systemtests.utils.resourceutils.KafkaConsumerUtils;
+import com.github.streamshub.systemtests.utils.resourceutils.KafkaCmdUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.KafkaNamingUtils;
-import com.github.streamshub.systemtests.utils.resourceutils.KafkaTopicUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
 import com.github.streamshub.systemtests.utils.testutils.ConsumerTestUtils;
 import io.fabric8.kubernetes.api.model.Pod;
@@ -31,6 +30,24 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class ConsumerST extends AbstractST {
     private static final Logger LOGGER = LogWrapper.getLogger(ConsumerST.class);
 
+    /**
+     * Tests resetting Kafka consumer group offsets across multiple topics using various offset reset types via the UI.
+     *
+     * <p>The test first prepares the scenario by creating topics and producing/consuming messages to set initial offsets.</p>
+     * <p>It verifies the default consumer offsets correspond to the latest message offsets before any reset.</p>
+     * <p>The test then navigates to the Consumer Groups page and uses the UI to reset offsets for all topics using:</p>
+     * <ul>
+     *   <li>Earliest offset reset</li>
+     *   <li>Latest offset reset</li>
+     *   <li>Date/time-based offset resets with UNIX epoch format</li>
+     *   <li>Date/time-based offset resets with ISO-8601 format</li>
+     * </ul>
+     * <p>For each reset type, the test verifies that the consumer group offsets are updated accordingly by querying Kafka through the broker pod.</p>
+     * <p>The test ensures that both dry-run and actual reset operations work as expected and that offsets reflect the UI commands.</p>
+     *
+     * <p>This comprehensive test validates the correctness of consumer offset reset functionality across multiple topics and offset types,
+     * ensuring synchronization between UI actions and Kafka consumer group state.</p>
+     */
     @Test
     void testResetConsumerOffsetAllTopicsVariousOffsets() {
         final TestCaseConfig tcc = getTestCaseConfig();
@@ -50,8 +67,8 @@ public class ConsumerST extends AbstractST {
         ConsumerTestUtils.prepareConsumerOffsetScenario(tcc, topicPrefix, consumerGroupName, 2, 1, 1, 1);
 
         LOGGER.info("Verify default offset");
-        assertEquals(KafkaConsumerUtils.getConsumerGroupOffset(tcc.namespace(), tcc.kafkaName(), brokerPodName, consumerGroupName, topicPrefix + "-0", clientsConfig), latestOffset);
-        assertEquals(KafkaConsumerUtils.getConsumerGroupOffset(tcc.namespace(), tcc.kafkaName(), brokerPodName, consumerGroupName, topicPrefix + "-1", clientsConfig), latestOffset);
+        assertEquals(KafkaCmdUtils.getConsumerGroupOffset(tcc.namespace(), tcc.kafkaName(), brokerPodName, consumerGroupName, topicPrefix + "-0", clientsConfig), latestOffset);
+        assertEquals(KafkaCmdUtils.getConsumerGroupOffset(tcc.namespace(), tcc.kafkaName(), brokerPodName, consumerGroupName, topicPrefix + "-1", clientsConfig), latestOffset);
 
         tcc.page().navigate(PwPageUrls.getConsumerGroupsPage(tcc, tcc.kafkaName(), consumerGroupName));
         // Reset offset button needs to wait a bit after consumers are done consuming,
@@ -61,46 +78,46 @@ public class ConsumerST extends AbstractST {
 
         LOGGER.info("Verify earliest offset reset");
         ConsumerTestUtils.execDryRunAndReset(tcc, ResetOffsetType.EARLIEST, null, null);
-        assertEquals(KafkaConsumerUtils.getConsumerGroupOffset(tcc.namespace(), tcc.kafkaName(), brokerPodName, consumerGroupName, topicPrefix + "-0", clientsConfig), earliestOffset);
-        assertEquals(KafkaConsumerUtils.getConsumerGroupOffset(tcc.namespace(), tcc.kafkaName(), brokerPodName, consumerGroupName, topicPrefix + "-1", clientsConfig), earliestOffset);
+        assertEquals(KafkaCmdUtils.getConsumerGroupOffset(tcc.namespace(), tcc.kafkaName(), brokerPodName, consumerGroupName, topicPrefix + "-0", clientsConfig), earliestOffset);
+        assertEquals(KafkaCmdUtils.getConsumerGroupOffset(tcc.namespace(), tcc.kafkaName(), brokerPodName, consumerGroupName, topicPrefix + "-1", clientsConfig), earliestOffset);
 
         LOGGER.info("Verify latest offset reset");
         tcc.page().navigate(PwPageUrls.getConsumerGroupsResetOffsetPage(tcc, tcc.kafkaName(), consumerGroupName));
         ConsumerTestUtils.execDryRunAndReset(tcc, ResetOffsetType.LATEST, null, null);
-        assertEquals(KafkaConsumerUtils.getConsumerGroupOffset(tcc.namespace(), tcc.kafkaName(), brokerPodName, consumerGroupName, topicPrefix + "-0", clientsConfig), latestOffset);
-        assertEquals(KafkaConsumerUtils.getConsumerGroupOffset(tcc.namespace(), tcc.kafkaName(), brokerPodName, consumerGroupName, topicPrefix + "-1", clientsConfig), latestOffset);
+        assertEquals(KafkaCmdUtils.getConsumerGroupOffset(tcc.namespace(), tcc.kafkaName(), brokerPodName, consumerGroupName, topicPrefix + "-0", clientsConfig), latestOffset);
+        assertEquals(KafkaCmdUtils.getConsumerGroupOffset(tcc.namespace(), tcc.kafkaName(), brokerPodName, consumerGroupName, topicPrefix + "-1", clientsConfig), latestOffset);
 
         LOGGER.info("Verify UNIX datetime from earliest");
         tcc.page().navigate(PwPageUrls.getConsumerGroupsResetOffsetPage(tcc, tcc.kafkaName(), consumerGroupName));
         ConsumerTestUtils.execDryRunAndReset(tcc, ResetOffsetType.DATE_TIME, ResetOffsetDateTimeType.UNIX_EPOCH, earliestEpoch);
-        assertEquals(KafkaConsumerUtils.getConsumerGroupOffset(tcc.namespace(), tcc.kafkaName(), brokerPodName, consumerGroupName, topicPrefix + "-0", clientsConfig), earliestOffset);
-        assertEquals(KafkaConsumerUtils.getConsumerGroupOffset(tcc.namespace(), tcc.kafkaName(), brokerPodName, consumerGroupName, topicPrefix + "-1", clientsConfig), earliestOffset);
+        assertEquals(KafkaCmdUtils.getConsumerGroupOffset(tcc.namespace(), tcc.kafkaName(), brokerPodName, consumerGroupName, topicPrefix + "-0", clientsConfig), earliestOffset);
+        assertEquals(KafkaCmdUtils.getConsumerGroupOffset(tcc.namespace(), tcc.kafkaName(), brokerPodName, consumerGroupName, topicPrefix + "-1", clientsConfig), earliestOffset);
 
         LOGGER.info("Verify UNIX datetime latest for topic 0");
         tcc.page().navigate(PwPageUrls.getConsumerGroupsResetOffsetPage(tcc, tcc.kafkaName(), consumerGroupName));
-        String latestEpoch = KafkaTopicUtils.getConsumerOffsetTimestampFromOffset(tcc.namespace(), tcc.kafkaName(), brokerPodName, topicPrefix + "-0", clientsConfig, latestOffsetIndex, 0, 1);
+        String latestEpoch = KafkaCmdUtils.getConsumerOffsetTimestampFromOffset(tcc.namespace(), tcc.kafkaName(), brokerPodName, topicPrefix + "-0", clientsConfig, latestOffsetIndex, 0, 1);
         ConsumerTestUtils.execDryRunAndReset(tcc, ResetOffsetType.DATE_TIME, ResetOffsetDateTimeType.UNIX_EPOCH, latestEpoch);
-        assertEquals(KafkaConsumerUtils.getConsumerGroupOffset(tcc.namespace(), tcc.kafkaName(), brokerPodName, consumerGroupName, topicPrefix + "-0", clientsConfig), latestOffsetIndex);
+        assertEquals(KafkaCmdUtils.getConsumerGroupOffset(tcc.namespace(), tcc.kafkaName(), brokerPodName, consumerGroupName, topicPrefix + "-0", clientsConfig), latestOffsetIndex);
 
         LOGGER.info("Verify UNIX datetime latest for topic 1");
         tcc.page().navigate(PwPageUrls.getConsumerGroupsResetOffsetPage(tcc, tcc.kafkaName(), consumerGroupName));
-        latestEpoch = KafkaTopicUtils.getConsumerOffsetTimestampFromOffset(tcc.namespace(), tcc.kafkaName(), brokerPodName, topicPrefix + "-1", clientsConfig, latestOffsetIndex, 0, 1);
+        latestEpoch = KafkaCmdUtils.getConsumerOffsetTimestampFromOffset(tcc.namespace(), tcc.kafkaName(), brokerPodName, topicPrefix + "-1", clientsConfig, latestOffsetIndex, 0, 1);
         ConsumerTestUtils.execDryRunAndReset(tcc, ResetOffsetType.DATE_TIME, ResetOffsetDateTimeType.UNIX_EPOCH, latestEpoch);
-        assertEquals(KafkaConsumerUtils.getConsumerGroupOffset(tcc.namespace(), tcc.kafkaName(), brokerPodName, consumerGroupName, topicPrefix + "-1", clientsConfig), latestOffsetIndex);
+        assertEquals(KafkaCmdUtils.getConsumerGroupOffset(tcc.namespace(), tcc.kafkaName(), brokerPodName, consumerGroupName, topicPrefix + "-1", clientsConfig), latestOffsetIndex);
 
         LOGGER.info("Verify ISO datetime from middle offset for topic 0");
         tcc.page().navigate(PwPageUrls.getConsumerGroupsResetOffsetPage(tcc, tcc.kafkaName(), consumerGroupName));
-        String middleEpoch = KafkaTopicUtils.getConsumerOffsetTimestampFromOffset(tcc.namespace(), tcc.kafkaName(), brokerPodName, topicPrefix + "-0", clientsConfig, middleOffset, 0, 1);
+        String middleEpoch = KafkaCmdUtils.getConsumerOffsetTimestampFromOffset(tcc.namespace(), tcc.kafkaName(), brokerPodName, topicPrefix + "-0", clientsConfig, middleOffset, 0, 1);
         String middleIsoTime = Instant.ofEpochMilli(Long.parseLong(middleEpoch)).atOffset(ZoneOffset.UTC).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
         ConsumerTestUtils.execDryRunAndReset(tcc, ResetOffsetType.DATE_TIME, ResetOffsetDateTimeType.ISO_8601, middleIsoTime);
-        assertEquals(KafkaConsumerUtils.getConsumerGroupOffset(tcc.namespace(), tcc.kafkaName(), brokerPodName, consumerGroupName, topicPrefix + "-0", clientsConfig), middleOffset);
+        assertEquals(KafkaCmdUtils.getConsumerGroupOffset(tcc.namespace(), tcc.kafkaName(), brokerPodName, consumerGroupName, topicPrefix + "-0", clientsConfig), middleOffset);
 
         LOGGER.info("Verify ISO datetime from middle offset for topic 1");
         tcc.page().navigate(PwPageUrls.getConsumerGroupsResetOffsetPage(tcc, tcc.kafkaName(), consumerGroupName));
-        middleEpoch = KafkaTopicUtils.getConsumerOffsetTimestampFromOffset(tcc.namespace(), tcc.kafkaName(), brokerPodName, topicPrefix + "-1", clientsConfig, middleOffset, 0, 1);
+        middleEpoch = KafkaCmdUtils.getConsumerOffsetTimestampFromOffset(tcc.namespace(), tcc.kafkaName(), brokerPodName, topicPrefix + "-1", clientsConfig, middleOffset, 0, 1);
         middleIsoTime = Instant.ofEpochMilli(Long.parseLong(middleEpoch)).atOffset(ZoneOffset.UTC).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
         ConsumerTestUtils.execDryRunAndReset(tcc, ResetOffsetType.DATE_TIME, ResetOffsetDateTimeType.ISO_8601, middleIsoTime);
-        assertEquals(KafkaConsumerUtils.getConsumerGroupOffset(tcc.namespace(), tcc.kafkaName(), brokerPodName, consumerGroupName, topicPrefix + "-1", clientsConfig), middleOffset);
+        assertEquals(KafkaCmdUtils.getConsumerGroupOffset(tcc.namespace(), tcc.kafkaName(), brokerPodName, consumerGroupName, topicPrefix + "-1", clientsConfig), middleOffset);
     }
 
     @BeforeEach
