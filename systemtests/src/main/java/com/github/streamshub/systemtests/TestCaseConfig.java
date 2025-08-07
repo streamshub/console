@@ -83,4 +83,11 @@ public class TestCaseConfig {
     public int messageCount() {
         return messageCount;
     }
+
+    // ----------
+    // Setters
+    // ----------
+    public void setMessageCount(int messageCount) {
+        this.messageCount = messageCount;
+    }
 }

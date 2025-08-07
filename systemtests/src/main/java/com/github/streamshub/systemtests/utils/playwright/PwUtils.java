@@ -269,7 +269,7 @@ public class PwUtils {
                 String valueText = getTrimmedText(locator.getAttribute(attribute).toString());
 
                 LOGGER.debug("Current locator value [{}], should contain [{}]", valueText, text);
-                if (valueText.equals(text)) {
+                if (valueText.contains(text)) {
                     return true;
                 }
 
@@ -278,7 +278,7 @@ public class PwUtils {
                 }
                 return false;
             },
-            () -> LOGGER.error("Locator does not contain value [{}], instead it contains [{}]", text, getTrimmedText(locator.textContent()))
+            () -> LOGGER.error("Locator does not contain value [{}], instead it contains [{}]", text, getTrimmedText(locator.getAttribute(attribute).toString()))
         );
     }
 
@@ -401,5 +401,25 @@ public class PwUtils {
             Thread.currentThread().interrupt();
             LOGGER.error("Sleep was interrupted due to: {}", e.getMessage());
         }
+    }
+    public static void waitForElementEnabledState(TestCaseConfig tcc, String selector, boolean shouldBeEnabled, boolean reload, long timeout) {
+        waitForElementEnabledState(tcc, tcc.page().locator(selector), shouldBeEnabled, reload, timeout);
+    }
+
+    public static void waitForElementEnabledState(TestCaseConfig tcc, Locator locator, boolean shouldBeEnabled, boolean reload, long timeout) {
+        Wait.until("locator to be in state enabled=" + shouldBeEnabled, TimeConstants.GLOBAL_POLL_INTERVAL_SHORT, timeout,
+            () -> {
+                if (locator.isEnabled() == shouldBeEnabled) {
+                    LOGGER.debug("Locator has correct state enabled={}", locator.isEnabled());
+                    return true;
+                }
+                LOGGER.debug("Locator has incorrect state enabled={}, need enabled={}", locator.isEnabled(), shouldBeEnabled);
+                if (reload) {
+                    tcc.page().reload(getDefaultReloadOpts());
+                }
+                return false;
+            },
+            () -> LOGGER.error("Locator has incorrect state enabled={}, need enabled={}", locator.isEnabled(), shouldBeEnabled)
+        );
     }
 }

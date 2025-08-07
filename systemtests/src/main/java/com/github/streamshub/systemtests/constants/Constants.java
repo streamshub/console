@@ -30,6 +30,8 @@ public class Constants {
     public static final String USER_USERNAME = "Anonymous";
     public static final int SELECTOR_RETRIES = 10;
     public static final String VALUE_ATTRIBUTE = "value";
+    public static final String DISABLED = "disabled";
+    public static final String CHECKED_ATTRIBUTE = "checked";
 
     /**
      * Messages
