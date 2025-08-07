@@ -1,7 +1,6 @@
 package com.github.streamshub.console.api;
 
 import java.net.URI;
-import java.util.Arrays;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
@@ -35,6 +34,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.aggregator.AggregateWith;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.Mockito;
 
@@ -56,6 +56,7 @@ import com.github.streamshub.console.kafka.systemtest.deployment.DeploymentManag
 import com.github.streamshub.console.test.AdminClientSpy;
 import com.github.streamshub.console.test.LogCapture;
 import com.github.streamshub.console.test.TestHelper;
+import com.github.streamshub.console.test.VarargsAggregator;
 
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.informers.SharedIndexInformer;
@@ -234,17 +235,20 @@ class KafkaClustersResourceIT {
             .body("data.attributes.name", contains("test-kafka1"));
     }
 
-    @Test
-    void testListClustersWithAnonymousLimited() {
-        List<String> visibleClusters = Arrays.asList("test-kafka1", "test-kafkaY");
-
+    @ParameterizedTest
+    @CsvSource({
+        "'test-kafka1',             test-kafka1",
+        "'test-kafka1,test-kafkaY', test-kafka1, test-kafkaY",
+        "'*',                       test-kafka1, test-kafka2, test-kafkaY",
+    })
+    void testListClustersWithAnonymousLimited(String resourceNames, @AggregateWith(VarargsAggregator.class) String... visibleClusters) {
         consoleConfig.setSecurity(new GlobalSecurityConfigBuilder()
                 .addNewRole()
                     .withName("unauthenticated")
                     .addNewRule()
                         .withResources("kafkas")
                         .withPrivileges(Privilege.LIST)
-                        .withResourceNames(visibleClusters)
+                        .withResourceNames(resourceNames.split(","))
                     .endRule()
                 .endRole()
                 .addNewSubject()
@@ -258,8 +262,8 @@ class KafkaClustersResourceIT {
                 .get())
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
-            .body("data.size()", equalTo(visibleClusters.size()))
-            .body("data.attributes.name", containsInAnyOrder(visibleClusters.toArray(String[]::new)));
+            .body("data.size()", equalTo(visibleClusters.length))
+            .body("data.attributes.name", containsInAnyOrder(visibleClusters));
     }
 
     @Test
