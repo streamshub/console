@@ -17,6 +17,14 @@ export const ConnectorsDataSchema = z.object({
   state: ConnectorStateSchema,
   trace: z.string().nullable().optional(),
   workerId: z.string().optional(),
+  topics: z.array(z.string()).optional(),
+  config: z.record(z.string(), z.string()).optional(),
+});
+
+const PluginSchema = z.object({
+  class: z.string(),
+  type: z.enum(["source", "sink"]),
+  version: z.string(),
 });
 
 export const ConnectClusterDataSchema = z.object({
@@ -27,6 +35,7 @@ export const ConnectClusterDataSchema = z.object({
   kafkaClusterId: z.string().optional(),
   version: z.string().optional(),
   replicas: z.any().nullable().optional(),
+  plugins: z.array(PluginSchema).optional(),
 });
 
 const ConnectClusterSchema = z.object({
@@ -185,6 +194,46 @@ export const ConnectClustersResponseSchema = z.object({
   included: z.array(ConnectorSchema).optional(),
 });
 
+const connectorTaskSchema = z.object({
+  id: z.string(),
+  type: z.literal("connectorTasks"),
+  attributes: z.object({
+    taskId: z.number(),
+    config: z.record(z.string(), z.string()),
+    state: z.string(),
+    workerId: z.string(),
+  }),
+  relationships: {},
+});
+
+export const connectorDetailSchema = z.object({
+  data: z.object({
+    id: z.string(),
+    type: z.literal("connectors"),
+    meta: z.object({
+      managed: z.boolean(),
+    }),
+    attributes: ConnectorsDataSchema,
+    relationships: z.object({
+      connectCluster: z.object({
+        data: z.object({
+          type: z.literal("connects"),
+          id: z.string(),
+        }),
+      }),
+      tasks: z.object({
+        data: z.array(
+          z.object({
+            type: z.literal("connectorTasks"),
+            id: z.string(),
+          }),
+        ),
+      }),
+    }),
+  }),
+  included: z.array(z.union([ConnectClusterSchema, connectorTaskSchema])),
+});
+
 export type Connectors = z.infer<typeof ConnectorsSchema>;
 
 export type ConnectorsResponse = z.infer<typeof ConnectorsResponseSchema>;
@@ -204,3 +253,9 @@ export type EnrichedConnector = z.infer<typeof ConnectorsSchema> & {
 export type ConnectorState = z.infer<typeof ConnectorStateSchema>;
 
 export type ConnectCluster = z.infer<typeof ConnectClusterDetailResponseSchema>;
+
+export type plugins = z.infer<typeof PluginSchema>;
+
+export type ConnectorCluster = z.infer<typeof connectorDetailSchema>;
+
+export type ConnectorTask = z.infer<typeof connectorTaskSchema>;

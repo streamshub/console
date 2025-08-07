@@ -152,7 +152,11 @@ export function ConnectorsTable({
           case "name":
             return (
               <Td key={key} dataLabel={t("connectors.name")}>
-                {row.attributes.name}
+                <Link
+                  href={`/kafka/${kafkaId}/kafka-connect/connectors/${encodeURIComponent(row.id)}`}
+                >
+                  {row.attributes.name}
+                </Link>
               </Td>
             );
           case "connect-cluster":
