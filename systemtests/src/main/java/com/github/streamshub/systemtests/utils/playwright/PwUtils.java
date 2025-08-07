@@ -266,7 +266,7 @@ public class PwUtils {
         LOGGER.debug("Waiting for locator [{}] to contain value [{}]", locator.toString(), text);
         Wait.until("locator to contain text: " + text, TimeConstants.GLOBAL_POLL_INTERVAL_SHORT, componentLoadTimeout,
             () -> {
-                String valueText = getTrimmedText(locator.getAttribute(attribute).toString());
+                String valueText = getTrimmedText(locator.getAttribute(attribute));
 
                 LOGGER.debug("Current locator value [{}], should contain [{}]", valueText, text);
                 if (valueText.contains(text)) {

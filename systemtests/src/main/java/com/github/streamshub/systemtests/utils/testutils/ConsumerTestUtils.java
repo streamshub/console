@@ -24,6 +24,8 @@ import java.util.List;
 public class ConsumerTestUtils {
     private static final Logger LOGGER = LogWrapper.getLogger(ConsumerTestUtils.class);
 
+    private ConsumerTestUtils() {}
+
     /**
      * Prepares a scenario for testing consumer group offsets by:
      * <ul>
