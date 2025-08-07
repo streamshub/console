@@ -1,6 +1,6 @@
 "use client";
 
-import { ConnectorState, plugins } from "@/api/kafkaConnect/schema";
+import { ConnectorState, ConnectorTask } from "@/api/kafkaConnect/schema";
 import { ResponsiveTable } from "@/components/Table";
 import {
   CheckCircleIcon,
@@ -94,21 +94,22 @@ const StateLabel: Record<ConnectorState, { label: ReactNode }> = {
   },
 };
 
-export function ConnectClusterDetails({
-  connectVersion,
-  workers,
-  data,
-  plugins,
+export function ConnectorDetails({
+  workerId,
+  className,
+  connectorTask,
+  state,
+  type,
+  topics,
+  maxTasks,
 }: {
-  connectVersion: string;
-  workers: number;
-  data: {
-    name: string;
-    type: "source" | "sink";
-    state: ConnectorState;
-    replicas: number | null;
-  }[];
-  plugins: plugins[];
+  className: string;
+  workerId: number;
+  state: ConnectorState;
+  type: string;
+  topics: string[];
+  maxTasks: number;
+  connectorTask: ConnectorTask[];
 }) {
   const t = useTranslations("KafkaConnect");
 
@@ -127,17 +128,33 @@ export function ConnectClusterDetails({
         <DescriptionList isHorizontal columnModifier={{ default: "2Col" }}>
           <DescriptionListGroup>
             <DescriptionListTerm>
-              {t("connect_clusters.version")}
+              {t("connectors.connector_worker_id")}
             </DescriptionListTerm>
+            <DescriptionListDescription>{workerId}</DescriptionListDescription>
+          </DescriptionListGroup>
+          <DescriptionListGroup>
+            <DescriptionListTerm>{t("connectors.class")}</DescriptionListTerm>
+            <DescriptionListDescription>{className}</DescriptionListDescription>
+          </DescriptionListGroup>
+          <DescriptionListGroup>
+            <DescriptionListTerm>{t("connectors.state")}</DescriptionListTerm>
             <DescriptionListDescription>
-              {connectVersion}
+              {StateLabel[state].label}
             </DescriptionListDescription>
           </DescriptionListGroup>
           <DescriptionListGroup>
+            <DescriptionListTerm>{t("connectors.type")}</DescriptionListTerm>
+            <DescriptionListDescription>{type}</DescriptionListDescription>
+          </DescriptionListGroup>
+          <DescriptionListGroup>
+            <DescriptionListTerm>{t("connectors.topics")}</DescriptionListTerm>
+            <DescriptionListDescription>{topics}</DescriptionListDescription>
+          </DescriptionListGroup>
+          <DescriptionListGroup>
             <DescriptionListTerm>
-              {t("connect_clusters.workers")}
+              {t("connectors.max_tasks")}
             </DescriptionListTerm>
-            <DescriptionListDescription>{workers}</DescriptionListDescription>
+            <DescriptionListDescription>{maxTasks}</DescriptionListDescription>
           </DescriptionListGroup>
         </DescriptionList>
       </FlexItem>
@@ -150,56 +167,32 @@ export function ConnectClusterDetails({
         >
           <Tab
             eventKey={0}
-            title={<TabTitleText>Connectors</TabTitleText>}
-            aria-label="Connectors Tab"
+            title={<TabTitleText>{t("connectors.tasks")}</TabTitleText>}
+            aria-label={t("connectors.tasks")}
           >
             <ResponsiveTable
-              ariaLabel="Kafka connectors"
+              ariaLabel={t("connectors.tasks")}
               variant={TableVariant.compact}
-              columns={["name", "type", "state", "replicas"] as const}
-              data={data}
-              renderHeader={({ column, key, Th }) => (
-                <Th key={key}>
-                  {column.charAt(0).toUpperCase() + column.slice(1)}
-                </Th>
-              )}
-              renderCell={({ column, key, row, Td }) => {
+              columns={["taskId", "state", "workerId"] as const}
+              data={connectorTask}
+              renderHeader={({ column, key, Th }) => {
                 switch (column) {
-                  case "name":
-                    return <Td key={key}>{row.name}</Td>;
-                  case "type":
-                    return <Td key={key}>{row.type}</Td>;
+                  case "taskId":
+                    return <Th key={key}>{t("connectors.taskId")}</Th>;
                   case "state":
-                    return <Td key={key}>{StateLabel[row.state].label}</Td>;
-                  case "replicas":
-                    return <Td key={key}>{row.replicas ?? "N/A"}</Td>;
+                    return <Th key={key}>{t("connectors.state")}</Th>;
+                  case "workerId":
+                    return <Th key={key}>{t("connectors.workerId")}</Th>;
                 }
               }}
-            />
-          </Tab>
-          <Tab
-            eventKey={1}
-            title={<TabTitleText>Plugins</TabTitleText>}
-            aria-label="Plugins"
-          >
-            <ResponsiveTable
-              ariaLabel="Plugins"
-              variant={TableVariant.compact}
-              columns={["class", "type", "version"] as const}
-              data={plugins}
-              renderHeader={({ column, key, Th }) => (
-                <Th key={key}>
-                  {column.charAt(0).toUpperCase() + column.slice(1)}
-                </Th>
-              )}
               renderCell={({ column, key, row, Td }) => {
                 switch (column) {
-                  case "class":
-                    return <Td key={key}>{row.class}</Td>;
-                  case "type":
-                    return <Td key={key}>{row.type}</Td>;
-                  case "version":
-                    return <Td key={key}>{row.version}</Td>;
+                  case "taskId":
+                    return <Td key={key}>{row.attributes.taskId}</Td>;
+                  case "state":
+                    return <Td key={key}>{row.attributes.state}</Td>;
+                  case "workerId":
+                    return <Td key={key}>{row.attributes.workerId}</Td>;
                 }
               }}
             />

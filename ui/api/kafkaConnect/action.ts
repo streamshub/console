@@ -15,6 +15,8 @@ import {
   ConnectClustersResponseSchema,
   ConnectCluster,
   ConnectClusterDetailResponseSchema,
+  ConnectorCluster,
+  connectorDetailSchema,
 } from "./schema";
 
 export async function getKafkaConnectors(params: {
@@ -70,7 +72,7 @@ export async function getKafkaConnectClusters(params: {
       sort: sortParam(params.sort, params.sortDir),
 
       include: "connectors",
-      "fields[connects]": "name,version,replicas,connectors,",
+      "fields[connects]": "name,version,replicas,connectors",
     }),
   );
 
@@ -85,10 +87,26 @@ export async function getConnectCluster(
   const sp = new URLSearchParams(
     filterUndefinedFromObj({
       include: "connectors",
-      "fields[connects]": "name,version,replicas,connectors,",
+      "fields[connects]": "name,version,replicas,connectors,plugins",
     }),
   );
   return fetchData(`/api/connects/${clusterId}`, sp, (rawData) =>
     ConnectClusterDetailResponseSchema.parse(rawData),
+  );
+}
+
+export async function getConnectorCluster(
+  connectorId: string,
+): Promise<ApiResponse<ConnectorCluster>> {
+  const sp = new URLSearchParams(
+    filterUndefinedFromObj({
+      include: "connectCluster,tasks",
+      "fields[connectorTasks]": "taskId,state,workerId,config",
+      "fields[connectors]":
+        "name,state,type,connectCluster,topics,config,tasks",
+    }),
+  );
+  return fetchData(`/api/connectors/${connectorId}`, sp, (rawData) =>
+    connectorDetailSchema.parse(rawData),
   );
 }
