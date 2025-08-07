@@ -339,4 +339,22 @@ public class KafkaTopicUtils {
         // returning names, since no CR is created on cluster side
         return topics.stream().map(kt -> kt.getMetadata().getName()).toList();
     }
+
+    public static String getConsumerOffsetTimestampFromOffset(String namespaceName, String kafkaName, String podName, String topicName, String clientsConfig, String offset, int partition, int maxMessages) {
+        String bootstrapServer = KafkaUtils.getPlainScramShaBootstrapAddress(kafkaName);
+        String clientConfigPath = "/tmp/client.properties";
+
+        String insertPropertiesCommand = String.format("echo '%s' > %s", clientsConfig, clientConfigPath);
+        LOGGER.debug("Insert client config");
+        String output = KubeResourceManager.get().kubeCmdClient().inNamespace(namespaceName).execInPod(podName, Constants.BASH_CMD, "-c", insertPropertiesCommand).out().trim();
+        LOGGER.debug("Inserting resulted in => [{}]", output);
+
+        String getOffsetCommand = String.format("./bin/kafka-console-consumer.sh --bootstrap-server=%s --consumer.config=%s --topic=%s --offset=%s --partition=%d --max-messages=%d --property=print.timestamp=true 2>/dev/null" +
+                                                " | awk -F'[:\\t]' '/CreateTime:/ {print $2}'", bootstrapServer, clientConfigPath, topicName, offset, partition, maxMessages);
+        LOGGER.debug("Execute get offset command");
+        output = KubeResourceManager.get().kubeCmdClient().inNamespace(namespaceName).execInPod(podName, Constants.BASH_CMD, "-c", getOffsetCommand).out().trim();
+        LOGGER.debug("Execution resulted in => [{}]", output);
+
+        return output;
+    }
 }

@@ -24,7 +24,7 @@ public class ConsumerGroupsPageSelectors {
         .withElementButton().withComponentButton()
         .build();
 
-    public static String CGPS_PAGE = new CssBuilder(CssSelectors.PAGES_CONTENT)
+    public static final String CGPS_PAGE = new CssBuilder(CssSelectors.PAGES_CONTENT)
         .withChild()
         .withElementDiv().withComponentPage().withSubComponentMainBody().withChild()
         .withElementDiv().withComponentPanel().withChild()
@@ -123,11 +123,8 @@ public class ConsumerGroupsPageSelectors {
     public static final String CGPS_RESET_PAGE_PARTITIONS_RADIOS = new CssBuilder(CGPS_FORM)
         .withChild()
         .withElementSection().withComponentForm().withSubComponentSection().nth(1).withChild()
-        .withElementDiv().withComponentForm().withSubComponentGroup().nth(2).withChild()
+        .withElementDiv().withComponentForm().withSubComponentGroup().nth(4).withChild()
         .withElementDiv().withComponentForm().withSubComponentGroupControl()
-        // .withChild()
-        // .withElementDiv().withComponentRadio().nth(1).withChild()
-        // .withElementInput().withComponentRadio().withSubComponentInput()
         .build();
 
     public static final String CGPS_RESET_PAGE_ALL_PARTITIONS_RADIO = new CssBuilder(CGPS_RESET_PAGE_PARTITIONS_RADIOS)
@@ -191,7 +188,13 @@ public class ConsumerGroupsPageSelectors {
         .withElementButton().withComponentMenu().withSubComponentItem()
         .build();
 
-    public static final String CGPS_RESET_PAGE_OFFSET_SPECIFIC_DATETIME_OFFSET = new CssBuilder(CGPS_RESET_PAGE_OFFSET_DROPDOWN_ITEMS)
+    public static final String CGPS_RESET_PAGE_OFFSET_ALL_PARTITIONS_SPECIFIC_DATETIME_OFFSET = new CssBuilder(CGPS_RESET_PAGE_OFFSET_DROPDOWN_ITEMS)
+        .nth(1)
+        .withChild()
+        .withElementButton().withComponentMenu().withSubComponentItem()
+        .build();
+
+    public static final String CGPS_RESET_PAGE_OFFSET_SPECIFIC_PARTITION_SPECIFIC_DATETIME_OFFSET = new CssBuilder(CGPS_RESET_PAGE_OFFSET_DROPDOWN_ITEMS)
         .nth(4)
         .withChild()
         .withElementButton().withComponentMenu().withSubComponentItem()
@@ -206,21 +209,21 @@ public class ConsumerGroupsPageSelectors {
         .withElementInput()
         .build();
 
-    public static final String CGPS_RESET_PAGE_OFFSET_SPECIFIC_DATETIME_ISO_FORMAT_RADIO = new CssBuilder(CGPS_FORM)
+    public static final String CGPS_RESET_PAGE_OFFSET_SPECIFIC_DATETIME = new CssBuilder(CGPS_FORM)
         .withChild()
         .withElementSection().withComponentForm().withSubComponentSection().nth(2).withChild()
-        .withElementDiv().withComponentForm().withSubComponentGroup().nth(2).withChild()
+        .withElementDiv().withComponentForm().withSubComponentGroup().withChild()
         .withElementDiv().withComponentForm().withSubComponentGroupControl().withChild()
-        .withElementDiv().withComponentRadio().nth(1).withChild()
+        .withElementDiv().withComponentRadio()
+        .build();
+
+    public static final String CGPS_RESET_PAGE_OFFSET_SPECIFIC_DATETIME_ISO_FORMAT_RADIO = new CssBuilder(CGPS_RESET_PAGE_OFFSET_SPECIFIC_DATETIME)
+        .nth(1).withChild()
         .withElementInput().withComponentRadio().withSubComponentInput()
         .build();
 
-    public static final String CGPS_RESET_PAGE_OFFSET_SPECIFIC_DATETIME_EPOCH_FORMAT_RADIO = new CssBuilder(CGPS_FORM)
-        .withChild()
-        .withElementSection().withComponentForm().withSubComponentSection().nth(2).withChild()
-        .withElementDiv().withComponentForm().withSubComponentGroup().nth(2).withChild()
-        .withElementDiv().withComponentForm().withSubComponentGroupControl().withChild()
-        .withElementDiv().withComponentRadio().nth(2).withChild()
+    public static final String CGPS_RESET_PAGE_OFFSET_SPECIFIC_DATETIME_EPOCH_FORMAT_RADIO = new CssBuilder(CGPS_RESET_PAGE_OFFSET_SPECIFIC_DATETIME)
+        .nth(2).withChild()
         .withElementInput().withComponentRadio().withSubComponentInput()
         .build();
 
@@ -228,7 +231,7 @@ public class ConsumerGroupsPageSelectors {
     public static final String CGPS_RESET_PAGE_OFFSET_SPECIFIC_DATETIME_INPUT = new CssBuilder(CGPS_FORM)
         .withChild()
         .withElementSection().withComponentForm().withSubComponentSection().nth(2).withChild()
-        .withElementDiv().withComponentForm().withSubComponentGroup().nth(3).withChild()
+        .withElementDiv().withComponentForm().withSubComponentGroup().nth(4).withChild()
         .withElementDiv().withComponentForm().withSubComponentGroupControl().withChild()
         .withElementSpan().withComponentFormControl().withChild()
         .withElementInput()
