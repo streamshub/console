@@ -5,7 +5,7 @@ public enum ResetOffsetType {
     EARLIEST("Earliest offset", "earliest"),
     LATEST("Latest offset", "latest"),
     DATE_TIME("Specific Date time", "datetime"),
-    // Only if resetting with selected partition
+    // Is displayed only if resetting with specific partition
     CUSTOM_OFFSET("Custom offset", "offset");
 
     private final String description;

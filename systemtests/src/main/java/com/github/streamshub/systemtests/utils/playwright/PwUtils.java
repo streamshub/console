@@ -349,6 +349,40 @@ public class PwUtils {
         );
     }
 
+    public static void waitForElementEnabledState(TestCaseConfig tcc, String selector, boolean shouldBeEnabled, boolean reload, long timeout) {
+        waitForElementEnabledState(tcc, tcc.page().locator(selector), shouldBeEnabled, reload, timeout);
+    }
+
+    /**
+     * Waits until a specific locator reaches the desired enabled or disabled state within the given timeout.
+     * <p>
+     * Optionally reloads the page if the state is not yet reached during the polling interval.
+     * </p>
+     *
+     * @param tcc             the test case configuration containing the Playwright page
+     * @param locator         the Playwright {@link Locator} to check the enabled state for
+     * @param shouldBeEnabled {@code true} if the element should be enabled; {@code false} if it should be disabled
+     * @param reload          {@code true} if the page should be reloaded on each failed check
+     * @param timeout         the maximum amount of time (in milliseconds) to wait for the state to be achieved
+     */
+
+    public static void waitForElementEnabledState(TestCaseConfig tcc, Locator locator, boolean shouldBeEnabled, boolean reload, long timeout) {
+        Wait.until("locator to be in state enabled=" + shouldBeEnabled, TimeConstants.GLOBAL_POLL_INTERVAL_SHORT, timeout,
+            () -> {
+                if (locator.isEnabled() == shouldBeEnabled) {
+                    LOGGER.debug("Locator has correct state enabled={}", locator.isEnabled());
+                    return true;
+                }
+                LOGGER.debug("Locator has incorrect state enabled={}, need enabled={}", locator.isEnabled(), shouldBeEnabled);
+                if (reload) {
+                    tcc.page().reload(getDefaultReloadOpts());
+                }
+                return false;
+            },
+            () -> LOGGER.error("Locator has incorrect state enabled={}, need enabled={}", locator.isEnabled(), shouldBeEnabled)
+        );
+    }
+
     // ----------------
     // Default options
     // ----------------
@@ -401,25 +435,5 @@ public class PwUtils {
             Thread.currentThread().interrupt();
             LOGGER.error("Sleep was interrupted due to: {}", e.getMessage());
         }
-    }
-    public static void waitForElementEnabledState(TestCaseConfig tcc, String selector, boolean shouldBeEnabled, boolean reload, long timeout) {
-        waitForElementEnabledState(tcc, tcc.page().locator(selector), shouldBeEnabled, reload, timeout);
-    }
-
-    public static void waitForElementEnabledState(TestCaseConfig tcc, Locator locator, boolean shouldBeEnabled, boolean reload, long timeout) {
-        Wait.until("locator to be in state enabled=" + shouldBeEnabled, TimeConstants.GLOBAL_POLL_INTERVAL_SHORT, timeout,
-            () -> {
-                if (locator.isEnabled() == shouldBeEnabled) {
-                    LOGGER.debug("Locator has correct state enabled={}", locator.isEnabled());
-                    return true;
-                }
-                LOGGER.debug("Locator has incorrect state enabled={}, need enabled={}", locator.isEnabled(), shouldBeEnabled);
-                if (reload) {
-                    tcc.page().reload(getDefaultReloadOpts());
-                }
-                return false;
-            },
-            () -> LOGGER.error("Locator has incorrect state enabled={}, need enabled={}", locator.isEnabled(), shouldBeEnabled)
-        );
     }
 }
