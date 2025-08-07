@@ -106,7 +106,7 @@ kafka:
                   - topics/records
                   - consumerGroups
                   - rebalances
-              - privileges:
+                privileges:
                   - get
                   - list
 
@@ -119,13 +119,14 @@ kafka:
                   - consumerGroups
                   - rebalances
                   - nodes/configs
-              - privileges:
+                  - nodes
+                privileges:
                   - get
                   - list
               - resources:
                   - consumerGroups
                   - rebalances
-              - privileges:
+                privileges:
                   - update
 
     - name: my-kafka2
