@@ -119,6 +119,7 @@ kafka:
                   - consumerGroups
                   - rebalances
                   - nodes/configs
+                  - nodes
                 privileges:
                   - get
                   - list
