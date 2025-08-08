@@ -39,8 +39,8 @@ public class ConsumerST extends AbstractST {
      * <ul>
      *   <li>Earliest offset reset</li>
      *   <li>Latest offset reset</li>
-     *   <li>Date/time-based offset resets with UNIX epoch format</li>
-     *   <li>Date/time-based offset resets with ISO-8601 format</li>
+     *   <li>Date/time-based earliest latest offset resets with UNIX epoch format</li>
+     *   <li>Date/time-based middle offset resets with ISO-8601 format</li>
      * </ul>
      * <p>For each reset type, the test verifies that the consumer group offsets are updated accordingly by querying Kafka through the broker pod.</p>
      * <p>The test ensures that both dry-run and actual reset operations work as expected and that offsets reflect the UI commands.</p>
