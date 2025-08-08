@@ -10,7 +10,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -26,7 +25,6 @@ import com.github.streamshub.console.api.model.connect.ConnectCluster;
 import com.github.streamshub.console.api.model.connect.Connector;
 import com.github.streamshub.console.api.model.connect.ConnectorPlugin;
 import com.github.streamshub.console.api.model.connect.ConnectorTask;
-import com.github.streamshub.console.api.security.PermissionService;
 import com.github.streamshub.console.api.support.FieldFilter;
 import com.github.streamshub.console.api.support.KafkaConnectAPI;
 import com.github.streamshub.console.api.support.KafkaConnectAPI.ConnectorOffsets;
@@ -35,7 +33,6 @@ import com.github.streamshub.console.api.support.ListRequestContext;
 import com.github.streamshub.console.api.support.Promises;
 import com.github.streamshub.console.config.ConsoleConfig;
 import com.github.streamshub.console.config.KafkaConnectConfig;
-import com.github.streamshub.console.config.security.Privilege;
 
 import io.fabric8.kubernetes.client.CustomResource;
 import io.strimzi.api.kafka.model.connect.KafkaConnect;
@@ -78,14 +75,10 @@ public class KafkaConnectService {
     @Inject
     StrimziResourceService strimziService;
 
-    @Inject
-    PermissionService permissionService;
-
     public CompletionStage<List<ConnectCluster>> listClusters(FieldFilter fields, ListRequestContext<ConnectCluster> listSupport) {
         var pendingServerInfo = consoleConfig.getKafkaConnectClusters()
                 .stream()
                 .filter(listSupport.filter(KafkaConnectConfig.class))
-                .filter(config -> permissionService.permitted(ConnectCluster.API_TYPE, Privilege.LIST, config.clusterKey()))
                 .map(config -> describeCluster(config, fields, listSupport.getFetchParams(), true))
                 .toList();
 
@@ -206,7 +199,6 @@ public class KafkaConnectService {
 
         return connectClient.getConnectors(clusterConfig.clusterKey())
                 .thenApplyAsync(names -> names.stream()
-                        .filter(permissionService.permitted(Connector.API_TYPE, Privilege.LIST, Function.identity()))
                         .map(name -> describeConnector(clusterConfig, name, fields, fetchParams)),
                         threadContext.currentContextExecutor())
                 .thenCompose(Promises::joinStages);
