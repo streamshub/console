@@ -112,14 +112,14 @@ export async function postData<T>(
   const rawData = await response.text();
 
   if (response.ok) {
-    log.debug(rawData, `patch ${url} response`);
+    log.debug({rawData}, `patch ${url} response`);
 
     return {
       payload: rawData.length > 0 ? parser(JSON.parse(rawData)) : null,
       timestamp: new Date(),
     };
   } else {
-    log.info(rawData, `patch ${url} response`);
+    log.info({rawData}, `patch ${url} response`);
 
     return {
       errors: ApiErrorResponse.parse(JSON.parse(rawData)).errors,
@@ -144,14 +144,14 @@ export async function patchData<T>(
   const rawData = await response.text();
 
   if (response.ok) {
-    log.debug(rawData, `patch ${url} response`);
+    log.debug({rawData}, `patch ${url} response`);
 
     return {
       payload: rawData.length > 0 ? parser(JSON.parse(rawData)) : null,
       timestamp: new Date(),
     };
   } else {
-    log.info(rawData, `patch ${url} response`);
+    log.info({rawData}, `patch ${url} response`);
 
     return {
       errors: ApiErrorResponse.parse(JSON.parse(rawData)).errors,

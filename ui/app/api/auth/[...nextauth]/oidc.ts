@@ -127,7 +127,7 @@ class OpenIdConnect {
     const responseBody = await response.text();
 
     if (!response.ok) {
-      log.debug(responseBody, "Bad token response");
+      log.debug({responseBody}, "Bad token response");
       return {
         error: responseBody,
       };

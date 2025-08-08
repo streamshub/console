@@ -10,7 +10,7 @@ export default function GlobalError({
   reset: () => void;
 }) {
   useEffect(() => {
-    log.error("unmanaged error", error);
+    log.error({error}, "unmanaged error");
   }, [error]);
   return (
     <html>
