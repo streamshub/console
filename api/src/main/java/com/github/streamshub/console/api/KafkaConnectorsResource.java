@@ -29,14 +29,11 @@ import com.github.streamshub.console.api.model.connect.ConnectCluster;
 import com.github.streamshub.console.api.model.connect.Connector;
 import com.github.streamshub.console.api.model.connect.ConnectorFilterParams;
 import com.github.streamshub.console.api.model.connect.ConnectorTask;
-import com.github.streamshub.console.api.security.Authorized;
-import com.github.streamshub.console.api.security.ResourcePrivilege;
 import com.github.streamshub.console.api.service.KafkaConnectService;
 import com.github.streamshub.console.api.support.ErrorCategory;
 import com.github.streamshub.console.api.support.FieldFilter;
 import com.github.streamshub.console.api.support.ListRequestContext;
 import com.github.streamshub.console.api.support.StringEnumeration;
-import com.github.streamshub.console.config.security.Privilege;
 
 import io.xlate.validation.constraints.Expression;
 
@@ -58,8 +55,6 @@ public class KafkaConnectorsResource {
     @APIResponseSchema(Connector.DataList.class)
     @APIResponse(responseCode = "500", ref = "ServerError")
     @APIResponse(responseCode = "504", ref = "ServerTimeout")
-    @Authorized
-    @ResourcePrivilege(Privilege.LIST)
     public CompletionStage<Response> listConnectors(
             @QueryParam(Connector.FIELDS_PARAM)
             @DefaultValue(Connector.Fields.LIST_DEFAULT)
@@ -132,8 +127,6 @@ public class KafkaConnectorsResource {
     @APIResponseSchema(Connector.Data.class)
     @APIResponse(responseCode = "500", ref = "ServerError")
     @APIResponse(responseCode = "504", ref = "ServerTimeout")
-    @Authorized
-    @ResourcePrivilege(Privilege.LIST)
     public CompletionStage<Response> describeConnector(
             @Parameter(description = "Connector identifier")
             @PathParam("connectorId")
