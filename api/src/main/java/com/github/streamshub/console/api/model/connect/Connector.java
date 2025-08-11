@@ -174,11 +174,11 @@ public class Connector extends KubeApiResource<Connector.Attributes, Connector.R
     static class Attributes extends KubeAttributes {
         @JsonProperty
         @Schema(enumeration = {
-                "sink",
-                "source",
-                "source:mm",
-                "source:mm-checkpoint",
-                "source:mm-heartbeat"
+            "sink",
+            "source",
+            "source:mm",
+            "source:mm-checkpoint",
+            "source:mm-heartbeat"
         })
         String type;
 
