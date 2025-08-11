@@ -31,7 +31,7 @@
         <maven.checkstyle.version>3.6.0</maven.checkstyle.version>
         <jacoco-maven-plugin.version>0.8.13</jacoco-maven-plugin.version>
         <jandex-maven-plugin.version>3.4.0</jandex-maven-plugin.version>
-        <spotbugs.version>4.9.3</spotbugs.version>
+        <spotbugs.version>4.9.4</spotbugs.version>
         <surefire-plugin.version>3.5.3</surefire-plugin.version>
 
         <!-- Sonar settings -->
@@ -207,7 +207,7 @@
                         <dependency>
                             <groupId>com.puppycrawl.tools</groupId>
                             <artifactId>checkstyle</artifactId>
-                            <version>10.26.1</version>
+                            <version>11.0.0</version>
                         </dependency>
                     </dependencies>
                 </plugin>
