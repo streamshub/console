@@ -239,7 +239,7 @@ class KafkaConnectorsResourceIT implements ClientRequestFilter {
     void testDescribeConnector(String connectCluster, String connectorName) {
         var enc = Base64.getUrlEncoder();
         String connectorID = enc.encodeToString(connectCluster.getBytes()) +
-                '.' +
+                ',' +
                 enc.encodeToString(connectorName.getBytes());
 
         whenRequesting(req -> req.get(connectorID))
@@ -258,7 +258,7 @@ class KafkaConnectorsResourceIT implements ClientRequestFilter {
     void testDescribeConnectorWithAllIncluded(String connectCluster, String connectorName, int taskCount) {
         var enc = Base64.getUrlEncoder();
         String connectorID = enc.encodeToString(connectCluster.getBytes()) +
-                '.' +
+                ',' +
                 enc.encodeToString(connectorName.getBytes());
 
         whenRequesting(req -> req

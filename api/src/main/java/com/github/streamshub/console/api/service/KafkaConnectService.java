@@ -11,6 +11,7 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -383,7 +384,7 @@ public class KafkaConnectService {
         StringBuilder encoded = new StringBuilder(base);
         for (String v : values) {
             if (!encoded.isEmpty()) {
-                encoded.append('.');
+                encoded.append(',');
             }
             encoded.append(Base64.getUrlEncoder().encodeToString(v.getBytes(StandardCharsets.UTF_8)));
         }
@@ -392,7 +393,7 @@ public class KafkaConnectService {
 
     static String[] decode(String value) {
         List<String> decoded = new ArrayList<>();
-        for (String v : value.split("\\.")) {
+        for (String v : value.split(Pattern.quote(","))) {
             decoded.add(new String(Base64.getUrlDecoder().decode(v), StandardCharsets.UTF_8));
         }
         return decoded.toArray(String[]::new);
