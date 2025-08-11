@@ -173,6 +173,13 @@ public class Connector extends KubeApiResource<Connector.Attributes, Connector.R
     @JsonFilter(FIELDS_PARAM)
     static class Attributes extends KubeAttributes {
         @JsonProperty
+        @Schema(enumeration = {
+                "sink",
+                "source",
+                "source:mm",
+                "source:mm-checkpoint",
+                "source:mm-heartbeat"
+        })
         String type;
 
         @JsonProperty
@@ -239,6 +246,10 @@ public class Connector extends KubeApiResource<Connector.Attributes, Connector.R
 
     public void metrics(Metrics metrics) {
         attributes.metrics = metrics;
+    }
+
+    public String type() {
+        return attributes.type;
     }
 
     public void type(String type) {

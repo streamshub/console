@@ -5,7 +5,6 @@ import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.github.streamshub.console.api.support.KafkaConnectAPI;
 
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
 public record ConnectorPlugin(
@@ -16,8 +15,8 @@ public record ConnectorPlugin(
         List<ConfigInfo> config
 ) {
 
-    public ConnectorPlugin(KafkaConnectAPI.PluginInfo info) {
-        this(info.className(), info.type(), info.version(), new ArrayList<>());
+    public ConnectorPlugin(String className, String type, String version) {
+        this(className, type, version, new ArrayList<>());
     }
 
     static record ConfigInfo(
