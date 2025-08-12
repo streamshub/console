@@ -243,7 +243,7 @@ export function ConfigTable({
         </PageSection>
       )}
       <TableView
-        ariaLabel={"Node configuration"}
+        ariaLabel={"Topic configuration"}
         toolbarBreakpoint={"md"}
         columns={columns}
         data={filteredData}

@@ -12,7 +12,6 @@ export const test = base.extend<MyFixtures>({
   authenticatedPage: async ({ page }, use) => {
     // Set up the fixture.
     const todoPage = new AuthenticatedPage(page);
-    await todoPage.goToClusterOverview();
     await use(todoPage);
   },
 });
