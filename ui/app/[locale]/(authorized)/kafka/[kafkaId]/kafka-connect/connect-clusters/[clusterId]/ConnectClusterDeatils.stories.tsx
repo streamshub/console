@@ -8,12 +8,14 @@ const meta: Meta<typeof ConnectClusterDetails> = {
     workers: 3,
     data: [
       {
+        id: "11234",
         name: "my-connector-cluster",
         type: "sink",
         state: "RUNNING",
         replicas: 2,
       },
       {
+        id: "324dxsgs",
         name: "another-connector",
         type: "source",
         state: "PAUSED",

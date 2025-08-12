@@ -25,6 +25,7 @@ import {
 import { useTranslations } from "next-intl";
 import { ReactNode, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 
 const StateLabel: Record<ConnectorState, { label: ReactNode }> = {
   UNASSIGNED: {
@@ -99,16 +100,19 @@ export function ConnectClusterDetails({
   workers,
   data,
   plugins,
+  kafkaId,
 }: {
   connectVersion: string;
   workers: number;
   data: {
+    id: string;
     name: string;
     type: "source" | "sink";
     state: ConnectorState;
     replicas: number | null;
   }[];
   plugins: plugins[];
+  kafkaId: string;
 }) {
   const t = useTranslations("KafkaConnect");
 
@@ -166,7 +170,15 @@ export function ConnectClusterDetails({
               renderCell={({ column, key, row, Td }) => {
                 switch (column) {
                   case "name":
-                    return <Td key={key}>{row.name}</Td>;
+                    return (
+                      <Td key={key}>
+                        <Link
+                          href={`/kafka/${kafkaId}/kafka-connect/${encodeURIComponent(row.id)}`}
+                        >
+                          {row.name}
+                        </Link>
+                      </Td>
+                    );
                   case "type":
                     return <Td key={key}>{row.type}</Td>;
                   case "state":

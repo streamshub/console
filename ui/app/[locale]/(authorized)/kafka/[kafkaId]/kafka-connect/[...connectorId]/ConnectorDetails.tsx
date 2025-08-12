@@ -104,7 +104,7 @@ export function ConnectorDetails({
   maxTasks,
 }: {
   className: string;
-  workerId: number;
+  workerId: string;
   state: ConnectorState;
   type: string;
   topics: string[];
@@ -190,7 +190,11 @@ export function ConnectorDetails({
                   case "taskId":
                     return <Td key={key}>{row.attributes.taskId}</Td>;
                   case "state":
-                    return <Td key={key}>{row.attributes.state}</Td>;
+                    return (
+                      <Td key={key}>
+                        {StateLabel[row.attributes.state].label}
+                      </Td>
+                    );
                   case "workerId":
                     return <Td key={key}>{row.attributes.workerId}</Td>;
                 }

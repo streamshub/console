@@ -18,7 +18,15 @@ export const ConnectorsDataSchema = z.object({
   trace: z.string().nullable().optional(),
   workerId: z.string().optional(),
   topics: z.array(z.string()).optional(),
-  config: z.record(z.string(), z.string()).optional(),
+  config: z
+    .object({
+      "connector.class": z.string().optional(),
+      file: z.string().optional(),
+      "tasks.max": z.string().optional(),
+      name: z.string().optional(),
+      topic: z.string().optional(),
+    })
+    .optional(),
 });
 
 const PluginSchema = z.object({
@@ -200,10 +208,9 @@ const connectorTaskSchema = z.object({
   attributes: z.object({
     taskId: z.number(),
     config: z.record(z.string(), z.string()),
-    state: z.string(),
+    state: ConnectorStateSchema,
     workerId: z.string(),
   }),
-  relationships: {},
 });
 
 export const connectorDetailSchema = z.object({

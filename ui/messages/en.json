@@ -694,7 +694,8 @@
     "consumer_groups": "Consumer groups",
     "view_all_kafka_clusters": "View all Kafka clusters",
     "Kafka_connect": "Kafka connect",
-    "connect_cluster": "Connect cluster"
+    "connect_clusters": "Connect clusters",
+    "connectors": "Connectors"
   },
   "KafkaConnect": {
     "connectors_title": "Connectors",
