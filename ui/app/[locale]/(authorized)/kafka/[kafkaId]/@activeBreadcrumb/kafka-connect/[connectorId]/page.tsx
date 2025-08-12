@@ -5,28 +5,20 @@ import {
 } from "@/libs/patternfly/react-core";
 import { HomeIcon } from "@/libs/patternfly/react-icons";
 import { useTranslations } from "next-intl";
-
-import { KafkaConnectParams } from "../../../../kafka-connect/kafkaConnect.params";
+import { KafkaParams } from "../../../kafka.params";
 
 export default function KafkaConnectClustersActiveBreadcrumbPage({
-  params: { kafkaId, clusterId },
+  params: { kafkaId },
 }: {
-  params: KafkaConnectParams;
+  params: KafkaParams;
 }) {
-  return (
-    <KafkaConnectClustersActiveBreadcrumb
-      kafkaId={kafkaId}
-      clusterId={clusterId}
-    />
-  );
+  return <KafkaConnectClustersActiveBreadcrumb kafkaId={kafkaId} />;
 }
 
 function KafkaConnectClustersActiveBreadcrumb({
   kafkaId,
-  clusterId,
 }: {
   kafkaId: string;
-  clusterId: string;
 }) {
   const t = useTranslations();
 
@@ -44,15 +36,8 @@ function KafkaConnectClustersActiveBreadcrumb({
       >
         {t("breadcrumbs.overview")}
       </BreadcrumbItem>
-      <BreadcrumbItem
-        key="kafka-connect"
-        to={`/kafka/${kafkaId}/kafka-connect`}
-        showDivider
-      >
+      <BreadcrumbItem showDivider={true}>
         {t("breadcrumbs.Kafka_connect")}
-      </BreadcrumbItem>
-      <BreadcrumbItem key="connect-cluster" showDivider>
-        {t("breadcrumbs.connect_clusters")}
       </BreadcrumbItem>
     </Breadcrumb>
   );

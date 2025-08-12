@@ -1,16 +1,62 @@
-import { KafkaParams } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/kafka.params";
 import { AppHeader } from "@/components/AppHeader";
-import { PageSection } from "@/libs/patternfly/react-core";
-import { KafkaConnectTabs } from "../../KafkaConnectTabs";
+import { useTranslations } from "next-intl";
+import { NoDataErrorState } from "@/components/NoDataErrorState";
+import { getConnectCluster } from "@/api/kafkaConnect/action";
+import { Suspense } from "react";
+import { KafkaConnectParams } from "../../../../kafka-connect/kafkaConnect.params";
+import { ConnectClusterBreadcrumb } from "./ConnectClusterBreadcrumb";
 
-export default function ConnectorsHeader({ params }: { params: KafkaParams }) {
+export default function Page({
+  params: { kafkaId, clusterId },
+}: {
+  params: KafkaConnectParams;
+}) {
+  return (
+    <Suspense fallback={<Header params={{ kafkaId, clusterId }} />}>
+      <ConnectClusterAppHeader params={{ kafkaId, clusterId }} />
+    </Suspense>
+  );
+}
+
+async function ConnectClusterAppHeader({
+  params: { kafkaId, clusterId },
+}: {
+  params: KafkaConnectParams;
+}) {
+  const response = await getConnectCluster(clusterId);
+
+  if (response.errors) {
+    return <NoDataErrorState errors={response.errors} />;
+  }
+
+  const connectCluster = response.payload!;
+  const connectClusterName = connectCluster.data.attributes.name;
+
+  return (
+    <Header
+      params={{ kafkaId, clusterId }}
+      connectClusterName={connectClusterName}
+    />
+  );
+}
+
+function Header({
+  params: { kafkaId, clusterId },
+  connectClusterName = "",
+}: {
+  params: KafkaConnectParams;
+  connectClusterName?: string;
+}) {
+  const t = useTranslations();
+
   return (
     <AppHeader
-      title={"Kafka Connect"}
-      navigation={
-        <PageSection className={"pf-v6-u-px-sm"} type="subnav">
-          <KafkaConnectTabs kafkaId={params.kafkaId} />
-        </PageSection>
+      title={t("KafkaConnect.connect_clusters_title")}
+      subTitle={
+        <ConnectClusterBreadcrumb
+          kafkaId={kafkaId}
+          connectClusterName={connectClusterName}
+        />
       }
     />
   );

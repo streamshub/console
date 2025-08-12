@@ -11,11 +11,11 @@ export async function generateMetadata(props: {
   const t = await getTranslations();
 
   return {
-    title: `${t("KafkaConnect.connectors_title")} ${props.params.connectorId} | ${t("common.title")}`,
+    title: `${t("KafkaConnect.connect_clusters_title")} ${props.params.connectorId} | ${t("common.title")}`,
   };
 }
 
-export default function ConnectorDetailsPage({
+export default function ConnectClusterPage({
   params,
 }: {
   params: { kafkaId: string; connectorId: string };
@@ -26,7 +26,7 @@ export default function ConnectorDetailsPage({
         fallback={
           <ConnectorDetails
             className={""}
-            workerId={0}
+            workerId={""}
             state={"UNASSIGNED"}
             type={""}
             topics={[]}
@@ -35,13 +35,13 @@ export default function ConnectorDetailsPage({
           />
         }
       >
-        <ConnectedConnectorDetails connectorId={params.connectorId} />
+        <ConnectConnectorDetails connectorId={params.connectorId} />
       </Suspense>
     </PageSection>
   );
 }
 
-async function ConnectedConnectorDetails({
+async function ConnectConnectorDetails({
   connectorId,
 }: {
   connectorId: string;
@@ -54,17 +54,23 @@ async function ConnectedConnectorDetails({
 
   const connectCluster = response.payload!;
 
-  console.log("connector", connectCluster);
+  const data = connectCluster.data;
+  const included = connectCluster.included || [];
+  const connectorTasks = included.filter(
+    (item) => item.type === "connectorTasks",
+  );
+  const workerId =
+    connectorTasks.length > 0 ? connectorTasks[0].attributes.workerId : "";
 
   return (
     <ConnectorDetails
-      className={""}
-      workerId={0}
-      state={"UNASSIGNED"}
-      type={""}
-      topics={[]}
-      maxTasks={0}
-      connectorTask={[]}
+      className={data.attributes.config?.["connector.class"] || ""}
+      workerId={workerId}
+      state={data.attributes.state}
+      type={data.attributes.type || ""}
+      topics={data.attributes.topics || []}
+      maxTasks={Number(data.attributes.config?.["tasks.max"] ?? 0)}
+      connectorTask={connectorTasks}
     />
   );
 }

@@ -106,6 +106,7 @@ export async function getConnectorCluster(
         "name,state,type,connectCluster,topics,config,tasks",
     }),
   );
+
   return fetchData(`/api/connectors/${connectorId}`, sp, (rawData) =>
     connectorDetailSchema.parse(rawData),
   );

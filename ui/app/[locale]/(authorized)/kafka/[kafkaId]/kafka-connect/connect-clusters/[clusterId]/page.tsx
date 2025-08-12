@@ -19,13 +19,14 @@ export async function generateMetadata(props: {
 export default function ConnectClusterPage({
   params,
 }: {
-  params: { clusterId: string };
+  params: { kafkaId: string; clusterId: string };
 }) {
   return (
     <PageSection>
       <Suspense
         fallback={
           <ConnectClusterDetails
+            kafkaId=""
             connectVersion={""}
             workers={0}
             data={[]}
@@ -33,7 +34,10 @@ export default function ConnectClusterPage({
           />
         }
       >
-        <ConnectedConnectClusterDetails clusterId={params.clusterId} />
+        <ConnectedConnectClusterDetails
+          clusterId={params.clusterId}
+          kafkaId={params.kafkaId}
+        />
       </Suspense>
     </PageSection>
   );
@@ -41,8 +45,10 @@ export default function ConnectClusterPage({
 
 async function ConnectedConnectClusterDetails({
   clusterId,
+  kafkaId,
 }: {
   clusterId: string;
+  kafkaId: string;
 }) {
   const response = await getConnectCluster(clusterId);
 
@@ -58,6 +64,7 @@ async function ConnectedConnectClusterDetails({
   const plugins = connectCluster.data.attributes.plugins || [];
 
   const connectorData = (connectCluster.included ?? []).map((connector) => ({
+    id: connector.id,
     name: connector.attributes.name,
     type: connector.attributes.type as "source" | "sink",
     state: connector.attributes.state as ConnectorState,
@@ -66,6 +73,7 @@ async function ConnectedConnectClusterDetails({
 
   return (
     <ConnectClusterDetails
+      kafkaId={kafkaId}
       connectVersion={version ?? ""}
       workers={workers}
       data={connectorData}

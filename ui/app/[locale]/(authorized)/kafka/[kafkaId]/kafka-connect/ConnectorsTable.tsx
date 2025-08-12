@@ -153,7 +153,7 @@ export function ConnectorsTable({
             return (
               <Td key={key} dataLabel={t("connectors.name")}>
                 <Link
-                  href={`/kafka/${kafkaId}/kafka-connect/connectors/${encodeURIComponent(row.id)}`}
+                  href={`/kafka/${kafkaId}/kafka-connect/${encodeURIComponent(row.id)}`}
                 >
                   {row.attributes.name}
                 </Link>
