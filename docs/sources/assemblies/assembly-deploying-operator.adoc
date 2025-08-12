@@ -8,10 +8,14 @@
 [role="_abstract"]
 Install the console operator using one of the following methods:
 
-* By applying a `Console` Custom Resource Definition (CRD)
-* Once the StreamsHub operator is submitted to the OperatorHub (see https://github.com/streamshub/console/issues/1526[Issue 1526] for details), you can install the operator:
-** By using the Operator Lifecycle Manager (OLM) command line interface (CLI)
-** From the OperatorHub in the OpenShift web console (Openshift Clusters only)
+* Using the Operator Lifecycle Manager (OLM) command line interface (CLI)
+* From the OperatorHub in the OpenShift web console (Openshift clusters only)
+* By applying the `Console` RBAC, deployment, and Custom Resource Definition (CRD) resources
+
+ifdef::Section[]
+NOTE: OLM and OperatorHub install options will become available after the operator is submitted to and approved for the OperatorHub.
+See https://github.com/streamshub/console/issues/1526[Issue 1526] for tracking progress.
+endif::Section[]
 
 The recommended approach is to install the operator via the Kubernetes CLI (`kubectl`) using the Operator Lifecycle Manager (OLM) resources.
 If using the OLM is not suitable for your environment, you can install the operator by applying the CRD directly.
