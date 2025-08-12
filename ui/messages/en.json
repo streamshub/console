@@ -710,7 +710,10 @@
       "max_tasks": "Max Tasks",
       "class": "Class",
       "taskId": "Task ID",
-      "workerId": "Worker ID"
+      "workerId": "Worker ID",
+      "configuration": "Configuration",
+      "connector_class": "Connector class",
+      "configuration_file_name": "Configuration file name"
     },
     "connect_clusters_title": "Connect clusters",
     "connect_clusters": {

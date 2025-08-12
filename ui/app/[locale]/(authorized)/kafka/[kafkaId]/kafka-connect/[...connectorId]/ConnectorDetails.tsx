@@ -1,6 +1,10 @@
 "use client";
 
-import { ConnectorState, ConnectorTask } from "@/api/kafkaConnect/schema";
+import {
+  ConnectorConfig,
+  ConnectorState,
+  ConnectorTask,
+} from "@/api/kafkaConnect/schema";
 import { ResponsiveTable } from "@/components/Table";
 import {
   CheckCircleIcon,
@@ -19,6 +23,7 @@ import {
   FlexItem,
   Icon,
   Tab,
+  TabContentBody,
   Tabs,
   TabTitleText,
 } from "@patternfly/react-core";
@@ -102,6 +107,7 @@ export function ConnectorDetails({
   type,
   topics,
   maxTasks,
+  config,
 }: {
   className: string;
   workerId: string;
@@ -110,6 +116,7 @@ export function ConnectorDetails({
   topics: string[];
   maxTasks: number;
   connectorTask: ConnectorTask[];
+  config: ConnectorConfig;
 }) {
   const t = useTranslations("KafkaConnect");
 
@@ -170,36 +177,80 @@ export function ConnectorDetails({
             title={<TabTitleText>{t("connectors.tasks")}</TabTitleText>}
             aria-label={t("connectors.tasks")}
           >
-            <ResponsiveTable
-              ariaLabel={t("connectors.tasks")}
-              variant={TableVariant.compact}
-              columns={["taskId", "state", "workerId"] as const}
-              data={connectorTask}
-              renderHeader={({ column, key, Th }) => {
-                switch (column) {
-                  case "taskId":
-                    return <Th key={key}>{t("connectors.taskId")}</Th>;
-                  case "state":
-                    return <Th key={key}>{t("connectors.state")}</Th>;
-                  case "workerId":
-                    return <Th key={key}>{t("connectors.workerId")}</Th>;
-                }
-              }}
-              renderCell={({ column, key, row, Td }) => {
-                switch (column) {
-                  case "taskId":
-                    return <Td key={key}>{row.attributes.taskId}</Td>;
-                  case "state":
-                    return (
-                      <Td key={key}>
-                        {StateLabel[row.attributes.state].label}
-                      </Td>
-                    );
-                  case "workerId":
-                    return <Td key={key}>{row.attributes.workerId}</Td>;
-                }
-              }}
-            />
+            <TabContentBody hasPadding>
+              <ResponsiveTable
+                ariaLabel={t("connectors.tasks")}
+                variant={TableVariant.compact}
+                columns={["taskId", "state", "workerId"] as const}
+                data={connectorTask}
+                renderHeader={({ column, key, Th }) => {
+                  switch (column) {
+                    case "taskId":
+                      return <Th key={key}>{t("connectors.taskId")}</Th>;
+                    case "state":
+                      return <Th key={key}>{t("connectors.state")}</Th>;
+                    case "workerId":
+                      return <Th key={key}>{t("connectors.workerId")}</Th>;
+                  }
+                }}
+                renderCell={({ column, key, row, Td }) => {
+                  switch (column) {
+                    case "taskId":
+                      return <Td key={key}>{row.attributes.taskId}</Td>;
+                    case "state":
+                      return (
+                        <Td key={key}>
+                          {StateLabel[row.attributes.state].label}
+                        </Td>
+                      );
+                    case "workerId":
+                      return <Td key={key}>{row.attributes.workerId}</Td>;
+                  }
+                }}
+              />
+            </TabContentBody>
+          </Tab>
+          <Tab
+            eventKey={1}
+            title={<TabTitleText>{t("connectors.configuration")}</TabTitleText>}
+            aria-label={t("connectors.configuration")}
+          >
+            <TabContentBody hasPadding>
+              <DescriptionList isHorizontal>
+                <DescriptionListGroup>
+                  <DescriptionListTerm>
+                    {t("connectors.connector_class")}
+                  </DescriptionListTerm>
+                  <DescriptionListDescription>
+                    {config["connector.class"]}
+                  </DescriptionListDescription>
+                </DescriptionListGroup>
+                <DescriptionListGroup>
+                  <DescriptionListTerm>
+                    {t("connectors.max_tasks")}
+                  </DescriptionListTerm>
+                  <DescriptionListDescription>
+                    {config["tasks.max"]}
+                  </DescriptionListDescription>
+                </DescriptionListGroup>
+                <DescriptionListGroup>
+                  <DescriptionListTerm>
+                    {t("connectors.configuration_file_name")}
+                  </DescriptionListTerm>
+                  <DescriptionListDescription>
+                    {config.name}
+                  </DescriptionListDescription>
+                </DescriptionListGroup>
+                <DescriptionListGroup>
+                  <DescriptionListTerm>
+                    {"connectors.topics"}
+                  </DescriptionListTerm>
+                  <DescriptionListDescription>
+                    {config.topic}
+                  </DescriptionListDescription>
+                </DescriptionListGroup>
+              </DescriptionList>
+            </TabContentBody>
           </Tab>
         </Tabs>
       </FlexItem>

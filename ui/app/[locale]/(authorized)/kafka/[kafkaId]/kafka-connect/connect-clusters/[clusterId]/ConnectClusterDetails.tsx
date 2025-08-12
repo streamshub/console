@@ -19,6 +19,7 @@ import {
   FlexItem,
   Icon,
   Tab,
+  TabContentBody,
   Tabs,
   TabTitleText,
 } from "@patternfly/react-core";
@@ -154,67 +155,71 @@ export function ConnectClusterDetails({
         >
           <Tab
             eventKey={0}
-            title={<TabTitleText>Connectors</TabTitleText>}
+            title={<TabTitleText>{t("connectors_title")}</TabTitleText>}
             aria-label="Connectors Tab"
           >
-            <ResponsiveTable
-              ariaLabel="Kafka connectors"
-              variant={TableVariant.compact}
-              columns={["name", "type", "state", "replicas"] as const}
-              data={data}
-              renderHeader={({ column, key, Th }) => (
-                <Th key={key}>
-                  {column.charAt(0).toUpperCase() + column.slice(1)}
-                </Th>
-              )}
-              renderCell={({ column, key, row, Td }) => {
-                switch (column) {
-                  case "name":
-                    return (
-                      <Td key={key}>
-                        <Link
-                          href={`/kafka/${kafkaId}/kafka-connect/${encodeURIComponent(row.id)}`}
-                        >
-                          {row.name}
-                        </Link>
-                      </Td>
-                    );
-                  case "type":
-                    return <Td key={key}>{row.type}</Td>;
-                  case "state":
-                    return <Td key={key}>{StateLabel[row.state].label}</Td>;
-                  case "replicas":
-                    return <Td key={key}>{row.replicas ?? "N/A"}</Td>;
-                }
-              }}
-            />
+            <TabContentBody>
+              <ResponsiveTable
+                ariaLabel="Kafka connectors"
+                variant={TableVariant.compact}
+                columns={["name", "type", "state", "replicas"] as const}
+                data={data}
+                renderHeader={({ column, key, Th }) => (
+                  <Th key={key}>
+                    {column.charAt(0).toUpperCase() + column.slice(1)}
+                  </Th>
+                )}
+                renderCell={({ column, key, row, Td }) => {
+                  switch (column) {
+                    case "name":
+                      return (
+                        <Td key={key}>
+                          <Link
+                            href={`/kafka/${kafkaId}/kafka-connect/${encodeURIComponent(row.id)}`}
+                          >
+                            {row.name}
+                          </Link>
+                        </Td>
+                      );
+                    case "type":
+                      return <Td key={key}>{row.type}</Td>;
+                    case "state":
+                      return <Td key={key}>{StateLabel[row.state].label}</Td>;
+                    case "replicas":
+                      return <Td key={key}>{row.replicas ?? "N/A"}</Td>;
+                  }
+                }}
+              />
+            </TabContentBody>
           </Tab>
           <Tab
             eventKey={1}
-            title={<TabTitleText>Plugins</TabTitleText>}
+            title={<TabTitleText>{t("connect_clusters.plugins")}</TabTitleText>}
             aria-label="Plugins"
           >
-            <ResponsiveTable
-              ariaLabel="Plugins"
-              variant={TableVariant.compact}
-              columns={["class", "type", "version"] as const}
-              data={plugins}
-              renderHeader={({ column, key, Th }) => (
-                <Th key={key}>
-                  {column.charAt(0).toUpperCase() + column.slice(1)}
-                </Th>
-              )}
-              renderCell={({ column, key, row, Td }) => {
-                switch (column) {
-                  case "class":
-                    return <Td key={key}>{row.class}</Td>;
-                  case "type":
-                    return <Td key={key}>{row.type}</Td>;
-                  case "version":
-                    return <Td key={key}>{row.version}</Td>;
-                }
-              }}
-            />
+            <TabContentBody hasPadding>
+              <ResponsiveTable
+                ariaLabel="Plugins"
+                variant={TableVariant.compact}
+                columns={["class", "type", "version"] as const}
+                data={plugins}
+                renderHeader={({ column, key, Th }) => (
+                  <Th key={key}>
+                    {column.charAt(0).toUpperCase() + column.slice(1)}
+                  </Th>
+                )}
+                renderCell={({ column, key, row, Td }) => {
+                  switch (column) {
+                    case "class":
+                      return <Td key={key}>{row.class}</Td>;
+                    case "type":
+                      return <Td key={key}>{row.type}</Td>;
+                    case "version":
+                      return <Td key={key}>{row.version}</Td>;
+                  }
+                }}
+              />
+            </TabContentBody>
           </Tab>
         </Tabs>
       </FlexItem>
