@@ -32,6 +32,7 @@ export default function ConnectClusterPage({
             topics={[]}
             maxTasks={0}
             connectorTask={[]}
+            config={{}}
           />
         }
       >
@@ -71,6 +72,7 @@ async function ConnectConnectorDetails({
       topics={data.attributes.topics || []}
       maxTasks={Number(data.attributes.config?.["tasks.max"] ?? 0)}
       connectorTask={connectorTasks}
+      config={data.attributes.config || {}}
     />
   );
 }
