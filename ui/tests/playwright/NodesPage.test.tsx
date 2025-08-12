@@ -4,16 +4,14 @@ test.beforeEach(async ({ authenticatedPage }) => {
   await authenticatedPage.goToClusterOverview();
 });
 
-test("Nodes page", async ({ page }) => {
+test("Nodes page", async ({ page, authenticatedPage }) => {
   await test.step("Navigate to nodes page", async () => {
-    await page.click('text="Kafka nodes"');
-    await page.waitForSelector('text="Rack"', { timeout: 500000 });
+    await authenticatedPage.clickLink('Kafka nodes', "sidebar");
+    await expect(page.getByRole('columnheader', { name: 'Rack' })).toBeVisible();
   });
   await test.step("Nodes page should display table", async () => {
-    expect(await page.innerText("body")).toContain("Nodes");
-    expect(await page.innerText("body")).toContain(
-      "Partitions distribution (% of total)",
-    );
+    await expect(page.locator('h1').getByText('Nodes')).toBeVisible();
+    await expect(page.getByText('Partitions distribution (% of total)')).toBeVisible();
 
     const headerRows = await page
       .locator('table[aria-label="Kafka nodes"] thead tr')
@@ -34,7 +32,7 @@ test("Nodes page", async ({ page }) => {
     expect(dataRows).toBeGreaterThan(0);
     const dataCells = await page
       .locator('table[aria-label="Kafka nodes"] tbody tr td')
-      .evaluateAll((tds) => tds.map((td) => td.Content?.trim() ?? ""));
+      .evaluateAll((tds) => tds.map((td) => td.innerHTML?.trim() ?? ""));
 
     expect(dataCells.length).toBeGreaterThan(0);
   });

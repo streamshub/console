@@ -8,7 +8,7 @@ export default defineConfig({
   retries: process.env.CI_CLUSTER ? 5 : 0,
 
   // Opt out of parallel tests on CI.
-  workers: process.env.CI_CLUSTER ? 1 : undefined,
+  workers: process.env.CI_CLUSTER ? 2 : undefined,
 
   projects: [
     { name: "setup", testMatch: /.*\.setup\.ts/ },

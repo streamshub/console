@@ -7,16 +7,21 @@ test.beforeEach(async ({ authenticatedPage }) => {
 test("Topics configuration", async ({ page, authenticatedPage }) => {
   await test.step("Navigate to topics configuration page", async () => {
     await authenticatedPage.clickTab("Configuration");
+    await expect(page.getByRole('columnheader', { name: 'Property' })).toBeVisible();
   });
   await test.step("Topics configuration page should display table", async () => {
-    await authenticatedPage.waitForTableLoaded();
-    const dataRows = await page
-      .locator('table[aria-label="Node configuration"] tbody tr')
-      .elementHandles();
-    expect(dataRows.length).toBeGreaterThan(0);
+    await page.waitForFunction(() => {
+      return (
+        document.querySelectorAll(
+          'table[aria-label="Topic configuration"] tbody tr',
+        ).length > 0
+      );
+    });
+
     const dataCells = await page
-      .locator('table[aria-label="Node configuration"] tbody tr td')
-      .evaluateAll((tds) => tds.map((td) => td.Content?.trim() ?? ""));
+      .locator('table[aria-label="Topic configuration"] tbody tr td')
+      .evaluateAll((tds) => tds.map((td) => td.innerHTML?.trim() ?? ""));
+
     expect(dataCells.length).toBeGreaterThan(0);
   });
 });

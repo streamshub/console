@@ -4,11 +4,17 @@ export class AuthenticatedPage {
   private readonly baseUrl: string;
 
   constructor(public readonly page: Page) {
-    this.baseUrl = process.env.TEST_BASE_URL;
+    this.baseUrl = process.env.TEST_BASE_URL!;
   }
 
   async goToClusterOverview() {
-    await this.page.goto(this.baseUrl);
+    await this.page.goto(this.baseUrl, {
+        waitUntil: 'domcontentloaded'
+    });
+  }
+
+  async clickNav(name: string) {
+      this.page.locator("#page-sidebar").getByRole('link', { name: name }).click();
   }
 
   async clickLink(text: string, where: "main" | "sidebar" = "main") {
@@ -16,9 +22,7 @@ export class AuthenticatedPage {
       .locator(where === "main" ? "main" : "#page-sidebar")
       .locator("a")
       .locator(`text="${text}"`);
-    await link.click();
-    const url = await link.getAttribute("href");
-    await this.awaitLink(url);
+    link.click();
   }
 
   async clickTab(text: string, where: "main" | "sidebar" = "main") {
@@ -33,20 +37,10 @@ export class AuthenticatedPage {
     });
   }
 
-  async awaitLink(url: string) {
-    // the first ** is to handle relative links
-    // the last ** is to handle redirects, sometimes we link to a page that redirects to another page
-    const waitUrl = `${url.startsWith(this.baseUrl) ? "" : "**"}${url.startsWith("/") ? "" : "/"}${url}`;
-    try {
-      await this.page.waitForURL(waitUrl, { waitUntil: "networkidle" });
-    } catch {
-      await this.page.waitForURL(waitUrl + "/**", { waitUntil: "networkidle" });
-    }
-  }
-
   async goToTopics(waitForLoaded = true) {
     await this.goToClusterOverview();
-    await this.clickLink("Topics", "sidebar");
+    await this.clickNav("Topics");
+    await expect(this.page.locator('h1').getByText('Topics')).toBeVisible();
     if (waitForLoaded) {
       await this.waitForTableLoaded();
     }
@@ -56,22 +50,23 @@ export class AuthenticatedPage {
     await this.goToTopics(waitForLoaded);
     await this.clickFirstLinkInTheTable("Topics");
     if (waitForLoaded) {
+      // wait for 'Topics' link to be in the breadcrumbs
+      await expect(this.page.getByLabel('Breadcrumb').getByRole('link', { name: 'Topics' })).toBeVisible();
       await this.waitForTableLoaded();
     }
   }
 
   async goToConsumerGroups(waitForLoaded = true) {
     await this.goToClusterOverview();
-    await this.clickLink("Consumer groups", "sidebar");
+    await this.clickNav("Consumer groups");
+    await expect(this.page.locator('h1').getByText('Consumer groups')).toBeVisible();
     if (waitForLoaded) {
       await this.waitForTableLoaded();
     }
   }
 
   async waitForTableLoaded() {
-    await this.page.waitForSelector('text="Loading data"', {
-      state: "hidden",
-    });
+    await expect(this.page.locator('div').filter({ hasText: /^Loading data$/ }).first()).toBeHidden();
   }
 
   async clickFirstLinkInTheTable(tableLabel: string) {
@@ -82,8 +77,6 @@ export class AuthenticatedPage {
       .first()
       .locator("td a")
       .first();
-    await link.click();
-    const url = await link.getAttribute("href");
-    await this.awaitLink(url);
+    link.click();
   }
 }
