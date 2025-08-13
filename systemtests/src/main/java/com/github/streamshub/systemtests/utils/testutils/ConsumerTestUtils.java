@@ -26,6 +26,9 @@ public class ConsumerTestUtils {
 
     private ConsumerTestUtils() {}
 
+
+
+
     /**
      * Prepares a scenario for testing consumer group offsets by:
      * <ul>
@@ -45,7 +48,7 @@ public class ConsumerTestUtils {
      * @param replicas          the number of replicas per topic
      * @param minIsr            the minimum in-sync replicas required for topic durability
      */
-    public static void prepareConsumerOffsetScenario(TestCaseConfig tcc, String topicPrefix, String consumerGroupName, int topicCount, int partitions, int replicas, int minIsr) {
+    public static List<String> prepareConsumerGroupOffsetScenarioAndReturnTopicNames(TestCaseConfig tcc, String topicPrefix, String consumerGroupName, int topicCount, int partitions, int replicas, int minIsr) {
         LOGGER.info("Prepare consumer offset scenario by creating topic(s) and then producing and consuming messages");
 
         List<String> kafkaTopicNames = KafkaTopicUtils.setupTopicsAndReturn(tcc.namespace(), tcc.kafkaName(), topicPrefix, topicCount, true, partitions, replicas, minIsr)
@@ -72,6 +75,7 @@ public class ConsumerTestUtils {
         }
 
         LOGGER.info("Reset consumer offset scenario ready");
+        return kafkaTopicNames;
     }
 
     /**
@@ -184,7 +188,7 @@ public class ConsumerTestUtils {
      * @param value         the value associated with the offset reset (e.g., a specific offset or timestamp)
      */
     public static void execDryRunAndReset(TestCaseConfig tcc, ResetOffsetType offsetType, ResetOffsetDateTimeType dateTimeType, String value) {
-        LOGGER.debug("DryRun reset consumer group with offset {}", offsetType);
+        LOGGER.info("DryRun reset offset - OffsetType {} DateTime {} reset value {}", offsetType, dateTimeType, value);
         selectResetOffsetParameters(tcc, offsetType, dateTimeType, value);
 
         PwUtils.waitForLocatorAndClick(tcc, ConsumerGroupsPageSelectors.CGPS_RESET_PAGE_OFFSET_DRY_RUN_BUTTON);
@@ -192,7 +196,7 @@ public class ConsumerTestUtils {
         PwUtils.waitForLocatorAndClick(tcc, ConsumerGroupsPageSelectors.CGPS_BACK_TO_EDIT_OFFSET_BUTTON);
 
         // Reselect offset since UI resets previously selected
-        LOGGER.debug("Execute reset consumer group offsets with offset {}", offsetType);
+        LOGGER.info("Reset offset - OffsetType {} DateTime {} reset value {}", offsetType, dateTimeType, value);
         selectResetOffsetParameters(tcc, offsetType, dateTimeType, value);
         PwUtils.waitForLocatorAndClick(tcc, ConsumerGroupsPageSelectors.CGPS_RESET_PAGE_OFFSET_RESET_BUTTON);
     }

@@ -1,17 +1,17 @@
 package com.github.streamshub.systemtests.enums;
 
 public enum ResetOffsetDateTimeType {
-    UNIX_EPOCH("Unix Epoch Milliseconds"),
-    ISO_8601("ISO 8601 Date-Time Format");
+    UNIX_EPOCH("Unix_Epoch_Milliseconds"),
+    ISO_8601("ISO_8601_DateTime");
 
-    private final String type;
+    private final String description;
 
-    ResetOffsetDateTimeType(String type) {
-        this.type = type;
+    ResetOffsetDateTimeType(String description) {
+        this.description = description;
     }
 
     @Override
     public String toString() {
-        return type;
+        return description;
     }
 }

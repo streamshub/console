@@ -121,22 +121,37 @@ public class KafkaCmdUtils {
     public static String getConsumerGroupOffset(String namespaceName, String kafkaName, String podName, String consumerGroupName, String topicName, String clientsConfig) {
         String bootstrapServer = KafkaUtils.getPlainScramShaBootstrapAddress(kafkaName);
 
-        LOGGER.debug("Retrieve conumer group {} offset", consumerGroupName);
+        LOGGER.info("Retrieve consumer group {} offset", consumerGroupName);
 
         insertClientProperties(namespaceName, podName, clientsConfig);
 
         String getOffsetCommand = String.format("./bin/kafka-consumer-groups.sh --bootstrap-server=%s --command-config=%s --group=%s --describe 2>/dev/null \\\n" +
             "  | awk -v topic=%s '$2 == topic { print $4 }' \\\n" +
             "  | grep -E '^[0-9]+$'", bootstrapServer, CLIENTS_CONFIG_FILE_PATH, consumerGroupName, topicName);
-        LOGGER.debug("Run consumer groups command to get the offset");
+        LOGGER.debug("Run get consumergroup offset command");
         String output = KubeResourceManager.get().kubeCmdClient().inNamespace(namespaceName).execInPod(podName, Constants.BASH_CMD, "-c", getOffsetCommand).out().trim();
         LOGGER.debug("Get offset command resulted in => [{}]", output);
 
         return output;
     }
 
+    public static void setConsumerGroupOffset(String namespaceName, String kafkaName, String podName, String consumerGroupName, String topicName, String offset, String clientsConfig) {
+        String bootstrapServer = KafkaUtils.getPlainScramShaBootstrapAddress(kafkaName);
+
+        LOGGER.info("Set consumer group {} offset to {}", consumerGroupName, offset);
+
+        insertClientProperties(namespaceName, podName, clientsConfig);
+
+        String setOffsetCmd = String.format("./bin/kafka-consumer-groups.sh --bootstrap-server=%s --command-config=%s " +
+            "--group=%s --topic=%s --reset-offsets --to-offset=%s --execute", bootstrapServer, CLIENTS_CONFIG_FILE_PATH, consumerGroupName, topicName, offset);
+
+        LOGGER.debug("Run consumer groups command to set the offset");
+        String output = KubeResourceManager.get().kubeCmdClient().inNamespace(namespaceName).execInPod(podName, Constants.BASH_CMD, "-c", setOffsetCmd).out().trim();
+        LOGGER.debug("Set offset command resulted in => [{}]", output);
+    }
+
     public static void insertClientProperties(String namespaceName, String podName, String clientsConfig) {
-        LOGGER.debug("Insert client config");
+        LOGGER.info("Insert client config");
         String insertConfigCommand = String.format("echo '%s' > %s", clientsConfig, CLIENTS_CONFIG_FILE_PATH);
         String output = KubeResourceManager.get().kubeCmdClient().inNamespace(namespaceName).execInPod(podName, Constants.BASH_CMD, "-c", insertConfigCommand).out().trim();
         LOGGER.debug("Insert client config resulted in => [{}]", output);
