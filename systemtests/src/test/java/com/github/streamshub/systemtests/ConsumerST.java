@@ -65,7 +65,7 @@ public class ConsumerST extends AbstractST {
         return Stream.of(
             Arguments.of(messageCount, ResetOffsetType.EARLIEST, null, earliestOffsetIndex),
             // Only one that uses `--to-latest` which sets the index to nth+1 for consuming the next message
-            Arguments.of(messageCount, ResetOffsetType.LATEST, null, latestOffsetIndex),
+            Arguments.of(messageCount, ResetOffsetType.LATEST, null, messageCount),
             Arguments.of(messageCount, ResetOffsetType.DATE_TIME, ResetOffsetDateTimeType.UNIX_EPOCH, earliestOffsetIndex),
             Arguments.of(messageCount, ResetOffsetType.DATE_TIME, ResetOffsetDateTimeType.UNIX_EPOCH, latestOffsetIndex),
             Arguments.of(messageCount, ResetOffsetType.DATE_TIME, ResetOffsetDateTimeType.UNIX_EPOCH, middleOffsetIndex),
