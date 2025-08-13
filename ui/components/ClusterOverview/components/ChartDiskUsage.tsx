@@ -46,7 +46,11 @@ export function ChartDiskUsage({ usages, available }: ChartDiskUsageProps) {
     );
   }
   const CursorVoronoiContainer = createContainer("voronoi", "cursor");
-  const legendData: { name: string, childName: string, symbol?: { type: string } }[] = [];
+  const legendData: {
+    name: string;
+    childName: string;
+    symbol?: { type: string };
+  }[] = [];
 
   Object.entries(usages).forEach(([nodeId, _]) => {
     legendData.push({
@@ -63,7 +67,9 @@ export function ChartDiskUsage({ usages, available }: ChartDiskUsageProps) {
     });
   });
 
-  const padding = getPadding(legendData.length / itemsPerRow);
+  const basePadding = getPadding(legendData.length / itemsPerRow);
+  const padding = { ...basePadding, bottom: basePadding.bottom - 60 };
+
   return (
     <div ref={containerRef}>
       <Chart
@@ -99,7 +105,7 @@ export function ChartDiskUsage({ usages, available }: ChartDiskUsageProps) {
             itemsPerRow={itemsPerRow}
           />
         }
-        height={getHeight(legendData.length / itemsPerRow)}
+        height={getHeight(legendData.length / itemsPerRow) - 40}
         padding={padding}
         themeColor={ChartThemeColor.multiUnordered}
         width={width}
@@ -130,15 +136,15 @@ export function ChartDiskUsage({ usages, available }: ChartDiskUsageProps) {
           {Object.entries(usages).map(([nodeId, series]) => {
             return (
               <ChartArea
-                key={ `usage-area-${nodeId}` }
-                data={ Object.entries(series).map(([k, v]) => {
-                    return ({
-                      name: `Node ${nodeId}`,
-                      x: Date.parse(k),
-                      y: v,
-                    })
+                key={`usage-area-${nodeId}`}
+                data={Object.entries(series).map(([k, v]) => {
+                  return {
+                    name: `Node ${nodeId}`,
+                    x: Date.parse(k),
+                    y: v,
+                  };
                 })}
-                name={ `node ${nodeId}` }
+                name={`node ${nodeId}`}
               />
             );
           })}
@@ -148,8 +154,8 @@ export function ChartDiskUsage({ usages, available }: ChartDiskUsageProps) {
 
             return (
               <ChartThreshold
-                key={ `chart-softlimit-${nodeId}` }
-                data={ Object.entries(availableSeries).map(([k, v]) => ({
+                key={`chart-softlimit-${nodeId}`}
+                data={Object.entries(availableSeries).map(([k, v]) => ({
                   name: `Available storage threshold (node ${nodeId})`,
                   x: Date.parse(k),
                   y: v,
