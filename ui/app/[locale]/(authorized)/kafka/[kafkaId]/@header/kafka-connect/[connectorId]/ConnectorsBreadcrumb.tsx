@@ -15,11 +15,7 @@ export function ConnectorBreadcrumb({
 
   return (
     <Breadcrumb>
-      <BreadcrumbItem
-        key="connectors"
-        to={`/kafka/${kafkaId}/kafka-connect`}
-        showDivider
-      >
+      <BreadcrumbItem key="connectors" showDivider>
         {t("breadcrumbs.connectors")}
       </BreadcrumbItem>
       <BreadcrumbItem key={"cgm"} showDivider={true} isActive={true}>

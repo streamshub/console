@@ -131,7 +131,7 @@ export function ConnectorsTable({
       emptyStateNoResults={
         <EmptyStateNoMatchFound onClear={onClearAllFilters!} />
       }
-      ariaLabel={t("connectors.title")}
+      ariaLabel={t("connectors_title")}
       columns={ConnectorsTableColumns}
       renderHeader={({ column, key, Th }) => {
         switch (column) {
