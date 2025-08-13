@@ -55,6 +55,7 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.everyItem;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.startsWith;
 
 @QuarkusTest
 @TestHTTPEndpoint(KafkaConnectorsResource.class)
@@ -231,6 +232,21 @@ class KafkaConnectorsResourceIT implements ClientRequestFilter {
 
     @ParameterizedTest
     @CsvSource({
+        "'eq,source',       connect1-",
+        "'in,source:mm,source:mm-checkpoint,source:mm-heartbeat', connect2-"
+    })
+    void testListConnectorsFilteredByMirrorMakerTypes(String filter, String connectorPrefix) {
+        whenRequesting(req -> req
+                .param("filter[type]", String.valueOf(filter))
+                .get())
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()))
+            .body("data.size()", is(2))
+            .body("data.attributes.name", everyItem(startsWith(connectorPrefix)));
+    }
+
+    @ParameterizedTest
+    @CsvSource({
         "default/test-connect1, connect1-connector1",
         "default/test-connect1, connect1-connector2",
         "default/test-connect2, connect2-connector1",
@@ -276,5 +292,4 @@ class KafkaConnectorsResourceIT implements ClientRequestFilter {
             .body("included.findAll { it.type == 'connectorTasks' }.size()", is(taskCount))
             .body("included.findAll { it.type == 'connectorTasks' }.relationships.connector.data.id.flatten()", everyItem(is(connectorID)));
     }
-
 }
