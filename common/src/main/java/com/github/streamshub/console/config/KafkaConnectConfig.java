@@ -21,6 +21,8 @@ import io.sundr.builder.annotations.Buildable;
 @Buildable(editableEnabled = false)
 public class KafkaConnectConfig implements Authenticated, Trustable {
 
+    private static final Base64.Encoder ID_ENCODER = Base64.getUrlEncoder().withoutPadding();
+
     @NotBlank(message = "Kafka Connect `name` is required")
     private String name;
 
@@ -48,7 +50,7 @@ public class KafkaConnectConfig implements Authenticated, Trustable {
 
     @JsonIgnore
     public String clusterKeyEncoded() {
-        return Base64.getUrlEncoder().encodeToString(clusterKey().getBytes());
+        return ID_ENCODER.encodeToString(clusterKey().getBytes());
     }
 
     @JsonIgnore
