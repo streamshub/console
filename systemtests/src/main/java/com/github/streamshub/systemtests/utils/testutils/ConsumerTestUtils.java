@@ -26,9 +26,6 @@ public class ConsumerTestUtils {
 
     private ConsumerTestUtils() {}
 
-
-
-
     /**
      * Prepares a scenario for testing consumer group offsets by:
      * <ul>

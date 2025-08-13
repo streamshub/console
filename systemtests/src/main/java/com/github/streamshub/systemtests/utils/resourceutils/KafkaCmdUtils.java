@@ -135,6 +135,27 @@ public class KafkaCmdUtils {
         return output;
     }
 
+    /**
+     * Sets the offset for a given Kafka consumer group and topic to a specific value.
+     *
+     * <p>This method executes the {@code kafka-consumer-groups.sh} CLI command inside the specified Kafka broker pod
+     * to reset offsets to a given position using the {@code --to-offset} option.</p>
+     *
+     * <p>Before executing, it configures the Kafka client properties file in the pod to allow secure communication
+     * based on the provided client configuration. The method logs both the intended operation and the CLI output for
+     * debugging and traceability.</p>
+     *
+     * <p>This is useful for preparing test scenarios or restoring a specific consumer group state when verifying
+     * offset reset behavior.</p>
+     *
+     * @param namespaceName       the Kubernetes namespace containing the Kafka cluster
+     * @param kafkaName           the name of the Kafka cluster
+     * @param podName             the name of the broker pod where the command will be executed
+     * @param consumerGroupName   the name of the consumer group whose offset should be set
+     * @param topicName           the topic for which the offset will be set
+     * @param offset              the offset value to set (as a string)
+     * @param clientsConfig       the Kafka client configuration content to be inserted before running the command
+     */
     public static void setConsumerGroupOffset(String namespaceName, String kafkaName, String podName, String consumerGroupName, String topicName, String offset, String clientsConfig) {
         String bootstrapServer = KafkaUtils.getPlainScramShaBootstrapAddress(kafkaName);
 

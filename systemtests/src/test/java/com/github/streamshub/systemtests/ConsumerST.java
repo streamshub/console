@@ -128,7 +128,6 @@ public class ConsumerST extends AbstractST {
                 KafkaCmdUtils.getConsumerGroupOffset(tcc.namespace(), tcc.kafkaName(), brokerPodName, consumerGroupName, kafkaTopicName, clientsConfig));
         }
     }
-    
 
     @BeforeEach
     void testCaseSetup() {
