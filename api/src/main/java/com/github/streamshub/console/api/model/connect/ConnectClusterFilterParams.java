@@ -41,7 +41,7 @@ public class ConnectClusterFilterParams extends FilterParams {
 
     @QueryParam("filter[kafkaClusters]")
     @Parameter(
-        description = "Retrieve only connect clusters associated with the identified Kafka clusters",
+        description = "Retrieve only Kafka Connect clusters associated with the identified Kafka clusters",
         schema = @Schema(implementation = String[].class, minItems = 2),
         explode = Explode.FALSE)
     @Expression(

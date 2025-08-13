@@ -21,7 +21,8 @@ test-connect1.example.com:
 
   "/connectors/connect1-connector1":
     name: connect1-connector1
-    config: {}
+    config:
+      connector.class: my.custom.Connector1
     tasks:
       - connector: connect1-connector1
         task: 0
@@ -75,7 +76,8 @@ test-connect1.example.com:
 
   "/connectors/connect1-connector2":
     name: connect1-connector2
-    config: {}
+    config:
+      connector.class: my.custom.Connector2
     tasks:
       - connector: connect1-connector2
         task: 0
@@ -138,7 +140,8 @@ test-connect2.example.com:
 
   "/connectors/connect2-connector1":
     name: connect2-connector1
-    config: {}
+    config:
+      connector.class: org.apache.kafka.connect.mirror.MirrorSourceConnector
     tasks:
       - connector: connect2-connector1
         task: 0
@@ -180,7 +183,8 @@ test-connect2.example.com:
 
   "/connectors/connect2-connector2":
     name: connect2-connector2
-    config: {}
+    config:
+      connector.class: org.apache.kafka.connect.mirror.MirrorCheckpointConnector
     tasks:
       - connector: connect2-connector2
         task: 0

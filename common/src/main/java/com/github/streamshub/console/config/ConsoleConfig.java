@@ -74,6 +74,17 @@ public class ConsoleConfig {
         return Named.uniqueNames(schemaRegistries);
     }
 
+    @JsonIgnore
+    @AssertTrue(message = "Kafka Connect name, namespace, and mirrorMaker combinations must be unique")
+    public boolean hasUniqueKafkaConnectClusters() {
+        return Optional.ofNullable(kafkaConnectClusters)
+                .map(clusters -> clusters.stream()
+                        .map(kc -> List.of(kc.clusterKey(), kc.isMirrorMaker()))
+                        .distinct()
+                        .count() == clusters.size())
+                .orElse(true);
+    }
+
     /**
      * Specifying security subjects local to a Kafka cluster is not allowed when global OIDC
      * security is enabled.

@@ -4,6 +4,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -19,6 +20,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.NotFoundException;
 
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.context.ThreadContext;
 import org.jboss.logging.Logger;
 
@@ -82,6 +84,18 @@ public class KafkaConnectService {
     @Inject
     PermissionService permissionService;
 
+    @Inject
+    @ConfigProperty(name = "console.connect.mirror.classes.checkpoints")
+    List<String> mmCheckpoints;
+
+    @Inject
+    @ConfigProperty(name = "console.connect.mirror.classes.heartbeats")
+    List<String> mmHeartbeats;
+
+    @Inject
+    @ConfigProperty(name = "console.connect.mirror.classes.sources")
+    List<String> mmSources;
+
     public CompletionStage<List<ConnectCluster>> listClusters(FieldFilter fields, ListRequestContext<ConnectCluster> listSupport) {
         var pendingServerInfo = consoleConfig.getKafkaConnectClusters()
                 .stream()
@@ -112,7 +126,7 @@ public class KafkaConnectService {
         var clusterKey = clusterConfig.clusterKey();
         var includePlugins = fields.isIncluded(ConnectCluster.FIELDS_PARAM, ConnectCluster.Fields.PLUGINS.toString());
         var pluginPromise = includePlugins
-            ? connectClient.getConnectorPlugins(clusterKey).thenApply(plugins -> plugins.stream().map(ConnectorPlugin::new).toList())
+            ? describeConnectorPlugins(clusterConfig)
             : PROMISE_NULL_PLUGINS;
 
         var includeConnectors = fetchParams.includes(ConnectCluster.Fields.CONNECTORS.toString());
@@ -250,7 +264,7 @@ public class KafkaConnectService {
                     Connector connector = new Connector(encode("", clusterConfig.clusterKey(), connectorName));
                     connector.name(connectorName);
                     connector.namespace(clusterConfig.getNamespace());
-                    connector.type(info.type());
+                    connector.type(mapType(info));
                     connector.config(info.config());
                     connector.state(state.connector().state());
                     connector.trace(state.connector().trace());
@@ -290,6 +304,24 @@ public class KafkaConnectService {
             });
     }
 
+    private String mapType(KafkaConnectAPI.ConnectorInfo info) {
+        var config = Optional.ofNullable(info.config()).orElseGet(Collections::emptyMap);
+        var className = config.getOrDefault("connector.class", "");
+        return mapType(info.type(), className);
+    }
+
+    private String mapType(String type, String className) {
+        if (mmCheckpoints.contains(className)) {
+            type += ":mm-checkpoint";
+        } else if (mmHeartbeats.contains(className)) {
+            type += ":mm-heartbeat";
+        } else if (mmSources.contains(className)) {
+            type += ":mm";
+        }
+
+        return type;
+    }
+
     private void mapTasks(Connector connector, KafkaConnectAPI.ConnectorInfo info, KafkaConnectAPI.ConnectorStateInfo state, boolean include) {
         List<ConnectorTask> tasks = new ArrayList<>();
 
@@ -324,6 +356,16 @@ public class KafkaConnectService {
         }
 
         return connector;
+    }
+
+    private CompletionStage<List<ConnectorPlugin>> describeConnectorPlugins(KafkaConnectConfig clusterConfig) {
+        return connectClient.getConnectorPlugins(clusterConfig.clusterKey())
+                .thenApply(plugins -> plugins.stream()
+                        .map(plugin -> new ConnectorPlugin(
+                                plugin.className(),
+                                mapType(plugin.type(), plugin.className()),
+                                plugin.version()))
+                        .toList());
     }
 
     private CompletionStage<List<String>> describeConnectorTopics(KafkaConnectConfig clusterConfig, String connectorName) {
