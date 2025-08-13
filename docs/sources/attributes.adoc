@@ -21,3 +21,6 @@
 :BookURLConfiguring: https://strimzi.io/docs/operators/latest/configuring
 //External links
 :ApicurioRegistrySite: https://www.apicur.io/[Apicurio Registry^]
+
+// Section enabler for conditioning text in/out
+:Section:
