@@ -1,59 +1,62 @@
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  Tooltip,
-} from "@/libs/patternfly/react-core";
-import { HomeIcon } from "@/libs/patternfly/react-icons";
 import { useTranslations } from "next-intl";
 
 import { KafkaConnectParams } from "../../../../kafka-connect/kafkaConnect.params";
+import { Suspense } from "react";
+import { getConnectCluster } from "@/api/kafkaConnect/action";
+import { NoDataErrorState } from "@/components/NoDataErrorState";
+import { ConnectClusterBreadcrumb } from "./ConnectClusterBreadcrumb";
 
-export default function KafkaConnectClustersActiveBreadcrumbPage({
+export default function Page({
   params: { kafkaId, clusterId },
 }: {
   params: KafkaConnectParams;
 }) {
   return (
-    <KafkaConnectClustersActiveBreadcrumb
-      kafkaId={kafkaId}
-      clusterId={clusterId}
+    <Suspense
+      fallback={
+        <ConnectClustersActiveBreadcrumb params={{ kafkaId, clusterId }} />
+      }
+    >
+      <KafkaConnectClustersActiveBreadcrumb params={{ kafkaId, clusterId }} />
+    </Suspense>
+  );
+}
+
+async function KafkaConnectClustersActiveBreadcrumb({
+  params: { kafkaId, clusterId },
+}: {
+  params: KafkaConnectParams;
+}) {
+  const response = await getConnectCluster(clusterId);
+
+  if (response.errors) {
+    return <NoDataErrorState errors={response.errors} />;
+  }
+
+  const connectCluster = response.payload!;
+  const connectClusterName = connectCluster.data.attributes.name;
+
+  return (
+    <ConnectClustersActiveBreadcrumb
+      params={{ kafkaId, clusterId }}
+      connectClusterName={connectClusterName}
     />
   );
 }
 
-function KafkaConnectClustersActiveBreadcrumb({
-  kafkaId,
-  clusterId,
+function ConnectClustersActiveBreadcrumb({
+  params: { kafkaId, clusterId },
+  connectClusterName = "",
 }: {
-  kafkaId: string;
-  clusterId: string;
+  params: KafkaConnectParams;
+  connectClusterName?: string;
 }) {
   const t = useTranslations();
 
   return (
-    <Breadcrumb>
-      <BreadcrumbItem key="home" to="/" showDivider>
-        <Tooltip content={t("breadcrumbs.view_all_kafka_clusters")}>
-          <HomeIcon />
-        </Tooltip>
-      </BreadcrumbItem>
-      <BreadcrumbItem
-        key="overview"
-        to={`/kafka/${kafkaId}/overview`}
-        showDivider
-      >
-        {t("breadcrumbs.overview")}
-      </BreadcrumbItem>
-      <BreadcrumbItem
-        key="kafka-connect"
-        to={`/kafka/${kafkaId}/kafka-connect`}
-        showDivider
-      >
-        {t("breadcrumbs.Kafka_connect")}
-      </BreadcrumbItem>
-      <BreadcrumbItem key="connect-cluster" showDivider>
-        {t("breadcrumbs.connect_clusters")}
-      </BreadcrumbItem>
-    </Breadcrumb>
+    <ConnectClusterBreadcrumb
+      kafkaId={kafkaId}
+      connectClusterName={connectClusterName}
+    />
   );
 }

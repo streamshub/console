@@ -15,11 +15,7 @@ export function ConnectClusterBreadcrumb({
 
   return (
     <Breadcrumb>
-      <BreadcrumbItem
-        key="connect_clusters"
-        to={`/kafka/${kafkaId}/kafka-connect/connect-clusters`}
-        showDivider
-      >
+      <BreadcrumbItem key="connect_clusters" showDivider>
         {t("breadcrumbs.connect_clusters")}
       </BreadcrumbItem>
       <BreadcrumbItem key={"cgm"} showDivider={true} isActive={true}>

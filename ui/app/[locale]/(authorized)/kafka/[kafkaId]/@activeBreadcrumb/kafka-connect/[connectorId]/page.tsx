@@ -1,44 +1,56 @@
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  Tooltip,
-} from "@/libs/patternfly/react-core";
-import { HomeIcon } from "@/libs/patternfly/react-icons";
 import { useTranslations } from "next-intl";
-import { KafkaParams } from "../../../kafka.params";
+import { Suspense } from "react";
+import { getConnectorCluster } from "@/api/kafkaConnect/action";
+import { NoDataErrorState } from "@/components/NoDataErrorState";
+import { KafkaConnectorParams } from "../../../kafka-connect/kafkaConnectors.params";
+import { ConnectorBreadcrumb } from "./ConnectorBreadcrumb";
 
-export default function KafkaConnectClustersActiveBreadcrumbPage({
-  params: { kafkaId },
+export default function Page({
+  params: { kafkaId, connectorId },
 }: {
-  params: KafkaParams;
+  params: KafkaConnectorParams;
 }) {
-  return <KafkaConnectClustersActiveBreadcrumb kafkaId={kafkaId} />;
+  return (
+    <Suspense
+      fallback={<ConnectorActiveBreadcrumb params={{ kafkaId, connectorId }} />}
+    >
+      <KafkaConnectorActiveBreadcrumb params={{ kafkaId, connectorId }} />
+    </Suspense>
+  );
 }
 
-function KafkaConnectClustersActiveBreadcrumb({
-  kafkaId,
+async function KafkaConnectorActiveBreadcrumb({
+  params: { kafkaId, connectorId },
 }: {
-  kafkaId: string;
+  params: KafkaConnectorParams;
+}) {
+  const response = await getConnectorCluster(connectorId);
+
+  if (response.errors) {
+    return <NoDataErrorState errors={response.errors} />;
+  }
+
+  const connectCluster = response.payload!;
+  const connectClusterName = connectCluster.data.attributes.name;
+
+  return (
+    <ConnectorActiveBreadcrumb
+      params={{ kafkaId, connectorId }}
+      connectorName={connectClusterName}
+    />
+  );
+}
+
+function ConnectorActiveBreadcrumb({
+  params: { kafkaId, connectorId },
+  connectorName = "",
+}: {
+  params: KafkaConnectorParams;
+  connectorName?: string;
 }) {
   const t = useTranslations();
 
   return (
-    <Breadcrumb>
-      <BreadcrumbItem key="home" to="/" showDivider>
-        <Tooltip content={t("breadcrumbs.view_all_kafka_clusters")}>
-          <HomeIcon />
-        </Tooltip>
-      </BreadcrumbItem>
-      <BreadcrumbItem
-        key="overview"
-        to={`/kafka/${kafkaId}/overview`}
-        showDivider
-      >
-        {t("breadcrumbs.overview")}
-      </BreadcrumbItem>
-      <BreadcrumbItem showDivider={true}>
-        {t("breadcrumbs.Kafka_connect")}
-      </BreadcrumbItem>
-    </Breadcrumb>
+    <ConnectorBreadcrumb kafkaId={kafkaId} connectorName={connectorName} />
   );
 }

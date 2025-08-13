@@ -342,7 +342,7 @@
     "topics": "Topics",
     "brokers": "Kafka nodes",
     "consumer_groups": "Consumer groups",
-    "kafka_connect": "Kafka connect"
+    "kafka_connect": "Kafka Connect"
   },
   "AppMasthead": {
     "global_navigation": "Global navigation",
@@ -693,7 +693,7 @@
     "create_topic": "Create topic",
     "consumer_groups": "Consumer groups",
     "view_all_kafka_clusters": "View all Kafka clusters",
-    "Kafka_connect": "Kafka connect",
+    "Kafka_connect": "Kafka Connect",
     "connect_clusters": "Connect clusters",
     "connectors": "Connectors"
   },
