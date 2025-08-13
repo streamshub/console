@@ -4,7 +4,7 @@ import { NoDataErrorState } from "@/components/NoDataErrorState";
 import { getConnectCluster } from "@/api/kafkaConnect/action";
 import { Suspense } from "react";
 import { KafkaConnectParams } from "../../../../kafka-connect/kafkaConnect.params";
-import { ConnectClusterBreadcrumb } from "./ConnectClusterBreadcrumb";
+import RichText from "@/components/RichText";
 
 export default function Page({
   params: { kafkaId, clusterId },
@@ -41,7 +41,6 @@ async function ConnectClusterAppHeader({
 }
 
 function Header({
-  params: { kafkaId, clusterId },
   connectClusterName = "",
 }: {
   params: KafkaConnectParams;
@@ -51,12 +50,12 @@ function Header({
 
   return (
     <AppHeader
-      title={t("KafkaConnect.connect_clusters_title")}
-      subTitle={
-        <ConnectClusterBreadcrumb
-          kafkaId={kafkaId}
-          connectClusterName={connectClusterName}
-        />
+      title={
+        decodeURIComponent(connectClusterName) === "+" ? (
+          <RichText>{(tags) => t.rich("common.empty_name", tags)}</RichText>
+        ) : (
+          connectClusterName
+        )
       }
     />
   );

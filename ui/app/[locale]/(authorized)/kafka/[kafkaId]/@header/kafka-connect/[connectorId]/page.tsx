@@ -4,7 +4,7 @@ import { KafkaConnectorParams } from "../../../kafka-connect/kafkaConnectors.par
 import { NoDataErrorState } from "@/components/NoDataErrorState";
 import { getConnectorCluster } from "@/api/kafkaConnect/action";
 import { Suspense } from "react";
-import { ConnectorBreadcrumb } from "./ConnectorsBreadcrumb";
+import RichText from "@/components/RichText";
 
 export default function Page({
   params: { kafkaId, connectorId },
@@ -38,7 +38,6 @@ async function ConnectedAppHeader({
 }
 
 function Header({
-  params: { kafkaId, connectorId },
   connectorName = "",
 }: {
   params: KafkaConnectorParams;
@@ -48,9 +47,12 @@ function Header({
 
   return (
     <AppHeader
-      title={t("KafkaConnect.connectors_title")}
-      subTitle={
-        <ConnectorBreadcrumb kafkaId={kafkaId} connectorName={connectorName} />
+      title={
+        decodeURIComponent(connectorName) === "+" ? (
+          <RichText>{(tags) => t.rich("common.empty_name", tags)}</RichText>
+        ) : (
+          connectorName
+        )
       }
     />
   );
