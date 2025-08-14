@@ -5,6 +5,7 @@ import { NoDataErrorState } from "@/components/NoDataErrorState";
 import { getConnectorCluster } from "@/api/kafkaConnect/action";
 import { Suspense } from "react";
 import RichText from "@/components/RichText";
+import { ManagedConnectorLabel } from "../../../kafka-connect/ManagedConnectorLabel";
 
 export default function Page({
   params: { kafkaId, connectorId },
@@ -12,7 +13,9 @@ export default function Page({
   params: KafkaConnectorParams;
 }) {
   return (
-    <Suspense fallback={<Header params={{ kafkaId, connectorId }} />}>
+    <Suspense
+      fallback={<Header params={{ kafkaId, connectorId }} managed={false} />}
+    >
       <ConnectedAppHeader params={{ kafkaId, connectorId }} />
     </Suspense>
   );
@@ -31,17 +34,24 @@ async function ConnectedAppHeader({
 
   const connectCluster = response.payload!;
   const connectorName = connectCluster.data.attributes.name;
+  const managed = connectCluster.data.meta.managed;
 
   return (
-    <Header params={{ kafkaId, connectorId }} connectorName={connectorName} />
+    <Header
+      params={{ kafkaId, connectorId }}
+      connectorName={connectorName}
+      managed={managed}
+    />
   );
 }
 
 function Header({
   connectorName = "",
+  managed,
 }: {
   params: KafkaConnectorParams;
   connectorName?: string;
+  managed: boolean;
 }) {
   const t = useTranslations();
 
@@ -51,7 +61,10 @@ function Header({
         decodeURIComponent(connectorName) === "+" ? (
           <RichText>{(tags) => t.rich("common.empty_name", tags)}</RichText>
         ) : (
-          connectorName
+          <>
+            {connectorName}
+            {managed === true && <ManagedConnectorLabel />}
+          </>
         )
       }
     />

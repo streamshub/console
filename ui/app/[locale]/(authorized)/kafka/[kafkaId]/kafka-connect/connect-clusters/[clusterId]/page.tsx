@@ -65,6 +65,7 @@ async function ConnectedConnectClusterDetails({
 
   const connectorData = (connectCluster.included ?? []).map((connector) => ({
     id: connector.id,
+    managed: connector.meta?.managed || false,
     name: connector.attributes.name,
     type: connector.attributes.type as "source" | "sink",
     state: connector.attributes.state as ConnectorState,

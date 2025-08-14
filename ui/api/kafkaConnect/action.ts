@@ -103,7 +103,7 @@ export async function getConnectorCluster(
       include: "connectCluster,tasks",
       "fields[connectorTasks]": "taskId,state,workerId,config",
       "fields[connectors]":
-        "name,state,type,connectCluster,topics,config,tasks",
+        "name,state,type,connectCluster,topics,config,tasks,workerId",
     }),
   );
 
