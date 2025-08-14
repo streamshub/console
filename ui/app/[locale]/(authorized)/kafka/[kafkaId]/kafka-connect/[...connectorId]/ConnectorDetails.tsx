@@ -4,6 +4,7 @@ import {
   ConnectorConfig,
   ConnectorState,
   ConnectorTask,
+  ConnectorType,
 } from "@/api/kafkaConnect/schema";
 import { ResponsiveTable } from "@/components/Table";
 import {
@@ -99,6 +100,24 @@ const StateLabel: Record<ConnectorState, { label: ReactNode }> = {
   },
 };
 
+const TypeLabel: Record<ConnectorType, { label: ReactNode }> = {
+  source: {
+    label: <>Source</>,
+  },
+  sink: {
+    label: <>Sink</>,
+  },
+  "source:mm": {
+    label: <>Mirror Source</>,
+  },
+  "source:mm-checkpoint": {
+    label: <>Mirror Checkpoint</>,
+  },
+  "source:mm-heartbeat": {
+    label: <>Mirror Heartbeat</>,
+  },
+};
+
 export function ConnectorDetails({
   workerId,
   className,
@@ -112,8 +131,8 @@ export function ConnectorDetails({
   className: string;
   workerId: string;
   state: ConnectorState;
-  type: string;
-  topics: string[];
+  type: ConnectorType;
+  topics: string[] | undefined;
   maxTasks: number;
   connectorTask: ConnectorTask[];
   config: ConnectorConfig;
@@ -151,11 +170,15 @@ export function ConnectorDetails({
           </DescriptionListGroup>
           <DescriptionListGroup>
             <DescriptionListTerm>{t("connectors.type")}</DescriptionListTerm>
-            <DescriptionListDescription>{type}</DescriptionListDescription>
+            <DescriptionListDescription>
+              {TypeLabel[type].label}
+            </DescriptionListDescription>
           </DescriptionListGroup>
           <DescriptionListGroup>
             <DescriptionListTerm>{t("connectors.topics")}</DescriptionListTerm>
-            <DescriptionListDescription>{topics}</DescriptionListDescription>
+            <DescriptionListDescription>
+              {topics ?? "-"}
+            </DescriptionListDescription>
           </DescriptionListGroup>
           <DescriptionListGroup>
             <DescriptionListTerm>

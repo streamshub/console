@@ -28,7 +28,7 @@ export default function ConnectClusterPage({
             className={""}
             workerId={""}
             state={"UNASSIGNED"}
-            type={""}
+            type={"source"}
             topics={[]}
             maxTasks={0}
             connectorTask={[]}
@@ -60,8 +60,7 @@ async function ConnectConnectorDetails({
   const connectorTasks = included.filter(
     (item) => item.type === "connectorTasks",
   );
-  const workerId =
-    connectorTasks.length > 0 ? connectorTasks[0].attributes.workerId : "";
+  const workerId = data.attributes.workerId ?? "-";
 
   return (
     <ConnectorDetails
@@ -69,7 +68,7 @@ async function ConnectConnectorDetails({
       workerId={workerId}
       state={data.attributes.state}
       type={data.attributes.type || ""}
-      topics={data.attributes.topics || []}
+      topics={data.attributes.topics}
       maxTasks={Number(data.attributes.config?.["tasks.max"] ?? 0)}
       connectorTask={connectorTasks}
       config={data.attributes.config || {}}

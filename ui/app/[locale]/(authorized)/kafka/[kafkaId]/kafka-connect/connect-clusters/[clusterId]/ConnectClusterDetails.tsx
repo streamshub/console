@@ -26,11 +26,13 @@ import {
   TabContentBody,
   Tabs,
   TabTitleText,
+  Truncate,
 } from "@patternfly/react-core";
 import { useTranslations } from "next-intl";
 import { ReactNode, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { ManagedConnectorLabel } from "../../ManagedConnectorLabel";
 
 const StateLabel: Record<ConnectorState, { label: ReactNode }> = {
   UNASSIGNED: {
@@ -128,9 +130,10 @@ export function ConnectClusterDetails({
   connectVersion: string;
   workers: number;
   data: {
+    managed: boolean;
     id: string;
     name: string;
-    type: "source" | "sink";
+    type: ConnectorType;
     state: ConnectorState;
     replicas: number | null;
   }[];
@@ -199,12 +202,13 @@ export function ConnectClusterDetails({
                           <Link
                             href={`/kafka/${kafkaId}/kafka-connect/${encodeURIComponent(row.id)}`}
                           >
-                            {row.name}
+                            <Truncate content={row.name!} />
                           </Link>
+                          {row.managed === true && <ManagedConnectorLabel />}
                         </Td>
                       );
                     case "type":
-                      return <Td key={key}>{row.type}</Td>;
+                      return <Td key={key}>{TypeLabel[row.type].label}</Td>;
                     case "state":
                       return <Td key={key}>{StateLabel[row.state].label}</Td>;
                     case "replicas":
