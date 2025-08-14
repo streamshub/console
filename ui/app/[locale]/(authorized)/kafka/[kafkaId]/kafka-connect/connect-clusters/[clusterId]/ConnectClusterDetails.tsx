@@ -1,6 +1,10 @@
 "use client";
 
-import { ConnectorState, plugins } from "@/api/kafkaConnect/schema";
+import {
+  ConnectorState,
+  ConnectorType,
+  plugins,
+} from "@/api/kafkaConnect/schema";
 import { ResponsiveTable } from "@/components/Table";
 import {
   CheckCircleIcon,
@@ -96,6 +100,24 @@ const StateLabel: Record<ConnectorState, { label: ReactNode }> = {
   },
 };
 
+const TypeLabel: Record<ConnectorType, { label: ReactNode }> = {
+  source: {
+    label: <>Source</>,
+  },
+  sink: {
+    label: <>Sink</>,
+  },
+  "source:mm": {
+    label: <>Mirror Source</>,
+  },
+  "source:mm-checkpoint": {
+    label: <>Mirror Checkpoint</>,
+  },
+  "source:mm-heartbeat": {
+    label: <>Mirror Heartbeat</>,
+  },
+};
+
 export function ConnectClusterDetails({
   connectVersion,
   workers,
@@ -186,7 +208,7 @@ export function ConnectClusterDetails({
                     case "state":
                       return <Td key={key}>{StateLabel[row.state].label}</Td>;
                     case "replicas":
-                      return <Td key={key}>{row.replicas ?? "N/A"}</Td>;
+                      return <Td key={key}>{row.replicas ?? "-"}</Td>;
                   }
                 }}
               />
@@ -213,7 +235,7 @@ export function ConnectClusterDetails({
                     case "class":
                       return <Td key={key}>{row.class}</Td>;
                     case "type":
-                      return <Td key={key}>{row.type}</Td>;
+                      return <Td key={key}>{TypeLabel[row.type].label}</Td>;
                     case "version":
                       return <Td key={key}>{row.version}</Td>;
                   }

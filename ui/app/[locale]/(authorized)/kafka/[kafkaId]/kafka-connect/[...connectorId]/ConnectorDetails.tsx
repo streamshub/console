@@ -217,38 +217,14 @@ export function ConnectorDetails({
           >
             <TabContentBody hasPadding>
               <DescriptionList isHorizontal>
-                <DescriptionListGroup>
-                  <DescriptionListTerm>
-                    {t("connectors.connector_class")}
-                  </DescriptionListTerm>
-                  <DescriptionListDescription>
-                    {config["connector.class"]}
-                  </DescriptionListDescription>
-                </DescriptionListGroup>
-                <DescriptionListGroup>
-                  <DescriptionListTerm>
-                    {t("connectors.max_tasks")}
-                  </DescriptionListTerm>
-                  <DescriptionListDescription>
-                    {config["tasks.max"]}
-                  </DescriptionListDescription>
-                </DescriptionListGroup>
-                <DescriptionListGroup>
-                  <DescriptionListTerm>
-                    {t("connectors.configuration_file_name")}
-                  </DescriptionListTerm>
-                  <DescriptionListDescription>
-                    {config.name}
-                  </DescriptionListDescription>
-                </DescriptionListGroup>
-                <DescriptionListGroup>
-                  <DescriptionListTerm>
-                    {"connectors.topics"}
-                  </DescriptionListTerm>
-                  <DescriptionListDescription>
-                    {config.topic}
-                  </DescriptionListDescription>
-                </DescriptionListGroup>
+                {Object.entries(config || {}).map(([key, value]) => (
+                  <DescriptionListGroup key={key}>
+                    <DescriptionListTerm>{key}</DescriptionListTerm>
+                    <DescriptionListDescription>
+                      {value ?? "-"}
+                    </DescriptionListDescription>
+                  </DescriptionListGroup>
+                ))}
               </DescriptionList>
             </TabContentBody>
           </Tab>
