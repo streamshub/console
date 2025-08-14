@@ -9,20 +9,24 @@ const ConnectorStateSchema = z.union([
   z.literal("RESTARTING"),
 ]);
 
-export const ConnectorConfigSchema = z.object({
-  "connector.class": z.string().optional(),
-  file: z.string().optional(),
-  "tasks.max": z.string().optional(),
-  name: z.string().optional(),
-  topic: z.string().optional(),
-  "task.class": z.string().optional(),
-});
+const ConnectorTypeSchema = z.union([
+  z.literal("source"),
+  z.literal("sink"),
+  z.literal("source:mm"),
+  z.literal("source:mm-checkpoint"),
+  z.literal("source:mm-heartbeat"),
+]);
+
+export const ConnectorConfigSchema = z.record(
+  z.string(),
+  z.string().nullable().optional(),
+);
 
 export const ConnectorsDataSchema = z.object({
   name: z.string(),
   namespace: z.string().nullable().optional(),
   creationTimestamp: z.string().nullable().optional(),
-  type: z.enum(["source", "sink"]).optional(),
+  type: ConnectorTypeSchema,
   state: ConnectorStateSchema,
   trace: z.string().nullable().optional(),
   workerId: z.string().optional(),
@@ -32,7 +36,7 @@ export const ConnectorsDataSchema = z.object({
 
 const PluginSchema = z.object({
   class: z.string(),
-  type: z.enum(["source", "sink"]),
+  type: ConnectorTypeSchema,
   version: z.string(),
 });
 
@@ -91,6 +95,7 @@ export const ConnectorsSchema = z.object({
       page: z.object({
         cursor: z.string(),
       }),
+      managed: z.boolean().optional(),
     })
     .optional(),
 });
@@ -269,3 +274,5 @@ export type ConnectorCluster = z.infer<typeof connectorDetailSchema>;
 export type ConnectorTask = z.infer<typeof connectorTaskSchema>;
 
 export type ConnectorConfig = z.infer<typeof ConnectorConfigSchema>;
+
+export type ConnectorType = z.infer<typeof ConnectorTypeSchema>;

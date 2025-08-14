@@ -1,7 +1,11 @@
-import { ConnectorState, EnrichedConnector } from "@/api/kafkaConnect/schema";
+import {
+  ConnectorState,
+  ConnectorType,
+  EnrichedConnector,
+} from "@/api/kafkaConnect/schema";
 import { TableView, TableViewProps } from "@/components/Table";
 import { useTranslations } from "next-intl";
-import { Icon } from "@/libs/patternfly/react-core";
+import { Icon, Truncate } from "@/libs/patternfly/react-core";
 import { EmptyStateNoMatchFound } from "@/components/Table/EmptyStateNoMatchFound";
 import {
   CheckCircleIcon,
@@ -13,6 +17,7 @@ import {
 import { ReactNode } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { ManagedConnectorLabel } from "./ManagedConnectorLabel";
 
 export const ConnectorsTableColumns = [
   "name",
@@ -92,6 +97,24 @@ const StateLabel: Record<ConnectorState, { label: ReactNode }> = {
   },
 };
 
+const TypeLabel: Record<ConnectorType, { label: ReactNode }> = {
+  source: {
+    label: <>Source</>,
+  },
+  sink: {
+    label: <>Sink</>,
+  },
+  "source:mm": {
+    label: <>Mirror Source</>,
+  },
+  "source:mm-checkpoint": {
+    label: <>Mirror Checkpoint</>,
+  },
+  "source:mm-heartbeat": {
+    label: <>Mirror Heartbeat</>,
+  },
+};
+
 export function ConnectorsTable({
   connectors,
   page,
@@ -155,8 +178,9 @@ export function ConnectorsTable({
                 <Link
                   href={`/kafka/${kafkaId}/kafka-connect/${encodeURIComponent(row.id)}`}
                 >
-                  {row.attributes.name}
+                  <Truncate content={row.attributes.name!} />
                 </Link>
+                {row.meta?.managed === true && <ManagedConnectorLabel />}
               </Td>
             );
           case "connect-cluster":
@@ -172,7 +196,7 @@ export function ConnectorsTable({
           case "type":
             return (
               <Td key={key} dataLabel={t("connectors.type")}>
-                {row.attributes.type}
+                {TypeLabel[row.attributes.type].label}
               </Td>
             );
           case "state":
@@ -184,7 +208,7 @@ export function ConnectorsTable({
           case "tasks":
             return (
               <Td key={key} dataLabel={t("connectors.tasks")}>
-                {row.replicas}
+                {row.replicas ?? "-"}
               </Td>
             );
         }
