@@ -26,6 +26,9 @@ export function ClusterLinks({ kafkaId }: { kafkaId: string }) {
         <NavItemLink url={`/kafka/${kafkaId}/nodes`}>
           {t("AppLayout.brokers")}
         </NavItemLink>
+        <NavItemLink url={`/kafka/${kafkaId}/kafka-connect`}>
+          {t("AppLayout.kafka_connect")}
+        </NavItemLink>
         {/*
       <NavItemLink url={`/kafka/${kafkaId}/service-registry`}>
         Service registry
