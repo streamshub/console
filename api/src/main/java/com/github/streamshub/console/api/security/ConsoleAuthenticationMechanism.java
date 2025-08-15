@@ -3,11 +3,8 @@ package com.github.streamshub.console.api.security;
 import java.io.IOException;
 import java.security.Permission;
 import java.security.Principal;
-import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -39,10 +36,9 @@ import com.github.streamshub.console.api.model.ErrorResponse;
 import com.github.streamshub.console.api.support.ErrorCategory;
 import com.github.streamshub.console.api.support.KafkaContext;
 import com.github.streamshub.console.config.ConsoleConfig;
+import com.github.streamshub.console.config.KafkaClusterConfig;
 import com.github.streamshub.console.config.security.Decision;
-import com.github.streamshub.console.config.security.AuditConfig;
-import com.github.streamshub.console.config.security.Privilege;
-import com.github.streamshub.console.config.security.SecurityConfig;
+import com.github.streamshub.console.config.security.KafkaSecurityConfig;
 import com.github.streamshub.console.config.security.SubjectConfig;
 
 import io.quarkus.oidc.runtime.OidcAuthenticationMechanism;
@@ -94,6 +90,9 @@ public class ConsoleAuthenticationMechanism implements HttpAuthenticationMechani
 
     @Inject
     Map<String, KafkaContext> contexts;
+
+    @Inject
+    PermissionCache permissionCache;
 
     @Inject
     OidcAuthenticationMechanism oidc;
@@ -323,61 +322,72 @@ public class ConsoleAuthenticationMechanism implements HttpAuthenticationMechani
     }
 
     private void addRoleChecker(KafkaContext ctx, QuarkusSecurityIdentity.Builder builder, Principal principal) {
-        var globalSecurity = consoleConfig.getSecurity();
-        Optional<SecurityConfig> clusterSecurity = ctx != null
-                ? Optional.of(ctx.clusterConfig().getSecurity())
-                : Optional.empty();
+        var applicationPermissions = permissionCache.getPermissions();
+        var auditRules = permissionCache.getAuditRules();
 
-        var auditRules = mergeAuditRules(
-            getAuditRules(globalSecurity.getAudit(), ""),
-            clusterSecurity.map(c -> getAuditRules(c.getAudit(), "kafkas/" + ctx.clusterConfig().getName() + '/'))
-                .orElseGet(Collections::emptyMap)
-        );
-
-        if (globalSecurity.getRoles().isEmpty()
-                && clusterSecurity.map(cs -> cs.getRoles().isEmpty()).orElse(true)) {
+        if (applicationPermissions.isEmpty()) {
             // No roles are defined - allow everything
             builder.addPermissionChecker(requiredPermission -> {
-                auditLog(principal, requiredPermission, true, auditRules.get(requiredPermission));
+                auditLog(principal, requiredPermission, true, auditRules);
                 return Uni.createFrom().item(true);
             });
 
             return;
         }
 
-        Stream<SubjectConfig> globalSubjects = globalSecurity.getSubjects().stream();
-        Stream<SubjectConfig> clusterSubjects = clusterSecurity.map(cs -> cs.getSubjects().stream())
-                .orElseGet(Stream::empty);
+        var roleNames = getPrincipalRoles(principal, ctx);
 
-        List<String> roleNames = Stream.concat(clusterSubjects, globalSubjects)
-                .filter(sub -> matchesPrincipal(sub, principal))
-                .flatMap(sub -> sub.getRoleNames().stream())
-                .distinct()
+        List<Permission> possessedPermissions = applicationPermissions
+                .entrySet()
+                .stream()
+                .filter(entry -> roleNames.contains(entry.getKey()))
+                .map(Map.Entry::getValue)
+                .flatMap(List::stream)
                 .toList();
 
-        Stream<Permission> globalPermissions = getPermissions(globalSecurity, roleNames, "");
-        Stream<Permission> clusterPermissions = clusterSecurity
-                .map(cs -> getPermissions(cs, roleNames, "kafkas/" + ctx.clusterConfig().getName() + '/'))
-                .orElseGet(Stream::empty);
-
-        List<Permission> possessedPermissions = Stream.concat(globalPermissions, clusterPermissions).toList();
-
         builder.addPermissionChecker(requiredPermission -> {
-            boolean allowed = possessedPermissions
+            var grantingPermission = possessedPermissions
                     .stream()
-                    .anyMatch(possessed -> possessed.implies(requiredPermission));
+                    .filter(possessed -> possessed.implies(requiredPermission))
+                    .findFirst();
 
-            auditLog(principal, requiredPermission, allowed, auditRules.get(requiredPermission));
+            boolean allowed = grantingPermission.isPresent();
+
+            auditLog(principal, requiredPermission, allowed, auditRules);
             return Uni.createFrom().item(allowed);
         });
     }
 
-    private void auditLog(Principal principal, Permission required, boolean allowed, Decision audit) {
-        if (audit != null && audit.logResult(allowed)) {
-            log.infof("%s %s %s", principal.getName(), allowed ? "allowed" : "denied", required);
-        } else {
-            log.tracef("%s %s %s", principal.getName(), allowed ? "allowed" : "denied", required);
+    private Set<String> getPrincipalRoles(Principal principal, KafkaContext ctx) {
+        Stream<SubjectConfig> globalSubjects = consoleConfig
+                .getSecurity()
+                .getSubjects()
+                .stream();
+
+        Stream<SubjectConfig> clusterSubjects = Optional
+                .ofNullable(ctx)
+                .map(KafkaContext::clusterConfig)
+                .map(KafkaClusterConfig::getSecurity)
+                .map(KafkaSecurityConfig::getSubjects)
+                .map(Collection::stream)
+                .orElseGet(Stream::empty);
+
+        return Stream.concat(clusterSubjects, globalSubjects)
+                .filter(sub -> matchesPrincipal(sub, principal))
+                .flatMap(sub -> sub.getRoleNames().stream())
+                .distinct()
+                .collect(Collectors.toSet());
+    }
+
+    private void auditLog(Principal principal, Permission required, boolean allowed, Map<Permission, Decision> auditRules) {
+        for (Map.Entry<Permission, Decision> entry : auditRules.entrySet()) {
+            if (entry.getValue().logResult(allowed) && entry.getKey().implies(required)) {
+                log.infof("%s %s %s", principal.getName(), allowed ? "allowed" : "denied", required);
+                return;
+            }
         }
+
+        log.tracef("%s %s %s", principal.getName(), allowed ? "allowed" : "denied", required);
     }
 
     private void maybeLogAuthenticationFailure(Throwable t) {
@@ -410,63 +420,6 @@ public class ConsoleAuthenticationMechanism implements HttpAuthenticationMechani
         }
 
         return false;
-    }
-
-    private Stream<Permission> getPermissions(SecurityConfig security, Collection<String> roleNames, String resourcePrefix) {
-        return security.getRoles()
-                .stream()
-                .filter(role -> roleNames.contains(role.getName()))
-                .flatMap(role -> role.getRules().stream())
-                .flatMap(rule -> {
-                    List<Permission> rulePermissions = new ArrayList<>();
-                    Privilege[] actions = rule.getPrivileges().toArray(Privilege[]::new);
-
-                    for (var resource : rule.getResources()) {
-                        rulePermissions.add(new ConsolePermission(
-                            resourcePrefix + resource,
-                            rule.getResourceNames(),
-                            actions
-                        ));
-                    }
-
-                    return rulePermissions.stream();
-                });
-    }
-
-    private Map<Permission, Decision> mergeAuditRules(Map<Permission, Decision> global, Map<Permission, Decision> cluster) {
-        return Stream.concat(global.entrySet().stream(), cluster.entrySet().stream())
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-    }
-
-    private Map<Permission, Decision> getAuditRules(List<AuditConfig> audits, String resourcePrefix) {
-        return audits.stream().flatMap(rule -> {
-            Map<ConsolePermission, Decision> auditRules = new HashMap<>();
-            Set<Privilege> actions = rule.getPrivileges().stream().flatMap(p -> p.expand().stream()).collect(Collectors.toSet());
-
-            for (var action : actions) {
-                for (var resource : rule.getResources()) {
-                    if (rule.getResourceNames().isEmpty()) {
-                        auditRules.put(
-                                new ConsolePermission(
-                                        resourcePrefix + resource,
-                                        Collections.emptySet(),
-                                        action),
-                                rule.getDecision());
-                    } else {
-                        for (String name : rule.getResourceNames()) {
-                            auditRules.put(
-                                    new ConsolePermission(
-                                            resourcePrefix + resource,
-                                            Collections.singleton(name),
-                                            action),
-                                    rule.getDecision());
-                        }
-                    }
-                }
-            }
-
-            return auditRules.entrySet().stream();
-        }).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
     private Optional<String[]> getBasicAuthentication(MultiMap headers) {

@@ -136,7 +136,7 @@ public class KafkaClusterService {
                 .toList();
 
         return Stream.concat(configuredClusters.values().stream(), otherClusters.stream())
-                .filter(permissionService.permitted(KafkaCluster.API_TYPE, Privilege.LIST, KafkaCluster::name))
+                .filter(permissionService.permitted(KafkaCluster.API_TYPE, Privilege.LIST, KafkaCluster::getId))
                 .filter(listSupport)
                 .map(listSupport::tally)
                 .filter(listSupport::betweenCursors)

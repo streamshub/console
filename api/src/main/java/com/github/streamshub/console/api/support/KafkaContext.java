@@ -172,6 +172,14 @@ public class KafkaContext implements Closeable {
                     .map(KafkaListenerAuthenticationOAuth::getTokenEndpointUri));
     }
 
+    public String securityResourcePath(String subresource) {
+        return "kafkas/" + clusterId() + '/' + subresource;
+    }
+
+    public String auditDisplayResourcePath(String subresource) {
+        return "kafkas/[" + clusterConfig.clusterKey() + "]/" + subresource;
+    }
+
     /**
      * The SchemaRegistryContext contains a per-Kafka registry client
      * and key/value SerDes classes to be used to handle message browsing.
