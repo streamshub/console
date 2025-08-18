@@ -6,7 +6,12 @@ import {
   ConnectorTask,
   ConnectorType,
 } from "@/api/kafkaConnect/schema";
-import { ResponsiveTable } from "@/components/Table";
+import {
+  ResponsiveTable,
+  ResponsiveTdProps,
+  ResponsiveThProps,
+  TableView,
+} from "@/components/Table";
 import {
   CheckCircleIcon,
   ExclamationCircleIcon,
@@ -14,7 +19,7 @@ import {
   PauseCircleIcon,
   PendingIcon,
 } from "@/libs/patternfly/react-icons";
-import { TableVariant } from "@/libs/patternfly/react-table";
+import { TableVariant, Td, Th } from "@/libs/patternfly/react-table";
 import {
   DescriptionList,
   DescriptionListDescription,
@@ -29,7 +34,7 @@ import {
   TabTitleText,
 } from "@patternfly/react-core";
 import { useTranslations } from "next-intl";
-import { ReactNode, useState } from "react";
+import { ReactElement, ReactNode, useState } from "react";
 import Image from "next/image";
 
 const StateLabel: Record<ConnectorState, { label: ReactNode }> = {
@@ -177,7 +182,7 @@ export function ConnectorDetails({
           <DescriptionListGroup>
             <DescriptionListTerm>{t("connectors.topics")}</DescriptionListTerm>
             <DescriptionListDescription>
-              {topics ?? "-"}
+              {topics && topics.length > 0 ? topics.join(", ") : "-"}
             </DescriptionListDescription>
           </DescriptionListGroup>
           <DescriptionListGroup>
@@ -201,11 +206,14 @@ export function ConnectorDetails({
             aria-label={t("connectors.tasks")}
           >
             <TabContentBody hasPadding>
-              <ResponsiveTable
-                ariaLabel={t("connectors.tasks")}
+              <TableView
                 variant={TableVariant.compact}
-                columns={["taskId", "state", "workerId"] as const}
+                onPageChange={() => {}}
                 data={connectorTask}
+                emptyStateNoData={<div>{t("connectors.no_task")}</div>}
+                emptyStateNoResults={<div></div>}
+                ariaLabel={t("connectors.tasks")}
+                columns={["taskId", "state", "workerId"] as const}
                 renderHeader={({ column, key, Th }) => {
                   switch (column) {
                     case "taskId":

@@ -700,9 +700,9 @@
   "KafkaConnect": {
     "connectors_title": "Connectors",
     "ManagedConnectorLabel": {
-    "label": "Managed",
-    "tooltip": "Connector created using a KafkaMirrorMaker2 custom resource and managed in Kafka Connect by the Strimzi Cluster Operator."
-  },
+      "label": "Managed",
+      "tooltip": "Connector created using a KafkaMirrorMaker2 custom resource and managed in Kafka Connect by the Strimzi Cluster Operator."
+    },
     "connectors": {
       "name": "Name",
       "connect_cluster": "Connect cluster",
@@ -717,7 +717,8 @@
       "workerId": "Worker ID",
       "configuration": "Configuration",
       "connector_class": "Connector class",
-      "configuration_file_name": "Configuration file name"
+      "configuration_file_name": "Configuration file name",
+      "no_task": "No Task"
     },
     "connect_clusters_title": "Connect clusters",
     "connect_clusters": {
