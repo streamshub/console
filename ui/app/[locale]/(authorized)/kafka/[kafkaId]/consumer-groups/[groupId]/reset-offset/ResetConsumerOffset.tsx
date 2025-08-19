@@ -37,12 +37,14 @@ export function ResetConsumerOffset({
   topics,
   partitions,
   baseurl,
+  bootstrapServersUrl,
 }: {
   kafkaId: string;
   consumerGroupName: string;
   topics: { topicId: string; topicName: string }[];
   partitions: number[];
   baseurl: string;
+  bootstrapServersUrl: string | null;
 }) {
   const router = useRouter();
   const t = useTranslations();
@@ -124,7 +126,7 @@ export function ResetConsumerOffset({
   };
 
   const generateCliCommand = (): string => {
-    let baseCommand = `$ kafka-consumer-groups --bootstrap-server \${bootstrap-Server} --group ${consumerGroupName} --reset-offsets`;
+    let baseCommand = `$ kafka-consumer-groups --bootstrap-server ${bootstrapServersUrl} --group ${consumerGroupName} --reset-offsets`;
     const topic =
       selectedConsumerTopic === "allTopics"
         ? "--all-topics"
@@ -166,7 +168,7 @@ export function ResetConsumerOffset({
             partition: partition,
             offset:
               selectedOffset === "custom" ||
-                selectedOffset === "specificDateTime"
+              selectedOffset === "specificDateTime"
                 ? selectDateTimeFormat === "Epoch"
                   ? convertEpochToISO(String(offset.offset))
                   : offset.offset

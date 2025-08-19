@@ -6,8 +6,11 @@ import { PageSection } from "@/libs/patternfly/react-core";
 import { Suspense } from "react";
 import { ResetConsumerOffset } from "./ResetConsumerOffset";
 import { NoDataErrorState } from "@/components/NoDataErrorState";
+import { getKafkaCluster } from "@/api/kafka/actions";
 
-export async function generateMetadata(props: { params: { kafkaId: string, groupId: string} }) {
+export async function generateMetadata(props: {
+  params: { kafkaId: string; groupId: string };
+}) {
   const t = await getTranslations();
 
   return {
@@ -30,6 +33,7 @@ export default function ResetOffsetPage({
             topics={[]}
             partitions={[]}
             baseurl={`/kafka/${kafkaId}/consumer-groups`}
+            bootstrapServersUrl={""}
           />
         }
       >
@@ -45,6 +49,17 @@ async function ConnectedResetOffset({
   params: KafkaParams & { groupId: string };
 }) {
   const response = await getConsumerGroup(kafkaId, groupId);
+
+  const data = (await getKafkaCluster(kafkaId))?.payload;
+  if (!data) {
+    return null;
+  }
+  const listeners = data.attributes.listeners || [];
+  const externalServers = listeners.filter((l) => l.type !== "internal");
+
+  const bootstrapServerUrl =
+    externalServers.find((s) => s.bootstrapServers !== null)
+      ?.bootstrapServers ?? null;
 
   if (response.errors) {
     return <NoDataErrorState errors={response.errors} />;
@@ -65,10 +80,18 @@ async function ConnectedResetOffset({
 
   if (undescribedTopics.length > 0) {
     const distinct = new Set(undescribedTopics);
-    return <NoDataErrorState errors={[{
-        title: "Insufficient access",
-        detail: "Missing required access to topics: " + Array.from(distinct).join(", ")
-    }]} />;
+    return (
+      <NoDataErrorState
+        errors={[
+          {
+            title: "Insufficient access",
+            detail:
+              "Missing required access to topics: " +
+              Array.from(distinct).join(", "),
+          },
+        ]}
+      />
+    );
   }
 
   const topicDetails = topics.map((topic) => ({
@@ -85,6 +108,7 @@ async function ConnectedResetOffset({
       partitions={partitions}
       baseurl={`/kafka/${kafkaId}/consumer-groups`}
       kafkaId={kafkaId}
+      bootstrapServersUrl={bootstrapServerUrl}
     />
   );
 }
