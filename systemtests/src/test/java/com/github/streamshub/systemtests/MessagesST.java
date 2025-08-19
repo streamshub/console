@@ -16,16 +16,35 @@ import com.github.streamshub.systemtests.utils.resourceutils.KafkaClientsUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.KafkaNamingUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.KafkaTopicUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.KafkaUtils;
+import com.github.streamshub.systemtests.utils.resourceutils.NamespaceUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
 import io.skodjob.testframe.resources.KubeResourceManager;
 import io.strimzi.api.kafka.model.topic.KafkaTopic;
 import org.apache.kafka.common.security.auth.SecurityProtocol;
 import org.apache.logging.log4j.Logger;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 public class MessagesST extends AbstractST {
     private static final Logger LOGGER = LogWrapper.getLogger(MessagesST.class);
+    private static TestCaseConfig tcc;
+    private static final String TOPIC_PREFIX = "filter-messages";
+
+    // If message count is changed, verify message values inside tests
+    private static final int MESSAGE_COUNT = Constants.MESSAGE_COUNT;
+    private static final int TOPIC_COUNT = 1;
+    private static String kafkaTopicName;
+
+    // 1. Filter by key
+    private static final String KEY_FILTER = "orderID";
+    private static final String KEY_FILTER_MESSAGE = "my-order";
+    // 2. Filter by message header
+    private static final String HEADER_FILTER = "traceID=abc123";
+    private static final String HEADER_FILTER_LOOK_UP_TEXT = "traceID";
+    private static final String HEADER_FILTER_MESSAGE = "abc123";
+    // 3. Filter by message value
+    private static final String VALUE_FILTER = "package=sent";
 
     /**
      * Verifies message filtering functionality on the Messages page using various search text inputs.
@@ -45,29 +64,6 @@ public class MessagesST extends AbstractST {
      */
     @Test
     void testMessageSearchUsingQueries() {
-        final TestCaseConfig tcc = getTestCaseConfig();
-        final String topicPrefix = "filter-text";
-
-        LOGGER.info("Create topic and produce messages for filtering test");
-        String kafkaTopicName = KafkaTopicUtils.setupTopicsAndReturn(tcc.namespace(), tcc.kafkaName(), topicPrefix, 1, true, 1, 1, 1)
-            .get(0).getMetadata().getName();
-
-        KafkaClients clients = new KafkaClientsBuilder()
-            .withNamespaceName(tcc.namespace())
-            .withTopicName(kafkaTopicName)
-            .withMessageCount(Constants.MESSAGE_COUNT_HIGH)
-            .withDelayMs(0)
-            .withProducerName(KafkaNamingUtils.producerName(kafkaTopicName))
-            .withConsumerName(KafkaNamingUtils.consumerName(kafkaTopicName))
-            .withConsumerGroup(KafkaNamingUtils.consumerGroupName(kafkaTopicName))
-            .withBootstrapAddress(KafkaUtils.getPlainScramShaBootstrapAddress(tcc.kafkaName()))
-            .withUsername(tcc.kafkaUserName())
-            .withAdditionalConfig(KafkaClientsUtils.getScramShaConfig(tcc.namespace(), tcc.kafkaUserName(), SecurityProtocol.SASL_PLAINTEXT))
-            .build();
-
-        KubeResourceManager.get().createResourceWithWait(clients.producer(), clients.consumer());
-        WaitUtils.waitForClientsSuccess(clients);
-
         tcc.page().navigate(PwPageUrls.getMessagesPage(tcc, tcc.kafkaName(), ResourceUtils.getKubeResource(KafkaTopic.class, tcc.namespace(), kafkaTopicName).getStatus().getTopicId()));
 
         LOGGER.info("Wait for message search page toolbar to be fully there before filtering messages");
@@ -76,8 +72,8 @@ public class MessagesST extends AbstractST {
 
         LOGGER.info("Verify default order and number of displayed messages");
         PwUtils.waitForLocatorCount(tcc, 50, MessagesPageSelectors.MPS_SEARCH_RESULTS_TABLE_ITEMS, true);
-        PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItems(1), "Hello-world - 9999", true);
-        PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItem(1, 1), "9,999", true);
+        PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItems(1), VALUE_FILTER + " - 99", true);
+        PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItem(1, 1), "299", true);
 
         LOGGER.info("Start filtering messages by input text");
 
@@ -85,25 +81,25 @@ public class MessagesST extends AbstractST {
         PwUtils.waitForLocatorAndFill(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT, "messages=latest retrieve=2");
         PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_ENTER_BUTTON);
         PwUtils.waitForLocatorCount(tcc, 2, MessagesPageSelectors.MPS_SEARCH_RESULTS_TABLE_ITEMS, true);
-        PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItems(1), "Hello-world - 9999", true);
-        PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItems(2), "Hello-world - 9998", true);
+        PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItems(1), VALUE_FILTER + " - 99", true);
+        PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItems(2), VALUE_FILTER + " - 98", true);
 
-        LOGGER.info("Get 20 messages from offset 365");
-        PwUtils.fill(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT, "messages=offset:365 retrieve=20");
+        LOGGER.info("Get 20 messages from offset from the middle of sent messages");
+        PwUtils.fill(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT, "messages=offset:150 retrieve=20");
         PwUtils.click(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_ENTER_BUTTON);
         PwUtils.waitForLocatorCount(tcc, 20, MessagesPageSelectors.MPS_SEARCH_RESULTS_TABLE_ITEMS, true);
-        PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItem(1, 5), "Hello-world - 365", true);
-        PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItem(1, 1), "365", true);
+        PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItem(1, 5), HEADER_FILTER_MESSAGE + " - 50", true);
+        PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItem(1, 1), "150", true);
 
         LOGGER.info("Get message containing word from all messages");
-        PwUtils.fill(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT, "messages=offset:1 retrieve=100 world - 42");
+        PwUtils.fill(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT, "messages=offset:10 retrieve=100 " + KEY_FILTER_MESSAGE + " - 42");
         PwUtils.click(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_ENTER_BUTTON);
         PwUtils.waitForLocatorCount(tcc, 1, MessagesPageSelectors.MPS_SEARCH_RESULTS_TABLE_ITEMS, true);
-        PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItem(1, 5), "Hello-world - 42", true);
+        PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItem(1, 5), KEY_FILTER_MESSAGE + " - 42", true);
         PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItem(1, 1), "42", true);
 
         LOGGER.info("Get NONE message containing word from different messages while fetching another message");
-        PwUtils.fill(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT, "messages=latest retrieve=40 world - 42");
+        PwUtils.fill(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT, "messages=latest retrieve=40 " + KEY_FILTER_MESSAGE + " - 42");
         PwUtils.click(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_ENTER_BUTTON);
         PwUtils.waitForLocatorCount(tcc, 1, MessagesPageSelectors.MPS_SEARCH_RESULTS_TABLE_ITEMS, true);
         PwUtils.waitForContainsText(tcc, MessagesPageSelectors.MPS_SEARCH_RESULTS_TABLE_ITEMS, "No messages data", true);
@@ -112,8 +108,8 @@ public class MessagesST extends AbstractST {
         PwUtils.fill(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT, "messages=totalyNotOkay retrieve=-9");
         PwUtils.click(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_ENTER_BUTTON);
         PwUtils.waitForLocatorCount(tcc, 50, MessagesPageSelectors.MPS_SEARCH_RESULTS_TABLE_ITEMS, true);
-        PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItems(1), "Hello-world - 9999", true);
-        PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItems(2), "Hello-world - 9998", true);
+        PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItems(1), VALUE_FILTER + " - 99", true);
+        PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItems(2), VALUE_FILTER + " - 98", true);
     }
 
 
@@ -141,53 +137,6 @@ public class MessagesST extends AbstractST {
      */
     @Test
     void testFilterMessagesUsingUIForm() {
-        final TestCaseConfig tcc = getTestCaseConfig();
-        final String topicPrefix = "ui-form-filter";
-        final String keyFilter = "orderID";
-        final String keyFilterMessage = "my-order";
-
-        final String headerFilter = "traceID=abc123";
-        final String headerFilterLookUpText = "traceID";
-        final String headerFilterMessage = "abc123";
-
-        final String valueFilter = "package=sent";
-
-        LOGGER.info("Create topic and produce multiple different messages for filtering test");
-        String kafkaTopicName = KafkaTopicUtils.setupTopicsAndReturn(tcc.namespace(), tcc.kafkaName(), topicPrefix, 1, true, 1, 1, 1)
-            .get(0).getMetadata().getName();
-
-        // Set clients to send messages with KEY
-        KafkaClients clients = new KafkaClientsBuilder()
-            .withNamespaceName(tcc.namespace())
-            .withTopicName(kafkaTopicName)
-            .withMessageCount(Constants.MESSAGE_COUNT)
-            .withDelayMs(0)
-            .withProducerName(KafkaNamingUtils.producerName(kafkaTopicName))
-            .withConsumerName(KafkaNamingUtils.consumerName(kafkaTopicName))
-            .withConsumerGroup(KafkaNamingUtils.consumerGroupName(kafkaTopicName))
-            .withBootstrapAddress(KafkaUtils.getPlainScramShaBootstrapAddress(tcc.kafkaName()))
-            .withUsername(tcc.kafkaUserName())
-            .withMessage(keyFilterMessage)
-            .withMessageKey(keyFilter)
-            .withAdditionalConfig(KafkaClientsUtils.getScramShaConfig(tcc.namespace(), tcc.kafkaUserName(), SecurityProtocol.SASL_PLAINTEXT))
-            .build();
-
-        KubeResourceManager.get().createResourceWithWait(clients.producer(), clients.consumer());
-        WaitUtils.waitForClientsSuccess(clients);
-
-        // create second set of messages with different HEADER and MESSAGE
-        clients.setMessageKey("NoDataInKey-True");
-        clients.setHeaders(headerFilter);
-        clients.setMessage(headerFilterMessage);
-
-        KubeResourceManager.get().createResourceWithWait(clients.producer(), clients.consumer());
-        WaitUtils.waitForClientsSuccess(clients);
-        // create third set of messages with different MESSAGE
-        clients.setHeaders("NoDataInHeader=true");
-        clients.setMessage(valueFilter);
-
-        KubeResourceManager.get().createResourceWithWait(clients.producer(), clients.consumer());
-        WaitUtils.waitForClientsSuccess(clients);
         tcc.page().navigate(PwPageUrls.getMessagesPage(tcc, tcc.kafkaName(), ResourceUtils.getKubeResource(KafkaTopic.class, tcc.namespace(), kafkaTopicName).getStatus().getTopicId()));
 
         LOGGER.info("Wait for page toolbar to be fully loaded before filtering");
@@ -196,7 +145,7 @@ public class MessagesST extends AbstractST {
 
         LOGGER.info("Verify default state of displayed messages");
         PwUtils.waitForLocatorCount(tcc, 50, MessagesPageSelectors.MPS_SEARCH_RESULTS_TABLE_ITEMS, true);
-        PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItems(1), valueFilter + " - 99", true);
+        PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItems(1), VALUE_FILTER + " - 99", true);
         PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItem(1, 1), "299", true);
         PwUtils.waitForContainsAttribute(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT, "messages=latest retrieve=50", Constants.VALUE_ATTRIBUTE, true);
 
@@ -204,7 +153,7 @@ public class MessagesST extends AbstractST {
         PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_OPEN_POPOVER_FORM_BUTTON);
         PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_TPF_WHERE_DROPDOWN_BUTTON);
         PwUtils.waitForLocatorAndClick(tcc, new CssBuilder(MessagesPageSelectors.MPS_TPF_FILTER_WHERE_DROPDOWN_ITEMS).nth(2).build());
-        PwUtils.waitForLocatorAndFill(tcc, MessagesPageSelectors.MPS_TPF_HAS_WORDS_INPUT, keyFilter);
+        PwUtils.waitForLocatorAndFill(tcc, MessagesPageSelectors.MPS_TPF_HAS_WORDS_INPUT, KEY_FILTER);
         PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_TPF_SEARCH_BUTTON);
         PwUtils.waitForContainsText(tcc, MessagesPageSelectors.MPS_EMPTY_FILTER_SEARCH_CONTENT, "No messages data", true);
 
@@ -220,7 +169,7 @@ public class MessagesST extends AbstractST {
         LOGGER.debug("Verify filtered messages with specific key");
         PwUtils.waitForLocatorCount(tcc, 5, MessagesPageSelectors.MPS_SEARCH_RESULTS_TABLE_ITEMS, true);
         PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItem(1, 1), "95", true);
-        PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItem(1, 3), keyFilter, true);
+        PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItem(1, 3), KEY_FILTER, true);
 
         LOGGER.debug("Reset messages filter");
         PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_OPEN_POPOVER_FORM_BUTTON);
@@ -233,19 +182,19 @@ public class MessagesST extends AbstractST {
         PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_OPEN_POPOVER_FORM_BUTTON);
         PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_TPF_WHERE_DROPDOWN_BUTTON);
         PwUtils.waitForLocatorAndClick(tcc, new CssBuilder(MessagesPageSelectors.MPS_TPF_FILTER_WHERE_DROPDOWN_ITEMS).nth(3).build());
-        PwUtils.waitForLocatorAndFill(tcc, MessagesPageSelectors.MPS_TPF_HAS_WORDS_INPUT, headerFilterLookUpText);
+        PwUtils.waitForLocatorAndFill(tcc, MessagesPageSelectors.MPS_TPF_HAS_WORDS_INPUT, HEADER_FILTER_LOOK_UP_TEXT);
         PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_TPF_PARAMETERS_MESSAGES);
         PwUtils.waitForLocatorAndClick(tcc, new CssBuilder(MessagesPageSelectors.MPS_TPF_PARAMETERS_MESSAGES_DROPDOWN_ITEMS).nth(1).build());
         PwUtils.waitForLocatorAndFill(tcc, MessagesPageSelectors.MPS_TPF_PARAMETERS_MESSAGES_OFFSET_INPUT, "95");
         PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_TPF_SEARCH_BUTTON);
-        PwUtils.waitForContainsAttribute(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT, "messages=offset:95 retrieve=50 " + headerFilterLookUpText + " where=headers", Constants.VALUE_ATTRIBUTE, true);
+        PwUtils.waitForContainsAttribute(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT, "messages=offset:95 retrieve=50 " + HEADER_FILTER_LOOK_UP_TEXT + " where=headers", Constants.VALUE_ATTRIBUTE, true);
         // Because filter retrieve overlaps 5 messages from previous set, there should be only 45 with correct header
         // Order is ASC
         LOGGER.debug("Verify filtered messages with specific header");
         PwUtils.waitForLocatorCount(tcc, 45, MessagesPageSelectors.MPS_SEARCH_RESULTS_TABLE_ITEMS, true);
         PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItem(1, 1), "100", true);
-        PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItem(1, 4), headerFilterLookUpText, true);
-        PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItem(1, 5), headerFilterMessage + " - 0", true);
+        PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItem(1, 4), HEADER_FILTER_LOOK_UP_TEXT, true);
+        PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItem(1, 5), HEADER_FILTER_MESSAGE + " - 0", true);
 
         LOGGER.debug("Reset messages filter");
         PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_OPEN_POPOVER_FORM_BUTTON);
@@ -259,26 +208,79 @@ public class MessagesST extends AbstractST {
 
         PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_TPF_WHERE_DROPDOWN_BUTTON);
         PwUtils.waitForLocatorAndClick(tcc, new CssBuilder(MessagesPageSelectors.MPS_TPF_FILTER_WHERE_DROPDOWN_ITEMS).nth(4).build());
-        PwUtils.waitForLocatorAndFill(tcc, MessagesPageSelectors.MPS_TPF_HAS_WORDS_INPUT, valueFilter);
+        PwUtils.waitForLocatorAndFill(tcc, MessagesPageSelectors.MPS_TPF_HAS_WORDS_INPUT, VALUE_FILTER);
         PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_TPF_PARAMETERS_MESSAGES);
         PwUtils.waitForLocatorAndClick(tcc, new CssBuilder(MessagesPageSelectors.MPS_TPF_PARAMETERS_MESSAGES_DROPDOWN_ITEMS).nth(1).build());
         PwUtils.waitForLocatorAndFill(tcc, MessagesPageSelectors.MPS_TPF_PARAMETERS_MESSAGES_OFFSET_INPUT, "195");
         PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_TPF_SEARCH_BUTTON);
-        PwUtils.waitForContainsAttribute(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT, "messages=offset:195 retrieve=50 " + valueFilter + " where=value", Constants.VALUE_ATTRIBUTE, true);
+        PwUtils.waitForContainsAttribute(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT, "messages=offset:195 retrieve=50 " + VALUE_FILTER + " where=value", Constants.VALUE_ATTRIBUTE, true);
         // Because filter retrieve overlaps 5 messages from previous set, there should be only 45 with correct message value
         // Order is ASC
         LOGGER.debug("Verify filtered messages with specific message value");
         PwUtils.waitForLocatorCount(tcc, 45, MessagesPageSelectors.MPS_SEARCH_RESULTS_TABLE_ITEMS, true);
         PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItem(1, 1), "200", true);
-        PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItem(1, 5), valueFilter + " - 0", true);
+        PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItem(1, 5), VALUE_FILTER + " - 0", true);
     }
 
+    void prepareMessageFilterScenario() {
+        LOGGER.info("Prepare filter messages scenario by creating topic and producing various messages");
 
-    @BeforeEach
-    void testCaseSetup() {
-        final TestCaseConfig tcc = getTestCaseConfig();
+        kafkaTopicName = KafkaTopicUtils.setupTopicsAndReturn(tcc.namespace(), tcc.kafkaName(), TOPIC_PREFIX, TOPIC_COUNT, true, 1, 1, 1)
+            .get(0).getMetadata().getName();
+
+        // Setup UI form filtering
+        // First set clients to send messages with KEY
+        KafkaClients clients = new KafkaClientsBuilder()
+            .withNamespaceName(tcc.namespace())
+            .withTopicName(kafkaTopicName)
+            .withMessageCount(MESSAGE_COUNT)
+            .withDelayMs(0)
+            .withProducerName(KafkaNamingUtils.producerName(kafkaTopicName))
+            .withConsumerName(KafkaNamingUtils.consumerName(kafkaTopicName))
+            .withConsumerGroup(KafkaNamingUtils.consumerGroupName(kafkaTopicName))
+            .withBootstrapAddress(KafkaUtils.getPlainScramShaBootstrapAddress(tcc.kafkaName()))
+            .withUsername(tcc.kafkaUserName())
+            .withMessage(KEY_FILTER_MESSAGE)
+            .withMessageKey(KEY_FILTER)
+            .withAdditionalConfig(KafkaClientsUtils.getScramShaConfig(tcc.namespace(), tcc.kafkaUserName(), SecurityProtocol.SASL_PLAINTEXT))
+            .build();
+
+        KubeResourceManager.get().createResourceWithWait(clients.producer(), clients.consumer());
+        WaitUtils.waitForClientsSuccess(clients);
+
+        // create second set of messages with different HEADER and MESSAGE
+        clients.setMessageKey("NoDataInKey-True");
+        clients.setHeaders(HEADER_FILTER);
+        clients.setMessage(HEADER_FILTER_MESSAGE);
+
+        KubeResourceManager.get().createResourceWithWait(clients.producer(), clients.consumer());
+        WaitUtils.waitForClientsSuccess(clients);
+        // create third set of messages with different MESSAGE
+        clients.setHeaders("NoDataInHeader=true");
+        clients.setMessage(VALUE_FILTER);
+
+        KubeResourceManager.get().createResourceWithWait(clients.producer(), clients.consumer());
+        WaitUtils.waitForClientsSuccess(clients);
+
+        LOGGER.info("Filtering scenario prepared");
+    }
+
+    @BeforeAll
+    void testClassSetup() {
+        // Init test case config based on the test context
+        tcc = new TestCaseConfig(KubeResourceManager.get().getTestContext());
+        // Prepare test environment
+        NamespaceUtils.prepareNamespace(tcc.namespace());
         KafkaSetup.setupDefaultKafkaIfNeeded(tcc.namespace(), tcc.kafkaName());
         ConsoleInstanceSetup.setupIfNeeded(ConsoleInstanceSetup.getDefaultConsoleInstance(tcc.namespace(), tcc.consoleInstanceName(), tcc.kafkaName(), tcc.kafkaUserName()));
         PwUtils.login(tcc);
+
+        // Test Class specific
+        prepareMessageFilterScenario();
+    }
+
+    @AfterAll
+    void testClassTeardown() {
+        tcc.playwright().close();
     }
 }

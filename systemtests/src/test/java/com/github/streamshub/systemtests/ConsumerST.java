@@ -12,14 +12,17 @@ import com.github.streamshub.systemtests.utils.playwright.PwUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.KafkaClientsUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.KafkaCmdUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.KafkaNamingUtils;
+import com.github.streamshub.systemtests.utils.resourceutils.NamespaceUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
 import com.github.streamshub.systemtests.utils.testutils.ConsumerTestUtils;
 import io.fabric8.kubernetes.api.model.Pod;
 import io.skodjob.testframe.TestFrameConstants;
+import io.skodjob.testframe.resources.KubeResourceManager;
 import io.strimzi.api.kafka.model.topic.KafkaTopic;
 import org.apache.kafka.common.security.auth.SecurityProtocol;
 import org.apache.logging.log4j.Logger;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -34,18 +37,25 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ConsumerST extends AbstractST {
     private static final Logger LOGGER = LogWrapper.getLogger(ConsumerST.class);
+    private static TestCaseConfig tcc;
+    private static final String TOPIC_PREFIX = "rst-all-topics-var-offset";
+    private static final int MESSAGE_COUNT = Constants.MESSAGE_COUNT_HIGH;
+    private static final int TOPIC_COUNT = 2;
+    private static String consumerGroupName;
+    private static String clientsConfig;
 
     /**
      * Tests resetting Kafka consumer group offsets across multiple topics using various offset reset types via the UI.
      *
-     * <p>The test first prepares the scenario by creating topics and producing/consuming messages to set initial offsets.</p>
-     * <p>It verifies the default consumer offsets correspond to the latest message offsets before any reset.</p>
+     * <p>The test class first prepares the scenario by creating topics and producing/consuming messages to set initial offsets.</p>
+     * <p>Test method then retrieves these prepared topics for each reset scenario.</p>
+     * <p>It verifies the default consumer offsets could be reset using UI `Reset offsets` button.</p>
      * <p>The test then navigates to the Consumer Groups page and uses the UI to reset offsets for all topics using:</p>
      * <ul>
      *   <li>Earliest offset reset</li>
      *   <li>Latest offset reset</li>
-     *   <li>Date/time-based earliest latest offset resets with UNIX epoch format</li>
-     *   <li>Date/time-based middle offset resets with ISO-8601 format</li>
+     *   <li>Date/time-based earliest / latest / half-way offset resets with UNIX epoch format</li>
+     *   <li>Date/time-based earliest / latest / half-way offset resets with ISO-8601 format</li>
      * </ul>
      * <p>For each reset type, the test verifies that the consumer group offsets are updated accordingly by querying Kafka through the broker pod.</p>
      * <p>The test ensures that both dry-run and actual reset operations work as expected and that offsets reflect the UI commands.</p>
@@ -55,23 +65,21 @@ public class ConsumerST extends AbstractST {
      */
 
     private Stream<Arguments> offsetResetScenarios() {
-        final int messageCount = Constants.MESSAGE_COUNT_HIGH;
-
         final String earliestOffsetIndex = "0";
         // Use index to reset consumers to previous offset to read timestamp
-        final String latestOffsetIndex = String.valueOf(messageCount - 1);
-        final String middleOffsetIndex = String.valueOf((int) Math.ceil(messageCount / 2.0) - 1);
+        final String latestOffsetIndex = String.valueOf(MESSAGE_COUNT - 1);
+        final String middleOffsetIndex = String.valueOf((int) Math.ceil(MESSAGE_COUNT / 2.0) - 1);
 
         return Stream.of(
-            Arguments.of(messageCount, ResetOffsetType.EARLIEST, null, earliestOffsetIndex),
+            Arguments.of(MESSAGE_COUNT, ResetOffsetType.EARLIEST, null, earliestOffsetIndex),
             // Only one that uses `--to-latest` which sets the index to nth+1 for consuming the next message
-            Arguments.of(messageCount, ResetOffsetType.LATEST, null, String.valueOf(messageCount)),
-            Arguments.of(messageCount, ResetOffsetType.DATE_TIME, ResetOffsetDateTimeType.UNIX_EPOCH, earliestOffsetIndex),
-            Arguments.of(messageCount, ResetOffsetType.DATE_TIME, ResetOffsetDateTimeType.UNIX_EPOCH, latestOffsetIndex),
-            Arguments.of(messageCount, ResetOffsetType.DATE_TIME, ResetOffsetDateTimeType.UNIX_EPOCH, middleOffsetIndex),
-            Arguments.of(messageCount, ResetOffsetType.DATE_TIME, ResetOffsetDateTimeType.ISO_8601, earliestOffsetIndex),
-            Arguments.of(messageCount, ResetOffsetType.DATE_TIME, ResetOffsetDateTimeType.ISO_8601, latestOffsetIndex),
-            Arguments.of(messageCount, ResetOffsetType.DATE_TIME, ResetOffsetDateTimeType.ISO_8601, middleOffsetIndex)
+            Arguments.of(MESSAGE_COUNT, ResetOffsetType.LATEST, null, String.valueOf(MESSAGE_COUNT)),
+            Arguments.of(MESSAGE_COUNT, ResetOffsetType.DATE_TIME, ResetOffsetDateTimeType.UNIX_EPOCH, earliestOffsetIndex),
+            Arguments.of(MESSAGE_COUNT, ResetOffsetType.DATE_TIME, ResetOffsetDateTimeType.UNIX_EPOCH, latestOffsetIndex),
+            Arguments.of(MESSAGE_COUNT, ResetOffsetType.DATE_TIME, ResetOffsetDateTimeType.UNIX_EPOCH, middleOffsetIndex),
+            Arguments.of(MESSAGE_COUNT, ResetOffsetType.DATE_TIME, ResetOffsetDateTimeType.ISO_8601, earliestOffsetIndex),
+            Arguments.of(MESSAGE_COUNT, ResetOffsetType.DATE_TIME, ResetOffsetDateTimeType.ISO_8601, latestOffsetIndex),
+            Arguments.of(MESSAGE_COUNT, ResetOffsetType.DATE_TIME, ResetOffsetDateTimeType.ISO_8601, middleOffsetIndex)
         );
     }
 
@@ -80,30 +88,20 @@ public class ConsumerST extends AbstractST {
     void testResetConsumerOffsetAllTopicsAllPartitions(int messageCount,
         ResetOffsetType resetType, ResetOffsetDateTimeType dateTimeType, String expectedOffset) {
 
-        final TestCaseConfig tcc = getTestCaseConfig();
-        tcc.setMessageCount(messageCount);
-
-        final String topicPrefix = "rst-all-topics-var-offset";
-        final String consumerGroupName = KafkaNamingUtils.consumerGroupName(topicPrefix);
-        final String clientsConfig = KafkaClientsUtils.getScramShaConfig(tcc.namespace(), tcc.kafkaUserName(), SecurityProtocol.SASL_PLAINTEXT);
         final String brokerPodName = ResourceUtils.listKubeResourcesByPrefix(Pod.class, tcc.namespace(), KafkaNamingUtils.brokerPodNamePrefix(tcc.kafkaName())).get(0).getMetadata().getName();
-        final int topicCount = 2;
 
-        // Set up if first test or if previous test failed and removed kafka topics or list if previous test passed
-        List<String> kafkaTopicNames = ResourceUtils.listKubeResourcesByPrefix(KafkaTopic.class, tcc.namespace(), topicPrefix)
+        // Get topics for test from prepared scenario
+        List<String> kafkaTopicNames = ResourceUtils.listKubeResourcesByPrefix(KafkaTopic.class, tcc.namespace(), TOPIC_PREFIX)
             .stream()
             .map(kt -> kt.getMetadata().getName())
             .toList();
 
-        if (kafkaTopicNames.isEmpty()) {
-            kafkaTopicNames = ConsumerTestUtils.prepareConsumerGroupOffsetScenarioAndReturnTopicNames(tcc, topicPrefix, consumerGroupName, topicCount, 1, 1, 1);
-        }
-
-        LOGGER.info("Verify default consumer offset");
         tcc.page().navigate(PwPageUrls.getConsumerGroupsPage(tcc, tcc.kafkaName(), consumerGroupName));
         PwUtils.waitForElementEnabledState(tcc, ConsumerGroupsPageSelectors.CGPS_RESET_CONSUMER_OFFSET_BUTTON, true, true, TestFrameConstants.GLOBAL_TIMEOUT_MEDIUM);
+
         // Look at the offset in UI
         for (String kafkaTopicName : kafkaTopicNames) {
+            LOGGER.info("Verify default consumer offset");
             KafkaCmdUtils.setConsumerGroupOffset(tcc.namespace(), tcc.kafkaName(), brokerPodName, consumerGroupName, kafkaTopicName, String.valueOf(messageCount), clientsConfig);
             assertEquals(String.valueOf(messageCount),
                 KafkaCmdUtils.getConsumerGroupOffset(tcc.namespace(), tcc.kafkaName(), brokerPodName, consumerGroupName, kafkaTopicName, clientsConfig));
@@ -124,16 +122,34 @@ public class ConsumerST extends AbstractST {
             tcc.page().navigate(PwPageUrls.getConsumerGroupsResetOffsetPage(tcc, tcc.kafkaName(), consumerGroupName));
             ConsumerTestUtils.execDryRunAndReset(tcc, resetType, dateTimeType, resetValue);
 
+            LOGGER.info("Verify expected consumer offset value");
             assertEquals(String.valueOf(expectedOffset),
                 KafkaCmdUtils.getConsumerGroupOffset(tcc.namespace(), tcc.kafkaName(), brokerPodName, consumerGroupName, kafkaTopicName, clientsConfig));
         }
     }
 
-    @BeforeEach
-    void testCaseSetup() {
-        final TestCaseConfig tcc = getTestCaseConfig();
+    @BeforeAll
+    void testClassSetup() {
+        // Init test case config based on the test context
+        tcc = new TestCaseConfig(KubeResourceManager.get().getTestContext());
+        // Prepare test environment
+        NamespaceUtils.prepareNamespace(tcc.namespace());
         KafkaSetup.setupDefaultKafkaIfNeeded(tcc.namespace(), tcc.kafkaName());
         ConsoleInstanceSetup.setupIfNeeded(ConsoleInstanceSetup.getDefaultConsoleInstance(tcc.namespace(), tcc.consoleInstanceName(), tcc.kafkaName(), tcc.kafkaUserName()));
         PwUtils.login(tcc);
+
+        // Test class specific
+        tcc.setMessageCount(MESSAGE_COUNT);
+        // Setup topics, produce messages and consume all
+        ConsumerTestUtils.prepareConsumerGroupOffsetScenario(tcc, TOPIC_PREFIX,
+                KafkaNamingUtils.consumerGroupName(tcc.kafkaName()), TOPIC_COUNT, 1, 1, 1);
+        // Use one consumer group for all topics
+        consumerGroupName = KafkaNamingUtils.consumerGroupName(tcc.kafkaName());
+        clientsConfig = KafkaClientsUtils.getScramShaConfig(tcc.namespace(), tcc.kafkaUserName(), SecurityProtocol.SASL_PLAINTEXT);
+    }
+
+    @AfterAll
+    void testClassTeardown() {
+        tcc.playwright().close();
     }
 }

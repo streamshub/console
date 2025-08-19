@@ -31,7 +31,8 @@ public class YamlConfig extends InstallConfig {
     private static final Logger LOGGER = LogWrapper.getLogger(YamlConfig.class);
     private List<HasMetadata> consoleBundleResources;
 
-    public YamlConfig() {
+    public YamlConfig(String namespace) {
+        super(namespace);
         LOGGER.info("Console Operator will be installed using YAML bundle");
         // Need to replace streamed content due to KubernetesException being thrown during load of released YAML
         // that contains `namespace: ${NAMESPACE}` where $ is an unknown symbol that cannot be parsed
