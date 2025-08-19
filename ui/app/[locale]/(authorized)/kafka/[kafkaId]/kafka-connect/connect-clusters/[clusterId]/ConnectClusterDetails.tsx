@@ -9,6 +9,7 @@ import { ResponsiveTable } from "@/components/Table";
 import {
   CheckCircleIcon,
   ExclamationCircleIcon,
+  HelpIcon,
   HistoryIcon,
   PauseCircleIcon,
   PendingIcon,
@@ -26,8 +27,9 @@ import {
   TabContentBody,
   Tabs,
   TabTitleText,
+  Tooltip,
   Truncate,
-} from "@patternfly/react-core";
+} from "@/libs/patternfly/react-core";
 import { useTranslations } from "next-intl";
 import { ReactNode, useState } from "react";
 import Image from "next/image";
@@ -165,7 +167,10 @@ export function ConnectClusterDetails({
           </DescriptionListGroup>
           <DescriptionListGroup>
             <DescriptionListTerm>
-              {t("connect_clusters.workers")}
+              {t("connect_clusters.workers")}{" "}
+              <Tooltip content={t("connect_clusters.workers_tooltip")}>
+                <HelpIcon />
+              </Tooltip>
             </DescriptionListTerm>
             <DescriptionListDescription>{workers}</DescriptionListDescription>
           </DescriptionListGroup>

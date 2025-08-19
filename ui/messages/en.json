@@ -725,7 +725,8 @@
       "name": "Name",
       "version": "Connect Version",
       "workers": "Workers",
-      "plugins": "Plugins"
+      "plugins": "Plugins",
+      "workers_tooltip": "Workers represents the number of replicas in the Kafka Connect cluster. This information is obtained from the Strimzi custom resource that defines the cluster and is not available for Kafka Connect clusters that are not managed by the Strimzi Cluster Operator."
     }
   }
 }

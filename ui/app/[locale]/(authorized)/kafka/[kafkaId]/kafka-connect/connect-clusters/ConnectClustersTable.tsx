@@ -3,6 +3,8 @@ import { TableView, TableViewProps } from "@/components/Table";
 import { useTranslations } from "next-intl";
 import { EmptyStateNoMatchFound } from "@/components/Table/EmptyStateNoMatchFound";
 import Link from "next/link";
+import { Tooltip } from "@/libs/patternfly/react-core";
+import { HelpIcon } from "@/libs/patternfly/react-icons";
 
 export const ConnectClustersTableColumns = [
   "name",
@@ -61,7 +63,14 @@ export function ConnectClustersTable({
           case "version":
             return <Th key={key}>{t("connect_clusters.version")}</Th>;
           case "workers":
-            return <Th key={key}>{t("connect_clusters.workers")}</Th>;
+            return (
+              <Th key={key}>
+                {t("connect_clusters.workers")}{" "}
+                <Tooltip content={t("connect_clusters.workers_tooltip")}>
+                  <HelpIcon />
+                </Tooltip>
+              </Th>
+            );
         }
       }}
       renderCell={({ row, column, key, Td }) => {
