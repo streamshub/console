@@ -80,9 +80,9 @@ function reloadConfig(
 
 /**
  * Check whether the configuration value contains a reference to an environment
- * variable - e.g. ${my-var-reference}. To find the environment variable, 
+ * variable - e.g. ${my-var-reference}. To find the environment variable,
  * non-word [^a-zA-Z_0-9] characters are replaced by underscore and the entire
- * value is converted to upper-case characters. 
+ * value is converted to upper-case characters.
  */
 function resolveValue(value: string | null): string | null {
     if (value?.startsWith("${") && value.endsWith("}")) {
@@ -197,5 +197,11 @@ export async function clientConfig(): Promise<ConsoleConfig> {
       // Do not return security information do client-side
       security: null,
     };
+  });
+}
+
+export async function oidcEnabled(): Promise<boolean> {
+  return getOrLoadConfig().then((cfg) => {
+    return (cfg?.security?.oidc ?? null) !== null;
   });
 }

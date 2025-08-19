@@ -29,15 +29,16 @@ export type ClusterInfo = {
   clusterName: string;
   authenticationMethod: string;
   id: string;
+  loginRequired: boolean;
 };
 
 export function AppDropdown({
   clusters,
   kafkaId,
-}: {
-  clusters: ClusterInfo[];
-  kafkaId: string;
-}) {
+}: Readonly<{
+  readonly clusters: ClusterInfo[];
+  readonly kafkaId: string;
+}>) {
   const t = useTranslations();
   const router = useRouter();
   const [activeItem, setActiveItem] = useState<string | undefined>(undefined);
@@ -73,7 +74,12 @@ export function AppDropdown({
       localStorage.setItem("PreviousClusterId", currentCluster.id);
       localStorage.setItem("PreviousClusterName", currentCluster.clusterName);
     }
-    router.push(`/kafka/${id}/login`);
+
+    if (currentCluster?.loginRequired) {
+      router.push(`/kafka/${id}/login`);
+    } else {
+      router.push(`/kafka/${id}`);
+    }
   };
 
   const handleSearchInputChange = (value: string) => {
