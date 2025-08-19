@@ -45,7 +45,7 @@ public class ConsumerTestUtils {
      * @param replicas          the number of replicas per topic
      * @param minIsr            the minimum in-sync replicas required for topic durability
      */
-    public static List<String> prepareConsumerGroupOffsetScenarioAndReturnTopicNames(TestCaseConfig tcc, String topicPrefix, String consumerGroupName, int topicCount, int partitions, int replicas, int minIsr) {
+    public static void prepareConsumerGroupOffsetScenario(TestCaseConfig tcc, String topicPrefix, String consumerGroupName, int topicCount, int partitions, int replicas, int minIsr) {
         LOGGER.info("Prepare consumer offset scenario by creating topic(s) and then producing and consuming messages");
 
         List<String> kafkaTopicNames = KafkaTopicUtils.setupTopicsAndReturn(tcc.namespace(), tcc.kafkaName(), topicPrefix, topicCount, true, partitions, replicas, minIsr)
@@ -72,7 +72,6 @@ public class ConsumerTestUtils {
         }
 
         LOGGER.info("Reset consumer offset scenario ready");
-        return kafkaTopicNames;
     }
 
     /**

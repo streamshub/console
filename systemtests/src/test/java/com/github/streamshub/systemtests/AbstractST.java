@@ -11,7 +11,6 @@ import com.github.streamshub.systemtests.resourcetypes.KafkaUserType;
 import com.github.streamshub.systemtests.setup.console.ConsoleOperatorSetup;
 import com.github.streamshub.systemtests.setup.strimzi.StrimziOperatorSetup;
 import com.github.streamshub.systemtests.utils.resourceutils.ClusterUtils;
-import com.github.streamshub.systemtests.utils.resourceutils.NamespaceUtils;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.Namespace;
 import io.skodjob.testframe.annotations.ResourceManager;
@@ -53,7 +52,7 @@ public abstract class AbstractST {
     private static final Logger LOGGER = LogWrapper.getLogger(AbstractST.class);
     // Operators
     protected final StrimziOperatorSetup strimziOperatorSetup = new StrimziOperatorSetup(Constants.CO_NAMESPACE);
-    protected final ConsoleOperatorSetup consoleOperatorSetup = new ConsoleOperatorSetup();
+    protected final ConsoleOperatorSetup consoleOperatorSetup = new ConsoleOperatorSetup(Constants.CO_NAMESPACE);
 
     static {
         KubeResourceManager.get().setResourceTypes(
@@ -96,45 +95,37 @@ public abstract class AbstractST {
     protected TestCaseConfig getTestCaseConfig() {
         return (TestCaseConfig) KubeResourceManager.get().getTestContext()
             .getStore(ExtensionContext.Namespace.GLOBAL)
-            .get(KubeResourceManager.get().getTestContext().getTestMethod().orElseThrow().getName());
+            .get(KubeResourceManager.get().getTestContext());
     }
 
     @BeforeAll
-    void setupTestSuite() {
-        LOGGER.info("=========== AbstractST - BeforeAll - Setup TestSuite ===========");
-        NamespaceUtils.prepareNamespace(Constants.CO_NAMESPACE);
+    void setupTestSuite(ExtensionContext extensionContext) {
+        KubeResourceManager.get().setTestContext(extensionContext);
         strimziOperatorSetup.install();
         consoleOperatorSetup.install();
     }
 
     @BeforeEach
-    void setupTestCase() {
-        LOGGER.info("=========== AbstractST - BeforeEach - Setup TestCase {} ===========", KubeResourceManager.get().getTestContext().getTestMethod());
+    void setupTestCase(ExtensionContext extensionContext) {
+        KubeResourceManager.get().setTestContext(extensionContext);
         ClusterUtils.checkClusterHealth();
-        // Init test case config based on the test context
-        TestCaseConfig tcc = new TestCaseConfig(KubeResourceManager.get().getTestContext());
-        // Create namespace
-        NamespaceUtils.prepareNamespace(tcc.namespace());
-        // Store test case config into the test context
-        KubeResourceManager.get().getTestContext()
-            .getStore(ExtensionContext.Namespace.GLOBAL)
-            .put(KubeResourceManager.get().getTestContext().getTestMethod().get().getName(), tcc);
     }
 
     @AfterEach
     void teardownTestCase(ExtensionContext extensionContext) {
         KubeResourceManager.get().setTestContext(extensionContext);
-        getTestCaseConfig().playwright().close();
-        if (Environment.CLEANUP_ENVIRONMENT) {
-            KubeResourceManager.get().deleteResources();
-        }
+        cleanupIfNeeded();
     }
 
     @AfterAll
-    void teardownTestSuit(ExtensionContext extensionContext) {
+    void teardownTestSuite(ExtensionContext extensionContext) {
         KubeResourceManager.get().setTestContext(extensionContext);
+        cleanupIfNeeded();
+    }
+
+    protected void cleanupIfNeeded() {
         if (Environment.CLEANUP_ENVIRONMENT) {
-            KubeResourceManager.get().deleteResources();
+            KubeResourceManager.get().deleteResources(false);
         }
     }
 }

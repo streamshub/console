@@ -24,8 +24,7 @@ public class NamespaceUtils {
      * @param namespaceName the name of the Kubernetes namespace to prepare
      */
     public static void prepareNamespace(String namespaceName) {
-        Namespace namespace = ResourceUtils.getKubeResource(Namespace.class, namespaceName);
-        if (namespace == null) {
+        if (ResourceUtils.getKubeResource(Namespace.class, namespaceName) == null) {
             KubeResourceManager.get().createResourceWithWait(
                 new NamespaceBuilder()
                     .withNewMetadata()
