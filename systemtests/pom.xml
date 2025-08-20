@@ -241,6 +241,7 @@
             <id>regression</id>
             <properties>
                 <skipTests>false</skipTests>
+                <groups>regression</groups>
             </properties>
         </profile>
     </profiles>

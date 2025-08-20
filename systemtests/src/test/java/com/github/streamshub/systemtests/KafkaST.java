@@ -2,6 +2,7 @@ package com.github.streamshub.systemtests;
 
 import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.constants.Labels;
+import com.github.streamshub.systemtests.constants.TestTags;
 import com.github.streamshub.systemtests.enums.ConditionStatus;
 import com.github.streamshub.systemtests.enums.ResourceStatus;
 import com.github.streamshub.systemtests.locators.ClusterOverviewPageSelectors;
@@ -28,11 +29,13 @@ import io.strimzi.api.kafka.model.nodepool.KafkaNodePool;
 import io.strimzi.api.kafka.model.nodepool.KafkaNodePoolBuilder;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-class KafkaST extends AbstractST {
+@Tag(TestTags.REGRESSION)
+public class KafkaST extends AbstractST {
     private static final Logger LOGGER = LogWrapper.getLogger(KafkaST.class);
 
     /**
@@ -331,10 +334,9 @@ class KafkaST extends AbstractST {
         PwUtils.waitForContainsText(tcc, new CssBuilder(ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_WARNING_MESSAGE_ITEMS).nth(1).build(), MessageStore.clusterCardNoMessages(), true);
     }
 
-
     @BeforeEach
     void testCaseSetup() {
-        final TestCaseConfig tcc = getTestCaseConfig();
+        final TestCaseConfig tcc = new TestCaseConfig(KubeResourceManager.get().getTestContext());
         NamespaceUtils.prepareNamespace(tcc.namespace());
         KafkaSetup.setupDefaultKafkaIfNeeded(tcc.namespace(), tcc.kafkaName());
         ConsoleInstanceSetup.setupIfNeeded(ConsoleInstanceSetup.getDefaultConsoleInstance(tcc.namespace(), tcc.consoleInstanceName(), tcc.kafkaName(), tcc.kafkaUserName()));

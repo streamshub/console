@@ -6,6 +6,9 @@ import com.github.streamshub.systemtests.logs.LogWrapper;
 import io.skodjob.testframe.resources.KubeResourceManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.Arrays;
+import java.util.List;
+
 public class KafkaCmdUtils {
     private static final Logger LOGGER = LogWrapper.getLogger(KafkaCmdUtils.class);
 
@@ -176,5 +179,19 @@ public class KafkaCmdUtils {
         String insertConfigCommand = String.format("echo '%s' > %s", clientsConfig, CLIENTS_CONFIG_FILE_PATH);
         String output = KubeResourceManager.get().kubeCmdClient().inNamespace(namespaceName).execInPod(podName, Constants.BASH_CMD, "-c", insertConfigCommand).out().trim();
         LOGGER.debug("Insert client config resulted in => [{}]", output);
+    }
+
+    public static List<String> listKafkaTopicsByPrefix(String namespaceName, String kafkaName, String podName, String clientsConfig, String topicPrefix) {
+        String bootstrapServer = KafkaUtils.getPlainScramShaBootstrapAddress(kafkaName);
+        insertClientProperties(namespaceName, podName, clientsConfig);
+
+        String listTopicsCmd = String.format("./bin/kafka-topics.sh --bootstrap-server=%s --command-config=%s --list 2>/dev/null | grep '^%s'", bootstrapServer, CLIENTS_CONFIG_FILE_PATH, topicPrefix);
+
+        LOGGER.debug("Execute list topics command");
+        List<String> output = Arrays.stream(KubeResourceManager.get().kubeCmdClient().inNamespace(namespaceName).execInPod(podName, Constants.BASH_CMD, "-c", listTopicsCmd)
+            .out().trim().split("\\r?\\n")).toList();
+
+        LOGGER.debug("Listing topics resulted in => {}", output.toString());
+        return output;
     }
 }

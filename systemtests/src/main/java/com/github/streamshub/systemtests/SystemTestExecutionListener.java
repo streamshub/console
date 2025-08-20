@@ -33,12 +33,20 @@ public class SystemTestExecutionListener implements TestExecutionListener {
             LOGGER.info("========================= TEST CASES TO BE EXECUTED =========================");
             testPlan.getDescendants(root).forEach(testIdentifier -> {
                 if (testIdentifier.isTest()) {
+                    // Regular test
                     testIdentifier.getSource().ifPresent(source -> {
-                        String testName = testIdentifier.getDisplayName().replace("()","");
+                        String testName = testIdentifier.getDisplayName().replace("()", "");
                         String fullTestName = ((MethodSource) source).getClassName() + "." + testName;
                         LOGGER.info(testName);
                         TESTS_TO_BE_EXECUTED.add(fullTestName);
                     });
+                } else if (testIdentifier.isContainer() && testIdentifier.getSource().get() instanceof MethodSource) {
+                    // Parametrized test
+                    LOGGER.debug("container {}", testIdentifier.getUniqueId());
+                    String testName = ((MethodSource) testIdentifier.getSource().get()).getMethodName();
+                    String fullTestName = ((MethodSource) testIdentifier.getSource().get()).getClassName() + "." + testName;
+                    LOGGER.info(testName);
+                    TESTS_TO_BE_EXECUTED.add(fullTestName);
                 }
             });
         });
