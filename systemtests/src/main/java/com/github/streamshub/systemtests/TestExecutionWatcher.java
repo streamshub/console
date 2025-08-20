@@ -20,9 +20,7 @@ public class TestExecutionWatcher implements TestExecutionExceptionHandler, Life
         LOGGER.error("{} - Exception {} has been thrown in @Test. Going to collect logs from components.", extensionContext.getRequiredTestClass().getSimpleName(), throwable.getMessage());
 
         // In case of test failure, make screenshot of the last page state
-        TestCaseConfig tcc = (TestCaseConfig) KubeResourceManager.get().getTestContext()
-            .getStore(ExtensionContext.Namespace.GLOBAL)
-            .get(KubeResourceManager.get().getTestContext().getTestMethod().orElseThrow().getName());
+        TestCaseConfig tcc = new TestCaseConfig(KubeResourceManager.get().getTestContext());
         LOGGER.error("Exception has been thrown. Last known page url {}", tcc.page().url());
         PwUtils.screenshot(tcc, tcc.kafkaName(), "exception");
 

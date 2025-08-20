@@ -1,8 +1,11 @@
 package com.github.streamshub.systemtests;
 
+import com.github.streamshub.systemtests.annotations.SetupSharedResources;
+import com.github.streamshub.systemtests.annotations.UseSharedResources;
 import com.github.streamshub.systemtests.clients.KafkaClients;
 import com.github.streamshub.systemtests.clients.KafkaClientsBuilder;
 import com.github.streamshub.systemtests.constants.Constants;
+import com.github.streamshub.systemtests.constants.TestTags;
 import com.github.streamshub.systemtests.locators.CssBuilder;
 import com.github.streamshub.systemtests.locators.CssSelectors;
 import com.github.streamshub.systemtests.locators.MessagesPageSelectors;
@@ -24,18 +27,28 @@ import org.apache.kafka.common.security.auth.SecurityProtocol;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
+import java.util.Map;
+import java.util.stream.Stream;
+
+@Tag(TestTags.REGRESSION)
 public class MessagesST extends AbstractST {
     private static final Logger LOGGER = LogWrapper.getLogger(MessagesST.class);
     private static TestCaseConfig tcc;
-    private static final String TOPIC_PREFIX = "filter-messages";
 
+    // Shared resources groups
+    private static final String FILTER_MESSAGES_GROUP = "MessagesST-FilterMessagesGroup";
+
+    private static final String TOPIC_PREFIX = "filter-messages";
     // If message count is changed, verify message values inside tests
     private static final int MESSAGE_COUNT = Constants.MESSAGE_COUNT;
     private static final int TOPIC_COUNT = 1;
     private static String kafkaTopicName;
-
     // 1. Filter by key
     private static final String KEY_FILTER = "orderID";
     private static final String KEY_FILTER_MESSAGE = "my-order";
@@ -62,54 +75,46 @@ public class MessagesST extends AbstractST {
      *
      * <p>Checks are performed on both message content and the number of results returned.
      */
-    @Test
-    void testMessageSearchUsingQueries() {
-        tcc.page().navigate(PwPageUrls.getMessagesPage(tcc, tcc.kafkaName(), ResourceUtils.getKubeResource(KafkaTopic.class, tcc.namespace(), kafkaTopicName).getStatus().getTopicId()));
+    public Stream<Arguments> searchUsingQueryScenarios() {
+        return Stream.of(
+            Arguments.of(50, "", Map.of(
+                MessagesPageSelectors.getTableRowItems(1), VALUE_FILTER + " - 99",
+                MessagesPageSelectors.getTableRowItem(1, 1), "299")),
+            Arguments.of(2, "messages=latest retrieve=2", Map.of(
+                MessagesPageSelectors.getTableRowItems(1), VALUE_FILTER + " - 99",
+                MessagesPageSelectors.getTableRowItems(2), VALUE_FILTER + " - 98")),
+            Arguments.of(20, "messages=offset:150 retrieve=20", Map.of(
+                MessagesPageSelectors.getTableRowItem(1, 5), HEADER_FILTER_MESSAGE + " - 50",
+                MessagesPageSelectors.getTableRowItem(1, 1), "150")),
+            Arguments.of(1, "messages=offset:10 retrieve=100 " + KEY_FILTER_MESSAGE + " - 42", Map.of(
+                MessagesPageSelectors.getTableRowItem(1, 5), KEY_FILTER_MESSAGE + " - 42",
+                MessagesPageSelectors.getTableRowItem(1, 1), "42")),
+            Arguments.of(1, "messages=latest retrieve=40 " + KEY_FILTER_MESSAGE + " - 42", Map.of(
+                MessagesPageSelectors.MPS_SEARCH_RESULTS_TABLE_ITEMS, "No messages data")),
+            Arguments.of(50, "messages=totalyNotOkay retrieve=-9", Map.of(
+                MessagesPageSelectors.getTableRowItems(1), VALUE_FILTER + " - 99",
+                MessagesPageSelectors.getTableRowItems(2), VALUE_FILTER + " - 98"))
+        );
+    }
+
+    @ParameterizedTest(name = "Query: {1}")
+    @MethodSource("searchUsingQueryScenarios")
+    @UseSharedResources(FILTER_MESSAGES_GROUP)
+    void testMessageSearchUsingQueries(int expectedResults, String searchQuery, Map<String, String> checks) {
+        tcc.page().navigate(PwPageUrls.getMessagesPage(tcc, tcc.kafkaName(),
+            ResourceUtils.getKubeResource(KafkaTopic.class, tcc.namespace(), kafkaTopicName).getStatus().getTopicId()));
 
         LOGGER.info("Wait for message search page toolbar to be fully there before filtering messages");
         PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_CONTENT_HEADER_TITLE_CONTENT, kafkaTopicName, true);
         PwUtils.waitForLocatorVisible(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT);
 
-        LOGGER.info("Verify default order and number of displayed messages");
-        PwUtils.waitForLocatorCount(tcc, 50, MessagesPageSelectors.MPS_SEARCH_RESULTS_TABLE_ITEMS, true);
-        PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItems(1), VALUE_FILTER + " - 99", true);
-        PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItem(1, 1), "299", true);
-
-        LOGGER.info("Start filtering messages by input text");
-
-        LOGGER.info("Get latest 2 messages");
-        PwUtils.waitForLocatorAndFill(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT, "messages=latest retrieve=2");
+        LOGGER.info("Search query [{}] expecting results count of {}", searchQuery, expectedResults);
+        PwUtils.waitForLocatorAndFill(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT, searchQuery);
         PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_ENTER_BUTTON);
-        PwUtils.waitForLocatorCount(tcc, 2, MessagesPageSelectors.MPS_SEARCH_RESULTS_TABLE_ITEMS, true);
-        PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItems(1), VALUE_FILTER + " - 99", true);
-        PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItems(2), VALUE_FILTER + " - 98", true);
+        PwUtils.waitForLocatorCount(tcc, expectedResults, MessagesPageSelectors.MPS_SEARCH_RESULTS_TABLE_ITEMS, true);
 
-        LOGGER.info("Get 20 messages from offset from the middle of sent messages");
-        PwUtils.fill(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT, "messages=offset:150 retrieve=20");
-        PwUtils.click(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_ENTER_BUTTON);
-        PwUtils.waitForLocatorCount(tcc, 20, MessagesPageSelectors.MPS_SEARCH_RESULTS_TABLE_ITEMS, true);
-        PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItem(1, 5), HEADER_FILTER_MESSAGE + " - 50", true);
-        PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItem(1, 1), "150", true);
-
-        LOGGER.info("Get message containing word from all messages");
-        PwUtils.fill(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT, "messages=offset:10 retrieve=100 " + KEY_FILTER_MESSAGE + " - 42");
-        PwUtils.click(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_ENTER_BUTTON);
-        PwUtils.waitForLocatorCount(tcc, 1, MessagesPageSelectors.MPS_SEARCH_RESULTS_TABLE_ITEMS, true);
-        PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItem(1, 5), KEY_FILTER_MESSAGE + " - 42", true);
-        PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItem(1, 1), "42", true);
-
-        LOGGER.info("Get NONE message containing word from different messages while fetching another message");
-        PwUtils.fill(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT, "messages=latest retrieve=40 " + KEY_FILTER_MESSAGE + " - 42");
-        PwUtils.click(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_ENTER_BUTTON);
-        PwUtils.waitForLocatorCount(tcc, 1, MessagesPageSelectors.MPS_SEARCH_RESULTS_TABLE_ITEMS, true);
-        PwUtils.waitForContainsText(tcc, MessagesPageSelectors.MPS_SEARCH_RESULTS_TABLE_ITEMS, "No messages data", true);
-
-        LOGGER.info("Test that invalid number retrieve input gets reverted to a default input");
-        PwUtils.fill(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT, "messages=totalyNotOkay retrieve=-9");
-        PwUtils.click(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_ENTER_BUTTON);
-        PwUtils.waitForLocatorCount(tcc, 50, MessagesPageSelectors.MPS_SEARCH_RESULTS_TABLE_ITEMS, true);
-        PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItems(1), VALUE_FILTER + " - 99", true);
-        PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItems(2), VALUE_FILTER + " - 98", true);
+        LOGGER.info("Run checks on results");
+        checks.forEach((selector, expectedValue) -> PwUtils.waitForContainsText(tcc, selector, expectedValue, true));
     }
 
 
@@ -136,6 +141,7 @@ public class MessagesST extends AbstractST {
      * <p>Checks are made on message content, offsets, keys, headers, and values to ensure correctness of filtering logic.
      */
     @Test
+    @UseSharedResources(FILTER_MESSAGES_GROUP)
     void testFilterMessagesUsingUIForm() {
         tcc.page().navigate(PwPageUrls.getMessagesPage(tcc, tcc.kafkaName(), ResourceUtils.getKubeResource(KafkaTopic.class, tcc.namespace(), kafkaTopicName).getStatus().getTopicId()));
 
@@ -222,7 +228,8 @@ public class MessagesST extends AbstractST {
         PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItem(1, 5), VALUE_FILTER + " - 0", true);
     }
 
-    void prepareMessageFilterScenario() {
+    @SetupSharedResources(FILTER_MESSAGES_GROUP)
+    public void prepareMessageFilterScenario() {
         LOGGER.info("Prepare filter messages scenario by creating topic and producing various messages");
 
         kafkaTopicName = KafkaTopicUtils.setupTopicsAndReturn(tcc.namespace(), tcc.kafkaName(), TOPIC_PREFIX, TOPIC_COUNT, true, 1, 1, 1)
@@ -274,9 +281,6 @@ public class MessagesST extends AbstractST {
         KafkaSetup.setupDefaultKafkaIfNeeded(tcc.namespace(), tcc.kafkaName());
         ConsoleInstanceSetup.setupIfNeeded(ConsoleInstanceSetup.getDefaultConsoleInstance(tcc.namespace(), tcc.consoleInstanceName(), tcc.kafkaName(), tcc.kafkaUserName()));
         PwUtils.login(tcc);
-
-        // Test Class specific
-        prepareMessageFilterScenario();
     }
 
     @AfterAll
