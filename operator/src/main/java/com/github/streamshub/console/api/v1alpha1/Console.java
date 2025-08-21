@@ -17,7 +17,7 @@ import io.sundr.builder.annotations.Buildable;
 @Buildable(editableEnabled = false)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @CSVMetadata(
-    displayName = "Console Instance",
+    displayName = "Console",
     description = "Represents a deployable Console UI for monitoring Kafka resources."
     )
 public class Console extends CustomResource<ConsoleSpec, ConsoleStatus> implements Namespaced {
