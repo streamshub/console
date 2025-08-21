@@ -146,7 +146,7 @@ public class ConsumerST extends AbstractST {
         tcc.setMessageCount(MESSAGE_COUNT);
         // Setup topics, produce messages and consume all
         ConsumerTestUtils.prepareConsumerGroupOffsetScenario(tcc, TOPIC_PREFIX,
-                KafkaNamingUtils.consumerGroupName(tcc.kafkaName()), TOPIC_COUNT, 1, 1, 1);
+                RESET_OFFSET_CONSUMER_GROUP, TOPIC_COUNT, 1, 1, 1);
     }
 
     @BeforeAll
