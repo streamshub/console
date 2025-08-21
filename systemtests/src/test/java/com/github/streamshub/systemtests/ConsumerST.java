@@ -20,7 +20,6 @@ import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
 import com.github.streamshub.systemtests.utils.testutils.ConsumerTestUtils;
 import io.fabric8.kubernetes.api.model.Pod;
 import io.skodjob.testframe.TestFrameConstants;
-import io.skodjob.testframe.resources.KubeResourceManager;
 import io.strimzi.api.kafka.model.topic.KafkaTopic;
 import org.apache.kafka.common.security.auth.SecurityProtocol;
 import org.apache.logging.log4j.Logger;
@@ -153,7 +152,7 @@ public class ConsumerST extends AbstractST {
     @BeforeAll
     void testClassSetup() {
         // Init test case config based on the test context
-        tcc = new TestCaseConfig(KubeResourceManager.get().getTestContext());
+        tcc = getTestCaseConfig();
         // Prepare test environment
         NamespaceUtils.prepareNamespace(tcc.namespace());
         KafkaSetup.setupDefaultKafkaIfNeeded(tcc.namespace(), tcc.kafkaName());

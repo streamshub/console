@@ -93,9 +93,16 @@ public abstract class AbstractST {
     }
 
     protected TestCaseConfig getTestCaseConfig() {
-        return (TestCaseConfig) KubeResourceManager.get().getTestContext()
-            .getStore(ExtensionContext.Namespace.GLOBAL)
-            .get(KubeResourceManager.get().getTestContext());
+        final var ctx = KubeResourceManager.get().getTestContext();
+        final var store = ctx.getStore(ExtensionContext.Namespace.GLOBAL);
+        final String key = ctx.getUniqueId();
+
+        TestCaseConfig tcc = store.get(key, TestCaseConfig.class);
+        if (tcc == null) {
+            tcc = new TestCaseConfig(ctx);
+            store.put(key, tcc);
+        }
+        return tcc;
     }
 
     @BeforeAll

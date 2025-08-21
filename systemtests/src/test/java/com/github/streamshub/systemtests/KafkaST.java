@@ -28,6 +28,7 @@ import io.strimzi.api.kafka.model.kafka.PersistentClaimStorageBuilder;
 import io.strimzi.api.kafka.model.nodepool.KafkaNodePool;
 import io.strimzi.api.kafka.model.nodepool.KafkaNodePoolBuilder;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -334,9 +335,14 @@ public class KafkaST extends AbstractST {
         PwUtils.waitForContainsText(tcc, new CssBuilder(ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_WARNING_MESSAGE_ITEMS).nth(1).build(), MessageStore.clusterCardNoMessages(), true);
     }
 
+    @AfterEach
+    void testCaseTeardown() {
+        getTestCaseConfig().playwright().close();
+    }
+
     @BeforeEach
     void testCaseSetup() {
-        final TestCaseConfig tcc = new TestCaseConfig(KubeResourceManager.get().getTestContext());
+        final TestCaseConfig tcc = getTestCaseConfig();
         NamespaceUtils.prepareNamespace(tcc.namespace());
         KafkaSetup.setupDefaultKafkaIfNeeded(tcc.namespace(), tcc.kafkaName());
         ConsoleInstanceSetup.setupIfNeeded(ConsoleInstanceSetup.getDefaultConsoleInstance(tcc.namespace(), tcc.consoleInstanceName(), tcc.kafkaName(), tcc.kafkaUserName()));
