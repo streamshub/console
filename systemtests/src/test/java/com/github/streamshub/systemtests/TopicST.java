@@ -284,7 +284,7 @@ public class TopicST extends AbstractST {
     @BeforeAll
     void testClassSetup() {
         // Init test case config based on the test context
-        tcc = new TestCaseConfig(KubeResourceManager.get().getTestContext());
+        tcc = getTestCaseConfig();
         // Prepare test environment
         NamespaceUtils.prepareNamespace(tcc.namespace());
         KafkaSetup.setupDefaultKafkaIfNeeded(tcc.namespace(), tcc.kafkaName());
