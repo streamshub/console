@@ -59,7 +59,7 @@
     "zod": "^4.0.17"
   },
   "devDependencies": {
-    "@playwright/test": "^1.54.2",
+    "@playwright/test": "^1.55.0",
     "@storybook/addon-links": "^9.1.2",
     "@storybook/nextjs": "^9.1.2",
     "@storybook/test-runner": "^0.23.0",
