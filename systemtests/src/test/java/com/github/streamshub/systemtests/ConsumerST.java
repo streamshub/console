@@ -12,6 +12,7 @@ import com.github.streamshub.systemtests.locators.ConsumerGroupsPageSelectors;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.setup.console.ConsoleInstanceSetup;
 import com.github.streamshub.systemtests.setup.strimzi.KafkaSetup;
+import com.github.streamshub.systemtests.utils.Utils;
 import com.github.streamshub.systemtests.utils.WaitUtils;
 import com.github.streamshub.systemtests.utils.playwright.PwPageUrls;
 import com.github.streamshub.systemtests.utils.playwright.PwUtils;
@@ -192,7 +193,7 @@ public class ConsumerST extends AbstractST {
     @BeforeAll
     void testClassSetup() {
         // Init test case config based on the test context
-        tcc = getTestCaseConfig();
+        tcc = Utils.getTestCaseConfig();
         // Prepare test environment
         NamespaceUtils.prepareNamespace(tcc.namespace());
         KafkaSetup.setupDefaultKafkaIfNeeded(tcc.namespace(), tcc.kafkaName());

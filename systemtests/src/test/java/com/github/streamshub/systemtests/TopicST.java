@@ -43,6 +43,7 @@ import org.junit.jupiter.api.TestMethodOrder;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.github.streamshub.systemtests.utils.Utils.getTestCaseConfig;
 import static org.wildfly.common.Assert.assertTrue;
 
 @Tag(TestTags.REGRESSION)

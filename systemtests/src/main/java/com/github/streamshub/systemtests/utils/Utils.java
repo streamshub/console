@@ -1,6 +1,10 @@
 package com.github.streamshub.systemtests.utils;
 
+import com.github.streamshub.systemtests.TestCaseConfig;
 import com.github.streamshub.systemtests.exceptions.SetupException;
+
+import io.skodjob.testframe.resources.KubeResourceManager;
+import org.junit.jupiter.api.extension.ExtensionContext;
 
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
@@ -24,5 +28,18 @@ public class Utils {
 
     public static String decodeFromBase64(String data)  {
         return new String(Base64.getDecoder().decode(data), StandardCharsets.US_ASCII);
+    }
+
+    public static TestCaseConfig getTestCaseConfig() {
+        final var ctx = KubeResourceManager.get().getTestContext();
+        final var store = ctx.getStore(ExtensionContext.Namespace.GLOBAL);
+        final String key = ctx.getUniqueId();
+
+        TestCaseConfig tcc = store.get(key, TestCaseConfig.class);
+        if (tcc == null) {
+            tcc = new TestCaseConfig(ctx);
+            store.put(key, tcc);
+        }
+        return tcc;
     }
 }
