@@ -1,78 +1,19 @@
 package com.github.streamshub.systemtests.utils.testutils;
 
 import com.github.streamshub.systemtests.TestCaseConfig;
-import com.github.streamshub.systemtests.clients.KafkaClients;
-import com.github.streamshub.systemtests.clients.KafkaClientsBuilder;
 import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.enums.ResetOffsetDateTimeType;
 import com.github.streamshub.systemtests.enums.ResetOffsetType;
 import com.github.streamshub.systemtests.locators.ConsumerGroupsPageSelectors;
 import com.github.streamshub.systemtests.logs.LogWrapper;
-import com.github.streamshub.systemtests.utils.WaitUtils;
 import com.github.streamshub.systemtests.utils.playwright.PwUtils;
-import com.github.streamshub.systemtests.utils.resourceutils.KafkaClientsUtils;
-import com.github.streamshub.systemtests.utils.resourceutils.KafkaNamingUtils;
-import com.github.streamshub.systemtests.utils.resourceutils.KafkaTopicUtils;
-import com.github.streamshub.systemtests.utils.resourceutils.KafkaUtils;
 import com.microsoft.playwright.Locator;
-import io.skodjob.testframe.resources.KubeResourceManager;
-import org.apache.kafka.common.security.auth.SecurityProtocol;
 import org.apache.logging.log4j.Logger;
-
-import java.util.List;
 
 public class ConsumerTestUtils {
     private static final Logger LOGGER = LogWrapper.getLogger(ConsumerTestUtils.class);
 
     private ConsumerTestUtils() {}
-
-    /**
-     * Prepares a scenario for testing consumer group offsets by:
-     * <ul>
-     *     <li>Creating one or more Kafka topics with the given configuration</li>
-     *     <li>Producing and consuming a defined number of messages for each topic</li>
-     *     <li>Associating all consumers with a single specified consumer group</li>
-     * </ul>
-     *
-     * This setup is typically used in tests that validate consumer group offset behavior,
-     * including offset reset functionality.
-     *
-     * @param tcc               the test case configuration containing namespace, Kafka name, user info, and message count
-     * @param topicPrefix       the prefix used to name the topics to be created
-     * @param consumerGroupName the name of the consumer group to associate with all created consumers
-     * @param topicCount        the number of topics to create
-     * @param partitions        the number of partitions per topic
-     * @param replicas          the number of replicas per topic
-     * @param minIsr            the minimum in-sync replicas required for topic durability
-     */
-    public static void prepareConsumerGroupOffsetScenario(TestCaseConfig tcc, String topicPrefix, String consumerGroupName, int topicCount, int partitions, int replicas, int minIsr) {
-        LOGGER.info("Prepare consumer offset scenario by creating topic(s) and then producing and consuming messages");
-
-        List<String> kafkaTopicNames = KafkaTopicUtils.setupTopicsAndReturn(tcc.namespace(), tcc.kafkaName(), topicPrefix, topicCount, true, partitions, replicas, minIsr)
-            .stream()
-            .map(kt -> kt.getMetadata().getName())
-            .toList();
-
-        for (String kafkaTopicName : kafkaTopicNames) {
-            KafkaClients clients = new KafkaClientsBuilder()
-                .withNamespaceName(tcc.namespace())
-                .withTopicName(kafkaTopicName)
-                .withMessageCount(tcc.messageCount())
-                .withDelayMs(0)
-                .withProducerName(KafkaNamingUtils.producerName(kafkaTopicName))
-                .withConsumerName(KafkaNamingUtils.consumerName(kafkaTopicName))
-                .withConsumerGroup(consumerGroupName)
-                .withBootstrapAddress(KafkaUtils.getPlainScramShaBootstrapAddress(tcc.kafkaName()))
-                .withUsername(tcc.kafkaUserName())
-                .withAdditionalConfig(KafkaClientsUtils.getScramShaConfig(tcc.namespace(), tcc.kafkaUserName(), SecurityProtocol.SASL_PLAINTEXT))
-                .build();
-
-            KubeResourceManager.get().createResourceWithWait(clients.producer(), clients.consumer());
-            WaitUtils.waitForClientsSuccess(clients);
-        }
-
-        LOGGER.info("Reset consumer offset scenario ready");
-    }
 
     /**
      * Selects the offset reset type in the consumer group reset UI.
