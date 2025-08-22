@@ -2,6 +2,8 @@ package com.github.streamshub.systemtests;
 
 import com.github.streamshub.systemtests.annotations.SetupSharedResources;
 import com.github.streamshub.systemtests.annotations.UseSharedResources;
+import com.github.streamshub.systemtests.clients.KafkaClients;
+import com.github.streamshub.systemtests.clients.KafkaClientsBuilder;
 import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.constants.TestTags;
 import com.github.streamshub.systemtests.enums.ResetOffsetDateTimeType;
@@ -10,16 +12,20 @@ import com.github.streamshub.systemtests.locators.ConsumerGroupsPageSelectors;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.setup.console.ConsoleInstanceSetup;
 import com.github.streamshub.systemtests.setup.strimzi.KafkaSetup;
+import com.github.streamshub.systemtests.utils.WaitUtils;
 import com.github.streamshub.systemtests.utils.playwright.PwPageUrls;
 import com.github.streamshub.systemtests.utils.playwright.PwUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.KafkaClientsUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.KafkaCmdUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.KafkaNamingUtils;
+import com.github.streamshub.systemtests.utils.resourceutils.KafkaTopicUtils;
+import com.github.streamshub.systemtests.utils.resourceutils.KafkaUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.NamespaceUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
 import com.github.streamshub.systemtests.utils.testutils.ConsumerTestUtils;
 import io.fabric8.kubernetes.api.model.Pod;
 import io.skodjob.testframe.TestFrameConstants;
+import io.skodjob.testframe.resources.KubeResourceManager;
 import io.strimzi.api.kafka.model.topic.KafkaTopic;
 import org.apache.kafka.common.security.auth.SecurityProtocol;
 import org.apache.logging.log4j.Logger;
@@ -70,7 +76,6 @@ public class ConsumerST extends AbstractST {
      * <p>This comprehensive test validates the correctness of consumer offset reset functionality across multiple topics and offset types,
      * ensuring synchronization between UI actions and Kafka consumer group state.</p>
      */
-
     public Stream<Arguments> offsetResetScenarios() {
         final String earliestOffsetIndex = "0";
         // Use index to reset consumers to previous offset to read timestamp
@@ -140,13 +145,48 @@ public class ConsumerST extends AbstractST {
         }
     }
 
+    /**
+     * Prepares a scenario for testing consumer group offsets by:
+     * <ul>
+     *     <li>Creating one or more Kafka topics with the given configuration</li>
+     *     <li>Producing and consuming a defined number of messages for each topic</li>
+     *     <li>Associating all consumers with a single specified consumer group</li>
+     * </ul>
+     *
+     * This setup is typically used in tests that validate consumer group offset behavior,
+     * including offset reset functionality.
+     */
     @SetupSharedResources(RESET_OFFSET_GROUP)
     public void setupResetOffset() {
         // Test class specific
         tcc.setMessageCount(MESSAGE_COUNT);
-        // Setup topics, produce messages and consume all
-        ConsumerTestUtils.prepareConsumerGroupOffsetScenario(tcc, TOPIC_PREFIX,
-                RESET_OFFSET_CONSUMER_GROUP, TOPIC_COUNT, 1, 1, 1);
+
+        LOGGER.info("Prepare consumer offset scenario by creating topic(s) and then producing and consuming messages");
+
+        List<String> kafkaTopicNames = KafkaTopicUtils.setupTopicsAndReturn(tcc.namespace(), tcc.kafkaName(), TOPIC_PREFIX, TOPIC_COUNT, true, 1, 1, 1)
+            .stream()
+            .map(kt -> kt.getMetadata().getName())
+            .toList();
+
+        for (String kafkaTopicName : kafkaTopicNames) {
+            KafkaClients clients = new KafkaClientsBuilder()
+                .withNamespaceName(tcc.namespace())
+                .withTopicName(kafkaTopicName)
+                .withMessageCount(tcc.messageCount())
+                .withDelayMs(0)
+                .withProducerName(KafkaNamingUtils.producerName(kafkaTopicName))
+                .withConsumerName(KafkaNamingUtils.consumerName(kafkaTopicName))
+                .withConsumerGroup(RESET_OFFSET_CONSUMER_GROUP)
+                .withBootstrapAddress(KafkaUtils.getPlainScramShaBootstrapAddress(tcc.kafkaName()))
+                .withUsername(tcc.kafkaUserName())
+                .withAdditionalConfig(KafkaClientsUtils.getScramShaConfig(tcc.namespace(), tcc.kafkaUserName(), SecurityProtocol.SASL_PLAINTEXT))
+                .build();
+
+            KubeResourceManager.get().createResourceWithWait(clients.producer(), clients.consumer());
+            WaitUtils.waitForClientsSuccess(clients);
+        }
+
+        LOGGER.info("Reset consumer offset scenario ready");
     }
 
     @BeforeAll
