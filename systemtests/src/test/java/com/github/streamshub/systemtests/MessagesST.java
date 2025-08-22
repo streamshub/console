@@ -36,6 +36,8 @@ import org.junit.jupiter.params.provider.MethodSource;
 import java.util.Map;
 import java.util.stream.Stream;
 
+import static com.github.streamshub.systemtests.utils.Utils.getTestCaseConfig;
+
 @Tag(TestTags.REGRESSION)
 public class MessagesST extends AbstractST {
     private static final Logger LOGGER = LogWrapper.getLogger(MessagesST.class);
