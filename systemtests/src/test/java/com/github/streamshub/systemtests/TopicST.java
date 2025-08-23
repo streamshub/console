@@ -52,13 +52,12 @@ public class TopicST extends AbstractST {
     private static final Logger LOGGER = LogWrapper.getLogger(TopicST.class);
     private static TestCaseConfig tcc;
 
-    // Shared resources groups
-    private static final String SPECIAL_STATE_TOPICS_GROUP = "TopicST-SpecialStateTopicsGroup";
-    private static final String BASIC_REPLICATED_TOPICS_GROUP = "TopicST-BasicReplicatedTopicsGroup";
-
     // BasicTopics
+    private static final String SPECIAL_STATE_TOPICS_GROUP = "TopicST-SpecialStateTopicsGroup";
     private static final int BASIC_REPLICATED_TOPIC_COUNT = 150;
+
     // SpecialTopics
+    private static final String BASIC_REPLICATED_TOPICS_GROUP = "TopicST-BasicReplicatedTopicsGroup";
     private static final int REPLICATED_TOPICS_COUNT = 5;
     private static final int UNMANAGED_REPLICATED_TOPICS_COUNT = 2;
     private static final int TOTAL_REPLICATED_TOPICS_COUNT = REPLICATED_TOPICS_COUNT + UNMANAGED_REPLICATED_TOPICS_COUNT;
@@ -89,7 +88,6 @@ public class TopicST extends AbstractST {
      * <p>This ensures that the pagination mechanism in the topics page works correctly and is user-friendly at scale.</p>
      */
     @Test
-    @Order(1)
     @UseSharedResources(BASIC_REPLICATED_TOPICS_GROUP)
     void testPaginationWithManyTopics() {
         LOGGER.info("Verify topics are displayed");
