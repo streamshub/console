@@ -10,6 +10,7 @@ import { Link } from "@/i18n/routing";
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import RichText from "@/components/RichText";
+import { encodeGroupId } from "@/utils/consumerGroup"
 
 export function ConsumerGroupsTable({
   kafkaId,
@@ -125,7 +126,7 @@ export function ConsumerGroupsTable({
                 dataLabel={t("ConsumerGroupsTable.consumer_group_name")}
               >
                 <Link
-                  href={`/kafka/${kafkaId}/consumer-groups/${row.id === "" ? "+" : encodeURIComponent(row.id)}`}
+                  href={`/kafka/${kafkaId}/consumer-groups/${encodeGroupId(row.id)}`}
                 >
                   {row.id === "" ? (
                     <RichText>

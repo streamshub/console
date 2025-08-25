@@ -3,22 +3,23 @@
 import { Button, Tooltip } from "@/libs/patternfly/react-core";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
+import { encodeGroupId } from "@/utils/consumerGroup";
 
 export function ConsumerGroupActionButton({
   disabled,
   kafkaId,
-  consumerGroupName,
+  groupId,
 }: {
   disabled: boolean;
   kafkaId: string;
-  consumerGroupName: string;
+  groupId: string;
 }) {
   const t = useTranslations();
   const router = useRouter();
 
   const onClickResetOffset = () => {
     router.push(
-      `/kafka/${kafkaId}/consumer-groups/${consumerGroupName}/reset-offset`,
+      `/kafka/${kafkaId}/consumer-groups/${encodeGroupId(groupId)}/reset-offset`,
     );
   };
 

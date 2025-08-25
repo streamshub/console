@@ -14,19 +14,20 @@ import {
 } from "@/libs/patternfly/react-core";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
+import { encodeGroupId } from "@/utils/consumerGroup";
 
 export function ResetOffsetModal({
   members,
   isResetOffsetModalOpen,
   onClickClose,
   kafkaId,
-  consumerGroupName,
+  groupId,
 }: {
   members: string[];
   isResetOffsetModalOpen: boolean;
   onClickClose: () => void;
   kafkaId: string;
-  consumerGroupName: string;
+  groupId: string;
 }) {
   const t = useTranslations("ConsumerGroupsTable");
   const router = useRouter();
@@ -34,7 +35,7 @@ export function ResetOffsetModal({
   const refresh = () => {
     if (members.length === 0) {
       router.push(
-        `/kafka/${kafkaId}/consumer-groups/${consumerGroupName}/reset-offset`,
+        `/kafka/${kafkaId}/consumer-groups/${encodeGroupId(groupId)}/reset-offset`,
       );
     }
   };

@@ -13,6 +13,7 @@ import { useTranslations } from "next-intl";
 import { ReactNode } from "react";
 import { EmptyStateNoMatchFound } from "@/components/Table/EmptyStateNoMatchFound";
 import RichText from "@/components/RichText";
+import { encodeGroupId } from "@/utils/consumerGroup";
 
 export const ConsumerGroupColumns = [
   "name",
@@ -175,7 +176,7 @@ export function ConsumerGroupsTable({
                 dataLabel={t("ConsumerGroupsTable.consumer_group_name")}
               >
                 <Link
-                  href={`/kafka/${kafkaId}/consumer-groups/${row.id === "" ? "+" : encodeURIComponent(row.id)}`}
+                  href={`/kafka/${kafkaId}/consumer-groups/${encodeGroupId(row.id)}`}
                 >
                   {row.id === "" ? (
                     <RichText>
