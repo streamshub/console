@@ -5,6 +5,7 @@ import { PageSection } from "@/libs/patternfly/react-core";
 import { ConnectedDryrunPage } from "./ConnectedDryrunPage";
 import { Offset } from "../ResetOffset";
 import { NoDataErrorState } from "@/components/NoDataErrorState";
+import { encodeGroupId } from "@/utils/consumerGroup";
 
 export default function DryrunPage({
   params: { kafkaId, groupId },
@@ -100,7 +101,7 @@ async function AsyncConnectedDryrunPage({
     <ConnectedDryrunPage
       groupId={groupId}
       offsetvalue={offsets}
-      baseurl={`/kafka/${kafkaId}/consumer-groups/${groupId}/reset-offset`}
+      baseurl={`/kafka/${kafkaId}/consumer-groups/${encodeGroupId(groupId)}/reset-offset`}
       cliCommand={searchParams?.cliCommand || ""}
     />
   );

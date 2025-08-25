@@ -7,6 +7,7 @@ import {
 } from "@/libs/patternfly/react-core";
 import { HomeIcon } from "@/libs/patternfly/react-icons";
 import { useTranslations } from "next-intl";
+import { encodeGroupId } from "@/utils/consumerGroup";
 
 export default function DryrunActiveBreadcrumb({
   params: { groupId, kafkaId },
@@ -31,7 +32,7 @@ export default function DryrunActiveBreadcrumb({
       </BreadcrumbItem>
       <BreadcrumbLink
         key={"cg"}
-        href={`/kafka/${kafkaId}/consumer-groups/${groupId}/reset-offset`}
+        href={`/kafka/${kafkaId}/consumer-groups/${encodeGroupId(groupId)}/reset-offset`}
         showDivider={true}
       >
         {t("ConsumerGroupsTable.reset_consumer_offset")}
