@@ -104,7 +104,7 @@
                 <!-- Managed for CVE-2025-53864 -->
                 <groupId>com.nimbusds</groupId>
                 <artifactId>nimbus-jose-jwt</artifactId>
-                <version>10.4.1</version>
+                <version>10.4.2</version>
             </dependency>
             <dependency>
                 <groupId>io.strimzi</groupId>
