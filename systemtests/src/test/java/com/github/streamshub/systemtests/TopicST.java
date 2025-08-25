@@ -1,7 +1,5 @@
 package com.github.streamshub.systemtests;
 
-import com.github.streamshub.systemtests.annotations.SetupSharedResources;
-import com.github.streamshub.systemtests.annotations.UseSharedResources;
 import com.github.streamshub.systemtests.clients.KafkaClients;
 import com.github.streamshub.systemtests.clients.KafkaClientsBuilder;
 import com.github.streamshub.systemtests.constants.Constants;
@@ -52,14 +50,10 @@ public class TopicST extends AbstractST {
     private static final Logger LOGGER = LogWrapper.getLogger(TopicST.class);
     private static TestCaseConfig tcc;
 
-    // BasicTopics
-    private static final String SPECIAL_STATE_TOPICS_GROUP = "TopicST-SpecialStateTopicsGroup";
-    private static final int BASIC_REPLICATED_TOPIC_COUNT = 150;
-
-    // SpecialTopics
-    private static final String BASIC_REPLICATED_TOPICS_GROUP = "TopicST-BasicReplicatedTopicsGroup";
-    private static final int REPLICATED_TOPICS_COUNT = 5;
-    private static final int UNMANAGED_REPLICATED_TOPICS_COUNT = 2;
+    // Topics
+    // Note for pagination scenario it's best to have total of 150 topics
+    private static final int REPLICATED_TOPICS_COUNT = 140;
+    private static final int UNMANAGED_REPLICATED_TOPICS_COUNT = 5;
     private static final int TOTAL_REPLICATED_TOPICS_COUNT = REPLICATED_TOPICS_COUNT + UNMANAGED_REPLICATED_TOPICS_COUNT;
     //
     private static final int UNDER_REPLICATED_TOPICS_COUNT = 3;
@@ -82,23 +76,22 @@ public class TopicST extends AbstractST {
      */
     @Test
     @Order(Order.DEFAULT)
-    @UseSharedResources(BASIC_REPLICATED_TOPICS_GROUP)
     void testPaginationWithManyTopics() {
         LOGGER.info("Verify topics are displayed");
-        TopicChecks.checkOverviewPageTopicState(tcc, tcc.kafkaName(), BASIC_REPLICATED_TOPIC_COUNT, BASIC_REPLICATED_TOPIC_COUNT, BASIC_REPLICATED_TOPIC_COUNT, 0, 0);
-        TopicChecks.checkTopicsPageTopicState(tcc, tcc.kafkaName(), BASIC_REPLICATED_TOPIC_COUNT, BASIC_REPLICATED_TOPIC_COUNT, 0, 0);
+        TopicChecks.checkOverviewPageTopicState(tcc, tcc.kafkaName(), TOTAL_TOPICS_COUNT, TOTAL_TOPICS_COUNT, TOTAL_REPLICATED_TOPICS_COUNT, UNDER_REPLICATED_TOPICS_COUNT, UNAVAILABLE_TOPICS_COUNT);
+        TopicChecks.checkTopicsPageTopicState(tcc, tcc.kafkaName(), TOTAL_TOPICS_COUNT, TOTAL_REPLICATED_TOPICS_COUNT, UNDER_REPLICATED_TOPICS_COUNT, UNAVAILABLE_TOPICS_COUNT);
 
         LOGGER.info("Verify pagination on topics page");
         List<Integer> topicsPerPageList = List.of(10, 20, 50, 100);
 
         LOGGER.info("Verify top navigation");
-        TopicChecks.checkPaginationPage(tcc, BASIC_REPLICATED_TOPIC_COUNT, topicsPerPageList,
+        TopicChecks.checkPaginationPage(tcc, TOTAL_REPLICATED_TOPICS_COUNT, topicsPerPageList,
             TopicsPageSelectors.TPS_TOP_PAGINATION_DROPDOWN_BUTTON, TopicsPageSelectors.TPS_PAGINATION_DROPDOWN_ITEMS,
             TopicsPageSelectors.TPS_TOP_PAGINATION_DROPDOWN_BUTTON_TEXT,
             TopicsPageSelectors.TPS_TOP_PAGINATION_NAV_PREV_BUTTON, TopicsPageSelectors.TPS_TOP_PAGINATION_NAV_NEXT_BUTTON);
 
         LOGGER.info("Verify bottom navigation");
-        TopicChecks.checkPaginationPage(tcc, BASIC_REPLICATED_TOPIC_COUNT, topicsPerPageList,
+        TopicChecks.checkPaginationPage(tcc, TOTAL_REPLICATED_TOPICS_COUNT, topicsPerPageList,
             TopicsPageSelectors.TPS_BOTTOM_PAGINATION_DROPDOWN_BUTTON, TopicsPageSelectors.TPS_PAGINATION_DROPDOWN_ITEMS,
             TopicsPageSelectors.TPS_BOTTOM_PAGINATION_DROPDOWN_BUTTON_TEXT,
             TopicsPageSelectors.TPS_BOTTOM_PAGINATION_NAV_PREV_BUTTON, TopicsPageSelectors.TPS_BOTTOM_PAGINATION_NAV_NEXT_BUTTON);
@@ -116,11 +109,10 @@ public class TopicST extends AbstractST {
      */
     @Test
     @Order(Integer.MAX_VALUE)
-    @UseSharedResources(BASIC_REPLICATED_TOPICS_GROUP)
     void testRecentlyViewedTopics() {
         LOGGER.info("Verify topics are present but none has been viewed just yet");
-        TopicChecks.checkOverviewPageTopicState(tcc, tcc.kafkaName(), BASIC_REPLICATED_TOPIC_COUNT, BASIC_REPLICATED_TOPIC_COUNT, BASIC_REPLICATED_TOPIC_COUNT, 0, 0);
-        TopicChecks.checkTopicsPageTopicState(tcc, tcc.kafkaName(), BASIC_REPLICATED_TOPIC_COUNT, BASIC_REPLICATED_TOPIC_COUNT, 0, 0);
+        TopicChecks.checkOverviewPageTopicState(tcc, tcc.kafkaName(), TOTAL_TOPICS_COUNT, TOTAL_TOPICS_COUNT, TOTAL_REPLICATED_TOPICS_COUNT, UNDER_REPLICATED_TOPICS_COUNT, UNAVAILABLE_TOPICS_COUNT);
+        TopicChecks.checkTopicsPageTopicState(tcc, tcc.kafkaName(), TOTAL_TOPICS_COUNT, TOTAL_REPLICATED_TOPICS_COUNT, UNDER_REPLICATED_TOPICS_COUNT, UNAVAILABLE_TOPICS_COUNT);
 
         List<KafkaTopic> topics = ResourceUtils.listKubeResourcesByPrefix(KafkaTopic.class, tcc.namespace(), REPLICATED_TOPICS_PREFIX);
         List<String> topicNames = topics.stream().map(kt -> kt.getMetadata().getName()).sorted().toList().subList(0, 3);
@@ -169,11 +161,10 @@ public class TopicST extends AbstractST {
      */
     @Test
     @Order(Order.DEFAULT)
-    @UseSharedResources(SPECIAL_STATE_TOPICS_GROUP)
     void testFilterTopics() {
         LOGGER.info("Verify Topics are displayed correctly first");
-        TopicChecks.checkOverviewPageTopicState(tcc, tcc.kafkaName(), TOTAL_TOPICS_COUNT, TOTAL_TOPICS_COUNT, REPLICATED_TOPICS_COUNT + UNMANAGED_REPLICATED_TOPICS_COUNT, UNDER_REPLICATED_TOPICS_COUNT, UNAVAILABLE_TOPICS_COUNT);
-        TopicChecks.checkTopicsPageTopicState(tcc, tcc.kafkaName(), TOTAL_TOPICS_COUNT, REPLICATED_TOPICS_COUNT + UNMANAGED_REPLICATED_TOPICS_COUNT, UNDER_REPLICATED_TOPICS_COUNT, UNAVAILABLE_TOPICS_COUNT);
+        TopicChecks.checkOverviewPageTopicState(tcc, tcc.kafkaName(), TOTAL_TOPICS_COUNT, TOTAL_TOPICS_COUNT, TOTAL_REPLICATED_TOPICS_COUNT, UNDER_REPLICATED_TOPICS_COUNT, UNAVAILABLE_TOPICS_COUNT);
+        TopicChecks.checkTopicsPageTopicState(tcc, tcc.kafkaName(), TOTAL_TOPICS_COUNT, TOTAL_REPLICATED_TOPICS_COUNT, UNDER_REPLICATED_TOPICS_COUNT, UNAVAILABLE_TOPICS_COUNT);
 
         LOGGER.info("Verify Topics Filtering");
         tcc.page().navigate(PwPageUrls.getTopicsPage(tcc, tcc.kafkaName()), PwUtils.getDefaultNavigateOpts());
@@ -183,7 +174,7 @@ public class TopicST extends AbstractST {
             KafkaClientsUtils.getScramShaConfig(tcc.namespace(), tcc.kafkaUserName(), SecurityProtocol.SASL_PLAINTEXT), UNMANAGED_REPLICATED_TOPICS_PREFIX);
 
         TopicChecks.checkTopicsFilterByName(tcc, unmanagedReplicatedTopicsNames);
-        TopicChecks.checkTopicsFilterById(tcc, ResourceUtils.listKubeResourcesByPrefix(KafkaTopic.class, tcc.namespace(), REPLICATED_TOPICS_PREFIX).stream().map(kt -> kt.getMetadata().getName()).toList());
+        TopicChecks.checkTopicsFilterById(tcc, ResourceUtils.listKubeResourcesByPrefix(KafkaTopic.class, tcc.namespace(), REPLICATED_TOPICS_PREFIX).stream().map(kt -> kt.getMetadata().getName()).toList().subList(REPLICATED_TOPICS_COUNT - 5, REPLICATED_TOPICS_COUNT - 1));
         TopicChecks.checkTopicsFilterByStatus(tcc, ResourceUtils.listKubeResourcesByPrefix(KafkaTopic.class, tcc.namespace(), UNDER_REPLICATED_TOPICS_PREFIX).stream().map(kt -> kt.getMetadata().getName()).toList(), TopicStatus.UNDER_REPLICATED);
         TopicChecks.checkTopicsFilterByStatus(tcc, ResourceUtils.listKubeResourcesByPrefix(KafkaTopic.class, tcc.namespace(), UNAVAILABLE_TOPICS_PREFIX).stream().map(kt -> kt.getMetadata().getName()).toList(), TopicStatus.OFFLINE);
     }
@@ -199,11 +190,10 @@ public class TopicST extends AbstractST {
      */
     @Test
     @Order(Order.DEFAULT)
-    @UseSharedResources(SPECIAL_STATE_TOPICS_GROUP)
     void testSortTopics() {
         LOGGER.info("Verify Topics are displayed correctly first");
-        TopicChecks.checkOverviewPageTopicState(tcc, tcc.kafkaName(), TOTAL_TOPICS_COUNT, TOTAL_TOPICS_COUNT, REPLICATED_TOPICS_COUNT + UNMANAGED_REPLICATED_TOPICS_COUNT, UNDER_REPLICATED_TOPICS_COUNT, UNAVAILABLE_TOPICS_COUNT);
-        TopicChecks.checkTopicsPageTopicState(tcc, tcc.kafkaName(), TOTAL_TOPICS_COUNT, REPLICATED_TOPICS_COUNT + UNMANAGED_REPLICATED_TOPICS_COUNT, UNDER_REPLICATED_TOPICS_COUNT, UNAVAILABLE_TOPICS_COUNT);
+        TopicChecks.checkOverviewPageTopicState(tcc, tcc.kafkaName(), TOTAL_TOPICS_COUNT, TOTAL_TOPICS_COUNT, TOTAL_REPLICATED_TOPICS_COUNT, UNDER_REPLICATED_TOPICS_COUNT, UNAVAILABLE_TOPICS_COUNT);
+        TopicChecks.checkTopicsPageTopicState(tcc, tcc.kafkaName(), TOTAL_TOPICS_COUNT, TOTAL_REPLICATED_TOPICS_COUNT, UNDER_REPLICATED_TOPICS_COUNT, UNAVAILABLE_TOPICS_COUNT);
 
         tcc.page().navigate(PwPageUrls.getTopicsPage(tcc, tcc.kafkaName()), PwUtils.getDefaultNavigateOpts());
 
@@ -246,21 +236,14 @@ public class TopicST extends AbstractST {
     // ------
     // Setup
     // ------
-    @SetupSharedResources(BASIC_REPLICATED_TOPICS_GROUP)
-    public void prepareBasicReplicatedTopics() {
-        KafkaTopicUtils.setupTopicsAndReturn(tcc.namespace(), tcc.kafkaName(), REPLICATED_TOPICS_PREFIX, BASIC_REPLICATED_TOPIC_COUNT,
-            true, 1, 1, 1);
-    }
-
-    @SetupSharedResources(SPECIAL_STATE_TOPICS_GROUP)
-    public void prepareSpecialStateTopics() {
-        LOGGER.info("Check default UI state regarding topics");
+    public void prepareTopicsScenario() {
+        LOGGER.info("Check default UI state before preparing test topics");
         TopicChecks.checkOverviewPageTopicState(tcc, tcc.kafkaName(), 0, 0, 0, 0, 0);
         TopicChecks.checkTopicsPageTopicState(tcc, tcc.kafkaName(), 0, 0, 0, 0);
 
         LOGGER.info("Create all types of topics");
-
         final int scaledUpBrokerReplicas = Constants.REGULAR_BROKER_REPLICAS + 1;
+
         List<KafkaTopic> replicatedTopics = KafkaTopicUtils.setupTopicsAndReturn(tcc.namespace(), tcc.kafkaName(), REPLICATED_TOPICS_PREFIX, REPLICATED_TOPICS_COUNT, true, 1, 1, 1);
         // Produce extra messages for the last fullyReplicated topic - use higher message count number to take more storage
         String topicWithMoreMessages = replicatedTopics.get(REPLICATED_TOPICS_COUNT - 1).getMetadata().getName();
@@ -276,9 +259,9 @@ public class TopicST extends AbstractST {
             .withUsername(tcc.kafkaUserName())
             .withAdditionalConfig(KafkaClientsUtils.getScramShaConfig(tcc.namespace(), tcc.kafkaUserName(), SecurityProtocol.SASL_PLAINTEXT))
             .build();
-
         KubeResourceManager.get().createResourceWithWait(clients.producer(), clients.consumer());
         WaitUtils.waitForClientsSuccess(clients);
+
         KafkaTopicUtils.setupUnmanagedTopicsAndReturnNames(tcc.namespace(), tcc.kafkaName(), KafkaNamingUtils.kafkaUserName(tcc.kafkaName()), UNMANAGED_REPLICATED_TOPICS_PREFIX, UNMANAGED_REPLICATED_TOPICS_COUNT, tcc.messageCount(), 1, 1, 1);
         KafkaTopicUtils.setupUnderReplicatedTopicsAndReturn(tcc.namespace(), tcc.kafkaName(), KafkaNamingUtils.kafkaUserName(tcc.kafkaName()), UNDER_REPLICATED_TOPICS_PREFIX, UNDER_REPLICATED_TOPICS_COUNT, tcc.messageCount(), 1, scaledUpBrokerReplicas, scaledUpBrokerReplicas);
         KafkaTopicUtils.setupUnavailableTopicsAndReturn(tcc.namespace(), tcc.kafkaName(), KafkaNamingUtils.kafkaUserName(tcc.kafkaName()), UNAVAILABLE_TOPICS_PREFIX, UNAVAILABLE_TOPICS_COUNT, tcc.messageCount(), 1, 1, 1);
@@ -293,6 +276,8 @@ public class TopicST extends AbstractST {
         KafkaSetup.setupDefaultKafkaIfNeeded(tcc.namespace(), tcc.kafkaName());
         ConsoleInstanceSetup.setupIfNeeded(ConsoleInstanceSetup.getDefaultConsoleInstance(tcc.namespace(), tcc.consoleInstanceName(), tcc.kafkaName(), tcc.kafkaUserName()));
         PwUtils.login(tcc);
+        
+        prepareTopicsScenario();
     }
 
     @AfterAll

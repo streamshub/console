@@ -1,7 +1,5 @@
 package com.github.streamshub.systemtests;
 
-import com.github.streamshub.systemtests.annotations.SetupSharedResources;
-import com.github.streamshub.systemtests.annotations.UseSharedResources;
 import com.github.streamshub.systemtests.clients.KafkaClients;
 import com.github.streamshub.systemtests.clients.KafkaClientsBuilder;
 import com.github.streamshub.systemtests.constants.Constants;
@@ -50,9 +48,6 @@ public class ConsumerST extends AbstractST {
     private static final Logger LOGGER = LogWrapper.getLogger(ConsumerST.class);
     private static TestCaseConfig tcc;
 
-    // Shared resources groups
-    private static final String RESET_OFFSET_GROUP = "ConsumerST-ResetOffsetGroup";
-
     private static final String TOPIC_PREFIX = "rst-all-topics-var-offset";
     private static final int MESSAGE_COUNT = Constants.MESSAGE_COUNT_HIGH;
     private static final int TOPIC_COUNT = 2;
@@ -98,7 +93,6 @@ public class ConsumerST extends AbstractST {
 
     @ParameterizedTest(name = "Type: {1} - DateTime: {2} - Offset: {3}")
     @MethodSource("offsetResetScenarios")
-    @UseSharedResources(RESET_OFFSET_GROUP)
     void testResetConsumerOffsetAllTopicsAllPartitions(int messageCount,
         ResetOffsetType resetType, ResetOffsetDateTimeType dateTimeType, String expectedOffset) {
 
@@ -146,19 +140,7 @@ public class ConsumerST extends AbstractST {
         }
     }
 
-    /**
-     * Prepares a scenario for testing consumer group offsets by:
-     * <ul>
-     *     <li>Creating one or more Kafka topics with the given configuration</li>
-     *     <li>Producing and consuming a defined number of messages for each topic</li>
-     *     <li>Associating all consumers with a single specified consumer group</li>
-     * </ul>
-     *
-     * This setup is typically used in tests that validate consumer group offset behavior,
-     * including offset reset functionality.
-     */
-    @SetupSharedResources(RESET_OFFSET_GROUP)
-    public void setupResetOffset() {
+    public void setupConsumersScenario() {
         // Test class specific
         tcc.setMessageCount(MESSAGE_COUNT);
 
@@ -199,6 +181,8 @@ public class ConsumerST extends AbstractST {
         KafkaSetup.setupDefaultKafkaIfNeeded(tcc.namespace(), tcc.kafkaName());
         ConsoleInstanceSetup.setupIfNeeded(ConsoleInstanceSetup.getDefaultConsoleInstance(tcc.namespace(), tcc.consoleInstanceName(), tcc.kafkaName(), tcc.kafkaUserName()));
         PwUtils.login(tcc);
+
+        setupConsumersScenario();
     }
 
     @AfterAll

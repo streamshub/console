@@ -1,7 +1,5 @@
 package com.github.streamshub.systemtests;
 
-import com.github.streamshub.systemtests.annotations.SetupSharedResources;
-import com.github.streamshub.systemtests.annotations.UseSharedResources;
 import com.github.streamshub.systemtests.clients.KafkaClients;
 import com.github.streamshub.systemtests.clients.KafkaClientsBuilder;
 import com.github.streamshub.systemtests.constants.Constants;
@@ -42,9 +40,6 @@ import static com.github.streamshub.systemtests.utils.Utils.getTestCaseConfig;
 public class MessagesST extends AbstractST {
     private static final Logger LOGGER = LogWrapper.getLogger(MessagesST.class);
     private static TestCaseConfig tcc;
-
-    // Shared resources groups
-    private static final String FILTER_MESSAGES_GROUP = "MessagesST-FilterMessagesGroup";
 
     private static final String TOPIC_PREFIX = "filter-messages";
     // If message count is changed, verify message values inside tests
@@ -101,7 +96,6 @@ public class MessagesST extends AbstractST {
 
     @ParameterizedTest(name = "Query: {1}")
     @MethodSource("searchUsingQueryScenarios")
-    @UseSharedResources(FILTER_MESSAGES_GROUP)
     void testMessageSearchUsingQueries(int expectedResults, String searchQuery, Map<String, String> checks) {
         tcc.page().navigate(PwPageUrls.getMessagesPage(tcc, tcc.kafkaName(),
             ResourceUtils.getKubeResource(KafkaTopic.class, tcc.namespace(), kafkaTopicName).getStatus().getTopicId()));
@@ -143,7 +137,6 @@ public class MessagesST extends AbstractST {
      * <p>Checks are made on message content, offsets, keys, headers, and values to ensure correctness of filtering logic.
      */
     @Test
-    @UseSharedResources(FILTER_MESSAGES_GROUP)
     void testFilterMessagesUsingUIForm() {
         tcc.page().navigate(PwPageUrls.getMessagesPage(tcc, tcc.kafkaName(), ResourceUtils.getKubeResource(KafkaTopic.class, tcc.namespace(), kafkaTopicName).getStatus().getTopicId()));
 
@@ -230,8 +223,7 @@ public class MessagesST extends AbstractST {
         PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItem(1, 5), VALUE_FILTER + " - 0", true);
     }
 
-    @SetupSharedResources(FILTER_MESSAGES_GROUP)
-    public void prepareMessageFilterScenario() {
+    public void prepareMessagesScenario() {
         LOGGER.info("Prepare filter messages scenario by creating topic and producing various messages");
 
         kafkaTopicName = KafkaTopicUtils.setupTopicsAndReturn(tcc.namespace(), tcc.kafkaName(), TOPIC_PREFIX, TOPIC_COUNT, true, 1, 1, 1)
@@ -283,6 +275,8 @@ public class MessagesST extends AbstractST {
         KafkaSetup.setupDefaultKafkaIfNeeded(tcc.namespace(), tcc.kafkaName());
         ConsoleInstanceSetup.setupIfNeeded(ConsoleInstanceSetup.getDefaultConsoleInstance(tcc.namespace(), tcc.consoleInstanceName(), tcc.kafkaName(), tcc.kafkaUserName()));
         PwUtils.login(tcc);
+
+        prepareMessagesScenario();
     }
 
     @AfterAll
