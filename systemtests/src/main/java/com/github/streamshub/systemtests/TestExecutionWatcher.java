@@ -4,13 +4,12 @@ import com.github.streamshub.systemtests.exceptions.ClusterUnreachableException;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.logs.TestLogCollector;
 import com.github.streamshub.systemtests.utils.playwright.PwUtils;
+import io.skodjob.testframe.resources.KubeResourceManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.LifecycleMethodExecutionExceptionHandler;
 import org.junit.jupiter.api.extension.TestExecutionExceptionHandler;
 import org.opentest4j.TestAbortedException;
-
-import static com.github.streamshub.systemtests.utils.Utils.getTestCaseConfig;
 
 public class TestExecutionWatcher implements TestExecutionExceptionHandler, LifecycleMethodExecutionExceptionHandler {
     private static final TestLogCollector LOG_COLLECTOR = TestLogCollector.getInstance();
@@ -21,10 +20,15 @@ public class TestExecutionWatcher implements TestExecutionExceptionHandler, Life
         LOGGER.error("{} - Exception {} has been thrown in @Test. Going to collect logs from components.", extensionContext.getRequiredTestClass().getSimpleName(), throwable.getMessage());
 
         // In case of test failure, make screenshot of the last page state
-        if ()
-        final TestCaseConfig tcc = getTestCaseConfig();
-        LOGGER.error("Exception has been thrown. Last known page url {}", tcc.page().url());
-        PwUtils.screenshot(tcc, tcc.kafkaName(), "exception");
+        TestCaseConfig tcc  = KubeResourceManager.get().getTestContext()
+            .getStore(ExtensionContext.Namespace.GLOBAL)
+            .get(KubeResourceManager.get().getTestContext().getUniqueId(), TestCaseConfig.class);
+        if (tcc != null) {
+            LOGGER.error("Exception has been thrown. Last known page url {}", tcc.page().url());
+            PwUtils.screenshot(tcc, tcc.kafkaName(), "exception");
+        } else {
+            LOGGER.error("Exception has been thrown, but no TestCaseConfig instance was stored in the ExtensionContext");
+        }
 
         if (!(throwable instanceof TestAbortedException || throwable instanceof ClusterUnreachableException)) {
             final String testClass = extensionContext.getRequiredTestClass().getName();
