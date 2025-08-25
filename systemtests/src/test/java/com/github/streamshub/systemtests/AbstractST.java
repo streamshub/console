@@ -119,7 +119,7 @@ public abstract class AbstractST {
 
     protected void cleanupIfNeeded() {
         if (Environment.CLEANUP_ENVIRONMENT) {
-            KubeResourceManager.get().deleteResources(false);
+            KubeResourceManager.get().deleteResources();
         }
     }
 }
