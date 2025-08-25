@@ -21,6 +21,7 @@ public class TestExecutionWatcher implements TestExecutionExceptionHandler, Life
         LOGGER.error("{} - Exception {} has been thrown in @Test. Going to collect logs from components.", extensionContext.getRequiredTestClass().getSimpleName(), throwable.getMessage());
 
         // In case of test failure, make screenshot of the last page state
+        if ()
         final TestCaseConfig tcc = getTestCaseConfig();
         LOGGER.error("Exception has been thrown. Last known page url {}", tcc.page().url());
         PwUtils.screenshot(tcc, tcc.kafkaName(), "exception");

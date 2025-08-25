@@ -71,13 +71,6 @@ public class TopicST extends AbstractST {
     private static final String UNDER_REPLICATED_TOPICS_PREFIX = "underreplicated";
     private static final String UNAVAILABLE_TOPICS_PREFIX = "unavailable";
     
-    // Basic replicated state topics
-    @SetupSharedResources(BASIC_REPLICATED_TOPICS_GROUP)
-    public void prepareBasicReplicatedTopics() {
-        KafkaTopicUtils.setupTopicsAndReturn(tcc.namespace(), tcc.kafkaName(), REPLICATED_TOPICS_PREFIX, BASIC_REPLICATED_TOPIC_COUNT,
-            true, 1, 1, 1);
-    }
-
     /**
      * Tests the pagination functionality on the topics page when a large number of topics are present.
      *
@@ -88,6 +81,7 @@ public class TopicST extends AbstractST {
      * <p>This ensures that the pagination mechanism in the topics page works correctly and is user-friendly at scale.</p>
      */
     @Test
+    @Order(Order.DEFAULT)
     @UseSharedResources(BASIC_REPLICATED_TOPICS_GROUP)
     void testPaginationWithManyTopics() {
         LOGGER.info("Verify topics are displayed");
@@ -121,7 +115,7 @@ public class TopicST extends AbstractST {
      * <p>This ensures proper tracking, rendering, and graceful fallback behavior for recently viewed topics in the UI.</p>
      */
     @Test
-    @Order(Order.DEFAULT)
+    @Order(Integer.MAX_VALUE)
     @UseSharedResources(BASIC_REPLICATED_TOPICS_GROUP)
     void testRecentlyViewedTopics() {
         LOGGER.info("Verify topics are present but none has been viewed just yet");
@@ -164,39 +158,6 @@ public class TopicST extends AbstractST {
         PwUtils.waitForContainsText(tcc, MessagesPageSelectors.MPS_EMPTY_BODY_CONTENT, "Resource not found", true);
     }
 
-    // Special state topics
-    @SetupSharedResources(SPECIAL_STATE_TOPICS_GROUP)
-    public void prepareSpecialStateTopics() {
-        LOGGER.info("Check default UI state regarding topics");
-        TopicChecks.checkOverviewPageTopicState(tcc, tcc.kafkaName(), 0, 0, 0, 0, 0);
-        TopicChecks.checkTopicsPageTopicState(tcc, tcc.kafkaName(), 0, 0, 0, 0);
-
-        LOGGER.info("Create all types of topics");
-
-        final int scaledUpBrokerReplicas = Constants.REGULAR_BROKER_REPLICAS + 1;
-        List<KafkaTopic> replicatedTopics = KafkaTopicUtils.setupTopicsAndReturn(tcc.namespace(), tcc.kafkaName(), REPLICATED_TOPICS_PREFIX, REPLICATED_TOPICS_COUNT, true, 1, 1, 1);
-        // Produce extra messages for the last fullyReplicated topic - use higher message count number to take more storage
-        String topicWithMoreMessages = replicatedTopics.get(REPLICATED_TOPICS_COUNT - 1).getMetadata().getName();
-        KafkaClients clients = new KafkaClientsBuilder()
-            .withNamespaceName(tcc.namespace())
-            .withTopicName(topicWithMoreMessages)
-            .withMessageCount(Constants.MESSAGE_COUNT_HIGH)
-            .withDelayMs(0)
-            .withProducerName(KafkaNamingUtils.producerName(topicWithMoreMessages))
-            .withConsumerName(KafkaNamingUtils.consumerName(topicWithMoreMessages))
-            .withConsumerGroup(KafkaNamingUtils.consumerGroupName(topicWithMoreMessages))
-            .withBootstrapAddress(KafkaUtils.getPlainScramShaBootstrapAddress(tcc.kafkaName()))
-            .withUsername(tcc.kafkaUserName())
-            .withAdditionalConfig(KafkaClientsUtils.getScramShaConfig(tcc.namespace(), tcc.kafkaUserName(), SecurityProtocol.SASL_PLAINTEXT))
-            .build();
-
-        KubeResourceManager.get().createResourceWithWait(clients.producer(), clients.consumer());
-        WaitUtils.waitForClientsSuccess(clients);
-        KafkaTopicUtils.setupUnmanagedTopicsAndReturnNames(tcc.namespace(), tcc.kafkaName(), KafkaNamingUtils.kafkaUserName(tcc.kafkaName()), UNMANAGED_REPLICATED_TOPICS_PREFIX, UNMANAGED_REPLICATED_TOPICS_COUNT, tcc.messageCount(), 1, 1, 1);
-        KafkaTopicUtils.setupUnderReplicatedTopicsAndReturn(tcc.namespace(), tcc.kafkaName(), KafkaNamingUtils.kafkaUserName(tcc.kafkaName()), UNDER_REPLICATED_TOPICS_PREFIX, UNDER_REPLICATED_TOPICS_COUNT, tcc.messageCount(), 1, scaledUpBrokerReplicas, scaledUpBrokerReplicas);
-        KafkaTopicUtils.setupUnavailableTopicsAndReturn(tcc.namespace(), tcc.kafkaName(), KafkaNamingUtils.kafkaUserName(tcc.kafkaName()), UNAVAILABLE_TOPICS_PREFIX, UNAVAILABLE_TOPICS_COUNT, tcc.messageCount(), 1, 1, 1);
-    }
-
     /**
      * Tests display and filtering of topics in various replication states.
      *
@@ -207,6 +168,7 @@ public class TopicST extends AbstractST {
      * <p>This confirms that all topic states are properly represented and filterable in the UI.</p>
      */
     @Test
+    @Order(Order.DEFAULT)
     @UseSharedResources(SPECIAL_STATE_TOPICS_GROUP)
     void testFilterTopics() {
         LOGGER.info("Verify Topics are displayed correctly first");
@@ -236,6 +198,7 @@ public class TopicST extends AbstractST {
      * <p>This ensures that sorting logic is correctly implemented and provides meaningful ordering to users.</p>
      */
     @Test
+    @Order(Order.DEFAULT)
     @UseSharedResources(SPECIAL_STATE_TOPICS_GROUP)
     void testSortTopics() {
         LOGGER.info("Verify Topics are displayed correctly first");
@@ -278,6 +241,47 @@ public class TopicST extends AbstractST {
         PwUtils.waitForLocatorCount(tcc, TOTAL_REPLICATED_TOPICS_COUNT, TopicsPageSelectors.TPS_TABLE_ROWS, false);
         // Last managed replicated has utilized more storage
         PwUtils.waitForContainsText(tcc, TopicsPageSelectors.getTableRowItems(1), replicatedTopicsNames.get(REPLICATED_TOPICS_COUNT - 1), true);
+    }
+
+    // ------
+    // Setup
+    // ------
+    @SetupSharedResources(BASIC_REPLICATED_TOPICS_GROUP)
+    public void prepareBasicReplicatedTopics() {
+        KafkaTopicUtils.setupTopicsAndReturn(tcc.namespace(), tcc.kafkaName(), REPLICATED_TOPICS_PREFIX, BASIC_REPLICATED_TOPIC_COUNT,
+            true, 1, 1, 1);
+    }
+
+    @SetupSharedResources(SPECIAL_STATE_TOPICS_GROUP)
+    public void prepareSpecialStateTopics() {
+        LOGGER.info("Check default UI state regarding topics");
+        TopicChecks.checkOverviewPageTopicState(tcc, tcc.kafkaName(), 0, 0, 0, 0, 0);
+        TopicChecks.checkTopicsPageTopicState(tcc, tcc.kafkaName(), 0, 0, 0, 0);
+
+        LOGGER.info("Create all types of topics");
+
+        final int scaledUpBrokerReplicas = Constants.REGULAR_BROKER_REPLICAS + 1;
+        List<KafkaTopic> replicatedTopics = KafkaTopicUtils.setupTopicsAndReturn(tcc.namespace(), tcc.kafkaName(), REPLICATED_TOPICS_PREFIX, REPLICATED_TOPICS_COUNT, true, 1, 1, 1);
+        // Produce extra messages for the last fullyReplicated topic - use higher message count number to take more storage
+        String topicWithMoreMessages = replicatedTopics.get(REPLICATED_TOPICS_COUNT - 1).getMetadata().getName();
+        KafkaClients clients = new KafkaClientsBuilder()
+            .withNamespaceName(tcc.namespace())
+            .withTopicName(topicWithMoreMessages)
+            .withMessageCount(Constants.MESSAGE_COUNT_HIGH)
+            .withDelayMs(0)
+            .withProducerName(KafkaNamingUtils.producerName(topicWithMoreMessages))
+            .withConsumerName(KafkaNamingUtils.consumerName(topicWithMoreMessages))
+            .withConsumerGroup(KafkaNamingUtils.consumerGroupName(topicWithMoreMessages))
+            .withBootstrapAddress(KafkaUtils.getPlainScramShaBootstrapAddress(tcc.kafkaName()))
+            .withUsername(tcc.kafkaUserName())
+            .withAdditionalConfig(KafkaClientsUtils.getScramShaConfig(tcc.namespace(), tcc.kafkaUserName(), SecurityProtocol.SASL_PLAINTEXT))
+            .build();
+
+        KubeResourceManager.get().createResourceWithWait(clients.producer(), clients.consumer());
+        WaitUtils.waitForClientsSuccess(clients);
+        KafkaTopicUtils.setupUnmanagedTopicsAndReturnNames(tcc.namespace(), tcc.kafkaName(), KafkaNamingUtils.kafkaUserName(tcc.kafkaName()), UNMANAGED_REPLICATED_TOPICS_PREFIX, UNMANAGED_REPLICATED_TOPICS_COUNT, tcc.messageCount(), 1, 1, 1);
+        KafkaTopicUtils.setupUnderReplicatedTopicsAndReturn(tcc.namespace(), tcc.kafkaName(), KafkaNamingUtils.kafkaUserName(tcc.kafkaName()), UNDER_REPLICATED_TOPICS_PREFIX, UNDER_REPLICATED_TOPICS_COUNT, tcc.messageCount(), 1, scaledUpBrokerReplicas, scaledUpBrokerReplicas);
+        KafkaTopicUtils.setupUnavailableTopicsAndReturn(tcc.namespace(), tcc.kafkaName(), KafkaNamingUtils.kafkaUserName(tcc.kafkaName()), UNAVAILABLE_TOPICS_PREFIX, UNAVAILABLE_TOPICS_COUNT, tcc.messageCount(), 1, 1, 1);
     }
 
     @BeforeAll
