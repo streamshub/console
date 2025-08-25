@@ -55,7 +55,7 @@ function Header({
           key={"consumergGroupActionButton"}
           disabled={disabled}
           kafkaId={kafkaId}
-          consumerGroupName={groupId}
+          groupId={groupId}
         />,
       ]}
     />

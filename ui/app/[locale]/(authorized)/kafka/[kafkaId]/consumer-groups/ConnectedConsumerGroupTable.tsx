@@ -189,7 +189,7 @@ export function ConnectedConsumerGroupTable({
           members={consumerGroupMembers}
           isResetOffsetModalOpen={isResetOffsetModalOpen}
           onClickClose={closeResetOffsetModal}
-          consumerGroupName={consumerGroupName}
+          groupId={consumerGroupName}
           kafkaId={kafkaId}
         />
       )}
