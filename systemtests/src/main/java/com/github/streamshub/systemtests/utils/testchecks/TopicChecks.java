@@ -1,6 +1,7 @@
 package com.github.streamshub.systemtests.utils.testchecks;
 
 import com.github.streamshub.systemtests.TestCaseConfig;
+import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.enums.FilterType;
 import com.github.streamshub.systemtests.enums.TopicStatus;
 import com.github.streamshub.systemtests.locators.ClusterOverviewPageSelectors;
@@ -224,8 +225,8 @@ public class TopicChecks {
         LOGGER.info("Filter topics by status");
         TopicsTestUtils.selectFilter(tcc, FilterType.STATUS);
         TopicsTestUtils.selectTopicStatus(tcc, status);
-
-        PwUtils.waitForLocatorCount(tcc, topicNames.size(), TopicsPageSelectors.TPS_TABLE_ROWS, false);
+        // Use default max results per page or actual topic count if it's less than the maximum per page
+        PwUtils.waitForLocatorCount(tcc, Math.min(topicNames.size(), Constants.DEFAULT_TOPICS_PER_PAGE), TopicsPageSelectors.TPS_TABLE_ROWS, false);
 
         for (String topicName : topicNames) {
             LOGGER.debug("Verify topic {} status {}", topicName, status.getName());
