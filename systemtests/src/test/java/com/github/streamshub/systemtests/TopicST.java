@@ -38,7 +38,6 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import static com.github.streamshub.systemtests.utils.Utils.getTestCaseConfig;
@@ -85,13 +84,13 @@ public class TopicST extends AbstractST {
         List<Integer> topicsPerPageList = List.of(10, 20, 50, 100);
 
         LOGGER.info("Verify top navigation");
-        TopicChecks.checkPaginationPage(tcc, TOTAL_REPLICATED_TOPICS_COUNT, topicsPerPageList,
+        TopicChecks.checkPaginationPage(tcc, TOTAL_TOPICS_COUNT, topicsPerPageList,
             TopicsPageSelectors.TPS_TOP_PAGINATION_DROPDOWN_BUTTON, TopicsPageSelectors.TPS_PAGINATION_DROPDOWN_ITEMS,
             TopicsPageSelectors.TPS_TOP_PAGINATION_DROPDOWN_BUTTON_TEXT,
             TopicsPageSelectors.TPS_TOP_PAGINATION_NAV_PREV_BUTTON, TopicsPageSelectors.TPS_TOP_PAGINATION_NAV_NEXT_BUTTON);
 
         LOGGER.info("Verify bottom navigation");
-        TopicChecks.checkPaginationPage(tcc, TOTAL_REPLICATED_TOPICS_COUNT, topicsPerPageList,
+        TopicChecks.checkPaginationPage(tcc, TOTAL_TOPICS_COUNT, topicsPerPageList,
             TopicsPageSelectors.TPS_BOTTOM_PAGINATION_DROPDOWN_BUTTON, TopicsPageSelectors.TPS_PAGINATION_DROPDOWN_ITEMS,
             TopicsPageSelectors.TPS_BOTTOM_PAGINATION_DROPDOWN_BUTTON_TEXT,
             TopicsPageSelectors.TPS_BOTTOM_PAGINATION_NAV_PREV_BUTTON, TopicsPageSelectors.TPS_BOTTOM_PAGINATION_NAV_NEXT_BUTTON);
@@ -197,15 +196,6 @@ public class TopicST extends AbstractST {
 
         tcc.page().navigate(PwPageUrls.getTopicsPage(tcc, tcc.kafkaName()), PwUtils.getDefaultNavigateOpts());
 
-        final String brokerPodName = ResourceUtils.listKubeResourcesByPrefix(Pod.class, tcc.namespace(), KafkaNamingUtils.brokerPodNamePrefix(tcc.kafkaName())).get(0).getMetadata().getName();
-
-        List<String> replicatedTopicsNames = new ArrayList<>();
-        replicatedTopicsNames.addAll(ResourceUtils.listKubeResourcesByPrefix(KafkaTopic.class, tcc.namespace(), REPLICATED_TOPICS_PREFIX).stream().map(kt -> kt.getMetadata().getName()).toList());
-        replicatedTopicsNames.addAll(KafkaCmdUtils.listKafkaTopicsByPrefix(tcc.namespace(), tcc.kafkaName(), brokerPodName,
-            KafkaClientsUtils.getScramShaConfig(tcc.namespace(), tcc.kafkaUserName(), SecurityProtocol.SASL_PLAINTEXT), UNMANAGED_REPLICATED_TOPICS_PREFIX));
-
-        replicatedTopicsNames = replicatedTopicsNames.stream().sorted().toList();
-
         List<String> unavailableTopicsNames = ResourceUtils.listKubeResourcesByPrefix(KafkaTopic.class, tcc.namespace(), UNAVAILABLE_TOPICS_PREFIX).stream().map(kt -> kt.getMetadata().getName()).sorted().toList();
 
         LOGGER.info("Sort topics offline topics by name");
@@ -225,12 +215,13 @@ public class TopicST extends AbstractST {
         // Filter
         TopicsTestUtils.selectFilter(tcc, FilterType.STATUS);
         TopicsTestUtils.selectTopicStatus(tcc, TopicStatus.FULLY_REPLICATED);
-        PwUtils.waitForLocatorCount(tcc, TOTAL_REPLICATED_TOPICS_COUNT, TopicsPageSelectors.TPS_TABLE_ROWS, false);
+        PwUtils.waitForLocatorCount(tcc, Math.min(Constants.DEFAULT_TOPICS_PER_PAGE, TOTAL_REPLICATED_TOPICS_COUNT), TopicsPageSelectors.TPS_TABLE_ROWS, false);
         // Sort by storage
         TopicsTestUtils.selectSortBy(tcc, TopicsPageSelectors.TPS_TABLE_HEADER_SORT_BY_STORAGE, TopicsPageSelectors.TPS_TABLE_HEADER_SORT_BY_STORAGE_BUTTON, "descending");
-        PwUtils.waitForLocatorCount(tcc, TOTAL_REPLICATED_TOPICS_COUNT, TopicsPageSelectors.TPS_TABLE_ROWS, false);
+        PwUtils.waitForLocatorCount(tcc, Math.min(Constants.DEFAULT_TOPICS_PER_PAGE, TOTAL_REPLICATED_TOPICS_COUNT), TopicsPageSelectors.TPS_TABLE_ROWS, false);
         // Last managed replicated has utilized more storage
-        PwUtils.waitForContainsText(tcc, TopicsPageSelectors.getTableRowItems(1), replicatedTopicsNames.get(REPLICATED_TOPICS_COUNT - 1), true);
+        final String topicWithLargestStorageUsage = ResourceUtils.listKubeResourcesByPrefix(KafkaTopic.class, tcc.namespace(), REPLICATED_TOPICS_PREFIX).get(REPLICATED_TOPICS_COUNT - 1).getMetadata().getName();
+        PwUtils.waitForContainsText(tcc, TopicsPageSelectors.getTableRowItems(1), topicWithLargestStorageUsage, true);
     }
 
     // ------
