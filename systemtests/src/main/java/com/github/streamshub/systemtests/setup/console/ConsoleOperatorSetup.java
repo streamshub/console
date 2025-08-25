@@ -3,6 +3,7 @@ package com.github.streamshub.systemtests.setup.console;
 import com.github.streamshub.systemtests.Environment;
 import com.github.streamshub.systemtests.exceptions.SetupException;
 import com.github.streamshub.systemtests.logs.LogWrapper;
+import com.github.streamshub.systemtests.utils.resourceutils.NamespaceUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import org.apache.logging.log4j.Logger;
@@ -12,10 +13,10 @@ public class ConsoleOperatorSetup {
 
     private InstallConfig installConfig;
 
-    public ConsoleOperatorSetup() {
+    public ConsoleOperatorSetup(String namespace) {
         switch (Environment.CONSOLE_INSTALL_TYPE) {
-            case Yaml -> installConfig = new YamlConfig();
-            case Olm -> installConfig = new OlmConfig();
+            case Yaml -> installConfig = new YamlConfig(namespace);
+            case Olm -> installConfig = new OlmConfig(namespace);
             default -> throw new SetupException("Unknown installation type: " + Environment.CONSOLE_INSTALL_TYPE);
         }
     }
@@ -26,16 +27,8 @@ public class ConsoleOperatorSetup {
             LOGGER.warn("Console Operator is already deployed. Skipping deployment");
             return;
         }
+
+        NamespaceUtils.prepareNamespace(installConfig.deploymentNamespace);
         installConfig.install();
-    }
-
-    public ConsoleOperatorSetup inNamespace(String namespace) {
-        installConfig.setDeploymentNamespace(namespace);
-        return this;
-    }
-
-    public ConsoleOperatorSetup withName(String name) {
-        installConfig.setDeploymentName(name);
-        return this;
     }
 }

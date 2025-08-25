@@ -27,7 +27,8 @@ public class OlmConfig extends InstallConfig {
     private String channelName = Environment.CONSOLE_OLM_CHANNEL_NAME;
     private String subscriptionName = Constants.CONSOLE_OLM_SUBSCRIPTION_NAME;
 
-    public OlmConfig() {
+    public OlmConfig(String namespace) {
+        super(namespace);
         LOGGER.info("Console Operator will be installed using OLM");
         if (!ClusterUtils.isOcp() &&
             ResourceUtils.getKubeResource(CustomResourceDefinition.class, "subscriptions.operators.coreos.com") == null) {
