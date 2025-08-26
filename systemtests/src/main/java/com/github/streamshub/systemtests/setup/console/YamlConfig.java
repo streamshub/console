@@ -60,6 +60,16 @@ public class YamlConfig extends InstallConfig {
         KubeResourceManager.get().createOrUpdateResourceWithWait(getBundleDeployment());
     }
 
+    @Override
+    public void delete() {
+        KubeResourceManager.get().deleteResourceWithWait(getBundleCrds());
+        KubeResourceManager.get().deleteResourceWithWait(getBundleServiceAccount());
+        KubeResourceManager.get().deleteResourceWithWait(getBundleClusterRoles());
+        KubeResourceManager.get().deleteResourceWithWait(getBundleClusterRoleBindings());
+        KubeResourceManager.get().deleteResourceWithWait(getBundleRoleBindings());
+        KubeResourceManager.get().deleteResourceWithWait(getBundleDeployment());
+    }
+
     private CustomResourceDefinition[] getBundleCrds() {
         return ResourceUtils.getResourcesStreamFromListOfResources(consoleBundleResources, CustomResourceDefinition.class)
             .toArray(CustomResourceDefinition[]::new);

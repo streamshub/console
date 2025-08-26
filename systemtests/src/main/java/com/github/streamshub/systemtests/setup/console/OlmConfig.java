@@ -4,9 +4,9 @@ import com.github.streamshub.systemtests.Environment;
 import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.exceptions.OperatorSdkNotInstalledException;
 import com.github.streamshub.systemtests.logs.LogWrapper;
+import com.github.streamshub.systemtests.utils.WaitUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.ClusterUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
-import com.github.streamshub.systemtests.utils.WaitUtils;
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.openshift.api.model.operatorhub.v1.OperatorGroup;
@@ -17,6 +17,7 @@ import io.skodjob.testframe.resources.KubeResourceManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.Collections;
+import java.util.List;
 
 public class OlmConfig extends InstallConfig {
     private static final Logger LOGGER = LogWrapper.getLogger(OlmConfig.class);
@@ -48,6 +49,17 @@ public class OlmConfig extends InstallConfig {
             .get(0)
             .getMetadata()
             .getName();
+    }
+
+    @Override
+    public void delete() {
+        KubeResourceManager.get().deleteResourceWithWait(getOlmOperatorGroup());
+        KubeResourceManager.get().deleteResourceWithWait(getOlmSubscription());
+        KubeResourceManager.get().deleteResourceWithWait();
+        List<Deployment> deploymentList = ResourceUtils.listKubeResourcesByPrefix(Deployment.class, deploymentNamespace, deploymentName);
+        if (!deploymentList.isEmpty()) {
+            KubeResourceManager.get().deleteResourceWithWait(deploymentList.get(0));
+        }
     }
 
     private Subscription getOlmSubscription() {

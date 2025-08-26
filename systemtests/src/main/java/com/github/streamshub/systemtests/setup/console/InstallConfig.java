@@ -11,6 +11,7 @@ public abstract class InstallConfig {
     }
 
     abstract void install();
+    abstract void delete();
 
     public String getDeploymentName() {
         return deploymentName;

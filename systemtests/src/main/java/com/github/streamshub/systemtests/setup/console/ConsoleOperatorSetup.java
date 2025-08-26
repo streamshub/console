@@ -23,10 +23,8 @@ public class ConsoleOperatorSetup {
     public void install() {
         LOGGER.info("----------- Install Console Operator -----------");
         if (!ResourceUtils.listKubeResourcesByPrefix(Deployment.class, installConfig.getDeploymentNamespace(), installConfig.getDeploymentName()).isEmpty()) {
-            Deployment dep = ResourceUtils.listKubeResourcesByPrefix(Deployment.class, installConfig.getDeploymentNamespace(), installConfig.getDeploymentName()).get(0);
-            LOGGER.warn("Console Operator is already deployed. Skipping deployment");
-            LOGGER.warn("Console {}/{} status [{}]", dep.getMetadata().getNamespace(), dep.getMetadata().getName(), dep.getStatus().toString());
-            return;
+            LOGGER.info("Clean up currently deployed operator to ensure correct operator is deployed");
+            installConfig.delete();
         }
 
         installConfig.install();
