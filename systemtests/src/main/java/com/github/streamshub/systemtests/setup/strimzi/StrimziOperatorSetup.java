@@ -2,7 +2,6 @@ package com.github.streamshub.systemtests.setup.strimzi;
 
 import com.github.streamshub.systemtests.Environment;
 import com.github.streamshub.systemtests.logs.LogWrapper;
-import com.github.streamshub.systemtests.utils.resourceutils.NamespaceUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
 import com.marcnuri.helm.Helm;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
@@ -28,8 +27,6 @@ public class StrimziOperatorSetup {
             LOGGER.warn("Strimzi Operator is already installed or it's installation was skipped with SKIP_STRIMZI_INSTALLATION");
             return;
         }
-
-        NamespaceUtils.prepareNamespace(deploymentNamespace);
 
         Helm.install(CHART)
             .withName(deploymentName)

@@ -38,8 +38,8 @@ public class OlmConfig extends InstallConfig {
 
     @Override
     public void install() {
-        KubeResourceManager.get().createResourceWithWait(getOlmOperatorGroup());
-        KubeResourceManager.get().createResourceWithWait(getOlmSubscription());
+        KubeResourceManager.get().createOrUpdateResourceWithWait(getOlmOperatorGroup());
+        KubeResourceManager.get().createOrUpdateResourceWithWait(getOlmSubscription());
 
         WaitUtils.waitForDeploymentWithPrefixIsReady(deploymentNamespace, olmAppBundlePrefix);
 

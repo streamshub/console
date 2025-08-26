@@ -11,6 +11,7 @@ import com.github.streamshub.systemtests.resourcetypes.KafkaUserType;
 import com.github.streamshub.systemtests.setup.console.ConsoleOperatorSetup;
 import com.github.streamshub.systemtests.setup.strimzi.StrimziOperatorSetup;
 import com.github.streamshub.systemtests.utils.resourceutils.ClusterUtils;
+import com.github.streamshub.systemtests.utils.resourceutils.NamespaceUtils;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.Namespace;
 import io.skodjob.testframe.annotations.ResourceManager;
@@ -39,12 +40,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.ExtensionContext;
+import org.slf4j.event.Level;
 
 import java.io.IOException;
 
 @TestVisualSeparator
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-@ResourceManager(asyncDeletion = false, cleanResources = false)
+@ResourceManager(cleanResources = false)
 @SuppressWarnings("ClassDataAbstractionCoupling")
 @ExtendWith({TestExecutionWatcher.class})
 @ExtendWith(ExtensionContextParameterResolver.class)
@@ -95,6 +97,7 @@ public abstract class AbstractST {
     @BeforeAll
     void setupTestSuite(ExtensionContext extensionContext) {
         KubeResourceManager.get().setTestContext(extensionContext);
+        NamespaceUtils.prepareNamespace(Constants.CO_NAMESPACE);
         strimziOperatorSetup.install();
         consoleOperatorSetup.install();
     }
@@ -113,13 +116,15 @@ public abstract class AbstractST {
 
     @AfterAll
     void teardownTestSuite(ExtensionContext extensionContext) {
+        LOGGER.warn("AFTERALLLL");
         KubeResourceManager.get().setTestContext(extensionContext);
         cleanupIfNeeded();
     }
 
     protected void cleanupIfNeeded() {
         if (Environment.CLEANUP_ENVIRONMENT) {
-            KubeResourceManager.get().deleteResources();
+            KubeResourceManager.get().printCurrentResources(Level.DEBUG);
+            KubeResourceManager.get().deleteResources(false);
         }
     }
 }

@@ -3,7 +3,6 @@ package com.github.streamshub.systemtests.setup.console;
 import com.github.streamshub.systemtests.Environment;
 import com.github.streamshub.systemtests.exceptions.SetupException;
 import com.github.streamshub.systemtests.logs.LogWrapper;
-import com.github.streamshub.systemtests.utils.resourceutils.NamespaceUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import org.apache.logging.log4j.Logger;
@@ -24,11 +23,12 @@ public class ConsoleOperatorSetup {
     public void install() {
         LOGGER.info("----------- Install Console Operator -----------");
         if (!ResourceUtils.listKubeResourcesByPrefix(Deployment.class, installConfig.getDeploymentNamespace(), installConfig.getDeploymentName()).isEmpty()) {
+            Deployment dep = ResourceUtils.listKubeResourcesByPrefix(Deployment.class, installConfig.getDeploymentNamespace(), installConfig.getDeploymentName()).get(0);
             LOGGER.warn("Console Operator is already deployed. Skipping deployment");
+            LOGGER.warn("Console {}/{} status [{}]", dep.getMetadata().getNamespace(), dep.getMetadata().getName(), dep.getStatus().toString());
             return;
         }
 
-        NamespaceUtils.prepareNamespace(installConfig.deploymentNamespace);
         installConfig.install();
     }
 }
