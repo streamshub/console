@@ -53,6 +53,7 @@ import com.github.streamshub.console.config.ConsoleConfig;
 import com.github.streamshub.console.kafka.systemtest.TestPlainProfile;
 import com.github.streamshub.console.kafka.systemtest.deployment.DeploymentManager;
 import com.github.streamshub.console.kafka.systemtest.utils.ConsumerUtils;
+import com.github.streamshub.console.support.Identifiers;
 import com.github.streamshub.console.test.AdminClientSpy;
 import com.github.streamshub.console.test.TestHelper;
 import com.github.streamshub.console.test.TopicHelper;
@@ -197,7 +198,7 @@ class ConsumerGroupsResourceIT {
                 .assertThat()
                 .statusCode(is(Status.OK.getStatusCode()))
                 .body("data.size()", is(2))
-                .body("data.id", everyItem(matchesPattern(compile("^grp-\\d{2}-FLAG-.*$"))));
+                .body("data.attributes.groupId", everyItem(matchesPattern(compile("^grp-\\d{2}-FLAG-.*$"))));
         }
     }
 
@@ -294,7 +295,7 @@ class ConsumerGroupsResourceIT {
 
         // Page 1
         String response1 = whenRequesting(req -> req
-                .param("sort", "id,state,someIgnoredField,-simpleConsumerGroup")
+                .param("sort", "groupId,state,someIgnoredField,-simpleConsumerGroup")
                 .param("page[size]", 2)
                 .param("fields[consumerGroups]", "state,simpleConsumerGroup")
                 .get("", clusterId1))
@@ -309,8 +310,8 @@ class ConsumerGroupsResourceIT {
             .body("meta.page.total", is(10))
             .body("meta.page.pageNumber", is(1))
             .body("data.size()", is(2))
-            .body("data[0].id", is(groupIds.get(0)))
-            .body("data[1].id", is(groupIds.get(1)))
+            .body("data[0].id", is(Identifiers.encode(groupIds.get(0))))
+            .body("data[1].id", is(Identifiers.encode(groupIds.get(1))))
             .extract()
             .asString();
 
@@ -334,8 +335,8 @@ class ConsumerGroupsResourceIT {
             .body("meta.page.total", is(10))
             .body("meta.page.pageNumber", is(2))
             .body("data.size()", is(2))
-            .body("data[0].id", is(groupIds.get(2)))
-            .body("data[1].id", is(groupIds.get(3)))
+            .body("data[0].id", is(Identifiers.encode(groupIds.get(2))))
+            .body("data[1].id", is(Identifiers.encode(groupIds.get(3))))
             .extract()
             .asString();
 
@@ -356,8 +357,8 @@ class ConsumerGroupsResourceIT {
             .body("meta.page.total", is(10))
             .body("meta.page.pageNumber", is(5))
             .body("data.size()", is(2))
-            .body("data[0].id", is(groupIds.get(8)))
-            .body("data[1].id", is(groupIds.get(9)))
+            .body("data[0].id", is(Identifiers.encode(groupIds.get(8))))
+            .body("data[1].id", is(Identifiers.encode(groupIds.get(9))))
             .extract()
             .asString();
 
@@ -378,8 +379,8 @@ class ConsumerGroupsResourceIT {
             .body("meta.page.total", is(10))
             .body("meta.page.pageNumber", is(1))
             .body("data.size()", is(2))
-            .body("data[0].id", is(groupIds.get(0)))
-            .body("data[1].id", is(groupIds.get(1)))
+            .body("data[0].id", is(Identifiers.encode(groupIds.get(0))))
+            .body("data[1].id", is(Identifiers.encode(groupIds.get(1))))
             .extract()
             .asString();
 
@@ -410,6 +411,7 @@ class ConsumerGroupsResourceIT {
 
         String topic1 = "t1-" + UUID.randomUUID().toString();
         String group1 = "g1-" + UUID.randomUUID().toString();
+        String group1Id = Identifiers.encode(group1);
         String client1 = "c1-" + UUID.randomUUID().toString();
 
         try (var consumer = groupUtils.consume(group1, topic1, client1, 2, false)) {
@@ -419,7 +421,7 @@ class ConsumerGroupsResourceIT {
                 .assertThat()
                 .statusCode(is(Status.OK.getStatusCode()))
                 .body("data.size()", is(1))
-                .body("data[0].id", is(group1))
+                .body("data[0].id", is(group1Id))
                 .body("data[0].meta.errors.size()", is(1))
                 .body("data[0].meta.errors[0].detail", is("EXPECTED TEST EXCEPTION"));
         }
@@ -429,10 +431,11 @@ class ConsumerGroupsResourceIT {
     void testDescribeConsumerGroupDefault() {
         String topic1 = "t1-" + UUID.randomUUID().toString();
         String group1 = "g1-" + UUID.randomUUID().toString();
+        String group1Id = Identifiers.encode(group1);
         String client1 = "c1-" + UUID.randomUUID().toString();
 
         try (var consumer = groupUtils.consume(group1, topic1, client1, 2, false)) {
-            whenRequesting(req -> req.get("{groupId}", clusterId1, group1))
+            whenRequesting(req -> req.get("{groupId}", clusterId1, group1Id))
                 .assertThat()
                 .statusCode(is(Status.OK.getStatusCode()))
                 .body("data.attributes.state", is(Matchers.notNullValue(String.class)))
@@ -460,6 +463,7 @@ class ConsumerGroupsResourceIT {
     void testDescribeConsumerGroupWithEmptyGroupId() {
         String topic1 = "t1-" + UUID.randomUUID().toString();
         String group1 = "";
+        String group1Id = Identifiers.encode("+");
         String client1 = "c1-" + UUID.randomUUID().toString();
 
         try (var consumer = groupUtils.request()
@@ -472,10 +476,10 @@ class ConsumerGroupsResourceIT {
                 .consumeMessages(0)
                 .consume()) {
             // must be fetched with a single blank space character
-            whenRequesting(req -> req.get("{groupId}", clusterId1, "+"))
+            whenRequesting(req -> req.get("{groupId}", clusterId1, group1Id))
                 .assertThat()
                 .statusCode(is(Status.OK.getStatusCode()))
-                .body("data.id", is(group1))
+                .body("data.id", is(group1Id))
                 .body("data.attributes.state", is(Matchers.notNullValue(String.class)));
         }
     }
@@ -504,15 +508,16 @@ class ConsumerGroupsResourceIT {
 
         String topic1 = "t1-" + UUID.randomUUID().toString();
         String group1 = "g1-" + UUID.randomUUID().toString();
+        String group1Id = Identifiers.encode(group1);
         String client1 = "c1-" + UUID.randomUUID().toString();
 
         try (var consumer = groupUtils.consume(group1, topic1, client1, 2, false)) {
             whenRequesting(req -> req
                     .param("fields[consumerGroups]", "offsets")
-                    .get("{groupId}", clusterId1, group1))
+                    .get("{groupId}", clusterId1, group1Id))
                 .assertThat()
                 .statusCode(is(Status.OK.getStatusCode()))
-                .body("data.id", is(group1))
+                .body("data.id", is(group1Id))
                 .body("data.meta.errors.size()", is(1))
                 .body("data.meta.errors[0].title", is("Unable to list consumer group offsets"))
                 .body("data.meta.errors[0].detail", is("EXPECTED TEST EXCEPTION"));
@@ -542,15 +547,16 @@ class ConsumerGroupsResourceIT {
 
         String topic1 = "t1-" + UUID.randomUUID().toString();
         String group1 = "g1-" + UUID.randomUUID().toString();
+        String group1Id = Identifiers.encode(group1);
         String client1 = "c1-" + UUID.randomUUID().toString();
 
         try (var consumer = groupUtils.consume(group1, topic1, client1, 2, false)) {
             whenRequesting(req -> req
                     .param("fields[consumerGroups]", "offsets")
-                    .get("{groupId}", clusterId1, group1))
+                    .get("{groupId}", clusterId1, group1Id))
                 .assertThat()
                 .statusCode(is(Status.OK.getStatusCode()))
-                .body("data.id", is(group1))
+                .body("data.id", is(group1Id))
                 .body("data.meta.errors.size()", is(2)) // 2 partitions, both failed
                 .body("data.meta.errors.title", everyItem(startsWith("Unable to list offsets for topic/partition")))
                 .body("data.meta.errors.detail", everyItem(is("EXPECTED TEST EXCEPTION")));
@@ -561,10 +567,11 @@ class ConsumerGroupsResourceIT {
     void testDeleteConsumerGroupWithMembers() {
         String topic1 = "t1-" + UUID.randomUUID().toString();
         String group1 = "g1-" + UUID.randomUUID().toString();
+        String group1Id = Identifiers.encode(group1);
         String client1 = "c1-" + UUID.randomUUID().toString();
 
         try (var consumer = groupUtils.consume(group1, topic1, client1, 2, false)) {
-            whenRequesting(req -> req.delete("{groupId}", clusterId1, group1))
+            whenRequesting(req -> req.delete("{groupId}", clusterId1, group1Id))
                 .assertThat()
                 .statusCode(is(Status.CONFLICT.getStatusCode()))
                 .body("errors.size()", is(1))
@@ -597,6 +604,7 @@ class ConsumerGroupsResourceIT {
     void testDeleteConsumerGroupSucceeds() {
         String topic1 = "t1-" + UUID.randomUUID().toString();
         String group1 = "g1-" + UUID.randomUUID().toString();
+        String group1Id = Identifiers.encode(group1);
         String client1 = "c1-" + UUID.randomUUID().toString();
 
         try (var consumer = groupUtils.consume(group1, topic1, client1, 2, false)) {
@@ -604,11 +612,11 @@ class ConsumerGroupsResourceIT {
                 .until(() -> ConsumerGroupState.STABLE == groupUtils.consumerGroupState(group1));
         }
 
-        whenRequesting(req -> req.delete("{groupId}", clusterId1, group1))
+        whenRequesting(req -> req.delete("{groupId}", clusterId1, group1Id))
             .assertThat()
             .statusCode(is(Status.NO_CONTENT.getStatusCode()));
 
-        whenRequesting(req -> req.get("{groupId}", clusterId1, group1))
+        whenRequesting(req -> req.get("{groupId}", clusterId1, group1Id))
             .assertThat()
             .statusCode(is(Status.NOT_FOUND.getStatusCode()));
     }
@@ -650,10 +658,11 @@ class ConsumerGroupsResourceIT {
         String topic1 = "t1-" + UUID.randomUUID().toString();
         String topic1Id = topicUtils.createTopics(List.of(topic1), 2).get(topic1);
         String group1 = "g1-" + UUID.randomUUID().toString();
+        String group1Id = Identifiers.encode(group1);
         String client1 = "c1-" + UUID.randomUUID().toString();
 
         String preparedRequest = requestBody
-                .replace("$groupId", group1)
+                .replace("$groupId", group1Id)
                 .replace("$topicId", topic1Id);
 
         var consumer = groupUtils.request()
@@ -670,7 +679,7 @@ class ConsumerGroupsResourceIT {
             whenRequesting(req -> req
                     .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
                     .body(preparedRequest)
-                    .patch("{groupId}", clusterId1, group1))
+                    .patch("{groupId}", clusterId1, group1Id))
                 .assertThat()
                 .statusCode(is(responseStatus.getStatusCode()))
                 .body(new TypeSafeMatcher<String>() {
@@ -710,6 +719,7 @@ class ConsumerGroupsResourceIT {
         String topic1 = "t1-" + UUID.randomUUID().toString();
         String topic1Id = topicUtils.createTopics(List.of(topic1), partitionCount).get(topic1);
         String group1 = "g1-" + UUID.randomUUID().toString();
+        String group1Id = Identifiers.encode(group1);
         String client1 = "c1-" + UUID.randomUUID().toString();
 
         groupUtils.request()
@@ -739,7 +749,7 @@ class ConsumerGroupsResourceIT {
                 .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
                 .body(Json.createObjectBuilder()
                         .add("data", Json.createObjectBuilder()
-                                .add("id", group1)
+                                .add("id", group1Id)
                                 .add("type", "consumerGroups")
                                 .add("attributes", Json.createObjectBuilder()
                                         .add("offsets", Json.createArrayBuilder()
@@ -748,7 +758,7 @@ class ConsumerGroupsResourceIT {
                                                         .add("offset", offsetSpec)))))
                         .build()
                         .toString())
-                .patch("{groupId}", clusterId1, group1))
+                .patch("{groupId}", clusterId1, group1Id))
             .assertThat()
             .statusCode(is(Status.NO_CONTENT.getStatusCode()));
 
@@ -776,6 +786,7 @@ class ConsumerGroupsResourceIT {
         String topic1 = "t1-" + UUID.randomUUID().toString();
         String topic1Id = topicUtils.createTopics(List.of(topic1), partitionCount).get(topic1);
         String group1 = "g1-" + UUID.randomUUID().toString();
+        String group1Id = Identifiers.encode(group1);
         String client1 = "c1-" + UUID.randomUUID().toString();
 
         groupUtils.request()
@@ -807,7 +818,7 @@ class ConsumerGroupsResourceIT {
                         .add("meta", Json.createObjectBuilder()
                                 .add("dryRun", true))
                         .add("data", Json.createObjectBuilder()
-                                .add("id", group1)
+                                .add("id", group1Id)
                                 .add("type", "consumerGroups")
                                 .add("attributes", Json.createObjectBuilder()
                                         .add("offsets", Json.createArrayBuilder()
@@ -816,7 +827,7 @@ class ConsumerGroupsResourceIT {
                                                         .add("offset", offsetSpec)))))
                         .build()
                         .toString())
-                .patch("{groupId}", clusterId1, group1))
+                .patch("{groupId}", clusterId1, group1Id))
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
             .body("data.attributes.state", is(ConsumerGroupState.EMPTY.name()))

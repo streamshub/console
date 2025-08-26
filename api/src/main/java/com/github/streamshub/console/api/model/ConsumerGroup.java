@@ -308,7 +308,7 @@ public class ConsumerGroup {
 
         JsonObject attr = cursor.getJsonObject("attributes");
 
-        return new ConsumerGroup(cursor.getString("id"),
+        return new ConsumerGroup(attr.getString(Fields.GROUP_ID, null),
                 attr.getBoolean(Fields.SIMPLE_CONSUMER_GROUP, false),
                 attr.getString(Fields.STATE, null));
     }
@@ -320,6 +320,10 @@ public class ConsumerGroup {
 
         if (sortFields.contains(Fields.SIMPLE_CONSUMER_GROUP)) {
             attrBuilder.add(Fields.SIMPLE_CONSUMER_GROUP, simpleConsumerGroup);
+        }
+
+        if (sortFields.contains(Fields.GROUP_ID)) {
+            attrBuilder.add(Fields.GROUP_ID, groupId);
         }
 
         if (sortFields.contains(Fields.STATE)) {

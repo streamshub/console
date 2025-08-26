@@ -53,6 +53,7 @@ import com.github.streamshub.console.api.support.KafkaOffsetSpec;
 import com.github.streamshub.console.api.support.ListRequestContext;
 import com.github.streamshub.console.api.support.UnknownTopicIdPatch;
 import com.github.streamshub.console.config.security.Privilege;
+import com.github.streamshub.console.support.Identifiers;
 
 import io.fabric8.kubernetes.api.model.ObjectMeta;
 import io.fabric8.kubernetes.client.KubernetesClient;
@@ -311,7 +312,10 @@ public class TopicDescribeService {
 
                         if (searchTopics.contains(idString)) {
                             var topicGroups = consumerGroups.getOrDefault(idString, Collections.emptyList());
-                            var identifiers = topicGroups.stream().map(g -> new Identifier("consumerGroups", g)).toList();
+                            var identifiers = topicGroups.stream()
+                                    .map(Identifiers::encode)
+                                    .map(g -> new Identifier("consumerGroups", g))
+                                    .toList();
                             topic.consumerGroups().getData().addAll(identifiers);
                             topic.consumerGroups().addMeta("count", identifiers.size());
                         } else {
