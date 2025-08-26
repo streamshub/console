@@ -46,7 +46,7 @@ spec:
               name: my-oidc-configmap
               key: ca.jks
         password: # <7>
-          value: truststore-password      
+          value: truststore-password
     subjects:
       - claim: groups # <8>
         include: # <9>
@@ -67,23 +67,23 @@ spec:
     roles:
       - name: developers
         rules:
-          - resources: # <12> 
+          - resources: # <12>
               - kafkas
-          - resourceNames: # <13>
+            resourceNames: # <13>
               - <dev_cluster_a>
               - <dev_cluster_b>
-          - privileges: # <14>
+            privileges: # <14>
               - '*'
       - name: administrators
         rules:
           - resources:
               - kafkas
-          - privileges:
+            privileges:
               - '*'
   kafkaClusters:
     - name: console-kafka
       namespace: kafka
-      listener: secure                     
+      listener: secure
       credentials:
         kafkaUser:
           name: console-kafka-user1
