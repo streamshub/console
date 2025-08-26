@@ -14,6 +14,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.github.streamshub.console.config.authentication.Authenticated;
 import com.github.streamshub.console.config.authentication.AuthenticationConfig;
+import com.github.streamshub.console.support.Identifiers;
 
 import io.sundr.builder.annotations.Buildable;
 
@@ -50,7 +51,7 @@ public class KafkaConnectConfig implements Authenticated, Trustable {
 
     @JsonIgnore
     public String clusterKeyEncoded() {
-        return ID_ENCODER.encodeToString(clusterKey().getBytes());
+        return Identifiers.encode(clusterKey());
     }
 
     @JsonIgnore

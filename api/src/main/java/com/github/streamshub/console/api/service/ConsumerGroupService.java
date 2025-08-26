@@ -60,6 +60,7 @@ import com.github.streamshub.console.api.support.Promises;
 import com.github.streamshub.console.api.support.UnknownTopicIdPatch;
 import com.github.streamshub.console.api.support.ValidationProxy;
 import com.github.streamshub.console.config.security.Privilege;
+import com.github.streamshub.console.support.Identifiers;
 
 @ApplicationScoped
 public class ConsumerGroupService {
@@ -229,9 +230,9 @@ public class ConsumerGroupService {
                             (e1, e2) -> { }));
     }
 
-    public CompletionStage<Optional<ConsumerGroup>> patchConsumerGroup(ConsumerGroup patch, boolean dryRun) {
+    public CompletionStage<Optional<ConsumerGroup>> patchConsumerGroup(String requestGroupId, ConsumerGroup patch, boolean dryRun) {
         Admin adminClient = kafkaContext.admin();
-        String groupId = preprocessGroupId(patch.getGroupId());
+        String groupId = preprocessGroupId(requestGroupId);
 
         return assertConsumerGroupExists(adminClient, groupId)
             .thenComposeAsync(nothing -> Optional.ofNullable(patch.getOffsets())
@@ -620,6 +621,10 @@ public class ConsumerGroupService {
     }
 
     private static String preprocessGroupId(String groupId) {
-        return "+".equals(groupId) ? "" : groupId;
+        String[] decoded = Identifiers.decode(groupId);
+        if (decoded.length == 1) {
+            return "+".equals(decoded[0]) ? "" : decoded[0];
+        }
+        throw new GroupIdNotFoundException("Invalid groupId");
     }
 }

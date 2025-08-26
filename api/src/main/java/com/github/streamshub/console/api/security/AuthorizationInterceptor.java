@@ -13,6 +13,7 @@ import jakarta.inject.Inject;
 import jakarta.interceptor.AroundInvoke;
 import jakarta.interceptor.Interceptor;
 import jakarta.interceptor.InvocationContext;
+import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.ForbiddenException;
 import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.core.PathSegment;
@@ -25,6 +26,7 @@ import com.github.streamshub.console.api.ClientFactory;
 import com.github.streamshub.console.api.service.TopicDescribeService;
 import com.github.streamshub.console.api.support.KafkaContext;
 import com.github.streamshub.console.config.security.ResourceTypes;
+import com.github.streamshub.console.support.Identifiers;
 
 import io.quarkus.security.identity.SecurityIdentity;
 
@@ -144,10 +146,18 @@ public class AuthorizationInterceptor {
                 resourceNames.add(converter.apply(segment));
             } else {
                 if (s == 3) {
-                    if (ResourceTypes.Kafka.TOPICS.value().equals(segment)) {
-                        converter = this::topicName;
-                    } else if (ResourceTypes.Kafka.REBALANCES.value().equals(segment)) {
-                        converter = this::rebalanceName;
+                    switch (ResourceTypes.Kafka.fromValue(segment)) {
+                        case CONSUMER_GROUPS:
+                            converter = this::consumerGroupId;
+                            break;
+                        case REBALANCES:
+                            converter = this::rebalanceName;
+                            break;
+                        case TOPICS:
+                            converter = this::topicName;
+                            break;
+                        default:
+                            break;
                     }
                 }
                 if (!resource.isEmpty()) {
@@ -165,6 +175,17 @@ public class AuthorizationInterceptor {
     private String topicName(String topicId) {
         return topicDescribe.topicNameForId(topicId).toCompletableFuture().join()
             .orElseThrow(() -> new UnknownTopicIdException("No such topic: " + topicId));
+    }
+
+    /**
+     * Decode the base64-encoded consumer groupId.
+     */
+    private String consumerGroupId(String groupId) {
+        String[] decoded = Identifiers.decode(groupId);
+        if (decoded.length != 1) {
+            throw new BadRequestException("Malformed consumer group URI");
+        }
+        return decoded[0];
     }
 
     /**

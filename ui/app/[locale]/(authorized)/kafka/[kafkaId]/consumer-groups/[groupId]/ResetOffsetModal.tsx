@@ -20,13 +20,13 @@ export function ResetOffsetModal({
   isResetOffsetModalOpen,
   onClickClose,
   kafkaId,
-  consumerGroupName,
+  consumerGroupId,
 }: {
   members: string[];
   isResetOffsetModalOpen: boolean;
   onClickClose: () => void;
   kafkaId: string;
-  consumerGroupName: string;
+  consumerGroupId: string;
 }) {
   const t = useTranslations("ConsumerGroupsTable");
   const router = useRouter();
@@ -34,7 +34,7 @@ export function ResetOffsetModal({
   const refresh = () => {
     if (members.length === 0) {
       router.push(
-        `/kafka/${kafkaId}/consumer-groups/${consumerGroupName}/reset-offset`,
+        `/kafka/${kafkaId}/consumer-groups/${consumerGroupId}/reset-offset`,
       );
     }
   };

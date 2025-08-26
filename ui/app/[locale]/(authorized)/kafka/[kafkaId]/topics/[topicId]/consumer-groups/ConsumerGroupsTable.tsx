@@ -125,14 +125,14 @@ export function ConsumerGroupsTable({
                 dataLabel={t("ConsumerGroupsTable.consumer_group_name")}
               >
                 <Link
-                  href={`/kafka/${kafkaId}/consumer-groups/${row.id === "" ? "+" : encodeURIComponent(row.id)}`}
+                  href={`/kafka/${kafkaId}/consumer-groups/${row.id}`}
                 >
-                  {row.id === "" ? (
+                  {row.attributes.groupId === "" ? (
                     <RichText>
                       {(tags) => t.rich("ConsumerGroupsTable.empty_name", tags)}
                     </RichText>
                   ) : (
-                    row.id
+                    row.attributes.groupId
                   )}
                 </Link>
               </Td>

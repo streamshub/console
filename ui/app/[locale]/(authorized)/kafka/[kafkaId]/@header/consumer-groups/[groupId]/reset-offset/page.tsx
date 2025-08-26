@@ -1,3 +1,4 @@
+import { getConsumerGroup } from "@/api/consumerGroups/actions";
 import { KafkaConsumerGroupMembersParams } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/consumer-groups/[groupId]/KafkaConsumerGroupMembers.params";
 import { AppHeader } from "@/components/AppHeader";
 import { Suspense } from "react";
@@ -10,7 +11,7 @@ export default function Page({
   params: KafkaConsumerGroupMembersParams;
 }) {
   return (
-    <Suspense fallback={<Header params={{ kafkaId, groupId }} />}>
+    <Suspense fallback={<Header groupIdDisplay={""} />}>
       <ConnectedAppHeader params={{ kafkaId, groupId }} />
     </Suspense>
   );
@@ -21,25 +22,32 @@ async function ConnectedAppHeader({
 }: {
   params: KafkaConsumerGroupMembersParams;
 }) {
-  return <Header params={{ kafkaId, groupId }} />;
+  const consumerGroup = (await getConsumerGroup(kafkaId, groupId)).payload;
+  let groupIdDisplay = "";
+
+  if (consumerGroup) {
+    groupIdDisplay = consumerGroup.attributes.groupId;
+  }
+
+  return <Header groupIdDisplay={groupIdDisplay} />;
 }
 
 function Header({
-  params: { kafkaId, groupId },
+  groupIdDisplay,
 }: {
-  params: KafkaConsumerGroupMembersParams;
+  groupIdDisplay: string;
 }) {
-  const t = useTranslations("ConsumerGroupsTable");
+  const t = useTranslations();
 
   return (
     <AppHeader
-      title={t("reset_consumer_offset")}
+      title={t("ConsumerGroupsTable.reset_consumer_offset")}
       subTitle={
-        decodeURIComponent(groupId) === "+" ? (
+        groupIdDisplay === "" ? (
           <RichText>{(tags) => t.rich("common.empty_name", tags)}</RichText>
         ) : (
           <RichText>
-            {(tags) => t.rich("consumer_name", { ...tags, groupId })}
+            {(tags) => t.rich("ConsumerGroupsTable.consumer_name", { ...tags, groupId: groupIdDisplay })}
           </RichText>
         )
       }

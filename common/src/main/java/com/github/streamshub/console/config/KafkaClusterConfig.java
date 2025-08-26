@@ -1,6 +1,5 @@
 package com.github.streamshub.console.config;
 
-import java.util.Base64;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -13,14 +12,13 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.github.streamshub.console.config.security.KafkaSecurityConfig;
 import com.github.streamshub.console.config.security.ResourceTypes;
 import com.github.streamshub.console.config.security.ResourceTypes.ValidResourceTypes;
+import com.github.streamshub.console.support.Identifiers;
 
 import io.sundr.builder.annotations.Buildable;
 
 @JsonInclude(Include.NON_NULL)
 @Buildable(editableEnabled = false)
 public class KafkaClusterConfig implements Named {
-
-    private static final Base64.Encoder ID_ENCODER = Base64.getUrlEncoder().withoutPadding();
 
     private String id;
     @NotBlank(message = "Kafka cluster `name` is required")
@@ -51,7 +49,7 @@ public class KafkaClusterConfig implements Named {
 
     @JsonIgnore
     public String clusterKeyEncoded() {
-        return ID_ENCODER.encodeToString(clusterKey().getBytes());
+        return Identifiers.encode(clusterKey());
     }
 
     @JsonIgnore

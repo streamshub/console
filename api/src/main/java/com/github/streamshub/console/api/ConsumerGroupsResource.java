@@ -82,6 +82,7 @@ public class ConsumerGroupsResource {
             @StringEnumeration(
                     source = ConsumerGroup.FIELDS_PARAM,
                     allowedValues = {
+                        ConsumerGroup.Fields.GROUP_ID,
                         ConsumerGroup.Fields.STATE,
                         ConsumerGroup.Fields.SIMPLE_CONSUMER_GROUP,
                         ConsumerGroup.Fields.MEMBERS,
@@ -98,6 +99,7 @@ public class ConsumerGroupsResource {
                             type = SchemaType.ARRAY,
                             implementation = String.class,
                             enumeration = {
+                                ConsumerGroup.Fields.GROUP_ID,
                                 ConsumerGroup.Fields.STATE,
                                 ConsumerGroup.Fields.SIMPLE_CONSUMER_GROUP,
                                 ConsumerGroup.Fields.MEMBERS,
@@ -153,6 +155,7 @@ public class ConsumerGroupsResource {
             @StringEnumeration(
                     source = ConsumerGroup.FIELDS_PARAM,
                     allowedValues = {
+                        ConsumerGroup.Fields.GROUP_ID,
                         ConsumerGroup.Fields.STATE,
                         ConsumerGroup.Fields.SIMPLE_CONSUMER_GROUP,
                         ConsumerGroup.Fields.MEMBERS,
@@ -169,6 +172,7 @@ public class ConsumerGroupsResource {
                             type = SchemaType.ARRAY,
                             implementation = String.class,
                             enumeration = {
+                                ConsumerGroup.Fields.GROUP_ID,
                                 ConsumerGroup.Fields.STATE,
                                 ConsumerGroup.Fields.SIMPLE_CONSUMER_GROUP,
                                 ConsumerGroup.Fields.MEMBERS,
@@ -235,13 +239,14 @@ public class ConsumerGroupsResource {
 
         if (dryRun) {
             requestedFields.accept(List.of(
+                ConsumerGroup.Fields.GROUP_ID,
                 ConsumerGroup.Fields.STATE,
                 ConsumerGroup.Fields.MEMBERS,
                 ConsumerGroup.Fields.OFFSETS
             ));
         }
 
-        return consumerGroupService.patchConsumerGroup(patch.getData().getAttributes(), dryRun)
+        return consumerGroupService.patchConsumerGroup(groupId, patch.getData().getAttributes(), dryRun)
                 .thenApply(optionalGroup -> optionalGroup
                         .map(ConsumerGroup.Data::new)
                         .map(Response::ok)

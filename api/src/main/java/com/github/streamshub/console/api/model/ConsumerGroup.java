@@ -19,7 +19,6 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonFilter;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.github.streamshub.console.api.model.jsonapi.JsonApiError;
 import com.github.streamshub.console.api.model.jsonapi.JsonApiResource;
@@ -29,6 +28,7 @@ import com.github.streamshub.console.api.model.jsonapi.None;
 import com.github.streamshub.console.api.support.ComparatorBuilder;
 import com.github.streamshub.console.api.support.ErrorCategory;
 import com.github.streamshub.console.api.support.ListRequestContext;
+import com.github.streamshub.console.support.Identifiers;
 
 import io.xlate.validation.constraints.Expression;
 
@@ -43,6 +43,7 @@ public class ConsumerGroup {
     public static final String FIELDS_PARAM = "fields[" + API_TYPE + "]";
 
     public static final class Fields {
+        public static final String GROUP_ID = "groupId";
         public static final String STATE = "state";
         public static final String MEMBERS = "members";
         public static final String COORDINATOR = "coordinator";
@@ -56,14 +57,21 @@ public class ConsumerGroup {
 
         static final Map<String, Map<Boolean, Comparator<ConsumerGroup>>> COMPARATORS = ComparatorBuilder.bidirectional(
                 Map.of("id", ID_COMPARATOR,
+                        GROUP_ID, nullsLast(comparing(ConsumerGroup::getGroupId)),
                         STATE, nullsLast(comparing(ConsumerGroup::getState)),
                         SIMPLE_CONSUMER_GROUP, comparing(ConsumerGroup::isSimpleConsumerGroup)));
 
         public static final ComparatorBuilder<ConsumerGroup> COMPARATOR_BUILDER =
                 new ComparatorBuilder<>(ConsumerGroup.Fields::comparator, ConsumerGroup.Fields.defaultComparator());
 
-        public static final String LIST_DEFAULT = STATE + ", " + SIMPLE_CONSUMER_GROUP;
-        public static final String DESCRIBE_DEFAULT = STATE + ", " + MEMBERS + ", " + COORDINATOR + ", " + OFFSETS
+        public static final String LIST_DEFAULT = GROUP_ID +
+                ", " + STATE +
+                ", " + SIMPLE_CONSUMER_GROUP;
+        public static final String DESCRIBE_DEFAULT = GROUP_ID +
+                ", " + STATE +
+                ", " + MEMBERS +
+                ", " + COORDINATOR +
+                ", " + OFFSETS
                 + ", " + SIMPLE_CONSUMER_GROUP;
 
         private Fields() {
@@ -134,14 +142,16 @@ public class ConsumerGroup {
          */
         @JsonCreator
         public ConsumerGroupResource(String id, String type, ConsumerGroup attributes) {
-            super(id, type, new ConsumerGroup(id, attributes));
+            super(id, type, new ConsumerGroup(attributes));
         }
 
         /**
          * Used by list and describe
          */
         public ConsumerGroupResource(ConsumerGroup attributes) {
-            super(attributes.groupId, API_TYPE, attributes);
+            super(Identifiers.encode("".equals(attributes.groupId) ? "+" : attributes.groupId),
+                    API_TYPE,
+                    attributes);
 
             if (attributes.errors != null) {
                 addMeta("errors", attributes.errors);
@@ -150,7 +160,6 @@ public class ConsumerGroup {
     }
 
     // Available via list or describe operations
-    @JsonIgnore
     private final String groupId;
     private final boolean simpleConsumerGroup;
     private final String state;
@@ -169,10 +178,16 @@ public class ConsumerGroup {
     // When a describe error occurs
     private List<JsonApiError> errors;
 
-    private ConsumerGroup(String id, ConsumerGroup other) {
-        this(id,
-             other != null && other.simpleConsumerGroup,
-             other != null ? other.state : null);
+    private ConsumerGroup(ConsumerGroup other) {
+        if (other != null) {
+            this.groupId = other.groupId;
+            this.simpleConsumerGroup = other.simpleConsumerGroup;
+            this.state = other.state;
+        } else {
+            this.groupId = null;
+            this.simpleConsumerGroup = false;
+            this.state = null;
+        }
 
         Optional.ofNullable(other)
             .map(ConsumerGroup::getOffsets)

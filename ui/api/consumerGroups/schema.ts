@@ -44,6 +44,7 @@ export const ConsumerGroupSchema = z.object({
   id: z.string(),
   type: z.literal("consumerGroups"),
   attributes: z.object({
+    groupId: z.string(),
     simpleConsumerGroup: z.boolean().optional(),
     state: ConsumerGroupStateSchema,
     members: z.array(MemberDescriptionSchema).nullable().optional(),
