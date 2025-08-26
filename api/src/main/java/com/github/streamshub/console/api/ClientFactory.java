@@ -269,8 +269,9 @@ public class ClientFactory {
 
         if (validConfigs(kafkaResource, clusterConfig, clientConfigs)) {
             Admin admin = null;
+            boolean globalConnection = establishGlobalConnection(adminConfigs);
 
-            if (establishGlobalConnection(adminConfigs)) {
+            if (globalConnection) {
                 admin = adminBuilder.apply(adminConfigs);
             }
 
@@ -296,9 +297,9 @@ public class ClientFactory {
             KafkaContext previous = contexts.put(clusterId, ctx);
 
             if (previous == null) {
-                log.infof("Added KafkaContext for cluster %s, id=%s", clusterKey, clusterId);
+                log.infof("Added KafkaContext for cluster %s, id=%s, global=%s", clusterKey, clusterId, globalConnection);
             } else {
-                log.infof("Replaced KafkaContext for cluster %s, id=%s", clusterKey, clusterId);
+                log.infof("Replaced KafkaContext for cluster %s, id=%s, global=%s", clusterKey, clusterId, previous.admin() != null);
                 previous.close();
             }
         }
@@ -353,7 +354,7 @@ public class ClientFactory {
         }
 
         if (createContext) {
-            if (clientsMessage.length() > 0) {
+            if (!clientsMessage.isEmpty()) {
                 clientsMessage.insert(0, "Some configuration may be missing for connection to cluster %s, connection attempts may fail".formatted(clusterConfig.clusterKey()));
                 log.warn(clientsMessage.toString().trim());
             }
@@ -429,11 +430,14 @@ public class ClientFactory {
         log.infof("Closing all known KafkaContexts");
 
         contexts.values().parallelStream().forEach(context -> {
-            log.infof("Closing KafkaContext %s", context.clusterId());
+            var key = context.clusterConfig().clusterKey();
+            var id = context.clusterId();
+            log.infof("Closing KafkaContext %s, id=%s", key, id);
+
             try {
                 context.close();
             } catch (Exception e) {
-                log.warnf("Exception occurred closing context: %s", e.getMessage());
+                log.warnf("Exception occurred closing context %s, id=%s: %s", key, id, e.getMessage());
             }
         });
     }

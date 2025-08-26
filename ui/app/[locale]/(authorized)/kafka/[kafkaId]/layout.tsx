@@ -10,6 +10,7 @@ import { KafkaParams } from "./kafka.params";
 import { getKafkaCluster, getKafkaClusters } from "@/api/kafka/actions";
 import { NoDataErrorState } from "@/components/NoDataErrorState";
 import { ClusterInfo } from "@/components/AppDropdown";
+import { oidcEnabled } from "@/utils/config";
 
 export default async function AsyncLayout({
   children,
@@ -26,6 +27,7 @@ export default async function AsyncLayout({
   const authOptions = await getAuthOptions();
   const session = await getServerSession(authOptions);
   const response = await getKafkaCluster(kafkaId);
+  const loginRequired = !(await oidcEnabled());
 
   const clusters = (await getKafkaClusters(undefined, { pageSize: 1000 }))
     ?.payload;
@@ -42,6 +44,7 @@ export default async function AsyncLayout({
       projectName: namespace,
       authenticationMethod: authMethod,
       id: id,
+      loginRequired: loginRequired,
     };
   });
 

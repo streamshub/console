@@ -78,6 +78,22 @@ function reloadConfig(
   return false;
 }
 
+/**
+ * Check whether the configuration value contains a reference to an environment
+ * variable - e.g. ${my-var-reference}. To find the environment variable,
+ * non-word [^a-zA-Z_0-9] characters are replaced by underscore and the entire
+ * value is converted to upper-case characters.
+ */
+function resolveValue(value: string | null): string | null {
+    if (value?.startsWith("${") && value.endsWith("}")) {
+        let envName = value.substring(2, value.length - 1).replaceAll(/\W/g, "_").toUpperCase();
+        log.debug(`looking for ${envName} in process.env`);
+        return process.env[envName] ?? value;
+    }
+
+    return value;
+}
+
 async function getOrLoadConfig(): Promise<ConsoleConfig> {
   let consoleConfig: ConsoleConfig = (globalThis as any).consoleConfig;
   let readOnly: boolean =
@@ -111,16 +127,19 @@ async function getOrLoadConfig(): Promise<ConsoleConfig> {
       if (trustStoreCfg?.type == "PEM") {
         if (trustStoreCfg.content.value) {
           trustStore = {
-            type: trustStoreCfg.type,
+            type: resolveValue(trustStoreCfg.type)!,
             content: {
-              value: trustStoreCfg.content.value,
+              value: resolveValue(trustStoreCfg.content.value),
             },
           };
         } else if (trustStoreCfg.content.valueFrom) {
           trustStore = {
-            type: trustStoreCfg.type,
+            type: resolveValue(trustStoreCfg.type)!,
             content: {
-              value: fs.readFileSync(trustStoreCfg.content.valueFrom, "utf8"),
+              value: fs.readFileSync(
+                resolveValue(trustStoreCfg.content.valueFrom)!,
+                "utf8"
+              ),
             },
           };
         }
@@ -139,11 +158,11 @@ async function getOrLoadConfig(): Promise<ConsoleConfig> {
             cfg.security?.oidc == null
               ? null
               : {
-                  authServerUrl: cfg.security?.oidc?.authServerUrl ?? null,
-                  clientId: cfg.security?.oidc?.clientId ?? null,
-                  clientSecret: cfg.security?.oidc?.clientSecret ?? null,
+                  authServerUrl: resolveValue(cfg.security?.oidc?.authServerUrl ?? null),
+                  clientId: resolveValue(cfg.security?.oidc?.clientId ?? null),
+                  clientSecret: resolveValue(cfg.security?.oidc?.clientSecret ?? null),
                   trustStore: trustStore,
-                  scopes: cfg.security?.oidc?.scopes,
+                  scopes: resolveValue(cfg.security?.oidc?.scopes),
                 },
         },
         loadTime: new Date(),
@@ -178,5 +197,11 @@ export async function clientConfig(): Promise<ConsoleConfig> {
       // Do not return security information do client-side
       security: null,
     };
+  });
+}
+
+export async function oidcEnabled(): Promise<boolean> {
+  return getOrLoadConfig().then((cfg) => {
+    return (cfg?.security?.oidc ?? null) !== null;
   });
 }

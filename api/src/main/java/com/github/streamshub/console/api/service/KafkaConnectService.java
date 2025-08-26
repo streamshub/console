@@ -4,13 +4,13 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -19,6 +19,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.NotFoundException;
 
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.context.ThreadContext;
 import org.jboss.logging.Logger;
 
@@ -27,7 +28,6 @@ import com.github.streamshub.console.api.model.connect.ConnectCluster;
 import com.github.streamshub.console.api.model.connect.Connector;
 import com.github.streamshub.console.api.model.connect.ConnectorPlugin;
 import com.github.streamshub.console.api.model.connect.ConnectorTask;
-import com.github.streamshub.console.api.security.PermissionService;
 import com.github.streamshub.console.api.support.FieldFilter;
 import com.github.streamshub.console.api.support.KafkaConnectAPI;
 import com.github.streamshub.console.api.support.KafkaConnectAPI.ConnectorOffsets;
@@ -36,7 +36,6 @@ import com.github.streamshub.console.api.support.ListRequestContext;
 import com.github.streamshub.console.api.support.Promises;
 import com.github.streamshub.console.config.ConsoleConfig;
 import com.github.streamshub.console.config.KafkaConnectConfig;
-import com.github.streamshub.console.config.security.Privilege;
 
 import io.fabric8.kubernetes.client.CustomResource;
 import io.strimzi.api.kafka.model.connect.KafkaConnect;
@@ -80,13 +79,21 @@ public class KafkaConnectService {
     StrimziResourceService strimziService;
 
     @Inject
-    PermissionService permissionService;
+    @ConfigProperty(name = "console.connect.mirror.classes.checkpoints")
+    List<String> mmCheckpoints;
+
+    @Inject
+    @ConfigProperty(name = "console.connect.mirror.classes.heartbeats")
+    List<String> mmHeartbeats;
+
+    @Inject
+    @ConfigProperty(name = "console.connect.mirror.classes.sources")
+    List<String> mmSources;
 
     public CompletionStage<List<ConnectCluster>> listClusters(FieldFilter fields, ListRequestContext<ConnectCluster> listSupport) {
         var pendingServerInfo = consoleConfig.getKafkaConnectClusters()
                 .stream()
                 .filter(listSupport.filter(KafkaConnectConfig.class))
-                .filter(config -> permissionService.permitted(ConnectCluster.API_TYPE, Privilege.LIST, config.clusterKey()))
                 .map(config -> describeCluster(config, fields, listSupport.getFetchParams(), true))
                 .toList();
 
@@ -112,7 +119,7 @@ public class KafkaConnectService {
         var clusterKey = clusterConfig.clusterKey();
         var includePlugins = fields.isIncluded(ConnectCluster.FIELDS_PARAM, ConnectCluster.Fields.PLUGINS.toString());
         var pluginPromise = includePlugins
-            ? connectClient.getConnectorPlugins(clusterKey).thenApply(plugins -> plugins.stream().map(ConnectorPlugin::new).toList())
+            ? describeConnectorPlugins(clusterConfig)
             : PROMISE_NULL_PLUGINS;
 
         var includeConnectors = fetchParams.includes(ConnectCluster.Fields.CONNECTORS.toString());
@@ -207,7 +214,6 @@ public class KafkaConnectService {
 
         return connectClient.getConnectors(clusterConfig.clusterKey())
                 .thenApplyAsync(names -> names.stream()
-                        .filter(permissionService.permitted(Connector.API_TYPE, Privilege.LIST, Function.identity()))
                         .map(name -> describeConnector(clusterConfig, name, fields, fetchParams)),
                         threadContext.currentContextExecutor())
                 .thenCompose(Promises::joinStages);
@@ -250,7 +256,7 @@ public class KafkaConnectService {
                     Connector connector = new Connector(encode("", clusterConfig.clusterKey(), connectorName));
                     connector.name(connectorName);
                     connector.namespace(clusterConfig.getNamespace());
-                    connector.type(info.type());
+                    connector.type(mapType(info));
                     connector.config(info.config());
                     connector.state(state.connector().state());
                     connector.trace(state.connector().trace());
@@ -290,6 +296,24 @@ public class KafkaConnectService {
             });
     }
 
+    private String mapType(KafkaConnectAPI.ConnectorInfo info) {
+        var config = Optional.ofNullable(info.config()).orElseGet(Collections::emptyMap);
+        var className = config.getOrDefault("connector.class", "");
+        return mapType(info.type(), className);
+    }
+
+    private String mapType(String type, String className) {
+        if (mmCheckpoints.contains(className)) {
+            type += ":mm-checkpoint";
+        } else if (mmHeartbeats.contains(className)) {
+            type += ":mm-heartbeat";
+        } else if (mmSources.contains(className)) {
+            type += ":mm";
+        }
+
+        return type;
+    }
+
     private void mapTasks(Connector connector, KafkaConnectAPI.ConnectorInfo info, KafkaConnectAPI.ConnectorStateInfo state, boolean include) {
         List<ConnectorTask> tasks = new ArrayList<>();
 
@@ -324,6 +348,16 @@ public class KafkaConnectService {
         }
 
         return connector;
+    }
+
+    private CompletionStage<List<ConnectorPlugin>> describeConnectorPlugins(KafkaConnectConfig clusterConfig) {
+        return connectClient.getConnectorPlugins(clusterConfig.clusterKey())
+                .thenApply(plugins -> plugins.stream()
+                        .map(plugin -> new ConnectorPlugin(
+                                plugin.className(),
+                                mapType(plugin.type(), plugin.className()),
+                                plugin.version()))
+                        .toList());
     }
 
     private CompletionStage<List<String>> describeConnectorTopics(KafkaConnectConfig clusterConfig, String connectorName) {

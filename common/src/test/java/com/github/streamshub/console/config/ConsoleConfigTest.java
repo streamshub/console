@@ -3,6 +3,7 @@ package com.github.streamshub.console.config;
 import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
+import java.util.regex.Pattern;
 
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
@@ -10,6 +11,8 @@ import jakarta.validation.Validator;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import com.github.streamshub.console.config.security.Decision;
 import com.github.streamshub.console.config.security.GlobalSecurityConfigBuilder;
@@ -178,6 +181,54 @@ class ConsoleConfigTest {
             metrics.setName(name);
             metrics.setUrl("http://example.com");
             config.getMetricsSources().add(metrics);
+        }
+
+        var violations = validator.validate(config);
+
+        assertTrue(violations.isEmpty());
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        "'default/name1/false', 'default/name1/false'",
+    })
+    void testKafkaConnectNotUniqueFailsValidation(String kc1, String kc2) {
+        for (String kcString : List.of(kc1, kc2)) {
+            String[] elements = kcString.split(Pattern.quote("/"));
+            KafkaConnectConfig kcc = new KafkaConnectConfig();
+            kcc.setName(elements[0]);
+            kcc.setNamespace(elements[1]);
+            kcc.setMirrorMaker(Boolean.valueOf(elements[2]));
+            kcc.setUrl("http://example.com");
+            kcc.getKafkaClusters().add("my-kafka");
+            config.getKafkaConnectClusters().add(kcc);
+        }
+
+        var violations = validator.validate(config);
+
+        assertEquals(1, violations.size());
+        assertEquals(
+            "Kafka Connect name, namespace, and mirrorMaker combinations must be unique",
+            violations.iterator().next().getMessage()
+        );
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        "'default/name1/false', 'default/name1/true'",
+        "'default/name1/false', 'custom-namespace/name1/false'",
+        "'default/name1/false', 'default/name2/false'",
+    })
+    void testKafkaConnectUniquePassesValidation(String kc1, String kc2) {
+        for (String kcString : List.of(kc1, kc2)) {
+            String[] elements = kcString.split(Pattern.quote("/"));
+            KafkaConnectConfig kcc = new KafkaConnectConfig();
+            kcc.setName(elements[0]);
+            kcc.setNamespace(elements[1]);
+            kcc.setMirrorMaker(Boolean.valueOf(elements[2]));
+            kcc.setUrl("http://example.com");
+            kcc.getKafkaClusters().add("my-kafka");
+            config.getKafkaConnectClusters().add(kcc);
         }
 
         var violations = validator.validate(config);
