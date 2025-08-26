@@ -116,7 +116,6 @@ public abstract class AbstractST {
 
     @AfterAll
     void teardownTestSuite(ExtensionContext extensionContext) {
-        LOGGER.warn("AFTERALLLL");
         KubeResourceManager.get().setTestContext(extensionContext);
         cleanupIfNeeded();
     }
