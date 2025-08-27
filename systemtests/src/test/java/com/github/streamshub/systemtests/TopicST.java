@@ -47,7 +47,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class TopicST extends AbstractST {
     private static final Logger LOGGER = LogWrapper.getLogger(TopicST.class);
-    private static TestCaseConfig tcc;
+    private TestCaseConfig tcc;
 
     // Topics
     // Note for pagination scenario it's best to have total of 150 topics

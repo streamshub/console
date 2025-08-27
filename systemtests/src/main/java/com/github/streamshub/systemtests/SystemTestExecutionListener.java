@@ -19,13 +19,13 @@ public class SystemTestExecutionListener implements TestExecutionListener {
 
     @Override
     public void testPlanExecutionStarted(TestPlan testPlan) {
-        LOGGER.info(String.join("", Collections.nCopies(76, "#")));
+        LOGGER.info("#".repeat(76));
         testPlan.getRoots().forEach(root -> {
-            LOGGER.info("========================= TEST CLASSES TO BE EXECUTED =========================");
+            LOGGER.info("======================== TEST CLASSES TO BE EXECUTED ========================");
             LOGGER.info(
                 testPlan.getDescendants(root)
                     .stream()
-                    .filter(ti -> ti.isContainer())
+                    .filter(ti -> ti.isContainer() && !(ti.getSource().get() instanceof MethodSource))
                     .map(ti -> ti.getDisplayName())
                     .collect(Collectors.joining(", "))
             );
@@ -42,7 +42,6 @@ public class SystemTestExecutionListener implements TestExecutionListener {
                     });
                 } else if (testIdentifier.isContainer() && testIdentifier.getSource().get() instanceof MethodSource) {
                     // Parametrized test
-                    LOGGER.debug("container {}", testIdentifier.getUniqueId());
                     String testName = ((MethodSource) testIdentifier.getSource().get()).getMethodName();
                     String fullTestName = ((MethodSource) testIdentifier.getSource().get()).getClassName() + "." + testName;
                     LOGGER.info(testName);
@@ -50,8 +49,8 @@ public class SystemTestExecutionListener implements TestExecutionListener {
                 }
             });
         });
-        LOGGER.info(String.join("", Collections.nCopies(76, "=")));
-        LOGGER.info("============ Total count of tests to be executed [{}] ============", TESTS_TO_BE_EXECUTED.size());
+        LOGGER.info("#".repeat(76));
+        LOGGER.info("======================= Total count of tests to be executed [{}] =================", TESTS_TO_BE_EXECUTED.size());
         TestExecutionListener.super.testPlanExecutionStarted(testPlan);
     }
 

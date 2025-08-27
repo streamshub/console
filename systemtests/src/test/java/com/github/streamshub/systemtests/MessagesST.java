@@ -39,7 +39,7 @@ import static com.github.streamshub.systemtests.utils.Utils.getTestCaseConfig;
 @Tag(TestTags.REGRESSION)
 public class MessagesST extends AbstractST {
     private static final Logger LOGGER = LogWrapper.getLogger(MessagesST.class);
-    private static TestCaseConfig tcc;
+    private TestCaseConfig tcc;
 
     private static final String TOPIC_PREFIX = "filter-messages";
     // If message count is changed, verify message values inside tests

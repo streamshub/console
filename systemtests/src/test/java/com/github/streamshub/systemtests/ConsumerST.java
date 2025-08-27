@@ -46,7 +46,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 @Tag(TestTags.REGRESSION)
 public class ConsumerST extends AbstractST {
     private static final Logger LOGGER = LogWrapper.getLogger(ConsumerST.class);
-    private static TestCaseConfig tcc;
+    private TestCaseConfig tcc;
 
     private static final String TOPIC_PREFIX = "rst-all-topics-var-offset";
     private static final int MESSAGE_COUNT = Constants.MESSAGE_COUNT_HIGH;
