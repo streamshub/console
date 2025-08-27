@@ -57,20 +57,24 @@ public class MessagesST extends AbstractST {
     private static final String VALUE_FILTER = "package=sent";
 
     /**
-     * Verifies message filtering functionality on the Messages page using various search text inputs.
+     * Provides parameterized scenarios for verifying message search functionality
+     * on the Messages page using different query strings.
      *
-     * <p>This test performs the following steps:
+     * <p>Each scenario defines:</p>
      * <ul>
-     *     <li>Creates a Kafka topic and produces a batch of messages to it.</li>
-     *     <li>Waits for the messages page to load and verifies default message count and ordering.</li>
-     *     <li>Tests filtering the latest messages (e.g., retrieve latest 2 messages).</li>
-     *     <li>Tests retrieving messages from a specific offset.</li>
-     *     <li>Tests filtering messages by matching content ("world - 42").</li>
-     *     <li>Tests that no unrelated messages are shown when filters do not match any result.</li>
-     *     <li>Tests the fallback behavior when an invalid retrieve value is provided.</li>
+     *   <li>The expected number of results returned.</li>
+     *   <li>The query string used (e.g., latest, offset, invalid values, etc.).</li>
+     *   <li>The expected content checks to validate in the result table.</li>
      * </ul>
      *
-     * <p>Checks are performed on both message content and the number of results returned.
+     * <p>Scenarios include:</p>
+     * <ul>
+     *   <li>Retrieving the latest messages.</li>
+     *   <li>Retrieving messages from a specific offset.</li>
+     *   <li>Filtering by message content.</li>
+     *   <li>Handling no-match queries.</li>
+     *   <li>Validating fallback behavior for invalid query parameters.</li>
+     * </ul>
      */
     public Stream<Arguments> searchUsingQueryScenarios() {
         return Stream.of(
@@ -94,6 +98,25 @@ public class MessagesST extends AbstractST {
         );
     }
 
+    /**
+     * Executes parameterized search scenarios on the Messages page.
+     *
+     * <p>For each query, the test:</p>
+     * <ul>
+     *   <li>Navigates to the topic's Messages page.</li>
+     *   <li>Applies the provided search query via the search toolbar.</li>
+     *   <li>Validates the number of results displayed matches the expected count.</li>
+     *   <li>Performs additional content checks to confirm message keys, values, headers,
+     *       and ordering are correctly filtered or displayed.</li>
+     * </ul>
+     *
+     * <p>This ensures that the Messages page search input correctly supports latest retrieval,
+     * offset-based queries, message content filtering, and gracefully handles invalid inputs.</p>
+     *
+     * @param expectedResults number of results expected to be displayed in the table
+     * @param searchQuery the search query string to apply
+     * @param checks map of selectors to expected values used for content validation
+     */
     @ParameterizedTest(name = "Query: {1}")
     @MethodSource("searchUsingQueryScenarios")
     void testMessageSearchUsingQueries(int expectedResults, String searchQuery, Map<String, String> checks) {
@@ -113,28 +136,27 @@ public class MessagesST extends AbstractST {
         checks.forEach((selector, expectedValue) -> PwUtils.waitForContainsText(tcc, selector, expectedValue, true));
     }
 
-
     /**
      * Verifies message filtering functionality using the form-based UI filter panel on the Messages page.
      *
-     * <p>This test performs the following steps:
+     * <p>The test covers filtering by message key, header, and value, ensuring that only the
+     * expected subset of messages is displayed after each filter is applied. It also validates
+     * filter reset behavior between steps.</p>
+     *
+     * <p>The test performs the following steps:</p>
      * <ul>
-     *     <li>Creates a Kafka topic and sends three distinct sets of messages with different:
-     *         <ul>
-     *             <li>Message keys (e.g., "orderID")</li>
-     *             <li>Headers (e.g., "traceID=abc123")</li>
-     *             <li>Message values (e.g., "package=sent")</li>
-     *         </ul>
-     *     </li>
-     *     <li>Verifies the initial default state of the message table.</li>
-     *     <li>Tests key-based filtering using the form panel, including showing "No messages data" when offset is not set.</li>
-     *     <li>Tests applying offset for proper filtering and verifies correct message is returned.</li>
-     *     <li>Tests header-based filtering using the form panel and verifies correct subset is returned.</li>
-     *     <li>Tests value-based filtering using the form panel and verifies correct subset is returned.</li>
-     *     <li>Performs filter reset between each filtering step and verifies table content.</li>
+     *   <li>Create a Kafka topic and send three distinct sets of messages with different keys, headers, and values.</li>
+     *   <li>Verify the default state of the Messages page (latest messages displayed, correct attributes in query input).</li>
+     *   <li>Apply a <b>key-based filter</b> without an offset and confirm "No messages data" is shown.</li>
+     *   <li>Set an offset, reapply the key filter, and verify only messages with the matching key are displayed.</li>
+     *   <li>Reset filters and confirm the table shows the default latest messages again.</li>
+     *   <li>Apply a <b>header-based filter</b> with offset and confirm only matching messages appear in ascending order.</li>
+     *   <li>Reset filters and re-verify default state.</li>
+     *   <li>Apply a <b>value-based filter</b> with offset and confirm the correct subset of messages is shown.</li>
      * </ul>
      *
-     * <p>Checks are made on message content, offsets, keys, headers, and values to ensure correctness of filtering logic.
+     * <p>Throughout the test, assertions are made on message offsets, keys, headers, values,
+     * and table counts to ensure filtering logic and UI behavior work as expected.</p>
      */
     @Test
     void testFilterMessagesUsingUIForm() {
@@ -223,6 +245,26 @@ public class MessagesST extends AbstractST {
         PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItem(1, 5), VALUE_FILTER + " - 0", true);
     }
 
+    /**
+     * Prepares a Kafka topic and produces a diverse set of messages for message filtering tests.
+     *
+     * <p>This scenario sets up a single-topic environment with multiple batches of messages
+     * containing variations in keys, headers, and values to support different filter queries.</p>
+     *
+     * <p>The preparation includes:</p>
+     * <ul>
+     *   <li>Creating a Kafka topic for testing.</li>
+     *   <li>Producing the first batch of messages with a specific key and message content.</li>
+     *   <li>Producing a second batch of messages with distinct headers and message values.</li>
+     *   <li>Producing a third batch of messages with alternative values and headers.</li>
+     * </ul>
+     *
+     * <p>Each producer/consumer pair is executed and verified for success before continuing,
+     * ensuring that messages are reliably available for filtering tests.</p>
+     *
+     * <p>At the end, the topic contains a mixture of messages with variations in keys, headers,
+     * and payloads, allowing subsequent tests to validate filtering by key, header, or value.</p>
+     */
     public void prepareMessagesScenario() {
         LOGGER.info("Prepare filter messages scenario by creating topic and producing various messages");
 

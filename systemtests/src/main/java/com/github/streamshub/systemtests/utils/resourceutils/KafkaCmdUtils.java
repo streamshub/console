@@ -174,13 +174,23 @@ public class KafkaCmdUtils {
         LOGGER.debug("Set offset command resulted in => [{}]", output);
     }
 
-    public static void insertClientProperties(String namespaceName, String podName, String clientsConfig) {
-        LOGGER.info("Insert client config");
-        String insertConfigCommand = String.format("echo '%s' > %s", clientsConfig, CLIENTS_CONFIG_FILE_PATH);
-        String output = KubeResourceManager.get().kubeCmdClient().inNamespace(namespaceName).execInPod(podName, Constants.BASH_CMD, "-c", insertConfigCommand).out().trim();
-        LOGGER.debug("Insert client config resulted in => [{}]", output);
-    }
-
+    /**
+     * Lists Kafka topics from a given cluster that start with the specified prefix.
+     *
+     * <p>The method executes the {@code kafka-topics.sh --list} command inside the specified Kafka pod
+     * using the provided client configuration. The output is filtered by the given topic prefix to return
+     * only matching topics.</p>
+     *
+     * <p>This is useful for verifying topic creation during tests or for interacting with a subset of topics
+     * that share a common naming pattern.</p>
+     *
+     * @param namespaceName the Kubernetes namespace where the Kafka cluster is running
+     * @param kafkaName the name of the Kafka cluster
+     * @param podName the name of the Kafka broker pod in which to run the command
+     * @param clientsConfig the Kafka client configuration file contents for authentication/authorization
+     * @param topicPrefix the prefix to filter topics by
+     * @return a list of topic names that begin with the given prefix
+     */
     public static List<String> listKafkaTopicsByPrefix(String namespaceName, String kafkaName, String podName, String clientsConfig, String topicPrefix) {
         String bootstrapServer = KafkaUtils.getPlainScramShaBootstrapAddress(kafkaName);
         insertClientProperties(namespaceName, podName, clientsConfig);
@@ -193,5 +203,27 @@ public class KafkaCmdUtils {
 
         LOGGER.debug("Listing topics resulted in => {}", output.toString());
         return output;
+    }
+
+    /**
+     * Inserts Kafka client configuration into a file inside the specified pod.
+     *
+     * <p>The configuration string is written to the predefined client configuration file path
+     * within the given pod, enabling subsequent Kafka CLI commands to authenticate and execute
+     * with the provided settings.</p>
+     *
+     * <p>This is typically required before running Kafka commands such as listing topics or
+     * managing consumer groups, as those commands rely on the client configuration file for
+     * connection and authentication.</p>
+     *
+     * @param namespaceName the Kubernetes namespace where the Kafka pod is running
+     * @param podName the name of the pod in which the configuration file should be created
+     * @param clientsConfig the Kafka client configuration content to write into the file
+     */
+    public static void insertClientProperties(String namespaceName, String podName, String clientsConfig) {
+        LOGGER.info("Insert client config");
+        String insertConfigCommand = String.format("echo '%s' > %s", clientsConfig, CLIENTS_CONFIG_FILE_PATH);
+        String output = KubeResourceManager.get().kubeCmdClient().inNamespace(namespaceName).execInPod(podName, Constants.BASH_CMD, "-c", insertConfigCommand).out().trim();
+        LOGGER.debug("Insert client config resulted in => [{}]", output);
     }
 }

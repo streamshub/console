@@ -32,6 +32,19 @@ public class Utils {
         return new String(Base64.getDecoder().decode(data), StandardCharsets.US_ASCII);
     }
 
+    /**
+     * Retrieves the {@link TestCaseConfig} associated with the current test execution context.
+     *
+     * <p>This method first attempts to fetch an existing {@code TestCaseConfig} from the global store
+     * of the JUnit {@link ExtensionContext}. If no configuration is found for the current test’s
+     * unique identifier, a new {@code TestCaseConfig} is created, initialized with the test context,
+     * and stored in the global namespace for later reuse.</p>
+     *
+     * <p>This ensures that each test case has access to a consistent configuration object
+     * throughout its lifecycle, while avoiding redundant re-initialization.</p>
+     *
+     * @return the {@code TestCaseConfig} instance for the current test case
+     */
     public static TestCaseConfig getTestCaseConfig() {
         final ExtensionContext testContext = KubeResourceManager.get().getTestContext();
         final ExtensionContext.Store store = testContext.getStore(ExtensionContext.Namespace.GLOBAL);

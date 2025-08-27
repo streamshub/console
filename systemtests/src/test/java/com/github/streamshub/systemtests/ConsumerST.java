@@ -54,23 +54,29 @@ public class ConsumerST extends AbstractST {
     private static final String RESET_OFFSET_CONSUMER_GROUP = "reset-offset-consumer-group";
 
     /**
-     * Tests resetting Kafka consumer group offsets across multiple topics using various offset reset types via the UI.
+     * Provides parameterized scenarios for verifying consumer group offset reset functionality
+     * across all topics and partitions using different reset types.
      *
-     * <p>The test class first prepares the scenario by creating topics and producing/consuming messages to set initial offsets.</p>
-     * <p>Test method then retrieves these prepared topics for each reset scenario.</p>
-     * <p>It verifies the default consumer offsets could be reset using UI `Reset offsets` button.</p>
-     * <p>The test then navigates to the Consumer Groups page and uses the UI to reset offsets for all topics using:</p>
+     * <p>Each scenario defines:</p>
      * <ul>
-     *   <li>Earliest offset reset</li>
-     *   <li>Latest offset reset</li>
-     *   <li>Date/time-based earliest / latest / half-way offset resets with UNIX epoch format</li>
-     *   <li>Date/time-based earliest / latest / half-way offset resets with ISO-8601 format</li>
+     *   <li>The total number of messages in the topic.</li>
+     *   <li>The type of offset reset to perform (EARLIEST, LATEST, DATE_TIME).</li>
+     *   <li>The date/time type when using DATE_TIME reset (UNIX_EPOCH or ISO_8601).</li>
+     *   <li>The expected offset value after the reset.</li>
      * </ul>
-     * <p>For each reset type, the test verifies that the consumer group offsets are updated accordingly by querying Kafka through the broker pod.</p>
-     * <p>The test ensures that both dry-run and actual reset operations work as expected and that offsets reflect the UI commands.</p>
      *
-     * <p>This comprehensive test validates the correctness of consumer offset reset functionality across multiple topics and offset types,
-     * ensuring synchronization between UI actions and Kafka consumer group state.</p>
+     * <p>Scenarios include:</p>
+     * <ul>
+     *   <li>Resetting to the earliest offset.</li>
+     *   <li>Resetting to the latest offset.</li>
+     *   <li>Resetting based on a specific timestamp using UNIX epoch format.</li>
+     *   <li>Resetting based on a specific timestamp using ISO-8601 format.</li>
+     *   <li>Resetting to a midpoint offset (halfway through the messages).</li>
+     * </ul>
+     *
+     * <p>This ensures comprehensive coverage of all supported offset reset types,
+     * verifying that the consumer group offsets are updated correctly in Kafka
+     * and that the UI reflects these changes accurately.</p>
      */
     public Stream<Arguments> offsetResetScenarios() {
         final String earliestOffsetIndex = "0";
@@ -90,7 +96,30 @@ public class ConsumerST extends AbstractST {
             Arguments.of(MESSAGE_COUNT, ResetOffsetType.DATE_TIME, ResetOffsetDateTimeType.ISO_8601, middleOffsetIndex)
         );
     }
-
+    /**
+     * Executes parameterized tests for resetting Kafka consumer group offsets
+     * across all topics and partitions using the UI.
+     *
+     * <p> For each scenario provided by {@link #offsetResetScenarios()}:</p>
+     * <ul>
+     *   <li>Navigates to the Consumer Groups page for the test consumer group.</li>
+     *   <li>Verifies the current default offset for each topic.</li>
+     *   <li> If a DATE_TIME reset is used, calculates the appropriate timestamp
+     *       based on the expected offset and selected date/time format (UNIX_EPOCH or ISO-8601).</li>
+     *   <li>Performs a dry-run and actual reset of offsets using the UI reset page.</li>
+     *   <li>Validates that the consumer group offsets are updated correctly in Kafka
+     *       by querying the broker pod directly.</li>
+     * </ul>
+     *
+     * <p>This ensures that all supported reset types (EARLIEST, LATEST, and DATE_TIME)
+     * work as expected for multiple topics and partitions, and that the UI commands
+     * synchronize correctly with the underlying Kafka consumer group state.</p>
+     *
+     * @param messageCount the total number of messages in the topic
+     * @param resetType the type of offset reset to perform (EARLIEST, LATEST, DATE_TIME)
+     * @param dateTimeType the date/time format used for DATE_TIME resets (UNIX_EPOCH or ISO-8601), null otherwise
+     * @param expectedOffset the expected offset value after the reset operation
+     */
     @ParameterizedTest(name = "Type: {1} - DateTime: {2} - Offset: {3}")
     @MethodSource("offsetResetScenarios")
     void testResetConsumerOffsetAllTopicsAllPartitions(int messageCount,
@@ -140,8 +169,26 @@ public class ConsumerST extends AbstractST {
         }
     }
 
+    /**
+     * Prepares the Kafka consumer offset test scenario by creating topics
+     * and producing/consuming messages for each topic.
+     *
+     * <p>The method performs the following steps:</p>
+     * <ul>
+     *   <li>Sets the total message count for the test context.</li>
+     *   <li>Creates one or more Kafka topics with the configured prefix and count.</li>
+     *   <li>For each topic, creates a Kafka producer and consumer using the
+     *       {@link #RESET_OFFSET_CONSUMER_GROUP} consumer group.</li>
+     *   <li>Produces the specified number of messages to each topic and consumes them
+     *       to set initial consumer offsets.</li>
+     *   <li>Waits for all client operations to complete successfully, ensuring offsets
+     *       are properly initialized for testing offset reset scenarios.</li>
+     * </ul>
+     *
+     * <p>This setup ensures that the consumer offset reset tests have a consistent
+     * initial state across all topics and partitions.</p>
+     */
     public void setupConsumersScenario() {
-        // Test class specific
         tcc.setMessageCount(MESSAGE_COUNT);
 
         LOGGER.info("Prepare consumer offset scenario by creating topic(s) and then producing and consuming messages");

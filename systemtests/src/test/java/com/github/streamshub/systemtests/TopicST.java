@@ -64,14 +64,23 @@ public class TopicST extends AbstractST {
     private static final String UNDER_REPLICATED_TOPICS_PREFIX = "underreplicated";
     private static final String UNAVAILABLE_TOPICS_PREFIX = "unavailable";
     
-    /**
-     * Tests the pagination functionality on the topics page when a large number of topics are present.
+        /**
+     * Tests pagination behavior on the Topics page when handling a large set of topics.
      *
-     * <p>The test creates 150 Kafka topics and verifies their presence on both the overview and topics pages.</p>
-     * <p>It then tests the pagination UI components (both top and bottom), using various pagination sizes (10, 20, 50, 100 topics per page).</p>
-     * <p>Navigation buttons and dropdowns are validated to ensure correct page transitions and content display.</p>
+     * <p>The test first creates and validates the presence of 150 Kafka topics across both
+     * the overview and topics pages.</p>
      *
-     * <p>This ensures that the pagination mechanism in the topics page works correctly and is user-friendly at scale.</p>
+     * <p>It then exercises the pagination controls in the UI, verifying that both the top
+     * and bottom pagination components function correctly. The following checks are included:</p>
+     * <ul>
+     *   <li>Page size options for 10, 20, 50, and 100 topics per page are available and work as expected.</li>
+     *   <li>Navigation buttons (previous/next) perform correct page transitions.</li>
+     *   <li>Dropdown menus display the correct selected page size.</li>
+     *   <li>Topics displayed on each page match the expected counts.</li>
+     * </ul>
+     *
+     * <p>This ensures that pagination remains reliable and user-friendly even when
+     * scaling to large numbers of topics.</p>
      */
     @Test
     @Order(Order.DEFAULT)
@@ -97,14 +106,24 @@ public class TopicST extends AbstractST {
     }
 
     /**
-     * Tests the "Recently Viewed Topics" feature on the Kafka overview page.
+     * Tests the "Recently Viewed Topics" functionality on the Kafka Overview page.
      *
-     * <p>The test opens a subset of created topics to simulate recent activity, then navigates to the overview page to validate that
-     * the recently viewed topics are correctly displayed in the UI card.</p>
-     * <p>It also verifies that the entries persist even after the topics are deleted, and that clicking on a deleted topic leads to
-     * a "Resource not found" message on the messages page.</p>
-     * <p>NOTE: This test must be the last executed in the sharedResources order as it deletes topics during testing</p>
-     * <p>This ensures proper tracking, rendering, and graceful fallback behavior for recently viewed topics in the UI.</p>
+     * <p>The test simulates user activity by opening a subset of created topics, ensuring
+     * they appear in the "Recently Viewed Topics" card on the overview page. It performs
+     * the following checks:</p>
+     * <ul>
+     *   <li>Initially verifies that no topics are marked as recently viewed.</li>
+     *   <li>Visits several topic message pages, triggering them to appear in the "Recently Viewed Topics" card.</li>
+     *   <li>Validates that the card correctly displays the visited topics in reverse chronological order.</li>
+     *   <li>Deletes the visited topics and ensures that their entries persist in the card.</li>
+     *   <li>Confirms that clicking a deleted topic leads to a "Resource not found" message.</li>
+     * </ul>
+     *
+     * <p><strong>Note:</strong> This test must run last in the {@code sharedResources} order
+     * because it deletes topics as part of the scenario.</p>
+     *
+     * <p>This ensures proper tracking, persistence, and graceful fallback behavior of the
+     * "Recently Viewed Topics" feature in the UI.</p>
      */
     @Test
     @Order(Integer.MAX_VALUE)
@@ -150,13 +169,27 @@ public class TopicST extends AbstractST {
     }
 
     /**
-     * Tests display and filtering of topics in various replication states.
+     * Tests the display and filtering of Kafka topics in different replication states.
      *
-     * <p>The test creates four categories of topics: fully replicated, unmanaged replicated, under-replicated, and unavailable.</p>
-     * <p>It verifies that the UI displays correct topic counts for each state on the overview and topics pages.</p>
-     * <p>Filtering capabilities are tested by filtering topics by name, ID, and replication status to ensure accurate and expected results.</p>
+     * <p>The test creates and categorizes topics into four replication states:
+     * <ul>
+     *   <li>Fully replicated</li>
+     *   <li>Unmanaged replicated</li>
+     *   <li>Under-replicated</li>
+     *   <li>Unavailable</li>
+     * </ul>
+     * </p>
      *
-     * <p>This confirms that all topic states are properly represented and filterable in the UI.</p>
+     * <p>It verifies that the UI correctly displays the topic counts for each category
+     * on both the overview and topics pages. The test also validates filtering behavior by:</p>
+     * <ul>
+     *   <li>Filtering topics by <strong>name</strong> (matching unmanaged replicated topics).</li>
+     *   <li>Filtering topics by <strong>ID</strong> (subset of replicated topics).</li>
+     *   <li>Filtering topics by <strong>replication status</strong> (under-replicated and unavailable topics).</li>
+     * </ul>
+     *
+     * <p>This ensures that the UI properly represents all topic states and that filtering
+     * works reliably across different criteria.</p>
      */
     @Test
     @Order(Order.DEFAULT)
@@ -179,13 +212,21 @@ public class TopicST extends AbstractST {
     }
 
     /**
-     * Tests the sorting functionality for Kafka topics based on name and storage usage.
+     * Tests the sorting functionality for Kafka topics by name and storage usage.
      *
-     * <p>The test first filters topics by the "Offline" status and verifies sorting by name in descending order.</p>
-     * <p>Then it filters for "Fully Replicated" topics and simulates message production to increase storage for one topic.</p>
-     * <p>It verifies that sorting by storage usage places the topic with the highest usage at the top of the list.</p>
+     * <p>The test performs the following steps:
+     * <ul>
+     *   <li>Filters topics by "Offline" status and verifies that sorting by name in descending order works correctly.</li>
+     *   <li>Clears the filter and then filters for "Fully Replicated" topics.</li>
+     *   <li>Simulates message production to increase storage for a topic and verifies that sorting by storage usage
+     *       places the topic with the highest storage at the top of the list.</li>
+     * </ul>
      *
-     * <p>This ensures that sorting logic is correctly implemented and provides meaningful ordering to users.</p>
+     * <p>Checks include topic counts, correct ordering of topics in the table, and that sorting buttons
+     * in the UI respond appropriately to user interactions.</p>
+     *
+     * <p>This ensures that topic sorting by different criteria is correctly implemented and provides meaningful
+     * ordering for end users in the UI.</p>
      */
     @Test
     @Order(Order.DEFAULT)
@@ -227,6 +268,21 @@ public class TopicST extends AbstractST {
     // ------
     // Setup
     // ------
+    /**
+     * Prepares a comprehensive topic scenario for testing topic states and UI behaviors.
+     *
+     * <p>The method performs the following steps:
+     * <ul>
+     *   <li>Verifies that the overview and topics pages initially show zero topics.</li>
+     *   <li>Creates a set of fully replicated topics and produces extra messages for the last topic to simulate higher storage usage.</li>
+     *   <li>Creates a set of unmanaged replicated topics.</li>
+     *   <li>Creates under-replicated topics by scaling up broker replicas.</li>
+     *   <li>Creates unavailable topics to simulate offline partitions.</li>
+     * </ul>
+     *
+     * <p>This scenario ensures that the test environment contains topics in all relevant replication states,
+     * which is essential for verifying UI topic displays, filtering, sorting, and storage-based behaviors.</p>
+     */
     public void prepareTopicsScenario() {
         LOGGER.info("Check default UI state before preparing test topics");
         TopicChecks.checkOverviewPageTopicState(tcc, tcc.kafkaName(), 0, 0, 0, 0, 0);
