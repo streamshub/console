@@ -26,7 +26,14 @@ export default function ResetOffsetPage({
         fallback={
           <ResetConsumerOffset
             kafkaId={kafkaId}
-            consumerGroupName={groupId}
+            consumerGroup={{
+              id: groupId,
+              type: "consumerGroups",
+              attributes: {
+                groupId: "-",
+                state: "UNKNOWN",
+              }
+            }}
             topics={[]}
             partitions={[]}
             baseurl={`/kafka/${kafkaId}/consumer-groups`}
