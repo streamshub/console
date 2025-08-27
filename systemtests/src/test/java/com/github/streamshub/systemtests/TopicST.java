@@ -41,7 +41,7 @@ import org.junit.jupiter.api.TestMethodOrder;
 import java.util.List;
 
 import static com.github.streamshub.systemtests.utils.Utils.getTestCaseConfig;
-import static org.wildfly.common.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Tag(TestTags.REGRESSION)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
