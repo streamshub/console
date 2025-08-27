@@ -268,7 +268,7 @@ public class TopicST extends AbstractST {
         ConsoleInstanceSetup.setupIfNeeded(ConsoleInstanceSetup.getDefaultConsoleInstance(tcc.namespace(), tcc.consoleInstanceName(), tcc.kafkaName(), tcc.kafkaUserName()));
         PwUtils.login(tcc);
         
-        //prepareTopicsScenario();
+        prepareTopicsScenario();
     }
 
     @AfterAll
