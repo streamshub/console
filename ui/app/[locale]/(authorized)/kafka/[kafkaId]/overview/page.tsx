@@ -24,7 +24,7 @@ export default async function OverviewPage({ params }: { params: KafkaParams }) 
   }).then(r => r.payload ?? null);
 
   const topics = getTopics(params.kafkaId, { fields: "status", pageSize: 1 });
-  const consumerGroups = getConsumerGroups(params.kafkaId, { fields: "state" });
+  const consumerGroups = getConsumerGroups(params.kafkaId, { fields: "groupId,state" });
   const viewedTopics = getViewedTopics().then((topics) =>
     topics.filter((t) => t.kafkaId === params.kafkaId),
   );

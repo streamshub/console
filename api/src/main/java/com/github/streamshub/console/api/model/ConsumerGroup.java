@@ -15,6 +15,7 @@ import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 import jakarta.validation.Valid;
 
+import org.apache.kafka.common.errors.GroupIdNotFoundException;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -149,9 +150,7 @@ public class ConsumerGroup {
          * Used by list and describe
          */
         public ConsumerGroupResource(ConsumerGroup attributes) {
-            super(Identifiers.encode("".equals(attributes.groupId) ? "+" : attributes.groupId),
-                    API_TYPE,
-                    attributes);
+            super(encodeGroupId(attributes.groupId), API_TYPE, attributes);
 
             if (attributes.errors != null) {
                 addMeta("errors", attributes.errors);
@@ -199,6 +198,20 @@ public class ConsumerGroup {
         this.groupId = groupId;
         this.simpleConsumerGroup = simpleConsumerGroup;
         this.state = state;
+    }
+
+    public static String encodeGroupId(String groupId) {
+        return Identifiers.encode("".equals(groupId) ? "+" : groupId);
+    }
+
+    public static String decodeGroupId(String encodedGroupId) {
+        String[] decoded = Identifiers.decode(encodedGroupId);
+
+        if (decoded.length == 1) {
+            return "+".equals(decoded[0]) ? "" : decoded[0];
+        }
+
+        throw new GroupIdNotFoundException("Invalid groupId");
     }
 
     public static ConsumerGroup fromKafkaModel(org.apache.kafka.clients.admin.ConsumerGroupListing listing) {

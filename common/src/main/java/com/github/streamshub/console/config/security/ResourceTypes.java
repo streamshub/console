@@ -90,15 +90,6 @@ public class ResourceTypes {
         public String value() {
             return value;
         }
-
-        public static Kafka fromValue(String value) {
-            for (Kafka v : values()) {
-                if (v.value.equals(value)) {
-                    return v;
-                }
-            }
-            throw new IllegalArgumentException("Unknown Kafka resource value: " + value);
-        }
     }
 
     @Target(ElementType.FIELD)

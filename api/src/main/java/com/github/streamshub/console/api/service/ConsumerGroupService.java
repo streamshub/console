@@ -60,7 +60,6 @@ import com.github.streamshub.console.api.support.Promises;
 import com.github.streamshub.console.api.support.UnknownTopicIdPatch;
 import com.github.streamshub.console.api.support.ValidationProxy;
 import com.github.streamshub.console.config.security.Privilege;
-import com.github.streamshub.console.support.Identifiers;
 
 @ApplicationScoped
 public class ConsumerGroupService {
@@ -173,7 +172,7 @@ public class ConsumerGroupService {
 
     public CompletionStage<ConsumerGroup> describeConsumerGroup(String requestGroupId, List<String> includes) {
         Admin adminClient = kafkaContext.admin();
-        String groupId = preprocessGroupId(requestGroupId);
+        String groupId = ConsumerGroup.decodeGroupId(requestGroupId);
 
         return assertConsumerGroupExists(adminClient, groupId)
             .thenComposeAsync(
@@ -232,7 +231,7 @@ public class ConsumerGroupService {
 
     public CompletionStage<Optional<ConsumerGroup>> patchConsumerGroup(String requestGroupId, ConsumerGroup patch, boolean dryRun) {
         Admin adminClient = kafkaContext.admin();
-        String groupId = preprocessGroupId(requestGroupId);
+        String groupId = ConsumerGroup.decodeGroupId(requestGroupId);
 
         return assertConsumerGroupExists(adminClient, groupId)
             .thenComposeAsync(nothing -> Optional.ofNullable(patch.getOffsets())
@@ -426,7 +425,7 @@ public class ConsumerGroupService {
 
     public CompletionStage<Void> deleteConsumerGroup(String requestGroupId) {
         Admin adminClient = kafkaContext.admin();
-        String groupId = preprocessGroupId(requestGroupId);
+        String groupId = ConsumerGroup.decodeGroupId(requestGroupId);
 
         return adminClient.deleteConsumerGroups(List.of(groupId))
                 .deletedGroups()
@@ -618,13 +617,5 @@ public class ConsumerGroupService {
 
             group.setOffsets(offsets);
         }
-    }
-
-    private static String preprocessGroupId(String groupId) {
-        String[] decoded = Identifiers.decode(groupId);
-        if (decoded.length == 1) {
-            return "+".equals(decoded[0]) ? "" : decoded[0];
-        }
-        throw new GroupIdNotFoundException("Invalid groupId");
     }
 }
