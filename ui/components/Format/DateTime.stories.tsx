@@ -2,8 +2,6 @@ import type { Meta, StoryObj } from "@storybook/nextjs";
 import { expect, waitFor, within } from "storybook/test";
 import { DateTime } from "./DateTime";
 
-const ORIGINAL_ENV = process.env;
-
 const meta: Meta<typeof DateTime> = {
   component: DateTime,
   args: {
@@ -32,17 +30,11 @@ type Story = StoryObj<typeof DateTime>;
 
 export const Default: Story = {};
 
+// Tests assume the process is running with TZ='America/Los_Angeles'
 export const DateTimeStringUTC: Story = {
   args: {
     value: "2025-04-01T00:00:00-07:00", // A static date value
     utc: true,
-  },
-  beforeEach: () => {
-    // UTC-7 for daylight / UTC-8 for standard
-    process.env = { ...ORIGINAL_ENV, TZ: "America/Los_Angeles" }
-  },
-  afterEach: () => {
-    process.env = ORIGINAL_ENV;
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -55,20 +47,13 @@ export const DateTimeStringUTC: Story = {
 
 export const DateTimeStringLocal: Story = {
   args: {
-    value: "2025-04-01T14:00:00Z", // A static date value
-  },
-  beforeEach: () => {
-    // UTC-4 for daylight / UTC-5 for standard
-    process.env = { ...ORIGINAL_ENV, TZ: "America/New_York" }
-  },
-  afterEach: () => {
-    process.env = ORIGINAL_ENV;
+    value: "2025-04-01T07:00:00Z", // A static date value
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await waitFor(() => {
       // Check that the date was adjusted to UTC
-      expect(canvas.getByText("2025-04-01 10:00:00-04:00")).toBeInTheDocument();
+      expect(canvas.getByText("2025-04-01 00:00:00-07:00")).toBeInTheDocument();
     });
   },
 };
