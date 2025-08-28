@@ -86,6 +86,10 @@ public class TopicsPageSelectors {
         return CssBuilder.joinLocators(new CssBuilder(TPS_TABLE_ROWS).nth(nth).build(), CssSelectors.PAGES_AD_TABLE_ROW_ITEMS);
     }
 
+    public static String getTableRowItem(int nthRow, int nthColumn) {
+        return new CssBuilder(getTableRowItems(nthRow)).nth(nthColumn).build();
+    }
+
     public static final String TPS_TOP_TOOLBAR = new CssBuilder(CssSelectors.PAGES_CONTENT)
         .withChild()
         .withElementDiv().withComponentPage().withSubComponentMainBody().withChild()

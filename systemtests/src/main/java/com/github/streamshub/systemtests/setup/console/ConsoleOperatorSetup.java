@@ -12,10 +12,10 @@ public class ConsoleOperatorSetup {
 
     private InstallConfig installConfig;
 
-    public ConsoleOperatorSetup() {
+    public ConsoleOperatorSetup(String namespace) {
         switch (Environment.CONSOLE_INSTALL_TYPE) {
-            case Yaml -> installConfig = new YamlConfig();
-            case Olm -> installConfig = new OlmConfig();
+            case Yaml -> installConfig = new YamlConfig(namespace);
+            case Olm -> installConfig = new OlmConfig(namespace);
             default -> throw new SetupException("Unknown installation type: " + Environment.CONSOLE_INSTALL_TYPE);
         }
     }
@@ -23,19 +23,10 @@ public class ConsoleOperatorSetup {
     public void install() {
         LOGGER.info("----------- Install Console Operator -----------");
         if (!ResourceUtils.listKubeResourcesByPrefix(Deployment.class, installConfig.getDeploymentNamespace(), installConfig.getDeploymentName()).isEmpty()) {
-            LOGGER.warn("Console Operator is already deployed. Skipping deployment");
-            return;
+            LOGGER.info("Clean up currently deployed operator to ensure correct operator is deployed");
+            installConfig.delete();
         }
+
         installConfig.install();
-    }
-
-    public ConsoleOperatorSetup inNamespace(String namespace) {
-        installConfig.setDeploymentNamespace(namespace);
-        return this;
-    }
-
-    public ConsoleOperatorSetup withName(String name) {
-        installConfig.setDeploymentName(name);
-        return this;
     }
 }

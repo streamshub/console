@@ -40,12 +40,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.ExtensionContext;
+import org.slf4j.event.Level;
 
 import java.io.IOException;
 
 @TestVisualSeparator
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-@ResourceManager(asyncDeletion = false, cleanResources = false)
+@ResourceManager(cleanResources = false)
 @SuppressWarnings("ClassDataAbstractionCoupling")
 @ExtendWith({TestExecutionWatcher.class})
 @ExtendWith(ExtensionContextParameterResolver.class)
@@ -53,7 +54,7 @@ public abstract class AbstractST {
     private static final Logger LOGGER = LogWrapper.getLogger(AbstractST.class);
     // Operators
     protected final StrimziOperatorSetup strimziOperatorSetup = new StrimziOperatorSetup(Constants.CO_NAMESPACE);
-    protected final ConsoleOperatorSetup consoleOperatorSetup = new ConsoleOperatorSetup();
+    protected final ConsoleOperatorSetup consoleOperatorSetup = new ConsoleOperatorSetup(Constants.CO_NAMESPACE);
 
     static {
         KubeResourceManager.get().setResourceTypes(
@@ -93,48 +94,36 @@ public abstract class AbstractST {
         }
     }
 
-    protected TestCaseConfig getTestCaseConfig() {
-        return (TestCaseConfig) KubeResourceManager.get().getTestContext()
-            .getStore(ExtensionContext.Namespace.GLOBAL)
-            .get(KubeResourceManager.get().getTestContext().getTestMethod().orElseThrow().getName());
-    }
-
     @BeforeAll
-    void setupTestSuite() {
-        LOGGER.info("=========== AbstractST - BeforeAll - Setup TestSuite ===========");
+    void setupTestSuite(ExtensionContext extensionContext) {
+        KubeResourceManager.get().setTestContext(extensionContext);
         NamespaceUtils.prepareNamespace(Constants.CO_NAMESPACE);
         strimziOperatorSetup.install();
         consoleOperatorSetup.install();
     }
 
     @BeforeEach
-    void setupTestCase() {
-        LOGGER.info("=========== AbstractST - BeforeEach - Setup TestCase {} ===========", KubeResourceManager.get().getTestContext().getTestMethod());
+    void setupTestCase(ExtensionContext extensionContext) {
+        KubeResourceManager.get().setTestContext(extensionContext);
         ClusterUtils.checkClusterHealth();
-        // Init test case config based on the test context
-        TestCaseConfig tcc = new TestCaseConfig(KubeResourceManager.get().getTestContext());
-        // Create namespace
-        NamespaceUtils.prepareNamespace(tcc.namespace());
-        // Store test case config into the test context
-        KubeResourceManager.get().getTestContext()
-            .getStore(ExtensionContext.Namespace.GLOBAL)
-            .put(KubeResourceManager.get().getTestContext().getTestMethod().get().getName(), tcc);
     }
 
     @AfterEach
     void teardownTestCase(ExtensionContext extensionContext) {
         KubeResourceManager.get().setTestContext(extensionContext);
-        getTestCaseConfig().playwright().close();
-        if (Environment.CLEANUP_ENVIRONMENT) {
-            KubeResourceManager.get().deleteResources();
-        }
+        cleanupIfNeeded();
     }
 
     @AfterAll
-    void teardownTestSuit(ExtensionContext extensionContext) {
+    void teardownTestSuite(ExtensionContext extensionContext) {
         KubeResourceManager.get().setTestContext(extensionContext);
+        cleanupIfNeeded();
+    }
+
+    protected void cleanupIfNeeded() {
         if (Environment.CLEANUP_ENVIRONMENT) {
-            KubeResourceManager.get().deleteResources();
+            KubeResourceManager.get().printCurrentResources(Level.DEBUG);
+            KubeResourceManager.get().deleteResources(false);
         }
     }
 }

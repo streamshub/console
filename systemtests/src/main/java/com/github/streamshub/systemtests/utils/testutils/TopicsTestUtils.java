@@ -81,7 +81,6 @@ public class TopicsTestUtils {
             }
 
             // Attempt to open the dropdown
-            tcc.page().focus(TopicsPageSelectors.TPS_TOP_TOOLBAR_FILTER_TYPE_DROPDOWN);
             PwUtils.waitForLocatorAndClick(tcc, TopicsPageSelectors.TPS_TOP_TOOLBAR_FILTER_TYPE_DROPDOWN);
 
             // Select the item if it's visible
