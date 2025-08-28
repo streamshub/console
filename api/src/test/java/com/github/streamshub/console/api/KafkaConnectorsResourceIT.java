@@ -253,7 +253,7 @@ class KafkaConnectorsResourceIT implements ClientRequestFilter {
         "default/test-connect2, connect2-connector2"
     })
     void testDescribeConnector(String connectCluster, String connectorName) {
-        var enc = Base64.getUrlEncoder();
+        var enc = Base64.getUrlEncoder().withoutPadding();
         String connectorID = enc.encodeToString(connectCluster.getBytes()) +
                 ',' +
                 enc.encodeToString(connectorName.getBytes());
@@ -272,7 +272,7 @@ class KafkaConnectorsResourceIT implements ClientRequestFilter {
         "default/test-connect2, connect2-connector2, 2"
     })
     void testDescribeConnectorWithAllIncluded(String connectCluster, String connectorName, int taskCount) {
-        var enc = Base64.getUrlEncoder();
+        var enc = Base64.getUrlEncoder().withoutPadding();
         String connectorID = enc.encodeToString(connectCluster.getBytes()) +
                 ',' +
                 enc.encodeToString(connectorName.getBytes());

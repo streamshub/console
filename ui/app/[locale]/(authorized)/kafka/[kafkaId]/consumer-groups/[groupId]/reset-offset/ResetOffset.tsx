@@ -59,7 +59,6 @@ export function ResetOffset({
   onOffsetSelect,
 }: {
   cliCommand: string;
-  consumerGroupName: string;
   topics: { topicId: string; topicName: string }[];
   partitions: number[];
   selectTopic: TopicSelection;

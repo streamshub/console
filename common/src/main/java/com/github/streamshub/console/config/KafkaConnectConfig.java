@@ -1,7 +1,6 @@
 package com.github.streamshub.console.config;
 
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.List;
 
 import jakarta.validation.Valid;
@@ -20,8 +19,6 @@ import io.sundr.builder.annotations.Buildable;
 @JsonInclude(Include.NON_NULL)
 @Buildable(editableEnabled = false)
 public class KafkaConnectConfig implements Authenticated, Trustable {
-
-    private static final Base64.Encoder ID_ENCODER = Base64.getUrlEncoder().withoutPadding();
 
     @NotBlank(message = "Kafka Connect `name` is required")
     private String name;
@@ -46,11 +43,6 @@ public class KafkaConnectConfig implements Authenticated, Trustable {
     @JsonIgnore
     public String clusterKey() {
         return hasNamespace() ? "%s/%s".formatted(namespace, name) : name;
-    }
-
-    @JsonIgnore
-    public String clusterKeyEncoded() {
-        return ID_ENCODER.encodeToString(clusterKey().getBytes());
     }
 
     @JsonIgnore

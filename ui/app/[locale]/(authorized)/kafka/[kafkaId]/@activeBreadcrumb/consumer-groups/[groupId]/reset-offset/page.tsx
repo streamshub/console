@@ -1,20 +1,31 @@
+import { getConsumerGroup } from "@/api/consumerGroups/actions";
 import { KafkaConsumerGroupMembersParams } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/consumer-groups/[groupId]/KafkaConsumerGroupMembers.params";
 import { BreadcrumbLink } from "@/components/Navigation/BreadcrumbLink";
 import RichText from "@/components/RichText";
+import { NoDataErrorState } from "@/components/NoDataErrorState";
+
 import {
   Breadcrumb,
   BreadcrumbItem,
   Tooltip,
 } from "@/libs/patternfly/react-core";
 import { HomeIcon } from "@/libs/patternfly/react-icons";
-import { useTranslations } from "next-intl";
+import { getTranslations } from "next-intl/server";
 
-export default function ConsumerGroupsActiveBreadcrumb({
+export default async function ConsumerGroupsActiveBreadcrumb({
   params: { groupId, kafkaId },
 }: {
   params: KafkaConsumerGroupMembersParams;
 }) {
-  const t = useTranslations();
+  const t = await getTranslations();
+  const consumerGroup = (await getConsumerGroup(kafkaId, groupId));
+
+  if (consumerGroup.errors) {
+    return <NoDataErrorState errors={consumerGroup.errors} />;
+  }
+
+  const groupIdDisplay = consumerGroup.payload?.attributes.groupId!;
+
   return (
     <Breadcrumb>
       <BreadcrumbItem key="home" to="/" showDivider>
@@ -37,10 +48,10 @@ export default function ConsumerGroupsActiveBreadcrumb({
         {t("breadcrumbs.consumer_groups")}
       </BreadcrumbLink>
       <BreadcrumbItem key={"cgm"} showDivider={true} isActive={true}>
-        {decodeURIComponent(groupId) === "+" ? (
+        {groupIdDisplay === "" ? (
           <RichText>{(tags) => t.rich("common.empty_name", tags)}</RichText>
         ) : (
-          groupId
+          groupIdDisplay
         )}
       </BreadcrumbItem>
     </Breadcrumb>

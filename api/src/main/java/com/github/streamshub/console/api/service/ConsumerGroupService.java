@@ -172,7 +172,7 @@ public class ConsumerGroupService {
 
     public CompletionStage<ConsumerGroup> describeConsumerGroup(String requestGroupId, List<String> includes) {
         Admin adminClient = kafkaContext.admin();
-        String groupId = preprocessGroupId(requestGroupId);
+        String groupId = ConsumerGroup.decodeGroupId(requestGroupId);
 
         return assertConsumerGroupExists(adminClient, groupId)
             .thenComposeAsync(
@@ -229,9 +229,9 @@ public class ConsumerGroupService {
                             (e1, e2) -> { }));
     }
 
-    public CompletionStage<Optional<ConsumerGroup>> patchConsumerGroup(ConsumerGroup patch, boolean dryRun) {
+    public CompletionStage<Optional<ConsumerGroup>> patchConsumerGroup(String requestGroupId, ConsumerGroup patch, boolean dryRun) {
         Admin adminClient = kafkaContext.admin();
-        String groupId = preprocessGroupId(patch.getGroupId());
+        String groupId = ConsumerGroup.decodeGroupId(requestGroupId);
 
         return assertConsumerGroupExists(adminClient, groupId)
             .thenComposeAsync(nothing -> Optional.ofNullable(patch.getOffsets())
@@ -425,7 +425,7 @@ public class ConsumerGroupService {
 
     public CompletionStage<Void> deleteConsumerGroup(String requestGroupId) {
         Admin adminClient = kafkaContext.admin();
-        String groupId = preprocessGroupId(requestGroupId);
+        String groupId = ConsumerGroup.decodeGroupId(requestGroupId);
 
         return adminClient.deleteConsumerGroups(List.of(groupId))
                 .deletedGroups()
@@ -617,9 +617,5 @@ public class ConsumerGroupService {
 
             group.setOffsets(offsets);
         }
-    }
-
-    private static String preprocessGroupId(String groupId) {
-        return "+".equals(groupId) ? "" : groupId;
     }
 }

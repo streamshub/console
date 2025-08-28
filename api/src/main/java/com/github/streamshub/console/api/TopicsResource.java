@@ -319,6 +319,7 @@ public class TopicsResource {
             @StringEnumeration(
                     source = ConsumerGroup.FIELDS_PARAM,
                     allowedValues = {
+                        ConsumerGroup.Fields.GROUP_ID,
                         ConsumerGroup.Fields.STATE,
                         ConsumerGroup.Fields.SIMPLE_CONSUMER_GROUP,
                         ConsumerGroup.Fields.MEMBERS,
@@ -335,6 +336,7 @@ public class TopicsResource {
                             type = SchemaType.ARRAY,
                             implementation = String.class,
                             enumeration = {
+                                ConsumerGroup.Fields.GROUP_ID,
                                 ConsumerGroup.Fields.STATE,
                                 ConsumerGroup.Fields.SIMPLE_CONSUMER_GROUP,
                                 ConsumerGroup.Fields.MEMBERS,

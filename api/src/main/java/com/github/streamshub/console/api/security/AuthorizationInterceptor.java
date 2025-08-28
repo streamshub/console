@@ -22,9 +22,11 @@ import org.apache.kafka.common.errors.UnknownTopicIdException;
 import org.jboss.logging.Logger;
 
 import com.github.streamshub.console.api.ClientFactory;
+import com.github.streamshub.console.api.model.ConsumerGroup;
 import com.github.streamshub.console.api.service.TopicDescribeService;
 import com.github.streamshub.console.api.support.KafkaContext;
 import com.github.streamshub.console.config.security.ResourceTypes;
+import com.github.streamshub.console.config.security.ResourceTypes.Kafka;
 
 import io.quarkus.security.identity.SecurityIdentity;
 
@@ -144,10 +146,18 @@ public class AuthorizationInterceptor {
                 resourceNames.add(converter.apply(segment));
             } else {
                 if (s == 3) {
-                    if (ResourceTypes.Kafka.TOPICS.value().equals(segment)) {
-                        converter = this::topicName;
-                    } else if (ResourceTypes.Kafka.REBALANCES.value().equals(segment)) {
-                        converter = this::rebalanceName;
+                    switch (ResourceTypes.forValue(segment, Kafka.class)) {
+                        case CONSUMER_GROUPS:
+                            converter = ConsumerGroup::decodeGroupId;
+                            break;
+                        case REBALANCES:
+                            converter = this::rebalanceName;
+                            break;
+                        case TOPICS:
+                            converter = this::topicName;
+                            break;
+                        default:
+                            break;
                     }
                 }
                 if (!resource.isEmpty()) {

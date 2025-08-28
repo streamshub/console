@@ -13,7 +13,7 @@ export default function Page({
 }) {
   return (
     <Suspense
-      fallback={<Header params={{ kafkaId, groupId }} disabled={true} />}
+      fallback={<Header params={{ kafkaId, groupId, groupIdDisplay: "" }} disabled={true} />}
     >
       <ConnectedAppHeader params={{ kafkaId, groupId }} />
     </Suspense>
@@ -25,29 +25,34 @@ async function ConnectedAppHeader({
 }: {
   params: KafkaConsumerGroupMembersParams;
 }) {
-  const disabled =
-    (await getConsumerGroup(kafkaId, groupId))?.payload?.attributes.state !==
-    "EMPTY";
+  const consumerGroup = (await getConsumerGroup(kafkaId, groupId)).payload;
+  let disabled = true;
+  let groupIdDisplay = "";
 
-  return <Header params={{ kafkaId, groupId }} disabled={disabled} />;
+  if (consumerGroup) {
+    disabled = consumerGroup.attributes.state !== "EMPTY";
+    groupIdDisplay = consumerGroup.attributes.groupId;
+  }
+
+  return <Header params={{ kafkaId, groupId, groupIdDisplay }} disabled={disabled} />;
 }
 
 function Header({
   disabled,
-  params: { kafkaId, groupId },
+  params: { kafkaId, groupId, groupIdDisplay },
 }: {
   disabled: boolean;
-  params: KafkaConsumerGroupMembersParams;
+  params: { kafkaId: string; groupId: string; groupIdDisplay: string };
 }) {
   const t = useTranslations();
 
   return (
     <AppHeader
       title={
-        decodeURIComponent(groupId) === "+" ? (
+        groupIdDisplay === "" ? (
           <RichText>{(tags) => t.rich("common.empty_name", tags)}</RichText>
         ) : (
-          groupId
+          groupIdDisplay
         )
       }
       actions={[
@@ -55,7 +60,7 @@ function Header({
           key={"consumergGroupActionButton"}
           disabled={disabled}
           kafkaId={kafkaId}
-          consumerGroupName={groupId}
+          groupId={groupId}
         />,
       ]}
     />

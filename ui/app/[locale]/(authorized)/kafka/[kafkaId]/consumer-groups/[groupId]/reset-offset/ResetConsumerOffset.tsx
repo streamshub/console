@@ -13,6 +13,7 @@ import { LoadingPage } from "./LoadingPage";
 import { ResetOffset } from "./ResetOffset";
 import { useTranslations } from "next-intl";
 import { useAlert } from "@/components/AlertContext";
+import { ConsumerGroup } from "@/api/consumerGroups/schema";
 
 export type Offset = {
   topicId: string;
@@ -33,13 +34,13 @@ export type ErrorState = Partial<Record<ResetOffsetErrorParam, string>>;
 
 export function ResetConsumerOffset({
   kafkaId,
-  consumerGroupName,
+  consumerGroup,
   topics,
   partitions,
   baseurl,
 }: {
   kafkaId: string;
-  consumerGroupName: string;
+  readonly consumerGroup: ConsumerGroup;
   topics: { topicId: string; topicName: string }[];
   partitions: number[];
   baseurl: string;
@@ -124,7 +125,7 @@ export function ResetConsumerOffset({
   };
 
   const generateCliCommand = (): string => {
-    let baseCommand = `$ kafka-consumer-groups --bootstrap-server \${bootstrap-Server} --group ${consumerGroupName} --reset-offsets`;
+    let baseCommand = `$ kafka-consumer-groups --bootstrap-server \${bootstrap-Server} --group '${consumerGroup.attributes.groupId}' --reset-offsets`;
     const topic =
       selectedConsumerTopic === "allTopics"
         ? "--all-topics"
@@ -213,7 +214,7 @@ export function ResetConsumerOffset({
     searchParams.set("data", data);
     searchParams.set("cliCommand", cliCommand);
     router.push(
-      `${baseurl}/${consumerGroupName}/reset-offset/dryrun?${searchParams.toString()}`,
+      `${baseurl}/${consumerGroup.id}/reset-offset/dryrun?${searchParams.toString()}`,
     );
   };
 
@@ -233,12 +234,13 @@ export function ResetConsumerOffset({
   const handleSave = async () => {
     setError({});
     setIsLoading(true);
+    const groupId = consumerGroup.attributes.groupId;
 
     try {
       const uniqueOffsets = generateOffsets();
       const response = await updateConsumerGroup(
         kafkaId,
-        consumerGroupName,
+        consumerGroup.id,
         uniqueOffsets,
       );
       if (response.errors?.length) {
@@ -266,7 +268,7 @@ export function ResetConsumerOffset({
         closeResetOffset();
         addAlert({
           title: t("ConsumerGroupsTable.reset_offset_submitted_successfully", {
-            consumerGroupName,
+            groupId,
           }),
           variant: "success",
         });
@@ -284,7 +286,6 @@ export function ResetConsumerOffset({
         <LoadingPage />
       ) : (
         <ResetOffset
-          consumerGroupName={consumerGroupName}
           topics={topics}
           partitions={partitions}
           selectTopic={selectedConsumerTopic}

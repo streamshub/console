@@ -17,7 +17,7 @@ export default function Page({
   searchParams: { data?: string };
 }) {
   return (
-    <Suspense fallback={<Header params={{ kafkaId, groupId }} offsets={[]} />}>
+    <Suspense fallback={<Header groupIdDisplay={""} offsets={[]} />}>
       <ConnectedAppHeader
         params={{ kafkaId, groupId }}
         searchParams={searchParams}
@@ -87,17 +87,17 @@ async function ConnectedAppHeader({
       offset: o.offset,
     }),
   );
-  return <Header params={{ kafkaId, groupId }} offsets={offsets} />;
+  return <Header groupIdDisplay={res.attributes.groupId} offsets={offsets} />;
 }
 
 function Header({
-  params: { kafkaId, groupId },
+  groupIdDisplay,
   offsets,
 }: {
-  params: KafkaConsumerGroupMembersParams;
+  groupIdDisplay: string;
   offsets: Offset[];
 }) {
-  const t = useTranslations("ConsumerGroupsTable");
+  const t = useTranslations();
 
   return (
     <AppHeader
@@ -106,21 +106,21 @@ function Header({
           <FlexItem>
             <Content>
               <Content>
-                <RichText>{(tags) => t.rich("dry_run_result", tags)}</RichText>
+                <RichText>{(tags) => t.rich("ConsumerGroupsTable.dry_run_result", tags)}</RichText>
               </Content>
             </Content>
           </FlexItem>
           <FlexItem>
-            <DryrunDownloadButton groupId={groupId} offsets={offsets} />
+            <DryrunDownloadButton groupId={groupIdDisplay} offsets={offsets} />
           </FlexItem>
         </Flex>
       }
       subTitle={
-        decodeURIComponent(groupId) === "+" ? (
+        groupIdDisplay === "" ? (
           <RichText>{(tags) => t.rich("common.empty_name", tags)}</RichText>
         ) : (
           <RichText>
-            {(tags) => t.rich("consumer_name", { ...tags, groupId })}
+            {(tags) => t.rich("ConsumerGroupsTable.consumer_name", { ...tags, groupId: groupIdDisplay })}
           </RichText>
         )
       }

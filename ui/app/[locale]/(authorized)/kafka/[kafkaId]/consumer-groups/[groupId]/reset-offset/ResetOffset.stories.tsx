@@ -9,7 +9,6 @@ type Story = StoryObj<typeof ResetOffset>;
 
 export const Default: Story = {
   args: {
-    consumerGroupName: "console-consumer-01",
     topics: [
       { topicId: "123", topicName: "console_datagen_002-a" },
       { topicId: "456", topicName: "console_datagen_002-b" },
@@ -21,6 +20,6 @@ export const Default: Story = {
     selectOffset: "latest",
     isLoading: false,
     cliCommand:
-      "$ kafka-consumer-groups --bootstrap-server localhost:9092 --group my-consumer-group --reset-offsets --topic mytopic --to-earliest --dry-run",
+      "$ kafka-consumer-groups --bootstrap-server localhost:9092 --group 'my-consumer-group' --reset-offsets --topic mytopic --to-earliest --dry-run",
   },
 };

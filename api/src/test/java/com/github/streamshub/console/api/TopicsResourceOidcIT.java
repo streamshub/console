@@ -36,6 +36,7 @@ import com.github.streamshub.console.kafka.systemtest.TestPlainProfile;
 import com.github.streamshub.console.kafka.systemtest.deployment.DeploymentManager;
 import com.github.streamshub.console.kafka.systemtest.utils.ConsumerUtils;
 import com.github.streamshub.console.kafka.systemtest.utils.TokenUtils;
+import com.github.streamshub.console.support.Identifiers;
 import com.github.streamshub.console.test.LogCapture;
 import com.github.streamshub.console.test.TestHelper;
 import com.github.streamshub.console.test.TopicHelper;
@@ -228,11 +229,11 @@ class TopicsResourceOidcIT {
 
         if ("a".equals(team)) {
             allowedTopic = topicA;
-            allowedGroup = groupA;
+            allowedGroup = Identifiers.encode(groupA);
             forbiddenTopic = topicB;
         } else {
             allowedTopic = topicB;
-            allowedGroup = groupB;
+            allowedGroup = Identifiers.encode(groupB);
             forbiddenTopic = topicA;
         }
 

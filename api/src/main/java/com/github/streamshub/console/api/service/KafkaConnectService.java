@@ -1,8 +1,6 @@
 package com.github.streamshub.console.api.service;
 
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -11,7 +9,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -36,6 +33,7 @@ import com.github.streamshub.console.api.support.ListRequestContext;
 import com.github.streamshub.console.api.support.Promises;
 import com.github.streamshub.console.config.ConsoleConfig;
 import com.github.streamshub.console.config.KafkaConnectConfig;
+import com.github.streamshub.console.support.Identifiers;
 
 import io.fabric8.kubernetes.client.CustomResource;
 import io.strimzi.api.kafka.model.connect.KafkaConnect;
@@ -109,7 +107,7 @@ public class KafkaConnectService {
     }
 
     public CompletionStage<ConnectCluster> describeCluster(String clusterId, FieldFilter fields, FetchParams fetchParams) {
-        String[] idParts = decode(clusterId);
+        String[] idParts = Identifiers.decode(clusterId);
         KafkaConnectConfig clusterConfig = consoleConfig.getKafkaConnectCluster(idParts[0])
                 .orElseThrow(() -> new NotFoundException("Unknown Kafka Connect cluster"));
         return describeCluster(clusterConfig, fields, fetchParams, true);
@@ -133,7 +131,7 @@ public class KafkaConnectService {
 
         return connectClient.getWorkerDetails(clusterKey)
                 .thenApply(server -> {
-                    var cluster = new ConnectCluster(encode("", clusterConfig.clusterKey()));
+                    var cluster = new ConnectCluster(Identifiers.encode("", clusterConfig.clusterKey()));
                     cluster.name(clusterConfig.getName());
                     cluster.namespace(clusterConfig.getNamespace());
                     cluster.commit(server.commit());
@@ -201,7 +199,7 @@ public class KafkaConnectService {
             String connectorId,
             FieldFilter fields,
             FetchParams fetchParams) {
-        String[] idParts = decode(connectorId);
+        String[] idParts = Identifiers.decode(connectorId);
         KafkaConnectConfig clusterConfig = consoleConfig.getKafkaConnectCluster(idParts[0])
                 .orElseThrow(() -> new NotFoundException("Unknown Kafka Connect connector"));
         return describeConnector(clusterConfig, idParts[1], fields, fetchParams);
@@ -253,7 +251,7 @@ public class KafkaConnectService {
             .thenCombine(
                 connectClient.getConnectorStatus(clusterConfig.clusterKey(), connectorName),
                 (info, state) -> {
-                    Connector connector = new Connector(encode("", clusterConfig.clusterKey(), connectorName));
+                    Connector connector = new Connector(Identifiers.encode("", clusterConfig.clusterKey(), connectorName));
                     connector.name(connectorName);
                     connector.namespace(clusterConfig.getNamespace());
                     connector.type(mapType(info));
@@ -321,7 +319,7 @@ public class KafkaConnectService {
             var taskState = state.tasks().stream()
                     .filter(t -> Objects.equals(t.id(), taskInfo.task()))
                     .findFirst();
-            var taskId = encode(connector.getId(), String.valueOf(taskInfo.task()));
+            var taskId = Identifiers.encode(connector.getId(), String.valueOf(taskInfo.task()));
             ConnectorTask task = new ConnectorTask(taskId);
 
             task.taskId(taskInfo.task());
@@ -408,28 +406,5 @@ public class KafkaConnectService {
         }
 
         return promise;
-    }
-
-    /**
-     * id values must be URL-safe, so we encode the unknown/variable values of object
-     * names from Kafka Connect.
-     */
-    static String encode(String base, String... values) {
-        StringBuilder encoded = new StringBuilder(base);
-        for (String v : values) {
-            if (!encoded.isEmpty()) {
-                encoded.append(',');
-            }
-            encoded.append(Base64.getUrlEncoder().encodeToString(v.getBytes(StandardCharsets.UTF_8)));
-        }
-        return encoded.toString();
-    }
-
-    static String[] decode(String value) {
-        List<String> decoded = new ArrayList<>();
-        for (String v : value.split(Pattern.quote(","))) {
-            decoded.add(new String(Base64.getUrlDecoder().decode(v), StandardCharsets.UTF_8));
-        }
-        return decoded.toArray(String[]::new);
     }
 }

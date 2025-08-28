@@ -192,22 +192,23 @@ class KafkaConnectsResourceIT implements ClientRequestFilter {
 
     @Test
     void testListConnectClustersSortedByVersion() {
+        var enc = Base64.getUrlEncoder().withoutPadding();
         whenRequesting(req -> req.param("sort", "version").get())
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
             .body("data.size()", is(3))
             .body("data.meta.managed", contains(true, true, false))
-            .body("data[0].id", is(Base64.getUrlEncoder().encodeToString("default/test-connect1".getBytes())))
+            .body("data[0].id", is(enc.encodeToString("default/test-connect1".getBytes())))
             .body("data[0].attributes.commit", is("abc123d"))
             .body("data[0].attributes.kafkaClusterId", is(consoleConfig.getKafka().getCluster("default/test-kafka1").get().getId()))
             .body("data[0].attributes.version", is("4.0.0"))
             .body("data[0].attributes.replicas", is(2))
-            .body("data[1].id", is(Base64.getUrlEncoder().encodeToString("default/test-connect2".getBytes())))
+            .body("data[1].id", is(enc.encodeToString("default/test-connect2".getBytes())))
             .body("data[1].attributes.commit", is("zyx987w"))
             .body("data[1].attributes.kafkaClusterId", is("k2-id"))
             .body("data[1].attributes.version", is("4.0.1"))
             .body("data[1].attributes.replicas", is(4))
-            .body("data[2].id", is(Base64.getUrlEncoder().encodeToString("test-connect3".getBytes())))
+            .body("data[2].id", is(enc.encodeToString("test-connect3".getBytes())))
             .body("data[2].attributes.commit", is("yyy777x"))
             .body("data[2].attributes.kafkaClusterId", is("test-kafkaY"))
             .body("data[2].attributes.version", is("4.0.2"))
@@ -226,7 +227,7 @@ class KafkaConnectsResourceIT implements ClientRequestFilter {
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
             .body("data.size()", is(1))
-            .body("data[0].id", is(Base64.getUrlEncoder().encodeToString(("default/" + expectedName).getBytes())))
+            .body("data[0].id", is(Base64.getUrlEncoder().withoutPadding().encodeToString(("default/" + expectedName).getBytes())))
             .body("data[0].attributes.namespace", is("default"))
             .body("data[0].attributes.name", is(expectedName))
             .body("data[0].attributes.commit", is(expectedCommit))
@@ -249,7 +250,7 @@ class KafkaConnectsResourceIT implements ClientRequestFilter {
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
             .body("data.size()", is(1))
-            .body("data[0].id", is(Base64.getUrlEncoder().encodeToString(("default/" + expectedName).getBytes())))
+            .body("data[0].id", is(Base64.getUrlEncoder().withoutPadding().encodeToString(("default/" + expectedName).getBytes())))
             .body("data[0].attributes.namespace", is("default"))
             .body("data[0].attributes.commit", is(expectedCommit))
             .body("data[0].attributes.kafkaClusterId", is(expectedKafkaId))
@@ -271,7 +272,7 @@ class KafkaConnectsResourceIT implements ClientRequestFilter {
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
             .body("data.size()", is(1))
-            .body("data[0].id", is(Base64.getUrlEncoder().encodeToString(("default/" + expectedName).getBytes())))
+            .body("data[0].id", is(Base64.getUrlEncoder().withoutPadding().encodeToString(("default/" + expectedName).getBytes())))
             .body("data[0].relationships.connectors.data.size()", is(2))
             .body("included.size()", is(2));
     }
@@ -289,7 +290,7 @@ class KafkaConnectsResourceIT implements ClientRequestFilter {
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
             .body("data.size()", is(1))
-            .body("data[0].id", is(Base64.getUrlEncoder().encodeToString(("default/" + expectedName).getBytes())))
+            .body("data[0].id", is(Base64.getUrlEncoder().withoutPadding().encodeToString(("default/" + expectedName).getBytes())))
             .body("data[0].relationships.connectors.data.size()", is(2))
             .body("included", anyOf(nullValue(), hasSize(0))); // included is either missing or empty
     }
@@ -309,7 +310,7 @@ class KafkaConnectsResourceIT implements ClientRequestFilter {
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
             .body("data.size()", is(1))
-            .body("data[0].id", is(Base64.getUrlEncoder().encodeToString(("default/" + expectedName).getBytes())))
+            .body("data[0].id", is(Base64.getUrlEncoder().withoutPadding().encodeToString(("default/" + expectedName).getBytes())))
             .body("included.size()", is(5)) // 2 connectors + 3 tasks
             .body("included.findAll { it.type == 'connectors' }.size()", is(2))
             .body("included.findAll { it.type == 'connectors' }.relationships.tasks.data", containsInAnyOrder(hasSize(1), hasSize(2)))
@@ -334,7 +335,7 @@ class KafkaConnectsResourceIT implements ClientRequestFilter {
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
             .body("data.size()", is(1))
-            .body("data[0].id", is(Base64.getUrlEncoder().encodeToString(("default/" + expectedName).getBytes())))
+            .body("data[0].id", is(Base64.getUrlEncoder().withoutPadding().encodeToString(("default/" + expectedName).getBytes())))
             .body("included.size()", is(2)) // 2 connectors + no tasks
             .body("included.type", everyItem(is("connectors")))
             .body("included.relationships.tasks.data", containsInAnyOrder(hasSize(1), hasSize(2)))
@@ -347,7 +348,7 @@ class KafkaConnectsResourceIT implements ClientRequestFilter {
         "default/test-connect2, default/test-kafka2",
     })
     void testDescribeConnectCluster(String connectClusterKey, String kafkaClusterKey) {
-        String connectClusterID = Base64.getUrlEncoder().encodeToString(connectClusterKey.getBytes());
+        String connectClusterID = Base64.getUrlEncoder().withoutPadding().encodeToString(connectClusterKey.getBytes());
         // Tests that the connectorTasks relationships are returned, but the resources themselves are not included
         whenRequesting(req -> req
                 .param("fields[connects]", "name,kafkaClusters")

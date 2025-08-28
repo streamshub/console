@@ -92,6 +92,7 @@ import com.github.streamshub.console.config.security.ResourceTypes;
 import com.github.streamshub.console.kafka.systemtest.TestPlainProfile;
 import com.github.streamshub.console.kafka.systemtest.deployment.DeploymentManager;
 import com.github.streamshub.console.kafka.systemtest.utils.ConsumerUtils;
+import com.github.streamshub.console.support.Identifiers;
 import com.github.streamshub.console.test.AdminClientSpy;
 import com.github.streamshub.console.test.LogCapture;
 import com.github.streamshub.console.test.TestHelper;
@@ -808,7 +809,9 @@ class TopicsResourceIT {
         String topic2 = "t2-" + UUID.randomUUID().toString();
 
         String group1 = "g1-" + UUID.randomUUID().toString();
+        String group1Id = Identifiers.encode(group1);
         String group2 = "g2-" + UUID.randomUUID().toString();
+        String group2Id = Identifiers.encode(group2);
 
         String client1 = "c1-" + UUID.randomUUID().toString();
         String client2 = "c2-" + UUID.randomUUID().toString();
@@ -824,11 +827,11 @@ class TopicsResourceIT {
                 .body("data.find { it.attributes.name == '%s' }.relationships.consumerGroups.data[0]".formatted(topic1),
                     allOf(
                         hasEntry(equalTo("type"), equalTo("consumerGroups")),
-                        hasEntry(equalTo("id"), equalTo(group1))))
+                        hasEntry(equalTo("id"), equalTo(group1Id))))
                 .body("data.find { it.attributes.name == '%s' }.relationships.consumerGroups.data[0]".formatted(topic2),
                     allOf(
                         hasEntry(equalTo("type"), equalTo("consumerGroups")),
-                        hasEntry(equalTo("id"), equalTo(group2))));
+                        hasEntry(equalTo("id"), equalTo(group2Id))));
         }
     }
 
@@ -2291,7 +2294,9 @@ class TopicsResourceIT {
         String topic1Id = topicUtils.createTopics(List.of(topic1), 2).get(topic1);
 
         String group1 = "g1-" + UUID.randomUUID().toString();
+        String group1Id = Identifiers.encode(group1);
         String group2 = "g2-" + UUID.randomUUID().toString();
+        String group2Id = Identifiers.encode(group2);
 
         String client1 = "c1-" + UUID.randomUUID().toString();
         String client2 = "c2-" + UUID.randomUUID().toString();
@@ -2306,13 +2311,14 @@ class TopicsResourceIT {
                 .body("data.size()", is(1))
                 .body("data[0].relationships.consumerGroups.data.size()", is(2))
                 .body("data[0].relationships.consumerGroups.data.type", contains("consumerGroups", "consumerGroups"))
-                .body("data[0].relationships.consumerGroups.data.id", containsInAnyOrder(group1, group2));
+                .body("data[0].relationships.consumerGroups.data.id", containsInAnyOrder(group1Id, group2Id));
 
             whenRequesting(req -> req.get("{topicId}/consumerGroups", clusterId1, topic1Id))
                 .assertThat()
                 .statusCode(is(Status.OK.getStatusCode()))
                 .body("data.size()", is(2))
-                .body("data.id", containsInAnyOrder(group1, group2));
+                .body("data.id", containsInAnyOrder(group1Id, group2Id))
+                .body("data.attributes.groupId", containsInAnyOrder(group1, group2));
         }
     }
 
