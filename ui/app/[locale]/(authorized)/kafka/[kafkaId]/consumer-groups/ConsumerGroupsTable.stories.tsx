@@ -14,6 +14,7 @@ type Story = StoryObj<typeof Comp>;
 
 const generateConsumerGroup = (
   id: string,
+  groupId: string,
   state: string,
   lag1: number,
   lag2: number,
@@ -21,6 +22,7 @@ const generateConsumerGroup = (
 ) => ({
   id,
   attributes: {
+    groupId,
     state,
     offsets:
       lag3 !== undefined
@@ -53,6 +55,7 @@ export const ConsumerGroups: Story = {
     consumerGroups: (() => {
       const groups = Array.from({ length: 21 }, (_, i) =>
         generateConsumerGroup(
+          `${i}`,
           `console-datagen-group-${i}`,
           ["STABLE", "EMPTY"][i % 2],
           i * 1000,
