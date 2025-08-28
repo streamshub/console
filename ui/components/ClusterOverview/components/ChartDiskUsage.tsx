@@ -71,7 +71,7 @@ export function ChartDiskUsage({ usages, available }: ChartDiskUsageProps) {
   const padding = { ...basePadding, bottom: basePadding.bottom - 60 };
 
   return (
-    <div ref={containerRef} style={{ maxHeight: "280px" }}>
+    <div ref={containerRef}>
       <Chart
         ariaTitle={"Used disk space"}
         containerComponent={
