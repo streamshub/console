@@ -67,11 +67,10 @@ export function ChartDiskUsage({ usages, available }: ChartDiskUsageProps) {
     });
   });
 
-  const basePadding = getPadding(legendData.length / itemsPerRow);
-  const padding = { ...basePadding, bottom: basePadding.bottom - 60 };
+  const padding = getPadding(legendData.length / itemsPerRow);
 
   return (
-    <div ref={containerRef}>
+    <div ref={containerRef} style={{ maxHeight: "280px" }}>
       <Chart
         ariaTitle={"Used disk space"}
         containerComponent={
@@ -105,7 +104,7 @@ export function ChartDiskUsage({ usages, available }: ChartDiskUsageProps) {
             itemsPerRow={itemsPerRow}
           />
         }
-        height={getHeight(legendData.length / itemsPerRow) - 40}
+        height={getHeight(legendData.length / itemsPerRow)}
         padding={padding}
         themeColor={ChartThemeColor.multiUnordered}
         width={width}
