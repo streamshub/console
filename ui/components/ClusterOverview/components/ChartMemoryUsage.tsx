@@ -14,6 +14,7 @@ import { Alert } from "@/libs/patternfly/react-core";
 import { useFormatter, useTranslations } from "next-intl";
 import { getHeight, getPadding } from "./chartConsts";
 import { useChartWidth } from "./useChartWidth";
+import { formatDateTime } from "@/utils/dateTime";
 
 type ChartDiskUsageProps = {
   usages: Record<string, TimeSeriesMetrics>;
@@ -64,13 +65,8 @@ export function ChartMemoryUsage({ usages }: ChartDiskUsageProps) {
             labelComponent={
               <ChartLegendTooltip
                 legendData={legendData}
-                title={(args) =>
-                  format.dateTime(args?.x ?? 0, {
-                    timeZone: "UTC",
-                    timeStyle: "medium",
-                    dateStyle: "short",
-                  })
-                }
+                flyoutWidth={250}
+                title={(args) => formatDateTime(args?.x ?? 0)}
               />
             }
             labels={({ datum }: { datum: Datum }) =>
@@ -95,16 +91,7 @@ export function ChartMemoryUsage({ usages }: ChartDiskUsageProps) {
       >
         <ChartAxis
           scale={"time"}
-          tickFormat={(d) => {
-            const [_, ...time] = format
-              .dateTime(d, {
-                dateStyle: "short",
-                timeStyle: "short",
-                timeZone: "UTC",
-              })
-              .split(" ");
-            return time.join(" ");
-          }}
+          tickFormat={(d) => formatDateTime(d, "HH:mm")}
           tickCount={5}
         />
         <ChartAxis

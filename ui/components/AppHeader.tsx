@@ -47,12 +47,7 @@ export function AppHeader({
                 className={"pf-v6-u-font-size-sm"}
               >
                 Last updated{" "}
-                <DateTime
-                  value={lastRefresh}
-                  dateStyle={"short"}
-                  timeStyle={"medium"}
-                  tz={"local"}
-                />
+                <DateTime value={lastRefresh} />
                 <RefreshButton />
               </FlexItem>
             )}
