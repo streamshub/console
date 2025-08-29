@@ -1,4 +1,5 @@
 "use client";
+import { signOut } from "next-auth/react";
 import {
   EmptyState,
   EmptyStateBody,
@@ -12,6 +13,9 @@ export function NoDataErrorState({ errors }: { errors: ApiError[] }) {
 
   switch (errors[0].status ?? "400") {
     case "401":
+      // Force sign out in attempt to re-establish an authenticated sessions
+      signOut();
+      // Fall through
     case "403":
       errorIcon = BanIcon;
       break;
