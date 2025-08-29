@@ -6,12 +6,7 @@ import {
   ConnectorTask,
   ConnectorType,
 } from "@/api/kafkaConnect/schema";
-import {
-  ResponsiveTable,
-  ResponsiveTdProps,
-  ResponsiveThProps,
-  TableView,
-} from "@/components/Table";
+import { TableView } from "@/components/Table";
 import {
   CheckCircleIcon,
   ExclamationCircleIcon,
@@ -19,7 +14,7 @@ import {
   PauseCircleIcon,
   PendingIcon,
 } from "@/libs/patternfly/react-icons";
-import { TableVariant, Td, Th } from "@/libs/patternfly/react-table";
+import { TableVariant } from "@/libs/patternfly/react-table";
 import {
   DescriptionList,
   DescriptionListDescription,
@@ -34,7 +29,7 @@ import {
   TabTitleText,
 } from "@patternfly/react-core";
 import { useTranslations } from "next-intl";
-import { ReactElement, ReactNode, useState } from "react";
+import { ReactNode, useState } from "react";
 import Image from "next/image";
 
 const StateLabel: Record<ConnectorState, { label: ReactNode }> = {
