@@ -48,20 +48,21 @@ public class ConsumerST extends AbstractST {
         final int messageCount = Constants.MESSAGE_COUNT;
         return Stream.of(
             Arguments.of("Special chars", messageCount, "group$$$$$%^^&*"),
-            Arguments.of("Colon separated", messageCount, "group:part:1"),
+            Arguments.of("Semicolon separated", messageCount, "group;part;;1"),
             Arguments.of("Dot separated", messageCount, "group.1.3.5"),
-            Arguments.of("Numeric suffix", messageCount, "group:123"),
-            Arguments.of("Symbols", messageCount, "group@!\"#?"),
-            Arguments.of("Underscores", messageCount, "group_with_underscores"),
-            Arguments.of("Hyphenated", messageCount, "group-hyphen-name"),
-            Arguments.of("With slash", messageCount, "group/with/slash"),
-            Arguments.of("Equals sign", messageCount, "group=equals"),
-            Arguments.of("Comma separated", messageCount, "group,comma,separated"),
+            Arguments.of("Colon separated", messageCount, "group:12::3:"),
+            Arguments.of("Symbols", messageCount, "group'@!\"#?§±"),
+            Arguments.of("Underscores", messageCount, "group_with__underscores_"),
+            Arguments.of("Hyphenated", messageCount, "group-hyphen--name-"),
+            Arguments.of("With slash", messageCount, "group/with//slash/"),
+            Arguments.of("Equals sign", messageCount, "group=equals==two"),
+            Arguments.of("Comma separated", messageCount, "group,comma,separated,,"),
             Arguments.of("With spaces", messageCount, "group space allowed"),
-            Arguments.of("Pipe symbol", messageCount, "group|pipe|"),
-            Arguments.of("Tilde", messageCount, "group~tilde~name"),
-            Arguments.of("Unicode checkmark", messageCount, "group©unicode✓test"),
+            Arguments.of("Pipe symbol", messageCount, "group|pipe||secondpipe"),
+            Arguments.of("Tilde", messageCount, "group~tilde~~name"),
+            Arguments.of("Unicode checkmark", messageCount, "group©©unicode✓✓test"),
             Arguments.of("Japanese text", messageCount, "group日本のキャラクター"),
+            Arguments.of("Czech text", messageCount, "skupina+ěščřžýáíé"),
             Arguments.of("Fancy unicode", messageCount, "group_𝕬𝖑𝖑𝖙𝖊𝖘𝖙𝖘"),
             Arguments.of("Whitespaces regex", messageCount, "\s\s\s"),
             Arguments.of("Very long name", messageCount,
@@ -69,7 +70,7 @@ public class ConsumerST extends AbstractST {
         );
     }
 
-    @ParameterizedTest(name = "Test: {0} - ConsumerGroupName: {2}")
+    @ParameterizedTest(name = "Scenario: {0} - ConsumerGroupName: [{2}]")
     @MethodSource("variableConsumerGroupNamesScenario")
     void testVariableConsumerGroupNames(String displayName, int messageCount, String consumerGroupName) {
 
@@ -110,7 +111,9 @@ public class ConsumerST extends AbstractST {
         PwUtils.waitForContainsText(tcc, new CssBuilder(CssSelectors.PAGES_HEADER_BREADCRUMB_ITEMS).nth(4).build(), consumerGroupName, true);
 
         LOGGER.info("Navigate to consumer groups page to check group is present");
-        tcc.page().navigate(PwPageUrls.getConsumerGroupsPage(tcc, tcc.kafkaName(), ""));
+        tcc.page().navigate(PwPageUrls.getConsumerGroupsPage(tcc, tcc.kafkaName(), ""), PwUtils.getDefaultNavigateOpts());
+        tcc.page().navigate(PwPageUrls.getConsumerGroupsPage(tcc, tcc.kafkaName(), ""), PwUtils.getDefaultNavigateOpts());
+
         PwUtils.waitForContainsText(tcc, ConsumerGroupsPageSelectors.CGPS_HEADER_TITLE, "Consumer Groups", true);
         PwUtils.waitForContainsText(tcc, ConsumerGroupsPageSelectors.CGPS_TABLE_ITEMS, consumerGroupName, true);
 
@@ -118,14 +121,15 @@ public class ConsumerST extends AbstractST {
         PwUtils.waitForLocatorAndClick(tcc.page()
             .locator(ConsumerGroupsPageSelectors.CGPS_TABLE_ITEMS)
             .locator("a", new Locator.LocatorOptions().setHasText(consumerGroupName)));
-
         tcc.page().waitForURL(PwPageUrls.getConsumerGroupsPage(tcc, tcc.kafkaName(), consumerGroupEncodedName), PwUtils.getDefaultWaitForUrlOpts());
         PwUtils.waitForContainsText(tcc, SingleConsumerGroupPageSelectors.SCGPS_PAGE_HEADER_NAME, consumerGroupName, true);
         PwUtils.waitForContainsText(tcc, new CssBuilder(CssSelectors.PAGES_HEADER_BREADCRUMB_ITEMS).nth(4).build(), consumerGroupName, true);
 
         LOGGER.info("Check topic page if consumer group is present");
         final String topicId = ResourceUtils.getKubeResource(KafkaTopic.class, tcc.namespace(), topicName).getStatus().getTopicId();
-        tcc.page().navigate(PwPageUrls.getSingleTopicConsumerGroupsPage(tcc, tcc.kafkaName(), topicId));
+        tcc.page().navigate(PwPageUrls.getSingleTopicConsumerGroupsPage(tcc, tcc.kafkaName(), topicId), PwUtils.getDefaultNavigateOpts());
+        tcc.page().waitForURL(PwPageUrls.getSingleTopicConsumerGroupsPage(tcc, tcc.kafkaName(), topicId), PwUtils.getDefaultWaitForUrlOpts());
+
         PwUtils.waitForContainsText(tcc, ConsumerGroupsPageSelectors.CGPS_TABLE_ITEMS, consumerGroupName, true);
 
         LOGGER.info("Try click-through link and get redirected to a correct page");
