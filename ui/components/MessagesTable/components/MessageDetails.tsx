@@ -161,8 +161,8 @@ export function MessageDetailsBody({
             <DescriptionListDescription>
               <DateTime
                 value={message.attributes.timestamp}
+                utc={true}
                 empty={<NoData />}
-                tz={"UTC"}
               />
             </DescriptionListDescription>
           </DescriptionListGroup>

@@ -342,12 +342,7 @@ export function ClusterCard({
                                     width={1}
                                     className={"pf-v6-u-text-nowrap"}
                                   >
-                                    <DateTime
-                                      value={m.date}
-                                      tz={"UTC"}
-                                      dateStyle={"short"}
-                                      timeStyle={"short"}
-                                    />
+                                    <DateTime value={m.date} />
                                   </DataListCell>,
                                 ]}
                               />

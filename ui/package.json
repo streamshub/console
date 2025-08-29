@@ -10,7 +10,7 @@
     "lint": "next lint",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
-    "test-storybook": "test-storybook",
+    "test-storybook": "TZ='America/Los_Angeles' test-storybook",
     "test": "npx playwright test --config ./tests/playwright/playwright.config.ts"
   },
   "dependencies": {

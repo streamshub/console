@@ -1,36 +1,41 @@
+"use client";
+
+import { formatDateTime } from "@/utils/dateTime";
 import { isDate, parseISO } from "date-fns";
-import { useFormatter } from "next-intl";
-import { ReactNode } from "react";
+import { ReactNode, useEffect, useState } from "react";
+
+const FORMAT = "yyyy-MM-dd HH:mm:ssXXX";
 
 export function DateTime({
   value,
-  dateStyle = "long",
-  timeStyle = "long",
-  tz = "local",
+  utc = false,
   empty = "-",
 }: {
-  value: string | Date | undefined;
-  dateStyle?: "full" | "long" | "medium" | "short";
-  timeStyle?: "full" | "long" | "medium" | "short";
-  tz?: "UTC" | "local";
-  empty?: ReactNode;
+  readonly value: string | Date | undefined;
+  readonly utc?: boolean;
+  readonly empty?: ReactNode;
 }) {
-  const format = useFormatter();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
+  if (!mounted) {
+    // Do not return any result unless mounted (i.e., running client side)
+    return null;
+  }
+
   if (!value) {
     return empty;
   }
-  const maybeDate = typeof value === "string" ? parseISO(value) : value;
-  if (!isDate(maybeDate)) {
+
+  const dateValue = typeof value === "string" ? parseISO(value) : value;
+
+  if (!isDate(dateValue)) {
     return empty;
   }
-  const formattedDt = format.dateTime(maybeDate, {
-    dateStyle,
-    timeStyle,
-    timeZone: tz === "local" ? undefined : "UTC",
-  });
+
   return (
-    <time dateTime={maybeDate.toISOString()} suppressHydrationWarning={true}>
-      {formattedDt}
+    <time dateTime={dateValue.toISOString()}>
+      {formatDateTime(value, FORMAT, utc)}
     </time>
   );
 }
