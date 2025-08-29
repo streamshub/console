@@ -1,16 +1,12 @@
-package com.github.streamshub.systemtests;
+package com.github.streamshub.systemtests.consumers;
 
 import com.github.streamshub.systemtests.clients.KafkaClients;
 import com.github.streamshub.systemtests.clients.KafkaClientsBuilder;
 import com.github.streamshub.systemtests.constants.Constants;
-import com.github.streamshub.systemtests.constants.TestTags;
 import com.github.streamshub.systemtests.enums.ResetOffsetDateTimeType;
 import com.github.streamshub.systemtests.enums.ResetOffsetType;
-import com.github.streamshub.systemtests.locators.ConsumerGroupsPageSelectors;
+import com.github.streamshub.systemtests.locators.SingleConsumerGroupPageSelectors;
 import com.github.streamshub.systemtests.logs.LogWrapper;
-import com.github.streamshub.systemtests.setup.console.ConsoleInstanceSetup;
-import com.github.streamshub.systemtests.setup.strimzi.KafkaSetup;
-import com.github.streamshub.systemtests.utils.Utils;
 import com.github.streamshub.systemtests.utils.WaitUtils;
 import com.github.streamshub.systemtests.utils.playwright.PwPageUrls;
 import com.github.streamshub.systemtests.utils.playwright.PwUtils;
@@ -19,7 +15,6 @@ import com.github.streamshub.systemtests.utils.resourceutils.KafkaCmdUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.KafkaNamingUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.KafkaTopicUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.KafkaUtils;
-import com.github.streamshub.systemtests.utils.resourceutils.NamespaceUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
 import com.github.streamshub.systemtests.utils.testutils.ConsumerTestUtils;
 import io.fabric8.kubernetes.api.model.Pod;
@@ -28,9 +23,7 @@ import io.skodjob.testframe.resources.KubeResourceManager;
 import io.strimzi.api.kafka.model.topic.KafkaTopic;
 import org.apache.kafka.common.security.auth.SecurityProtocol;
 import org.apache.logging.log4j.Logger;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -43,10 +36,8 @@ import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-@Tag(TestTags.REGRESSION)
-public class ConsumerST extends AbstractST {
-    private static final Logger LOGGER = LogWrapper.getLogger(ConsumerST.class);
-    private TestCaseConfig tcc;
+public class ConsumerGroupResetOffsetST extends ConsumerST {
+    private static final Logger LOGGER = LogWrapper.getLogger(ConsumerGroupResetOffsetST.class);
 
     private static final String TOPIC_PREFIX = "rst-all-topics-var-offset";
     private static final int MESSAGE_COUNT = Constants.MESSAGE_COUNT_HIGH;
@@ -96,6 +87,7 @@ public class ConsumerST extends AbstractST {
             Arguments.of(MESSAGE_COUNT, ResetOffsetType.DATE_TIME, ResetOffsetDateTimeType.ISO_8601, middleOffsetIndex)
         );
     }
+
     /**
      * Executes parameterized tests for resetting Kafka consumer group offsets
      * across all topics and partitions using the UI.
@@ -134,7 +126,7 @@ public class ConsumerST extends AbstractST {
             .toList();
 
         tcc.page().navigate(PwPageUrls.getConsumerGroupsPage(tcc, tcc.kafkaName(), RESET_OFFSET_CONSUMER_GROUP));
-        PwUtils.waitForElementEnabledState(tcc, ConsumerGroupsPageSelectors.CGPS_RESET_CONSUMER_OFFSET_BUTTON, true, true, TestFrameConstants.GLOBAL_TIMEOUT_MEDIUM);
+        PwUtils.waitForElementEnabledState(tcc, SingleConsumerGroupPageSelectors.SCGPS_RESET_CONSUMER_OFFSET_BUTTON, true, true, TestFrameConstants.GLOBAL_TIMEOUT_MEDIUM);
 
         // Look at the offset in UI
         for (String kafkaTopicName : kafkaTopicNames) {
@@ -220,20 +212,7 @@ public class ConsumerST extends AbstractST {
     }
 
     @BeforeAll
-    void testClassSetup() {
-        // Init test case config based on the test context
-        tcc = Utils.getTestCaseConfig();
-        // Prepare test environment
-        NamespaceUtils.prepareNamespace(tcc.namespace());
-        KafkaSetup.setupDefaultKafkaIfNeeded(tcc.namespace(), tcc.kafkaName());
-        ConsoleInstanceSetup.setupIfNeeded(ConsoleInstanceSetup.getDefaultConsoleInstance(tcc.namespace(), tcc.consoleInstanceName(), tcc.kafkaName(), tcc.kafkaUserName()));
-        PwUtils.login(tcc);
-
+    void nestedClassSetup() {
         setupConsumersScenario();
-    }
-
-    @AfterAll
-    void testClassTeardown() {
-        tcc.playwright().close();
     }
 }
