@@ -33,5 +33,5 @@ entries:
     replaces: streamshub-console-operator.v0.8.3
   - name: streamshub-console-operator.v0.8.5
     replaces: streamshub-console-operator.v0.8.4
-  - name: streamshub-console-operator.v0.8.6-snapshot
+  - name: streamshub-console-operator.v0.8.6
     replaces: streamshub-console-operator.v0.8.5
