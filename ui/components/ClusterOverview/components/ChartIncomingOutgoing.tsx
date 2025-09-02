@@ -77,7 +77,7 @@ export function ChartIncomingOutgoing({
             labelComponent={
               <ChartLegendTooltip
                 legendData={legendData}
-                title={(args) => formatDateTime(args?.x ?? 0)}
+                title={(args) => formatDateTime({ value: args?.x ?? 0 })}
               />
             }
             labels={({ datum }: { datum: Datum }) => {
@@ -104,7 +104,7 @@ export function ChartIncomingOutgoing({
       >
         <ChartAxis
           scale={"time"}
-          tickFormat={(d) => formatDateTime(d, "HH:mm")}
+          tickFormat={(d) => formatDateTime({ value: d, format: "HH:mm" })}
           tickCount={4}
           orientation={"bottom"}
           offsetY={padding.bottom}

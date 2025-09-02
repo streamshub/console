@@ -1,16 +1,19 @@
-import { format as formatDate } from "date-fns";
 import { formatInTimeZone } from "date-fns-tz";
 
-const FORMAT = "yyyy-MM-dd HH:mm:ssXXX";
-
-export function formatDateTime(value: number | string | Date | undefined, format: string = FORMAT, utc?: boolean) {
+export function formatDateTime({
+  value,
+  timeZone,
+  format = "yyyy-MM-dd HH:mm:ssXXX",
+} : {
+  value: number | string | Date | undefined,
+  timeZone?: string,
+  format?: string,
+}) {
   if (value === undefined) {
     return "-";
   }
 
-  if (utc) {
-    return formatInTimeZone(value, "UTC", format);
-  } else {
-    return formatDate(value, format);
-  }
+  timeZone ??= Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+  return formatInTimeZone(value, timeZone, format);
 }

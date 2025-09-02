@@ -4,15 +4,13 @@ import { formatDateTime } from "@/utils/dateTime";
 import { isDate, parseISO } from "date-fns";
 import { ReactNode, useEffect, useState } from "react";
 
-const FORMAT = "yyyy-MM-dd HH:mm:ssXXX";
-
 export function DateTime({
   value,
-  utc = false,
+  timeZone,
   empty = "-",
 }: {
   readonly value: string | Date | undefined;
-  readonly utc?: boolean;
+  readonly timeZone?: string;
   readonly empty?: ReactNode;
 }) {
   const [mounted, setMounted] = useState(false);
@@ -35,7 +33,7 @@ export function DateTime({
 
   return (
     <time dateTime={dateValue.toISOString()}>
-      {formatDateTime(value, FORMAT, utc)}
+      {formatDateTime({ value, timeZone })}
     </time>
   );
 }

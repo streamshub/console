@@ -251,7 +251,7 @@ export function MessagesTable({
                       case "timestampUTC":
                         return (
                           <Cell>
-                            <DateTime value={row.attributes.timestamp} utc={true} />
+                            <DateTime value={row.attributes.timestamp} timeZone="UTC" />
                           </Cell>
                         );
                       case "key":

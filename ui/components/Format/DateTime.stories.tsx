@@ -13,10 +13,9 @@ const meta: Meta<typeof DateTime> = {
       control: "text",
       description: "The date value to be displayed",
     },
-    utc: {
-      options: [ true, false ],
-      control: { type: "radio" },
-      description: "Whether UTC or local timezone is used for display",
+    timeZone: {
+      control: "text",
+      description: "Timezone used for display",
     },
     empty: {
       control: "text",
@@ -34,7 +33,7 @@ export const Default: Story = {};
 export const DateTimeStringUTC: Story = {
   args: {
     value: "2025-04-01T00:00:00-07:00", // A static date value
-    utc: true,
+    timeZone: "UTC",
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -48,6 +47,7 @@ export const DateTimeStringUTC: Story = {
 export const DateTimeStringLocal: Story = {
   args: {
     value: "2025-04-01T07:00:00Z", // A static date value
+    timeZone: "US/Pacific",
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
