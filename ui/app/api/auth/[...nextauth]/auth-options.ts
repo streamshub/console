@@ -11,6 +11,13 @@ import oidcSource from "./oidc";
 
 const log = logger.child({ module: "auth" });
 
+declare module "next-auth/jwt" {
+  interface JWT {
+    id_token?: string;
+    provider?: string;
+  }
+}
+
 function makeAuthOption(cluster: ClusterList): Provider {
   switch (cluster.meta.authentication?.method) {
     case "oauth": {
@@ -44,6 +51,24 @@ export async function getAuthOptions(): Promise<AuthOptions> {
         },
         async session({ session, token }: { session: Session; token: JWT }) {
           return oidc.session({ session, token });
+        },
+      },
+      events: {
+        async signOut({ token }) {
+          if (token.provider === "oidc" && token.id_token) {
+            try {
+              const logoutUrl = await oidc.getLogoutUrl();
+
+              if (logoutUrl) {
+                const url = new URL(logoutUrl);
+                url.searchParams.set("id_token_hint", token.id_token);
+                await fetch(url);
+                log.info("OIDC back-channel logout successful");
+              }
+            } catch (error) {
+              log.error({ error }, "Error during OIDC back-channel logout");
+            }
+          }
         },
       },
     };
