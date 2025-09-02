@@ -269,9 +269,6 @@ export function RebalanceTable({
                       .map((c) => c.lastTransitionTime!)
                       .find(() => true) ?? row.attributes.creationTimestamp
                   }
-                  tz={"UTC"}
-                  dateStyle={"short"}
-                  timeStyle={"medium"}
                 />
               </Td>
             );

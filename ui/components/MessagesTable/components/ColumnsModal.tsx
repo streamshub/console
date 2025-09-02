@@ -1,11 +1,12 @@
-import { Button, Modal } from "@/libs/patternfly/react-core";
 import {
+  Button,
   Content,
   DataList,
   DataListCell,
   DataListCheck,
   DataListControl,
   DataListItemCells,
+  Modal,
   ModalBody,
   ModalFooter,
   ModalHeader,
@@ -27,14 +28,13 @@ export type Column = (typeof columns)[number];
 
 export function useColumnLabels() {
   const t = useTranslations();
-  const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const columnLabels: Record<Column, string> = {
     key: t("useColumnLabels.key"),
     headers: t("useColumnLabels.headers"),
     "offset-partition": t("useColumnLabels.offset-partition"),
     value: t("useColumnLabels.value"),
     size: t("useColumnLabels.size"),
-    timestamp: t("useColumnLabels.timestamp", { timeZone }),
+    timestamp: t("useColumnLabels.timestamp"),
     timestampUTC: t("useColumnLabels.timestampUTC"),
   };
   return columnLabels;

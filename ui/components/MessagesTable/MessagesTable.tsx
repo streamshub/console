@@ -245,22 +245,13 @@ export function MessagesTable({
                       case "timestamp":
                         return (
                           <Cell>
-                            <DateTime
-                              value={row.attributes.timestamp}
-                              dateStyle={"short"}
-                              timeStyle={"medium"}
-                            />
+                            <DateTime value={row.attributes.timestamp} />
                           </Cell>
                         );
                       case "timestampUTC":
                         return (
                           <Cell>
-                            <DateTime
-                              value={row.attributes.timestamp}
-                              dateStyle={"short"}
-                              timeStyle={"medium"}
-                              tz={"UTC"}
-                            />
+                            <DateTime value={row.attributes.timestamp} utc={true} />
                           </Cell>
                         );
                       case "key":
@@ -394,11 +385,7 @@ export function MessagesTable({
               className={"pf-v6-u-px-md pf-v6-u-py-sm"}
             >
               Last updated:{" "}
-              <DateTime
-                value={lastUpdated}
-                timeStyle={"medium"}
-                dateStyle={"short"}
-              />
+              <DateTime value={lastUpdated} />
             </Content>
           </Content>
         </DrawerContent>

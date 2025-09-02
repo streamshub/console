@@ -427,7 +427,7 @@
     "offset-partition": "Offset",
     "value": "Value",
     "size": "Size",
-    "timestamp": "Timestamp ({timeZone})",
+    "timestamp": "Timestamp (local)",
     "timestampUTC": "Timestamp (UTC)"
   },
   "ConfigTable": {
