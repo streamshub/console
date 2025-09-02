@@ -77,7 +77,7 @@ export function ChartDiskUsage({ usages, available }: ChartDiskUsageProps) {
             labelComponent={
               <ChartLegendTooltip
                 legendData={legendData}
-                title={(args) => formatDateTime(args?.x ?? 0)}
+                title={(args) => formatDateTime({ value: args?.x ?? 0 })}
               />
             }
             labels={({ datum }: { datum: Datum }) =>
@@ -102,7 +102,7 @@ export function ChartDiskUsage({ usages, available }: ChartDiskUsageProps) {
       >
         <ChartAxis
           scale={"time"}
-          tickFormat={(d) => formatDateTime(d, "HH:mm")}
+          tickFormat={(d) => formatDateTime({ value: d, format: "HH:mm" })}
           tickCount={5}
         />
         <ChartAxis

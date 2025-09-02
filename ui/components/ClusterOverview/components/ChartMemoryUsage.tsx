@@ -66,7 +66,7 @@ export function ChartMemoryUsage({ usages }: ChartDiskUsageProps) {
               <ChartLegendTooltip
                 legendData={legendData}
                 flyoutWidth={250}
-                title={(args) => formatDateTime(args?.x ?? 0)}
+                title={(args) => formatDateTime({ value: args?.x ?? 0 })}
               />
             }
             labels={({ datum }: { datum: Datum }) =>
@@ -91,7 +91,7 @@ export function ChartMemoryUsage({ usages }: ChartDiskUsageProps) {
       >
         <ChartAxis
           scale={"time"}
-          tickFormat={(d) => formatDateTime(d, "HH:mm")}
+          tickFormat={(d) => formatDateTime({ value: d, format: "HH:mm" })}
           tickCount={5}
         />
         <ChartAxis
