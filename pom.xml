@@ -163,7 +163,7 @@
             <dependency>
                 <groupId>io.sundr</groupId>
                 <artifactId>builder-annotations</artifactId>
-                <version>0.200.4</version>
+                <version>0.201.0</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -207,7 +207,7 @@
                         <dependency>
                             <groupId>com.puppycrawl.tools</groupId>
                             <artifactId>checkstyle</artifactId>
-                            <version>11.0.0</version>
+                            <version>11.0.1</version>
                         </dependency>
                     </dependencies>
                 </plugin>
