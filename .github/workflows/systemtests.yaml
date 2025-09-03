@@ -1,0 +1,155 @@
+name: Run System Tests
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  parse-and-run:
+    if: ${{ github.event.issue.pull_request && startsWith(github.event.comment.body, '@streamshub-bot run tests') }}
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Check Team Membership
+        id: team-check
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }} # needs `read:org` scope
+          script: |
+            const username = context.payload.comment.user.login;
+            const org = context.repo.owner;
+            const teamSlug = "console-developers";
+            
+            try {
+              const { data: membership } = await github.rest.teams.getMembershipForUserInOrg({
+                org,
+                team_slug: teamSlug,
+                username
+              });
+            
+              if (!membership || membership.state !== "active") {
+                core.setFailed(`❌ User ${username} is not in ${teamSlug}`);
+              }
+            } catch (err) {
+              core.setFailed(`❌ User ${username} is not in ${teamSlug}`);
+            }
+
+      - name: Ensure Build Workflow Succeeded
+        id: build-check
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { data: runs } = await github.rest.actions.listWorkflowRuns({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: "integration.yml",
+              branch: context.payload.issue.pull_request.head.ref,
+              event: "pull_request"
+            });
+            if (!runs.workflow_runs.length) {
+              core.setFailed("❌ No Build workflow runs found for this PR branch");
+            } else if (runs.workflow_runs[0].conclusion !== "success") {
+              core.setFailed("❌ Latest Build workflow did not succeed");
+            }
+
+      - name: Extract Parameters
+        id: parse
+        run: |
+          echo "COMMENT=${{ github.event.comment.body }}" >> $GITHUB_ENV
+          # Example parser: strip command and export key/values
+          COMMENT="${{ github.event.comment.body }}"
+          PARAMS=$(echo "$COMMENT" | sed 's/@bot run tests//')
+          echo "PARAMS=$PARAMS" >> $GITHUB_ENV
+          # Optional: split flags into env vars if you want
+          for arg in $PARAMS; do
+            if [[ "$arg" == --*=* ]]; then
+              key=$(echo "$arg" | cut -d= -f1 | sed 's/^--//')
+              val=$(echo "$arg" | cut -d= -f2-)
+              echo "${key^^}=$val" >> $GITHUB_ENV
+            fi
+          done
+
+      - name: Set Up JDK 17
+        uses: actions/setup-java@v5
+        with:
+          java-version: '17'
+          distribution: 'adopt'
+
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Download Images
+        uses: actions/download-artifact@v5
+        with:
+          name: streamshub-images
+
+      - name: Start minikube
+        id: minikube
+        uses: medyagh/setup-minikube@latest
+        with:
+          cpus: 2
+          memory: 8g
+          addons: registry,ingress,ingress-dns
+          insecure-registry: 'localhost:5000,10.0.0.0/24'
+          start-args: '--extra-config=kubeadm.ignore-preflight-errors=SystemVerification --extra-config=apiserver.authorization-mode=RBAC,Node'
+
+      - name: Set Dynamic Environment Vars
+        run: |
+          echo "PROJECT_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+          echo "CLUSTER_DOMAIN=$(minikube ip).nip.io" >> $GITHUB_ENV
+          echo "CONSOLE_URL=https://example-console.$(minikube ip).nip.io" >> $GITHUB_ENV
+          echo "CONSOLE_CLUSTER_DOMAIN=$CLUSTER_DOMAIN" >> $GITHUB_ENV
+          echo "CONSOLE_OLM_CATALOG_SOURCE_NAMESPACE=olm" >> $GITHUB_ENV
+
+      - name: Prepare minikube
+        run: |
+          set -x
+
+          sudo apt-get install -y socat
+          socat TCP-LISTEN:5000,reuseaddr,fork TCP:$(minikube ip):5000 &
+          SOCAT_PID=${!}
+
+          mkdir streamshub-images
+          tar -xzf streamshub-images.tgz -C streamshub-images
+
+          # Load images
+          skopeo sync --all --scoped --src dir --dest docker --dest-tls-verify=false \
+            streamshub-images/localhost:5000/streamshub \
+            localhost:5000/streamshub
+
+          kill ${SOCAT_PID}
+
+          # Enable TLS/SSL passthough
+          kubectl patch deployment -n ingress-nginx ingress-nginx-controller --type='json' -p='[{"op": "add", "path": "/spec/template/spec/containers/0/args/-", "value":"--enable-ssl-passthrough"}]'
+
+          # Install yq for deployment script
+          curl -L https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64 > yq && chmod +x yq
+          sudo cp -v yq /usr/bin/
+
+          # Install OLM
+          curl -sL https://github.com/operator-framework/operator-lifecycle-manager/releases/download/${OLM_VERSION}/install.sh | bash -s "${OLM_VERSION}"
+
+          # Create the namespace for the test resources
+          kubectl create namespace $TARGET_NAMESPACE
+
+      - name: Deploy Console Catalog
+        run: |
+          set -x
+
+          # Create the CatalogSource with the Console operator bundle
+          yq ea '.spec.image = "localhost:5000/streamshub/console-operator-catalog:${{ env.PROJECT_VERSION }}"' \
+            ./install/operator/olm/010-CatalogSource-console-operator-catalog.yaml \
+            | kubectl apply -n olm -f -
+
+          kubectl wait catalogsource/streamshub-console-catalog -n olm \
+            --for=jsonpath='{.status.connectionState.lastObservedState}'=READY \
+            --timeout=180s
+
+      - name: Run System Tests
+        run: |
+          echo "Running with params: $PARAMS"
+          mvn clean verify -B --no-transfer-progress \
+            -Dprofile=${PROFILE:-default} \
+            -Dit.test=${TESTCASE:-*} \
+            -Denv=${ENV:-local}
