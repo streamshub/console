@@ -5,10 +5,11 @@ import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.constants.TimeConstants;
 import com.github.streamshub.systemtests.enums.FilterType;
 import com.github.streamshub.systemtests.enums.TopicStatus;
-import com.github.streamshub.systemtests.logs.LogWrapper;
-import com.github.streamshub.systemtests.utils.playwright.PwUtils;
-import com.github.streamshub.systemtests.locators.CssSelectors;
+import com.github.streamshub.systemtests.locators.CssBuilder;
 import com.github.streamshub.systemtests.locators.TopicsPageSelectors;
+import com.github.streamshub.systemtests.logs.LogWrapper;
+import com.github.streamshub.systemtests.utils.Utils;
+import com.github.streamshub.systemtests.utils.playwright.PwUtils;
 import com.microsoft.playwright.Locator;
 import org.apache.logging.log4j.Logger;
 
@@ -27,32 +28,32 @@ public class TopicsTestUtils {
      * @param tcc                   the test case configuration containing the page context
      * @param selectorWithAttribute CSS selector to locate the element whose 'aria-sort' attribute is checked
      * @param selectorSortButton    CSS selector to locate the button that triggers sorting when clicked
-     * @param attributeVal          the desired value of the 'aria-sort' attribute to confirm selection
+     * @param expectedAttr          the desired value of the 'aria-sort' attribute to confirm selection
      */
-    public static void selectSortBy(TestCaseConfig tcc, String selectorWithAttribute, String selectorSortButton, String attributeVal) {
-        LOGGER.info("Select sort by with value {}", attributeVal);
-        for (int i = 0; i < Constants.SELECTOR_RETRIES; i++) {
-            Locator locator = CssSelectors.getLocator(tcc, selectorWithAttribute);
-            // Case 1: Locator is null or hidden
+    public static void selectSortBy(TestCaseConfig tcc, String selectorWithAttribute, String selectorSortButton, String expectedAttr) {
+        LOGGER.info("Select sort by with value {}", expectedAttr);
+        Utils.retryAction("Ensure topics table is sorted correctly", () -> {
+            PwUtils.removeFocus(tcc);
+            Locator locator = tcc.page().locator(selectorWithAttribute);
+
             if (locator == null || locator.isHidden()) {
-                LOGGER.warn("Locator is not present or its attribute is not present");
-                PwUtils.sleepWaitForComponent(TimeConstants.UI_COMPONENT_REACTION_INTERVAL_SHORT);
-                continue;
+                PwUtils.screenshot(tcc, tcc.kafkaName(), "topicStatusFilterInvisible");
+                throw new IllegalStateException("Locator was not visible");
             }
 
-            // Case 2: Locator is present but attribute is not equal to expected
-            String currentAttribute = locator.getAttribute("aria-sort");
-            if (currentAttribute == null || !currentAttribute.equals(attributeVal)) {
-                LOGGER.warn("Locator is present, but its attribute is not equal to {}", attributeVal);
+            String currentAttr = locator.getAttribute("aria-sort");
+            if (!expectedAttr.equals(currentAttr)) {
+                PwUtils.screenshot(tcc, tcc.kafkaName(), "topicStatusFilterIncorrect");
                 PwUtils.waitForLocatorAndClick(tcc, selectorSortButton);
-                PwUtils.sleepWaitForComponent(TimeConstants.UI_COMPONENT_REACTION_INTERVAL_SHORT);
-                continue;
+                throw new IllegalStateException(
+                    "Locator had aria-sort=" + currentAttr + ", expected=" + expectedAttr
+                );
             }
 
-            // Case 3: Matches desired value
-            break;
-        }
+            LOGGER.info("Locator attribute matched expected value: {}", expectedAttr);
+        }, Constants.SELECTOR_RETRIES);
     }
+
 
     /**
      * Selects a topic filter type from the filter dropdown in the UI.
@@ -69,30 +70,35 @@ public class TopicsTestUtils {
         LOGGER.debug("Selecting topic filter type [{}]", filterType.getName());
         PwUtils.waitForLocatorVisible(tcc, TopicsPageSelectors.TPS_TOP_TOOLBAR_FILTER_TYPE_DROPDOWN);
 
-        for (int i = 0; i < Constants.SELECTOR_RETRIES; i++) {
-            String currentText = CssSelectors.getLocator(tcc, TopicsPageSelectors.TPS_TOP_TOOLBAR_FILTER_TYPE_DROPDOWN).innerText();
+        Utils.retryAction("Select filter type " + filterType.getName(), () -> {
+            String currentText = tcc.page().locator(TopicsPageSelectors.TPS_TOP_TOOLBAR_FILTER_TYPE_DROPDOWN).innerText();
 
             LOGGER.debug("Filter type contains [{}]", currentText);
 
-            // Break if the filter type is already correctly set
+            // Already correct - stop retrying
             if (currentText != null && currentText.contains(filterType.getName())) {
-                LOGGER.debug("Filter [{}] selected", filterType.getName());
-                break;
+                LOGGER.debug("Filter [{}] already selected", filterType.getName());
+                return;
             }
 
-            // Attempt to open the dropdown
+            // Try to select the filter
             PwUtils.waitForLocatorAndClick(tcc, TopicsPageSelectors.TPS_TOP_TOOLBAR_FILTER_TYPE_DROPDOWN);
 
-            // Select the item if it's visible
-            Locator dropdownItem = CssSelectors.getLocator(tcc, TopicsPageSelectors.TPS_TOP_TOOLBAR_FILTER_TYPE_DROPDOWN_ITEMS).nth(filterType.getPosition());
+            String dropdownItem = new CssBuilder(TopicsPageSelectors.TPS_TOP_TOOLBAR_FILTER_TYPE_DROPDOWN_ITEMS)
+                .nth(filterType.getPosition())
+                .build();
 
-            if (dropdownItem.isVisible()) {
-                PwUtils.clickWithRetry(dropdownItem);
+            if (tcc.page().locator(dropdownItem).isVisible()) {
+                PwUtils.waitForLocatorAndClick(tcc, dropdownItem);
             } else {
                 LOGGER.warn("Filter type in dropdown [{}] not visible", filterType.getName());
             }
-        }
+
+            // Fail this attempt so retryAction will try again
+            throw new IllegalStateException("Filter [" + filterType.getName() + "] not yet selected");
+        }, Constants.SELECTOR_RETRIES);
     }
+
 
     /**
      * Selects a topic status filter from the status dropdown in the UI.
@@ -108,30 +114,38 @@ public class TopicsTestUtils {
     public static void selectTopicStatus(TestCaseConfig tcc, TopicStatus topicStatus) {
         LOGGER.debug("Selecting topic status [{}]", topicStatus.getName());
         PwUtils.waitForLocatorVisible(tcc, TopicsPageSelectors.TPS_TOP_TOOLBAR_FILTER_BY_STATUS_DROPDOWN);
-        for (int i = 0; i < Constants.SELECTOR_RETRIES; i++) {
-            String currentFilters = CssSelectors.getLocator(tcc, TopicsPageSelectors.TPS_TOP_TOOLBAR_SEARCH_CURRENT_STATUS_ITEMS).allInnerTexts().toString();
+
+        Utils.retryAction("Select topic status " + topicStatus.getName(), () -> {
+            String currentFilters = tcc.page()
+                .locator(TopicsPageSelectors.TPS_TOP_TOOLBAR_SEARCH_CURRENT_STATUS_ITEMS)
+                .allInnerTexts()
+                .toString();
 
             LOGGER.debug("Locator contains {}", currentFilters);
-            // Break the loop if the expected status is present
+
+            // Already selected - success
             if (currentFilters != null && currentFilters.contains(topicStatus.getName())) {
                 LOGGER.debug("Topic status [{}] selected", topicStatus.getName());
-                break;
+                return;
             }
 
-            // Open status dropdown
+            // Try selecting it
             tcc.page().focus(TopicsPageSelectors.TPS_TOP_TOOLBAR_FILTER_BY_STATUS_DROPDOWN);
             PwUtils.waitForLocatorAndClick(tcc, TopicsPageSelectors.TPS_TOP_TOOLBAR_FILTER_BY_STATUS_DROPDOWN);
-            PwUtils.sleepWaitForComponent(TimeConstants.UI_COMPONENT_REACTION_INTERVAL_SHORT);
+            Utils.sleepWait(TimeConstants.UI_COMPONENT_REACTION_INTERVAL_SHORT);
 
-            // Wait for dropdown item and click
-            Locator dropdownItem = CssSelectors.getLocator(tcc, TopicsPageSelectors.TPS_TOP_TOOLBAR_FILTER_BY_STATUS_DROPDOWN_ITEMS).nth(topicStatus.getPosition());
+            String dropdownItemInput = new CssBuilder(TopicsPageSelectors.TPS_TOP_TOOLBAR_FILTER_BY_STATUS_DROPDOWN_ITEMS)
+                .nth(topicStatus.getPosition())
+                .withDesc()
+                .withElementInput()
+                .build();
 
-            if (dropdownItem.isVisible()) {
-                PwUtils.clickWithRetry(dropdownItem);
-                PwUtils.sleepWaitForComponent(TimeConstants.UI_COMPONENT_REACTION_INTERVAL_SHORT);
-            } else {
-                LOGGER.warn("Dropdown item topic status [{}] not visible", topicStatus.getName());
-            }
-        }
+            PwUtils.waitForLocatorAndClick(tcc, dropdownItemInput);
+            Utils.sleepWait(TimeConstants.UI_COMPONENT_REACTION_INTERVAL_SHORT);
+
+            // Fail this attempt so retryAction retries if needed
+            throw new IllegalStateException("Topic status [" + topicStatus.getName() + "] not yet selected");
+        }, Constants.SELECTOR_RETRIES);
     }
+
 }

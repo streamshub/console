@@ -17,15 +17,27 @@ public class TestExecutionWatcher implements TestExecutionExceptionHandler, Life
 
     @Override
     public void handleTestExecutionException(ExtensionContext extensionContext, Throwable throwable) throws Throwable {
-        LOGGER.error("{} - Exception {} has been thrown in @Test. Going to collect logs from components.", extensionContext.getRequiredTestClass().getSimpleName(), throwable.getMessage());
+        LOGGER.error("{} - Exception [{}] has been thrown in @Test. Going to collect logs from components.",
+            extensionContext.getRequiredTestClass().getSimpleName(), throwable);
 
         // In case of test failure, make screenshot of the last page state
-        TestCaseConfig tcc  = KubeResourceManager.get().getTestContext()
+
+        // First try if the testCase has it's own TestCaseConfig stored
+        TestCaseConfig tcc = KubeResourceManager.get().getTestContext()
             .getStore(ExtensionContext.Namespace.GLOBAL)
             .get(KubeResourceManager.get().getTestContext().getUniqueId(), TestCaseConfig.class);
+
+        // If not check in testClass for shared TestCaseConfig in beforeAll
+        if (tcc == null) {
+            tcc = KubeResourceManager.get().getTestContext()
+                .getStore(ExtensionContext.Namespace.GLOBAL)
+                .get(extensionContext.getParent().get().getUniqueId(), TestCaseConfig.class);
+        }
+
         if (tcc != null) {
             LOGGER.error("Exception has been thrown. Last known page url {}", tcc.page().url());
             PwUtils.screenshot(tcc, tcc.kafkaName(), "exception");
+            PwUtils.saveTracing(tcc.context());
         } else {
             LOGGER.error("Exception has been thrown, but no TestCaseConfig instance was stored in the ExtensionContext");
         }
@@ -41,7 +53,7 @@ public class TestExecutionWatcher implements TestExecutionExceptionHandler, Life
 
     @Override
     public void handleBeforeAllMethodExecutionException(ExtensionContext extensionContext, Throwable throwable) throws Throwable {
-        LOGGER.error("[BeforeAll@{}] Thrown Exception [{}]. Going to collect logs from components.", extensionContext.getRequiredTestClass().getSimpleName(), throwable.getMessage());
+        LOGGER.error("[BeforeAll@{}] Thrown Exception [{}]. Going to collect logs from components.", extensionContext.getRequiredTestClass().getSimpleName(), throwable);
         if (!(throwable instanceof TestAbortedException || throwable instanceof ClusterUnreachableException)) {
             final String testClass = extensionContext.getRequiredTestClass().getName();
 
@@ -52,7 +64,7 @@ public class TestExecutionWatcher implements TestExecutionExceptionHandler, Life
 
     @Override
     public void handleBeforeEachMethodExecutionException(ExtensionContext extensionContext, Throwable throwable) throws Throwable {
-        LOGGER.error("[BeforeEach@{}] Thrown Exception [{}]. Going to collect logs from components.", extensionContext.getRequiredTestClass().getSimpleName(), throwable.getMessage());
+        LOGGER.error("[BeforeEach@{}] Thrown Exception [{}]. Going to collect logs from components.", extensionContext.getRequiredTestClass().getSimpleName(), throwable);
         if (!(throwable instanceof TestAbortedException || throwable instanceof ClusterUnreachableException)) {
             final String testClass = extensionContext.getRequiredTestClass().getName();
             final String testMethod = extensionContext.getRequiredTestMethod().getName();
@@ -64,7 +76,7 @@ public class TestExecutionWatcher implements TestExecutionExceptionHandler, Life
 
     @Override
     public void handleAfterEachMethodExecutionException(ExtensionContext extensionContext, Throwable throwable) throws Throwable {
-        LOGGER.error("[AfterEach@{}] Thrown Exception [{}]. Going to collect logs from components.", extensionContext.getRequiredTestClass().getSimpleName(), throwable.getMessage());
+        LOGGER.error("[AfterEach@{}] Thrown Exception [{}]. Going to collect logs from components.", extensionContext.getRequiredTestClass().getSimpleName(), throwable);
         if (!(throwable instanceof ClusterUnreachableException)) {
             final String testClass = extensionContext.getRequiredTestClass().getName();
             final String testMethod = extensionContext.getRequiredTestMethod().getName();
@@ -76,7 +88,7 @@ public class TestExecutionWatcher implements TestExecutionExceptionHandler, Life
 
     @Override
     public void handleAfterAllMethodExecutionException(ExtensionContext extensionContext, Throwable throwable) throws Throwable {
-        LOGGER.error("[AfterAll@{}] Thrown Exception [{}]. Going to collect logs from components.", extensionContext.getRequiredTestClass().getSimpleName(), throwable.getMessage());
+        LOGGER.error("[AfterAll@{}] Thrown Exception [{}]. Going to collect logs from components.", extensionContext.getRequiredTestClass().getSimpleName(), throwable);
         if (!(throwable instanceof ClusterUnreachableException)) {
             final String testClass = extensionContext.getRequiredTestClass().getName();
 

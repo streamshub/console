@@ -1,11 +1,11 @@
 package com.github.streamshub.systemtests.enums;
 
 public enum TopicStatus {
-    FULLY_REPLICATED("Fully replicated", 0),
-    UNDER_REPLICATED("Under replicated", 1),
-    PARTIALLY_OFFLINE("Partially offline", 2),
-    UNKNOWN("Unknown", 3),
-    OFFLINE("Offline", 4);
+    FULLY_REPLICATED("Fully replicated", 1),
+    UNDER_REPLICATED("Under replicated", 2),
+    PARTIALLY_OFFLINE("Partially offline", 3),
+    UNKNOWN("Unknown", 4),
+    OFFLINE("Offline", 5);
 
     private final String name;
     private final int position;
