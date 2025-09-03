@@ -60,17 +60,26 @@ jobs:
         env:
           COMMENT: ${{ github.event.comment.body }}
         run: |
-          echo "COMMENT=$COMMENT" >> $GITHUB_ENV
-          # Strip command and export key/values
-          PARAMS=$(echo "$COMMENT" | sed 's/@streamshub-bot test//')
+          # Strip the command and get only flags
+          PARAMS=$(echo "$COMMENT" | sed 's/@streamshub-bot run tests//')
           echo "PARAMS=$PARAMS" >> $GITHUB_ENV
-          # Split flags into env vars
+          
+          # Set defaults
+          echo "TESTCASE=" >> $GITHUB_ENV
+          echo "PROFILE=" >> $GITHUB_ENV
+          echo "INSTALL_TYPE=olm" >> $GITHUB_ENV
+          echo "RETRY_COUNT=4" >> $GITHUB_ENV
+          echo "EXTRA_ENV=" >> $GITHUB_ENV
+          
+          # Parse flags
           for arg in $PARAMS; do
-            if [[ "$arg" == --*=* ]]; then
-              key=$(echo "$arg" | cut -d= -f1 | sed 's/^--//')
-              val=$(echo "$arg" | cut -d= -f2-)
-              echo "${key^^}=$val" >> $GITHUB_ENV
-            fi
+            case $arg in
+              --testcase=*)     echo "TESTCASE=${arg#*=}" >> $GITHUB_ENV ;;
+              --profile=*)      echo "PROFILE=${arg#*=}" >> $GITHUB_ENV ;;
+              --install-type=*) echo "INSTALL_TYPE=${arg#*=}" >> $GITHUB_ENV ;;
+              --retry-count=*)  echo "RETRY_COUNT=${arg#*=}" >> $GITHUB_ENV ;;
+              --env=*)          echo "EXTRA_ENV=${arg#*=}" >> $GITHUB_ENV ;;
+            esac
           done
 
       - name: Set Up JDK 17
