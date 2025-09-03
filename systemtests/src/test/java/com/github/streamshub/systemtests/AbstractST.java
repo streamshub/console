@@ -3,6 +3,7 @@ package com.github.streamshub.systemtests;
 import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.constants.Labels;
 import com.github.streamshub.systemtests.interfaces.ExtensionContextParameterResolver;
+import com.github.streamshub.systemtests.interfaces.BucketMethodsOrderRandomizer;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.resourcetypes.ConsoleType;
 import com.github.streamshub.systemtests.resourcetypes.KafkaTopicType;
@@ -38,6 +39,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.slf4j.event.Level;
@@ -50,13 +52,41 @@ import java.io.IOException;
 @SuppressWarnings("ClassDataAbstractionCoupling")
 @ExtendWith({TestExecutionWatcher.class})
 @ExtendWith(ExtensionContextParameterResolver.class)
+@TestMethodOrder(BucketMethodsOrderRandomizer.class)
 public abstract class AbstractST {
     private static final Logger LOGGER = LogWrapper.getLogger(AbstractST.class);
+    private static boolean initialized = false;
     // Operators
     protected final StrimziOperatorSetup strimziOperatorSetup = new StrimziOperatorSetup(Constants.CO_NAMESPACE);
     protected final ConsoleOperatorSetup consoleOperatorSetup = new ConsoleOperatorSetup(Constants.CO_NAMESPACE);
 
-    static {
+    /**
+     * Initializes the testing tools and Kubernetes resource manager for system tests.
+     *
+     * <p>This method ensures that resource types, callbacks, and logging
+     * configurations are set up only once, at the start of test execution.
+     * Calling it multiple times has no effect after the first invocation.</p>
+     *
+     * <p>Unlike placing this logic in a {@code static {}} block, this method
+     * avoids executing prematurely when the test listener scans class names
+     * and methods, preventing unwanted logging or side effects before actual
+     * test cases run.</p>
+     *
+     * <p>Specifically, it:</p>
+     * <ul>
+     *   <li>Registers all custom Kubernetes resource types used in the tests.</li>
+     *   <li>Adds a callback to label newly created namespaces for log collection.</li>
+     *   <li>Configures the path for storing YAML representations of resources.</li>
+     *   <li>Logs the environment configuration and saves it to a file.</li>
+     * </ul>
+     */
+
+    void init() {
+        if (initialized) {
+            return;
+        }
+        initialized = true;
+
         KubeResourceManager.get().setResourceTypes(
             new CustomResourceDefinitionType(),
             new ClusterRoleBindingType(),
@@ -94,8 +124,11 @@ public abstract class AbstractST {
         }
     }
 
+
     @BeforeAll
     void setupTestSuite(ExtensionContext extensionContext) {
+        init();
+
         KubeResourceManager.get().setTestContext(extensionContext);
         NamespaceUtils.prepareNamespace(Constants.CO_NAMESPACE);
         strimziOperatorSetup.install();

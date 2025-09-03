@@ -192,7 +192,7 @@ public class KafkaST extends AbstractST {
         // with broker role
         PwUtils.waitForContainsText(tcc, new CssBuilder(NodesPageSelectors.NPS_OVERVIEW_NODE_ITEMS).nth(3).build(), Integer.toString(Constants.REGULAR_BROKER_REPLICAS), true);
         // Node table
-        assertEquals(Constants.REGULAR_BROKER_REPLICAS + Constants.REGULAR_CONTROLLER_REPLICAS, CssSelectors.getLocator(tcc, NodesPageSelectors.NPS_TABLE_BODY).all().size());
+        assertEquals(Constants.REGULAR_BROKER_REPLICAS + Constants.REGULAR_CONTROLLER_REPLICAS, tcc.page().locator(NodesPageSelectors.NPS_TABLE_BODY).all().size());
 
         // Scale brokers
         LOGGER.debug("Scale Kafka brokers to {}", scaledBrokersCount);
@@ -228,7 +228,7 @@ public class KafkaST extends AbstractST {
         // with broker role
         PwUtils.waitForContainsText(tcc, new CssBuilder(NodesPageSelectors.NPS_OVERVIEW_NODE_ITEMS).nth(3).build(), Integer.toString(scaledBrokersCount), true);
         // Node table
-        assertEquals(scaledBrokersCount + Constants.REGULAR_CONTROLLER_REPLICAS, CssSelectors.getLocator(tcc, NodesPageSelectors.NPS_TABLE_BODY).all().size());
+        assertEquals(scaledBrokersCount + Constants.REGULAR_CONTROLLER_REPLICAS, tcc.page().locator(NodesPageSelectors.NPS_TABLE_BODY).all().size());
 
         // Scale brokers down
         // Note: It is not possible to scale controllers down due to inability to change dynamically quorums https://github.com/strimzi/strimzi-kafka-operator/issues/9429
@@ -262,7 +262,7 @@ public class KafkaST extends AbstractST {
         // with broker role
         PwUtils.waitForContainsText(tcc, new CssBuilder(NodesPageSelectors.NPS_OVERVIEW_NODE_ITEMS).nth(3).build(), Integer.toString(Constants.REGULAR_BROKER_REPLICAS), true);
         // Node table
-        assertEquals(Constants.REGULAR_BROKER_REPLICAS + Constants.REGULAR_CONTROLLER_REPLICAS, CssSelectors.getLocator(tcc, NodesPageSelectors.NPS_TABLE_BODY).all().size());
+        assertEquals(Constants.REGULAR_BROKER_REPLICAS + Constants.REGULAR_CONTROLLER_REPLICAS, tcc.page().locator(NodesPageSelectors.NPS_TABLE_BODY).all().size());
     }
 
     /**
@@ -285,7 +285,7 @@ public class KafkaST extends AbstractST {
         // Check warnings list
         LOGGER.debug("Verify warnings list contains only one row with `No messages` text");
         PwUtils.waitForLocatorVisible(tcc, ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_WARNING_MESSAGE_ITEMS);
-        PwUtils.waitForLocatorCount(tcc, 1,  CssSelectors.getLocator(tcc, ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_WARNING_MESSAGE_ITEMS), true);
+        PwUtils.waitForLocatorCount(tcc, 1,  ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_WARNING_MESSAGE_ITEMS, true);
         PwUtils.waitForContainsText(tcc, new CssBuilder(ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_WARNING_MESSAGE_ITEMS).nth(1).build(), MessageStore.clusterCardNoMessages(), true);
 
         // Make kafka fail
@@ -331,7 +331,7 @@ public class KafkaST extends AbstractST {
         PwUtils.waitForLocatorAndClick(tcc, ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_WARNINGS_DROPDOWN_BUTTON);
 
         PwUtils.waitForLocatorVisible(tcc, ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_WARNING_MESSAGE_ITEMS);
-        PwUtils.waitForLocatorCount(tcc, 1,  CssSelectors.getLocator(tcc, ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_WARNING_MESSAGE_ITEMS), true);
+        PwUtils.waitForLocatorCount(tcc, 1,  ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_WARNING_MESSAGE_ITEMS, true);
         PwUtils.waitForContainsText(tcc, new CssBuilder(ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_WARNING_MESSAGE_ITEMS).nth(1).build(), MessageStore.clusterCardNoMessages(), true);
     }
 
