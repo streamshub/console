@@ -1,4 +1,6 @@
 name: Run System Tests
+permissions:
+  contents: read
 
 on:
   issue_comment:
@@ -6,7 +8,7 @@ on:
 
 jobs:
   parse-and-run:
-    if: ${{ github.event.issue.pull_request && startsWith(github.event.comment.body, '@streamshub-bot run tests') }}
+    if: ${{ github.event.issue.pull_request && startsWith(github.event.comment.body, '@streamshub-bot test') }}
     runs-on: ubuntu-24.04
 
     steps:
@@ -55,13 +57,15 @@ jobs:
 
       - name: Extract Parameters
         id: parse
+        env:
+          COMMENT: ${{ github.event.comment.body }}
         run: |
-          echo "COMMENT=${{ github.event.comment.body }}" >> $GITHUB_ENV
-          # Example parser: strip command and export key/values
+          echo "COMMENT=$COMMENT" >> $GITHUB_ENV
+          # Strip command and export key/values
           COMMENT="${{ github.event.comment.body }}"
-          PARAMS=$(echo "$COMMENT" | sed 's/@bot run tests//')
+          PARAMS=$(echo "$COMMENT" | sed 's/@streamshub-bot test//')
           echo "PARAMS=$PARAMS" >> $GITHUB_ENV
-          # Optional: split flags into env vars if you want
+          # Split flags into env vars
           for arg in $PARAMS; do
             if [[ "$arg" == --*=* ]]; then
               key=$(echo "$arg" | cut -d= -f1 | sed 's/^--//')
