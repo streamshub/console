@@ -1,5 +1,7 @@
-package com.github.streamshub.systemtests;
+package com.github.streamshub.systemtests.messages;
 
+import com.github.streamshub.systemtests.AbstractST;
+import com.github.streamshub.systemtests.TestCaseConfig;
 import com.github.streamshub.systemtests.annotations.SetupTestBucket;
 import com.github.streamshub.systemtests.annotations.TestBucket;
 import com.github.streamshub.systemtests.clients.KafkaClients;
