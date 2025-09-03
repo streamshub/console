@@ -62,7 +62,6 @@ jobs:
         run: |
           echo "COMMENT=$COMMENT" >> $GITHUB_ENV
           # Strip command and export key/values
-          COMMENT="${{ github.event.comment.body }}"
           PARAMS=$(echo "$COMMENT" | sed 's/@streamshub-bot test//')
           echo "PARAMS=$PARAMS" >> $GITHUB_ENV
           # Split flags into env vars
