@@ -265,13 +265,16 @@ export function ConnectorDetails({
                   switch (column) {
                     case "property":
                       return (
-                        <Td key={key} dataLabel={t("ConfigTable.property")}>
+                        <Td
+                          key={key}
+                          dataLabel={t("connectors.config.property")}
+                        >
                           {name}
                         </Td>
                       );
                     case "value":
                       return (
-                        <Td key={key} dataLabel={t("ConfigTable.value")}>
+                        <Td key={key} dataLabel={t("connectors.config.value")}>
                           {value ?? "-"}
                         </Td>
                       );
