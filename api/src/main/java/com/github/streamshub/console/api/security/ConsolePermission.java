@@ -7,7 +7,11 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Predicate;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
+import org.jboss.logging.Logger;
 
 import com.github.streamshub.console.config.security.Privilege;
 
@@ -16,6 +20,10 @@ import static java.util.function.Predicate.not;
 public final class ConsolePermission extends Permission {
 
     private static final long serialVersionUID = 1L;
+    private static final Logger log = Logger.getLogger(ConsolePermission.class);
+
+    static final String UNMATCHABLE = ConsolePermission.class.getName() + ".UNMATCHABLE";
+
     public static final String ACTIONS_SEPARATOR = ",";
 
     private final String resource;
@@ -23,13 +31,14 @@ public final class ConsolePermission extends Permission {
     private Collection<String> resourceNames;
     private transient Optional<Collection<String>> resourceNamesDisplay = Optional.empty();
     private final Set<Privilege> actions;
+    private transient Predicate<String> resourceNamePredicate;
 
     public ConsolePermission(String resource, String resourceDisplay, Collection<String> resourceNames, Privilege... actions) {
         super("console");
         this.resource = resource;
         this.resourceDisplay = Optional.ofNullable(resourceDisplay);
-        this.resourceNames = resourceNames;
         this.actions = checkActions(actions);
+        setResourceNames(resourceNames);
     }
 
     public ConsolePermission(String resource, Collection<String> resourceNames, Privilege... actions) {
@@ -53,13 +62,67 @@ public final class ConsolePermission extends Permission {
     }
 
     ConsolePermission resourceName(String resourceName) {
-        this.resourceNames = Collections.singleton(resourceName);
+        setResourceNames(Collections.singleton(resourceName));
         return this;
     }
 
     ConsolePermission resourceNamesDisplay(Collection<String> resourceNamesDisplay) {
         this.resourceNamesDisplay = Optional.ofNullable(resourceNamesDisplay);
         return this;
+    }
+
+    static boolean isDelimitedRegex(String value) {
+        return value.length() > 1 && value.startsWith("/") && value.endsWith("/");
+    }
+
+    private boolean allUnmatchable(Collection<String> resourceNames) {
+        return !resourceNames.isEmpty() && resourceNames.stream().allMatch(UNMATCHABLE::equals);
+    }
+
+    private void setResourceNames(Collection<String> resourceNames) {
+        this.resourceNames = new HashSet<>(resourceNames);
+        boolean allUnmatchable = allUnmatchable(this.resourceNames);
+        this.resourceNames.removeIf(UNMATCHABLE::equals);
+
+        if (allUnmatchable) {
+            this.resourceNamePredicate = x -> false;
+        } else if (this.resourceNames.isEmpty()) {
+            this.resourceNamePredicate = null;
+        } else {
+            resourceNamePredicate = resourceNames.stream()
+                    .filter(Objects::nonNull)
+                    .map(name -> {
+                        Predicate<String> predicate;
+
+                        if (isDelimitedRegex(name)) {
+                            predicate = regexPredicate(name);
+                        } else if (name.endsWith("*")) {
+                            String match = name.substring(0, name.length() - 1);
+                            predicate = value -> value.startsWith(match);
+                        } else {
+                            predicate = name::equals;
+                        }
+
+                        return predicate;
+                    })
+                    .reduce(x -> false, Predicate::or);
+        }
+    }
+
+    Predicate<String> regexPredicate(String name) {
+        Pattern pattern = Pattern.compile(name.substring(1, name.length() - 1));
+        return value -> {
+            boolean matched = pattern.matcher(value).matches();
+            if (log.isDebugEnabled()) {
+                String matchMsg = matched ? "matched" : "did not match";
+                log.debugf("Resource %s %s regex pattern %s", value, matchMsg, pattern);
+            }
+            return matched;
+        };
+    }
+
+    private boolean matchesAnyResourceName() {
+        return Objects.isNull(resourceNamePredicate);
     }
 
     @Override
@@ -98,7 +161,7 @@ public final class ConsolePermission extends Permission {
             return true;
         }
 
-        if (resourceNames.isEmpty()) {
+        if (this.matchesAnyResourceName()) {
             /*
              * Configuration does not specify any resource names, so
              * access to any is allowed.
@@ -106,7 +169,7 @@ public final class ConsolePermission extends Permission {
             return false;
         }
 
-        if (requiredPermission.resourceNames.isEmpty()) {
+        if (requiredPermission.matchesAnyResourceName()) {
             /*
              * Configuration specifies named resources, but this request
              * has no resource name. I.e., the request is for an index/list
@@ -119,18 +182,7 @@ public final class ConsolePermission extends Permission {
         /*
          * Deny when any of the required names are not given in configuration.
          */
-        return requiredPermission.resourceNames.stream().anyMatch(not(this::matchesResourceName));
-    }
-
-    boolean matchesResourceName(String requiredName) {
-        if (resourceNames.contains(requiredName)) {
-            return true;
-        }
-
-        return resourceNames.stream()
-                .filter(n -> n.endsWith("*"))
-                .map(n -> n.substring(0, n.length() - 1))
-                .anyMatch(requiredName::startsWith);
+        return requiredPermission.resourceNames.stream().anyMatch(not(resourceNamePredicate));
     }
 
     @Override
