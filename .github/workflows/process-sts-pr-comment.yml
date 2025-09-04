@@ -1,0 +1,138 @@
+name: Process PR comment
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  process-comment:
+    if: ${{ github.event.issue.pull_request && startsWith(github.event.comment.body, '/systemtests') }}
+    runs-on: ubuntu-latest
+    env:
+      # CHANGE THIS
+      ORG: StreamzHubOrg
+      TEAM: streamzhub-developers
+      PR_NUMBER: ${{ github.event.issue.number }}
+      REPO: ${{ github.repository }}
+      RUN_ID: ${{ github.run_id }}
+      MESSAGE_BODY: ${{ github.event.comment.body }}
+      GH_TOKEN: ${{ secrets.GH_FULL_ORG_TOKEN }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Validate user
+        run: |
+          echo "Fetching team members for $ORG/$TEAM..."
+          members=$(gh api "orgs/$ORG/teams/$TEAM/members" --jq '.[].login' --paginate)
+          
+          if [ -z "$members" ]; then
+            echo "❌ Unable to get team members"
+            exit 1
+          fi
+          
+          commenter="${{ github.event.comment.user.login }}"
+          echo "Checking if $commenter is in the team..."
+          
+          if echo "$members" | grep -qw "$commenter"; then
+            echo "✅ $commenter IS a member of $ORG/$TEAM"
+          else
+            gh pr comment $PR_NUMBER --repo $REPO --body "❌ $commenter is not allowed to use this"
+            exit 1
+          fi
+
+      - name: Help comment
+        if: ${{ contains(github.event.comment.body, '--help') }}
+        run: |
+          cat > help.md <<- "MESSAGE"
+          ## ℹ️ Systemtests Help ℹ️
+          You can run system tests with the following parameters:
+          * `--testcase=<name>` (optional): Run a specific test case. Use Maven style, e.g. [TopicST | KafkaST#testKafkaTwo...]
+          * `--profile=<profile>` (optional): Profile to use, e.g. [regression]
+          * `--env=<VAR1=val1;VAR2=val2>` (optional): Set environment variables for the test
+          * `--install-type=<olm|yaml>` (optional): Choose installation type. Default is [olm]
+          * `--retry-count=<number>` (optional): Number of Maven retries. Default is [0]
+          * `--help`: Show this help message
+          
+          Note: Use either `--testcase` or `--profile` to select tests to run, setting both will result in
+          github actions prioretizing testcase over profile. If neither is provided, no systemtest will start.
+          
+          ### Example usage:
+          ```bash
+            /systemtests run --profile=regression --env=MY_ENV=one;SECOND=two
+            /systemtests run --testcase=TopicST --install-type=olm --retry-count=3
+          ```
+          MESSAGE
+            
+          gh pr comment $PR_NUMBER --repo $REPO --body-file help.md
+          
+          echo "Help requested. Exiting workflow."
+          gh run cancel $RUN_ID --repo $REPO
+
+      - name: Parse environment variables from comment
+        id: parse_env
+        run: |
+          echo "Parsing message $MESSAGE_BODY"
+
+          # Extract optional flags (sed deals with potential format of --flag=value and --flag value)
+          testcase=$(echo "$MESSAGE_BODY" | sed -nE 's/.*--testcase[= ]+([^[:space:]]+).*/\1/p')
+          profile=$(echo "$MESSAGE_BODY" | sed -nE 's/.*--profile[= ]+([^[:space:]]+).*/\1/p')
+          env_str=$(echo "$MESSAGE_BODY" | sed -nE 's/.*--env[= ]+([^[:space:]]+).*/\1/p')
+          
+          install_type=$(echo "$MESSAGE_BODY" | grep -oE -- '--install-type=[^ ]+' | cut -d= -f2- | tr '[:upper:]' '[:lower:]')
+          if [[ -n "$install_type" && "$install_type" != "olm" && "$install_type" != "yaml" ]]; then
+            echo "❌ Invalid --install-type value: $install_type. Must be 'olm' or 'yaml'."
+            exit 1
+          fi
+          
+          retry_count=$(echo "$MESSAGE_BODY" | grep -oE -- '--retry-count=[0-9]+' | cut -d= -f2-)
+          if [[ -n "$retry_count" && ! "$retry_count" =~ ^[0-9]+$ ]]; then
+            echo "❌ Invalid --retry-count value: $retry_count. Must be a positive integer."
+            exit 1
+          fi
+          
+          # Apply defaults if empty
+          install_type="${install_type:-olm}"
+          retry_count="${retry_count:-0}"
+
+          # Export as step outputs
+          echo "testcase=$testcase" >> $GITHUB_OUTPUT
+          echo "profile=$profile" >> $GITHUB_OUTPUT
+          echo "env_str=$env_str" >> $GITHUB_OUTPUT
+          echo "install_type=$install_type" >> $GITHUB_OUTPUT
+          echo "retry_count=$retry_count" >> $GITHUB_OUTPUT
+          
+          # Export current PR branch latest commit sha
+          commit_sha=$(gh pr view $PR_NUMBER --json headRefOid -q '.headRefOid')
+          echo "commit_sha=$commit_sha" >> $GITHUB_OUTPUT
+
+      - name: Check if Build workflow succeeded
+        if: ${{ startsWith(github.event.comment.body, '/systemtests run') }}
+        run: |
+          BRANCH=$(gh pr view ${{ github.event.issue.number }} --json headRefName -q '.headRefName')
+          echo "Fetching latest Build workflow run for branch $BRANCH..."
+          
+          BUILD_RUN=$(gh api "repos/$REPO/actions/workflows/integration.yml/runs?branch=$BRANCH&per_page=1" \
+            --jq '.workflow_runs[0].conclusion')
+          
+          echo "Build workflow latest run conclusion: $BUILD_RUN"
+          
+          if [ "$BUILD_RUN" != "success" ]; then
+            gh pr comment $PR_NUMBER --repo $REPO --edit-last --create-if-none --body "❌ Build did not succeed. Cannot trigger systemtests"
+            exit 1
+          fi
+
+      - name: Invoke workflow in another repo with inputs
+        uses: benc-uk/workflow-dispatch@v1
+        with:
+          token: ${{ secrets.GH_FULL_ORG_TOKEN }}
+          workflow: systemtests.yml
+          inputs: >
+            {
+              "commit_sha": "${{ steps.parse_env.outputs.commit_sha }}",
+              "testcase": "${{ steps.parse_env.outputs.testcase }}",
+              "profile": "${{ steps.parse_env.outputs.profile }}",
+              "install_type": "${{ steps.parse_env.outputs.install_type }}",
+              "retry_count": "${{ steps.parse_env.outputs.retry_count }}",
+              "env_str": "${{ steps.parse_env.outputs.env_str }}"
+            }
