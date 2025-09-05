@@ -1,5 +1,7 @@
 package com.github.streamshub.systemtests;
 
+import com.github.streamshub.systemtests.annotations.SetupTestBucket;
+import com.github.streamshub.systemtests.annotations.TestBucket;
 import com.github.streamshub.systemtests.clients.KafkaClients;
 import com.github.streamshub.systemtests.clients.KafkaClientsBuilder;
 import com.github.streamshub.systemtests.constants.Constants;
@@ -18,9 +20,7 @@ import com.github.streamshub.systemtests.utils.resourceutils.KafkaNamingUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.KafkaTopicUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.KafkaUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.NamespaceUtils;
-import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
 import io.skodjob.testframe.resources.KubeResourceManager;
-import io.strimzi.api.kafka.model.topic.KafkaTopic;
 import org.apache.kafka.common.security.auth.SecurityProtocol;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.AfterAll;
@@ -39,6 +39,7 @@ import static com.github.streamshub.systemtests.utils.Utils.getTestCaseConfig;
 @Tag(TestTags.REGRESSION)
 public class MessagesST extends AbstractST {
     private static final Logger LOGGER = LogWrapper.getLogger(MessagesST.class);
+    private static final String VARIOUS_MESSAGE_TYPES_BUCKET = "VariousMessageTypes";
     private TestCaseConfig tcc;
 
     private static final String TOPIC_PREFIX = "filter-messages";
@@ -119,9 +120,10 @@ public class MessagesST extends AbstractST {
      */
     @ParameterizedTest(name = "Query: {1}")
     @MethodSource("searchUsingQueryScenarios")
+    @TestBucket(VARIOUS_MESSAGE_TYPES_BUCKET)
     void testMessageSearchUsingQueries(int expectedResults, String searchQuery, Map<String, String> checks) {
-        tcc.page().navigate(PwPageUrls.getMessagesPage(tcc, tcc.kafkaName(),
-            ResourceUtils.getKubeResource(KafkaTopic.class, tcc.namespace(), kafkaTopicName).getStatus().getTopicId()));
+        final String topicId = WaitUtils.waitForKafkaTopicToHaveIdAndReturn(tcc.namespace(), kafkaTopicName);
+        tcc.page().navigate(PwPageUrls.getMessagesPage(tcc, tcc.kafkaName(), topicId));
 
         LOGGER.info("Wait for message search page toolbar to be fully there before filtering messages");
         PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_CONTENT_HEADER_TITLE_CONTENT, kafkaTopicName, true);
@@ -159,8 +161,10 @@ public class MessagesST extends AbstractST {
      * and table counts to ensure filtering logic and UI behavior work as expected.</p>
      */
     @Test
+    @TestBucket(VARIOUS_MESSAGE_TYPES_BUCKET)
     void testFilterMessagesUsingUIForm() {
-        tcc.page().navigate(PwPageUrls.getMessagesPage(tcc, tcc.kafkaName(), ResourceUtils.getKubeResource(KafkaTopic.class, tcc.namespace(), kafkaTopicName).getStatus().getTopicId()));
+        final String topicId = WaitUtils.waitForKafkaTopicToHaveIdAndReturn(tcc.namespace(), kafkaTopicName);
+        tcc.page().navigate(PwPageUrls.getMessagesPage(tcc, tcc.kafkaName(), topicId));
 
         LOGGER.info("Wait for page toolbar to be fully loaded before filtering");
         PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_CONTENT_HEADER_TITLE_CONTENT, kafkaTopicName, true);
@@ -265,7 +269,8 @@ public class MessagesST extends AbstractST {
      * <p>At the end, the topic contains a mixture of messages with variations in keys, headers,
      * and payloads, allowing subsequent tests to validate filtering by key, header, or value.</p>
      */
-    public void prepareMessagesScenario() {
+    @SetupTestBucket(VARIOUS_MESSAGE_TYPES_BUCKET)
+    public void prepareVariousMessageTypes() {
         LOGGER.info("Prepare filter messages scenario by creating topic and producing various messages");
 
         kafkaTopicName = KafkaTopicUtils.setupTopicsAndReturn(tcc.namespace(), tcc.kafkaName(), TOPIC_PREFIX, TOPIC_COUNT, true, 1, 1, 1)
@@ -317,8 +322,6 @@ public class MessagesST extends AbstractST {
         KafkaSetup.setupDefaultKafkaIfNeeded(tcc.namespace(), tcc.kafkaName());
         ConsoleInstanceSetup.setupIfNeeded(ConsoleInstanceSetup.getDefaultConsoleInstance(tcc.namespace(), tcc.consoleInstanceName(), tcc.kafkaName(), tcc.kafkaUserName()));
         PwUtils.login(tcc);
-
-        prepareMessagesScenario();
     }
 
     @AfterAll

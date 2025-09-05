@@ -1,5 +1,7 @@
 package com.github.streamshub.systemtests;
 
+import com.github.streamshub.systemtests.annotations.SetupTestBucket;
+import com.github.streamshub.systemtests.annotations.TestBucket;
 import com.github.streamshub.systemtests.clients.KafkaClients;
 import com.github.streamshub.systemtests.clients.KafkaClientsBuilder;
 import com.github.streamshub.systemtests.constants.Constants;
@@ -47,6 +49,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class TopicST extends AbstractST {
     private static final Logger LOGGER = LogWrapper.getLogger(TopicST.class);
+    private static final String VARIOUS_TOPIC_TYPES_BUCKET = "VariousTopicTypes";
     private TestCaseConfig tcc;
 
     // Topics
@@ -64,7 +67,7 @@ public class TopicST extends AbstractST {
     private static final String UNDER_REPLICATED_TOPICS_PREFIX = "underreplicated";
     private static final String UNAVAILABLE_TOPICS_PREFIX = "unavailable";
     
-        /**
+    /**
      * Tests pagination behavior on the Topics page when handling a large set of topics.
      *
      * <p>The test first creates and validates the presence of 150 Kafka topics across both
@@ -84,11 +87,11 @@ public class TopicST extends AbstractST {
      */
     @Test
     @Order(Order.DEFAULT)
+    @TestBucket(VARIOUS_TOPIC_TYPES_BUCKET)
     void testPaginationWithManyTopics() {
         LOGGER.info("Verify topics are displayed");
         TopicChecks.checkOverviewPageTopicState(tcc, tcc.kafkaName(), TOTAL_TOPICS_COUNT, TOTAL_TOPICS_COUNT, TOTAL_REPLICATED_TOPICS_COUNT, UNDER_REPLICATED_TOPICS_COUNT, UNAVAILABLE_TOPICS_COUNT);
         TopicChecks.checkTopicsPageTopicState(tcc, tcc.kafkaName(), TOTAL_TOPICS_COUNT, TOTAL_REPLICATED_TOPICS_COUNT, UNDER_REPLICATED_TOPICS_COUNT, UNAVAILABLE_TOPICS_COUNT);
-
         LOGGER.info("Verify pagination on topics page");
         List<Integer> topicsPerPageList = List.of(10, 20, 50, 100);
 
@@ -127,6 +130,7 @@ public class TopicST extends AbstractST {
      */
     @Test
     @Order(Integer.MAX_VALUE)
+    @TestBucket(VARIOUS_TOPIC_TYPES_BUCKET)
     void testRecentlyViewedTopics() {
         LOGGER.info("Verify topics are present but none has been viewed just yet");
         TopicChecks.checkOverviewPageTopicState(tcc, tcc.kafkaName(), TOTAL_TOPICS_COUNT, TOTAL_TOPICS_COUNT, TOTAL_REPLICATED_TOPICS_COUNT, UNDER_REPLICATED_TOPICS_COUNT, UNAVAILABLE_TOPICS_COUNT);
@@ -193,6 +197,7 @@ public class TopicST extends AbstractST {
      */
     @Test
     @Order(Order.DEFAULT)
+    @TestBucket(VARIOUS_TOPIC_TYPES_BUCKET)
     void testFilterTopics() {
         LOGGER.info("Verify Topics are displayed correctly first");
         TopicChecks.checkOverviewPageTopicState(tcc, tcc.kafkaName(), TOTAL_TOPICS_COUNT, TOTAL_TOPICS_COUNT, TOTAL_REPLICATED_TOPICS_COUNT, UNDER_REPLICATED_TOPICS_COUNT, UNAVAILABLE_TOPICS_COUNT);
@@ -230,6 +235,7 @@ public class TopicST extends AbstractST {
      */
     @Test
     @Order(Order.DEFAULT)
+    @TestBucket(VARIOUS_TOPIC_TYPES_BUCKET)
     void testSortTopics() {
         LOGGER.info("Verify Topics are displayed correctly first");
         TopicChecks.checkOverviewPageTopicState(tcc, tcc.kafkaName(), TOTAL_TOPICS_COUNT, TOTAL_TOPICS_COUNT, TOTAL_REPLICATED_TOPICS_COUNT, UNDER_REPLICATED_TOPICS_COUNT, UNAVAILABLE_TOPICS_COUNT);
@@ -283,7 +289,8 @@ public class TopicST extends AbstractST {
      * <p>This scenario ensures that the test environment contains topics in all relevant replication states,
      * which is essential for verifying UI topic displays, filtering, sorting, and storage-based behaviors.</p>
      */
-    public void prepareTopicsScenario() {
+    @SetupTestBucket(VARIOUS_TOPIC_TYPES_BUCKET)
+    public void prepareVariousTopicTypes() {
         LOGGER.info("Check default UI state before preparing test topics");
         TopicChecks.checkOverviewPageTopicState(tcc, tcc.kafkaName(), 0, 0, 0, 0, 0);
         TopicChecks.checkTopicsPageTopicState(tcc, tcc.kafkaName(), 0, 0, 0, 0);
@@ -323,8 +330,6 @@ public class TopicST extends AbstractST {
         KafkaSetup.setupDefaultKafkaIfNeeded(tcc.namespace(), tcc.kafkaName());
         ConsoleInstanceSetup.setupIfNeeded(ConsoleInstanceSetup.getDefaultConsoleInstance(tcc.namespace(), tcc.consoleInstanceName(), tcc.kafkaName(), tcc.kafkaUserName()));
         PwUtils.login(tcc);
-        
-        prepareTopicsScenario();
     }
 
     @AfterAll

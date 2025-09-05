@@ -1,9 +1,9 @@
 package com.github.streamshub.systemtests;
 
 import com.github.streamshub.systemtests.constants.Constants;
-import com.github.streamshub.systemtests.utils.resourceutils.KafkaNamingUtils;
-import com.github.streamshub.systemtests.utils.playwright.PwUtils;
 import com.github.streamshub.systemtests.utils.Utils;
+import com.github.streamshub.systemtests.utils.playwright.PwUtils;
+import com.github.streamshub.systemtests.utils.resourceutils.KafkaNamingUtils;
 import com.microsoft.playwright.Browser;
 import com.microsoft.playwright.BrowserContext;
 import com.microsoft.playwright.Page;
