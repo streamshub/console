@@ -46,8 +46,12 @@ import com.github.streamshub.console.config.PrometheusConfig.Type;
 import com.github.streamshub.console.config.ValueBuilder;
 import com.github.streamshub.console.config.authentication.AuthenticationConfigBuilder;
 import com.github.streamshub.console.config.authentication.Basic;
+import com.github.streamshub.console.config.security.GlobalSecurityConfigBuilder;
+import com.github.streamshub.console.config.security.KafkaSecurityConfigBuilder;
+import com.github.streamshub.console.config.security.Privilege;
 import com.github.streamshub.console.kafka.systemtest.TestPlainProfile;
 import com.github.streamshub.console.kafka.systemtest.deployment.DeploymentManager;
+import com.github.streamshub.console.kafka.systemtest.utils.TokenUtils;
 import com.github.streamshub.console.test.AdminClientSpy;
 import com.github.streamshub.console.test.MockHelper;
 import com.github.streamshub.console.test.TestHelper;
@@ -566,6 +570,43 @@ class NodesResourceIT implements ClientRequestFilter {
             .statusCode(is(Status.OK.getStatusCode()))
             .body("meta.summary.leaderId", is("3"))
             .body("data.collect { it.id }", hasItem("6"));
+    }
+
+    @Test
+    void testListNodesWithLimitedAuthorization() {
+        utils.resetSecurity(consoleConfig, true);
+        TokenUtils tokens = new TokenUtils(config);
+
+        utils.updateSecurity(consoleConfig.getSecurity(), new GlobalSecurityConfigBuilder()
+                .addNewSubject()
+                    .withInclude("alice")
+                    .withRoleNames("limited-nodes-role")
+                .endSubject()
+            .build());
+
+        consoleConfig.getKafka().getClusterById(clusterId).ifPresent(cfg -> {
+            cfg.setSecurity(new KafkaSecurityConfigBuilder()
+                    .addNewRole()
+                        .withName("limited-nodes-role")
+                        .addNewRule()
+                            .withResources("nodes")
+                            .withPrivileges(Privilege.LIST)
+                            // allowed to list nodes 0, 3, 6, & 9; expressed as RegExp
+                            .withResourceNames("/[0369]/")
+                        .endRule()
+                    .endRole()
+                    .build());
+        });
+
+        whenRequesting(req -> req
+                .auth()
+                    .oauth2(tokens.getToken("alice"))
+                .param("sort", "-id")
+                .get("", clusterId))
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()))
+            .body("data.size()", equalTo(4))
+            .body("data.id", contains("9", "6", "3", "0"));
     }
 
     @Test
