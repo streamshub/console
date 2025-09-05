@@ -26,7 +26,7 @@ public class TestBucketExtension implements BeforeTestExecutionCallback, AfterTe
     private static final Map<String, AtomicInteger> EXECUTED_ANNOTATED_TEST_COUNT_MAP = new ConcurrentHashMap<>();
 
     // Used to store context of the method which was annotated as a setup - this helps clean up after all the tests finish
-    private static final Map<String, ExtensionContext> SHARED_RESOURCES_SETUP_CONTEXT_MAP = new ConcurrentHashMap<>();
+    private static final Map<String, ExtensionContext> TEST_BUCKET_SETUP_CONTEXT_MAP = new ConcurrentHashMap<>();
 
     /**
      * Prepares shared resources before executing a test method annotated with {@link TestBucket}.
@@ -54,19 +54,19 @@ public class TestBucketExtension implements BeforeTestExecutionCallback, AfterTe
             return;
         }
 
-        String sharedResourceGroupName = testAnnotation.value();
-        LOGGER.info("Shared resources beforeTestExecution - @TestBucket({})", sharedResourceGroupName);
+        String testBucketGroupName = testAnnotation.value();
+        LOGGER.info("Shared resources beforeTestExecution - @TestBucket({})", testBucketGroupName);
 
         // Init executed test count to 0
-        EXECUTED_ANNOTATED_TEST_COUNT_MAP.putIfAbsent(sharedResourceGroupName, new AtomicInteger(0));
+        EXECUTED_ANNOTATED_TEST_COUNT_MAP.putIfAbsent(testBucketGroupName, new AtomicInteger(0));
 
         // First test = setup shared resources
-        if (EXECUTED_ANNOTATED_TEST_COUNT_MAP.get(sharedResourceGroupName).get() == 0) {
-            LOGGER.info("Setup shared resources for TestBucket [{}]", sharedResourceGroupName);
-            // Gather count of ALL the tests annotated with the same @UseSharedResources within the same class that are about to be executed in this run
+        if (EXECUTED_ANNOTATED_TEST_COUNT_MAP.get(testBucketGroupName).get() == 0) {
+            LOGGER.info("Setup shared resources for TestBucket [{}]", testBucketGroupName);
+            // Gather count of ALL the tests annotated with the same @TestBucket within the same class that are about to be executed in this run
             List<Method> methodsInSameClassWithCurrentAnno = Arrays.stream(testMethodContext.getRequiredTestClass().getDeclaredMethods())
                 .filter(method -> method.isAnnotationPresent(TestBucket.class))
-                .filter(method -> method.getAnnotation(TestBucket.class).value().equals(sharedResourceGroupName))
+                .filter(method -> method.getAnnotation(TestBucket.class).value().equals(testBucketGroupName))
                 .filter(method -> SystemTestExecutionListener.TESTS_TO_BE_EXECUTED.contains(testMethodContext.getRequiredTestClass().getName() + "." + method.getName()))
                 .toList();
 
@@ -75,17 +75,17 @@ public class TestBucketExtension implements BeforeTestExecutionCallback, AfterTe
                 .mapToInt(method -> countPlannedInvocations(method, testMethodContext))
                 .sum();
 
-            TOTAL_ANNOTATED_TEST_COUNT_MAP.putIfAbsent(sharedResourceGroupName, totalTestRuns);
+            TOTAL_ANNOTATED_TEST_COUNT_MAP.putIfAbsent(testBucketGroupName, totalTestRuns);
 
             // Store a new context directed towards setup method for a cleanup later
-            TestBucketExtensionContext setupMethodContext = new TestBucketExtensionContext(testMethodContext, sharedResourceGroupName);
-            SHARED_RESOURCES_SETUP_CONTEXT_MAP.put(sharedResourceGroupName, setupMethodContext);
+            TestBucketExtensionContext setupMethodContext = new TestBucketExtensionContext(testMethodContext, testBucketGroupName);
+            TEST_BUCKET_SETUP_CONTEXT_MAP.put(testBucketGroupName, setupMethodContext);
             KubeResourceManager.get().setTestContext(setupMethodContext);
 
             // Call setup method
             for (Method method : testMethodContext.getRequiredTestClass().getDeclaredMethods()) {
                 if (method.isAnnotationPresent(SetupTestBucket.class) &&
-                    method.getAnnotation(SetupTestBucket.class).value().equals(sharedResourceGroupName)) {
+                    method.getAnnotation(SetupTestBucket.class).value().equals(testBucketGroupName)) {
                     // Called method needs to be either explicitly public or needs to be -> `method.setAccessible(true)`
                     method.invoke(testMethodContext.getRequiredTestInstance());
                 }
@@ -113,7 +113,7 @@ public class TestBucketExtension implements BeforeTestExecutionCallback, AfterTe
      * </ul>
      *
      * <p>This is mainly used to track planned invocations when aggregating test runs
-     * for shared-resource groups such as {@code @TestBucket}.</p>
+     * for testBucket groups.</p>
      *
      * @param testMethod the method under inspection
      * @param testMethodContext the JUnit {@link ExtensionContext} providing test instance access
@@ -151,7 +151,7 @@ public class TestBucketExtension implements BeforeTestExecutionCallback, AfterTe
     }
 
     /**
-     * Cleans up shared resources after a test finishes, ensuring teardown happens
+     * Cleans up shared resources after testBucket execution finishes, ensuring teardown happens
      * only once all tests in the same {@link TestBucket} group have completed.
      *
      * <p>Rules:</p>
@@ -181,15 +181,15 @@ public class TestBucketExtension implements BeforeTestExecutionCallback, AfterTe
             return;
         }
 
-        String sharedResourceGroupName = testAnnotation.value();
-        LOGGER.info("Shared resources afterTestExecution - @TestBucket({})", sharedResourceGroupName);
+        String testBucketGroupName = testAnnotation.value();
+        LOGGER.info("Shared resources afterTestExecution - @TestBucket({})", testBucketGroupName);
 
-        int executedTestCount = EXECUTED_ANNOTATED_TEST_COUNT_MAP.get(sharedResourceGroupName).incrementAndGet();
-        int totalTestCount = TOTAL_ANNOTATED_TEST_COUNT_MAP.get(sharedResourceGroupName);
+        int executedTestCount = EXECUTED_ANNOTATED_TEST_COUNT_MAP.get(testBucketGroupName).incrementAndGet();
+        int totalTestCount = TOTAL_ANNOTATED_TEST_COUNT_MAP.get(testBucketGroupName);
 
         if (executedTestCount == totalTestCount) {
-            LOGGER.info("Teardown shared resources for TestBucket [{}]", sharedResourceGroupName);
-            ExtensionContext setupContext = SHARED_RESOURCES_SETUP_CONTEXT_MAP.get(sharedResourceGroupName);
+            LOGGER.info("Teardown shared resources for TestBucket [{}]", testBucketGroupName);
+            ExtensionContext setupContext = TEST_BUCKET_SETUP_CONTEXT_MAP.get(testBucketGroupName);
 
             if (setupContext != null) {
                 KubeResourceManager.get().setTestContext(setupContext);
