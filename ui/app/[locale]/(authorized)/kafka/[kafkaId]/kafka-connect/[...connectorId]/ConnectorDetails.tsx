@@ -200,7 +200,7 @@ export function ConnectorDetails({
             title={<TabTitleText>{t("connectors.tasks")}</TabTitleText>}
             aria-label={t("connectors.tasks")}
           >
-            <TabContentBody hasPadding>
+            <TabContentBody>
               <TableView
                 variant={TableVariant.compact}
                 onPageChange={() => {}}
@@ -241,17 +241,46 @@ export function ConnectorDetails({
             title={<TabTitleText>{t("connectors.configuration")}</TabTitleText>}
             aria-label={t("connectors.configuration")}
           >
-            <TabContentBody hasPadding>
-              <DescriptionList isHorizontal>
-                {Object.entries(config || {}).map(([key, value]) => (
-                  <DescriptionListGroup key={key}>
-                    <DescriptionListTerm>{key}</DescriptionListTerm>
-                    <DescriptionListDescription>
-                      {value ?? "-"}
-                    </DescriptionListDescription>
-                  </DescriptionListGroup>
-                ))}
-              </DescriptionList>
+            <TabContentBody>
+              <TableView
+                ariaLabel="Connector configuration"
+                onPageChange={() => {}}
+                emptyStateNoData={<div>{t("connectors.no_config")}</div>}
+                emptyStateNoResults={<div></div>}
+                columns={["property", "value"] as const}
+                data={Object.entries(config || {})}
+                renderHeader={({ column, key, Th }) => {
+                  switch (column) {
+                    case "property":
+                      return (
+                        <Th key={key} width={60}>
+                          {t("connectors.config.property")}
+                        </Th>
+                      );
+                    case "value":
+                      return <Th key={key}>{t("connectors.config.value")}</Th>;
+                  }
+                }}
+                renderCell={({ column, key, row: [name, value], Td }) => {
+                  switch (column) {
+                    case "property":
+                      return (
+                        <Td
+                          key={key}
+                          dataLabel={t("connectors.config.property")}
+                        >
+                          {name}
+                        </Td>
+                      );
+                    case "value":
+                      return (
+                        <Td key={key} dataLabel={t("connectors.config.value")}>
+                          {value ?? "-"}
+                        </Td>
+                      );
+                  }
+                }}
+              />
             </TabContentBody>
           </Tab>
         </Tabs>

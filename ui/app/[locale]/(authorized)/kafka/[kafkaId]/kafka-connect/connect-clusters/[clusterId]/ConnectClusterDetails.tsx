@@ -172,7 +172,9 @@ export function ConnectClusterDetails({
                 <HelpIcon />
               </Tooltip>
             </DescriptionListTerm>
-            <DescriptionListDescription>{workers}</DescriptionListDescription>
+            <DescriptionListDescription>
+              {workers ?? "-"}
+            </DescriptionListDescription>
           </DescriptionListGroup>
         </DescriptionList>
       </FlexItem>
@@ -228,7 +230,7 @@ export function ConnectClusterDetails({
             title={<TabTitleText>{t("connect_clusters.plugins")}</TabTitleText>}
             aria-label="Plugins"
           >
-            <TabContentBody hasPadding>
+            <TabContentBody>
               <ResponsiveTable
                 ariaLabel="Plugins"
                 variant={TableVariant.compact}
