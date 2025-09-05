@@ -20,6 +20,13 @@ public class Environment {
     public static final String STRIMZI_OPERATOR_VERSION = ENVS.getOrDefault("STRIMZI_OPERATOR_VERSION", "");
     public static final boolean SKIP_STRIMZI_INSTALLATION = ENVS.getOrDefault("SKIP_STRIMZI_INSTALLATION", Boolean::parseBoolean, false);
 
+    // Keycloak
+    public static final String KEYCLOAK_VERSION = ENVS.getOrDefault("KEYCLOAK_VERSION", "26.2.5");
+    public static final boolean DEFAULT_TO_DENY_NETWORK_POLICIES = ENVS.getOrDefault("DEFAULT_TO_DENY_NETWORK_POLICIES", Boolean::parseBoolean, true);
+
+    // Postgres
+    public static final String POSTGRES_IMAGE = ENVS.getOrDefault("POSTGRES_IMAGE", "mirror.gcr.io/postgres:latest");
+
     // Console
     public static final String CONSOLE_API_IMAGE = ENVS.getOrDefault("CONSOLE_API_IMAGE", "");
     public static final String CONSOLE_UI_IMAGE = ENVS.getOrDefault("CONSOLE_UI_IMAGE", "");
