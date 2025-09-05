@@ -718,7 +718,12 @@
       "configuration": "Configuration",
       "connector_class": "Connector class",
       "configuration_file_name": "Configuration file name",
-      "no_task": "No Task"
+      "no_task": "No Task",
+      "config": {
+        "property": "Property",
+        "value": "Value"
+      },
+      "no_config": "No Configuration found"
     },
     "connect_clusters_title": "Connect clusters",
     "connect_clusters": {
