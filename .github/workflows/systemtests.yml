@@ -1,0 +1,324 @@
+name: Systemtest
+
+on:
+  workflow_dispatch:
+    inputs:
+      commit_sha:
+        description: 'Commit sha'
+        required: true
+      testcase:
+        description: 'Test case to run'
+        required: false
+      profile:
+        description: 'Profile to use'
+        required: false
+      install_type:
+        description: 'Install type to use'
+        required: false
+      retry_count:
+        description: 'Retry count to use'
+        required: false
+      env_str:
+        description: 'Envs to use'
+        required: false
+
+jobs:
+  run-systemtests:
+    runs-on: ubuntu-24.04
+    env:
+      RUN_URL: ${{ github.run_url }}
+      COMMIT_SHA: ${{ github.event.inputs.commit_sha }}
+      GH_TOKEN: ${{ secrets.GH_FULL_ORG_TOKEN }}
+      REPO: ${{ github.repository }}
+      TEST_CASE: ${{ github.event.inputs.testcase }}
+      PROFILE: ${{ github.event.inputs.profile }}
+      INSTALL_TYPE: ${{ github.event.inputs.install_type }}
+      RETRY_COUNT: ${{ github.event.inputs.retry_count }}
+      ENVS: ${{ github.event.inputs.env_str }}
+      OLM_VERSION: "v0.28.0"
+      YQ_VERSION: "v4.44.1"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ env.COMMIT_SHA }}
+
+      - name: Get the commit details
+        run: |
+          ARTIFACTS_RUN_ID=$(gh run list --repo $REPO --commit $COMMIT_SHA --workflow integration.yml --status success --json databaseId --jq '.[0].databaseId')
+          PR_NUMBER=$(gh pr list --repo $REPO --state all --json number,commits -q ".[] | select(.commits | any(.oid == \"$COMMIT_SHA\")) | .number")
+        
+          echo "PR_NUMBER=$PR_NUMBER" >> $GITHUB_ENV
+          echo "ARTIFACTS_RUN_ID=$ARTIFACTS_RUN_ID" >> $GITHUB_ENV
+
+      - name: Comment the build
+        run: |
+          cat > params.md <<- PARAMS
+          ## 🏃Systemtests run started️ 🏃
+          Build phase succeeded. Triggering systemtests.
+          #### Used parameters
+          * TEST_CASE: $TEST_CASE
+          * PROFILE: $PROFILE
+          * INSTALL_TYPE: $INSTALL_TYPE
+          * RETRY_COUNT: $RETRY_COUNT
+          * ENVS: $ENVS
+          PARAMS
+          
+          gh api repos/$REPO/statuses/$COMMIT_SHA -f state="pending" -f context="System Tests" -f description="System tests are running..." -f target_url="$RUN_URL"
+          gh pr comment $PR_NUMBER --repo $REPO --edit-last --create-if-none --body-file params.md
+
+      - name: Download Images
+        id: download-artifact
+        uses: dawidd6/action-download-artifact@v11
+        with:
+          github_token: ${{ env.GH_TOKEN }}
+          workflow: integration.yml
+          workflow_conclusion: success
+          run_id: ${{ env.ARTIFACTS_RUN_ID }}
+          skip_unpack: false
+          repo: ${{ env.REPO }}
+          name: streamshub-images
+
+      - name: Start minikube
+        id: minikube
+        uses: medyagh/setup-minikube@latest
+        with:
+          cpus: 4
+          memory: 15g
+          addons: registry,ingress,ingress-dns
+          insecure-registry: 'localhost:5000,10.0.0.0/24'
+          start-args: '--extra-config=kubeadm.ignore-preflight-errors=SystemVerification --extra-config=apiserver.authorization-mode=RBAC,Node'
+
+      - name: Set Dynamic Environment Vars
+        run: |
+          echo "PROJECT_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+          # STs config
+          echo "CONSOLE_CLUSTER_DOMAIN=$(minikube ip).nip.io" >> $GITHUB_ENV
+          echo "CONSOLE_OLM_CATALOG_SOURCE_NAME=streamshub-console-catalog" >> $GITHUB_ENV
+          echo "CONSOLE_OLM_CATALOG_SOURCE_NAMESPACE=olm" >> $GITHUB_ENV
+
+      - name: Prepare minikube
+        run: |
+          sudo apt-get update && sudo apt-get install -y socat
+          socat TCP-LISTEN:5000,reuseaddr,fork TCP:$(minikube ip):5000 &
+          SOCAT_PID=${!}
+
+          mkdir streamshub-images
+          tar -xzf streamshub-images.tgz -C streamshub-images
+
+          # Load images
+          skopeo sync --all --scoped --src dir --dest docker --dest-tls-verify=false \
+            streamshub-images/localhost:5000/streamshub \
+            localhost:5000/streamshub
+
+          kill ${SOCAT_PID}
+
+          # Enable TLS/SSL passthough
+          kubectl patch deployment -n ingress-nginx ingress-nginx-controller --type='json' -p='[{"op": "add", "path": "/spec/template/spec/containers/0/args/-", "value":"--enable-ssl-passthrough"}]'
+
+          # Install yq for deployment script
+          curl -L https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64 > yq && chmod +x yq
+          sudo cp -v yq /usr/bin/
+
+          # Install OLM
+          curl -sL https://github.com/operator-framework/operator-lifecycle-manager/releases/download/${OLM_VERSION}/install.sh | bash -s "${OLM_VERSION}"
+
+      - name: Deploy CatalogSource
+        run: |
+          # Create the CatalogSource with the Console operator bundle
+          yq ea '.spec.image = "localhost:5000/streamshub/console-operator-catalog:${{ env.PROJECT_VERSION }}"' \
+            ./install/operator/olm/010-CatalogSource-console-operator-catalog.yaml \
+            | kubectl apply -n $CONSOLE_OLM_CATALOG_SOURCE_NAMESPACE -f -
+
+          kubectl wait catalogsource/streamshub-console-catalog -n $CONSOLE_OLM_CATALOG_SOURCE_NAMESPACE \
+            --for=jsonpath='{.status.connectionState.lastObservedState}'=READY \
+            --timeout=180s
+
+      - name: Install Node.js & Playwright
+        uses: actions/setup-node@v5
+        with:
+          node-version: lts/*
+      - run: |
+          npm install -g playwright
+          npx playwright install --with-deps
+
+      - name: Setup JDK
+        uses: actions/setup-java@v5
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Build project
+        run: |
+          mvn clean install -B -DskipTests --no-transfer-progress
+
+      - name: Run system tests
+        run: |
+          # Split ENVS by ';' and export each
+          IFS=';' read -ra KV_PAIRS <<< "$ENVS"
+          for KV in "${KV_PAIRS[@]}"; do
+            export "$KV"
+          done
+
+          PARAMETERS="-Dfailsafe.rerunFailingTestsCount=${RETRY_COUNT}"
+
+
+          if [[ -n "${TEST_CASE}" ]]; then
+            PARAMETERS="$PARAMETERS -Dit.test=${TEST_CASE} -DskipSTs=false"
+          elif [[ -n "${PROFILE}" ]]; then
+            PARAMETERS="$PARAMETERS -P ${PROFILE}"
+          fi
+
+          mvn clean verify -B --no-transfer-progress -pl systemtests $PARAMETERS
+
+      - name: Archive systemtest artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: systemtests-artifacts
+          if-no-files-found: warn
+          path: |
+            systemtests/target/**/TEST-*.xml
+            systemtests/target/logs/**
+            systemtests/screenshot/**
+            systemtests/tracing/**
+
+      - name: Parse & summarize test results
+        if: always()
+        shell: bash
+        run: |
+          TOTAL=0; PASSED=0; FAILED=0; ERRORS=0; SKIPPED=0
+          FAILED_TESTS=""
+      
+          RESULT_DIR="systemtests/target/failsafe-reports"
+          echo "==> Checking result dir: $RESULT_DIR"
+      
+          TEST_FILES=()
+          if [[ -d "$RESULT_DIR" ]]; then
+            echo "Directory exists. Finding TEST-*.xml files"
+            # Collect files into an array
+            while IFS= read -r -d '' f; do 
+              TEST_FILES+=("$f"); 
+            done < <(find "$RESULT_DIR" -type f -name 'TEST-*.xml' -print0)
+            echo "Found ${#TEST_FILES[@]} files:"
+            for f in "${TEST_FILES[@]}"; do 
+              echo " - $f"; 
+            done
+          else
+            echo "No test results directory found: $RESULT_DIR"
+          fi
+      
+          for f in "${TEST_FILES[@]}"; do
+            echo "Processing $f"
+        
+            # Wrap each testcase as an array to preserve structure
+            TESTCASES_JSON=$(yq -p=xml -o=json '.testsuite.testcase | map([.["+@classname"], .["+@name"], .failure, .error, .skipped])' "$f")
+        
+            # Read JSON array into Bash array
+            mapfile -t TESTCASES < <(echo "$TESTCASES_JSON" | jq -c '.[]')
+          
+            for testcase in "${TESTCASES[@]}"; do
+              # Use jq to safely extract elements
+              CLASSNAME=$(echo "$testcase" | jq -r '.[0] // "UNKNOWN_CLASS"')
+              NAME=$(echo "$testcase" | jq -r '.[1] // ""')
+              
+              if [[ -z "$NAME" ]]; then
+                TEST_DISPLAY="$CLASSNAME"
+              else
+                TEST_DISPLAY="$CLASSNAME#$NAME"
+              fi
+
+              HAS_FAILURE=$(echo "$testcase" | jq -r '.[2] != null')
+              HAS_ERROR=$(echo "$testcase" | jq -r '.[3] != null')
+              HAS_SKIPPED=$(echo "$testcase" | jq -r '.[4] != null')
+              
+              TOTAL=$((TOTAL+1))
+              if [[ "$HAS_ERROR" == "true" ]]; then
+                ERRORS=$((ERRORS+1))
+                FAILED_TESTS+="${TEST_DISPLAY},"
+                echo "ERROR   : ${TEST_DISPLAY}"
+              elif [[ "$HAS_FAILURE" == "true" ]]; then
+                FAILED=$((FAILED+1))
+                FAILED_TESTS+="${TEST_DISPLAY},"
+                echo "FAILURE : ${TEST_DISPLAY}"
+              elif [[ "$HAS_SKIPPED" == "true" ]]; then
+                SKIPPED=$((SKIPPED+1))
+                echo "SKIPPED : ${TEST_DISPLAY}"
+              else
+                PASSED=$((PASSED+1))
+                echo "PASSED  : ${TEST_DISPLAY}"
+              fi
+            done
+          done
+          
+          # Remove trailing comma
+          FAILED_TESTS="${FAILED_TESTS%,}"
+          
+          echo "==> Summary: TOTAL=$TOTAL PASSED=$PASSED FAILED=$FAILED ERRORS=$ERRORS SKIPPED=$SKIPPED"
+          echo "FAILED_TESTS=$FAILED_TESTS"
+
+          # Prepare LIST_FAILED safe for GitHub
+          LIST_FAILED=""
+          if [[ -n "$FAILED_TESTS" ]]; then
+            LIST_FAILED="Test Failures:"
+            IFS=',' read -ra FAILED_ARRAY <<< "$FAILED_TESTS"
+            for t in "${FAILED_ARRAY[@]}"; do
+              [[ -n "$t" ]] && LIST_FAILED+="\n- $t"
+            done
+          fi
+
+          # Export variables to GitHub Actions environment
+          echo "TOTAL=$TOTAL" >> $GITHUB_ENV
+          echo "PASSED=$PASSED" >> $GITHUB_ENV
+          echo "FAILED=$FAILED" >> $GITHUB_ENV
+          echo "ERRORS=$ERRORS" >> $GITHUB_ENV
+          echo "SKIPPED=$SKIPPED" >> $GITHUB_ENV
+          echo "FAILED_TESTS=$FAILED_TESTS" >> $GITHUB_ENV
+          
+          # Export multi-line values using literal newlines
+          echo "LIST_FAILED<<EOF" >> $GITHUB_ENV
+          echo -e "$LIST_FAILED" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+
+      - name: Update PR status
+        if: always()
+        shell: bash
+        run: |    
+          STATUS_SYMBOL="❌"
+          STATE="failure"
+          DESCRIPTION="Systemtests failed"
+          
+          # If total tests is zero - fail
+          if [[ $TOTAL -eq 0 ]]; then
+            STATUS_SYMBOL="⚠️"
+            STATE="failure"
+            DESCRIPTION="No tests were executed"
+          
+          # If there were no failures or errors and total > 0
+          elif [[ $((FAILED + ERRORS)) -eq 0 ]]; then
+            STATUS_SYMBOL="✅"
+            STATE="success"
+            DESCRIPTION="Systemtests succeeded"
+          fi
+          
+          # Write results to result.md using heredoc
+          cat > result.md <<- RESULTS
+          ## $STATUS_SYMBOL Systemtests run finished - $STATE $STATUS_SYMBOL
+          ### Test Summary:
+          - **TOTAL**: $TOTAL
+          - **PASS**: $PASSED
+          - **FAIL**: $((FAILED+ERRORS))
+          - **SKIP**: $SKIPPED
+          
+          #### Used parameters:
+          * TEST_CASE: $TEST_CASE
+          * PROFILE: $PROFILE
+          * INSTALL_TYPE: $INSTALL_TYPE
+          * RETRY_COUNT: $RETRY_COUNT
+          * ENVS: $ENVS
+          
+          $LIST_FAILED
+          RESULTS
+          
+          gh api repos/$REPO/statuses/$COMMIT_SHA -f state="$STATE" -f context="System Tests" -f description="$DESCRIPTION" -f target_url="$RUN_URL"
+          gh pr comment $PR_NUMBER --repo $REPO --edit-last --create-if-none --body-file result.md
