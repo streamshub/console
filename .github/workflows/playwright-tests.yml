@@ -33,7 +33,7 @@ jobs:
           start-args: '--extra-config=kubeadm.ignore-preflight-errors=SystemVerification --extra-config=apiserver.authorization-mode=RBAC,Node'
 
       - name: Use Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
 
       - name: Set Dynamic Environment Vars
         run: |
