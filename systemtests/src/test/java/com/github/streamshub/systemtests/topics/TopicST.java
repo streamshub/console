@@ -1,6 +1,7 @@
 package com.github.streamshub.systemtests.topics;
 
 import com.github.streamshub.systemtests.AbstractST;
+import com.github.streamshub.systemtests.MessageStore;
 import com.github.streamshub.systemtests.TestCaseConfig;
 import com.github.streamshub.systemtests.annotations.SetupTestBucket;
 import com.github.streamshub.systemtests.annotations.TestBucket;
