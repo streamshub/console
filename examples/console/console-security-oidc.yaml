@@ -63,6 +63,8 @@ spec:
             resourceNames:
               - dev-cluster-a
               - dev-cluster-b
+              # Regular expressions may be used, delimited by slash (/)
+              - /qa-cluster-[xy]/
             privileges:
               - 'ALL'
       # administrators may operate on any (unspecified) Kafka clusters

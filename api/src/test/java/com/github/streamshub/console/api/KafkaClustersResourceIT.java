@@ -237,9 +237,15 @@ class KafkaClustersResourceIT {
 
     @ParameterizedTest
     @CsvSource({
-        "'test-kafka1',             test-kafka1",
-        "'test-kafka1,test-kafkaY', test-kafka1, test-kafkaY",
-        "'*',                       test-kafka1, test-kafka2, test-kafkaY",
+        "'test-kafka1',                   test-kafka1",
+        "'test-kafka1,test-kafkaY',       test-kafka1, test-kafkaY",
+        "'/(?:.*\\/)?test-kafka[1Y]/',    test-kafka1, test-kafkaY",
+        "'/(?:.*\\/)?test-kafka(?:1|Y)/', test-kafka1, test-kafkaY",
+        "'/(?:.*\\/)?test-kafkaZ/'",      // matches none, nothing visible
+        "'/ '",                           // matches none, nothing visible
+        "' /'",                           // matches none, nothing visible
+        "'test-kafkaZ'",                  // matches none, nothing visible
+        "'*',                             test-kafka1, test-kafka2, test-kafkaY",
     })
     void testListClustersWithAnonymousLimited(String resourceNames, @AggregateWith(VarargsAggregator.class) String... visibleClusters) {
         consoleConfig.setSecurity(new GlobalSecurityConfigBuilder()
