@@ -1,7 +1,9 @@
 "use client";
 import {
+  AboutModal,
   Brand,
   Button,
+  Content,
   Masthead,
   MastheadBrand,
   MastheadContent,
@@ -18,6 +20,7 @@ import {
 } from "@/libs/patternfly/react-core";
 import {
   BarsIcon,
+  InfoCircleIcon,
   MoonIcon,
   QuestionCircleIcon,
   SunIcon,
@@ -29,29 +32,36 @@ import { useAppLayout } from "./AppLayoutProvider";
 import { UserDropdown } from "./UserDropdown";
 import { useDarkMode } from "@/app/[locale]/useDarkMode";
 import { AppDropdown, ClusterInfo } from "./AppDropdown";
+import { MetadataResponse } from "@/api/meta/schema";
 
 export function AppMasthead({
   username,
   showSidebarToggle,
   clusterInfoList,
   kafkaId,
+  metadata,
 }: {
-  username?: string;
-  showSidebarToggle: boolean;
-  clusterInfoList: ClusterInfo[];
-  kafkaId: string;
+  readonly username?: string;
+  readonly showSidebarToggle: boolean;
+  readonly clusterInfoList: ClusterInfo[];
+  readonly kafkaId: string;
+  readonly metadata?: MetadataResponse;
 }) {
   const t = useTranslations();
   const { toggleSidebar } = useAppLayout();
   const { isDarkMode, toggleDarkMode } = useDarkMode();
 
   const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
+  const [isAboutModalOpen, setIsAboutModalOpen] = useState(false);
 
   const openFeedbackModal = () => {
     setIsFeedbackModalOpen(true);
   };
   const closeFeedbackModal = () => {
     setIsFeedbackModalOpen(false);
+  };
+  const toggleAboutModal = (_event: React.MouseEvent<Element, MouseEvent> | KeyboardEvent | MouseEvent) => {
+    setIsAboutModalOpen(!isAboutModalOpen);
   };
 
   return (
@@ -131,6 +141,15 @@ export function AppMasthead({
                       onClick={openFeedbackModal}
                     />
                   </ToolbarItem>
+                  {metadata && <ToolbarItem className={"pf-v6-u-py-sm"}>
+                    <Button
+                      aria-label={t("AppMasthead.help")}
+                      variant={"plain"}
+                      icon={<InfoCircleIcon />}
+                      ouiaId={"help-button"}
+                      onClick={toggleAboutModal}
+                    />
+                  </ToolbarItem>}
                 </ToolbarGroup>
               </ToolbarGroup>
               {username && (
@@ -140,6 +159,7 @@ export function AppMasthead({
           </Toolbar>
         </MastheadContent>
       </Masthead>
+
       <FeedbackModal
         onShareFeedback={t("feedback.links.share")}
         onJoinMailingList={t("feedback.links.informDirection")}
@@ -149,6 +169,29 @@ export function AppMasthead({
         isOpen={isFeedbackModalOpen}
         onClose={closeFeedbackModal}
       />
+
+      <AboutModal
+        isOpen={isAboutModalOpen}
+        onClose={(e: React.MouseEvent<Element, MouseEvent> | KeyboardEvent | MouseEvent) => toggleAboutModal(e)}
+        brandImageSrc={
+          isDarkMode
+            ? "/full_logo_hori_reverse.svg"
+            : "/full_logo_hori_default.svg"
+        }
+        brandImageAlt="Brand Logo"
+        productName={t("common.title")}
+      >
+        <Content>
+          <dl>
+            <dt>Version</dt>
+            <dd>{metadata?.attributes.version}</dd>
+            <dt>Platform</dt>
+            <dd>{metadata?.attributes.platform}</dd>
+            <dt>User agent</dt>
+            <dd>{navigator.userAgent}</dd>
+          </dl>
+        </Content>
+      </AboutModal>
     </>
   );
 }

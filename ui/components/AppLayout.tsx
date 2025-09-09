@@ -9,17 +9,20 @@ import { ReconciliationProvider } from "./ReconciliationProvider";
 import { ReconciliationPausedBanner } from "./ReconciliationPausedBanner";
 import { AlertProvider } from "./AlertProvider";
 import { ClusterInfo } from "./AppDropdown";
+import { MetadataResponse } from "@/api/meta/schema";
 
 export function AppLayout({
   username,
   sidebar,
   children,
   kafkaId,
+  metadata,
   clusterInfoList,
 }: PropsWithChildren<{
   username?: string;
   sidebar?: ReactNode;
   kafkaId?: string;
+  readonly metadata?: MetadataResponse;
   clusterInfoList?: ClusterInfo[];
 }>) {
   const t = useTranslations();
@@ -33,6 +36,7 @@ export function AppLayout({
           showSidebarToggle={!!sidebar}
           clusterInfoList={clusterInfoList || []}
           kafkaId={kafkaId || ""}
+          metadata={metadata}
         />
       }
       sidebar={

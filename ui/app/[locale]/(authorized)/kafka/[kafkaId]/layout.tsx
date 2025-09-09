@@ -8,6 +8,8 @@ import { useTranslations } from "next-intl";
 import { PropsWithChildren, ReactNode, Suspense } from "react";
 import { KafkaParams } from "./kafka.params";
 import { getKafkaCluster, getKafkaClusters } from "@/api/kafka/actions";
+import { getMetadata } from "@/api/meta/actions";
+import { MetadataResponse } from "@/api/meta/schema";
 import { NoDataErrorState } from "@/components/NoDataErrorState";
 import { ClusterInfo } from "@/components/AppDropdown";
 import { oidcEnabled } from "@/utils/config";
@@ -52,10 +54,13 @@ export default async function AsyncLayout({
     return <NoDataErrorState errors={response.errors} />;
   }
 
+  const metadata = (await getMetadata()).payload ?? undefined;
+
   return (
     <Layout
       username={(session?.user?.name || session?.user?.email) ?? "User"}
       kafkaId={kafkaId}
+      metadata={metadata}
       activeBreadcrumb={activeBreadcrumb}
       header={header}
       modal={modal}
@@ -72,10 +77,12 @@ function Layout({
   header,
   modal,
   kafkaId,
+  metadata,
   username,
   clusterInfoList,
 }: PropsWithChildren<{
   kafkaId: string;
+  readonly metadata?: MetadataResponse;
   username: string;
   header: ReactNode;
   activeBreadcrumb: ReactNode;
@@ -88,6 +95,7 @@ function Layout({
       <AppLayout
         username={username}
         kafkaId={kafkaId}
+        metadata={metadata}
         sidebar={<ClusterLinks kafkaId={kafkaId} />}
         clusterInfoList={clusterInfoList}
       >

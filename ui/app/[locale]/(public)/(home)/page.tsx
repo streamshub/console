@@ -1,4 +1,5 @@
 import { getKafkaClusters } from "@/api/kafka/actions";
+import { getMetadata } from "@/api/meta/actions";
 import { AppLayout } from "@/components/AppLayout";
 import { ClusterTableColumn } from "@/components/ClustersTable";
 import { ExpandableCard } from "@/components/ExpandableCard";
@@ -114,9 +115,10 @@ export default async function Home({
   }
 
   const showLearning = cfg.showLearning;
+  const metadata = (await getMetadata()).payload ?? undefined;
 
   return (
-    <AppLayout username={username}>
+    <AppLayout username={username} metadata={metadata}>
       <PageSection padding={{ default: "noPadding" }} variant={"default"}>
         <div className={styles.hero}>
           <div>
@@ -149,7 +151,10 @@ export default async function Home({
                 <Content>
                   <RichText>
                     {(tags) =>
-                      t.rich("homepage.platform_openshift_cluster", tags)
+                      t.rich("homepage.platform", {
+                        ...tags,
+                        platform: metadata?.attributes.platform ?? "Unknown"
+                      })
                     }
                   </RichText>
                   <Content component={"small"}>
