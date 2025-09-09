@@ -39,10 +39,12 @@ import com.github.streamshub.console.api.model.Node.BrokerStatus;
 import com.github.streamshub.console.api.model.Node.ControllerStatus;
 import com.github.streamshub.console.api.model.Node.MetadataStatus;
 import com.github.streamshub.console.api.model.NodeSummary;
+import com.github.streamshub.console.api.security.PermissionService;
 import com.github.streamshub.console.api.support.KafkaContext;
 import com.github.streamshub.console.api.support.ListRequestContext;
 import com.github.streamshub.console.api.support.MetadataQuorumSupport;
 import com.github.streamshub.console.config.ConsoleConfig;
+import com.github.streamshub.console.config.security.Privilege;
 
 import io.fabric8.kubernetes.api.model.ObjectMeta;
 import io.fabric8.kubernetes.api.model.Pod;
@@ -83,6 +85,9 @@ public class NodeService {
     KafkaContext kafkaContext;
 
     @Inject
+    PermissionService permissionService;
+
+    @Inject
     ThreadContext threadContext;
 
     @Inject
@@ -105,6 +110,7 @@ public class NodeService {
 
         return listNodes()
             .thenApply(nodes -> nodes.stream()
+                    .filter(permissionService.permitted(Node.API_TYPE, Privilege.LIST, Node::getId))
                     .map(node -> tallySummary(node, summary))
                     .filter(listSupport.filter(Node.class))
                     .map(listSupport::tally)

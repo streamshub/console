@@ -9,6 +9,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import jakarta.annotation.PostConstruct;
@@ -219,41 +220,78 @@ class PermissionCache {
 
         for (String name : kafkaClusterNames) {
             if ("*".equals(name)) {
-                if (log.isDebugEnabled()) {
-                    log.debugf("Expanding wildcard to include all Kafka clusters: %s", clusterKeyIds.values());
-                }
-                updatedNames.addAll(clusterKeyIds.values());
-                continue;
-            }
-
-            var clusterIdFromKey = clusterKeyIds.get(name);
-            var clusterIdsFromName = clusterNameIds.get(name);
-
-            if (clusterIdFromKey != null) {
-                updatedNames.add(clusterIdFromKey);
-            } else if (clusterIdsFromName != null) {
-                if (clusterIdsFromName.size() == 1) {
-                    /*
-                     * When we can determine a single cluster using a name (without namespace),
-                     * use it without logging anything. This is the backward-compatible behavior.
-                     */
-                    updatedNames.add(clusterIdsFromName.get(0));
-                } else {
-                    log.warnf("""
-                            Kafka cluster '%s' in security rule resolves to multiple cluster \
-                            configurations. Clusters with a namespace must prefix the name \
-                            with the namespace value. Possible Kafka clusters: %s""",
-                            name,
-                            clusterIdsFromName);
-                }
+                updatedNames.addAll(mapKafkaClusterIdWildcard(clusterKeyIds));
+            } else if (ConsolePermission.isDelimitedRegex(name)) {
+                updatedNames.addAll(mapKafkaClusterIdRegex(name, clusterKeyIds));
             } else {
-                log.warnf("""
-                        Unknown Kafka cluster '%s' in security rule. \
-                        Clusters with a namespace must prefix the name with the namespace \
-                        value. Known Kafka clusters: %s""", name, clusterKeyIds.keySet());
+                updatedNames.addAll(mapKafkaClusterIdLiteral(name, clusterKeyIds, clusterNameIds));
             }
         }
 
         return updatedNames;
+    }
+
+    private Collection<String> mapKafkaClusterIdWildcard(Map<String, String> clusterKeyIds) {
+        Collection<String> allClusterIds = clusterKeyIds.values();
+
+        if (log.isDebugEnabled()) {
+            log.debugf("Expanding wildcard to include all Kafka clusters: %s", allClusterIds);
+        }
+
+        return allClusterIds;
+    }
+
+    private Collection<String> mapKafkaClusterIdRegex(String name, Map<String, String> clusterKeyIds) {
+        Pattern pattern = Pattern.compile(name.substring(1, name.length() - 1));
+        List<String> matchedClusterIds = clusterKeyIds.entrySet()
+            .stream()
+            .filter(entry -> {
+                String clusterKey = entry.getKey();
+                boolean matched = pattern.matcher(clusterKey).matches();
+                if (log.isDebugEnabled()) {
+                    String matchMsg = matched ? "matched" : "did not match";
+                    log.debugf("Cluster key %s %s regex pattern %s", clusterKey, matchMsg, pattern);
+                }
+                return matched;
+            })
+            .map(Map.Entry::getValue)
+            .toList();
+
+        if (log.isDebugEnabled()) {
+            log.debugf("Expanding regex %s to include Kafka clusters: %s", name, matchedClusterIds);
+        }
+
+        return matchedClusterIds.isEmpty() ? Collections.singleton(ConsolePermission.UNMATCHABLE) : matchedClusterIds;
+    }
+
+    private Collection<String> mapKafkaClusterIdLiteral(String name, Map<String, String> clusterKeyIds, Map<String, List<String>> clusterNameIds) {
+        var clusterIdFromKey = clusterKeyIds.get(name);
+        var clusterIdsFromName = clusterNameIds.get(name);
+
+        if (clusterIdFromKey != null) {
+            return Collections.singleton(clusterIdFromKey);
+        } else if (clusterIdsFromName != null) {
+            if (clusterIdsFromName.size() == 1) {
+                /*
+                 * When we can determine a single cluster using a name (without namespace),
+                 * use it without logging anything. This is the backward-compatible behavior.
+                 */
+                return Collections.singleton(clusterIdsFromName.get(0));
+            } else {
+                log.warnf("""
+                        Kafka cluster '%s' in security rule resolves to multiple cluster \
+                        configurations. Clusters with a namespace must prefix the name \
+                        with the namespace value. Possible Kafka clusters: %s""",
+                        name,
+                        clusterIdsFromName);
+            }
+        } else {
+            log.warnf("""
+                    Unknown Kafka cluster '%s' in security rule. \
+                    Clusters with a namespace must prefix the name with the namespace \
+                    value. Known Kafka clusters: %s""", name, clusterKeyIds.keySet());
+        }
+
+        return Collections.singleton(ConsolePermission.UNMATCHABLE);
     }
 }
