@@ -70,7 +70,6 @@
     "connected_kafka_clusters": "Connected Kafka clusters",
     "page_header": "Welcome to the {product} console",
     "page_subtitle": "The {brand} {product} console provides a user interface for managing and monitoring your streaming resources",
-    "platform_openshift_cluster": "<strong>Platform: OpenShift Cluster</strong>",
     "platform": "<strong>Platform: {platform}</strong>",
     "recently_viewed_topics_header": "Recently viewed topics",
     "recently_viewed_topics_header_popover": "When you start looking at specific topics through the {product} console, they'll start showing here.",
