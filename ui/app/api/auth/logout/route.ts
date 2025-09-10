@@ -6,9 +6,6 @@ import { oidcEnabled } from "@/utils/config";
 export async function GET(req: NextRequest) {
   const isOidc = await oidcEnabled();
 
-  console.log("is oidc Enable", isOidc);
-
-  // If OIDC is not enabled, just clear session and redirect
   if (!isOidc) {
     return NextResponse.redirect(new URL("/logout", req.url));
   }

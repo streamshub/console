@@ -178,7 +178,6 @@ class OpenIdConnect {
         `account ${JSON.stringify(account)} present, saving new token: ${JSON.stringify(token)}`,
       );
 
-      console.log("account", account);
       // Save the access token and refresh token in the JWT on the initial login
       return {
         access_token: account.access_token,
@@ -207,8 +206,6 @@ class OpenIdConnect {
 
     // Send properties to the client, like an access_token from a provider.
     log.trace(token, "Updating session with token");
-
-    console.log("session", session), console.log("token", token);
     return {
       ...session,
       error: token.error,
