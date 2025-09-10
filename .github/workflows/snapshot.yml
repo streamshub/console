@@ -14,8 +14,8 @@ jobs:
     name: snapshot
     env:
       PLATFORMS: linux/amd64,linux/arm64,linux/ppc64le,linux/s390x
-      IMAGE_EXPIRATION: "20h"
-      QUAY_EXPIRES_AFTER_LABEL: "quay.expires-after=20h"
+      IMAGE_EXPIRATION: "72h"
+      QUAY_EXPIRES_AFTER_LABEL: "quay.expires-after=72h"
     steps:
       # ==================== Setup ====================
       - name: Checkout
