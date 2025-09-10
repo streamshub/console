@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
   url.searchParams.set("id_token_hint", token.id_token);
   url.searchParams.set(
     "post_logout_redirect_uri",
-    new URL("/", req.url).toString(),
+    new URL("/api/auth/oidc/signin", req.url).toString(),
   );
 
   return NextResponse.redirect(url.toString());
