@@ -1,0 +1,140 @@
+name: Systemtest
+
+on:
+  workflow_dispatch:
+    inputs:
+      commit_sha:
+        description: 'Commit sha'
+        required: true
+      testcase:
+        description: 'Test case to run'
+        required: false
+      profile:
+        description: 'Profile to use'
+        required: false
+      install_type:
+        description: 'Install type to use'
+        required: false
+      retry_count:
+        description: 'Retry count to use'
+        required: false
+      env_str:
+        description: 'Envs to use for tests'
+        required: false
+
+jobs:
+  run-systemtests:
+    permissions:
+      contents: read
+      statuses: write
+      pull-requests: write
+    runs-on: ubuntu-24.04
+    env:
+      RUN_URL: ${{ github.run_url }}
+      COMMIT_SHA: ${{ github.event.inputs.commit_sha }}
+      GH_TOKEN: ${{ secrets.GH_FULL_ORG_TOKEN }}
+      REPO: ${{ github.repository }}
+      TEST_CASE: ${{ github.event.inputs.testcase }}
+      PROFILE: ${{ github.event.inputs.profile }}
+      INSTALL_TYPE: ${{ github.event.inputs.install_type }}
+      RETRY_COUNT: ${{ github.event.inputs.retry_count }}
+      ENVS: ${{ github.event.inputs.env_str }}
+      OLM_VERSION: "v0.28.0"
+      YQ_VERSION: "v4.44.1"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ env.COMMIT_SHA }}
+
+      - name: Get the commit details
+        run: |
+          ARTIFACTS_RUN_ID=$(gh run list --repo $REPO --commit $COMMIT_SHA --workflow integration.yml --status success --status success --json databaseId --jq '.[0].databaseId')
+          PR_NUMBER=$(gh pr list --repo $REPO --state open --search $COMMIT_SHA --json number,createdAt -q "sort_by(.createdAt) | .[-1] | .number")
+        
+          echo "PR_NUMBER=$PR_NUMBER" >> $GITHUB_ENV
+          echo "ARTIFACTS_RUN_ID=$ARTIFACTS_RUN_ID" >> $GITHUB_ENV
+
+      - name: Comment the build
+        run: ./.github/actions/systemtests/update-pr-systemtests-started.sh
+
+      - name: Download Images
+        id: download-artifact
+        uses: dawidd6/action-download-artifact@v11
+        with:
+          github_token: ${{ env.GH_TOKEN }}
+          workflow: integration.yml
+          workflow_conclusion: success
+          run_id: ${{ env.ARTIFACTS_RUN_ID }}
+          skip_unpack: false
+          repo: ${{ env.REPO }}
+          name: streamshub-images
+
+      - name: Setup Minikube
+        id: setup_minikube
+        uses: ./.github/actions/setup-minikube
+        with:
+          MEM: 15g
+          CPUS: 4
+
+      - name: Set Dynamic Environment Vars
+        run: |
+          echo "PROJECT_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+          # STs config
+          echo "CONSOLE_CLUSTER_DOMAIN=$(minikube ip).nip.io" >> $GITHUB_ENV
+          echo "CONSOLE_OLM_CATALOG_SOURCE_NAME=streamshub-console-catalog" >> $GITHUB_ENV
+          echo "CONSOLE_OLM_CATALOG_SOURCE_NAMESPACE=olm" >> $GITHUB_ENV
+
+      - name: Deploy CatalogSource
+        run: |
+          set -x
+
+          # Create the CatalogSource with the Console operator bundle
+          yq ea '.spec.image = "localhost:5000/streamshub/console-operator-catalog:${{ env.PROJECT_VERSION }}"' \
+            ./install/operator/olm/010-CatalogSource-console-operator-catalog.yaml \
+            | kubectl apply -n $CONSOLE_OLM_CATALOG_SOURCE_NAMESPACE -f -
+
+          kubectl wait catalogsource/streamshub-console-catalog -n $CONSOLE_OLM_CATALOG_SOURCE_NAMESPACE \
+            --for=jsonpath='{.status.connectionState.lastObservedState}'=READY \
+            --timeout=180s
+
+      - name: Install Playwright Via NodeJS
+        uses: actions/setup-node@v5
+        with:
+          node-version: lts/*
+      - run: |
+          npm install -g playwright
+          npx playwright install --with-deps
+
+      - name: Setup JDK
+        uses: actions/setup-java@v5
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Build project
+        run: |
+          mvn clean install -B -DskipTests --no-transfer-progress
+
+      - name: Prepare systemtest ENV
+        run: ./.github/actions/systemtests/prepare-systemtests-env.sh
+
+      - name: Run systemtests
+        run: |
+          mvn clean verify -B --no-transfer-progress -pl systemtests $PARAMETERS
+
+      - name: Archive systemtest artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: systemtests-artifacts
+          if-no-files-found: warn
+          path: |
+            systemtests/target/**/TEST-*.xml
+            systemtests/target/logs/**
+            systemtests/screenshot/**
+            systemtests/tracing/**
+
+      - name: Parse results and update PR status
+        if: always()
+        run: ./.github/actions/systemtests/parse-results-update-pr.sh

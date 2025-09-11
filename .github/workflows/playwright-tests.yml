@@ -22,18 +22,11 @@ jobs:
         with:
           name: streamshub-images
 
-      - name: Start minikube
-        id: minikube
-        uses: medyagh/setup-minikube@latest
+      - name: Setup Minikube Environment
+        uses: ./.github/actions/setup-minikube
         with:
-          cpus: 2
-          memory: 8g
-          addons: registry,ingress,ingress-dns
-          insecure-registry: 'localhost:5000,10.0.0.0/24'
-          start-args: '--extra-config=kubeadm.ignore-preflight-errors=SystemVerification --extra-config=apiserver.authorization-mode=RBAC,Node'
-
-      - name: Use Node.js
-        uses: actions/setup-node@v5
+          MEM: 8g
+          CPUS: 2
 
       - name: Set Dynamic Environment Vars
         run: |
@@ -41,41 +34,12 @@ jobs:
           echo "CLUSTER_DOMAIN=$(minikube ip).nip.io" >> $GITHUB_ENV
           echo "CONSOLE_URL=https://example-console.$(minikube ip).nip.io" >> $GITHUB_ENV
 
-      - name: Prepare minikube
-        run: |
-          set -x
-
-          sudo apt-get install -y socat
-          socat TCP-LISTEN:5000,reuseaddr,fork TCP:$(minikube ip):5000 &
-          SOCAT_PID=${!}
-
-          mkdir streamshub-images
-          tar -xzf streamshub-images.tgz -C streamshub-images
-
-          # Load images
-          skopeo sync --all --scoped --src dir --dest docker --dest-tls-verify=false \
-            streamshub-images/localhost:5000/streamshub \
-            localhost:5000/streamshub
-
-          kill ${SOCAT_PID}
-
-          # Enable TLS/SSL passthough
-          kubectl patch deployment -n ingress-nginx ingress-nginx-controller --type='json' -p='[{"op": "add", "path": "/spec/template/spec/containers/0/args/-", "value":"--enable-ssl-passthrough"}]'
-
-          # Install yq for deployment script
-          curl -L https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64 > yq && chmod +x yq
-          sudo cp -v yq /usr/bin/
-
-          # Install OLM
-          curl -sL https://github.com/operator-framework/operator-lifecycle-manager/releases/download/${OLM_VERSION}/install.sh | bash -s "${OLM_VERSION}"
-
-          # Create the namespace for the test resources
-          kubectl create namespace $TARGET_NAMESPACE
-
       # replace with resources in docs PR
       - name: Install Operators
         run: |
           set -x
+          # Create the namespace for the test resources
+          kubectl create namespace $TARGET_NAMESPACE
 
           # Create the CatalogSource with the Console operator bundle
           yq ea '.spec.image = "localhost:5000/streamshub/console-operator-catalog:${{ env.PROJECT_VERSION }}"' \
@@ -205,6 +169,9 @@ jobs:
             envsubst | \
             kubectl apply -n ${TARGET_NAMESPACE} -f -
           kubectl wait deployment/console-datagen --for=condition=available --timeout=300s -n $TARGET_NAMESPACE
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
 
       - name: Run Playwright Tests
         working-directory: ./ui

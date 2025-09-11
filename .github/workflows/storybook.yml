@@ -3,7 +3,7 @@ name: Build and Deploy Storybook to Chromatic
 on:
   push:
     branches:
-      - main
+      - special
     paths:
       - 'ui/**'
       - '!ui/package.json'

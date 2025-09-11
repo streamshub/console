@@ -1,0 +1,62 @@
+name: "Setup Local Minikube Playwright Testing Environment"
+description: "Sets up Minikube with registry, ingress, OLM, and exports IP"
+
+inputs:
+  PROJECT_VERSION:
+    required: false
+    description: "Optional project version"
+  MEM:
+    required: false
+    default: "8g"
+    description: "Minikube memory allocation"
+  CPUS:
+    required: false
+    default: "2"
+    description: "Minikube CPU allocation"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install yq for deployment scripts
+      shell: bash
+      run: |
+        curl -L https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64 > yq && chmod +x yq
+        sudo cp -v yq /usr/bin/
+
+    - name: Start Minikube
+      id: minikube
+      uses: medyagh/setup-minikube@latest
+      with:
+        cpus: ${{ inputs.CPUS }}
+        memory: ${{ inputs.MEM }}
+        addons: registry,ingress,ingress-dns
+        insecure-registry: 'localhost:5000,10.0.0.0/24'
+        start-args: '--extra-config=kubeadm.ignore-preflight-errors=SystemVerification --extra-config=apiserver.authorization-mode=RBAC,Node'
+
+    - name: Sync images into local registry
+      shell: bash
+      run: |
+        sudo apt-get install -y socat
+        socat TCP-LISTEN:5000,reuseaddr,fork TCP:$(minikube ip):5000 &
+        SOCAT_PID=${!}
+
+        mkdir -p streamshub-images
+        tar -xzf streamshub-images.tgz -C streamshub-images
+
+        skopeo sync --all --scoped --src dir --dest docker --dest-tls-verify=false \
+          streamshub-images/localhost:5000/streamshub \
+          localhost:5000/streamshub
+
+        kill ${SOCAT_PID}
+
+    - name: Setup Nginx
+      shell: bash
+      run: |
+        kubectl patch deployment -n ingress-nginx ingress-nginx-controller \
+          --type='json' \
+          -p='[{"op": "add", "path": "/spec/template/spec/containers/0/args/-", "value":"--enable-ssl-passthrough"}]'
+
+    - name: Setup OLM
+      shell: bash
+      run: |
+        curl -sL https://github.com/operator-framework/operator-lifecycle-manager/releases/download/v0.28.0/install.sh | bash -s v0.28.0
