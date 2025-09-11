@@ -1,5 +1,5 @@
 name: "Setup Local Minikube Playwright Testing Environment"
-description: "Sets up Minikube with registry, ingress, OLM, and exports IP"
+description: "Sets up Minikube with registry, ingress, and OLM"
 
 inputs:
   PROJECT_VERSION:
@@ -49,7 +49,7 @@ runs:
 
         kill ${SOCAT_PID}
 
-    - name: Setup Nginx
+    - name: Set Nginx ingres passthrough
       shell: bash
       run: |
         kubectl patch deployment -n ingress-nginx ingress-nginx-controller \

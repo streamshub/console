@@ -24,22 +24,25 @@ if [[ -d "$RESULT_DIR" ]]; then
     TEST_FILES+=("$f");
   done < <(find "$RESULT_DIR" -type f -name 'TEST-*.xml' -print0)
 
-  echo "Found ${#TEST_FILES[@]} files:"
+  echo "Found ${#TEST_FILES[@]} results files:"
 
   for f in "${TEST_FILES[@]}"; do
-    echo " * $f";
+    echo "Found results file: $f";
   done
 else
   echo "No test results directory found: $RESULT_DIR"
 fi
 
 for f in "${TEST_FILES[@]}"; do
-  echo "Processing $f"
+  echo "Processing results file $f"
+
+  # Get test type count directly from root testSuite tag
   TOTAL=$(yq -p=xml -o=json '.testsuite."+@tests"' "$f" | jq -r)
   FAILED=$(yq -p=xml -o=json '.testsuite."+@failures"' "$f" | jq -r)
   ERRORS=$(yq -p=xml -o=json '.testsuite."+@errors"' "$f" | jq -r)
   SKIPPED=$(yq -p=xml -o=json '.testsuite."+@skipped"' "$f" | jq -r)
 
+  # Get more info about what test failed from list of testcases
   TESTCASES_JSON=$(yq -p=xml -o=json '.testsuite.testcase
     | (select(tag == "!!map") | [.]) + (select(tag == "!!seq"))
     | map({"classname": .["+@classname"], "name": .["+@name"], "failure": .failure, "error": .error})' "$f")
@@ -91,19 +94,19 @@ else
   DESCRIPTION="Systemtests failed"
 fi
 
-# Prepare LIST_FAILED for markdown
+# Prepare list of failed testCase names for markdown
 LIST_FAILED=""
 if [[ -n "$FAILED_TESTS" ]]; then
-  LIST_FAILED="Test Failures:"
+  LIST_FAILED="#### Test Failures:"
   IFS=',' read -ra FAILED_ARRAY <<< "$FAILED_TESTS"
   for t in "${FAILED_ARRAY[@]}"; do
     [[ -n "$t" ]] && LIST_FAILED+="\n- $t"
   done
 fi
 
-# Write result.md
+# Write results markdown for PR comment
 mkdir -p "$(dirname "$RESULT_MD")"
-cat > "$RESULT_MD" <<- RESULTS
+cat > $RESULT_MD <<- RESULTS
 ## $STATUS_SYMBOL Systemtests run finished - $STATE $STATUS_SYMBOL
 ### Test Summary:
 - **TOTAL**: $TOTAL
@@ -123,25 +126,8 @@ RESULTS
 
 echo "Results file $(cat $RESULT_MD)"
 
-# Export variables for GitHub Actions
-echo "TOTAL=$TOTAL" >> $GITHUB_ENV
-echo "PASSED=$PASSED" >> $GITHUB_ENV
-echo "FAILED=$FAILED" >> $GITHUB_ENV
-echo "ERRORS=$ERRORS" >> $GITHUB_ENV
-echo "SKIPPED=$SKIPPED" >> $GITHUB_ENV
-echo "FAILED_TESTS=$FAILED_TESTS" >> $GITHUB_ENV
-echo "STATE=$STATE" >> $GITHUB_ENV
-echo "RESULT_MD=$RESULT_MD" >> $GITHUB_ENV
-
 # Set status check of the PR
-gh api repos/$REPO/statuses/$COMMIT_SHA \
-    -f state="$STATE" \
-    -f context="System Tests" \
-    -f description="$DESCRIPTION" \
-    -f target_url="$RUN_URL"
+gh api repos/$REPO/statuses/$COMMIT_SHA -f state="$STATE" -f context="System Tests" -f description="$DESCRIPTION" -f target_url="$RUN_URL"
 
-# Comment status
-gh pr comment $PR_NUMBER --repo $REPO  \
-    --edit-last \
-    --create-if-none \
-    --body-file $RESULT_MD
+# Comment PR with results markdown
+gh pr comment $PR_NUMBER --repo $REPO  --edit-last --create-if-none --body-file $RESULT_MD

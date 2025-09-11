@@ -18,4 +18,5 @@ elif [[ -n "$PROFILE" ]]; then
   PARAMETERS="$PARAMETERS -P $PROFILE"
 fi
 
+# Export parameters
 echo "PARAMETERS=$PARAMETERS" >> "$GITHUB_ENV"

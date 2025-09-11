@@ -22,14 +22,7 @@ PARAMS
 
 # Set status check
 gh api repos/$REPO/statuses/$COMMIT_SHA \
-  -f state="pending" \
-  -f context="System Tests" \
-  -f description="System tests are running..." \
-  -f target_url="$RUN_URL"
+  -f state="pending" -f context="System Tests" -f description="System tests are running..." -f target_url="$RUN_URL"
 
 # Update PR comment
-gh pr comment "$PR_NUMBER" \
-  --repo "$REPO" \
-  --edit-last \
-  --create-if-none \
-  --body-file "$PARAMS_MD"
+gh pr comment "$PR_NUMBER" --repo "$REPO" --edit-last --create-if-none --body-file "$PARAMS_MD"
