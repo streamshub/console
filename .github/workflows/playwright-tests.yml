@@ -147,7 +147,7 @@ jobs:
         run: |
           set -x
           curl -kL ${CONSOLE_URL}
-          curl -kL ${CONSOLE_URL} | grep "StreamsHub console"
+          curl -kL ${CONSOLE_URL} | grep "StreamsHub Console"
 
       - name: Deploy Data Generator
         run: |

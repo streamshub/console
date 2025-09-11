@@ -239,6 +239,18 @@ rules:
       - prometheuses/api
     resourceNames:
       - k8s
+
+  # Granted to Console instances to read the ClusterVersion and fetch the OpenShift version 
+  # for display.
+  - verbs:
+      - get
+    apiGroups:
+      - config.openshift.io
+    resources:
+      - clusterversions
+    resourceNames:
+      - version
+
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding

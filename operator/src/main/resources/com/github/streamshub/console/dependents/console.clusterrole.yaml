@@ -28,3 +28,11 @@ rules:
       - ""
     resources:
       - pods
+  - verbs:
+      - get
+    apiGroups:
+      - config.openshift.io
+    resources:
+      - clusterversions
+    resourceNames:
+      - version
