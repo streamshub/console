@@ -14,9 +14,8 @@ BUILD_RUN=$(gh api "repos/$REPO/actions/workflows/$WORKFLOW_FILE/runs?branch=$BR
   --jq '.workflow_runs[0].conclusion')
 
 echo "Build workflow latest run conclusion: $BUILD_RUN"
-# TODO:debug
-# if [[ "$BUILD_RUN" != "success" ]]; then
-#   gh pr comment "$PR_NUMBER" --repo "$REPO" --edit-last --create-if-none \
-#     --body "❌ Build did not succeed. Cannot trigger systemtests"
-#   exit 1
-# fi
+if [[ "$BUILD_RUN" != "success" ]]; then
+  gh pr comment "$PR_NUMBER" --repo "$REPO" --edit-last --create-if-none \
+    --body "❌ Build did not succeed. Cannot trigger systemtests"
+  exit 1
+fi
