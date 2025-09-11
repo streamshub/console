@@ -26,6 +26,7 @@ jobs:
       # ==================== Setup ====================
       - name: Checkout
         uses: actions/checkout@v5
+
       - name: Set Image Tag Env
         run: echo "PROJECT_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
 
