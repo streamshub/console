@@ -53,24 +53,6 @@ export async function getAuthOptions(): Promise<AuthOptions> {
           return oidc.session({ session, token });
         },
       },
-      events: {
-        async signOut({ token }) {
-          if (token.provider === "oidc" && token.id_token) {
-            try {
-              const logoutUrl = await oidc.getLogoutUrl();
-
-              if (logoutUrl) {
-                const url = new URL(logoutUrl);
-                url.searchParams.set("id_token_hint", token.id_token);
-                await fetch(url);
-                log.info("OIDC back-channel logout successful");
-              }
-            } catch (error) {
-              log.error({ error }, "Error during OIDC back-channel logout");
-            }
-          }
-        },
-      },
     };
   } else {
     log.debug("OIDC is disabled");
@@ -87,7 +69,7 @@ export async function getAuthOptions(): Promise<AuthOptions> {
           }
           return token;
         },
-        async session({ session, token, user }) {
+        async session({ session, token }) {
           // Send properties to the client, like an access_token and user id from a provider.
           session.authorization = token.authorization;
 
