@@ -95,35 +95,40 @@ public class PwUtils {
     // Wait for locator visible
     // --------------------------
     public static void waitForLocatorVisible(TestCaseConfig tcc, String selector) {
-        waitForLocatorVisible(tcc, selector, TimeConstants.ELEMENT_VISIBILITY_TIMEOUT);
+        waitForLocatorVisible(tcc.page().locator(selector));
     }
 
-    public static void waitForLocatorVisible(TestCaseConfig tcc, String selector, long timeout) {
-        LOGGER.debug("Waiting for locator to be visible without reloading [{}]", selector);
-        tcc.page()
-            .locator(selector)
-            .waitFor(new Locator.WaitForOptions().setTimeout(timeout)
-                .setState(WaitForSelectorState.VISIBLE));
+    public static void waitForLocatorVisible(Locator locator) {
+        waitForLocatorVisible(locator, TimeConstants.ELEMENT_VISIBILITY_TIMEOUT);
+    }
+
+    public static void waitForLocatorVisible(Locator locator, long timeout) {
+        LOGGER.debug("Waiting for locator to be visible without reloading [{}]", locator);
+        locator.waitFor(new Locator.WaitForOptions().setTimeout(timeout).setState(WaitForSelectorState.VISIBLE));
     }
 
     // --------------------------
     // Click actions
     // --------------------------
     public static void waitForLocatorAndClick(TestCaseConfig tcc, String selector) {
-        waitForLocatorVisible(tcc, selector);
-        clickWithRetry(tcc, selector);
+        waitForLocatorAndClick(tcc.page().locator(selector));
+    }
+
+    public static void waitForLocatorAndClick(Locator locator) {
+        waitForLocatorVisible(locator);
+        clickWithRetry(locator);
     }
 
     // Due to https://github.com/microsoft/playwright/issues/14946
     // some buttons or elements that change their visibility might throw errors onclick action
-    public static void clickWithRetry(TestCaseConfig tcc, String selector) {
-        Utils.retryAction("click on locator", () -> click(tcc, selector), Constants.MAX_ACTION_RETRIES);
+    public static void clickWithRetry(Locator locator) {
+        Utils.retryAction("click on locator", () -> click(locator), Constants.MAX_ACTION_RETRIES);
     }
 
-    public static void click(TestCaseConfig tcc, String selector) {
-        LOGGER.debug("Clicking on locator [{}]", selector);
+    public static void click(Locator locator) {
+        LOGGER.debug("Clicking on locator [{}]", locator);
         Utils.sleepWait(TimeConstants.UI_COMPONENT_REACTION_INTERVAL_SHORT);
-        tcc.page().locator(selector).click(new Locator.ClickOptions().setForce(true).setTimeout(TimeConstants.COMPONENT_LOAD_TIMEOUT));
+        locator.click(new Locator.ClickOptions().setForce(true).setTimeout(TimeConstants.COMPONENT_LOAD_TIMEOUT));
         Utils.sleepWait(TimeConstants.UI_COMPONENT_REACTION_INTERVAL_SHORT);
     }
 
@@ -131,18 +136,22 @@ public class PwUtils {
     // Fill actions
     // --------------------------
     public static void waitForLocatorAndFill(TestCaseConfig tcc, String selector, String fillText) {
-        waitForLocatorVisible(tcc, selector);
-        fillWithRetry(tcc, selector, fillText);
+        waitForLocatorAndFill(tcc.page().locator(selector), fillText);
     }
 
-    public static void fillWithRetry(TestCaseConfig tcc, String selector, String text) {
-        Utils.retryAction("fill locator", () -> fill(tcc, selector, text), Constants.MAX_ACTION_RETRIES);
+    public static void waitForLocatorAndFill(Locator locator, String fillText) {
+        waitForLocatorVisible(locator);
+        fillWithRetry(locator, fillText);
     }
 
-    public static void fill(TestCaseConfig tcc, String selector, String text) {
-        LOGGER.debug("Fill locator [{}] with text [{}]", selector, text);
+    public static void fillWithRetry(Locator locator, String text) {
+        Utils.retryAction("fill locator", () -> fill(locator, text), Constants.MAX_ACTION_RETRIES);
+    }
+
+    public static void fill(Locator locator, String text) {
+        LOGGER.debug("Fill locator [{}] with text [{}]", locator, text);
         Utils.sleepWait(TimeConstants.UI_COMPONENT_REACTION_INTERVAL_SHORT);
-        tcc.page().locator(selector).fill(text, new Locator.FillOptions().setForce(true).setTimeout(TimeConstants.COMPONENT_LOAD_TIMEOUT));
+        locator.fill(text, new Locator.FillOptions().setForce(true).setTimeout(TimeConstants.COMPONENT_LOAD_TIMEOUT));
         Utils.sleepWait(TimeConstants.UI_COMPONENT_REACTION_INTERVAL_SHORT);
     }
 
@@ -358,10 +367,6 @@ public class PwUtils {
             .setWaitUntil(WaitUntilState.NETWORKIDLE);
     }
 
-    public static void screenshot(TestCaseConfig tcc) {
-        screenshot(tcc, tcc.kafkaName(), "");
-    }
-
     public static void screenshot(TestCaseConfig tcc, String kafkaName, String additionalSuffix) {
         // e.g. screenshots/testFilterTopics/topicst-33aaa/topics/screenshotname-2025-04-21__18-05-33.png
         String pageUrl = tcc.page().url().replace(PwPageUrls.getKafkaBaseUrl(tcc, kafkaName), "");
@@ -381,6 +386,10 @@ public class PwUtils {
         tcc.page().screenshot(new Page.ScreenshotOptions().setPath(Path.of(Environment.SCREENSHOTS_DIR_PATH, screenshotName)));
     }
 
+    public static void saveTracing(BrowserContext context) {
+        context.tracing().stop(new Tracing.StopOptions().setPath(Paths.get(Environment.TRACING_DIR_PATH,
+            KubeResourceManager.get().getTestContext().getDisplayName().replace("()", "") + "-trace.zip")));
+    }
 
 
     /**
@@ -398,10 +407,5 @@ public class PwUtils {
         LOGGER.info("Remove focus by moving mouse to X,Y = [0;0]");
         tcc.page().mouse().move(0, 0);
 
-    }
-
-    public static void saveTracing(BrowserContext context) {
-        context.tracing().stop(new Tracing.StopOptions().setPath(Paths.get(Environment.TRACING_DIR_PATH,
-            KubeResourceManager.get().getTestContext().getDisplayName().replace("()", "") + "-trace.zip")));
     }
 }
