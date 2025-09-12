@@ -47,6 +47,7 @@ public class MessagesST extends AbstractST {
     private static final int MESSAGE_COUNT = Constants.MESSAGE_COUNT;
     private static final int TOPIC_COUNT = 1;
     private static String kafkaTopicName;
+
     // 1. Filter by key
     private static final String KEY_FILTER = "orderID";
     private static final String KEY_FILTER_MESSAGE = "my-order";
