@@ -88,6 +88,21 @@ class OpenIdConnect {
     return true;
   }
 
+  async getLogoutUrl() {
+    try {
+      const discoveryEndpoint = this.provider!.wellKnown!;
+      const response = await fetch(discoveryEndpoint);
+      if (!response.ok) {
+        throw new Error("Failed to fetch OIDC discovery document");
+      }
+      const discovery = await response.json();
+      return discovery.end_session_endpoint;
+    } catch (error) {
+      log.error({ error }, "Failed to get OIDC logout URL");
+      return null;
+    }
+  }
+
   async refreshToken(token: JWT): Promise<JWT> {
     let refresh_token =
       typeof token.refresh_token === "string" ? token.refresh_token : undefined;
@@ -127,7 +142,7 @@ class OpenIdConnect {
     const responseBody = await response.text();
 
     if (!response.ok) {
-      log.debug({responseBody}, "Bad token response");
+      log.debug({ responseBody }, "Bad token response");
       return {
         error: responseBody,
       };
@@ -162,6 +177,7 @@ class OpenIdConnect {
       log.trace(
         `account ${JSON.stringify(account)} present, saving new token: ${JSON.stringify(token)}`,
       );
+
       // Save the access token and refresh token in the JWT on the initial login
       return {
         access_token: account.access_token,
@@ -171,6 +187,7 @@ class OpenIdConnect {
         name: token.name,
         picture: token.picture,
         sub: token.sub,
+        id_token: account.id_token,
       };
     }
 
@@ -186,6 +203,7 @@ class OpenIdConnect {
       session.expires = new Date(0).toISOString();
       return session;
     }
+
     // Send properties to the client, like an access_token from a provider.
     log.trace(token, "Updating session with token");
     return {

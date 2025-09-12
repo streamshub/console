@@ -11,6 +11,13 @@ import oidcSource from "./oidc";
 
 const log = logger.child({ module: "auth" });
 
+declare module "next-auth/jwt" {
+  interface JWT {
+    id_token?: string;
+    provider?: string;
+  }
+}
+
 function makeAuthOption(cluster: ClusterList): Provider {
   switch (cluster.meta.authentication?.method) {
     case "oauth": {
@@ -62,7 +69,7 @@ export async function getAuthOptions(): Promise<AuthOptions> {
           }
           return token;
         },
-        async session({ session, token, user }) {
+        async session({ session, token }) {
           // Send properties to the client, like an access_token and user id from a provider.
           session.authorization = token.authorization;
 
