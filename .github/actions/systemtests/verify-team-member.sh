@@ -29,4 +29,5 @@ if $is_member; then
   echo "✅ $COMMENTER IS a member of $ORG/$TEAM"
 else
   echo "❌ $COMMENTER is not allowed to trigger this workflow"
+  exit 1
 fi
