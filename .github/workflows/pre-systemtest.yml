@@ -1,0 +1,54 @@
+name: Pre-Systemtest
+permissions:
+  contents: read
+  pull-requests: write
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  process-comment:
+    if: ${{ github.event.issue.pull_request && startsWith(github.event.comment.body, '/systemtests') }}
+    runs-on: ubuntu-latest
+    env:
+      ORG: streamshub
+      TEAM: console-developers
+      PR_NUMBER: ${{ github.event.issue.number }}
+      REPO: ${{ github.repository }}
+      RUN_ID: ${{ github.run_id }}
+      MESSAGE_BODY: ${{ github.event.comment.body }}
+      GH_TOKEN: ${{ secrets.BOT_ORG_SCOPED_TOKEN }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Verify Team Member
+        run: ./.github/actions/systemtests/verify-team-member.sh $ORG $TEAM "${{ github.event.comment.user.login }}"
+
+      - name: Comment Help
+        if: ${{ contains(github.event.comment.body, '--help') }}
+        run: ./.github/actions/systemtests/pr-help.sh
+          
+      - name: Check if Build workflow succeeded
+        if: ${{ startsWith(github.event.comment.body, '/systemtests run') }}
+        run: ./.github/actions/systemtests/verify-workflow-run-succeeded.sh
+
+      - name: Parse parameters from comment
+        id: parse_env
+        run: ./.github/actions/systemtests/parse-pr-comment-params.sh
+
+      - name: Invoke workflow in another repo with inputs
+        uses: benc-uk/workflow-dispatch@v1
+        with:
+          token: ${{ secrets.GH_FULL_ORG_TOKEN }}
+          workflow: systemtests.yml
+          inputs: >
+            {
+              "commit_sha": "${{ steps.parse_env.outputs.commit_sha }}",
+              "testcase": "${{ steps.parse_env.outputs.testcase }}",
+              "profile": "${{ steps.parse_env.outputs.profile }}",
+              "install_type": "${{ steps.parse_env.outputs.install_type }}",
+              "retry_count": "${{ steps.parse_env.outputs.retry_count }}",
+              "env_str": "${{ steps.parse_env.outputs.env_str }}"
+            }
