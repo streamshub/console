@@ -138,6 +138,7 @@ public class ConsumerST extends AbstractST {
         PwUtils.waitForLocatorAndClick(tcc.page()
             .locator(ConsumerGroupsPageSelectors.CGPS_TABLE_ITEMS)
             .locator("a", new Locator.LocatorOptions().setHasText(consumerGroupName)));
+
         tcc.page().waitForURL(PwPageUrls.getConsumerGroupsPage(tcc, tcc.kafkaName(), consumerGroupEncodedName), PwUtils.getDefaultWaitForUrlOpts());
         PwUtils.waitForContainsText(tcc, SingleConsumerGroupPageSelectors.SCGPS_PAGE_HEADER_NAME, consumerGroupName, true);
         PwUtils.waitForContainsText(tcc, new CssBuilder(CssSelectors.PAGES_HEADER_BREADCRUMB_ITEMS).nth(4).build(), consumerGroupName, true);
@@ -154,6 +155,7 @@ public class ConsumerST extends AbstractST {
         PwUtils.waitForLocatorAndClick(tcc.page()
             .locator(ConsumerGroupsPageSelectors.CGPS_TABLE_ITEMS)
             .locator("a", new Locator.LocatorOptions().setHasText(consumerGroupName)));
+
         tcc.page().waitForURL(PwPageUrls.getConsumerGroupsPage(tcc, tcc.kafkaName(), consumerGroupEncodedName), PwUtils.getDefaultWaitForUrlOpts());
         PwUtils.waitForContainsText(tcc, SingleConsumerGroupPageSelectors.SCGPS_PAGE_HEADER_NAME, consumerGroupName, true);
         PwUtils.waitForContainsText(tcc, new CssBuilder(CssSelectors.PAGES_HEADER_BREADCRUMB_ITEMS).nth(4).build(), consumerGroupName, true);
