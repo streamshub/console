@@ -77,7 +77,13 @@ public class ConsoleAuthenticationMechanism implements HttpAuthenticationMechani
             .setPrincipal(new QuarkusPrincipal("ANONYMOUS"))
             .build();
 
-    private static final Set<String> UNAUTHENTICATED_PATHS = Set.of("/health", "/metrics", "/openapi", "/swagger-ui");
+    private static final Set<String> UNAUTHENTICATED_PATHS = Set.of(
+            "/health",
+            "/metrics",
+            "/openapi",
+            "/swagger-ui",
+            "/api/metadata"
+    );
 
     @Inject
     Logger log;

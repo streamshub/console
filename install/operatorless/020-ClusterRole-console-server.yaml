@@ -32,3 +32,12 @@ rules:
       - ""
     resources:
       - pods
+  # API may read the ClusterVersion to fetch the OpenShift version for display
+  - verbs:
+      - get
+    apiGroups:
+      - config.openshift.io
+    resources:
+      - clusterversions
+    resourceNames:
+      - version
