@@ -16,9 +16,17 @@ if [[ -z "$members" ]]; then
 fi
 
 echo "Checking if $COMMENTER is in the team..."
-if echo "$members" | grep -Pqw "^$COMMENTER$"; then
+
+is_member=false
+while IFS= read -r member; do
+  if [[ "$member" == "$COMMENTER" ]]; then
+    is_member=true
+    break
+  fi
+done <<< "$members"
+
+if $is_member; then
   echo "✅ $COMMENTER IS a member of $ORG/$TEAM"
 else
   echo "❌ $COMMENTER is not allowed to trigger this workflow"
-  exit 1
 fi

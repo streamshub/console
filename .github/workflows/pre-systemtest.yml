@@ -12,14 +12,13 @@ jobs:
     if: ${{ github.event.issue.pull_request && startsWith(github.event.comment.body, '/systemtests') }}
     runs-on: ubuntu-latest
     env:
-      # CHANGE THIS
-      ORG: StreamzHubOrg
-      TEAM: streamzhub-developers
+      ORG: streamshub
+      TEAM: console-developers
       PR_NUMBER: ${{ github.event.issue.number }}
       REPO: ${{ github.repository }}
       RUN_ID: ${{ github.run_id }}
       MESSAGE_BODY: ${{ github.event.comment.body }}
-      GH_TOKEN: ${{ secrets.GH_FULL_ORG_TOKEN }}
+      GH_TOKEN: ${{ secrets.BOT_ORG_SCOPED_TOKEN }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
