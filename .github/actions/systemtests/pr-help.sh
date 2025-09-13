@@ -19,7 +19,7 @@ You can run system tests with the following parameters:
 * `--help`: Show this help message
 
 Note: Use either `--testcase` or `--profile` to select tests to run, setting both will result in
-github actions prioretizing testcase over profile. If neither is provided, no systemtest will start.
+github actions prioritizing testcase over profile. If neither is provided, no systemtest will start.
 
 ### Example usage:
 ```bash
@@ -30,7 +30,6 @@ MESSAGE
 
 # Comment help
 gh pr comment $PR_NUMBER --repo $REPO --body-file $HELP_MD
-
 
 echo "Stop further workflow execution. Exiting workflow"
 gh run cancel $RUN_ID --repo $REPO

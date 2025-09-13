@@ -32,7 +32,7 @@ jobs:
     env:
       RUN_URL: ${{ github.run_url }}
       COMMIT_SHA: ${{ github.event.inputs.commit_sha }}
-      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GH_TOKEN: ${{ secrets.BOT_ORG_SCOPED_TOKEN }}
       REPO: ${{ github.repository }}
       TEST_CASE: ${{ github.event.inputs.testcase }}
       PROFILE: ${{ github.event.inputs.profile }}
