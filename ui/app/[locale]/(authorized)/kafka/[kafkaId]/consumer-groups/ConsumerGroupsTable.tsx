@@ -19,6 +19,7 @@ import { useTranslations } from "next-intl";
 import { ReactNode } from "react";
 import { EmptyStateNoMatchFound } from "@/components/Table/EmptyStateNoMatchFound";
 import RichText from "@/components/RichText";
+import { hasPrivilege } from "@/utils/privileges";
 
 export const ConsumerGroupColumns = [
   "name",
@@ -303,6 +304,7 @@ export function ConsumerGroupsTable({
       }}
       renderActions={({ row, ActionsColumn }) => (
         <ActionsColumn
+          isDisabled={!hasPrivilege("UPDATE", row)}
           items={[
             {
               title: t("ConsumerGroupsTable.reset_offset"),
