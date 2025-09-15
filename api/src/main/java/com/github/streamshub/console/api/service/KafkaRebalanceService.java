@@ -71,12 +71,14 @@ public class KafkaRebalanceService {
                 .sorted(listSupport.getSortComparator())
                 .dropWhile(listSupport::beforePageBegin)
                 .takeWhile(listSupport::pageCapacityAvailable)
+                .map(permissionService.addPrivileges(ResourceTypes.Kafka.REBALANCES.value(), KafkaRebalance::name))
                 .toList();
     }
 
     public KafkaRebalance getRebalance(String id) {
         return findRebalance(id)
             .map(this::toKafkaRebalance)
+            .map(permissionService.addPrivileges(ResourceTypes.Kafka.REBALANCES.value(), KafkaRebalance::name))
             .orElseThrow(() -> new NotFoundException("No such Kafka rebalance resource"));
     }
 

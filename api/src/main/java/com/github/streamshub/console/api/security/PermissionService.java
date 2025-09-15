@@ -1,11 +1,13 @@
 package com.github.streamshub.console.api.security;
 
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -13,6 +15,7 @@ import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.ForbiddenException;
 
+import com.github.streamshub.console.api.model.jsonapi.JsonApiBase;
 import com.github.streamshub.console.api.support.KafkaContext;
 import com.github.streamshub.console.config.security.Privilege;
 import com.github.streamshub.console.config.security.ResourceTypes;
@@ -104,5 +107,24 @@ public class PermissionService {
     public ForbiddenException forbidden(String resource, Privilege privilege, String name) {
         return new ForbiddenException("Access denied: resource={%s} privilege:{%s}, resourceName:{%s}"
                 .formatted(resource, privilege, name));
+    }
+
+    private Set<Privilege> getPrivileges(String resource, String name) {
+        Set<Privilege> possessed = new LinkedHashSet<>();
+
+        for (var privilege : Privilege.ALL.expand()) {
+            if (permitted(resource, privilege, name)) {
+                possessed.add(privilege);
+            }
+        }
+
+        return possessed;
+    }
+
+    public <T extends JsonApiBase> UnaryOperator<T> addPrivileges(String resource, Function<T, String> nameSource) {
+        return (T item) -> {
+            item.addMeta("privileges", getPrivileges(resource, nameSource.apply(item)));
+            return item;
+        };
     }
 }

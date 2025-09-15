@@ -146,6 +146,7 @@ public class KafkaClusterService {
                 .dropWhile(listSupport::beforePageBegin)
                 .takeWhile(listSupport::pageCapacityAvailable)
                 .map(this::setManaged)
+                .map(permissionService.addPrivileges(KafkaCluster.API_TYPE, KafkaCluster::getId))
                 .toList();
     }
 
@@ -165,7 +166,10 @@ public class KafkaClusterService {
             .thenApplyAsync(this::addKafkaContextData, threadContext.currentContextExecutor())
             .thenApply(this::addKafkaResourceData)
             .thenCompose(cluster -> addMetrics(cluster, fields))
-            .thenApply(this::setManaged);
+            .thenApply(this::setManaged)
+            .thenApplyAsync(
+                    permissionService.addPrivileges(KafkaCluster.API_TYPE, KafkaCluster::getId),
+                    threadContext.currentContextExecutor());
     }
 
     private CompletionStage<KafkaCluster> addNodes(KafkaCluster cluster, DescribeClusterResult clusterResult, CompletableFuture<QuorumInfo> quorumResult) {
