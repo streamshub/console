@@ -8,7 +8,6 @@ import {
   MenuToggle,
   ToolbarItem,
 } from "@/libs/patternfly/react-core";
-import { signOut } from "next-auth/react";
 import React, { useState } from "react";
 
 function UserToggle(
@@ -25,10 +24,7 @@ function UserToggle(
       isFullHeight
       isExpanded={isOpen}
       icon={
-        <Avatar
-          src={picture ?? "https://www.patternfly.org/images/668560cd.svg"}
-          alt={username ?? "User"}
-        />
+        <Avatar src={picture ?? "/avatar_img.svg"} alt={username ?? "User"} />
       }
     >
       {username ?? "User"}
