@@ -30,7 +30,7 @@
         <maven.dependency.version>3.8.1</maven.dependency.version>
         <maven.checkstyle.version>3.6.0</maven.checkstyle.version>
         <jacoco-maven-plugin.version>0.8.13</jacoco-maven-plugin.version>
-        <jandex-maven-plugin.version>3.4.0</jandex-maven-plugin.version>
+        <jandex-maven-plugin.version>3.5.0</jandex-maven-plugin.version>
         <spotbugs.version>4.9.5</spotbugs.version>
         <surefire-plugin.version>3.5.4</surefire-plugin.version>
 
