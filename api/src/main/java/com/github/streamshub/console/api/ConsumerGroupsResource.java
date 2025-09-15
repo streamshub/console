@@ -246,7 +246,7 @@ public class ConsumerGroupsResource {
             ));
         }
 
-        return consumerGroupService.patchConsumerGroup(groupId, patch.getData().getAttributes(), dryRun)
+        return consumerGroupService.patchConsumerGroup(groupId, patch.getData(), dryRun)
                 .thenApply(optionalGroup -> optionalGroup
                         .map(ConsumerGroup.Data::new)
                         .map(Response::ok)

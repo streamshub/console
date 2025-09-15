@@ -56,6 +56,7 @@ const ClusterDetailSchema = z.object({
     .object({
       reconciliationPaused: z.boolean().optional(),
       managed: z.boolean(),
+      privileges: z.array(z.string()).optional(),
     })
     .optional(),
   attributes: z.object({

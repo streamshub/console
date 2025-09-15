@@ -30,13 +30,11 @@ export async function ConnectedClusterCard({
     return (
       <ClusterCard
         isLoading={false}
-        status={res?.attributes.status ?? "n/a"}
+        kafkaDetail={res}
         messages={messages ?? []}
-        name={res?.attributes.name ?? "n/a"}
         consumerGroups={undefined}
         brokersOnline={undefined}
         brokersTotal={undefined}
-        kafkaVersion={res?.attributes.kafkaVersion ?? "n/a"}
         kafkaId={res?.id}
         managed={res?.meta?.managed || false}
       />
@@ -53,16 +51,11 @@ export async function ConnectedClusterCard({
   return (
     <ClusterCard
       isLoading={false}
-      status={
-        res?.attributes.status ??
-        (brokersOnline == brokersTotal ? "Ready" : "Not Available")
-      }
+      kafkaDetail={res}
       messages={messages ?? []}
-      name={res?.attributes.name ?? "n/a"}
       consumerGroups={groupCount}
       brokersOnline={brokersOnline}
       brokersTotal={brokersTotal}
-      kafkaVersion={res?.attributes.kafkaVersion ?? "Not Available"}
       kafkaId={res.id}
       managed={res.meta?.managed || false}
     />

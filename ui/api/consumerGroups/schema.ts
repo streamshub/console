@@ -43,6 +43,11 @@ export type MemberDescription = z.infer<typeof MemberDescriptionSchema>;
 export const ConsumerGroupSchema = z.object({
   id: z.string(),
   type: z.literal("consumerGroups"),
+  meta: z
+    .object({
+      privileges: z.array(z.string()).optional(),
+    })
+    .optional(),
   attributes: z.object({
     groupId: z.string(),
     simpleConsumerGroup: z.boolean().optional(),

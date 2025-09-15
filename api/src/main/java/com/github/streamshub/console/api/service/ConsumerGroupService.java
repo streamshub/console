@@ -157,14 +157,16 @@ public class ConsumerGroupService {
                     .filter(permissionService.permitted(ConsumerGroup.API_TYPE, Privilege.LIST, ConsumerGroupListing::groupId))
                     .map(ConsumerGroup::fromKafkaModel),
                     threadContext.currentContextExecutor())
-            .thenApply(groups -> groups
+            .thenApplyAsync(groups -> groups
                     .filter(listSupport.filter(ConsumerGroup.class))
                     .map(listSupport::tally)
                     .filter(listSupport::betweenCursors)
                     .sorted(listSupport.getSortComparator())
                     .dropWhile(listSupport::beforePageBegin)
                     .takeWhile(listSupport::pageCapacityAvailable)
-                    .toList())
+                    .map(permissionService.addPrivileges(ConsumerGroup.API_TYPE, ConsumerGroup::groupId))
+                    .toList(),
+                    threadContext.currentContextExecutor())
             .thenComposeAsync(
                     groups -> augmentList(adminClient, groups, includes),
                     threadContext.currentContextExecutor());
@@ -179,7 +181,10 @@ public class ConsumerGroupService {
                     nothing -> describeConsumerGroups(adminClient, List.of(groupId), includes),
                     threadContext.currentContextExecutor())
             .thenApply(groups -> groups.get(groupId))
-            .thenApply(result -> result.getOrThrow(CompletionException::new));
+            .thenApply(result -> result.getOrThrow(CompletionException::new))
+            .thenApplyAsync(
+                    permissionService.addPrivileges(ConsumerGroup.API_TYPE, ConsumerGroup::groupId),
+                    threadContext.currentContextExecutor());
     }
 
     public CompletionStage<Map<String, List<String>>> listConsumerGroupMembership(Collection<String> topicIds) {
@@ -203,13 +208,13 @@ public class ConsumerGroupService {
                     threadContext.currentContextExecutor())
             .thenApply(list -> list.stream()
                     .map(group -> Map.entry(
-                            group.getGroupId(),
+                            group.groupId(),
                             Stream.concat(
-                                Optional.ofNullable(group.getOffsets())
+                                Optional.ofNullable(group.offsets())
                                     .map(Collection::stream)
                                     .orElseGet(Stream::empty)
                                     .map(OffsetAndMetadata::topicId),
-                                Optional.ofNullable(group.getMembers())
+                                Optional.ofNullable(group.members())
                                     .map(Collection::stream)
                                     .orElseGet(Stream::empty)
                                     .map(MemberDescription::getAssignments)
@@ -234,7 +239,7 @@ public class ConsumerGroupService {
         String groupId = ConsumerGroup.decodeGroupId(requestGroupId);
 
         return assertConsumerGroupExists(adminClient, groupId)
-            .thenComposeAsync(nothing -> Optional.ofNullable(patch.getOffsets())
+            .thenComposeAsync(nothing -> Optional.ofNullable(patch.offsets())
                     .filter(Predicate.not(Collection::isEmpty))
                     .map(patchedOffsets -> alterConsumerGroupOffsets(adminClient, groupId, patch, dryRun))
                     .orElseGet(() -> CompletableFuture.completedStage(Optional.empty())),
@@ -256,7 +261,7 @@ public class ConsumerGroupService {
     }
 
     CompletionStage<Optional<ConsumerGroup>> alterConsumerGroupOffsets(Admin adminClient, String groupId, ConsumerGroup patch, boolean dryRun) {
-        var topicsToDescribe = patch.getOffsets()
+        var topicsToDescribe = patch.offsets()
                 .stream()
                 .map(OffsetAndMetadata::topicId)
                 .distinct()
@@ -271,7 +276,7 @@ public class ConsumerGroupService {
             .thenApply(topics -> validationService.validate(new ConsumerGroupValidation.ConsumerGroupPatchInputs(topics, patch)))
             .thenApply(ConsumerGroupValidation.ConsumerGroupPatchInputs::topics)
             .thenCompose(topics -> {
-                var offsetModifications = patch.getOffsets()
+                var offsetModifications = patch.offsets()
                     .stream()
                     .flatMap(offset -> {
                         String topicId = offset.topicId();
@@ -370,7 +375,7 @@ public class ConsumerGroupService {
             .thenApply(groups -> groups.get(groupId))
             .thenApply(result -> result.getOrThrow(CompletionException::new))
             .thenCombine(pendingTopicsIds, (group, topicIds) -> {
-                group.setOffsets(alterRequest.entrySet().stream().map(e -> {
+                group.offsets(alterRequest.entrySet().stream().map(e -> {
                     String topicName = e.getKey().topic();
                     return new OffsetAndMetadata(topicIds.get(topicName),
                             topicName,
@@ -434,7 +439,7 @@ public class ConsumerGroupService {
     }
 
     private CompletionStage<List<ConsumerGroup>> augmentList(Admin adminClient, List<ConsumerGroup> list, List<String> includes) {
-        Map<String, ConsumerGroup> groups = list.stream().collect(Collectors.toMap(ConsumerGroup::getGroupId, Function.identity()));
+        Map<String, ConsumerGroup> groups = list.stream().collect(Collectors.toMap(ConsumerGroup::groupId, Function.identity()));
         CompletableFuture<Void> describePromise;
 
         if (REQUIRE_DESCRIBE.stream().anyMatch(includes::contains)) {
@@ -454,16 +459,16 @@ public class ConsumerGroupService {
             Throwable thrown = description.getAlternate();
             JsonApiError error = new JsonApiError("Unable to describe consumer group", thrown.getMessage(), thrown);
             group.addError(error);
-            group.setMembers(null);
-            group.setOffsets(null);
-            group.setCoordinator(null);
-            group.setAuthorizedOperations(null);
+            group.members(null);
+            group.offsets(null);
+            group.coordinator(null);
+            group.authorizedOperations(null);
         } else {
             ConsumerGroup describedGroup = description.getPrimary();
-            group.setMembers(describedGroup.getMembers());
-            group.setOffsets(describedGroup.getOffsets());
-            group.setCoordinator(describedGroup.getCoordinator());
-            group.setAuthorizedOperations(describedGroup.getAuthorizedOperations());
+            group.members(describedGroup.members());
+            group.offsets(describedGroup.offsets());
+            group.coordinator(describedGroup.coordinator());
+            group.authorizedOperations(describedGroup.authorizedOperations());
         }
     }
 
@@ -615,7 +620,7 @@ public class ConsumerGroupService {
                         offsetsAndMetadata.leaderEpoch().orElse(null)));
             });
 
-            group.setOffsets(offsets);
+            group.offsets(offsets);
         }
     }
 }

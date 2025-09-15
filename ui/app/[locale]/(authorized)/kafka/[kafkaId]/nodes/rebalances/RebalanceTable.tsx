@@ -34,6 +34,7 @@ import { EmptyStateNoKafkaRebalance } from "./EmptyStateNoKafkaRebalance";
 import Image from "next/image";
 import { DateTime } from "@/components/Format/DateTime";
 import RichText from "@/components/RichText";
+import { hasPrivilege } from "@/utils/privileges";
 
 export const RebalanceTableColumns = ["name", "status", "lastUpdated"] as const;
 
@@ -276,6 +277,7 @@ export function RebalanceTable({
       }}
       renderActions={({ row, ActionsColumn }) => (
         <ActionsColumn
+          isDisabled={!hasPrivilege("UPDATE", row)}
           items={[
             {
               title: t("approve"),
