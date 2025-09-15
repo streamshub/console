@@ -1,15 +1,42 @@
 "use client";
 
-import { ConsumerGroup } from "@/api/consumerGroups/schema";
+import { ConsumerGroup, ConsumerGroupState } from "@/api/consumerGroups/schema";
 import { Number } from "@/components/Format/Number";
 import { LabelLink } from "@/components/Navigation/LabelLink";
 import { TableView } from "@/components/Table";
-import { LabelGroup, Tooltip } from "@/libs/patternfly/react-core";
-import { HelpIcon } from "@/libs/patternfly/react-icons";
+import { Icon, LabelGroup, Tooltip } from "@/libs/patternfly/react-core";
+import {
+  CheckCircleIcon,
+  HelpIcon,
+  InfoCircleIcon,
+} from "@/libs/patternfly/react-icons";
 import { Link } from "@/i18n/routing";
 import { useTranslations } from "next-intl";
-import { useEffect, useState } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import RichText from "@/components/RichText";
+
+const StateLabel: Partial<Record<ConsumerGroupState, { label: ReactNode }>> = {
+  STABLE: {
+    label: (
+      <>
+        <Icon status={"success"}>
+          <CheckCircleIcon />
+        </Icon>
+        &nbsp;STABLE
+      </>
+    ),
+  },
+  EMPTY: {
+    label: (
+      <>
+        <Icon status={"info"}>
+          <InfoCircleIcon />
+        </Icon>
+        &nbsp;EMPTY
+      </>
+    ),
+  },
+};
 
 export function ConsumerGroupsTable({
   kafkaId,
@@ -124,9 +151,7 @@ export function ConsumerGroupsTable({
                 key={key}
                 dataLabel={t("ConsumerGroupsTable.consumer_group_name")}
               >
-                <Link
-                  href={`/kafka/${kafkaId}/consumer-groups/${row.id}`}
-                >
+                <Link href={`/kafka/${kafkaId}/consumer-groups/${row.id}`}>
                   {row.attributes.groupId === "" ? (
                     <RichText>
                       {(tags) => t.rich("ConsumerGroupsTable.empty_name", tags)}
@@ -140,7 +165,7 @@ export function ConsumerGroupsTable({
           case "state":
             return (
               <Td key={key} dataLabel={t("ConsumerGroupsTable.state")}>
-                {row.attributes.state}
+                {StateLabel[row.attributes.state]?.label}
               </Td>
             );
           case "lag":
