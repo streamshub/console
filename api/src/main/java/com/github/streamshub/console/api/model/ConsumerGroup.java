@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonFilter;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.github.streamshub.console.api.model.jsonapi.JsonApiError;
+import com.github.streamshub.console.api.model.jsonapi.JsonApiMeta;
 import com.github.streamshub.console.api.model.jsonapi.JsonApiResource;
 import com.github.streamshub.console.api.model.jsonapi.JsonApiRootData;
 import com.github.streamshub.console.api.model.jsonapi.JsonApiRootDataList;
@@ -124,6 +125,12 @@ public class ConsumerGroup extends JsonApiResource<ConsumerGroup.Attributes, Non
         }
     }
 
+    public static class Meta extends JsonApiMeta {
+        // When a describe error occurs
+        @JsonProperty
+        List<JsonApiError> errors;
+    }
+
     @JsonFilter("fieldFilter")
     public static class Attributes {
         // Available via list or describe operations
@@ -154,10 +161,7 @@ public class ConsumerGroup extends JsonApiResource<ConsumerGroup.Attributes, Non
         @JsonProperty
         List<@Valid OffsetAndMetadata> offsets = Collections.emptyList();
 
-        // When a describe error occurs
-        @JsonProperty
-        List<JsonApiError> errors;
-
+        @JsonCreator
         private Attributes(String groupId, boolean simpleConsumerGroup, String state) {
             this.groupId = groupId;
             this.simpleConsumerGroup = simpleConsumerGroup;
@@ -243,11 +247,18 @@ public class ConsumerGroup extends JsonApiResource<ConsumerGroup.Attributes, Non
         return group;
     }
 
+    @Override
+    public JsonApiMeta metaFactory() {
+        return new Meta();
+    }
+
     public void addError(JsonApiError error) {
-        if (attributes.errors == null) {
-            attributes.errors = new ArrayList<>();
+        var meta = (Meta) getOrCreateMeta();
+
+        if (meta.errors == null) {
+            meta.errors = new ArrayList<>();
         }
-        attributes.errors.add(error);
+        meta.errors.add(error);
     }
 
     public String groupId() {
