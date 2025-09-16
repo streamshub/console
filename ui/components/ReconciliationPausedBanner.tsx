@@ -13,6 +13,7 @@ import { updateKafkaCluster } from "@/api/kafka/actions";
 import { ClusterDetail } from "@/api/kafka/schema";
 import { useState } from "react";
 import { ReconciliationModal } from "./ClusterOverview/ReconciliationModal";
+import { hasPrivilege } from "@/utils/privileges";
 
 export function ReconciliationPausedBanner({ kafkaDetail }: { kafkaDetail: ClusterDetail }) {
   const t = useTranslations();
@@ -46,7 +47,7 @@ export function ReconciliationPausedBanner({ kafkaDetail }: { kafkaDetail: Clust
             <FlexItem spacer={{ default: "spacerNone" }}>
               {t("reconciliation.reconciliation_paused_warning")}
             </FlexItem>
-            { kafkaDetail.meta?.privileges?.includes("UPDATE") &&
+            { hasPrivilege("UPDATE", kafkaDetail) &&
               <>
                 &nbsp;
                 <FlexItem spacer={{ default: "spacerLg" }}>
