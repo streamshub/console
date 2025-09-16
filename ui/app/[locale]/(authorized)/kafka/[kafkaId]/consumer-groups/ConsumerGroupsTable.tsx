@@ -7,6 +7,7 @@ import {
   CheckCircleIcon,
   ExclamationTriangleIcon,
   HelpIcon,
+  HistoryIcon,
   InfoCircleIcon,
   InProgressIcon,
   OffIcon,
@@ -43,7 +44,7 @@ const StateLabel: Record<ConsumerGroupState, { label: ReactNode }> = {
         <Icon status={"success"}>
           <CheckCircleIcon />
         </Icon>
-        &nbsp;STABLE
+        &nbsp;Stable
       </>
     ),
   },
@@ -53,7 +54,7 @@ const StateLabel: Record<ConsumerGroupState, { label: ReactNode }> = {
         <Icon status={"info"}>
           <InfoCircleIcon />
         </Icon>
-        &nbsp;EMPTY
+        &nbsp;Empty
       </>
     ),
   },
@@ -81,7 +82,7 @@ const StateLabel: Record<ConsumerGroupState, { label: ReactNode }> = {
     label: (
       <>
         <Icon>
-          <InProgressIcon />
+          <HistoryIcon />
         </Icon>
         &nbsp;Assigning
       </>
