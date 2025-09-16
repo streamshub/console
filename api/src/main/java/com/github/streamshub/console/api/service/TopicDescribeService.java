@@ -143,7 +143,10 @@ public class TopicDescribeService {
                     .dropWhile(listSupport::beforePageBegin)
                     .takeWhile(listSupport::pageCapacityAvailable))
             .thenApplyAsync(
-                    topics -> topics.map(this::setManaged).toList(),
+                    topics -> topics
+                        .map(this::setManaged)
+                        .map(permissionService.addPrivileges(Topic.API_TYPE, Topic::name))
+                        .toList(),
                     threadContext.currentContextExecutor());
     }
 
@@ -197,6 +200,9 @@ public class TopicDescribeService {
             .thenApply(result -> result.get(id))
             .thenApply(result -> result.getOrThrow(CompletionException::new))
             .thenApplyAsync(this::setManaged, threadContext.currentContextExecutor())
+            .thenApplyAsync(
+                    permissionService.addPrivileges(Topic.API_TYPE, Topic::name),
+                    threadContext.currentContextExecutor())
             .toCompletableFuture();
 
         return describePromise.thenComposeAsync(topic -> {

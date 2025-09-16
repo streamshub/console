@@ -118,6 +118,7 @@ public class NodeService {
                     .sorted(listSupport.getSortComparator())
                     .dropWhile(listSupport::beforePageBegin)
                     .takeWhile(listSupport::pageCapacityAvailable)
+                    .map(permissionService.addPrivileges(Node.API_TYPE, Node::getId))
                     .toList());
     }
 
