@@ -5,8 +5,13 @@ import { TableView, TableViewProps } from "@/components/Table";
 import { Icon, LabelGroup, Tooltip } from "@/libs/patternfly/react-core";
 import {
   CheckCircleIcon,
+  ExclamationTriangleIcon,
   HelpIcon,
   InfoCircleIcon,
+  InProgressIcon,
+  OffIcon,
+  PendingIcon,
+  SyncAltIcon,
 } from "@/libs/patternfly/react-icons";
 import { Link } from "@/i18n/routing";
 import { useTranslations } from "next-intl";
@@ -31,7 +36,7 @@ export type SortableConsumerGroupTableColumns = Exclude<
 
 export const SortableColumns = ["name", "state"];
 
-const StateLabel: Partial<Record<ConsumerGroupState, { label: ReactNode }>> = {
+const StateLabel: Record<ConsumerGroupState, { label: ReactNode }> = {
   STABLE: {
     label: (
       <>
@@ -49,6 +54,66 @@ const StateLabel: Partial<Record<ConsumerGroupState, { label: ReactNode }>> = {
           <InfoCircleIcon />
         </Icon>
         &nbsp;EMPTY
+      </>
+    ),
+  },
+  UNKNOWN: {
+    label: (
+      <>
+        <Icon status={"warning"}>
+          <ExclamationTriangleIcon />
+        </Icon>
+        &nbsp;Unknown
+      </>
+    ),
+  },
+  PREPARING_REBALANCE: {
+    label: (
+      <>
+        <Icon>
+          <PendingIcon />
+        </Icon>
+        &nbsp;Preparing Rebalance
+      </>
+    ),
+  },
+  ASSIGNING: {
+    label: (
+      <>
+        <Icon>
+          <InProgressIcon />
+        </Icon>
+        &nbsp;Assigning
+      </>
+    ),
+  },
+  DEAD: {
+    label: (
+      <>
+        <Icon>
+          <OffIcon />
+        </Icon>
+        &nbsp;Dead
+      </>
+    ),
+  },
+  COMPLETING_REBALANCE: {
+    label: (
+      <>
+        <Icon>
+          <SyncAltIcon />
+        </Icon>
+        &nbsp;Completing Rebalance
+      </>
+    ),
+  },
+  RECONCILING: {
+    label: (
+      <>
+        <Icon>
+          <InProgressIcon />
+        </Icon>
+        &nbsp;Reconciling
       </>
     ),
   },
@@ -174,9 +239,7 @@ export function ConsumerGroupsTable({
                 key={key}
                 dataLabel={t("ConsumerGroupsTable.consumer_group_name")}
               >
-                <Link
-                  href={`/kafka/${kafkaId}/consumer-groups/${row.id}`}
-                >
+                <Link href={`/kafka/${kafkaId}/consumer-groups/${row.id}`}>
                   {row.attributes.groupId === "" ? (
                     <RichText>
                       {(tags) => t.rich("ConsumerGroupsTable.empty_name", tags)}

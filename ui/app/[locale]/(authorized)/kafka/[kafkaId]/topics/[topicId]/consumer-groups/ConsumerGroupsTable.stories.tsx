@@ -1,67 +1,87 @@
 import type { Meta, StoryObj } from "@storybook/nextjs";
+import { ConsumerGroupsTable } from "./ConsumerGroupsTable";
 
-import { ConsumerGroupsTable as Comp } from "./ConsumerGroupsTable";
+const allStates = [
+  "STABLE",
+  "EMPTY",
+  "UNKNOWN",
+  "PREPARING_REBALANCE",
+  "ASSIGNING",
+  "COMPLETING_REBALANCE",
+  "RECONCILING",
+  "DEAD",
+] as const;
 
-export default {
-  component: Comp,
-  args: {
-    consumerGroups: [],
-  },
-} as Meta<typeof Comp>;
-type Story = StoryObj<typeof Comp>;
-
-const generateConsumerGroup = (
-  id: string,
-  groupId: string,
-  state: string,
-  lag1: number,
-  lag2: number,
-  lag3?: number,
-) => ({
-  id,
+type ConsumerGroupMock = {
+  id: string;
+  type: "consumer-group";
   attributes: {
-    groupId,
+    groupId: string;
+    state: (typeof allStates)[number];
+    members: Array<{
+      clientId: string;
+      memberId: string;
+      assignments?: Array<{
+        topicName: string;
+        topicId: string;
+        partition: number;
+      }>;
+    }>;
+    offsets?: Array<{
+      topic: string;
+      partition: number;
+      lag: number;
+    }>;
+  };
+};
+
+const createMockConsumerGroup = (
+  id: string,
+  state: ConsumerGroupMock["attributes"]["state"],
+): ConsumerGroupMock => ({
+  id,
+  type: "consumer-group",
+  attributes: {
+    groupId: `group-${id}`,
     state,
-    offsets:
-      lag3 !== undefined
-        ? [{ lag: lag1 }, { lag: lag2 }, { lag: lag3 }]
-        : [{ lag: lag1 }, { lag: lag2 }],
     members: [
       {
-        host: "localhost",
-        memberId: "member-1",
-        clientId: "client-1",
-        groupInstanceId: "instance-1",
+        clientId: `client-${id}`,
+        memberId: `member-${id}`,
         assignments: [
           {
-            topicName: `console_datagen_${id.split("-").pop()}-a`,
-            topicId: "1",
-          },
-          {
-            topicName: `console_datagen_${id.split("-").pop()}-b`,
-            topicId: "2",
+            topicName: "topic-A",
+            topicId: "topic-1",
+            partition: 0,
           },
         ],
+      },
+    ],
+    offsets: [
+      {
+        topic: "topic-A",
+        partition: 0,
+        lag: 42,
       },
     ],
   },
 });
 
-export const ConsumerGroups: Story = {
+const mockConsumerGroups = allStates.map((state, index) =>
+  createMockConsumerGroup(`${index}`, state),
+);
+
+const meta: Meta<typeof ConsumerGroupsTable> = {
+  component: ConsumerGroupsTable,
   args: {
-    consumerGroups: (() => {
-      const groups = Array.from({ length: 21 }, (_, i) =>
-        generateConsumerGroup(
-          `${i}`,
-          `console-datagen-group-${i}`,
-          ["STABLE", "EMPTY"][i % 2],
-          i * 1000,
-          i * 1000,
-          i % 3 === 0 ? i * 1000 : undefined,
-        ),
-      );
-      return groups;
-    })(),
-    total: 21,
+    kafkaId: "mock-kafka-id",
+    page: 1,
+    total: mockConsumerGroups.length,
+    consumerGroups: mockConsumerGroups,
   },
 };
+
+export default meta;
+type Story = StoryObj<typeof ConsumerGroupsTable>;
+
+export const AllStates: Story = {};
