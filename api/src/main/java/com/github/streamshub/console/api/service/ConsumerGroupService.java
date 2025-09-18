@@ -60,6 +60,7 @@ import com.github.streamshub.console.api.support.Promises;
 import com.github.streamshub.console.api.support.UnknownTopicIdPatch;
 import com.github.streamshub.console.api.support.ValidationProxy;
 import com.github.streamshub.console.config.security.Privilege;
+import com.github.streamshub.console.config.security.ResourceTypes;
 
 @ApplicationScoped
 public class ConsumerGroupService {
@@ -117,7 +118,7 @@ public class ConsumerGroupService {
                 throw (RuntimeException) UnknownTopicIdPatch.apply(error, CompletionException::new);
             })
             .thenComposeAsync(topic -> {
-                permissionService.assertPermitted(Topic.API_TYPE, Privilege.GET, topic.name());
+                permissionService.assertPermitted(ResourceTypes.Kafka.TOPICS, Privilege.GET, topic.name());
                 return listConsumerGroupMembership(List.of(topicId));
             }, asyncExec)
             .thenComposeAsync(topicGroups -> {
@@ -148,13 +149,15 @@ public class ConsumerGroupService {
             .findFirst()
             .orElse(null);
 
+        permissionService.addPrivileges(listSupport.meta(), ResourceTypes.Kafka.CONSUMER_GROUPS, null);
+
         return adminClient.listConsumerGroups(new ListConsumerGroupsOptions()
                 .inStates(states))
             .valid()
             .toCompletionStage()
             .thenApplyAsync(groups -> groups.stream()
                     .filter(group -> groupIds.isEmpty() || groupIds.contains(group.groupId()))
-                    .filter(permissionService.permitted(ConsumerGroup.API_TYPE, Privilege.LIST, ConsumerGroupListing::groupId))
+                    .filter(permissionService.permitted(ResourceTypes.Kafka.CONSUMER_GROUPS, Privilege.LIST, ConsumerGroupListing::groupId))
                     .map(ConsumerGroup::fromKafkaModel),
                     threadContext.currentContextExecutor())
             .thenApplyAsync(groups -> groups
@@ -164,7 +167,7 @@ public class ConsumerGroupService {
                     .sorted(listSupport.getSortComparator())
                     .dropWhile(listSupport::beforePageBegin)
                     .takeWhile(listSupport::pageCapacityAvailable)
-                    .map(permissionService.addPrivileges(ConsumerGroup.API_TYPE, ConsumerGroup::groupId))
+                    .map(permissionService.addPrivileges(ResourceTypes.Kafka.CONSUMER_GROUPS, ConsumerGroup::groupId))
                     .toList(),
                     threadContext.currentContextExecutor())
             .thenComposeAsync(
@@ -183,7 +186,7 @@ public class ConsumerGroupService {
             .thenApply(groups -> groups.get(groupId))
             .thenApply(result -> result.getOrThrow(CompletionException::new))
             .thenApplyAsync(
-                    permissionService.addPrivileges(ConsumerGroup.API_TYPE, ConsumerGroup::groupId),
+                    permissionService.addPrivileges(ResourceTypes.Kafka.CONSUMER_GROUPS, ConsumerGroup::groupId),
                     threadContext.currentContextExecutor());
     }
 
@@ -199,7 +202,7 @@ public class ConsumerGroupService {
             .valid()
             .toCompletionStage()
             .thenApplyAsync(groups -> groups.stream()
-                    .filter(permissionService.permitted(ConsumerGroup.API_TYPE, Privilege.LIST, ConsumerGroupListing::groupId))
+                    .filter(permissionService.permitted(ResourceTypes.Kafka.CONSUMER_GROUPS, Privilege.LIST, ConsumerGroupListing::groupId))
                     .map(ConsumerGroup::fromKafkaModel).toList(),
                     threadContext.currentContextExecutor())
             .thenComposeAsync(groups -> augmentList(adminClient, groups, List.of(
@@ -252,7 +255,7 @@ public class ConsumerGroupService {
             .toCompletionStage()
             .thenAcceptAsync(listing -> {
                 if (listing.stream()
-                        .filter(permissionService.permitted(ConsumerGroup.API_TYPE, Privilege.GET, ConsumerGroupListing::groupId))
+                        .filter(permissionService.permitted(ResourceTypes.Kafka.CONSUMER_GROUPS, Privilege.GET, ConsumerGroupListing::groupId))
                         .map(ConsumerGroupListing::groupId)
                         .noneMatch(groupId::equals)) {
                     throw new GroupIdNotFoundException("No such consumer group: " + groupId);
@@ -491,7 +494,7 @@ public class ConsumerGroupService {
                     entry.getValue()
                         .toCompletionStage()
                         .thenCombineAsync(pendingTopicsIds, (description, topicIds) -> {
-                            permissionService.assertPermitted(ConsumerGroup.API_TYPE, Privilege.GET, description.groupId());
+                            permissionService.assertPermitted(ResourceTypes.Kafka.CONSUMER_GROUPS, Privilege.GET, description.groupId());
                             return ConsumerGroup.fromKafkaModel(description, topicIds);
                         }, threadContext.currentContextExecutor())
                         .<Void>handle((consumerGroup, error) -> {

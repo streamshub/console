@@ -141,6 +141,7 @@ public class KafkaRebalance extends KubeApiResource<KafkaRebalance.Attributes, N
                     })
                     .toList());
             addMeta("page", listSupport.buildPageMeta());
+            listSupport.meta().forEach(this::addMeta);
             listSupport.buildPageLinks(KafkaRebalance::toCursor).forEach(this::addLink);
         }
     }
