@@ -41,7 +41,7 @@ jobs:
       - name: Invoke workflow in another repo with inputs
         uses: benc-uk/workflow-dispatch@v1
         with:
-          token: ${{ secrets.GH_FULL_ORG_TOKEN }}
+          token: ${{ secrets.BOT_ORG_SCOPED_TOKEN }}
           workflow: systemtests.yml
           inputs: >
             {
