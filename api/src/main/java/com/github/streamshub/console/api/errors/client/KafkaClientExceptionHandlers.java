@@ -11,6 +11,7 @@ import org.apache.kafka.common.errors.AuthorizationException;
 import org.apache.kafka.common.errors.GroupIdNotFoundException;
 import org.apache.kafka.common.errors.GroupNotEmptyException;
 import org.apache.kafka.common.errors.InvalidConfigurationException;
+import org.apache.kafka.common.errors.InvalidGroupIdException;
 import org.apache.kafka.common.errors.InvalidPartitionsException;
 import org.apache.kafka.common.errors.InvalidReplicaAssignmentException;
 import org.apache.kafka.common.errors.InvalidReplicationFactorException;
@@ -53,6 +54,21 @@ public class KafkaClientExceptionHandlers {
         @Override
         public boolean handlesException(Throwable thrown) {
             return thrown instanceof AuthorizationException;
+        }
+    }
+
+    @Provider
+    @ApplicationScoped
+    public static class InvalidGroupIdExceptionHandler
+        extends AbstractClientExceptionHandler<InvalidGroupIdException> {
+
+        public InvalidGroupIdExceptionHandler() {
+            super(ErrorCategory.UncategorizedBadRequest.class, null, (String) null);
+        }
+
+        @Override
+        public boolean handlesException(Throwable thrown) {
+            return thrown instanceof InvalidGroupIdException;
         }
     }
 
