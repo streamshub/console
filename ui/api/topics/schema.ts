@@ -73,6 +73,7 @@ const TopicSchema = z.object({
   type: z.literal("topics"),
   meta: z.object({
     managed: z.boolean().optional(),
+    privileges: z.array(z.string()).optional(),
   }).optional(),
   attributes: z.object({
     name: z.string().optional(),
@@ -95,7 +96,8 @@ export const TopicResponse = z.object({
   data: TopicSchema,
 });
 export type Topic = z.infer<typeof TopicSchema>;
-const TopicListSchema = z.object({
+
+const TopicListItemSchema = z.object({
   id: z.string(),
   type: z.literal("topics"),
   meta: z.object({
@@ -103,6 +105,7 @@ const TopicListSchema = z.object({
       cursor: z.string(),
     }),
     managed: z.boolean().optional(),
+    privileges: z.array(z.string()).optional(),
   }),
   attributes: TopicSchema.shape.attributes.pick({
     name: true,
@@ -115,7 +118,7 @@ const TopicListSchema = z.object({
     consumerGroups: true
   }),
 });
-export type TopicList = z.infer<typeof TopicListSchema>;
+export type TopicListItem = z.infer<typeof TopicListItemSchema>;
 export const TopicsResponseSchema = z.object({
   meta: z.object({
     page: z.object({
@@ -132,6 +135,7 @@ export const TopicsResponseSchema = z.object({
       }),
       totalPartitions: z.number(),
     }),
+    privileges: z.array(z.string()).optional(),
   }),
   links: z.object({
     first: z.string().nullable(),
@@ -139,7 +143,7 @@ export const TopicsResponseSchema = z.object({
     next: z.string().nullable(),
     last: z.string().nullable(),
   }),
-  data: z.array(TopicListSchema),
+  data: z.array(TopicListItemSchema),
 });
 export type TopicsResponse = z.infer<typeof TopicsResponseSchema>;
 
