@@ -72,7 +72,7 @@ public class PermissionService {
                 .join();
     }
 
-    private ConsolePermissionRequired newPermissionRequired(ResourceTypes.ResourceType<?> resource, Privilege privilege) {
+    private ConsolePermissionRequired newRequiredPermission(ResourceTypes.ResourceType<?> resource, Privilege privilege) {
         return new ConsolePermissionRequired(
                 resolveResource(resource.value()),
                 resolveResourceAudit(resource.value()),
@@ -80,7 +80,7 @@ public class PermissionService {
     }
 
     public <T> Predicate<T> permitted(ResourceTypes.ResourceType<?> resource, Privilege privilege, Function<T, String> nameSource) {
-        ConsolePermissionRequired required = newPermissionRequired(resource, privilege);
+        ConsolePermissionRequired required = newRequiredPermission(resource, privilege);
 
         return (T item) -> {
             String itemName = nameSource.apply(item);
@@ -90,16 +90,12 @@ public class PermissionService {
     }
 
     public boolean permitted(ResourceTypes.ResourceType<?> resource, Privilege privilege, String name) {
-        String displayName;
+        ConsolePermissionRequired required = newRequiredPermission(resource, privilege);
 
         if (name != null) {
-            displayName = resolveResourceName(resource.value(), name);
-        } else {
-            displayName = null;
+            required.setResourceName(name, resolveResourceName(resource.value(), name));
         }
 
-        ConsolePermissionRequired required = newPermissionRequired(resource, privilege);
-        required.setResourceName(name, displayName);
         return checkPermission(required);
     }
 
@@ -118,7 +114,7 @@ public class PermissionService {
         Set<Privilege> possessed = new LinkedHashSet<>();
 
         for (var privilege : Privilege.ALL.expand()) {
-            ConsolePermissionRequired required = newPermissionRequired(resource, privilege);
+            ConsolePermissionRequired required = newRequiredPermission(resource, privilege);
             required.setResourceName(name, null);
             required.setAudited(false);
 
