@@ -1,10 +1,10 @@
 package com.github.streamshub.console.api.security;
 
-import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.UnaryOperator;
 
 import jakarta.annotation.Priority;
@@ -98,8 +98,8 @@ public class AuthorizationInterceptor {
 
         String resource = rootResource;
         String resourceDisplay = null;
-        List<String> resourceNames = new ArrayList<>(1);
-        List<String> resourceNamesDisplay = null;
+        AtomicReference<String> resourceName = new AtomicReference<>();
+        String resourceNameDisplay = null;
 
         if (ResourceTypes.Global.KAFKAS.value().equals(rootResource)) {
             if (segmentCount > 2) {
@@ -116,26 +116,31 @@ public class AuthorizationInterceptor {
                  */
                 if (segmentCount > 3) {
                     StringBuilder resourceBuilder = new StringBuilder();
-                    setKafkaResource(resourceBuilder, resourceNames, segments);
+                    setKafkaResource(resourceBuilder, segments, resourceName);
                     String rawResource = resourceBuilder.toString();
                     resource = ctx.securityResourcePath(rawResource);
                     resourceDisplay = ctx.auditDisplayResourcePath(rawResource);
                 } else {
-                    resourceNames.add(kafkaId);
-                    resourceNamesDisplay = List.of(ctx.clusterConfig().clusterKey());
+                    resourceName.set(kafkaId);
+                    resourceNameDisplay = ctx.clusterConfig().clusterKey();
                 }
             }
         } else {
             if (segmentCount > 2) {
-                resourceNames.add(segments.get(2).getPath());
+                resourceName.set(segments.get(2).getPath());
             }
         }
 
-        return new ConsolePermission(resource, resourceDisplay, resourceNames, authz.value())
-                .resourceNamesDisplay(resourceNamesDisplay);
+        return new ConsolePermissionRequired(
+                resource,
+                resourceDisplay,
+                resourceName.get(),
+                resourceNameDisplay,
+                authz.value()
+        );
     }
 
-    private void setKafkaResource(StringBuilder resource, List<String> resourceNames, List<PathSegment> segments) {
+    private void setKafkaResource(StringBuilder resource, List<PathSegment> segments, AtomicReference<String> resourceName) {
         var segmentCount = segments.size();
         UnaryOperator<String> converter = UnaryOperator.identity();
 
@@ -143,7 +148,7 @@ public class AuthorizationInterceptor {
             String segment = segments.get(s).getPath();
 
             if (s == 4) {
-                resourceNames.add(converter.apply(segment));
+                resourceName.set(converter.apply(segment));
             } else {
                 if (s == 3) {
                     switch (ResourceTypes.forValue(segment, Kafka.class)) {
