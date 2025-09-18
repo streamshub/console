@@ -7,6 +7,10 @@ declare module "next-auth" {
   interface Session {
     error?: "RefreshAccessTokenError";
     authorization?: string;
+
+    /** Added for OIDC logout support */
+    idToken?: string;
+
     user?: {
       name: string;
       email?: string | null;
@@ -23,5 +27,8 @@ declare module "next-auth/jwt" {
   /** Returned by the `jwt` callback and `getToken`, when using JWT sessions */
   interface JWT {
     authorization?: string;
+
+    /** Added to persist id_token from provider */
+    id_token?: string;
   }
 }

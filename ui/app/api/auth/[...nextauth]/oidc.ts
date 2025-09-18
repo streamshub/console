@@ -88,21 +88,6 @@ class OpenIdConnect {
     return true;
   }
 
-  async getLogoutUrl() {
-    try {
-      const discoveryEndpoint = this.provider!.wellKnown!;
-      const response = await fetch(discoveryEndpoint);
-      if (!response.ok) {
-        throw new Error("Failed to fetch OIDC discovery document");
-      }
-      const discovery = await response.json();
-      return discovery.end_session_endpoint;
-    } catch (error) {
-      log.error({ error }, "Failed to get OIDC logout URL");
-      return null;
-    }
-  }
-
   async refreshToken(token: JWT): Promise<JWT> {
     let refresh_token =
       typeof token.refresh_token === "string" ? token.refresh_token : undefined;
@@ -210,6 +195,7 @@ class OpenIdConnect {
       ...session,
       error: token.error,
       accessToken: token.access_token,
+      idToken: token.id_token,
       authorization: `Bearer ${token.access_token}`,
     };
   }

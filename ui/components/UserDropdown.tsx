@@ -9,6 +9,7 @@ import {
   ToolbarItem,
 } from "@/libs/patternfly/react-core";
 import React, { useState } from "react";
+import { handleLogout } from "@/utils/logout";
 
 function UserToggle(
   username: string | null | undefined,
@@ -52,11 +53,7 @@ export function UserDropdown({
         }
       >
         <DropdownList>
-          <DropdownItem
-            onClick={() => (window.location.href = "/api/auth/logout")}
-          >
-            Logout
-          </DropdownItem>
+          <DropdownItem onClick={handleLogout}>Logout</DropdownItem>
         </DropdownList>
       </Dropdown>
     </ToolbarItem>

@@ -11,13 +11,6 @@ import oidcSource from "./oidc";
 
 const log = logger.child({ module: "auth" });
 
-declare module "next-auth/jwt" {
-  interface JWT {
-    id_token?: string;
-    provider?: string;
-  }
-}
-
 function makeAuthOption(cluster: ClusterList): Provider {
   switch (cluster.meta.authentication?.method) {
     case "oauth": {
