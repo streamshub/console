@@ -41,6 +41,7 @@ import com.github.streamshub.console.api.support.ListRequestContext;
 import com.github.streamshub.console.api.support.MetadataQuorumSupport;
 import com.github.streamshub.console.config.ConsoleConfig;
 import com.github.streamshub.console.config.security.Privilege;
+import com.github.streamshub.console.config.security.ResourceTypes;
 
 import io.fabric8.kubernetes.api.model.ObjectMeta;
 import io.fabric8.kubernetes.client.KubernetesClient;
@@ -137,8 +138,10 @@ public class KafkaClusterService {
                 .filter(k -> !configuredClusters.containsKey(k.getId()))
                 .toList();
 
+        permissionService.addPrivileges(listSupport.meta(), ResourceTypes.Global.KAFKAS, null);
+
         return Stream.concat(configuredClusters.values().stream(), otherClusters.stream())
-                .filter(permissionService.permitted(KafkaCluster.API_TYPE, Privilege.LIST, KafkaCluster::getId))
+                .filter(permissionService.permitted(ResourceTypes.Global.KAFKAS, Privilege.LIST, KafkaCluster::getId))
                 .filter(listSupport.filter(KafkaCluster.class))
                 .map(listSupport::tally)
                 .filter(listSupport::betweenCursors)
@@ -146,7 +149,7 @@ public class KafkaClusterService {
                 .dropWhile(listSupport::beforePageBegin)
                 .takeWhile(listSupport::pageCapacityAvailable)
                 .map(this::setManaged)
-                .map(permissionService.addPrivileges(KafkaCluster.API_TYPE, KafkaCluster::getId))
+                .map(permissionService.addPrivileges(ResourceTypes.Global.KAFKAS, KafkaCluster::getId))
                 .toList();
     }
 
@@ -168,7 +171,7 @@ public class KafkaClusterService {
             .thenCompose(cluster -> addMetrics(cluster, fields))
             .thenApply(this::setManaged)
             .thenApplyAsync(
-                    permissionService.addPrivileges(KafkaCluster.API_TYPE, KafkaCluster::getId),
+                    permissionService.addPrivileges(ResourceTypes.Global.KAFKAS, KafkaCluster::getId),
                     threadContext.currentContextExecutor());
     }
 
