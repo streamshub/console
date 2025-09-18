@@ -8,16 +8,16 @@ import {
   MenuToggle,
   ToolbarItem,
 } from "@/libs/patternfly/react-core";
-import { signOut } from "next-auth/react";
 import React, { useState } from "react";
+import { handleLogout } from "@/utils/logout";
 
 function UserToggle(
-    username: string | null | undefined,
-    picture: string | null | undefined,
-    isOpen: boolean,
-    setIsOpen: React.Dispatch<React.SetStateAction<boolean>>,
-    toggleRef: React.RefObject<any>)
-{
+  username: string | null | undefined,
+  picture: string | null | undefined,
+  isOpen: boolean,
+  setIsOpen: React.Dispatch<React.SetStateAction<boolean>>,
+  toggleRef: React.RefObject<any>,
+) {
   return (
     <MenuToggle
       ref={toggleRef}
@@ -25,12 +25,7 @@ function UserToggle(
       isFullHeight
       isExpanded={isOpen}
       icon={
-        <Avatar
-          src={
-            picture ?? "https://www.patternfly.org/images/668560cd.svg"
-          }
-          alt={username ?? "User"}
-        />
+        <Avatar src={picture ?? "/avatar_img.svg"} alt={username ?? "User"} />
       }
     >
       {username ?? "User"}
@@ -46,18 +41,19 @@ export function UserDropdown({
   picture: string | null | undefined;
 }) {
   const [isOpen, setIsOpen] = useState(false);
+
   return (
     <ToolbarItem>
       <Dropdown
         isOpen={isOpen}
         onOpenChange={(isOpen: boolean) => setIsOpen(isOpen)}
         popperProps={{ position: "right" }}
-        toggle={(toggleRef) => UserToggle(username, picture, isOpen, setIsOpen, toggleRef)}
+        toggle={(toggleRef) =>
+          UserToggle(username, picture, isOpen, setIsOpen, toggleRef)
+        }
       >
         <DropdownList>
-          <DropdownItem onClick={() => signOut({ callbackUrl: "/" })}>
-            Logout
-          </DropdownItem>
+          <DropdownItem onClick={handleLogout}>Logout</DropdownItem>
         </DropdownList>
       </Dropdown>
     </ToolbarItem>
