@@ -2,6 +2,11 @@ import { signOut, getSession } from "next-auth/react";
 import oidcSource from "@/app/api/auth/[...nextauth]/oidc";
 
 export async function handleLogout() {
+  // Ensure we're on the client side
+  if (typeof window === "undefined") {
+    return signOut({ callbackUrl: "/" });
+  }
+
   const oidc = await oidcSource();
 
   if (oidc.isEnabled()) {
@@ -20,6 +25,8 @@ export async function handleLogout() {
       )}`;
 
       await signOut({ redirect: false });
+
+      // Only safe to call on the client
       window.location.href = logoutUrl;
       return;
     }
