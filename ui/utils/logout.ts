@@ -1,11 +1,10 @@
+"use client";
+
 import { signOut, getSession } from "next-auth/react";
 import oidcSource from "@/app/api/auth/[...nextauth]/oidc";
 
 export async function handleLogout() {
-  // Ensure we're on the client side
-  if (typeof window === "undefined") {
-    return signOut({ callbackUrl: "/" });
-  }
+  if (typeof window === "undefined") return;
 
   const oidc = await oidcSource();
 
@@ -24,9 +23,10 @@ export async function handleLogout() {
         window.location.origin + "/api/auth/oidc/signin",
       )}`;
 
+      // Clear local session without redirect flicker
       await signOut({ redirect: false });
 
-      // Only safe to call on the client
+      // Then navigate browser to Keycloak logout page
       window.location.href = logoutUrl;
       return;
     }
