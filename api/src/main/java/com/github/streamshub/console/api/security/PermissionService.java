@@ -1,8 +1,6 @@
 package com.github.streamshub.console.api.security;
 
-import java.util.Collections;
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
@@ -74,39 +72,35 @@ public class PermissionService {
                 .join();
     }
 
-    public <T> Predicate<T> permitted(ResourceTypes.ResourceType<?> resource, Privilege privilege, Function<T, String> nameSource) {
-        ConsolePermission required = new ConsolePermission(
+    private ConsolePermissionRequired newPermissionRequired(ResourceTypes.ResourceType<?> resource, Privilege privilege) {
+        return new ConsolePermissionRequired(
                 resolveResource(resource.value()),
                 resolveResourceAudit(resource.value()),
-                Collections.emptyList(),
                 privilege);
+    }
+
+    public <T> Predicate<T> permitted(ResourceTypes.ResourceType<?> resource, Privilege privilege, Function<T, String> nameSource) {
+        ConsolePermissionRequired required = newPermissionRequired(resource, privilege);
 
         return (T item) -> {
             String itemName = nameSource.apply(item);
-            required.resourceName(itemName);
-            required.resourceNamesDisplay(List.of(resolveResourceName(resource.value(), itemName)));
+            required.setResourceName(itemName, resolveResourceName(resource.value(), itemName));
             return checkPermission(required);
         };
     }
 
     public boolean permitted(ResourceTypes.ResourceType<?> resource, Privilege privilege, String name) {
-        List<String> names;
-        List<String> displayNames;
+        String displayName;
 
         if (name != null) {
-            names = List.of(name);
-            displayNames = List.of(resolveResourceName(resource.value(), name));
+            displayName = resolveResourceName(resource.value(), name);
         } else {
-            names = Collections.emptyList();
-            displayNames = Collections.emptyList();
+            displayName = null;
         }
 
-        return checkPermission(new ConsolePermission(
-                resolveResource(resource.value()),
-                resolveResourceAudit(resource.value()),
-                names,
-                privilege)
-                .resourceNamesDisplay(displayNames));
+        ConsolePermissionRequired required = newPermissionRequired(resource, privilege);
+        required.setResourceName(name, displayName);
+        return checkPermission(required);
     }
 
     public void assertPermitted(ResourceTypes.ResourceType<?> resource, Privilege privilege, String name) {
@@ -124,7 +118,11 @@ public class PermissionService {
         Set<Privilege> possessed = new LinkedHashSet<>();
 
         for (var privilege : Privilege.ALL.expand()) {
-            if (permitted(resource, privilege, name)) {
+            ConsolePermissionRequired required = newPermissionRequired(resource, privilege);
+            required.setResourceName(name, null);
+            required.setAudited(false);
+
+            if (checkPermission(required)) {
                 possessed.add(privilege);
             }
         }
