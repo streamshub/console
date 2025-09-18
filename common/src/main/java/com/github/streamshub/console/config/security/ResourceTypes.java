@@ -20,7 +20,7 @@ import jakarta.validation.Payload;
 
 public class ResourceTypes {
 
-    interface ResourceType<E> {
+    public interface ResourceType<E> {
         String value();
 
         default Set<ResourceType<E>> expand() {

@@ -113,6 +113,7 @@ public class ConsumerGroup extends JsonApiResource<ConsumerGroup.Attributes, Non
                     })
                     .toList());
             addMeta("page", listSupport.buildPageMeta());
+            listSupport.meta().forEach(this::addMeta);
             listSupport.buildPageLinks(ConsumerGroup::toCursor).forEach(this::addLink);
         }
     }
@@ -279,10 +280,6 @@ public class ConsumerGroup extends JsonApiResource<ConsumerGroup.Attributes, Non
 
     public void members(Collection<MemberDescription> members) {
         attributes.members = members;
-    }
-
-    public String partitionAssignor() {
-        return attributes.partitionAssignor;
     }
 
     public void partitionAssignor(String partitionAssignor) {

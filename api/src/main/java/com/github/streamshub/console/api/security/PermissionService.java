@@ -74,42 +74,53 @@ public class PermissionService {
                 .join();
     }
 
-    public <T> Predicate<T> permitted(String resource, Privilege privilege, Function<T, String> nameSource) {
+    public <T> Predicate<T> permitted(ResourceTypes.ResourceType<?> resource, Privilege privilege, Function<T, String> nameSource) {
         ConsolePermission required = new ConsolePermission(
-                resolveResource(resource),
-                resolveResourceAudit(resource),
+                resolveResource(resource.value()),
+                resolveResourceAudit(resource.value()),
                 Collections.emptyList(),
                 privilege);
 
         return (T item) -> {
             String itemName = nameSource.apply(item);
             required.resourceName(itemName);
-            required.resourceNamesDisplay(List.of(resolveResourceName(resource, itemName)));
+            required.resourceNamesDisplay(List.of(resolveResourceName(resource.value(), itemName)));
             return checkPermission(required);
         };
     }
 
-    public boolean permitted(String resource, Privilege privilege, String name) {
+    public boolean permitted(ResourceTypes.ResourceType<?> resource, Privilege privilege, String name) {
+        List<String> names;
+        List<String> displayNames;
+
+        if (name != null) {
+            names = List.of(name);
+            displayNames = List.of(resolveResourceName(resource.value(), name));
+        } else {
+            names = Collections.emptyList();
+            displayNames = Collections.emptyList();
+        }
+
         return checkPermission(new ConsolePermission(
-                resolveResource(resource),
-                resolveResourceAudit(resource),
-                List.of(name),
+                resolveResource(resource.value()),
+                resolveResourceAudit(resource.value()),
+                names,
                 privilege)
-                .resourceNamesDisplay(List.of(resolveResourceName(resource, name))));
+                .resourceNamesDisplay(displayNames));
     }
 
-    public void assertPermitted(String resource, Privilege privilege, String name) {
+    public void assertPermitted(ResourceTypes.ResourceType<?> resource, Privilege privilege, String name) {
         if (!permitted(resource, privilege, name)) {
             throw forbidden(resource, privilege, name);
         }
     }
 
-    public ForbiddenException forbidden(String resource, Privilege privilege, String name) {
+    public ForbiddenException forbidden(ResourceTypes.ResourceType<?> resource, Privilege privilege, String name) {
         return new ForbiddenException("Access denied: resource={%s} privilege:{%s}, resourceName:{%s}"
-                .formatted(resource, privilege, name));
+                .formatted(resource.value(), privilege, name));
     }
 
-    private Set<Privilege> getPrivileges(String resource, String name) {
+    private Set<Privilege> getPrivileges(ResourceTypes.ResourceType<?> resource, String name) {
         Set<Privilege> possessed = new LinkedHashSet<>();
 
         for (var privilege : Privilege.ALL.expand()) {
@@ -121,10 +132,16 @@ public class PermissionService {
         return possessed;
     }
 
-    public <T extends JsonApiBase> UnaryOperator<T> addPrivileges(String resource, Function<T, String> nameSource) {
-        return (T item) -> {
-            item.addMeta("privileges", getPrivileges(resource, nameSource.apply(item)));
-            return item;
-        };
+    public <T extends JsonApiBase> UnaryOperator<T> addPrivileges(ResourceTypes.ResourceType<?> resource, Function<T, String> nameSource) {
+        return (T item) -> addPrivileges(item, resource, nameSource.apply(item));
+    }
+
+    public void addPrivileges(Map<String, Object> meta, ResourceTypes.ResourceType<?> resource, String name) {
+        meta.put("privileges", getPrivileges(resource, name));
+    }
+
+    private <T extends JsonApiBase> T addPrivileges(T item, ResourceTypes.ResourceType<?> resource, String name) {
+        item.addMeta("privileges", getPrivileges(resource, name));
+        return item;
     }
 }

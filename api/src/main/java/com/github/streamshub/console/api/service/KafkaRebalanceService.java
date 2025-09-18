@@ -58,9 +58,11 @@ public class KafkaRebalanceService {
         final Map<String, Integer> statuses = new HashMap<>();
         listSupport.meta().put("summary", Map.of("statuses", statuses));
 
+        permissionService.addPrivileges(listSupport.meta(), ResourceTypes.Kafka.REBALANCES, null);
+
         return rebalanceResources()
                 .filter(permissionService.permitted(
-                        ResourceTypes.Kafka.REBALANCES.value(),
+                        ResourceTypes.Kafka.REBALANCES,
                         Privilege.LIST,
                         r -> r.getMetadata().getName()))
                 .map(this::toKafkaRebalance)
@@ -71,14 +73,14 @@ public class KafkaRebalanceService {
                 .sorted(listSupport.getSortComparator())
                 .dropWhile(listSupport::beforePageBegin)
                 .takeWhile(listSupport::pageCapacityAvailable)
-                .map(permissionService.addPrivileges(ResourceTypes.Kafka.REBALANCES.value(), KafkaRebalance::name))
+                .map(permissionService.addPrivileges(ResourceTypes.Kafka.REBALANCES, KafkaRebalance::name))
                 .toList();
     }
 
     public KafkaRebalance getRebalance(String id) {
         return findRebalance(id)
             .map(this::toKafkaRebalance)
-            .map(permissionService.addPrivileges(ResourceTypes.Kafka.REBALANCES.value(), KafkaRebalance::name))
+            .map(permissionService.addPrivileges(ResourceTypes.Kafka.REBALANCES, KafkaRebalance::name))
             .orElseThrow(() -> new NotFoundException("No such Kafka rebalance resource"));
     }
 
@@ -150,7 +152,10 @@ public class KafkaRebalanceService {
     }
 
     KafkaRebalance tallyStatus(Map<String, Integer> statuses, KafkaRebalance rebalance) {
-        statuses.compute(rebalance.status(), (k, v) -> v == null ? 1 : v + 1);
+        String status = rebalance.status();
+        if (status != null) {
+            statuses.compute(rebalance.status(), (k, v) -> v == null ? 1 : v + 1);
+        }
         return rebalance;
     }
 
