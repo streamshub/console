@@ -10,8 +10,8 @@ export async function getMetadata(): Promise<ApiResponse<MetadataResponse>> {
     (rawData) => MetadataSchema.parse(rawData.data),
     true,
     {
-        cache: "force-cache",
         next: {
+            // 60s cache
             revalidate: 60,
         }
     },

@@ -128,6 +128,7 @@ public class KafkaCluster extends KubeApiResource<KafkaCluster.Attributes, Kafka
                     })
                     .toList());
             addMeta("page", listSupport.buildPageMeta());
+            listSupport.meta().forEach(this::addMeta);
             listSupport.buildPageLinks(KafkaCluster::toCursor).forEach(this::addLink);
         }
     }

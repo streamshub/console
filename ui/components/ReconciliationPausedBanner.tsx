@@ -10,10 +10,12 @@ import {
 import { useTranslations } from "next-intl";
 import { useReconciliationContext } from "./ReconciliationContext";
 import { updateKafkaCluster } from "@/api/kafka/actions";
+import { ClusterDetail } from "@/api/kafka/schema";
 import { useState } from "react";
 import { ReconciliationModal } from "./ClusterOverview/ReconciliationModal";
+import { hasPrivilege } from "@/utils/privileges";
 
-export function ReconciliationPausedBanner({ kafkaId }: { kafkaId: string }) {
+export function ReconciliationPausedBanner({ kafkaDetail }: { kafkaDetail: ClusterDetail }) {
   const t = useTranslations();
 
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
@@ -22,7 +24,7 @@ export function ReconciliationPausedBanner({ kafkaId }: { kafkaId: string }) {
 
   const resumeReconciliation = async () => {
     try {
-      const response = await updateKafkaCluster(kafkaId, false);
+      const response = await updateKafkaCluster(kafkaDetail.id, false);
 
       if (response.errors) {
         console.log("Unknown error occurred", response.errors);
@@ -45,16 +47,20 @@ export function ReconciliationPausedBanner({ kafkaId }: { kafkaId: string }) {
             <FlexItem spacer={{ default: "spacerNone" }}>
               {t("reconciliation.reconciliation_paused_warning")}
             </FlexItem>
-            &nbsp;
-            <FlexItem spacer={{ default: "spacerLg" }}>
-              <Button
-                variant="link"
-                isInline
-                onClick={() => setIsModalOpen(true)}
-              >
-                {t("reconciliation.resume")}
-              </Button>
-            </FlexItem>
+            { hasPrivilege("UPDATE", kafkaDetail) &&
+              <>
+                &nbsp;
+                <FlexItem spacer={{ default: "spacerLg" }}>
+                  <Button
+                    variant="link"
+                    isInline
+                    onClick={() => setIsModalOpen(true)}
+                  >
+                    {t("reconciliation.resume")}
+                  </Button>
+                </FlexItem>
+              </>
+            }
           </Flex>
         </Bullseye>
       </Banner>

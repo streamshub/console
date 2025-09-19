@@ -5,6 +5,7 @@ import { Suspense } from "react";
 import { useTranslations } from "next-intl";
 import { ConsumerGroupActionButton } from "./ConsumerGroupActionButton";
 import RichText from "@/components/RichText";
+import { hasPrivilege } from "@/utils/privileges";
 
 export default function Page({
   params: { kafkaId, groupId },
@@ -30,7 +31,7 @@ async function ConnectedAppHeader({
   let groupIdDisplay = "";
 
   if (consumerGroup) {
-    disabled = consumerGroup.attributes.state !== "EMPTY";
+    disabled = consumerGroup.attributes.state !== "EMPTY" || !hasPrivilege("UPDATE", consumerGroup);
     groupIdDisplay = consumerGroup.attributes.groupId;
   }
 

@@ -53,6 +53,7 @@ import com.github.streamshub.console.api.support.KafkaOffsetSpec;
 import com.github.streamshub.console.api.support.ListRequestContext;
 import com.github.streamshub.console.api.support.UnknownTopicIdPatch;
 import com.github.streamshub.console.config.security.Privilege;
+import com.github.streamshub.console.config.security.ResourceTypes;
 import com.github.streamshub.console.support.Identifiers;
 
 import io.fabric8.kubernetes.api.model.ObjectMeta;
@@ -125,7 +126,9 @@ public class TopicDescribeService {
         final Map<String, Integer> statuses = new HashMap<>();
         final AtomicInteger partitionCount = new AtomicInteger(0);
 
-        listSupport.meta().put("summary", Map.of(
+        var meta = listSupport.meta();
+        permissionService.addPrivileges(meta, ResourceTypes.Kafka.TOPICS, null);
+        meta.put("summary", Map.of(
                 "statuses", statuses,
                 "totalPartitions", partitionCount));
 
@@ -143,7 +146,10 @@ public class TopicDescribeService {
                     .dropWhile(listSupport::beforePageBegin)
                     .takeWhile(listSupport::pageCapacityAvailable))
             .thenApplyAsync(
-                    topics -> topics.map(this::setManaged).toList(),
+                    topics -> topics
+                        .map(this::setManaged)
+                        .map(permissionService.addPrivileges(ResourceTypes.Kafka.TOPICS, Topic::name))
+                        .toList(),
                     threadContext.currentContextExecutor());
     }
 
@@ -164,7 +170,7 @@ public class TopicDescribeService {
         Predicate<TopicListing> authorizationFilter;
 
         if (checkAuthorization) {
-            authorizationFilter = permissionService.permitted(Topic.API_TYPE, Privilege.LIST, TopicListing::name);
+            authorizationFilter = permissionService.permitted(ResourceTypes.Kafka.TOPICS, Privilege.LIST, TopicListing::name);
         } else {
             authorizationFilter = x -> true;
         }
@@ -197,6 +203,9 @@ public class TopicDescribeService {
             .thenApply(result -> result.get(id))
             .thenApply(result -> result.getOrThrow(CompletionException::new))
             .thenApplyAsync(this::setManaged, threadContext.currentContextExecutor())
+            .thenApplyAsync(
+                    permissionService.addPrivileges(ResourceTypes.Kafka.TOPICS, Topic::name),
+                    threadContext.currentContextExecutor())
             .toCompletableFuture();
 
         return describePromise.thenComposeAsync(topic -> {
@@ -250,7 +259,7 @@ public class TopicDescribeService {
         if (fields.contains(Topic.Fields.CONFIGS)) {
             Map<String, Uuid> topicIds = new HashMap<>();
             List<ConfigResource> keys = topics.values().stream()
-                    .filter(e -> permissionService.permitted(Topic.API_TYPE, Privilege.GET, e.name()))
+                    .filter(e -> permissionService.permitted(ResourceTypes.Kafka.TOPICS, Privilege.GET, e.name()))
                     .map(topic -> {
                         topicIds.put(topic.name(), Uuid.fromString(topic.getId()));
                         return topic.name();
@@ -270,7 +279,7 @@ public class TopicDescribeService {
     private CompletableFuture<Void> maybeDescribeTopics(Admin adminClient, Map<Uuid, Topic> topics, List<String> fields, String offsetSpec) {
         if (REQUIRE_DESCRIBE.stream().anyMatch(fields::contains)) {
             Collection<Uuid> topicIds = topics.entrySet().stream()
-                    .filter(e -> permissionService.permitted(Topic.API_TYPE, Privilege.GET, e.getValue().name()))
+                    .filter(e -> permissionService.permitted(ResourceTypes.Kafka.TOPICS, Privilege.GET, e.getValue().name()))
                     .map(Map.Entry::getKey)
                     .toList();
 
@@ -299,7 +308,7 @@ public class TopicDescribeService {
         }
 
         List<String> searchTopics = topics.entrySet().stream()
-                .filter(e -> permissionService.permitted(Topic.API_TYPE, Privilege.GET, e.getValue().name()))
+                .filter(e -> permissionService.permitted(ResourceTypes.Kafka.TOPICS, Privilege.GET, e.getValue().name()))
                 .map(Map.Entry::getKey)
                 .map(Uuid::toString)
                 .toList();
@@ -344,8 +353,8 @@ public class TopicDescribeService {
                     entry.getValue()
                         .toCompletionStage()
                         .<Void>handleAsync((description, error) -> {
-                            if (error == null && !permissionService.permitted(Topic.API_TYPE, Privilege.GET, description.name())) {
-                                error = permissionService.forbidden(Topic.API_TYPE, Privilege.GET, description.name());
+                            if (error == null && !permissionService.permitted(ResourceTypes.Kafka.TOPICS, Privilege.GET, description.name())) {
+                                error = permissionService.forbidden(ResourceTypes.Kafka.TOPICS, Privilege.GET, description.name());
                             }
                             result.put(
                                 entry.getKey(),
