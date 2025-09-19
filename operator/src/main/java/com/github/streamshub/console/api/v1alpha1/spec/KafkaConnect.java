@@ -36,9 +36,8 @@ public class KafkaConnect {
     @JsonPropertyDescription("""
             Indicates whether this Kafka Connect cluster is a MirrorMaker 2 deployment.
             This affects how certain resources are displayed and managed by the console.
-            Defaults to false.
             """)
-    private Boolean mirrorMaker = Boolean.FALSE;
+    private Boolean mirrorMaker;
 
     @JsonPropertyDescription("Authentication configuration to use when connecting to the Kafka Connect REST API.")
     private Authentication authentication;
