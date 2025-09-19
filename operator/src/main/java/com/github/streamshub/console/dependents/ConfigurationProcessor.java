@@ -57,11 +57,13 @@ import com.github.streamshub.console.api.v1alpha1.status.ConditionBuilder;
 import com.github.streamshub.console.api.v1alpha1.status.ConsoleStatus;
 import com.github.streamshub.console.config.ConsoleConfig;
 import com.github.streamshub.console.config.KafkaClusterConfig;
+import com.github.streamshub.console.config.KafkaConnectConfig;
 import com.github.streamshub.console.config.PrometheusConfig;
 import com.github.streamshub.console.config.SchemaRegistryConfig;
 import com.github.streamshub.console.config.TrustStoreConfig;
 import com.github.streamshub.console.config.TrustStoreConfigBuilder;
 import com.github.streamshub.console.config.ValueBuilder;
+import com.github.streamshub.console.api.v1alpha1.spec.KafkaConnect;
 import com.github.streamshub.console.config.authentication.Authenticated;
 import com.github.streamshub.console.config.authentication.AuthenticationConfigBuilder;
 import com.github.streamshub.console.config.authentication.OIDC;
@@ -279,6 +281,16 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
                 source.getTrustStore(),
                 data
             ));
+
+        coalesce(primary.getSpec().getKafkaConnectClusters(), Collections::emptyList).stream()
+            .forEach(connect -> buildClientSecrets(
+                context,
+                primary.getMetadata().getNamespace(),
+                "kafka-connect-" + connect.getName(),
+                connect.getAuthentication(),
+                connect.getTrustStore(),
+                data
+            ));
     }
 
     private void buildClientSecrets(Context<Console> context, String namespace, String name, Authentication authentication, TrustStore trustStore, Map<String, String> data) {
@@ -412,6 +424,7 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
         addSecurity(primary, config, context);
         addMetricsSources(primary, config, context);
         addSchemaRegistries(primary, config);
+        addKafkaConnectClusters(primary, config);
 
         for (var kafkaRef : primary.getSpec().getKafkaClusters()) {
             var kafkaConfig = addConfig(primary, context, config, kafkaRef);
@@ -881,5 +894,26 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
 
     private static boolean hasNone(Map<String, String> properties, String... keys) {
         return Arrays.stream(keys).noneMatch(properties::containsKey);
+    }
+
+    private void addKafkaConnectClusters(Console primary, ConsoleConfig config) {
+        for (KafkaConnect connect : coalesce(primary.getSpec().getKafkaConnectClusters(), Collections::emptyList)) {
+            String name = connect.getName();
+            String qualifiedName = "kafka-connect-" + name;
+            var connectConfig = new KafkaConnectConfig();
+            connectConfig.setName(name);
+            connectConfig.setNamespace(connect.getNamespace());
+            connectConfig.setUrl(connect.getUrl());
+            connectConfig.setMirrorMaker(Optional.ofNullable(connect.getMirrorMaker()).orElse(Boolean.FALSE));
+            connectConfig.setKafkaClusters(coalesce(connect.getKafkaClusters(), Collections::emptyList));
+            connectConfig.setTrustStore(buildTrustStoreConfig(connect.getTrustStore(), qualifiedName));
+
+            var authentication = connect.getAuthentication();
+            if (authentication != null) {
+                addAuthentication(authentication, connectConfig, qualifiedName);
+            }
+
+            config.getKafkaConnectClusters().add(connectConfig);
+        }
     }
 }
