@@ -31,8 +31,16 @@ public class PwPageUrls {
         return getKafkaBaseUrl(tcc, kafkaName) + "/topics";
     }
 
+    public static String getSingleTopicPage(TestCaseConfig tcc, String kafkaName, String topicId) {
+        return getTopicsPage(tcc, kafkaName) + "/" + topicId;
+    }
+
+    public static String getSingleTopicConsumerGroupsPage(TestCaseConfig tcc, String kafkaName, String topicId) {
+        return getSingleTopicPage(tcc, kafkaName, topicId) + "/consumer-groups";
+    }
+
     public static String getMessagesPage(TestCaseConfig tcc, String kafkaName, String topicId) {
-        return getTopicsPage(tcc, kafkaName) + "/" + topicId + "/messages";
+        return getSingleTopicPage(tcc, kafkaName, topicId) + "/messages";
     }
 
     public static String getConsumerGroupsPage(TestCaseConfig tcc, String kafkaName, String consumerGroupName) {

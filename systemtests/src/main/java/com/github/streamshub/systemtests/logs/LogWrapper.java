@@ -50,6 +50,10 @@ public class LogWrapper {
         loggerConfig.addAppender(consoleAppender, Level.toLevel(Environment.TEST_CONSOLE_LOG_LEVEL, Level.INFO), null);
         loggerConfig.addAppender(rollingAppender, Level.toLevel(Environment.TEST_FILE_LOG_LEVEL, Level.DEBUG), null);
 
+        // Add a specific logger config to silence Netty’s internal debug
+        LoggerConfig nettyLoggerConfig = new LoggerConfig("io.netty.util.internal", Level.ERROR, true);
+        config.addLogger("io.netty.util.internal", nettyLoggerConfig);
+
         ctx.updateLoggers();
 
         // Root level needs to be the highest level in order to not cap file and stdout output log levels
