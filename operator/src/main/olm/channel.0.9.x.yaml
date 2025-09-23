@@ -5,4 +5,4 @@ package: streamshub-console-operator
 properties: []
 entries:
   - name: streamshub-console-operator.v0.9.0
-    replaces: streamshub-console-operator.v0.8.2
+    replaces: streamshub-console-operator.v0.8.6

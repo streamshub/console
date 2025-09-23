@@ -10,3 +10,11 @@ entries:
     replaces: streamshub-console-operator.v0.8.0
   - name: streamshub-console-operator.v0.8.2
     replaces: streamshub-console-operator.v0.8.1
+  - name: streamshub-console-operator.v0.8.3
+    replaces: streamshub-console-operator.v0.8.2
+  - name: streamshub-console-operator.v0.8.4
+    replaces: streamshub-console-operator.v0.8.3
+  - name: streamshub-console-operator.v0.8.5
+    replaces: streamshub-console-operator.v0.8.4
+  - name: streamshub-console-operator.v0.8.6
+    replaces: streamshub-console-operator.v0.8.5
