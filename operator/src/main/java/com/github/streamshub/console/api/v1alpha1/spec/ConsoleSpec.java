@@ -49,6 +49,8 @@ public class ConsoleSpec {
 
     List<KafkaCluster> kafkaClusters = new ArrayList<>();
 
+    List<KafkaConnect> kafkaConnectClusters;
+
     @JsonPropertyDescription("""
             DEPRECATED: Environment variables which should be applied to the API container. \
             Use `containers` property instead.
@@ -109,6 +111,14 @@ public class ConsoleSpec {
 
     public void setKafkaClusters(List<KafkaCluster> kafkaClusters) {
         this.kafkaClusters = kafkaClusters;
+    }
+
+    public List<KafkaConnect> getKafkaConnectClusters() {
+        return kafkaConnectClusters;
+    }
+
+    public void setKafkaConnectClusters(List<KafkaConnect> kafkaConnectClusters) {
+        this.kafkaConnectClusters = kafkaConnectClusters;
     }
 
     public List<EnvVar> getEnv() {
