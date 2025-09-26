@@ -1,3 +1,5 @@
+:_mod-docs-content-type: PROCEDURE
+
 [id='proc-restting-consumer-offsets-{context}']
 = Resetting consumer offsets
 

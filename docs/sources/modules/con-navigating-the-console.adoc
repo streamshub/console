@@ -1,3 +1,5 @@
+:_mod-docs-content-type: CONCEPT
+
 [id='con-navigating-the-console-{context}']
 = Navigating the StreamsHub Console
 

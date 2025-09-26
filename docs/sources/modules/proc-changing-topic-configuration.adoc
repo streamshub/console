@@ -1,3 +1,5 @@
+:_mod-docs-content-type: PROCEDURE
+
 [id='proc-changing-topic-configuration-{context}']
 = Changing topic configuration
 

@@ -1,3 +1,5 @@
+:_mod-docs-content-type: CONCEPT
+
 [id='con-homepage-checking-connected-users-{context}']
 = HOME: Checking connected clusters
 

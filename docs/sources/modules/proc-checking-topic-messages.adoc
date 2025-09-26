@@ -1,3 +1,5 @@
+:_mod-docs-content-type: PROCEDURE
+
 [id='proc-checking-topic-messages-{context}']
 = Checking topic messages
 
