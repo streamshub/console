@@ -45,6 +45,7 @@ import static org.awaitility.Awaitility.await;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.everyItem;
 import static org.hamcrest.Matchers.is;
 
 @QuarkusTest
@@ -163,7 +164,8 @@ class KafkaClustersResourceOidcIT {
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
             .body("data.size()", equalTo(KafkaClustersResourceIT.STATIC_KAFKAS.size()))
-            .body("data.attributes.name", containsInAnyOrder(KafkaClustersResourceIT.STATIC_KAFKAS.toArray(String[]::new)));
+            .body("data.attributes.name", containsInAnyOrder(KafkaClustersResourceIT.STATIC_KAFKAS.toArray(String[]::new)))
+            .body("data.meta.privileges", everyItem(is(List.of(Privilege.LIST.name()))));
     }
 
     @Test
@@ -217,7 +219,8 @@ class KafkaClustersResourceOidcIT {
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
             .body("data.size()", equalTo(visibleClusters.size()))
-            .body("data.attributes.name", containsInAnyOrder(visibleClusters.toArray(String[]::new)));
+            .body("data.attributes.name", containsInAnyOrder(visibleClusters.toArray(String[]::new)))
+            .body("data.meta.privileges", everyItem(is(List.of(Privilege.LIST.name()))));
     }
 
     @Test
@@ -243,7 +246,8 @@ class KafkaClustersResourceOidcIT {
                 .param("fields[" + KafkaCluster.API_TYPE + "]", "name")
                 .get("{clusterId}", clusterId1))
             .assertThat()
-            .statusCode(is(Status.OK.getStatusCode()));
+            .statusCode(is(Status.OK.getStatusCode()))
+            .body("data.meta.privileges", is(Privilege.ALL.expand().stream().map(Enum::name).toList()));
     }
 
     @Test

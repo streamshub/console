@@ -269,7 +269,8 @@ class KafkaClustersResourceIT {
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
             .body("data.size()", equalTo(visibleClusters.length))
-            .body("data.attributes.name", containsInAnyOrder(visibleClusters));
+            .body("data.attributes.name", containsInAnyOrder(visibleClusters))
+            .body("data.meta.privileges", everyItem(is(List.of(Privilege.LIST.name()))));
     }
 
     @Test
