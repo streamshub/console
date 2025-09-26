@@ -1,3 +1,5 @@
+:_mod-docs-content-type: PROCEDURE
+
 [id='proc-logging-in-{context}']
 = Logging in to a Kafka cluster from the homepage
 

@@ -1,3 +1,5 @@
+:_mod-docs-content-type: CONCEPT
+
 [id='con-cluster-overview-page-{context}']
 = Cluster overview page
 
