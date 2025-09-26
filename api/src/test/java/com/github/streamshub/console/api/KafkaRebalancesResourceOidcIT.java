@@ -3,6 +3,7 @@ package com.github.streamshub.console.api;
 import java.net.URI;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.List;
 import java.util.UUID;
 
 import jakarta.inject.Inject;
@@ -38,6 +39,7 @@ import io.strimzi.test.container.StrimziKafkaContainer;
 
 import static com.github.streamshub.console.test.TestHelper.whenRequesting;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.everyItem;
 import static org.hamcrest.Matchers.is;
 
 @QuarkusTest
@@ -207,7 +209,8 @@ class KafkaRebalancesResourceOidcIT {
                 .get("", allowedId))
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
-            .body("data.size()", equalTo(total));
+            .body("data.size()", equalTo(total))
+            .body("data.meta.privileges", everyItem(is(List.of(Privilege.LIST.name()))));
 
         whenRequesting(req -> req
                 .auth()
