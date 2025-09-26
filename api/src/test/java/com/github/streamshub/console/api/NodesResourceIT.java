@@ -606,7 +606,8 @@ class NodesResourceIT implements ClientRequestFilter {
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
             .body("data.size()", equalTo(4))
-            .body("data.id", contains("9", "6", "3", "0"));
+            .body("data.id", contains("9", "6", "3", "0"))
+            .body("data.meta.privileges", everyItem(is(List.of(Privilege.LIST.name()))));
     }
 
     @Test

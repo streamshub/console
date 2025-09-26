@@ -8,6 +8,7 @@ import { useTranslations } from "next-intl";
 import { PropsWithChildren, ReactNode, Suspense } from "react";
 import { KafkaParams } from "./kafka.params";
 import { getKafkaCluster, getKafkaClusters } from "@/api/kafka/actions";
+import { ClusterDetail } from "@/api/kafka/schema";
 import { getMetadata } from "@/api/meta/actions";
 import { MetadataResponse } from "@/api/meta/schema";
 import { NoDataErrorState } from "@/components/NoDataErrorState";
@@ -59,7 +60,7 @@ export default async function AsyncLayout({
   return (
     <Layout
       username={(session?.user?.name || session?.user?.email) ?? "User"}
-      kafkaId={kafkaId}
+      kafkaDetail={response.payload!}
       metadata={metadata}
       activeBreadcrumb={activeBreadcrumb}
       header={header}
@@ -76,12 +77,12 @@ function Layout({
   activeBreadcrumb,
   header,
   modal,
-  kafkaId,
+  kafkaDetail,
   metadata,
   username,
   clusterInfoList,
 }: PropsWithChildren<{
-  kafkaId: string;
+  kafkaDetail: ClusterDetail;
   readonly metadata?: MetadataResponse;
   username: string;
   header: ReactNode;
@@ -94,9 +95,9 @@ function Layout({
     <AppLayoutProvider>
       <AppLayout
         username={username}
-        kafkaId={kafkaId}
+        kafkaDetail={kafkaDetail}
         metadata={metadata}
-        sidebar={<ClusterLinks kafkaId={kafkaId} />}
+        sidebar={<ClusterLinks kafkaId={kafkaDetail.id} />}
         clusterInfoList={clusterInfoList}
       >
         <PageGroup stickyOnBreakpoint={{ default: "top" }}>
