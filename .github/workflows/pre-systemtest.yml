@@ -39,7 +39,7 @@ jobs:
         run: ./.github/actions/systemtests/parse-pr-comment-params.sh
 
       - name: Invoke workflow in another repo with inputs
-        uses: benc-uk/workflow-dispatch@v1
+        uses: benc-uk/workflow-dispatch@e2e5e9a103e331dad343f381a29e654aea3cf8fc
         with:
           token: ${{ secrets.BOT_ORG_SCOPED_TOKEN }}
           workflow: systemtests.yml
