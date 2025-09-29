@@ -24,16 +24,16 @@ export const logger = pino({
       "*.expires_at",
     ],
     censor: (value, path) => {
-      const p = path.join("");
-      if (p.includes("token") && typeof value === "string") {
-        // return the last chars of the token for cross-reference
-        return "***" + value.substring(value.length - 4);
-      } else if (
-        (p.includes("expires_at") || p.includes("iat") || p.includes("exp")) &&
-        typeof value === "number"
-      ) {
-        // return the last chars of the token for cross-reference
-        return new Date(value * 1000).toLocaleString();
+      if (typeof value === "string") {
+        if (path.includes("token")) {
+          // return the last chars of the token for cross-reference
+          return "***" + value.substring(value.length - 4);
+        }
+      } else if (typeof value === "number") {
+        if (path.includes("expires_at") || path.includes("iat") || path.includes("exp")) {
+          // return the last chars of the token for cross-reference
+          return new Date(value * 1000).toLocaleString();
+        }
       }
       return "***";
     },
