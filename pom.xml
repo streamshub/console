@@ -16,13 +16,12 @@
         <!-- Dependencies -->
         <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
         <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
-        <quarkus.platform.version>3.20.2.2</quarkus.platform.version>
+        <quarkus.platform.version>3.27.0</quarkus.platform.version>
         <strimzi-api.version>0.47.0</strimzi-api.version>
         <strimzi-oauth.version>0.17.0</strimzi-oauth.version>
         <apicurio-registry.version>2.6.13.Final</apicurio-registry.version>
 
         <!-- Test Dependencies -->
-        <hamcrest.version>3.0</hamcrest.version>
         <strimzi-test-container.version>0.112.0</strimzi-test-container.version>
 
         <!-- Plugin Versions -->
@@ -89,24 +88,6 @@
     <dependencyManagement>
         <dependencies>
             <dependency>
-                <!-- Managed for CVE-2025-48924 -->
-                <groupId>org.apache.commons</groupId>
-                <artifactId>commons-lang3</artifactId>
-                <version>3.18.0</version>
-            </dependency>
-            <dependency>
-                <!-- Managed for CVE-2024-56128 -->
-                <groupId>org.apache.kafka</groupId>
-                <artifactId>kafka-clients</artifactId>
-                <version>3.9.1</version>
-            </dependency>
-            <dependency>
-                <!-- Managed for CVE-2025-53864 -->
-                <groupId>com.nimbusds</groupId>
-                <artifactId>nimbus-jose-jwt</artifactId>
-                <version>10.5</version>
-            </dependency>
-            <dependency>
                 <groupId>io.strimzi</groupId>
                 <artifactId>kafka-oauth-client</artifactId>
                 <version>${strimzi-oauth.version}</version>
@@ -132,11 +113,6 @@
                 <version>${strimzi-oauth.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.hamcrest</groupId>
-                <artifactId>hamcrest-core</artifactId>
-                <version>${hamcrest.version}</version>
-            </dependency>
-            <dependency>
                 <groupId>io.strimzi</groupId>
                 <artifactId>strimzi-test-container</artifactId>
                 <version>${strimzi-test-container.version}</version>
@@ -149,9 +125,9 @@
                 <scope>import</scope>
             </dependency>
             <dependency>
-                <groupId>${quarkus.platform.group-id}</groupId>
+                <groupId>io.quarkiverse.operatorsdk</groupId>
                 <artifactId>quarkus-operator-sdk-bom</artifactId>
-                <version>${quarkus.platform.version}</version>
+                <version>7.2.1</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>

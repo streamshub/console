@@ -12,14 +12,8 @@ import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
 
 public class KafkaResourceManager implements QuarkusTestResourceLifecycleManager {
 
-    private Map<String, String> initArgs;
     private DeploymentManager deployments;
     private ServerSocket randomSocket;
-
-    @Override
-    public void init(Map<String, String> initArgs) {
-        this.initArgs = Map.copyOf(initArgs);
-    }
 
     @Override
     public void inject(TestInjector testInjector) {
@@ -31,7 +25,6 @@ public class KafkaResourceManager implements QuarkusTestResourceLifecycleManager
         deployments = DeploymentManager.newInstance();
         deployments.getKafkaContainer();
         String externalBootstrap = deployments.getExternalBootstrapServers();
-        String profile = "%" + initArgs.get("profile") + ".";
 
         try {
             randomSocket = new ServerSocket(0);
@@ -42,9 +35,9 @@ public class KafkaResourceManager implements QuarkusTestResourceLifecycleManager
         URI randomBootstrapServers = URI.create("dummy://localhost:" + randomSocket.getLocalPort());
 
         return Map.ofEntries(
-                Map.entry(profile + CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, externalBootstrap),
-                Map.entry(profile + "console.test.external-bootstrap", externalBootstrap),
-                Map.entry(profile + "console.test.random-bootstrap", randomBootstrapServers.toString()));
+                Map.entry(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, externalBootstrap),
+                Map.entry("console.test.external-bootstrap", externalBootstrap),
+                Map.entry("console.test.random-bootstrap", randomBootstrapServers.toString()));
     }
 
     @Override

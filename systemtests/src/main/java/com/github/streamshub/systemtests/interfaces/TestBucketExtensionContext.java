@@ -186,6 +186,11 @@ public class TestBucketExtensionContext implements ExtensionContext {
     }
 
     @Override
+    public Store getStore(StoreScope scope, Namespace namespace) {
+        return delegate.getStore(scope, namespace);
+    }
+
+    @Override
     public ExecutionMode getExecutionMode() {
         return delegate.getExecutionMode();
     }
