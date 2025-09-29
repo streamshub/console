@@ -16,13 +16,12 @@
         <!-- Dependencies -->
         <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
         <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
-        <quarkus.platform.version>3.20.3</quarkus.platform.version>
+        <quarkus.platform.version>3.27.1</quarkus.platform.version>
         <strimzi-api.version>0.49.0</strimzi-api.version>
         <strimzi-oauth.version>0.17.1</strimzi-oauth.version>
         <apicurio-registry.version>2.6.13.Final</apicurio-registry.version>
 
         <!-- Test Dependencies -->
-        <hamcrest.version>3.0</hamcrest.version>
         <strimzi-test-container.version>0.113.0</strimzi-test-container.version>
 
         <!-- Plugin Versions -->
@@ -89,10 +88,10 @@
     <dependencyManagement>
         <dependencies>
             <dependency>
-                <!-- Managed for CVE-2025-53864 -->
-                <groupId>com.nimbusds</groupId>
-                <artifactId>nimbus-jose-jwt</artifactId>
-                <version>10.6</version>
+                <!-- Held back to 3.9 until support for empty group.id is removed -->
+                <groupId>org.apache.kafka</groupId>
+                <artifactId>kafka-clients</artifactId>
+                <version>3.9.1</version>
             </dependency>
             <dependency>
                 <groupId>io.strimzi</groupId>
@@ -120,11 +119,6 @@
                 <version>${strimzi-oauth.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.hamcrest</groupId>
-                <artifactId>hamcrest-core</artifactId>
-                <version>${hamcrest.version}</version>
-            </dependency>
-            <dependency>
                 <groupId>io.strimzi</groupId>
                 <artifactId>strimzi-test-container</artifactId>
                 <version>${strimzi-test-container.version}</version>
@@ -137,9 +131,9 @@
                 <scope>import</scope>
             </dependency>
             <dependency>
-                <groupId>${quarkus.platform.group-id}</groupId>
+                <groupId>io.quarkiverse.operatorsdk</groupId>
                 <artifactId>quarkus-operator-sdk-bom</artifactId>
-                <version>${quarkus.platform.version}</version>
+                <version>7.2.1</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>

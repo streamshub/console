@@ -29,7 +29,6 @@ public class KafkaResourceManager extends ResourceManagerBase implements Quarkus
     public Map<String, String> start(Map<Class<?>, Map<String, String>> dependencyProperties) {
         kafkaCluster = deployStrimziKafka();
         String externalBootstrap = kafkaCluster.getBootstrapServers();
-        String profile = "%" + initArgs.get("profile") + ".";
 
         try {
             randomSocket = new ServerSocket(0);
@@ -40,9 +39,9 @@ public class KafkaResourceManager extends ResourceManagerBase implements Quarkus
         URI randomBootstrapServers = URI.create("dummy://localhost:" + randomSocket.getLocalPort());
 
         return Map.ofEntries(
-                Map.entry(profile + CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, externalBootstrap),
-                Map.entry(profile + "console.test.external-bootstrap", externalBootstrap),
-                Map.entry(profile + "console.test.random-bootstrap", randomBootstrapServers.toString()));
+                Map.entry(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, externalBootstrap),
+                Map.entry("console.test.external-bootstrap", externalBootstrap),
+                Map.entry("console.test.random-bootstrap", randomBootstrapServers.toString()));
     }
 
     @Override

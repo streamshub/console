@@ -1,5 +1,6 @@
 package com.github.streamshub.console.kafka.systemtest;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -17,7 +18,7 @@ public class TestPlainNoK8sProfile extends TestPlainProfile implements QuarkusTe
 
     @Override
     public List<TestResourceEntry> testResources() {
-        return List.of(new TestResourceEntry(KafkaResourceManager.class, Map.of("profile", PROFILE)));
+        return List.of(new TestResourceEntry(KafkaResourceManager.class, Collections.emptyMap()));
     }
 
     @Override
