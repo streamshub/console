@@ -93,7 +93,7 @@ jobs:
             metadata:
               name: strimzi-kafka-operator
             spec:
-              channel: stable
+              channel: strimzi-0.45.x
               name: strimzi-kafka-operator
               source: operatorhubio-catalog
               sourceNamespace: olm' | kubectl apply -n operators -f -
