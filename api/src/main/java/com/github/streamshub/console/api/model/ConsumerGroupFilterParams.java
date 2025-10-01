@@ -65,7 +65,7 @@ public class ConsumerGroupFilterParams extends FilterParams {
 
     @Override
     protected void buildPredicates() {
-        maybeAddPredicate(idFilter, ConsumerGroup.class, ConsumerGroup::getGroupId);
-        maybeAddPredicate("filter[state]", stateFilter, ConsumerGroup.class, ConsumerGroup::getState);
+        maybeAddPredicate(idFilter, ConsumerGroup.class, ConsumerGroup::groupId);
+        maybeAddPredicate("filter[state]", stateFilter, ConsumerGroup.class, ConsumerGroup::state);
     }
 }

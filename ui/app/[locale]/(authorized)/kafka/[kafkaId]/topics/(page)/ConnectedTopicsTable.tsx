@@ -1,5 +1,5 @@
 "use client";
-import { TopicList, TopicStatus } from "@/api/topics/schema";
+import { TopicsResponse, TopicStatus } from "@/api/topics/schema";
 import {
   SortableColumns,
   TopicsTable,
@@ -12,7 +12,7 @@ import { useFilterParams } from "@/utils/useFilterParams";
 import { useEffect, useState, useOptimistic, useTransition } from "react";
 
 export type ConnectedTopicsTableProps = {
-  topics: TopicList[] | undefined;
+  topics: TopicsResponse | undefined;
   topicsCount: number;
   page: number;
   perPage: number;
@@ -30,7 +30,7 @@ export type ConnectedTopicsTableProps = {
 type State = {
   id: string | undefined;
   name: string | undefined;
-  topics: TopicList[] | undefined;
+  topics: TopicsResponse | undefined;
   perPage: number;
   sort: TopicsTableColumn;
   sortDir: "asc" | "desc";
@@ -103,6 +103,7 @@ export function ConnectedTopicsTable({
   return (
     <TopicsTable
       baseurl={baseurl}
+      topics={state.topics}
       topicsCount={topicsCount}
       page={page}
       perPage={state.perPage}
@@ -123,7 +124,6 @@ export function ConnectedTopicsTable({
           addOptimistic({ perPage });
         });
       }}
-      topics={state.topics}
       isColumnSortable={(col) => {
         if (!SortableColumns.includes(col)) {
           return undefined;

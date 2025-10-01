@@ -386,6 +386,10 @@ public class ConsoleAuthenticationMechanism implements HttpAuthenticationMechani
     }
 
     private void auditLog(Principal principal, Permission required, boolean allowed, Map<Permission, Decision> auditRules) {
+        if (required instanceof ConsolePermissionRequired consoleRequired && !consoleRequired.isAudited()) {
+            return;
+        }
+
         for (Map.Entry<Permission, Decision> entry : auditRules.entrySet()) {
             if (entry.getValue().logResult(allowed) && entry.getKey().implies(required)) {
                 log.infof("%s %s %s", principal.getName(), allowed ? "allowed" : "denied", required);

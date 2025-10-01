@@ -44,6 +44,7 @@ import com.github.streamshub.console.api.support.ListRequestContext;
 import com.github.streamshub.console.api.support.TopicValidation;
 import com.github.streamshub.console.api.support.ValidationProxy;
 import com.github.streamshub.console.config.security.Privilege;
+import com.github.streamshub.console.config.security.ResourceTypes;
 
 import io.fabric8.kubernetes.api.model.ObjectMeta;
 import io.fabric8.kubernetes.client.KubernetesClient;
@@ -98,7 +99,7 @@ public class TopicService {
     NodeService nodeService;
 
     public CompletionStage<NewTopic> createTopic(NewTopic topic, boolean validateOnly) {
-        permissionService.assertPermitted(Topic.API_TYPE, Privilege.CREATE, topic.name());
+        permissionService.assertPermitted(ResourceTypes.Kafka.TOPICS, Privilege.CREATE, topic.name());
 
         return validate(topic).thenComposeAsync(
                 nothing -> createTopicValidated(topic, validateOnly),

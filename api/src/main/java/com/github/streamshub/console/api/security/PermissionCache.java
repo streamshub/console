@@ -102,7 +102,7 @@ class PermissionCache {
                         resourceNames = mapKafkaClusterIds(resourceNames);
                     }
 
-                    rulePermissions.add(new ConsolePermission(resource, resourceNames, actions));
+                    rulePermissions.add(new ConsolePermissionPossessed(resource, resourceNames, actions));
                 }
 
                 permissions.computeIfAbsent(roleName, k -> new ArrayList<>()).addAll(rulePermissions);
@@ -122,7 +122,7 @@ class PermissionCache {
 
                 for (var resource : rule.getResources()) {
                     Collection<String> resourceNames = rule.getResourceNames();
-                    rulePermissions.add(new ConsolePermission(
+                    rulePermissions.add(new ConsolePermissionPossessed(
                             kafkaContext.securityResourcePath(resource),
                             resourceNames,
                             actions));
@@ -188,10 +188,10 @@ class PermissionCache {
 
         for (var action : actions) {
             if (resourceNames.isEmpty()) {
-                auditRules.put(new ConsolePermission(resource, Collections.emptySet(), action), decision);
+                auditRules.put(new ConsolePermissionPossessed(resource, Collections.emptySet(), action), decision);
             } else {
                 for (String name : resourceNames) {
-                    auditRules.put(new ConsolePermission(resource, List.of(name), action), decision);
+                    auditRules.put(new ConsolePermissionPossessed(resource, List.of(name), action), decision);
                 }
             }
         }
@@ -221,7 +221,7 @@ class PermissionCache {
         for (String name : kafkaClusterNames) {
             if ("*".equals(name)) {
                 updatedNames.addAll(mapKafkaClusterIdWildcard(clusterKeyIds));
-            } else if (ConsolePermission.isDelimitedRegex(name)) {
+            } else if (ConsolePermissionPossessed.isDelimitedRegex(name)) {
                 updatedNames.addAll(mapKafkaClusterIdRegex(name, clusterKeyIds));
             } else {
                 updatedNames.addAll(mapKafkaClusterIdLiteral(name, clusterKeyIds, clusterNameIds));

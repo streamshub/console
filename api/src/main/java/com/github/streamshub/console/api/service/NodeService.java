@@ -45,6 +45,7 @@ import com.github.streamshub.console.api.support.ListRequestContext;
 import com.github.streamshub.console.api.support.MetadataQuorumSupport;
 import com.github.streamshub.console.config.ConsoleConfig;
 import com.github.streamshub.console.config.security.Privilege;
+import com.github.streamshub.console.config.security.ResourceTypes;
 
 import io.fabric8.kubernetes.api.model.ObjectMeta;
 import io.fabric8.kubernetes.api.model.Pod;
@@ -110,7 +111,7 @@ public class NodeService {
 
         return listNodes()
             .thenApply(nodes -> nodes.stream()
-                    .filter(permissionService.permitted(Node.API_TYPE, Privilege.LIST, Node::getId))
+                    .filter(permissionService.permitted(ResourceTypes.Kafka.NODES, Privilege.LIST, Node::getId))
                     .map(node -> tallySummary(node, summary))
                     .filter(listSupport.filter(Node.class))
                     .map(listSupport::tally)
@@ -118,6 +119,7 @@ public class NodeService {
                     .sorted(listSupport.getSortComparator())
                     .dropWhile(listSupport::beforePageBegin)
                     .takeWhile(listSupport::pageCapacityAvailable)
+                    .map(permissionService.addPrivileges(ResourceTypes.Kafka.NODES, Node::getId))
                     .toList());
     }
 

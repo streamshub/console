@@ -1,11 +1,10 @@
-import { TopicList, TopicStatus } from "@/api/topics/schema";
+import { TopicsResponse, TopicListItem, TopicStatus } from "@/api/topics/schema";
 import { Bytes } from "@/components/Format/Bytes";
 import { Number } from "@/components/Format/Number";
 import { ManagedTopicLabel } from "@/components/ManagedTopicLabel";
-import { ButtonLink } from "@/components/Navigation/ButtonLink";
 import { TableView, TableViewProps } from "@/components/Table";
 import { EmptyStateNoMatchFound } from "@/components/Table/EmptyStateNoMatchFound";
-import { Icon, Switch, Tooltip } from "@/libs/patternfly/react-core";
+import { Icon, Switch, Tooltip, Truncate } from "@/libs/patternfly/react-core";
 import {
   CheckCircleIcon,
   ExclamationCircleIcon,
@@ -14,10 +13,10 @@ import {
 } from "@/libs/patternfly/react-icons";
 import { TableVariant } from "@/libs/patternfly/react-table";
 import { Link } from "@/i18n/routing";
-import { Truncate } from "@/libs/patternfly/react-core";
 import { useTranslations } from "next-intl";
 import { ReactNode } from "react";
 import { EmptyStateNoTopics } from "./components/EmptyStateNoTopics";
+import { hasPrivilege } from "@/utils/privileges";
 
 export const TopicsTableColumns = [
   "name",
@@ -86,7 +85,7 @@ const StatusLabel: Record<TopicStatus, { label: ReactNode }> = {
 };
 
 export type TopicsTableProps = {
-  topics: TopicList[] | undefined;
+  topics: TopicsResponse | undefined;
   topicsCount: number;
   baseurl: string;
   page: number;
@@ -96,15 +95,15 @@ export type TopicsTableProps = {
   filterId: string | undefined;
   filterName: string | undefined;
   filterStatus: TopicStatus[] | undefined;
-  onEditTopic: (topic: TopicList) => void;
-  onDeleteTopic: (topic: TopicList) => void;
+  onEditTopic: (topic: TopicListItem) => void;
+  onDeleteTopic: (topic: TopicListItem) => void;
   onCreateTopic: () => void;
   onInternalTopicsChange: (checked: boolean) => void;
   onFilterIdChange: (id: string | undefined) => void;
   onFilterNameChange: (name: string | undefined) => void;
   onFilterStatusChange: (status: TopicStatus[] | undefined) => void;
 } & Pick<
-  TableViewProps<TopicList, (typeof TopicsTableColumns)[number]>,
+  TableViewProps<TopicListItem, (typeof TopicsTableColumns)[number]>,
   "isColumnSortable" | "onPageChange" | "onClearAllFilters"
 >;
 
@@ -137,7 +136,7 @@ export function TopicsTable({
       page={page}
       perPage={perPage}
       onPageChange={onPageChange}
-      data={topics}
+      data={topics?.data}
       emptyStateNoData={
         <EmptyStateNoTopics
           canCreate={isReadOnly === false}
@@ -258,6 +257,7 @@ export function TopicsTable({
               {
                 title: t("table.actions.edit"),
                 onClick: () => onEditTopic(row),
+                isDisabled: !hasPrivilege("UPDATE", row),
               },
               {
                 isSeparator: true,
@@ -265,6 +265,7 @@ export function TopicsTable({
               {
                 title: t("table.actions.delete"),
                 onClick: () => onDeleteTopic(row),
+                isDisabled: !hasPrivilege("DELETE", row),
               },
             ]}
           />
@@ -281,7 +282,7 @@ export function TopicsTable({
           onRemoveGroup: () => {
             onFilterNameChange(undefined);
           },
-          validate: (value) => true,
+          validate: (_) => true,
           errorMessage: "At least 3 characters",
         },
         "Topic ID": {
@@ -294,7 +295,7 @@ export function TopicsTable({
           onRemoveGroup: () => {
             onFilterIdChange(undefined);
           },
-          validate: (value) => true,
+          validate: (_) => true,
           errorMessage: "At least 3 characters",
         },
         Status: {
@@ -318,7 +319,7 @@ export function TopicsTable({
       }}
       onClearAllFilters={onClearAllFilters}
       actions={
-        isReadOnly === false
+        isReadOnly === false && hasPrivilege("CREATE", topics)
           ? [
               {
                 label: t("create_topic"),

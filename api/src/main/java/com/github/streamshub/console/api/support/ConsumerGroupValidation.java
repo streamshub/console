@@ -102,7 +102,7 @@ public class ConsumerGroupValidation {
             Map<Uuid, Either<Topic, Throwable>> topics = inputs.topics();
             AtomicInteger index = new AtomicInteger(0);
 
-            Optional.ofNullable(patch.getOffsets())
+            Optional.ofNullable(patch.offsets())
                 .orElseGet(Collections::emptyList)
                 .stream()
                 .forEach(offset -> {

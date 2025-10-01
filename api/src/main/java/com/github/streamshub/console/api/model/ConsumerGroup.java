@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonFilter;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.github.streamshub.console.api.model.jsonapi.JsonApiError;
+import com.github.streamshub.console.api.model.jsonapi.JsonApiMeta;
 import com.github.streamshub.console.api.model.jsonapi.JsonApiResource;
 import com.github.streamshub.console.api.model.jsonapi.JsonApiRootData;
 import com.github.streamshub.console.api.model.jsonapi.JsonApiRootDataList;
@@ -36,9 +37,19 @@ import io.xlate.validation.constraints.Expression;
 import static java.util.Comparator.comparing;
 import static java.util.Comparator.nullsLast;
 
-@Schema(name = "ConsumerGroupAttributes")
-@JsonFilter("fieldFilter")
-public class ConsumerGroup {
+@Schema(name = "ConsumerGroup")
+@Expression(
+    value = "self.id != null",
+    message = "resource ID is required",
+    node = "id",
+    payload = ErrorCategory.InvalidResource.class)
+@Expression(
+    when = "self.type != null",
+    value = "self.type == '" + ConsumerGroup.API_TYPE + "'",
+    message = "resource type conflicts with operation",
+    node = "type",
+    payload = ErrorCategory.ResourceConflict.class)
+public class ConsumerGroup extends JsonApiResource<ConsumerGroup.Attributes, None> {
 
     public static final String API_TYPE = "consumerGroups";
     public static final String FIELDS_PARAM = "fields[" + API_TYPE + "]";
@@ -54,13 +65,13 @@ public class ConsumerGroup {
         public static final String SIMPLE_CONSUMER_GROUP = "simpleConsumerGroup";
 
         static final Comparator<ConsumerGroup> ID_COMPARATOR =
-                comparing(ConsumerGroup::getGroupId);
+                comparing(ConsumerGroup::groupId);
 
         static final Map<String, Map<Boolean, Comparator<ConsumerGroup>>> COMPARATORS = ComparatorBuilder.bidirectional(
                 Map.of("id", ID_COMPARATOR,
-                        GROUP_ID, nullsLast(comparing(ConsumerGroup::getGroupId)),
-                        STATE, nullsLast(comparing(ConsumerGroup::getState)),
-                        SIMPLE_CONSUMER_GROUP, comparing(ConsumerGroup::isSimpleConsumerGroup)));
+                        GROUP_ID, nullsLast(comparing(ConsumerGroup::groupId)),
+                        STATE, nullsLast(comparing(ConsumerGroup::state)),
+                        SIMPLE_CONSUMER_GROUP, comparing(ConsumerGroup::simpleConsumerGroup)));
 
         public static final ComparatorBuilder<ConsumerGroup> COMPARATOR_BUILDER =
                 new ComparatorBuilder<>(ConsumerGroup.Fields::comparator, ConsumerGroup.Fields.defaultComparator());
@@ -93,111 +104,93 @@ public class ConsumerGroup {
     }
 
     @Schema(name = "ConsumerGroupDataList")
-    public static final class DataList extends JsonApiRootDataList<ConsumerGroupResource> {
+    public static final class DataList extends JsonApiRootDataList<ConsumerGroup> {
         public DataList(List<ConsumerGroup> data, ListRequestContext<ConsumerGroup> listSupport) {
             super(data.stream()
                     .map(entry -> {
-                        var rsrc = new ConsumerGroupResource(entry);
-                        rsrc.addMeta("page", listSupport.buildPageMeta(entry::toCursor));
-                        return rsrc;
+                        entry.addMeta("page", listSupport.buildPageMeta(entry::toCursor));
+                        return entry;
                     })
                     .toList());
             addMeta("page", listSupport.buildPageMeta());
+            listSupport.meta().forEach(this::addMeta);
             listSupport.buildPageLinks(ConsumerGroup::toCursor).forEach(this::addLink);
         }
     }
 
     @Schema(name = "ConsumerGroupData")
-    public static final class Data extends JsonApiRootData<ConsumerGroupResource> {
-        /**
-         * Used by patch
-         */
+    public static final class Data extends JsonApiRootData<ConsumerGroup> {
         @JsonCreator
-        public Data(@JsonProperty("data") ConsumerGroupResource data) {
+        public Data(@JsonProperty("data") ConsumerGroup data) {
             super(data);
         }
-
-        /**
-         * Used by list and describe
-         */
-        public Data(ConsumerGroup attributes) {
-            super(new ConsumerGroupResource(attributes));
-        }
     }
 
-    @Schema(name = "ConsumerGroup")
-    @Expression(
-        value = "self.id != null",
-        message = "resource ID is required",
-        node = "id",
-        payload = ErrorCategory.InvalidResource.class)
-    @Expression(
-        when = "self.type != null",
-        value = "self.type == '" + API_TYPE + "'",
-        message = "resource type conflicts with operation",
-        node = "type",
-        payload = ErrorCategory.ResourceConflict.class)
-    public static final class ConsumerGroupResource extends JsonApiResource<ConsumerGroup, None> {
-        /**
-         * Used by patch
-         */
+    public static class Meta extends JsonApiMeta {
+        // When a describe error occurs
+        @JsonProperty
+        List<JsonApiError> errors;
+    }
+
+    @JsonFilter("fieldFilter")
+    public static class Attributes {
+        // Available via list or describe operations
+        @JsonProperty
+        final String groupId;
+
+        @JsonProperty
+        final boolean simpleConsumerGroup;
+
+        @JsonProperty
+        final String state;
+
+        // Available via describe operation only
+
+        @JsonProperty
+        Collection<MemberDescription> members = Collections.emptyList();
+
+        @JsonProperty
+        String partitionAssignor;
+
+        @JsonProperty
+        Node coordinator;
+
+        @JsonProperty
+        List<String> authorizedOperations;
+
+        // Available via list offsets operation only
+        @JsonProperty
+        List<@Valid OffsetAndMetadata> offsets = Collections.emptyList();
+
         @JsonCreator
-        public ConsumerGroupResource(String id, String type, ConsumerGroup attributes) {
-            super(id, type, new ConsumerGroup(attributes));
+        private Attributes(String groupId, boolean simpleConsumerGroup, String state) {
+            this.groupId = groupId;
+            this.simpleConsumerGroup = simpleConsumerGroup;
+            this.state = state;
         }
 
-        /**
-         * Used by list and describe
-         */
-        public ConsumerGroupResource(ConsumerGroup attributes) {
-            super(encodeGroupId(attributes.groupId), API_TYPE, attributes);
-
-            if (attributes.errors != null) {
-                addMeta("errors", attributes.errors);
+        private Attributes(Attributes other) {
+            if (other != null) {
+                this.groupId = other.groupId;
+                this.simpleConsumerGroup = other.simpleConsumerGroup;
+                this.state = other.state;
+                this.offsets = other.offsets;
+            } else {
+                this.groupId = null;
+                this.simpleConsumerGroup = false;
+                this.state = null;
             }
         }
-    }
 
-    // Available via list or describe operations
-    private final String groupId;
-    private final boolean simpleConsumerGroup;
-    private final String state;
-
-    // Available via describe operation only
-
-    private Collection<MemberDescription> members = Collections.emptyList();
-    private String partitionAssignor;
-    private Node coordinator;
-    private List<String> authorizedOperations;
-
-    // Available via list offsets operation only
-
-    private List<@Valid OffsetAndMetadata> offsets = Collections.emptyList();
-
-    // When a describe error occurs
-    private List<JsonApiError> errors;
-
-    private ConsumerGroup(ConsumerGroup other) {
-        if (other != null) {
-            this.groupId = other.groupId;
-            this.simpleConsumerGroup = other.simpleConsumerGroup;
-            this.state = other.state;
-        } else {
-            this.groupId = null;
-            this.simpleConsumerGroup = false;
-            this.state = null;
-        }
-
-        Optional.ofNullable(other)
-            .map(ConsumerGroup::getOffsets)
-            .ifPresent(this::setOffsets);
     }
 
     @JsonCreator
-    public ConsumerGroup(String groupId, boolean simpleConsumerGroup, String state) {
-        this.groupId = groupId;
-        this.simpleConsumerGroup = simpleConsumerGroup;
-        this.state = state;
+    public ConsumerGroup(String id, String type, Attributes attributes) {
+        super(id, type, new Attributes(attributes));
+    }
+
+    private ConsumerGroup(String groupId, boolean simpleConsumerGroup, String state) {
+        super(encodeGroupId(groupId), API_TYPE, new Attributes(groupId, simpleConsumerGroup, state));
     }
 
     public static String encodeGroupId(String groupId) {
@@ -215,7 +208,11 @@ public class ConsumerGroup {
     }
 
     public static ConsumerGroup fromKafkaModel(org.apache.kafka.clients.admin.ConsumerGroupListing listing) {
-        return new ConsumerGroup(listing.groupId(), listing.isSimpleConsumerGroup(), listing.state().map(Enum::name).orElse(null));
+        return new ConsumerGroup(
+            listing.groupId(),
+            listing.isSimpleConsumerGroup(),
+            listing.state().map(Enum::name).orElse(null)
+        );
     }
 
     /**
@@ -236,14 +233,14 @@ public class ConsumerGroup {
                 description.isSimpleConsumerGroup(),
                 Optional.ofNullable(description.state()).map(Enum::name).orElse(null));
 
-        group.setPartitionAssignor(description.partitionAssignor());
-        group.setCoordinator(Node.fromKafkaModel(description.coordinator()));
-        group.setMembers(description.members()
+        group.partitionAssignor(description.partitionAssignor());
+        group.coordinator(Node.fromKafkaModel(description.coordinator()));
+        group.members(description.members()
                 .stream()
                 .map(member -> MemberDescription.fromKafkaModel(member, topicIds))
                 .toList());
 
-        group.setAuthorizedOperations(Optional.ofNullable(description.authorizedOperations())
+        group.authorizedOperations(Optional.ofNullable(description.authorizedOperations())
                 .map(Collection::stream)
                 .map(ops -> ops.map(Enum::name).toList())
                 .orElse(null));
@@ -251,63 +248,66 @@ public class ConsumerGroup {
         return group;
     }
 
+    @Override
+    public JsonApiMeta metaFactory() {
+        return new Meta();
+    }
+
     public void addError(JsonApiError error) {
-        if (errors == null) {
-            errors = new ArrayList<>();
+        var meta = (Meta) getOrCreateMeta();
+
+        if (meta.errors == null) {
+            meta.errors = new ArrayList<>();
         }
-        errors.add(error);
+        meta.errors.add(error);
     }
 
-    public String getGroupId() {
-        return groupId;
+    public String groupId() {
+        return attributes.groupId;
     }
 
-    public boolean isSimpleConsumerGroup() {
-        return simpleConsumerGroup;
+    public boolean simpleConsumerGroup() {
+        return attributes.simpleConsumerGroup;
     }
 
-    public String getState() {
-        return state;
+    public String state() {
+        return attributes.state;
     }
 
-    public Collection<MemberDescription> getMembers() {
-        return members;
+    public Collection<MemberDescription> members() {
+        return attributes.members;
     }
 
-    public void setMembers(Collection<MemberDescription> members) {
-        this.members = members;
+    public void members(Collection<MemberDescription> members) {
+        attributes.members = members;
     }
 
-    public String getPartitionAssignor() {
-        return partitionAssignor;
+    public void partitionAssignor(String partitionAssignor) {
+        attributes.partitionAssignor = partitionAssignor;
     }
 
-    public void setPartitionAssignor(String partitionAssignor) {
-        this.partitionAssignor = partitionAssignor;
+    public Node coordinator() {
+        return attributes.coordinator;
     }
 
-    public Node getCoordinator() {
-        return coordinator;
+    public void coordinator(Node coordinator) {
+        attributes.coordinator = coordinator;
     }
 
-    public void setCoordinator(Node coordinator) {
-        this.coordinator = coordinator;
+    public List<String> authorizedOperations() {
+        return attributes.authorizedOperations;
     }
 
-    public List<String> getAuthorizedOperations() {
-        return authorizedOperations;
+    public void authorizedOperations(List<String> authorizedOperations) {
+        attributes.authorizedOperations = authorizedOperations;
     }
 
-    public void setAuthorizedOperations(List<String> authorizedOperations) {
-        this.authorizedOperations = authorizedOperations;
+    public List<OffsetAndMetadata> offsets() {
+        return attributes.offsets;
     }
 
-    public List<OffsetAndMetadata> getOffsets() {
-        return offsets;
-    }
-
-    public void setOffsets(List<OffsetAndMetadata> offsets) {
-        this.offsets = offsets;
+    public void offsets(List<OffsetAndMetadata> offsets) {
+        attributes.offsets = offsets;
     }
 
     /**
@@ -328,19 +328,19 @@ public class ConsumerGroup {
 
     public String toCursor(List<String> sortFields) {
         JsonObjectBuilder cursor = Json.createObjectBuilder()
-                .add("id", groupId);
+                .add("id", attributes.groupId);
         JsonObjectBuilder attrBuilder = Json.createObjectBuilder();
 
         if (sortFields.contains(Fields.SIMPLE_CONSUMER_GROUP)) {
-            attrBuilder.add(Fields.SIMPLE_CONSUMER_GROUP, simpleConsumerGroup);
+            attrBuilder.add(Fields.SIMPLE_CONSUMER_GROUP, attributes.simpleConsumerGroup);
         }
 
         if (sortFields.contains(Fields.GROUP_ID)) {
-            attrBuilder.add(Fields.GROUP_ID, groupId);
+            attrBuilder.add(Fields.GROUP_ID, attributes.groupId);
         }
 
         if (sortFields.contains(Fields.STATE)) {
-            attrBuilder.add(Fields.STATE, state);
+            attrBuilder.add(Fields.STATE, attributes.state);
         }
 
         cursor.add("attributes", attrBuilder.build());

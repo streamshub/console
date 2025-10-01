@@ -33,15 +33,15 @@ import { updateKafkaCluster } from "@/api/kafka/actions";
 import { useReconciliationContext } from "../ReconciliationContext";
 import { ReconciliationPauseButton } from "./ReconciliationPauseButton";
 import { ReconciliationModal } from "./ReconciliationModal";
+import { ClusterDetail } from "@/api/kafka/schema";
+import { hasPrivilege } from "@/utils/privileges";
 import { useState } from "react";
 
 type ClusterCardProps = {
-  name: string;
-  status: string;
+  kafkaDetail: ClusterDetail | null;
   brokersOnline?: number;
   brokersTotal?: number;
   consumerGroups?: number;
-  kafkaVersion: string;
   kafkaId: string | undefined;
   messages: Array<{
     variant: "danger" | "warning";
@@ -54,12 +54,10 @@ type ClusterCardProps = {
 
 export function ClusterCard({
   isLoading,
-  name,
-  status,
+  kafkaDetail,
   brokersOnline,
   brokersTotal,
   consumerGroups,
-  kafkaVersion,
   messages,
   kafkaId,
   managed,
@@ -100,6 +98,9 @@ export function ClusterCard({
     0 + (isReconciliationPaused ? 1 : 0);
   const dangers = messages?.filter((m) => m.variant === "danger").length || 0;
 
+  const status = kafkaDetail?.attributes.status ??
+    (brokersOnline == brokersTotal ? "Ready" : "Not Available");
+
   return (
     <>
       <Card component={"div"}>
@@ -110,12 +111,14 @@ export function ClusterCard({
                 {t("ClusterCard.Kafka_cluster_details")}
               </Title>
             </FlexItem>
-            <FlexItem align={{ default: "alignRight" }}>
-              <ReconciliationPauseButton
-                clusterId={kafkaId || ""}
-                managed={managed || false}
-              />
-            </FlexItem>
+            { hasPrivilege("UPDATE", kafkaDetail) &&
+              <FlexItem align={{ default: "alignRight" }}>
+                <ReconciliationPauseButton
+                  clusterId={kafkaId || ""}
+                  managed={managed || false}
+                />
+              </FlexItem>
+            }
           </Flex>
           <Flex direction={{ default: "column" }} gap={{ default: "gap" }}>
             <Flex
@@ -153,7 +156,7 @@ export function ClusterCard({
                         )}
                       </Icon>
 
-                      <Title headingLevel={"h2"}>{name}</Title>
+                      <Title headingLevel={"h2"}>{kafkaDetail?.attributes.name ?? "n/a"}</Title>
 
                       <Content>
                         <Content component={"small"}>{status}</Content>
@@ -217,7 +220,7 @@ export function ClusterCard({
                   </GridItem>
                   <GridItem span={12} xl={4}>
                     <div className="pf-v6-u-font-size-xl">
-                      {isLoading ? <Skeleton /> : kafkaVersion}
+                      {isLoading ? <Skeleton /> : kafkaDetail?.attributes.kafkaVersion ?? "Not Available"}
                     </div>
                     <Content>
                       <Content component={"small"}>

@@ -12,8 +12,6 @@ import { Suspense } from "react";
 import { ConnectedTopicsTable } from "./ConnectedTopicsTable";
 import { NoDataErrorState } from "@/components/NoDataErrorState";
 
-//export const dynamic = "force-dynamic";
-
 export async function generateMetadata() {
   const t = await getTranslations();
 
@@ -138,7 +136,7 @@ async function AsyncTopicsTable({
 
   return (
     <ConnectedTopicsTable
-      topics={topics.data}
+      topics={topics}
       topicsCount={topics.meta.page.total}
       id={id}
       name={name}

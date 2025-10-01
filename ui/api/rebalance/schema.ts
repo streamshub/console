@@ -42,6 +42,7 @@ export const RebalanceSchema = z.object({
     .object({
       autoApproval: z.boolean().optional(),
       allowedActions: z.array(z.string()),
+      privileges: z.array(z.string()).optional(),
     })
     .optional(),
   attributes: z.object({
@@ -78,6 +79,7 @@ const RebalancesListSchema = z.object({
     autoApproval: z.boolean(),
     managed: z.boolean().optional(),
     allowedActions: z.array(z.string()),
+    privileges: z.array(z.string()).optional(),
   }),
   attributes: RebalanceSchema.shape.attributes.pick({
     name: true,
