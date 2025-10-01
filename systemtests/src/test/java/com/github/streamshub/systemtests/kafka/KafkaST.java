@@ -1,5 +1,8 @@
-package com.github.streamshub.systemtests;
+package com.github.streamshub.systemtests.kafka;
 
+import com.github.streamshub.systemtests.AbstractST;
+import com.github.streamshub.systemtests.MessageStore;
+import com.github.streamshub.systemtests.TestCaseConfig;
 import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.constants.Labels;
 import com.github.streamshub.systemtests.constants.TestTags;
@@ -129,7 +132,7 @@ public class KafkaST extends AbstractST {
         WaitUtils.waitForPodsReadyAndStable(tcc.namespace(), Labels.getKnpBrokerLabelSelector(tcc.kafkaName()), scaledBrokersCount, true);
 
         // Check UI displays the broker count change
-        PwUtils.waitForContainsText(tcc.page(), CssSelectors.getLocator(tcc, ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_DATA_BROKER_COUNT),
+        PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_DATA_BROKER_COUNT,
             scaledBrokersCount + "/" + scaledBrokersCount, PodUtils.getTimeoutForPodOperations(scaledBrokersCount - Constants.REGULAR_BROKER_REPLICAS), true);
 
         // Now verify resume from top notification and just check the annotation on Kafka cluster
@@ -210,7 +213,7 @@ public class KafkaST extends AbstractST {
 
         LOGGER.debug("Verify new Kafka broker count on OverviewPage is {}", scaledBrokersCount);
         tcc.page().navigate(PwPageUrls.getOverviewPage(tcc, tcc.kafkaName()), PwUtils.getDefaultNavigateOpts());
-        PwUtils.waitForContainsText(tcc.page(), CssSelectors.getLocator(tcc, ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_DATA_BROKER_COUNT),
+        PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_DATA_BROKER_COUNT,
             scaledBrokersCount + "/" + scaledBrokersCount, PodUtils.getTimeoutForPodOperations(scaledBrokersCount - Constants.REGULAR_BROKER_REPLICAS), true);
 
         LOGGER.debug("Verify new Kafka node count on Nodes page");
@@ -245,7 +248,7 @@ public class KafkaST extends AbstractST {
         LOGGER.debug("Verify current Kafka broker count on OverviewPage is {}", Constants.REGULAR_BROKER_REPLICAS);
         tcc.page().navigate(PwPageUrls.getOverviewPage(tcc, tcc.kafkaName()), PwUtils.getDefaultNavigateOpts());
         // broker scaling needs longer to be displayed
-        PwUtils.waitForContainsText(tcc.page(), CssSelectors.getLocator(tcc, ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_DATA_BROKER_COUNT),
+        PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_DATA_BROKER_COUNT,
             Constants.REGULAR_BROKER_REPLICAS + "/" + Constants.REGULAR_BROKER_REPLICAS, PodUtils.getTimeoutForPodOperations(Constants.REGULAR_BROKER_REPLICAS), true);
 
         LOGGER.debug("Verify current Kafka broker count on NodesPage is {}", Constants.REGULAR_BROKER_REPLICAS);
