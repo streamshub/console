@@ -67,7 +67,7 @@ export default async function middleware(req: NextRequest) {
       { path: requestPath },
       "Bypassing OIDC authentication for /api/schema",
     );
-    return NextResponse.next(); // Allow access without authentication
+    return NextResponse.next({ request: req }); // Allow access without authentication
   }
 
   const isPublicPage = !oidcEnabled && publicPathnameRegex.test(requestPath);
