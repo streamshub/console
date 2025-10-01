@@ -2,6 +2,8 @@ package com.github.streamshub.systemtests.locators;
 
 public class ConsumerGroupsPageSelectors {
 
+    private ConsumerGroupsPageSelectors() {}
+
     public static final String CGPS_HEADER_TITLE = CssSelectors.PAGES_CONTENT_HEADER_TITLE_CONTENT;
 
     public static final String CGPS_TABLE = new CssBuilder(CssSelectors.PAGES_CONTENT)
