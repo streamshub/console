@@ -3,6 +3,9 @@ set -xeuo pipefail
 
 # Get directory of this script
 SCRIPT_DIR="$(cd -- "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
+
+source $SCRIPT_DIR/common.sh
+
 ROOT_DIR="$SCRIPT_DIR/../../.."
 PARAMS_MD=${1:-"$ROOT_DIR/params.md"}
 
@@ -24,5 +27,7 @@ PARAMS
 gh api repos/$REPO/statuses/$COMMIT_SHA \
   -f state="pending" -f context="System Tests" -f description="System tests are running..." -f target_url="$RUN_URL"
 
-# Update PR comment
-gh pr comment "$PR_NUMBER" --repo "$REPO" --edit-last --create-if-none --body-file "$PARAMS_MD"
+# Update PR comment - do not edit help comment
+COMMENT_MODE=$(getEditModeOrSkipIfLastCommentIsHelp)
+echo "Comment mode: $COMMENT_MODE"
+gh pr comment $PR_NUMBER --repo $REPO $COMMENT_MODE --body-file $PARAMS_MD

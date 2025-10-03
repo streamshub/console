@@ -3,6 +3,9 @@ set -xeuo pipefail
 
 # Get directory of this script, regardless of where it was called from
 SCRIPT_DIR="$(cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P)"
+
+source $SCRIPT_DIR/common.sh
+
 ROOT_DIR="$SCRIPT_DIR/../../.."
 RESULT_DIR=${1:-"$ROOT_DIR/systemtests/target/failsafe-reports"}
 RESULT_MD=${2:-"$ROOT_DIR/test-results.md"}
@@ -129,5 +132,7 @@ echo "Results file $(cat $RESULT_MD)"
 # Set status check of the PR
 gh api repos/$REPO/statuses/$COMMIT_SHA -f state="$STATE" -f context="System Tests" -f description="$DESCRIPTION" -f target_url="$RUN_URL"
 
-# Comment PR with results markdown
-gh pr comment $PR_NUMBER --repo $REPO  --edit-last --create-if-none --body-file $RESULT_MD
+# Comment PR with results markdown - do not edit help comment
+COMMENT_MODE=$(getEditModeOrSkipIfLastCommentIsHelp)
+echo "Comment mode: $COMMENT_MODE"
+gh pr comment $PR_NUMBER --repo $REPO $COMMENT_MODE --body-file $RESULT_MD
