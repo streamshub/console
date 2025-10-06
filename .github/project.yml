@@ -1,4 +1,4 @@
 name: Streaming Platform Console
 release:
-  current-version: 0.6.8
-  next-version: 0.6.9-SNAPSHOT
+  current-version: 0.6.9
+  next-version: 0.6.10-SNAPSHOT
