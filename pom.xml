@@ -6,7 +6,7 @@
     <groupId>com.github.streamshub</groupId>
     <artifactId>console</artifactId>
     <packaging>pom</packaging>
-    <version>0.6.9</version>
+    <version>0.6.10-SNAPSHOT</version>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -61,7 +61,7 @@
     <scm>
         <connection>scm:git:git://github.com/streamshub/console.git</connection>
         <developerConnection>scm:git:git@github.com:streamshub/console.git</developerConnection>
-        <tag>0.6.9</tag>
+        <tag>HEAD</tag>
     </scm>
 
     <licenses>
