@@ -32,7 +32,7 @@ export default async function AsyncLayout({
   const response = await getKafkaCluster(kafkaId);
 
   const isOidcEnabled = await oidcEnabled();
-  const loginRequired = !(await oidcEnabled());
+  const loginRequired = !isOidcEnabled;
 
   const clusters = (await getKafkaClusters(undefined, { pageSize: 1000 }))
     ?.payload;
