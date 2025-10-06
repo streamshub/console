@@ -1,4 +1,4 @@
-FROM quay.io/keycloak/keycloak:26.3
+FROM quay.io/keycloak/keycloak:26.4
 # No operations, this is only a placeholder used to manage the image
 # version via dependabot. The FROM statement is always expected to
 # present on the first line of this file.
