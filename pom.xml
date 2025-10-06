@@ -163,7 +163,7 @@
             <dependency>
                 <groupId>io.sundr</groupId>
                 <artifactId>builder-annotations</artifactId>
-                <version>0.220.1</version>
+                <version>0.230.0</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
