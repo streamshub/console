@@ -22,7 +22,7 @@
         <!-- Playwright -->
         <playwright.version>1.55.0</playwright.version>
         <!-- Used for test-frame -->
-        <test-frame.version>1.1.0</test-frame.version>
+        <test-frame.version>1.2.0</test-frame.version>
         <!-- Allows skipping tests - unit, system or both types -->
         <skipTests>false</skipTests>
         <skipUTs>${skipTests}</skipUTs>
