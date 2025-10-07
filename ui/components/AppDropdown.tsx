@@ -35,9 +35,11 @@ export type ClusterInfo = {
 export function AppDropdown({
   clusters,
   kafkaId,
+  isOidcEnabled,
 }: Readonly<{
   readonly clusters: ClusterInfo[];
   readonly kafkaId: string;
+  readonly isOidcEnabled?: boolean;
 }>) {
   const t = useTranslations();
   const router = useRouter();
@@ -107,7 +109,11 @@ export function AppDropdown({
           <MenuItem
             key={cluster.id}
             itemId={cluster.id}
-            description={`Authentication: ${cluster.authenticationMethod}`}
+            description={
+              !isOidcEnabled
+                ? `Authentication: ${cluster.authenticationMethod}`
+                : undefined
+            }
             isSelected={kafkaId === cluster.id}
           >
             <Flex>

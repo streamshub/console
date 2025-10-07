@@ -40,12 +40,14 @@ export function AppMasthead({
   clusterInfoList,
   kafkaId,
   metadata,
+  isOidcEnabled,
 }: {
   readonly username?: string;
   readonly showSidebarToggle: boolean;
   readonly clusterInfoList: ClusterInfo[];
   readonly kafkaId: string;
   readonly metadata?: MetadataResponse;
+  readonly isOidcEnabled?: boolean;
 }) {
   const t = useTranslations();
   const { toggleSidebar } = useAppLayout();
@@ -60,7 +62,9 @@ export function AppMasthead({
   const closeFeedbackModal = () => {
     setIsFeedbackModalOpen(false);
   };
-  const toggleAboutModal = (_event: React.MouseEvent<Element, MouseEvent> | KeyboardEvent | MouseEvent) => {
+  const toggleAboutModal = (
+    _event: React.MouseEvent<Element, MouseEvent> | KeyboardEvent | MouseEvent,
+  ) => {
     setIsAboutModalOpen(!isAboutModalOpen);
   };
 
@@ -103,7 +107,11 @@ export function AppMasthead({
             <ToolbarContent id={"masthead-toolbar"}>
               {showSidebarToggle && (
                 <ToolbarItem className={"pf-v6-u-py-sm"}>
-                  <AppDropdown clusters={clusterInfoList} kafkaId={kafkaId} />
+                  <AppDropdown
+                    clusters={clusterInfoList}
+                    kafkaId={kafkaId}
+                    isOidcEnabled={isOidcEnabled}
+                  />
                 </ToolbarItem>
               )}
               <ToolbarGroup
@@ -141,15 +149,17 @@ export function AppMasthead({
                       onClick={openFeedbackModal}
                     />
                   </ToolbarItem>
-                  {metadata && <ToolbarItem className={"pf-v6-u-py-sm"}>
-                    <Button
-                      aria-label={t("AppMasthead.help")}
-                      variant={"plain"}
-                      icon={<InfoCircleIcon />}
-                      ouiaId={"help-button"}
-                      onClick={toggleAboutModal}
-                    />
-                  </ToolbarItem>}
+                  {metadata && (
+                    <ToolbarItem className={"pf-v6-u-py-sm"}>
+                      <Button
+                        aria-label={t("AppMasthead.help")}
+                        variant={"plain"}
+                        icon={<InfoCircleIcon />}
+                        ouiaId={"help-button"}
+                        onClick={toggleAboutModal}
+                      />
+                    </ToolbarItem>
+                  )}
                 </ToolbarGroup>
               </ToolbarGroup>
               {username && (
@@ -172,7 +182,9 @@ export function AppMasthead({
 
       <AboutModal
         isOpen={isAboutModalOpen}
-        onClose={(e: React.MouseEvent<Element, MouseEvent> | KeyboardEvent | MouseEvent) => toggleAboutModal(e)}
+        onClose={(
+          e: React.MouseEvent<Element, MouseEvent> | KeyboardEvent | MouseEvent,
+        ) => toggleAboutModal(e)}
         brandImageSrc={
           isDarkMode
             ? "/full_logo_hori_reverse.svg"

@@ -30,7 +30,9 @@ export default async function AsyncLayout({
   const authOptions = await getAuthOptions();
   const session = await getServerSession(authOptions);
   const response = await getKafkaCluster(kafkaId);
-  const loginRequired = !(await oidcEnabled());
+
+  const isOidcEnabled = await oidcEnabled();
+  const loginRequired = !isOidcEnabled;
 
   const clusters = (await getKafkaClusters(undefined, { pageSize: 1000 }))
     ?.payload;
@@ -66,6 +68,7 @@ export default async function AsyncLayout({
       header={header}
       modal={modal}
       clusterInfoList={clusterInfoList || []}
+      isOidcEnabled={isOidcEnabled}
     >
       {children}
     </Layout>
@@ -81,6 +84,7 @@ function Layout({
   metadata,
   username,
   clusterInfoList,
+  isOidcEnabled,
 }: PropsWithChildren<{
   kafkaDetail: ClusterDetail;
   readonly metadata?: MetadataResponse;
@@ -89,6 +93,7 @@ function Layout({
   activeBreadcrumb: ReactNode;
   modal: ReactNode;
   clusterInfoList: ClusterInfo[];
+  isOidcEnabled: boolean;
 }>) {
   const t = useTranslations();
   return (
@@ -99,6 +104,7 @@ function Layout({
         metadata={metadata}
         sidebar={<ClusterLinks kafkaId={kafkaDetail.id} />}
         clusterInfoList={clusterInfoList}
+        isOidcEnabled={isOidcEnabled}
       >
         <PageGroup stickyOnBreakpoint={{ default: "top" }}>
           <PageBreadcrumb>{activeBreadcrumb}</PageBreadcrumb>

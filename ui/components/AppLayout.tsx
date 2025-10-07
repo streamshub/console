@@ -19,12 +19,14 @@ export function AppLayout({
   kafkaDetail,
   metadata,
   clusterInfoList,
+  isOidcEnabled,
 }: PropsWithChildren<{
   username?: string;
   sidebar?: ReactNode;
   kafkaDetail?: ClusterDetail;
   readonly metadata?: MetadataResponse;
   clusterInfoList?: ClusterInfo[];
+  isOidcEnabled?: boolean;
 }>) {
   const t = useTranslations();
 
@@ -40,6 +42,7 @@ export function AppLayout({
           clusterInfoList={clusterInfoList || []}
           kafkaId={kafkaId || ""}
           metadata={metadata}
+          isOidcEnabled={isOidcEnabled}
         />
       }
       sidebar={
@@ -56,7 +59,9 @@ export function AppLayout({
       <ClusterDrawerProvider>
         <AlertProvider>
           <ReconciliationProvider kafkaId={kafkaId ?? ""}>
-            {isValidKafkaId && <ReconciliationPausedBanner kafkaDetail={kafkaDetail} />}
+            {isValidKafkaId && (
+              <ReconciliationPausedBanner kafkaDetail={kafkaDetail} />
+            )}
             <ClusterDrawer>{children}</ClusterDrawer>
           </ReconciliationProvider>
         </AlertProvider>
