@@ -57,7 +57,10 @@ export function OptimizationProposal({
   };
   return (
     <Modal variant={ModalVariant.medium} isOpen={true} onClose={onClickClose}>
-      <ModalHeader title={t("optimization_proposal_of_kafka_rebalance")} />
+      <ModalHeader
+        title={t("optimization_proposal_of_kafka_rebalance")}
+        description={t("optimization_proposal_of_kafka_rebalance_description")}
+      />
       <ModalBody>
         <DescriptionList
           isHorizontal

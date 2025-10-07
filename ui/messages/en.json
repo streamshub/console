@@ -658,6 +658,7 @@
     "no_kafka_cluster_rebalances_found": "No Kafka cluster rebalances found",
     "no_kafka_cluster_rebalances_found_description": "Configure a KafkaRebalance resource to generate optimization proposals and initiate rebalances for your Kafka cluster.",
     "optimization_proposal_of_kafka_rebalance": "Optimization proposal for KafkaRebalance",
+    "optimization_proposal_of_kafka_rebalance_description": "A summary of proposed changes based on defined optimization goals, assessed in a specific order of priority.",
     "data_to_move": "Data To Move MB",
     "data_to_move_tooltip": "Total amount of data (in MB) moved across brokers as part of the optimization.",
     "excluded_brokers_for_leadership": "Excluded Brokers For Leadership",
