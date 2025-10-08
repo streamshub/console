@@ -5,10 +5,6 @@
 
 package com.github.streamshub.systemtests.locators;
 
-import com.github.streamshub.systemtests.TestCaseConfig;
-import com.microsoft.playwright.Locator;
-import com.microsoft.playwright.Page;
-
 /**
  * Note: When creating new element from scratch using empty CssSelectors constructor,
  * please start with `body` element that is right after `html` element, this ensures code continuity.
@@ -16,14 +12,6 @@ import com.microsoft.playwright.Page;
 public class CssSelectors {
 
     private CssSelectors() {}
-
-    public static Locator getLocator(TestCaseConfig tcc, String selector) {
-        return getLocator(tcc.page(), selector);
-    }
-
-    public static Locator getLocator(Page page, String selector) {
-        return page.locator(selector);
-    }
 
     public static final String PAGE_DIV = new CssBuilder()
         .withElementBody().withChild()
