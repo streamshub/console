@@ -1,5 +1,6 @@
 "use client";
-import { useDarkMode } from "@/app/[locale]/useDarkMode";
+import { ThemeSelector } from "@/app/[locale]/ThemeSelector";
+import { useColorTheme } from "@/app/[locale]/useColorTheme";
 import { ExternalLink } from "@/components/Navigation/ExternalLink";
 import RichText from "@/components/RichText";
 import { Link } from "@/i18n/routing";
@@ -16,14 +17,8 @@ import {
   LoginFormProps,
   LoginMainFooterBandItem,
   LoginPage,
-  ToggleGroup,
-  ToggleGroupItem,
 } from "@/libs/patternfly/react-core";
-import {
-  AngleLeftIcon,
-  MoonIcon,
-  SunIcon,
-} from "@/libs/patternfly/react-icons";
+import { AngleLeftIcon } from "@/libs/patternfly/react-icons";
 import { signIn } from "next-auth/react";
 import { useTranslations } from "next-intl";
 import { FormEvent, useEffect, useState } from "react";
@@ -73,7 +68,7 @@ export function SignInPage({
   const t = useTranslations();
   const productName = t("common.product");
 
-  const { isDarkMode, toggleDarkMode } = useDarkMode();
+  const { isDarkMode } = useColorTheme();
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -186,24 +181,7 @@ export function SignInPage({
     <>
       <Flex direction={{ default: "column" }}>
         <FlexItem align={{ default: "alignRight" }} className="pf-v6-u-mr-md">
-          <ToggleGroup className={"pf-v6-u-py-md"}>
-            <ToggleGroupItem
-              icon={<SunIcon />}
-              aria-label="Light mode"
-              isSelected={!isDarkMode}
-              onChange={() => {
-                toggleDarkMode(false);
-              }}
-            />
-            <ToggleGroupItem
-              icon={<MoonIcon />}
-              aria-label="Dark mode"
-              isSelected={isDarkMode}
-              onChange={() => {
-                toggleDarkMode(true);
-              }}
-            />
-          </ToggleGroup>
+          <ThemeSelector />
         </FlexItem>
       </Flex>
       <LoginPage
