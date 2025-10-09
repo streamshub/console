@@ -114,7 +114,7 @@ class OpenIdConnect {
     }
 
     log.trace(
-      { url: tokenEndpoint, params: JSON.stringify(params) },
+      { url: tokenEndpoint, params: params },
       "Refreshing token",
     );
 
@@ -159,9 +159,7 @@ class OpenIdConnect {
     log.trace("jwt callback invoked");
 
     if (account) {
-      log.trace(
-        `account ${JSON.stringify(account)} present, saving new token: ${JSON.stringify(token)}`,
-      );
+      log.trace({ account, token }, `account present, saving new token`);
 
       // Save the access token and refresh token in the JWT on the initial login
       return {

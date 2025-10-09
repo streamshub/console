@@ -167,15 +167,23 @@ async function getOrLoadConfig(): Promise<ConsoleConfig> {
         },
         loadTime: new Date(),
       };
-      log.info(
-        `console configuration loaded from ${process.env.CONSOLE_CONFIG_PATH}: ${JSON.stringify(consoleConfig)}`,
-      );
+      if (log.isLevelEnabled("debug")) {
+        log.debug(
+          consoleConfig,
+          `console configuration loaded from ${process.env.CONSOLE_CONFIG_PATH}`,
+        );
+      } else {
+        log.info(
+          `console configuration loaded from ${process.env.CONSOLE_CONFIG_PATH}`,
+        );
+      }
     }
 
     (globalThis as any).consoleConfig = consoleConfig;
   } else {
     log.trace(
-      `console configuration reused from globalThis: ${JSON.stringify(consoleConfig)}`,
+      consoleConfig,
+      `console configuration reused from globalThis`,
     );
   }
 
