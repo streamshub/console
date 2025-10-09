@@ -2,7 +2,6 @@
 import {
   AboutModal,
   Brand,
-  Button,
   Content,
   Masthead,
   MastheadBrand,
@@ -11,28 +10,21 @@ import {
   MastheadMain,
   MastheadToggle,
   PageToggleButton,
-  ToggleGroup,
-  ToggleGroupItem,
   Toolbar,
   ToolbarContent,
   ToolbarGroup,
   ToolbarItem,
 } from "@/libs/patternfly/react-core";
-import {
-  BarsIcon,
-  InfoCircleIcon,
-  MoonIcon,
-  QuestionCircleIcon,
-  SunIcon,
-} from "@/libs/patternfly/react-icons";
+import { BarsIcon } from "@/libs/patternfly/react-icons";
 import { FeedbackModal } from "@patternfly/react-user-feedback";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { useAppLayout } from "./AppLayoutProvider";
 import { UserDropdown } from "./UserDropdown";
-import { useDarkMode } from "@/app/[locale]/useDarkMode";
+import { useColorTheme } from "@/app/[locale]/useColorTheme";
 import { AppDropdown, ClusterInfo } from "./AppDropdown";
 import { MetadataResponse } from "@/api/meta/schema";
+import { ThemeSelector } from "@/app/[locale]/ThemeSelector";
 
 export function AppMasthead({
   username,
@@ -51,7 +43,7 @@ export function AppMasthead({
 }) {
   const t = useTranslations();
   const { toggleSidebar } = useAppLayout();
-  const { isDarkMode, toggleDarkMode } = useDarkMode();
+  const { isDarkMode } = useColorTheme();
 
   const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
   const [isAboutModalOpen, setIsAboutModalOpen] = useState(false);
@@ -118,49 +110,7 @@ export function AppMasthead({
                 variant="action-group"
                 align={{ default: "alignEnd" }}
               >
-                <ToggleGroup className={"pf-v6-u-py-sm"}>
-                  <ToggleGroupItem
-                    icon={<SunIcon />}
-                    aria-label="Light mode"
-                    isSelected={!isDarkMode}
-                    onChange={() => {
-                      toggleDarkMode(false);
-                    }}
-                  />
-                  <ToggleGroupItem
-                    icon={<MoonIcon />}
-                    aria-label="Dark mode"
-                    isSelected={isDarkMode}
-                    onChange={() => {
-                      toggleDarkMode(true);
-                    }}
-                  />
-                </ToggleGroup>
-                <ToolbarGroup
-                  variant="label-group"
-                  visibility={{ default: "hidden", lg: "visible" }}
-                >
-                  <ToolbarItem className={"pf-v6-u-py-sm"}>
-                    <Button
-                      aria-label={t("AppMasthead.help")}
-                      variant={"plain"}
-                      icon={<QuestionCircleIcon />}
-                      ouiaId={"help-button"}
-                      onClick={openFeedbackModal}
-                    />
-                  </ToolbarItem>
-                  {metadata && (
-                    <ToolbarItem className={"pf-v6-u-py-sm"}>
-                      <Button
-                        aria-label={t("AppMasthead.help")}
-                        variant={"plain"}
-                        icon={<InfoCircleIcon />}
-                        ouiaId={"help-button"}
-                        onClick={toggleAboutModal}
-                      />
-                    </ToolbarItem>
-                  )}
-                </ToolbarGroup>
+                <ThemeSelector />
               </ToolbarGroup>
               {username && (
                 <UserDropdown username={username} picture={undefined} />
