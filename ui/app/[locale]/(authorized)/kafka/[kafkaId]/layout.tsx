@@ -14,6 +14,7 @@ import { MetadataResponse } from "@/api/meta/schema";
 import { NoDataErrorState } from "@/components/NoDataErrorState";
 import { ClusterInfo } from "@/components/AppDropdown";
 import { oidcEnabled } from "@/utils/config";
+import { ThemeInitializer } from "@/components/ThemeInitializer";
 
 export default async function AsyncLayout({
   children,
@@ -98,6 +99,7 @@ function Layout({
   const t = useTranslations();
   return (
     <AppLayoutProvider>
+      <ThemeInitializer />
       <AppLayout
         username={username}
         kafkaDetail={kafkaDetail}
