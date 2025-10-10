@@ -2,6 +2,7 @@
 import {
   AboutModal,
   Brand,
+  Button,
   Content,
   Masthead,
   MastheadBrand,
@@ -10,12 +11,17 @@ import {
   MastheadMain,
   MastheadToggle,
   PageToggleButton,
+  ToggleGroup,
   Toolbar,
   ToolbarContent,
   ToolbarGroup,
   ToolbarItem,
 } from "@/libs/patternfly/react-core";
-import { BarsIcon } from "@/libs/patternfly/react-icons";
+import {
+  BarsIcon,
+  InfoCircleIcon,
+  QuestionCircleIcon,
+} from "@/libs/patternfly/react-icons";
 import { FeedbackModal } from "@patternfly/react-user-feedback";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
@@ -110,7 +116,34 @@ export function AppMasthead({
                 variant="action-group"
                 align={{ default: "alignEnd" }}
               >
-                <ThemeSelector />
+                <ToggleGroup className={"pf-v6-u-py-sm"}>
+                  <ThemeSelector />
+                </ToggleGroup>
+                <ToolbarGroup
+                  variant="label-group"
+                  visibility={{ default: "hidden", lg: "visible" }}
+                >
+                  <ToolbarItem className={"pf-v6-u-py-sm"}>
+                    <Button
+                      aria-label={t("AppMasthead.help")}
+                      variant={"plain"}
+                      icon={<QuestionCircleIcon />}
+                      ouiaId={"help-button"}
+                      onClick={openFeedbackModal}
+                    />
+                  </ToolbarItem>
+                  {metadata && (
+                    <ToolbarItem className={"pf-v6-u-py-sm"}>
+                      <Button
+                        aria-label={t("AppMasthead.help")}
+                        variant={"plain"}
+                        icon={<InfoCircleIcon />}
+                        ouiaId={"help-button"}
+                        onClick={toggleAboutModal}
+                      />
+                    </ToolbarItem>
+                  )}
+                </ToolbarGroup>
               </ToolbarGroup>
               {username && (
                 <UserDropdown username={username} picture={undefined} />
