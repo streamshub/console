@@ -23,7 +23,6 @@ If you are using the Topic Operator to manage topics in unidirectional mode, cre
 
 For more information on topic configuration properties, see the {kafkaDoc}. 
 
-[NOTE]
-====
-For topic replication, partition leader elections can be clean or unclean. Clean leader election means that out-of-sync replicas cannot become leaders. If no in-sync replicas are available, Kafka waits until the original leader is back online before messages are picked up again. 
-====
+NOTE: For topic replication, partition leader elections can be clean or unclean. 
+Clean leader election means that out-of-sync replicas cannot become leaders. 
+If no in-sync replicas are available, Kafka waits until the original leader is back online before messages are picked up again. 
