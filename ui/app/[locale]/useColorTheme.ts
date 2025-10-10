@@ -11,43 +11,38 @@ const COLOR_MODES = {
 } as const;
 
 export const useColorTheme = () => {
-  const [mode, setMode] = useState<ThemeMode>(COLOR_MODES.SYSTEM);
+  const [mode, setMode] = useState<ThemeMode>(() => {
+    if (typeof window === "undefined") return COLOR_MODES.SYSTEM;
+    return (
+      (localStorage.getItem("theme-mode") as ThemeMode) || COLOR_MODES.SYSTEM
+    );
+  });
 
-  // Load saved mode
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const stored = localStorage.getItem("theme-mode") as ThemeMode | null;
-    if (stored) setMode(stored);
-  }, []);
+  const [isSystemDark, setIsSystemDark] = useState(() =>
+    typeof window !== "undefined"
+      ? window.matchMedia("(prefers-color-scheme: dark)").matches
+      : false,
+  );
 
   const isDarkMode =
-    mode === COLOR_MODES.DARK ||
-    (mode === COLOR_MODES.SYSTEM &&
-      typeof window !== "undefined" &&
-      window.matchMedia("(prefers-color-scheme: dark)").matches);
+    mode === COLOR_MODES.DARK || (mode === COLOR_MODES.SYSTEM && isSystemDark);
 
-  // Apply mode + persist to localStorage
   useEffect(() => {
     if (typeof document === "undefined") return;
-    const root = document.documentElement;
 
-    root.classList.toggle("pf-v6-theme-dark", isDarkMode);
-    if (typeof window !== "undefined") {
-      localStorage.setItem("theme-mode", mode);
-    }
+    document.documentElement.classList.toggle("pf-v6-theme-dark", isDarkMode);
+    localStorage.setItem("theme-mode", mode);
   }, [mode, isDarkMode]);
 
-  // Watch system preference changes
   useEffect(() => {
-    if (typeof window === "undefined" || mode !== COLOR_MODES.SYSTEM) return;
-
+    if (typeof window === "undefined") return;
     const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
-    const handler = () => setMode(COLOR_MODES.SYSTEM);
-    mediaQuery.addEventListener("change", handler);
-    return () => mediaQuery.removeEventListener("change", handler);
-  }, [mode]);
 
-  // Derived helpers
+    const handleChange = (e: MediaQueryListEvent) => setIsSystemDark(e.matches);
+    mediaQuery.addEventListener("change", handleChange);
+    return () => mediaQuery.removeEventListener("change", handleChange);
+  }, []);
+
   const isLightMode = mode === COLOR_MODES.LIGHT;
   const isSystemMode = mode === COLOR_MODES.SYSTEM;
 
