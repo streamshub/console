@@ -35,9 +35,6 @@ If the leadership assignments of partitions are not well-balanced, it can contri
 A well-balanced Kafka cluster should distribute leadership roles across brokers evenly.
 Replicas:: Followers that replicate the leader's data. Replicas provide fault tolerance and data availability.
 
-[NOTE]
-====
-Discrepancies in the distribution of data across brokers may indicate balancing issues in the Kafka cluster. 
+NOTE: Discrepancies in the distribution of data across brokers may indicate balancing issues in the Kafka cluster. 
 If certain brokers are consistently handling larger amounts of data, it may indicate that partitions are not evenly distributed across the brokers. 
 This could lead to uneven resource utilization and potentially impact the performance of those brokers.
-====

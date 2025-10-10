@@ -14,7 +14,4 @@ Consumer groups:: Displays consumer group activity, including offsets, lag metri
 
 Start with the cluster overview, then drill down into individual nodes, inspect topic configurations, or monitor consumer group activity.
 
-[NOTE]
-====
-If the side menu for navigation of a cluster is hidden, click the hamburger menu (three horizontal lines) in the console header.
-====
+NOTE: If the side menu for navigation of a cluster is hidden, click the hamburger menu (three horizontal lines) in the console header.
