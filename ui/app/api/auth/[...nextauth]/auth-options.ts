@@ -31,7 +31,7 @@ export async function getAuthOptions(): Promise<AuthOptions> {
   let oidc = await oidcSource();
 
   if (oidc.isEnabled()) {
-    log.debug("OIDC is enabled");
+    log.trace("OIDC is enabled");
     providers = [oidc.provider!];
     return {
       providers,
