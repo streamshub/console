@@ -33,3 +33,15 @@ gh pr comment $PR_NUMBER --repo $REPO --body-file $HELP_MD
 
 echo "Stop further workflow execution. Exiting workflow"
 gh run cancel $RUN_ID --repo $REPO
+
+# Wait for run to stop to prevent it running other steps async
+while true; do
+  STATUS=$(gh run view $RUN_ID --json status -q '.status')
+  echo "Current status: $STATUS"
+  if [ "$STATUS" == "completed" ]; then
+    echo "Workflow cancelled."
+    break
+  fi
+  sleep 5
+done
+

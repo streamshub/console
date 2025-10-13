@@ -39,6 +39,8 @@ jobs:
       INSTALL_TYPE: ${{ github.event.inputs.install_type }}
       RETRY_COUNT: ${{ github.event.inputs.retry_count }}
       ENVS: ${{ github.event.inputs.env_str }}
+      CO_NAMESPACE: "co-namespace"
+      OLM_MINIKUBE_NAMESPACE: "olm"
       OLM_VERSION: "v0.28.0"
       YQ_VERSION: "v4.44.1"
     steps:
@@ -57,6 +59,30 @@ jobs:
 
       - name: Comment the build
         run: ./.github/actions/systemtests/update-pr-systemtests-started.sh
+
+      # YAML INSTALL PATH
+      - name: Prepare YAML install
+        if: ${{ env.INSTALL_TYPE == 'yaml' }}
+        run: |
+          set -eux
+          echo "Preparing YAML-based installation..."
+
+          # Download k8s-resources artifact (same run as images)
+          gh run download ${{ env.ARTIFACTS_RUN_ID }} --repo ${{ env.REPO }}  -n k8s-resources --dir ./k8s-resources
+
+          # Merge YAML files
+          mkdir -p ./k8s-resources/merged
+          cat ./k8s-resources/kubernetes/consoles.console.streamshub.github.com-v1.yml \
+              ./k8s-resources/kubernetes/kubernetes.yml \
+              > ./k8s-resources/merged/streamshub-console-operator.yaml
+
+          # Export as environment variable
+          echo "CONSOLE_INSTALL_TYPE=yaml" >> $GITHUB_ENV
+          CONSOLE_OPERATOR_BUNDLE_URL=$(realpath ./k8s-resources/merged/streamshub-console-operator.yaml)
+          echo "CONSOLE_OPERATOR_BUNDLE_URL=$CONSOLE_OPERATOR_BUNDLE_URL" >> $GITHUB_ENV
+
+          echo "YAML operator manifest created at: $CONSOLE_OPERATOR_BUNDLE_URL"
+          cat $CONSOLE_OPERATOR_BUNDLE_URL
 
       - name: Download Images
         id: download-artifact
@@ -80,23 +106,26 @@ jobs:
       - name: Set Dynamic Environment Vars
         run: |
           echo "PROJECT_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
-          # STs config
           echo "CONSOLE_CLUSTER_DOMAIN=$(minikube ip).nip.io" >> $GITHUB_ENV
-          echo "CONSOLE_OLM_CATALOG_SOURCE_NAME=streamshub-console-catalog" >> $GITHUB_ENV
-          echo "CONSOLE_OLM_CATALOG_SOURCE_NAMESPACE=olm" >> $GITHUB_ENV
 
-      - name: Deploy CatalogSource
+      # OLM INSTALL PATH
+      - name: Deploy OLM CatalogSource
+        if: ${{ env.INSTALL_TYPE == 'olm' }}
         run: |
           set -x
-
+          
+          echo "CONSOLE_OLM_CATALOG_SOURCE_NAME=streamshub-console-catalog" >> $GITHUB_ENV
+          echo "CONSOLE_OLM_CATALOG_SOURCE_NAMESPACE=$OLM_MINIKUBE_NAMESPACE" >> $GITHUB_ENV
+          
           # Create the CatalogSource with the Console operator bundle
           yq ea '.spec.image = "localhost:5000/streamshub/console-operator-catalog:${{ env.PROJECT_VERSION }}"' \
             ./install/operator/olm/010-CatalogSource-console-operator-catalog.yaml \
-            | kubectl apply -n $CONSOLE_OLM_CATALOG_SOURCE_NAMESPACE -f -
+            | kubectl apply -n $OLM_MINIKUBE_NAMESPACE -f -
 
-          kubectl wait catalogsource/streamshub-console-catalog -n $CONSOLE_OLM_CATALOG_SOURCE_NAMESPACE \
+          kubectl wait catalogsource/streamshub-console-catalog -n $OLM_MINIKUBE_NAMESPACE \
             --for=jsonpath='{.status.connectionState.lastObservedState}'=READY \
             --timeout=180s
+
 
       - name: Install Playwright Via NodeJS
         uses: actions/setup-node@v5

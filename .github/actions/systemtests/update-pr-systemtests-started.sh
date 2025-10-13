@@ -27,7 +27,6 @@ PARAMS
 gh api repos/$REPO/statuses/$COMMIT_SHA \
   -f state="pending" -f context="System Tests" -f description="System tests are running..." -f target_url="$RUN_URL"
 
-# Update PR comment - do not edit help comment
-COMMENT_MODE=$(getEditModeOrSkipIfLastCommentIsHelp)
-echo "Comment mode: $COMMENT_MODE"
-gh pr comment $PR_NUMBER --repo $REPO $COMMENT_MODE --body-file $PARAMS_MD
+# Update PR comment
+deleteLastStatusComment
+gh pr comment $PR_NUMBER --repo $REPO --body-file $PARAMS_MD

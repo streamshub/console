@@ -20,9 +20,8 @@ BUILD_RUN=$(gh api "repos/$REPO/actions/workflows/$WORKFLOW_FILE/runs?branch=$BR
 
 echo "Build workflow latest run conclusion: $BUILD_RUN"
 if [[ "$BUILD_RUN" != "success" ]]; then
-  # Do not edit help comment
-  COMMENT_MODE=$(getEditModeOrSkipIfLastCommentIsHelp)
-  echo "Comment mode: $COMMENT_MODE"
-  gh pr comment $PR_NUMBER --repo $REPO $COMMENT_MODE --body "❌ Build did not succeed. Cannot trigger systemtests"
+  # Comment workflow status
+  deleteLastStatusComment
+  gh pr comment $PR_NUMBER --repo $REPO --body "❌ Build did not succeed. Cannot trigger systemtests"
   exit 1
 fi
