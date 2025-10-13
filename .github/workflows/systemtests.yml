@@ -60,30 +60,6 @@ jobs:
       - name: Comment the build
         run: ./.github/actions/systemtests/update-pr-systemtests-started.sh
 
-      # YAML INSTALL PATH
-      - name: Prepare YAML install
-        if: ${{ env.INSTALL_TYPE == 'yaml' }}
-        run: |
-          set -eux
-          echo "Preparing YAML-based installation..."
-
-          # Download k8s-resources artifact (same run as images)
-          gh run download ${{ env.ARTIFACTS_RUN_ID }} --repo ${{ env.REPO }}  -n k8s-resources --dir ./k8s-resources
-
-          # Merge YAML files
-          mkdir -p ./k8s-resources/merged
-          cat ./k8s-resources/kubernetes/consoles.console.streamshub.github.com-v1.yml \
-              ./k8s-resources/kubernetes/kubernetes.yml \
-              > ./k8s-resources/merged/streamshub-console-operator.yaml
-
-          # Export as environment variable
-          echo "CONSOLE_INSTALL_TYPE=yaml" >> $GITHUB_ENV
-          CONSOLE_OPERATOR_BUNDLE_URL=$(realpath ./k8s-resources/merged/streamshub-console-operator.yaml)
-          echo "CONSOLE_OPERATOR_BUNDLE_URL=$CONSOLE_OPERATOR_BUNDLE_URL" >> $GITHUB_ENV
-
-          echo "YAML operator manifest created at: $CONSOLE_OPERATOR_BUNDLE_URL"
-          cat $CONSOLE_OPERATOR_BUNDLE_URL
-
       - name: Download Images
         id: download-artifact
         uses: dawidd6/action-download-artifact@ac66b43f0e6a346234dd65d4d0c8fbb31cb316e5
@@ -107,6 +83,30 @@ jobs:
         run: |
           echo "PROJECT_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
           echo "CONSOLE_CLUSTER_DOMAIN=$(minikube ip).nip.io" >> $GITHUB_ENV
+
+      # YAML INSTALL PATH
+      - name: Prepare YAML install
+        if: ${{ env.INSTALL_TYPE == 'yaml' }}
+        run: |
+          set -eux
+          echo "Preparing YAML-based installation..."
+
+          # Download k8s-resources artifact (same run as images)
+          gh run download ${{ env.ARTIFACTS_RUN_ID }} --repo ${{ env.REPO }}  -n k8s-resources --dir ./k8s-resources
+
+          # Merge YAML files
+          mkdir -p ./k8s-resources/merged
+          cat ./k8s-resources/kubernetes/consoles.console.streamshub.github.com-v1.yml \
+              ./k8s-resources/kubernetes/kubernetes.yml \
+              > ./k8s-resources/merged/streamshub-console-operator.yaml
+
+          # Export as environment variable
+          echo "CONSOLE_INSTALL_TYPE=yaml" >> $GITHUB_ENV
+          CONSOLE_OPERATOR_BUNDLE_URL=$(realpath ./k8s-resources/merged/streamshub-console-operator.yaml)
+          echo "CONSOLE_OPERATOR_BUNDLE_URL=$CONSOLE_OPERATOR_BUNDLE_URL" >> $GITHUB_ENV
+
+          echo "YAML operator manifest created at: $CONSOLE_OPERATOR_BUNDLE_URL"
+          cat $CONSOLE_OPERATOR_BUNDLE_URL
 
       # OLM INSTALL PATH
       - name: Deploy OLM CatalogSource
