@@ -30,8 +30,12 @@ or
     )
   )
 or
+#######
+# Fetch both topic metrics - JMX Exporter naming and Strimzi Metrics Reporter naming
+#######
   sum by (__console_metric_name__) (
     label_replace(
+      # JMX exporter topic bytes in
       irate(kafka_server_brokertopicmetrics_bytesin_total{topic!="",namespace="%1$s",pod=~"%2$s-.+-\\d+",strimzi_io_kind="Kafka"}[5m]),
       "__console_metric_name__",
       "incoming_byte_rate",
@@ -42,7 +46,30 @@ or
 or
   sum by (__console_metric_name__) (
     label_replace(
+      # JMX exporter topic bytes out
       irate(kafka_server_brokertopicmetrics_bytesout_total{topic!="",namespace="%1$s",pod=~"%2$s-.+-\\d+",strimzi_io_kind="Kafka"}[5m]),
+      "__console_metric_name__",
+      "outgoing_byte_rate",
+      "",
+      ""
+    )
+  )
+or
+  sum by (__console_metric_name__) (
+    label_replace(
+      # Strimzi Metrics Reporter topic bytes in
+      irate(kafka_server_brokertopicmetrics_bytesinpersec_total{topic!="",namespace="%1$s",pod=~"%2$s-.+-\\d+",strimzi_io_kind="Kafka"}[5m]),
+      "__console_metric_name__",
+      "incoming_byte_rate",
+      "",
+      ""
+    )
+  )
+or
+  sum by (__console_metric_name__) (
+    label_replace(
+      # Strimzi Metrics Reporter topic bytes out
+      irate(kafka_server_brokertopicmetrics_bytesoutpersec_total{topic!="",namespace="%1$s",pod=~"%2$s-.+-\\d+",strimzi_io_kind="Kafka"}[5m]),
       "__console_metric_name__",
       "outgoing_byte_rate",
       "",
