@@ -88,7 +88,7 @@ jobs:
       - name: Prepare YAML install
         if: ${{ env.INSTALL_TYPE == 'yaml' }}
         run: |
-          set -eux
+          set -x
           echo "Preparing YAML-based installation..."
 
           # Download k8s-resources artifact (same run as images)
@@ -125,7 +125,6 @@ jobs:
           kubectl wait catalogsource/streamshub-console-catalog -n $OLM_MINIKUBE_NAMESPACE \
             --for=jsonpath='{.status.connectionState.lastObservedState}'=READY \
             --timeout=180s
-
 
       - name: Install Playwright Via NodeJS
         uses: actions/setup-node@v5

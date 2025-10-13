@@ -7,7 +7,6 @@ on:
   pull_request:
     branches:
       - 'main'
-      - 'mastermainer'
       - '[0-9]+.[0-9]+.x'
       - 'systemtests'
     types: [ opened, reopened, synchronize ]
@@ -160,88 +159,88 @@ jobs:
         with:
           name: streamshub-images
           path: streamshub-images.tgz
-#
-#  test-java:
-#    runs-on: ubuntu-24.04
-#    steps:
-#      - name: Checkout
-#        uses: actions/checkout@v5
-#
-#      - name: Set Up JDK 17
-#        uses: actions/setup-java@v5
-#        with:
-#          java-version: '17'
-#          distribution: 'adopt'
-#
-#      - name: Cache Maven Packages
-#        uses: actions/cache@v4
-#        with:
-#          path: ~/.m2/repository
-#          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-#          restore-keys: |
-#            ${{ runner.os }}-maven-
-#
-#      - name: Test API and Operator
-#        run: |
-#          #
-#          # Set write-transformed-bytecode-to-build-output for IT coverage. Do NOT use the container image
-#          # created by this step.
-#          #
-#          # See: https://quarkus.io/guides/tests-with-coverage#coverage-for-integration-tests
-#          #
-#          mvn verify -B --no-transfer-progress -DskipSTs \
-#            -Dquarkus.package.write-transformed-bytecode-to-build-output=true
-#
-#      - name: Archive Failed Tests Results
-#        uses: actions/upload-artifact@v4
-#        if: failure()
-#        with:
-#          name: artifacts
-#          path: |
-#            **/target/failsafe-reports/
-#            **/target/surefire-reports/
-#
-#      ## Save the context information for use in Sonar analysis
-#      - name: Save Build Context
-#        run: |
-#          mkdir -vp target
-#          echo "$GITHUB_CONTEXT" > target/build-context.json
-#        env:
-#          GITHUB_CONTEXT: ${{ toJson(github) }}
-#
-#      ## Attach the target directory for use in Sonar analysis
-#      - name: Archive Build Output
-#        uses: actions/upload-artifact@v4
-#        with:
-#          name: target
-#          path: |
-#            **/target/
-#            !**/target/**/*.jar
-#            !**/target/failsafe-reports/**/*
-#            !**/target/surefire-reports/**/*
-#
-#  test-storybook:
-#    runs-on: ubuntu-24.04
-#    steps:
-#      - name: Checkout
-#        uses: actions/checkout@v5
-#
-#      - name: Build Storybook
-#        working-directory: ./ui
-#        run: |
-#          npm ci
-#          npx playwright install
-#          npm run build-storybook
-#
-#      - name: Test Storybook
-#        working-directory: ./ui
-#        run: |
-#          npx --yes concurrently -k -s first -n "SB,TEST" -c "magenta,blue" \
-#            "npx http-server storybook-static --port 6006 --silent" \
-#            "npx wait-on tcp:127.0.0.1:6006 && npm run test-storybook"
-#
-#  Playwright:
-#    if: ${{ contains(github.event.pull_request.labels.*.name, 'safe to test') || github.repository == 'streamshub/console' }}
-#    uses: ./.github/workflows/playwright-tests.yml
-#    needs:
-#      - build-images
+
+  test-java:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set Up JDK 17
+        uses: actions/setup-java@v5
+        with:
+          java-version: '17'
+          distribution: 'adopt'
+
+      - name: Cache Maven Packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+
+      - name: Test API and Operator
+        run: |
+          #
+          # Set write-transformed-bytecode-to-build-output for IT coverage. Do NOT use the container image
+          # created by this step.
+          #
+          # See: https://quarkus.io/guides/tests-with-coverage#coverage-for-integration-tests
+          #
+          mvn verify -B --no-transfer-progress -DskipSTs \
+            -Dquarkus.package.write-transformed-bytecode-to-build-output=true
+
+      - name: Archive Failed Tests Results
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: artifacts
+          path: |
+            **/target/failsafe-reports/
+            **/target/surefire-reports/
+
+      ## Save the context information for use in Sonar analysis
+      - name: Save Build Context
+        run: |
+          mkdir -vp target
+          echo "$GITHUB_CONTEXT" > target/build-context.json
+        env:
+          GITHUB_CONTEXT: ${{ toJson(github) }}
+
+      ## Attach the target directory for use in Sonar analysis
+      - name: Archive Build Output
+        uses: actions/upload-artifact@v4
+        with:
+          name: target
+          path: |
+            **/target/
+            !**/target/**/*.jar
+            !**/target/failsafe-reports/**/*
+            !**/target/surefire-reports/**/*
+
+  test-storybook:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Build Storybook
+        working-directory: ./ui
+        run: |
+          npm ci
+          npx playwright install
+          npm run build-storybook
+
+      - name: Test Storybook
+        working-directory: ./ui
+        run: |
+          npx --yes concurrently -k -s first -n "SB,TEST" -c "magenta,blue" \
+            "npx http-server storybook-static --port 6006 --silent" \
+            "npx wait-on tcp:127.0.0.1:6006 && npm run test-storybook"
+
+  Playwright:
+    if: ${{ contains(github.event.pull_request.labels.*.name, 'safe to test') || github.repository == 'streamshub/console' }}
+    uses: ./.github/workflows/playwright-tests.yml
+    needs:
+      - build-images
