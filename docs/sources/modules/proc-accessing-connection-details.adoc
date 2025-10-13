@@ -13,7 +13,4 @@ On the *Cluster overview* page, click *Cluster connection details*.
 . Copy the bootstrap address (external or internal, depending on your client environment). 
 . Add any required connection properties to your Kafka client configuration to establish a secure connection.
 
-[NOTE]
-====
-Ensure that the authentication type configured for the Kafka cluster matches the authentication type used by the client.
-====
+NOTE: Ensure that the authentication type configured for the Kafka cluster matches the authentication type used by the client.
