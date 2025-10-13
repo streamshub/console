@@ -33,7 +33,4 @@ Click on the right arrow (>) next to a node name to view more information about 
 
 Click on the *Rebalance* tab to show any rebalances taking place on the cluster.
 
-[NOTE]
-====
-Consider rebalancing if partition distribution is uneven to ensure efficient resource utilization.
-====
+NOTE: Consider rebalancing if partition distribution is uneven to ensure efficient resource utilization.

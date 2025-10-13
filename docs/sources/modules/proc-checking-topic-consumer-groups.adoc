@@ -20,7 +20,4 @@ For more information on checking consumer groups, see xref:con-consumer-groups-p
 For each group member, you see the unique (consumer) client ID assigned to the consumer within the consumer group, overall consumer lag, and the number of assigned partitions.
 For more information on checking consumer group members, see xref:proc-checking-consumer-groups-members-{context}[].
 
-[NOTE]
-====
-Monitoring consumer group behavior is essential for ensuring optimal distribution of messages between consumers.
-====
+NOTE: Monitoring consumer group behavior is essential for ensuring optimal distribution of messages between consumers.
