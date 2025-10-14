@@ -107,8 +107,8 @@ kafka:
                   - consumerGroups
                   - rebalances
                 privileges:
-                  - get
-                  - list
+                  - GET
+                  - LIST
 
           # administrators may list, view, and update an expanded set of resources
           - name: administrators
@@ -121,13 +121,13 @@ kafka:
                   - nodes/configs
                   - nodes
                 privileges:
-                  - get
-                  - list
+                  - GET
+                  - LIST
               - resources:
                   - consumerGroups
                   - rebalances
                 privileges:
-                  - update
+                  - UPDATE
 
     - name: my-kafka2
       namespace: my-namespace2
