@@ -137,8 +137,8 @@ spec:
                   - consumerGroups
                   - rebalances
                 privileges:
-                  - get
-                  - list
+                  - GET
+                  - LIST
           - name: administrators
             rules:
               - resources:
@@ -148,13 +148,13 @@ spec:
                   - rebalances
                   - nodes/configs
                 privileges:
-                  - get
-                  - list
+                  - GET
+                  - LIST
               - resources:
                   - consumerGroups
                   - rebalances
                 privileges:
-                  - update
+                  - UPDATE
 ----
 
 [discrete]
