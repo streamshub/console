@@ -2,6 +2,7 @@ package com.github.streamshub.systemtests.utils;
 
 import com.github.streamshub.systemtests.TestCaseConfig;
 import com.github.streamshub.systemtests.constants.TimeConstants;
+import com.github.streamshub.systemtests.exceptions.PlaywrightActionExecutionException;
 import com.github.streamshub.systemtests.exceptions.SetupException;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import io.skodjob.testframe.resources.KubeResourceManager;
@@ -65,14 +66,14 @@ public class Utils {
      * <p>
      * This method attempts to run the provided {@link Runnable} action up to a maximum number of retries.
      * If the action throws an exception, it will retry the execution after a short wait interval.
-     * If all attempts fail, a {@link RuntimeException} is thrown with the last encountered exception as the cause.
+     * If all attempts fail, a {@link PlaywrightActionExecutionException} is thrown with the last encountered exception as the cause.
      * </p>
      *
      * @param actionName a descriptive name for the action, used in logging to identify what is being retried
      * @param action     the {@link Runnable} task to execute
      * @param maxRetries the maximum number of retry attempts before failing the execution
      *
-     * @throws RuntimeException if the action fails after the specified number of retries
+     * @throws PlaywrightActionExecutionException if the action fails after the specified number of retries
      */
     public static void retryAction(String actionName, Runnable action, int maxRetries) {
         for (int attempt = 1; attempt <= maxRetries; attempt++) {
@@ -83,7 +84,7 @@ public class Utils {
                 return;
             } catch (Exception e) {
                 if (attempt == maxRetries) {
-                    throw new RuntimeException(String.format("Action '%s' failed after %d attempts", actionName, maxRetries), e);
+                    throw new PlaywrightActionExecutionException(String.format("Action '%s' failed after %d attempts", actionName, maxRetries), e);
                 }
                 LOGGER.debug("Action '{}' failed on attempt {}/{}, retrying...", actionName, attempt, maxRetries);
                 sleepWait(TimeConstants.UI_COMPONENT_REACTION_INTERVAL_SHORT);

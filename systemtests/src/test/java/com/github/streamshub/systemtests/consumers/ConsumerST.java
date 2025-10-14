@@ -50,7 +50,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
 @Tag(TestTags.REGRESSION)
-public class ConsumerST extends AbstractST {
+class ConsumerST extends AbstractST {
     private static final Logger LOGGER = LogWrapper.getLogger(ConsumerST.class);
     private static final String RESET_OFFSET_BUCKET = "ResetOffset";
 

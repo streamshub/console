@@ -11,6 +11,8 @@ import org.junit.jupiter.api.extension.LifecycleMethodExecutionExceptionHandler;
 import org.junit.jupiter.api.extension.TestExecutionExceptionHandler;
 import org.opentest4j.TestAbortedException;
 
+import java.util.Optional;
+
 public class TestExecutionWatcher implements TestExecutionExceptionHandler, LifecycleMethodExecutionExceptionHandler {
     private static final TestLogCollector LOG_COLLECTOR = TestLogCollector.getInstance();
     private static final Logger LOGGER = LogWrapper.getLogger(TestExecutionWatcher.class);
@@ -28,10 +30,11 @@ public class TestExecutionWatcher implements TestExecutionExceptionHandler, Life
             .get(KubeResourceManager.get().getTestContext().getUniqueId(), TestCaseConfig.class);
 
         // If not check in testClass for shared TestCaseConfig in beforeAll
-        if (tcc == null) {
+        Optional<ExtensionContext> parentContext = extensionContext.getParent();
+        if (tcc == null && parentContext.isPresent()) {
             tcc = KubeResourceManager.get().getTestContext()
                 .getStore(ExtensionContext.Namespace.GLOBAL)
-                .get(extensionContext.getParent().get().getUniqueId(), TestCaseConfig.class);
+                .get(parentContext.get().getUniqueId(), TestCaseConfig.class);
         }
 
         if (tcc != null) {

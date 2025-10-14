@@ -38,9 +38,10 @@ import org.junit.jupiter.api.Test;
 
 import static com.github.streamshub.systemtests.utils.Utils.getTestCaseConfig;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Tag(TestTags.REGRESSION)
-public class KafkaST extends AbstractST {
+class KafkaST extends AbstractST {
     private static final Logger LOGGER = LogWrapper.getLogger(KafkaST.class);
 
     /**
@@ -316,7 +317,13 @@ public class KafkaST extends AbstractST {
         LOGGER.debug("Verify warnings list now contains one row with warning message");
         PwUtils.waitForLocatorVisible(tcc, ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_WARNING_MESSAGE_ITEMS);
         PwUtils.waitForLocatorCount(tcc, 1,  ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_WARNING_MESSAGE_ITEMS, true);
-        PwUtils.waitForContainsText(tcc, new CssBuilder(ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_WARNING_MESSAGE_ITEMS).nth(1).build(), warningMessage, true);
+
+        String kafkaWarningsString = tcc.page()
+            .locator(new CssBuilder(ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_WARNING_MESSAGE_ITEMS).nth(1).build())
+            .allInnerTexts()
+            .toString();
+
+        assertTrue(PwUtils.getTrimmedText(kafkaWarningsString).contains(warningMessage));
 
         // Remove wrong config
         LOGGER.info("Remove incorrect Kafka config to get rid off the warning from UI status");

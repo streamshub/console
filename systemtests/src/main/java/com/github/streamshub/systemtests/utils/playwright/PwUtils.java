@@ -200,8 +200,8 @@ public class PwUtils {
     // --------------------------
     // Wait for attribute
     // --------------------------
-    public static void waitForContainsAttribute(TestCaseConfig tcc, String selector, String text, String attribute, boolean reload) {
-        waitForContainsAttribute(tcc, selector, text, attribute, TimeConstants.COMPONENT_LOAD_TIMEOUT, reload);
+    public static void waitForAttributeContainsText(TestCaseConfig tcc, String selector, String text, String attribute, boolean reload) {
+        waitForAttributeContainsText(tcc, selector, text, attribute, TimeConstants.COMPONENT_LOAD_TIMEOUT, reload);
     }
 
     /**
@@ -221,7 +221,7 @@ public class PwUtils {
      *
      * @throws AssertionError if the attribute value does not match the expected text within the timeout
      */
-    public static void waitForContainsAttribute(TestCaseConfig tcc, String selector, String text, String attribute, long componentLoadTimeout, boolean reload) {
+    public static void waitForAttributeContainsText(TestCaseConfig tcc, String selector, String text, String attribute, long componentLoadTimeout, boolean reload) {
         LOGGER.debug("Waiting for locator [{}] to contain value [{}]", selector, text);
         Wait.until("locator to contain text: " + text, TimeConstants.GLOBAL_POLL_INTERVAL_SHORT, componentLoadTimeout,
             () -> {
