@@ -75,13 +75,13 @@ spec:
               - <dev_cluster_a>
               - <dev_cluster_b>
             privileges: # <14>
-              - '*'
+              - 'ALL'
       - name: administrators
         rules:
           - resources:
               - kafkas
             privileges:
-              - '*'
+              - 'ALL'
   kafkaClusters:
     - name: console-kafka
       namespace: kafka
