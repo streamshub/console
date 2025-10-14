@@ -50,7 +50,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Tag(TestTags.REGRESSION)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-class TopicST extends AbstractST {
+public class TopicST extends AbstractST {
     private static final Logger LOGGER = LogWrapper.getLogger(TopicST.class);
     private static final String VARIOUS_TOPIC_TYPES_BUCKET = "VariousTopicTypes";
     private TestCaseConfig tcc;

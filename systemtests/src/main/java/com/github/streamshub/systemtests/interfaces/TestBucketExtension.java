@@ -3,6 +3,7 @@ package com.github.streamshub.systemtests.interfaces;
 import com.github.streamshub.systemtests.SystemTestExecutionListener;
 import com.github.streamshub.systemtests.annotations.SetupTestBucket;
 import com.github.streamshub.systemtests.annotations.TestBucket;
+import com.github.streamshub.systemtests.exceptions.SetupException;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import io.skodjob.testframe.resources.KubeResourceManager;
 import org.apache.logging.log4j.Logger;
@@ -142,7 +143,7 @@ public class TestBucketExtension implements BeforeTestExecutionCallback, AfterTe
                         throw new IllegalStateException("Unsupported MethodSource return type: " + value);
                     }
                 } catch (ReflectiveOperationException e) {
-                    throw new RuntimeException("Failed to resolve @MethodSource: " + sourceName, e);
+                    throw new SetupException("Failed to resolve @MethodSource: " + sourceName, e);
                 }
             })
             .sum();

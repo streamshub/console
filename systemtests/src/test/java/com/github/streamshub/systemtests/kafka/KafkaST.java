@@ -41,7 +41,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Tag(TestTags.REGRESSION)
-class KafkaST extends AbstractST {
+public class KafkaST extends AbstractST {
     private static final Logger LOGGER = LogWrapper.getLogger(KafkaST.class);
 
     /**
