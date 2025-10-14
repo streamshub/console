@@ -9,10 +9,10 @@ on:
 
 jobs:
   process-comment:
-    if: ${{ github.event.issue.pull_request && startsWith(github.event.comment.body, '/systemtests') }}
+    if: ${{ github.event.issue.pull_request && startsWith(github.event.comment.body, '/systemtests run') }}
     runs-on: ubuntu-latest
     env:
-      ORG: streamshub
+      ORG: ${{ github.repository_owner }}
       TEAM: console-developers
       PR_NUMBER: ${{ github.event.issue.number }}
       REPO: ${{ github.repository }}
@@ -29,9 +29,8 @@ jobs:
       - name: Comment Help
         if: ${{ contains(github.event.comment.body, '--help') }}
         run: ./.github/actions/systemtests/pr-help.sh
-          
+
       - name: Check if Build workflow succeeded
-        if: ${{ startsWith(github.event.comment.body, '/systemtests run') }}
         run: ./.github/actions/systemtests/verify-workflow-run-succeeded.sh
 
       - name: Parse parameters from comment

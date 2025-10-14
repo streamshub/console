@@ -132,7 +132,6 @@ echo "Results file $(cat $RESULT_MD)"
 # Set status check of the PR
 gh api repos/$REPO/statuses/$COMMIT_SHA -f state="$STATE" -f context="System Tests" -f description="$DESCRIPTION" -f target_url="$RUN_URL"
 
-# Comment PR with results markdown - do not edit help comment
-COMMENT_MODE=$(getEditModeOrSkipIfLastCommentIsHelp)
-echo "Comment mode: $COMMENT_MODE"
-gh pr comment $PR_NUMBER --repo $REPO $COMMENT_MODE --body-file $RESULT_MD
+# Comment PR with results markdown
+deleteLastStatusComment
+gh pr comment $PR_NUMBER --repo $REPO --body-file $RESULT_MD
