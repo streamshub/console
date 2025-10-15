@@ -5,17 +5,22 @@ import com.github.streamshub.systemtests.constants.Labels;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.utils.Utils;
 import com.github.streamshub.systemtests.utils.WaitUtils;
+import io.fabric8.kubernetes.api.model.Pod;
 import io.skodjob.testframe.resources.KubeResourceManager;
 import io.strimzi.api.kafka.model.kafka.Kafka;
 import io.strimzi.api.kafka.model.kafka.KafkaBuilder;
+import io.strimzi.api.kafka.model.kafka.listener.GenericKafkaListener;
+import io.strimzi.api.kafka.model.kafka.listener.GenericKafkaListenerConfigurationBroker;
 import io.strimzi.api.kafka.model.kafka.listener.GenericKafkaListenerConfigurationBrokerBuilder;
-import io.strimzi.api.kafka.model.kafka.listener.GenericKafkaListenerConfigurationBuilder;
 import io.strimzi.api.kafka.model.nodepool.KafkaNodePool;
 import io.strimzi.api.kafka.model.nodepool.KafkaNodePoolBuilder;
 import org.apache.logging.log4j.Logger;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.IntStream;
 
 public class KafkaUtils {
     private static final Logger LOGGER = LogWrapper.getLogger(KafkaUtils.class);
@@ -98,9 +103,86 @@ public class KafkaUtils {
         }
     }
 
+    public static List<Integer> getNewNodePoolNodeIds(String namespace, String kafkaName, int existingReplicas, int desiredReplicas) {
+        // Get existing pod names from all Kafka nodepools
+        List<String> podNames = ResourceUtils
+            .listKubeResourcesByLabelSelector(Pod.class, namespace, Labels.getKafkaPodLabelSelector(kafkaName))
+            .stream()
+            .map(p -> p.getMetadata().getName())
+            .toList();
+
+        // Extract existing node IDs from pod name suffixes
+        List<Integer> nodeIds = podNames.stream()
+            .map(name -> Integer.parseInt(name.replaceAll(".*-(\\d+)$", "$1")))
+            .sorted()
+            .toList();
+
+        // Compute the current maximum node ID (or -1 if none)
+        int maxId = nodeIds.isEmpty() ? -1 : Collections.max(nodeIds);
+
+        // Example: newlyAdded = how many replicas to add (e.g. 4 new nodes)
+        int newlyAdded = desiredReplicas - existingReplicas;
+
+        // Compute new IDs continuing after the current max
+        return IntStream.rangeClosed(maxId + 1, maxId + newlyAdded)
+            .boxed()
+            .toList();
+    }
+
     public static void scaleBrokerReplicas(String namespace, String kafkaName, int scaledBrokersCount) {
         LOGGER.info("Scale Kafka broker replicas to {}", scaledBrokersCount);
 
+        int existingBrokerReplicas = ResourceUtils.listKubeResourcesByLabelSelector(Pod.class, namespace, Labels.getKnpBrokerLabelSelector(kafkaName)).size();
+        if (existingBrokerReplicas == scaledBrokersCount) {
+            return;
+        }
+
+        // Add each new broker host with broker ID into the config
+        GenericKafkaListener currentListenersBrokerConfig = ResourceUtils.getKubeResource(Kafka.class, namespace, kafkaName)
+            .getSpec()
+            .getKafka()
+            .getListeners()
+            .stream()
+            .filter(listener -> listener.getName().equals(Constants.SECURE_LISTENER_NAME))
+            .toList()
+            .get(0);
+
+
+        List<GenericKafkaListenerConfigurationBroker> newBrokerConfigList = new ArrayList<>();
+        String hashedNamespace = Utils.hashStub(namespace);
+
+        if (existingBrokerReplicas < scaledBrokersCount) {
+            // Add existing broker listener
+            newBrokerConfigList.addAll(currentListenersBrokerConfig.getConfiguration().getBrokers());
+
+            for (int nodeId : getNewNodePoolNodeIds(namespace, kafkaName, existingBrokerReplicas, scaledBrokersCount)) {
+                LOGGER.debug("Add Kafka listener to broker node ID {}", nodeId);
+                newBrokerConfigList.add(new GenericKafkaListenerConfigurationBrokerBuilder(
+                    new GenericKafkaListenerConfigurationBrokerBuilder()
+                        .withBroker(nodeId)
+                        .withHost(String.join(".", "broker-" + nodeId, hashedNamespace, kafkaName, ClusterUtils.getClusterDomain()))
+                        .build()
+                    ).build());
+            }
+        } else {
+            newBrokerConfigList.addAll(currentListenersBrokerConfig.getConfiguration().getBrokers().subList(0, scaledBrokersCount));
+        }
+
+        // Process new broker config listener list
+        KubeResourceManager.get().createOrUpdateResourceWithWait(
+            new KafkaBuilder(ResourceUtils.getKubeResource(Kafka.class, namespace, kafkaName))
+                .editSpec()
+                    .editKafka()
+                        .editMatchingListener(l -> l.getName().equals(Constants.SECURE_LISTENER_NAME))
+                            .editConfiguration()
+                                .withBrokers(newBrokerConfigList)
+                            .endConfiguration()
+                        .endListener()
+                    .endKafka()
+                .endSpec()
+                .build());
+
+        // Edit KNP
         KubeResourceManager.get().createOrUpdateResourceWithWait(
             new KafkaNodePoolBuilder(ResourceUtils.getKubeResource(KafkaNodePool.class, namespace, KafkaNamingUtils.brokerPoolName(kafkaName)))
                 .editSpec()
@@ -108,48 +190,8 @@ public class KafkaUtils {
                 .endSpec()
                 .build());
 
-        // Wait for change of replicas, then get the nodeIds
+        // Wait for change of replicas in config and also pods
         WaitUtils.waitForKafkaBrokerNodePoolReplicasInSpec(namespace, kafkaName, scaledBrokersCount);
-
-        List<String> nodeIds = List.of(ResourceUtils.getKubeResource(KafkaNodePool.class, namespace, KafkaNamingUtils.brokerPoolName(kafkaName))
-            .getStatus()
-            .getNodeIds()
-            .toString()
-            .replace("[", "")
-            .replace(" ", "")
-            .replace("]", "")
-            .split(","));
-
-        // Create new listener config spec
-        String hashedNamespace = Utils.hashStub(namespace);
-        GenericKafkaListenerConfigurationBuilder configurationBuilder = new GenericKafkaListenerConfigurationBuilder();
-
-        configurationBuilder = configurationBuilder
-            .withNewBootstrap()
-                .withHost(String.join(".", "bootstrap", hashedNamespace, kafkaName, ClusterUtils.getClusterDomain()))
-            .endBootstrap();
-
-        // Add each broker host with broker ID into the config
-        for (String nodeId : nodeIds) {
-            configurationBuilder = configurationBuilder.addToBrokers(
-                new GenericKafkaListenerConfigurationBrokerBuilder()
-                    .withBroker(Integer.parseInt(nodeId))
-                    .withHost(String.join(".", "broker-" + nodeId, hashedNamespace, kafkaName, ClusterUtils.getClusterDomain()))
-                    .build());
-        }
-
-        // Finally apply the new listener config to Kafka to avoid ingress issues caused by missing listener broker ids
-        KubeResourceManager.get().createOrUpdateResourceWithWait(
-            new KafkaBuilder(ResourceUtils.getKubeResource(Kafka.class, namespace, kafkaName))
-                .editSpec()
-                    .editKafka()
-                        .editMatchingListener(l -> l.getName().equals(Constants.SECURE_LISTENER_NAME))
-                            .withConfiguration(configurationBuilder.build())
-                        .endListener()
-                    .endKafka()
-                .endSpec()
-                .build());
-
         WaitUtils.waitForPodsReadyAndStable(namespace, Labels.getKnpBrokerLabelSelector(kafkaName), scaledBrokersCount, true);
         LOGGER.info("Kafka broker replicas successfully scaled to {}", scaledBrokersCount);
     }
