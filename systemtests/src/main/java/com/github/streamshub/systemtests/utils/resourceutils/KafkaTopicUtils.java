@@ -2,7 +2,6 @@ package com.github.streamshub.systemtests.utils.resourceutils;
 
 import com.github.streamshub.systemtests.clients.KafkaClients;
 import com.github.streamshub.systemtests.clients.KafkaClientsBuilder;
-import com.github.streamshub.systemtests.constants.Labels;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.utils.WaitUtils;
 import io.fabric8.kubernetes.api.model.Pod;
@@ -10,7 +9,6 @@ import io.skodjob.testframe.resources.KubeResourceManager;
 import io.strimzi.api.ResourceAnnotations;
 import io.strimzi.api.ResourceLabels;
 import io.strimzi.api.kafka.model.nodepool.KafkaNodePool;
-import io.strimzi.api.kafka.model.nodepool.KafkaNodePoolBuilder;
 import io.strimzi.api.kafka.model.topic.KafkaTopic;
 import io.strimzi.api.kafka.model.topic.KafkaTopicBuilder;
 import org.apache.kafka.common.security.auth.SecurityProtocol;
@@ -84,14 +82,9 @@ public class KafkaTopicUtils {
 
         // Scale Brokers Up
         KafkaNodePool knp = ResourceUtils.getKubeResource(KafkaNodePool.class, namespace, KafkaNamingUtils.brokerPoolName(kafkaName));
-        KubeResourceManager.get().createOrUpdateResourceWithWait(
-            new KafkaNodePoolBuilder(knp)
-                .editSpec()
-                    .withReplicas(knp.getSpec().getReplicas() + 1)
-                .endSpec()
-                .build());
+        int scaledBrokersCount = knp.getSpec().getReplicas() + 1;
 
-        WaitUtils.waitForPodsReadyAndStable(namespace, Labels.getKnpBrokerLabelSelector(kafkaName), knp.getSpec().getReplicas() + 1, true);
+        KafkaUtils.scaleBrokerReplicas(namespace, kafkaName, scaledBrokersCount);
 
         // Create new topics for under replication
         List<KafkaTopic> kafkaTopics = KafkaTopicUtils.setupTopicsAndReturn(namespace, kafkaName, topicNamePrefix, numberToCreate, true, partitions, replicas, minIsr);
@@ -120,14 +113,9 @@ public class KafkaTopicUtils {
 
         // Scale down brokers
         knp = ResourceUtils.getKubeResource(KafkaNodePool.class, namespace, KafkaNamingUtils.brokerPoolName(kafkaName));
-        KubeResourceManager.get().createOrUpdateResourceWithWait(
-            new KafkaNodePoolBuilder(knp)
-                .editSpec()
-                    .withReplicas(knp.getSpec().getReplicas() - 1)
-                .endSpec()
-                .build());
+        scaledBrokersCount = knp.getSpec().getReplicas() - 1;
 
-        WaitUtils.waitForPodsReadyAndStable(namespace, Labels.getKnpBrokerLabelSelector(kafkaName), knp.getSpec().getReplicas() - 1, true);
+        KafkaUtils.scaleBrokerReplicas(namespace, kafkaName, scaledBrokersCount);
 
         KafkaUtils.removeAnnotation(namespace, kafkaName, ResourceAnnotations.ANNO_STRIMZI_IO_SKIP_BROKER_SCALEDOWN_CHECK, true);
         return kafkaTopics;
@@ -160,14 +148,10 @@ public class KafkaTopicUtils {
 
         // Scale up brokers
         KafkaNodePool knp = ResourceUtils.getKubeResource(KafkaNodePool.class, namespace, KafkaNamingUtils.brokerPoolName(kafkaName));
-        KubeResourceManager.get().createOrUpdateResourceWithWait(
-            new KafkaNodePoolBuilder(knp)
-                .editSpec()
-                    .withReplicas(knp.getSpec().getReplicas() + 1)
-                .endSpec()
-                .build());
+        int scaledBrokersCount = knp.getSpec().getReplicas() + 1;
 
-        WaitUtils.waitForPodsReadyAndStable(namespace, Labels.getKnpBrokerLabelSelector(kafkaName), knp.getSpec().getReplicas() + 1, true);
+        KafkaUtils.scaleBrokerReplicas(namespace, kafkaName, scaledBrokersCount);
+
         List<KafkaTopic> kafkaTopics = setupTopicsAndReturn(namespace, kafkaName, topicNamePrefix, numberToCreate, true, partitions, replicas, minIsr);
 
         // Reassign the topic partition to last created broker that will be deleted
@@ -203,14 +187,9 @@ public class KafkaTopicUtils {
 
         // Scale down brokers
         knp = ResourceUtils.getKubeResource(KafkaNodePool.class, namespace, KafkaNamingUtils.brokerPoolName(kafkaName));
-        KubeResourceManager.get().createOrUpdateResourceWithWait(
-            new KafkaNodePoolBuilder(knp)
-                .editSpec()
-                    .withReplicas(knp.getSpec().getReplicas() - 1)
-                .endSpec()
-                .build());
+        scaledBrokersCount = knp.getSpec().getReplicas() - 1;
 
-        WaitUtils.waitForPodsReadyAndStable(namespace, Labels.getKnpBrokerLabelSelector(kafkaName), knp.getSpec().getReplicas() - 1, true);
+        KafkaUtils.scaleBrokerReplicas(namespace, kafkaName, scaledBrokersCount);
 
         KafkaUtils.removeAnnotation(namespace, kafkaName, ResourceAnnotations.ANNO_STRIMZI_IO_SKIP_BROKER_SCALEDOWN_CHECK, true);
         return kafkaTopics;

@@ -19,6 +19,7 @@ import com.github.streamshub.systemtests.utils.WaitUtils;
 import com.github.streamshub.systemtests.utils.playwright.PwPageUrls;
 import com.github.streamshub.systemtests.utils.playwright.PwUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.KafkaNamingUtils;
+import com.github.streamshub.systemtests.utils.resourceutils.KafkaUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.NamespaceUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.PodUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
@@ -29,7 +30,6 @@ import io.strimzi.api.kafka.model.kafka.Kafka;
 import io.strimzi.api.kafka.model.kafka.KafkaClusterSpec;
 import io.strimzi.api.kafka.model.kafka.PersistentClaimStorageBuilder;
 import io.strimzi.api.kafka.model.nodepool.KafkaNodePool;
-import io.strimzi.api.kafka.model.nodepool.KafkaNodePoolBuilder;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -93,16 +93,10 @@ public class KafkaST extends AbstractST {
 
         // Scale brokers, but expect nothing happens
         LOGGER.info("Trying to fail scaling Kafka brokers count to {}", scaledBrokersCount);
-        KafkaNodePool knp = ResourceUtils.getKubeResource(KafkaNodePool.class, tcc.namespace(), KafkaNamingUtils.brokerPoolName(tcc.kafkaName()));
-        KubeResourceManager.get().createOrUpdateResourceWithWait(
-            new KafkaNodePoolBuilder(knp)
-                .editSpec()
-                    .withReplicas(scaledBrokersCount)
-                .endSpec()
-                .build());
+        KafkaUtils.scaleBrokerReplicas(tcc.namespace(), tcc.kafkaName(), scaledBrokersCount);
 
         // Check replicas are changed, but actual count stayed the same
-        knp = ResourceUtils.getKubeResource(KafkaNodePool.class, tcc.namespace(), KafkaNamingUtils.brokerPoolName(tcc.kafkaName()));
+        KafkaNodePool knp = ResourceUtils.getKubeResource(KafkaNodePool.class, tcc.namespace(), KafkaNamingUtils.brokerPoolName(tcc.kafkaName()));
         assertEquals(scaledBrokersCount, knp.getSpec().getReplicas());
         // Node IDs should remain the same
         assertEquals(Constants.REGULAR_BROKER_REPLICAS, knp.getStatus().getNodeIds().size());
@@ -200,14 +194,9 @@ public class KafkaST extends AbstractST {
 
         // Scale brokers
         LOGGER.debug("Scale Kafka brokers to {}", scaledBrokersCount);
-        KubeResourceManager.get().createOrUpdateResourceWithWait(
-            new KafkaNodePoolBuilder(ResourceUtils.getKubeResource(KafkaNodePool.class, tcc.namespace(), KafkaNamingUtils.brokerPoolName(tcc.kafkaName())))
-                .editSpec()
-                    .withReplicas(scaledBrokersCount)
-                .endSpec()
-                .build());
 
-        WaitUtils.waitForPodsReadyAndStable(tcc.namespace(), Labels.getKnpBrokerLabelSelector(tcc.kafkaName()), scaledBrokersCount, true);
+        // Need to edit kafka bootstrap
+        KafkaUtils.scaleBrokerReplicas(tcc.namespace(), tcc.kafkaName(), scaledBrokersCount);
 
         // Check Overview and Nodes page
         LOGGER.info("Verify newly added Kafka brokers are displayed in UI");
@@ -236,15 +225,7 @@ public class KafkaST extends AbstractST {
 
         // Scale brokers down
         // Note: It is not possible to scale controllers down due to inability to change dynamically quorums https://github.com/strimzi/strimzi-kafka-operator/issues/9429
-        LOGGER.info("Scale Kafka brokers back to the default count of {}", Constants.REGULAR_BROKER_REPLICAS);
-        KubeResourceManager.get().createOrUpdateResourceWithWait(
-            new KafkaNodePoolBuilder(ResourceUtils.getKubeResource(KafkaNodePool.class, tcc.namespace(), KafkaNamingUtils.brokerPoolName(tcc.kafkaName())))
-                .editSpec()
-                    .withReplicas(Constants.REGULAR_BROKER_REPLICAS)
-                .endSpec()
-                .build());
-
-        WaitUtils.waitForPodsReadyAndStable(tcc.namespace(), Labels.getKnpBrokerLabelSelector(tcc.kafkaName()), Constants.REGULAR_BROKER_REPLICAS, true);
+        KafkaUtils.scaleBrokerReplicas(tcc.namespace(), tcc.kafkaName(), Constants.REGULAR_BROKER_REPLICAS);
 
         LOGGER.debug("Verify current Kafka broker count on OverviewPage is {}", Constants.REGULAR_BROKER_REPLICAS);
         tcc.page().navigate(PwPageUrls.getOverviewPage(tcc, tcc.kafkaName()), PwUtils.getDefaultNavigateOpts());
