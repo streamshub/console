@@ -30,7 +30,6 @@ import io.strimzi.api.kafka.model.kafka.Kafka;
 import io.strimzi.api.kafka.model.kafka.KafkaClusterSpec;
 import io.strimzi.api.kafka.model.kafka.PersistentClaimStorageBuilder;
 import io.strimzi.api.kafka.model.nodepool.KafkaNodePool;
-import io.strimzi.api.kafka.model.nodepool.KafkaNodePoolBuilder;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -92,18 +91,13 @@ public class KafkaST extends AbstractST {
         LOGGER.debug("Verify Kafka has pause reconciliation annotation set to true");
         WaitUtils.waitForKafkaHasAnnotationWithValue(tcc.namespace(), tcc.kafkaName(), ResourceAnnotations.ANNO_STRIMZI_IO_PAUSE_RECONCILIATION, "true");
 
-        // Scale brokers, but expect nothing happens
+        // Scale brokers (without wait) and expect nothing happens because of paused reconciliation
         LOGGER.info("Trying to fail scaling Kafka brokers count to {}", scaledBrokersCount);
-        KafkaNodePool knp = ResourceUtils.getKubeResource(KafkaNodePool.class, tcc.namespace(), KafkaNamingUtils.brokerPoolName(tcc.kafkaName()));
-        KubeResourceManager.get().createOrUpdateResourceWithWait(
-            new KafkaNodePoolBuilder(knp)
-                .editSpec()
-                    .withReplicas(scaledBrokersCount)
-                .endSpec()
-                .build());
+
+        KafkaUtils.scaleBrokerReplicas(tcc.namespace(), tcc.kafkaName(), scaledBrokersCount);
 
         // Check replicas are changed, but actual count stayed the same
-        knp = ResourceUtils.getKubeResource(KafkaNodePool.class, tcc.namespace(), KafkaNamingUtils.brokerPoolName(tcc.kafkaName()));
+        KafkaNodePool knp = ResourceUtils.getKubeResource(KafkaNodePool.class, tcc.namespace(), KafkaNamingUtils.brokerPoolName(tcc.kafkaName()));
         assertEquals(scaledBrokersCount, knp.getSpec().getReplicas());
         // Node IDs should remain the same
         assertEquals(Constants.REGULAR_BROKER_REPLICAS, knp.getStatus().getNodeIds().size());
@@ -203,7 +197,7 @@ public class KafkaST extends AbstractST {
         LOGGER.debug("Scale Kafka brokers to {}", scaledBrokersCount);
 
         // Need to edit kafka bootstrap
-        KafkaUtils.scaleBrokerReplicas(tcc.namespace(), tcc.kafkaName(), scaledBrokersCount);
+        KafkaUtils.scaleBrokerReplicasWithWait(tcc.namespace(), tcc.kafkaName(), scaledBrokersCount);
 
         // Check Overview and Nodes page
         LOGGER.info("Verify newly added Kafka brokers are displayed in UI");
@@ -232,7 +226,7 @@ public class KafkaST extends AbstractST {
 
         // Scale brokers down
         // Note: It is not possible to scale controllers down due to inability to change dynamically quorums https://github.com/strimzi/strimzi-kafka-operator/issues/9429
-        KafkaUtils.scaleBrokerReplicas(tcc.namespace(), tcc.kafkaName(), Constants.REGULAR_BROKER_REPLICAS);
+        KafkaUtils.scaleBrokerReplicasWithWait(tcc.namespace(), tcc.kafkaName(), Constants.REGULAR_BROKER_REPLICAS);
 
         LOGGER.debug("Verify current Kafka broker count on OverviewPage is {}", Constants.REGULAR_BROKER_REPLICAS);
         tcc.page().navigate(PwPageUrls.getOverviewPage(tcc, tcc.kafkaName()), PwUtils.getDefaultNavigateOpts());

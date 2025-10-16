@@ -84,7 +84,7 @@ public class KafkaTopicUtils {
         KafkaNodePool knp = ResourceUtils.getKubeResource(KafkaNodePool.class, namespace, KafkaNamingUtils.brokerPoolName(kafkaName));
         int scaledBrokersCount = knp.getSpec().getReplicas() + 1;
 
-        KafkaUtils.scaleBrokerReplicas(namespace, kafkaName, scaledBrokersCount);
+        KafkaUtils.scaleBrokerReplicasWithWait(namespace, kafkaName, scaledBrokersCount);
 
         // Create new topics for under replication
         List<KafkaTopic> kafkaTopics = KafkaTopicUtils.setupTopicsAndReturn(namespace, kafkaName, topicNamePrefix, numberToCreate, true, partitions, replicas, minIsr);
@@ -115,7 +115,7 @@ public class KafkaTopicUtils {
         knp = ResourceUtils.getKubeResource(KafkaNodePool.class, namespace, KafkaNamingUtils.brokerPoolName(kafkaName));
         scaledBrokersCount = knp.getSpec().getReplicas() - 1;
 
-        KafkaUtils.scaleBrokerReplicas(namespace, kafkaName, scaledBrokersCount);
+        KafkaUtils.scaleBrokerReplicasWithWait(namespace, kafkaName, scaledBrokersCount);
 
         KafkaUtils.removeAnnotation(namespace, kafkaName, ResourceAnnotations.ANNO_STRIMZI_IO_SKIP_BROKER_SCALEDOWN_CHECK, true);
         return kafkaTopics;
@@ -150,7 +150,7 @@ public class KafkaTopicUtils {
         KafkaNodePool knp = ResourceUtils.getKubeResource(KafkaNodePool.class, namespace, KafkaNamingUtils.brokerPoolName(kafkaName));
         int scaledBrokersCount = knp.getSpec().getReplicas() + 1;
 
-        KafkaUtils.scaleBrokerReplicas(namespace, kafkaName, scaledBrokersCount);
+        KafkaUtils.scaleBrokerReplicasWithWait(namespace, kafkaName, scaledBrokersCount);
 
         List<KafkaTopic> kafkaTopics = setupTopicsAndReturn(namespace, kafkaName, topicNamePrefix, numberToCreate, true, partitions, replicas, minIsr);
 
@@ -189,7 +189,7 @@ public class KafkaTopicUtils {
         knp = ResourceUtils.getKubeResource(KafkaNodePool.class, namespace, KafkaNamingUtils.brokerPoolName(kafkaName));
         scaledBrokersCount = knp.getSpec().getReplicas() - 1;
 
-        KafkaUtils.scaleBrokerReplicas(namespace, kafkaName, scaledBrokersCount);
+        KafkaUtils.scaleBrokerReplicasWithWait(namespace, kafkaName, scaledBrokersCount);
 
         KafkaUtils.removeAnnotation(namespace, kafkaName, ResourceAnnotations.ANNO_STRIMZI_IO_SKIP_BROKER_SCALEDOWN_CHECK, true);
         return kafkaTopics;

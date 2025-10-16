@@ -229,9 +229,12 @@ public class KafkaUtils {
                 .endSpec()
                 .build());
 
-        // Wait for change of replicas in config and also pods
+        LOGGER.info("Kafka broker replicas scaled to {}", scaledBrokersCount);
+    }
+
+    public static void scaleBrokerReplicasWithWait(String namespace, String kafkaName, int scaledBrokersCount) {
+        scaleBrokerReplicas(namespace, kafkaName, scaledBrokersCount);
         WaitUtils.waitForKafkaBrokerNodePoolReplicasInSpec(namespace, kafkaName, scaledBrokersCount);
         WaitUtils.waitForPodsReadyAndStable(namespace, Labels.getKnpBrokerLabelSelector(kafkaName), scaledBrokersCount, true);
-        LOGGER.info("Kafka broker replicas successfully scaled to {}", scaledBrokersCount);
     }
 }
