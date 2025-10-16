@@ -37,6 +37,9 @@ jobs:
         id: parse_env
         run: ./.github/actions/systemtests/parse-pr-comment-params.sh
 
+      - name: Comment start of the build
+        run: ./.github/actions/systemtests/update-pr-systemtests-started.sh
+
       - name: Invoke workflow in another repo with inputs
         uses: benc-uk/workflow-dispatch@e2e5e9a103e331dad343f381a29e654aea3cf8fc
         with:
@@ -44,10 +47,10 @@ jobs:
           workflow: systemtests.yml
           inputs: >
             {
-              "commit_sha": "${{ steps.parse_env.outputs.commit_sha }}",
-              "testcase": "${{ steps.parse_env.outputs.testcase }}",
-              "profile": "${{ steps.parse_env.outputs.profile }}",
-              "install_type": "${{ steps.parse_env.outputs.install_type }}",
-              "retry_count": "${{ steps.parse_env.outputs.retry_count }}",
-              "env_str": "${{ steps.parse_env.outputs.env_str }}"
+              "commit_sha": "${{ env.COMMIT_SHA }}",
+              "testcase": "${{ env.TESTCASE }}",
+              "profile": "${{ env.PROFILE }}",
+              "install_type": "${{ env.INSTALL_TYPE }}",
+              "retry_count": "${{ env.RETRY_COUNT }}",
+              "envs": "${{ env.ENVS }}"
             }
