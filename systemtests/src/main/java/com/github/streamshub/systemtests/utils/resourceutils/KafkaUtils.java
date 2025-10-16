@@ -173,6 +173,7 @@ public class KafkaUtils {
 
         int existingBrokerReplicas = ResourceUtils.listKubeResourcesByLabelSelector(Pod.class, namespace, Labels.getKnpBrokerLabelSelector(kafkaName)).size();
         if (existingBrokerReplicas == scaledBrokersCount) {
+            LOGGER.debug("Scaling skipped, brokers already have a replica count of: {}", scaledBrokersCount);
             return;
         }
 
@@ -191,6 +192,7 @@ public class KafkaUtils {
         String hashedNamespace = Utils.hashStub(namespace);
 
         if (existingBrokerReplicas < scaledBrokersCount) {
+            LOGGER.debug("Scaling brokers up from: {} to: {}", existingBrokerReplicas, scaledBrokersCount);
             // Add existing broker listener
             newBrokerConfigList.addAll(currentListenersBrokerConfig.getConfiguration().getBrokers());
 
@@ -204,11 +206,12 @@ public class KafkaUtils {
                     ).build());
             }
         } else {
+            LOGGER.debug("Scaling brokers down from: {} to: {}", existingBrokerReplicas, scaledBrokersCount);
             newBrokerConfigList.addAll(currentListenersBrokerConfig.getConfiguration().getBrokers().subList(0, scaledBrokersCount));
         }
 
         // Process new broker config listener list
-        KubeResourceManager.get().createOrUpdateResourceWithWait(
+        KubeResourceManager.get().createOrUpdateResourceWithoutWait(
             new KafkaBuilder(ResourceUtils.getKubeResource(Kafka.class, namespace, kafkaName))
                 .editSpec()
                     .editKafka()
@@ -222,7 +225,7 @@ public class KafkaUtils {
                 .build());
 
         // Edit KNP
-        KubeResourceManager.get().createOrUpdateResourceWithWait(
+        KubeResourceManager.get().createOrUpdateResourceWithoutWait(
             new KafkaNodePoolBuilder(ResourceUtils.getKubeResource(KafkaNodePool.class, namespace, KafkaNamingUtils.brokerPoolName(kafkaName)))
                 .editSpec()
                     .withReplicas(scaledBrokersCount)
