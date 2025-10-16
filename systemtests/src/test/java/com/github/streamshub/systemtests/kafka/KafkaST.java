@@ -30,6 +30,7 @@ import io.strimzi.api.kafka.model.kafka.Kafka;
 import io.strimzi.api.kafka.model.kafka.KafkaClusterSpec;
 import io.strimzi.api.kafka.model.kafka.PersistentClaimStorageBuilder;
 import io.strimzi.api.kafka.model.nodepool.KafkaNodePool;
+import io.strimzi.api.kafka.model.nodepool.KafkaNodePoolBuilder;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -93,10 +94,16 @@ public class KafkaST extends AbstractST {
 
         // Scale brokers, but expect nothing happens
         LOGGER.info("Trying to fail scaling Kafka brokers count to {}", scaledBrokersCount);
-        KafkaUtils.scaleBrokerReplicas(tcc.namespace(), tcc.kafkaName(), scaledBrokersCount);
+        KafkaNodePool knp = ResourceUtils.getKubeResource(KafkaNodePool.class, tcc.namespace(), KafkaNamingUtils.brokerPoolName(tcc.kafkaName()));
+        KubeResourceManager.get().createOrUpdateResourceWithWait(
+            new KafkaNodePoolBuilder(knp)
+                .editSpec()
+                    .withReplicas(scaledBrokersCount)
+                .endSpec()
+                .build());
 
         // Check replicas are changed, but actual count stayed the same
-        KafkaNodePool knp = ResourceUtils.getKubeResource(KafkaNodePool.class, tcc.namespace(), KafkaNamingUtils.brokerPoolName(tcc.kafkaName()));
+        knp = ResourceUtils.getKubeResource(KafkaNodePool.class, tcc.namespace(), KafkaNamingUtils.brokerPoolName(tcc.kafkaName()));
         assertEquals(scaledBrokersCount, knp.getSpec().getReplicas());
         // Node IDs should remain the same
         assertEquals(Constants.REGULAR_BROKER_REPLICAS, knp.getStatus().getNodeIds().size());

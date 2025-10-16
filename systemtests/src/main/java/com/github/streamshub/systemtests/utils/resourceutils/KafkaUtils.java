@@ -103,6 +103,23 @@ public class KafkaUtils {
         }
     }
 
+    /**
+     * Calculates the node IDs for newly added Kafka broker replicas
+     * when scaling a Kafka cluster managed by the Strimzi operator.
+     *
+     * <p>This method inspects the current Kafka broker pods to determine
+     * existing node IDs, then computes a list of new node IDs for brokers
+     * that need to be added to reach the desired replica count.</p>
+     *
+     * <p>This utility is used during broker scaling operations
+     * to ensure consistent and gap free node ID allocation.</p>
+     *
+     * @param namespace the Kubernetes namespace of the Kafka cluster
+     * @param kafkaName the name of the Kafka cluster
+     * @param existingReplicas the current number of broker replicas
+     * @param desiredReplicas the desired number of broker replicas
+     * @return a list of new node IDs to assign to added brokers
+     */
     public static List<Integer> getNewNodePoolNodeIds(String namespace, String kafkaName, int existingReplicas, int desiredReplicas) {
         // Get existing pod names from all Kafka nodepools
         List<String> podNames = ResourceUtils
@@ -113,7 +130,14 @@ public class KafkaUtils {
 
         // Extract existing node IDs from pod name suffixes
         List<Integer> nodeIds = podNames.stream()
-            .map(name -> Integer.parseInt(name.replaceAll(".*-(\\d+)$", "$1")))
+            .map(name -> {
+                int lastDashIndex = name.lastIndexOf('-');
+                if (lastDashIndex == -1 || lastDashIndex == name.length() - 1) {
+                    throw new IllegalArgumentException("Invalid Strimzi Kafka pod name structure: " + name);
+                }
+                // return number after the last dash - by strimzi naming standard this should be nodeId
+                return Integer.parseInt(name.substring(lastDashIndex + 1));
+            })
             .sorted()
             .toList();
 
@@ -129,6 +153,21 @@ public class KafkaUtils {
             .toList();
     }
 
+    /**
+     * Scales the number of Kafka broker replicas for a given Kafka cluster within a namespace.
+     *
+     * <p>This method dynamically updates both the {@link Kafka} and {@link KafkaNodePool}
+     * custom resources to reflect the desired broker replica count, adjusting broker
+     * listener configurations as needed. It ensures the cluster reaches the target state
+     * by waiting until all expected broker pods are ready and stable.</p>
+     *
+     * <p>This utility is commonly used to validate dynamic scaling
+     * behavior of Kafka brokers managed by the Strimzi operator mainly for ingress.</p>
+     *
+     * @param namespace the Kubernetes namespace where the Kafka cluster is deployed
+     * @param kafkaName the name of the Kafka cluster to scale
+     * @param scaledBrokersCount the desired number of broker replicas
+     */
     public static void scaleBrokerReplicas(String namespace, String kafkaName, int scaledBrokersCount) {
         LOGGER.info("Scale Kafka broker replicas to {}", scaledBrokersCount);
 
