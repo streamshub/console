@@ -8,6 +8,7 @@ import com.microsoft.playwright.Browser;
 import com.microsoft.playwright.BrowserContext;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Playwright;
+import com.microsoft.playwright.Tracing;
 import org.junit.jupiter.api.extension.ExtensionContext;
 
 import java.lang.reflect.Method;
@@ -40,6 +41,9 @@ public class TestCaseConfig {
         this.playwright = Playwright.create();
         this.browser = PwUtils.createBrowser(playwright);
         this.context = browser.newContext(new Browser.NewContextOptions().setIgnoreHTTPSErrors(true));
+        // Allow tracing
+        this.context.tracing().start(new Tracing.StartOptions().setScreenshots(true).setSnapshots(true).setSources(true));
+
         this.page = context.newPage();
 
         this.kafkaName = KafkaNamingUtils.kafkaClusterName(namespace);
@@ -62,6 +66,10 @@ public class TestCaseConfig {
 
     public Page page() {
         return page;
+    }
+
+    public BrowserContext context() {
+        return context;
     }
 
     public Playwright playwright() {

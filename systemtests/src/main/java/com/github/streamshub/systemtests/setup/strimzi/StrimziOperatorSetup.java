@@ -2,6 +2,7 @@ package com.github.streamshub.systemtests.setup.strimzi;
 
 import com.github.streamshub.systemtests.Environment;
 import com.github.streamshub.systemtests.logs.LogWrapper;
+import com.github.streamshub.systemtests.utils.WaitUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
 import com.marcnuri.helm.Helm;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
@@ -28,6 +29,7 @@ public class StrimziOperatorSetup {
             return;
         }
 
+        LOGGER.info("Install Strimzi Using Helm charts");
         Helm.install(CHART)
             .withName(deploymentName)
             .withNamespace(deploymentNamespace)
@@ -36,8 +38,12 @@ public class StrimziOperatorSetup {
             .waitReady()
             .call();
 
+        // Additional check that Strimzi deployment was installed
+        WaitUtils.waitForDeploymentWithPrefixIsReady(deploymentNamespace, deploymentName);
+
         // Allow resource manager delete
         KubeResourceManager.get().pushToStack(new ResourceItem<>(this::uninstall));
+        LOGGER.info("Installation of Strimzi completed");
     }
 
     public void uninstall() {

@@ -1,5 +1,8 @@
-package com.github.streamshub.systemtests;
+package com.github.streamshub.systemtests.kafka;
 
+import com.github.streamshub.systemtests.AbstractST;
+import com.github.streamshub.systemtests.MessageStore;
+import com.github.streamshub.systemtests.TestCaseConfig;
 import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.constants.Labels;
 import com.github.streamshub.systemtests.constants.TestTags;
@@ -16,6 +19,7 @@ import com.github.streamshub.systemtests.utils.WaitUtils;
 import com.github.streamshub.systemtests.utils.playwright.PwPageUrls;
 import com.github.streamshub.systemtests.utils.playwright.PwUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.KafkaNamingUtils;
+import com.github.streamshub.systemtests.utils.resourceutils.KafkaUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.NamespaceUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.PodUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
@@ -26,7 +30,6 @@ import io.strimzi.api.kafka.model.kafka.Kafka;
 import io.strimzi.api.kafka.model.kafka.KafkaClusterSpec;
 import io.strimzi.api.kafka.model.kafka.PersistentClaimStorageBuilder;
 import io.strimzi.api.kafka.model.nodepool.KafkaNodePool;
-import io.strimzi.api.kafka.model.nodepool.KafkaNodePoolBuilder;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -35,6 +38,7 @@ import org.junit.jupiter.api.Test;
 
 import static com.github.streamshub.systemtests.utils.Utils.getTestCaseConfig;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Tag(TestTags.REGRESSION)
 public class KafkaST extends AbstractST {
@@ -87,18 +91,13 @@ public class KafkaST extends AbstractST {
         LOGGER.debug("Verify Kafka has pause reconciliation annotation set to true");
         WaitUtils.waitForKafkaHasAnnotationWithValue(tcc.namespace(), tcc.kafkaName(), ResourceAnnotations.ANNO_STRIMZI_IO_PAUSE_RECONCILIATION, "true");
 
-        // Scale brokers, but expect nothing happens
+        // Scale brokers (without wait) and expect nothing happens because of paused reconciliation
         LOGGER.info("Trying to fail scaling Kafka brokers count to {}", scaledBrokersCount);
-        KafkaNodePool knp = ResourceUtils.getKubeResource(KafkaNodePool.class, tcc.namespace(), KafkaNamingUtils.brokerPoolName(tcc.kafkaName()));
-        KubeResourceManager.get().createOrUpdateResourceWithWait(
-            new KafkaNodePoolBuilder(knp)
-                .editSpec()
-                    .withReplicas(scaledBrokersCount)
-                .endSpec()
-                .build());
+
+        KafkaUtils.scaleBrokerReplicas(tcc.namespace(), tcc.kafkaName(), scaledBrokersCount);
 
         // Check replicas are changed, but actual count stayed the same
-        knp = ResourceUtils.getKubeResource(KafkaNodePool.class, tcc.namespace(), KafkaNamingUtils.brokerPoolName(tcc.kafkaName()));
+        KafkaNodePool knp = ResourceUtils.getKubeResource(KafkaNodePool.class, tcc.namespace(), KafkaNamingUtils.brokerPoolName(tcc.kafkaName()));
         assertEquals(scaledBrokersCount, knp.getSpec().getReplicas());
         // Node IDs should remain the same
         assertEquals(Constants.REGULAR_BROKER_REPLICAS, knp.getStatus().getNodeIds().size());
@@ -129,7 +128,7 @@ public class KafkaST extends AbstractST {
         WaitUtils.waitForPodsReadyAndStable(tcc.namespace(), Labels.getKnpBrokerLabelSelector(tcc.kafkaName()), scaledBrokersCount, true);
 
         // Check UI displays the broker count change
-        PwUtils.waitForContainsText(tcc.page(), CssSelectors.getLocator(tcc, ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_DATA_BROKER_COUNT),
+        PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_DATA_BROKER_COUNT,
             scaledBrokersCount + "/" + scaledBrokersCount, PodUtils.getTimeoutForPodOperations(scaledBrokersCount - Constants.REGULAR_BROKER_REPLICAS), true);
 
         // Now verify resume from top notification and just check the annotation on Kafka cluster
@@ -196,21 +195,16 @@ public class KafkaST extends AbstractST {
 
         // Scale brokers
         LOGGER.debug("Scale Kafka brokers to {}", scaledBrokersCount);
-        KubeResourceManager.get().createOrUpdateResourceWithWait(
-            new KafkaNodePoolBuilder(ResourceUtils.getKubeResource(KafkaNodePool.class, tcc.namespace(), KafkaNamingUtils.brokerPoolName(tcc.kafkaName())))
-                .editSpec()
-                    .withReplicas(scaledBrokersCount)
-                .endSpec()
-                .build());
 
-        WaitUtils.waitForPodsReadyAndStable(tcc.namespace(), Labels.getKnpBrokerLabelSelector(tcc.kafkaName()), scaledBrokersCount, true);
+        // Need to edit kafka bootstrap
+        KafkaUtils.scaleBrokerReplicasWithWait(tcc.namespace(), tcc.kafkaName(), scaledBrokersCount);
 
         // Check Overview and Nodes page
         LOGGER.info("Verify newly added Kafka brokers are displayed in UI");
 
         LOGGER.debug("Verify new Kafka broker count on OverviewPage is {}", scaledBrokersCount);
         tcc.page().navigate(PwPageUrls.getOverviewPage(tcc, tcc.kafkaName()), PwUtils.getDefaultNavigateOpts());
-        PwUtils.waitForContainsText(tcc.page(), CssSelectors.getLocator(tcc, ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_DATA_BROKER_COUNT),
+        PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_DATA_BROKER_COUNT,
             scaledBrokersCount + "/" + scaledBrokersCount, PodUtils.getTimeoutForPodOperations(scaledBrokersCount - Constants.REGULAR_BROKER_REPLICAS), true);
 
         LOGGER.debug("Verify new Kafka node count on Nodes page");
@@ -232,20 +226,12 @@ public class KafkaST extends AbstractST {
 
         // Scale brokers down
         // Note: It is not possible to scale controllers down due to inability to change dynamically quorums https://github.com/strimzi/strimzi-kafka-operator/issues/9429
-        LOGGER.info("Scale Kafka brokers back to the default count of {}", Constants.REGULAR_BROKER_REPLICAS);
-        KubeResourceManager.get().createOrUpdateResourceWithWait(
-            new KafkaNodePoolBuilder(ResourceUtils.getKubeResource(KafkaNodePool.class, tcc.namespace(), KafkaNamingUtils.brokerPoolName(tcc.kafkaName())))
-                .editSpec()
-                    .withReplicas(Constants.REGULAR_BROKER_REPLICAS)
-                .endSpec()
-                .build());
-
-        WaitUtils.waitForPodsReadyAndStable(tcc.namespace(), Labels.getKnpBrokerLabelSelector(tcc.kafkaName()), Constants.REGULAR_BROKER_REPLICAS, true);
+        KafkaUtils.scaleBrokerReplicasWithWait(tcc.namespace(), tcc.kafkaName(), Constants.REGULAR_BROKER_REPLICAS);
 
         LOGGER.debug("Verify current Kafka broker count on OverviewPage is {}", Constants.REGULAR_BROKER_REPLICAS);
         tcc.page().navigate(PwPageUrls.getOverviewPage(tcc, tcc.kafkaName()), PwUtils.getDefaultNavigateOpts());
         // broker scaling needs longer to be displayed
-        PwUtils.waitForContainsText(tcc.page(), CssSelectors.getLocator(tcc, ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_DATA_BROKER_COUNT),
+        PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_DATA_BROKER_COUNT,
             Constants.REGULAR_BROKER_REPLICAS + "/" + Constants.REGULAR_BROKER_REPLICAS, PodUtils.getTimeoutForPodOperations(Constants.REGULAR_BROKER_REPLICAS), true);
 
         LOGGER.debug("Verify current Kafka broker count on NodesPage is {}", Constants.REGULAR_BROKER_REPLICAS);
@@ -313,7 +299,13 @@ public class KafkaST extends AbstractST {
         LOGGER.debug("Verify warnings list now contains one row with warning message");
         PwUtils.waitForLocatorVisible(tcc, ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_WARNING_MESSAGE_ITEMS);
         PwUtils.waitForLocatorCount(tcc, 1,  ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_WARNING_MESSAGE_ITEMS, true);
-        PwUtils.waitForContainsText(tcc, new CssBuilder(ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_WARNING_MESSAGE_ITEMS).nth(1).build(), warningMessage, true);
+
+        String kafkaWarningsString = tcc.page()
+            .locator(new CssBuilder(ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_WARNING_MESSAGE_ITEMS).nth(1).build())
+            .allInnerTexts()
+            .toString();
+
+        assertTrue(PwUtils.getTrimmedText(kafkaWarningsString).contains(warningMessage));
 
         // Remove wrong config
         LOGGER.info("Remove incorrect Kafka config to get rid off the warning from UI status");

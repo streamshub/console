@@ -44,11 +44,11 @@ public class WaitUtils {
         Wait.until(String.format("creation of Deployment with prefix: %s in Namespace: %s", deploymentNamePrefix, namespaceName),
             TestFrameConstants.GLOBAL_POLL_INTERVAL_1_SEC, TestFrameConstants.GLOBAL_TIMEOUT_MEDIUM,
             () -> {
-                Deployment dep = listKubeResourcesByPrefix(Deployment.class, namespaceName, deploymentNamePrefix).get(0);
-                if (dep == null) {
+                List<Deployment> dep = listKubeResourcesByPrefix(Deployment.class, namespaceName, deploymentNamePrefix);
+                if (dep.isEmpty() || dep.get(0) == null) {
                     return false;
                 }
-                return Readiness.isDeploymentReady(dep);
+                return Readiness.isDeploymentReady(dep.get(0));
             });
     }
 
@@ -378,7 +378,7 @@ public class WaitUtils {
      * @throws AssertionError if the topic ID is not available within the configured timeout
      */
     public static String waitForKafkaTopicToHaveIdAndReturn(String namespace, String topicName) {
-        Wait.until(String.format("KafkaTopic %s/%s has an ID", namespace, topicName),
+        Wait.until(String.format("KafkaTopic %s/%s to have an ID", namespace, topicName),
             TimeConstants.POLL_INTERVAL_FOR_RESOURCE_READINESS, TimeConstants.GLOBAL_STATUS_TIMEOUT,
             () -> {
                 KafkaTopic topic = ResourceUtils.getKubeResource(KafkaTopic.class, namespace, topicName);

@@ -1,13 +1,26 @@
 package com.github.streamshub.systemtests.utils.resourceutils;
 
+import com.github.streamshub.systemtests.constants.Constants;
+import com.github.streamshub.systemtests.constants.Labels;
 import com.github.streamshub.systemtests.logs.LogWrapper;
+import com.github.streamshub.systemtests.utils.Utils;
 import com.github.streamshub.systemtests.utils.WaitUtils;
+import io.fabric8.kubernetes.api.model.Pod;
 import io.skodjob.testframe.resources.KubeResourceManager;
 import io.strimzi.api.kafka.model.kafka.Kafka;
 import io.strimzi.api.kafka.model.kafka.KafkaBuilder;
+import io.strimzi.api.kafka.model.kafka.listener.GenericKafkaListener;
+import io.strimzi.api.kafka.model.kafka.listener.GenericKafkaListenerConfigurationBroker;
+import io.strimzi.api.kafka.model.kafka.listener.GenericKafkaListenerConfigurationBrokerBuilder;
+import io.strimzi.api.kafka.model.nodepool.KafkaNodePool;
+import io.strimzi.api.kafka.model.nodepool.KafkaNodePoolBuilder;
 import org.apache.logging.log4j.Logger;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.IntStream;
 
 public class KafkaUtils {
     private static final Logger LOGGER = LogWrapper.getLogger(KafkaUtils.class);
@@ -88,5 +101,143 @@ public class KafkaUtils {
         if (wait) {
             WaitUtils.waitForKafkaHasNoAnnotationWithKey(namespace, kafkaName, annoKey);
         }
+    }
+
+    /**
+     * Calculates the node IDs for newly added Kafka broker replicas
+     * when scaling a Kafka cluster managed by the Strimzi operator.
+     *
+     * <p>This method inspects the current Kafka broker pods to determine
+     * existing node IDs, then computes a list of new node IDs for brokers
+     * that need to be added to reach the desired replica count.</p>
+     *
+     * <p>This utility is used during broker scaling operations
+     * to ensure consistent and gap free node ID allocation.</p>
+     *
+     * @param namespace the Kubernetes namespace of the Kafka cluster
+     * @param kafkaName the name of the Kafka cluster
+     * @param existingReplicas the current number of broker replicas
+     * @param desiredReplicas the desired number of broker replicas
+     * @return a list of new node IDs to assign to added brokers
+     */
+    public static List<Integer> getNewNodePoolNodeIds(String namespace, String kafkaName, int existingReplicas, int desiredReplicas) {
+        // Get existing pod names from all Kafka nodepools
+        List<String> podNames = ResourceUtils
+            .listKubeResourcesByLabelSelector(Pod.class, namespace, Labels.getKafkaPodLabelSelector(kafkaName))
+            .stream()
+            .map(p -> p.getMetadata().getName())
+            .toList();
+
+        // Extract existing node IDs from pod name suffixes
+        List<Integer> nodeIds = podNames.stream()
+            .map(name -> {
+                int lastDashIndex = name.lastIndexOf('-');
+                if (lastDashIndex == -1 || lastDashIndex == name.length() - 1) {
+                    throw new IllegalArgumentException("Invalid Strimzi Kafka pod name structure: " + name);
+                }
+                // return number after the last dash - by strimzi naming standard this should be nodeId
+                return Integer.parseInt(name.substring(lastDashIndex + 1));
+            })
+            .sorted()
+            .toList();
+
+        // Compute the current maximum node ID (or -1 if none)
+        int maxId = nodeIds.isEmpty() ? -1 : Collections.max(nodeIds);
+
+        // Example: newlyAdded = how many replicas to add (e.g. 4 new nodes)
+        int newlyAdded = desiredReplicas - existingReplicas;
+
+        // Compute new IDs continuing after the current max
+        return IntStream.rangeClosed(maxId + 1, maxId + newlyAdded)
+            .boxed()
+            .toList();
+    }
+
+    /**
+     * Scales the number of Kafka broker replicas for a given Kafka cluster within a namespace.
+     *
+     * <p>This method dynamically updates both the {@link Kafka} and {@link KafkaNodePool}
+     * custom resources to reflect the desired broker replica count, adjusting broker
+     * listener configurations as needed. It ensures the cluster reaches the target state
+     * by waiting until all expected broker pods are ready and stable.</p>
+     *
+     * <p>This utility is commonly used to validate dynamic scaling
+     * behavior of Kafka brokers managed by the Strimzi operator mainly for ingress.</p>
+     *
+     * @param namespace the Kubernetes namespace where the Kafka cluster is deployed
+     * @param kafkaName the name of the Kafka cluster to scale
+     * @param scaledBrokersCount the desired number of broker replicas
+     */
+    public static void scaleBrokerReplicas(String namespace, String kafkaName, int scaledBrokersCount) {
+        LOGGER.info("Scale Kafka broker replicas to {}", scaledBrokersCount);
+
+        int existingBrokerReplicas = ResourceUtils.listKubeResourcesByLabelSelector(Pod.class, namespace, Labels.getKnpBrokerLabelSelector(kafkaName)).size();
+        if (existingBrokerReplicas == scaledBrokersCount) {
+            LOGGER.debug("Scaling skipped, brokers already have a replica count of: {}", scaledBrokersCount);
+            return;
+        }
+
+        // Add each new broker host with broker ID into the config
+        GenericKafkaListener currentListenersBrokerConfig = ResourceUtils.getKubeResource(Kafka.class, namespace, kafkaName)
+            .getSpec()
+            .getKafka()
+            .getListeners()
+            .stream()
+            .filter(listener -> listener.getName().equals(Constants.SECURE_LISTENER_NAME))
+            .toList()
+            .get(0);
+
+
+        List<GenericKafkaListenerConfigurationBroker> newBrokerConfigList = new ArrayList<>();
+        String hashedNamespace = Utils.hashStub(namespace);
+
+        if (existingBrokerReplicas < scaledBrokersCount) {
+            LOGGER.debug("Scaling brokers up from: {} to: {}", existingBrokerReplicas, scaledBrokersCount);
+            // Add existing broker listener
+            newBrokerConfigList.addAll(currentListenersBrokerConfig.getConfiguration().getBrokers());
+
+            for (int nodeId : getNewNodePoolNodeIds(namespace, kafkaName, existingBrokerReplicas, scaledBrokersCount)) {
+                LOGGER.debug("Add Kafka listener to broker node ID {}", nodeId);
+                newBrokerConfigList.add(new GenericKafkaListenerConfigurationBrokerBuilder(
+                    new GenericKafkaListenerConfigurationBrokerBuilder()
+                        .withBroker(nodeId)
+                        .withHost(String.join(".", "broker-" + nodeId, hashedNamespace, kafkaName, ClusterUtils.getClusterDomain()))
+                        .build()
+                    ).build());
+            }
+        } else {
+            LOGGER.debug("Scaling brokers down from: {} to: {}", existingBrokerReplicas, scaledBrokersCount);
+            newBrokerConfigList.addAll(currentListenersBrokerConfig.getConfiguration().getBrokers().subList(0, scaledBrokersCount));
+        }
+
+        // Process new broker config listener list
+        KubeResourceManager.get().createOrUpdateResourceWithoutWait(
+            new KafkaBuilder(ResourceUtils.getKubeResource(Kafka.class, namespace, kafkaName))
+                .editSpec()
+                    .editKafka()
+                        .editMatchingListener(l -> l.getName().equals(Constants.SECURE_LISTENER_NAME))
+                            .editConfiguration()
+                                .withBrokers(newBrokerConfigList)
+                            .endConfiguration()
+                        .endListener()
+                    .endKafka()
+                .endSpec()
+                .build());
+
+        // Edit KNP
+        KubeResourceManager.get().createOrUpdateResourceWithoutWait(
+            new KafkaNodePoolBuilder(ResourceUtils.getKubeResource(KafkaNodePool.class, namespace, KafkaNamingUtils.brokerPoolName(kafkaName)))
+                .editSpec()
+                    .withReplicas(scaledBrokersCount)
+                .endSpec()
+                .build());
+
+        LOGGER.info("Kafka broker replicas scaled to {}", scaledBrokersCount);
+    }
+
+    public static void scaleBrokerReplicasWithWait(String namespace, String kafkaName, int scaledBrokersCount) {
+        scaleBrokerReplicas(namespace, kafkaName, scaledBrokersCount);
+        WaitUtils.waitForKafkaBrokerNodePoolReplicasInSpec(namespace, kafkaName, scaledBrokersCount);
+        WaitUtils.waitForPodsReadyAndStable(namespace, Labels.getKnpBrokerLabelSelector(kafkaName), scaledBrokersCount, true);
     }
 }

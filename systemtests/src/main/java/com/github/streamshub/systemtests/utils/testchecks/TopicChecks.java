@@ -5,14 +5,13 @@ import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.enums.FilterType;
 import com.github.streamshub.systemtests.enums.TopicStatus;
 import com.github.streamshub.systemtests.locators.ClusterOverviewPageSelectors;
-import com.github.streamshub.systemtests.locators.CssSelectors;
+import com.github.streamshub.systemtests.locators.CssBuilder;
 import com.github.streamshub.systemtests.locators.TopicsPageSelectors;
 import com.github.streamshub.systemtests.logs.LogWrapper;
+import com.github.streamshub.systemtests.utils.WaitUtils;
 import com.github.streamshub.systemtests.utils.playwright.PwPageUrls;
 import com.github.streamshub.systemtests.utils.playwright.PwUtils;
-import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
 import com.github.streamshub.systemtests.utils.testutils.TopicsTestUtils;
-import io.strimzi.api.kafka.model.topic.KafkaTopic;
 import org.apache.logging.log4j.Logger;
 
 import java.util.List;
@@ -65,18 +64,17 @@ public class TopicChecks {
         LOGGER.info("Verify Overview Page topic status [{} total topics] [FullyReplicated: {}] [UnderReplicated: {}] [Unavailabe: {}]", total, fullyReplicated, underReplicated, unavailable);
         // Total topic count
         tcc.page().navigate(PwPageUrls.getTopicsPage(tcc, kafkaName), PwUtils.getDefaultNavigateOpts());
-        PwUtils.waitForContainsText(tcc, CssSelectors.getLocator(tcc, TopicsPageSelectors.TPS_HEADER_TOTAL_TOPICS_BADGE), total + " total", true);
+        PwUtils.waitForContainsText(tcc, TopicsPageSelectors.TPS_HEADER_TOTAL_TOPICS_BADGE, total + " total", true);
         // Status
-        PwUtils.waitForContainsText(tcc, CssSelectors.getLocator(tcc, TopicsPageSelectors.TPS_HEADER_BADGE_STATUS_SUCCESS), Integer.toString(fullyReplicated), true);
-        PwUtils.waitForContainsText(tcc, CssSelectors.getLocator(tcc, TopicsPageSelectors.TPS_HEADER_BADGE_STATUS_WARNING), Integer.toString(underReplicated), true);
-        PwUtils.waitForContainsText(tcc, CssSelectors.getLocator(tcc, TopicsPageSelectors.TPS_HEADER_BADGE_STATUS_ERROR), Integer.toString(unavailable), true);
+        PwUtils.waitForContainsText(tcc, TopicsPageSelectors.TPS_HEADER_BADGE_STATUS_SUCCESS, Integer.toString(fullyReplicated), true);
+        PwUtils.waitForContainsText(tcc, TopicsPageSelectors.TPS_HEADER_BADGE_STATUS_WARNING, Integer.toString(underReplicated), true);
+        PwUtils.waitForContainsText(tcc, TopicsPageSelectors.TPS_HEADER_BADGE_STATUS_ERROR, Integer.toString(unavailable), true);
     }
 
     /**
      * Checks the pagination functionality on the topics page for different
      * "topics per page" settings. It verifies that navigating forward and backward
      * through the pages displays the correct range of topics and pagination text.
-     *
      * For each configured topics per page value, the method:
      *  - Navigates to the topics page
      *  - Selects the topics per page dropdown value
@@ -103,12 +101,11 @@ public class TopicChecks {
             // Go to topics page
             tcc.page().navigate(PwPageUrls.getTopicsPage(tcc, tcc.kafkaName()), PwUtils.getDefaultNavigateOpts());
 
-            // Click on topics per page selection dropdown
             LOGGER.debug("Click on topics per page selection");
             PwUtils.waitForLocatorAndClick(tcc, dropdownButtonSelector);
 
             LOGGER.debug("Select topics per page dropdown item");
-            PwUtils.waitForLocatorAndClick(CssSelectors.getLocator(tcc, dropdownItemsSelector).nth(perPageItemIndex));
+            PwUtils.waitForLocatorAndClick(tcc, new CssBuilder(dropdownItemsSelector).nth(perPageItemIndex + 1).build());
 
             // Check pages
             int pageOverflow = topicsCount % topicsPerPage;
@@ -150,8 +147,8 @@ public class TopicChecks {
     private static void checkPaginationContent(TestCaseConfig tcc, int pageNum, int numOfFinalPage, int topicsOnPage, int lowBoundary, int highBoundary, int topicsCount, String paginationTextSelector, String moveButtonSelector) {
         LOGGER.debug("Checking page {}/{}", pageNum, numOfFinalPage);
         // Check that correct number of topics is displayed
-        PwUtils.waitForLocatorVisible(CssSelectors.getLocator(tcc, TopicsPageSelectors.TPS_TABLE_ROWS).nth(2));
-        assertEquals(topicsOnPage, CssSelectors.getLocator(tcc, TopicsPageSelectors.TPS_TABLE_ROWS).count());
+        PwUtils.waitForLocatorVisible(tcc, new CssBuilder(TopicsPageSelectors.TPS_TABLE_ROWS).nth(1).build());
+        assertEquals(topicsOnPage, tcc.page().locator(TopicsPageSelectors.TPS_TABLE_ROWS).all().size());
 
         // Check pagination details
         String paginationOf = String.format("%s - %s of %s", lowBoundary, highBoundary, topicsCount);
@@ -202,7 +199,7 @@ public class TopicChecks {
         LOGGER.info("Filter topics by id");
         TopicsTestUtils.selectFilter(tcc, FilterType.TOPIC_ID);
         for (String topicName : topicNames) {
-            String topicId = ResourceUtils.getKubeResource(KafkaTopic.class, tcc.namespace(), topicName).getStatus().getTopicId();
+            String topicId = WaitUtils.waitForKafkaTopicToHaveIdAndReturn(tcc.namespace(), topicName);
             LOGGER.debug("Verify topic {} with id {}", topicName, topicId);
             PwUtils.waitForLocatorAndFill(tcc, TopicsPageSelectors.TPS_TOP_TOOLBAR_FILTER_SEARCH, topicId);
             PwUtils.waitForLocatorAndClick(tcc, TopicsPageSelectors.TPS_TOP_TOOLBAR_FILTER_SEARCH_BUTTON);
