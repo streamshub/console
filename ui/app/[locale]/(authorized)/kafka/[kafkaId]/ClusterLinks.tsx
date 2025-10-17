@@ -1,18 +1,20 @@
-import { getKafkaCluster } from "@/api/kafka/actions";
+import { ClusterDetail } from "@/api/kafka/schema";
 import { NavItemLink } from "@/components/Navigation/NavItemLink";
 import { NavGroup, NavList } from "@/libs/patternfly/react-core";
 import { useTranslations } from "next-intl";
 import { Suspense } from "react";
 
-export function ClusterLinks({ kafkaId }: { kafkaId: string }) {
+export function ClusterLinks({ kafkaDetail }: { kafkaDetail: ClusterDetail }) {
   const t = useTranslations();
+  const kafkaId = kafkaDetail.id;
+
   return (
     <NavList>
       <NavGroup
         title={
           (
             <Suspense>
-              <ClusterName kafkaId={kafkaId} />
+              <ClusterName kafkaName={kafkaDetail.attributes.name} />
             </Suspense>
           ) as unknown as string
         }
@@ -42,7 +44,6 @@ export function ClusterLinks({ kafkaId }: { kafkaId: string }) {
   );
 }
 
-async function ClusterName({ kafkaId }: { kafkaId: string }) {
-  const cluster = (await getKafkaCluster(kafkaId))?.payload;
-  return cluster?.attributes.name ?? `Cluster ${kafkaId}`;
+function ClusterName({ kafkaName }: { kafkaName: string }) {
+  return `Cluster ${kafkaName}`;
 }

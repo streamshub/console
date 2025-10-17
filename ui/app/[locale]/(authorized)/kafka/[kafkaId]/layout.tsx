@@ -104,7 +104,7 @@ function Layout({
         username={username}
         kafkaDetail={kafkaDetail}
         metadata={metadata}
-        sidebar={<ClusterLinks kafkaId={kafkaDetail.id} />}
+        sidebar={<ClusterLinks kafkaDetail={kafkaDetail} />}
         clusterInfoList={clusterInfoList}
         isOidcEnabled={isOidcEnabled}
       >
