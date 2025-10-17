@@ -164,8 +164,12 @@ public class KafkaClusterService {
                 clusterResult.authorizedOperations().toCompletionStage().toCompletableFuture(),
                 clusterResult.clusterId().toCompletionStage().toCompletableFuture(),
                 quorumResult)
-            .thenApply(nothing -> new KafkaCluster(get(clusterResult::clusterId), enumNames(get(clusterResult::authorizedOperations))))
-            .thenComposeAsync(cluster -> addNodes(cluster, clusterResult, quorumResult), threadContext.currentContextExecutor())
+            .thenApplyAsync(
+                    nothing -> new KafkaCluster(kafkaContext.clusterId(), enumNames(get(clusterResult::authorizedOperations))),
+                    threadContext.currentContextExecutor())
+            .thenComposeAsync(
+                    cluster -> addNodes(cluster, clusterResult, quorumResult),
+                    threadContext.currentContextExecutor())
             .thenApplyAsync(this::addKafkaContextData, threadContext.currentContextExecutor())
             .thenApply(this::addKafkaResourceData)
             .thenCompose(cluster -> addMetrics(cluster, fields))
