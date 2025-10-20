@@ -171,7 +171,7 @@ jobs:
           kubectl wait deployment/console-datagen --for=condition=available --timeout=300s -n $TARGET_NAMESPACE
 
       - name: Use Node.js
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@v6
 
       - name: Run Playwright Tests
         working-directory: ./ui
