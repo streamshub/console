@@ -11,6 +11,9 @@ import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.constants.TestTags;
 import com.github.streamshub.systemtests.enums.ResetOffsetDateTimeType;
 import com.github.streamshub.systemtests.enums.ResetOffsetType;
+import com.github.streamshub.systemtests.locators.ConsumerGroupsPageSelectors;
+import com.github.streamshub.systemtests.locators.CssBuilder;
+import com.github.streamshub.systemtests.locators.CssSelectors;
 import com.github.streamshub.systemtests.locators.SingleConsumerGroupPageSelectors;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.setup.console.ConsoleInstanceSetup;
@@ -27,6 +30,7 @@ import com.github.streamshub.systemtests.utils.resourceutils.KafkaUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.NamespaceUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
 import com.github.streamshub.systemtests.utils.testutils.ConsumerTestUtils;
+import com.microsoft.playwright.Locator;
 import io.fabric8.kubernetes.api.model.Pod;
 import io.skodjob.testframe.TestFrameConstants;
 import io.skodjob.testframe.resources.KubeResourceManager;
@@ -62,6 +66,100 @@ public class ConsumerST extends AbstractST {
     private static final String RESET_OFFSET_TOPIC_PREFIX = "rst-all-topics-var-offset";
     private static final int RESET_OFFSET_TOPIC_COUNT = 2;
     private static final String RESET_OFFSET_CONSUMER_GROUP_NAME = "reset-offset-consumer-group";
+
+    public Stream<Arguments> variableConsumerGroupNamesScenario() {
+        final int messageCount = Constants.MESSAGE_COUNT;
+        return Stream.of(
+            Arguments.of("Special chars", messageCount, "group$$$$$%^^&*"),
+            Arguments.of("Semicolon separated", messageCount, "group;part;;1"),
+            Arguments.of("Dot separated", messageCount, "group.1.3.5"),
+            Arguments.of("Colon separated", messageCount, "group:12::3:"),
+            Arguments.of("Symbols", messageCount, "group'@!\"#?"),
+            Arguments.of("Underscores", messageCount, "group_with__underscores_"),
+            Arguments.of("Hyphenated", messageCount, "group-hyphen--name-"),
+            Arguments.of("With slash", messageCount, "group/with//slash/"),
+            Arguments.of("Equals sign", messageCount, "group=equals==two"),
+            Arguments.of("Comma separated", messageCount, "group,comma,separated,,"),
+            Arguments.of("With spaces", messageCount, "group space allowed"),
+            Arguments.of("Pipe symbol", messageCount, "group|pipe||secondpipe"),
+            Arguments.of("Tilde", messageCount, "group~tilde~~name"),
+            Arguments.of("Very long name", messageCount,
+                "consumer_group_with_really_really_really_long_name_1234567890-1234567890-1234567890")
+        );
+    }
+
+    @ParameterizedTest(name = "Scenario: {0} - ConsumerGroupName: [{2}]")
+    @MethodSource("variableConsumerGroupNamesScenario")
+    void testVariableConsumerGroupNames(String displayName, int messageCount, String consumerGroupName) {
+        LOGGER.info("NAMESPACE {}", tcc.namespace());
+
+        String topicName = "topic-" + Utils.hashStub(displayName);
+        String consumerGroupEncodedName = Identifiers.encode(consumerGroupName);
+
+        // Must be done due to k8s ENV parsing results
+        // https://jellepelgrims.com/posts/dollar_signs
+        String k8sFriendlyName = consumerGroupName.replace("$", "$$");
+
+        LOGGER.info("Create KafkaTopic CR");
+        KubeResourceManager.get().createResourceWithWait(
+            KafkaTopicUtils.defaultTopic(tcc.namespace(), tcc.kafkaName(), topicName, 1, 1, 1).build());
+
+        LOGGER.info("Produce and consume messages");
+        KafkaClients clients = new KafkaClientsBuilder()
+            .withNamespaceName(tcc.namespace())
+            .withTopicName(topicName)
+            .withMessageCount(messageCount)
+            .withDelayMs(0)
+            .withProducerName(KafkaNamingUtils.producerName(topicName))
+            .withConsumerName(KafkaNamingUtils.consumerName(topicName))
+            .withConsumerGroup(k8sFriendlyName)
+            .withBootstrapAddress(KafkaUtils.getPlainScramShaBootstrapAddress(tcc.kafkaName()))
+            .withUsername(tcc.kafkaUserName())
+            .withAdditionalConfig(KafkaClientsUtils.getScramShaConfig(tcc.namespace(), tcc.kafkaUserName(), SecurityProtocol.SASL_PLAINTEXT))
+            .build();
+
+        KubeResourceManager.get().createResourceWithWait(clients.producer(), clients.consumer());
+        WaitUtils.waitForClientsSuccess(clients);
+
+        LOGGER.info("Verify consumer group is displaying correctly");
+
+        LOGGER.info("Navigate to single consumer group page encoded to '{}'", consumerGroupEncodedName);
+        tcc.page().navigate(PwPageUrls.getConsumerGroupsPage(tcc, tcc.kafkaName(), consumerGroupEncodedName));
+        PwUtils.waitForContainsText(tcc, SingleConsumerGroupPageSelectors.SCGPS_PAGE_HEADER_NAME, consumerGroupName, true);
+        PwUtils.waitForContainsText(tcc, new CssBuilder(CssSelectors.PAGES_HEADER_BREADCRUMB_ITEMS).nth(4).build(), consumerGroupName, true);
+
+        LOGGER.info("Navigate to consumer groups page to check group is present");
+        tcc.page().navigate(PwPageUrls.getConsumerGroupsPage(tcc, tcc.kafkaName(), ""), PwUtils.getDefaultNavigateOpts());
+
+        PwUtils.waitForContainsText(tcc, ConsumerGroupsPageSelectors.CGPS_HEADER_TITLE, "Consumer Groups", true);
+        PwUtils.waitForContainsText(tcc, ConsumerGroupsPageSelectors.CGPS_TABLE_ITEMS, consumerGroupName, true);
+
+        LOGGER.info("Try click-through link and get redirected to a correct page");
+        PwUtils.waitForLocatorAndClick(tcc.page()
+            .locator(ConsumerGroupsPageSelectors.CGPS_TABLE_ITEMS)
+            .locator("a", new Locator.LocatorOptions().setHasText(consumerGroupName)));
+
+        tcc.page().waitForURL(PwPageUrls.getConsumerGroupsPage(tcc, tcc.kafkaName(), consumerGroupEncodedName), PwUtils.getDefaultWaitForUrlOpts());
+        PwUtils.waitForContainsText(tcc, SingleConsumerGroupPageSelectors.SCGPS_PAGE_HEADER_NAME, consumerGroupName, true);
+        PwUtils.waitForContainsText(tcc, new CssBuilder(CssSelectors.PAGES_HEADER_BREADCRUMB_ITEMS).nth(4).build(), consumerGroupName, true);
+
+        LOGGER.info("Check topic page if consumer group is present");
+        final String topicId = WaitUtils.waitForKafkaTopicToHaveIdAndReturn(tcc.namespace(), topicName);
+
+        tcc.page().navigate(PwPageUrls.getSingleTopicConsumerGroupsPage(tcc, tcc.kafkaName(), topicId), PwUtils.getDefaultNavigateOpts());
+        tcc.page().waitForURL(PwPageUrls.getSingleTopicConsumerGroupsPage(tcc, tcc.kafkaName(), topicId), PwUtils.getDefaultWaitForUrlOpts());
+
+        PwUtils.waitForContainsText(tcc, ConsumerGroupsPageSelectors.CGPS_TABLE_ITEMS, consumerGroupName, true);
+
+        LOGGER.info("Try click-through link and get redirected to a correct page");
+        PwUtils.waitForLocatorAndClick(tcc.page()
+            .locator(ConsumerGroupsPageSelectors.CGPS_TABLE_ITEMS)
+            .locator("a", new Locator.LocatorOptions().setHasText(consumerGroupName)));
+
+        tcc.page().waitForURL(PwPageUrls.getConsumerGroupsPage(tcc, tcc.kafkaName(), consumerGroupEncodedName), PwUtils.getDefaultWaitForUrlOpts());
+        PwUtils.waitForContainsText(tcc, SingleConsumerGroupPageSelectors.SCGPS_PAGE_HEADER_NAME, consumerGroupName, true);
+        PwUtils.waitForContainsText(tcc, new CssBuilder(CssSelectors.PAGES_HEADER_BREADCRUMB_ITEMS).nth(4).build(), consumerGroupName, true);
+    }
 
     /**
      * Provides parameterized scenarios for verifying consumer group offset reset functionality
