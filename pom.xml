@@ -16,7 +16,7 @@
         <!-- Dependencies -->
         <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
         <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
-        <quarkus.platform.version>3.20.2.2</quarkus.platform.version>
+        <quarkus.platform.version>3.20.3</quarkus.platform.version>
         <strimzi-api.version>0.48.0</strimzi-api.version>
         <strimzi-oauth.version>0.17.0</strimzi-oauth.version>
         <apicurio-registry.version>2.6.13.Final</apicurio-registry.version>
@@ -89,22 +89,10 @@
     <dependencyManagement>
         <dependencies>
             <dependency>
-                <!-- Managed for CVE-2025-48924 -->
-                <groupId>org.apache.commons</groupId>
-                <artifactId>commons-lang3</artifactId>
-                <version>3.18.0</version>
-            </dependency>
-            <dependency>
-                <!-- Managed for CVE-2024-56128 -->
-                <groupId>org.apache.kafka</groupId>
-                <artifactId>kafka-clients</artifactId>
-                <version>3.9.1</version>
-            </dependency>
-            <dependency>
                 <!-- Managed for CVE-2025-53864 -->
                 <groupId>com.nimbusds</groupId>
                 <artifactId>nimbus-jose-jwt</artifactId>
-                <version>10.5</version>
+                <version>10.0.2</version>
             </dependency>
             <dependency>
                 <groupId>io.strimzi</groupId>
