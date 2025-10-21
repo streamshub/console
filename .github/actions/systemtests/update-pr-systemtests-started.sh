@@ -25,7 +25,7 @@ PARAMS
 
 # Set status check
 gh api repos/$REPO/statuses/$COMMIT_SHA \
-  -f state="pending" -f context="System Tests" -f description="System tests are running..." -f target_url="$RUN_URL"
+  -f state="pending" -f context="System Tests" -f description="System tests are running..."
 
 # Update PR comment
 deleteLastStatusComment

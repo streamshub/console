@@ -7,19 +7,36 @@ SCRIPT_DIR="$(cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P)"
 source $SCRIPT_DIR/common.sh
 
 ROOT_DIR="$SCRIPT_DIR/../../.."
-RESULT_DIR=${1:-"$ROOT_DIR/systemtests/target/failsafe-reports"}
+
+# Where to collect merged reports
+ALL_RESULTS="$ROOT_DIR/all-systemtest-artifacts"
+RESULT_DIR=${1:-"$ROOT_DIR/merged-failsafe-reports"}
 RESULT_MD=${2:-"$ROOT_DIR/test-results.md"}
+
+echo "=== Merge test results ==="
+mkdir -p "$RESULT_DIR"
+# Merge all results from downloaded artifacts if available
+if [[ -d "$ALL_RESULTS" ]]; then
+  echo "Merging all systemtest artifacts into $RESULT_DIR"
+  find "$ALL_RESULTS" -type d -name failsafe-reports | while read d; do
+    echo " -> from: $d"
+    cp -r "$d"/* "$RESULT_DIR/" 2>/dev/null || true
+  done
+else
+  echo "No all-systemtest-artifacts directory found; using default results path"
+fi
+
+echo "=== Prepare test results and update PR status ==="
 
 TOTAL=0
 PASSED=0
 FAILED=0
 ERRORS=0
 SKIPPED=0
+
 FAILED_TESTS=""
-
-echo "Prepare test results and update PR status"
-
 TEST_FILES=()
+
 if [[ -d "$RESULT_DIR" ]]; then
   echo "Directory exists. Finding TEST-*.xml files"
   # Collect files into an array
@@ -40,10 +57,10 @@ for f in "${TEST_FILES[@]}"; do
   echo "Processing results file $f"
 
   # Get test type count directly from root testSuite tag
-  TOTAL=$(yq -p=xml -o=json '.testsuite."+@tests"' "$f" | jq -r)
-  FAILED=$(yq -p=xml -o=json '.testsuite."+@failures"' "$f" | jq -r)
-  ERRORS=$(yq -p=xml -o=json '.testsuite."+@errors"' "$f" | jq -r)
-  SKIPPED=$(yq -p=xml -o=json '.testsuite."+@skipped"' "$f" | jq -r)
+  TOTAL=$(( TOTAL + $(yq -p=xml -o=json '.testsuite."+@tests" // 0' "$f" | jq -r) ))
+  FAILED=$(( FAILED + $(yq -p=xml -o=json '.testsuite."+@failures" // 0' "$f" | jq -r) ))
+  ERRORS=$(( ERRORS + $(yq -p=xml -o=json '.testsuite."+@errors" // 0' "$f" | jq -r) ))
+  SKIPPED=$(( SKIPPED + $(yq -p=xml -o=json '.testsuite."+@skipped" // 0' "$f" | jq -r) ))
 
   # Get more info about what test failed from list of testcases
   TESTCASES_JSON=$(yq -p=xml -o=json '.testsuite.testcase
@@ -103,7 +120,7 @@ if [[ -n "$FAILED_TESTS" ]]; then
   LIST_FAILED="#### Test Failures:"
   IFS=',' read -ra FAILED_ARRAY <<< "$FAILED_TESTS"
   for t in "${FAILED_ARRAY[@]}"; do
-    [[ -n "$t" ]] && LIST_FAILED+="\n- $t"
+    [[ -n "$t" ]] && LIST_FAILED+=$(printf '\n- %s' "$t")
   done
 fi
 
@@ -130,7 +147,7 @@ RESULTS
 echo "Results file $(cat $RESULT_MD)"
 
 # Set status check of the PR
-gh api repos/$REPO/statuses/$COMMIT_SHA -f state="$STATE" -f context="System Tests" -f description="$DESCRIPTION" -f target_url="$RUN_URL"
+gh api repos/$REPO/statuses/$COMMIT_SHA -f state="$STATE" -f context="System Tests" -f description="$DESCRIPTION"
 
 # Comment PR with results markdown
 deleteLastStatusComment

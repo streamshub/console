@@ -18,24 +18,60 @@ on:
       retry_count:
         description: 'Retry count to use'
         required: false
-      env_str:
+      envs:
         description: 'Envs to use for tests'
         required: false
 
 jobs:
-  run-systemtests:
+  generate-matrix:
     permissions:
       contents: read
       statuses: write
       pull-requests: write
     runs-on: ubuntu-24.04
     env:
-      RUN_URL: ${{ github.run_url }}
+      GH_TOKEN: ${{ secrets.BOT_ORG_SCOPED_TOKEN }}
+      REPO: ${{ github.repository }}
+      COMMIT_SHA: ${{ github.event.inputs.commit_sha }}
+      TESTCASE: ${{ github.event.inputs.testcase }}
+      PROFILE: ${{ github.event.inputs.profile }}
+    outputs:
+      matrix: ${{ steps.generate-matrix.outputs.matrix }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ env.COMMIT_SHA }}
+
+      - name: Get previously built artifacts
+        run: |
+          ARTIFACTS_RUN_ID=$(gh run list --repo $REPO --commit $COMMIT_SHA --workflow integration.yml --status success --json databaseId --jq '.[0].databaseId')
+          echo "ARTIFACTS_RUN_ID=$ARTIFACTS_RUN_ID" >> $GITHUB_ENV
+
+      - name: Generate ST matrix
+        id: generate-matrix
+        run: ./.github/actions/systemtests/generate-test-matrix.sh
+
+
+  # Run single or matrix of ST jobs
+  run-systemtests:
+    needs: generate-matrix
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.generate-matrix.outputs.matrix) }}
+      max-parallel: 2
+    permissions:
+      contents: read
+      statuses: write
+      pull-requests: write
+    runs-on: ubuntu-24.04
+    env:
+      # Need to use MATRIX TEST_CASE instead of the testcase from trigger job
+      TEST_CASE: ${{ matrix.testcase }}
+      PROFILE: ${{ matrix.profile }}
       COMMIT_SHA: ${{ github.event.inputs.commit_sha }}
       GH_TOKEN: ${{ secrets.BOT_ORG_SCOPED_TOKEN }}
       REPO: ${{ github.repository }}
-      TEST_CASE: ${{ github.event.inputs.testcase }}
-      PROFILE: ${{ github.event.inputs.profile }}
       INSTALL_TYPE: ${{ github.event.inputs.install_type }}
       RETRY_COUNT: ${{ github.event.inputs.retry_count }}
       ENVS: ${{ github.event.inputs.env_str }}
@@ -48,18 +84,6 @@ jobs:
         uses: actions/checkout@v5
         with:
           ref: ${{ env.COMMIT_SHA }}
-
-      - name: Get the commit details
-        run: |
-          ARTIFACTS_RUN_ID=$(gh run list --repo $REPO --commit $COMMIT_SHA --workflow integration.yml --status success --status success --json databaseId --jq '.[0].databaseId')
-          PR_NUMBER=$(gh pr list --repo $REPO --state open --search $COMMIT_SHA --json number,createdAt -q "sort_by(.createdAt) | .[-1] | .number")
-        
-          echo "PR_NUMBER=$PR_NUMBER" >> $GITHUB_ENV
-          echo "ARTIFACTS_RUN_ID=$ARTIFACTS_RUN_ID" >> $GITHUB_ENV
-
-      - name: Comment the build
-        run: ./.github/actions/systemtests/update-pr-systemtests-started.sh
-
       - name: Download Images
         id: download-artifact
         uses: dawidd6/action-download-artifact@ac66b43f0e6a346234dd65d4d0c8fbb31cb316e5
@@ -113,10 +137,10 @@ jobs:
         if: ${{ env.INSTALL_TYPE == 'olm' }}
         run: |
           set -x
-          
+
           echo "CONSOLE_OLM_CATALOG_SOURCE_NAME=streamshub-console-catalog" >> $GITHUB_ENV
           echo "CONSOLE_OLM_CATALOG_SOURCE_NAMESPACE=$OLM_MINIKUBE_NAMESPACE" >> $GITHUB_ENV
-          
+
           # Create the CatalogSource with the Console operator bundle
           yq ea '.spec.image = "localhost:5000/streamshub/console-operator-catalog:${{ env.PROJECT_VERSION }}"' \
             ./install/operator/olm/010-CatalogSource-console-operator-catalog.yaml \
@@ -155,13 +179,45 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: systemtests-artifacts
+          name: systemtests-artifacts-${{ matrix.testcase }}${{ matrix.profile && format('-{0}', matrix.profile) || '' }}
           if-no-files-found: warn
           path: |
             systemtests/target/**/TEST-*.xml
             systemtests/target/logs/**
             systemtests/screenshot/**
             systemtests/tracing/**
+
+  aggregate-results:
+    needs: run-systemtests
+    permissions:
+      contents: read
+      statuses: write
+      pull-requests: write
+    runs-on: ubuntu-24.04
+    # Ensure this job runs even if tests failed
+    if: always()
+    env:
+      COMMIT_SHA: ${{ github.event.inputs.commit_sha }}
+      GH_TOKEN: ${{ secrets.BOT_ORG_SCOPED_TOKEN }}
+      REPO: ${{ github.repository }}
+      TEST_CASE: ${{ github.event.inputs.testcase }}
+      PROFILE: ${{ github.event.inputs.profile }}
+      INSTALL_TYPE: ${{ github.event.inputs.install_type }}
+      RETRY_COUNT: ${{ github.event.inputs.retry_count }}
+      ENVS: ${{ github.event.inputs.env_str }}
+    steps:
+      - uses: actions/checkout@v5
+      - name: Download all systemtest artifacts
+        uses: actions/download-artifact@v5
+        with:
+          pattern: systemtests-artifacts-*
+          merge-multiple: true
+          path: ./all-systemtest-artifacts
+
+      - name: Get current PR number
+        run: |
+          PR_NUMBER=$(gh pr list --repo $REPO --state open --search $COMMIT_SHA --json number,createdAt -q "sort_by(.createdAt) | .[-1] | .number")
+          echo "PR_NUMBER=$PR_NUMBER" >> $GITHUB_ENV
 
       - name: Parse results and update PR status
         if: always()

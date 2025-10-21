@@ -23,12 +23,12 @@ if [[ ! "$retry_count" =~ ^[0-9]+$ ]]; then
 fi
 
 # Export as step outputs
-echo "testcase=$testcase" >> $GITHUB_OUTPUT
-echo "profile=$profile" >> $GITHUB_OUTPUT
-echo "env_str=$env_str" >> $GITHUB_OUTPUT
-echo "install_type=$install_type" >> $GITHUB_OUTPUT
-echo "retry_count=$retry_count" >> $GITHUB_OUTPUT
+echo "TESTCASE=$testcase" >> $GITHUB_ENV
+echo "PROFILE=$profile" >> $GITHUB_ENV
+echo "ENVS=$env_str" >> $GITHUB_ENV
+echo "INSTALL_TYPE=$install_type" >> $GITHUB_ENV
+echo "RETRY_COUNT=$retry_count" >> $GITHUB_ENV
 
 # Export current PR branch latest commit sha
 commit_sha=$(gh pr view $PR_NUMBER --json headRefOid -q '.headRefOid')
-echo "commit_sha=$commit_sha" >> $GITHUB_OUTPUT
+echo "COMMIT_SHA=$commit_sha" >> $GITHUB_ENV
