@@ -93,7 +93,7 @@ export function ConnectClustersTable({
             );
           case "workers":
             return (
-              <Td key={key} dataLabel={t("connect_clusters.type")}>
+              <Td key={key} dataLabel={t("connect_clusters.workers")}>
                 {row.attributes.replicas ?? "-"}
               </Td>
             );
