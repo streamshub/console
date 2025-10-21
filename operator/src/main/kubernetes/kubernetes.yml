@@ -200,6 +200,8 @@ rules:
       - kafkarebalances
       - kafkatopics
       - kafkausers
+      - kafkaconnects
+      - kafkamirrormaker2s
 
   # Granted to Console instances
   - verbs:

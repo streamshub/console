@@ -759,6 +759,41 @@ class ConsoleReconcilerTest extends ConsoleReconcilerTestBase {
         });
     }
 
+    @Test
+    void testConsoleReconciliationWithKafkaConnect() {
+        Console consoleCR = new ConsoleBuilder()
+                .withMetadata(new ObjectMetaBuilder()
+                        .withName("console-1")
+                        .withNamespace("ns2")
+                        .build())
+                .withNewSpec()
+                    .withHostname("example.com")
+                    .addNewKafkaConnectCluster()
+                        .withName("example-connect-cluster")
+                        .withUrl("http://example-connect-cluster.example.com")
+                        .withMirrorMaker(false)
+                        .withKafkaClusters(kafkaCR.getMetadata().getName())
+                    .endKafkaConnectCluster()
+                    .addNewKafkaCluster()
+                        .withName(kafkaCR.getMetadata().getName())
+                        .withNamespace(kafkaCR.getMetadata().getNamespace())
+                        .withListener(kafkaCR.getSpec().getKafka().getListeners().get(0).getName())
+                    .endKafkaCluster()
+                .endSpec()
+                .build();
+
+        client.resource(consoleCR).create();
+
+        assertConsoleConfig(consoleConfig -> {
+            String connectClusterName = consoleConfig.getKafkaConnectClusters().get(0).getName();
+            assertEquals("example-connect-cluster", connectClusterName);
+            String connectClusterUrl = consoleConfig.getKafkaConnectClusters().get(0).getUrl();
+            assertEquals("http://example-connect-cluster.example.com", connectClusterUrl);
+
+            String kafkaClusterNameRef = consoleConfig.getKafkaConnectClusters().get(0).getKafkaClusters().get(0);
+            assertEquals(kafkaCR.getMetadata().getName(), kafkaClusterNameRef);
+        });
+    }
 
     @ParameterizedTest
     @ValueSource(booleans = { true, false })

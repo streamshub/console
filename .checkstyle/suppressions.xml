@@ -6,7 +6,7 @@
 <suppressions>
     <!-- Note that [/\\] must be used as the path separator for cross-platform support -->
     <suppress checks="ClassDataAbstractionCoupling"
-              files="TopicsResourceIT.java"/>
+              files="TopicsResourceIT.java|ConfigurationProcessor.java"/>
     <suppress checks="ClassFanOutComplexity"
               files="TopicsResourceIT.java"/>
     <suppress checks="ClassFanOutComplexity"
