@@ -33,6 +33,12 @@ public class Constants {
     public static final String CHECKED_ATTRIBUTE = "checked";
     public static final int DEFAULT_TOPICS_PER_PAGE = 20;
 
+    // Topic Prefixes
+    public static final String REPLICATED_TOPICS_PREFIX = "replicated";
+    public static final String UNMANAGED_REPLICATED_TOPICS_PREFIX = "unmanaged-replicated";
+    public static final String UNDER_REPLICATED_TOPICS_PREFIX = "underreplicated";
+    public static final String UNAVAILABLE_TOPICS_PREFIX = "unavailable";
+
     /**
      * Messages
      */
