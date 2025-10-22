@@ -1,5 +1,6 @@
 package com.github.streamshub.systemtests.utils.resourceutils;
 
+import com.github.streamshub.console.dependents.ConsoleDeployment;
 import io.fabric8.openshift.api.model.Route;
 
 public class ConsoleUtils {
@@ -11,5 +12,9 @@ public class ConsoleUtils {
                 ResourceUtils.listKubeResourcesByPrefix(Route.class, namespace, consoleInstanceName).get(0).getSpec().getHost() :
                 consoleInstanceName + "." + ClusterUtils.getClusterDomain()
             );
+    }
+
+    public static String getConsoleDeploymentName(String instanceName) {
+        return instanceName + "-" + ConsoleDeployment.NAME;
     }
 }

@@ -61,7 +61,7 @@ public class OlmConfig extends InstallConfig {
         if (!deploymentList.isEmpty()) {
             // delete csv
             String csvFullName = ResourceUtils.listKubeResourcesByPrefix(ClusterServiceVersion.class, deploymentNamespace, packageName).get(0).getMetadata().getName();
-            ClusterServiceVersion csv = ResourceUtils.getKubeResource(ClusterServiceVersion.class, csvFullName);
+            ClusterServiceVersion csv = ResourceUtils.getKubeResource(ClusterServiceVersion.class, deploymentNamespace, csvFullName);
             KubeResourceManager.get().deleteResourceWithWait(csv);
             KubeResourceManager.get().deleteResourceWithWait(deploymentList.get(0));
         }
