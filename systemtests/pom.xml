@@ -242,5 +242,29 @@
                 <groups>regression</groups>
             </properties>
         </profile>
+
+        <profile>
+            <id>olm-upgrade</id>
+            <properties>
+                <skipTests>false</skipTests>
+                <groups>olm-upgrade</groups>
+            </properties>
+        </profile>
+
+        <profile>
+            <id>yaml-upgrade</id>
+            <properties>
+                <skipTests>false</skipTests>
+                <groups>yaml-upgrade</groups>
+            </properties>
+        </profile>
+
+        <profile>
+            <id>upgrade</id>
+            <properties>
+                <skipTests>false</skipTests>
+                <groups>olm-upgrade, yaml-upgrade</groups>
+            </properties>
+        </profile>
     </profiles>
 </project>
