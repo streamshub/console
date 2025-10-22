@@ -43,7 +43,7 @@
     "eslint-plugin-storybook": "^9.1.13",
     "iron-session": "^8.0.4",
     "js-yaml": "^4.1.0",
-    "next": "^14.2.33",
+    "next": "^16.0.0",
     "next-auth": "^4.24.11",
     "next-intl": "^4.3.12",
     "next-logger": "^5.0.2",
