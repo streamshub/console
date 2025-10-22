@@ -11,6 +11,7 @@ import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.openshift.api.model.operatorhub.v1.OperatorGroup;
 import io.fabric8.openshift.api.model.operatorhub.v1.OperatorGroupBuilder;
+import io.fabric8.openshift.api.model.operatorhub.v1alpha1.ClusterServiceVersion;
 import io.fabric8.openshift.api.model.operatorhub.v1alpha1.Subscription;
 import io.fabric8.openshift.api.model.operatorhub.v1alpha1.SubscriptionBuilder;
 import io.skodjob.testframe.resources.KubeResourceManager;
@@ -55,11 +56,19 @@ public class OlmConfig extends InstallConfig {
     public void delete() {
         KubeResourceManager.get().deleteResourceWithWait(getOlmOperatorGroup());
         KubeResourceManager.get().deleteResourceWithWait(getOlmSubscription());
-        KubeResourceManager.get().deleteResourceWithWait();
+
         List<Deployment> deploymentList = ResourceUtils.listKubeResourcesByPrefix(Deployment.class, deploymentNamespace, deploymentName);
         if (!deploymentList.isEmpty()) {
+            // delete csv
+            String csvFullName = ResourceUtils.listKubeResourcesByPrefix(ClusterServiceVersion.class, deploymentNamespace, packageName).get(0).getMetadata().getName();
+            ClusterServiceVersion csv = ResourceUtils.getKubeResource(ClusterServiceVersion.class, csvFullName);
+            KubeResourceManager.get().deleteResourceWithWait(csv);
             KubeResourceManager.get().deleteResourceWithWait(deploymentList.get(0));
         }
+    }
+
+    public void setChannelName(String channelName) {
+        this.channelName = channelName;
     }
 
     private Subscription getOlmSubscription() {

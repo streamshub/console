@@ -20,6 +20,10 @@ public class ConsoleOperatorSetup {
         }
     }
 
+    public void setInstallConfig(InstallConfig installConfig) {
+        this.installConfig = installConfig;
+    }
+
     public void install() {
         LOGGER.info("----------- Install Console Operator -----------");
         if (!ResourceUtils.listKubeResourcesByPrefix(Deployment.class, installConfig.getDeploymentNamespace(), installConfig.getDeploymentName()).isEmpty()) {

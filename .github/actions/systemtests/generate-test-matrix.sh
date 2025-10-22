@@ -14,7 +14,7 @@ fi
 
 # --- CASE 2: specific profile provided ---
 echo "No specific testcase provided, generating matrix..."
-FILES=$(find systemtests/src/test/java -type f -name '*ST.java' ! -name 'AbstractST.java')
+FILES=$(find systemtests/src/test/java -type f -name '*ST.java' ! -name 'AbstractST.java' ! -name 'AbstractUpgradeST.java')
 
 MATRIX="["
 SEP=""
