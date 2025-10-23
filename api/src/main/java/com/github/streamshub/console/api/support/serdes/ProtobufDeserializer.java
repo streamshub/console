@@ -2,23 +2,20 @@ package com.github.streamshub.console.api.support.serdes;
 
 import java.nio.ByteBuffer;
 
-import org.apache.kafka.common.header.Headers;
-
 import com.google.protobuf.Message;
 
 import io.apicurio.registry.resolver.ParsedSchema;
 import io.apicurio.registry.resolver.SchemaResolver;
-import io.apicurio.registry.serde.protobuf.ProtobufKafkaDeserializer;
+import io.apicurio.registry.resolver.strategy.ArtifactReference;
 import io.apicurio.registry.utils.protobuf.schema.ProtobufSchema;
 
 /**
- * Simple subclass of {@link ProtobufKafkaDeserializer} to make the
+ * Simple subclass of {@link io.apicurio.registry.serde.protobuf.ProtobufDeserializer} to make the
  * {@code readData} methods public.
  */
-class ProtobufDeserializer extends ProtobufKafkaDeserializer<Message> {
+class ProtobufDeserializer extends io.apicurio.registry.serde.protobuf.ProtobufDeserializer<Message> {
     ProtobufDeserializer(SchemaResolver<ProtobufSchema, Message> schemaResolver) {
-        super();
-        setSchemaResolver(schemaResolver);
+        super(schemaResolver);
     }
 
     @Override
@@ -27,11 +24,7 @@ class ProtobufDeserializer extends ProtobufKafkaDeserializer<Message> {
     }
 
     @Override
-    public Message readData(Headers headers,
-            ParsedSchema<ProtobufSchema> schema,
-            ByteBuffer buffer,
-            int start,
-            int length) {
-        return super.readData(headers, schema, buffer, start, length);
+    public Message readData(String topic, byte[] data, ArtifactReference artifactReference) {
+        throw new UnsupportedOperationException();
     }
 }

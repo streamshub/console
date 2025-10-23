@@ -19,7 +19,8 @@
         <quarkus.platform.version>3.27.1</quarkus.platform.version>
         <strimzi-api.version>0.49.0</strimzi-api.version>
         <strimzi-oauth.version>0.17.1</strimzi-oauth.version>
-        <apicurio-registry.version>2.6.13.Final</apicurio-registry.version>
+        <apicurio-registry.version>3.1.0</apicurio-registry.version>
+        <kioto-java-extra.version>0.0.30</kioto-java-extra.version>
 
         <!-- Test Dependencies -->
         <strimzi-test-container.version>0.113.0</strimzi-test-container.version>
@@ -88,6 +89,23 @@
     <dependencyManagement>
         <dependencies>
             <dependency>
+                <groupId>io.kiota</groupId>
+                <artifactId>kiota-http-jdk</artifactId>
+                <version>${kioto-java-extra.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.kiota</groupId>
+                <artifactId>kiota-serialization-jackson</artifactId>
+                <version>${kioto-java-extra.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.google.protobuf</groupId>
+                <artifactId>protobuf-bom</artifactId>
+                <version>4.33.0</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
                 <!-- Held back to 3.9 until support for empty group.id is removed -->
                 <groupId>org.apache.kafka</groupId>
                 <artifactId>kafka-clients</artifactId>
@@ -105,12 +123,12 @@
             </dependency>
             <dependency>
                 <groupId>io.apicurio</groupId>
-                <artifactId>apicurio-registry-serdes-avro-serde</artifactId>
+                <artifactId>apicurio-registry-avro-serde-kafka</artifactId>
                 <version>${apicurio-registry.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.apicurio</groupId>
-                <artifactId>apicurio-registry-serdes-protobuf-serde</artifactId>
+                <artifactId>apicurio-registry-protobuf-serde-kafka</artifactId>
                 <version>${apicurio-registry.version}</version>
             </dependency>
             <dependency>

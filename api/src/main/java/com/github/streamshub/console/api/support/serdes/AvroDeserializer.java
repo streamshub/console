@@ -3,20 +3,18 @@ package com.github.streamshub.console.api.support.serdes;
 import java.nio.ByteBuffer;
 
 import org.apache.avro.Schema;
-import org.apache.kafka.common.header.Headers;
 
 import io.apicurio.registry.resolver.ParsedSchema;
 import io.apicurio.registry.resolver.SchemaResolver;
-import io.apicurio.registry.serde.avro.AvroKafkaDeserializer;
+import io.apicurio.registry.resolver.strategy.ArtifactReference;
 
 /**
- * Simple subclass of {@link AvroKafkaDeserializer} to make the {@code readData}
- * methods public.
+ * Simple subclass of {@link io.apicurio.registry.serde.avro.AvroDeserializer}
+ * to make the {@code readData} methods public.
  */
-class AvroDeserializer extends AvroKafkaDeserializer<RecordData> {
+class AvroDeserializer extends io.apicurio.registry.serde.avro.AvroDeserializer<RecordData> {
     AvroDeserializer(SchemaResolver<Schema, RecordData> schemaResolver) {
-        super();
-        setSchemaResolver(schemaResolver);
+        super(schemaResolver);
     }
 
     @Override
@@ -25,11 +23,7 @@ class AvroDeserializer extends AvroKafkaDeserializer<RecordData> {
     }
 
     @Override
-    public RecordData readData(Headers headers,
-            ParsedSchema<Schema> schema,
-            ByteBuffer buffer,
-            int start,
-            int length) {
-        return super.readData(headers, schema, buffer, start, length);
+    public RecordData readData(String topic, byte[] data, ArtifactReference artifactReference) {
+        throw new UnsupportedOperationException();
     }
 }
