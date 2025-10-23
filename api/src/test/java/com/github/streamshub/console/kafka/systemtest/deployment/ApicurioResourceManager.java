@@ -94,7 +94,7 @@ public class ApicurioResourceManager extends ResourceManagerBase implements Quar
 
         apicurio.start();
 
-        String urlTemplate = "https://localhost:%d/apis/registry/v2/";
+        String urlTemplate = "https://localhost:%d/apis/registry/v2";
         var apicurioUrl = urlTemplate.formatted(apicurio.getMappedPort(port));
         return Map.of(
                 "console.test.apicurio-url", apicurioUrl,
