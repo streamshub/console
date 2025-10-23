@@ -61,7 +61,8 @@ import com.github.streamshub.console.config.ConsoleConfig;
 import com.github.streamshub.console.config.KafkaClusterConfig;
 import com.github.streamshub.console.config.SchemaRegistryConfig;
 
-import io.apicurio.registry.serde.SerdeConfig;
+import io.apicurio.registry.resolver.client.RegistryClientFacade;
+import io.apicurio.registry.serde.config.SerdeConfig;
 import io.fabric8.kubernetes.client.informers.ResourceEventHandler;
 import io.fabric8.kubernetes.client.informers.SharedIndexInformer;
 import io.fabric8.kubernetes.client.informers.cache.Cache;
@@ -147,6 +148,9 @@ public class ClientFactory {
 
     @Inject
     MetricsService metricsService;
+
+    @Inject
+    Map<String, RegistryClientFacade> registryClients;
 
     @Produces
     @ApplicationScoped
@@ -275,6 +279,7 @@ public class ClientFactory {
                 admin = adminBuilder.apply(adminConfigs);
             }
 
+            RegistryClientFacade registryClient = null;
             SchemaRegistryConfig registryConfig = null;
 
             if (clusterConfig.getSchemaRegistry() != null) {
@@ -283,10 +288,11 @@ public class ClientFactory {
                         .filter(registry -> registry.getName().equals(clusterConfig.getSchemaRegistry()))
                         .findFirst()
                         .orElseThrow();
+                registryClient = registryClients.get(registryConfig.getName());
             }
 
             KafkaContext ctx = new KafkaContext(clusterConfig, kafkaResource.orElse(null), clientConfigs, admin);
-            ctx.schemaRegistryClient(registryConfig, mapper);
+            ctx.schemaRegistryClient(registryClient, registryConfig, mapper);
 
             if (clusterConfig.hasNamespace()) {
                 ctx.prometheus(metricsService.createClient(consoleConfig, clusterConfig));
@@ -381,7 +387,7 @@ public class ClientFactory {
         configs.put(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, 50_000);
         configs.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
         configs.put(ConsumerConfig.DEFAULT_API_TIMEOUT_MS_CONFIG, 5000);
-        configs.put(SerdeConfig.ENABLE_HEADERS, "true");
+        configs.put(SerdeConfig.READ_TYPE_REF, "true");
         return configs;
     }
 

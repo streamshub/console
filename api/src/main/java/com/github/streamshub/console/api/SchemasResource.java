@@ -1,6 +1,7 @@
 package com.github.streamshub.console.api;
 
 import java.util.Collections;
+import java.util.Map;
 import java.util.Optional;
 
 import jakarta.inject.Inject;
@@ -19,7 +20,6 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import org.jboss.logging.Logger;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.streamshub.console.api.support.serdes.ApicurioClient;
 import com.github.streamshub.console.api.support.serdes.ArtifactReferences;
 import com.github.streamshub.console.api.support.serdes.MultiformatSchemaParser;
 import com.github.streamshub.console.config.ConsoleConfig;
@@ -27,8 +27,7 @@ import com.github.streamshub.console.config.SchemaRegistryConfig;
 
 import io.apicurio.registry.resolver.DefaultSchemaResolver;
 import io.apicurio.registry.resolver.SchemaResolver;
-import io.apicurio.registry.rest.client.RegistryClient;
-import io.apicurio.registry.rest.client.RegistryClientFactory;
+import io.apicurio.registry.resolver.client.RegistryClientFacade;
 
 @Path("/api/registries/{registryId}/schemas/{schemaId}")
 @Tag(name = "Schema Registry Resources")
@@ -42,6 +41,9 @@ public class SchemasResource {
 
     @Inject
     ConsoleConfig consoleConfig;
+
+    @Inject
+    Map<String, RegistryClientFacade> registryClients;
 
     /**
      * Retrieve the schema content from the identified/named registry.
@@ -66,17 +68,17 @@ public class SchemasResource {
             @PathParam("schemaId")
             String schemaId) {
 
-        SchemaRegistryConfig registryConfig = consoleConfig.getSchemaRegistries()
+        RegistryClientFacade registryClient = consoleConfig.getSchemaRegistries()
                 .stream()
                 .filter(config -> config.getName().equals(registryId))
+                .map(SchemaRegistryConfig::getName)
+                .map(registryClients::get)
                 .findFirst()
                 .orElseThrow(() -> new NotFoundException("Unknown registry"));
 
-        RegistryClient registryClient = RegistryClientFactory.create(new ApicurioClient(registryConfig));
-
         @SuppressWarnings("resource")
         SchemaResolver<Object, ?> schemaResolver = new DefaultSchemaResolver<>();
-        schemaResolver.setClient(registryClient);
+        schemaResolver.setClientFacade(registryClient);
         schemaResolver.configure(Collections.emptyMap(), new MultiformatSchemaParser<>(Collections.emptySet()));
 
         var reference = ArtifactReferences.fromSchemaId(schemaId, objectMapper);
