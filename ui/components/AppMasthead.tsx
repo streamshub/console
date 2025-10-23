@@ -183,7 +183,11 @@ export function AppMasthead({
             <dt>Platform</dt>
             <dd>{metadata?.attributes.platform}</dd>
             <dt>User agent</dt>
-            <dd>{navigator.userAgent}</dd>
+            <dd>
+              {typeof navigator !== "undefined"
+                ? navigator.userAgent
+                : "Unknown"}
+            </dd>
           </dl>
         </Content>
       </AboutModal>
