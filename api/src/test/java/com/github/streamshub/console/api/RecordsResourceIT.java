@@ -1,6 +1,5 @@
 package com.github.streamshub.console.api;
 
-import java.io.ByteArrayInputStream;
 import java.net.URI;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
@@ -643,12 +642,27 @@ class RecordsResourceIT {
               """
               .formatted(valueArtifactId);
 
-        registryClient.createArtifact("default", keyArtifactId, ArtifactType.AVRO, new ByteArrayInputStream(keySchema
-                .getBytes()));
+        registryClient.createSchema(
+                ArtifactType.AVRO,
+                "default",
+                keyArtifactId,
+                "1.0.0",
+                "FAIL",
+                true,
+                keySchema,
+                Collections.emptySet()
+        );
 
-        registryClient.createArtifact("default", valueArtifactId, ArtifactType.AVRO, new ByteArrayInputStream(valueSchema
-                .getBytes()));
-
+        registryClient.createSchema(
+                ArtifactType.AVRO,
+                "default",
+                valueArtifactId,
+                "1.0.0",
+                "FAIL",
+                true,
+                valueSchema,
+                Collections.emptySet()
+        );
 
         final String topicName = UUID.randomUUID().toString();
         var topicIds = topicUtils.createTopics(List.of(topicName), 1);
@@ -658,10 +672,10 @@ class RecordsResourceIT {
                         .add("relationships", Json.createObjectBuilder()
                                 .add("keySchema", Json.createObjectBuilder()
                                         .add("meta", Json.createObjectBuilder()
-                                                .add("coordinates", "default:" + keyArtifactId)))
+                                                .add("coordinates", "default:" + keyArtifactId + ":1.0.0")))
                                 .add("valueSchema", Json.createObjectBuilder()
                                         .add("meta", Json.createObjectBuilder()
-                                                .add("coordinates", "default:" + valueArtifactId))))
+                                                .add("coordinates", "default:" + valueArtifactId + ":1.0.0"))))
                         .add("attributes", Json.createObjectBuilder()
                                 .add("key", """
                                         {
@@ -740,12 +754,27 @@ class RecordsResourceIT {
               """
               .formatted(valueArtifactId, valueArtifactId);
 
-        registryClient.createArtifact("default", keyArtifactId, ArtifactType.PROTOBUF, new ByteArrayInputStream(keySchema
-                .getBytes()));
+        registryClient.createSchema(
+                ArtifactType.PROTOBUF,
+                "default",
+                keyArtifactId,
+                "1.0.0",
+                "FAIL",
+                true,
+                keySchema,
+                Collections.emptySet()
+        );
 
-        registryClient.createArtifact("default", valueArtifactId, ArtifactType.PROTOBUF, new ByteArrayInputStream(valueSchema
-                .getBytes()));
-
+        registryClient.createSchema(
+                ArtifactType.PROTOBUF,
+                "default",
+                valueArtifactId,
+                "1.0.0",
+                "FAIL",
+                true,
+                valueSchema,
+                Collections.emptySet()
+        );
 
         final String topicName = UUID.randomUUID().toString();
         var topicIds = topicUtils.createTopics(List.of(topicName), 1);
@@ -756,10 +785,10 @@ class RecordsResourceIT {
                                 .add("keySchema", Json.createObjectBuilder()
                                         .add("meta", Json.createObjectBuilder()
                                                 // messageType omitted since there is only 1 in the key schema
-                                                .add("coordinates", "default:" + keyArtifactId)))
+                                                .add("coordinates", "default:" + keyArtifactId + ":1.0.0")))
                                 .add("valueSchema", Json.createObjectBuilder()
                                         .add("meta", Json.createObjectBuilder()
-                                                .add("coordinates", "default:" + valueArtifactId)
+                                                .add("coordinates", "default:" + valueArtifactId + ":1.0.0")
                                                 .add("messageType", "name_" + valueArtifactId))))
                         .add("attributes", Json.createObjectBuilder()
                                 .add("key", """
