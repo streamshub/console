@@ -40,7 +40,7 @@
     "eslint-config-next": "14.2.33",
     "eslint-config-prettier": "^10.1.8",
     "eslint-import-resolver-typescript": "^4.4.4",
-    "eslint-plugin-storybook": "^9.1.13",
+    "eslint-plugin-storybook": "^9.1.15",
     "iron-session": "^8.0.4",
     "js-yaml": "^4.1.0",
     "next": "^14.2.33",
