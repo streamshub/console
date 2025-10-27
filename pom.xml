@@ -23,7 +23,7 @@
 
         <!-- Test Dependencies -->
         <hamcrest.version>3.0</hamcrest.version>
-        <strimzi-test-container.version>0.112.0</strimzi-test-container.version>
+        <strimzi-test-container.version>0.113.0</strimzi-test-container.version>
 
         <!-- Plugin Versions -->
         <maven.compiler.version>3.14.1</maven.compiler.version>
