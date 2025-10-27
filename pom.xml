@@ -92,7 +92,7 @@
                 <!-- Managed for CVE-2025-53864 -->
                 <groupId>com.nimbusds</groupId>
                 <artifactId>nimbus-jose-jwt</artifactId>
-                <version>10.0.2</version>
+                <version>10.5</version>
             </dependency>
             <dependency>
                 <groupId>io.strimzi</groupId>
