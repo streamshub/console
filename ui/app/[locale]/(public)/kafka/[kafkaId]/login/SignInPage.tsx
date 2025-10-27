@@ -179,8 +179,11 @@ export function SignInPage({
 
   return (
     <>
-      <Flex direction={{ default: "column" }}>
-        <FlexItem align={{ default: "alignRight" }} className="pf-v6-u-mr-md">
+      <Flex
+        justifyContent={{ default: "justifyContentFlexEnd" }}
+        className="pf-v6-u-mr-4xl pf-v6-u-mt-lg"
+      >
+        <FlexItem>
           <ThemeSelector />
         </FlexItem>
       </Flex>
