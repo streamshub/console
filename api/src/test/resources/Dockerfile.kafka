@@ -1,4 +1,4 @@
-FROM quay.io/strimzi-test-container/test-container:0.112.0-kafka-4.1.0
+FROM quay.io/strimzi-test-container/test-container:0.113.0-kafka-4.1.0
 # No operations, this is only a placeholder used to manage the image
 # version via dependabot. The FROM statement is always expected to
 # present on the first line of this file.

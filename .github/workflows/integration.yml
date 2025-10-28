@@ -134,7 +134,7 @@ jobs:
 
       # ==================== Archive artifacts ====================
       - name: Archive Operator Kubernetes Resources
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: k8s-resources
           path: |
@@ -155,7 +155,7 @@ jobs:
           tar -czf streamshub-images.tgz -C streamshub-images .
 
       - name: Archive [UI, API, Operator-Bundle, Operator, Operator-Catalog] Image Files
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: streamshub-images
           path: streamshub-images.tgz
@@ -192,7 +192,7 @@ jobs:
             -Dquarkus.package.write-transformed-bytecode-to-build-output=true
 
       - name: Archive Failed Tests Results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         if: failure()
         with:
           name: artifacts
@@ -210,7 +210,7 @@ jobs:
 
       ## Attach the target directory for use in Sonar analysis
       - name: Archive Build Output
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: target
           path: |

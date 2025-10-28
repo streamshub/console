@@ -23,14 +23,14 @@
 
         <!-- Test Dependencies -->
         <hamcrest.version>3.0</hamcrest.version>
-        <strimzi-test-container.version>0.112.0</strimzi-test-container.version>
+        <strimzi-test-container.version>0.113.0</strimzi-test-container.version>
 
         <!-- Plugin Versions -->
         <maven.compiler.version>3.14.1</maven.compiler.version>
         <maven.dependency.version>3.9.0</maven.dependency.version>
         <maven.checkstyle.version>3.6.0</maven.checkstyle.version>
         <jacoco-maven-plugin.version>0.8.14</jacoco-maven-plugin.version>
-        <jandex-maven-plugin.version>3.5.0</jandex-maven-plugin.version>
+        <jandex-maven-plugin.version>3.5.1</jandex-maven-plugin.version>
         <spotbugs.version>4.9.8</spotbugs.version>
         <surefire-plugin.version>3.5.4</surefire-plugin.version>
 
@@ -92,7 +92,7 @@
                 <!-- Managed for CVE-2025-53864 -->
                 <groupId>com.nimbusds</groupId>
                 <artifactId>nimbus-jose-jwt</artifactId>
-                <version>10.0.2</version>
+                <version>10.5</version>
             </dependency>
             <dependency>
                 <groupId>io.strimzi</groupId>
@@ -195,7 +195,7 @@
                         <dependency>
                             <groupId>com.puppycrawl.tools</groupId>
                             <artifactId>checkstyle</artifactId>
-                            <version>12.1.0</version>
+                            <version>12.1.1</version>
                         </dependency>
                     </dependencies>
                 </plugin>
