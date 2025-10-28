@@ -203,7 +203,7 @@ jobs:
           kubectl logs -n ${TARGET_NAMESPACE} -l app.kubernetes.io/instance=example-console-deployment --all-containers=true --tail -1 > ./resources/${TARGET_NAMESPACE}-console-logs.txt
 
       - name: Archive Resource Backup
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         if: failure()
         with:
           name: playwright-tests-k8s-resources-failed

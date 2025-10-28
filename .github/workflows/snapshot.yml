@@ -141,7 +141,7 @@ jobs:
 
       # ==================== Archive artifacts ====================
       - name: Attach Kubernetes Resources
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: k8s-resources
           path: |
