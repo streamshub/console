@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/nextjs";
-import { composeStories } from "@storybook/react";
+import { composeStories } from "@storybook/nextjs";
 import * as ClusterCardStories from "./ClusterCard.stories";
 import { PageLayout } from "./PageLayout";
 import * as TopicsPartitionsCardStories from "./TopicsPartitionsCard.stories";
