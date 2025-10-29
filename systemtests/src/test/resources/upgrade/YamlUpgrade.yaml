@@ -1,6 +1,7 @@
-#  --- Structure ---
-#  fromVersion: String - Start from this version and upgrade to latest
-#  fromUrl: String - url, from which CRDs are downloaded
-#  --- Structure ---
-fromVersion: 0.9.0
-fromUrl: https://github.com/streamshub/console/releases/download/0.10.0/streamshub-console-operator.yaml
+# Operator version
+oldOperatorVersion: 0.9.0
+newOperatorVersion: 0.10.0
+# Url to generated CRDs Yaml containing operator.
+oldOperatorCrdsUrl: https://github.com/streamshub/console/releases/download/0.9.0/streamshub-console-operator.yaml
+newOperatorCrdsUrl: https://github.com/streamshub/console/releases/download/0.10.0/streamshub-console-operator.yaml
+
