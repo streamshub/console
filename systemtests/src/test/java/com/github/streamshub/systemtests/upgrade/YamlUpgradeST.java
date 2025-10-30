@@ -3,6 +3,7 @@ package com.github.streamshub.systemtests.upgrade;
 import com.github.streamshub.systemtests.Environment;
 import com.github.streamshub.systemtests.TestCaseConfig;
 import com.github.streamshub.systemtests.constants.Constants;
+import com.github.streamshub.systemtests.constants.TestTags;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.setup.console.ConsoleInstanceSetup;
 import com.github.streamshub.systemtests.setup.console.ConsoleOperatorSetup;
@@ -21,11 +22,13 @@ import io.fabric8.kubernetes.api.model.apps.Deployment;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import static com.github.streamshub.systemtests.utils.Utils.getTestCaseConfig;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+@Tag(TestTags.YAML_UPGRADE)
 public class YamlUpgradeST extends  AbstractUpgradeST {
 
     private static final Logger LOGGER = LogWrapper.getLogger(YamlUpgradeST.class);
