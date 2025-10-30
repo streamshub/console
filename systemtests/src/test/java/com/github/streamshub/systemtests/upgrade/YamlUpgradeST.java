@@ -90,8 +90,8 @@ public class YamlUpgradeST extends  AbstractUpgradeST {
         currentOperatorVersion = ResourceUtils.listKubeResourcesByPrefix(Deployment.class, Constants.CO_NAMESPACE, Environment.CONSOLE_OLM_PACKAGE_NAME)
             .get(0)
             .getMetadata()
-            .getName()
-            .replace(Environment.CONSOLE_OLM_PACKAGE_NAME + "-v", "");
+            .getLabels()
+            .get("app.kubernetes.io/version");
 
         assertEquals(yamlVersionData.getNewOperatorVersion(), currentOperatorVersion);
 
