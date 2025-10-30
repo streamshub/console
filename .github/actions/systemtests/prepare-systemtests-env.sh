@@ -14,7 +14,9 @@ PARAMETERS="-Dfailsafe.rerunFailingTestsCount=${RETRY_COUNT}"
 
 if [[ -n "$TEST_CASE" ]]; then
   PARAMETERS="$PARAMETERS -Dit.test=${TEST_CASE} -DskipSTs=false"
-elif [[ -n "$PROFILE" ]]; then
+fi
+
+if [[ -n "$PROFILE" ]]; then
   PARAMETERS="$PARAMETERS -P $PROFILE"
 fi
 
