@@ -64,11 +64,6 @@ public class TopicST extends AbstractST {
     private static final int UNDER_REPLICATED_TOPICS_COUNT = 3;
     private static final int UNAVAILABLE_TOPICS_COUNT = 2;
     private static final int TOTAL_TOPICS_COUNT = TOTAL_REPLICATED_TOPICS_COUNT + UNDER_REPLICATED_TOPICS_COUNT + UNAVAILABLE_TOPICS_COUNT;
-    // Topic Prefixes
-    private static final String REPLICATED_TOPICS_PREFIX = "replicated";
-    private static final String UNMANAGED_REPLICATED_TOPICS_PREFIX = "unmanaged-replicated";
-    private static final String UNDER_REPLICATED_TOPICS_PREFIX = "underreplicated";
-    private static final String UNAVAILABLE_TOPICS_PREFIX = "unavailable";
     
     /**
      * Tests pagination behavior on the Topics page when handling a large set of topics.
@@ -139,7 +134,7 @@ public class TopicST extends AbstractST {
         TopicChecks.checkOverviewPageTopicState(tcc, tcc.kafkaName(), TOTAL_TOPICS_COUNT, TOTAL_TOPICS_COUNT, TOTAL_REPLICATED_TOPICS_COUNT, UNDER_REPLICATED_TOPICS_COUNT, UNAVAILABLE_TOPICS_COUNT);
         TopicChecks.checkTopicsPageTopicState(tcc, tcc.kafkaName(), TOTAL_TOPICS_COUNT, TOTAL_REPLICATED_TOPICS_COUNT, UNDER_REPLICATED_TOPICS_COUNT, UNAVAILABLE_TOPICS_COUNT);
 
-        List<KafkaTopic> topics = ResourceUtils.listKubeResourcesByPrefix(KafkaTopic.class, tcc.namespace(), REPLICATED_TOPICS_PREFIX);
+        List<KafkaTopic> topics = ResourceUtils.listKubeResourcesByPrefix(KafkaTopic.class, tcc.namespace(), Constants.REPLICATED_TOPICS_PREFIX);
         List<String> topicNames = topics.stream().map(kt -> kt.getMetadata().getName()).sorted().toList().subList(0, 3);
         LOGGER.info("Mark topics as displayed on overview page by visiting their page");
         for (String topicName : topicNames) {
@@ -211,12 +206,12 @@ public class TopicST extends AbstractST {
 
         final String brokerPodName = ResourceUtils.listKubeResourcesByPrefix(Pod.class, tcc.namespace(), KafkaNamingUtils.brokerPodNamePrefix(tcc.kafkaName())).get(0).getMetadata().getName();
         final List<String> unmanagedReplicatedTopicsNames = KafkaCmdUtils.listKafkaTopicsByPrefix(tcc.namespace(), tcc.kafkaName(), brokerPodName,
-            KafkaClientsUtils.getScramShaConfig(tcc.namespace(), tcc.kafkaUserName(), SecurityProtocol.SASL_PLAINTEXT), UNMANAGED_REPLICATED_TOPICS_PREFIX);
+            KafkaClientsUtils.getScramShaConfig(tcc.namespace(), tcc.kafkaUserName(), SecurityProtocol.SASL_PLAINTEXT), Constants.UNMANAGED_REPLICATED_TOPICS_PREFIX);
 
         TopicChecks.checkTopicsFilterByName(tcc, unmanagedReplicatedTopicsNames);
-        TopicChecks.checkTopicsFilterById(tcc, ResourceUtils.listKubeResourcesByPrefix(KafkaTopic.class, tcc.namespace(), REPLICATED_TOPICS_PREFIX).stream().map(kt -> kt.getMetadata().getName()).toList().subList(REPLICATED_TOPICS_COUNT - 5, REPLICATED_TOPICS_COUNT - 1));
-        TopicChecks.checkTopicsFilterByStatus(tcc, ResourceUtils.listKubeResourcesByPrefix(KafkaTopic.class, tcc.namespace(), UNDER_REPLICATED_TOPICS_PREFIX).stream().map(kt -> kt.getMetadata().getName()).toList(), TopicStatus.UNDER_REPLICATED);
-        TopicChecks.checkTopicsFilterByStatus(tcc, ResourceUtils.listKubeResourcesByPrefix(KafkaTopic.class, tcc.namespace(), UNAVAILABLE_TOPICS_PREFIX).stream().map(kt -> kt.getMetadata().getName()).toList(), TopicStatus.OFFLINE);
+        TopicChecks.checkTopicsFilterById(tcc, ResourceUtils.listKubeResourcesByPrefix(KafkaTopic.class, tcc.namespace(), Constants.REPLICATED_TOPICS_PREFIX).stream().map(kt -> kt.getMetadata().getName()).toList().subList(REPLICATED_TOPICS_COUNT - 5, REPLICATED_TOPICS_COUNT - 1));
+        TopicChecks.checkTopicsFilterByStatus(tcc, ResourceUtils.listKubeResourcesByPrefix(KafkaTopic.class, tcc.namespace(), Constants.UNDER_REPLICATED_TOPICS_PREFIX).stream().map(kt -> kt.getMetadata().getName()).toList(), TopicStatus.UNDER_REPLICATED);
+        TopicChecks.checkTopicsFilterByStatus(tcc, ResourceUtils.listKubeResourcesByPrefix(KafkaTopic.class, tcc.namespace(), Constants.UNAVAILABLE_TOPICS_PREFIX).stream().map(kt -> kt.getMetadata().getName()).toList(), TopicStatus.OFFLINE);
     }
 
     /**
@@ -246,7 +241,7 @@ public class TopicST extends AbstractST {
 
         tcc.page().navigate(PwPageUrls.getTopicsPage(tcc, tcc.kafkaName()), PwUtils.getDefaultNavigateOpts());
 
-        List<String> unavailableTopicsNames = ResourceUtils.listKubeResourcesByPrefix(KafkaTopic.class, tcc.namespace(), UNAVAILABLE_TOPICS_PREFIX).stream().map(kt -> kt.getMetadata().getName()).sorted().toList();
+        List<String> unavailableTopicsNames = ResourceUtils.listKubeResourcesByPrefix(KafkaTopic.class, tcc.namespace(), Constants.UNAVAILABLE_TOPICS_PREFIX).stream().map(kt -> kt.getMetadata().getName()).sorted().toList();
 
         LOGGER.info("Sort topics offline topics by name");
         // Filter
@@ -270,7 +265,7 @@ public class TopicST extends AbstractST {
         TopicsTestUtils.selectSortBy(tcc, TopicsPageSelectors.TPS_TABLE_HEADER_SORT_BY_STORAGE, TopicsPageSelectors.TPS_TABLE_HEADER_SORT_BY_STORAGE_BUTTON, "descending");
         PwUtils.waitForLocatorCount(tcc, Math.min(Constants.DEFAULT_TOPICS_PER_PAGE, TOTAL_REPLICATED_TOPICS_COUNT), TopicsPageSelectors.TPS_TABLE_ROWS, false);
         // Last managed replicated has utilized more storage
-        final String topicWithLargestStorageUsage = REPLICATED_TOPICS_PREFIX + "-" + (REPLICATED_TOPICS_COUNT - 1);
+        final String topicWithLargestStorageUsage = Constants.REPLICATED_TOPICS_PREFIX + "-" + (REPLICATED_TOPICS_COUNT - 1);
         PwUtils.waitForContainsText(tcc, TopicsPageSelectors.getTableRowItem(1, 1), topicWithLargestStorageUsage, true);
     }
 
@@ -301,7 +296,7 @@ public class TopicST extends AbstractST {
         LOGGER.info("Create all types of topics");
         final int scaledUpBrokerReplicas = Constants.REGULAR_BROKER_REPLICAS + 1;
 
-        List<KafkaTopic> replicatedTopics = KafkaTopicUtils.setupTopicsAndReturn(tcc.namespace(), tcc.kafkaName(), REPLICATED_TOPICS_PREFIX, REPLICATED_TOPICS_COUNT, true, 1, 1, 1);
+        List<KafkaTopic> replicatedTopics = KafkaTopicUtils.setupTopicsAndReturn(tcc.namespace(), tcc.kafkaName(), Constants.REPLICATED_TOPICS_PREFIX, REPLICATED_TOPICS_COUNT, true, 1, 1, 1);
         // Produce extra messages for the last fullyReplicated topic - use higher message count number to take more storage
         String topicWithMoreMessages = replicatedTopics.get(REPLICATED_TOPICS_COUNT - 1).getMetadata().getName();
         KafkaClients clients = new KafkaClientsBuilder()
@@ -319,9 +314,9 @@ public class TopicST extends AbstractST {
         KubeResourceManager.get().createResourceWithWait(clients.producer(), clients.consumer());
         WaitUtils.waitForClientsSuccess(clients);
 
-        KafkaTopicUtils.setupUnmanagedTopicsAndReturnNames(tcc.namespace(), tcc.kafkaName(), KafkaNamingUtils.kafkaUserName(tcc.kafkaName()), UNMANAGED_REPLICATED_TOPICS_PREFIX, UNMANAGED_REPLICATED_TOPICS_COUNT, tcc.messageCount(), 1, 1, 1);
-        KafkaTopicUtils.setupUnderReplicatedTopicsAndReturn(tcc.namespace(), tcc.kafkaName(), KafkaNamingUtils.kafkaUserName(tcc.kafkaName()), UNDER_REPLICATED_TOPICS_PREFIX, UNDER_REPLICATED_TOPICS_COUNT, tcc.messageCount(), 1, scaledUpBrokerReplicas, scaledUpBrokerReplicas);
-        KafkaTopicUtils.setupUnavailableTopicsAndReturn(tcc.namespace(), tcc.kafkaName(), KafkaNamingUtils.kafkaUserName(tcc.kafkaName()), UNAVAILABLE_TOPICS_PREFIX, UNAVAILABLE_TOPICS_COUNT, tcc.messageCount(), 1, 1, 1);
+        KafkaTopicUtils.setupUnmanagedTopicsAndReturnNames(tcc.namespace(), tcc.kafkaName(), KafkaNamingUtils.kafkaUserName(tcc.kafkaName()), Constants.UNMANAGED_REPLICATED_TOPICS_PREFIX, UNMANAGED_REPLICATED_TOPICS_COUNT, tcc.messageCount(), 1, 1, 1);
+        KafkaTopicUtils.setupUnderReplicatedTopicsAndReturn(tcc.namespace(), tcc.kafkaName(), KafkaNamingUtils.kafkaUserName(tcc.kafkaName()), Constants.UNDER_REPLICATED_TOPICS_PREFIX, UNDER_REPLICATED_TOPICS_COUNT, tcc.messageCount(), 1, scaledUpBrokerReplicas, scaledUpBrokerReplicas);
+        KafkaTopicUtils.setupUnavailableTopicsAndReturn(tcc.namespace(), tcc.kafkaName(), KafkaNamingUtils.kafkaUserName(tcc.kafkaName()), Constants.UNAVAILABLE_TOPICS_PREFIX, UNAVAILABLE_TOPICS_COUNT, tcc.messageCount(), 1, 1, 1);
     }
 
     @BeforeAll

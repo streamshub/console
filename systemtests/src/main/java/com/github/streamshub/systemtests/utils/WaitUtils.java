@@ -27,6 +27,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import static com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils.listKubeResourcesByPrefix;
 
@@ -387,4 +388,18 @@ public class WaitUtils {
 
         return ResourceUtils.getKubeResource(KafkaTopic.class, namespace, topicName).getStatus().getTopicId();
     }
+
+    public static void waitForPodRoll(String namespace, String podName, String oldUid) {
+        Wait.until(String.format("Pod %s to roll", namespace + "/" + podName), TimeConstants.POLL_INTERVAL_FOR_RESOURCE_READINESS, TestFrameConstants.GLOBAL_TIMEOUT_MEDIUM,
+            () -> {
+                Pod pod = ResourceUtils.getKubeResource(Pod.class, namespace, podName);
+                if (pod != null) {
+                    return !Objects.equals(oldUid, pod.getMetadata().getUid());
+                }
+                LOGGER.debug("Pod {}/{} has not rolled yet", namespace, podName);
+                return false;
+            }
+        );
+    }
+
 }

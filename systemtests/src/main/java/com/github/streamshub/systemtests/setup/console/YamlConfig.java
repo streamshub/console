@@ -31,12 +31,12 @@ public class YamlConfig extends InstallConfig {
     private static final Logger LOGGER = LogWrapper.getLogger(YamlConfig.class);
     private List<HasMetadata> consoleBundleResources;
 
-    public YamlConfig(String namespace) {
+    public YamlConfig(String namespace, String operatorBundleUrl) {
         super(namespace);
         LOGGER.info("Console Operator will be installed using YAML bundle");
         // Need to replace streamed content due to KubernetesException being thrown during load of released YAML
         // that contains `namespace: ${NAMESPACE}` where $ is an unknown symbol that cannot be parsed
-        try (InputStream yamlContentStream = FileUtils.resolveLocation(Environment.CONSOLE_OPERATOR_BUNDLE_URL).openStream()) {
+        try (InputStream yamlContentStream = FileUtils.resolveLocation(operatorBundleUrl).openStream()) {
             InputStream replacedStream = new ByteArrayInputStream(new String(yamlContentStream.readAllBytes(), StandardCharsets.UTF_8)
                 .replace("${NAMESPACE}", "NAMESPACE")
                 .getBytes(StandardCharsets.UTF_8));
