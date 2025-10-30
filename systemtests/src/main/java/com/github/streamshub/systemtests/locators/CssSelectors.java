@@ -30,6 +30,27 @@ public class CssSelectors {
         .withElementButton().withComponentButton()
         .build();
 
+    // Keycloak
+    public static final String LOGIN_KEYCLOAK_PAGE_TITLE = new CssBuilder(PAGE_DIV)
+        .withDesc()
+        .withElementHeader().withId("kc-header")
+        .build();
+
+    public static final String LOGIN_KEYCLOAK_USERNAME_INPUT = new CssBuilder(PAGE_DIV)
+        .withDesc()
+        .withElementInput().withId("username")
+        .build();
+
+    public static final String LOGIN_KEYCLOAK_PASSWORD_INPUT = new CssBuilder(PAGE_DIV)
+        .withDesc()
+        .withElementInput().withId("password")
+        .build();
+
+    public static final String LOGIN_KEYCLOAK_SIGN_IN_BUTTON = new CssBuilder(PAGE_DIV)
+        .withDesc()
+        .withElementButton().withId("kc-login")
+        .build();
+
     // ----------------------------
     // Page contents
     // ----------------------------
@@ -133,5 +154,61 @@ public class CssSelectors {
     public static final String PAGES_AD_TABLE_ROW_ITEMS = new CssBuilder()
         .withElementTr().withComponentTable().withSubComponentTr().withChild()
         .withElementTd().withComponentTable().withSubComponentTd()
+        .build();
+
+    // Logged user
+    public static final String PAGES_CURRENTLY_LOGGED_USER_BUTTON = new CssBuilder(CssSelectors.PAGE_DIV)
+        .withChild()
+        .withElementDiv().withComponentPage().withChild()
+        .withElementHeader().withComponentMasthead().withChild()
+        .withElementDiv().withComponentMasthead().withSubComponentContent().withChild()
+        .withElementDiv().withComponentToolbar().withChild()
+        .withElementDiv().withComponentToolbar().withSubComponentContent().nth(1).withChild()
+        .withElementDiv().withComponentToolbar().withSubComponentContentSection().withChild()
+        .withElementDiv().withComponentToolbar().withSubComponentItem().withChild()
+        .withElementButton().withComponentMenuToggle()
+        .build();
+
+    // Name of kafka cluster
+    public static final String PAGES_LEFT_TOOLBAR_KAFKA_NAME = new CssBuilder(CssSelectors.PAGE_DIV)
+        .withChild()
+        .withElementDiv().withComponentPage().withChild()
+        .withElementDiv().withComponentPage().withSubComponentSidebar().withChild()
+        .withElementDiv().withComponentPage().withSubComponentSidebarBody().withChild()
+        .withElementNav().withComponentNav().withChild()
+        .withElementUl().withComponentNav().withSubComponentList().withChild()
+        .withElementSection().withComponentNav().withSubComponentSection().withChild()
+        .withElementH2().withComponentNav().withSubComponentSectionTitle()
+        .build();
+
+    // Select kafka
+    public static final String PAGES_NAV_KAFKA_SELECT_BUTTON = new CssBuilder(CssSelectors.PAGE_DIV)
+        .withChild()
+        .withElementDiv().withComponentPage().withChild()
+        .withElementHeader().withComponentMasthead().withChild()
+        .withElementDiv().withComponentMasthead().withSubComponentContent().withChild()
+        .withElementDiv().withComponentToolbar().withChild()
+        .withElementDiv().withComponentToolbar().withSubComponentContent().nth(1).withChild()
+        .withElementDiv().withComponentToolbar().withSubComponentContentSection().withChild()
+        .withElementDiv().withComponentToolbar().withSubComponentItem().nth(1).withChild()
+        .withElementButton().withComponentMenuToggle()
+        .build();
+
+    // Total available kafka clusters count
+    public static final String PAGES_TOTAL_AVAILABLE_KAFKA_COUNT = new CssBuilder(PAGES_NAV_KAFKA_SELECT_BUTTON)
+        .withChild()
+        .withElementSpan().withComponentMenuToggle().withSubComponentText().withChild()
+        .withElementDiv().withLayoutFlex().withChild()
+        .withElementDiv().nth(2).withChild()
+        .withElementSpan().withComponentBadge()
+        .build();
+
+    public static final String PAGES_LOGOUT_BUTTON = new CssBuilder()
+        .withElementBody().withChild()
+        .withElementDiv().withComponentMenu().withChild()
+        .withElementDiv().withComponentMenu().withSubComponentContent().withChild()
+        .withElementUl().withComponentMenu().withSubComponentList().withChild()
+        .withElementLi().withComponentMenu().withSubComponentListItem().withChild()
+        .withElementButton().withComponentMenu().withSubComponentItem()
         .build();
 }

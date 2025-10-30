@@ -66,7 +66,7 @@ public class PwUtils {
     public static void login(TestCaseConfig tcc) {
         final String loginUrl = PwPageUrls.getKafkaLoginPage(tcc, tcc.kafkaName());
         LOGGER.info("Logging in to the Console with URL: {}", loginUrl);
-        waitForConsoleUiToBecomeReady(tcc);
+        waitForConsoleUiAnonymousLoginToBecomeReady(tcc);
         // Anonymous login
         tcc.page().navigate(loginUrl, getDefaultNavigateOpts());
         tcc.page().waitForURL(Pattern.compile(loginUrl + ".*"), getDefaultWaitForUrlOpts());
@@ -316,7 +316,7 @@ public class PwUtils {
      *
      * @param tcc the {@link TestCaseConfig} containing the Playwright page instance used to perform the checks
      */
-    public static void waitForConsoleUiToBecomeReady(TestCaseConfig tcc) {
+    public static void waitForConsoleUiAnonymousLoginToBecomeReady(TestCaseConfig tcc) {
         LOGGER.info("============= Waiting for Console Website to be online =============");
         Wait.until("Console Web to become available", TestFrameConstants.GLOBAL_POLL_INTERVAL_SHORT, TestFrameConstants.GLOBAL_TIMEOUT_SHORT,
             () -> {
@@ -332,6 +332,36 @@ public class PwUtils {
 
                     // Second test if login page is able to display a login button
                     if (tcc.page().locator(CssSelectors.LOGIN_ANONYMOUSLY_BUTTON).isVisible()) {
+                        LOGGER.info("Console website is ready");
+                        return true;
+                    }
+
+                    return false;
+                } catch (Exception e) {
+                    LOGGER.warn("Console UI has not been loaded yet");
+                }
+                return false;
+            },
+            () -> LOGGER.error("Console UI did not load in time")
+        );
+    }
+
+    public static void waitForConsoleUiWithKeycloakToBecomeReady(TestCaseConfig tcc) {
+        LOGGER.info("============= Waiting for Console Website to be online =============");
+        Wait.until("Console Web to become available", TestFrameConstants.GLOBAL_POLL_INTERVAL_SHORT, TestFrameConstants.GLOBAL_TIMEOUT_SHORT,
+            () -> {
+                try {
+                    LOGGER.debug("Console website reach-out try");
+
+                    // First test if application is fully running
+                    tcc.page().navigate(PwPageUrls.getKafkaLoginPage(tcc, tcc.kafkaName()), getDefaultNavigateOpts());
+
+                    if (tcc.page().locator("body").innerText().contains("Error")) {
+                        return false;
+                    }
+
+                    // Second test if login page is able to display a login button
+                    if (tcc.page().locator(CssSelectors.LOGIN_KEYCLOAK_PAGE_TITLE).isVisible()) {
                         LOGGER.info("Console website is ready");
                         return true;
                     }
@@ -407,5 +437,24 @@ public class PwUtils {
         LOGGER.info("Remove focus by moving mouse to X,Y = [0;0]");
         tcc.page().mouse().move(0, 0);
 
+    }
+
+    public static void loginWithOidcUser(TestCaseConfig tcc, String username, String password) {
+        final String loginUrl = PwPageUrls.getKafkaLoginPage(tcc, tcc.kafkaName());
+        LOGGER.info("Logging in to the Console with URL: {}", loginUrl);
+        waitForConsoleUiWithKeycloakToBecomeReady(tcc);
+        // Anonymous login
+        tcc.page().navigate(loginUrl, getDefaultNavigateOpts());
+        waitForLocatorAndFill(tcc, CssSelectors.LOGIN_KEYCLOAK_USERNAME_INPUT, username);
+        waitForLocatorAndFill(tcc, CssSelectors.LOGIN_KEYCLOAK_PASSWORD_INPUT, password);
+        waitForLocatorAndClick(tcc, CssSelectors.LOGIN_KEYCLOAK_SIGN_IN_BUTTON);
+        // Go to overview page
+        tcc.page().waitForURL(PwPageUrls.getOverviewPage(tcc, tcc.kafkaName()), getDefaultWaitForUrlOpts());
+        LOGGER.info("Successfully logged into Console");
+    }
+
+    public static void logoutUser(TestCaseConfig tcc, String userName) {
+        waitForLocatorAndClick(tcc, CssSelectors.PAGES_CURRENTLY_LOGGED_USER_BUTTON);
+        waitForLocatorAndClick(tcc, CssSelectors.PAGES_LOGOUT_BUTTON);
     }
 }

@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+        - name: postgres
+          image: ${POSTGRES_IMAGE}
+          envFrom:
+            - configMapRef:
+                name: postgres-config
+          ports:
+            - containerPort: 5432
+          volumeMounts:
+            - name: postgres-tmp-storage
+              mountPath: /var/lib/postgresql/data
+              subPath: postgresql
+              readOnly: false
+      volumes:
+        - name: postgres-tmp-storage
+          emptyDir: {}

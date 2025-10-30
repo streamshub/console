@@ -1,0 +1,43 @@
+package com.github.streamshub.systemtests.constants;
+
+public class AuthTestConstants {
+    private AuthTestConstants() {}
+
+    // Keycloak Groups
+    public static final String DEV_GROUP_NAME = "/developers-team";
+    public static final String ADMIN_GROUP_NAME = "/administrators";
+    public static final String VIEW_ONLY_GROUP_NAME = "/view-only";
+    public static final String TOPICS_VIEW_GROUP_NAME = "/topics-view";
+    public static final String CONSUMERGROUPS_VIEW_GROUP_NAME = "/consumergroups-view";
+
+    // Console Roles
+    public static final String DEV_ROLE_NAME = "developers-role";
+    public static final String ADMIN_ROLE_NAME = "administrators";
+    public static final String READ_ONLY_ROLE_NAME = "readers";
+    public static final String TOPICS_VIEW_ROLE_NAME = "topics-viewer";
+    public static final String CONSUMERGROUPS_VIEW_ROLE_NAME = "consumer-viewer";
+
+    // Kafka Cluster Names
+    public static final String TEAM_DEV_KAFKA_NAME = "kc-team-dev";
+    public static final String TEAM_ADMIN_KAFKA_NAME = "kc-team-admin";
+
+    // JWT Claim
+    public static final String CLAIM_GROUPS = "groups";
+
+    // Test Usernames
+
+    // developer
+    public static final String USER_DEV_BOB = "bob";
+    // admin
+    public static final String USER_ADMIN_ALICE = "alice";
+    // both dev and admin
+    public static final String USER_CROSS_CAROL = "carol";
+    // read-only
+    public static final String USER_READONLY_EVE = "eve";
+    // topics only
+    public static final String USER_TOPICONLY_FRANK = "frank";
+    // consumer groups only
+    public static final String USER_CONSUMERONLY_GRACE = "grace";
+    // no access
+    public static final String USER_NOACCESS_HANK = "hank";
+}

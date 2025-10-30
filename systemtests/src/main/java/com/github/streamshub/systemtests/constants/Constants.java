@@ -100,4 +100,26 @@ public class Constants {
      * OLM
      */
     public static final String CONSOLE_OLM_SUBSCRIPTION_NAME = "console-sub";
+
+
+    /**
+     * Keycloak
+     */
+    public static final String KEYCLOAK_HOSTNAME_PREFIX = "console-oidc";
+    public static final String KEYCLOAK_NAMESPACE = "keycloak-oidc";
+    public static final String KEYCLOAK_CLIENT_ID = "console-client";
+    public static final String KEYCLOAK_TRUST_STORE_CONFIGMAP_NAME = "truststore-configmap";
+    public static final String KEYCLOAK_TRUST_STORE_ACCCESS_SECRET_NAME = "access-to-truststore";
+    public static final String PASSWORD_KEY_NAME = "password"; // NOSONAR - test password
+    public static final String TRUST_STORE_KEY_NAME = "truststore";
+
+    public static final String KEYCLOAK_REALM = "console-realm";
+    public static final String TRUST_STORE_FILE_PATH = "/tmp/keycloak/keycloak-truststore.jks";
+    public static final String TRUST_STORE_PASSWORD = "changeit"; // NOSONAR - test password
+
+    /**
+     * Scraper Pod
+     */
+    public static final String SCRAPER_NAME = "scraper";
+
 }
