@@ -20,23 +20,18 @@ import com.google.protobuf.DynamicMessage;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Message;
 
-import io.apicurio.registry.resolver.DefaultSchemaResolver;
 import io.apicurio.registry.resolver.ParsedSchema;
 import io.apicurio.registry.resolver.SchemaLookupResult;
-import io.apicurio.registry.resolver.SchemaParser;
 import io.apicurio.registry.resolver.SchemaResolver;
 import io.apicurio.registry.resolver.client.RegistryClientFacade;
 import io.apicurio.registry.resolver.config.SchemaResolverConfig;
 import io.apicurio.registry.resolver.data.Record;
 import io.apicurio.registry.resolver.strategy.ArtifactReference;
 import io.apicurio.registry.resolver.strategy.ArtifactReferenceResolverStrategy;
-import io.apicurio.registry.resolver.utils.Utils;
-import io.apicurio.registry.serde.BaseSerde;
 import io.apicurio.registry.serde.config.BaseKafkaSerDeConfig;
 import io.apicurio.registry.serde.config.SerdeConfig;
 import io.apicurio.registry.serde.data.KafkaSerdeMetadata;
 import io.apicurio.registry.serde.data.SerdeRecord;
-import io.apicurio.registry.serde.headers.HeadersHandler;
 import io.apicurio.registry.serde.protobuf.ProtobufSerializer;
 import io.apicurio.registry.types.ArtifactType;
 import io.apicurio.registry.utils.protobuf.schema.ProtobufSchema;
@@ -52,45 +47,35 @@ import static io.apicurio.registry.serde.BaseSerde.MAGIC_BYTE;
  * Registry, the schema will be used to serialize to either Avro or Protobuf
  * depending on the schema type.
  */
-public class MultiformatSerializer implements Serializer<RecordData>, ArtifactReferenceResolverStrategy<Object, RecordData>, ForceCloseable {
+public class MultiformatSerializer extends MultiformatSerdeBase
+        implements Serializer<RecordData>, ArtifactReferenceResolverStrategy<Object, RecordData> {
 
     private static final Logger LOGGER = Logger.getLogger(MultiformatSerializer.class);
     private static final SchemaLookupResult<Object> EMPTY_RESULT = SchemaLookupResult.builder().build();
 
-    final ObjectMapper objectMapper;
-    final BaseSerde<Object, RecordData> baseSerde;
-    HeadersHandler headersHandler;
-
-    boolean key;
-    SchemaResolver<Object, RecordData> schemaResolver;
     TempAvroSerializer<RecordData> avroSerializer;
     ProtobufSerializer<Message> protobufSerializer;
-    SchemaParser<Object, RecordData> parser;
 
     public MultiformatSerializer(RegistryClientFacade client, ObjectMapper objectMapper) {
-        super();
-        this.objectMapper = objectMapper;
-
-        if (client != null) {
-            schemaResolver = newResolver(client);
-            baseSerde = new BaseSerde<>(schemaResolver);
-            avroSerializer = new TempAvroSerializer<>(newResolver(client));
-            protobufSerializer = new ProtobufSerializer<>(newResolver(client));
-        } else {
-            baseSerde = new BaseSerde<>();
-        }
+        super(client, objectMapper);
     }
 
-    static <S, D> SchemaResolver<S, D> newResolver(RegistryClientFacade client) {
-        var resolver = new DefaultSchemaResolver<S, D>();
-        resolver.setClientFacade(client);
-        return resolver;
+    @Override
+    protected AutoCloseable createAvroSerde(SchemaResolver<Schema, RecordData> resolver) {
+        this.avroSerializer = new TempAvroSerializer<>(resolver);
+        return avroSerializer;
+    }
+
+    @Override
+    protected AutoCloseable createProtobufSerde(SchemaResolver<ProtobufSchema, Message> resolver) {
+        this.protobufSerializer = new ProtobufSerializer<>(resolver);
+        return protobufSerializer;
     }
 
     @Override
     public void configure(Map<String, ?> configs, boolean isKey) {
-        if (schemaResolver == null) {
-            this.key = isKey;
+        if (getSchemaResolver() == null) {
+            super.key = isKey;
             // Do not attempt to configure anything more if we will not be making remote calls to registry
             return;
         }
@@ -117,31 +102,7 @@ public class MultiformatSerializer implements Serializer<RecordData>, ArtifactRe
 
         baseSerde.configure(new SerdeConfig(configs), isKey, parser);
 
-        configure(new BaseKafkaSerDeConfig(serConfigs), isKey);
-    }
-
-    private void configure(BaseKafkaSerDeConfig config, boolean isKey) {
-        if (config.enableHeaders()) {
-            Object headersHandlerConf = config.getHeadersHandler();
-            Utils.instantiate(HeadersHandler.class, headersHandlerConf, this::setHeadersHandler);
-            this.headersHandler.configure(config.originals(), isKey);
-        }
-    }
-
-    private void setHeadersHandler(HeadersHandler headersHandler) {
-        this.headersHandler = headersHandler;
-    }
-
-    @Override
-    public void close() {
-        // don't close - serializer will be reused
-    }
-
-    public void forceClose() {
-        if (schemaResolver != null) {
-            avroSerializer.close();
-            protobufSerializer.close();
-        }
+        super.configure(new BaseKafkaSerDeConfig(serConfigs), isKey);
     }
 
     @Override
@@ -224,7 +185,7 @@ public class MultiformatSerializer implements Serializer<RecordData>, ArtifactRe
     }
 
     SchemaLookupResult<Object> resolveSchema(String topic, Headers headers, RecordData data) {
-        if (schemaResolver == null) {
+        if (getSchemaResolver() == null) {
             return EMPTY_RESULT;
         }
 
@@ -234,7 +195,7 @@ public class MultiformatSerializer implements Serializer<RecordData>, ArtifactRe
 
         if (reference != null) {
             try {
-                schema = schemaResolver.resolveSchemaByArtifactReference(reference);
+                schema = getSchemaResolver().resolveSchemaByArtifactReference(reference);
             } catch (Exception e) {
                 LOGGER.warnf("Exception retrieving schema: %s", RootCause.of(e)
                         .map(Throwable::getMessage)
@@ -244,11 +205,6 @@ public class MultiformatSerializer implements Serializer<RecordData>, ArtifactRe
         }
 
         return schema;
-    }
-
-    @SuppressWarnings("unchecked")
-    static <T> T cast(Object object) {
-        return (T) object;
     }
 
     private void setSchemaMeta(RecordData data, SchemaLookupResult<Object> schema, String type, String name) {
