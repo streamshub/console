@@ -62,7 +62,7 @@ import com.github.streamshub.console.config.KafkaClusterConfig;
 import com.github.streamshub.console.config.SchemaRegistryConfig;
 
 import io.apicurio.registry.resolver.client.RegistryClientFacade;
-import io.apicurio.registry.serde.config.SerdeConfig;
+import io.apicurio.registry.serde.config.KafkaSerdeConfig;
 import io.fabric8.kubernetes.client.informers.ResourceEventHandler;
 import io.fabric8.kubernetes.client.informers.SharedIndexInformer;
 import io.fabric8.kubernetes.client.informers.cache.Cache;
@@ -387,7 +387,7 @@ public class ClientFactory {
         configs.put(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, 50_000);
         configs.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
         configs.put(ConsumerConfig.DEFAULT_API_TIMEOUT_MS_CONFIG, 5000);
-        configs.put(SerdeConfig.READ_TYPE_REF, "true");
+        configs.put(KafkaSerdeConfig.ENABLE_HEADERS, "true");
         return configs;
     }
 

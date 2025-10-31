@@ -9,7 +9,6 @@ import java.util.stream.Collectors;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Produces;
-import jakarta.enterprise.inject.spi.CDI;
 import jakarta.inject.Inject;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -34,6 +33,9 @@ public class ApicurioClientFactory {
 
     @Inject
     ObjectMapper mapper;
+
+    @Inject
+    TrustStoreSupport trustStoreSupport;
 
     @Inject
     ConsoleConfig consoleConfig;
@@ -75,12 +77,11 @@ public class ApicurioClientFactory {
         return adapter;
     }
 
-    private static HttpClient.Builder handleConfiguration(SchemaRegistryConfig config) {
+    private HttpClient.Builder handleConfiguration(SchemaRegistryConfig config) {
         HttpClient.Builder clientBuilder = HttpClient.newBuilder();
         clientBuilder.version(HttpClient.Version.HTTP_1_1);
 
-        CDI.current().select(TrustStoreSupport.class).get()
-            .getTlsConfiguration(config, null)
+        trustStoreSupport.getTlsConfiguration(config, null)
             .ifPresent(tlsConfig -> {
                 try {
                     clientBuilder.sslContext(tlsConfig.createSSLContext());
