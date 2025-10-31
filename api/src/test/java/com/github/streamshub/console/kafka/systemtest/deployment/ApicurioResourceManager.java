@@ -50,6 +50,7 @@ public class ApicurioResourceManager extends ResourceManagerBase implements Quar
                 .withNetwork(SHARED_NETWORK)
                 .withExposedPorts(port)
                 .withEnv(Map.of(
+                        "REGISTRY_APIS_V2_DATE_FORMAT", "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
                         "QUARKUS_TLS_KEY_STORE_P12_PATH", keystorePath,
                         "QUARKUS_TLS_KEY_STORE_P12_PASSWORD", String.copyValueOf(tls.getPassphrase()),
                         "QUARKUS_HTTP_INSECURE_REQUESTS", "disabled",
