@@ -4,7 +4,6 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeFormatterBuilder;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -132,6 +131,9 @@ public class ApicurioClientFactory {
     }
 
     private static class ParseNode extends JsonParseNode {
+        private static final DateTimeFormatter LENIENT_ISO_OFFSET_DATE_TIME =
+                DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss[.SSS]X");
+
         ParseNode(ParseNodeFactory nodeFactory, JsonNode node) {
             super(nodeFactory, node);
         }
@@ -139,19 +141,7 @@ public class ApicurioClientFactory {
         @Override
         public OffsetDateTime getOffsetDateTimeValue() {
             if (currentNode.isTextual()) {
-                String nodeValue = currentNode.textValue();
-
-                if (nodeValue.matches("\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\+\\d{4}")) {
-                    return OffsetDateTime.parse(nodeValue, new DateTimeFormatterBuilder()
-                            .parseCaseInsensitive()
-                            .append(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
-                            .parseLenient()
-                            .appendOffset("+HHmm", "Z")
-                            .parseStrict()
-                            .toFormatter());
-                }
-
-                return OffsetDateTime.parse(currentNode.textValue());
+                return OffsetDateTime.parse(currentNode.textValue(), LENIENT_ISO_OFFSET_DATE_TIME);
             }
 
             return null;
