@@ -14,18 +14,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.protobuf.DynamicMessage;
 import com.google.protobuf.Message;
 
-import io.apicurio.registry.resolver.DefaultSchemaResolver;
 import io.apicurio.registry.resolver.ParsedSchema;
 import io.apicurio.registry.resolver.SchemaLookupResult;
-import io.apicurio.registry.resolver.SchemaParser;
 import io.apicurio.registry.resolver.SchemaResolver;
 import io.apicurio.registry.resolver.client.RegistryClientFacade;
 import io.apicurio.registry.resolver.strategy.ArtifactReference;
-import io.apicurio.registry.resolver.utils.Utils;
 import io.apicurio.registry.serde.BaseSerde;
 import io.apicurio.registry.serde.config.BaseKafkaSerDeConfig;
 import io.apicurio.registry.serde.config.SerdeConfig;
-import io.apicurio.registry.serde.headers.HeadersHandler;
 import io.apicurio.registry.types.ArtifactType;
 import io.apicurio.registry.utils.protobuf.schema.ProtobufSchema;
 
@@ -43,7 +39,7 @@ import io.apicurio.registry.utils.protobuf.schema.ProtobufSchema;
  * a raw message is returned if the deserializer detects the presence of a
  * schema identifier.
  */
-public class MultiformatDeserializer implements Deserializer<RecordData>, ForceCloseable {
+public class MultiformatDeserializer extends MultiformatSerdeBase implements Deserializer<RecordData> {
 
     private static final Logger LOG = Logger.getLogger(MultiformatDeserializer.class);
 
@@ -51,41 +47,29 @@ public class MultiformatDeserializer implements Deserializer<RecordData>, ForceC
     private static final SchemaLookupResult<Object> RESOLVER_MISSING = SchemaLookupResult.builder().build();
     private static final SchemaLookupResult<Object> LOOKUP_FAILURE = SchemaLookupResult.builder().build();
 
-    private final ObjectMapper objectMapper;
-    private final BaseSerde<Object, RecordData> baseSerde;
-    private HeadersHandler headersHandler;
-
     AvroDeserializer avroDeserializer;
     ProtobufDeserializer protobufDeserializer;
 
-    boolean key;
-    SchemaResolver<Object, RecordData> schemaResolver;
-    SchemaParser<Object, RecordData> parser;
-
     public MultiformatDeserializer(RegistryClientFacade client, ObjectMapper objectMapper) {
-        super();
-        this.objectMapper = objectMapper;
-
-        if (client != null) {
-            schemaResolver = newResolver(client);
-            baseSerde = new BaseSerde<>(schemaResolver);
-            avroDeserializer = new AvroDeserializer(newResolver(client));
-            protobufDeserializer = new ProtobufDeserializer(newResolver(client));
-        } else {
-            baseSerde = new BaseSerde<>();
-        }
+        super(client, objectMapper);
     }
 
-    static <S, D> SchemaResolver<S, D> newResolver(RegistryClientFacade client) {
-        var resolver = new DefaultSchemaResolver<S, D>();
-        resolver.setClientFacade(client);
-        return resolver;
+    @Override
+    protected AutoCloseable createAvroSerde(SchemaResolver<Schema, RecordData> resolver) {
+        this.avroDeserializer = new AvroDeserializer(resolver);
+        return avroDeserializer;
+    }
+
+    @Override
+    protected AutoCloseable createProtobufSerde(SchemaResolver<ProtobufSchema, Message> resolver) {
+        this.protobufDeserializer = new ProtobufDeserializer(resolver);
+        return protobufDeserializer;
     }
 
     @Override
     public void configure(Map<String, ?> configs, boolean isKey) {
-        if (schemaResolver == null) {
-            this.key = isKey;
+        if (getSchemaResolver() == null) {
+            super.key = isKey;
             // Do not attempt to configure anything more if we will not be making remote calls to registry
             return;
         }
@@ -106,31 +90,7 @@ public class MultiformatDeserializer implements Deserializer<RecordData>, ForceC
 
         baseSerde.configure(new SerdeConfig(configs), isKey, parser);
 
-        configure(new BaseKafkaSerDeConfig(configs), isKey);
-    }
-
-    private void configure(BaseKafkaSerDeConfig config, boolean isKey) {
-        if (config.enableHeaders()) {
-            Object headersHandlerConf = config.getHeadersHandler();
-            Utils.instantiate(HeadersHandler.class, headersHandlerConf, this::setHeadersHandler);
-            this.headersHandler.configure(config.originals(), isKey);
-        }
-    }
-
-    private void setHeadersHandler(HeadersHandler headersHandler) {
-        this.headersHandler = headersHandler;
-    }
-
-    @Override
-    public void close() {
-        // don't close - deserializer will be reused
-    }
-
-    public void forceClose() {
-        if (schemaResolver != null) {
-            avroDeserializer.close();
-            protobufDeserializer.close();
-        }
+        super.configure(new BaseKafkaSerDeConfig(configs), isKey);
     }
 
     private RecordData readData(SchemaLookupResult<Object> schemaResult, ByteBuffer buffer, int start, int length) {
@@ -202,22 +162,17 @@ public class MultiformatDeserializer implements Deserializer<RecordData>, ForceC
             result.error = new com.github.streamshub.console.api.model.jsonapi.JsonApiError(
                     "Schema resolution error",
                     "%s encoded, but no schema registry is configured"
-                        .formatted(key ? "Key" : "Value"),
+                        .formatted(isKey() ? "Key" : "Value"),
                     null);
         } else if (schemaResult == LOOKUP_FAILURE) {
             result.error = new com.github.streamshub.console.api.model.jsonapi.JsonApiError(
                     "Schema resolution error",
                     "Schema could not be retrieved from registry to decode %s"
-                        .formatted(key ? "Key" : "Value"),
+                        .formatted(isKey() ? "Key" : "Value"),
                     null);
         }
 
         return result;
-    }
-
-    @SuppressWarnings("unchecked")
-    static <T> T cast(Object object) {
-        return (T) object;
     }
 
     @Override
@@ -277,6 +232,8 @@ public class MultiformatDeserializer implements Deserializer<RecordData>, ForceC
         if (artifactReference == null || !artifactReference.hasValue()) {
             return NO_SCHEMA_ID;
         }
+
+        var schemaResolver = getSchemaResolver();
 
         if (schemaResolver == null) {
             return RESOLVER_MISSING;
