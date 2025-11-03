@@ -96,6 +96,10 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-cache</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-container-image</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>org.apache.kafka</groupId>
@@ -250,6 +254,19 @@
                 </executions>
             </plugin>
             <plugin>
+                <groupId>io.github.git-commit-id</groupId>
+                <artifactId>git-commit-id-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>get-the-git-infos</id>
+                        <goals>
+                            <goal>revision</goal>
+                        </goals>
+                        <phase>initialize</phase>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
                 <groupId>${quarkus.platform.group-id}</groupId>
                 <artifactId>quarkus-maven-plugin</artifactId>
                 <executions>
@@ -257,6 +274,11 @@
                         <goals>
                             <goal>build</goal>
                         </goals>
+                        <configuration>
+                            <properties>
+                                <git.revision>${git.commit.id.abbrev}</git.revision>
+                            </properties>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>
@@ -353,6 +375,7 @@
                         <quarkus.jacoco.reuse-data-file>true</quarkus.jacoco.reuse-data-file>
                         <quarkus.jacoco.report>false</quarkus.jacoco.report>
                         <quarkus.test.arg-line>${argLine}</quarkus.test.arg-line>
+                        <git.revision>${git.commit.id.abbrev}</git.revision>
                     </systemPropertyVariables>
                 </configuration>
             </plugin>
@@ -373,6 +396,7 @@
                                 <quarkus.jacoco.reuse-data-file>true</quarkus.jacoco.reuse-data-file>
                                 <quarkus.jacoco.report>false</quarkus.jacoco.report>
                                 <quarkus.test.arg-line>${argLine}</quarkus.test.arg-line>
+                                <git.revision>${git.commit.id.abbrev}</git.revision>
                             </systemPropertyVariables>
                             <environmentVariables>
                                 <DOCKER_CONFIG>${env.HOME}/.docker/config.json</DOCKER_CONFIG>

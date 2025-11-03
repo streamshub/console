@@ -94,7 +94,6 @@ jobs:
           export QUARKUS_CONTAINER_IMAGE_PUSH=true
           export QUARKUS_CONTAINER_IMAGE_TAG="${{ env.PROJECT_VERSION }}"
           export QUARKUS_KUBERNETES_VERSION="${{ env.PROJECT_VERSION }}"
-          export GIT_REVISION=$(git rev-parse --short HEAD)
 
           mvn verify -P container-image -B --no-transfer-progress -DskipTests \
             -Dquarkus.kubernetes.namespace='$${NAMESPACE}' \
