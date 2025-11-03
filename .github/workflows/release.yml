@@ -94,8 +94,6 @@ jobs:
           git checkout ${{github.base_ref}}
           git rebase release
 
-          export GIT_REVISION=$(git rev-parse --short release)
-
           # Build and push the release images using the commit tagged in `release:prepare`
           mvn -B release:perform --no-transfer-progress \
             '-Drelease.arguments=-Dquarkus.docker.buildx.platform=${{ env.PLATFORMS }}'

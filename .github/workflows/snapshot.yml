@@ -93,7 +93,7 @@ jobs:
           export QUARKUS_CONTAINER_IMAGE_TAG="${{ env.NEXT_VERSION }}"
           export QUARKUS_CONTAINER_IMAGE_ADDITIONAL_TAGS=snapshot-${{github.ref_name}}
           export QUARKUS_KUBERNETES_VERSION="${{ env.NEXT_VERSION }}"
-          export GIT_REVISION=$(git rev-parse --short HEAD)
+
           # Build and push the snapshot images
           mvn -B -P container-image verify --no-transfer-progress -DskipTests \
             -Dquarkus.kubernetes.namespace='$${NAMESPACE}' \
