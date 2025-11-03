@@ -33,7 +33,7 @@ export function NoDataErrorState({ errors }: { errors: ApiError[] }) {
       <EmptyStateBody>
         <>
           {errors.map((err) => (
-            <React.Fragment key={err.id}>
+            <React.Fragment key={err.id || err.title}>
               {err.title}: {err.detail} {err.code && <>({err.code})</>}
             </React.Fragment>
           ))}
