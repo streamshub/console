@@ -136,7 +136,6 @@
         <profile>
             <id>container-image</id>
             <properties>
-                <quarkus.profile>build</quarkus.profile>
                 <quarkus.docker.dockerfile-jvm-path>src/main/docker/Dockerfile</quarkus.docker.dockerfile-jvm-path>
                 <quarkus.container-image.build>true</quarkus.container-image.build>
                 <quarkus.container-image.registry>${container-image.registry}</quarkus.container-image.registry>
