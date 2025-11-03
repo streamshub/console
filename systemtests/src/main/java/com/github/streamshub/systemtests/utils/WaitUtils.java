@@ -389,17 +389,36 @@ public class WaitUtils {
         return ResourceUtils.getKubeResource(KafkaTopic.class, namespace, topicName).getStatus().getTopicId();
     }
 
-    public static void waitForPodRoll(String namespace, String podName, String oldUid) {
-        Wait.until(String.format("Pod %s to roll", namespace + "/" + podName), TimeConstants.POLL_INTERVAL_FOR_RESOURCE_READINESS, TestFrameConstants.GLOBAL_TIMEOUT_MEDIUM,
+    /**
+     * Waits for a ConsoleInstance to complete a roll by detecting a change in its UID.
+     *
+     * <p>This method checks the ConsoleInstance pods in given namespace with specified
+     * pod name prefix until a new pod (with a UID different from {@code oldUid}) appears, indicating
+     * that the Console instance has successfully rolled and re-deployed.</p>
+     *
+     * @param namespace the Kubernetes namespace where the Console instance is deployed
+     * @param podPrefix the name prefix used to identify Console pods
+     * @param oldUid the UID of the previous Console Pod, used to detect rollout completion
+     */
+    public static void waitForConsoleInstanceToRoll(String namespace, String podPrefix, String oldUid) {
+        Wait.until(String.format("ConsoleInstance %s/%s* to roll", namespace, podPrefix), TimeConstants.POLL_INTERVAL_FOR_RESOURCE_READINESS, TestFrameConstants.GLOBAL_TIMEOUT_MEDIUM,
             () -> {
-                Pod pod = ResourceUtils.getKubeResource(Pod.class, namespace, podName);
-                if (pod != null) {
-                    return !Objects.equals(oldUid, pod.getMetadata().getUid());
+                List<Pod> pods = ResourceUtils.listKubeResourcesByPrefix(Pod.class, namespace, podPrefix);
+
+                if (pods.isEmpty()) {
+                    LOGGER.debug("ConsoleInstance {}/{} has not rolled yet", namespace, podPrefix);
+                    return false;
                 }
-                LOGGER.debug("Pod {}/{} has not rolled yet", namespace, podName);
+
+                for (Pod pod : pods) {
+                    if (!Objects.equals(oldUid, pod.getMetadata().getUid())) {
+                        LOGGER.debug("ConsoleInstance {}/{} has rolled", namespace, podPrefix);
+                        return true;
+                    }
+                }
+
                 return false;
             }
         );
     }
-
 }

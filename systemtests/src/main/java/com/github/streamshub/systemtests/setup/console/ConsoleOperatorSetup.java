@@ -25,8 +25,14 @@ public class ConsoleOperatorSetup {
     }
 
     public void install() {
+        install(true);
+    }
+
+    public void install(boolean deleteResourcesBeforeInstall) {
         LOGGER.info("----------- Install Console Operator -----------");
-        if (!ResourceUtils.listKubeResourcesByPrefix(Deployment.class, installConfig.getDeploymentNamespace(), installConfig.getDeploymentName()).isEmpty()) {
+        if (deleteResourcesBeforeInstall &&
+            !ResourceUtils.listKubeResourcesByPrefix(Deployment.class, installConfig.getDeploymentNamespace(), installConfig.getDeploymentName()).isEmpty()) {
+
             LOGGER.info("Clean up currently deployed operator to ensure correct operator is deployed");
             installConfig.delete();
         }

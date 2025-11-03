@@ -18,7 +18,6 @@ import com.github.streamshub.systemtests.utils.resourceutils.KafkaTopicUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.NamespaceUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
 import com.github.streamshub.systemtests.utils.testchecks.TopicChecks;
-import io.fabric8.kubernetes.api.model.Pod;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.AfterAll;
@@ -45,6 +44,23 @@ public class OlmUpgradeST extends AbstractUpgradeST {
     private static final int UNAVAILABLE_TOPICS_COUNT = 2;
     private static final int TOTAL_TOPICS_COUNT = TOTAL_REPLICATED_TOPICS_COUNT + UNDER_REPLICATED_TOPICS_COUNT + UNAVAILABLE_TOPICS_COUNT;
 
+
+    /**
+     * Verifies that upgrading the Console Operator through OLM (Operator Lifecycle Manager)
+     * successfully transitions to the new version without disrupting the Console instance or UI functionality.
+     *
+     * <p>This test performs the following steps:</p>
+     * <ul>
+     *   <li>Installs the Console Operator using the <b>old OLM channel</b>.</li>
+     *   <li>Deploys a default Console instance connected to an existing Kafka cluster.</li>
+     *   <li>Validates that the operator is running with the expected old version.</li>
+     *   <li>Performs basic UI checks to confirm that the Console is functional before the upgrade.</li>
+     *   <li>Upgrades the Console Operator to the <b>new OLM channel</b>.</li>
+     *   <li>Waits for the Console instance to roll and ensures it redeploys properly.</li>
+     *   <li>Verifies that the operator version matches the expected upgraded version.</li>
+     *   <li>Performs the same UI validation checks to confirm that the Console remains functional after the upgrade.</li>
+     * </ul>
+     */
     @Test
     void testUpgradeOlmOperator() {
         // Setup
@@ -83,12 +99,7 @@ public class OlmUpgradeST extends AbstractUpgradeST {
         consoleOperatorSetup.setInstallConfig(olmConfig);
         consoleOperatorSetup.install();
 
-        String consoleInstancePodName = ResourceUtils.listKubeResourcesByPrefix(Pod.class, tcc.namespace(), ConsoleUtils.getConsoleDeploymentName(tcc.consoleInstanceName()))
-            .get(0)
-            .getMetadata()
-            .getName();
-
-        WaitUtils.waitForPodRoll(tcc.namespace(), consoleInstancePodName, oldInstanceSnapshot);
+        WaitUtils.waitForConsoleInstanceToRoll(tcc.namespace(), ConsoleUtils.getConsoleDeploymentName(tcc.consoleInstanceName()), oldInstanceSnapshot);
 
         LOGGER.info("Verify upgraded console operator version is: {}", olmVersionData.getNewOperatorVersion());
 
