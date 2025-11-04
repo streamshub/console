@@ -22,8 +22,8 @@ public class ConsoleUtils {
         return instanceName + "-" + ConsoleDeployment.NAME;
     }
 
-    public static void removeAllConsoleInstancesFinalizers() {
-        List<Console> consoleInstances = ResourceUtils.getKubeResourceClient(Console.class).inAnyNamespace().list().getItems();
+    public static void removeConsoleInstancesFinalizers(String namespace) {
+        List<Console> consoleInstances = ResourceUtils.getKubeResourceClient(Console.class).inNamespace(namespace).list().getItems();
 
         for (Console instance: consoleInstances) {
             instance.getMetadata().setFinalizers(null);

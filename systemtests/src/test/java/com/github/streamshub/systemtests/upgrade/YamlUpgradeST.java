@@ -20,6 +20,7 @@ import com.github.streamshub.systemtests.utils.testchecks.TopicChecks;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -28,7 +29,7 @@ import static com.github.streamshub.systemtests.utils.Utils.getTestCaseConfig;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @Tag(TestTags.YAML_UPGRADE)
-public class YamlUpgradeST extends  AbstractUpgradeST {
+public class YamlUpgradeST extends AbstractUpgradeST {
 
     private static final Logger LOGGER = LogWrapper.getLogger(YamlUpgradeST.class);
     private TestCaseConfig tcc;
@@ -116,6 +117,13 @@ public class YamlUpgradeST extends  AbstractUpgradeST {
         PwUtils.login(tcc);
         TopicChecks.checkOverviewPageTopicState(tcc, tcc.kafkaName(), TOTAL_TOPICS_COUNT, TOTAL_TOPICS_COUNT, TOTAL_REPLICATED_TOPICS_COUNT, UNDER_REPLICATED_TOPICS_COUNT, UNAVAILABLE_TOPICS_COUNT);
         TopicChecks.checkTopicsPageTopicState(tcc, tcc.kafkaName(), TOTAL_TOPICS_COUNT, TOTAL_REPLICATED_TOPICS_COUNT, UNDER_REPLICATED_TOPICS_COUNT, UNAVAILABLE_TOPICS_COUNT);
+    }
+
+    @AfterEach
+    void testCaseTeardown() {
+        // This is the only place a teardown like this is required, when operator YAML is applied inside the test context,
+        // after each will remove CRDs first, but they will get stuck on finalizers so this method prevents it.
+        ConsoleUtils.removeConsoleInstancesFinalizers(tcc.namespace());
     }
 
     @BeforeAll
