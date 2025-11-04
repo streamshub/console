@@ -1,0 +1,16 @@
+kubernetes:
+  enabled: false
+kafka:
+  clusters:
+    - name: test-kafka1
+      id: k1-id
+      properties:
+        bootstrap.servers: ${console.test.external-bootstrap}
+    - name: test-kafka2
+      id: k2-id
+      properties:
+        bootstrap.servers: ${console.test.random-bootstrap}
+    - name: test-kafka3
+      namespace: default
+      id: k3-id
+      listener: listener0
