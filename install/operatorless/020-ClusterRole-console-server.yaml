@@ -17,6 +17,7 @@ rules:
       - kafkanodepools
       - kafkarebalances
       - kafkatopics
+      - kafkausers
   - verbs:
       - patch
     apiGroups:
