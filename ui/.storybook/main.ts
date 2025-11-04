@@ -15,7 +15,6 @@ const config: StorybookConfig = {
 
   addons: [
     "@storybook/addon-links",
-    "@storybook/addon-onboarding",
     "@storybook/addon-docs"
   ],
 
