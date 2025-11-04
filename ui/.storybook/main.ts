@@ -13,11 +13,7 @@ const config: StorybookConfig = {
     },
   ],
 
-  addons: [
-    "@storybook/addon-links",
-    "@storybook/addon-onboarding",
-    "@storybook/addon-docs"
-  ],
+  addons: ["@storybook/addon-links", "@storybook/addon-docs"],
 
   features: {
     experimentalRSC: true,
@@ -32,6 +28,6 @@ const config: StorybookConfig = {
     // @ts-ignore
     config.resolve.plugins = [new TsconfigPathsPlugin()];
     return config;
-  }
+  },
 };
 export default config;
