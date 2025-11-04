@@ -19,7 +19,7 @@
         <quarkus.platform.version>3.27.1</quarkus.platform.version>
         <strimzi-api.version>0.49.0</strimzi-api.version>
         <strimzi-oauth.version>0.17.1</strimzi-oauth.version>
-        <apicurio-registry.version>3.1.0</apicurio-registry.version>
+        <apicurio-registry.version>3.1.2</apicurio-registry.version>
         <kioto-java-extra.version>0.0.30</kioto-java-extra.version>
 
         <!-- Test Dependencies -->

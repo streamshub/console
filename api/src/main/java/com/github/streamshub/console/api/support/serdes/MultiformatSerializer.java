@@ -28,6 +28,8 @@ import io.apicurio.registry.resolver.config.SchemaResolverConfig;
 import io.apicurio.registry.resolver.data.Record;
 import io.apicurio.registry.resolver.strategy.ArtifactReference;
 import io.apicurio.registry.resolver.strategy.ArtifactReferenceResolverStrategy;
+import io.apicurio.registry.serde.avro.AvroSerdeConfig;
+import io.apicurio.registry.serde.avro.AvroSerializer;
 import io.apicurio.registry.serde.config.BaseKafkaSerDeConfig;
 import io.apicurio.registry.serde.config.SerdeConfig;
 import io.apicurio.registry.serde.data.KafkaSerdeMetadata;
@@ -53,7 +55,7 @@ public class MultiformatSerializer extends MultiformatSerdeBase
     private static final Logger LOGGER = Logger.getLogger(MultiformatSerializer.class);
     private static final SchemaLookupResult<Object> EMPTY_RESULT = SchemaLookupResult.builder().build();
 
-    TempAvroSerializer<RecordData> avroSerializer;
+    AvroSerializer<RecordData> avroSerializer;
     ProtobufSerializer<Message> protobufSerializer;
 
     public MultiformatSerializer(RegistryClientFacade client, ObjectMapper objectMapper) {
@@ -62,7 +64,7 @@ public class MultiformatSerializer extends MultiformatSerdeBase
 
     @Override
     protected AutoCloseable createAvroSerde(SchemaResolver<Schema, RecordData> resolver) {
-        this.avroSerializer = new TempAvroSerializer<>(resolver);
+        this.avroSerializer = new AvroSerializer<>(resolver);
         return avroSerializer;
     }
 
@@ -84,11 +86,9 @@ public class MultiformatSerializer extends MultiformatSerdeBase
         serConfigs.put(SchemaResolverConfig.ARTIFACT_RESOLVER_STRATEGY, this);
 
         Map<String, Object> avroConfigs = new HashMap<>(serConfigs);
-        // Restore when TempAvroSerializer is removed:
-        // NOSONAR: avroConfigs.put(AvroSerdeConfig.AVRO_DATUM_PROVIDER, AvroDatumProvider.class.getName());
+        avroConfigs.put(AvroSerdeConfig.AVRO_DATUM_PROVIDER, AvroDatumProvider.class);
         avroConfigs.put(SchemaResolverConfig.FIND_LATEST_ARTIFACT, Boolean.TRUE);
         avroSerializer.configure(new SerdeConfig(avroConfigs), isKey);
-        avroSerializer.setAvroDatumProvider(new AvroDatumProvider());
 
         Map<String, Object> protobufConfigs = new HashMap<>(serConfigs);
         protobufConfigs.put(SchemaResolverConfig.FIND_LATEST_ARTIFACT, Boolean.TRUE);
