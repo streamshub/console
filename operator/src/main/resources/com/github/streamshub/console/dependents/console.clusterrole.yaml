@@ -16,6 +16,7 @@ rules:
       - kafkatopics
       - kafkaconnects
       - kafkamirrormaker2s
+      - kafkausers
   - verbs:
       - patch
     apiGroups:
