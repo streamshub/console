@@ -1,8 +1,12 @@
 package com.github.streamshub.console.api.service;
 
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.function.Predicate;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -13,12 +17,16 @@ import com.github.streamshub.console.config.ConsoleConfig;
 import com.github.streamshub.console.support.RootCause;
 
 import io.fabric8.kubernetes.api.model.HasMetadata;
+import io.fabric8.kubernetes.api.model.LabelSelector;
+import io.fabric8.kubernetes.api.model.LabelSelectorBuilder;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
 import io.quarkus.cache.CacheResult;
+import io.strimzi.api.ResourceLabels;
 import io.strimzi.api.kafka.model.connect.KafkaConnect;
 import io.strimzi.api.kafka.model.connector.KafkaConnector;
 import io.strimzi.api.kafka.model.mirrormaker2.KafkaMirrorMaker2;
+import io.strimzi.api.kafka.model.user.KafkaUser;
 
 @ApplicationScoped
 public class StrimziResourceService {
@@ -47,6 +55,17 @@ public class StrimziResourceService {
         return getResource(KafkaMirrorMaker2.class, namespace, name);
     }
 
+    @CacheResult(cacheName = "strimzi-user-custom-resources")
+    public CompletionStage<List<KafkaUser>> getKafkaUsers(String namespace, String kafkaCluster) {
+        return getResources(KafkaUser.class, namespace, ResourceLabels.STRIMZI_CLUSTER_LABEL, kafkaCluster);
+    }
+
+    @CacheResult(cacheName = "strimzi-user-custom-resourcess")
+    public CompletionStage<Optional<KafkaUser>> getKafkaUser(String namespace, String name, String kafkaCluster) {
+        return getResource(KafkaUser.class, namespace, name)
+                .thenApply(user -> user.filter(byKafkaCluster(kafkaCluster)));
+    }
+
     private <C extends HasMetadata> CompletionStage<Optional<C>> getResource(Class<C> type, String namespace, String name) {
         if (!consoleConfig.getKubernetes().isEnabled() || namespace == null) {
             return CompletableFuture.completedStage(Optional.empty());
@@ -66,10 +85,58 @@ public class StrimziResourceService {
                             type.getSimpleName(),
                             namespace,
                             name,
-                            RootCause.of(e).orElse(e));
+                            RootCause.of(e).orElse(e).getMessage());
                 }
 
                 return Optional.empty();
             });
+    }
+
+    private <C extends HasMetadata> CompletionStage<List<C>> getResources(Class<C> type, String namespace, String... labels) {
+        if (!consoleConfig.getKubernetes().isEnabled() || namespace == null) {
+            return CompletableFuture.completedStage(Collections.emptyList());
+        }
+
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                return k8s.resources(type)
+                        .inNamespace(namespace)
+                        .withLabelSelector(fromLabels(labels))
+                        .list()
+                        .getItems();
+            } catch (KubernetesClientException e) {
+                logger.warnf("Failed to fetch Strimzi %s resources in namespace %s: %s",
+                        type.getSimpleName(),
+                        namespace,
+                        RootCause.of(e).orElse(e).getMessage());
+            }
+
+            return Collections.emptyList();
+        });
+    }
+
+    private LabelSelector fromLabels(String... labels) {
+        if (labels.length % 2 != 0) {
+            throw new IllegalArgumentException("Must provide an even number of labels/values");
+        }
+
+        if (labels.length == 0) {
+            return null;
+        }
+
+        var builder = new LabelSelectorBuilder();
+
+        for (int i = 0; i < labels.length; i += 2) {
+            builder.addToMatchLabels(labels[i], labels[i + 1]);
+        }
+
+        return builder.build();
+    }
+
+    private <T extends HasMetadata> Predicate<T> byKafkaCluster(String kafkaCluster) {
+        return resource -> {
+            String ownedByCluster = resource.getMetadata().getLabels().get(ResourceLabels.STRIMZI_CLUSTER_LABEL);
+            return Objects.equals(ownedByCluster, kafkaCluster);
+        };
     }
 }
