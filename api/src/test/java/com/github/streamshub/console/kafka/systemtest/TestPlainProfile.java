@@ -101,8 +101,8 @@ public class TestPlainProfile implements QuarkusTestProfile {
                            value: ${console.test.oidc-trust-store.password}
 
                 schemaRegistries:
-                  - name: test-registry
-                    url: ${console.test.apicurio-url}
+                  - name: test-registry-v2
+                    url: ${console.test.apicurio2-url}
                     authentication:
                       oidc:
                         authServerUrl: ${console.test.oidc-url}
@@ -112,7 +112,7 @@ public class TestPlainProfile implements QuarkusTestProfile {
                         method: POST
                         grantType: CLIENT
                         grantOptions:
-                          audience: ${console.test.apicurio-url}
+                          audience: ${console.test.apicurio2-url}
                         trustStore:
                           type: ${console.test.oidc-trust-store.type}
                           content:
@@ -120,18 +120,43 @@ public class TestPlainProfile implements QuarkusTestProfile {
                           password:
                             value: ${console.test.oidc-trust-store.password}
                     trustStore:
-                      type: ${console.test.apicurio-trust-store.type}
+                      type: ${console.test.apicurio2-trust-store.type}
                       content:
-                        valueFrom: ${console.test.apicurio-trust-store.path}
+                        valueFrom: ${console.test.apicurio2-trust-store.path}
                       password:
-                        valueFrom: ${console.test.apicurio-trust-store.password-path}
+                        valueFrom: ${console.test.apicurio2-trust-store.password-path}
+
+                  - name: test-registry-v3
+                    url: ${console.test.apicurio3-url}
+                    authentication:
+                      oidc:
+                        authServerUrl: ${console.test.oidc-url}
+                        clientId: registry-api
+                        clientSecret:
+                          value: registry-api-secret
+                        method: POST
+                        grantType: CLIENT
+                        grantOptions:
+                          audience: ${console.test.apicurio3-url}
+                        trustStore:
+                          type: ${console.test.oidc-trust-store.type}
+                          content:
+                            valueFrom: ${console.test.oidc-trust-store.path}
+                          password:
+                            value: ${console.test.oidc-trust-store.password}
+                    trustStore:
+                      type: ${console.test.apicurio3-trust-store.type}
+                      content:
+                        valueFrom: ${console.test.apicurio3-trust-store.path}
+                      password:
+                        valueFrom: ${console.test.apicurio3-trust-store.password-path}
 
                 kafka:
                   clusters:
                     - name: test-kafka1
                       namespace: default
                       id: k1-id
-                      schemaRegistry: test-registry
+                      schemaRegistry: test-registry-v2
                       properties:
                         bootstrap.servers: ${console.test.external-bootstrap}
 
@@ -145,6 +170,7 @@ public class TestPlainProfile implements QuarkusTestProfile {
                       namespace: default
                       # listener is named and bootstrap.servers not set (will be retrieved from Kafka CR)
                       listener: listener0
+                      schemaRegistry: test-registry-v3
 
                     # missing required bootstrap.servers and sasl.mechanism
                     - name: test-kafkaX

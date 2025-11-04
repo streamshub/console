@@ -1,0 +1,4 @@
+FROM quay.io/apicurio/apicurio-registry:3.1.2
+# No operations, this is only a placeholder used to manage the image
+# version via dependabot. The FROM statement is always expected to
+# present on the first line of this file.
