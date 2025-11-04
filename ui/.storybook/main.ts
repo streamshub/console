@@ -13,7 +13,10 @@ const config: StorybookConfig = {
     },
   ],
 
-  addons: ["@storybook/addon-links", "@storybook/addon-docs"],
+  addons: [
+    "@storybook/addon-links",
+    "@storybook/addon-docs"
+  ],
 
   features: {
     experimentalRSC: true,
@@ -21,7 +24,11 @@ const config: StorybookConfig = {
 
   framework: {
     name: "@storybook/nextjs",
-    options: {},
+    options: {
+        builder: {
+          useSWC: true, // Enables SWC support
+      },
+    },
   },
 
   webpackFinal: async (config) => {
