@@ -4,6 +4,7 @@ import com.github.streamshub.systemtests.Environment;
 import com.github.streamshub.systemtests.exceptions.SetupException;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.utils.FileUtils;
+import com.github.streamshub.systemtests.utils.resourceutils.ConsoleUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
 import io.fabric8.kubernetes.api.model.EnvVarBuilder;
 import io.fabric8.kubernetes.api.model.HasMetadata;
@@ -62,6 +63,8 @@ public class YamlConfig extends InstallConfig {
 
     @Override
     public void delete() {
+        // For Yaml installed console removing finalizers is required to delete CRDs
+        ConsoleUtils.removeAllConsoleInstancesFinalizers();
         KubeResourceManager.get().deleteResourceWithWait(getBundleCrds());
         KubeResourceManager.get().deleteResourceWithWait(getBundleServiceAccount());
         KubeResourceManager.get().deleteResourceWithWait(getBundleClusterRoles());

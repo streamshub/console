@@ -3,7 +3,6 @@ package com.github.streamshub.systemtests.setup.console;
 import com.github.streamshub.systemtests.Environment;
 import com.github.streamshub.systemtests.exceptions.SetupException;
 import com.github.streamshub.systemtests.logs.LogWrapper;
-import com.github.streamshub.systemtests.utils.resourceutils.ConsoleUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import org.apache.logging.log4j.Logger;
@@ -35,7 +34,6 @@ public class ConsoleOperatorSetup {
             !ResourceUtils.listKubeResourcesByPrefix(Deployment.class, installConfig.getDeploymentNamespace(), installConfig.getDeploymentName()).isEmpty()) {
 
             LOGGER.info("Clean up currently deployed operator to ensure correct operator is deployed");
-            ConsoleUtils.removeAllConsoleInstancesFinalizers();
             installConfig.delete();
         }
 
