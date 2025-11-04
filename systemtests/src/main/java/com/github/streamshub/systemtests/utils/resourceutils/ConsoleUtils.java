@@ -1,7 +1,11 @@
 package com.github.streamshub.systemtests.utils.resourceutils;
 
+import com.github.streamshub.console.api.v1alpha1.Console;
 import com.github.streamshub.console.dependents.ConsoleDeployment;
 import io.fabric8.openshift.api.model.Route;
+import io.skodjob.testframe.resources.KubeResourceManager;
+
+import java.util.List;
 
 public class ConsoleUtils {
     private ConsoleUtils() {}
@@ -16,5 +20,14 @@ public class ConsoleUtils {
 
     public static String getConsoleDeploymentName(String instanceName) {
         return instanceName + "-" + ConsoleDeployment.NAME;
+    }
+
+    public static void removeAllConsoleInstancesFinalizers() {
+        List<Console> consoleInstances = ResourceUtils.getKubeResourceClient(Console.class).inAnyNamespace().list().getItems();
+
+        for (Console instance: consoleInstances) {
+            instance.getMetadata().setFinalizers(null);
+            KubeResourceManager.get().createOrUpdateResourceWithWait(instance);
+        }
     }
 }
