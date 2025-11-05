@@ -95,10 +95,6 @@ class RecordsResourceIT {
     @BeforeEach
     void setup() {
         URI bootstrapServers = URI.create(config.getValue(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, String.class));
-        URI randomBootstrapServers = URI.create(consoleConfig.getKafka()
-                .getCluster("default/test-kafka2")
-                .map(k -> k.getProperties().get("bootstrap.servers"))
-                .orElseThrow());
 
         topicUtils = new TopicHelper(bootstrapServers, config);
         topicUtils.deleteAllTopics();

@@ -127,61 +127,69 @@ public class MultiformatSerializer extends MultiformatSerdeBase
         byte[] serialized;
 
         if (parsedSchema instanceof Schema avroSchema) {
-            try {
-                ByteArrayOutputStream out = new ByteArrayOutputStream();
-                out.write(MAGIC_BYTE);
-                baseSerde.getIdHandler().writeId(schema.toArtifactReference(), out);
-                avroSerializer.serializeData(cast(schema.getParsedSchema()), data, out);
-                serialized = out.toByteArray();
-                setSchemaMeta(data, schema, ArtifactType.AVRO, avroSchema.getFullName());
-            } catch (Exception e) {
-                throw new BadRequestException(e.getMessage(), e);
-            }
+            serialized = serializeAvro(data, schema, avroSchema);
         } else if (parsedSchema instanceof ProtobufSchema protobufSchema) {
-            Message msg;
-            String schemaRef = schemaMeta(data, "schema-gav").orElseThrow(); // we know it's non-null because we have a schema
-            String messageType = schemaMeta(data, "message-type").orElse(null);
-            Descriptor descriptor;
-
-            if (messageType != null) {
-                descriptor = protobufSchema.getFileDescriptor().findMessageTypeByName(messageType);
-                if (descriptor == null) {
-                    throw new BadRequestException("No such message type %s for schema %s"
-                            .formatted(messageType, schemaRef));
-                }
-            } else if (protobufSchema.getFileDescriptor().getMessageTypes().size() == 1) {
-                descriptor = protobufSchema.getFileDescriptor().getMessageTypes().get(0);
-            } else {
-                throw new BadRequestException("Unable to determine message type to use from schema %s"
-                        .formatted(schemaRef));
-            }
-
-            try {
-                var builder = DynamicMessage.newBuilder(descriptor);
-                com.google.protobuf.util.JsonFormat.parser()
-                    .ignoringUnknownFields()
-                    .merge(data.dataString(null), builder);
-                msg = builder.build();
-            } catch (InvalidProtocolBufferException e) {
-                throw new BadRequestException(e.getMessage(), e);
-            }
-
-            try {
-                ByteArrayOutputStream out = new ByteArrayOutputStream();
-                out.write(MAGIC_BYTE);
-                baseSerde.getIdHandler().writeId(schema.toArtifactReference(), out);
-                protobufSerializer.serializeData(cast(schema.getParsedSchema()), msg, out);
-                serialized = out.toByteArray();
-                setSchemaMeta(data, schema, ArtifactType.PROTOBUF, descriptor.getFullName());
-            } catch (Exception e) {
-                throw new BadRequestException(e.getMessage(), e);
-            }
+            serialized = serializeProtobuf(data, schema, protobufSchema);
         } else {
             data.meta.remove("schema"); // Remove schema meta so it is not returned with 201 response
             serialized = data.data;
         }
 
         return serialized;
+    }
+
+    private byte[] serializeAvro(RecordData data, SchemaLookupResult<Object> schema, Schema avroSchema) {
+        try {
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            out.write(MAGIC_BYTE);
+            baseSerde.getIdHandler().writeId(schema.toArtifactReference(), out);
+            avroSerializer.serializeData(cast(schema.getParsedSchema()), data, out);
+            setSchemaMeta(data, schema, ArtifactType.AVRO, avroSchema.getFullName());
+            return out.toByteArray();
+        } catch (Exception e) {
+            throw new BadRequestException(e.getMessage(), e);
+        }
+    }
+
+    private byte[] serializeProtobuf(RecordData data, SchemaLookupResult<Object> schema, ProtobufSchema protobufSchema) {
+        Message msg;
+        String schemaRef = schemaMeta(data, "schema-gav").orElseThrow(); // we know it's non-null because we have a schema
+        String messageType = schemaMeta(data, "message-type").orElse(null);
+        Descriptor descriptor;
+
+        if (messageType != null) {
+            descriptor = protobufSchema.getFileDescriptor().findMessageTypeByName(messageType);
+            if (descriptor == null) {
+                throw new BadRequestException("No such message type %s for schema %s"
+                        .formatted(messageType, schemaRef));
+            }
+        } else if (protobufSchema.getFileDescriptor().getMessageTypes().size() == 1) {
+            descriptor = protobufSchema.getFileDescriptor().getMessageTypes().get(0);
+        } else {
+            throw new BadRequestException("Unable to determine message type to use from schema %s"
+                    .formatted(schemaRef));
+        }
+
+        try {
+            var builder = DynamicMessage.newBuilder(descriptor);
+            com.google.protobuf.util.JsonFormat.parser()
+                .ignoringUnknownFields()
+                .merge(data.dataString(null), builder);
+            msg = builder.build();
+        } catch (InvalidProtocolBufferException e) {
+            throw new BadRequestException(e.getMessage(), e);
+        }
+
+        try {
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            out.write(MAGIC_BYTE);
+            baseSerde.getIdHandler().writeId(schema.toArtifactReference(), out);
+            protobufSerializer.serializeData(cast(schema.getParsedSchema()), msg, out);
+            setSchemaMeta(data, schema, ArtifactType.PROTOBUF, descriptor.getFullName());
+            return out.toByteArray();
+        } catch (Exception e) {
+            throw new BadRequestException(e.getMessage(), e);
+        }
     }
 
     SchemaLookupResult<Object> resolveSchema(String topic, Headers headers, RecordData data) {
