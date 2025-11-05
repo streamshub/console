@@ -258,4 +258,35 @@ public class MultiformatDeserializer extends MultiformatSerdeBase implements Des
             return LOOKUP_FAILURE;
         }
     }
+
+    /**
+     * Simple subclass of {@link io.apicurio.registry.serde.avro.AvroDeserializer}
+     * to make the {@code readData} methods public.
+     */
+    private static class AvroDeserializer extends io.apicurio.registry.serde.avro.AvroDeserializer<RecordData> {
+        AvroDeserializer(SchemaResolver<Schema, RecordData> schemaResolver) {
+            super(schemaResolver);
+        }
+
+        @Override
+        public RecordData readData(ParsedSchema<Schema> schema, ByteBuffer buffer, int start, int length) {
+            return super.readData(schema, buffer, start, length);
+        }
+    }
+
+    /**
+     * Simple subclass of {@link io.apicurio.registry.serde.protobuf.ProtobufDeserializer} to make the
+     * {@code readData} methods public.
+     */
+    private static class ProtobufDeserializer extends io.apicurio.registry.serde.protobuf.ProtobufDeserializer<Message> {
+        ProtobufDeserializer(SchemaResolver<ProtobufSchema, Message> schemaResolver) {
+            super(schemaResolver);
+        }
+
+        @Override
+        public Message readData(ParsedSchema<ProtobufSchema> schema, ByteBuffer buffer, int start, int length) {
+            return super.readData(schema, buffer, start, length);
+        }
+    }
+
 }
