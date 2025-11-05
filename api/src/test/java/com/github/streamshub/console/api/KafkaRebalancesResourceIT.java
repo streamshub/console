@@ -13,6 +13,7 @@ import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response.Status;
 
+import org.apache.kafka.clients.CommonClientConfigs;
 import org.eclipse.microprofile.config.Config;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -21,7 +22,6 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import com.github.streamshub.console.config.ConsoleConfig;
 import com.github.streamshub.console.kafka.systemtest.TestPlainProfile;
-import com.github.streamshub.console.kafka.systemtest.deployment.DeploymentManager;
 import com.github.streamshub.console.test.TestHelper;
 
 import io.fabric8.kubernetes.client.KubernetesClient;
@@ -36,7 +36,6 @@ import io.strimzi.api.kafka.model.rebalance.KafkaRebalance;
 import io.strimzi.api.kafka.model.rebalance.KafkaRebalanceBuilder;
 import io.strimzi.api.kafka.model.rebalance.KafkaRebalanceMode;
 import io.strimzi.api.kafka.model.rebalance.KafkaRebalanceState;
-import io.strimzi.test.container.StrimziKafkaContainer;
 
 import static com.github.streamshub.console.test.TestHelper.whenRequesting;
 import static java.util.Comparator.nullsLast;
@@ -65,12 +64,8 @@ class KafkaRebalancesResourceIT {
     @Inject
     ConsoleConfig consoleConfig;
 
-    @DeploymentManager.InjectDeploymentManager
-    DeploymentManager deployments;
-
     TestHelper utils;
 
-    StrimziKafkaContainer kafkaContainer;
     String clusterId1;
     String clusterId2;
     URI bootstrapServers;
@@ -115,8 +110,7 @@ class KafkaRebalancesResourceIT {
 
     @BeforeEach
     void setup() {
-        kafkaContainer = deployments.getKafkaContainer();
-        bootstrapServers = URI.create(kafkaContainer.getBootstrapServers());
+        bootstrapServers = URI.create(config.getValue(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, String.class));
         randomBootstrapServers = URI.create(consoleConfig.getKafka()
                 .getCluster("default/test-kafka2")
                 .map(k -> k.getProperties().get("bootstrap.servers"))

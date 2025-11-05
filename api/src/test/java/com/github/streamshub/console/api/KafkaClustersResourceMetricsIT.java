@@ -37,7 +37,6 @@ import com.github.streamshub.console.api.support.KafkaContext;
 import com.github.streamshub.console.config.ConsoleConfig;
 import com.github.streamshub.console.config.KafkaClusterConfig;
 import com.github.streamshub.console.kafka.systemtest.TestPlainProfile;
-import com.github.streamshub.console.kafka.systemtest.deployment.DeploymentManager;
 import com.github.streamshub.console.test.AdminClientSpy;
 import com.github.streamshub.console.test.TestHelper;
 
@@ -48,7 +47,6 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.strimzi.api.kafka.model.kafka.Kafka;
 import io.strimzi.api.kafka.model.kafka.KafkaBuilder;
-import io.strimzi.test.container.StrimziKafkaContainer;
 
 import static com.github.streamshub.console.test.TestHelper.whenRequesting;
 import static org.awaitility.Awaitility.await;
@@ -88,12 +86,8 @@ class KafkaClustersResourceMetricsIT implements ClientRequestFilter {
     @Inject
     MetricsService metricsService;
 
-    @DeploymentManager.InjectDeploymentManager
-    DeploymentManager deployments;
-
     TestHelper utils;
 
-    StrimziKafkaContainer kafkaContainer;
     String clusterId1;
     URI bootstrapServers;
 
@@ -143,8 +137,7 @@ class KafkaClustersResourceMetricsIT implements ClientRequestFilter {
 
         consoleConfig.getKafka().getCluster("default/test-kafka1").get().setMetricsSource(metricsSource);
 
-        kafkaContainer = deployments.getKafkaContainer();
-        bootstrapServers = URI.create(kafkaContainer.getBootstrapServers());
+        bootstrapServers = URI.create(config.getValue(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, String.class));
 
         utils = new TestHelper(bootstrapServers, config);
 

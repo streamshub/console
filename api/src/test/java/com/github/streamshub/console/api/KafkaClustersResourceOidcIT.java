@@ -26,7 +26,6 @@ import com.github.streamshub.console.config.KafkaClusterConfig;
 import com.github.streamshub.console.config.security.GlobalSecurityConfigBuilder;
 import com.github.streamshub.console.config.security.Privilege;
 import com.github.streamshub.console.kafka.systemtest.TestPlainProfile;
-import com.github.streamshub.console.kafka.systemtest.deployment.DeploymentManager;
 import com.github.streamshub.console.kafka.systemtest.utils.TokenUtils;
 import com.github.streamshub.console.test.AdminClientSpy;
 import com.github.streamshub.console.test.TestHelper;
@@ -38,7 +37,6 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.strimzi.api.kafka.model.kafka.Kafka;
 import io.strimzi.api.kafka.model.kafka.KafkaBuilder;
-import io.strimzi.test.container.StrimziKafkaContainer;
 
 import static com.github.streamshub.console.test.TestHelper.whenRequesting;
 import static org.awaitility.Awaitility.await;
@@ -65,20 +63,15 @@ class KafkaClustersResourceOidcIT {
     @Inject
     ConsoleConfig consoleConfig;
 
-    @DeploymentManager.InjectDeploymentManager
-    DeploymentManager deployments;
-
     TestHelper utils;
     TokenUtils tokens;
 
-    StrimziKafkaContainer kafkaContainer;
     String clusterId1;
     URI bootstrapServers;
 
     @BeforeEach
     void setup() {
-        kafkaContainer = deployments.getKafkaContainer();
-        bootstrapServers = URI.create(kafkaContainer.getBootstrapServers());
+        bootstrapServers = URI.create(config.getValue(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, String.class));
 
         utils = new TestHelper(bootstrapServers, config);
         utils.resetSecurity(consoleConfig, true);

@@ -52,7 +52,6 @@ import com.github.streamshub.console.config.security.GlobalSecurityConfigBuilder
 import com.github.streamshub.console.config.security.Privilege;
 import com.github.streamshub.console.config.security.ResourceTypes;
 import com.github.streamshub.console.kafka.systemtest.TestPlainProfile;
-import com.github.streamshub.console.kafka.systemtest.deployment.DeploymentManager;
 import com.github.streamshub.console.test.AdminClientSpy;
 import com.github.streamshub.console.test.LogCapture;
 import com.github.streamshub.console.test.TestHelper;
@@ -72,7 +71,6 @@ import io.strimzi.api.kafka.model.kafka.listener.KafkaListenerAuthenticationCust
 import io.strimzi.api.kafka.model.kafka.listener.KafkaListenerAuthenticationOAuthBuilder;
 import io.strimzi.api.kafka.model.kafka.listener.KafkaListenerAuthenticationScramSha512Builder;
 import io.strimzi.kafka.oauth.client.JaasClientOauthLoginCallbackHandler;
-import io.strimzi.test.container.StrimziKafkaContainer;
 
 import static com.github.streamshub.console.test.TestHelper.whenRequesting;
 import static java.util.Objects.isNull;
@@ -129,12 +127,8 @@ class KafkaClustersResourceIT {
     @Inject
     ConsoleConfig consoleConfig;
 
-    @DeploymentManager.InjectDeploymentManager
-    DeploymentManager deployments;
-
     TestHelper utils;
 
-    StrimziKafkaContainer kafkaContainer;
     String clusterId1;
     String clusterId2;
     URI bootstrapServers;
@@ -152,8 +146,7 @@ class KafkaClustersResourceIT {
 
     @BeforeEach
     void setup() {
-        kafkaContainer = deployments.getKafkaContainer();
-        bootstrapServers = URI.create(kafkaContainer.getBootstrapServers());
+        bootstrapServers = URI.create(config.getValue(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, String.class));
         randomBootstrapServers = URI.create(consoleConfig.getKafka()
                 .getCluster("default/test-kafka2")
                 .map(k -> k.getProperties().get("bootstrap.servers"))

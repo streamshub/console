@@ -20,6 +20,7 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.Response.Status;
 
+import org.apache.kafka.clients.CommonClientConfigs;
 import org.eclipse.microprofile.config.Config;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -36,7 +37,6 @@ import com.github.streamshub.console.api.support.KafkaContext;
 import com.github.streamshub.console.config.ConsoleConfig;
 import com.github.streamshub.console.config.KafkaClusterConfig;
 import com.github.streamshub.console.kafka.systemtest.TestPlainProfile;
-import com.github.streamshub.console.kafka.systemtest.deployment.DeploymentManager;
 import com.github.streamshub.console.test.TestHelper;
 
 import io.fabric8.kubernetes.client.KubernetesClient;
@@ -48,7 +48,6 @@ import io.strimzi.api.kafka.model.connect.KafkaConnectBuilder;
 import io.strimzi.api.kafka.model.kafka.Kafka;
 import io.strimzi.api.kafka.model.kafka.KafkaBuilder;
 import io.strimzi.api.kafka.model.mirrormaker2.KafkaMirrorMaker2Builder;
-import io.strimzi.test.container.StrimziKafkaContainer;
 
 import static com.github.streamshub.console.test.TestHelper.whenRequesting;
 import static org.awaitility.Awaitility.await;
@@ -80,12 +79,8 @@ class KafkaConnectsResourceIT implements ClientRequestFilter {
     @Inject
     KafkaConnectAPI.Client connectClient;
 
-    @DeploymentManager.InjectDeploymentManager
-    DeploymentManager deployments;
-
     TestHelper utils;
 
-    StrimziKafkaContainer kafkaContainer;
     URI bootstrapServers;
 
     Consumer<ClientRequestContext> filterRequest;
@@ -118,8 +113,7 @@ class KafkaConnectsResourceIT implements ClientRequestFilter {
                     .build());
         };
         connectClient.setAdditionalFilter(Optional.of(this));
-        kafkaContainer = deployments.getKafkaContainer();
-        bootstrapServers = URI.create(kafkaContainer.getBootstrapServers());
+        bootstrapServers = URI.create(config.getValue(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, String.class));
 
         utils = new TestHelper(bootstrapServers, config);
         utils.resetSecurity(consoleConfig, false);
