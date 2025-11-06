@@ -4,7 +4,11 @@
   "accessTokenLifespan": 60,
   "ssoSessionIdleTimeout": 0,
   "ssoSessionMaxLifespan": 864000,
+  "notBefore": 0,
   "sslRequired": "external",
+  "rememberMe": false,
+  "ssoSessionIdleTimeoutRememberMe": 0,
+  "ssoSessionMaxLifespanRememberMe": 0,
   "roles":{
     "realm":[
       {
@@ -16,7 +20,7 @@
         "description":"Operations team member"
       },
       {
-        "name":"viewer-role",
+        "name":"viewers-role",
         "description":"Read-only access to all clusters"
       },
       {
@@ -100,17 +104,25 @@
       "clientId": "console-client",
       "description": "private client for streamshub console",
       "enabled": true,
-      "clientAuthenticatorType": "client-secret",
-      "redirectUris": ["https://console-instance-56a357.apps.kali-ops419.strimzi.app-services-dev.net/*"],
-      "webOrigins": ["https://console-instance-56a357.apps.kali-ops419.strimzi.app-services-dev.net/"],
+      "bearerOnly": false,
+      "consentRequired": false,
       "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "clientAuthenticatorType": "client-secret",
+      "redirectUris": ["${CONSOLE_URL}/*"],
+      "webOrigins": ["${CONSOLE_URL}/"],
       "directAccessGrantsEnabled": true,
       "serviceAccountsEnabled": true,
       "publicClient": false,
       "frontchannelLogout": true,
       "protocol": "openid-connect",
       "fullScopeAllowed": true,
-      "defaultClientScopes": ["profile", "groups", "email"]
+      "nodeReRegistrationTimeout": -1,
+      "defaultClientScopes": [
+        "profile",
+        "groups",
+        "email"
+      ]
     }
   ],
   "clientScopes":[
