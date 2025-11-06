@@ -7,8 +7,10 @@ import com.github.streamshub.systemtests.constants.TimeConstants;
 import com.github.streamshub.systemtests.enums.BrowserTypes;
 import com.github.streamshub.systemtests.exceptions.SetupException;
 import com.github.streamshub.systemtests.locators.CssSelectors;
+import com.github.streamshub.systemtests.locators.KafkaDashboardPageSelectors;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.utils.Utils;
+import com.github.streamshub.systemtests.utils.resourceutils.ConsoleUtils;
 import com.microsoft.playwright.Browser;
 import com.microsoft.playwright.BrowserContext;
 import com.microsoft.playwright.BrowserType;
@@ -449,12 +451,29 @@ public class PwUtils {
         waitForLocatorAndFill(tcc, CssSelectors.LOGIN_KEYCLOAK_PASSWORD_INPUT, password);
         waitForLocatorAndClick(tcc, CssSelectors.LOGIN_KEYCLOAK_SIGN_IN_BUTTON);
         // Go to overview page
-        tcc.page().waitForURL(PwPageUrls.getOverviewPage(tcc, tcc.kafkaName()), getDefaultWaitForUrlOpts());
+        tcc.page().waitForURL(ConsoleUtils.getConsoleUiUrl(tcc.namespace(), tcc.consoleInstanceName(), true), getDefaultWaitForUrlOpts());
         LOGGER.info("Successfully logged into Console");
     }
 
     public static void logoutUser(TestCaseConfig tcc, String userName) {
-        waitForLocatorAndClick(tcc, CssSelectors.PAGES_CURRENTLY_LOGGED_USER_BUTTON);
-        waitForLocatorAndClick(tcc, CssSelectors.PAGES_LOGOUT_BUTTON);
+
+        Utils.retryAction("Log-out user", ()-> {
+            String dashboardUrl = ConsoleUtils.getConsoleUiUrl(tcc.namespace(), tcc.consoleInstanceName(), true) + "/";
+
+            // There is a xpath difference between logout button in dashboard and in navbar on other pages
+            if (tcc.page().url().equals(dashboardUrl)) {
+                waitForLocatorAndClick(tcc, KafkaDashboardPageSelectors.KDPS_CURRENTLY_LOGGED_USER_BUTTON);
+            } else {
+                waitForLocatorAndClick(tcc, CssSelectors.PAGES_CURRENTLY_LOGGED_USER_BUTTON);
+            }
+
+            waitForLocatorAndClick(tcc, CssSelectors.PAGES_LOGOUT_BUTTON);
+            Utils.sleepWait(TimeConstants.UI_COMPONENT_REACTION_INTERVAL_SHORT);
+
+            if (tcc.page().url().equals(dashboardUrl) ||
+                tcc.page().locator(KafkaDashboardPageSelectors.KDPS_CURRENTLY_LOGGED_USER_BUTTON).allInnerTexts().contains(userName)) {
+                throw new IllegalStateException("User [" + userName + "] has not been logged out");
+            }
+        }, Constants.LOGOUT_RETRIES);
     }
 }

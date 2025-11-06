@@ -165,7 +165,7 @@ public class CssSelectors {
         .withElementDiv().withComponentToolbar().withChild()
         .withElementDiv().withComponentToolbar().withSubComponentContent().nth(1).withChild()
         .withElementDiv().withComponentToolbar().withSubComponentContentSection().withChild()
-        .withElementDiv().withComponentToolbar().withSubComponentItem().withChild()
+        .withElementDiv().withComponentToolbar().withSubComponentItem().nth(3).withChild()
         .withElementButton().withComponentMenuToggle()
         .build();
 
