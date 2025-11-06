@@ -22,6 +22,7 @@ import jakarta.ws.rs.client.ClientRequestFilter;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.Response.Status;
 
+import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.admin.DescribeClusterOptions;
 import org.apache.kafka.clients.admin.DescribeClusterResult;
 import org.apache.kafka.clients.admin.DescribeMetadataQuorumOptions;
@@ -50,7 +51,6 @@ import com.github.streamshub.console.config.security.GlobalSecurityConfigBuilder
 import com.github.streamshub.console.config.security.KafkaSecurityConfigBuilder;
 import com.github.streamshub.console.config.security.Privilege;
 import com.github.streamshub.console.kafka.systemtest.TestPlainProfile;
-import com.github.streamshub.console.kafka.systemtest.deployment.DeploymentManager;
 import com.github.streamshub.console.kafka.systemtest.utils.TokenUtils;
 import com.github.streamshub.console.test.AdminClientSpy;
 import com.github.streamshub.console.test.MockHelper;
@@ -72,7 +72,6 @@ import io.strimzi.api.kafka.model.kafka.listener.KafkaListenerType;
 import io.strimzi.api.kafka.model.nodepool.KafkaNodePool;
 import io.strimzi.api.kafka.model.nodepool.KafkaNodePoolBuilder;
 import io.strimzi.api.kafka.model.nodepool.ProcessRoles;
-import io.strimzi.test.container.StrimziKafkaContainer;
 
 import static com.github.streamshub.console.test.TestHelper.whenRequesting;
 import static org.awaitility.Awaitility.await;
@@ -110,14 +109,10 @@ class NodesResourceIT implements ClientRequestFilter {
     @Inject
     Map<String, KafkaContext> configuredContexts;
 
-    @DeploymentManager.InjectDeploymentManager
-    DeploymentManager deployments;
-
     TestHelper utils;
 
     final String clusterName1 = "test-kafka1";
     final String clusterNamespace1 = "default";
-    StrimziKafkaContainer kafkaContainer;
     String clusterId;
     URI bootstrapServers;
 
@@ -160,8 +155,7 @@ class NodesResourceIT implements ClientRequestFilter {
         consoleConfig.setMetricsSources(List.of(prometheusConfig));
         consoleConfig.getKafka().getCluster(clusterNamespace1 + '/' + clusterName1).get().setMetricsSource("test");
 
-        kafkaContainer = deployments.getKafkaContainer();
-        bootstrapServers = URI.create(kafkaContainer.getBootstrapServers());
+        bootstrapServers = URI.create(config.getValue(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, String.class));
         utils = new TestHelper(bootstrapServers, config);
         utils.resetSecurity(consoleConfig, false);
 

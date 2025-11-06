@@ -9,6 +9,7 @@ import java.util.UUID;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.core.Response.Status;
 
+import org.apache.kafka.clients.CommonClientConfigs;
 import org.eclipse.microprofile.config.Config;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -20,7 +21,6 @@ import com.github.streamshub.console.config.security.GlobalSecurityConfigBuilder
 import com.github.streamshub.console.config.security.KafkaSecurityConfigBuilder;
 import com.github.streamshub.console.config.security.Privilege;
 import com.github.streamshub.console.kafka.systemtest.TestPlainProfile;
-import com.github.streamshub.console.kafka.systemtest.deployment.DeploymentManager;
 import com.github.streamshub.console.kafka.systemtest.utils.TokenUtils;
 import com.github.streamshub.console.test.TestHelper;
 
@@ -35,7 +35,6 @@ import io.strimzi.api.kafka.model.rebalance.KafkaRebalance;
 import io.strimzi.api.kafka.model.rebalance.KafkaRebalanceBuilder;
 import io.strimzi.api.kafka.model.rebalance.KafkaRebalanceMode;
 import io.strimzi.api.kafka.model.rebalance.KafkaRebalanceState;
-import io.strimzi.test.container.StrimziKafkaContainer;
 
 import static com.github.streamshub.console.test.TestHelper.whenRequesting;
 import static org.hamcrest.Matchers.equalTo;
@@ -56,13 +55,9 @@ class KafkaRebalancesResourceOidcIT {
     @Inject
     ConsoleConfig consoleConfig;
 
-    @DeploymentManager.InjectDeploymentManager
-    DeploymentManager deployments;
-
     TestHelper utils;
     TokenUtils tokens;
 
-    StrimziKafkaContainer kafkaContainer;
     String clusterId1;
     String clusterId2;
     URI bootstrapServers;
@@ -101,8 +96,7 @@ class KafkaRebalancesResourceOidcIT {
 
     @BeforeEach
     void setup() {
-        kafkaContainer = deployments.getKafkaContainer();
-        bootstrapServers = URI.create(kafkaContainer.getBootstrapServers());
+        bootstrapServers = URI.create(config.getValue(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, String.class));
         randomBootstrapServers = URI.create(consoleConfig.getKafka()
                 .getCluster("default/test-kafka2")
                 .map(k -> k.getProperties().get("bootstrap.servers"))

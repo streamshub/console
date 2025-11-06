@@ -24,6 +24,7 @@ import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response.Status;
 
+import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.common.Uuid;
 import org.awaitility.core.ConditionEvaluationListener;
 import org.awaitility.core.EvaluatedCondition;
@@ -43,7 +44,6 @@ import com.github.streamshub.console.api.support.serdes.RecordData;
 import com.github.streamshub.console.config.ConsoleConfig;
 import com.github.streamshub.console.config.KafkaClusterConfig;
 import com.github.streamshub.console.kafka.systemtest.TestPlainProfile;
-import com.github.streamshub.console.kafka.systemtest.deployment.DeploymentManager;
 import com.github.streamshub.console.test.RecordHelper;
 import com.github.streamshub.console.test.TestHelper;
 import com.github.streamshub.console.test.TopicHelper;
@@ -86,9 +86,6 @@ class RecordsResourceIT {
     @Inject
     KubernetesClient client;
 
-    @DeploymentManager.InjectDeploymentManager
-    DeploymentManager deployments;
-
     TestHelper utils;
     TopicHelper topicUtils;
     RecordHelper recordUtils;
@@ -97,7 +94,7 @@ class RecordsResourceIT {
 
     @BeforeEach
     void setup() {
-        URI bootstrapServers = URI.create(deployments.getExternalBootstrapServers());
+        URI bootstrapServers = URI.create(config.getValue(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, String.class));
         URI randomBootstrapServers = URI.create(consoleConfig.getKafka()
                 .getCluster("default/test-kafka2")
                 .map(k -> k.getProperties().get("bootstrap.servers"))

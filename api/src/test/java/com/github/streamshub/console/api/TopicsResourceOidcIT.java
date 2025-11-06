@@ -14,6 +14,7 @@ import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response.Status;
 
+import org.apache.kafka.clients.CommonClientConfigs;
 import org.eclipse.microprofile.config.Config;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -33,7 +34,6 @@ import com.github.streamshub.console.config.security.KafkaSecurityConfigBuilder;
 import com.github.streamshub.console.config.security.Privilege;
 import com.github.streamshub.console.config.security.ResourceTypes;
 import com.github.streamshub.console.kafka.systemtest.TestPlainProfile;
-import com.github.streamshub.console.kafka.systemtest.deployment.DeploymentManager;
 import com.github.streamshub.console.kafka.systemtest.utils.ConsumerUtils;
 import com.github.streamshub.console.kafka.systemtest.utils.TokenUtils;
 import com.github.streamshub.console.support.Identifiers;
@@ -93,9 +93,6 @@ class TopicsResourceOidcIT {
     @Named("KafkaTopics")
     Map<String, Map<String, Map<String, KafkaTopic>>> managedTopics;
 
-    @DeploymentManager.InjectDeploymentManager
-    DeploymentManager deployments;
-
     TestHelper utils;
     TopicHelper topicUtils;
     ConsumerUtils groupUtils;
@@ -118,7 +115,7 @@ class TopicsResourceOidcIT {
 
     @BeforeEach
     void setup() {
-        bootstrapServers1 = URI.create(deployments.getExternalBootstrapServers());
+        bootstrapServers1 = URI.create(config.getValue(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, String.class));
         URI randomBootstrapServers = URI.create(consoleConfig.getKafka()
                 .getCluster("default/test-kafka2")
                 .map(k -> k.getProperties().get("bootstrap.servers"))

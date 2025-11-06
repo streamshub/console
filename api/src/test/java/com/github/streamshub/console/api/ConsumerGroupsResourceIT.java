@@ -20,6 +20,7 @@ import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response.Status;
 
+import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.admin.ConsumerGroupDescription;
 import org.apache.kafka.clients.admin.DescribeConsumerGroupsOptions;
 import org.apache.kafka.clients.admin.DescribeConsumerGroupsResult;
@@ -51,7 +52,6 @@ import org.skyscreamer.jsonassert.JSONCompareMode;
 import com.github.streamshub.console.api.support.Holder;
 import com.github.streamshub.console.config.ConsoleConfig;
 import com.github.streamshub.console.kafka.systemtest.TestPlainProfile;
-import com.github.streamshub.console.kafka.systemtest.deployment.DeploymentManager;
 import com.github.streamshub.console.kafka.systemtest.utils.ConsumerUtils;
 import com.github.streamshub.console.support.Identifiers;
 import com.github.streamshub.console.test.AdminClientSpy;
@@ -103,9 +103,6 @@ class ConsumerGroupsResourceIT {
     @Inject
     Holder<SharedIndexInformer<Kafka>> kafkaInformer;
 
-    @DeploymentManager.InjectDeploymentManager
-    DeploymentManager deployments;
-
     TestHelper utils;
     TopicHelper topicUtils;
     ConsumerUtils groupUtils;
@@ -114,7 +111,7 @@ class ConsumerGroupsResourceIT {
 
     @BeforeEach
     void setup() {
-        URI bootstrapServers = URI.create(deployments.getExternalBootstrapServers());
+        URI bootstrapServers = URI.create(config.getValue(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, String.class));
 
         topicUtils = new TopicHelper(bootstrapServers, config);
         topicUtils.deleteAllTopics();
