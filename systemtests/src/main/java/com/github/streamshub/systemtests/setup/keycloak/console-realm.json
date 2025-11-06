@@ -2,7 +2,7 @@
   "realm": "console-realm",
   "enabled": true,
   "accessTokenLifespan": 60,
-  "ssoSessionIdleTimeout": 864000,
+  "ssoSessionIdleTimeout": 0,
   "ssoSessionMaxLifespan": 864000,
   "sslRequired": "external",
   "roles":{

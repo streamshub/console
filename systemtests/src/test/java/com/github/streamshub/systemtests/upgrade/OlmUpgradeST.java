@@ -72,7 +72,7 @@ public class OlmUpgradeST extends AbstractUpgradeST {
         consoleOperatorSetup.install();
 
         LOGGER.info("Setup console instance");
-        ConsoleInstanceSetup.setupIfNeeded(ConsoleInstanceSetup.getDefaultConsoleInstance(tcc.namespace(), tcc.consoleInstanceName(), tcc.kafkaName(), tcc.kafkaUserName()));
+        ConsoleInstanceSetup.setupIfNeeded(ConsoleInstanceSetup.getDefaultConsoleInstance(tcc.namespace(), tcc.consoleInstanceName(), tcc.kafkaName(), tcc.kafkaUserName()).build());
 
         LOGGER.info("Verify console operator version");
 
