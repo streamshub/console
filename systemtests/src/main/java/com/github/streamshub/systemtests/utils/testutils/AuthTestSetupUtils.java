@@ -18,6 +18,7 @@ import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
 import java.util.List;
 
 public class AuthTestSetupUtils {
+    private AuthTestSetupUtils() {}
 
     public static List<KafkaCluster> getOidcKafkaClusters(String namespace) {
         return List.of(

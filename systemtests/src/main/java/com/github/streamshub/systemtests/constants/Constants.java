@@ -7,6 +7,7 @@ public class Constants {
     // ------------ General -----------
     // --------------------------------
     public static final int MAX_ACTION_RETRIES = 10;
+    public static final int LOGOUT_RETRIES = 5;
     /**
      * Cluster
      */

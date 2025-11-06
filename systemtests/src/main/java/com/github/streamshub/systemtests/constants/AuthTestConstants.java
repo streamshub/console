@@ -19,7 +19,9 @@ public class AuthTestConstants {
 
     // Kafka Cluster Names
     public static final String TEAM_DEV_KAFKA_NAME = "kc-team-dev";
+    public static final String TEAM_DEV_TOPIC_PREFIX = "dev-";
     public static final String TEAM_ADMIN_KAFKA_NAME = "kc-team-admin";
+    public static final String TEAM_ADMIN_TOPIC_PREFIX = "admin-";
 
     // JWT Claim
     public static final String CLAIM_GROUPS = "groups";
