@@ -1,9 +1,9 @@
-package com.github.streamshub.systemtests;
+package com.github.streamshub.systemtests.upgrade;
 
+import com.github.streamshub.systemtests.TestExecutionWatcher;
 import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.interfaces.BucketMethodsOrderRandomizer;
 import com.github.streamshub.systemtests.interfaces.ExtensionContextParameterResolver;
-import com.github.streamshub.systemtests.setup.console.ConsoleOperatorSetup;
 import com.github.streamshub.systemtests.setup.strimzi.StrimziOperatorSetup;
 import com.github.streamshub.systemtests.utils.SetupUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.ClusterUtils;
@@ -20,6 +20,7 @@ import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.ExtensionContext;
 
+
 @TestVisualSeparator
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @ResourceManager(cleanResources = false)
@@ -27,11 +28,9 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 @ExtendWith({TestExecutionWatcher.class})
 @ExtendWith(ExtensionContextParameterResolver.class)
 @TestMethodOrder(BucketMethodsOrderRandomizer.class)
-public abstract class AbstractST {
+public class AbstractUpgradeST {
     private static boolean initialized = false;
-    // Operators
     protected final StrimziOperatorSetup strimziOperatorSetup = new StrimziOperatorSetup(Constants.CO_NAMESPACE);
-    protected final ConsoleOperatorSetup consoleOperatorSetup = new ConsoleOperatorSetup(Constants.CO_NAMESPACE);
 
     @BeforeAll
     void setupTestSuite(ExtensionContext extensionContext) {
@@ -42,9 +41,10 @@ public abstract class AbstractST {
 
         KubeResourceManager.get().setTestContext(extensionContext);
         NamespaceUtils.prepareNamespace(Constants.CO_NAMESPACE);
+
         strimziOperatorSetup.install();
-        consoleOperatorSetup.install();
     }
+
 
     @BeforeEach
     void setupTestCase(ExtensionContext extensionContext) {

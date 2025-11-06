@@ -14,15 +14,25 @@ public class ConsoleOperatorSetup {
 
     public ConsoleOperatorSetup(String namespace) {
         switch (Environment.CONSOLE_INSTALL_TYPE) {
-            case Yaml -> installConfig = new YamlConfig(namespace);
+            case Yaml -> installConfig = new YamlConfig(namespace, Environment.CONSOLE_OPERATOR_BUNDLE_URL);
             case Olm -> installConfig = new OlmConfig(namespace);
             default -> throw new SetupException("Unknown installation type: " + Environment.CONSOLE_INSTALL_TYPE);
         }
     }
 
+    public void setInstallConfig(InstallConfig installConfig) {
+        this.installConfig = installConfig;
+    }
+
     public void install() {
+        install(true);
+    }
+
+    public void install(boolean deleteResourcesBeforeInstall) {
         LOGGER.info("----------- Install Console Operator -----------");
-        if (!ResourceUtils.listKubeResourcesByPrefix(Deployment.class, installConfig.getDeploymentNamespace(), installConfig.getDeploymentName()).isEmpty()) {
+        if (deleteResourcesBeforeInstall &&
+            !ResourceUtils.listKubeResourcesByPrefix(Deployment.class, installConfig.getDeploymentNamespace(), installConfig.getDeploymentName()).isEmpty()) {
+
             LOGGER.info("Clean up currently deployed operator to ensure correct operator is deployed");
             installConfig.delete();
         }
