@@ -1,0 +1,34 @@
+:_mod-docs-content-type: PROCEDURE
+
+[id='proc-checking-connectors-{context}']
+= Checking Kafka Connect connectors
+
+[role="_abstract"]
+Track the status of a specific Kafka Connect connector from the *Connectors* tab.
+The *Connectors* tab lists the connectors associated with a Kafka Connect cluster.
+
+.Procedure
+
+. Log in to the Kafka cluster in the StreamsHub Console, then click *Kafka Connect*.
+. On the *Kafka Connect* page, click the name of the connector you want to inspect.
++
+. Review the connector details:
++
+Connect worker ID:: Identifies the Kafka Connect worker that runs the connector.  
+State:: Shows the current status of the connector, such as *Running*, *Paused*, or *Failed*.  
+Topics:: Lists the Kafka topics used by the connector to produce or consume data.  
+Class:: Displays the Java class that implements the connector logic.  
+Type:: Indicates whether the connector is a *source* or *sink* connector.  
+Max tasks:: Specifies the maximum number of concurrent tasks that the connector can run.
+
+. Click the *Connectors* and *Configuration* tabs to view the following information:
++
+*Connectors* tab:
++
+--
+Task ID:: Identifies a specific task instance of the connector.
+State:: Shows the current status of the task, such as *Running*, *Paused*, or *Failed*.
+Worker ID:: Identifies the Kafka Connect worker that runs the task.
+--
++
+*Configuration* tab: Displays the property values that define how the connector is configured.

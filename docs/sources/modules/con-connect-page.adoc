@@ -1,0 +1,17 @@
+:_mod-docs-content-type: CONCEPT
+
+[id='con-connect-page-{context}']
+= Kafka Connect page
+
+[role="_abstract"]
+The *Kafka Connect* page lists Kafka Connect connectors and clusters associated with a Kafka cluster. 
+
+You can filter each list by name.
+
+Connectors list:: Shows the state of each connector and the number of tasks it's running, as well as the associated Kafka Connect cluster
+Clusters list:: Shows the Kafka Connect version, with the number of workers (or replicas) in the cluster. 
+
+If a connector is shown as *Managed*, it means that is managed using Strimzi. 
+
+Use the information provided on the tabs to check the configuration of your Kafka Connect environment. 
+Click on a name to view additional information on specific connectors and clusters.

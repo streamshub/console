@@ -7,7 +7,7 @@
 The *Consumer Groups* page lists all consumer groups associated with a Kafka cluster.
 You can filter the list by consumer group name or status.
 
-For each consumer group, you can view its status, the overall consumer lag across all partitions, and the number of members.
+For each consumer group, view the status, the overall consumer lag across all partitions, and the number of members.
 Click on associated topics to show the topic information available from the xref:con-topics-page-{context}[*Topics* page tabs]. 
 
 Consumer group status can be one of the following:

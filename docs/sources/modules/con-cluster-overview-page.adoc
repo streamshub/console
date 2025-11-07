@@ -5,7 +5,20 @@
 
 [role="_abstract"]
 The *Cluster overview* page shows the status of a Kafka cluster. 
-Here, you can assess the readiness of Kafka brokers, identify any cluster errors or warnings, and gain insights into the cluster's health.
-At a glance, the page provides information on the number of topics and partitions within the cluster, along with their replication status. 
-Explore cluster metrics through charts displaying used disk space, CPU utilization, and memory usage. 
-Additionally, topic metrics offer a comprehensive view of total incoming and outgoing byte rates for all topics in the Kafka cluster.
+Use this page to assess broker readiness, identify cluster errors or warnings, and monitor overall health.
+
+At a glance, the page displays:
+
+* Number of topics and partitions
+* Replication status
+* Cluster metrics:
+** Used disk space
+** CPU utilization
+** Memory usage
+* Topic metrics:
+** Total incoming byte rate
+** Total outgoing byte rate
+
+These metrics are presented in charts for quick scanning and analysis of cluster performance.
+
+To view more information, click on the broker and topic-related links.

@@ -33,7 +33,7 @@ For more information on configuring authentication, see the link:{BookURLDeployi
 
 .Procedure
 
-. From the homepage, optionally filter the list of clusters by name, then click *Login to cluster* for a selected Kafka cluster.
+. On the homepage, optionally filter the list of clusters by name, then click *Login to cluster* for a selected Kafka cluster.
 . Enter login credentials depending on the authentication method used.
 +
 * For SCRAM-SHA-512, enter the username and password associated with the `KafkaUser`. 

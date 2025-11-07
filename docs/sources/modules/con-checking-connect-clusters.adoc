@@ -1,0 +1,38 @@
+:_mod-docs-content-type: PROCEDURE
+
+[id='proc-checking-connect-clusters-{context}']
+= Checking Kafka Connect clusters
+
+[role="_abstract"]
+Track the status of a specific Kafka Connect cluster from the *Connect clusters* tab.
+The *Connect clusters* tab lists the Kafka Connect clusters associated with the Kafka cluster.
+
+.Procedure
+
+. Log in to the Kafka cluster in the StreamsHub Console, then click *Kafka Connect*.
+. On the *Kafka Connect* page, click the *Connect clusters* tab, then click the name of the cluster you want to inspect.
++
+The page displays the number of workers used to run connectors and their tasks. 
+This information is available only for Kafka Connect clusters managed by Strimzi. 
+
+. Click the *Connectors* and *Plugins* tabs to view the following information:
++
+*Connectors* tab:
++
+--
+Name:: Displays the name of the connector deployed in the cluster.  
+Type:: Indicates whether the connector is a *source* or *sink* connector.  
+State:: Shows the current status of the connector, such as *Running*, *Paused*, or *Failed*.  
+Replicas:: Displays the number of task replicas currently running for the connector.
+--
++
+*Plugins* tab:
++
+--
+Class:: Displays the fully qualified Java class name of the connector implementation.  
+Type:: Indicates the connector type.  
+Version:: Shows the plugin version provided by the Kafka Connect runtime.
+--
++
+Plugins provide the implementation classes used to create connectors. 
+The plugins list includes plugins for standard source and sink connectors, as well as the connectors used by Kafka MirrorMaker.

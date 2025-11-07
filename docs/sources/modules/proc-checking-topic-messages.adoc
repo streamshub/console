@@ -10,28 +10,26 @@ The *Messages* tab presents a chronological list of messages for a topic.
 .Procedure
 
 . Log in to the Kafka cluster in the StreamsHub Console, then click *Topics*.
-. From the *Topics* page, click the name of the topic you want to inspect.
+. On the *Topics* page, click the name of the topic you want to inspect.
 . Check the information on the *Messages* tab.
 +
-For each message, you can view its timestamp (in UTC), offset, key, and value.
+For each message, view the timestamp (in UTC), offset, key, and value.
 +
 Click on a message to view the full message details.
 +
-Click the *Manage columns* icon (represented as two columns) to choose the information to display.
+Click the *Manage columns* icon (represented as two-column icon) to choose the information to display.
 
 . Click the search dropdown and select the advanced search options to refine your search.
 +
 Choose to display the latest messages or messages from a specified time or offset. 
 You can display messages for all partitions or a specified partition.
 +
-When you are done, you can click the CSV icon (represented as a CSV file) to download the information on the returned messages. 
+When you are done, you can click the CSV icon (represented as a CSV file icon) to download the information on the returned messages. 
 
-.Refining your search
-
-In this example, search terms, and message, retrieval, and partition options are combined:
-
+Refining your search:: In this example, search terms, and message, retrieval, and partition options are combined:
++
 * `messages=timestamp:2024-03-01T00:00:00Z retrieve=50 partition=1 Error on page load where=value`
-
++
 The filter searches for the text "Error on page load" in partition 1 as a message value, starting from March 1, 2024, and retrieves up to 50 messages.
 
 Search terms:: Enter search terms as text (_has the words_) to find specific matches and define _where_ in a message to look for the term. You can search anywhere in the message or narrow the search to the key, header, or value.  
@@ -50,11 +48,11 @@ Message options:: Set the starting point for returning messages.
 ** `messages=latest`
 * *From offset* to start from an offset in a partition. In some cases, you may want to specify an offset without a partition. 
 However, the most common scenario is to search by offset within a specific partition.
-** `messages=offset:5600253 partition=0` 
+** `messages=offset:5600253 partition=0`
+* *From timestamp* to start from an exact time and date in ISO 8601 format.  
+** `messages=timestamp:2024-03-14T00:00:00Z` 
 * *From Unix timestamp* to start from a time and date in Unix format. 
 ** `messages=epoch:1`
-* *From timestamp* to start from an exact time and date in ISO 8601 format.  
-** `messages=timestamp:2024-03-14T00:00:00Z`
 
 Retrieval options:: Set a retrieval option.
 +
