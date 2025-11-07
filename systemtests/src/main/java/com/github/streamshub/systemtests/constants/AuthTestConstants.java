@@ -5,17 +5,17 @@ public class AuthTestConstants {
 
     // Keycloak Groups
     public static final String DEV_GROUP_NAME = "/developers-team";
-    public static final String ADMIN_GROUP_NAME = "/administrators";
-    public static final String VIEW_ONLY_GROUP_NAME = "/view-only";
-    public static final String TOPICS_VIEW_GROUP_NAME = "/topics-view";
-    public static final String CONSUMERGROUPS_VIEW_GROUP_NAME = "/consumergroups-view";
+    public static final String ADMIN_GROUP_NAME = "/administrators-team";
+    public static final String VIEW_ONLY_GROUP_NAME = "/view-only-team";
+    public static final String TOPICS_VIEW_GROUP_NAME = "/topics-view-team";
+    public static final String CONSUMERGROUPS_VIEW_GROUP_NAME = "/consumergroups-view-team";
 
     // Console Roles
     public static final String DEV_ROLE_NAME = "developers-role";
-    public static final String ADMIN_ROLE_NAME = "administrators";
-    public static final String READ_ONLY_ROLE_NAME = "readers";
-    public static final String TOPICS_VIEW_ROLE_NAME = "topics-viewer";
-    public static final String CONSUMERGROUPS_VIEW_ROLE_NAME = "consumer-viewer";
+    public static final String ADMIN_ROLE_NAME = "administrators-role";
+    public static final String VIEW_ONLY_ROLE_NAME = "viewer-role";
+    public static final String TOPICS_VIEW_ROLE_NAME = "topics-role";
+    public static final String CONSUMERGROUPS_VIEW_ROLE_NAME = "consumergroups-role";
 
     // Kafka Cluster Names
     public static final String TEAM_DEV_KAFKA_NAME = "kc-team-dev";
@@ -27,7 +27,6 @@ public class AuthTestConstants {
     public static final String CLAIM_GROUPS = "groups";
 
     // Test Usernames
-
     // developer
     public static final String USER_DEV_BOB = "bob";
     // admin

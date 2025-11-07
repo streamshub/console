@@ -1,9 +1,11 @@
 {
   "realm": "console-realm",
   "enabled": true,
-  "accessTokenLifespan": 60,
-  "ssoSessionIdleTimeout": 0,
+  "accessTokenLifespan": 6000,
+  "ssoSessionIdleTimeout": 864000,
   "ssoSessionMaxLifespan": 864000,
+  "accessCodeLifespan": 6000,
+  "accessCodeLifespanUserAction": 6000,
   "notBefore": 0,
   "sslRequired": "external",
   "rememberMe": false,
@@ -45,29 +47,29 @@
       ]
     },
     {
-      "name":"administrators",
-      "path":"/administrators",
+      "name":"administrators-team",
+      "path":"/administrators-team",
       "realmRoles":[
         "administrators-role"
       ]
     },
     {
-      "name":"view-only",
-      "path":"/view-only",
+      "name":"view-only-team",
+      "path":"/view-only-team",
       "realmRoles":[
         "viewer-role"
       ]
     },
     {
-      "name":"topics-view",
-      "path":"/topics-view",
+      "name":"topics-view-team",
+      "path":"/topics-view-team",
       "realmRoles":[
         "topics-role"
       ]
     },
     {
-      "name":"consumergroups-view",
-      "path":"/consumergroups-view",
+      "name":"consumergroups-view-team",
+      "path":"/consumergroups-view-team",
       "realmRoles":[
         "consumergroups-role"
       ]
@@ -86,7 +88,7 @@
       "enabled":true,
       "emailVerified":true,
       "firstName":"Bob",
-      "lastName":"TheDevbuilder",
+      "lastName":"TheDeveloper",
       "email":"bob@streamshub.io",
       "credentials":[
         {
@@ -96,6 +98,23 @@
       ],
       "groups":[
         "/developers-team"
+      ]
+    },
+    {
+      "username":"alice",
+      "enabled":true,
+      "emailVerified":true,
+      "firstName":"alice",
+      "lastName":"TheAdmin",
+      "email":"alice@streamshub.io",
+      "credentials":[
+        {
+          "type":"password",
+          "value":"alice"
+        }
+      ],
+      "groups":[
+        "/administrators-team"
       ]
     }
   ],
