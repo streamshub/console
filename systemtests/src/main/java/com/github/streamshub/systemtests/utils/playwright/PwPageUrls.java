@@ -50,4 +50,8 @@ public class PwPageUrls {
     public static String getConsumerGroupsResetOffsetPage(TestCaseConfig tcc, String kafkaName, String consumerGroupName) {
         return getKafkaBaseUrl(tcc, kafkaName) + "/consumer-groups/" + consumerGroupName + "/reset-offset";
     }
+
+    public static String getKafkaConnectPage(TestCaseConfig tcc, String kafkaName) {
+        return getKafkaBaseUrl(tcc, kafkaName) + "/kafka-connect";
+    }
 }
