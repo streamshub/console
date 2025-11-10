@@ -1,5 +1,6 @@
 package com.github.streamshub.systemtests.auth;
 
+import com.github.streamshub.console.dependents.ConsoleResource;
 import com.github.streamshub.systemtests.AbstractST;
 import com.github.streamshub.systemtests.TestCaseConfig;
 import com.github.streamshub.systemtests.clients.KafkaClients;
@@ -15,18 +16,27 @@ import com.github.streamshub.systemtests.locators.CssSelectors;
 import com.github.streamshub.systemtests.locators.KafkaDashboardPageSelectors;
 import com.github.streamshub.systemtests.locators.TopicsPageSelectors;
 import com.github.streamshub.systemtests.logs.LogWrapper;
+import com.github.streamshub.systemtests.setup.console.ConsoleInstanceSetup;
 import com.github.streamshub.systemtests.setup.keycloak.KeycloakConfig;
 import com.github.streamshub.systemtests.setup.keycloak.KeycloakSetup;
+import com.github.streamshub.systemtests.setup.strimzi.KafkaSetup;
+import com.github.streamshub.systemtests.utils.FileUtils;
 import com.github.streamshub.systemtests.utils.Utils;
 import com.github.streamshub.systemtests.utils.WaitUtils;
 import com.github.streamshub.systemtests.utils.playwright.PwPageUrls;
 import com.github.streamshub.systemtests.utils.playwright.PwUtils;
+import com.github.streamshub.systemtests.utils.resourceutils.ClusterUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.ConsoleUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.KafkaClientsUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.KafkaNamingUtils;
+import com.github.streamshub.systemtests.utils.resourceutils.KafkaTopicUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.KafkaUtils;
+import com.github.streamshub.systemtests.utils.resourceutils.NamespaceUtils;
 import com.github.streamshub.systemtests.utils.testchecks.TopicChecks;
+import com.github.streamshub.systemtests.utils.testutils.AuthTestSetupUtils;
 import com.github.streamshub.systemtests.utils.testutils.TopicsTestUtils;
+import io.fabric8.kubernetes.api.model.ConfigMapBuilder;
+import io.fabric8.kubernetes.api.model.SecretBuilder;
 import io.skodjob.testframe.resources.KubeResourceManager;
 import org.apache.kafka.common.security.auth.SecurityProtocol;
 import org.apache.logging.log4j.Logger;
@@ -37,6 +47,8 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
+
+import java.util.Base64;
 
 import static com.github.streamshub.systemtests.utils.Utils.getTestCaseConfig;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -272,45 +284,45 @@ public class AuthST extends AbstractST {
 
         // Setup namespace and kafka + console instance
         tcc = getTestCaseConfig();
-        // NamespaceUtils.prepareNamespace(tcc.namespace());
-        //
-        // // Setup Kafkas for both teams
-        // // Dev Kafka
-        // KafkaSetup.setupDefaultKafkaIfNeeded(tcc.namespace(), AuthTestConstants.TEAM_DEV_KAFKA_NAME);
-        // KafkaTopicUtils.setupTopicsAndReturn(tcc.namespace(), AuthTestConstants.TEAM_DEV_KAFKA_NAME,
-        //     AuthTestConstants.TEAM_DEV_TOPIC_PREFIX + Constants.REPLICATED_TOPICS_PREFIX,
-        //     DEV_REPLICATED_TOPICS_COUNT, true, 1, 1, 1);
-        //
-        // // Admin Kafka
-        // KafkaSetup.setupDefaultKafkaIfNeeded(tcc.namespace(), AuthTestConstants.TEAM_ADMIN_KAFKA_NAME);
-        // KafkaTopicUtils.setupTopicsAndReturn(tcc.namespace(), AuthTestConstants.TEAM_ADMIN_KAFKA_NAME, AuthTestConstants.TEAM_ADMIN_TOPIC_PREFIX + Constants.REPLICATED_TOPICS_PREFIX,
-        //     ADMIN_REPLICATED_TOPICS_COUNT, true, 1, 1, 1);
-        //
-        // // Import console auth realm
-        // KeycloakSetup.importConsoleRealm(keycloakConfig, "https://" + tcc.consoleInstanceName() + "." + ClusterUtils.getClusterDomain());
-        //
-        // //Secret to truststore
-        // KubeResourceManager.get().createOrUpdateResourceWithWait(new SecretBuilder()
-        //     .withNewMetadata()
-        //         .withName(Constants.KEYCLOAK_TRUST_STORE_ACCCESS_SECRET_NAME)
-        //         .withNamespace(tcc.namespace())
-        //         .addToLabels(ConsoleResource.MANAGEMENT_LABEL)
-        //     .endMetadata()
-        //     .addToData(Constants.PASSWORD_KEY_NAME, Base64.getEncoder().encodeToString(Constants.TRUST_STORE_PASSWORD.getBytes()))
-        //     .build());
-        //
-        // // Configmap with truststore
-        // KubeResourceManager.get().createOrUpdateResourceWithWait(new ConfigMapBuilder()
-        //     .withNewMetadata()
-        //         .withName(Constants.KEYCLOAK_TRUST_STORE_CONFIGMAP_NAME)
-        //         .withNamespace(tcc.namespace())
-        //         .addToLabels(ConsoleResource.MANAGEMENT_LABEL)
-        //     .endMetadata()
-        //     .addToBinaryData(Constants.TRUST_STORE_KEY_NAME, Base64.getEncoder().encodeToString(FileUtils.readFileBytes(Constants.TRUST_STORE_FILE_PATH)))
-        //     .build());
-        //
-        // // Console instance
-        // ConsoleInstanceSetup.setupIfNeeded(AuthTestSetupUtils.getOidcConsoleInstance(tcc.namespace(), tcc.consoleInstanceName(), keycloakConfig));
+        NamespaceUtils.prepareNamespace(tcc.namespace());
+
+        // Setup Kafkas for both teams
+        // Dev Kafka
+        KafkaSetup.setupDefaultKafkaIfNeeded(tcc.namespace(), AuthTestConstants.TEAM_DEV_KAFKA_NAME);
+        KafkaTopicUtils.setupTopicsAndReturn(tcc.namespace(), AuthTestConstants.TEAM_DEV_KAFKA_NAME,
+            AuthTestConstants.TEAM_DEV_TOPIC_PREFIX + Constants.REPLICATED_TOPICS_PREFIX,
+            DEV_REPLICATED_TOPICS_COUNT, true, 1, 1, 1);
+
+        // Admin Kafka
+        KafkaSetup.setupDefaultKafkaIfNeeded(tcc.namespace(), AuthTestConstants.TEAM_ADMIN_KAFKA_NAME);
+        KafkaTopicUtils.setupTopicsAndReturn(tcc.namespace(), AuthTestConstants.TEAM_ADMIN_KAFKA_NAME, AuthTestConstants.TEAM_ADMIN_TOPIC_PREFIX + Constants.REPLICATED_TOPICS_PREFIX,
+            ADMIN_REPLICATED_TOPICS_COUNT, true, 1, 1, 1);
+
+        // Import console auth realm
+        KeycloakSetup.importConsoleRealm(keycloakConfig, "https://" + tcc.consoleInstanceName() + "." + ClusterUtils.getClusterDomain());
+
+        //Secret to truststore
+        KubeResourceManager.get().createOrUpdateResourceWithWait(new SecretBuilder()
+            .withNewMetadata()
+                .withName(Constants.KEYCLOAK_TRUST_STORE_ACCCESS_SECRET_NAME)
+                .withNamespace(tcc.namespace())
+                .addToLabels(ConsoleResource.MANAGEMENT_LABEL)
+            .endMetadata()
+            .addToData(Constants.PASSWORD_KEY_NAME, Base64.getEncoder().encodeToString(Constants.TRUST_STORE_PASSWORD.getBytes()))
+            .build());
+
+        // Configmap with truststore
+        KubeResourceManager.get().createOrUpdateResourceWithWait(new ConfigMapBuilder()
+            .withNewMetadata()
+                .withName(Constants.KEYCLOAK_TRUST_STORE_CONFIGMAP_NAME)
+                .withNamespace(tcc.namespace())
+                .addToLabels(ConsoleResource.MANAGEMENT_LABEL)
+            .endMetadata()
+            .addToBinaryData(Constants.TRUST_STORE_KEY_NAME, Base64.getEncoder().encodeToString(FileUtils.readFileBytes(Constants.TRUST_STORE_FILE_PATH)))
+            .build());
+
+        // Console instance
+        ConsoleInstanceSetup.setupIfNeeded(AuthTestSetupUtils.getOidcConsoleInstance(tcc.namespace(), tcc.consoleInstanceName(), keycloakConfig));
     }
 
     @AfterAll
