@@ -457,7 +457,7 @@ public class PwUtils {
 
     public static void logoutUser(TestCaseConfig tcc, String userName) {
 
-        Utils.retryAction("Log-out user", ()-> {
+        Utils.retryAction("Log-out user " + userName, () -> {
             String dashboardUrl = ConsoleUtils.getConsoleUiUrl(tcc.namespace(), tcc.consoleInstanceName(), true) + "/";
 
             // There is a xpath difference between logout button in dashboard and in navbar on other pages

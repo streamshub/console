@@ -37,11 +37,7 @@ public class AuthTestSetupUtils {
                     .addNewRole()
                         .withName(AuthTestConstants.DEV_ROLE_NAME)
                         .addNewRule()
-                            .addToResources(
-                                ResourceTypes.Kafka.TOPICS.value(),
-                                ResourceTypes.Kafka.TOPIC_RECORDS.value(),
-                                ResourceTypes.Kafka.NODES.value(),
-                                ResourceTypes.Kafka.CONSUMER_GROUPS.value())
+                            .withResources(ResourceTypes.Kafka.ALL.expand().stream().map(ResourceTypes.ResourceType::value).toList())
                             .withPrivileges(Rule.Privilege.GET, Rule.Privilege.LIST)
                         .endRule()
                     .endRole()
@@ -53,32 +49,11 @@ public class AuthTestSetupUtils {
                         .endRule()
                     .endRole()
                     .addNewRole()
-                        .withName(AuthTestConstants.VIEW_ONLY_ROLE_NAME)
-                        .addNewRule()
-                            .addToResources(
-                                ResourceTypes.Kafka.TOPICS.value(),
-                                ResourceTypes.Kafka.TOPIC_RECORDS.value(),
-                                ResourceTypes.Kafka.NODES.value(),
-                                ResourceTypes.Kafka.NODE_CONFIGS.value(),
-                                ResourceTypes.Kafka.REBALANCES.value(),
-                                ResourceTypes.Kafka.CONSUMER_GROUPS.value())
-                            .withPrivileges(Rule.Privilege.GET, Rule.Privilege.LIST)
-                        .endRule()
-                    .endRole()
-                    .addNewRole()
                         .withName(AuthTestConstants.TOPICS_VIEW_ROLE_NAME)
                         .addNewRule()
                             .addToResources(
                                 ResourceTypes.Kafka.TOPICS.value(),
                                 ResourceTypes.Kafka.TOPIC_RECORDS.value())
-                            .withPrivileges(Rule.Privilege.GET, Rule.Privilege.LIST)
-                        .endRule()
-                    .endRole()
-                    .addNewRole()
-                        .withName(AuthTestConstants.CONSUMERGROUPS_VIEW_ROLE_NAME)
-                        .addNewRule()
-                            .addToResources(
-                                ResourceTypes.Kafka.CONSUMER_GROUPS.value())
                             .withPrivileges(Rule.Privilege.GET, Rule.Privilege.LIST)
                         .endRule()
                     .endRole()
@@ -107,7 +82,7 @@ public class AuthTestSetupUtils {
                     .addNewRole()
                         .withName(AuthTestConstants.ADMIN_ROLE_NAME)
                         .addNewRule()
-                            .addToResources(ResourceTypes.Global.ALL.value())
+                            .withResources(ResourceTypes.Kafka.ALL.expand().stream().map(ResourceTypes.ResourceType::value).toList())
                             .withPrivileges(Rule.Privilege.ALL)
                         .endRule()
                     .endRole()
@@ -160,11 +135,6 @@ public class AuthTestSetupUtils {
                     .endSubject()
                     .addNewSubject()
                         .withClaim(AuthTestConstants.CLAIM_GROUPS)
-                        .addToInclude(AuthTestConstants.VIEW_ONLY_GROUP_NAME)
-                        .addToRoleNames(AuthTestConstants.VIEW_ONLY_ROLE_NAME)
-                    .endSubject()
-                    .addNewSubject()
-                        .withClaim(AuthTestConstants.CLAIM_GROUPS)
                         .addToInclude(AuthTestConstants.TOPICS_VIEW_GROUP_NAME)
                         .addToRoleNames(AuthTestConstants.TOPICS_VIEW_ROLE_NAME)
                     .endSubject()
@@ -192,7 +162,7 @@ public class AuthTestSetupUtils {
                         .endRule()
                     .endRole()
                     .addNewRole()
-                        .withName(AuthTestConstants.VIEW_ONLY_ROLE_NAME)
+                        .withName(AuthTestConstants.TOPICS_VIEW_ROLE_NAME)
                         .addNewRule()
                             .withResources(ResourceTypes.Global.KAFKAS.value())
                             .withResourceNames(AuthTestConstants.TEAM_DEV_KAFKA_NAME)
@@ -200,16 +170,10 @@ public class AuthTestSetupUtils {
                         .endRule()
                     .endRole()
                     .addNewRole()
-                        .withName(AuthTestConstants.TOPICS_VIEW_ROLE_NAME)
-                        .addNewRule()
-                            .withResources(ResourceTypes.Global.KAFKAS.value())
-                            .withPrivileges(Rule.Privilege.GET, Rule.Privilege.LIST)
-                        .endRule()
-                    .endRole()
-                    .addNewRole()
                         .withName(AuthTestConstants.CONSUMERGROUPS_VIEW_ROLE_NAME)
                         .addNewRule()
                             .withResources(ResourceTypes.Global.KAFKAS.value())
+                            .withResourceNames(AuthTestConstants.TEAM_DEV_KAFKA_NAME)
                             .withPrivileges(Rule.Privilege.GET, Rule.Privilege.LIST)
                         .endRule()
                     .endRole()

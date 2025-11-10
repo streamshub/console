@@ -54,13 +54,6 @@
       ]
     },
     {
-      "name":"view-only-team",
-      "path":"/view-only-team",
-      "realmRoles":[
-        "viewer-role"
-      ]
-    },
-    {
       "name":"topics-view-team",
       "path":"/topics-view-team",
       "realmRoles":[
@@ -115,6 +108,40 @@
       ],
       "groups":[
         "/administrators-team"
+      ]
+    },
+    {
+      "username":"frank",
+      "enabled":true,
+      "emailVerified":true,
+      "firstName":"frank",
+      "lastName":"TopicOnlyViewer",
+      "email":"frank@streamshub.io",
+      "credentials":[
+        {
+          "type":"password",
+          "value":"frank"
+        }
+      ],
+      "groups":[
+        "/topics-view-team"
+      ]
+    },
+    {
+      "username":"grace",
+      "enabled":true,
+      "emailVerified":true,
+      "firstName":"grace",
+      "lastName":"ConsuemerOnlyViewer",
+      "email":"grace@streamshub.io",
+      "credentials":[
+        {
+          "type":"password",
+          "value":"grace"
+        }
+      ],
+      "groups":[
+        "/consumergroups-view-team"
       ]
     }
   ],

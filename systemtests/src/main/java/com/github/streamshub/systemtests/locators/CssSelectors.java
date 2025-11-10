@@ -211,4 +211,13 @@ public class CssSelectors {
         .withElementLi().withComponentMenu().withSubComponentListItem().withChild()
         .withElementButton().withComponentMenu().withSubComponentItem()
         .build();
+
+    public static final String PAGES_NOT_AUTHORIZED_CONTENT = new CssBuilder(PAGES_MAIN_CONTENT)
+        .withChild()
+        .withElementDiv().withComponentEmptyState().withChild()
+        .withElementDiv().withComponentEmptyState().withSubComponentContent().withChild()
+        .withElementDiv().withComponentEmptyState().withSubComponentHeader().withChild()
+        .withElementDiv().withComponentEmptyState().withSubComponentTitle().withChild()
+        .withElementH1().withComponentEmptyState().withSubComponentTitleText()
+        .build();
 }
