@@ -1,0 +1,61 @@
+:_mod-docs-content-type: REFERENCE
+
+// Module included in the following assemblies:
+//
+// assembly-deploying.adoc
+
+[id='ref-kafka-connect-clusters-{context}']
+= Adding Kafka Connect clusters
+
+[role="_abstract"]
+Integrate Kafka Connect clusters with the console to view available connectors and their configurations.  
+You can associate one or more Kafka Connect clusters with one or more Kafka clusters that are already defined in the console configuration.  
+The console displays Connect cluster and connector information but does not allow modification.
+
+A placeholder for adding Connect clusters is provided in: `examples/console/010-Console-example.yaml`.
+
+You can define Connect clusters globally as part of the console configuration using the `kafkaConnectClusters` property.
+
+`kafkaConnectClusters`:: Defines one or more Kafka Connect clusters that the console can connect to in order to retrieve connector information.  
+Each entry includes a `name`, an endpoint `url`, and a list of Kafka clusters with which the Connect cluster is associated.
+
+`kafkaClusters`:: Lists the Kafka clusters associated with the Kafka Connect cluster.  
+Each Kafka cluster is referenced by its `<namespace>/<name>` combination as defined in the `kafkaClusters` configuration.  
+For standalone Kafka clusters without a namespace, specify only the cluster name.
+
+.Example Kafka Connect cluster configuration
+[source,yaml]
+----
+apiVersion: console.streamshub.github.com/v1alpha1
+kind: Console
+metadata:
+  name: my-console
+spec:
+  hostname: my-console.<cluster_domain>
+  kafkaClusters:
+    - name: console-kafka
+      namespace: kafka
+      listener: secure
+      metricsSource: my-ocp-prometheus
+      credentials:
+        kafkaUser:
+          name: console-kafka-user1
+  kafkaConnectClusters:
+    - name: my-connect-cluster # <1>
+      url: http://my-connect-cluster.example.com/ # <2>
+      kafkaClusters: # <3>
+        - kafka/console-kafka
+    - name: my-mm2-cluster # <4>
+      url: http://my-mm2-cluster.example.com/
+      kafkaClusters: # <5>
+        - ns1/kafka1
+        - ns2/kafka2
+  # ...
+----
+<1> A unique name for the Connect cluster.
+<2> Base URL of the Kafka Connect REST API endpoint.
+<3> Associates the Connect cluster with one or more Kafka clusters configured in the console.
+<4> Example entry for a MirrorMaker 2 Connect cluster.
+<5> Associates this Kafka Connect cluster with multiple Kafka clusters in different namespaces.
+
+When the console is deployed with these settings, Connect clusters and connector details can be viewed from the **Kafka Connect** page of the console.

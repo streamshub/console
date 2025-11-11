@@ -31,3 +31,13 @@ spec:
         kafkaUser:
           name: console-kafka-user1   # Name of the `KafkaUser` resource used to connect to Kafka
                                       # This is optional if properties are used to configure the user
+  kafkaConnectClusters: [
+    # Array of Kafka Connect clusters that the console can connect to
+    # for viewing connector and configuration details.
+    # Each entry defines the name, endpoint URL, and associated Kafka clusters.
+    #
+    # - name: my-connect-cluster
+    #   url: http://my-connect-cluster.example.com/
+    #   kafkaClusters:
+    #     - ${KAFKA_NAMESPACE}/console-kafka
+  ]                                    

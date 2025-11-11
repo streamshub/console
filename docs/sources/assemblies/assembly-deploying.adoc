@@ -16,6 +16,17 @@ You can configure the console to use an existing Prometheus source.
 If no source is set, the operator creates a private Prometheus instance when the console is deployed. 
 However, this default setup is not recommended for production and should only be used for development or evaluation purposes.
 
+Connect the console to one or more Kafka clusters to provide visibility into topics, Kafka nodes, and consumer groups.
+
+Configure the console to integrate with related services, including:
+
+* **Authentication providers** for securing access to Kafka clusters
+* **Kafka Connect clusters** for viewing connector and configuration details
+* **Metrics providers** for monitoring Kafka cluster performance
+* **Schema registries** for managing and validating data schemas
+
+Define these integrations in the `Console` custom resource configuration YAML file.
+
 //Prereqs, including example Kafka install 
 include::../modules/deploying/con-deploying-prereqs.adoc[leveloffset=+1]
 include::../modules/deploying/proc-deploying-kafka.adoc[leveloffset=+2]
@@ -29,6 +40,8 @@ include::../modules/deploying/proc-deploying-operator-crd.adoc[leveloffset=+2]
 include::../modules/deploying/proc-connecting-console.adoc[leveloffset=+1]
 //cluster connection authentication options
 include::../modules/deploying/ref-authentication-options.adoc[leveloffset=+2]
+//kafka connect 
+include::../modules/deploying/ref-kafka-connect-clusters.adoc[leveloffset=+2]
 //cluster metrics options
 include::../modules/deploying/ref-metrics-options.adoc[leveloffset=+2]
 //cluster schema registry options
