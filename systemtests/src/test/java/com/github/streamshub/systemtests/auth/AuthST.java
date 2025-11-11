@@ -291,12 +291,12 @@ public class AuthST extends AbstractST {
         KafkaSetup.setupDefaultKafkaIfNeeded(tcc.namespace(), AuthTestConstants.TEAM_DEV_KAFKA_NAME);
         KafkaTopicUtils.setupTopicsAndReturn(tcc.namespace(), AuthTestConstants.TEAM_DEV_KAFKA_NAME,
             AuthTestConstants.TEAM_DEV_TOPIC_PREFIX + Constants.REPLICATED_TOPICS_PREFIX,
-            DEV_REPLICATED_TOPICS_COUNT, true, 1, 1, 1);
+            AuthTestConstants.DEV_REPLICATED_TOPICS_COUNT, true, 1, 1, 1);
 
         // Admin Kafka
         KafkaSetup.setupDefaultKafkaIfNeeded(tcc.namespace(), AuthTestConstants.TEAM_ADMIN_KAFKA_NAME);
         KafkaTopicUtils.setupTopicsAndReturn(tcc.namespace(), AuthTestConstants.TEAM_ADMIN_KAFKA_NAME, AuthTestConstants.TEAM_ADMIN_TOPIC_PREFIX + Constants.REPLICATED_TOPICS_PREFIX,
-            ADMIN_REPLICATED_TOPICS_COUNT, true, 1, 1, 1);
+            AuthTestConstants.ADMIN_REPLICATED_TOPICS_COUNT, true, 1, 1, 1);
 
         // Import console auth realm
         KeycloakSetup.importConsoleRealm(keycloakConfig, "https://" + tcc.consoleInstanceName() + "." + ClusterUtils.getClusterDomain());
