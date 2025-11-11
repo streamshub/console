@@ -1,4 +1,4 @@
-package com.github.streamshub.systemtests.utils;
+package com.github.streamshub.systemtests.utils.resourceutils;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -9,8 +9,6 @@ import com.github.streamshub.systemtests.constants.Labels;
 import com.github.streamshub.systemtests.exceptions.SetupException;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.setup.keycloak.KeycloakConfig;
-import com.github.streamshub.systemtests.utils.resourceutils.ClusterUtils;
-import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
 import io.fabric8.kubernetes.api.model.LabelSelector;
 import io.fabric8.kubernetes.api.model.Pod;
 import io.fabric8.kubernetes.api.model.networking.v1.NetworkPolicy;
@@ -29,7 +27,7 @@ public class KeycloakUtils {
 
     private KeycloakUtils() {}
 
-    private final static LabelSelector SCRAPER_SELECTOR = new LabelSelector(null, Map.of(Labels.APP, Constants.SCRAPER_NAME));
+    private static final LabelSelector SCRAPER_SELECTOR = new LabelSelector(null, Map.of(Labels.APP, Constants.SCRAPER_NAME));
 
     public static String importRealm(String namespaceName, String baseURI, String token, String realmData) {
         final String testSuiteScraperPodName = ResourceUtils.listKubeResourcesByPrefix(Pod.class, namespaceName, Constants.SCRAPER_NAME).get(0).getMetadata().getName();
@@ -107,7 +105,7 @@ public class KeycloakUtils {
 
     public static void allowNetworkPolicyAllIngressForMatchingLabel(String namespaceName, String policyName, Map<String, String> matchLabels) {
         if (Environment.DEFAULT_TO_DENY_NETWORK_POLICIES) {
-            LOGGER.info("Apply NetworkPolicy with Ingress to accept all connections to the Pods matching labels: {}", matchLabels.toString());
+            LOGGER.info("Apply NetworkPolicy with Ingress to accept all connections to the Pods matching labels: {}", matchLabels);
 
             NetworkPolicy networkPolicy = new NetworkPolicyBuilder()
                 .withNewMetadata()
@@ -161,7 +159,7 @@ public class KeycloakUtils {
 
                 return false;
             } catch (Exception e) {
-                LOGGER.warn("Exception occurred during doing request on Keycloak API: " + e.getMessage());
+                LOGGER.warn("Exception occurred during doing request on Keycloak API: {}", e.getMessage());
                 return false;
             }
         });
