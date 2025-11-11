@@ -7,7 +7,7 @@ import com.github.streamshub.systemtests.exceptions.SetupException;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.setup.ScraperPod;
 import com.github.streamshub.systemtests.utils.FileUtils;
-import com.github.streamshub.systemtests.utils.KeycloakUtils;
+import com.github.streamshub.systemtests.utils.resourceutils.KeycloakUtils;
 import com.github.streamshub.systemtests.utils.WaitUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
 import io.fabric8.kubernetes.api.model.ConfigMap;
