@@ -8,29 +8,37 @@ export async function handleLogout() {
 
   const oidc = await oidcSource();
 
-  if (oidc.isEnabled()) {
-    const session = await getSession();
-    const idToken = session?.idToken;
+  try {
+    // Check if OIDC is configured
+    if (oidc.isEnabled()) {
+      const session = await getSession();
+      const idToken = session?.idToken;
 
-    const discovery = await fetch(`${oidc.provider!.wellKnown}`);
-    const discoveryDoc = await discovery.json();
+      const discovery = await fetch(`${oidc.provider!.wellKnown}`);
+      const discoveryDoc = await discovery.json();
 
-    const endSessionEndpoint = discoveryDoc.end_session_endpoint;
-    if (endSessionEndpoint && idToken) {
-      const logoutUrl = `${endSessionEndpoint}?id_token_hint=${encodeURIComponent(
-        idToken,
-      )}&post_logout_redirect_uri=${encodeURIComponent(
-        window.location.origin + "/api/auth/oidc/signin",
-      )}`;
+      const endSessionEndpoint = discoveryDoc.end_session_endpoint;
 
-      // Clear local session without redirect flicker
-      await signOut({ redirect: false });
+      if (endSessionEndpoint) {
+        // Build logout URL (with or without id_token_hint)
+        const logoutUrl = `${endSessionEndpoint}${
+          idToken ? `?id_token_hint=${encodeURIComponent(idToken)}&` : "?"
+        }post_logout_redirect_uri=${encodeURIComponent(
+          window.location.origin + "/api/auth/oidc/signin",
+        )}`;
 
-      // Then navigate browser to Keycloak logout page
-      window.location.href = logoutUrl;
-      return;
+        // Sign out locally but don’t redirect immediately
+        await signOut({ redirect: false });
+
+        // Redirect to OIDC provider logout
+        window.location.href = logoutUrl;
+        return;
+      }
     }
+  } catch (err) {
+    console.error("OIDC logout failed, falling back to default logout:", err);
   }
 
+  // Default fallback if OIDC isn't enabled or fails
   return signOut({ callbackUrl: "/" });
 }
