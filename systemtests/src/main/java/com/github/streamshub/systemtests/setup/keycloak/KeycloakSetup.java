@@ -65,12 +65,10 @@ public class KeycloakSetup {
     private static final String POSTGRES_PASSWORD = "testpasswd";
 
     private String namespace;
-    private KeycloakConfig keycloakConfig;
 
     public KeycloakSetup(String namespace) {
         this.namespace = namespace;
     }
-
 
     /**
      * Sets up a complete Keycloak environment in the given namespace and returns a Keycloak configuration.
@@ -98,12 +96,12 @@ public class KeycloakSetup {
 
         Secret keycloakAdminSecret = ResourceUtils.getKubeResource(Secret.class, namespace, KEYCLOAK_SECRET_NAME);
 
-        keycloakConfig = new KeycloakConfig(namespace,
+        KeycloakConfig keycloakConfig = new KeycloakConfig(namespace,
             new String(Base64.getDecoder().decode(keycloakAdminSecret.getData().get("password")), StandardCharsets.UTF_8),
             new String(Base64.getDecoder().decode(keycloakAdminSecret.getData().get("username")), StandardCharsets.UTF_8));
 
         // Prepare truststore
-        Exec.exec(List.of(Constants.BASH_CMD, PREPARE_TRUST_STORE_SCRIPT_PATH, namespace, KeycloakUtils.getKeycloakHostname(false), Constants.TRUST_STORE_PASSWORD, Constants.TRUST_STORE_FILE_PATH));
+        Exec.exec(List.of(Constants.BASH_CMD, PREPARE_TRUST_STORE_SCRIPT_PATH, namespace, KeycloakUtils.getKeycloakHostname(false), Constants.TRUST_STORE_PASSWORD, Environment.KEYCLOAK_TRUST_STORE_FILE_PATH));
         return keycloakConfig;
     }
 

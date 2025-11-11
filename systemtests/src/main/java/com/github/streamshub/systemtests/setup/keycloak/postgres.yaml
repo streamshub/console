@@ -14,6 +14,16 @@ spec:
     spec:
       containers:
         - name: postgres
+          resources:
+            requests:
+              cpu: 0.5
+              memory: 700Mi
+              ephemeral-storage: 1Gi
+            limits:
+              memory: 1Gi
+              ephemeral-storage: 2Gi
+              cpu: 1
+          automountServiceAccountToken: false
           image: ${POSTGRES_IMAGE}
           envFrom:
             - configMapRef:

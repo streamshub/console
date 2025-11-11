@@ -2,8 +2,8 @@
 
 set -euo pipefail
 
-if [ -z "${1-}" ]; then echo "ERROR: KEYCLOAK_OPERATOR_NAMESPACE (arg 1) is missing"; exit 1; fi
-if [ -z "${2-}" ]; then echo "ERROR: KEYCLOAK_VERSION (arg 2) is missing"; exit 1; fi
+if [[ -z "${1-}" ]]; then echo "ERROR: KEYCLOAK_OPERATOR_NAMESPACE (arg 1) is missing" >&2; exit 1; fi
+if [[ -z "${2-}" ]]; then echo "ERROR: KEYCLOAK_VERSION (arg 2) is missing" >&2; exit 1; fi
 
 KEYCLOAK_OPERATOR_NAMESPACE=$1
 KEYCLOAK_VERSION=$2
