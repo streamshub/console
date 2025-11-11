@@ -2,6 +2,7 @@ package com.github.streamshub.systemtests.auth;
 
 import com.github.streamshub.console.dependents.ConsoleResource;
 import com.github.streamshub.systemtests.AbstractST;
+import com.github.streamshub.systemtests.Environment;
 import com.github.streamshub.systemtests.TestCaseConfig;
 import com.github.streamshub.systemtests.clients.KafkaClients;
 import com.github.streamshub.systemtests.clients.KafkaClientsBuilder;
@@ -52,6 +53,7 @@ import java.util.Base64;
 
 import static com.github.streamshub.systemtests.utils.Utils.getTestCaseConfig;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Tag(TestTags.REGRESSION)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
@@ -237,8 +239,8 @@ public class AuthST extends AbstractST {
         tcc.page().navigate(PwPageUrls.getKafkaBaseUrl(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME));
 
         LOGGER.info("Check navbar data are correct");
-        PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_CURRENTLY_LOGGED_USER_BUTTON, AuthTestConstants.USER_CONSUMERONLY_GRACE, true);
         PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_TOTAL_AVAILABLE_KAFKA_COUNT, "1", true);
+        assertTrue(tcc.page().locator(CssSelectors.PAGES_CURRENTLY_LOGGED_USER_BUTTON).allInnerTexts().toString().contains(AuthTestConstants.USER_CONSUMERONLY_GRACE));
 
         LOGGER.info("Verify topic count display is unavailable");
         PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_TOPICS_CARD, "Not Authorized", true);
@@ -318,7 +320,7 @@ public class AuthST extends AbstractST {
                 .withNamespace(tcc.namespace())
                 .addToLabels(ConsoleResource.MANAGEMENT_LABEL)
             .endMetadata()
-            .addToBinaryData(Constants.TRUST_STORE_KEY_NAME, Base64.getEncoder().encodeToString(FileUtils.readFileBytes(Constants.TRUST_STORE_FILE_PATH)))
+            .addToBinaryData(Constants.TRUST_STORE_KEY_NAME, Base64.getEncoder().encodeToString(FileUtils.readFileBytes(Environment.KEYCLOAK_TRUST_STORE_FILE_PATH)))
             .build());
 
         // Console instance

@@ -115,7 +115,6 @@ public class Constants {
     public static final String TRUST_STORE_KEY_NAME = "truststore";
 
     public static final String KEYCLOAK_REALM = "console-realm";
-    public static final String TRUST_STORE_FILE_PATH = "/tmp/keycloak/keycloak-truststore.jks";
     public static final String TRUST_STORE_PASSWORD = "changeit"; // NOSONAR - test password
 
     /**
