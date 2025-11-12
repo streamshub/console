@@ -57,6 +57,9 @@ public class KafkaUser extends KubeApiResource<KafkaUser.Attributes, KafkaUser.R
         public static final String NAME = "name";
         public static final String NAMESPACE = "namespace";
         public static final String CREATION_TIMESTAMP = "creationTimestamp";
+        public static final String USERNAME = "username";
+        public static final String AUTHENTICATION_TYPE = "authenticationType";
+        public static final String AUTHORIZATION = "authorization";
 
         static final Comparator<KafkaUser> ID_COMPARATOR =
                 comparing(KafkaUser::getId, nullsLast(String::compareTo));
@@ -74,12 +77,12 @@ public class KafkaUser extends KubeApiResource<KafkaUser.Attributes, KafkaUser.R
         public static final String LIST_DEFAULT =
                 NAME + ", "
                 + NAMESPACE + ", "
-                + CREATION_TIMESTAMP;
+                + CREATION_TIMESTAMP + ", "
+                + USERNAME + ", "
+                + AUTHENTICATION_TYPE + ", "
+                + AUTHORIZATION;
 
-        public static final String DESCRIBE_DEFAULT =
-                NAME + ", "
-                + NAMESPACE + ", "
-                + CREATION_TIMESTAMP;
+        public static final String DESCRIBE_DEFAULT = LIST_DEFAULT;
 
         private Fields() {
             // Prevent instances
@@ -122,6 +125,7 @@ public class KafkaUser extends KubeApiResource<KafkaUser.Attributes, KafkaUser.R
     static final class Meta extends JsonApiMeta {
     }
 
+    @JsonInclude(value = Include.NON_NULL)
     public record KafkaUserAccessControl(
             String type,
             String resourceName,

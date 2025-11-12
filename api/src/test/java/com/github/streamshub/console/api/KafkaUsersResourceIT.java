@@ -2,8 +2,11 @@ package com.github.streamshub.console.api;
 
 import java.net.URI;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import jakarta.inject.Inject;
@@ -14,10 +17,12 @@ import org.eclipse.microprofile.config.Config;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import com.github.streamshub.console.config.ConsoleConfig;
 import com.github.streamshub.console.kafka.systemtest.TestPlainProfile;
+import com.github.streamshub.console.support.Identifiers;
 import com.github.streamshub.console.test.TestHelper;
 
 import io.fabric8.kubernetes.client.KubernetesClient;
@@ -30,20 +35,35 @@ import io.strimzi.api.kafka.model.kafka.KafkaBuilder;
 import io.strimzi.api.kafka.model.rebalance.KafkaRebalance;
 import io.strimzi.api.kafka.model.user.KafkaUser;
 import io.strimzi.api.kafka.model.user.KafkaUserBuilder;
+import io.strimzi.api.kafka.model.user.acl.AclOperation;
+import io.strimzi.api.kafka.model.user.acl.AclResourcePatternType;
+import io.strimzi.api.kafka.model.user.acl.AclRule;
+import io.strimzi.api.kafka.model.user.acl.AclRuleClusterResource;
+import io.strimzi.api.kafka.model.user.acl.AclRuleTopicResourceBuilder;
+import io.strimzi.api.kafka.model.user.acl.AclRuleType;
 
 import static com.github.streamshub.console.test.TestHelper.whenRequesting;
 import static io.strimzi.api.kafka.model.user.KafkaUserScramSha512ClientAuthentication.TYPE_SCRAM_SHA_512;
 import static io.strimzi.api.kafka.model.user.KafkaUserTlsClientAuthentication.TYPE_TLS;
 import static io.strimzi.api.kafka.model.user.KafkaUserTlsExternalClientAuthentication.TYPE_TLS_EXTERNAL;
 import static java.util.Comparator.nullsLast;
+import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.everyItem;
+import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.in;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @QuarkusTest
 @TestHTTPEndpoint(KafkaUsersResource.class)
 @TestProfile(TestPlainProfile.class)
 class KafkaUsersResourceIT {
+
+    static final String NAMESPACE = "default";
+    static final List<String> KNOWN_AUTHN_TYPES = Arrays.asList(TYPE_TLS, TYPE_TLS_EXTERNAL, TYPE_SCRAM_SHA_512, "");
 
     @Inject
     Config config;
@@ -61,16 +81,39 @@ class KafkaUsersResourceIT {
     URI bootstrapServers;
     URI randomBootstrapServers;
 
+    Map<String, List<String>> clusterUserNames;
+    static List<AclRule> commonRules = List.of(
+            new AclRule(
+                    AclRuleType.ALLOW,
+                    new AclRuleClusterResource(),
+                    "*",
+                    List.of(AclOperation.DESCRIBE)),
+            new AclRule(
+                    AclRuleType.ALLOW,
+                    new AclRuleTopicResourceBuilder()
+                        .withName("topic-a")
+                        .build(),
+                    "*",
+                    List.of(AclOperation.ALL)),
+            new AclRule(
+                    AclRuleType.DENY,
+                    new AclRuleTopicResourceBuilder()
+                        .withName("topic-x-*")
+                        .withPatternType(AclResourcePatternType.PREFIX)
+                        .build(),
+                    "*",
+                    List.of(AclOperation.ALL))
+    );
+
     static KafkaUser buildUser(int sequence, String clusterName, String authN, boolean ready) {
         var builder = new KafkaUserBuilder()
             .withNewMetadata()
                 .withName("user-" + sequence)
-                .withNamespace("default")
+                .withNamespace(NAMESPACE)
             .endMetadata()
             .withNewSpec()
-                .withNewKafkaUserScramSha512ClientAuthentication()
-                .endKafkaUserScramSha512ClientAuthentication()
                 .withNewKafkaUserAuthorizationSimple()
+                    .withAcls(commonRules)
                 .endKafkaUserAuthorizationSimple()
             .endSpec();
 
@@ -119,7 +162,7 @@ class KafkaUsersResourceIT {
     void setup() {
         bootstrapServers = URI.create(config.getValue(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, String.class));
         randomBootstrapServers = URI.create(consoleConfig.getKafka()
-                .getCluster("default/test-kafka2")
+                .getCluster(NAMESPACE + "/test-kafka2")
                 .map(k -> k.getProperties().get("bootstrap.servers"))
                 .orElseThrow());
 
@@ -153,25 +196,46 @@ class KafkaUsersResourceIT {
         // No cluster name - MUST BE FIRST for "Not found" test
         utils.apply(client, buildUser(r++, null, "", false));
 
-        for (String clusterName : Arrays.asList("test-kafka1", "test-kafka2", "test-kafka3")) {
-            for (String authN : List.of(TYPE_TLS, TYPE_TLS_EXTERNAL, TYPE_SCRAM_SHA_512, "")) {
+        clusterUserNames = new HashMap<>();
+
+        for (String clusterName : Arrays.asList("test-kafka1", "test-kafka2")) {
+            String clusterKey = NAMESPACE + "/" + clusterName;
+            clusterUserNames.put(clusterKey, new ArrayList<>());
+
+            for (String authN : KNOWN_AUTHN_TYPES) {
+                KafkaUser ku;
                 // Not ready
-                utils.apply(client, buildUser(r++, clusterName, authN, false));
+                ku = utils.apply(client, buildUser(r++, clusterName, authN, false));
+                clusterUserNames.get(clusterKey).add(ku.getMetadata().getName());
                 // Ready
-                utils.apply(client, buildUser(r++, clusterName, authN, true));
+                ku = utils.apply(client, buildUser(r++, clusterName, authN, true));
+                clusterUserNames.get(clusterKey).add(ku.getMetadata().getName());
             }
         }
 
-        clusterId1 = consoleConfig.getKafka().getCluster("default/test-kafka1").get().getId();
-        clusterId2 = consoleConfig.getKafka().getCluster("default/test-kafka2").get().getId();
+        clusterId1 = consoleConfig.getKafka().getCluster(NAMESPACE + "/test-kafka1").get().getId();
+        clusterId2 = consoleConfig.getKafka().getCluster(NAMESPACE + "/test-kafka2").get().getId();
     }
 
-    @Test
-    void testListUsersSimple() {
-        whenRequesting(req -> req.get("", clusterId1))
+    @ParameterizedTest
+    @CsvSource({
+        NAMESPACE + "/test-kafka1",
+        NAMESPACE + "/test-kafka2"
+    })
+    void testListUsersSimple(String clusterKey) {
+        var clusterId = consoleConfig.getKafka().getCluster(clusterKey).get().getId();
+        var userNames = clusterUserNames.get(clusterKey);
+        var userIds = userNames.stream().map(n -> Identifiers.encode("", NAMESPACE, n)).toList();
+
+        whenRequesting(req -> req.get("", clusterId))
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
-            .body("data.size()", is(8)); // ready + not ready for each of 4 authN types
+            .body("data.size()", is(userNames.size())) // ready + not ready for each of 4 authN types
+            .body("data.id", containsInAnyOrder(userIds.toArray(String[]::new)))
+            .body("data.attributes.name", containsInAnyOrder(userNames.toArray(String[]::new)))
+            .body("data.attributes.namespace", everyItem(is(NAMESPACE)))
+            .body("data.attributes.authenticationType", everyItem(anyOf(is(in(KNOWN_AUTHN_TYPES)), nullValue(String.class))))
+            .body("data.attributes.authorization.accessControls", everyItem(hasSize(commonRules.size())));
     }
 
     @ParameterizedTest
@@ -199,5 +263,19 @@ class KafkaUsersResourceIT {
                 .toList();
 
         assertEquals(sortedValues, values);
+    }
+
+    @Test
+    void testDescribeUser() {
+        var userNames = clusterUserNames.get(NAMESPACE + "/test-kafka1");
+        var userId = Identifiers.encode("", NAMESPACE, userNames.get(0));
+
+        whenRequesting(req -> req.get("{userId}", clusterId1, userId))
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()))
+            .body("data.id", is(userId))
+            .body("data.attributes.name", is(userNames.get(0)))
+            .body("data.attributes.namespace", is(NAMESPACE))
+            .body("data.attributes.authorization.accessControls.size()", is(commonRules.size()));
     }
 }
