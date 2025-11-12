@@ -12,6 +12,7 @@ import org.eclipse.microprofile.openapi.annotations.media.SchemaProperty;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonFilter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -121,9 +122,49 @@ public class KafkaUser extends KubeApiResource<KafkaUser.Attributes, KafkaUser.R
     static final class Meta extends JsonApiMeta {
     }
 
+    public record KafkaUserAccessControl(
+            String type,
+            String resourceName,
+            String patternType,
+            String host,
+            List<String> operations,
+            String permissionType) {
+    }
+
+    public record KafkaUserAuthorization(List<KafkaUserAccessControl> accessControls) {
+    }
+
     @JsonFilter(FIELDS_PARAM)
     public static class Attributes extends KubeAttributes {
+        @JsonProperty
+        @Schema(readOnly = true, description = """
+                The user principal name as known to Kafka. This may differ \
+                from the `name` when managed by Strimzi and the actual generated \
+                principal name has additional requirements depending on the \
+                type of authentication. For example, users with TLS authentication \
+                are known to Kafka by the Common Name (CN) of the corresponding \
+                certificate which is likely to be different than the KafkaUser \
+                resource `name`.
+                """)
+        private String username;
 
+        @JsonProperty
+        private String authenticationType;
+
+        @JsonProperty
+        private KafkaUserAuthorization authorization;
+
+        public void setUsername(String username) {
+            this.username = username;
+        }
+
+        public void setAuthenticationType(String authenticationType) {
+            this.authenticationType = authenticationType;
+        }
+
+        public void setAuthorization(KafkaUserAuthorization authorization) {
+            this.authorization = authorization;
+        }
     }
 
     @JsonFilter(FIELDS_PARAM)
@@ -132,11 +173,6 @@ public class KafkaUser extends KubeApiResource<KafkaUser.Attributes, KafkaUser.R
 
     public KafkaUser(String id) {
         super(id, API_TYPE, new Attributes(), new Relationships());
-    }
-
-    @JsonCreator
-    public KafkaUser(String id, String type, Meta meta, Attributes attributes, Relationships relationships) {
-        super(id, type, meta, attributes, relationships);
     }
 
     public static KafkaUser fromId(String id) {
@@ -154,5 +190,10 @@ public class KafkaUser extends KubeApiResource<KafkaUser.Attributes, KafkaUser.R
     @Override
     public JsonApiMeta metaFactory() {
         return new Meta();
+    }
+
+    @JsonIgnore
+    String username() {
+        return attributes.username;
     }
 }
