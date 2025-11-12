@@ -23,7 +23,7 @@ Configure the console to integrate with related services, including:
 * **Authentication providers** for securing access to Kafka clusters
 * **Kafka Connect clusters** for viewing connector and configuration details
 * **Metrics providers** for monitoring Kafka cluster performance
-* **Schema registries** for managing and validating data schemas
+* **Schema registries** for validating and decoding messages using data schemas
 
 Define these integrations in the `Console` custom resource configuration YAML file.
 
