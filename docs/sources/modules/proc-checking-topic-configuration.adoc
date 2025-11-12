@@ -5,18 +5,18 @@
 
 [role="_abstract"]
 Check the configuration of a specific topic from the *Configuration* tab.
-The *Configuration* tab presents a list of configuration values for the topic.
+The *Configuration* tab lists the configuration values for the topic.
+
+TIP: The Strimzi Topic Operator simplifies the process of creating and managing Kafka topics using `KafkaTopic` resources.
 
 .Procedure
 
 . Log in to the Kafka cluster in the StreamsHub Console, then click *Topics*.
-. From the *Topics* page, click the name of the topic you want to inspect.
+. On the *Topics* page, click the name of the topic you want to inspect.
 . Check the information on the *Configuration* tab.
-
-You can filter for the properties you want to check, including selecting by data source:
-
-* *DEFAULT_CONFIG* properties have a predefined default value. This value is used when there are no user-defined values for those properties. 
-* *STATIC_BROKER_CONFIG* properties have predefined values that apply to the entire broker and, by extension, to all topics managed by that broker. This value is used when there are no user-defined values for those properties. 
-* *DYNAMIC_TOPIC_CONFIG* property values have been configured for a specific topic and override the default configuration values.
-
-TIP: The Strimzi Topic Operator simplifies the process of creating managing Kafka topics using `KafkaTopic` resources.
++
+Filter the configuration properties to narrow results by data source:
++
+* *DEFAULT_CONFIG*: The fallback value used when no other configuration is specified.
+* *STATIC_BROKER_CONFIG*: Predefined, broker-wide values that apply to all topics by default.
+* *DYNAMIC_TOPIC_CONFIG*: Topic-specific values that override all default or broker-level settings.

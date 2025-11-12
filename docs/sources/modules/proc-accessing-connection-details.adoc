@@ -8,7 +8,8 @@ Retrieve the necessary connection details from the *Cluster overview* page to co
 
 .Procedure
 
-. Log in to the Kafka cluster in the StreamsHub Console. + 
+. Log in to the Kafka cluster in the StreamsHub Console.
++ 
 On the *Cluster overview* page, click *Cluster connection details*.
 . Copy the bootstrap address (external or internal, depending on your client environment). 
 . Add any required connection properties to your Kafka client configuration to establish a secure connection.

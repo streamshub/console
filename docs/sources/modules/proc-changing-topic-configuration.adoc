@@ -5,7 +5,7 @@
 
 [role="_abstract"]
 Change the configuration of a specific topic from the *Configuration* tab.
-The *Configuration* tab presents a list of configuration options for the topic.
+The *Configuration* tab lists the configuration options for the topic.
 
 The topics are configured directly in the Kafka cluster.
 If you are using the Topic Operator to manage topics in unidirectional mode, configure the topics using `KafkaTopic` resources outside the console.
@@ -16,8 +16,9 @@ If you are using the Topic Operator to manage topics in unidirectional mode, con
 . Select the options icon (three vertical dots) for the relevant topic and click *Edit configuration*.
 Or you can click the name of the topic you want to configure from the *Topics* page and click the *Configuration* tab.
 . Edit the configuration by updating individual property values.
-You can filter for the properties you want to configure, including selecting by data source:
 +
-* *DEFAULT_CONFIG* properties have a predefined default value. This value is used when there are no user-defined values for those properties. 
-* *STATIC_BROKER_CONFIG* properties have predefined values that apply to the entire broker and, by extension, to all topics managed by that broker. This value is used when there are no user-defined values for those properties. 
-* *DYNAMIC_TOPIC_CONFIG* property values have been configured for a specific topic and override the default configuration values.
+Filter the configuration properties to narrow results by data source:
++
+* *DEFAULT_CONFIG*: The fallback value used when no other configuration is specified.
+* *STATIC_BROKER_CONFIG*: Predefined, broker-wide values that apply to all topics by default.
+* *DYNAMIC_TOPIC_CONFIG*: Topic-specific values that override all default or broker-level settings.
