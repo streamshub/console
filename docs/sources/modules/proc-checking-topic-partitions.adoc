@@ -5,26 +5,29 @@
 
 [role="_abstract"]
 Check the partitions for a specific topic from the *Partitions* tab.
-The *Partitions* tab presents a list of partitions belonging to a topic.
+The *Partitions* tab lists the partitions belonging to a topic.
 
 .Procedure
 
 . Log in to the Kafka cluster in the StreamsHub Console, then click *Topics*.
-. From the *Topics* page, click the name of the topic you want to inspect.
+. On the *Topics* page, click the name of the topic you want to inspect.
 . Check the information on the *Partitions* tab.
-
-For each partition, you can view its replication status, as well as information on designated partition leaders, replica brokers, and the amount of data stored by the partition.
-
-You can view partitions by replication status:
-
++
+For each partition, view the replication status, as well as information on designated partition leaders, replica brokers, and the amount of data stored by the partition.
++
+Replication status:
++
+--
 In-sync:: All partitions in the topic are fully replicated. A partition is fully-replicated when its replicas (followers) are 'in-sync' with the designated partition leader. Replicas are 'in-sync' if they have fetched records up to the log end offset of the leader partition within an allowable lag time, as determined by `replica.lag.time.max.ms`.
 Under-replicated:: A partition is under-replicated if some of its replicas (followers) are not in-sync. 
 An under-replicated status signals potential issues in data replication.
 Offline:: Some or all partitions in the topic are currently unavailable. 
 This may be due to issues such as broker failures or network problems, which need investigating and addressing. 
-
-You can also check information on the broker designated as partition leader and the brokers that contain the replicas:
- 
+--
++
+In addition, check information on the broker designated as partition leader and the brokers that contain the replicas:
++
+-- 
 Leader:: The leader handles all produce requests. Followers on other brokers replicate the leader's data. 
 A follower is considered in-sync if it catches up with the leader's latest committed message.
 Preferred leader:: When creating a new topic, Kafka's leader election algorithm assigns a leader from the list of replicas for each partition. 
@@ -34,7 +37,8 @@ A "No" value may suggest imbalances in the leadership assignments, requiring fur
 If the leadership assignments of partitions are not well-balanced, it can contribute to size discrepancies. 
 A well-balanced Kafka cluster should distribute leadership roles across brokers evenly.
 Replicas:: Followers that replicate the leader's data. Replicas provide fault tolerance and data availability.
-
+--
++
 NOTE: Discrepancies in the distribution of data across brokers may indicate balancing issues in the Kafka cluster. 
 If certain brokers are consistently handling larger amounts of data, it may indicate that partitions are not evenly distributed across the brokers. 
 This could lead to uneven resource utilization and potentially impact the performance of those brokers.

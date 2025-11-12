@@ -4,14 +4,25 @@
 = Navigating the StreamsHub Console
 
 [role="_abstract"]
-When you open the StreamsHub Console, the homepage displays a list of connected Kafka clusters. 
-Click a cluster name to view its details from the following pages:
+When you open the StreamsHub Console, the homepage lists all connected Kafka clusters.
+You can explore each cluster through the following views:
 
-Cluster overview:: Displays high-level information about the Kafka cluster, including its status, key metrics, and resource utilization.
-Nodes:: Provides details on broker and controller nodes, including their roles, operational status, and partition distribution.
-Topics:: Lists topics and their configurations, including partition-specific information and connected consumer groups.
-Consumer groups:: Displays consumer group activity, including offsets, lag metrics, and partition assignments.
+Cluster overview:: Summarizes cluster status, key metrics, and resource usage.
+Nodes:: Details broker and controller nodes, including roles, status, and partition distribution.
+Topics:: Lists topics with configuration details, partition data, and associated consumer groups.
+Kafka Connect:: Displays information about Kafka Connect clusters, including connector status, configuration details, and available plugins.
+Consumer groups:: Shows activity, offsets, lag metrics, and partition assignments.
 
-Start with the cluster overview, then drill down into individual nodes, inspect topic configurations, or monitor consumer group activity.
+Begin with the cluster overview, then drill down into nodes, topics, Kafka Connect, or consumer groups as needed.
 
-NOTE: If the side menu for navigation of a cluster is hidden, click the hamburger menu (three horizontal lines) in the console header.
+NOTE: If the cluster navigation menu is hidden, click the hamburger icon (three horizontal lines) in the console header to reveal it.
+
+== Choose how the console looks
+
+The StreamsHub Console supports three theme options: *Light*, *Dark*, and *System*.  
+When set to *System*, the console automatically matches your operating system’s theme preference.
+
+To change the theme, click the theme icon (sun/moon) in the console header. 
+This opens the theme selector, where you can choose your preferred appearance.
+
+

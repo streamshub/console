@@ -7,8 +7,7 @@
 The *Nodes* page lists all nodes created for a Kafka cluster, including nodes that perform broker, controller, or dual roles.
 You can filter the list by node pool, role (broker or controller), or status.
 
-For each node, you can view its status.
-For broker nodes, the page shows partition distribution across the cluster, including the number of partition leaders and followers.
+For broker nodes, partition distribution across the cluster is shown, including the number of partition leaders and followers.
 
 Broker status is shown as one of the following:
 
@@ -29,8 +28,10 @@ Quorum follower:: The controller is a follower in the metadata quorum, passively
 Quorum follower lagged:: The controller is a follower but has fallen behind the leader. It is not fully up to date with the latest metadata and may be ineligible for leader election until it catches up.
 Unknown:: The controller's state is unknown, possibly due to an unexpected error or failure.
 
-Click on the right arrow (>) next to a node name to view more information about the node, including its hostname and disk usage.
+To view more information:
 
-Click on the *Rebalance* tab to show any rebalances taking place on the cluster.
+* Click on the right arrow (>) next to a node name to view more information about the node, including its hostname and disk usage.
+* Click on a broker node ID to view configuration properties.
+* Click on the *Rebalance* tab to show any rebalances taking place on the cluster.
 
 NOTE: Consider rebalancing if partition distribution is uneven to ensure efficient resource utilization.

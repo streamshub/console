@@ -15,29 +15,29 @@ All active members of the consumer group must be shut down before resetting the 
 .Procedure
 
 . Log in to the Kafka cluster in the StreamsHub Console, then click *Consumer Groups*. 
+
 . Click the options icon (three vertical dots) for the consumer group and click the reset consumer offsets option to display the *Reset consumer offset* page.
+
 . Choose to apply the offset reset to all consumer topics associated with the consumer group or select a specific topic.
 +
 If you selected a topic, choose to apply the offset reset to all partitions or select a specific partition.
+
 . Choose the position to reset the offset:
 +
-* Custom offset  (available only if you selected a specific topic _and_ a specific partition) +
+* Custom offset (available only if you selected a specific topic _and_ a specific partition).
 If you select this option, enter the custom offset value.
 * Latest offset
 * Earliest offset
-* Specific date and time +
+* Specific date and time
++
 If you selected date and time, choose the appropriate format and enter the date in that format. 
-. Click *Reset* to perform the offset reset.
 
-.Performing a dry run
-
-Before actually executing the offset reset, you can use the dry run option to view which offsets would be reset before applying the change.
-
-. From the *Reset consumer offset* page, click the down arrow next to *Dry run*.
-. Choose the option to run and show the results in the console. +
-Or you can copy the dry run command and run it independently against the consumer group.
-
-The results in the console show the new offsets for each topic partition included in the reset operation.
-
+. (Optional) Perform a dry run before applying the offset reset.  
++
+.. Click the down arrow next to *Dry run*.  
+.. Choose the option to run the dry run and view the results in the console, or copy the command to run it independently against the consumer group.
++  
+The results display the new offsets for each topic partition included in the reset operation.  
 A download option is available for the results.
 
+. Click *Reset* to perform the offset reset.

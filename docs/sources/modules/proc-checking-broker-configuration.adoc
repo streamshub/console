@@ -1,0 +1,19 @@
+:_mod-docs-content-type: PROCEDURE
+
+[id='proc-checking-broker-configuration-{context}']
+= Checking broker configuration
+
+[role="_abstract"]
+Check the configuration of a specific broker by clicking on a broker node ID.
+The broker page lists the configuration values for the broker.
+
+.Procedure
+
+. Log in to the Kafka cluster in the StreamsHub Console, then click *Kafka nodes*.
+. On the *Nodes* page, click the name of the broker you want to inspect.
+. Check the information on the broker page.
++
+Filter the configuration properties to narrow results by data source:
++
+* *DEFAULT_CONFIG*: The fallback value used when no other configuration is specified.
+* *STATIC_BROKER_CONFIG*: Predefined, broker-wide values that apply to all topics by default.
