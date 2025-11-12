@@ -11,7 +11,7 @@
 Enable secure console connections to Kafka clusters using an OIDC provider.
 Configure the console deployment to configure connections to any Identity Provider (IdP), such as Keycloak or Dex, that supports OpenID Connect (OIDC).
 Also define the subjects and roles for user authorization.
-To use group-based authorization as shown in the examples, the configured OIDC provider must support the `groups` scope to include a user's group membership in the generated access tokens.
+To use group-based authorization as shown in the examples, configure an OIDC provider that includes a group membership claim, such as `groups`, in the generated access tokens.
 The security profiles can be configured for all Kafka cluster connections on a global level, though you can add roles and rules for specific Kafka clusters.
 
 An example configuration is provided in the following file: `examples/console/console-security-oidc.yaml`.
@@ -72,8 +72,12 @@ spec:
           - resources: # <12>
               - kafkas
             resourceNames: # <13>
-              - <dev_cluster_a>
-              - <dev_cluster_b>
+                # exact
+              - dev-cluster-a 
+                # wildcard          
+              - com.example.team.*
+                # regular expression      
+              - /qa-cluster-[xy]/    
             privileges: # <14>
               - 'ALL'
       - name: administrators
@@ -103,7 +107,9 @@ spec:
 <10> Roles assigned to the specified users or groups.
 <11> Specific users included by name when no claim is specified.
 <12> Resources that the assigned role can access.
-<13> Specific resource names accessible by the assigned role.
+<13> Resource name filters that identify which resources the assigned role can access.
+You can specify exact names (for example, `dev-cluster-a`), wildcard patterns (for example, `com.example.team.*`), or regular expressions.
+When a value is enclosed in slashes (/), the console switches to regular-expression mode (for example, `/qa-cluster-[xy]/`).
 <14> Privileges granted to the assigned role for the specified resources.
 
 If you want to specify roles and rules for individual Kafka clusters, add the details under `kafka.clusters[].security.roles[]`.
