@@ -3,6 +3,7 @@ package com.github.streamshub.console.api;
 import java.net.URI;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.List;
 import java.util.UUID;
 
 import jakarta.inject.Inject;
@@ -31,11 +32,12 @@ import io.strimzi.api.kafka.model.user.KafkaUser;
 import io.strimzi.api.kafka.model.user.KafkaUserBuilder;
 
 import static com.github.streamshub.console.test.TestHelper.whenRequesting;
+import static io.strimzi.api.kafka.model.user.KafkaUserScramSha512ClientAuthentication.TYPE_SCRAM_SHA_512;
+import static io.strimzi.api.kafka.model.user.KafkaUserTlsClientAuthentication.TYPE_TLS;
+import static io.strimzi.api.kafka.model.user.KafkaUserTlsExternalClientAuthentication.TYPE_TLS_EXTERNAL;
 import static java.util.Comparator.nullsLast;
-import static org.hamcrest.Matchers.emptyArray;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @QuarkusTest
@@ -59,7 +61,7 @@ class KafkaUsersResourceIT {
     URI bootstrapServers;
     URI randomBootstrapServers;
 
-    static KafkaUser buildUser(int sequence, String clusterName, boolean ready) {
+    static KafkaUser buildUser(int sequence, String clusterName, String authN, boolean ready) {
         var builder = new KafkaUserBuilder()
             .withNewMetadata()
                 .withName("user-" + sequence)
@@ -78,6 +80,28 @@ class KafkaUsersResourceIT {
                 .endMetadata();
         }
 
+        switch (authN) {
+            case TYPE_TLS:
+                builder = builder.editSpec()
+                    .withNewKafkaUserTlsClientAuthentication()
+                    .endKafkaUserTlsClientAuthentication()
+                    .endSpec();
+                break;
+            case TYPE_TLS_EXTERNAL:
+                builder = builder.editSpec()
+                    .withNewKafkaUserTlsExternalClientAuthentication()
+                    .endKafkaUserTlsExternalClientAuthentication()
+                    .endSpec();
+                break;
+            case TYPE_SCRAM_SHA_512:
+                builder = builder.editSpec()
+                    .withNewKafkaUserScramSha512ClientAuthentication()
+                    .endKafkaUserScramSha512ClientAuthentication()
+                    .endSpec();
+                break;
+            default:
+                break;
+        }
 
         builder = builder
             .withNewStatus()
@@ -127,13 +151,15 @@ class KafkaUsersResourceIT {
         int r = 0;
 
         // No cluster name - MUST BE FIRST for "Not found" test
-        utils.apply(client, buildUser(r++, null, false));
+        utils.apply(client, buildUser(r++, null, "", false));
 
         for (String clusterName : Arrays.asList("test-kafka1", "test-kafka2", "test-kafka3")) {
-            // Not ready
-            utils.apply(client, buildUser(r++, clusterName, false));
-            // Ready
-            utils.apply(client, buildUser(r++, clusterName, true));
+            for (String authN : List.of(TYPE_TLS, TYPE_TLS_EXTERNAL, TYPE_SCRAM_SHA_512, "")) {
+                // Not ready
+                utils.apply(client, buildUser(r++, clusterName, authN, false));
+                // Ready
+                utils.apply(client, buildUser(r++, clusterName, authN, true));
+            }
         }
 
         clusterId1 = consoleConfig.getKafka().getCluster("default/test-kafka1").get().getId();
@@ -141,11 +167,11 @@ class KafkaUsersResourceIT {
     }
 
     @Test
-    void testListUsersIncludesAllowedActions() {
+    void testListUsersSimple() {
         whenRequesting(req -> req.get("", clusterId1))
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
-            .body("data", not(emptyArray()));
+            .body("data.size()", is(8)); // ready + not ready for each of 4 authN types
     }
 
     @ParameterizedTest
@@ -163,7 +189,9 @@ class KafkaUsersResourceIT {
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
             .body("data.size()", equalTo(2))
-            .extract().jsonPath().getList("data.findAll { it }.collect { it.attributes. " + sortField + " }");
+            .extract()
+            .jsonPath()
+            .getList("data.findAll { it }.collect { it.attributes. " + sortField + " }");
 
         var sortedValues = values.stream()
                 .map(String.class::cast)
