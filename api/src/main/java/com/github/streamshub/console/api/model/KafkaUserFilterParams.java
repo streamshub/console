@@ -12,9 +12,9 @@ import io.xlate.validation.constraints.Expression;
 
 public class KafkaUserFilterParams extends FilterParams {
 
-    @QueryParam("filter[name]")
+    @QueryParam("filter[username]")
     @Parameter(
-        description = "Retrieve only Kafka users with a name matching this parameter",
+        description = "Retrieve only Kafka users with a username matching this parameter",
         schema = @Schema(implementation = String[].class, minItems = 2),
         explode = Explode.FALSE)
     @Expression(
@@ -22,17 +22,17 @@ public class KafkaUserFilterParams extends FilterParams {
         value = "self.operator == 'eq' || self.operator == 'in' || self.operator == 'like'",
         message = "unsupported filter operator, supported values: [ 'eq', 'in', 'like' ]",
         payload = ErrorCategory.InvalidQueryParameter.class,
-        node = "filter[name]")
+        node = "filter[username]")
     @Expression(
         when = "self != null",
         value = "self.operands.size() >= 1",
         message = "at least 1 operand is required",
         payload = ErrorCategory.InvalidQueryParameter.class,
-        node = "filter[name]")
-    FetchFilter nameFilter;
+        node = "filter[username]")
+    FetchFilter usernameFilter;
 
     @Override
     protected void buildPredicates() {
-        maybeAddPredicate(nameFilter, KafkaUser.class, KafkaUser::name);
+        maybeAddPredicate(usernameFilter, KafkaUser.class, KafkaUser::username);
     }
 }
