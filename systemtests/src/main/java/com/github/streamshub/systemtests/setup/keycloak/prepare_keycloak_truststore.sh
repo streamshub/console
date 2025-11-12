@@ -19,7 +19,7 @@ echo "Retrieve HTTPS cert from ${KEYCLOAK_HOSTNAME} and export it to ${CERT_FILE
 openssl s_client -connect ${KEYCLOAK_HOSTNAME}:443 -showcerts </dev/null 2>/dev/null | openssl x509 -outform PEM > ${CERT_FILE}
 
 if [[ ! -s "${CERT_FILE}" ]]; then
-  echo "ERROR: Certificate file '${CERT_FILE}' was not created or is empty"
+  echo "ERROR: Certificate file '${CERT_FILE}' was not created or is empty" >&2
   exit 1
 fi
 echo "Certificate saved to ${CERT_FILE}"
@@ -33,7 +33,7 @@ else
 fi
 
 if keytool -list -keystore ${TRUST_STORE_FILE_PATH} -storepass ${STORE_PASS} -alias ${ALIAS} &>/dev/null; then
-  echo "ERROR: Alias ${ALIAS} found in truststore after deletion, exiting"
+  echo "ERROR: Alias ${ALIAS} found in truststore after deletion, exiting" >&2
   exit 1
 else
   echo "Importing certificate into truststore ${TRUST_STORE_FILE_PATH} with alias ${ALIAS}"

@@ -12,6 +12,7 @@ spec:
       labels:
         app: postgres
     spec:
+      automountServiceAccountToken: false
       containers:
         - name: postgres
           resources:
@@ -23,7 +24,6 @@ spec:
               memory: 1Gi
               ephemeral-storage: 2Gi
               cpu: 1
-          automountServiceAccountToken: false
           image: ${POSTGRES_IMAGE}
           envFrom:
             - configMapRef:
