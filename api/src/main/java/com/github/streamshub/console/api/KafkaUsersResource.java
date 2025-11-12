@@ -71,6 +71,9 @@ public class KafkaUsersResource {
                         KafkaUser.Fields.NAME,
                         KafkaUser.Fields.NAMESPACE,
                         KafkaUser.Fields.CREATION_TIMESTAMP,
+                        KafkaUser.Fields.USERNAME,
+                        KafkaUser.Fields.AUTHENTICATION_TYPE,
+                        KafkaUser.Fields.AUTHORIZATION,
                     },
                     payload = ErrorCategory.InvalidQueryParameter.class)
             @Parameter(
@@ -83,6 +86,9 @@ public class KafkaUsersResource {
                                 KafkaUser.Fields.NAME,
                                 KafkaUser.Fields.NAMESPACE,
                                 KafkaUser.Fields.CREATION_TIMESTAMP,
+                                KafkaUser.Fields.USERNAME,
+                                KafkaUser.Fields.AUTHENTICATION_TYPE,
+                                KafkaUser.Fields.AUTHORIZATION,
                             }))
             List<String> fields,
 
@@ -134,6 +140,9 @@ public class KafkaUsersResource {
                         KafkaUser.Fields.NAME,
                         KafkaUser.Fields.NAMESPACE,
                         KafkaUser.Fields.CREATION_TIMESTAMP,
+                        KafkaUser.Fields.USERNAME,
+                        KafkaUser.Fields.AUTHENTICATION_TYPE,
+                        KafkaUser.Fields.AUTHORIZATION,
                     },
                     payload = ErrorCategory.InvalidQueryParameter.class)
             @Parameter(
@@ -146,6 +155,9 @@ public class KafkaUsersResource {
                                 KafkaUser.Fields.NAME,
                                 KafkaUser.Fields.NAMESPACE,
                                 KafkaUser.Fields.CREATION_TIMESTAMP,
+                                KafkaUser.Fields.USERNAME,
+                                KafkaUser.Fields.AUTHENTICATION_TYPE,
+                                KafkaUser.Fields.AUTHORIZATION,
                             }))
             List<String> fields) {
 
