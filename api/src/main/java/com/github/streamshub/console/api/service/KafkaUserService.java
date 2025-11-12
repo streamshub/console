@@ -87,6 +87,11 @@ public class KafkaUserService {
     public CompletionStage<KafkaUser> describeUser(String userId) {
         Kafka kafkaCluster = kafkaContext.resource();
         String[] idParts = Identifiers.decode(userId);
+
+        if (idParts.length != 2) {
+            return CompletableFuture.failedStage(new NotFoundException("No such KafkaUser"));
+        }
+
         String namespace = idParts[0];
         String name = idParts[1];
 
@@ -114,8 +119,9 @@ public class KafkaUserService {
 
         final String namespace = userMeta.getNamespace();
         final String name = userMeta.getName();
+        final String userId = Identifiers.encode("", namespace, name);
 
-        KafkaUser user = KafkaUser.fromId(Identifiers.encode(namespace, name));
+        KafkaUser user = KafkaUser.fromId(userId);
         KafkaUser.Attributes attr = user.getAttributes();
         attr.setNamespace(namespace);
         attr.setName(name);
