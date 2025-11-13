@@ -71,25 +71,24 @@ public class StrimziResourceService {
             return CompletableFuture.completedStage(Optional.empty());
         }
 
-        return CompletableFuture.completedStage(null)
-            .thenApplyAsync(nothing -> {
-                try {
-                    C resource = k8s.resources(type)
-                            .inNamespace(namespace)
-                            .withName(name)
-                            .get();
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                C resource = k8s.resources(type)
+                        .inNamespace(namespace)
+                        .withName(name)
+                        .get();
 
-                    return Optional.ofNullable(resource);
-                } catch (KubernetesClientException e) {
-                    logger.warnf("Failed to fetch Strimzi %s resource %s/%s: %s",
-                            type.getSimpleName(),
-                            namespace,
-                            name,
-                            RootCause.of(e).orElse(e).getMessage());
-                }
+                return Optional.ofNullable(resource);
+            } catch (KubernetesClientException e) {
+                logger.warnf("Failed to fetch Strimzi %s resource %s/%s: %s",
+                        type.getSimpleName(),
+                        namespace,
+                        name,
+                        RootCause.of(e).orElse(e).getMessage());
+            }
 
-                return Optional.empty();
-            });
+            return Optional.empty();
+        });
     }
 
     private <C extends HasMetadata> CompletionStage<List<C>> getResources(Class<C> type, String namespace, String... labels) {
@@ -116,14 +115,6 @@ public class StrimziResourceService {
     }
 
     private LabelSelector fromLabels(String... labels) {
-        if (labels.length % 2 != 0) {
-            throw new IllegalArgumentException("Must provide an even number of labels/values");
-        }
-
-        if (labels.length == 0) {
-            return null;
-        }
-
         var builder = new LabelSelectorBuilder();
 
         for (int i = 0; i < labels.length; i += 2) {
