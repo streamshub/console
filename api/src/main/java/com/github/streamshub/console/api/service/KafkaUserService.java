@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -37,6 +38,9 @@ import io.strimzi.api.kafka.model.user.acl.AclRuleTransactionalIdResource;
 
 @ApplicationScoped
 public class KafkaUserService {
+
+    private static final Supplier<RuntimeException> NO_SUCH_USER =
+            () -> new NotFoundException("No such KafkaUser");
 
     @Inject
     Logger logger;
@@ -89,7 +93,7 @@ public class KafkaUserService {
         String[] idParts = Identifiers.decode(userId);
 
         if (idParts.length != 2) {
-            return CompletableFuture.failedStage(new NotFoundException("No such KafkaUser"));
+            return CompletableFuture.failedStage(NO_SUCH_USER.get());
         }
 
         String namespace = idParts[0];
@@ -102,10 +106,10 @@ public class KafkaUserService {
                 .thenApply(optUser -> optUser
                         .map(this::createUser)
                         .map(addPrivileges())
-                        .orElseThrow(() -> new NotFoundException("No such KafkaUser: " + name)));
+                        .orElseThrow(NO_SUCH_USER));
         }
 
-        return CompletableFuture.failedStage(new NotFoundException("No such KafkaUser: " + name));
+        return CompletableFuture.failedStage(NO_SUCH_USER.get());
     }
 
     private UnaryOperator<KafkaUser> addPrivileges() {
