@@ -38,8 +38,7 @@ import io.strimzi.api.kafka.model.user.KafkaUserBuilder;
 import io.strimzi.api.kafka.model.user.acl.AclOperation;
 import io.strimzi.api.kafka.model.user.acl.AclResourcePatternType;
 import io.strimzi.api.kafka.model.user.acl.AclRule;
-import io.strimzi.api.kafka.model.user.acl.AclRuleClusterResource;
-import io.strimzi.api.kafka.model.user.acl.AclRuleTopicResourceBuilder;
+import io.strimzi.api.kafka.model.user.acl.AclRuleBuilder;
 import io.strimzi.api.kafka.model.user.acl.AclRuleType;
 
 import static com.github.streamshub.console.test.TestHelper.whenRequesting;
@@ -82,33 +81,81 @@ class KafkaUsersResourceIT {
     URI randomBootstrapServers;
 
     Map<String, List<String>> clusterUserNames;
+
     static List<AclRule> commonRules = List.of(
-            new AclRule(
-                    AclRuleType.ALLOW,
-                    new AclRuleClusterResource(),
-                    "*",
-                    List.of(AclOperation.DESCRIBE)),
-            new AclRule(
-                    AclRuleType.ALLOW,
-                    new AclRuleTopicResourceBuilder()
-                        .withName("topic-a")
-                        .build(),
-                    "*",
-                    List.of(AclOperation.ALL)),
-            new AclRule(
-                    AclRuleType.DENY,
-                    new AclRuleTopicResourceBuilder()
-                        .withName("topic-x-*")
-                        .withPatternType(AclResourcePatternType.PREFIX)
-                        .build(),
-                    "*",
-                    List.of(AclOperation.ALL))
+            clusterRule(AclRuleType.ALLOW, AclOperation.DESCRIBE, AclOperation.DESCRIBECONFIGS),
+            topicRule(AclRuleType.ALLOW, "topic-a", null, AclOperation.ALL),
+            topicRule(AclRuleType.DENY, "topic-x-*", AclResourcePatternType.PREFIX, AclOperation.ALL),
+            groupRule(AclRuleType.ALLOW, "group-a", null, AclOperation.READ),
+            groupRule(AclRuleType.DENY, "group-x-*", AclResourcePatternType.PREFIX, AclOperation.ALL),
+            txRule(AclRuleType.ALLOW, "tx-a", null, AclOperation.IDEMPOTENTWRITE),
+            txRule(AclRuleType.DENY, "tx-x-*", AclResourcePatternType.PREFIX, AclOperation.ALL)
     );
 
+    static AclRuleBuilder initRuleBuilder(AclRuleType type, AclOperation... operations) {
+        var builder = new AclRuleBuilder()
+                .withType(type);
+
+        if (operations.length == 1) {
+            builder = builder.withOperation(operations[0]);
+        } else {
+            builder = builder.withOperations(operations);
+        }
+
+        return builder;
+    }
+
+    static AclRule clusterRule(AclRuleType type, AclOperation... operations) {
+        var builder = initRuleBuilder(type, operations);
+
+        return builder
+                .withNewAclRuleClusterResource()
+                .endAclRuleClusterResource()
+                .build();
+    }
+
+    static AclRule topicRule(AclRuleType type, String name, AclResourcePatternType patternType, AclOperation... operations) {
+        var builder = initRuleBuilder(type, operations);
+        var topicBuilder = builder.withNewAclRuleTopicResource()
+                .withName(name);
+
+        if (patternType != null) {
+            topicBuilder = topicBuilder.withPatternType(patternType);
+        }
+
+        return topicBuilder.endAclRuleTopicResource().build();
+    }
+
+    static AclRule groupRule(AclRuleType type, String name, AclResourcePatternType patternType, AclOperation... operations) {
+        var builder = initRuleBuilder(type, operations);
+        var groupBuilder = builder.withNewAclRuleGroupResource()
+                .withName(name);
+
+        if (patternType != null) {
+            groupBuilder = groupBuilder.withPatternType(patternType);
+        }
+
+        return groupBuilder.endAclRuleGroupResource().build();
+    }
+
+    static AclRule txRule(AclRuleType type, String name, AclResourcePatternType patternType, AclOperation... operations) {
+        var builder = initRuleBuilder(type, operations);
+        var groupBuilder = builder.withNewAclRuleTransactionalIdResource()
+                .withName(name);
+
+        if (patternType != null) {
+            groupBuilder = groupBuilder.withPatternType(patternType);
+        }
+
+        return groupBuilder.endAclRuleTransactionalIdResource().build();
+    }
+
     static KafkaUser buildUser(int sequence, String clusterName, String authN, boolean ready) {
+        var username = (clusterName != null ? clusterName : "nocluster") + "-user-" + sequence;
+
         var builder = new KafkaUserBuilder()
             .withNewMetadata()
-                .withName("user-" + sequence)
+                .withName(username)
                 .withNamespace(NAMESPACE)
             .endMetadata()
             .withNewSpec()
@@ -239,6 +286,27 @@ class KafkaUsersResourceIT {
     }
 
     @ParameterizedTest
+    @CsvSource({
+        NAMESPACE + ", test-kafka1",
+        NAMESPACE + ", test-kafka2"
+    })
+    void testListUsersFiltered(String namespace, String clusterName) {
+        String clusterKey = namespace + '/' + clusterName;
+        var clusterId = consoleConfig.getKafka().getCluster(clusterKey).get().getId();
+        var userNames = clusterUserNames.get(clusterKey);
+        var userIds = userNames.stream().map(n -> Identifiers.encode("", NAMESPACE, n)).toList();
+
+        whenRequesting(req -> req
+                .param("filter[username]", "like," + clusterName + "-*")
+                .get("", clusterId))
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()))
+            .body("data.size()", is(userNames.size())) // ready + not ready for each of 4 authN types
+            .body("data.id", containsInAnyOrder(userIds.toArray(String[]::new)))
+            .body("data.attributes.name", containsInAnyOrder(userNames.toArray(String[]::new)));
+    }
+
+    @ParameterizedTest
     @ValueSource(strings = {
         com.github.streamshub.console.api.model.KafkaUser.Fields.NAME,
         com.github.streamshub.console.api.model.KafkaUser.Fields.NAMESPACE,
@@ -277,5 +345,40 @@ class KafkaUsersResourceIT {
             .body("data.attributes.name", is(userNames.get(0)))
             .body("data.attributes.namespace", is(NAMESPACE))
             .body("data.attributes.authorization.accessControls.size()", is(commonRules.size()));
+    }
+
+    @Test
+    void testDescribeUserNotFoundUnencodedUserId() {
+        whenRequesting(req -> req.get("{userId}", clusterId1, UUID.randomUUID().toString()))
+            .assertThat()
+            .statusCode(is(Status.NOT_FOUND.getStatusCode()));
+    }
+
+    @Test
+    void testDescribeUserNotFoundMissingEncodedNamespace() {
+        var userId = Identifiers.encode("", UUID.randomUUID().toString());
+
+        whenRequesting(req -> req.get("{userId}", clusterId1, userId))
+            .assertThat()
+            .statusCode(is(Status.NOT_FOUND.getStatusCode()));
+    }
+
+    @Test
+    void testDescribeUserNotFoundWrongNamespaceEncoded() {
+        var userNames = clusterUserNames.get(NAMESPACE + "/test-kafka1");
+        var userId = Identifiers.encode("", "other-namespace", userNames.get(0));
+
+        whenRequesting(req -> req.get("{userId}", clusterId1, userId))
+            .assertThat()
+            .statusCode(is(Status.NOT_FOUND.getStatusCode()));
+    }
+
+    @Test
+    void testDescribeUserNotFoundNoSuchUser() {
+        var userId = Identifiers.encode("", NAMESPACE, UUID.randomUUID().toString());
+
+        whenRequesting(req -> req.get("{userId}", clusterId1, userId))
+            .assertThat()
+            .statusCode(is(Status.NOT_FOUND.getStatusCode()));
     }
 }
