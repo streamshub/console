@@ -220,6 +220,8 @@ public class AuthST extends AbstractST {
         LOGGER.info("Verify consumer groups page is unavailable");
         tcc.page().navigate(PwPageUrls.getConsumerGroupsPage(tcc, AuthTestConstants.TEAM_DEV_KAFKA_NAME, ""), PwUtils.getDefaultNavigateOpts());
         PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_NOT_AUTHORIZED_CONTENT, "Not Authorized", true);
+        // Logout and check user is no longer logged in
+        PwUtils.logoutUser(tcc, AuthTestConstants.USER_ADMIN_ALICE);
     }
 
     // Must be the last test
@@ -280,6 +282,8 @@ public class AuthST extends AbstractST {
         PwUtils.waitForContainsText(tcc, ConsumerGroupsPageSelectors.CGPS_TABLE, KafkaNamingUtils.consumerGroupName(newTopicName), true);
 
         WaitUtils.waitForClientsSuccess(clients);
+        // Logout and check user is no longer logged in
+        PwUtils.logoutUser(tcc, AuthTestConstants.USER_ADMIN_ALICE);
     }
 
     @BeforeAll

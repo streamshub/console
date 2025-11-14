@@ -213,7 +213,7 @@ public class CssSelectors {
         .build();
 
     public static final String PAGES_NOT_AUTHORIZED_CONTENT = new CssBuilder(PAGES_MAIN_CONTENT)
-        .withChild()
+        .withDesc()
         .withElementDiv().withComponentEmptyState().withChild()
         .withElementDiv().withComponentEmptyState().withSubComponentContent().withChild()
         .withElementDiv().withComponentEmptyState().withSubComponentHeader().withChild()

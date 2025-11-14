@@ -36,8 +36,4 @@ public class AuthTestConstants {
     public static final String USER_TOPICONLY_FRANK = "frank";
     // consumer groups only
     public static final String USER_CONSUMERONLY_GRACE = "grace";
-    // both topics and consumer view
-    public static final String USER_CROSS_CAROL = "carol";
-    // no access
-    public static final String USER_NOACCESS_HANK = "hank";
 }
