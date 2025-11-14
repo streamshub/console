@@ -1,6 +1,5 @@
 package com.github.streamshub.systemtests.utils.testutils;
 
-import com.github.streamshub.console.api.v1alpha1.Console;
 import com.github.streamshub.console.api.v1alpha1.ConsoleBuilder;
 import com.github.streamshub.console.api.v1alpha1.spec.KafkaCluster;
 import com.github.streamshub.console.api.v1alpha1.spec.KafkaClusterBuilder;
@@ -13,6 +12,7 @@ import com.github.streamshub.systemtests.setup.keycloak.KeycloakConfig;
 import com.github.streamshub.systemtests.utils.resourceutils.ClusterUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.KafkaNamingUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.KeycloakUtils;
+import io.fabric8.kubernetes.api.model.EnvVarBuilder;
 import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
 
 import java.util.List;
@@ -90,8 +90,8 @@ public class AuthTestSetupUtils {
             .build());
     }
 
-    public static Console getOidcConsoleInstance(String namespace, String consoleInstanceName, KeycloakConfig keycloakConfig) {
-        return new ConsoleBuilder()
+    public static ConsoleBuilder getOidcConsoleInstance(String namespace, String consoleInstanceName, KeycloakConfig keycloakConfig) {
+        ConsoleBuilder builder = new ConsoleBuilder()
             .withMetadata(new ObjectMetaBuilder()
                 .withName(consoleInstanceName)
                 .withNamespace(namespace)
@@ -105,7 +105,7 @@ public class AuthTestSetupUtils {
                         .withAuthServerUrl(KeycloakUtils.getKeycloakRealmUri(Constants.KEYCLOAK_REALM))
                         .withClientId(Constants.KEYCLOAK_CLIENT_ID)
                         .withNewClientSecret()
-                            .withValue(KeycloakUtils.getClientSecret(Constants.KEYCLOAK_NAMESPACE, keycloakConfig, Constants.KEYCLOAK_REALM, Constants.KEYCLOAK_CLIENT_ID))
+                            .withValue(KeycloakUtils.getClientSecret(namespace, keycloakConfig, Constants.KEYCLOAK_REALM, Constants.KEYCLOAK_CLIENT_ID))
                         .endClientSecret()
                         .withNewTrustStore()
                             .withType(TrustStore.Type.JKS)
@@ -178,7 +178,25 @@ public class AuthTestSetupUtils {
                         .endRule()
                     .endRole()
                 .endSecurity()
-            .endSpec()
-            .build();
+            .endSpec();
+
+        if (!ClusterUtils.isOcp()) {
+            // Force NextJS to accept self signed certs
+            builder = builder
+                .editSpec()
+                    .editContainers()
+                        .withNewUi()
+                            .editSpec()
+                                .addToEnv(new EnvVarBuilder()
+                                    .withName("NODE_TLS_REJECT_UNAUTHORIZED")
+                                    .withValue("0")
+                                    .build())
+                            .endSpec()
+                        .endUi()
+                    .endContainers()
+                .endSpec();
+        }
+
+        return builder;
     }
 }

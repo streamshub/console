@@ -17,6 +17,7 @@ import io.fabric8.kubernetes.api.model.Secret;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.kubernetes.api.model.apps.StatefulSet;
 import io.fabric8.kubernetes.api.model.batch.v1.Job;
+import io.fabric8.kubernetes.api.model.networking.v1.Ingress;
 import io.fabric8.kubernetes.client.readiness.Readiness;
 import io.skodjob.testframe.TestFrameConstants;
 import io.skodjob.testframe.resources.KubeResourceManager;
@@ -455,5 +456,22 @@ public class WaitUtils {
         Wait.until(String.format("StatefulSet %s/%s to be ready", namespaceName, statefulSetName), TimeConstants.POLL_INTERVAL_FOR_RESOURCE_READINESS, TestFrameConstants.GLOBAL_TIMEOUT_MEDIUM,
             () -> Readiness.isStatefulSetReady(ResourceUtils.getKubeResource(StatefulSet.class, namespaceName, statefulSetName))
         );
+    }
+
+    public static void waitForIngressToBePresent(String namespace, String ingressName) {
+        Wait.until(String.format("Ingress %s/%s to be present", namespace, ingressName),
+            TestFrameConstants.GLOBAL_POLL_INTERVAL_SHORT, TestFrameConstants.GLOBAL_TIMEOUT_MEDIUM,
+            () -> {
+                return ResourceUtils.getKubeResource(Ingress.class, namespace, ingressName) != null;
+            });
+
+    }
+
+    public static void waitForLogInPod(String namespace, String podName, String expectedLog) {
+        Wait.until(String.format("Pod %s/%s to contain log [%s]", namespace, podName, expectedLog),
+            TestFrameConstants.GLOBAL_POLL_INTERVAL_SHORT, TestFrameConstants.GLOBAL_TIMEOUT_SHORT,
+            () -> {
+                return KubeResourceManager.get().kubeClient().getLogsFromPod(namespace, podName).contains(expectedLog);
+            });
     }
 }
