@@ -3,30 +3,35 @@ package com.github.streamshub.systemtests.setup.keycloak;
 import com.github.streamshub.systemtests.Environment;
 import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.constants.Labels;
+import com.github.streamshub.systemtests.constants.TimeConstants;
 import com.github.streamshub.systemtests.exceptions.SetupException;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.setup.ScraperPod;
 import com.github.streamshub.systemtests.utils.FileUtils;
-import com.github.streamshub.systemtests.utils.resourceutils.KeycloakUtils;
+import com.github.streamshub.systemtests.utils.Utils;
 import com.github.streamshub.systemtests.utils.WaitUtils;
+import com.github.streamshub.systemtests.utils.resourceutils.ClusterUtils;
+import com.github.streamshub.systemtests.utils.resourceutils.KeycloakUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
 import io.fabric8.kubernetes.api.model.ConfigMap;
 import io.fabric8.kubernetes.api.model.ConfigMapBuilder;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.LabelSelector;
 import io.fabric8.kubernetes.api.model.LabelSelectorBuilder;
-import io.fabric8.kubernetes.api.model.Namespace;
-import io.fabric8.kubernetes.api.model.NamespaceBuilder;
+import io.fabric8.kubernetes.api.model.Pod;
 import io.fabric8.kubernetes.api.model.Secret;
 import io.fabric8.kubernetes.api.model.SecretBuilder;
 import io.fabric8.kubernetes.api.model.Service;
 import io.fabric8.kubernetes.api.model.ServiceBuilder;
 import io.fabric8.kubernetes.api.model.ServicePortBuilder;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
+import io.fabric8.kubernetes.api.model.networking.v1.Ingress;
 import io.fabric8.kubernetes.api.model.networking.v1.NetworkPolicy;
 import io.fabric8.kubernetes.api.model.networking.v1.NetworkPolicyBuilder;
 import io.skodjob.testframe.TestFrameEnv;
+import io.skodjob.testframe.enums.LogLevel;
 import io.skodjob.testframe.executor.Exec;
+import io.skodjob.testframe.executor.ExecResult;
 import io.skodjob.testframe.resources.KubeResourceManager;
 import io.skodjob.testframe.resources.ResourceItem;
 import io.vertx.core.json.JsonObject;
@@ -39,6 +44,8 @@ import java.nio.file.Path;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
+
+import static com.github.streamshub.systemtests.utils.resourceutils.KeycloakUtils.getKeycloakHostname;
 
 public class KeycloakSetup {
     private static final Logger LOGGER = LogWrapper.getLogger(KeycloakSetup.class);
@@ -55,8 +62,10 @@ public class KeycloakSetup {
 
     // Deployment variables
     private static final String KEYCLOAK = "keycloak";
+    private static final String KEYCLOAK_INGRES_NAME = "keycloak-ingress";
     private static final String KEYCLOAK_OPERATOR_DEPLOYMENT_NAME = "keycloak-operator";
     private static final String KEYCLOAK_SECRET_NAME = "keycloak-initial-admin";
+    private static final String KEYCLOAK_TLS_SECRET_NAME = "example-tls-secret";
 
     // Postgres
     private static final String POSTGRES = "postgres";
@@ -66,8 +75,7 @@ public class KeycloakSetup {
 
     private String namespace;
 
-    public KeycloakSetup(String namespace) {
-        this.namespace = namespace;
+    public KeycloakSetup() {
     }
 
     /**
@@ -82,26 +90,60 @@ public class KeycloakSetup {
      *
      * @return a {@link KeycloakConfig} object containing admin credentials and connection details for the deployed Keycloak instance
      */
-    public KeycloakConfig setupKeycloakAndReturnConfig() {
+    public KeycloakConfig setupKeycloakAndReturnConfig(String namespace) {
+        LOGGER.info("Setup keycloak");
+        this.namespace = namespace;
+
         // If keycloak has been already deployed
-        if (ResourceUtils.getKubeResource(Namespace.class, namespace) == null) {
-            KubeResourceManager.get().createOrUpdateResourceWithWait(new NamespaceBuilder().withNewMetadata().withName(namespace).endMetadata().build());
+        if (ResourceUtils.listKubeResourcesByPrefix(Deployment.class, namespace, KEYCLOAK_OPERATOR_DEPLOYMENT_NAME).isEmpty()) {
             KubeResourceManager.get().createResourceWithoutWait(ScraperPod.getDefaultPod(namespace, Constants.SCRAPER_NAME).build());
             deployKeycloakOperator();
             deployPostgres();
             allowNetworkPolicyBetweenKeycloakAndPostgres();
             deployKeycloakInstance();
             KeycloakUtils.allowNetworkPolicyAllIngressForMatchingLabel(namespace, KEYCLOAK + "-allow", Map.of(Labels.APP, KEYCLOAK));
+
+            // Minikube requires additional ingress TLS manipulation
+            if (!ClusterUtils.isOcp()) {
+                LOGGER.info("Due to cluster type Keycloak need some TLS adjusting");
+                // Wait for keycloak ingress to be present
+                WaitUtils.waitForIngressToBePresent(namespace, KEYCLOAK_INGRES_NAME);
+                // Apply TLS config to ingress with keycloak hostname without http
+                // Use TLS secret for keycloak created in prepare operator script
+                Ingress keycloakIngress = ResourceUtils.getKubeResource(Ingress.class, namespace, KEYCLOAK_INGRES_NAME);
+                KubeResourceManager.get().createOrUpdateResourceWithWait(
+                    keycloakIngress.edit()
+                        .editSpec()
+                            .addNewTl()
+                                .withHosts(Constants.KEYCLOAK_HOSTNAME_PREFIX + "." + ClusterUtils.getClusterDomain())
+                                .withSecretName(KEYCLOAK_TLS_SECRET_NAME)
+                            .endTl()
+                        .endSpec()
+                    .build());
+
+                // Need to wait some time so that the certificate takes place and nginx loads it, without wait it gets fake k8s cert
+                Utils.sleepWait(TimeConstants.COMPONENT_LOAD_TIMEOUT);
+
+                String nginxController = ResourceUtils.listKubeResourcesByLabelSelector(Pod.class, Constants.NGINX_INGRESS_NAMESPACE, Labels.getNginxPodLabelSelector())
+                    .get(0).getMetadata().getName();
+
+                // Once nginx log contains hostname of keycloak the cert has been synced
+                WaitUtils.waitForLogInPod(Constants.NGINX_INGRESS_NAMESPACE, nginxController,
+                     Constants.KEYCLOAK_HOSTNAME_PREFIX + "." + ClusterUtils.getClusterDomain());
+            }
         }
 
+        LOGGER.info("Setup keycloak admin secret so we can access it later for realm import");
         Secret keycloakAdminSecret = ResourceUtils.getKubeResource(Secret.class, namespace, KEYCLOAK_SECRET_NAME);
 
         KeycloakConfig keycloakConfig = new KeycloakConfig(namespace,
             new String(Base64.getDecoder().decode(keycloakAdminSecret.getData().get("password")), StandardCharsets.UTF_8),
             new String(Base64.getDecoder().decode(keycloakAdminSecret.getData().get("username")), StandardCharsets.UTF_8));
 
-        // Prepare truststore
-        Exec.exec(List.of(Constants.BASH_CMD, PREPARE_TRUST_STORE_SCRIPT_PATH, namespace, KeycloakUtils.getKeycloakHostname(false), Constants.TRUST_STORE_PASSWORD, Environment.KEYCLOAK_TRUST_STORE_FILE_PATH));
+        LOGGER.info("Prepare keycloak truststore for communication with console");
+        // This truststore only gets the old certificate
+        ExecResult execResult = Exec.exec(null, List.of(Constants.BASH_CMD, PREPARE_TRUST_STORE_SCRIPT_PATH, namespace, getKeycloakHostname(false), Constants.TRUST_STORE_PASSWORD, Environment.KEYCLOAK_TRUST_STORE_FILE_PATH), 0, LogLevel.INFO, true);
+        LOGGER.info(execResult.out());
         return keycloakConfig;
     }
 
@@ -118,7 +160,7 @@ public class KeycloakSetup {
     private void deployKeycloakOperator() {
         LOGGER.info("Preparing Keycloak Operator in Namespace: {}", namespace);
         Exec.exec(List.of(Constants.BASH_CMD, KEYCLOAK_PREPARE_SCRIPT_PATH, namespace, Environment.KEYCLOAK_VERSION,
-            KeycloakUtils.getKeycloakHostname(false)));
+            getKeycloakHostname(false), KEYCLOAK_TLS_SECRET_NAME));
 
         WaitUtils.waitForDeploymentWithPrefixIsReady(namespace, KEYCLOAK_OPERATOR_DEPLOYMENT_NAME);
 
@@ -156,7 +198,7 @@ public class KeycloakSetup {
     private void deployKeycloakInstance() {
         LOGGER.info("Deploying Keycloak instance into Namespace: {}", namespace);
         KubeResourceManager.get().kubeCmdClient().inNamespace(namespace).applyContent(FileUtils.readFile(KEYCLOAK_INSTANCE_FILE_PATH)
-            .replace("${HOSTNAME}", KeycloakUtils.getKeycloakHostname(true)));
+            .replace("${HOSTNAME}", getKeycloakHostname(true)));
 
         WaitUtils.waitForStatefulSetReady(namespace, KEYCLOAK);
         WaitUtils.waitForSecretReady(namespace, KEYCLOAK_SECRET_NAME);

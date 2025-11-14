@@ -445,8 +445,8 @@ public class PwUtils {
         final String loginUrl = PwPageUrls.getKafkaLoginPage(tcc, tcc.kafkaName());
         LOGGER.info("Logging in to the Console with URL: {}", loginUrl);
         waitForConsoleUiWithKeycloakToBecomeReady(tcc);
-        // Anonymous login
         tcc.page().navigate(loginUrl, getDefaultNavigateOpts());
+        // Login with user
         waitForLocatorAndFill(tcc, CssSelectors.LOGIN_KEYCLOAK_USERNAME_INPUT, username);
         waitForLocatorAndFill(tcc, CssSelectors.LOGIN_KEYCLOAK_PASSWORD_INPUT, password);
         waitForLocatorAndClick(tcc, CssSelectors.LOGIN_KEYCLOAK_SIGN_IN_BUTTON);
