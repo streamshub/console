@@ -23,6 +23,7 @@ if [[ ! -s "${CERT_FILE}" ]]; then
   exit 1
 fi
 echo "Certificate saved to ${CERT_FILE}"
+echo "$(cat ${CERT_FILE})"
 
 echo "Checking if truststore ${TRUST_STORE_FILE_PATH} already contains alias ${ALIAS}"
 if keytool -list -keystore ${TRUST_STORE_FILE_PATH} -storepass ${STORE_PASS} -alias ${ALIAS} &>/dev/null; then

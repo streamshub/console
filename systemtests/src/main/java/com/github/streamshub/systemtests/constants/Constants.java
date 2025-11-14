@@ -1,6 +1,8 @@
 package com.github.streamshub.systemtests.constants;
 
 public class Constants {
+    public static final String NGINX_INGRESS_NAMESPACE = "ingress-nginx";
+
     private Constants() {}
 
     // --------------------------------
@@ -107,7 +109,6 @@ public class Constants {
      * Keycloak
      */
     public static final String KEYCLOAK_HOSTNAME_PREFIX = "console-oidc";
-    public static final String KEYCLOAK_NAMESPACE = "keycloak-oidc";
     public static final String KEYCLOAK_CLIENT_ID = "console-client";
     public static final String KEYCLOAK_TRUST_STORE_CONFIGMAP_NAME = "truststore-configmap";
     public static final String KEYCLOAK_TRUST_STORE_ACCCESS_SECRET_NAME = "access-to-truststore";

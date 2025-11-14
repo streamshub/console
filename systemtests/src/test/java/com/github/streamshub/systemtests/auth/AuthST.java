@@ -1,5 +1,6 @@
 package com.github.streamshub.systemtests.auth;
 
+import com.github.streamshub.console.dependents.ConsoleIngress;
 import com.github.streamshub.console.dependents.ConsoleResource;
 import com.github.streamshub.systemtests.AbstractST;
 import com.github.streamshub.systemtests.Environment;
@@ -33,11 +34,13 @@ import com.github.streamshub.systemtests.utils.resourceutils.KafkaNamingUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.KafkaTopicUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.KafkaUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.NamespaceUtils;
+import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
 import com.github.streamshub.systemtests.utils.testchecks.TopicChecks;
 import com.github.streamshub.systemtests.utils.testutils.AuthTestSetupUtils;
 import com.github.streamshub.systemtests.utils.testutils.TopicsTestUtils;
 import io.fabric8.kubernetes.api.model.ConfigMapBuilder;
 import io.fabric8.kubernetes.api.model.SecretBuilder;
+import io.fabric8.kubernetes.api.model.networking.v1.Ingress;
 import io.skodjob.testframe.resources.KubeResourceManager;
 import org.apache.kafka.common.security.auth.SecurityProtocol;
 import org.apache.logging.log4j.Logger;
@@ -62,7 +65,7 @@ public class AuthST extends AbstractST {
     private TestCaseConfig tcc;
 
     // Keycloak
-    private final KeycloakSetup keycloakSetup = new KeycloakSetup(Constants.KEYCLOAK_NAMESPACE);
+    private final KeycloakSetup keycloakSetup = new KeycloakSetup();
     protected KeycloakConfig keycloakConfig;
 
     @Order(1)
@@ -281,12 +284,12 @@ public class AuthST extends AbstractST {
 
     @BeforeAll
     void testClassSetup() {
-        // Setup keycloak operator
-        keycloakConfig = keycloakSetup.setupKeycloakAndReturnConfig();
-
-        // Setup namespace and kafka + console instance
+        // // Setup namespace and kafka + console instance
         tcc = getTestCaseConfig();
         NamespaceUtils.prepareNamespace(tcc.namespace());
+
+        // Setup keycloak operator
+        keycloakConfig = keycloakSetup.setupKeycloakAndReturnConfig(tcc.namespace());
 
         // Setup Kafkas for both teams
         // Dev Kafka
@@ -303,7 +306,7 @@ public class AuthST extends AbstractST {
         // Import console auth realm
         KeycloakSetup.importConsoleRealm(keycloakConfig, "https://" + tcc.consoleInstanceName() + "." + ClusterUtils.getClusterDomain());
 
-        //Secret to truststore
+        LOGGER.info("Create secret with trust store password for console");
         KubeResourceManager.get().createOrUpdateResourceWithWait(new SecretBuilder()
             .withNewMetadata()
                 .withName(Constants.KEYCLOAK_TRUST_STORE_ACCCESS_SECRET_NAME)
@@ -314,17 +317,39 @@ public class AuthST extends AbstractST {
             .build());
 
         // Configmap with truststore
+        LOGGER.info("Create configmap with trust store");
+        String encodedTrustStore = Base64.getEncoder().encodeToString(FileUtils.readFileBytes(Environment.KEYCLOAK_TRUST_STORE_FILE_PATH));
+
+        LOGGER.info("Encoded TrustStore: {}", encodedTrustStore);
+
         KubeResourceManager.get().createOrUpdateResourceWithWait(new ConfigMapBuilder()
             .withNewMetadata()
                 .withName(Constants.KEYCLOAK_TRUST_STORE_CONFIGMAP_NAME)
                 .withNamespace(tcc.namespace())
                 .addToLabels(ConsoleResource.MANAGEMENT_LABEL)
             .endMetadata()
-            .addToBinaryData(Constants.TRUST_STORE_KEY_NAME, Base64.getEncoder().encodeToString(FileUtils.readFileBytes(Environment.KEYCLOAK_TRUST_STORE_FILE_PATH)))
+            .addToBinaryData(Constants.TRUST_STORE_KEY_NAME, encodedTrustStore)
             .build());
 
         // Console instance
-        ConsoleInstanceSetup.setupIfNeeded(AuthTestSetupUtils.getOidcConsoleInstance(tcc.namespace(), tcc.consoleInstanceName(), keycloakConfig));
+        ConsoleInstanceSetup.setupIfNeeded(AuthTestSetupUtils.getOidcConsoleInstance(tcc.namespace(), tcc.consoleInstanceName(), keycloakConfig).build());
+
+        if (!ClusterUtils.isOcp()) {
+            LOGGER.info("Edit console ingress, annotate for bigger buffer");
+            WaitUtils.waitForIngressToBePresent(tcc.namespace(), tcc.consoleInstanceName() + "-" + ConsoleIngress.NAME);
+            Ingress consoleIngress = ResourceUtils.getKubeResource(Ingress.class, tcc.namespace(), tcc.consoleInstanceName() + "-" + ConsoleIngress.NAME);
+            // Add nginx ingress annotation to increase buffer
+            // This is required to correctly receive bigger header containing keycloak token - session cookie
+            consoleIngress = consoleIngress.edit()
+                .editMetadata()
+                    .addToAnnotations("nginx.ingress.kubernetes.io/proxy-buffer-size", "16k")
+                    .addToAnnotations("nginx.ingress.kubernetes.io/proxy-buffers-number", "8")
+                    .addToAnnotations("nginx.ingress.kubernetes.io/proxy-busy-buffers-size", "16k")
+                .endMetadata()
+                .build();
+
+            KubeResourceManager.get().createOrUpdateResourceWithWait(consoleIngress);
+        }
     }
 
     @AfterAll
