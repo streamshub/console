@@ -191,6 +191,7 @@ public class CssBuilder {
     public CssBuilder withSubComponentControls() { return withSubComponent("controls"); }
     public CssBuilder withSubComponentLink() { return withSubComponent("link"); }
     public CssBuilder withSubComponentSubnav() { return withSubComponent("subnav"); }
+    public CssBuilder withSubComponentSidebar() { return withSubComponent("sidebar"); }
     public CssBuilder withSubComponentSidebarBody() { return withSubComponent("sidebar-body"); }
     public CssBuilder withSubComponentTbody() { return withSubComponent("tbody"); }
     public CssBuilder withSubComponentThead() { return withSubComponent("thead"); }
@@ -219,6 +220,7 @@ public class CssBuilder {
     public CssBuilder withSubComponentTh() { return withSubComponent("th"); }
     public CssBuilder withSubComponentButton() { return withSubComponent("button"); }
     public CssBuilder withSubComponentSection() { return withSubComponent("section"); }
+    public CssBuilder withSubComponentSectionTitle() { return withSubComponent("section-title"); }
     public CssBuilder withSubComponentGroupControl() { return withSubComponent("group-control"); }
     public CssBuilder withSubComponentCheck() { return withSubComponent("check"); }
     public CssBuilder withSubComponentSort() { return withSubComponent("sort"); }

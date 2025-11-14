@@ -1,0 +1,284 @@
+{
+  "realm": "console-realm",
+  "enabled": true,
+  "accessTokenLifespan": 6000,
+  "ssoSessionIdleTimeout": 864000,
+  "ssoSessionMaxLifespan": 864000,
+  "accessCodeLifespan": 6000,
+  "accessCodeLifespanUserAction": 6000,
+  "notBefore": 0,
+  "sslRequired": "external",
+  "rememberMe": false,
+  "ssoSessionIdleTimeoutRememberMe": 0,
+  "ssoSessionMaxLifespanRememberMe": 0,
+  "roles":{
+    "realm":[
+      {
+        "name":"developers-role",
+        "description":"Developer team member"
+      },
+      {
+        "name":"administrators-role",
+        "description":"Operations team member"
+      },
+      {
+        "name":"viewers-role",
+        "description":"Read-only access to all clusters"
+      },
+      {
+        "name":"topics-role",
+        "description":"Can view topics only"
+      },
+      {
+        "name":"consumergroups-role",
+        "description":"Can view consumer groups only"
+      }
+    ],
+    "client": {
+      "console-client": []
+    }
+  },
+  "groups":[
+    {
+      "name":"developers-team",
+      "path":"/developers-team",
+      "realmRoles":[
+        "developers-role"
+      ]
+    },
+    {
+      "name":"administrators-team",
+      "path":"/administrators-team",
+      "realmRoles":[
+        "administrators-role"
+      ]
+    },
+    {
+      "name":"topics-view-team",
+      "path":"/topics-view-team",
+      "realmRoles":[
+        "topics-role"
+      ]
+    },
+    {
+      "name":"consumergroups-view-team",
+      "path":"/consumergroups-view-team",
+      "realmRoles":[
+        "consumergroups-role"
+      ]
+    },
+    {
+      "name":"no-access",
+      "path":"/no-access",
+      "realmRoles":[
+
+      ]
+    }
+  ],
+  "users":[
+    {
+      "username":"bob",
+      "enabled":true,
+      "emailVerified":true,
+      "firstName":"Bob",
+      "lastName":"TheDeveloper",
+      "email":"bob@streamshub.io",
+      "credentials":[
+        {
+          "type":"password",
+          "value":"bob"
+        }
+      ],
+      "groups":[
+        "/developers-team"
+      ]
+    },
+    {
+      "username":"alice",
+      "enabled":true,
+      "emailVerified":true,
+      "firstName":"alice",
+      "lastName":"TheAdmin",
+      "email":"alice@streamshub.io",
+      "credentials":[
+        {
+          "type":"password",
+          "value":"alice"
+        }
+      ],
+      "groups":[
+        "/administrators-team"
+      ]
+    },
+    {
+      "username":"frank",
+      "enabled":true,
+      "emailVerified":true,
+      "firstName":"frank",
+      "lastName":"TopicOnlyViewer",
+      "email":"frank@streamshub.io",
+      "credentials":[
+        {
+          "type":"password",
+          "value":"frank"
+        }
+      ],
+      "groups":[
+        "/topics-view-team"
+      ]
+    },
+    {
+      "username":"grace",
+      "enabled":true,
+      "emailVerified":true,
+      "firstName":"grace",
+      "lastName":"ConsuemerOnlyViewer",
+      "email":"grace@streamshub.io",
+      "credentials":[
+        {
+          "type":"password",
+          "value":"grace"
+        }
+      ],
+      "groups":[
+        "/consumergroups-view-team"
+      ]
+    }
+  ],
+  "clients": [
+    {
+      "clientId": "console-client",
+      "description": "private client for streamshub console",
+      "enabled": true,
+      "bearerOnly": false,
+      "consentRequired": false,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "clientAuthenticatorType": "client-secret",
+      "redirectUris": ["${CONSOLE_URL}/*"],
+      "webOrigins": ["${CONSOLE_URL}/"],
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": true,
+      "publicClient": false,
+      "frontchannelLogout": true,
+      "protocol": "openid-connect",
+      "fullScopeAllowed": true,
+      "nodeReRegistrationTimeout": -1,
+      "defaultClientScopes": [
+        "profile",
+        "groups",
+        "email"
+      ]
+    }
+  ],
+  "clientScopes":[
+    {
+      "name":"profile",
+      "protocol":"openid-connect",
+      "attributes":{
+        "include.in.token.scope":"true",
+        "display.on.consent.screen":"true"
+      },
+      "protocolMappers":[
+        {
+          "name":"profile",
+          "protocol":"openid-connect",
+          "protocolMapper":"oidc-usermodel-attribute-mapper",
+          "config":{
+            "userinfo.token.claim":"true",
+            "user.attribute":"profile",
+            "id.token.claim":"true",
+            "access.token.claim":"true",
+            "claim.name":"profile",
+            "jsonType.label":"String"
+          }
+        },
+        {
+          "name":"username",
+          "protocol":"openid-connect",
+          "protocolMapper":"oidc-usermodel-attribute-mapper",
+          "config":{
+            "userinfo.token.claim":"true",
+            "user.attribute":"username",
+            "id.token.claim":"true",
+            "access.token.claim":"true",
+            "claim.name":"preferred_username",
+            "jsonType.label":"String"
+          }
+        }
+      ]
+    },
+    {
+      "name":"basic",
+      "protocol":"openid-connect",
+      "attributes":{
+        "include.in.token.scope":"false",
+        "display.on.consent.screen":"false"
+      },
+      "protocolMappers":[
+        {
+          "name":"sub",
+          "protocol":"openid-connect",
+          "protocolMapper":"oidc-sub-mapper"
+        },
+        {
+          "name":"auth_time",
+          "protocol":"openid-connect",
+          "protocolMapper":"oidc-usersessionmodel-note-mapper",
+          "config":{
+            "user.session.note":"AUTH_TIME",
+            "id.token.claim":"true",
+            "access.token.claim":"true",
+            "claim.name":"auth_time",
+            "jsonType.label":"long"
+          }
+        }
+      ]
+    },
+    {
+      "name":"email",
+      "protocol":"openid-connect",
+      "attributes":{
+        "include.in.token.scope":"true",
+        "display.on.consent.screen":"true"
+      },
+      "protocolMappers":[
+        {
+          "name":"email",
+          "protocol":"openid-connect",
+          "protocolMapper":"oidc-usermodel-attribute-mapper",
+          "config":{
+            "userinfo.token.claim":"true",
+            "user.attribute":"email",
+            "id.token.claim":"true",
+            "access.token.claim":"true",
+            "claim.name":"email",
+            "jsonType.label":"String"
+          }
+        }
+      ]
+    },
+    {
+      "name":"groups",
+      "protocol":"openid-connect",
+      "attributes":{
+        "include.in.token.scope":"true",
+        "display.on.consent.screen":"true"
+      },
+      "protocolMappers":[
+        {
+          "name":"Groups Mapper",
+          "protocol":"openid-connect",
+          "protocolMapper":"oidc-group-membership-mapper",
+          "config":{
+            "full.path":"true",
+            "multivalued":"true",
+            "id.token.claim":"true",
+            "access.token.claim":"true",
+            "claim.name":"groups"
+          }
+        }
+      ]
+    }
+  ]
+}
