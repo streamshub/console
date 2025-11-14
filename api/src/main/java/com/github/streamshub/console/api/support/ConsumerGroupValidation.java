@@ -141,7 +141,7 @@ public class ConsumerGroupValidation {
                             return;
                         }
 
-                        offset.offset().getOptionalPrimary()
+                        offset.optionalAbsoluteOffset()
                             .ifPresent(absoluteOffset ->
                                 verifyOffsetWithinRange(valid, i, topic, partition, absoluteOffset, partitions, context));
                     }
