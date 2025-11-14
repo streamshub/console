@@ -279,85 +279,34 @@ public class ConsumerGroupService {
             .thenApply(topics -> validationService.validate(new ConsumerGroupValidation.ConsumerGroupPatchInputs(topics, patch)))
             .thenApply(ConsumerGroupValidation.ConsumerGroupPatchInputs::topics)
             .thenCompose(topics -> {
-                var offsetModifications = patch.offsets()
-                    .stream()
-                    .flatMap(offset -> {
-                        String topicId = offset.topicId();
-                        Either<Topic, Throwable> topic = topics.get(Uuid.fromString(topicId));
-
-                        if (topic.isPrimaryEmpty()) {
-                            return Stream.empty();
-                        }
-
-                        String topicName = topic.getPrimary().name();
-                        Integer partition = offset.partition();
-
-                        if (partition != null) {
-                            return Stream.of(Map.entry(new PartitionId(topicId, topicName, partition), offset));
-                        } else {
-                            return topic.getPrimary().partitions().getOptionalPrimary()
-                                .map(Collection::stream)
-                                .orElseGet(Stream::empty)
-                                .map(PartitionInfo::getPartition)
-                                .map(p -> Map.entry(new PartitionId(topicId, topicName, p), offset));
-                        }
-                    })
-                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-
-                var topicOffsetsRequest = offsetModifications.entrySet()
-                    .stream()
-                    .filter(e -> e.getValue().offset().isPrimaryEmpty())
-                    .map(e -> Map.entry(
-                        e.getKey().toKafkaModel(),
-                        switch (e.getValue().offset().getAlternate()) {
-                            case KafkaOffsetSpec.EARLIEST -> OffsetSpec.earliest();
-                            case KafkaOffsetSpec.LATEST -> OffsetSpec.latest();
-                            case KafkaOffsetSpec.MAX_TIMESTAMP -> OffsetSpec.maxTimestamp();
-                            default -> OffsetSpec.forTimestamp(Instant.parse(e.getValue().offset().getAlternate()).toEpochMilli());
-                        }))
-                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-
-                var topicOffsetsResult = adminClient.listOffsets(topicOffsetsRequest);
+                var offsetModifications = buildOffsetModifications(patch, topics);
+                var offsetModificationsByPK = offsetModifications.entrySet().stream()
+                        .map(e -> Map.entry(e.getKey().toKafkaModel(), e.getValue()))
+                        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
                 Map<TopicPartition, org.apache.kafka.clients.consumer.OffsetAndMetadata> targetOffsets = new HashMap<>();
 
-                var pendingTopicOffsets = getListOffsetsResults(topicOffsetsRequest.keySet(), topicOffsetsResult);
+                return fetchOffsetsForSpecs(adminClient, offsetModifications, offsetModificationsByPK, targetOffsets)
+                    .thenRun(() -> {
+                        for (var entry : offsetModifications.entrySet()) {
+                            PartitionId id = entry.getKey();
+                            OffsetAndMetadata offsetMeta = entry.getValue();
 
-                var offsetModificationsByPK = offsetModifications.entrySet()
-                    .stream()
-                    .map(e -> Map.entry(e.getKey().toKafkaModel(), e.getValue()))
-                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-
-                return Promises.allOf(pendingTopicOffsets.values())
-                    .thenRun(() ->
-                        pendingTopicOffsets
-                            .entrySet()
-                            .stream()
-                            .map(e -> Map.entry(e.getKey(), e.getValue().join()))
-                            .filter(e -> e.getValue().offset() >= 0)
-                            .forEach(e -> targetOffsets.put(
-                                    e.getKey(),
-                                    new org.apache.kafka.clients.consumer.OffsetAndMetadata(
-                                            e.getValue().offset(),
-                                            Optional.ofNullable(offsetModificationsByPK.get(e.getKey()).leaderEpoch()),
-                                            offsetModificationsByPK.get(e.getKey()).metadata()))))
-                    .thenRun(() ->
-                        offsetModifications.entrySet()
-                            .stream()
-                            .filter(e -> e.getValue().offset().isPrimaryPresent())
-                            .forEach(e -> {
-                                PartitionId id = e.getKey();
+                            if (offsetMeta.hasAbsoluteOffset()) {
                                 targetOffsets.put(
                                         id.toKafkaModel(),
                                         new org.apache.kafka.clients.consumer.OffsetAndMetadata(
-                                            e.getValue().offset().getPrimary(),
+                                            offsetMeta.absoluteOffset(),
                                             Optional.ofNullable(offsetModifications.get(id).leaderEpoch()),
                                             offsetModifications.get(id).metadata()
                                         )
                                 );
-                            })
-                    )
-                    .thenApply(nothing1 -> targetOffsets);
+                            } else if (offsetMeta.isDeleted()) {
+                                targetOffsets.put(id.toKafkaModel(), null);
+                            }
+                        }
+                    })
+                    .thenApply(nothing -> targetOffsets);
             })
             .thenComposeAsync(alterRequest -> {
                 if (dryRun) {
@@ -370,6 +319,74 @@ public class ConsumerGroupService {
             }, threadContext.currentContextExecutor());
     }
 
+    Map<PartitionId, OffsetAndMetadata> buildOffsetModifications(ConsumerGroup patch, Map<Uuid, Either<Topic, Throwable>> topics) {
+        return patch.offsets()
+            .stream()
+            .flatMap(offset -> {
+                String topicId = offset.topicId();
+                Either<Topic, Throwable> topic = topics.get(Uuid.fromString(topicId));
+
+                if (topic.isPrimaryEmpty()) {
+                    return Stream.empty();
+                }
+
+                String topicName = topic.getPrimary().name();
+                Integer partition = offset.partition();
+
+                if (partition != null) {
+                    return Stream.of(Map.entry(new PartitionId(topicId, topicName, partition), offset));
+                } else {
+                    return topic.getPrimary().partitions().getOptionalPrimary()
+                        .map(Collection::stream)
+                        .orElseGet(Stream::empty)
+                        .map(PartitionInfo::getPartition)
+                        .map(p -> Map.entry(new PartitionId(topicId, topicName, p), offset));
+                }
+            })
+            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+    }
+
+    /**
+     * Find the absolute offsets for the partitions being reset to an offset spec
+     * like earliest, latest, max timestamp, or specific timestamp. Results are
+     * places in the {@code targetOffsets} map parameter.
+     */
+    CompletionStage<Void> fetchOffsetsForSpecs(Admin adminClient,
+            Map<PartitionId, OffsetAndMetadata> offsetModifications,
+            Map<TopicPartition, OffsetAndMetadata> offsetModificationsByPK,
+            Map<TopicPartition, org.apache.kafka.clients.consumer.OffsetAndMetadata> targetOffsets) {
+
+        var topicOffsetsRequest = offsetModifications.entrySet()
+            .stream()
+            .filter(e -> e.getValue().hasOffsetSpec())
+            .map(e -> Map.entry(
+                e.getKey().toKafkaModel(),
+                switch (e.getValue().offsetSpec()) {
+                    case KafkaOffsetSpec.EARLIEST -> OffsetSpec.earliest();
+                    case KafkaOffsetSpec.LATEST -> OffsetSpec.latest();
+                    case KafkaOffsetSpec.MAX_TIMESTAMP -> OffsetSpec.maxTimestamp();
+                    default -> OffsetSpec.forTimestamp(Instant.parse(e.getValue().offsetSpec()).toEpochMilli());
+                }))
+            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+        var topicOffsetsResult = adminClient.listOffsets(topicOffsetsRequest);
+        var pendingTopicOffsets = getListOffsetsResults(topicOffsetsRequest.keySet(), topicOffsetsResult);
+
+        return Promises.allOf(pendingTopicOffsets.values())
+            .thenRun(() ->
+                pendingTopicOffsets
+                    .entrySet()
+                    .stream()
+                    .map(e -> Map.entry(e.getKey(), e.getValue().join()))
+                    .filter(e -> e.getValue().offset() >= 0)
+                    .forEach(e -> targetOffsets.put(
+                            e.getKey(),
+                            new org.apache.kafka.clients.consumer.OffsetAndMetadata(
+                                    e.getValue().offset(),
+                                    Optional.ofNullable(offsetModificationsByPK.get(e.getKey()).leaderEpoch()),
+                                    offsetModificationsByPK.get(e.getKey()).metadata()))));
+    }
+
     CompletionStage<ConsumerGroup> alterConsumerGroupOffsetsDryRun(Admin adminClient, String groupId,
             Map<TopicPartition, org.apache.kafka.clients.consumer.OffsetAndMetadata> alterRequest) {
         var pendingTopicsIds = fetchTopicIdMap();
@@ -379,15 +396,16 @@ public class ConsumerGroupService {
             .thenApply(result -> result.getOrThrow(CompletionException::new))
             .thenCombine(pendingTopicsIds, (group, topicIds) -> {
                 group.offsets(alterRequest.entrySet().stream().map(e -> {
-                    String topicName = e.getKey().topic();
-                    return new OffsetAndMetadata(topicIds.get(topicName),
-                            topicName,
-                            e.getKey().partition(),
-                            Either.of(e.getValue().offset()),
-                            null,
-                            null,
-                            e.getValue().metadata(),
-                            e.getValue().leaderEpoch().orElse(null));
+                    var topicPartition = e.getKey();
+                    String topicName = topicPartition.topic();
+                    String topicId = topicIds.get(topicName);
+                    var offsetMeta = e.getValue();
+
+                    if (offsetMeta == null) {
+                        return new OffsetAndMetadata(topicId, topicPartition);
+                    }
+
+                    return new OffsetAndMetadata(topicId, topicPartition, offsetMeta);
                 }).toList());
 
                 return group;
@@ -396,26 +414,42 @@ public class ConsumerGroupService {
 
     CompletableFuture<Void> alterConsumerGroupOffsets(Admin adminClient, String groupId,
             Map<TopicPartition, org.apache.kafka.clients.consumer.OffsetAndMetadata> alterRequest) {
-        var alterResults = adminClient.alterConsumerGroupOffsets(groupId, alterRequest);
 
-        Map<TopicPartition, CompletableFuture<Void>> offsetResults = alterRequest.keySet()
-                .stream()
-                .collect(Collectors.toMap(
-                        Function.identity(),
-                        partition -> alterResults.partitionResult(partition)
-                            .toCompletionStage()
-                            .exceptionally(error -> {
-                                if (error instanceof UnknownMemberIdException) {
-                                    throw GROUP_NOT_EMPTY;
-                                }
-                                if (error instanceof CompletionException ce) {
-                                    throw ce;
-                                }
-                                throw new CompletionException(error);
-                            })
-                            .toCompletableFuture()));
+        var alteredPartitions = alterRequest.entrySet().stream()
+                .filter(e -> e.getValue() != null)
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
-        return Promises.allOf(offsetResults.values());
+        var deletedPartitions = alterRequest.entrySet().stream()
+                .filter(e -> e.getValue() == null)
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toSet());
+
+        var alterResults = adminClient.alterConsumerGroupOffsets(groupId, alteredPartitions);
+        var deleteResults = adminClient.deleteConsumerGroupOffsets(groupId, deletedPartitions);
+
+        var results = new ArrayList<CompletableFuture<Void>>();
+
+        for (var entry : alterRequest.entrySet()) {
+            var partition = entry.getKey();
+
+            var promise = entry.getValue() == null
+                    ? deleteResults.partitionResult(partition)
+                    : alterResults.partitionResult(partition);
+
+            results.add(promise.toCompletionStage()
+                    .exceptionally(error -> {
+                        if (error instanceof UnknownMemberIdException) {
+                            throw GROUP_NOT_EMPTY;
+                        }
+                        if (error instanceof CompletionException ce) {
+                            throw ce;
+                        }
+                        throw new CompletionException(error);
+                    })
+                    .toCompletableFuture());
+        }
+
+        return Promises.allOf(results);
     }
 
     private Map<TopicPartition, CompletableFuture<ListOffsetsResultInfo>> getListOffsetsResults(
