@@ -93,7 +93,7 @@ export async function updateConsumerGroup(
   offsets: Array<{
     topicId: string;
     partition?: number;
-    offset: string | number;
+    offset: string | number | null;
     metadata?: string;
   }>,
   dryRun?: boolean,

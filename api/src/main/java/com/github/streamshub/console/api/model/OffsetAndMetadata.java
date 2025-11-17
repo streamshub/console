@@ -6,7 +6,6 @@ import java.util.Optional;
 
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
@@ -61,7 +60,7 @@ public record OffsetAndMetadata(
             implementation = Object.class,
             oneOf = { Long.class, OffsetSpec.class })
         @JsonDeserialize(using = OffsetAndMetadata.EitherLongOrStringDeserializer.class)
-        @NotNull(payload = ErrorCategory.InvalidResource.class)
+        @JsonInclude(Include.ALWAYS)
         Either<
             @Min(value = 0, payload = ErrorCategory.InvalidResource.class)
             Long,
@@ -142,6 +141,8 @@ public record OffsetAndMetadata(
                 return Either.of(node.asLong());
             } else if (node.isTextual()) {
                 return Either.ofAlternate(node.asText());
+            } else if (node.isNull()) {
+                return null;
             }
 
             throw MismatchedInputException.from(parser, Either.class, "Unable to parse offset");

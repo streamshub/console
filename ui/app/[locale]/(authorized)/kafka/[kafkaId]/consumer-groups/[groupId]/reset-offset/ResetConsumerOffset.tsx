@@ -32,6 +32,8 @@ export type ResetOffsetErrorParam =
 
 export type ErrorState = Partial<Record<ResetOffsetErrorParam, string>>;
 
+type OffsetAlteration = string | number | null;
+
 export function ResetConsumerOffset({
   kafkaId,
   consumerGroup,
@@ -42,7 +44,7 @@ export function ResetConsumerOffset({
   kafkaId: string;
   readonly consumerGroup: ConsumerGroup;
   topics: { topicId: string; topicName: string }[];
-  partitions: number[];
+  partitions: { topicId: string; partitionNumber: number }[];
   baseurl: string;
 }) {
   const router = useRouter();
@@ -120,80 +122,105 @@ export function ResetConsumerOffset({
     const numericValue = Number(value);
     setOffset((prev) => ({
       ...prev,
-      offset: isNaN(numericValue) ? value : numericValue,
+      offset: Number.isNaN(numericValue) ? value : numericValue,
     }));
   };
 
   const generateCliCommand = (): string => {
-    let baseCommand = `$ kafka-consumer-groups --bootstrap-server \${bootstrap-Server} --group '${consumerGroup.attributes.groupId}' --reset-offsets`;
-    const topic =
-      selectedConsumerTopic === "allTopics"
-        ? "--all-topics"
-        : `--topic ${offset.topicName}`;
-    baseCommand += ` ${topic}`;
-    if (selectedConsumerTopic === "selectedTopic") {
+    let baseCommand = `$ kafka-consumer-groups --bootstrap-server \${bootstrap-Server} --group '${consumerGroup.attributes.groupId}' `;
+
+    if (selectedOffset === "delete") {
+      baseCommand += "--delete-offsets ";
+    } else {
+      baseCommand += "--reset-offsets ";
+    }
+
+    if (selectedConsumerTopic === "allTopics") {
+      baseCommand += "--all-topics";
+    } else {
       // Only include partition if a specific topic is selected
       const partition =
         selectedPartition === "allPartitions" ? "" : `:${offset.partition}`;
-      baseCommand += `${partition}`;
+
+      baseCommand += `--topic ${offset.topicName}${partition}`;
     }
+
     if (selectedOffset === "custom") {
       baseCommand += ` --to-offset ${offset.offset}`;
     } else if (selectedOffset === "specificDateTime") {
       baseCommand += ` --to-datetime ${offset.offset}`;
-    } else {
+    } else if (selectedOffset !== "delete") {
       baseCommand += ` --to-${selectedOffset}`;
     }
+
     baseCommand += ` --dry-run`;
+
     return baseCommand;
+  };
+
+  const requestOffset = (
+    selectedOffset: OffsetValue,
+    selectDateTimeFormat: DateTimeFormatSelection,
+  ): OffsetAlteration => {
+    let reqOffset: OffsetAlteration;
+
+    switch (selectedOffset) {
+      case "custom":
+        reqOffset = offset.offset;
+        break;
+      case "delete":
+        reqOffset = null;
+        break;
+      case "specificDateTime":
+        if (selectDateTimeFormat === "Epoch") {
+          reqOffset = convertEpochToISO(String(offset.offset));
+        } else {
+          reqOffset = offset.offset;
+        }
+        break;
+      case "earliest":
+      case "latest":
+      default:
+        reqOffset = selectedOffset;
+        break;
+    }
+
+    return reqOffset;
   };
 
   const generateOffsets = (): Array<{
     topicId: string;
-    partition?: number;
-    offset: string | number;
+    partition: number;
+    offset: OffsetAlteration;
   }> => {
     const offsets: Array<{
       topicId: string;
-      partition?: number;
-      offset: string | number;
+      partition: number;
+      offset: OffsetAlteration;
     }> = [];
 
-    if (selectedConsumerTopic === "allTopics") {
-      topics.forEach((topic) => {
-        partitions.forEach((partition) => {
-          offsets.push({
-            topicId: topic.topicId,
-            partition: partition,
-            offset:
-              selectedOffset === "custom" ||
-                selectedOffset === "specificDateTime"
-                ? selectDateTimeFormat === "Epoch"
-                  ? convertEpochToISO(String(offset.offset))
-                  : offset.offset
-                : selectedOffset,
-          });
-        });
-      });
-    } else if (selectedConsumerTopic === "selectedTopic") {
-      const uniquePartitions = new Set(
-        partitions.map((partition) =>
-          selectedPartition === "allPartitions" ? partition : offset.partition,
-        ),
-      );
+    const requestedOffset = requestOffset(selectedOffset, selectDateTimeFormat);
 
-      Array.from(uniquePartitions).forEach((partition) => {
+    if (selectedConsumerTopic === "allTopics") {
+      for (let partition of partitions) {
         offsets.push({
-          topicId: offset.topicId,
-          partition,
-          offset:
-            selectedOffset === "custom" || selectedOffset === "specificDateTime"
-              ? selectDateTimeFormat === "Epoch"
-                ? convertEpochToISO(String(offset.offset))
-                : offset.offset
-              : selectedOffset,
+          topicId: partition.topicId,
+          partition: partition.partitionNumber,
+          offset: requestedOffset,
         });
-      });
+      }
+    } else {
+      for (let partition of partitions) {
+        if (partition.topicId === offset.topicId) {
+          if (selectedPartition === "allPartitions" || offset.partition === partition.partitionNumber) {
+            offsets.push({
+              topicId: offset.topicId,
+              partition: partition.partitionNumber,
+              offset: requestedOffset,
+            });
+          }
+        }
+      }
     }
 
     // Remove duplicate entries
@@ -227,7 +254,7 @@ export function ResetConsumerOffset({
   };
 
   const convertEpochToISO = (epoch: string): string => {
-    const date = new Date(parseInt(epoch, 10));
+    const date = new Date(Number.parseInt(epoch, 10));
     return date.toISOString();
   };
 
