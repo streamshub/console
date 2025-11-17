@@ -83,7 +83,10 @@ async function ConnectedResetOffset({
     topicName: topic.topicName,
   }));
 
-  const partitions = topics.map((t) => t.partition);
+  const partitions = topics.map((t) => ({
+    topicId: t.topicId!,
+    partitionNumber: t.partition
+  }));
 
   return (
     <ResetConsumerOffset

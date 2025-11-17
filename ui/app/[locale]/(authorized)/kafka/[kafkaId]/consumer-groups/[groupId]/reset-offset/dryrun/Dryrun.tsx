@@ -29,7 +29,7 @@ import { useTranslations } from "next-intl";
 export type NewOffset = {
   topicName: string;
   partition: number;
-  offset: number | string;
+  offset: number | string | null;
   metadata?: string;
 };
 
@@ -165,7 +165,7 @@ export function Dryrun({
                                           {offsets.map(
                                             ({ partition, offset }) => (
                                               <ListItem key={partition}>
-                                                {offset}
+                                                {offset ?? t("offset_deleted")}
                                               </ListItem>
                                             ),
                                           )}
