@@ -17,10 +17,10 @@ const OffsetAndMetadataSchema = z.object({
   topicId: z.string().optional(),
   topicName: z.string(),
   partition: z.number(),
-  offset: z.number(),
+  offset: z.number().nullable(),
   logEndOffset: z.number().optional(),
   lag: z.number().optional(),
-  metadata: z.string(),
+  metadata: z.string().optional(),
   leaderEpoch: z.number().optional(),
 });
 export type OffsetAndMetadata = z.infer<typeof OffsetAndMetadataSchema>;
