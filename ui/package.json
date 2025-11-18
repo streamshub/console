@@ -61,9 +61,9 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.56.1",
-    "@storybook/addon-docs": "^10.0.7",
-    "@storybook/addon-links": "^10.0.7",
-    "@storybook/nextjs": "^10.0.7",
+    "@storybook/addon-docs": "^10.0.8",
+    "@storybook/addon-links": "^10.0.8",
+    "@storybook/nextjs": "^10.0.8",
     "@storybook/test-runner": "^0.24.1",
     "@swc/helpers": "^0.5.17",
     "pino-pretty": "^13.1.2",
