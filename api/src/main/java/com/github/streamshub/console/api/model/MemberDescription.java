@@ -43,6 +43,11 @@ public class MemberDescription {
         result.assignments = description.assignment()
                 .topicPartitions()
                 .stream()
+                /*
+                 * Filter out assigned partitions not visible to the client
+                 * configured to connect to Kafka cluster.
+                 */
+                .filter(partition -> topicIds.containsKey(partition.topic()))
                 .map(partition -> new PartitionId(
                         topicIds.get(partition.topic()),
                         partition.topic(),
