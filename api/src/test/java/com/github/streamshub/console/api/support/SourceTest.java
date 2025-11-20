@@ -7,8 +7,8 @@ import org.junit.jupiter.params.provider.CsvSource;
 import com.github.streamshub.console.api.model.jsonapi.ErrorSource;
 import com.github.streamshub.console.api.support.ErrorCategory.Source;
 
-import static org.junit.Assert.assertNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 class SourceTest {
 
