@@ -415,7 +415,8 @@
     "not_available": "n/a"
   },
   "metrics": {
-     "all_brokers": "All Brokers"
+     "all_brokers": "All Brokers",
+     "all_topics": "All topics"
   },
   "ColumnsModal": {
     "title": "Manage columns",
