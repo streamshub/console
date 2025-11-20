@@ -64,7 +64,6 @@ export function FilterByTime({
     setIsTimeSelectOpen(false);
   };
 
-  // Menu toggle (new PF6 API)
   const toggle = (toggleRef: React.Ref<MenuToggleElement>) => (
     <MenuToggle
       ref={toggleRef}
