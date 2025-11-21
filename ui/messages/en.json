@@ -492,11 +492,13 @@
     "selected_topic": "A selected topic",
     "offset_details": "Offset details",
     "new_offset": "New offset",
+    "offset_deleted": "Deleted",
     "offset": {
       "custom": "Custom offset",
       "earliest": "Earliest offset",
       "latest": "Latest offset",
-      "specific_date_time": "Specific Date time"
+      "specific_date_time": "Specific Date-Time",
+      "delete": "Delete Committed Offsets"
     },
     "custom_offset": "Custom offset",
     "reset": "Reset",
