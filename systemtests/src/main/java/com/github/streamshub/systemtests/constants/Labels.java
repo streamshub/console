@@ -100,4 +100,11 @@ public class Labels {
             ))
             .build();
     }
+
+    public static LabelSelector getNginxPodLabelSelector() {
+        return new LabelSelectorBuilder()
+            .addToMatchLabels("app.kubernetes.io/component", "controller")
+            .addToMatchLabels("app.kubernetes.io/instance", "ingress-nginx")
+            .build();
+    }
 }
