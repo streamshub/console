@@ -39,7 +39,7 @@ jobs:
       matrix: ${{ steps.generate-matrix.outputs.matrix }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           ref: ${{ env.COMMIT_SHA }}
 
@@ -81,7 +81,7 @@ jobs:
       YQ_VERSION: "v4.44.1"
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           ref: ${{ env.COMMIT_SHA }}
       - name: Download Images
@@ -206,7 +206,7 @@ jobs:
       RETRY_COUNT: ${{ github.event.inputs.retry_count }}
       ENVS: ${{ github.event.inputs.env_str }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Download all systemtest artifacts
         uses: actions/download-artifact@v6
         with:
