@@ -30,7 +30,7 @@
         <maven.dependency.version>3.9.0</maven.dependency.version>
         <maven.checkstyle.version>3.6.0</maven.checkstyle.version>
         <jacoco-maven-plugin.version>0.8.14</jacoco-maven-plugin.version>
-        <jandex-maven-plugin.version>3.5.1</jandex-maven-plugin.version>
+        <jandex-maven-plugin.version>3.5.2</jandex-maven-plugin.version>
         <spotbugs.version>4.9.8</spotbugs.version>
         <surefire-plugin.version>3.5.4</surefire-plugin.version>
 
@@ -203,14 +203,14 @@
                         <dependency>
                             <groupId>com.puppycrawl.tools</groupId>
                             <artifactId>checkstyle</artifactId>
-                            <version>12.1.1</version>
+                            <version>12.1.2</version>
                         </dependency>
                     </dependencies>
                 </plugin>
                 <plugin>
                     <groupId>com.github.spotbugs</groupId>
                     <artifactId>spotbugs-maven-plugin</artifactId>
-                    <version>4.9.8.1</version>
+                    <version>4.9.8.2</version>
                     <dependencies>
                         <!-- overwrite dependency on spotbugs if you want to specify the version of spotbugs -->
                         <dependency>
