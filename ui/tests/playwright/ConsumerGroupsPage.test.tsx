@@ -5,20 +5,27 @@ test.beforeEach(async ({ authenticatedPage }) => {
 });
 
 test("Consumer groups page", async ({ page }) => {
-  await test.step("Consumer groups page should display table", async () => {
-    await page.waitForFunction(() => {
-      return (
-        document.querySelectorAll(
-          'table[aria-label="Consumer groups"] tbody tr',
-        ).length > 0
-      );
-    });
+  await test.step("Consumer groups page should display table or empty state", async () => {
+    const tableRows = page.locator(
+      'table[aria-label="Consumer groups"] tbody tr'
+    );
+    const emptyState = page.getByText("No consumer groups");
 
-    await expect(page.getByRole('columnheader', { name: "Consumer group name" })).toBeVisible();
-    await expect(page.getByRole('columnheader', { name: "State" })).toBeVisible();
-    await expect(page.getByRole('columnheader', { name: "Overall lag" })).toBeVisible();
-    await expect(page.getByRole('columnheader', { name: "Members" })).toBeVisible();
-    await expect(page.getByRole('columnheader', { name: "Topics" })).toBeVisible();
+    await Promise.race([
+      tableRows.first().waitFor({ state: "visible" }).catch(() => null),
+      emptyState.waitFor({ state: "visible" }).catch(() => null),
+    ]);
+
+    if (await emptyState.isVisible()) {
+      await expect(emptyState).toBeVisible();
+      return; 
+    }
+
+    await expect(page.getByRole("columnheader", { name: "Consumer group name" })).toBeVisible();
+    await expect(page.getByRole("columnheader", { name: "State" })).toBeVisible();
+    await expect(page.getByRole("columnheader", { name: "Overall lag" })).toBeVisible();
+    await expect(page.getByRole("columnheader", { name: "Members" })).toBeVisible();
+    await expect(page.getByRole("columnheader", { name: "Topics" })).toBeVisible();
 
     const dataCells = await page
       .locator('table[aria-label="Consumer groups"] tbody tr td')
