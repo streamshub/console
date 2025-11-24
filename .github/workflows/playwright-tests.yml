@@ -15,7 +15,7 @@ jobs:
     continue-on-error: true
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Download Images
         uses: actions/download-artifact@v6
@@ -50,6 +50,8 @@ jobs:
             --for=jsonpath='{.status.connectionState.lastObservedState}'=READY \
             --timeout=180s
 
+          STRIMZI_CHANNEL="strimzi-$(mvn help:evaluate -Dexpression=strimzi-api.version -q -DforceStdout | awk -F. '{ print $1"."$2 }').x"
+
           # Install Strimzi Operator
           echo '---
             apiVersion: operators.coreos.com/v1alpha1
@@ -57,7 +59,7 @@ jobs:
             metadata:
               name: strimzi-kafka-operator
             spec:
-              channel: stable
+              channel: '${STRIMZI_CHANNEL}'
               name: strimzi-kafka-operator
               source: operatorhubio-catalog
               sourceNamespace: olm' | kubectl apply -n operators -f -
