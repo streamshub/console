@@ -13,7 +13,6 @@ import io.fabric8.kubernetes.api.model.ConfigMap;
 import io.fabric8.kubernetes.api.model.ConfigMapBuilder;
 import io.skodjob.testframe.resources.KubeResourceManager;
 import io.skodjob.testframe.utils.TestFrameUtils;
-import io.strimzi.api.ResourceAnnotations;
 import io.strimzi.api.ResourceLabels;
 import io.strimzi.api.kafka.model.common.template.ContainerEnvVarBuilder;
 import io.strimzi.api.kafka.model.kafka.Kafka;
@@ -237,8 +236,6 @@ public class KafkaSetup {
             .editMetadata()
                 .withNamespace(namespaceName)
                 .withName(clusterName)
-                .addToAnnotations(ResourceAnnotations.ANNO_STRIMZI_IO_KRAFT, "enabled")
-                .addToAnnotations(ResourceAnnotations.ANNO_STRIMZI_IO_NODE_POOLS, "enabled")
             .endMetadata()
             .editSpec()
                 .withNewEntityOperator()
