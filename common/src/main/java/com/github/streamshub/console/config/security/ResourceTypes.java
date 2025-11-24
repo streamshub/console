@@ -69,6 +69,7 @@ public class ResourceTypes {
         REBALANCES("rebalances"),
         TOPICS("topics"),
         TOPIC_RECORDS("topics/records"),
+        USERS("users"),
         ALL("*") {
             @Override
             public Set<ResourceType<Kafka>> expand() {
