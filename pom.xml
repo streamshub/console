@@ -19,7 +19,8 @@
         <quarkus.platform.version>3.20.3</quarkus.platform.version>
         <strimzi-api.version>0.48.0</strimzi-api.version>
         <strimzi-oauth.version>0.17.1</strimzi-oauth.version>
-        <apicurio-registry.version>2.6.13.Final</apicurio-registry.version>
+        <apicurio-registry.version>3.1.2</apicurio-registry.version>
+        <kioto-java-extra.version>0.0.30</kioto-java-extra.version>
 
         <!-- Test Dependencies -->
         <hamcrest.version>3.0</hamcrest.version>
@@ -89,6 +90,23 @@
     <dependencyManagement>
         <dependencies>
             <dependency>
+                <groupId>io.kiota</groupId>
+                <artifactId>kiota-http-jdk</artifactId>
+                <version>${kioto-java-extra.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.kiota</groupId>
+                <artifactId>kiota-serialization-jackson</artifactId>
+                <version>${kioto-java-extra.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.google.protobuf</groupId>
+                <artifactId>protobuf-bom</artifactId>
+                <version>4.33.0</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
                 <!-- Managed for CVE-2025-53864 -->
                 <groupId>com.nimbusds</groupId>
                 <artifactId>nimbus-jose-jwt</artifactId>
@@ -106,12 +124,12 @@
             </dependency>
             <dependency>
                 <groupId>io.apicurio</groupId>
-                <artifactId>apicurio-registry-serdes-avro-serde</artifactId>
+                <artifactId>apicurio-registry-avro-serde-kafka</artifactId>
                 <version>${apicurio-registry.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.apicurio</groupId>
-                <artifactId>apicurio-registry-serdes-protobuf-serde</artifactId>
+                <artifactId>apicurio-registry-protobuf-serde-kafka</artifactId>
                 <version>${apicurio-registry.version}</version>
             </dependency>
             <dependency>
