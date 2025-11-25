@@ -363,7 +363,7 @@ public class KeycloakSetup {
      * <p>This ensures that the Keycloak instance is pre-populated with the necessary console realms for testing or configuration.</p>
      */
     public static void importConsoleRealm(KeycloakConfig keycloakConfig, String consoleURL) {
-        String token = KeycloakUtils.getToken(keycloakConfig.getNamespace(), keycloakConfig);
+        String token = KeycloakUtils.getToken(keycloakConfig);
 
         LOGGER.info("Importing console Keycloak realm to Keycloak");
         Path path = Path.of(KEYCLOAK_RESOURCES_PATH + DEFAULT_KEYCLOAK_REALM);
@@ -373,7 +373,7 @@ public class KeycloakSetup {
                 .replace("${CONSOLE_URL}", consoleURL);
 
             String jsonRealm = new JsonObject(consoleRealmString).encode();
-            String result = KeycloakUtils.importRealm(keycloakConfig.getNamespace(), keycloakConfig.getHttpsUri(), token, jsonRealm);
+            String result = KeycloakUtils.importRealm(getKeycloakHostname(true), token, jsonRealm);
 
             if (!result.isEmpty() && !result.contains("already exists")) {
                 throw new SetupException(String.format("Realm from file path: %s wasn't imported!", path));

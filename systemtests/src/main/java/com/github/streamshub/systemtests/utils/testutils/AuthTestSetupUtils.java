@@ -105,7 +105,7 @@ public class AuthTestSetupUtils {
                         .withAuthServerUrl(KeycloakUtils.getKeycloakRealmUri(Constants.KEYCLOAK_REALM))
                         .withClientId(Constants.KEYCLOAK_CLIENT_ID)
                         .withNewClientSecret()
-                            .withValue(KeycloakUtils.getClientSecret(namespace, keycloakConfig, Constants.KEYCLOAK_REALM, Constants.KEYCLOAK_CLIENT_ID))
+                            .withValue(KeycloakUtils.getClientSecret(keycloakConfig, Constants.KEYCLOAK_REALM, Constants.KEYCLOAK_CLIENT_ID))
                         .endClientSecret()
                         .withNewTrustStore()
                             .withType(TrustStore.Type.JKS)

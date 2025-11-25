@@ -10,10 +10,11 @@ import com.github.streamshub.systemtests.exceptions.SetupException;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.setup.keycloak.KeycloakConfig;
 import io.fabric8.kubernetes.api.model.LabelSelector;
-import io.fabric8.kubernetes.api.model.Pod;
 import io.fabric8.kubernetes.api.model.networking.v1.NetworkPolicy;
 import io.fabric8.kubernetes.api.model.networking.v1.NetworkPolicyBuilder;
 import io.skodjob.testframe.TestFrameConstants;
+import io.skodjob.testframe.enums.LogLevel;
+import io.skodjob.testframe.executor.Exec;
 import io.skodjob.testframe.resources.KubeResourceManager;
 import io.skodjob.testframe.wait.Wait;
 import io.vertx.core.json.JsonObject;
@@ -29,12 +30,8 @@ public class KeycloakUtils {
 
     private static final LabelSelector SCRAPER_SELECTOR = new LabelSelector(null, Map.of(Labels.APP, Constants.SCRAPER_NAME));
 
-    public static String importRealm(String namespaceName, String baseURI, String token, String realmData) {
-        final String testSuiteScraperPodName = ResourceUtils.listKubeResourcesByPrefix(Pod.class, namespaceName, Constants.SCRAPER_NAME).get(0).getMetadata().getName();
-
+    public static String importRealm(String baseURI, String token, String realmData) {
         return executeRequestAndReturnData(
-            namespaceName,
-            testSuiteScraperPodName,
             new String[]{
                 "curl",
                 "--insecure",
@@ -48,37 +45,31 @@ public class KeycloakUtils {
         );
     }
 
-    public static String getClientSecret(String namespaceName, KeycloakConfig keycloakConfig, String realm, String clientName) {
-        final String testSuiteScraperPodName = ResourceUtils.listKubeResourcesByPrefix(Pod.class, namespaceName, Constants.SCRAPER_NAME).get(0).getMetadata().getName();
-        final String clientUuid = getClientUuid(namespaceName, keycloakConfig, realm, clientName);
-        final String token = getToken(namespaceName, keycloakConfig);
+    public static String getClientSecret(KeycloakConfig keycloakConfig, String realm, String clientName) {
+        final String clientUuid = getClientUuid(keycloakConfig, realm, clientName);
+        final String token = getToken(keycloakConfig);
         return new JsonObject(executeRequestAndReturnData(
-            namespaceName,
-            testSuiteScraperPodName,
             new String[]{
                 "curl",
                 "--insecure",
                 "-X",
                 "GET",
-                keycloakConfig.getHttpsUri() + "/admin/realms/" + realm + "/clients/" + clientUuid + "/client-secret",
+                getKeycloakHostname(true) + "/admin/realms/" + realm + "/clients/" + clientUuid + "/client-secret",
                 "-H", "Authorization: Bearer " + token
             }
         )).getString("value");
     }
 
-    public static String getClientUuid(String namespaceName, KeycloakConfig keycloakConfig, String realm, String clientName) {
-        final String testSuiteScraperPodName = ResourceUtils.listKubeResourcesByPrefix(Pod.class, namespaceName, Constants.SCRAPER_NAME).get(0).getMetadata().getName();
-        final String token = getToken(namespaceName, keycloakConfig);
+    public static String getClientUuid(KeycloakConfig keycloakConfig, String realm, String clientName) {
+        final String token = getToken(keycloakConfig);
 
         String response = executeRequestAndReturnData(
-            namespaceName,
-            testSuiteScraperPodName,
             new String[]{
                 "curl",
                 "--insecure",
                 "-X",
                 "GET",
-                keycloakConfig.getHttpsUri() + "/admin/realms/" + realm + "/clients/",
+                getKeycloakHostname(true) + "/admin/realms/" + realm + "/clients/",
                 "-H", "Authorization: Bearer " + token
             }
         );
@@ -126,13 +117,9 @@ public class KeycloakUtils {
         }
     }
 
-    public static String getToken(String namespaceName, KeycloakConfig keycloakConfig) {
-        final String testSuiteScraperPodName = ResourceUtils.listKubeResourcesByLabelSelector(Pod.class, namespaceName, SCRAPER_SELECTOR).get(0).getMetadata().getName();
-
+    public static String getToken(KeycloakConfig keycloakConfig) {
         return new JsonObject(
             executeRequestAndReturnData(
-                namespaceName,
-                testSuiteScraperPodName,
                 new String[]{
                     "curl",
                     "-v",
@@ -140,18 +127,17 @@ public class KeycloakUtils {
                     "-X",
                     "POST",
                     "-d", "client_id=admin-cli&grant_type=password&username=" + keycloakConfig.getUsername() + "&password=" + keycloakConfig.getPassword(),
-                    keycloakConfig.getHttpsUri() + "/realms/master/protocol/openid-connect/token"
+                    getKeycloakHostname(true) + "/realms/master/protocol/openid-connect/token"
                 }
             )).getString("access_token");
     }
 
-    public static String executeRequestAndReturnData(String namespaceName, String scraperPodName, String[] request) {
+    public static String executeRequestAndReturnData(String[] request) {
         AtomicReference<String> response = new AtomicReference<>("");
 
         Wait.until("request to Keycloak API will be successful", TestFrameConstants.GLOBAL_POLL_INTERVAL_SHORT, TestFrameConstants.GLOBAL_TIMEOUT_MEDIUM, () -> {
             try {
-                String commandOutput = KubeResourceManager.get().kubeCmdClient().inNamespace(namespaceName).execInPod(scraperPodName, request).out().trim();
-
+                String commandOutput = Exec.exec(LogLevel.DEBUG, false, request).out();
                 if (!commandOutput.contains("Connection refused")) {
                     response.set(commandOutput);
                     return true;

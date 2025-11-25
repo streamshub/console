@@ -434,11 +434,12 @@ public class WaitUtils {
         Wait.until(String.format("deletion of Deployment: %s/%s", namespace, name),
             TestFrameConstants.GLOBAL_POLL_INTERVAL_SHORT, TestFrameConstants.GLOBAL_TIMEOUT_MEDIUM,
             () -> {
-                if (ResourceUtils.getKubeResource(Deployment.class, namespace, name) == null) {
+                Deployment deployment = ResourceUtils.getKubeResource(Deployment.class, namespace, name);
+                if (deployment == null) {
                     return true;
                 } else {
                     LOGGER.warn("Deployment: {}/{} has not been deleted yet!", namespace, name);
-                    KubeResourceManager.get().deleteResourceWithWait(ResourceUtils.getKubeResource(Deployment.class, namespace, name));
+                    KubeResourceManager.get().deleteResourceWithWait(deployment);
                     return false;
                 }
             });
