@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/nextjs";
-import { composeStories } from "@storybook/react";
+import { composeStories } from "@storybook/testing-react";
 import * as ClusterCardStories from "./ClusterCard.stories";
 import { PageLayout } from "./PageLayout";
 import * as TopicsPartitionsCardStories from "./TopicsPartitionsCard.stories";
@@ -34,7 +34,7 @@ export const Loading: Story = {
     <ReconciliationContext.Provider
       value={{
         isReconciliationPaused: false,
-        setReconciliationPaused: () => { },
+        setReconciliationPaused: () => {},
       }}
     >
       <PageLayout

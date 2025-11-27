@@ -65,6 +65,7 @@
     "@storybook/addon-links": "^10.1.0",
     "@storybook/nextjs": "^10.1.0",
     "@storybook/test-runner": "^0.24.1",
+    "@storybook/testing-react": "^2.0.0",
     "@swc/helpers": "^0.5.17",
     "pino-pretty": "^13.1.2",
     "playwright": "^1.45.2",
