@@ -117,10 +117,4 @@ public class Constants {
 
     public static final String KEYCLOAK_REALM = "console-realm";
     public static final String TRUST_STORE_PASSWORD = "changeit"; // NOSONAR - test password
-
-    /**
-     * Scraper Pod
-     */
-    public static final String SCRAPER_NAME = "scraper";
-
 }

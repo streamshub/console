@@ -5,11 +5,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.streamshub.systemtests.Environment;
 import com.github.streamshub.systemtests.constants.Constants;
-import com.github.streamshub.systemtests.constants.Labels;
 import com.github.streamshub.systemtests.exceptions.SetupException;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.setup.keycloak.KeycloakConfig;
-import io.fabric8.kubernetes.api.model.LabelSelector;
 import io.fabric8.kubernetes.api.model.networking.v1.NetworkPolicy;
 import io.fabric8.kubernetes.api.model.networking.v1.NetworkPolicyBuilder;
 import io.skodjob.testframe.TestFrameConstants;
@@ -27,8 +25,6 @@ public class KeycloakUtils {
     private static final Logger LOGGER = LogWrapper.getLogger(KeycloakUtils.class);
 
     private KeycloakUtils() {}
-
-    private static final LabelSelector SCRAPER_SELECTOR = new LabelSelector(null, Map.of(Labels.APP, Constants.SCRAPER_NAME));
 
     public static String importRealm(String baseURI, String token, String realmData) {
         return executeRequestAndReturnData(

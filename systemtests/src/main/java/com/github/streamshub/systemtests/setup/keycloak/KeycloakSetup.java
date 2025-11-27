@@ -6,7 +6,6 @@ import com.github.streamshub.systemtests.constants.Labels;
 import com.github.streamshub.systemtests.constants.TimeConstants;
 import com.github.streamshub.systemtests.exceptions.SetupException;
 import com.github.streamshub.systemtests.logs.LogWrapper;
-import com.github.streamshub.systemtests.setup.ScraperPod;
 import com.github.streamshub.systemtests.utils.FileUtils;
 import com.github.streamshub.systemtests.utils.Utils;
 import com.github.streamshub.systemtests.utils.WaitUtils;
@@ -82,7 +81,7 @@ public class KeycloakSetup {
      * Sets up a complete Keycloak environment in the given namespace and returns a Keycloak configuration.
      *
      * <p>If the namespace does not already exist, it creates the namespace and deploys the necessary resources
-     * including a scraper pod, Keycloak Operator, PostgreSQL instance, network policies, and a Keycloak instance.</p>
+     * including a Keycloak Operator, PostgreSQL instance, network policies, and a Keycloak instance.</p>
      * <p>Once Keycloak is running, it retrieves admin credentials from the Keycloak secret and constructs a {@link KeycloakConfig} object.</p>
      * <p>It also imports default realms into Keycloak and prepares a truststore for secure communication.</p>
      *
@@ -96,7 +95,6 @@ public class KeycloakSetup {
 
         // If keycloak has been already deployed
         if (ResourceUtils.listKubeResourcesByPrefix(Deployment.class, namespace, KEYCLOAK_OPERATOR_DEPLOYMENT_NAME).isEmpty()) {
-            KubeResourceManager.get().createResourceWithoutWait(ScraperPod.getDefaultPod(namespace, Constants.SCRAPER_NAME).build());
             deployKeycloakOperator();
             deployPostgres();
             allowNetworkPolicyBetweenKeycloakAndPostgres();
