@@ -56,7 +56,6 @@ public class OlmConfig extends InstallConfig {
     public void delete() {
         KubeResourceManager.get().deleteResourceWithWait(getOlmOperatorGroup());
         KubeResourceManager.get().deleteResourceWithWait(getOlmSubscription());
-
         List<Deployment> deploymentList = ResourceUtils.listKubeResourcesByPrefix(Deployment.class, deploymentNamespace, deploymentName);
         if (!deploymentList.isEmpty()) {
             // delete csv

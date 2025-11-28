@@ -1,12 +1,15 @@
 package com.github.streamshub.systemtests.constants;
 
 public class Constants {
+    public static final String NGINX_INGRESS_NAMESPACE = "ingress-nginx";
+
     private Constants() {}
 
     // --------------------------------
     // ------------ General -----------
     // --------------------------------
     public static final int MAX_ACTION_RETRIES = 10;
+    public static final int LOGOUT_RETRIES = 5;
     /**
      * Cluster
      */
@@ -100,4 +103,18 @@ public class Constants {
      * OLM
      */
     public static final String CONSOLE_OLM_SUBSCRIPTION_NAME = "console-sub";
+
+
+    /**
+     * Keycloak
+     */
+    public static final String KEYCLOAK_HOSTNAME_PREFIX = "console-oidc";
+    public static final String KEYCLOAK_CLIENT_ID = "console-client";
+    public static final String KEYCLOAK_TRUST_STORE_CONFIGMAP_NAME = "truststore-configmap";
+    public static final String KEYCLOAK_TRUST_STORE_ACCCESS_SECRET_NAME = "access-to-truststore";
+    public static final String PASSWORD_KEY_NAME = "password"; // NOSONAR - test password
+    public static final String TRUST_STORE_KEY_NAME = "truststore";
+
+    public static final String KEYCLOAK_REALM = "console-realm";
+    public static final String TRUST_STORE_PASSWORD = "changeit"; // NOSONAR - test password
 }

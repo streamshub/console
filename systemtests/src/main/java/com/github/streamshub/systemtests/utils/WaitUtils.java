@@ -15,7 +15,9 @@ import io.fabric8.kubernetes.api.model.LabelSelector;
 import io.fabric8.kubernetes.api.model.Pod;
 import io.fabric8.kubernetes.api.model.Secret;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
+import io.fabric8.kubernetes.api.model.apps.StatefulSet;
 import io.fabric8.kubernetes.api.model.batch.v1.Job;
+import io.fabric8.kubernetes.api.model.networking.v1.Ingress;
 import io.fabric8.kubernetes.client.readiness.Readiness;
 import io.skodjob.testframe.TestFrameConstants;
 import io.skodjob.testframe.resources.KubeResourceManager;
@@ -420,5 +422,87 @@ public class WaitUtils {
                 return false;
             }
         );
+    }
+
+    /**
+     * Wait for the Deployment resource to be deleted.
+     *
+     * @param namespace name of the Namespace in which the Deployment resides
+     * @param name      name of the Deployment
+     */
+    public static void waitForDeploymentDeletion(String namespace, String name) {
+        Wait.until(String.format("deletion of Deployment: %s/%s", namespace, name),
+            TestFrameConstants.GLOBAL_POLL_INTERVAL_SHORT, TestFrameConstants.GLOBAL_TIMEOUT_MEDIUM,
+            () -> {
+                Deployment deployment = ResourceUtils.getKubeResource(Deployment.class, namespace, name);
+                if (deployment == null) {
+                    return true;
+                } else {
+                    LOGGER.warn("Deployment: {}/{} has not been deleted yet!", namespace, name);
+                    KubeResourceManager.get().deleteResourceWithWait(deployment);
+                    return false;
+                }
+            });
+    }
+
+    /**
+     * Waits for a StatefulSet to reach the ready state.
+     *
+     * <p>This method continuously polls the specified StatefulSet in the given namespace until it is marked as ready.</p>
+     * <p>It uses a predefined polling interval and timeout to determine readiness via Kubernetes resource status.</p>
+     *
+     * <p>This ensures that the StatefulSet has all its replicas ready before proceeding with further test steps.</p>
+     */
+    public static void waitForStatefulSetReady(String namespaceName, String statefulSetName) {
+        Wait.until(String.format("StatefulSet %s/%s to be ready", namespaceName, statefulSetName), TimeConstants.POLL_INTERVAL_FOR_RESOURCE_READINESS, TestFrameConstants.GLOBAL_TIMEOUT_MEDIUM,
+            () -> Readiness.isStatefulSetReady(ResourceUtils.getKubeResource(StatefulSet.class, namespaceName, statefulSetName))
+        );
+    }
+
+    /**
+     * Waits for a specific Kubernetes {@link Ingress} resource to become available.
+     *
+     * <p>This method continuously polls the cluster for the presence of an Ingress with the given
+     * name in the specified namespace. The wait operation repeats at the interval defined by
+     * {@link TestFrameConstants#GLOBAL_POLL_INTERVAL_SHORT} and times out after
+     * {@link TestFrameConstants#GLOBAL_TIMEOUT_MEDIUM}.</p>
+     *
+     * <p>The method succeeds as soon as the Ingress is found. It is typically used in scenarios
+     * where the Console, Operator, or other components create an Ingress as part of their
+     * deployment process, and subsequent test steps depend on its availability.</p>
+     *
+     * @param namespace   the namespace where the Ingress is expected to be created
+     * @param ingressName the name of the Ingress resource to wait for
+     */
+    public static void waitForIngressToBePresent(String namespace, String ingressName) {
+        Wait.until(String.format("Ingress %s/%s to be present", namespace, ingressName),
+            TestFrameConstants.GLOBAL_POLL_INTERVAL_SHORT, TestFrameConstants.GLOBAL_TIMEOUT_MEDIUM,
+            () -> {
+                return ResourceUtils.getKubeResource(Ingress.class, namespace, ingressName) != null;
+            });
+
+    }
+
+    /**
+     * Waits until a specific log message appears in the logs of a given Kubernetes Pod.
+     *
+     * <p>This method polls the Pod's logs at the interval defined by
+     * {@link TestFrameConstants#GLOBAL_POLL_INTERVAL_SHORT} and stops as soon as the log output
+     * contains the provided {@code expectedLog} string. If the message does not appear before
+     * {@link TestFrameConstants#GLOBAL_TIMEOUT_SHORT} elapses, the wait operation fails.</p>
+     *
+     * <p>Useful for verifying that a Pod has reached a specific operational state or emitted
+     * an expected event during startup or execution.</p>
+     *
+     * @param namespace    the namespace containing the Pod
+     * @param podName      the name of the Pod to check
+     * @param expectedLog  the log message to wait for within the Pod's log output
+     */
+    public static void waitForLogInPod(String namespace, String podName, String expectedLog) {
+        Wait.until(String.format("Pod %s/%s to contain log [%s]", namespace, podName, expectedLog),
+            TestFrameConstants.GLOBAL_POLL_INTERVAL_SHORT, TestFrameConstants.GLOBAL_TIMEOUT_SHORT,
+            () -> {
+                return KubeResourceManager.get().kubeClient().getLogsFromPod(namespace, podName).contains(expectedLog);
+            });
     }
 }

@@ -55,6 +55,14 @@ public class Environment {
 
     public static final String TEST_CLIENTS_PULL_SECRET = ENVS.getOrDefault("TEST_CLIENTS_PULL_SECRET", "");
 
+    // Keycloak
+    public static final String KEYCLOAK_VERSION = ENVS.getOrDefault("KEYCLOAK_VERSION", "26.2.5");
+    public static final boolean DEFAULT_TO_DENY_NETWORK_POLICIES = ENVS.getOrDefault("DEFAULT_TO_DENY_NETWORK_POLICIES", Boolean::parseBoolean, true);
+    public static final String KEYCLOAK_TRUST_STORE_FILE_PATH = ENVS.getOrDefault("TRUST_STORE_FILE_PATH", "/tmp/keycloak/keycloak-truststore.jks");
+
+    // Postgres
+    public static final String POSTGRES_IMAGE = ENVS.getOrDefault("POSTGRES_IMAGE", "mirror.gcr.io/postgres:18");
+
     // ------------------------------------------------------------------------------------------------------------------------------------------------------------
     // Deny instantiation
     private Environment() {}

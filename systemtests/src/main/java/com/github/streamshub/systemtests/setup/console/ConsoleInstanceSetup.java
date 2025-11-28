@@ -28,7 +28,7 @@ public class ConsoleInstanceSetup {
         LOGGER.info("Console deployed and available at {}", ConsoleUtils.getConsoleUiUrl(console.getMetadata().getNamespace(), console.getMetadata().getName(), true));
     }
 
-    public static Console getDefaultConsoleInstance(String namespaceName, String instanceName, String kafkaName, String kafkaUserName) {
+    public static ConsoleBuilder getDefaultConsoleInstance(String namespaceName, String instanceName, String kafkaName, String kafkaUserName) {
         ConsoleBuilder builder = new ConsoleBuilder()
             .withMetadata(new ObjectMetaBuilder()
                 .withName(instanceName)
@@ -67,6 +67,6 @@ public class ConsoleInstanceSetup {
             .endSpec();
         }
 
-        return builder.build();
+        return builder;
     }
 }

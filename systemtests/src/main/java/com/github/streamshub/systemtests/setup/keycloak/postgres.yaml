@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      automountServiceAccountToken: false
+      containers:
+        - name: postgres
+          resources:
+            requests:
+              cpu: 0.5
+              memory: 700Mi
+              ephemeral-storage: 1Gi
+            limits:
+              memory: 1Gi
+              ephemeral-storage: 2Gi
+              cpu: 1
+          image: ${POSTGRES_IMAGE}
+          envFrom:
+            - configMapRef:
+                name: postgres-config
+          ports:
+            - containerPort: 5432
+          volumeMounts:
+            - name: postgres-tmp-storage
+              mountPath: /var/lib/postgresql/data
+              subPath: postgresql
+              readOnly: false
+      volumes:
+        - name: postgres-tmp-storage
+          emptyDir: {}
