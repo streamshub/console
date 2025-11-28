@@ -6,7 +6,7 @@ echo "Parse PR comment parameters from message $MESSAGE_BODY"
 # Extract optional flags (sed deals with potential format of --flag=value and --flag value)
 testcase=$(echo "$MESSAGE_BODY" | sed -nE 's/.*--testcase[= ]+([^[:space:]]+).*/\1/p')
 profile=$(echo "$MESSAGE_BODY" | sed -nE 's/.*--profile[= ]+([^[:space:]]+).*/\1/p')
-env_str=$(echo "$MESSAGE_BODY" | sed -nE 's/.*--env[= ]+([^[:space:]]+).*/\1/p')
+envs=$(echo "$MESSAGE_BODY" | sed -nE 's/.*--env[= ]+([^[:space:]]+).*/\1/p')
 
 install_type=$(echo "$MESSAGE_BODY" | sed -nE 's/.*--install-type[= ]+([^[:space:]]+).*/\1/p' | tr '[:upper:]' '[:lower:]')
 install_type="${install_type:-olm}"
@@ -25,7 +25,7 @@ fi
 # Export as step outputs
 echo "TESTCASE=$testcase" >> $GITHUB_ENV
 echo "PROFILE=$profile" >> $GITHUB_ENV
-echo "ENVS=$env_str" >> $GITHUB_ENV
+echo "ENVS=$envs" >> $GITHUB_ENV
 echo "INSTALL_TYPE=$install_type" >> $GITHUB_ENV
 echo "RETRY_COUNT=$retry_count" >> $GITHUB_ENV
 
