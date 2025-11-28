@@ -74,7 +74,7 @@ jobs:
       REPO: ${{ github.repository }}
       INSTALL_TYPE: ${{ github.event.inputs.install_type }}
       RETRY_COUNT: ${{ github.event.inputs.retry_count }}
-      ENVS: ${{ github.event.inputs.env_str }}
+      ENVS: ${{ github.event.inputs.envs }}
       CO_NAMESPACE: "co-namespace"
       OLM_MINIKUBE_NAMESPACE: "olm"
       OLM_VERSION: "v0.28.0"
@@ -204,7 +204,7 @@ jobs:
       PROFILE: ${{ github.event.inputs.profile }}
       INSTALL_TYPE: ${{ github.event.inputs.install_type }}
       RETRY_COUNT: ${{ github.event.inputs.retry_count }}
-      ENVS: ${{ github.event.inputs.env_str }}
+      ENVS: ${{ github.event.inputs.envs }}
     steps:
       - uses: actions/checkout@v6
       - name: Download all systemtest artifacts
