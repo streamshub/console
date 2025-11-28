@@ -459,6 +459,21 @@ public class WaitUtils {
         );
     }
 
+    /**
+     * Waits for a specific Kubernetes {@link Ingress} resource to become available.
+     *
+     * <p>This method continuously polls the cluster for the presence of an Ingress with the given
+     * name in the specified namespace. The wait operation repeats at the interval defined by
+     * {@link TestFrameConstants#GLOBAL_POLL_INTERVAL_SHORT} and times out after
+     * {@link TestFrameConstants#GLOBAL_TIMEOUT_MEDIUM}.</p>
+     *
+     * <p>The method succeeds as soon as the Ingress is found. It is typically used in scenarios
+     * where the Console, Operator, or other components create an Ingress as part of their
+     * deployment process, and subsequent test steps depend on its availability.</p>
+     *
+     * @param namespace   the namespace where the Ingress is expected to be created
+     * @param ingressName the name of the Ingress resource to wait for
+     */
     public static void waitForIngressToBePresent(String namespace, String ingressName) {
         Wait.until(String.format("Ingress %s/%s to be present", namespace, ingressName),
             TestFrameConstants.GLOBAL_POLL_INTERVAL_SHORT, TestFrameConstants.GLOBAL_TIMEOUT_MEDIUM,
@@ -468,6 +483,21 @@ public class WaitUtils {
 
     }
 
+    /**
+     * Waits until a specific log message appears in the logs of a given Kubernetes Pod.
+     *
+     * <p>This method polls the Pod's logs at the interval defined by
+     * {@link TestFrameConstants#GLOBAL_POLL_INTERVAL_SHORT} and stops as soon as the log output
+     * contains the provided {@code expectedLog} string. If the message does not appear before
+     * {@link TestFrameConstants#GLOBAL_TIMEOUT_SHORT} elapses, the wait operation fails.</p>
+     *
+     * <p>Useful for verifying that a Pod has reached a specific operational state or emitted
+     * an expected event during startup or execution.</p>
+     *
+     * @param namespace    the namespace containing the Pod
+     * @param podName      the name of the Pod to check
+     * @param expectedLog  the log message to wait for within the Pod's log output
+     */
     public static void waitForLogInPod(String namespace, String podName, String expectedLog) {
         Wait.until(String.format("Pod %s/%s to contain log [%s]", namespace, podName, expectedLog),
             TestFrameConstants.GLOBAL_POLL_INTERVAL_SHORT, TestFrameConstants.GLOBAL_TIMEOUT_SHORT,

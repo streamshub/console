@@ -68,6 +68,23 @@ public class AuthST extends AbstractST {
     private final KeycloakSetup keycloakSetup = new KeycloakSetup();
     protected KeycloakConfig keycloakConfig;
 
+    /**
+     * Verifies that a developer user can log in via OIDC and access their assigned Kafka cluster.
+     *
+     * <p>The test covers end-to-end behavior for a dev user, including UI navigation, topic visibility,
+     * and filtering behavior:</p>
+     *
+     * <ul>
+     *   <li>Logs in as a developer user and checks that the navbar correctly displays the logged-in username.</li>
+     *   <li>Validates that the user can see the Kafka clusters assigned to their team and the total count is correct.</li>
+     *   <li>Navigates to the Kafka overview and topics pages, verifying topic replication and availability counts.</li>
+     *   <li>Ensures that topics belonging to an admin Kafka cluster are not visible in search results for this user.</li>
+     *   <li>Performs logout and verifies that the user can no longer access the console UI.</li>
+     * </ul>
+     *
+     * <p>This test ensures that access control, topic visibility, and UI elements behave correctly
+     * for a developer user, confirming both security restrictions and correct data display.</p>
+     */
     @Order(1)
     @Test
     void testAccessDevUser() {
@@ -109,6 +126,24 @@ public class AuthST extends AbstractST {
         assertNotEquals(tcc.page().url(), ConsoleUtils.getConsoleUiUrl(tcc.namespace(), tcc.consoleInstanceName(), true));
     }
 
+    /**
+     * Verifies that an admin user can log in via OIDC and access all assigned Kafka clusters.
+     *
+     * <p>The test covers end-to-end behavior for an admin user, including UI navigation, topic visibility,
+     * and filtering behavior across multiple Kafka clusters:</p>
+     *
+     * <ul>
+     *   <li>Logs in as an admin user and checks that the navbar correctly displays the logged-in username.</li>
+     *   <li>Validates that the user can see all Kafka clusters assigned to their admin role and the total count is correct.</li>
+     *   <li>Navigates to the development Kafka cluster and verifies topic replication, availability, and restricted visibility for admin topics.</li>
+     *   <li>Navigates to the admin Kafka cluster and verifies topic replication, availability, and restricted visibility for dev topics.</li>
+     *   <li>Tests search and filtering functionality to ensure topics from other clusters are not visible.</li>
+     *   <li>Performs logout and verifies that the user can no longer access the console UI for either cluster.</li>
+     * </ul>
+     *
+     * <p>This test ensures that admin access control, topic visibility, and UI elements behave correctly,
+     * confirming both security restrictions and full access to all relevant Kafka resources.</p>
+     */
     @Order(2)
     @Test
     void testAccessAdminUser() {
@@ -180,6 +215,24 @@ public class AuthST extends AbstractST {
         assertNotEquals(tcc.page().url(), ConsoleUtils.getConsoleUiUrl(tcc.namespace(), tcc.consoleInstanceName(), true));
     }
 
+    /**
+     * Verifies that a "topics-only" usergroup can access Kafka topic information but is restricted
+     * from viewing other administrative pages like Nodes and Consumer Groups.
+     *
+     * <p>The test covers the following behaviors:</p>
+     *
+     * <ul>
+     *   <li>Logs in as a topics-only user and confirms the navbar displays the correct username.</li>
+     *   <li>Checks that the user can see only the Kafka clusters they are authorized to access and verifies the total count.</li>
+     *   <li>Validates topic overview and topics pages for the authorized Kafka cluster, including replicated topics count and visibility.</li>
+     *   <li>Ensures that search and filtering on the Topics page work correctly.</li>
+     *   <li>Verifies that restricted pages such as Nodes and Consumer Groups display a "Not Authorized" message.</li>
+     *   <li>Logs out and confirms the user can no longer access the console UI.</li>
+     * </ul>
+     *
+     * <p>This test ensures that topic-level access control is enforced correctly while restricting
+     * access to administrative views, confirming both security and proper UI behavior.</p>
+     */
     @Order(3)
     @Test
     void testAccessTopicsViewUser() {
@@ -224,7 +277,28 @@ public class AuthST extends AbstractST {
         PwUtils.logoutUser(tcc, AuthTestConstants.USER_ADMIN_ALICE);
     }
 
-    // Must be the last test
+    /**
+     * Verifies that a "consumer-groups-only" user can access Kafka consumer group information
+     * but is restricted from viewing topics and other administrative pages.
+     *
+     * <p><b>Note that this test needs to be last in execution order because it performs messaging on shared topics</b></p>
+     *
+     * <p>The test covers the following behaviors:</p>
+     *
+     * <ul>
+     *   <li>Logs in as a consumer-groups-only user and confirms the navbar displays the correct username.</li>
+     *   <li>Checks that the user can see only the Kafka clusters they are authorized to access and verifies the total count.</li>
+     *   <li>Validates that the Topics overview and Topics page display "Not Authorized" for this user.</li>
+     *   <li>Ensures that the Nodes page is also restricted and shows "Not Authorized".</li>
+     *   <li>Verifies that the Consumer Groups page is accessible, even when no consumer groups exist.</li>
+     *   <li>Creates a Kafka topic and producer/consumer clients, then confirms the new consumer group appears in the UI.</li>
+     *   <li>Waits for the producer/consumer clients to complete successfully.</li>
+     *   <li>Logs out and ensures the user can no longer access the console UI.</li>
+     * </ul>
+     *
+     * <p>This test ensures proper enforcement of access control for users limited to consumer-group operations,
+     * confirming both UI restrictions and functional availability where permitted.</p>
+     */
     @Order(Integer.MAX_VALUE)
     @Test
     void testAccessConsumerGroupsViewUser() {
