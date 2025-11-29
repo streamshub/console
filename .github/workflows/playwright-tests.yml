@@ -135,7 +135,7 @@ jobs:
                 spec:
                   containers:
                   - name: console-datagen
-                    image: quay.io/streamshub/console-datagen:0.4.1
+                    image: quay.io/streamshub/console-datagen:0.5.0
                     ports:
                     - containerPort: 9080
                     livenessProbe:
@@ -163,6 +163,13 @@ jobs:
                       value: "TestKafka"
                     - name: DATAGEN_KAFKA_TEST_CONFIGS_BOOTSTRAP_SERVERS
                       value: "bootstrap.console-kafka.${CLUSTER_DOMAIN}:443"
+                    - name: DATAGEN_KAFKA_TEST_CONFIGS_SSL_TRUSTSTORE_TYPE
+                      value: PEM
+                    - name: DATAGEN_KAFKA_TEST_CONFIGS_SSL_TRUSTSTORE_CERTIFICATES
+                      valueFrom:
+                        secretKeyRef:
+                          name: console-kafka-cluster-ca-cert
+                          key: ca.crt
                     - name: DATAGEN_KAFKA_TEST_CONFIGS_SASL_JAAS_CONFIG
                       valueFrom:
                         secretKeyRef:
@@ -193,6 +200,22 @@ jobs:
             mcr.microsoft.com/playwright:v${PLAYWRIGHT_VERSION} \
             /bin/bash -c 'cd /app && npm test'
 
+      - name: Backup Logs
+        if: always()
+        run: |
+          mkdir ./logs
+          kubectl logs -n operators -l strimzi.io/kind=cluster-operator --all-containers=true --tail -1 > ./logs/strimzi-cluster-operator-logs.txt
+          kubectl logs -n operators -l app.kubernetes.io/name=streamshub-console-operator --all-containers=true --tail -1 > ./logs/streamshub-console-operator-logs.txt
+          kubectl logs -n ${TARGET_NAMESPACE} -l app.kubernetes.io/instance=example-console-deployment --all-containers=true --tail -1 > ./logs/${TARGET_NAMESPACE}-console-logs.txt
+          kubectl logs -n ${TARGET_NAMESPACE} -l app=console-datagen --all-containers=true --tail -1 > ./logs/${TARGET_NAMESPACE}-datagen-logs.txt
+
+      - name: Archive Logs Backup
+        uses: actions/upload-artifact@v5
+        if: always()
+        with:
+          name: playwright-tests-k8s-logs
+          path: ./logs
+
       - name: Backup Resources
         if: failure()
         run: |
@@ -200,9 +223,6 @@ jobs:
           kubectl get all,catalogsources,operatorgroups -n olm -o yaml > ./resources/olm.yaml
           kubectl get all,subscriptions,csv,operatorgroups,installplans -n operators -o yaml > ./resources/operators.yaml
           kubectl get all -n ${TARGET_NAMESPACE} -o yaml > ./resources/${TARGET_NAMESPACE}.yaml
-          kubectl logs -n operators -l strimzi.io/kind=cluster-operator --all-containers=true --tail -1 > ./resources/strimzi-cluster-operator-logs.txt
-          kubectl logs -n operators -l app.kubernetes.io/name=streamshub-console-operator --all-containers=true --tail -1 > ./resources/streamshub-console-operator-logs.txt
-          kubectl logs -n ${TARGET_NAMESPACE} -l app.kubernetes.io/instance=example-console-deployment --all-containers=true --tail -1 > ./resources/${TARGET_NAMESPACE}-console-logs.txt
 
       - name: Archive Resource Backup
         uses: actions/upload-artifact@v5
