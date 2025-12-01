@@ -1,6 +1,9 @@
 package com.github.streamshub.console.api.support;
 
+import java.util.List;
 import java.util.Map;
+
+import com.github.streamshub.console.kafka.systemtest.deployment.StrimziCrdResourceManager;
 
 import io.quarkus.test.junit.QuarkusTestProfile;
 
@@ -11,6 +14,12 @@ import io.quarkus.test.junit.QuarkusTestProfile;
  * against Kafka will fail.
  */
 public class OperationFilterTestProfile implements QuarkusTestProfile {
+
+    @Override
+    public List<TestResourceEntry> testResources() {
+        // Make sure the Strimzi CRDs are created in the Kube database to avoid informer startup failures
+        return List.of(new TestResourceEntry(StrimziCrdResourceManager.class));
+    }
 
     @Override
     public Map<String, String> getConfigOverrides() {

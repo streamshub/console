@@ -40,9 +40,7 @@ public class TestPlainProfile implements QuarkusTestProfile {
                     ), true),
                 new TestResourceEntry(StrimziCrdResourceManager.class, Collections.emptyMap(), true),
                 new TestResourceEntry(KeycloakResourceManager.class, Collections.emptyMap(), true),
-                new TestResourceEntry(KafkaResourceManager.class, Map.ofEntries(
-                        Map.entry("profile", PROFILE)
-                    ), true)
+                new TestResourceEntry(KafkaResourceManager.class, Collections.emptyMap(), true)
             );
     }
 
