@@ -53,11 +53,11 @@ public class ApicurioClientFactory {
 
         if (config.getUrl().contains("/apis/registry/v2")) {
             var client = new io.apicurio.registry.rest.client.v2.RegistryClient(adapter);
-            return new RegistryClientFacadeImpl_v2(client, null);
+            return new RegistryClientFacadeImpl_v2(client);
         }
 
         var client = new io.apicurio.registry.rest.client.RegistryClient(adapter);
-        return new RegistryClientFacadeImpl(client, null);
+        return new RegistryClientFacadeImpl(client);
     }
 
     private RequestAdapter createAdapter(SchemaRegistryConfig config) {
