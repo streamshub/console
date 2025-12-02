@@ -84,7 +84,7 @@ async function ConnectedAppHeader({
       topicId: o.topicId!,
       topicName: o.topicName,
       partition: o.partition,
-      offset: o.offset,
+      offset: o.offset ?? "",
     }),
   );
   return <Header groupIdDisplay={res.attributes.groupId} offsets={offsets} />;
