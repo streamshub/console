@@ -3,7 +3,7 @@ import { KafkaConsumerGroupMembersParams } from "../../KafkaConsumerGroupMembers
 import { Suspense } from "react";
 import { PageSection } from "@/libs/patternfly/react-core";
 import { ConnectedDryrunPage } from "./ConnectedDryrunPage";
-import { Offset } from "../ResetOffset";
+import { NewOffset } from "./Dryrun";
 import { NoDataErrorState } from "@/components/NoDataErrorState";
 
 export default function DryrunPage({
@@ -87,7 +87,7 @@ async function AsyncConnectedDryrunPage({
   }
 
   const res = response.payload!;
-  const offsets: Offset[] = Array.from(res.attributes?.offsets ?? []).map(
+  const offsets: NewOffset[] = Array.from(res.attributes?.offsets ?? []).map(
     (o) => ({
       topicId: o.topicId!,
       topicName: o.topicName,

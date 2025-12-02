@@ -40,7 +40,7 @@ Resource `id` differs from URL
         }]
       }
     @
-Invalid group state - connected members
+Invalid group state - connected members for alter offset
     | {
         "data": {
           "type": "consumerGroups",
@@ -142,7 +142,7 @@ Offset after latest
         }]
       }
     @
-Offset null
+Invalid group state - connected members for delete offset
     | {
         "data": {
           "type": "consumerGroups",
@@ -156,14 +156,11 @@ Offset null
           }
         }
       }
-    | BAD_REQUEST
+    | CONFLICT
     | {
         "errors": [{
-          "status": "400",
-          "code": "4003",
-          "source": {
-            "pointer": "/data/attributes/offsets/0/offset"
-          }
+          "status": "409",
+          "code": "4091"
         }]
       }
     @
