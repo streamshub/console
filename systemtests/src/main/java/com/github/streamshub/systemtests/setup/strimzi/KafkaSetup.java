@@ -109,6 +109,7 @@ public class KafkaSetup {
      */
     public static KafkaNodePool getDefaultBrokerNodePools(String namespaceName, String clusterName, int replicas) {
         return new KafkaNodePoolBuilder()
+            .withApiVersion(Constants.STRIMZI_API_V1)
             .withNewMetadata()
                 .withName(KafkaNamingUtils.brokerPoolName(clusterName))
                 .withNamespace(namespaceName)
@@ -141,6 +142,7 @@ public class KafkaSetup {
      */
     public static KafkaNodePool getDefaultControllerNodePools(String namespaceName, String clusterName, int replicas) {
         return new KafkaNodePoolBuilder()
+            .withApiVersion(Constants.STRIMZI_API_V1)
             .withNewMetadata()
                 .withName(KafkaNamingUtils.controllerPoolName(clusterName))
                 .withNamespace(namespaceName)
@@ -173,6 +175,7 @@ public class KafkaSetup {
      */
     public static KafkaUser getDefaultKafkaUser(String namespaceName, String clusterName) {
         return new KafkaUserBuilder()
+            .withApiVersion(Constants.STRIMZI_API_V1)
             .withNewMetadata()
                 .withName(KafkaNamingUtils.kafkaUserName(clusterName))
                 .withNamespace(namespaceName)
@@ -233,6 +236,7 @@ public class KafkaSetup {
         // This helps to avoid issues with same-name kafka in different namespace exposing the same hostname
         String hashedNamespace = Utils.hashStub(namespaceName);
         return new KafkaBuilder()
+            .withApiVersion(Constants.STRIMZI_API_V1)
             .editMetadata()
                 .withNamespace(namespaceName)
                 .withName(clusterName)
