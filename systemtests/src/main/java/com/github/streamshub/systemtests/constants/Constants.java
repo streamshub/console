@@ -3,6 +3,11 @@ package com.github.streamshub.systemtests.constants;
 public class Constants {
     public static final String NGINX_INGRESS_NAMESPACE = "ingress-nginx";
 
+    // As of now for strimzi operator 0.49.0, it is required to convert all resources to `apiVersion: v1`
+    // Best way is to hard-set this value when creating strimzi CRs to avoid long upgrading process described in:
+    // https://strimzi.io/docs/operators/0.49.0/deploying.html#proc-convert-custom-resources-cluster-str
+    public static final String STRIMZI_API_V1 = "v1";
+
     private Constants() {}
 
     // --------------------------------
