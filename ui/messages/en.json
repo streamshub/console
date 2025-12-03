@@ -342,7 +342,8 @@
     "topics": "Topics",
     "brokers": "Kafka nodes",
     "consumer_groups": "Consumer groups",
-    "kafka_connect": "Kafka Connect"
+    "kafka_connect": "Kafka Connect",
+    "kafka_users": "Kafka Users"
   },
   "AppMasthead": {
     "global_navigation": "Global navigation",
@@ -710,6 +711,7 @@
     "create_topic": "Create topic",
     "consumer_groups": "Consumer groups",
     "view_all_kafka_clusters": "View all Kafka clusters",
+    "kafka_users": "Kafka Users",
     "Kafka_connect": "Kafka Connect",
     "connect_clusters": "Connect clusters",
     "connectors": "Connectors"
@@ -750,5 +752,13 @@
       "plugins": "Plugins",
       "workers_tooltip": "Workers represents the number of replicas in the Kafka Connect cluster. This information is obtained from the Strimzi custom resource that defines the cluster and is not available for Kafka Connect clusters that are not managed by the Strimzi Cluster Operator."
     }
+  },
+  "kafkausers": {
+    "name": "Name",
+    "namespace": "Namespace",
+    "creationTimestamp": "Creation Time",
+    "username": "Username",
+    "authentication": "Authentication",
+    "title": "Kafka Users"
   }
 }
