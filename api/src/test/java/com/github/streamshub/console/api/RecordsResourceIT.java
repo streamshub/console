@@ -1,6 +1,5 @@
 package com.github.streamshub.console.api;
 
-import java.io.ByteArrayInputStream;
 import java.net.URI;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
@@ -48,6 +47,7 @@ import com.github.streamshub.console.test.RecordHelper;
 import com.github.streamshub.console.test.TestHelper;
 import com.github.streamshub.console.test.TopicHelper;
 
+import io.apicurio.registry.resolver.client.RegistryClientFacade;
 import io.apicurio.registry.types.ArtifactType;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.quarkus.test.common.http.TestHTTPEndpoint;
@@ -90,15 +90,11 @@ class RecordsResourceIT {
     TopicHelper topicUtils;
     RecordHelper recordUtils;
     String clusterId1;
-    String clusterId2;
+    String clusterId3;
 
     @BeforeEach
     void setup() {
         URI bootstrapServers = URI.create(config.getValue(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, String.class));
-        URI randomBootstrapServers = URI.create(consoleConfig.getKafka()
-                .getCluster("default/test-kafka2")
-                .map(k -> k.getProperties().get("bootstrap.servers"))
-                .orElseThrow());
 
         topicUtils = new TopicHelper(bootstrapServers, config);
         topicUtils.deleteAllTopics();
@@ -110,8 +106,9 @@ class RecordsResourceIT {
         client.resources(Kafka.class).inAnyNamespace().delete();
 
         utils.apply(client, utils.buildKafkaResource("test-kafka1", utils.getClusterId(), bootstrapServers));
-        // Second cluster is offline/non-existent
-        utils.apply(client, utils.buildKafkaResource("test-kafka2", UUID.randomUUID().toString(), randomBootstrapServers));
+        // test-kafka3 simply proxies to test-kafka1, but we can associate a different schema registry with it
+        clusterId3 = UUID.randomUUID().toString();
+        utils.apply(client, utils.buildKafkaResource("test-kafka3", clusterId3, bootstrapServers));
 
         // Wait for the context map to be populated with all Kafka configurations
         await().atMost(10, TimeUnit.SECONDS).until(() -> kafkaContexts.values()
@@ -119,10 +116,22 @@ class RecordsResourceIT {
                 .map(KafkaContext::clusterConfig)
                 .map(KafkaClusterConfig::getName)
                 .toList()
-                .containsAll(List.of("test-kafka1", "test-kafka2")));
+                .containsAll(List.of("test-kafka1", "test-kafka3")));
 
         clusterId1 = consoleConfig.getKafka().getCluster("default/test-kafka1").get().getId();
-        clusterId2 = consoleConfig.getKafka().getCluster("default/test-kafka2").get().getId();
+    }
+
+    private String getClusterId(String kafkaName) {
+        return switch (kafkaName) {
+            case "test-kafka1" -> clusterId1;
+            case "test-kafka3" -> clusterId3;
+            default -> throw new IllegalArgumentException(kafkaName);
+        };
+    }
+
+    private RegistryClientFacade getRegistryClient(String kafkaName) {
+        return kafkaContexts.get(getClusterId(kafkaName))
+                .schemaRegistryContext().registryClient();
     }
 
     @Test
@@ -607,9 +616,11 @@ class RecordsResourceIT {
             .body("errors[0].source.pointer", is("/data/attributes/partition"));
     }
 
-    @Test
-    void testProduceRecordWithAvroFormat() {
-        var registryClient = kafkaContexts.get(clusterId1).schemaRegistryContext().registryClient();
+    @ParameterizedTest
+    @ValueSource(strings = { "test-kafka1", "test-kafka3" })
+    void testProduceRecordWithAvroFormat(String kafkaName) {
+        String clusterId = getClusterId(kafkaName);
+        var registryClient = getRegistryClient(kafkaName);
 
         final String keyArtifactId = UUID.randomUUID().toString().replace("-", "");
         final String keySchema = """
@@ -643,12 +654,27 @@ class RecordsResourceIT {
               """
               .formatted(valueArtifactId);
 
-        registryClient.createArtifact("default", keyArtifactId, ArtifactType.AVRO, new ByteArrayInputStream(keySchema
-                .getBytes()));
+        registryClient.createSchema(
+                ArtifactType.AVRO,
+                "default",
+                keyArtifactId,
+                "1.0.0",
+                "FAIL",
+                true,
+                keySchema,
+                Collections.emptySet()
+        );
 
-        registryClient.createArtifact("default", valueArtifactId, ArtifactType.AVRO, new ByteArrayInputStream(valueSchema
-                .getBytes()));
-
+        registryClient.createSchema(
+                ArtifactType.AVRO,
+                "default",
+                valueArtifactId,
+                "1.0.0",
+                "FAIL",
+                true,
+                valueSchema,
+                Collections.emptySet()
+        );
 
         final String topicName = UUID.randomUUID().toString();
         var topicIds = topicUtils.createTopics(List.of(topicName), 1);
@@ -658,10 +684,10 @@ class RecordsResourceIT {
                         .add("relationships", Json.createObjectBuilder()
                                 .add("keySchema", Json.createObjectBuilder()
                                         .add("meta", Json.createObjectBuilder()
-                                                .add("coordinates", "default:" + keyArtifactId)))
+                                                .add("coordinates", "default:" + keyArtifactId + ":1.0.0")))
                                 .add("valueSchema", Json.createObjectBuilder()
                                         .add("meta", Json.createObjectBuilder()
-                                                .add("coordinates", "default:" + valueArtifactId))))
+                                                .add("coordinates", "default:" + valueArtifactId + ":1.0.0"))))
                         .add("attributes", Json.createObjectBuilder()
                                 .add("key", """
                                         {
@@ -678,7 +704,7 @@ class RecordsResourceIT {
         whenRequesting(req -> req
                 .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
                 .body(requestBody.toString())
-                .post("", clusterId1, topicIds.get(topicName)))
+                .post("", clusterId, topicIds.get(topicName)))
             .assertThat()
             .statusCode(is(Status.CREATED.getStatusCode()))
             .body("data.attributes.partition", is(0))
@@ -692,7 +718,7 @@ class RecordsResourceIT {
                     // fully qualified
                     is("console.avro.name_" + valueArtifactId));
 
-        var recordsResponse = whenRequesting(req -> req.get("", clusterId1, topicIds.get(topicName)))
+        var recordsResponse = whenRequesting(req -> req.get("", clusterId, topicIds.get(topicName)))
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
             .body("data", hasSize(1))
@@ -717,9 +743,11 @@ class RecordsResourceIT {
         });
     }
 
-    @Test
-    void testProduceRecordWithProtobufFormat() {
-        var registryClient = kafkaContexts.get(clusterId1).schemaRegistryContext().registryClient();
+    @ParameterizedTest
+    @ValueSource(strings = { "test-kafka1", "test-kafka3" })
+    void testProduceRecordWithProtobufFormat(String kafkaName) {
+        String clusterId = getClusterId(kafkaName);
+        var registryClient = getRegistryClient(kafkaName);
 
         final String keyArtifactId = UUID.randomUUID().toString().replace("-", "");
         final String keySchema = """
@@ -740,12 +768,27 @@ class RecordsResourceIT {
               """
               .formatted(valueArtifactId, valueArtifactId);
 
-        registryClient.createArtifact("default", keyArtifactId, ArtifactType.PROTOBUF, new ByteArrayInputStream(keySchema
-                .getBytes()));
+        registryClient.createSchema(
+                ArtifactType.PROTOBUF,
+                "default",
+                keyArtifactId,
+                "1.0.0",
+                "FAIL",
+                true,
+                keySchema,
+                Collections.emptySet()
+        );
 
-        registryClient.createArtifact("default", valueArtifactId, ArtifactType.PROTOBUF, new ByteArrayInputStream(valueSchema
-                .getBytes()));
-
+        registryClient.createSchema(
+                ArtifactType.PROTOBUF,
+                "default",
+                valueArtifactId,
+                "1.0.0",
+                "FAIL",
+                true,
+                valueSchema,
+                Collections.emptySet()
+        );
 
         final String topicName = UUID.randomUUID().toString();
         var topicIds = topicUtils.createTopics(List.of(topicName), 1);
@@ -756,10 +799,10 @@ class RecordsResourceIT {
                                 .add("keySchema", Json.createObjectBuilder()
                                         .add("meta", Json.createObjectBuilder()
                                                 // messageType omitted since there is only 1 in the key schema
-                                                .add("coordinates", "default:" + keyArtifactId)))
+                                                .add("coordinates", "default:" + keyArtifactId + ":1.0.0")))
                                 .add("valueSchema", Json.createObjectBuilder()
                                         .add("meta", Json.createObjectBuilder()
-                                                .add("coordinates", "default:" + valueArtifactId)
+                                                .add("coordinates", "default:" + valueArtifactId + ":1.0.0")
                                                 .add("messageType", "name_" + valueArtifactId))))
                         .add("attributes", Json.createObjectBuilder()
                                 .add("key", """
@@ -777,7 +820,7 @@ class RecordsResourceIT {
         whenRequesting(req -> req
                 .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
                 .body(requestBody.toString())
-                .post("", clusterId1, topicIds.get(topicName)))
+                .post("", clusterId, topicIds.get(topicName)))
             .assertThat()
             .statusCode(is(Status.CREATED.getStatusCode()))
             .body("data.attributes.partition", is(0))
@@ -787,7 +830,7 @@ class RecordsResourceIT {
             .body("data.relationships.valueSchema.meta.artifactType", is(ArtifactType.PROTOBUF))
             .body("data.relationships.valueSchema.meta.name", is("name_" + valueArtifactId));
 
-        var recordsResponse = whenRequesting(req -> req.get("", clusterId1, topicIds.get(topicName)))
+        var recordsResponse = whenRequesting(req -> req.get("", clusterId, topicIds.get(topicName)))
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
             .body("data", hasSize(1))

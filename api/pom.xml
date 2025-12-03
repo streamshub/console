@@ -128,11 +128,11 @@
 
         <dependency>
             <groupId>io.apicurio</groupId>
-            <artifactId>apicurio-registry-serdes-avro-serde</artifactId>
+            <artifactId>apicurio-registry-avro-serde-kafka</artifactId>
         </dependency>
         <dependency>
             <groupId>io.apicurio</groupId>
-            <artifactId>apicurio-registry-serdes-protobuf-serde</artifactId>
+            <artifactId>apicurio-registry-protobuf-serde-kafka</artifactId>
         </dependency>
         <dependency>
             <groupId>com.google.protobuf</groupId>
