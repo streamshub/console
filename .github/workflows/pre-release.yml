@@ -13,6 +13,22 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Ensure upgrade YAMLs changed
+        run: |
+          CHANGED=$(git diff --name-only \
+            ${{ github.event.pull_request.base.sha }} \
+            ${{ github.event.pull_request.head.sha }} \
+            | grep -E "systemtests/src/test/resources/upgrade/(YamlUpgrade.yaml|OlmUpgrade.yaml)" || true)
+
+          if [ -z "$CHANGED" ]; then
+            echo "❌[ERROR]: Neither YamlUpgrade.yaml nor OlmUpgrade.yaml was modified in this PR, exiting the flow."
+            exit 1
+          fi
+
+          echo "✔️ Upgrade YAML change detected: $CHANGED"
 
       - name: Retrieve Project Metadata
         uses: radcortez/project-metadata-action@874c89bea2ee8282008328c3418eec4d219013f3

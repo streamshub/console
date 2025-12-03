@@ -2,6 +2,7 @@ package com.github.streamshub.systemtests.utils.resourceutils;
 
 import com.github.streamshub.systemtests.clients.KafkaClients;
 import com.github.streamshub.systemtests.clients.KafkaClientsBuilder;
+import com.github.streamshub.systemtests.constants.Constants;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.utils.WaitUtils;
 import io.fabric8.kubernetes.api.model.Pod;
@@ -197,6 +198,7 @@ public class KafkaTopicUtils {
 
     public static KafkaTopicBuilder defaultTopic(String topicNamespace, String clusterName, String topicName, int partitions, int replicas, int minIsr) {
         return new KafkaTopicBuilder()
+            .withApiVersion(Constants.STRIMZI_API_V1)
             .withNewMetadata()
                 .withName(topicName)
                 .withNamespace(topicNamespace)
