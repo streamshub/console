@@ -61,6 +61,18 @@ public class StrimziResourceService {
         return (SharedIndexInformer<R>) k8s.resources(KafkaTopicV1Beta2.class).inAnyNamespace().inform();
     }
 
+    public KafkaTopic createTopic(KafkaTopic topic) {
+        return k8s.resource(new KafkaTopicV1Beta2(topic)).create();
+    }
+
+    public KafkaTopic patchTopic(KafkaTopic topic) {
+        return k8s.resource(new KafkaTopicV1Beta2(topic)).patch();
+    }
+
+    public void deleteTopic(KafkaTopic topic) {
+        k8s.resource(new KafkaTopicV1Beta2(topic)).delete();
+    }
+
     @CacheResult(cacheName = "strimzi-connect-custom-resource")
     public CompletionStage<Optional<KafkaConnect>> getKafkaConnect(String namespace, String name) {
         return getResource(KafkaConnect.class, namespace, name);
@@ -163,8 +175,17 @@ public class StrimziResourceService {
     @Kind("KafkaTopic")
     @Version(Constants.V1BETA2)
     @Group(Constants.RESOURCE_GROUP_NAME)
-    private static class KafkaTopicV1Beta2 extends KafkaTopic {
+    static class KafkaTopicV1Beta2 extends KafkaTopic {
         private static final long serialVersionUID = 1L;
+
+        public KafkaTopicV1Beta2() {
+            super();
+        }
+
+        public KafkaTopicV1Beta2(KafkaTopic topic) {
+            super(topic.getSpec(), topic.getStatus());
+            super.setMetadata(topic.getMetadata());
+        }
     }
 
     /**
