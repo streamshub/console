@@ -23,27 +23,8 @@ public class TestPlainNoK8sProfile extends TestPlainProfile implements QuarkusTe
 
     @Override
     public Map<String, String> getConfigOverrides() {
-        var configFile = writeConfiguration("""
-                kubernetes:
-                  enabled: false
-                kafka:
-                  clusters:
-                    - name: test-kafka1
-                      id: k1-id
-                      properties:
-                        bootstrap.servers: ${console.test.external-bootstrap}
-                    - name: test-kafka2
-                      id: k2-id
-                      properties:
-                        bootstrap.servers: ${console.test.random-bootstrap}
-                    - name: test-kafka3
-                      namespace: default
-                      id: k3-id
-                      listener: listener0
-                """);
-
         return Map.of(
                 "quarkus.kubernetes-client.devservices.enabled", "false",
-                "console.config-path", configFile.getAbsolutePath());
+                "console.config-path", getClass().getResource("/config-testplain-nok8s.yaml").getPath());
     }
 }
