@@ -89,8 +89,7 @@ public class ConsoleConfigFactory {
                 processNode((ArrayNode) node, i++, entry);
             }
         } else if (node.isObject()) {
-            for (var cursor = node.fields(); cursor.hasNext();) {
-                var field = cursor.next();
+            for (var field : node.properties()) {
                 processNode((ObjectNode) node, field.getKey(), field.getValue());
             }
         }

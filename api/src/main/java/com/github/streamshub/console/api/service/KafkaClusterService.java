@@ -29,7 +29,6 @@ import org.eclipse.microprofile.context.ThreadContext;
 import org.jboss.logging.Logger;
 
 import com.github.streamshub.console.api.Annotations;
-import com.github.streamshub.console.api.ClientFactory;
 import com.github.streamshub.console.api.model.Condition;
 import com.github.streamshub.console.api.model.KafkaCluster;
 import com.github.streamshub.console.api.model.KafkaListener;
@@ -42,6 +41,7 @@ import com.github.streamshub.console.api.support.MetadataQuorumSupport;
 import com.github.streamshub.console.config.ConsoleConfig;
 import com.github.streamshub.console.config.security.Privilege;
 import com.github.streamshub.console.config.security.ResourceTypes;
+import com.github.streamshub.console.support.KafkaConfigs;
 
 import io.fabric8.kubernetes.api.model.ObjectMeta;
 import io.fabric8.kubernetes.client.KubernetesClient;
@@ -55,7 +55,8 @@ import io.strimzi.api.kafka.model.kafka.KafkaSpec;
 import io.strimzi.api.kafka.model.kafka.KafkaStatus;
 import io.strimzi.api.kafka.model.kafka.listener.GenericKafkaListener;
 import io.strimzi.api.kafka.model.kafka.listener.GenericKafkaListenerConfiguration;
-import io.strimzi.api.kafka.model.kafka.listener.KafkaListenerAuthentication;
+import io.strimzi.api.kafka.model.kafka.listener.KafkaListenerAuthenticationCustom;
+import io.strimzi.api.kafka.model.kafka.listener.KafkaListenerAuthenticationScramSha512;
 import io.strimzi.api.kafka.model.kafka.listener.KafkaListenerType;
 import io.strimzi.api.kafka.model.kafka.listener.ListenerStatus;
 
@@ -266,13 +267,13 @@ public class KafkaClusterService {
 
     void addAuthenticationMethod(KafkaCluster cluster, KafkaContext kafkaContext) {
         switch (kafkaContext.saslMechanism(Admin.class)) {
-            case ClientFactory.OAUTHBEARER:
+            case KafkaConfigs.MECHANISM_OAUTHBEARER:
                 Map<String, String> authMeta = new HashMap<>(2);
                 authMeta.put(AUTHN_METHOD_KEY, "oauth");
                 authMeta.put("tokenUrl", kafkaContext.tokenUrl().orElse(null));
                 cluster.addMeta(AUTHN_KEY, authMeta);
                 break;
-            case ClientFactory.PLAIN, ClientFactory.SCRAM_SHA256, ClientFactory.SCRAM_SHA512:
+            case KafkaConfigs.MECHANISM_PLAIN, KafkaConfigs.MECHANISM_SCRAM_SHA256, KafkaConfigs.MECHANISM_SCRAM_SHA512:
                 cluster.addMeta(AUTHN_KEY, Map.of(AUTHN_METHOD_KEY, "basic"));
                 break;
             default:
@@ -450,7 +451,19 @@ public class KafkaClusterService {
     static Optional<String> getAuthType(GenericKafkaListener listener) {
         return Optional.of(listener)
             .map(GenericKafkaListener::getAuth)
-            .map(KafkaListenerAuthentication::getType);
+            .map(authn -> {
+                if (authn instanceof KafkaListenerAuthenticationCustom custom) {
+                    String saslMechanism = KafkaConfigs.saslMechanism(custom.getListenerConfig());
+
+                    if (KafkaConfigs.MECHANISM_SCRAM_SHA512.equals(saslMechanism)) {
+                        return KafkaListenerAuthenticationScramSha512.SCRAM_SHA_512;
+                    } else if (KafkaConfigs.MECHANISM_OAUTHBEARER.equals(saslMechanism)) {
+                        return KafkaConfigs.TYPE_OAUTH;
+                    }
+                }
+
+                return authn.getType();
+            });
     }
 
     static List<String> enumNames(Collection<? extends Enum<?>> values) {

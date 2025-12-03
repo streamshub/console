@@ -41,6 +41,7 @@ import com.github.streamshub.console.ReconciliationException;
 import com.github.streamshub.console.api.v1alpha1.Console;
 import com.github.streamshub.console.api.v1alpha1.spec.Credentials;
 import com.github.streamshub.console.api.v1alpha1.spec.KafkaCluster;
+import com.github.streamshub.console.api.v1alpha1.spec.KafkaConnect;
 import com.github.streamshub.console.api.v1alpha1.spec.SchemaRegistry;
 import com.github.streamshub.console.api.v1alpha1.spec.TrustStore;
 import com.github.streamshub.console.api.v1alpha1.spec.Value;
@@ -63,7 +64,6 @@ import com.github.streamshub.console.config.SchemaRegistryConfig;
 import com.github.streamshub.console.config.TrustStoreConfig;
 import com.github.streamshub.console.config.TrustStoreConfigBuilder;
 import com.github.streamshub.console.config.ValueBuilder;
-import com.github.streamshub.console.api.v1alpha1.spec.KafkaConnect;
 import com.github.streamshub.console.config.authentication.Authenticated;
 import com.github.streamshub.console.config.authentication.AuthenticationConfigBuilder;
 import com.github.streamshub.console.config.authentication.OIDC;
@@ -76,6 +76,7 @@ import com.github.streamshub.console.config.security.RuleConfigBuilder;
 import com.github.streamshub.console.config.security.SecurityConfig;
 import com.github.streamshub.console.config.security.SubjectConfigBuilder;
 import com.github.streamshub.console.dependents.support.ConfigSupport;
+import com.github.streamshub.console.support.KafkaConfigs;
 
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.Secret;
@@ -91,7 +92,6 @@ import io.strimzi.api.kafka.model.kafka.KafkaStatus;
 import io.strimzi.api.kafka.model.kafka.listener.GenericKafkaListener;
 import io.strimzi.api.kafka.model.kafka.listener.KafkaListenerAuthentication;
 import io.strimzi.api.kafka.model.kafka.listener.KafkaListenerAuthenticationCustom;
-import io.strimzi.api.kafka.model.kafka.listener.KafkaListenerAuthenticationOAuth;
 import io.strimzi.api.kafka.model.kafka.listener.KafkaListenerAuthenticationScramSha512;
 import io.strimzi.api.kafka.model.kafka.listener.KafkaListenerAuthenticationTls;
 import io.strimzi.api.kafka.model.kafka.listener.ListenerStatus;
@@ -775,18 +775,30 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
                 .orElse("");
 
         switch (authenticationType) {
-            case KafkaListenerAuthenticationOAuth.TYPE_OAUTH:
-                properties.putIfAbsent(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, "SASL_" + saslType(listenerSpec));
+            case KafkaConfigs.TYPE_OAUTH: // deprecated type
+                properties.putIfAbsent(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, saslType(listenerSpec));
                 properties.putIfAbsent(SaslConfigs.SASL_MECHANISM, "OAUTHBEARER");
                 break;
             case KafkaListenerAuthenticationScramSha512.SCRAM_SHA_512:
-                properties.putIfAbsent(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, "SASL_" + saslType(listenerSpec));
+                properties.putIfAbsent(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, saslType(listenerSpec));
                 properties.putIfAbsent(SaslConfigs.SASL_MECHANISM, "SCRAM-SHA-512");
                 break;
             case KafkaListenerAuthenticationTls.TYPE_TLS:
                 properties.putIfAbsent(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, "SSL");
                 break;
             case KafkaListenerAuthenticationCustom.TYPE_CUSTOM:
+                KafkaListenerAuthenticationCustom custom = (KafkaListenerAuthenticationCustom) listenerSpec.getAuth();
+                String saslMechanism = KafkaConfigs.saslMechanism(custom.getListenerConfig());
+
+                if (KafkaConfigs.MECHANISM_SCRAM_SHA512.equals(saslMechanism)) {
+                    properties.putIfAbsent(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, saslType(listenerSpec));
+                    properties.putIfAbsent(SaslConfigs.SASL_MECHANISM, "SCRAM-SHA-512");
+                } else if (KafkaConfigs.MECHANISM_OAUTHBEARER.equals(saslMechanism)) {
+                    properties.putIfAbsent(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, saslType(listenerSpec));
+                    properties.putIfAbsent(SaslConfigs.SASL_MECHANISM, "OAUTHBEARER");
+                }
+
+                break;
             default:
                 // Nothing yet
                 break;
@@ -816,9 +828,9 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
 
     private String saslType(GenericKafkaListener listenerSpec) {
         if (listenerSpec.isTls()) {
-            return "SSL";
+            return "SASL_SSL";
         }
-        return "PLAINTEXT";
+        return "SASL_PLAINTEXT";
     }
 
     void maybeAddTrustedCertificates(Map<String, String> properties, String certificates) {

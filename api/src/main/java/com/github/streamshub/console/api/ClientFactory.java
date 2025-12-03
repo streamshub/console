@@ -44,7 +44,6 @@ import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.config.SaslConfigs;
 import org.apache.kafka.common.config.SslConfigs;
 import org.apache.kafka.common.security.auth.SecurityProtocol;
-import org.apache.kafka.common.security.oauthbearer.OAuthBearerLoginModule;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.eclipse.microprofile.config.Config;
@@ -60,6 +59,7 @@ import com.github.streamshub.console.api.support.serdes.RecordData;
 import com.github.streamshub.console.config.ConsoleConfig;
 import com.github.streamshub.console.config.KafkaClusterConfig;
 import com.github.streamshub.console.config.SchemaRegistryConfig;
+import com.github.streamshub.console.support.KafkaConfigs;
 
 import io.apicurio.registry.resolver.client.RegistryClientFacade;
 import io.apicurio.registry.serde.config.KafkaSerdeConfig;
@@ -73,6 +73,8 @@ import io.strimzi.api.kafka.model.kafka.KafkaSpec;
 import io.strimzi.api.kafka.model.kafka.KafkaStatus;
 import io.strimzi.api.kafka.model.kafka.listener.GenericKafkaListener;
 import io.strimzi.api.kafka.model.kafka.listener.KafkaListenerAuthentication;
+import io.strimzi.api.kafka.model.kafka.listener.KafkaListenerAuthenticationCustom;
+import io.strimzi.api.kafka.model.kafka.listener.KafkaListenerAuthenticationScramSha512;
 import io.strimzi.api.kafka.model.kafka.listener.ListenerStatus;
 
 /**
@@ -90,11 +92,6 @@ import io.strimzi.api.kafka.model.kafka.listener.ListenerStatus;
  */
 @ApplicationScoped
 public class ClientFactory {
-
-    public static final String OAUTHBEARER = OAuthBearerLoginModule.OAUTHBEARER_MECHANISM;
-    public static final String PLAIN = "PLAIN";
-    public static final String SCRAM_SHA256 = "SCRAM-SHA-256";
-    public static final String SCRAM_SHA512 = "SCRAM-SHA-512";
 
     private static final String STRIMZI_OAUTH_CALLBACK = "io.strimzi.kafka.oauth.client.JaasClientOauthLoginCallbackHandler";
 
@@ -632,14 +629,29 @@ public class ClientFactory {
         boolean saslEnabled;
 
         switch (authType) {
-            case "oauth":
-                saslEnabled = true;
-                cfg.putIfAbsent(SaslConfigs.SASL_MECHANISM, OAUTHBEARER);
+            case KafkaConfigs.TYPE_OAUTH: // deprecated type
+                cfg.putIfAbsent(SaslConfigs.SASL_MECHANISM, KafkaConfigs.MECHANISM_OAUTHBEARER);
                 cfg.putIfAbsent(SaslConfigs.SASL_LOGIN_CALLBACK_HANDLER_CLASS, STRIMZI_OAUTH_CALLBACK);
-                break;
-            case "scram-sha-512":
-                cfg.putIfAbsent(SaslConfigs.SASL_MECHANISM, SCRAM_SHA512);
                 saslEnabled = true;
+                break;
+            case KafkaListenerAuthenticationScramSha512.SCRAM_SHA_512:
+                cfg.putIfAbsent(SaslConfigs.SASL_MECHANISM, KafkaConfigs.MECHANISM_SCRAM_SHA512);
+                saslEnabled = true;
+                break;
+            case KafkaListenerAuthenticationCustom.TYPE_CUSTOM:
+                String saslMechanism = saslMechanism((KafkaListenerAuthenticationCustom) listener.getAuth());
+
+                if (KafkaConfigs.MECHANISM_SCRAM_SHA512.equals(saslMechanism)) {
+                    cfg.putIfAbsent(SaslConfigs.SASL_MECHANISM, KafkaConfigs.MECHANISM_SCRAM_SHA512);
+                    saslEnabled = true;
+                } else if (KafkaConfigs.MECHANISM_OAUTHBEARER.equals(saslMechanism)) {
+                    cfg.putIfAbsent(SaslConfigs.SASL_MECHANISM, KafkaConfigs.MECHANISM_OAUTHBEARER);
+                    cfg.putIfAbsent(SaslConfigs.SASL_LOGIN_CALLBACK_HANDLER_CLASS, STRIMZI_OAUTH_CALLBACK);
+                    saslEnabled = true;
+                } else {
+                    saslEnabled = false;
+                }
+
                 break;
             default:
                 saslEnabled = false;
@@ -659,6 +671,10 @@ public class ClientFactory {
         }
 
         cfg.putIfAbsent(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, protocol.toString());
+    }
+
+    public static String saslMechanism(KafkaListenerAuthenticationCustom custom) {
+        return KafkaConfigs.saslMechanism(custom.getListenerConfig());
     }
 
     Optional<String> getDefaultConfig(String clientType, String configName) {
@@ -709,13 +725,13 @@ public class ClientFactory {
         SaslJaasConfigCredential credential = identity.getCredential(SaslJaasConfigCredential.class);
 
         switch (saslMechanism) {
-            case OAUTHBEARER:
+            case KafkaConfigs.MECHANISM_OAUTHBEARER:
                 configureOAuthBearer(credential, configs);
                 break;
-            case PLAIN:
+            case KafkaConfigs.MECHANISM_PLAIN:
                 configureBasic(credential, configs);
                 break;
-            case SCRAM_SHA256, SCRAM_SHA512:
+            case KafkaConfigs.MECHANISM_SCRAM_SHA256, KafkaConfigs.MECHANISM_SCRAM_SHA512:
                 configureBasic(credential, configs);
                 break;
             default:
