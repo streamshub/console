@@ -641,10 +641,7 @@ public class ClientFactory {
             case KafkaListenerAuthenticationCustom.TYPE_CUSTOM:
                 String saslMechanism = saslMechanism((KafkaListenerAuthenticationCustom) listener.getAuth());
 
-                if (KafkaConfigs.MECHANISM_SCRAM_SHA512.equals(saslMechanism)) {
-                    cfg.putIfAbsent(SaslConfigs.SASL_MECHANISM, KafkaConfigs.MECHANISM_SCRAM_SHA512);
-                    saslEnabled = true;
-                } else if (KafkaConfigs.MECHANISM_OAUTHBEARER.equals(saslMechanism)) {
+                if (KafkaConfigs.MECHANISM_OAUTHBEARER.equals(saslMechanism)) {
                     cfg.putIfAbsent(SaslConfigs.SASL_MECHANISM, KafkaConfigs.MECHANISM_OAUTHBEARER);
                     cfg.putIfAbsent(SaslConfigs.SASL_LOGIN_CALLBACK_HANDLER_CLASS, STRIMZI_OAUTH_CALLBACK);
                     saslEnabled = true;

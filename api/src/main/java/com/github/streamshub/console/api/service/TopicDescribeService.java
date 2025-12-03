@@ -57,7 +57,6 @@ import com.github.streamshub.console.config.security.ResourceTypes;
 import com.github.streamshub.console.support.Identifiers;
 
 import io.fabric8.kubernetes.api.model.ObjectMeta;
-import io.fabric8.kubernetes.client.KubernetesClient;
 import io.strimzi.api.kafka.model.kafka.Kafka;
 import io.strimzi.api.kafka.model.topic.KafkaTopic;
 
@@ -100,9 +99,6 @@ public class TopicDescribeService {
     @Inject
     @Named("KafkaTopics")
     Map<String, Map<String, Map<String, KafkaTopic>>> managedTopics;
-
-    @Inject
-    KubernetesClient k8s;
 
     @Inject
     PermissionService permissionService;

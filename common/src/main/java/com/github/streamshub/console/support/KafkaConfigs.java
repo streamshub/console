@@ -21,15 +21,17 @@ public class KafkaConfigs {
         // No instances
     }
 
+    /**
+     * Retrieve any known SASL mechanism enabled in the provided listener
+     * configuration map. Currently only recognizes the OAUTHBEARER mechanism.
+     */
     public static String saslMechanism(Map<String, Object> listenerConfig) {
         var enabledMechanisms = (String) listenerConfig.get("sasl.enabled.mechanisms");
 
         if (enabledMechanisms != null) {
             Set<String> mechanisms = Set.of(enabledMechanisms.split(","));
 
-            if (mechanisms.contains(MECHANISM_SCRAM_SHA512)) {
-                return MECHANISM_SCRAM_SHA512;
-            } else if (mechanisms.contains(MECHANISM_OAUTHBEARER)) {
+            if (mechanisms.contains(MECHANISM_OAUTHBEARER)) {
                 return MECHANISM_OAUTHBEARER;
             }
         }

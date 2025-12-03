@@ -14,17 +14,13 @@ import jakarta.inject.Named;
 
 import org.jboss.logging.Logger;
 
+import com.github.streamshub.console.api.service.StrimziResourceService;
 import com.github.streamshub.console.config.ConsoleConfig;
 
 import io.fabric8.kubernetes.api.model.HasMetadata;
-import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
 import io.fabric8.kubernetes.client.informers.ResourceEventHandler;
 import io.fabric8.kubernetes.client.informers.SharedIndexInformer;
-import io.fabric8.kubernetes.model.annotation.Group;
-import io.fabric8.kubernetes.model.annotation.Kind;
-import io.fabric8.kubernetes.model.annotation.Version;
-import io.strimzi.api.kafka.model.common.Constants;
 import io.strimzi.api.kafka.model.kafka.Kafka;
 import io.strimzi.api.kafka.model.nodepool.KafkaNodePool;
 import io.strimzi.api.kafka.model.topic.KafkaTopic;
@@ -37,10 +33,10 @@ public class InformerFactory {
     private static final Logger LOGGER = Logger.getLogger(InformerFactory.class);
 
     @Inject
-    KubernetesClient k8s;
+    ConsoleConfig consoleConfig;
 
     @Inject
-    ConsoleConfig consoleConfig;
+    StrimziResourceService strimziService;
 
     @Produces
     @ApplicationScoped
@@ -70,20 +66,20 @@ public class InformerFactory {
     void onStartup(@Observes Startup event) {
         if (consoleConfig.getKubernetes().isEnabled()) {
             try {
-                kafkaInformer = Holder.of(k8s.resources(Kafka.class).inAnyNamespace().inform());
+                kafkaInformer = Holder.of(strimziService.informKafkas());
             } catch (KubernetesClientException e) {
                 LOGGER.warnf("Failed to create Strimzi Kafka informer: %s", e.getMessage());
             }
 
             try {
-                kafkaNodePoolInformer = k8s.resources(KafkaNodePool.class).inAnyNamespace().inform();
+                kafkaNodePoolInformer = strimziService.informKafkaNodePools();
                 kafkaNodePoolInformer.addEventHandler(new KafkaNodePoolEventHandler(nodePools));
             } catch (KubernetesClientException e) {
                 LOGGER.warnf("Failed to create Strimzi KafkaNodePool informer: %s", e.getMessage());
             }
 
             try {
-                topicInformer = k8s.resources(KafkaTopicV1Beta2.class).inAnyNamespace().inform();
+                topicInformer = strimziService.informKafkaTopics();
                 topicInformer.addEventHandler(new KafkaTopicEventHandler(topics));
             } catch (KubernetesClientException e) {
                 LOGGER.warnf("Failed to create Strimzi KafkaTopic informer: %s", e.getMessage());
@@ -91,10 +87,6 @@ public class InformerFactory {
         } else {
             LOGGER.warn("Kubernetes client connection is disabled. Custom resource information will not be available.");
         }
-    }
-
-    <T extends HasMetadata> SharedIndexInformer<T> inform(Class<T> resourceType) {
-        return k8s.resources(resourceType).inAnyNamespace().inform();
     }
 
     void disposeKafkaInformer(@Disposes @Named("KafkaInformer") Holder<SharedIndexInformer<Kafka>> informer) {
@@ -197,23 +189,6 @@ public class InformerFactory {
             return Optional.ofNullable(topic.getSpec())
                     .map(KafkaTopicSpec::getTopicName)
                     .orElseGet(() -> super.name(topic));
-        }
-    }
-
-    @Kind("KafkaTopic")
-    @Version(Constants.V1BETA2)
-    @Group(Constants.RESOURCE_GROUP_NAME)
-    private static class KafkaTopicV1Beta2 extends KafkaTopic {
-        private static final long serialVersionUID = 1L;
-
-        @Override
-        public boolean equals(Object o) {
-            return super.equals(o);
-        }
-
-        @Override
-        public int hashCode() {
-            return super.hashCode();
         }
     }
 }

@@ -56,7 +56,6 @@ import io.strimzi.api.kafka.model.kafka.KafkaStatus;
 import io.strimzi.api.kafka.model.kafka.listener.GenericKafkaListener;
 import io.strimzi.api.kafka.model.kafka.listener.GenericKafkaListenerConfiguration;
 import io.strimzi.api.kafka.model.kafka.listener.KafkaListenerAuthenticationCustom;
-import io.strimzi.api.kafka.model.kafka.listener.KafkaListenerAuthenticationScramSha512;
 import io.strimzi.api.kafka.model.kafka.listener.KafkaListenerType;
 import io.strimzi.api.kafka.model.kafka.listener.ListenerStatus;
 
@@ -455,9 +454,7 @@ public class KafkaClusterService {
                 if (authn instanceof KafkaListenerAuthenticationCustom custom) {
                     String saslMechanism = KafkaConfigs.saslMechanism(custom.getListenerConfig());
 
-                    if (KafkaConfigs.MECHANISM_SCRAM_SHA512.equals(saslMechanism)) {
-                        return KafkaListenerAuthenticationScramSha512.SCRAM_SHA_512;
-                    } else if (KafkaConfigs.MECHANISM_OAUTHBEARER.equals(saslMechanism)) {
+                    if (KafkaConfigs.MECHANISM_OAUTHBEARER.equals(saslMechanism)) {
                         return KafkaConfigs.TYPE_OAUTH;
                     }
                 }

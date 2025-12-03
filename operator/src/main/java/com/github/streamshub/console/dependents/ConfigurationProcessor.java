@@ -790,10 +790,7 @@ public class ConfigurationProcessor implements DependentResource<HasMetadata, Co
                 KafkaListenerAuthenticationCustom custom = (KafkaListenerAuthenticationCustom) listenerSpec.getAuth();
                 String saslMechanism = KafkaConfigs.saslMechanism(custom.getListenerConfig());
 
-                if (KafkaConfigs.MECHANISM_SCRAM_SHA512.equals(saslMechanism)) {
-                    properties.putIfAbsent(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, saslType(listenerSpec));
-                    properties.putIfAbsent(SaslConfigs.SASL_MECHANISM, "SCRAM-SHA-512");
-                } else if (KafkaConfigs.MECHANISM_OAUTHBEARER.equals(saslMechanism)) {
+                if (KafkaConfigs.MECHANISM_OAUTHBEARER.equals(saslMechanism)) {
                     properties.putIfAbsent(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, saslType(listenerSpec));
                     properties.putIfAbsent(SaslConfigs.SASL_MECHANISM, "OAUTHBEARER");
                 }
