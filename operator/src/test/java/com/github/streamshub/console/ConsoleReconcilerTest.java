@@ -14,6 +14,7 @@ import org.apache.kafka.common.config.SaslConfigs;
 import org.apache.kafka.common.config.SslConfigs;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import com.github.streamshub.console.api.v1alpha1.Console;
@@ -105,8 +106,12 @@ class ConsoleReconcilerTest extends ConsoleReconcilerTestBase {
         awaitReady(consoleCR);
     }
 
-    @Test
-    void testConsoleReconciliationWithOAuthBearerPlaintext() {
+    @ParameterizedTest
+    @CsvSource({
+        "2, oauth-auth-listener",
+        "3, oauth-custom-auth-listener"
+    })
+    void testConsoleReconciliationWithOAuthBearerPlaintext(int listenerIndex, String listenerName) {
         Console consoleCR = createConsole(new ConsoleBuilder()
                 .withNewSpec()
                     .withHostname("example.com")
@@ -114,7 +119,7 @@ class ConsoleReconcilerTest extends ConsoleReconcilerTestBase {
                         .withName(kafkaCR.getMetadata().getName())
                         .withNamespace(kafkaCR.getMetadata().getNamespace())
                         // reference oauthbearer listener
-                        .withListener(kafkaCR.getSpec().getKafka().getListeners().get(2).getName())
+                        .withListener(kafkaCR.getSpec().getKafka().getListeners().get(listenerIndex).getName())
                     .endKafkaCluster()
                 .endSpec());
 
@@ -132,7 +137,9 @@ class ConsoleReconcilerTest extends ConsoleReconcilerTestBase {
             String configEncoded = consoleSecret.getData().get("console-config.yaml");
             byte[] configDecoded = Base64.getDecoder().decode(configEncoded);
             ConsoleConfig consoleConfig = YAML.readValue(configDecoded, ConsoleConfig.class);
-            var properties = consoleConfig.getKafka().getClusters().get(0).getProperties();
+            var clusterConfig = consoleConfig.getKafka().getClusters().get(0);
+            assertEquals(listenerName, clusterConfig.getListener());
+            var properties = clusterConfig.getProperties();
             assertEquals("SASL_PLAINTEXT", properties.get(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG));
             assertEquals("OAUTHBEARER", properties.get(SaslConfigs.SASL_MECHANISM));
         });

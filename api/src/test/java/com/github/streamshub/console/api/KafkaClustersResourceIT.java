@@ -161,7 +161,7 @@ class KafkaClustersResourceIT {
         utils.apply(client, new KafkaBuilder(utils.buildKafkaResource("test-kafka1", utils.getClusterId(), bootstrapServers,
                         new KafkaListenerAuthenticationCustomBuilder()
                         .withSasl()
-                        .addToListenerConfig("sasl.enabled.mechanisms", "oauthbearer")
+                        .addToListenerConfig("sasl.enabled.mechanisms", "SCRAM-SHA-512")
                         .build()))
             .editOrNewStatus()
                 .addNewCondition()
@@ -738,7 +738,7 @@ class KafkaClustersResourceIT {
         "true, SASL_SSL",
         "false, SASL_PLAINTEXT"
     })
-    void testDescribeClusterWithOAuthTokenUrl(boolean tls, String expectedProtocol) {
+    void testDescribeClusterWithDeprecatedOAuthTokenUrl(boolean tls, String expectedProtocol) {
         String clusterId = UUID.randomUUID().toString();
 
         /*
@@ -758,6 +758,52 @@ class KafkaClustersResourceIT {
                 .endSpec()
                 .build();
 
+        testDescribeClusterWithOAuthTokenUrl(clusterId, kafka, expectedProtocol);
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        "true, SASL_SSL",
+        "false, SASL_PLAINTEXT"
+    })
+    void testDescribeClusterWithCustomOAuthTokenUrl(boolean tls, String expectedProtocol) {
+        String clusterId = UUID.randomUUID().toString();
+
+        /*
+         * Create a Kafka CR that proxies to kafka1.
+         * test-kafka3 is predefined in KafkaUnsecuredResourceManager
+         */
+        Kafka kafka = new KafkaBuilder(utils.buildKafkaResource("test-kafka3", clusterId, bootstrapServers,
+                    new KafkaListenerAuthenticationCustomBuilder()
+                        .addToListenerConfig("sasl.enabled.mechanisms", "OAUTHBEARER")
+                        .addToListenerConfig("oauthbearer.sasl.jaas.config", """
+                                org.apache.kafka.common.security.oauthbearer.OAuthBearerLoginModule \
+                                required \
+                                unsecuredLoginStringClaim_sub="thePrincipalName" \
+                                oauth.token.endpoint.uri="https://example.com/token" \
+                                oauth.valid.issuer.uri="http://valid-issuer" \
+                                oauth.jwks.endpoint.uri="http://jwks" \
+                                oauth.jwks.expiry.seconds="500" \
+                                oauth.jwks.refresh.seconds="400" \
+                                oauth.username.claim="preferred_username" \
+                                oauth.enable.metrics="true" \
+                                oauth.ssl.truststore.location="/mnt/oauth-certs/tls.crt" \
+                                oauth.ssl.truststore.type="PEM";
+                                """)
+                    .build()))
+                .editSpec()
+                    .editKafka()
+                    .editMatchingListener(l -> "listener0".equals(l.getName()))
+                        .withTls(tls)
+                    .endListener()
+                .endKafka()
+                .endSpec()
+                .build();
+
+        testDescribeClusterWithOAuthTokenUrl(clusterId, kafka, expectedProtocol);
+    }
+
+    private void testDescribeClusterWithOAuthTokenUrl(String clusterId, Kafka kafka, String expectedProtocol) {
         Map<String, Object> clientConfig = mockAdminClient();
 
         utils.apply(client, kafka);

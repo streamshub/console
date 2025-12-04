@@ -47,7 +47,6 @@ import com.github.streamshub.console.config.security.Privilege;
 import com.github.streamshub.console.config.security.ResourceTypes;
 
 import io.fabric8.kubernetes.api.model.ObjectMeta;
-import io.fabric8.kubernetes.client.KubernetesClient;
 import io.strimzi.api.kafka.model.kafka.Kafka;
 import io.strimzi.api.kafka.model.kafka.KafkaSpec;
 import io.strimzi.api.kafka.model.kafka.Status;
@@ -84,7 +83,7 @@ public class TopicService {
     KafkaContext kafkaContext;
 
     @Inject
-    KubernetesClient k8s;
+    StrimziResourceService strimziService;
 
     @Inject
     PermissionService permissionService;
@@ -150,7 +149,7 @@ public class TopicService {
                     return topicName.get();
                 })
                 .thenComposeAsync(topicName -> topicDescribe.getManagedTopic(topicName)
-                        .map(kafkaTopic -> CompletableFuture.runAsync(() -> k8s.resource(kafkaTopic).delete()))
+                        .map(kafkaTopic -> CompletableFuture.runAsync(() -> strimziService.deleteTopic(kafkaTopic)))
                         .orElseGet(() -> adminClient.deleteTopics(TopicCollection.ofTopicIds(List.of(id)))
                                 .topicIdValues()
                                 .get(id)
@@ -308,7 +307,7 @@ public class TopicService {
         final CompletableFuture<NewTopic> promise = topicCheck.promise();
 
         CompletableFuture
-            .runAsync(() -> k8s.resource(topicResource).create())
+            .runAsync(() -> strimziService.createTopic(topicResource))
             .thenRunAsync(() -> topicCheck.schedule(0), threadContext.currentContextExecutor())
             .exceptionally(e -> {
                 promise.completeExceptionally(e);
@@ -370,7 +369,7 @@ public class TopicService {
         final CompletableFuture<Void> promise = topicCheck.promise();
 
         CompletableFuture
-            .runAsync(() -> k8s.resource(modifiedTopic).patch())
+            .runAsync(() -> strimziService.patchTopic(modifiedTopic))
             .thenRunAsync(() -> topicCheck.schedule(0), threadContext.currentContextExecutor())
             .exceptionally(e -> {
                 promise.completeExceptionally(e);

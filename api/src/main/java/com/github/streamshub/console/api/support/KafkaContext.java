@@ -7,6 +7,8 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import org.apache.kafka.clients.admin.Admin;
@@ -28,6 +30,7 @@ import io.strimzi.api.kafka.model.kafka.KafkaClusterSpec;
 import io.strimzi.api.kafka.model.kafka.KafkaSpec;
 import io.strimzi.api.kafka.model.kafka.KafkaStatus;
 import io.strimzi.api.kafka.model.kafka.listener.GenericKafkaListener;
+import io.strimzi.api.kafka.model.kafka.listener.KafkaListenerAuthenticationCustom;
 import io.strimzi.api.kafka.model.kafka.listener.KafkaListenerAuthenticationOAuth;
 import io.strimzi.kafka.oauth.client.ClientConfig;
 
@@ -35,6 +38,8 @@ public class KafkaContext implements Closeable {
 
     public static final KafkaContext EMPTY = new KafkaContext(null, null, Collections.emptyMap(), null);
     private static final Logger LOGGER = Logger.getLogger(KafkaContext.class);
+    private static final Pattern OAUTH_TOKEN_URI_PATTERN = Pattern.compile(
+            Pattern.quote(ClientConfig.OAUTH_TOKEN_ENDPOINT_URI) + "=\"([^\"]+)\"");
 
     final KafkaClusterConfig clusterConfig;
     final Kafka resource;
@@ -154,6 +159,7 @@ public class KafkaContext implements Closeable {
         return configs(clientType).get(SaslConfigs.SASL_JAAS_CONFIG) instanceof String;
     }
 
+    @SuppressWarnings("deprecation")
     public Optional<String> tokenUrl() {
         return Optional.ofNullable(clusterConfig.getProperties().get(ClientConfig.OAUTH_TOKEN_ENDPOINT_URI))
             .or(() -> Optional.ofNullable(resource())
@@ -165,9 +171,30 @@ public class KafkaContext implements Closeable {
                     .filter(listener -> listener.getName().equals(clusterConfig.getListener()))
                     .findFirst()
                     .map(GenericKafkaListener::getAuth)
-                    .filter(KafkaListenerAuthenticationOAuth.class::isInstance)
-                    .map(KafkaListenerAuthenticationOAuth.class::cast)
-                    .map(KafkaListenerAuthenticationOAuth::getTokenEndpointUri));
+                    .map(authn -> {
+                        if (authn instanceof KafkaListenerAuthenticationCustom custom) {
+                            return tokenUrlCustom(custom);
+                        } else if (authn instanceof KafkaListenerAuthenticationOAuth oauth) {
+                            return oauth.getTokenEndpointUri();
+                        } else {
+                            return null;
+                        }
+                    }));
+    }
+
+    private static String tokenUrlCustom(KafkaListenerAuthenticationCustom custom) {
+        for (var entry : custom.getListenerConfig().entrySet()) {
+            if (entry.getKey().endsWith(".sasl.jaas.config")) {
+                String jaasConfig = entry.getValue().toString();
+                Matcher tokenUriMatcher = OAUTH_TOKEN_URI_PATTERN.matcher(jaasConfig);
+
+                if (tokenUriMatcher.find()) {
+                    return tokenUriMatcher.group(1);
+                }
+            }
+        }
+
+        return null;
     }
 
     public String securityResourcePath(String subresource) {

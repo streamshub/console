@@ -14,10 +14,10 @@ import jakarta.inject.Named;
 
 import org.jboss.logging.Logger;
 
+import com.github.streamshub.console.api.service.StrimziResourceService;
 import com.github.streamshub.console.config.ConsoleConfig;
 
 import io.fabric8.kubernetes.api.model.HasMetadata;
-import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
 import io.fabric8.kubernetes.client.informers.ResourceEventHandler;
 import io.fabric8.kubernetes.client.informers.SharedIndexInformer;
@@ -33,10 +33,10 @@ public class InformerFactory {
     private static final Logger LOGGER = Logger.getLogger(InformerFactory.class);
 
     @Inject
-    KubernetesClient k8s;
+    ConsoleConfig consoleConfig;
 
     @Inject
-    ConsoleConfig consoleConfig;
+    StrimziResourceService strimziService;
 
     @Produces
     @ApplicationScoped
@@ -56,7 +56,7 @@ public class InformerFactory {
     Map<String, Map<String, Map<String, KafkaTopic>>> topics = new ConcurrentHashMap<>();
 
     SharedIndexInformer<KafkaNodePool> kafkaNodePoolInformer;
-    SharedIndexInformer<KafkaTopic> topicInformer;
+    SharedIndexInformer<? extends KafkaTopic> topicInformer;
 
     /**
      * Initialize CDI beans produced by this factory. Executed on application startup.
@@ -66,20 +66,20 @@ public class InformerFactory {
     void onStartup(@Observes Startup event) {
         if (consoleConfig.getKubernetes().isEnabled()) {
             try {
-                kafkaInformer = Holder.of(k8s.resources(Kafka.class).inAnyNamespace().inform());
+                kafkaInformer = Holder.of(strimziService.informKafkas());
             } catch (KubernetesClientException e) {
                 LOGGER.warnf("Failed to create Strimzi Kafka informer: %s", e.getMessage());
             }
 
             try {
-                kafkaNodePoolInformer = k8s.resources(KafkaNodePool.class).inAnyNamespace().inform();
+                kafkaNodePoolInformer = strimziService.informKafkaNodePools();
                 kafkaNodePoolInformer.addEventHandler(new KafkaNodePoolEventHandler(nodePools));
             } catch (KubernetesClientException e) {
                 LOGGER.warnf("Failed to create Strimzi KafkaNodePool informer: %s", e.getMessage());
             }
 
             try {
-                topicInformer = k8s.resources(KafkaTopic.class).inAnyNamespace().inform();
+                topicInformer = strimziService.informKafkaTopics();
                 topicInformer.addEventHandler(new KafkaTopicEventHandler(topics));
             } catch (KubernetesClientException e) {
                 LOGGER.warnf("Failed to create Strimzi KafkaTopic informer: %s", e.getMessage());
@@ -128,18 +128,29 @@ public class InformerFactory {
 
         @Override
         public void onAdd(T item) {
+            log(item, "add");
             map(item).ifPresent(map -> map.put(name(item), item));
         }
 
         @Override
         public void onUpdate(T oldItem, T item) {
+            log(item, "update");
             onDelete(oldItem, false);
             onAdd(item);
         }
 
         @Override
         public void onDelete(T item, boolean deletedFinalStateUnknown) {
+            log(item, "delete");
             map(item).ifPresent(map -> map.remove(name(item)));
+        }
+
+        void log(T item, String event) {
+            LOGGER.debugf("Event '%s' for %s resource %s/%s",
+                    event,
+                    item.getClass().getSimpleName(),
+                    item.getMetadata().getNamespace(),
+                    item.getMetadata().getName());
         }
 
         Optional<Map<String, T>> map(T item) {
