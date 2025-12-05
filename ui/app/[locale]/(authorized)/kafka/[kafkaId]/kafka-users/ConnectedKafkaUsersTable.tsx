@@ -6,6 +6,7 @@ import { useFilterParams } from "@/utils/useFilterParams";
 import { useOptimistic, useTransition } from "react";
 
 export type ConnectedKafkaUsersTableProps = {
+  kafkaId: string;
   kafkaUsers: KafkaUser[] | undefined;
   kafkaUserCount: number;
   page: number;
@@ -26,6 +27,7 @@ type State = {
 };
 
 export function ConnectedKafkaUsersTable({
+  kafkaId,
   kafkaUsers,
   kafkaUserCount,
   sort,
@@ -72,6 +74,7 @@ export function ConnectedKafkaUsersTable({
 
   return (
     <KafkaUsersTable
+      kafkaId={kafkaId}
       kafkaUsers={state.kafkaUsers}
       kafkaUserCount={kafkaUserCount}
       page={page}
