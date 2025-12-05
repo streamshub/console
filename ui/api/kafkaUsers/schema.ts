@@ -1,12 +1,17 @@
 import { z } from "zod";
 
+export const AuthorizationSchema = z.record(
+  z.string(),
+  z.string().nullable().optional(),
+);
+
 export const KafkaUserAttributesSchema = z.object({
   name: z.string(),
   namespace: z.string().nullable().optional(),
   creationTimestamp: z.string().nullable().optional(),
   username: z.string(),
   authenticationType: z.string(),
-  authorization: z.any().nullable().optional(),
+  authorization: AuthorizationSchema.nullable().optional(),
 });
 
 export const KafkaUserSchema = z.object({
@@ -43,3 +48,4 @@ export type KafkaUser = z.infer<typeof KafkaUserSchema>;
 export type KafkaUserAttributes = z.infer<typeof KafkaUserAttributesSchema>;
 export type KafkaUserResponse = z.infer<typeof KafkaUserResponseSchema>;
 export type KafkaUsersResponse = z.infer<typeof KafkaUsersResponseSchema>;
+export type Authorization = z.infer<typeof AuthorizationSchema>;

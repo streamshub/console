@@ -1,7 +1,10 @@
 import { KafkaUser } from "@/api/kafkaUsers/schema";
+import { DateTime } from "@/components/Format/DateTime";
 import { EmptyStateNoMatchFound } from "@/components/Table/EmptyStateNoMatchFound";
 import { TableView, TableViewProps } from "@/components/Table/TableView";
+import { Truncate } from "@/libs/patternfly/react-core";
 import { useTranslations } from "next-intl";
+import Link from "next/link";
 
 export const KafkaUserColumns = [
   "name",
@@ -14,6 +17,7 @@ export const KafkaUserColumns = [
 export type KafkaUserColumn = (typeof KafkaUserColumns)[number];
 
 export type KafkaUsersTableProps = {
+  kafkaId: string;
   kafkaUsers: KafkaUser[] | undefined;
   kafkaUserCount: number;
   page: number;
@@ -26,6 +30,7 @@ export type KafkaUsersTableProps = {
 >;
 
 export function KafkaUsersTable({
+  kafkaId,
   kafkaUsers,
   kafkaUserCount,
   filterUsername,
@@ -71,9 +76,18 @@ export function KafkaUsersTable({
       renderCell={({ row, column, key, Td }) => {
         switch (column) {
           case "name":
+            const canViewDetails =
+              row.meta.privileges?.includes("GET") === true;
+
             return (
               <Td key={key} dataLabel={t("name")}>
-                {row.attributes.name}
+                {canViewDetails ? (
+                  <Link href={`/kafka/${kafkaId}/kafka-users/${row.id}`}>
+                    <Truncate content={row.attributes.name} />
+                  </Link>
+                ) : (
+                  <Truncate content={row.attributes.name} />
+                )}
               </Td>
             );
 
@@ -87,9 +101,11 @@ export function KafkaUsersTable({
           case "creationTimestamp":
             return (
               <Td key={key} dataLabel={t("creationTimestamp")}>
-                {row.attributes.creationTimestamp
-                  ? new Date(row.attributes.creationTimestamp).toLocaleString()
-                  : "n/a"}
+                {row.attributes.creationTimestamp ? (
+                  <DateTime value={row.attributes.creationTimestamp} />
+                ) : (
+                  "-"
+                )}
               </Td>
             );
 

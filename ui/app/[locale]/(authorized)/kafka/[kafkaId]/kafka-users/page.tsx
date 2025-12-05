@@ -49,6 +49,7 @@ export default function KafkaUsersPage({
             sort={sort}
             nextPageCursor={undefined}
             prevPageCursor={undefined}
+            kafkaId={""}
           />
         }
       >
@@ -87,7 +88,6 @@ async function AsyncKafkaUserTable({
     username,
   });
 
-  console.log("kafka users response", response);
   if (response.errors) {
     return <NoDataErrorState errors={response.errors} />;
   }
@@ -104,6 +104,7 @@ async function AsyncKafkaUserTable({
 
   return (
     <ConnectedKafkaUsersTable
+      kafkaId={kafkaId}
       kafkaUsers={kafkaUsers.data}
       kafkaUserCount={kafkaUsers.meta.page.total || 0}
       page={kafkaUsers.meta.page.pageNumber || 0}

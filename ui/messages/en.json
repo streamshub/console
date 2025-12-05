@@ -759,6 +759,9 @@
     "creationTimestamp": "Creation Time",
     "username": "Username",
     "authentication": "Authentication",
-    "title": "Kafka Users"
+    "title": "Kafka Users",
+    "no_authorization": "No authorization rules",
+    "authorization": "Authorization",
+    "kafka_user": "Kafka User"
   }
 }
