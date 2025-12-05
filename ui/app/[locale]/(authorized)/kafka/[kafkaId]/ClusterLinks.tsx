@@ -31,6 +31,10 @@ export function ClusterLinks({ kafkaDetail }: { kafkaDetail: ClusterDetail }) {
         <NavItemLink url={`/kafka/${kafkaId}/kafka-connect`}>
           {t("AppLayout.kafka_connect")}
         </NavItemLink>
+        <NavItemLink url={`/kafka/${kafkaId}/kafka-users`}>
+          {t("AppLayout.kafka_users")}
+        </NavItemLink>
+
         {/*
       <NavItemLink url={`/kafka/${kafkaId}/service-registry`}>
         Service registry
