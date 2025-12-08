@@ -81,46 +81,43 @@ export function ResetOffset({
   onOffsetSelect: (value: OffsetValue) => void;
 }) {
   const t = useTranslations("ConsumerGroupsTable");
-  let submitEnabled: boolean;
+  const isTopicSelected = selectTopic === "selectedTopic";
+  const isPartitionSelected = selectPartition === "selectedPartition";
+  const hasTopicName = typeof offset.topicName === "string" && offset.topicName.length > 0;
+  const hasPartition = typeof offset.partition === "number";
+  const hasCustomOffset = typeof offset.offset === "number";
+  const hasSpecificDateTime = typeof offset.offset === "string";
 
-  if (selectOffset === "specificDateTime") {
-    submitEnabled = (typeof offset.offset === "string");
-  } else if (selectOffset === "latest" || selectOffset === "earliest") {
-    submitEnabled = true;
-  } else if (selectOffset === "custom") {
-    submitEnabled = (selectTopic === "selectedTopic" &&
-            offset.topicName.length > 0 &&
-            selectPartition === "selectedPartition" &&
-            typeof offset.offset === "number");
-  } else if (selectOffset === "delete") {
-    submitEnabled = (selectTopic === "selectedTopic" &&
-            typeof offset.topicName === "string" &&
-            offset.topicName.length > 0 &&
-            (selectPartition === "allPartitions" ||
-            typeof offset.partition === "number"));
-  } else {
-    submitEnabled = false;
-  }
+  const submitEnabled = {
+    specificDateTime: () => hasSpecificDateTime,
+    latest: () => true,
+    earliest: () => true,
+    custom: () =>
+      isTopicSelected &&
+      hasTopicName &&
+      isPartitionSelected &&
+      hasCustomOffset,
+    delete: () =>
+      isTopicSelected &&
+      hasTopicName &&
+      (selectPartition === "allPartitions" || hasPartition),
+  }[selectOffset] ?? false;
 
   const isEnabled = submitEnabled;
 
-  let offsetOptions: { value: OffsetValue, label: string }[] = [];
+  const offsetOptions: { value: OffsetValue, label: string }[] = [
+    ...(isTopicSelected && isPartitionSelected
+      ? [{ value: "custom" as OffsetValue, label: t("offset.custom") }]
+      : []),
 
-  if (selectTopic === "selectedTopic" && selectPartition === "selectedPartition") {
-    offsetOptions.push({ value: "custom", label: t("offset.custom") });
-  }
-
-  offsetOptions.push(
     { value: "earliest", label: t("offset.earliest") },
     { value: "latest", label: t("offset.latest") },
-    {
-      value: "specificDateTime",
-      label: t("offset.specific_date_time"),
-    });
+    { value: "specificDateTime", label: t("offset.specific_date_time") },
 
-  if (selectTopic === "selectedTopic") {
-    offsetOptions.push({ value: "delete", label: t("offset.delete") });
-  }
+    ...(isTopicSelected
+      ? [{ value: "delete" as OffsetValue, label: t("offset.delete") }]
+      : []),
+  ];
 
   return (
     <Panel>
