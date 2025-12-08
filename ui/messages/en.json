@@ -762,6 +762,7 @@
     "title": "Kafka Users",
     "no_authorization": "No authorization rules",
     "authorization": "Authorization",
-    "kafka_user": "Kafka User"
+    "kafka_user": "Kafka User",
+    "no_kafka_users": "No kafka users"
   }
 }

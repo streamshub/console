@@ -50,7 +50,7 @@ export function KafkaUsersTable({
       perPage={perPage}
       onPageChange={onPageChange}
       data={kafkaUsers}
-      emptyStateNoData={<div>{t("KafkaUsersTable.no_kafka_users")}</div>}
+      emptyStateNoData={<div>{t("no_kafka_users")}</div>}
       emptyStateNoResults={
         <EmptyStateNoMatchFound onClear={onClearAllFilters!} />
       }

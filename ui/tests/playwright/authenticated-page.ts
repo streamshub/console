@@ -9,12 +9,15 @@ export class AuthenticatedPage {
 
   async goToClusterOverview() {
     await this.page.goto(this.baseUrl, {
-        waitUntil: 'domcontentloaded'
+      waitUntil: "domcontentloaded",
     });
   }
 
   async clickNav(name: string) {
-      this.page.locator("#page-sidebar").getByRole('link', { name: name }).click();
+    this.page
+      .locator("#page-sidebar")
+      .getByRole("link", { name: name })
+      .click();
   }
 
   async clickLink(text: string, where: "main" | "sidebar" = "main") {
@@ -40,7 +43,7 @@ export class AuthenticatedPage {
   async goToTopics(waitForLoaded = true) {
     await this.goToClusterOverview();
     await this.clickNav("Topics");
-    await expect(this.page.locator('h1').getByText('Topics')).toBeVisible();
+    await expect(this.page.locator("h1").getByText("Topics")).toBeVisible();
     if (waitForLoaded) {
       await this.waitForTableLoaded();
     }
@@ -51,7 +54,11 @@ export class AuthenticatedPage {
     await this.clickFirstLinkInTheTable("Topics");
     if (waitForLoaded) {
       // wait for 'Topics' link to be in the breadcrumbs
-      await expect(this.page.getByLabel('Breadcrumb').getByRole('link', { name: 'Topics' })).toBeVisible();
+      await expect(
+        this.page
+          .getByLabel("Breadcrumb")
+          .getByRole("link", { name: "Topics" }),
+      ).toBeVisible();
       await this.waitForTableLoaded();
     }
   }
@@ -59,14 +66,32 @@ export class AuthenticatedPage {
   async goToConsumerGroups(waitForLoaded = true) {
     await this.goToClusterOverview();
     await this.clickNav("Consumer groups");
-    await expect(this.page.locator('h1').getByText('Consumer groups')).toBeVisible();
+    await expect(
+      this.page.locator("h1").getByText("Consumer groups"),
+    ).toBeVisible();
+    if (waitForLoaded) {
+      await this.waitForTableLoaded();
+    }
+  }
+
+  async goToKafkaUser(waitForLoaded = true) {
+    await this.goToClusterOverview();
+    await this.clickNav("Kafka Users");
+    await expect(
+      this.page.locator("h1").getByText("Kafka Users"),
+    ).toBeVisible();
     if (waitForLoaded) {
       await this.waitForTableLoaded();
     }
   }
 
   async waitForTableLoaded() {
-    await expect(this.page.locator('div').filter({ hasText: /^Loading data$/ }).first()).toBeHidden();
+    await expect(
+      this.page
+        .locator("div")
+        .filter({ hasText: /^Loading data$/ })
+        .first(),
+    ).toBeHidden();
   }
 
   async clickFirstLinkInTheTable(tableLabel: string) {
