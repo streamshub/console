@@ -26,3 +26,19 @@ export const Default: Story = {
     cliCommand: `$ kafka-consumer-groups --bootstrap-server \${bootstrap-Server} --group --reset-offsets`,
   },
 };
+
+const DeletedOffsets = [
+  { topicName: "Topic A", partition: 0, offset: null },
+  { topicName: "Topic A", partition: 1, offset: 5678 },
+  { topicName: "Topic B", partition: 0, offset: null },
+  { topicName: "Topic C", partition: 1, offset: 221222 },
+];
+
+export const DeletedOffsetsStory: Story = {
+  args: {
+    consumerGroupName: "console_datagen_002-a",
+    newOffset: DeletedOffsets,
+    cliCommand:
+      "$ kafka-consumer-groups --bootstrap-server ${bootstrap-server} --group --reset-offsets",
+  },
+};

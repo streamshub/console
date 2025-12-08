@@ -46,23 +46,6 @@ export function Dryrun({
 }) {
   const t = useTranslations("ConsumerGroupsTable");
 
-  const onClickDownload = () => {
-    const data = {
-      consumerGroupName,
-      newOffset,
-    };
-    const jsonString = JSON.stringify(data, null, 2);
-    const blob = new Blob([jsonString], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "dryrun-result.json";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
-
   // Group offsets by topic
   const groupedTopics = newOffset.reduce<Record<string, NewOffset[]>>(
     (acc, offset) => {
