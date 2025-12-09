@@ -70,4 +70,75 @@ public class NodesPageSelectors {
         .withElementTbody().withComponentTable().withSubComponentTbody()
         .build();
 
+    // Rebalance
+
+    public static final String NPS_REBALANCE_TABLE_ITEMS = new CssBuilder(CssSelectors.PAGES_CONTENT)
+        .withChild()
+        .withElementDiv().withComponentPage().withSubComponentMainBody().withChild()
+        .withElementDiv().withLayoutGrid().withChild()
+        .withElementDiv().withLayoutGrid().withSubComponentItem().nth(3).withChild()
+        .withElementDiv().withComponentScrollOuterWrapper().withChild()
+        .withElementDiv().withComponentScrollInnerWrapper().withChild()
+        .withElementTable().withComponentTable().withChild()
+        .withElementTbody().withComponentTable().withSubComponentTbody().withChild()
+        .withElementTr().withComponentTable().withSubComponentTr()
+        .build();
+
+
+    public static final String NPS_REBALANCE_PROPOSAL_DROPDOWN_BUTTON = new CssBuilder(NPS_REBALANCE_TABLE_ITEMS)
+        .withChild()
+        .withElementTd().withComponentTable().withSubComponentTd().nth(1).withChild()
+        .withElementButton().withComponentButton().withChild()
+        .build();
+
+    public static final String NPS_REBALANCE_PROPOSAL_STATUS = new CssBuilder(NPS_REBALANCE_TABLE_ITEMS)
+        .withChild()
+        .withElementTd().withComponentTable().withSubComponentTd().nth(3).withChild()
+        .withElementDiv().withChild()
+        .withElementSpan()
+        .build();
+
+    public static final String NPS_REBALANCE_PROPOSAL_STATUS = new CssBuilder(NPS_REBALANCE_TABLE_ITEMS)
+        .withChild()
+        .withElementTd().withComponentTable().withSubComponentTd().nth(3).withChild()
+        .withElementDiv().withChild()
+        .withElementSpan()
+        .build();
+
+    public static final String NPS_REBALANCE_PROPOSAL_UPDATED_DATE = new CssBuilder(NPS_REBALANCE_TABLE_ITEMS)
+        .withChild()
+        .withElementTd().withComponentTable().withSubComponentTd().nth(4).withChild()
+        .withElementTime()
+        .build();
+
+    public static final String NPS_REBALANCE_PROPOSAL_NAME = new CssBuilder(NPS_REBALANCE_TABLE_ITEMS)
+        .withChild()
+        .withElementTd().withComponentTable().withSubComponentTd().nth(2).withChild()
+        .withElementA()
+        .build();
+
+
+    public static final String NPS_REBALANCE_PROPOSAL_DROPDOWN_ITEMS = new CssBuilder(NPS_REBALANCE_TABLE_ITEMS)
+        .withChild()
+        .withElementTd().withComponentTable().withSubComponentTd().withChild()
+        .withElementDiv().withComponentTable().withSubComponentExpandableRowContent().withChild()
+        .withElementDl().withComponentDescriptionList().withChild()
+        .withElementDiv().withLayoutFlex()
+        .build();
+
+    public static final String NPS_REBALANCE_PROPOSAL_DROPDOWN_MODE = new CssBuilder(NPS_REBALANCE_PROPOSAL_DROPDOWN_ITEMS)
+        .withChild()
+        .withElementDiv().nth(2).withChild()
+        .withElementDiv().withComponentDescriptionList().withSubComponentGroup().withChild()
+        .withElementDd().withComponentDescriptionList().withSubComponentDescription().withChild()
+        .withElementDiv().withComponentDescriptionList().withSubComponentText()
+        .build();
+
+    public static final String NPS_REBALANCE_PROPOSAL_DROPDOWN_APPROVAL = new CssBuilder(NPS_REBALANCE_PROPOSAL_DROPDOWN_ITEMS)
+        .withChild()
+        .withElementDiv().nth(1).withChild()
+        .withElementDiv().withComponentDescriptionList().withSubComponentGroup().withChild()
+        .withElementDd().withComponentDescriptionList().withSubComponentDescription().withChild()
+        .withElementDiv().withComponentDescriptionList().withSubComponentText()
+        .build();
 }
