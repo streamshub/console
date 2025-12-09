@@ -23,6 +23,7 @@ import io.strimzi.api.kafka.model.kafka.listener.KafkaListenerType;
 import io.strimzi.api.kafka.model.nodepool.KafkaNodePool;
 import io.strimzi.api.kafka.model.nodepool.KafkaNodePoolBuilder;
 import io.strimzi.api.kafka.model.nodepool.ProcessRoles;
+import io.strimzi.api.kafka.model.rebalance.KafkaRebalanceBuilder;
 import io.strimzi.api.kafka.model.user.KafkaUser;
 import io.strimzi.api.kafka.model.user.KafkaUserBuilder;
 import io.strimzi.api.kafka.model.user.acl.AclOperation;
@@ -42,7 +43,17 @@ public class KafkaSetup {
             getDefaultBrokerNodePools(namespaceName, clusterName, Constants.REGULAR_BROKER_REPLICAS),
             getDefaultControllerNodePools(namespaceName, clusterName, Constants.REGULAR_CONTROLLER_REPLICAS),
             getDefaultKafkaUser(namespaceName, clusterName),
-            getDefaultKafka(namespaceName, clusterName, Environment.ST_KAFKA_VERSION, Constants.REGULAR_BROKER_REPLICAS)
+            getDefaultKafka(namespaceName, clusterName, Environment.ST_KAFKA_VERSION, Constants.REGULAR_BROKER_REPLICAS).build()
+        );
+    }
+
+    public static void setupKafkaWithCcIfNeeded(String namespaceName, String clusterName) {
+        setupKafkaIfNeeded(
+            getDefaultKafkaConfigMap(namespaceName, clusterName),
+            getDefaultBrokerNodePools(namespaceName, clusterName, Constants.REGULAR_BROKER_REPLICAS),
+            getDefaultControllerNodePools(namespaceName, clusterName, Constants.REGULAR_CONTROLLER_REPLICAS),
+            getDefaultKafkaUser(namespaceName, clusterName),
+            getKafkaWithCc(namespaceName, clusterName, Environment.ST_KAFKA_VERSION, Constants.REGULAR_BROKER_REPLICAS).build()
         );
     }
 
@@ -232,7 +243,7 @@ public class KafkaSetup {
      * @param replicas the number of Kafka broker replicas to configure
      * @return a fully built {@link Kafka} resource object with the default configuration
      */
-    public static Kafka getDefaultKafka(String namespaceName, String clusterName, String kafkaVersion, int replicas) {
+    public static KafkaBuilder getDefaultKafka(String namespaceName, String clusterName, String kafkaVersion, int replicas) {
         // This helps to avoid issues with same-name kafka in different namespace exposing the same hostname
         String hashedNamespace = Utils.hashStub(namespaceName);
         return new KafkaBuilder()
@@ -312,7 +323,39 @@ public class KafkaSetup {
                         .endValueFrom()
                     .endJmxPrometheusExporterMetricsConfig()
                 .endKafka()
-            .endSpec()
-            .build();
+            .endSpec();
+    }
+
+
+    public static KafkaBuilder getKafkaWithCc(String namespaceName, String clusterName, String kafkaVersion, int replicas) {
+        // contains fastest reliable config for CC
+        return getDefaultKafka(namespaceName, clusterName, kafkaVersion, replicas).editSpec()
+            .editKafka()
+                .addToConfig("cruise.control.metrics.reporter.metrics.reporting.interval.ms", 5_000)
+                .addToConfig("cruise.control.metrics.reporter.metadata.max.age.ms", 4_000)
+            .endKafka()
+            .editOrNewCruiseControl()
+                .addToConfig("max.active.user.tasks", 10)
+                .addToConfig("sample.store.topic.replication.factor", 1)
+                .addToConfig("broker.sample.store.topic.partition.count", 1)
+                .addToConfig("metadata.max.age.ms", 4_000)
+                .addToConfig("metric.sampling.interval.ms", 5_000)
+                .addToConfig("cruise.control.metrics.reporter.metrics.reporting.interval.ms", 5_000)
+                .addToConfig("skip.sample.store.topic.rack.awareness.check", true)
+            .endCruiseControl()
+            .endSpec();
+    }
+
+
+    public static KafkaRebalanceBuilder getKafkaRebalance(String namespace, String clusterName) {
+        return new KafkaRebalanceBuilder()
+            .withApiVersion(Constants.STRIMZI_API_V1)
+            .withNewMetadata()
+                .addToLabels(ResourceLabels.STRIMZI_CLUSTER_LABEL, clusterName)
+                .withNamespace(namespace)
+                .withName(namespace)
+            .endMetadata()
+            .withNewSpec()
+            .endSpec();
     }
 }
