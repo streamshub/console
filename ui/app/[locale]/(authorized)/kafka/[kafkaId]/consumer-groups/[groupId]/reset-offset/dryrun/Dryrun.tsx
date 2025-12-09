@@ -29,7 +29,7 @@ import { useTranslations } from "next-intl";
 export type NewOffset = {
   topicName: string;
   partition: number;
-  offset: number | string;
+  offset: number | string | null;
   metadata?: string;
 };
 
@@ -45,23 +45,6 @@ export function Dryrun({
   cliCommand: string;
 }) {
   const t = useTranslations("ConsumerGroupsTable");
-
-  const onClickDownload = () => {
-    const data = {
-      consumerGroupName,
-      newOffset,
-    };
-    const jsonString = JSON.stringify(data, null, 2);
-    const blob = new Blob([jsonString], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "dryrun-result.json";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
 
   // Group offsets by topic
   const groupedTopics = newOffset.reduce<Record<string, NewOffset[]>>(
@@ -165,7 +148,7 @@ export function Dryrun({
                                           {offsets.map(
                                             ({ partition, offset }) => (
                                               <ListItem key={partition}>
-                                                {offset}
+                                                {offset ?? t("offset_deleted")}
                                               </ListItem>
                                             ),
                                           )}

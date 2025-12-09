@@ -1,10 +1,11 @@
 package com.github.streamshub.console.api.model;
 
 import java.io.IOException;
+import java.util.Objects;
+import java.util.Optional;
 
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
@@ -59,7 +60,7 @@ public record OffsetAndMetadata(
             implementation = Object.class,
             oneOf = { Long.class, OffsetSpec.class })
         @JsonDeserialize(using = OffsetAndMetadata.EitherLongOrStringDeserializer.class)
-        @NotNull(payload = ErrorCategory.InvalidResource.class)
+        @JsonInclude(Include.ALWAYS)
         Either<
             @Min(value = 0, payload = ErrorCategory.InvalidResource.class)
             Long,
@@ -77,6 +78,46 @@ public record OffsetAndMetadata(
 
         Integer leaderEpoch
 ) {
+
+    public OffsetAndMetadata(String topicId, org.apache.kafka.common.TopicPartition topicPartition) {
+        this(topicId, topicPartition.topic(), topicPartition.partition(), null, null, null, null, null);
+    }
+
+    public OffsetAndMetadata(String topicId, org.apache.kafka.common.TopicPartition topicPartition,
+            org.apache.kafka.clients.consumer.OffsetAndMetadata kafkaOffset) {
+        this(topicId,
+            topicPartition.topic(),
+            topicPartition.partition(),
+            Either.of(kafkaOffset.offset()),
+            null,
+            null,
+            kafkaOffset.metadata(),
+            kafkaOffset.leaderEpoch().orElse(null));
+    }
+
+    public boolean isDeleted() {
+        return Objects.isNull(offset);
+    }
+
+    public boolean hasAbsoluteOffset() {
+        return offset != null && offset.isPrimaryPresent();
+    }
+
+    public long absoluteOffset() {
+        return offset.getPrimary().longValue();
+    }
+
+    public Optional<Long> optionalAbsoluteOffset() {
+        return offset != null ? offset.getOptionalPrimary() : Optional.empty();
+    }
+
+    public boolean hasOffsetSpec() {
+        return offset != null && offset.isPrimaryEmpty();
+    }
+
+    public String offsetSpec() {
+        return offset.getAlternate();
+    }
 
     @Schema(ref = "OffsetSpec")
     private static class OffsetSpec { }
@@ -100,6 +141,8 @@ public record OffsetAndMetadata(
                 return Either.of(node.asLong());
             } else if (node.isTextual()) {
                 return Either.ofAlternate(node.asText());
+            } else if (node.isNull()) {
+                return null;
             }
 
             throw MismatchedInputException.from(parser, Either.class, "Unable to parse offset");

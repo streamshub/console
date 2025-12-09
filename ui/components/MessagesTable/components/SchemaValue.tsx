@@ -45,11 +45,7 @@ export function SchemaValue({
 
   const actions = (
     <CodeBlockAction>
-      <ClipboardCopyButton
-        onClick={copyToClipboard}
-        id={"copy-clipboard"}
-        textId={"copy-clipboard"}
-      >
+      <ClipboardCopyButton onClick={copyToClipboard} id={"copy-clipboard"}>
         {copyStatus}
       </ClipboardCopyButton>
       <Button

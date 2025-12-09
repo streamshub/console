@@ -10,6 +10,7 @@ import org.apache.kafka.common.errors.AuthenticationException;
 import org.apache.kafka.common.errors.AuthorizationException;
 import org.apache.kafka.common.errors.GroupIdNotFoundException;
 import org.apache.kafka.common.errors.GroupNotEmptyException;
+import org.apache.kafka.common.errors.GroupSubscribedToTopicException;
 import org.apache.kafka.common.errors.InvalidConfigurationException;
 import org.apache.kafka.common.errors.InvalidGroupIdException;
 import org.apache.kafka.common.errors.InvalidPartitionsException;
@@ -95,6 +96,21 @@ public class KafkaClientExceptionHandlers {
         @Override
         public boolean handlesException(Throwable thrown) {
             return thrown instanceof GroupNotEmptyException;
+        }
+    }
+
+    @Provider
+    @ApplicationScoped
+    public static class GroupSubscribedToTopicExceptionHandler
+        extends AbstractClientExceptionHandler<GroupSubscribedToTopicException> {
+
+        public GroupSubscribedToTopicExceptionHandler() {
+            super(ErrorCategory.ResourceConflict.class, "The consumer group is not empty", (String) null);
+        }
+
+        @Override
+        public boolean handlesException(Throwable thrown) {
+            return thrown instanceof GroupSubscribedToTopicException;
         }
     }
 

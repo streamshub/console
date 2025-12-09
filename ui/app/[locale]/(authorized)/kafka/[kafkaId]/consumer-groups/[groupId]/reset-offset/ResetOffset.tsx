@@ -60,7 +60,7 @@ export function ResetOffset({
 }: {
   cliCommand: string;
   topics: { topicId: string; topicName: string }[];
-  partitions: number[];
+  partitions: { topicId: string; partitionNumber: number }[];
   selectTopic: TopicSelection;
   selectPartition: partitionSelection;
   selectOffset: OffsetValue;
@@ -81,19 +81,43 @@ export function ResetOffset({
   onOffsetSelect: (value: OffsetValue) => void;
 }) {
   const t = useTranslations("ConsumerGroupsTable");
+  const isTopicSelected = selectTopic === "selectedTopic";
+  const isPartitionSelected = selectPartition === "selectedPartition";
+  const hasTopicName = typeof offset.topicName === "string" && offset.topicName.length > 0;
+  const hasPartition = typeof offset.partition === "number";
+  const hasCustomOffset = typeof offset.offset === "number";
+  const hasSpecificDateTime = typeof offset.offset === "string";
 
-  const isEnabled =
-    (selectTopic === "allTopics" ||
-      (selectTopic === "selectedTopic" &&
-        offset.topicName &&
-        (selectPartition === "allPartitions" ||
-          (selectPartition === "selectedPartition" &&
-            offset.partition !== undefined)))) &&
-    (selectOffset === "custom"
-      ? offset.offset !== undefined && offset.offset !== ""
-      : selectOffset === "specificDateTime"
-        ? offset.offset
-        : selectOffset === "latest" || selectOffset === "earliest");
+  const submitEnabled = {
+    specificDateTime: () => hasSpecificDateTime,
+    latest: () => true,
+    earliest: () => true,
+    custom: () =>
+      isTopicSelected &&
+      hasTopicName &&
+      isPartitionSelected &&
+      hasCustomOffset,
+    delete: () =>
+      isTopicSelected &&
+      hasTopicName &&
+      (selectPartition === "allPartitions" || hasPartition),
+  }[selectOffset] ?? false;
+
+  const isEnabled = submitEnabled;
+
+  const offsetOptions: { value: OffsetValue, label: string }[] = [
+    ...(isTopicSelected && isPartitionSelected
+      ? [{ value: "custom" as OffsetValue, label: t("offset.custom") }]
+      : []),
+
+    { value: "earliest", label: t("offset.earliest") },
+    { value: "latest", label: t("offset.latest") },
+    { value: "specificDateTime", label: t("offset.specific_date_time") },
+
+    ...(isTopicSelected
+      ? [{ value: "delete" as OffsetValue, label: t("offset.delete") }]
+      : []),
+  ];
 
   return (
     <Panel>
@@ -101,6 +125,18 @@ export function ResetOffset({
         <PanelMainBody>
           {error?.GeneralError && (
             <Alert variant="danger" isInline title={error.GeneralError} />
+          )}
+          {error?.PartitionError && (
+            <FormHelperText>
+              <HelperText>
+                <HelperTextItem
+                  icon={<ExclamationCircleIcon />}
+                  variant={"error"}
+                >
+                  {error.PartitionError}
+                </HelperTextItem>
+              </HelperText>
+            </FormHelperText>
           )}
           <Form>
             <FormSection title={t("target")}>
@@ -150,28 +186,16 @@ export function ResetOffset({
                     isChecked={selectPartition === "selectedPartition"}
                     onChange={() => onPartitionSelect("selectedPartition")}
                   />
-                  {error?.PartitionError && (
-                    <FormHelperText>
-                      <HelperText>
-                        <HelperTextItem
-                          icon={<ExclamationCircleIcon />}
-                          variant={"error"}
-                        >
-                          {error.PartitionError}
-                        </HelperTextItem>
-                      </HelperText>
-                    </FormHelperText>
-                  )}
                 </FormGroup>
               )}
               {selectTopic === "selectedTopic" &&
                 selectPartition === "selectedPartition" && (
                   <SelectComponent<number>
                     options={Array.from(new Set(partitions))
-                      .sort((a, b) => a - b)
+                      .sort((a, b) => a.partitionNumber - b.partitionNumber)
                       .map((partition) => ({
-                        value: partition,
-                        label: `${partition}`,
+                        value: partition.partitionNumber,
+                        label: `${partition.partitionNumber}`,
                       }))}
                     value={offset.partition}
                     placeholder={"Select partition"}
@@ -182,27 +206,7 @@ export function ResetOffset({
             <FormSection title={t("offset_details")}>
               <FormGroup label={t("new_offset")}>
                 <SelectComponent<OffsetValue>
-                  options={
-                    selectTopic === "allTopics" ||
-                    selectPartition === "allPartitions"
-                      ? [
-                          {
-                            value: "specificDateTime",
-                            label: t("offset.specific_date_time"),
-                          },
-                          { value: "latest", label: t("offset.latest") },
-                          { value: "earliest", label: t("offset.earliest") },
-                        ]
-                      : [
-                          { value: "custom", label: t("offset.custom") },
-                          { value: "latest", label: t("offset.latest") },
-                          { value: "earliest", label: t("offset.earliest") },
-                          {
-                            value: "specificDateTime",
-                            label: t("offset.specific_date_time"),
-                          },
-                        ]
-                  }
+                  options={offsetOptions}
                   value={selectOffset}
                   onChange={onOffsetSelect}
                   placeholder="Select an offset"
