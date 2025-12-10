@@ -1,6 +1,6 @@
 "use client";
 import { useFilterParams } from "@/utils/useFilterParams";
-import { useOptimistic, useState, useTransition } from "react";
+import { useOptimistic, useState, useTransition, useEffect } from "react";
 import {
   RebalanceTable,
   RebalanceTableColumn,
@@ -23,6 +23,7 @@ import {
 import { ValidationModal } from "./ValidationModal";
 import { patchRebalance } from "@/api/rebalance/actions";
 import { useAlert } from "@/components/AlertContext";
+import { clientConfig as config } from "@/utils/config";
 
 export type ConnectedReabalancesTableProps = {
   rebalances: RebalanceList[] | undefined;
@@ -72,6 +73,14 @@ export function ConnectedReabalancesTable({
   const [isAlertVisible, setAlertVisible] = useState(true);
 
   const [isModalOpen, setModalOpen] = useState(false);
+
+  const [showLearning, setShowLearning] = useState(false);
+
+  useEffect(() => {
+    config().then((cfg) => {
+      setShowLearning(cfg.showLearning);
+    });
+  }, []);
 
   const [approvalStatus, setApprovalStatus] = useState<
     "approve" | "stop" | "refresh"
@@ -158,9 +167,11 @@ export function ConnectedReabalancesTable({
             title={t("cruisecontrol_enable")}
             actionClose={<AlertActionCloseButton onClose={handleClose} />}
             actionLinks={
-              <AlertActionLink component="a" href="#">
-                {t("learn_more_about_cruisecontrol_enablement")}
-              </AlertActionLink>
+              showLearning ? (
+                <AlertActionLink component="a" href={t("external_link")}>
+                  {t("learn_more_about_cruisecontrol_enablement")}
+                </AlertActionLink>
+              ) : null
             }
           />
         )}
