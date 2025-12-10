@@ -125,6 +125,17 @@
           "access.token.claim": "true",
           "claim.name": "groups"
         }
+      }, {
+        "name": "Alternate Groups Mapper",
+        "protocol": "openid-connect",
+        "protocolMapper": "oidc-group-membership-mapper",
+        "consentRequired": false,
+        "config": {
+          "userinfo.token.claim": "true",
+          "id.token.claim": "true",
+          "access.token.claim": "true",
+          "claim.name": "memberOf"
+        }
       }]
     }, {
       "clientId": "registry-api",

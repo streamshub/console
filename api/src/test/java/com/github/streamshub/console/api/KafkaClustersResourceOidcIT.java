@@ -271,11 +271,11 @@ class KafkaClustersResourceOidcIT {
     @ParameterizedTest
     // alice and bob are on team-a; susan is only on team-b
     @CsvSource({
-        "alice, OK",
-        "bob, OK",
-        "susan, FORBIDDEN",
+        "alice, groups, OK",
+        "bob, memberOf, OK",
+        "susan, groups, FORBIDDEN",
     })
-    void testDescribeClusterWithGroupAccess(String username, Status expectedStatus) {
+    void testDescribeClusterWithGroupAccess(String username, String claimName, Status expectedStatus) {
         // team-a group is given admin access Kafkas
         utils.updateSecurity(consoleConfig.getSecurity(), new GlobalSecurityConfigBuilder()
                 .addNewRole()
@@ -287,7 +287,7 @@ class KafkaClustersResourceOidcIT {
                 .endRole()
                 .addNewSubject()
                     // here we define the subject in terms of group membership
-                    .withClaim("groups")
+                    .withClaim(claimName)
                     .withInclude("team-a")
                     .withRoleNames("admin-a")
                 .endSubject()
