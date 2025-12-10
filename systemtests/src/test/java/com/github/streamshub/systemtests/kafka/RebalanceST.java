@@ -78,6 +78,7 @@ public class RebalanceST extends AbstractST {
         PwUtils.waitForLocatorAndClick(tcc, NodesPageSelectors.NPS_PROPOSAL_ACTION_APPROVE_BUTTON);
         PwUtils.waitForLocatorAndClick(tcc, NodesPageSelectors.NPS_PROPOSAL_MODAL_CONFIRM_BUTTON);
 
+        LOGGER.info("Verify that UI caused rebalancing");
         WaitUtils.waitForKafkaRebalanceProposalStatus(tcc.namespace(), rebalanceName, KafkaRebalanceState.Rebalancing);
         PwUtils.waitForContainsText(tcc, NodesPageSelectors.NPS_REBALANCE_PROPOSAL_STATUS, KafkaRebalanceState.Rebalancing.name(), true);
     }
