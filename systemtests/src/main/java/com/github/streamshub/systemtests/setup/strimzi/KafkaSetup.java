@@ -347,13 +347,13 @@ public class KafkaSetup {
     }
 
 
-    public static KafkaRebalanceBuilder getKafkaRebalance(String namespace, String clusterName) {
+    public static KafkaRebalanceBuilder getKafkaRebalance(String namespace, String clusterName, String rebalanceName) {
         return new KafkaRebalanceBuilder()
             .withApiVersion(Constants.STRIMZI_API_V1)
             .withNewMetadata()
                 .addToLabels(ResourceLabels.STRIMZI_CLUSTER_LABEL, clusterName)
                 .withNamespace(namespace)
-                .withName(namespace)
+                .withName(rebalanceName)
             .endMetadata()
             .withNewSpec()
             .endSpec();

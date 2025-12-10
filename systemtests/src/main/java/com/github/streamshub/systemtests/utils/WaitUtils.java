@@ -24,6 +24,8 @@ import io.skodjob.testframe.resources.KubeResourceManager;
 import io.skodjob.testframe.wait.Wait;
 import io.strimzi.api.kafka.model.kafka.Kafka;
 import io.strimzi.api.kafka.model.nodepool.KafkaNodePool;
+import io.strimzi.api.kafka.model.rebalance.KafkaRebalance;
+import io.strimzi.api.kafka.model.rebalance.KafkaRebalanceState;
 import io.strimzi.api.kafka.model.topic.KafkaTopic;
 import org.apache.logging.log4j.Logger;
 
@@ -503,6 +505,20 @@ public class WaitUtils {
             TestFrameConstants.GLOBAL_POLL_INTERVAL_SHORT, TestFrameConstants.GLOBAL_TIMEOUT_SHORT,
             () -> {
                 return KubeResourceManager.get().kubeClient().getLogsFromPod(namespace, podName).contains(expectedLog);
+            });
+    }
+
+    public static void waitForKafkaRebalanceProposalStatus(String namespace, String rebalanceName, KafkaRebalanceState kafkaRebalanceState) {
+        Wait.until(String.format("KafkaRabalance %s/%s to be in state [%s]", namespace, rebalanceName, kafkaRebalanceState),
+            TestFrameConstants.GLOBAL_POLL_INTERVAL_MEDIUM, TestFrameConstants.GLOBAL_TIMEOUT_MEDIUM,
+            () -> {
+                 KafkaRebalance rebalance = ResourceUtils.getKubeResource(KafkaRebalance.class, namespace, rebalanceName);
+                 return rebalance != null && rebalance.getStatus() != null &&
+                    rebalance.getStatus().getConditions().stream()
+                        .filter(c -> c.getType().equals(kafkaRebalanceState.name()))
+                        .map(c -> c.getStatus().equals("True"))
+                        .findFirst()
+                        .orElse(false);
             });
     }
 }
