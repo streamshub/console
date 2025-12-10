@@ -645,6 +645,7 @@
     "cancel": "Cancel",
     "cruisecontrol_enable": "Cruise Control is enabled",
     "learn_more_about_cruisecontrol_enablement": "Learn more about Cruise Control enablement",
+    "external_link": "https://strimzi.io/docs/operators/latest/deploying#cruise-control-concepts-str",
     "approve": "Approve",
     "stop": "Stop",
     "rebalance_name": "Name",
