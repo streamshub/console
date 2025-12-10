@@ -763,6 +763,15 @@
     "no_authorization": "No authorization rules",
     "authorization": "Authorization",
     "kafka_user": "Kafka User",
-    "no_kafka_users": "No kafka users"
+    "no_kafka_users": "No kafka users",
+    "authorization_columns": {
+        "type": "Type",
+        "resourceName": "Name",
+        "patternType": "Pattern Type",
+        "host": "Host",
+        "operations": "Operations",
+        "permissionType": "Permission"
+
+    }
   }
 }

@@ -15,8 +15,15 @@ const mockUser: KafkaUser = {
     authenticationType: "scram-sha-512",
     creationTimestamp: new Date().toISOString(),
     authorization: {
-      operation: "read",
-      topic: "payments",
+      accessControls: [
+        {
+          type: "topic",
+          patternType: "literal",
+          resourceName: "payments",
+          operations: ["Read", "Write"],
+          permissionType: "allow",
+        },
+      ],
     },
   },
   relationships: {},

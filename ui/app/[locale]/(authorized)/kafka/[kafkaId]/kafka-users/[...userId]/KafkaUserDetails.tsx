@@ -19,6 +19,15 @@ import { TableVariant } from "@patternfly/react-table";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 
+export const AuthorizationColumns = [
+  "type",
+  "resourceName",
+  "patternType",
+  "host",
+  "operations",
+  "permissionType",
+] as const;
+
 export function KafkaUserDetails({
   kafkaUser,
 }: {
@@ -46,7 +55,7 @@ export function KafkaUserDetails({
     authenticationType,
     authorization,
   } = kafkaUser.attributes;
-  const authorizationData = Object.entries(authorization || {});
+  const authorizationData = authorization?.accessControls ?? [];
 
   return (
     <Flex direction={{ default: "column" }} gap={{ default: "gap2xl" }}>
@@ -100,32 +109,98 @@ export function KafkaUserDetails({
                 onPageChange={() => {}}
                 emptyStateNoData={<div>{t("no_authorization")}</div>}
                 emptyStateNoResults={<div></div>}
-                columns={["property", "value"] as const}
+                columns={AuthorizationColumns}
                 data={authorizationData}
                 renderHeader={({ column, key, Th }) => {
                   switch (column) {
-                    case "property":
+                    case "type":
                       return (
-                        <Th key={key} width={60}>
-                          {"Property"}
+                        <Th key={key}>{t("authorization_columns.type")}</Th>
+                      );
+                    case "resourceName":
+                      return (
+                        <Th key={key}>
+                          {t("authorization_columns.resourceName")}
                         </Th>
                       );
-                    case "value":
-                      return <Th key={key}>{"Value"}</Th>;
+                    case "patternType":
+                      return (
+                        <Th key={key}>
+                          {t("authorization_columns.patternType")}
+                        </Th>
+                      );
+                    case "host":
+                      return (
+                        <Th key={key}>{t("authorization_columns.host")}</Th>
+                      );
+                    case "operations":
+                      return (
+                        <Th key={key}>
+                          {t("authorization_columns.operations")}
+                        </Th>
+                      );
+                    case "permissionType":
+                      return (
+                        <Th key={key}>
+                          {t("authorization_columns.permissionType")}
+                        </Th>
+                      );
                   }
                 }}
-                renderCell={({ column, key, row: [name, value], Td }) => {
+                renderCell={({ column, key, row, Td }) => {
                   switch (column) {
-                    case "property":
+                    case "type":
                       return (
-                        <Td key={key} dataLabel={"Property"}>
-                          {name}
+                        <Td
+                          key={key}
+                          dataLabel={t("authorization_columns.type")}
+                        >
+                          {row.type}
                         </Td>
                       );
-                    case "value":
+                    case "resourceName":
                       return (
-                        <Td key={key} dataLabel={"Value"}>
-                          {value ?? t("n_a")}
+                        <Td
+                          key={key}
+                          dataLabel={t("authorization_columns.resourceName")}
+                        >
+                          {row.resourceName ?? "-"}
+                        </Td>
+                      );
+                    case "patternType":
+                      return (
+                        <Td
+                          key={key}
+                          dataLabel={t("authorization_columns.patternType")}
+                        >
+                          {row.patternType ?? "-"}
+                        </Td>
+                      );
+                    case "host":
+                      return (
+                        <Td
+                          key={key}
+                          dataLabel={t("authorization_columns.host")}
+                        >
+                          {row.host ?? "-"}
+                        </Td>
+                      );
+                    case "operations":
+                      return (
+                        <Td
+                          key={key}
+                          dataLabel={t("authorization_columns.operations")}
+                        >
+                          {row.operations?.join(", ")}
+                        </Td>
+                      );
+                    case "permissionType":
+                      return (
+                        <Td
+                          key={key}
+                          dataLabel={t("authorization_columns.permissionType")}
+                        >
+                          {row.permissionType}
                         </Td>
                       );
                   }

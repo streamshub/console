@@ -37,8 +37,8 @@ test("Kafka Users page: shows table headers or empty state", async ({
       "Creation Time",
     );
     expect(await headerRow.locator("th").nth(3).innerText()).toBe("Username");
-    expect(await headerRow.locator("th").nth(4).innerText()).toMatch(
-      /Authentication/i,
+    expect(await headerRow.locator("th").nth(4).innerText()).toBe(
+      "Authentication",
     );
   });
 

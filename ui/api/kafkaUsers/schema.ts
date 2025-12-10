@@ -1,9 +1,13 @@
 import { z } from "zod";
 
-export const AuthorizationSchema = z.record(
-  z.string(),
-  z.string().nullable().optional(),
-);
+export const AuthorizationSchema = z.object({
+  type: z.string(),
+  resourceName: z.string().nullable().optional(),
+  patternType: z.string().nullable().optional(),
+  host: z.string().nullable().optional(),
+  operations: z.array(z.string()),
+  permissionType: z.string(),
+});
 
 export const KafkaUserAttributesSchema = z.object({
   name: z.string(),
@@ -11,7 +15,12 @@ export const KafkaUserAttributesSchema = z.object({
   creationTimestamp: z.string().nullable().optional(),
   username: z.string(),
   authenticationType: z.string(),
-  authorization: AuthorizationSchema.nullable().optional(),
+  authorization: z
+    .object({
+      accessControls: z.array(AuthorizationSchema),
+    })
+    .nullable()
+    .optional(),
 });
 
 export const KafkaUserSchema = z.object({
