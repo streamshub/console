@@ -509,11 +509,11 @@ public class WaitUtils {
     }
 
     public static void waitForKafkaRebalanceProposalStatus(String namespace, String rebalanceName, KafkaRebalanceState kafkaRebalanceState) {
-        Wait.until(String.format("KafkaRabalance %s/%s to be in state [%s]", namespace, rebalanceName, kafkaRebalanceState),
+        Wait.until(String.format("KafkaRebalance %s/%s to be in state [%s]", namespace, rebalanceName, kafkaRebalanceState),
             TestFrameConstants.GLOBAL_POLL_INTERVAL_MEDIUM, TestFrameConstants.GLOBAL_TIMEOUT_MEDIUM,
             () -> {
-                 KafkaRebalance rebalance = ResourceUtils.getKubeResource(KafkaRebalance.class, namespace, rebalanceName);
-                 return rebalance != null && rebalance.getStatus() != null &&
+                KafkaRebalance rebalance = ResourceUtils.getKubeResource(KafkaRebalance.class, namespace, rebalanceName);
+                return rebalance != null && rebalance.getStatus() != null &&
                     rebalance.getStatus().getConditions().stream()
                         .filter(c -> c.getType().equals(kafkaRebalanceState.name()))
                         .map(c -> c.getStatus().equals("True"))
