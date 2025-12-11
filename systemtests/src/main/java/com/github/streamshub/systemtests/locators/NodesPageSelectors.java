@@ -70,4 +70,148 @@ public class NodesPageSelectors {
         .withElementTbody().withComponentTable().withSubComponentTbody()
         .build();
 
+    // Rebalance
+
+    public static final String NPS_REBALANCE_TABLE_ITEMS = new CssBuilder(CssSelectors.PAGES_CONTENT)
+        .withChild()
+        .withElementDiv().withComponentPage().withSubComponentMainBody().withChild()
+        .withElementDiv().withLayoutGrid().withChild()
+        .withElementDiv().withLayoutGrid().withSubComponentItem().nth(3).withChild()
+        .withElementDiv().withComponentScrollOuterWrapper().withChild()
+        .withElementDiv().withComponentScrollInnerWrapper().withChild()
+        .withElementTable().withComponentTable().withChild()
+        .withElementTbody().withComponentTable().withSubComponentTbody().withChild()
+        .withElementTr().withComponentTable().withSubComponentTr()
+        .build();
+
+
+    public static final String NPS_REBALANCE_PROPOSAL_DROPDOWN_BUTTON = new CssBuilder(NPS_REBALANCE_TABLE_ITEMS)
+        .withChild()
+        .withElementTd().withComponentTable().withSubComponentTd().nth(1).withChild()
+        .withElementButton().withComponentButton()
+        .build();
+
+    public static final String NPS_REBALANCE_PROPOSAL_STATUS = new CssBuilder(NPS_REBALANCE_TABLE_ITEMS)
+        .withChild()
+        .withElementTd().withComponentTable().withSubComponentTd().nth(3).withChild()
+        .withElementDiv().withChild()
+        .withElementSpan()
+        .build();
+
+    public static final String NPS_REBALANCE_PROPOSAL_UPDATED_DATE = new CssBuilder(NPS_REBALANCE_TABLE_ITEMS)
+        .withChild()
+        .withElementTd().withComponentTable().withSubComponentTd().nth(4).withChild()
+        .withElementTime()
+        .build();
+
+    public static final String NPS_REBALANCE_PROPOSAL_NAME = new CssBuilder(NPS_REBALANCE_TABLE_ITEMS)
+        .withChild()
+        .withElementTd().withComponentTable().withSubComponentTd().nth(2).withChild()
+        .withElementA()
+        .build();
+
+
+    public static final String NPS_REBALANCE_PROPOSAL_DROPDOWN_ITEMS = new CssBuilder(NPS_REBALANCE_TABLE_ITEMS)
+        .withChild()
+        .withElementTd().withComponentTable().withSubComponentTd().withChild()
+        .withElementDiv().withComponentTable().withSubComponentExpandableRowContent().withChild()
+        .withElementDl().withComponentDescriptionList().withChild()
+        .withElementDiv().withLayoutFlex()
+        .build();
+
+    public static final String NPS_REBALANCE_PROPOSAL_DROPDOWN_MODE = new CssBuilder(NPS_REBALANCE_PROPOSAL_DROPDOWN_ITEMS)
+        .withChild()
+        .withElementDiv().nth(2).withChild()
+        .withElementDiv().withComponentDescriptionList().withSubComponentGroup().withChild()
+        .withElementDd().withComponentDescriptionList().withSubComponentDescription().withChild()
+        .withElementDiv().withComponentDescriptionList().withSubComponentText()
+        .build();
+
+    public static final String NPS_REBALANCE_PROPOSAL_DROPDOWN_AUTO_APPROVAL_ENABLED = new CssBuilder(NPS_REBALANCE_PROPOSAL_DROPDOWN_ITEMS)
+        .withChild()
+        .withElementDiv().nth(1).withChild()
+        .withElementDiv().withComponentDescriptionList().withSubComponentGroup().withChild()
+        .withElementDd().withComponentDescriptionList().withSubComponentDescription().withChild()
+        .withElementDiv().withComponentDescriptionList().withSubComponentText()
+        .build();
+
+    public static final String NPS_PROPOSAL_ACTION_DROPDOWN_BUTTON = new CssBuilder(NPS_REBALANCE_TABLE_ITEMS)
+        .withChild()
+        .withElementTd().withComponentTable().withSubComponentTd().nth(5).withChild()
+        .withElementButton().withComponentMenuToggle()
+        .build();
+
+
+    public static final String NPS_PROPOSAL_ACTION_DROPDOWN_ITEMS = new CssBuilder(CssSelectors.PAGES_CONTENT)
+        .withChild()
+        .withElementDiv().withComponentPage().withSubComponentMainBody().withChild()
+        .withElementDiv().withLayoutGrid().withChild()
+        .withElementDiv().withLayoutGrid().withSubComponentItem().nth(3).withChild()
+        .withElementDiv().withComponentScrollOuterWrapper().withChild()
+        .withElementDiv().withComponentMenu().withChild()
+        .withElementDiv().withComponentMenu().withSubComponentContent().withChild()
+        .withElementUl().withComponentMenu().withSubComponentList().withChild()
+        .withElementLi().withComponentMenu().withSubComponentListItem()
+        .build();
+
+    public static final String NPS_PROPOSAL_ACTION_APPROVE_BUTTON = new CssBuilder(NPS_PROPOSAL_ACTION_DROPDOWN_ITEMS)
+        .nth(1)
+        .build();
+
+    public static final String NPS_PROPOSAL_ACTION_REFRESH_BUTTON = new CssBuilder(NPS_PROPOSAL_ACTION_DROPDOWN_ITEMS)
+        .nth(2)
+        .build();
+
+    public static final String NPS_PROPOSAL_ACTION_STOP_BUTTON = new CssBuilder(NPS_PROPOSAL_ACTION_DROPDOWN_ITEMS)
+        .nth(3)
+        .build();
+
+
+    public static final String NPS_PROPOSAL_MODAL_DATA_TO_MOVE = new CssBuilder(CssSelectors.PAGES_POPUP_MODAL_BODY)
+        .withChild()
+        .withElementDl().withComponentDescriptionList().withChild()
+        .withElementDiv().withComponentDescriptionList().withSubComponentGroup().nth(1).withChild()
+        .withElementDd().withComponentDescriptionList().withSubComponentDescription().withChild()
+        .withElementDiv().withComponentDescriptionList().withSubComponentText()
+        .build();
+
+    public static final String NPS_PROPOSAL_MODAL_DATA_MONITORED_PARTITIONS_PERCENTAGE = new CssBuilder(CssSelectors.PAGES_POPUP_MODAL_BODY)
+        .withChild()
+        .withElementDl().withComponentDescriptionList().withChild()
+        .withElementDiv().withComponentDescriptionList().withSubComponentGroup().nth(6).withChild()
+        .withElementDd().withComponentDescriptionList().withSubComponentDescription().withChild()
+        .withElementDiv().withComponentDescriptionList().withSubComponentText()
+        .build();
+
+    public static final String NPS_PROPOSAL_MODAL_DATA_NUMBER_REPLICA_MOVEMENTS = new CssBuilder(CssSelectors.PAGES_POPUP_MODAL_BODY)
+        .withChild()
+        .withElementDl().withComponentDescriptionList().withChild()
+        .withElementDiv().withComponentDescriptionList().withSubComponentGroup().nth(9).withChild()
+        .withElementDd().withComponentDescriptionList().withSubComponentDescription().withChild()
+        .withElementDiv().withComponentDescriptionList().withSubComponentText()
+        .build();
+
+    public static final String NPS_PROPOSAL_MODAL_DATA_BALANCEDNESS_AFTER = new CssBuilder(CssSelectors.PAGES_POPUP_MODAL_BODY)
+        .withChild()
+        .withElementDl().withComponentDescriptionList().withChild()
+        .withElementDiv().withComponentDescriptionList().withSubComponentGroup().nth(10).withChild()
+        .withElementDd().withComponentDescriptionList().withSubComponentDescription().withChild()
+        .withElementDiv().withComponentDescriptionList().withSubComponentText()
+        .build();
+
+    public static final String NPS_PROPOSAL_MODAL_DATA_BALANCEDNESS_BEFORE = new CssBuilder(CssSelectors.PAGES_POPUP_MODAL_BODY)
+        .withChild()
+        .withElementDl().withComponentDescriptionList().withChild()
+        .withElementDiv().withComponentDescriptionList().withSubComponentGroup().nth(11).withChild()
+        .withElementDd().withComponentDescriptionList().withSubComponentDescription().withChild()
+        .withElementDiv().withComponentDescriptionList().withSubComponentText()
+        .build();
+
+    public static final String NPS_PROPOSAL_MODAL_CLOSE_BUTTON = new CssBuilder(CssSelectors.PAGES_POPUP_MODAL)
+        .withChild()
+        .withElementFooter().withComponentModalBox().withSubComponentFooter().withChild()
+        .withElementButton().withComponentButton()
+        .build();
+
+    public static final String NPS_PROPOSAL_MODAL_CONFIRM_BUTTON = CssSelectors.PAGES_MODAL_CONFIRM_BUTTON;
 }
