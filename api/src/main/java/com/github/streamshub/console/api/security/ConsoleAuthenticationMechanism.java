@@ -20,6 +20,7 @@ import jakarta.annotation.Priority;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Alternative;
 import jakarta.inject.Inject;
+import jakarta.json.JsonString;
 import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MediaType;
 
@@ -415,21 +416,27 @@ public class ConsoleAuthenticationMechanism implements HttpAuthenticationMechani
         } else if (principal instanceof JsonWebToken jwt) {
             Object claim = jwt.getClaim(claimName);
 
-            if (claim instanceof String) {
-                return include.contains(claim);
-            }
-
             // array claim, like set/list of groups
             if (claim instanceof Collection<?> values) {
                 for (Object value : values) {
-                    if (include.contains(value)) {
+                    if (isIncluded(include, value)) {
                         return true;
                     }
                 }
+            } else {
+                return isIncluded(include, claim);
             }
         }
 
         return false;
+    }
+
+    private static boolean isIncluded(List<String> include, Object value) {
+        if (value instanceof JsonString jsonString) {
+            value = jsonString.getString();
+        }
+
+        return value instanceof String && include.contains(value);
     }
 
     private Optional<String[]> getBasicAuthentication(MultiMap headers) {
