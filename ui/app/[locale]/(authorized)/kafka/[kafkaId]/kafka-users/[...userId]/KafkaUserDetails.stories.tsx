@@ -2,6 +2,8 @@ import type { Meta, StoryObj } from "@storybook/nextjs";
 import { KafkaUserDetails } from "./KafkaUserDetails";
 import { KafkaUser } from "@/api/kafkaUsers/schema";
 
+const fixedDate = new Date(Date.UTC(2025, 11, 11, 0, 0, 0, 0)).toISOString();
+
 const mockUser: KafkaUser = {
   id: "user1",
   type: "kafkaUsers",
@@ -13,7 +15,7 @@ const mockUser: KafkaUser = {
     username: "alice",
     namespace: "kafka-namespace",
     authenticationType: "scram-sha-512",
-    creationTimestamp: new Date().toISOString(),
+    creationTimestamp: fixedDate,
     authorization: {
       accessControls: [
         {
