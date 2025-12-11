@@ -271,11 +271,11 @@ class KafkaClustersResourceOidcIT {
     @ParameterizedTest
     // alice and bob are on team-a; susan is only on team-b
     @CsvSource({
-        "alice, groups, OK",
-        "bob, memberOf, OK",
-        "susan, groups, FORBIDDEN",
+        "alice, OK",
+        "bob, OK",
+        "susan, FORBIDDEN",
     })
-    void testDescribeClusterWithGroupAccess(String username, String claimName, Status expectedStatus) {
+    void testDescribeClusterWithGroupAccess(String username, Status expectedStatus) {
         // team-a group is given admin access Kafkas
         utils.updateSecurity(consoleConfig.getSecurity(), new GlobalSecurityConfigBuilder()
                 .addNewRole()
@@ -287,8 +287,42 @@ class KafkaClustersResourceOidcIT {
                 .endRole()
                 .addNewSubject()
                     // here we define the subject in terms of group membership
-                    .withClaim(claimName)
+                    .withClaim("groups")
                     .withInclude("team-a")
+                    .withRoleNames("admin-a")
+                .endSubject()
+            .build());
+
+        whenRequesting(req -> req
+                .auth()
+                    .oauth2(tokens.getToken(username))
+                .param("fields[" + KafkaCluster.API_TYPE + "]", "name")
+                .get("{clusterId}", clusterId1))
+            .assertThat()
+            .statusCode(is(expectedStatus.getStatusCode()));
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        "alice, groups, team-a, OK", // groups: [ "team-a" ] gives access
+        "alice, memberOf, team-a, OK", // memberOf: [ "team-a" ] gives access
+        "alice, given_name, Alice, OK", // given_name: "Alice" gives access
+        "alice, realm_access, Alice, FORBIDDEN", // realm_access is an object in JWT (unsupported by API)
+    })
+    void testDescribeClusterWithVaryingTokenClaims(String username, String claimName, String includeValue, Status expectedStatus) {
+        // team-a group is given admin access Kafkas
+        utils.updateSecurity(consoleConfig.getSecurity(), new GlobalSecurityConfigBuilder()
+                .addNewRole()
+                    .withName("admin-a")
+                    .addNewRule()
+                        .withResources("kafkas")
+                        .withPrivileges(Privilege.ALL)
+                    .endRule()
+                .endRole()
+                .addNewSubject()
+                    // here we define the subject in terms of a JWT claim mapping
+                    .withClaim(claimName)
+                    .withInclude(includeValue)
                     .withRoleNames("admin-a")
                 .endSubject()
             .build());
