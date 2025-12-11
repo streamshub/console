@@ -1,6 +1,8 @@
 import type { Meta, StoryObj } from "@storybook/nextjs";
 import { KafkaUsersTable } from "./KafkaUsersTable";
 
+const fixedDate = new Date(Date.UTC(2025, 11, 11, 0, 0, 0, 0)).toISOString();
+
 const mockUsers = [
   {
     id: "user1",
@@ -11,7 +13,7 @@ const mockUsers = [
       username: "alice",
       namespace: "kafka-namespace",
       authenticationType: "scram-sha-512",
-      creationTimestamp: new Date().toISOString(),
+      creationTimestamp: fixedDate,
     },
   },
   {
@@ -23,7 +25,7 @@ const mockUsers = [
       username: "bob",
       namespace: null,
       authenticationType: "tls",
-      creationTimestamp: new Date().toISOString(),
+      creationTimestamp: fixedDate,
     },
   },
 ];
@@ -36,10 +38,6 @@ export default {
     page: 1,
     perPage: 20,
     filterUsername: "",
-    isColumnSortable: () => undefined,
-    onPageChange: () => {},
-    onClearAllFilters: () => {},
-    onFilterUsernameChange: () => {},
   },
 } satisfies Meta<typeof KafkaUsersTable>;
 
