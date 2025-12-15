@@ -18,7 +18,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Download Images
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           name: streamshub-images
 
