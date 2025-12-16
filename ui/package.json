@@ -57,7 +57,7 @@
     "use-debounce": "^10.0.6",
     "use-resize-observer": "^9.1.0",
     "victory": "^37.3.6",
-    "zod": "^4.1.13"
+    "zod": "^4.2.0"
   },
   "devDependencies": {
     "@playwright/test": "^1.57.0",
