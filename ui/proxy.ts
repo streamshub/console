@@ -42,7 +42,7 @@ const protectedPathnameRegex = RegExp(
   "i",
 );
 
-export default async function middleware(req: NextRequest) {
+export default async function proxy(req: NextRequest) {
   /*
    * Next.js middleware doesn't support reading files, so here we make a (cached)
    * call to the /config endpoint within the same application :(

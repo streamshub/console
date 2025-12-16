@@ -9,7 +9,8 @@ type Props = {
 };
 
 export default async function Layout({ children, params: { locale } }: Props) {
-  const messages = await getMessages();
+  const messages = await getMessages({ locale });
+
   return (
     <NextIntlProvider locale={locale} messages={messages}>
       {children}
