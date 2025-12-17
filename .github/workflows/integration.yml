@@ -43,7 +43,7 @@ jobs:
           distribution: 'adopt'
 
       - name: Cache Maven Packages
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.m2/repository
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
@@ -51,7 +51,7 @@ jobs:
             ${{ runner.os }}-maven-
 
       - name: Cache Next.js UI Build
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/.npm
@@ -172,7 +172,7 @@ jobs:
           distribution: 'adopt'
 
       - name: Cache Maven Packages
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.m2/repository
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
