@@ -22,7 +22,7 @@
         <apicurio-registry.version>3.1.4</apicurio-registry.version>
 
         <!-- Test Dependencies -->
-        <strimzi-test-container.version>0.113.0</strimzi-test-container.version>
+        <strimzi-test-container.version>0.114.0</strimzi-test-container.version>
 
         <!-- Plugin Versions -->
         <maven.compiler.version>3.14.1</maven.compiler.version>
