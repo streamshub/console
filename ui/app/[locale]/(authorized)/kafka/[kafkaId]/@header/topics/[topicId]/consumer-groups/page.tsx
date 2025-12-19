@@ -3,11 +3,18 @@ import {
   TopicHeaderProps,
 } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/@header/topics/[topicId]/TopicHeader";
 
-export default function TopicHeaderNoRefresh(
+export default async function TopicHeaderNoRefresh(
   props: Omit<TopicHeaderProps, "showRefresh">,
 ) {
+  const params = await props.params;
+
+  const { params: _unused, ...rest } = props;
+
   return (
-    <TopicHeader /* @next-codemod-error 'props' is used with spread syntax (...). Any asynchronous properties of 'props' must be awaited when accessed. */
-    {...props} showRefresh={false} />
+    <TopicHeader 
+      {...rest} 
+      params={params}
+      showRefresh={false} 
+    />
   );
 }
