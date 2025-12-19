@@ -7,11 +7,17 @@ import { redirect } from "@/i18n/routing";
 import { clientConfig as config } from "@/utils/config";
 import { NoDataErrorState } from "@/components/NoDataErrorState";
 
-export default async function CreateTopicPage({
-  params: { kafkaId },
-}: {
-  params: KafkaParams;
-}) {
+export default async function CreateTopicPage(
+  props: {
+    params: Promise<KafkaParams>;
+  }
+) {
+  const params = await props.params;
+
+  const {
+    kafkaId
+  } = params;
+
   const isReadOnly = (await config()).readOnly;
 
   if (isReadOnly) {

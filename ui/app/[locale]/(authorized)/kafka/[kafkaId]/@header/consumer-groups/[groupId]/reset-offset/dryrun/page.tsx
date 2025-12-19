@@ -9,13 +9,20 @@ import { Offset } from "../../../../../consumer-groups/[groupId]/reset-offset/Re
 import { DryrunDownloadButton } from "./DryrunDownloadButton";
 import RichText from "@/components/RichText";
 
-export default function Page({
-  params: { kafkaId, groupId },
-  searchParams,
-}: {
-  params: KafkaConsumerGroupMembersParams;
-  searchParams: { data?: string };
-}) {
+export default async function Page(
+  props: {
+    params: Promise<KafkaConsumerGroupMembersParams>;
+    searchParams: Promise<{ data?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
+
+  const {
+    kafkaId,
+    groupId
+  } = params;
+
   return (
     <Suspense fallback={<Header groupIdDisplay={""} offsets={[]} />}>
       <ConnectedAppHeader

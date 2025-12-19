@@ -5,11 +5,18 @@ import { KafkaUserDetailsBreadcrumb } from "./KafkaUserDetailsBreadcrumb";
 import { getKafkaUser } from "@/api/kafkaUsers/action";
 import { KafkaUserParams } from "../../../kafka-users/kafkaUser.params";
 
-export default function Page({
-  params: { kafkaId, userId },
-}: {
-  params: KafkaUserParams;
-}) {
+export default async function Page(
+  props: {
+    params: Promise<KafkaUserParams>;
+  }
+) {
+  const params = await props.params;
+
+  const {
+    kafkaId,
+    userId
+  } = params;
+
   return (
     <Suspense
       fallback={<KafkaUserActiveBreadcrumb params={{ kafkaId, userId }} />}

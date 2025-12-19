@@ -17,13 +17,20 @@ export async function generateMetadata() {
   };
 }
 
-export default async function ConnectedMessagesPage({
-  params: { kafkaId, topicId },
-  searchParams,
-}: {
-  params: KafkaTopicParams;
-  searchParams: MessagesSearchParams;
-}) {
+export default async function ConnectedMessagesPage(
+  props: {
+    params: Promise<KafkaTopicParams>;
+    searchParams: Promise<MessagesSearchParams>;
+  }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
+
+  const {
+    kafkaId,
+    topicId
+  } = params;
+
   const response = await getTopic(kafkaId, topicId);
 
   if (response.errors) {

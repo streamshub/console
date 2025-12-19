@@ -26,22 +26,23 @@ const sortMap: Record<(typeof SortableColumns)[number], string> = {
   storage: "totalLeaderLogBytes",
 };
 
-export default function TopicsPage({
-  params,
-  searchParams,
-}: {
-  params: KafkaParams;
-  searchParams: {
-    id: string | undefined;
-    name: string | undefined;
-    perPage: string | undefined;
-    sort: string | undefined;
-    sortDir: string | undefined;
-    page: string | undefined;
-    includeHidden: string | undefined;
-    status: string | undefined;
-  };
-}) {
+export default async function TopicsPage(
+  props: {
+    params: Promise<KafkaParams>;
+    searchParams: Promise<{
+      id: string | undefined;
+      name: string | undefined;
+      perPage: string | undefined;
+      sort: string | undefined;
+      sortDir: string | undefined;
+      page: string | undefined;
+      includeHidden: string | undefined;
+      status: string | undefined;
+    }>;
+  }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const id = searchParams["id"];
   const name = searchParams["name"];
   const pageSize = stringToInt(searchParams.perPage) || 20;
