@@ -7,8 +7,7 @@ interface Props {
   children: React.ReactNode
 }
 
-export default function AuthLayout(props: Props) {
-    const children = use(props.children);
+export default function AuthLayout({ children }: Props) {
     return (
         <SessionProvider>
             { children }
