@@ -16,18 +16,27 @@ import { ClusterInfo } from "@/components/AppDropdown";
 import { oidcEnabled } from "@/utils/config";
 import { ThemeInitializer } from "@/components/ThemeInitializer";
 
-export default async function AsyncLayout({
-  children,
-  activeBreadcrumb,
-  header,
-  modal,
-  params: { kafkaId },
-}: PropsWithChildren<{
-  params: KafkaParams;
-  header: ReactNode;
-  activeBreadcrumb: ReactNode;
-  modal: ReactNode;
-}>) {
+export default async function AsyncLayout(
+  props: PropsWithChildren<{
+    params: KafkaParams;
+    header: ReactNode;
+    activeBreadcrumb: ReactNode;
+    modal: ReactNode;
+  }>
+) {
+  const params = await props.params;
+
+  const {
+    kafkaId
+  } = params;
+
+  const {
+    children,
+    activeBreadcrumb,
+    header,
+    modal
+  } = props;
+
   const authOptions = await getAuthOptions();
   const session = await getServerSession(authOptions);
   const response = await getKafkaCluster(kafkaId);

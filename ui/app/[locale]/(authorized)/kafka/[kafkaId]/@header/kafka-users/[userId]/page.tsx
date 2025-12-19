@@ -6,11 +6,18 @@ import RichText from "@/components/RichText";
 import { KafkaUserParams } from "../../../kafka-users/kafkaUser.params";
 import { getKafkaUser } from "@/api/kafkaUsers/action";
 
-export default function Page({
-  params: { kafkaId, userId },
-}: {
-  params: KafkaUserParams;
-}) {
+export default async function Page(
+  props: {
+    params: Promise<KafkaUserParams>;
+  }
+) {
+  const params = await props.params;
+
+  const {
+    kafkaId,
+    userId
+  } = params;
+
   return (
     <Suspense fallback={<Header params={{ kafkaId, userId }} />}>
       <KafkaUserAppHeader params={{ kafkaId, userId }} />

@@ -16,20 +16,21 @@ export async function generateMetadata() {
   };
 }
 
-export default function ConnectClustersPage({
-  params,
-  searchParams,
-}: {
-  params: KafkaParams;
-  searchParams: {
-    kafkaClusters: string | undefined;
-    name: string | undefined;
-    perPage: string | undefined;
-    sort: string | undefined;
-    sortDir: string | undefined;
-    page: string | undefined;
-  };
-}) {
+export default async function ConnectClustersPage(
+  props: {
+    params: Promise<KafkaParams>;
+    searchParams: Promise<{
+      kafkaClusters: string | undefined;
+      name: string | undefined;
+      perPage: string | undefined;
+      sort: string | undefined;
+      sortDir: string | undefined;
+      page: string | undefined;
+    }>;
+  }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const kafkaId = searchParams["kafkaClusters"] || params.kafkaId;
   const name = searchParams["name"];
   const pageSize = stringToInt(searchParams.perPage) || 20;

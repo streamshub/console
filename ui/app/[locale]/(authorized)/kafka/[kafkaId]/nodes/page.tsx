@@ -18,22 +18,23 @@ export async function generateMetadata() {
   };
 }
 
-export default function NodesPage({
-  params,
-  searchParams,
-}: {
-  params: KafkaParams;
-  searchParams: {
-    perPage: string | undefined;
-    sort: string | undefined;
-    sortDir: string | undefined;
-    page: string | undefined;
-    nodePool: string | undefined;
-    roles: string | undefined;
-    brokerStatus: string | undefined;
-    controllerStatus: string | undefined;
-  };
-}) {
+export default async function NodesPage(
+  props: {
+    params: Promise<KafkaParams>;
+    searchParams: Promise<{
+      perPage: string | undefined;
+      sort: string | undefined;
+      sortDir: string | undefined;
+      page: string | undefined;
+      nodePool: string | undefined;
+      roles: string | undefined;
+      brokerStatus: string | undefined;
+      controllerStatus: string | undefined;
+    }>;
+  }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const pageSize = stringToInt(searchParams.perPage) || 20;
   const sort = (searchParams["sort"] || "name") as NodeListColumn;
   const sortDir = (searchParams["sortDir"] || "asc") as "asc" | "desc";

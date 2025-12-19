@@ -6,11 +6,18 @@ import { Suspense } from "react";
 import { KafkaConnectParams } from "../../../../kafka-connect/kafkaConnect.params";
 import RichText from "@/components/RichText";
 
-export default function Page({
-  params: { kafkaId, clusterId },
-}: {
-  params: KafkaConnectParams;
-}) {
+export default async function Page(
+  props: {
+    params: Promise<KafkaConnectParams>;
+  }
+) {
+  const params = await props.params;
+
+  const {
+    kafkaId,
+    clusterId
+  } = params;
+
   return (
     <Suspense fallback={<Header params={{ kafkaId, clusterId }} />}>
       <ConnectClusterAppHeader params={{ kafkaId, clusterId }} />
