@@ -10,6 +10,9 @@ const nextConfig = {
   experimental: {
     // typedRoutes: true, // disabled until next-intl is compatible with this
   },
+  turbopack: {
+    root: __dirname, // optional but recommended
+  },
   typescript: {
     //ignoreBuildErrors: true,
   },
