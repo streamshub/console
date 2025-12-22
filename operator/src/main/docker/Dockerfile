@@ -53,7 +53,7 @@
 #   accessed directly. (example: "foo.example.com,bar.example.com")
 #
 ###
-FROM registry.access.redhat.com/ubi9/openjdk-17:1.23
+FROM registry.access.redhat.com/ubi9/openjdk-17:1.24
 
 ENV LANGUAGE='en_US:en'
 LABEL org.opencontainers.image.source="https://github.com/streamshub/console"
