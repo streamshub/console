@@ -6,11 +6,18 @@ import { getConnectCluster } from "@/api/kafkaConnect/action";
 import { NoDataErrorState } from "@/components/NoDataErrorState";
 import { ConnectClusterBreadcrumb } from "./ConnectClusterBreadcrumb";
 
-export default function Page({
-  params: { kafkaId, clusterId },
-}: {
-  params: KafkaConnectParams;
-}) {
+export default async function Page(
+  props: {
+    params: Promise<KafkaConnectParams>;
+  }
+) {
+  const params = await props.params;
+
+  const {
+    kafkaId,
+    clusterId
+  } = params;
+
   return (
     <Suspense
       fallback={

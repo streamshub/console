@@ -16,11 +16,18 @@ export async function generateMetadata() {
   };
 }
 
-export default function TopicConfiguration({
-  params: { kafkaId, topicId },
-}: {
-  params: KafkaTopicParams;
-}) {
+export default async function TopicConfiguration(
+  props: {
+    params: Promise<KafkaTopicParams>;
+  }
+) {
+  const params = await props.params;
+
+  const {
+    kafkaId,
+    topicId
+  } = params;
+
   return (
     <PageSection isFilled={true}>
       <Suspense

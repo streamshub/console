@@ -18,7 +18,8 @@ import { Suspense } from "react";
 import { useTranslations } from "next-intl";
 import { NodesTabs } from "./NodesTabs";
 
-export default function NodesHeader({ params }: { params: KafkaParams }) {
+export default async function NodesHeader(props: { params: Promise<KafkaParams> }) {
+  const params = await props.params;
   return (
     <Suspense
       fallback={<Header kafkaId={undefined} cruiseControlEnable={false} />}

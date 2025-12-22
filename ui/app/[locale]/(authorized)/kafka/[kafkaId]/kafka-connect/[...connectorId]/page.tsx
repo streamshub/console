@@ -6,20 +6,21 @@ import { getConnectorCluster } from "@/api/kafkaConnect/action";
 import { ConnectorDetails } from "./ConnectorDetails";
 
 export async function generateMetadata(props: {
-  params: { kafkaId: string; connectorId: string };
+  params: Promise<{ kafkaId: string; connectorId: string }>;
 }) {
   const t = await getTranslations();
 
   return {
-    title: `${t("KafkaConnect.connect_clusters_title")} ${props.params.connectorId} | ${t("common.title")}`,
+    title: `${t("KafkaConnect.connect_clusters_title")} ${(await props.params).connectorId} | ${t("common.title")}`,
   };
 }
 
-export default function ConnectClusterPage({
-  params,
-}: {
-  params: { kafkaId: string; connectorId: string };
-}) {
+export default async function ConnectClusterPage(
+  props: {
+    params: Promise<{ kafkaId: string; connectorId: string }>;
+  }
+) {
+  const params = await props.params;
   return (
     <PageSection>
       <Suspense

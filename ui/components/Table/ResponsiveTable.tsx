@@ -26,10 +26,11 @@ import {
   ReactNode,
   Ref,
   useCallback,
+  useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
-import useResizeObserver from "use-resize-observer";
 import "./ResponsiveTable.css";
 
 export type RenderHeaderCb<TCol> = (props: {
@@ -119,23 +120,38 @@ export const ResponsiveTable = <TRow, TCol>({
   const [expanded, setExpanded] = useState<Record<number, number | undefined>>(
     {},
   );
-  const [width, setWidth] = useState(1000);
-  let animationHandle: number;
-  /**
-   * resize the columns on a rAF loop to render the table at 60fps
-   * @param width
-   */
-  const onResize = ({ width }: { width: number | undefined }) => {
-    if (animationHandle) {
-      cancelAnimationFrame(animationHandle);
+const tableRef = useRef<HTMLTableElement | null>(null);
+const rafId = useRef<number | null>(null);
+
+const [width, setWidth] = useState(1000);
+
+useEffect(() => {
+  if (!tableRef.current) return;
+
+  const observer = new ResizeObserver(entries => {
+    const entry = entries[0];
+    if (!entry) return;
+
+    const newWidth = entry.contentRect.width;
+
+    if (rafId.current !== null) {
+      cancelAnimationFrame(rafId.current);
     }
-    if (width) {
-      animationHandle = requestAnimationFrame(() => {
-        setWidth(width);
-      });
+
+    rafId.current = requestAnimationFrame(() => {
+      setWidth(newWidth);
+    });
+  });
+
+  observer.observe(tableRef.current);
+
+  return () => {
+    if (rafId.current !== null) {
+      cancelAnimationFrame(rafId.current);
     }
+    observer.disconnect();
   };
-  const { ref } = useResizeObserver({ onResize });
+}, []);
   const showColumns = width >= stackedLayoutBreakpoint;
 
   const canColumnBeHidden = useCallback(
@@ -220,7 +236,7 @@ export const ResponsiveTable = <TRow, TCol>({
     <Table
       aria-label={ariaLabel}
       gridBreakPoint=""
-      ref={ref}
+      ref={tableRef}
       className={showColumns ? "" : "pf-m-grid"}
       ouiaId={tableOuiaId}
       variant={variant}

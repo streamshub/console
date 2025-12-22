@@ -7,11 +7,18 @@ import { ConsumerGroupActionButton } from "./ConsumerGroupActionButton";
 import RichText from "@/components/RichText";
 import { hasPrivilege } from "@/utils/privileges";
 
-export default function Page({
-  params: { kafkaId, groupId },
-}: {
-  params: KafkaConsumerGroupMembersParams;
-}) {
+export default async function Page(
+  props: {
+    params: Promise<KafkaConsumerGroupMembersParams>;
+  }
+) {
+  const params = await props.params;
+
+  const {
+    kafkaId,
+    groupId
+  } = params;
+
   return (
     <Suspense
       fallback={<Header params={{ kafkaId, groupId, groupIdDisplay: "" }} disabled={true} />}
