@@ -2,6 +2,16 @@ import type { Meta, StoryObj } from "@storybook/nextjs";
 import { userEvent, within } from "storybook/test";
 import { ButtonLink } from "./ButtonLink";
 
+const handleInteraction = async ({ canvasElement }: { canvasElement: HTMLElement }) => {
+  const canvas = within(canvasElement);
+  const button = canvas.getByRole('link', { name: /click me/i });
+
+  // Prevent navigation for all stories using this function
+  button.addEventListener("click", (e) => e.preventDefault());
+  
+  await userEvent.click(button);
+};
+
 const meta: Meta<typeof ButtonLink> = {
   component: ButtonLink,
   args: {
@@ -25,39 +35,26 @@ export const Primary: Story = {
   args: {
     variant: "primary",
   },
-  play: async ({ canvasElement }) => {
-    const button = within(canvasElement).getByText("Click Me");
-    await userEvent.click(button);
-    // Add assertions or additional interactions here if needed
-  },
+  play: handleInteraction
 };
 
 export const Secondary: Story = {
   args: {
     variant: "secondary",
   },
-  play: async ({ canvasElement }) => {
-    const button = within(canvasElement).getByText("Click Me");
-    await userEvent.click(button);
-  },
+  play: handleInteraction
 };
 
 export const Danger: Story = {
   args: {
     variant: "danger",
   },
-  play: async ({ canvasElement }) => {
-    const button = within(canvasElement).getByText("Click Me");
-    await userEvent.click(button);
-  },
+  play: handleInteraction
 };
 
 export const LinkVariant: Story = {
   args: {
     variant: "link",
   },
-  play: async ({ canvasElement }) => {
-    const button = within(canvasElement).getByText("Click Me");
-    await userEvent.click(button);
-  },
+  play: handleInteraction
 };

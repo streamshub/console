@@ -5,11 +5,17 @@ import { useTranslations } from "next-intl";
 import { getKafkaCluster } from "@/api/kafka/actions";
 import { Suspense } from "react";
 
-export default function Header({
-  params: { kafkaId },
-}: {
-  params: KafkaParams;
-}) {
+export default async function Header(
+  props: {
+    params: Promise<KafkaParams>;
+  }
+) {
+  const params = await props.params;
+
+  const {
+    kafkaId
+  } = params;
+
   return (
     <Suspense fallback={<OverviewHeader params={{ kafkaId }} />}>
       <ConnectedHeader params={{ kafkaId }} />

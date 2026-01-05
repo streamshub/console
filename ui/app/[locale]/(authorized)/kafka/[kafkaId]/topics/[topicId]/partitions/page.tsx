@@ -13,11 +13,18 @@ export async function generateMetadata() {
   };
 }
 
-export default function PartitionsPage({
-  params: { kafkaId, topicId },
-}: {
-  params: KafkaTopicParams;
-}) {
+export default async function PartitionsPage(
+  props: {
+    params: Promise<KafkaTopicParams>;
+  }
+) {
+  const params = await props.params;
+
+  const {
+    kafkaId,
+    topicId
+  } = params;
+
   return (
     <Suspense
       fallback={<PartitionsTable kafkaId={kafkaId} topic={undefined} />}

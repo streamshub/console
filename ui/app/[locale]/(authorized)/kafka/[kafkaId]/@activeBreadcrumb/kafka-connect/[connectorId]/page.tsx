@@ -5,11 +5,18 @@ import { NoDataErrorState } from "@/components/NoDataErrorState";
 import { KafkaConnectorParams } from "../../../kafka-connect/kafkaConnectors.params";
 import { ConnectorBreadcrumb } from "./ConnectorBreadcrumb";
 
-export default function Page({
-  params: { kafkaId, connectorId },
-}: {
-  params: KafkaConnectorParams;
-}) {
+export default async function Page(
+  props: {
+    params: Promise<KafkaConnectorParams>;
+  }
+) {
+  const params = await props.params;
+
+  const {
+    kafkaId,
+    connectorId
+  } = params;
+
   return (
     <Suspense
       fallback={<ConnectorActiveBreadcrumb params={{ kafkaId, connectorId }} />}

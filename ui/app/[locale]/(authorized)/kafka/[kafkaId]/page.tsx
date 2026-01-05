@@ -3,6 +3,7 @@ import { redirect } from "@/i18n/routing";
 
 //export const dynamic = "force-dynamic";
 
-export default function KafkaRoot({ params }: { params: KafkaParams }) {
+export default async function KafkaRoot(props: { params: Promise<KafkaParams> }) {
+  const params = await props.params;
   redirect(`/kafka/${params.kafkaId}/overview`);
 }

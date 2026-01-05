@@ -1,3 +1,4 @@
+import { use } from "react";
 import { KafkaParams } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/kafka.params";
 import { BreadcrumbLink } from "@/components/Navigation/BreadcrumbLink";
 import {
@@ -8,11 +9,17 @@ import {
 import { HomeIcon } from "@/libs/patternfly/react-icons";
 import { useTranslations } from "next-intl";
 
-export default function TopicsActiveBreadcrumb({
-  params: { kafkaId },
-}: {
-  params: KafkaParams;
-}) {
+export default function TopicsActiveBreadcrumb(
+  props: {
+    params: Promise<KafkaParams>;
+  }
+) {
+  const params = use(props.params);
+
+  const {
+    kafkaId
+  } = params;
+
   const t = useTranslations("breadcrumbs");
   return (
     <Breadcrumb>
