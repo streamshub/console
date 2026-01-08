@@ -213,7 +213,9 @@ class KafkaClustersResourceIT {
                     hasEntry(equalTo("bootstrapServers"), equalTo(k2Bootstrap)),
                     hasEntry(equalTo("authType"), nullValue(String.class)))))
             .body("data.find { it.attributes.name == 'test-kafkaY'}.attributes.status", is(nullValue()))
-            .body("data.find { it.attributes.name == 'test-kafkaY'}.attributes.listeners", is(nullValue()));
+            .body("data.find { it.attributes.name == 'test-kafkaY'}.attributes.listeners", is(nullValue()))
+            .body("data.find { it.attributes.name == 'test-kafkaY' }.meta.kind",is(nullValue()));
+
     }
 
     @Test
