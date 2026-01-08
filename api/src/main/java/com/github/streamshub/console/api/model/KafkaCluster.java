@@ -151,6 +151,16 @@ public class KafkaCluster extends KubeApiResource<KafkaCluster.Attributes, Kafka
                     the Kafka cluster is not (known) to be managed by Strimzi.
                     """)
         Boolean reconciliationPaused;
+
+        @JsonProperty
+        @Schema(description = """
+                    Kubernetes resource kind backing this Kafka cluster.
+
+                    Known values:
+                    - kafkas.kafka.strimzi.io
+                    - virtualkafkaclusters.kroxylicious.io
+                    """)
+        String kind;
     }
 
     @JsonFilter("fieldFilter")
@@ -226,6 +236,17 @@ public class KafkaCluster extends KubeApiResource<KafkaCluster.Attributes, Kafka
                 .map(Meta.class::cast)
                 .map(meta -> meta.reconciliationPaused)
                 .orElse(null);
+    }
+
+    public void kind(String kind) {
+        ((Meta) getOrCreateMeta()).kind = kind;
+    }
+
+    public String kind() {
+        return Optional.ofNullable(meta())
+            .map(Meta.class::cast)
+            .map(meta -> meta.kind)
+            .orElse(null);
     }
 
     public JsonApiRelationshipToMany nodes() {

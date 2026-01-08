@@ -50,6 +50,17 @@ public class KafkaCluster {
             should be used by the console to establish connections.""")
     private String listener;
 
+    @JsonPropertyDescription("""
+            Kubernetes resource kind backing this Kafka cluster.
+
+            Supported values:
+            - kafkas.kafka.strimzi.io
+            - virtualkafkaclusters.kroxylicious.io
+
+            If omitted, the console will treat the cluster kind as unknown.
+            """)
+    private String kind;
+
     private Credentials credentials;
 
     @JsonPropertyDescription("""
@@ -110,6 +121,14 @@ public class KafkaCluster {
 
     public void setListener(String listener) {
         this.listener = listener;
+    }
+
+    public String getKind() {
+        return kind;
+    }
+
+    public void setKind(String kind) {
+        this.kind = kind;
     }
 
     public Credentials getCredentials() {
