@@ -41,11 +41,9 @@ public class KafkaClusterConfig implements Named {
     /**
      * Kubernetes resource kind backing this Kafka cluster.
      *
-     * Supported values:
-     * - kafkas.kafka.strimzi.io
-     * - virtualkafkaclusters.kroxylicious.io
+     * @see ClusterKind
      */
-    private String kind;
+    private ClusterKind kind;
     private Map<String, String> properties = new LinkedHashMap<>();
     private Map<String, String> adminProperties = new LinkedHashMap<>();
     private Map<String, String> consumerProperties = new LinkedHashMap<>();
@@ -123,13 +121,13 @@ public class KafkaClusterConfig implements Named {
         this.schemaRegistry = schemaRegistry;
     }
 
-    public String getKind() {
+    public ClusterKind getKind() {
         return kind;
     }
 
-    public void setKind(String kind) {
+    public void setKind(ClusterKind kind) {
         this.kind = kind;
-    }
+    }   
 
     public Map<String, String> getProperties() {
         return properties;

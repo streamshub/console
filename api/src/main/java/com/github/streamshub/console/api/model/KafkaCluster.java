@@ -27,6 +27,7 @@ import com.github.streamshub.console.api.model.kubernetes.PaginatedKubeResource;
 import com.github.streamshub.console.api.support.ComparatorBuilder;
 import com.github.streamshub.console.api.support.ErrorCategory;
 import com.github.streamshub.console.api.support.ListRequestContext;
+import com.github.streamshub.console.config.ClusterKind;
 
 import io.xlate.validation.constraints.Expression;
 
@@ -155,12 +156,9 @@ public class KafkaCluster extends KubeApiResource<KafkaCluster.Attributes, Kafka
         @JsonProperty
         @Schema(description = """
                     Kubernetes resource kind backing this Kafka cluster.
-
-                    Known values:
-                    - kafkas.kafka.strimzi.io
-                    - virtualkafkaclusters.kroxylicious.io
+                    implementation = ClusterKind.class
                     """)
-        String kind;
+        ClusterKind kind;
     }
 
     @JsonFilter("fieldFilter")
@@ -238,7 +236,7 @@ public class KafkaCluster extends KubeApiResource<KafkaCluster.Attributes, Kafka
                 .orElse(null);
     }
 
-    public void kind(String kind) {
+    public void kind(ClusterKind kind) {
         ((Meta) getOrCreateMeta()).kind = kind;
     }
 
@@ -246,8 +244,9 @@ public class KafkaCluster extends KubeApiResource<KafkaCluster.Attributes, Kafka
         return Optional.ofNullable(meta())
             .map(Meta.class::cast)
             .map(meta -> meta.kind)
+            .map(ClusterKind::getValue)
             .orElse(null);
-    }
+    }   
 
     public JsonApiRelationshipToMany nodes() {
         return relationships.nodes;
