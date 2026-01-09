@@ -97,6 +97,7 @@ kafka:
     - name: test-kafka1
       namespace: default
       id: k1-id
+      kind: kafkas.kafka.strimzi.io 
       schemaRegistry: test-registry-v2
       properties:
         bootstrap.servers: ${console.test.external-bootstrap}

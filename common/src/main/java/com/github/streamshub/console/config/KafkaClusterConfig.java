@@ -37,6 +37,13 @@ public class KafkaClusterConfig implements Named {
      * with this Kafka cluster.
      */
     private String schemaRegistry;
+
+    /**
+     * Kubernetes resource kind backing this Kafka cluster.
+     *
+     * @see ClusterKind
+     */
+    private ClusterKind kind;
     private Map<String, String> properties = new LinkedHashMap<>();
     private Map<String, String> adminProperties = new LinkedHashMap<>();
     private Map<String, String> consumerProperties = new LinkedHashMap<>();
@@ -113,6 +120,14 @@ public class KafkaClusterConfig implements Named {
     public void setSchemaRegistry(String schemaRegistry) {
         this.schemaRegistry = schemaRegistry;
     }
+
+    public ClusterKind getKind() {
+        return kind;
+    }
+
+    public void setKind(ClusterKind kind) {
+        this.kind = kind;
+    }   
 
     public Map<String, String> getProperties() {
         return properties;
