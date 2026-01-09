@@ -54,7 +54,7 @@
     "react-highlight-words": "^0.21.0",
     "react-json-view-lite": "^2.5.0",
     "typescript": "5.9.3",
-    "use-debounce": "^10.0.6",
+    "use-debounce": "^10.1.0",
     "use-resize-observer": "^9.1.0",
     "victory": "^37.3.6",
     "zod": "^4.3.5"
