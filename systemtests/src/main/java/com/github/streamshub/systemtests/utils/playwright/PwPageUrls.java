@@ -54,4 +54,8 @@ public class PwPageUrls {
     public static String getKafkaConnectPage(TestCaseConfig tcc, String kafkaName) {
         return getKafkaBaseUrl(tcc, kafkaName) + "/kafka-connect";
     }
+
+    public static String getKafkaRebalancePage(TestCaseConfig tcc, String kafkaName) {
+        return getNodesPage(tcc, kafkaName) + "/rebalances";
+    }
 }

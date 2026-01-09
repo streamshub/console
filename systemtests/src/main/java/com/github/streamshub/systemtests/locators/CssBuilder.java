@@ -118,6 +118,7 @@ public class CssBuilder {
     public CssBuilder withElementTable() { return withElement("table"); }
     public CssBuilder withElementButton() { return withElement("button"); }
     public CssBuilder withElementForm() { return withElement("form"); }
+    public CssBuilder withElementTime() { return withElement("time"); }
 
     // -------------------
     // Components
@@ -226,6 +227,8 @@ public class CssBuilder {
     public CssBuilder withSubComponentSort() { return withSubComponent("sort"); }
     public CssBuilder withSubComponentButtonContent() { return withSubComponent("button-content"); }
     public CssBuilder withSubComponentLabel() { return withSubComponent("label"); }
+    public CssBuilder withSubComponentExpandableRowContent() { return withSubComponent("expandable-row-content"); }
+    public CssBuilder withSubComponentDescription() { return withSubComponent("description"); }
 
     // ------------
     // Layouts
