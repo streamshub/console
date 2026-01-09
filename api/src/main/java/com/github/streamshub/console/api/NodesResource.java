@@ -159,4 +159,20 @@ public class NodesResource {
             .thenApply(Response.ResponseBuilder::build);
     }
 
+    @GET
+    @Path("{nodeId}/metrics")
+    @Produces(MediaType.APPLICATION_JSON)
+    @APIResponse(responseCode = "200", description = "Node metrics")
+    @APIResponse(responseCode = "404", ref = "NotFound")
+    @Authorized
+    @ResourcePrivilege(Privilege.GET)
+    public CompletionStage<Response> getNodeMetrics(
+            @PathParam("clusterId") String clusterId,
+            @PathParam("nodeId") String nodeId) {
+
+        return nodeService.getNodeMetrics(clusterId, nodeId)
+            .thenApply(Response::ok)
+            .thenApply(Response.ResponseBuilder::build);
+    }
+
 }
