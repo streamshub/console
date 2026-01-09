@@ -3,6 +3,7 @@ package com.github.streamshub.console.api.v1alpha1.spec;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.github.streamshub.console.api.v1alpha1.spec.security.KafkaSecurity;
+import com.github.streamshub.console.config.ClusterKind;
 
 import io.fabric8.generator.annotation.Required;
 import io.fabric8.generator.annotation.ValidationRule;
@@ -49,6 +50,13 @@ public class KafkaCluster {
             The name of the listener in the Strimzi Kafka Kubernetes resource that \
             should be used by the console to establish connections.""")
     private String listener;
+
+    @JsonPropertyDescription("""
+        Kubernetes resource kind backing this Kafka cluster.
+        The supported kinds are defined by the ClusterKind enum.
+        If omitted, the console will treat the cluster kind as unknown.
+        """)
+    private ClusterKind kind;
 
     private Credentials credentials;
 
@@ -111,6 +119,14 @@ public class KafkaCluster {
     public void setListener(String listener) {
         this.listener = listener;
     }
+
+    public ClusterKind getKind() {
+        return kind;
+    }
+
+    public void setKind(ClusterKind kind) {
+        this.kind = kind;
+    }   
 
     public Credentials getCredentials() {
         return credentials;

@@ -27,6 +27,7 @@ import com.github.streamshub.console.api.model.kubernetes.PaginatedKubeResource;
 import com.github.streamshub.console.api.support.ComparatorBuilder;
 import com.github.streamshub.console.api.support.ErrorCategory;
 import com.github.streamshub.console.api.support.ListRequestContext;
+import com.github.streamshub.console.config.ClusterKind;
 
 import io.xlate.validation.constraints.Expression;
 
@@ -151,6 +152,11 @@ public class KafkaCluster extends KubeApiResource<KafkaCluster.Attributes, Kafka
                     the Kafka cluster is not (known) to be managed by Strimzi.
                     """)
         Boolean reconciliationPaused;
+
+        @JsonProperty
+        @Schema(description = "Kubernetes resource kind backing this Kafka cluster.",
+                implementation = ClusterKind.class)
+        ClusterKind kind;
     }
 
     @JsonFilter("fieldFilter")
@@ -226,6 +232,10 @@ public class KafkaCluster extends KubeApiResource<KafkaCluster.Attributes, Kafka
                 .map(Meta.class::cast)
                 .map(meta -> meta.reconciliationPaused)
                 .orElse(null);
+    }
+
+    public void kind(ClusterKind kind) {
+        ((Meta) getOrCreateMeta()).kind = kind;
     }
 
     public JsonApiRelationshipToMany nodes() {

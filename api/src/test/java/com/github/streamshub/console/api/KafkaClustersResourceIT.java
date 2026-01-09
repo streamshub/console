@@ -208,6 +208,7 @@ class KafkaClustersResourceIT {
             .body("data.find { it.attributes.name == 'test-kafka1'}.attributes.listeners", hasItem(allOf(
                     hasEntry("bootstrapServers", k1Bootstrap),
                     hasEntry("authType", "custom"))))
+            .body("data.find { it.attributes.name == 'test-kafka1' }.meta.kind", is("kafkas.kafka.strimzi.io")) 
             .body("data.find { it.attributes.name == 'test-kafka2'}.attributes.status", is("NotReady"))
             .body("data.find { it.attributes.name == 'test-kafka2'}.attributes.listeners", hasItem(allOf(
                     hasEntry(equalTo("bootstrapServers"), equalTo(k2Bootstrap)),
