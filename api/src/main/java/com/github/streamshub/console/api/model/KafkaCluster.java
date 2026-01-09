@@ -154,10 +154,8 @@ public class KafkaCluster extends KubeApiResource<KafkaCluster.Attributes, Kafka
         Boolean reconciliationPaused;
 
         @JsonProperty
-        @Schema(description = """
-                    Kubernetes resource kind backing this Kafka cluster.
-                    implementation = ClusterKind.class
-                    """)
+        @Schema(description = "Kubernetes resource kind backing this Kafka cluster.",
+                implementation = ClusterKind.class)
         ClusterKind kind;
     }
 
@@ -239,14 +237,6 @@ public class KafkaCluster extends KubeApiResource<KafkaCluster.Attributes, Kafka
     public void kind(ClusterKind kind) {
         ((Meta) getOrCreateMeta()).kind = kind;
     }
-
-    public String kind() {
-        return Optional.ofNullable(meta())
-            .map(Meta.class::cast)
-            .map(meta -> meta.kind)
-            .map(ClusterKind::getValue)
-            .orElse(null);
-    }   
 
     public JsonApiRelationshipToMany nodes() {
         return relationships.nodes;

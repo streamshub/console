@@ -124,6 +124,10 @@ public class KafkaCluster {
         return kind;
     }
 
+    public void setKind(ClusterKind kind) {
+        this.kind = kind;
+    }   
+
     public Credentials getCredentials() {
         return credentials;
     }
