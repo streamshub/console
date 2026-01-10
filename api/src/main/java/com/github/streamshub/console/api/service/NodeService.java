@@ -33,6 +33,7 @@ import org.eclipse.microprofile.context.ThreadContext;
 import org.jboss.logging.Logger;
 
 import com.github.streamshub.console.api.model.ConfigEntry;
+import com.github.streamshub.console.api.model.Metrics;
 import com.github.streamshub.console.api.model.Metrics.ValueMetric;
 import com.github.streamshub.console.api.model.Node;
 import com.github.streamshub.console.api.model.Node.BrokerStatus;
@@ -505,5 +506,61 @@ public class NodeService {
                 .map(ValueMetric::value)
                 .orElse(null);
         return metricValue != null ? map.apply(metricValue) : defaultValue;
+    }
+
+    public CompletionStage<Metrics> getNodeMetrics(String clusterId, String nodeId) {
+        if (kafkaContext.prometheus() == null) {
+            logger.warnf("Metrics requested for node %s, but Prometheus is not configured", nodeId);
+            return CompletableFuture.completedStage(new Metrics());
+        }
+
+        var clusterConfig = kafkaContext.clusterConfig();
+        String namespace = clusterConfig.getNamespace();
+        String name = clusterConfig.getName();
+
+        String rangeQuery;
+        String valueQuery;
+
+        try (
+            var rangesStream = getClass().getResourceAsStream("/metrics/queries/kafkaCluster_ranges.promql");
+            var valuesStream = getClass().getResourceAsStream("/metrics/queries/kafkaCluster_values.promql")
+        ) {
+            rangeQuery = new String(rangesStream.readAllBytes(), StandardCharsets.UTF_8)
+                    .formatted(namespace, name);
+            valueQuery = new String(valuesStream.readAllBytes(), StandardCharsets.UTF_8)
+                    .formatted(namespace, name);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+
+        Metrics nodeMetrics = new Metrics();
+
+        var rangeResults = metricsService.queryRanges(rangeQuery).toCompletableFuture();
+        var valueResults = metricsService.queryValues(valueQuery).toCompletableFuture();
+
+        return CompletableFuture.allOf(
+            rangeResults.thenAccept(ranges ->
+                ranges.forEach((metricName, dataList) -> {
+                    var filtered = dataList.stream()
+                            .filter(m -> nodeId.equals(m.attributes().get("nodeId")))
+                            .toList();
+
+                    if (!filtered.isEmpty()) {
+                        nodeMetrics.ranges().put(metricName, filtered);
+                    }
+                })
+            ),
+            valueResults.thenAccept(values ->
+                values.forEach((metricName, dataList) -> {
+                    var filtered = dataList.stream()
+                            .filter(m -> nodeId.equals(m.attributes().get("nodeId")))
+                            .toList();
+
+                    if (!filtered.isEmpty()) {
+                        nodeMetrics.values().put(metricName, filtered);
+                    }
+                })
+            )
+        ).thenApply(nothing -> nodeMetrics);
     }
 }
