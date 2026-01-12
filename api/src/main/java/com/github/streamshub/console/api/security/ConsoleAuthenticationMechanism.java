@@ -41,6 +41,7 @@ import com.github.streamshub.console.config.KafkaClusterConfig;
 import com.github.streamshub.console.config.security.Decision;
 import com.github.streamshub.console.config.security.KafkaSecurityConfig;
 import com.github.streamshub.console.config.security.SubjectConfig;
+import com.github.streamshub.console.support.RootCause;
 
 import io.quarkus.oidc.runtime.OidcAuthenticationMechanism;
 import io.quarkus.oidc.runtime.OidcJwtCallerPrincipal;
@@ -119,7 +120,7 @@ public class ConsoleAuthenticationMechanism implements HttpAuthenticationMechani
         if (oidcEnabled()) {
             return oidc.authenticate(context, identityProviderManager)
                     .map(identity -> augmentIdentity(context, identity))
-                    .onFailure().invoke(this::maybeLogAuthenticationFailure);
+                    .onFailure().invoke(this::logAuthenticationFailure);
         }
 
         String clusterId = getClusterId(context);
@@ -401,9 +402,13 @@ public class ConsoleAuthenticationMechanism implements HttpAuthenticationMechani
         log.tracef("%s %s %s", principal.getName(), allowed ? "allowed" : "denied", required);
     }
 
-    private void maybeLogAuthenticationFailure(Throwable t) {
-        if (t.getCause() instanceof org.jose4j.jwt.consumer.InvalidJwtException ije) {
+    private void logAuthenticationFailure(Throwable t) {
+        Throwable rootCause = RootCause.of(t).orElse(t);
+
+        if (rootCause instanceof org.jose4j.jwt.consumer.InvalidJwtException ije) {
             log.debugf("Invalid JWT: %s", ije.getErrorDetails());
+        } else {
+            log.debugf("Authentication failed: %s", rootCause);
         }
     }
 

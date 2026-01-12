@@ -241,6 +241,7 @@ public class KafkaClusterService {
         cluster.setConfigured(true);
         cluster.name(config.getName());
         cluster.namespace(config.getNamespace());
+        cluster.kind(config.getKind());
 
         if (config.getId() != null) {
             // configuration has overridden the id
