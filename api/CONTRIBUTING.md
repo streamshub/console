@@ -11,7 +11,7 @@ One option to get started is to follow [Strimzi's Quick Starts](https://strimzi.
 
 You will also need a working installation of:
 
-- Java (v17)
+- Java (v21)
 - Maven (v3.8)
 
 ### Coding Guidelines

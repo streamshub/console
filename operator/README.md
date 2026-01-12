@@ -9,7 +9,7 @@ This repository contains the operator responsible for deploying the StreamsHub c
 There are a few things you need to have installed to run this project:
 
 - [Maven](https://maven.apache.org/)
-- [JDK 17+](https://openjdk.java.net/projects/jdk/17/)
+- [JDK 21+](https://openjdk.java.net/projects/jdk/21/)
 - Kubernetes environment ([minikube](https://minikube.sigs.k8s.io/) recommended) with [Strimzi Cluster Operator](https://strimzi.io) installed and a Kafka cluster deployed
 - [Docker](https://www.docker.com/) or [Podman](https://podman.io)
 
