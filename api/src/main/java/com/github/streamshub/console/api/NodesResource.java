@@ -32,6 +32,7 @@ import com.github.streamshub.console.api.model.ConfigEntry;
 import com.github.streamshub.console.api.model.ListFetchParams;
 import com.github.streamshub.console.api.model.Node;
 import com.github.streamshub.console.api.model.NodeFilterParams;
+import com.github.streamshub.console.api.model.NodeMetricsEntry;
 import com.github.streamshub.console.api.security.Authorized;
 import com.github.streamshub.console.api.security.ResourcePrivilege;
 import com.github.streamshub.console.api.service.NodeService;
@@ -159,4 +160,20 @@ public class NodesResource {
             .thenApply(Response.ResponseBuilder::build);
     }
 
+    @GET
+    @Path("{nodeId}/metrics")
+    @Produces(MediaType.APPLICATION_JSON)
+    @APIResponse(responseCode = "200", description = "Node metrics")
+    @APIResponse(responseCode = "404", ref = "NotFound")
+    @Authorized
+    @ResourcePrivilege(Privilege.GET)
+    public CompletionStage<Response> getNodeMetrics(
+            @PathParam("clusterId") String clusterId,
+            @PathParam("nodeId") String nodeId) {
+
+        return nodeService.getNodeMetrics(clusterId, nodeId)
+            .thenApply(metrics -> new NodeMetricsEntry.MetricsResponse(nodeId, metrics))
+            .thenApply(Response::ok)
+            .thenApply(Response.ResponseBuilder::build);
+    }
 }

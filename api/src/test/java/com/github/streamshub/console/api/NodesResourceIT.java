@@ -94,6 +94,11 @@ import static org.mockito.Mockito.when;
 @TestProfile(TestPlainProfile.class)
 class NodesResourceIT implements ClientRequestFilter {
 
+    static final JsonObject EMPTY_METRICS = Json.createObjectBuilder()
+        .add("data", Json.createObjectBuilder()
+                .add("result", Json.createArrayBuilder()))
+        .build();
+
     @Inject
     Config config;
 
@@ -629,4 +634,26 @@ class NodesResourceIT implements ClientRequestFilter {
             .body("errors.detail", contains("No such node: 99"));
     }
 
+    @Test
+    void testGetNodeMetrics() {
+        whenRequesting(req -> req.get("{nodeId}/metrics", clusterId, "10"))
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()))
+            .body("data.id", equalTo("10"))
+            .body("data.type", equalTo("node-metrics"))
+            .body("data.attributes", hasKey("metrics"))
+            .body("data.attributes.metrics.values", not(anEmptyMap()));
+    }
+
+    @Test
+    void testGetNodeMetrics_PrometheusReturnsNoData() {
+        filterQuery = ctx ->
+            ctx.abortWith(Response.ok(EMPTY_METRICS).build());
+
+        whenRequesting(req -> req.get("{nodeId}/metrics", clusterId, "10"))
+            .assertThat()
+            .statusCode(200)
+            .body("data.attributes.metrics.values", anEmptyMap())
+            .body("data.attributes.metrics.ranges", anEmptyMap());
+    }
 }
