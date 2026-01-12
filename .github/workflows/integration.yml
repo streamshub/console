@@ -36,11 +36,11 @@ jobs:
       - name: Fetch Operator Framework Utilities
         run: ./operator/bin/fetch-operator-utilities.sh
 
-      - name: Set Up JDK 17
+      - name: Set Up JDK
         uses: actions/setup-java@v5
         with:
-          java-version: '17'
-          distribution: 'adopt'
+          java-version: '21'
+          distribution: 'temurin'
 
       - name: Cache Maven Packages
         uses: actions/cache@v5
@@ -165,11 +165,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Set Up JDK 17
+      - name: Set Up JDK
         uses: actions/setup-java@v5
         with:
-          java-version: '17'
-          distribution: 'adopt'
+          java-version: '21'
+          distribution: 'temurin'
 
       - name: Cache Maven Packages
         uses: actions/cache@v5
