@@ -101,7 +101,6 @@ jobs:
       - name: Extract images
         run: |
           unzip streamshub-images.zip
-          tar -xzf streamshub-images.tgz
 
       - name: Setup Minikube
         id: setup_minikube
