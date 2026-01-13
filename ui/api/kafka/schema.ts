@@ -1,6 +1,11 @@
 import { z } from "zod";
 import { NodesListMetaSummary } from "../nodes/schema";
 
+export const KafkaClusterKindSchema = z
+  .enum(["kafkas.kafka.strimzi.io", "virtualkafkaclusters.kroxylicious.io"])
+  .nullable()
+  .optional();
+
 export const ClusterListSchema = z.object({
   id: z.string(),
   type: z.literal("kafkas"),
@@ -55,6 +60,7 @@ const ClusterDetailSchema = z.object({
   meta: z
     .object({
       reconciliationPaused: z.boolean().optional(),
+      kind: KafkaClusterKindSchema,
       managed: z.boolean(),
       privileges: z.array(z.string()).optional(),
     })

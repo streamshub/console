@@ -19,6 +19,7 @@ import { formatDateTime } from "@/utils/dateTime";
 type ChartIncomingOutgoingProps = {
   incoming: TimeSeriesMetrics;
   outgoing: TimeSeriesMetrics;
+  isVirtualKafkaCluster: boolean;
 };
 
 type Datum = {
@@ -31,6 +32,7 @@ type Datum = {
 export function ChartIncomingOutgoing({
   incoming,
   outgoing,
+  isVirtualKafkaCluster,
 }: ChartIncomingOutgoingProps) {
   const t = useTranslations();
   const formatBytes = useFormatBytes();
@@ -41,13 +43,17 @@ export function ChartIncomingOutgoing({
 
   const hasMetrics =
     Object.keys(incoming).length > 0 && Object.keys(outgoing).length > 0;
-  if (!hasMetrics) {
+  if (!hasMetrics || isVirtualKafkaCluster) {
     return (
       <Alert
-        variant="warning"
+        variant={isVirtualKafkaCluster ? "info" : "warning"}
         isInline
         isPlain
-        title={t("ChartIncomingOutgoing.data_unavailable")}
+        title={
+          isVirtualKafkaCluster
+            ? t("ClusterChartsCard.virtual_cluster_metrics_unavailable")
+            : t("ChartIncomingOutgoing.data_unavailable")
+        }
       />
     );
   }
