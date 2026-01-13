@@ -656,4 +656,18 @@ class NodesResourceIT implements ClientRequestFilter {
             .body("data.attributes.metrics.values", anEmptyMap())
             .body("data.attributes.metrics.ranges", anEmptyMap());
     }
+
+    @Test
+    void testGetNodeMetrics_PrometheusNotConfigured() {
+        consoleConfig.getKafka()
+            .getCluster(clusterNamespace1 + '/' + clusterName1)
+            .get()
+            .setMetricsSource(null);
+
+        whenRequesting(req -> req.get("{nodeId}/metrics", clusterId, "10"))
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()))
+            .body("data.attributes.metrics.values", anEmptyMap())
+            .body("data.attributes.metrics.ranges", anEmptyMap());
+    }
 }
