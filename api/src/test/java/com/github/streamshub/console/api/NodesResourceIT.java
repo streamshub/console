@@ -659,6 +659,8 @@ class NodesResourceIT implements ClientRequestFilter {
 
     @Test
     void testGetNodeMetrics_PrometheusNotConfigured() {
+        filterQuery = ctx -> ctx.abortWith(Response.ok(EMPTY_METRICS).build());
+
         consoleConfig.getKafka()
             .getCluster(clusterNamespace1 + '/' + clusterName1)
             .get()
@@ -669,5 +671,5 @@ class NodesResourceIT implements ClientRequestFilter {
             .statusCode(is(Status.OK.getStatusCode()))
             .body("data.attributes.metrics.values", anEmptyMap())
             .body("data.attributes.metrics.ranges", anEmptyMap());
-    }
+    }   
 }
