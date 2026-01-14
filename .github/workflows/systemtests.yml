@@ -86,8 +86,11 @@ jobs:
           ref: ${{ env.COMMIT_SHA }}
 
       - name: Download Image Artifacts
-        run: |
-          gh run download ${{ env.ARTIFACTS_RUN_ID }} --repo ${{ env.REPO }} --name streamshub-images
+        uses: actions/download-artifact@v7
+        with:
+          name: streamshub-images
+          run-id: ${{ env.ARTIFACTS_RUN_ID }}
+          repository: ${{ env.REPO }}
 
       - name: Extract Images
         run: |
