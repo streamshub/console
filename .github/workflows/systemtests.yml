@@ -85,20 +85,14 @@ jobs:
         with:
           ref: ${{ env.COMMIT_SHA }}
 
-      # Unpacking during this step must be skipped as Node.js cannot handle a single buffer > 2 GiB
-      - name: Download Images
-        id: download-artifact
-        uses: dawidd6/action-download-artifact@0bd50d53a6d7fb5cb921e607957e9cc12b4ce392
+      - name: Download Image Artifacts
+        uses: actions/download-artifact@v7
         with:
-          github_token: ${{ env.GH_TOKEN }}
-          workflow: integration.yml
-          workflow_conclusion: success
-          run_id: ${{ env.ARTIFACTS_RUN_ID }}
-          skip_unpack: true
-          repo: ${{ env.REPO }}
           name: streamshub-images
+          run-id: ${{ env.ARTIFACTS_RUN_ID }}
+          repository: ${{ env.REPO }}
 
-      - name: Extract images
+      - name: Extract Images
         run: |
           unzip streamshub-images.zip
 
