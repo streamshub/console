@@ -84,6 +84,8 @@ jobs:
         uses: actions/checkout@v6
         with:
           ref: ${{ env.COMMIT_SHA }}
+
+      # Unpacking during this step must be skipped as Node.js cannot handle a single buffer > 2 GiB
       - name: Download Images
         id: download-artifact
         uses: dawidd6/action-download-artifact@0bd50d53a6d7fb5cb921e607957e9cc12b4ce392
@@ -92,9 +94,13 @@ jobs:
           workflow: integration.yml
           workflow_conclusion: success
           run_id: ${{ env.ARTIFACTS_RUN_ID }}
-          skip_unpack: false
+          skip_unpack: true
           repo: ${{ env.REPO }}
           name: streamshub-images
+
+      - name: Extract images
+        run: |
+          unzip streamshub-images.zip
 
       - name: Setup Minikube
         id: setup_minikube
