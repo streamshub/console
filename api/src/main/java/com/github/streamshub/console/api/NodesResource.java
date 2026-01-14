@@ -32,7 +32,7 @@ import com.github.streamshub.console.api.model.ConfigEntry;
 import com.github.streamshub.console.api.model.ListFetchParams;
 import com.github.streamshub.console.api.model.Node;
 import com.github.streamshub.console.api.model.NodeFilterParams;
-import com.github.streamshub.console.api.model.NodeMetricsEntry;
+import com.github.streamshub.console.api.model.NodeMetrics;
 import com.github.streamshub.console.api.security.Authorized;
 import com.github.streamshub.console.api.security.ResourcePrivilege;
 import com.github.streamshub.console.api.service.NodeService;
@@ -171,8 +171,8 @@ public class NodesResource {
             @PathParam("clusterId") String clusterId,
             @PathParam("nodeId") String nodeId) {
 
-        return nodeService.getNodeMetrics(clusterId, nodeId)
-            .thenApply(metrics -> new NodeMetricsEntry.MetricsResponse(nodeId, metrics))
+        return nodeService.getNodeMetrics(nodeId)
+            .thenApply(metrics -> new NodeMetrics.MetricsResponse(nodeId, metrics))
             .thenApply(Response::ok)
             .thenApply(Response.ResponseBuilder::build);
     }

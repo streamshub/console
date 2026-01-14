@@ -508,7 +508,23 @@ public class NodeService {
         return metricValue != null ? map.apply(metricValue) : defaultValue;
     }
 
-    public CompletionStage<Metrics> getNodeMetrics(String clusterId, String nodeId) {
+    private <M extends Metrics.Metric> void extractNodeMetrics(
+        String nodeId,
+        Map<String, List<M>> allMetrics,
+        Map<String, List<M>> nodeMetrics) {
+
+        allMetrics.forEach((metricName, dataList) -> {
+            var filtered = dataList.stream()
+                .filter(m -> nodeId.equals(m.attributes().get("nodeId")))
+                .toList();
+
+            if (!filtered.isEmpty()) {
+                nodeMetrics.put(metricName, filtered);
+            }
+        });
+    }
+    
+    public CompletionStage<Metrics> getNodeMetrics(String nodeId) {
         if (kafkaContext.prometheus() == null) {
             logger.warnf("Metrics requested for node %s, but Prometheus is not configured", nodeId);
             return CompletableFuture.completedStage(new Metrics());
@@ -535,32 +551,22 @@ public class NodeService {
 
         Metrics nodeMetrics = new Metrics();
 
-        var rangeResults = metricsService.queryRanges(rangeQuery).toCompletableFuture();
-        var valueResults = metricsService.queryValues(valueQuery).toCompletableFuture();
+        var rangeFuture = metricsService.queryRanges(rangeQuery).toCompletableFuture();
+        var valueFuture = metricsService.queryValues(valueQuery).toCompletableFuture();
 
-        return CompletableFuture.allOf(
-            rangeResults.thenAccept(ranges ->
-                ranges.forEach((metricName, dataList) -> {
-                    var filtered = dataList.stream()
-                            .filter(m -> nodeId.equals(m.attributes().get("nodeId")))
-                            .toList();
-
-                    if (!filtered.isEmpty()) {
-                        nodeMetrics.ranges().put(metricName, filtered);
-                    }
-                })
-            ),
-            valueResults.thenAccept(values ->
-                values.forEach((metricName, dataList) -> {
-                    var filtered = dataList.stream()
-                            .filter(m -> nodeId.equals(m.attributes().get("nodeId")))
-                            .toList();
-
-                    if (!filtered.isEmpty()) {
-                        nodeMetrics.values().put(metricName, filtered);
-                    }
-                })
-            )
-        ).thenApply(nothing -> nodeMetrics);
+        return CompletableFuture.allOf(rangeFuture, valueFuture)
+                .thenApply(nothing -> {
+                    extractNodeMetrics(
+                                    nodeId, 
+                                    rangeFuture.join(), 
+                                    nodeMetrics.ranges());
+                
+                    extractNodeMetrics(
+                                    nodeId, 
+                                    valueFuture.join(), 
+                                    nodeMetrics.values());
+                
+                    return nodeMetrics;
+                });
     }
 }

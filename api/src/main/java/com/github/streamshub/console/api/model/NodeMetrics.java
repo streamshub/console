@@ -7,7 +7,7 @@ import com.github.streamshub.console.api.model.jsonapi.None;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 @Schema(name = "NodeMetrics")
-public class NodeMetricsEntry {
+public class NodeMetrics {
 
     public static class MetricsResponse extends JsonApiRootData<MetricsResource> {
 
@@ -16,26 +16,15 @@ public class NodeMetricsEntry {
         }
     }
 
-    public static final class MetricsResource
-            extends JsonApiResource<Attributes, None> {
+    public static final class MetricsResource extends JsonApiResource<Attributes, None> {
 
         public MetricsResource(String nodeId, Attributes attributes) {
-            super(nodeId, "node-metrics", attributes);
+            super(nodeId, "nodeMetrics", attributes);
         }
     }
 
     @Schema(name = "NodeMetricsAttributes")
-    public static final class Attributes {
-
-        @JsonProperty
-        private final Metrics metrics;
-
-        public Attributes(Metrics metrics) {
-            this.metrics = metrics;
-        }
-
-        public Metrics getMetrics() {
-            return metrics;
-        }
-    }
+    public static record Attributes(
+        @JsonProperty Metrics metrics
+    ) { }
 }

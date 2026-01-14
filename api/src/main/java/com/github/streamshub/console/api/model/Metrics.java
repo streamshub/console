@@ -23,6 +23,10 @@ public record Metrics(
         this(new LinkedHashMap<>(), new LinkedHashMap<>());
     }
 
+    public interface Metric {
+        Map<String, String> attributes();
+    }
+
     @Schema(additionalProperties = String.class)
     public static record ValueMetric(
             @JsonProperty
@@ -30,7 +34,7 @@ public record Metrics(
 
             @JsonAnyGetter
             @Schema(hidden = true)
-            Map<String, String> attributes) {
+            Map<String, String> attributes) implements Metric {
     }
 
     @Schema(additionalProperties = String.class)
@@ -41,7 +45,7 @@ public record Metrics(
 
             @JsonAnyGetter
             @Schema(hidden = true)
-            Map<String, String> attributes) {
+            Map<String, String> attributes) implements Metric {
     }
 
     @JsonFormat(shape = JsonFormat.Shape.ARRAY)
