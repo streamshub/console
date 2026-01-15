@@ -11,6 +11,7 @@ export const ClusterListSchema = z.object({
   type: z.literal("kafkas"),
   meta: z.object({
     configured: z.boolean(),
+    kind: KafkaClusterKindSchema,
     authentication: z
       .union([
         z.object({

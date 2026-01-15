@@ -6,6 +6,7 @@ import { ButtonLink } from "./Navigation/ButtonLink";
 import { Link } from "@/i18n/routing";
 import { Truncate } from "@/libs/patternfly/react-core";
 import { EmptyStateNoMatchFound } from "./Table/EmptyStateNoMatchFound";
+import { KroxyliciousClusterLabel } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/KroxyliciousClusterLabel";
 
 export const ClusterColumns = [
   "name",
@@ -91,18 +92,28 @@ export function ClustersTable({
       }}
       renderCell={({ key, column, row, Td }) => {
         switch (column) {
-          case "name":
+          case "name": {
+            const isVirtualCluster =
+              row.meta?.kind === "virtualkafkaclusters.kroxylicious.io";
+
             return (
               <Td key={key}>
                 {authenticated ? (
-                  <Link href={`/kafka/${row.id}`}>
-                    <Truncate content={row.attributes.name} />
-                  </Link>
+                  <>
+                    <Link href={`/kafka/${row.id}`}>
+                      <Truncate content={row.attributes.name} />
+                    </Link>
+                    {isVirtualCluster && <KroxyliciousClusterLabel />}
+                  </>
                 ) : (
-                  <Truncate content={row.attributes.name} />
+                  <>
+                    {row.attributes.name}
+                    {isVirtualCluster && <KroxyliciousClusterLabel />}
+                  </>
                 )}
               </Td>
             );
+          }
           case "version":
             return (
               <Td key={key}>
