@@ -47,7 +47,7 @@
     "next-auth": "^4.24.13",
     "next-intl": "^4.7.0",
     "next-logger": "^5.0.2",
-    "pino": "^10.1.1",
+    "pino": "^10.2.0",
     "react": "18.3.1",
     "react-csv-downloader": "^3.3.0",
     "react-dom": "18.3.1",
