@@ -43,11 +43,6 @@ jobs:
         with:
           ref: ${{ env.COMMIT_SHA }}
 
-      - name: Get previously built artifacts
-        run: |
-          ARTIFACTS_RUN_ID=$(gh run list --repo $REPO --commit $COMMIT_SHA --workflow integration.yml --status success --json databaseId --jq '.[0].databaseId')
-          echo "ARTIFACTS_RUN_ID=$ARTIFACTS_RUN_ID" >> $GITHUB_ENV
-
       - name: Generate ST matrix
         id: generate-matrix
         run: ./.github/actions/systemtests/generate-test-matrix.sh
@@ -84,6 +79,11 @@ jobs:
         uses: actions/checkout@v6
         with:
           ref: ${{ env.COMMIT_SHA }}
+
+      - name: Get previously built artifacts
+        run: |
+          ARTIFACTS_RUN_ID=$(gh run list --repo $REPO --commit $COMMIT_SHA --workflow integration.yml --status success --json databaseId --jq '.[0].databaseId')
+          echo "ARTIFACTS_RUN_ID=$ARTIFACTS_RUN_ID" >> $GITHUB_ENV
 
       - name: Download Image Artifacts
         uses: actions/download-artifact@v7
