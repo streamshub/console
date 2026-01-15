@@ -49,6 +49,11 @@ runs:
 
         kill ${SOCAT_PID}
 
+    - name: Remove local image files
+      shell: bash
+      run: |
+        rm -rvf streamshub-images.tgz streamshub-images
+
     - name: Set Nginx ingres passthrough
       shell: bash
       run: |
