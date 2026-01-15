@@ -94,6 +94,11 @@ import static org.mockito.Mockito.when;
 @TestProfile(TestPlainProfile.class)
 class NodesResourceIT implements ClientRequestFilter {
 
+    static final JsonObject EMPTY_METRICS = Json.createObjectBuilder()
+        .add("data", Json.createObjectBuilder()
+                .add("result", Json.createArrayBuilder()))
+        .build();
+
     @Inject
     Config config;
 
@@ -629,4 +634,43 @@ class NodesResourceIT implements ClientRequestFilter {
             .body("errors.detail", contains("No such node: 99"));
     }
 
+    @Test
+    void testGetNodeMetrics() {
+        whenRequesting(req -> req.get("{nodeId}/metrics", clusterId, "10"))
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()))
+            .body("data.id", equalTo("10"))
+            .body("data.type", equalTo("nodeMetrics"))
+            .body("data.attributes.metrics.values", not(anEmptyMap()))
+            .body("data.attributes.metrics.values.broker_state[0].value", equalTo("3"));
+    }
+
+    @Test
+    void testGetNodeMetrics_PrometheusReturnsNoData() {
+        filterQuery = ctx ->
+            ctx.abortWith(Response.ok(EMPTY_METRICS).build());
+
+        whenRequesting(req -> req.get("{nodeId}/metrics", clusterId, "10"))
+            .assertThat()
+            .statusCode(200)
+            .body("data.id", equalTo("10"))
+            .body("data.attributes.metrics.values", anEmptyMap())
+            .body("data.attributes.metrics.ranges", anEmptyMap());
+    }
+
+    @Test
+    void testGetNodeMetrics_PrometheusNotConfigured() {
+        filterQuery = ctx -> ctx.abortWith(Response.ok(EMPTY_METRICS).build());
+
+        consoleConfig.getKafka()
+            .getCluster(clusterNamespace1 + '/' + clusterName1)
+            .get()
+            .setMetricsSource(null);
+
+        whenRequesting(req -> req.get("{nodeId}/metrics", clusterId, "10"))
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()))
+            .body("data.attributes.metrics.values", anEmptyMap())
+            .body("data.attributes.metrics.ranges", anEmptyMap());
+    }   
 }
