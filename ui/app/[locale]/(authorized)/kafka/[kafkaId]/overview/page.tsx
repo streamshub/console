@@ -18,21 +18,32 @@ export async function generateMetadata() {
   };
 }
 
-export default async function OverviewPage({ params }: { params: KafkaParams }) {
+export default async function OverviewPage({
+  params,
+}: {
+  params: KafkaParams;
+}) {
   const kafkaCluster = getKafkaCluster(params.kafkaId, {
-    fields: 'name,namespace,creationTimestamp,status,kafkaVersion,nodes,listeners,conditions,metrics'
-  }).then(r => r.payload ?? null);
+    fields:
+      "name,namespace,creationTimestamp,status,kafkaVersion,nodes,listeners,conditions,metrics",
+  }).then((r) => r.payload ?? null);
 
   const topics = getTopics(params.kafkaId, { fields: "status", pageSize: 1 });
-  const consumerGroups = getConsumerGroups(params.kafkaId, { fields: "groupId,state" });
+  const consumerGroups = getConsumerGroups(params.kafkaId, {
+    fields: "groupId,state",
+  });
   const viewedTopics = getViewedTopics().then((topics) =>
     topics.filter((t) => t.kafkaId === params.kafkaId),
   );
 
+  console.log("kafkaCLuster", kafkaCluster);
   return (
     <PageLayout
       clusterOverview={
-        <ConnectedClusterCard cluster={kafkaCluster} consumerGroups={consumerGroups} />
+        <ConnectedClusterCard
+          cluster={kafkaCluster}
+          consumerGroups={consumerGroups}
+        />
       }
       topicsPartitions={<ConnectedTopicsPartitionsCard data={topics} />}
       clusterCharts={<ConnectedClusterChartsCard cluster={kafkaCluster} />}

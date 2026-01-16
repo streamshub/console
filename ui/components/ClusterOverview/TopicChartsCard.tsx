@@ -22,11 +22,16 @@ export function TopicChartsCard({
   isLoading,
   incoming,
   outgoing,
+  isVirtualKafkaCluster,
 }:
-  | ({ isLoading: false } & TopicChartsCardProps)
   | ({
-    isLoading: true;
-  } & Partial<{ [key in keyof TopicChartsCardProps]?: undefined }>)) {
+      isLoading: false;
+      isVirtualKafkaCluster: boolean;
+    } & TopicChartsCardProps)
+  | ({
+      isLoading: true;
+      isVirtualKafkaCluster?: boolean;
+    } & Partial<{ [key in keyof TopicChartsCardProps]?: undefined }>)) {
   const t = useTranslations();
 
   return (
@@ -42,14 +47,22 @@ export function TopicChartsCard({
         <Flex direction={{ default: "column" }} gap={{ default: "gapLg" }}>
           <b>
             {t("topicMetricsCard.topics_bytes_incoming_and_outgoing")}{" "}
-            <Tooltip content={t("topicMetricsCard.topics_bytes_incoming_and_outgoing_tooltip")}>
+            <Tooltip
+              content={t(
+                "topicMetricsCard.topics_bytes_incoming_and_outgoing_tooltip",
+              )}
+            >
               <HelpIcon />
             </Tooltip>
           </b>
           {isLoading ? (
             <ChartSkeletonLoader />
           ) : (
-            <ChartIncomingOutgoing incoming={incoming} outgoing={outgoing} />
+            <ChartIncomingOutgoing
+              incoming={incoming}
+              outgoing={outgoing}
+              isVirtualKafkaCluster={isVirtualKafkaCluster}
+            />
           )}
         </Flex>
       </CardBody>

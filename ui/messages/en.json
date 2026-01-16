@@ -371,6 +371,7 @@
     "Kafka_cluster_details": "Kafka cluster details"
   },
   "ClusterChartsCard": {
+    "virtual_cluster_metrics_unavailable": "Metrics unavailable for Virtual Kafka Clusters",
     "data_unavailable": "Cluster metrics are not available for this cluster. Please check your configuration.",
     "cluster_metrics": "Cluster metrics",
     "used_disk_space": "Used disk space",
@@ -773,5 +774,9 @@
         "permissionType": "Permission"
 
     }
+  },
+  "KroxyliciousCluster": {
+    "label": "Virtual",
+    "tooltip": "A virtual cluster is a logical Kafka endpoint that clients connect to. The proxy forwards requests to a physical Kafka cluster through its filters."
   }
 }

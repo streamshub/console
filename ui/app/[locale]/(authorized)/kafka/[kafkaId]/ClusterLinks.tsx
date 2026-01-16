@@ -1,8 +1,12 @@
 import { ClusterDetail } from "@/api/kafka/schema";
 import { NavItemLink } from "@/components/Navigation/NavItemLink";
-import { NavGroup, NavList } from "@/libs/patternfly/react-core";
+import {
+  NavGroup,
+  NavList,
+} from "@/libs/patternfly/react-core";
 import { useTranslations } from "next-intl";
 import { Suspense } from "react";
+import { KroxyliciousClusterLabel } from "./KroxyliciousClusterLabel";
 
 export function ClusterLinks({ kafkaDetail }: { kafkaDetail: ClusterDetail }) {
   const t = useTranslations();
@@ -14,7 +18,10 @@ export function ClusterLinks({ kafkaDetail }: { kafkaDetail: ClusterDetail }) {
         title={
           (
             <Suspense>
-              <ClusterName kafkaName={kafkaDetail.attributes.name} />
+              <ClusterName
+                kafkaName={kafkaDetail.attributes.name}
+                kind={kafkaDetail.meta?.kind}
+              />
             </Suspense>
           ) as unknown as string
         }
@@ -48,6 +55,19 @@ export function ClusterLinks({ kafkaDetail }: { kafkaDetail: ClusterDetail }) {
   );
 }
 
-function ClusterName({ kafkaName }: { kafkaName: string }) {
-  return `Cluster ${kafkaName}`;
+function ClusterName({
+  kafkaName,
+  kind,
+}: {
+  kafkaName: string;
+  kind?: string | null;
+}) {
+  const isKroxy = kind === "virtualkafkaclusters.kroxylicious.io";
+
+  return (
+    <>
+      {`Cluster ${kafkaName}`}
+      {isKroxy && <KroxyliciousClusterLabel />}
+    </>
+  );
 }
