@@ -91,6 +91,7 @@ jobs:
           name: streamshub-images
           run-id: ${{ env.ARTIFACTS_RUN_ID }}
           repository: ${{ env.REPO }}
+          github-token: ${{ env.GH_TOKEN }}
 
       - name: Extract Images
         run: |
