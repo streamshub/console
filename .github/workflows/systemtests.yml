@@ -92,10 +92,7 @@ jobs:
           run-id: ${{ env.ARTIFACTS_RUN_ID }}
           repository: ${{ env.REPO }}
           github-token: ${{ env.GH_TOKEN }}
-
-      - name: Extract Images
-        run: |
-          unzip streamshub-images.zip
+          path: .
 
       - name: Setup Minikube
         id: setup_minikube
