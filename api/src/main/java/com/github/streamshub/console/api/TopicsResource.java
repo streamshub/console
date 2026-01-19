@@ -431,5 +431,4 @@ public class TopicsResource {
                 .thenApply(Response::ok)
                 .thenApply(Response.ResponseBuilder::build);
     }
-
 }
