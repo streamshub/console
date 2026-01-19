@@ -41,6 +41,7 @@ import com.github.streamshub.console.api.model.ListFetchParams;
 import com.github.streamshub.console.api.model.NewTopic;
 import com.github.streamshub.console.api.model.Topic;
 import com.github.streamshub.console.api.model.TopicFilterParams;
+import com.github.streamshub.console.api.model.TopicMetrics;
 import com.github.streamshub.console.api.model.TopicPatch;
 import com.github.streamshub.console.api.security.Authorized;
 import com.github.streamshub.console.api.security.ResourcePrivilege;
@@ -405,6 +406,29 @@ public class TopicsResource {
 
         return topicService.patchTopic(topicId, topic.getData().getAttributes(), validateOnly)
                 .thenApply(nothing -> Response.noContent())
+                .thenApply(Response.ResponseBuilder::build);
+    }
+
+    @Path("{topicId}/metrics")
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    @APIResponse(responseCode = "200", description = "Topic metrics")
+    @APIResponse(responseCode = "404", ref = "NotFound")
+    @Authorized
+    @ResourcePrivilege(Privilege.GET)
+    public CompletionStage<Response> getTopicMetrics(
+            @Parameter(description = "Cluster identifier")
+            @PathParam("clusterId")
+            String clusterId,
+
+            @PathParam("topicId")
+            @KafkaUuid(payload = ErrorCategory.ResourceNotFound.class, message = "No such topic")
+            @Parameter(description = "Topic identifier")
+            String topicId) {
+
+        return topicService.getTopicMetrics(topicId)
+                .thenApply(metrics -> new TopicMetrics.MetricsResponse(topicId, metrics))
+                .thenApply(Response::ok)
                 .thenApply(Response.ResponseBuilder::build);
     }
 
