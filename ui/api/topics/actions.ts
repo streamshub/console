@@ -17,6 +17,8 @@ import {
   Topic,
   TopicCreateResponse,
   TopicCreateResponseSchema,
+  TopicMetrics,
+  TopicMetricsResponseSchema,
   TopicResponse,
   TopicsResponse,
   TopicsResponseSchema,
@@ -205,4 +207,15 @@ export async function setTopicAsViewed(kafkaId: string, topicId: string) {
     log.trace({ topic, cluster }, "setTopicAsViewed: invalid topic/cluster");
     return viewedTopics;
   }
+}
+
+export async function gettopicMetrics(
+  kafkaId: string,
+  topicId: number | string,
+): Promise<ApiResponse<TopicMetrics>> {
+  return fetchData(
+    `/api/kafkas/${kafkaId}/topics/${topicId}/metrics`,
+    "",
+    (rawData) => TopicMetricsResponseSchema.parse(rawData),
+  );
 }

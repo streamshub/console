@@ -28,7 +28,15 @@ export default async function OverviewPage({
       "name,namespace,creationTimestamp,status,kafkaVersion,nodes,listeners,conditions,metrics",
   }).then((r) => r.payload ?? null);
 
-  const topics = getTopics(params.kafkaId, { fields: "status", pageSize: 1 });
+  const topicsSummary = getTopics(params.kafkaId, {
+    fields: "status",
+    pageSize: 1,
+  });
+
+  const topicsForCharts = getTopics(params.kafkaId, {
+    fields: "name",
+    pageSize: 100,
+  });
   const consumerGroups = getConsumerGroups(params.kafkaId, {
     fields: "groupId,state",
   });
@@ -45,9 +53,14 @@ export default async function OverviewPage({
           consumerGroups={consumerGroups}
         />
       }
-      topicsPartitions={<ConnectedTopicsPartitionsCard data={topics} />}
+      topicsPartitions={<ConnectedTopicsPartitionsCard data={topicsSummary} />}
       clusterCharts={<ConnectedClusterChartsCard cluster={kafkaCluster} />}
-      topicCharts={<ConnectedTopicChartsCard cluster={kafkaCluster} />}
+      topicCharts={
+        <ConnectedTopicChartsCard
+          cluster={kafkaCluster}
+          topics={topicsForCharts}
+        />
+      }
       recentTopics={<ConnectedRecentTopics data={viewedTopics} />}
     />
   );

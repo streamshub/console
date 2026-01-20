@@ -20,6 +20,7 @@ type ChartIncomingOutgoingProps = {
   incoming: TimeSeriesMetrics;
   outgoing: TimeSeriesMetrics;
   isVirtualKafkaCluster: boolean;
+  selectedTopicName?: string;
 };
 
 type Datum = {
@@ -33,6 +34,7 @@ export function ChartIncomingOutgoing({
   incoming,
   outgoing,
   isVirtualKafkaCluster,
+  selectedTopicName,
 }: ChartIncomingOutgoingProps) {
   const t = useTranslations();
   const formatBytes = useFormatBytes();
@@ -59,13 +61,22 @@ export function ChartIncomingOutgoing({
   }
   // const showDate = shouldShowDate(duration);
   const CursorVoronoiContainer = createContainer("voronoi", "cursor");
+
+  const incomingLabel = selectedTopicName
+    ? `Incoming bytes (${selectedTopicName})`
+    : "Incoming bytes (all topics)";
+
+  const outgoingLabel = selectedTopicName
+    ? `Outgoing bytes (${selectedTopicName})`
+    : "Outgoing bytes (all topics)";
+
   const legendData = [
     {
-      name: "Incoming bytes (all topics)",
+      name: incomingLabel,
       childName: "incoming",
     },
     {
-      name: "Outgoing bytes (all topics)",
+      name: outgoingLabel,
       childName: "outgoing",
     },
   ];

@@ -416,6 +416,10 @@
     "no_data": "No clusters available.",
     "not_available": "n/a"
   },
+  "metrics": {
+     "all_brokers": "All Nodes",
+     "all_topics": "All topics"
+  },
   "ColumnsModal": {
     "title": "Manage columns",
     "description": "Chosen fields will be displayed in the table.",

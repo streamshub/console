@@ -15,12 +15,21 @@ import {
 } from "@/libs/patternfly/react-core";
 import { HelpIcon } from "@/libs/patternfly/react-icons";
 import { useTranslations } from "next-intl";
+import { FilterByBroker } from "./components/FilterByBroker";
+import { useState } from "react";
+import { useNodeMetrics } from "./components/useNodeMetric";
+
+function hasMetrics(metrics?: Record<string, TimeSeriesMetrics>) {
+  return metrics && Object.keys(metrics).length > 0;
+}
 
 type ClusterChartsCardProps = {
+  brokerList: string[];
   usedDiskSpace: Record<string, TimeSeriesMetrics>;
   availableDiskSpace: Record<string, TimeSeriesMetrics>;
   memoryUsage: Record<string, TimeSeriesMetrics>;
   cpuUsage: Record<string, TimeSeriesMetrics>;
+  kafkaId: string | undefined;
 };
 
 export function ClusterChartsCard({
@@ -29,12 +38,37 @@ export function ClusterChartsCard({
   availableDiskSpace,
   memoryUsage,
   cpuUsage,
+  brokerList,
+  kafkaId,
 }:
   | ({ isLoading: false } & ClusterChartsCardProps)
   | ({
       isLoading: true;
     } & Partial<{ [key in keyof ClusterChartsCardProps]?: undefined }>)) {
   const t = useTranslations();
+
+  const [diskBroker, setDiskBroker] = useState<string>();
+  const [cpuBroker, setCpuBroker] = useState<string>();
+  const [memBroker, setMemBroker] = useState<string>();
+
+  const diskMetrics = useNodeMetrics(kafkaId, diskBroker);
+  const cpuMetrics = useNodeMetrics(kafkaId, cpuBroker);
+  const memMetrics = useNodeMetrics(kafkaId, memBroker);
+
+  const diskHasMetrics = hasMetrics(
+    diskMetrics.data?.volume_stats_used_bytes ?? usedDiskSpace,
+  );
+
+  const cpuHasMetrics = hasMetrics(
+    cpuMetrics.data?.cpu_usage_seconds ?? cpuUsage,
+  );
+
+  const memHasMetrics = hasMetrics(
+    memMetrics.data?.memory_usage_bytes ?? memoryUsage,
+  );
+
+  const disableFilter = isLoading || !kafkaId || brokerList.length <= 1;
+
   return (
     <Card>
       <CardHeader>
@@ -55,11 +89,28 @@ export function ClusterChartsCard({
           {isLoading ? (
             <ChartSkeletonLoader />
           ) : (
-            <ChartDiskUsage
-              usages={usedDiskSpace}
-              available={availableDiskSpace}
-            />
+            <>
+              {!isLoading && diskHasMetrics && (
+                <FilterByBroker
+                  brokerList={brokerList}
+                  selectedBroker={diskBroker}
+                  onSetSelectedBroker={setDiskBroker}
+                  disableToolbar={disableFilter || diskMetrics.isLoading}
+                />
+              )}
+
+              <ChartDiskUsage
+                usages={
+                  diskMetrics.data?.volume_stats_used_bytes ?? usedDiskSpace
+                }
+                available={
+                  diskMetrics.data?.volume_stats_capacity_bytes ??
+                  availableDiskSpace
+                }
+              />
+            </>
           )}
+
           <Divider />
           <b>
             {t("ClusterChartsCard.cpu_usage")}{" "}
@@ -70,8 +121,22 @@ export function ClusterChartsCard({
           {isLoading ? (
             <ChartSkeletonLoader />
           ) : (
-            <ChartCpuUsage usages={cpuUsage} />
+            <>
+              {!isLoading && cpuHasMetrics && (
+                <FilterByBroker
+                  brokerList={brokerList}
+                  selectedBroker={cpuBroker}
+                  onSetSelectedBroker={setCpuBroker}
+                  disableToolbar={disableFilter || cpuMetrics.isLoading}
+                />
+              )}
+
+              <ChartCpuUsage
+                usages={cpuMetrics.data?.cpu_usage_seconds ?? cpuUsage}
+              />
+            </>
           )}
+
           <Divider />
           <b>
             {t("ClusterChartsCard.memory_usage")}{" "}
@@ -82,7 +147,20 @@ export function ClusterChartsCard({
           {isLoading ? (
             <ChartSkeletonLoader />
           ) : (
-            <ChartMemoryUsage usages={memoryUsage} />
+            <>
+              {!isLoading && memHasMetrics && (
+                <FilterByBroker
+                  brokerList={brokerList}
+                  selectedBroker={memBroker}
+                  onSetSelectedBroker={setMemBroker}
+                  disableToolbar={disableFilter || memMetrics.isLoading}
+                />
+              )}
+
+              <ChartMemoryUsage
+                usages={memMetrics.data?.memory_usage_bytes ?? memoryUsage}
+              />
+            </>
           )}
         </Flex>
       </CardBody>

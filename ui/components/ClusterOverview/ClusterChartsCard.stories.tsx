@@ -1,6 +1,8 @@
 import type { Meta, StoryObj } from "@storybook/nextjs";
 import { ClusterChartsCard } from "./ClusterChartsCard";
 
+const brokers = ["broker1", "broker2"];
+
 // Mock data for charts
 const mockTimestamps = {
   "2024-01-01T00:00:00Z": 40,
@@ -37,6 +39,7 @@ export const Default: Story = {
     availableDiskSpace: sampleAvailable,
     memoryUsage: sampleUsages,
     cpuUsage: sampleUsages,
+    brokerList: brokers,
   },
 };
 

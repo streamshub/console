@@ -71,10 +71,12 @@ export type TopicStatus = z.infer<typeof TopicStatusSchema>;
 const TopicSchema = z.object({
   id: z.string(),
   type: z.literal("topics"),
-  meta: z.object({
-    managed: z.boolean().optional(),
-    privileges: z.array(z.string()).optional(),
-  }).optional(),
+  meta: z
+    .object({
+      managed: z.boolean().optional(),
+      privileges: z.array(z.string()).optional(),
+    })
+    .optional(),
   attributes: z.object({
     name: z.string().optional(),
     status: TopicStatusSchema.optional(),
@@ -86,10 +88,13 @@ const TopicSchema = z.object({
     totalLeaderLogBytes: z.number().optional().nullable(),
   }),
   relationships: z.object({
-    consumerGroups: z.object({
-      meta: z.record(z.string(), z.any()).optional(),
-      data: z.array(z.any()),
-    }).optional().nullable(),
+    consumerGroups: z
+      .object({
+        meta: z.record(z.string(), z.any()).optional(),
+        data: z.array(z.any()),
+      })
+      .optional()
+      .nullable(),
   }),
 });
 export const TopicResponse = z.object({
@@ -115,7 +120,7 @@ const TopicListItemSchema = z.object({
     totalLeaderLogBytes: true,
   }),
   relationships: TopicSchema.shape.relationships.pick({
-    consumerGroups: true
+    consumerGroups: true,
   }),
 });
 export type TopicListItem = z.infer<typeof TopicListItemSchema>;
@@ -145,6 +150,36 @@ export const TopicsResponseSchema = z.object({
   }),
   data: z.array(TopicListItemSchema),
 });
+
+export const MetricsSchema = z.object({
+  values: z.record(
+    z.string(),
+    z.array(
+      z.object({
+        value: z.string(),
+      }),
+    ),
+  ),
+  ranges: z.record(
+    z.string(),
+    z.array(
+      z.object({
+        range: z.array(z.tuple([z.string(), z.string()])),
+      }),
+    ),
+  ),
+});
+
+export const TopicMetricsResponseSchema = z.object({
+  data: z.object({
+    id: z.string(),
+    type: z.literal("topicMetrics"),
+    attributes: z.object({
+      metrics: MetricsSchema.optional().nullable(),
+    }),
+  }),
+});
+
 export type TopicsResponse = z.infer<typeof TopicsResponseSchema>;
 
 export const TopicCreateResponseSchema = z.object({
@@ -154,3 +189,5 @@ export const TopicCreateResponseSchema = z.object({
 });
 
 export type TopicCreateResponse = z.infer<typeof TopicCreateResponseSchema>;
+
+export type TopicMetrics = z.infer<typeof TopicMetricsResponseSchema>;
