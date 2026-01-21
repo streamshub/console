@@ -44,7 +44,6 @@ export function FilterByBroker({
       onClick={onToggleClick}
       isExpanded={isBrokerSelectOpen}
       isDisabled={disableToolbar || brokerList.length === 0}
-      style={{ width: "250px" }}
     >
       {selectedBroker || t("all_brokers")}
     </MenuToggle>

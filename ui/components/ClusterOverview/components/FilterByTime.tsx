@@ -70,7 +70,6 @@ export function FilterByTime({
       onClick={onToggleClick}
       isExpanded={isTimeSelectOpen}
       isDisabled={disableToolbar}
-      style={{ width: "250px" }}
     >
       {DurationOptionsMap[duration]}
     </MenuToggle>
