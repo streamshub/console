@@ -86,8 +86,8 @@ export function FilterByTime({
         shouldFocusToggleOnSelect
       >
         <SelectList>
-          {Object.values(DurationOptionsMap).map((label) => (
-            <SelectOption value={label}>{label}</SelectOption>
+          {Object.values(DurationOptionsMap).map((label, index) => (
+            <SelectOption key={`time-${index}`} value={label}>{label}</SelectOption>
           ))}
         </SelectList>
       </Select>
