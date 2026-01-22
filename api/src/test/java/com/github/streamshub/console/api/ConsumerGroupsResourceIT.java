@@ -29,7 +29,7 @@ import org.apache.kafka.clients.admin.ListOffsetsResult;
 import org.apache.kafka.clients.admin.ListOffsetsResult.ListOffsetsResultInfo;
 import org.apache.kafka.clients.admin.OffsetSpec;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
-import org.apache.kafka.common.ConsumerGroupState;
+import org.apache.kafka.common.GroupState;
 import org.apache.kafka.common.KafkaFuture;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.errors.ApiException;
@@ -604,7 +604,7 @@ class ConsumerGroupsResourceIT {
                 .body("errors.status", contains("409"))
                 .body("errors.code", contains("4091"));
 
-            assertEquals(ConsumerGroupState.STABLE, groupUtils.consumerGroupState(group1));
+            assertEquals(GroupState.STABLE, groupUtils.consumerGroupState(group1));
         }
     }
 
@@ -622,7 +622,7 @@ class ConsumerGroupsResourceIT {
                 .body("errors.status", contains("404"))
                 .body("errors.code", contains("4041"));
 
-            assertEquals(ConsumerGroupState.STABLE, groupUtils.consumerGroupState(group1));
+            assertEquals(GroupState.STABLE, groupUtils.consumerGroupState(group1));
         }
     }
 
@@ -635,7 +635,7 @@ class ConsumerGroupsResourceIT {
 
         try (var consumer = groupUtils.consume(group1, topic1, client1, 2, false)) {
             await().atMost(10, TimeUnit.SECONDS)
-                .until(() -> ConsumerGroupState.STABLE == groupUtils.consumerGroupState(group1));
+                .until(() -> GroupState.STABLE == groupUtils.consumerGroupState(group1));
         }
 
         whenRequesting(req -> req.delete("{groupId}", clusterId1, group1Id))
@@ -856,7 +856,7 @@ class ConsumerGroupsResourceIT {
                 .patch("{groupId}", clusterId1, group1Id))
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
-            .body("data.attributes.state", is(ConsumerGroupState.EMPTY.name()))
+            .body("data.attributes.state", is(GroupState.EMPTY.name()))
             .body("data.attributes.offsets.topicId", everyItem(is(topic1Id)))
             .body("data.attributes.offsets.topicName", everyItem(is(topic1)))
             .body("data.attributes.offsets.partition", containsInAnyOrder(0, 1))

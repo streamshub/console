@@ -207,11 +207,11 @@ public class ConsumerGroup extends JsonApiResource<ConsumerGroup.Attributes, Non
         throw new GroupIdNotFoundException("Invalid groupId");
     }
 
-    public static ConsumerGroup fromKafkaModel(org.apache.kafka.clients.admin.ConsumerGroupListing listing) {
+    public static ConsumerGroup fromKafkaModel(org.apache.kafka.clients.admin.GroupListing listing) {
         return new ConsumerGroup(
             listing.groupId(),
             listing.isSimpleConsumerGroup(),
-            listing.state().map(Enum::name).orElse(null)
+            listing.groupState().map(Enum::name).orElse(null)
         );
     }
 
@@ -231,7 +231,7 @@ public class ConsumerGroup extends JsonApiResource<ConsumerGroup.Attributes, Non
         var group = new ConsumerGroup(
                 description.groupId(),
                 description.isSimpleConsumerGroup(),
-                Optional.ofNullable(description.state()).map(Enum::name).orElse(null));
+                Optional.ofNullable(description.groupState()).map(Enum::name).orElse(null));
 
         group.partitionAssignor(description.partitionAssignor());
         group.coordinator(Node.fromKafkaModel(description.coordinator()));

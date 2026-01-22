@@ -16,7 +16,8 @@ import java.util.function.Function;
 import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.clients.admin.AdminClientConfig;
-import org.apache.kafka.clients.admin.ConsumerGroupListing;
+import org.apache.kafka.clients.admin.GroupListing;
+import org.apache.kafka.clients.admin.ListGroupsOptions;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
@@ -25,7 +26,7 @@ import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
-import org.apache.kafka.common.ConsumerGroupState;
+import org.apache.kafka.common.GroupState;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.errors.GroupIdNotFoundException;
 import org.apache.kafka.common.serialization.StringSerializer;
@@ -54,7 +55,7 @@ public class ConsumerUtils {
         }
     }
 
-    public ConsumerGroupState consumerGroupState(String groupId) {
+    public GroupState consumerGroupState(String groupId) {
         try (Admin admin = Admin.create(adminConfig)) {
             return admin.describeConsumerGroups(List.of(groupId))
                     .describedGroups()
@@ -62,7 +63,7 @@ public class ConsumerUtils {
                     .toCompletionStage()
                     .toCompletableFuture()
                     .join()
-                    .state();
+                    .groupState();
         } catch (Exception e) {
             fail(e);
         }
@@ -97,10 +98,10 @@ public class ConsumerUtils {
     }
 
     private List<String> allGroupIds(Admin admin) {
-        return admin.listConsumerGroups()
+        return admin.listGroups(ListGroupsOptions.forConsumerGroups())
             .all()
             .toCompletionStage()
-            .thenApply(listing -> listing.stream().map(ConsumerGroupListing::groupId).toList())
+            .thenApply(listing -> listing.stream().map(GroupListing::groupId).toList())
             .toCompletableFuture()
             .join();
     }
