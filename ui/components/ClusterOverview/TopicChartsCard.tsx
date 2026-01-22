@@ -13,7 +13,7 @@ import { ChartIncomingOutgoing } from "./components/ChartIncomingOutgoing";
 import { ChartSkeletonLoader } from "./components/ChartSkeletonLoader";
 import { useTranslations } from "next-intl";
 import { FilterByTopic } from "./components/FilterByTopic";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { gettopicMetrics } from "@/api/topics/actions";
 
 function timeSeriesMetrics(
@@ -105,10 +105,10 @@ export function TopicChartsCard({
 
   const displayOutgoing = topicSpecificMetrics?.outgoing ?? outgoing;
 
-  const hasMetrics =
+  const hasBaselineMetrics =
     !isVirtualKafkaCluster &&
-    Object.keys(displayIncoming ?? {}).length > 0 &&
-    Object.keys(displayOutgoing ?? {}).length > 0;
+    Object.keys(incoming ?? {}).length > 0 &&
+    Object.keys(outgoing ?? {}).length > 0;
 
   return (
     <Card>
@@ -135,7 +135,7 @@ export function TopicChartsCard({
             <ChartSkeletonLoader />
           ) : (
             <>
-              {hasMetrics && (
+              {hasBaselineMetrics && (
                 <FilterByTopic
                   selectedTopic={selectedTopic}
                   topicList={topicList}
