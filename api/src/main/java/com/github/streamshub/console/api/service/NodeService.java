@@ -524,7 +524,7 @@ public class NodeService {
         });
     }
     
-    public CompletionStage<Metrics> getNodeMetrics(String nodeId) {
+    public CompletionStage<Metrics> getNodeMetrics(String nodeId, int durationMinutes) {
         if (kafkaContext.prometheus() == null) {
             logger.warnf("Metrics requested for node %s, but Prometheus is not configured", nodeId);
             return CompletableFuture.completedStage(new Metrics());
@@ -534,14 +534,15 @@ public class NodeService {
         String namespace = clusterConfig.getNamespace();
         String name = clusterConfig.getName();
 
-        String rangeQuery;
+        String rawRangeQuery;
         String valueQuery;
 
+    
         try (
             var rangesStream = getClass().getResourceAsStream("/metrics/queries/kafkaCluster_ranges.promql");
             var valuesStream = getClass().getResourceAsStream("/metrics/queries/kafkaCluster_values.promql")
         ) {
-            rangeQuery = new String(rangesStream.readAllBytes(), StandardCharsets.UTF_8)
+            rawRangeQuery = new String(rangesStream.readAllBytes(), StandardCharsets.UTF_8)
                     .formatted(namespace, name);
             valueQuery = new String(valuesStream.readAllBytes(), StandardCharsets.UTF_8)
                     .formatted(namespace, name);
@@ -549,23 +550,23 @@ public class NodeService {
             throw new UncheckedIOException(e);
         }
 
-        Metrics nodeMetrics = new Metrics();
+    
+        String promInterval = "5m";
+        if (durationMinutes >= 1440) promInterval = "30m"; 
+        if (durationMinutes >= 10080) promInterval = "2h"; 
 
-        var rangeFuture = metricsService.queryRanges(rangeQuery).toCompletableFuture();
+        final String finalizedQuery = rawRangeQuery.replace("[5m]", "[" + promInterval + "]");
+
+        logger.debugf("Executing PromQL: %s", finalizedQuery);
+
+        Metrics nodeMetrics = new Metrics();
+        var rangeFuture = metricsService.queryRanges(finalizedQuery, durationMinutes).toCompletableFuture();
         var valueFuture = metricsService.queryValues(valueQuery).toCompletableFuture();
 
         return CompletableFuture.allOf(rangeFuture, valueFuture)
                 .thenApply(nothing -> {
-                    extractNodeMetrics(
-                                    nodeId, 
-                                    rangeFuture.join(), 
-                                    nodeMetrics.ranges());
-                
-                    extractNodeMetrics(
-                                    nodeId, 
-                                    valueFuture.join(), 
-                                    nodeMetrics.values());
-                
+                    extractNodeMetrics(nodeId, rangeFuture.join(), nodeMetrics.ranges());
+                    extractNodeMetrics(nodeId, valueFuture.join(), nodeMetrics.values());
                     return nodeMetrics;
                 });
     }
