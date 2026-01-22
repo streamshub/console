@@ -36,14 +36,12 @@ export const DurationOptionsMap = {
 
 export function FilterByTime({
   duration,
-  keyText,
   ariaLabel,
   disableToolbar,
   onDurationChange,
 }: {
   duration: DurationOptions;
   onDurationChange: (value: DurationOptions) => void;
-  keyText: string;
   ariaLabel: string;
   disableToolbar: boolean;
 }) {
@@ -77,11 +75,9 @@ export function FilterByTime({
 
   return (
     <ToolbarItem>
-      <label hidden id={`${keyText}-label`}>
-        {ariaLabel}
-      </label>
+      <label hidden>{ariaLabel}</label>
       <Select
-        id={`filter-by-time-${keyText}`}
+        id={`filter-by-time`}
         isOpen={isTimeSelectOpen}
         selected={DurationOptionsMap[duration]}
         onSelect={onTimeSelect}
@@ -90,10 +86,8 @@ export function FilterByTime({
         shouldFocusToggleOnSelect
       >
         <SelectList>
-          {Object.values(DurationOptionsMap).map((label, idx) => (
-            <SelectOption key={`${keyText}-${idx}`} value={label}>
-              {label}
-            </SelectOption>
+          {Object.values(DurationOptionsMap).map((label) => (
+            <SelectOption value={label}>{label}</SelectOption>
           ))}
         </SelectList>
       </Select>

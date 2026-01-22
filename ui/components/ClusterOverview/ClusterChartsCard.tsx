@@ -11,6 +11,9 @@ import {
   Divider,
   Flex,
   Title,
+  Toolbar,
+  ToolbarContent,
+  ToolbarGroup,
   Tooltip,
 } from "@/libs/patternfly/react-core";
 import { HelpIcon } from "@/libs/patternfly/react-icons";
@@ -18,6 +21,7 @@ import { useTranslations } from "next-intl";
 import { FilterByBroker } from "./components/FilterByBroker";
 import { useState } from "react";
 import { useNodeMetrics } from "./components/useNodeMetric";
+import { DurationOptions, FilterByTime } from "./components/FilterByTime";
 
 function hasMetrics(metrics?: Record<string, TimeSeriesMetrics>) {
   return metrics && Object.keys(metrics).length > 0;
@@ -51,9 +55,19 @@ export function ClusterChartsCard({
   const [cpuBroker, setCpuBroker] = useState<string>();
   const [memBroker, setMemBroker] = useState<string>();
 
-  const diskMetrics = useNodeMetrics(kafkaId, diskBroker);
-  const cpuMetrics = useNodeMetrics(kafkaId, cpuBroker);
-  const memMetrics = useNodeMetrics(kafkaId, memBroker);
+  const [diskDuration, setDiskDuration] = useState<DurationOptions>(
+    DurationOptions.Last5minutes,
+  );
+  const [cpuDuration, setCpuDuration] = useState<DurationOptions>(
+    DurationOptions.Last5minutes,
+  );
+  const [memDuration, setMemDuration] = useState<DurationOptions>(
+    DurationOptions.Last5minutes,
+  );
+
+  const diskMetrics = useNodeMetrics(kafkaId, diskBroker, diskDuration);
+  const cpuMetrics = useNodeMetrics(kafkaId, cpuBroker, cpuDuration);
+  const memMetrics = useNodeMetrics(kafkaId, memBroker, memDuration);
 
   const diskHasMetrics = hasMetrics(
     diskMetrics.data?.volume_stats_used_bytes ?? usedDiskSpace,
@@ -91,15 +105,27 @@ export function ClusterChartsCard({
           ) : (
             <>
               {!isLoading && diskHasMetrics && (
-                <FilterByBroker
-                  brokerList={brokerList}
-                  selectedBroker={diskBroker}
-                  onSetSelectedBroker={setDiskBroker}
-                  disableToolbar={disableFilter || diskMetrics.isLoading}
-                />
+                <Toolbar>
+                  <ToolbarContent>
+                    <ToolbarGroup variant="filter-group">
+                      <FilterByBroker
+                        brokerList={brokerList}
+                        selectedBroker={diskBroker}
+                        onSetSelectedBroker={setDiskBroker}
+                        disableToolbar={disableFilter || diskMetrics.isLoading}
+                      />
+                      <FilterByTime
+                        duration={diskDuration}
+                        onDurationChange={setDiskDuration}
+                        ariaLabel={"Select time range"}
+                        disableToolbar={disableFilter || diskMetrics.isLoading}
+                      />
+                    </ToolbarGroup>
+                  </ToolbarContent>
+                </Toolbar>
               )}
-
               <ChartDiskUsage
+                duration={diskDuration}
                 usages={
                   diskMetrics.data?.volume_stats_used_bytes ?? usedDiskSpace
                 }
@@ -123,15 +149,28 @@ export function ClusterChartsCard({
           ) : (
             <>
               {!isLoading && cpuHasMetrics && (
-                <FilterByBroker
-                  brokerList={brokerList}
-                  selectedBroker={cpuBroker}
-                  onSetSelectedBroker={setCpuBroker}
-                  disableToolbar={disableFilter || cpuMetrics.isLoading}
-                />
+                <Toolbar>
+                  <ToolbarContent>
+                    <ToolbarGroup variant="filter-group">
+                      <FilterByBroker
+                        brokerList={brokerList}
+                        selectedBroker={cpuBroker}
+                        onSetSelectedBroker={setCpuBroker}
+                        disableToolbar={disableFilter || cpuMetrics.isLoading}
+                      />
+                      <FilterByTime
+                        duration={cpuDuration}
+                        onDurationChange={setCpuDuration}
+                        ariaLabel={"Select cpu time range"}
+                        disableToolbar={disableFilter || cpuMetrics.isLoading}
+                      />
+                    </ToolbarGroup>
+                  </ToolbarContent>
+                </Toolbar>
               )}
 
               <ChartCpuUsage
+                duration={cpuDuration}
                 usages={cpuMetrics.data?.cpu_usage_seconds ?? cpuUsage}
               />
             </>
@@ -149,15 +188,27 @@ export function ClusterChartsCard({
           ) : (
             <>
               {!isLoading && memHasMetrics && (
-                <FilterByBroker
-                  brokerList={brokerList}
-                  selectedBroker={memBroker}
-                  onSetSelectedBroker={setMemBroker}
-                  disableToolbar={disableFilter || memMetrics.isLoading}
-                />
+                <Toolbar>
+                  <ToolbarContent>
+                    <ToolbarGroup variant="filter-group">
+                      <FilterByBroker
+                        brokerList={brokerList}
+                        selectedBroker={memBroker}
+                        onSetSelectedBroker={setMemBroker}
+                        disableToolbar={disableFilter || memMetrics.isLoading}
+                      />
+                      <FilterByTime
+                        duration={memDuration}
+                        onDurationChange={setMemDuration}
+                        ariaLabel={"Select memory time range"}
+                        disableToolbar={disableFilter || memMetrics.isLoading}
+                      />
+                    </ToolbarGroup>
+                  </ToolbarContent>
+                </Toolbar>
               )}
-
               <ChartMemoryUsage
+                duration={memDuration}
                 usages={memMetrics.data?.memory_usage_bytes ?? memoryUsage}
               />
             </>

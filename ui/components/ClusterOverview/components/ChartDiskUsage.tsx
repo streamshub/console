@@ -16,10 +16,12 @@ import { useFormatter, useTranslations } from "next-intl";
 import { getHeight, getPadding } from "./chartConsts";
 import { useChartWidth } from "./useChartWidth";
 import { formatDateTime } from "@/utils/dateTime";
+import { DurationOptions } from "./FilterByTime";
 
 type ChartDiskUsageProps = {
   usages: Record<string, TimeSeriesMetrics>;
   available: Record<string, TimeSeriesMetrics>;
+  duration: DurationOptions;
 };
 type Datum = {
   x: number;
@@ -27,13 +29,21 @@ type Datum = {
   name: string;
 };
 
-export function ChartDiskUsage({ usages, available }: ChartDiskUsageProps) {
+export function ChartDiskUsage({
+  usages,
+  available,
+  duration,
+}: ChartDiskUsageProps) {
   const t = useTranslations();
   const format = useFormatter();
   const formatBytes = useFormatBytes();
   const [containerRef, width] = useChartWidth();
 
   const itemsPerRow = width > 650 ? 2 : 1;
+
+  const showDate = duration >= DurationOptions.Last24hours;
+  const axisFormat = showDate ? "HH:mm'\n'MMM dd" : "HH:mm";
+  const tooltipFormat = showDate ? "MMM dd, HH:mm" : "HH:mm";
 
   const hasMetrics = Object.keys(usages).length > 0;
   if (!hasMetrics) {
@@ -47,7 +57,11 @@ export function ChartDiskUsage({ usages, available }: ChartDiskUsageProps) {
     );
   }
   const CursorVoronoiContainer = createContainer("voronoi", "cursor");
-  const legendData: { name: string, childName: string, symbol?: { type: string } }[] = [];
+  const legendData: {
+    name: string;
+    childName: string;
+    symbol?: { type: string };
+  }[] = [];
 
   Object.entries(usages).forEach(([nodeId, _]) => {
     legendData.push({
@@ -77,7 +91,9 @@ export function ChartDiskUsage({ usages, available }: ChartDiskUsageProps) {
             labelComponent={
               <ChartLegendTooltip
                 legendData={legendData}
-                title={(args) => formatDateTime({ value: args?.x ?? 0 })}
+                title={(args) =>
+                  formatDateTime({ value: args?.x ?? 0, format: tooltipFormat })
+                }
               />
             }
             labels={({ datum }: { datum: Datum }) =>
@@ -102,7 +118,7 @@ export function ChartDiskUsage({ usages, available }: ChartDiskUsageProps) {
       >
         <ChartAxis
           scale={"time"}
-          tickFormat={(d) => formatDateTime({ value: d, format: "HH:mm" })}
+          tickFormat={(d) => formatDateTime({ value: d, format: axisFormat })}
           tickCount={5}
         />
         <ChartAxis
@@ -116,15 +132,15 @@ export function ChartDiskUsage({ usages, available }: ChartDiskUsageProps) {
           {Object.entries(usages).map(([nodeId, series]) => {
             return (
               <ChartArea
-                key={ `usage-area-${nodeId}` }
-                data={ Object.entries(series).map(([k, v]) => {
-                    return ({
-                      name: `Node ${nodeId}`,
-                      x: Date.parse(k),
-                      y: v,
-                    })
+                key={`usage-area-${nodeId}`}
+                data={Object.entries(series).map(([k, v]) => {
+                  return {
+                    name: `Node ${nodeId}`,
+                    x: Date.parse(k),
+                    y: v,
+                  };
                 })}
-                name={ `node ${nodeId}` }
+                name={`node ${nodeId}`}
               />
             );
           })}
@@ -134,8 +150,8 @@ export function ChartDiskUsage({ usages, available }: ChartDiskUsageProps) {
 
             return (
               <ChartThreshold
-                key={ `chart-softlimit-${nodeId}` }
-                data={ Object.entries(availableSeries).map(([k, v]) => ({
+                key={`chart-softlimit-${nodeId}`}
+                data={Object.entries(availableSeries).map(([k, v]) => ({
                   name: `Available storage threshold (node ${nodeId})`,
                   x: Date.parse(k),
                   y: v,

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { getNodeMetrics } from "@/api/nodes/actions";
 import { timeSeriesMetrics } from "@/components/ClusterOverview/components/timeSeriesMetrics";
+import { getKafkaCluster } from "@/api/kafka/actions";
 
 type MetricKey =
   | "volume_stats_used_bytes"
@@ -10,7 +11,8 @@ type MetricKey =
 
 export function useNodeMetrics(
   kafkaId: string | undefined,
-  selectedBroker?: string,
+  selectedBroker: string | undefined,
+  duration: number,
 ) {
   const [data, setData] = useState<Record<
     MetricKey,
@@ -20,37 +22,39 @@ export function useNodeMetrics(
 
   useEffect(() => {
     async function fetchMetrics() {
-      if (!kafkaId || !selectedBroker) {
-        setData(null);
-        return;
-      }
-
-      const nodeId = selectedBroker.replace("Node ", "");
+      if (!kafkaId) return;
       setIsLoading(true);
 
       try {
-        const res = await getNodeMetrics(kafkaId, nodeId);
-        const ranges = res.payload?.data?.attributes?.metrics?.ranges;
+        let ranges: any = null;
 
-        if (!ranges) {
-          setData(null);
-          return;
+        if (selectedBroker) {
+          const nodeId = selectedBroker.replace("Node ", "");
+          const res = await getNodeMetrics(kafkaId, nodeId, duration);
+          ranges = res.payload?.data?.attributes?.metrics?.ranges;
+        } else {
+          const res = await getKafkaCluster(kafkaId, { duration });
+          ranges = res.payload?.attributes?.metrics?.ranges;
         }
 
-        setData({
-          volume_stats_used_bytes: timeSeriesMetrics(
-            ranges,
-            "volume_stats_used_bytes",
-          ),
-          volume_stats_capacity_bytes: timeSeriesMetrics(
-            ranges,
-            "volume_stats_capacity_bytes",
-          ),
-          cpu_usage_seconds: timeSeriesMetrics(ranges, "cpu_usage_seconds"),
-          memory_usage_bytes: timeSeriesMetrics(ranges, "memory_usage_bytes"),
-        });
+        if (ranges) {
+          setData({
+            volume_stats_used_bytes: timeSeriesMetrics(
+              ranges,
+              "volume_stats_used_bytes",
+            ),
+            volume_stats_capacity_bytes: timeSeriesMetrics(
+              ranges,
+              "volume_stats_capacity_bytes",
+            ),
+            cpu_usage_seconds: timeSeriesMetrics(ranges, "cpu_usage_seconds"),
+            memory_usage_bytes: timeSeriesMetrics(ranges, "memory_usage_bytes"),
+          });
+        } else {
+          setData(null);
+        }
       } catch (e) {
-        console.error("Failed to fetch node metrics", e);
+        console.error("Failed to fetch metrics", e);
         setData(null);
       } finally {
         setIsLoading(false);
@@ -58,7 +62,7 @@ export function useNodeMetrics(
     }
 
     fetchMetrics();
-  }, [kafkaId, selectedBroker]);
+  }, [kafkaId, selectedBroker, duration]);
 
   return { data, isLoading };
 }

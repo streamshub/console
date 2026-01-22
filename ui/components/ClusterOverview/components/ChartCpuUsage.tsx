@@ -14,9 +14,11 @@ import { useFormatter, useTranslations } from "next-intl";
 import { getHeight, getPadding } from "./chartConsts";
 import { useChartWidth } from "./useChartWidth";
 import { formatDateTime } from "@/utils/dateTime";
+import { DurationOptions } from "./FilterByTime";
 
 type ChartCpuUsageProps = {
   usages: Record<string, TimeSeriesMetrics>;
+  duration: DurationOptions;
 };
 
 type Datum = {
@@ -25,10 +27,14 @@ type Datum = {
   name: string;
 };
 
-export function ChartCpuUsage({ usages }: ChartCpuUsageProps) {
+export function ChartCpuUsage({ usages, duration }: ChartCpuUsageProps) {
   const t = useTranslations();
   const format = useFormatter();
   const [containerRef, width] = useChartWidth();
+
+  const showDate = duration >= DurationOptions.Last24hours;
+  const axisFormat = showDate ? "HH:mm'\n'MMM dd" : "HH:mm";
+  const tooltipFormat = showDate ? "MMM dd, HH:mm" : "HH:mm";
 
   let itemsPerRow;
 
@@ -71,7 +77,12 @@ export function ChartCpuUsage({ usages }: ChartCpuUsageProps) {
               <ChartLegendTooltip
                 legendData={legendData}
                 flyoutWidth={250}
-                title={(args) => formatDateTime({ value: args?.x ?? 0})}
+                title={(args) =>
+                  formatDateTime({
+                    value: args?.x ?? 0,
+                    format: tooltipFormat,
+                  })
+                }
               />
             }
             labels={({ datum }: { datum: Datum }) =>
@@ -96,7 +107,12 @@ export function ChartCpuUsage({ usages }: ChartCpuUsageProps) {
       >
         <ChartAxis
           scale={"time"}
-          tickFormat={(d) => formatDateTime({ value: d, format: "HH:mm" })}
+          tickFormat={(d) =>
+            formatDateTime({
+              value: d,
+              format: axisFormat,
+            })
+          }
           tickCount={5}
         />
         <ChartAxis
@@ -110,15 +126,15 @@ export function ChartCpuUsage({ usages }: ChartCpuUsageProps) {
           {Object.entries(usages).map(([nodeId, series]) => {
             return (
               <ChartArea
-                key={ `cpu-usage-${nodeId}` }
-                data={ Object.entries(series).map(([k, v]) => {
-                    return ({
-                      name: `Node ${nodeId}`,
-                      x: Date.parse(k),
-                      y: v,
-                    })
+                key={`cpu-usage-${nodeId}`}
+                data={Object.entries(series).map(([k, v]) => {
+                  return {
+                    name: `Node ${nodeId}`,
+                    x: Date.parse(k),
+                    y: v,
+                  };
                 })}
-                name={ `node ${nodeId}` }
+                name={`node ${nodeId}`}
               />
             );
           })}
