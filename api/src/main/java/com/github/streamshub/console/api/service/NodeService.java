@@ -534,33 +534,33 @@ public class NodeService {
         String namespace = clusterConfig.getNamespace();
         String name = clusterConfig.getName();
 
-        String rawRangeQuery;
+        String promInterval = "5m";
+        if (durationMinutes >= 1440) {
+            promInterval = "30m"; 
+        }
+        if (durationMinutes >= 10080) {
+            promInterval = "2h"; 
+        }
+        String rangeQuery;
         String valueQuery;
 
-    
         try (
             var rangesStream = getClass().getResourceAsStream("/metrics/queries/kafkaCluster_ranges.promql");
             var valuesStream = getClass().getResourceAsStream("/metrics/queries/kafkaCluster_values.promql")
         ) {
-            rawRangeQuery = new String(rangesStream.readAllBytes(), StandardCharsets.UTF_8)
-                    .formatted(namespace, name);
+            rangeQuery = new String(rangesStream.readAllBytes(), StandardCharsets.UTF_8)
+                .formatted(namespace, name, promInterval);
+        
             valueQuery = new String(valuesStream.readAllBytes(), StandardCharsets.UTF_8)
-                    .formatted(namespace, name);
+                .formatted(namespace, name);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
 
-    
-        String promInterval = "5m";
-        if (durationMinutes >= 1440) promInterval = "30m"; 
-        if (durationMinutes >= 10080) promInterval = "2h"; 
-
-        final String finalizedQuery = rawRangeQuery.replace("[5m]", "[" + promInterval + "]");
-
-        logger.debugf("Executing PromQL: %s", finalizedQuery);
+        logger.debugf("Executing PromQL: %s", rangeQuery);
 
         Metrics nodeMetrics = new Metrics();
-        var rangeFuture = metricsService.queryRanges(finalizedQuery, durationMinutes).toCompletableFuture();
+        var rangeFuture = metricsService.queryRanges(rangeQuery, durationMinutes).toCompletableFuture();
         var valueFuture = metricsService.queryValues(valueQuery).toCompletableFuture();
 
         return CompletableFuture.allOf(rangeFuture, valueFuture)

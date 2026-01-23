@@ -170,7 +170,7 @@ public class NodesResource {
     public CompletionStage<Response> getNodeMetrics(
             @PathParam("clusterId") String clusterId,
             @PathParam("nodeId") String nodeId,
-            @QueryParam("duration") @DefaultValue("60") int durationMinutes) {
+            @QueryParam("duration[metrics]") @DefaultValue("5") int durationMinutes) {
 
         return nodeService.getNodeMetrics(nodeId, durationMinutes)
             .thenApply(metrics -> new NodeMetrics.MetricsResponse(nodeId, metrics))

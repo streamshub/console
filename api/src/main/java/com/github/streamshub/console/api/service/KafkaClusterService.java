@@ -354,17 +354,24 @@ public class KafkaClusterService {
         return cluster;
     }
 
-    CompletionStage<KafkaCluster> addMetrics(KafkaCluster cluster, List<String> fields, Integer durationMinutes) {
+    CompletionStage<KafkaCluster> addMetrics(KafkaCluster cluster, List<String> fields, int durationMinutes) {
         if (!fields.contains(KafkaCluster.Fields.METRICS)) {
             return CompletableFuture.completedStage(cluster);
         }
-
-        int finalDuration = (durationMinutes != null) ? durationMinutes : 5;
 
         if (kafkaContext.prometheus() == null) {
             logger.warnf("Kafka cluster metrics were requested, but Prometheus URL is not configured");
             cluster.metrics(null);
             return CompletableFuture.completedStage(cluster);
+        }
+
+
+        String promInterval = "5m";
+        if (durationMinutes >= 1440) {
+            promInterval = "30m";
+        }
+        if (durationMinutes >= 10080) {
+            promInterval = "2h";
         }
 
         String namespace = cluster.namespace();
@@ -373,21 +380,19 @@ public class KafkaClusterService {
         String valueQuery;
 
         try (var rangesStream = getClass().getResourceAsStream("/metrics/queries/kafkaCluster_ranges.promql");
-             var valuesStream = getClass().getResourceAsStream("/metrics/queries/kafkaCluster_values.promql")) {
+            var valuesStream = getClass().getResourceAsStream("/metrics/queries/kafkaCluster_values.promql")) {
+        
+       
             rangeQuery = new String(rangesStream.readAllBytes(), StandardCharsets.UTF_8)
-                    .formatted(namespace, name);
+                    .formatted(namespace, name, promInterval);
+        
             valueQuery = new String(valuesStream.readAllBytes(), StandardCharsets.UTF_8)
                     .formatted(namespace, name);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
 
-        String promInterval = "5m";
-        if (finalDuration >= 1440) promInterval = "30m"; 
-    
-        final String finalizedQuery = rangeQuery.replace("[5m]", "[" + promInterval + "]");
-
-        var rangeResults = metricsService.queryRanges(finalizedQuery, finalDuration).toCompletableFuture();
+        var rangeResults = metricsService.queryRanges(rangeQuery, durationMinutes).toCompletableFuture();
         var valueResults = metricsService.queryValues(valueQuery).toCompletableFuture();
 
         return CompletableFuture.allOf(

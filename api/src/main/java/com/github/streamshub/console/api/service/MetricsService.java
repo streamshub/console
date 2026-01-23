@@ -153,11 +153,21 @@ public class MetricsService {
 
 
     private String calculateStep(int durationMinutes) {
-        if (durationMinutes <= 15) return "15s";   
-        if (durationMinutes <= 60) return "1m";   
-        if (durationMinutes <= 360) return "5m";   
-        if (durationMinutes <= 1440) return "15m"; 
-        if (durationMinutes <= 2880) return "30m"; 
+        if (durationMinutes <= 15) {
+            return "15s";   
+        }
+        if (durationMinutes <= 60) {
+            return "1m";  
+        } 
+        if (durationMinutes <= 360) {
+            return "5m";  
+        } 
+        if (durationMinutes <= 1440) {
+            return "15m"; 
+        }
+        if (durationMinutes <= 2880) {
+            return "30m"; 
+        }
         return "2h";                               
     }
 

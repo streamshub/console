@@ -636,7 +636,8 @@ class NodesResourceIT implements ClientRequestFilter {
 
     @Test
     void testGetNodeMetrics() {
-        whenRequesting(req -> req.get("{nodeId}/metrics", clusterId, "10"))
+        whenRequesting(req -> req.queryParam("duration[metrics]", "10")
+        .get("{nodeId}/metrics", clusterId, "10"))
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
             .body("data.id", equalTo("10"))
@@ -656,6 +657,14 @@ class NodesResourceIT implements ClientRequestFilter {
             .body("data.id", equalTo("10"))
             .body("data.attributes.metrics.values", anEmptyMap())
             .body("data.attributes.metrics.ranges", anEmptyMap());
+    }
+
+    @Test
+    void testGetNodeMetrics_DefaultDuration() {
+        whenRequesting(req -> req.get("{nodeId}/metrics", clusterId, "10"))
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()))
+            .body("data.id", equalTo("10"));
     }
 
     @Test

@@ -1,7 +1,7 @@
   sum by (nodeId, __console_metric_name__) (
     label_replace(
       label_replace(
-        rate(container_cpu_usage_seconds_total{namespace="%1$s",pod=~"%2$s-.+-\\d+",container="kafka"}[5m]),
+        rate(container_cpu_usage_seconds_total{namespace="%1$s",pod=~"%2$s-.+-\\d+",container="kafka"}[%3$s]),
         "nodeId",
         "$1",
         "pod",
@@ -36,7 +36,7 @@ or
   sum by (__console_metric_name__) (
     label_replace(
       # JMX exporter topic bytes in
-      irate(kafka_server_brokertopicmetrics_bytesin_total{topic!="",namespace="%1$s",pod=~"%2$s-.+-\\d+",strimzi_io_kind="Kafka"}[5m]),
+      irate(kafka_server_brokertopicmetrics_bytesin_total{topic!="",namespace="%1$s",pod=~"%2$s-.+-\\d+",strimzi_io_kind="Kafka"}[%3$s]),
       "__console_metric_name__",
       "incoming_byte_rate",
       "",
@@ -47,7 +47,7 @@ or
   sum by (__console_metric_name__) (
     label_replace(
       # JMX exporter topic bytes out
-      irate(kafka_server_brokertopicmetrics_bytesout_total{topic!="",namespace="%1$s",pod=~"%2$s-.+-\\d+",strimzi_io_kind="Kafka"}[5m]),
+      irate(kafka_server_brokertopicmetrics_bytesout_total{topic!="",namespace="%1$s",pod=~"%2$s-.+-\\d+",strimzi_io_kind="Kafka"}[%3$s]),
       "__console_metric_name__",
       "outgoing_byte_rate",
       "",
@@ -58,7 +58,7 @@ or
   sum by (__console_metric_name__) (
     label_replace(
       # Strimzi Metrics Reporter topic bytes in
-      irate(kafka_server_brokertopicmetrics_bytesinpersec_total{topic!="",namespace="%1$s",pod=~"%2$s-.+-\\d+",strimzi_io_kind="Kafka"}[5m]),
+      irate(kafka_server_brokertopicmetrics_bytesinpersec_total{topic!="",namespace="%1$s",pod=~"%2$s-.+-\\d+",strimzi_io_kind="Kafka"}[%3$s]),
       "__console_metric_name__",
       "incoming_byte_rate",
       "",
@@ -69,7 +69,7 @@ or
   sum by (__console_metric_name__) (
     label_replace(
       # Strimzi Metrics Reporter topic bytes out
-      irate(kafka_server_brokertopicmetrics_bytesoutpersec_total{topic!="",namespace="%1$s",pod=~"%2$s-.+-\\d+",strimzi_io_kind="Kafka"}[5m]),
+      irate(kafka_server_brokertopicmetrics_bytesoutpersec_total{topic!="",namespace="%1$s",pod=~"%2$s-.+-\\d+",strimzi_io_kind="Kafka"}[%3$s]),
       "__console_metric_name__",
       "outgoing_byte_rate",
       "",
