@@ -96,11 +96,13 @@ public class TrustStoreSupport {
     }
 
     public void configureTruststoreFile(Trustable trustable, Trustable context, OidcCommonConfigBuilder<?> builder) {
-        final String bucketName = trustConfigName(trustable, context);
+        if (trustable.getTrustStore() != null) {
+            final String bucketName = trustConfigName(trustable, context);
 
-        tlsRegistry.get(bucketName).ifPresentOrElse(
-            tlsBucket -> builder.tlsConfigurationName(bucketName),
-            () -> LOGGER.warnf("No truststore found for bucket '" + bucketName + "'")
-        );
+            tlsRegistry.get(bucketName).ifPresentOrElse(
+                tlsBucket -> builder.tlsConfigurationName(bucketName),
+                () -> LOGGER.warnf("No truststore found for bucket '" + bucketName + "'")
+            );
+        }
     }
 }
