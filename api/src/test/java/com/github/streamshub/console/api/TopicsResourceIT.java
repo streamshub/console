@@ -2359,6 +2359,25 @@ class TopicsResourceIT {
         }
     }
 
+    @Test
+    void testGetTopicMetricsSuccess() {
+        String topicName = UUID.randomUUID().toString();
+        topicUtils.createTopics(List.of(topicName), 1);
+    
+        String topicId = whenRequesting(req -> req.get("", clusterId1))
+                .statusCode(is(Status.OK.getStatusCode()))
+                .extract()
+                .path("data.find { it.attributes.name == '%s' }.id", topicName);
+
+        whenRequesting(req -> req.pathParam("topicId", topicId)
+                .get("/{topicId}/metrics", clusterId1))
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()))
+            .body("data.id", is(topicId))
+            .body("data.type", is("topicMetrics"))
+            .body("data.attributes.metrics", notNullValue());
+    }
+
     // Utilities
 
     JsonObject linkExtract(String response) {

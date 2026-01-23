@@ -1,5 +1,8 @@
 package com.github.streamshub.console.api.service;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -34,6 +37,7 @@ import org.eclipse.microprofile.context.ThreadContext;
 import org.jboss.logging.Logger;
 
 import com.github.streamshub.console.api.model.ConfigEntry;
+import com.github.streamshub.console.api.model.Metrics;
 import com.github.streamshub.console.api.model.NewTopic;
 import com.github.streamshub.console.api.model.Topic;
 import com.github.streamshub.console.api.model.TopicPatch;
@@ -96,6 +100,10 @@ public class TopicService {
 
     @Inject
     NodeService nodeService;
+
+    @Inject
+    MetricsService metricsService;
+
 
     public CompletionStage<NewTopic> createTopic(NewTopic topic, boolean validateOnly) {
         permissionService.assertPermitted(ResourceTypes.Kafka.TOPICS, Privilege.CREATE, topic.name());
@@ -600,5 +608,50 @@ public class TopicService {
         }
 
         abstract void pollTopic();
+    }
+
+    public CompletionStage<Metrics> getTopicMetrics(String topicId) {
+
+        if (kafkaContext.prometheus() == null) {
+            logger.warnf(
+                "Metrics requested for topic %s, but Prometheus is not configured",
+                topicId
+            );
+            return CompletableFuture.completedStage(new Metrics());
+        }
+
+        var clusterConfig = kafkaContext.clusterConfig();
+        String namespace = clusterConfig.getNamespace();
+        String clusterName = clusterConfig.getName();
+
+        return topicDescribe.topicNameForId(topicId)
+            .thenApply(optName -> optName.orElseThrow(() ->
+                new UnknownTopicIdException("No such topic: " + topicId)
+            ))
+            .thenCompose(topicName -> {
+
+                String rangeQuery;
+
+                try (var rangesStream = getClass()
+                    .getResourceAsStream("/metrics/queries/topic_ranges.promql")) {
+
+                    rangeQuery = new String(
+                            rangesStream.readAllBytes(),
+                            StandardCharsets.UTF_8
+                    )
+                        .formatted(namespace, clusterName, topicName);
+
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
+                }
+
+                Metrics topicMetrics = new Metrics();
+
+                return metricsService.queryRanges(rangeQuery)
+                .thenApply(ranges -> {
+                    topicMetrics.ranges().putAll(ranges);
+                    return topicMetrics;
+                });
+            });
     }
 }
