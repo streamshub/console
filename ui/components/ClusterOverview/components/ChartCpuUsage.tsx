@@ -114,6 +114,11 @@ export function ChartCpuUsage({ usages, duration }: ChartCpuUsageProps) {
             })
           }
           tickCount={5}
+          style={{
+            tickLabels: {
+              padding: showDate ? 0 : 10,
+            },
+          }}
         />
         <ChartAxis
           dependentAxis

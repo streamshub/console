@@ -100,7 +100,11 @@ export function ChartMemoryUsage({ usages, duration }: ChartMemoryUsageProps) {
         <ChartAxis
           scale={"time"}
           tickFormat={(d) => formatDateTime({ value: d, format: axisFormat })}
-          tickCount={5}
+          style={{
+            tickLabels: {
+              padding: showDate ? 0 : 10,
+            },
+          }}
         />
         <ChartAxis
           dependentAxis

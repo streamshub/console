@@ -75,9 +75,13 @@ export async function getNodeMetrics(
   nodeId: number | string,
   duration: number,
 ): Promise<ApiResponse<NodeMetrics>> {
+  const queryParams = new URLSearchParams({
+    "duration[metrics]": duration.toString(),
+  });
+
   return fetchData(
-    `/api/kafkas/${kafkaId}/nodes/${nodeId}/metrics?duration=${duration}`,
-    "",
+    `/api/kafkas/${kafkaId}/nodes/${nodeId}/metrics`,
+    queryParams,
     (rawData) => NodeMetricsResponseSchema.parse(rawData),
   );
 }

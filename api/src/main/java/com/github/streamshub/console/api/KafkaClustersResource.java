@@ -187,8 +187,9 @@ public class KafkaClustersResource {
             List<String> fields,
 
             @Parameter(description = "Time range for metrics in minutes")
-            @QueryParam("duration") 
-            Integer durationMinutes) {
+            @QueryParam("duration[metrics]")
+            @DefaultValue("5")
+            int durationMinutes) {
 
         requestedFields.accept(fields);
 

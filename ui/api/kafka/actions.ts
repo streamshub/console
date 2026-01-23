@@ -68,9 +68,8 @@ export async function getKafkaCluster(
   });
 
   if (params?.duration) {
-    queryParams.append("duration", params.duration.toString());
+    queryParams.append("duration[metrics]", params.duration.toString());
   }
-
   return fetchData(
     `/api/kafkas/${clusterId}`,
     queryParams,
