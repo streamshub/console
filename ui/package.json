@@ -76,6 +76,10 @@
   "overrides": {
     "eslint-plugin-storybook": {
       "typescript": "$typescript"
+    },
+    "glob": "10.5.0",
+    "nyc": {
+      "glob": "^7.1.6"
     }
   }
 }
