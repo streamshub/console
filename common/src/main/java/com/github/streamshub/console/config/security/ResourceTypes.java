@@ -66,9 +66,11 @@ public class ResourceTypes {
         CONSUMER_GROUPS("consumerGroups"),
         NODE_CONFIGS("nodes/configs"),
         NODES("nodes"),
+        NODE_METRICS("nodes/metrics"),
         REBALANCES("rebalances"),
         TOPICS("topics"),
         TOPIC_RECORDS("topics/records"),
+        TOPIC_METRICS("topics/metrics"),
         USERS("users"),
         ALL("*") {
             @Override

@@ -57,10 +57,10 @@
     "use-debounce": "^10.1.0",
     "use-resize-observer": "^9.1.0",
     "victory": "^37.3.6",
-    "zod": "^4.3.5"
+    "zod": "^4.3.6"
   },
   "devDependencies": {
-    "@playwright/test": "^1.57.0",
+    "@playwright/test": "^1.58.0",
     "@storybook/addon-docs": "^10.1.11",
     "@storybook/addon-links": "^10.1.11",
     "@storybook/nextjs": "^10.1.11",
@@ -76,6 +76,10 @@
   "overrides": {
     "eslint-plugin-storybook": {
       "typescript": "$typescript"
+    },
+    "glob": "10.5.0",
+    "nyc": {
+      "glob": "^7.1.6"
     }
   }
 }
