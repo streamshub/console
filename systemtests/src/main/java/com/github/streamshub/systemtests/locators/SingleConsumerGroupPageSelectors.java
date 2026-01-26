@@ -172,7 +172,7 @@ public class SingleConsumerGroupPageSelectors {
     public static final String SCGPS_RESET_PAGE_OFFSET_DROPDOWN_ITEMS = SCGPS_RESET_PAGE_TARGET_SEARCH_TOPIC_RESULTS;
 
     public static final String SCGPS_RESET_PAGE_OFFSET_CUSTOM_OFFSET = new CssBuilder(SCGPS_RESET_PAGE_OFFSET_DROPDOWN_ITEMS)
-        .nth(1)
+        .nth(3)
         .withChild()
         .withElementButton().withComponentMenu().withSubComponentItem()
         .build();
@@ -184,13 +184,13 @@ public class SingleConsumerGroupPageSelectors {
         .build();
 
     public static final String SCGPS_RESET_PAGE_OFFSET_EARLIEST_OFFSET = new CssBuilder(SCGPS_RESET_PAGE_OFFSET_DROPDOWN_ITEMS)
-        .nth(3)
+        .nth(1)
         .withChild()
         .withElementButton().withComponentMenu().withSubComponentItem()
         .build();
 
     public static final String SCGPS_RESET_PAGE_OFFSET_ALL_PARTITIONS_SPECIFIC_DATETIME_OFFSET = new CssBuilder(SCGPS_RESET_PAGE_OFFSET_DROPDOWN_ITEMS)
-        .nth(1)
+        .nth(3)
         .withChild()
         .withElementButton().withComponentMenu().withSubComponentItem()
         .build();
