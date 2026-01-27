@@ -37,7 +37,8 @@ public class KeycloakResourceManager extends ResourceManagerBase implements Quar
         }
 
         String alias = "keycloak";
-        int port = 8443;
+        int httpPort = 8080;
+        int httpsPort = 8443;
         TlsHelper tls = TlsHelper.newInstance(alias);
         String keystorePath = "/opt/keycloak/keystore.p12";
         String keycloakImage;
@@ -54,7 +55,7 @@ public class KeycloakResourceManager extends ResourceManagerBase implements Quar
                 .withCreateContainerCmdModifier(setContainerName("keycloak"))
                 .withNetwork(SHARED_NETWORK)
                 .withNetworkAliases(alias)
-                .withExposedPorts(port)
+                .withExposedPorts(httpPort, httpsPort)
                 .withEnv(Map.of(
                         "KC_BOOTSTRAP_ADMIN_USERNAME", "admin",
                         "KC_BOOTSTRAP_ADMIN_PASSWORD", "admin",
@@ -71,16 +72,17 @@ public class KeycloakResourceManager extends ResourceManagerBase implements Quar
                         "/opt/keycloak/data/import/console-authz.json")
                 .withCommand(
                         "start",
-                        "--hostname=https://localhost:%d".formatted(port),
+                        "--hostname=https://localhost:%d".formatted(httpsPort),
                         "--hostname-backchannel-dynamic=true",
-                        "--http-enabled=false",
-                        "--https-port=%d".formatted(port),
+                        "--http-enabled=true",
+                        "--https-port=%d".formatted(httpsPort),
                         "--https-key-store-file=%s".formatted(keystorePath),
                         "--https-key-store-password=%s".formatted(String.copyValueOf(tls.getPassphrase())),
                         "--import-realm",
                         "--verbose"
                 )
                 .waitingFor(Wait.forHttps("/realms/console-authz")
+                        .forPort(httpsPort)
                         .allowInsecure()
                         .withStartupTimeout(Duration.ofMinutes(1)));
 
@@ -96,14 +98,15 @@ public class KeycloakResourceManager extends ResourceManagerBase implements Quar
 
         keycloak.start();
 
-        String urlTemplate = "https://localhost:%d/realms/console-authz";
-        var oidcUrl = urlTemplate.formatted(keycloak.getMappedPort(port));
+        String httpsUrlTemplate = "https://localhost:%d/realms/console-authz";
+        var httpsOidcUrl = httpsUrlTemplate.formatted(keycloak.getMappedPort(httpsPort));
 
         return Map.of(
-                "console.test.oidc-url", oidcUrl,
-                "console.test.oidc-url-internal", "https://%s:%d".formatted(alias, port),
-                "console.test.oidc-host", "localhost:%d".formatted(port),
-                "console.test.oidc-issuer", urlTemplate.formatted(port),
+                "console.test.oidc-url-plain", "http://localhost:%d/realms/console-authz".formatted(keycloak.getMappedPort(httpPort)),
+                "console.test.oidc-url", httpsOidcUrl,
+                "console.test.oidc-url-internal", "https://%s:%d".formatted(alias, httpsPort),
+                "console.test.oidc-host", "localhost:%d".formatted(httpsPort),
+                "console.test.oidc-issuer", httpsUrlTemplate.formatted(httpsPort),
                 "console.test.oidc-realm", "console-authz",
                 "console.test.oidc-trust-store.type", TrustStoreConfig.Type.JKS.name(),
                 "console.test.oidc-trust-store.path", truststoreFile.getAbsolutePath(),

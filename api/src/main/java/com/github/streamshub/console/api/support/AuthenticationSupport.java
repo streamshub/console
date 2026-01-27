@@ -86,12 +86,10 @@ public class AuthenticationSupport implements Supplier<Optional<String>> {
                 );
             });
 
-            setIfPresent(oidc.getTrustStore(), t ->
-                CDI.current().select(TrustStoreSupport.class).get().configureTruststoreFile(
-                    oidc,
-                    serviceConfig,
-                    builder
-                )
+            CDI.current().select(TrustStoreSupport.class).get().configureTruststoreFile(
+                oidc,
+                serviceConfig,
+                builder
             );
 
             tokens = new TokensHelper();
