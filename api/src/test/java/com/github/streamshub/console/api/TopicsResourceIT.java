@@ -2395,7 +2395,7 @@ class TopicsResourceIT {
         )
         .assertThat()
         .statusCode(Status.OK.getStatusCode())
-        .body("data.id", equalTo(topicId));
+            .body("data.id", equalTo(topicId));
     }
 
     @Test
@@ -2413,7 +2413,7 @@ class TopicsResourceIT {
                 .get("/{topicId}/metrics", clusterId1)
         )
         .assertThat()
-        .statusCode(Status.OK.getStatusCode());
+            .statusCode(Status.OK.getStatusCode());
     }
 
     // Utilities

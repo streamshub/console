@@ -691,7 +691,7 @@ class NodesResourceIT implements ClientRequestFilter {
         )
         .assertThat()
         .statusCode(Status.OK.getStatusCode())
-        .body("data.id", equalTo("10"));
+            .body("data.id", equalTo("10"));
     }
 
     @Test
@@ -702,6 +702,6 @@ class NodesResourceIT implements ClientRequestFilter {
         )
         .assertThat()
         .statusCode(Status.OK.getStatusCode())
-        .body("data.id", equalTo("10"));
+            .body("data.id", equalTo("10"));
     }
 }
