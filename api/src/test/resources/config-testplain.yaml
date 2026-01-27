@@ -40,6 +40,17 @@ metricsSources:
            valueFrom: ${console.test.oidc-trust-store.path}
          password:
            value: ${console.test.oidc-trust-store.password}
+ - name: test-oidc-no-truststore
+   type: standalone
+   url: http://prometheus.example.com
+   authentication:
+     oidc:
+       authServerUrl: ${console.test.oidc-url-plain}
+       clientId: registry-api
+       clientSecret:
+         value: registry-api-secret
+       method: BASIC
+       grantType: CLIENT
 
 schemaRegistries:
   - name: test-registry-v2
@@ -97,7 +108,7 @@ kafka:
     - name: test-kafka1
       namespace: default
       id: k1-id
-      kind: kafkas.kafka.strimzi.io 
+      kind: kafkas.kafka.strimzi.io
       schemaRegistry: test-registry-v2
       properties:
         bootstrap.servers: ${console.test.external-bootstrap}

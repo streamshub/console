@@ -131,6 +131,8 @@ class KafkaClustersResourceMetricsIT implements ClientRequestFilter {
             metricsSource = "test-bearer-token";
         } else if (testInfo.getTags().contains("oidc")) {
             metricsSource = "test-oidc";
+        } else if (testInfo.getTags().contains("oidc-no-truststore")) {
+            metricsSource = "test-oidc-no-truststore";
         } else {
             metricsSource = "test-basic";
         }
@@ -254,7 +256,17 @@ class KafkaClustersResourceMetricsIT implements ClientRequestFilter {
 
     @Test
     @Tag("oidc")
-    void testDescribeClusterWithMetricsSetsOIDCBearerHeader() throws Exception {
+    void testDescribeClusterWithMetricsSetsOIDCBearerHeaderWithTruststore() throws Exception {
+        testDescribeClusterWithMetricsSetsOIDCBearerHeader();
+    }
+
+    @Test
+    @Tag("oidc-no-truststore")
+    void testDescribeClusterWithMetricsSetsOIDCBearerHeaderWithoutTruststore() throws Exception {
+        testDescribeClusterWithMetricsSetsOIDCBearerHeader();
+    }
+
+    private void testDescribeClusterWithMetricsSetsOIDCBearerHeader() throws Exception {
         AtomicReference<String> queryAuthHeader = new AtomicReference<>();
         AtomicReference<String> queryRangeAuthHeader = new AtomicReference<>();
 
