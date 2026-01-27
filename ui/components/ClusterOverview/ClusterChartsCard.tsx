@@ -21,7 +21,8 @@ import { useTranslations } from "next-intl";
 import { FilterByBroker } from "./components/FilterByBroker";
 import { useState } from "react";
 import { useNodeMetrics } from "./components/useNodeMetric";
-import { DurationOptions, FilterByTime } from "./components/FilterByTime";
+import {FilterByTime } from "./components/FilterByTime";
+import { DurationOptions } from "./components/type";
 
 function hasMetrics(metrics?: Record<string, TimeSeriesMetrics>) {
   return metrics && Object.keys(metrics).length > 0;

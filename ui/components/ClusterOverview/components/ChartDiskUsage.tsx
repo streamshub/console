@@ -16,7 +16,7 @@ import { useFormatter, useTranslations } from "next-intl";
 import { getHeight, getPadding } from "./chartConsts";
 import { useChartWidth } from "./useChartWidth";
 import { formatDateTime } from "@/utils/dateTime";
-import { DurationOptions } from "./FilterByTime";
+import { DurationOptions } from "./type";
 
 type ChartDiskUsageProps = {
   usages: Record<string, TimeSeriesMetrics>;

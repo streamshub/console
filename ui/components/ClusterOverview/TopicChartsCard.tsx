@@ -17,8 +17,9 @@ import { ChartSkeletonLoader } from "./components/ChartSkeletonLoader";
 import { useTranslations } from "next-intl";
 import { FilterByTopic } from "./components/FilterByTopic";
 import { useState } from "react";
-import { DurationOptions, FilterByTime } from "./components/FilterByTime";
+import { FilterByTime } from "./components/FilterByTime";
 import { useTopicMetrics } from "./components/useTopicMetrics";
+import { DurationOptions } from "./components/type";
 
 type TopicOption = { id: string; name: string };
 
