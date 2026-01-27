@@ -51,11 +51,11 @@ public class ConsumerGroupFilterParams extends FilterParams {
         node = "filter[state]")
     @Expression(
         when = "self != null && self.operands.size() >= 1",
-        classImports = "org.apache.kafka.common.ConsumerGroupState",
+        classImports = "org.apache.kafka.common.GroupState",
         value = """
                 self.operands.stream()
-                    .map(state -> ConsumerGroupState.valueOf(state))
-                    .noneMatch(state -> state == ConsumerGroupState.UNKNOWN)
+                    .map(state -> GroupState.parse(state))
+                    .noneMatch(state -> state == GroupState.UNKNOWN)
                 """,
         exceptionalValue = ExceptionalValue.UNSET,
         message = "operands list contains an invalid consumer group state",

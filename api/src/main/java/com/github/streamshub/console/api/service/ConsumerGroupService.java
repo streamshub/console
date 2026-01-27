@@ -25,15 +25,15 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
 import org.apache.kafka.clients.admin.Admin;
-import org.apache.kafka.clients.admin.ConsumerGroupListing;
 import org.apache.kafka.clients.admin.DescribeConsumerGroupsOptions;
+import org.apache.kafka.clients.admin.GroupListing;
 import org.apache.kafka.clients.admin.ListConsumerGroupOffsetsSpec;
-import org.apache.kafka.clients.admin.ListConsumerGroupsOptions;
+import org.apache.kafka.clients.admin.ListGroupsOptions;
 import org.apache.kafka.clients.admin.ListOffsetsResult;
 import org.apache.kafka.clients.admin.ListOffsetsResult.ListOffsetsResultInfo;
 import org.apache.kafka.clients.admin.OffsetSpec;
 import org.apache.kafka.clients.admin.TopicListing;
-import org.apache.kafka.common.ConsumerGroupState;
+import org.apache.kafka.common.GroupState;
 import org.apache.kafka.common.TopicCollection;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.Uuid;
@@ -134,7 +134,7 @@ public class ConsumerGroupService {
 
         Admin adminClient = kafkaContext.admin();
 
-        Set<ConsumerGroupState> states = listSupport.filters(ConsumerGroup.class)
+        Set<GroupState> states = listSupport.filters(ConsumerGroup.class)
             .stream()
             .filter(FetchFilterPredicate.class::isInstance)
             .map(FetchFilterPredicate.class::cast)
@@ -143,7 +143,7 @@ public class ConsumerGroupService {
                 @SuppressWarnings("unchecked")
                 List<String> operands = filter.operands();
                 return operands.stream()
-                        .map(ConsumerGroupState::valueOf)
+                        .map(GroupState::parse)
                         .collect(Collectors.toSet());
             })
             .findFirst()
@@ -151,13 +151,14 @@ public class ConsumerGroupService {
 
         permissionService.addPrivileges(listSupport.meta(), ResourceTypes.Kafka.CONSUMER_GROUPS, null);
 
-        return adminClient.listConsumerGroups(new ListConsumerGroupsOptions()
-                .inStates(states))
+        return adminClient.listGroups(ListGroupsOptions
+                .forConsumerGroups()
+                .inGroupStates(states))
             .valid()
             .toCompletionStage()
             .thenApplyAsync(groups -> groups.stream()
                     .filter(group -> groupIds.isEmpty() || groupIds.contains(group.groupId()))
-                    .filter(permissionService.permitted(ResourceTypes.Kafka.CONSUMER_GROUPS, Privilege.LIST, ConsumerGroupListing::groupId))
+                    .filter(permissionService.permitted(ResourceTypes.Kafka.CONSUMER_GROUPS, Privilege.LIST, GroupListing::groupId))
                     .map(ConsumerGroup::fromKafkaModel),
                     threadContext.currentContextExecutor())
             .thenApplyAsync(groups -> groups
@@ -193,16 +194,17 @@ public class ConsumerGroupService {
     public CompletionStage<Map<String, List<String>>> listConsumerGroupMembership(Collection<String> topicIds) {
         Admin adminClient = kafkaContext.admin();
 
-        return adminClient.listConsumerGroups(new ListConsumerGroupsOptions()
-                .inStates(Set.of(
-                        ConsumerGroupState.STABLE,
-                        ConsumerGroupState.PREPARING_REBALANCE,
-                        ConsumerGroupState.COMPLETING_REBALANCE,
-                        ConsumerGroupState.EMPTY)))
+        return adminClient.listGroups(ListGroupsOptions
+                .forConsumerGroups()
+                .inGroupStates(Set.of(
+                        GroupState.STABLE,
+                        GroupState.PREPARING_REBALANCE,
+                        GroupState.COMPLETING_REBALANCE,
+                        GroupState.EMPTY)))
             .valid()
             .toCompletionStage()
             .thenApplyAsync(groups -> groups.stream()
-                    .filter(permissionService.permitted(ResourceTypes.Kafka.CONSUMER_GROUPS, Privilege.LIST, ConsumerGroupListing::groupId))
+                    .filter(permissionService.permitted(ResourceTypes.Kafka.CONSUMER_GROUPS, Privilege.LIST, GroupListing::groupId))
                     .map(ConsumerGroup::fromKafkaModel).toList(),
                     threadContext.currentContextExecutor())
             .thenComposeAsync(groups -> augmentList(adminClient, groups, List.of(
@@ -250,13 +252,13 @@ public class ConsumerGroupService {
     }
 
     CompletionStage<Void> assertConsumerGroupExists(Admin adminClient, String groupId) {
-        return adminClient.listConsumerGroups()
+        return adminClient.listGroups(ListGroupsOptions.forConsumerGroups())
             .all()
             .toCompletionStage()
             .thenAcceptAsync(listing -> {
                 if (listing.stream()
-                        .filter(permissionService.permitted(ResourceTypes.Kafka.CONSUMER_GROUPS, Privilege.GET, ConsumerGroupListing::groupId))
-                        .map(ConsumerGroupListing::groupId)
+                        .filter(permissionService.permitted(ResourceTypes.Kafka.CONSUMER_GROUPS, Privilege.GET, GroupListing::groupId))
+                        .map(GroupListing::groupId)
                         .noneMatch(groupId::equals)) {
                     throw new GroupIdNotFoundException("No such consumer group: " + groupId);
                 }
