@@ -3,12 +3,13 @@
 # %1$s = namespace
 # %2$s = cluster name
 # %3$s = specific topic name
+# %4$s = duration/interval (e.g., 5m, 30m, 2h)
 #######
 
   # 1. Incoming Byte Rate (JMX Exporter)
   sum by (__console_metric_name__, topic) (
     label_replace(
-      irate(kafka_server_brokertopicmetrics_bytesin_total{topic="%3$s",namespace="%1$s",pod=~"%2$s-.+-\\d+",strimzi_io_kind="Kafka"}[5m]),
+      irate(kafka_server_brokertopicmetrics_bytesin_total{topic="%3$s",namespace="%1$s",pod=~"%2$s-.+-\\d+",strimzi_io_kind="Kafka"}[%4$s]),
       "__console_metric_name__",
       "incoming_byte_rate",
       "",
@@ -19,7 +20,7 @@ or
   # 2. Outgoing Byte Rate (JMX Exporter)
   sum by (__console_metric_name__, topic) (
     label_replace(
-      irate(kafka_server_brokertopicmetrics_bytesout_total{topic="%3$s",namespace="%1$s",pod=~"%2$s-.+-\\d+",strimzi_io_kind="Kafka"}[5m]),
+      irate(kafka_server_brokertopicmetrics_bytesout_total{topic="%3$s",namespace="%1$s",pod=~"%2$s-.+-\\d+",strimzi_io_kind="Kafka"}[%4$s]),
       "__console_metric_name__",
       "outgoing_byte_rate",
       "",
@@ -30,7 +31,7 @@ or
   # 3. Incoming Byte Rate (Strimzi Metrics Reporter)
   sum by (__console_metric_name__, topic) (
     label_replace(
-      irate(kafka_server_brokertopicmetrics_bytesinpersec_total{topic="%3$s",namespace="%1$s",pod=~"%2$s-.+-\\d+",strimzi_io_kind="Kafka"}[5m]),
+      irate(kafka_server_brokertopicmetrics_bytesinpersec_total{topic="%3$s",namespace="%1$s",pod=~"%2$s-.+-\\d+",strimzi_io_kind="Kafka"}[%4$s]),
       "__console_metric_name__",
       "incoming_byte_rate",
       "",
@@ -41,7 +42,7 @@ or
   # 4. Outgoing Byte Rate (Strimzi Metrics Reporter)
   sum by (__console_metric_name__, topic) (
     label_replace(
-      irate(kafka_server_brokertopicmetrics_bytesoutpersec_total{topic="%3$s",namespace="%1$s",pod=~"%2$s-.+-\\d+",strimzi_io_kind="Kafka"}[5m]),
+      irate(kafka_server_brokertopicmetrics_bytesoutpersec_total{topic="%3$s",namespace="%1$s",pod=~"%2$s-.+-\\d+",strimzi_io_kind="Kafka"}[%4$s]),
       "__console_metric_name__",
       "outgoing_byte_rate",
       "",
