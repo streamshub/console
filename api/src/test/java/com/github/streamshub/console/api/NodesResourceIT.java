@@ -682,4 +682,26 @@ class NodesResourceIT implements ClientRequestFilter {
             .body("data.attributes.metrics.values", anEmptyMap())
             .body("data.attributes.metrics.ranges", anEmptyMap());
     }   
+
+    @Test
+    void testGetNodeMetrics_24HoursDuration_Uses30mInterval() {
+        whenRequesting(req ->
+            req.queryParam("duration[metrics]", "1440")
+                .get("{nodeId}/metrics", clusterId, "10")
+        )
+        .assertThat()
+        .statusCode(Status.OK.getStatusCode())
+        .body("data.id", equalTo("10"));
+    }
+
+    @Test
+    void testGetNodeMetrics_7DaysDuration_Uses2hInterval() {
+        whenRequesting(req ->
+            req.queryParam("duration[metrics]", "10080")
+                .get("{nodeId}/metrics", clusterId, "10")
+        )
+        .assertThat()
+        .statusCode(Status.OK.getStatusCode())
+        .body("data.id", equalTo("10"));
+    }
 }

@@ -90,6 +90,7 @@ import static org.hamcrest.Matchers.hasProperty;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
@@ -880,6 +881,19 @@ class KafkaClustersResourceIT {
         assertThat(String.valueOf(clientConfig.get(SaslConfigs.SASL_JAAS_CONFIG)),
                 containsString(ScramLoginModule.class.getName()));
     }
+
+    @Test
+    void testDescribeClusterWithMetricsAndDuration() {
+        whenRequesting(req -> req
+                .queryParam("fields[" + KafkaCluster.API_TYPE + "]", "name,metrics")
+                .queryParam("duration[metrics]", "10")
+                .get("{clusterId}", clusterId1))
+            .assertThat()
+            .statusCode(is(Status.OK.getStatusCode()))
+            .body("data.attributes.name", equalTo("test-kafka1"))
+            .body("data.attributes.metrics", notNullValue());
+    }
+
 
     @Test
     /*
