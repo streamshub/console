@@ -4,7 +4,8 @@ import { ClusterList } from "@/api/kafka/schema";
 import { useTranslations } from "next-intl";
 import { ButtonLink } from "./Navigation/ButtonLink";
 import { Link } from "@/i18n/routing";
-import { Truncate } from "@/libs/patternfly/react-core";
+import { Tooltip, Truncate } from "@/libs/patternfly/react-core";
+import { HelpIcon } from "@/libs/patternfly/react-icons";
 import { EmptyStateNoMatchFound } from "./Table/EmptyStateNoMatchFound";
 import { KroxyliciousClusterLabel } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/KroxyliciousClusterLabel";
 
@@ -117,8 +118,19 @@ export function ClustersTable({
           case "version":
             return (
               <Td key={key}>
-                {row.attributes.kafkaVersion ??
-                  t("ClustersTable.not_available")}
+                { row.attributes.kafkaVersion ?
+                    <>
+                        { row.attributes.kafkaVersion }
+                        {!row.meta.managed && <>
+                            {" "}
+                            <Tooltip content={t("ClustersTable.version_derived")}>
+                                <HelpIcon />
+                            </Tooltip>
+                            </>
+                        }
+                    </>
+                    : t("ClustersTable.not_available")
+                }
               </Td>
             );
           case "namespace":

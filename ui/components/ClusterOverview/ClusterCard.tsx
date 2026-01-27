@@ -19,12 +19,14 @@ import {
   Skeleton,
   Content,
   Title,
+  Tooltip,
   Truncate,
 } from "@/libs/patternfly/react-core";
 import {
   CheckCircleIcon,
   ExclamationCircleIcon,
   ExclamationTriangleIcon,
+  HelpIcon,
 } from "@/libs/patternfly/react-icons";
 import { Link } from "@/i18n/routing";
 import { useTranslations } from "next-intl";
@@ -220,7 +222,22 @@ export function ClusterCard({
                   </GridItem>
                   <GridItem span={12} xl={4}>
                     <div className="pf-v6-u-font-size-xl">
-                      {isLoading ? <Skeleton /> : kafkaDetail?.attributes.kafkaVersion ?? "Not Available"}
+                      {isLoading ? <Skeleton /> : <>
+                        { kafkaDetail?.attributes.kafkaVersion ?
+                            <>
+                                { kafkaDetail?.attributes.kafkaVersion }
+                                {!kafkaDetail?.meta?.managed && <>
+                                    {" "}
+                                    <Tooltip content={t("ClustersTable.version_derived")}>
+                                        <HelpIcon />
+                                    </Tooltip>
+                                    </>
+                                }
+                            </>
+                            : t("ClustersTable.not_available")
+                        }
+                        </>
+                      }
                     </div>
                     <Content>
                       <Content component={"small"}>
