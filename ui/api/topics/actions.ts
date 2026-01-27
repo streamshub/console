@@ -212,10 +212,15 @@ export async function setTopicAsViewed(kafkaId: string, topicId: string) {
 export async function gettopicMetrics(
   kafkaId: string,
   topicId: number | string,
+  duration: number,
 ): Promise<ApiResponse<TopicMetrics>> {
+  const queryParams = new URLSearchParams({
+    "duration[metrics]": duration.toString(),
+  });
+
   return fetchData(
     `/api/kafkas/${kafkaId}/topics/${topicId}/metrics`,
-    "",
+    queryParams,
     (rawData) => TopicMetricsResponseSchema.parse(rawData),
   );
 }

@@ -6,6 +6,9 @@ import {
   CardTitle,
   Flex,
   Title,
+  Toolbar,
+  ToolbarContent,
+  ToolbarGroup,
   Tooltip,
 } from "@/libs/patternfly/react-core";
 import { HelpIcon } from "@/libs/patternfly/react-icons";
@@ -13,26 +16,9 @@ import { ChartIncomingOutgoing } from "./components/ChartIncomingOutgoing";
 import { ChartSkeletonLoader } from "./components/ChartSkeletonLoader";
 import { useTranslations } from "next-intl";
 import { FilterByTopic } from "./components/FilterByTopic";
-import { useEffect, useState } from "react";
-import { gettopicMetrics } from "@/api/topics/actions";
-
-function timeSeriesMetrics(
-  ranges: Record<string, { range: string[][]; nodeId?: string }[]> | undefined,
-  rangeName: string,
-): TimeSeriesMetrics {
-  let series: TimeSeriesMetrics = {};
-
-  if (ranges) {
-    Object.values(ranges[rangeName] ?? {}).forEach((r) => {
-      series = r.range.reduce(
-        (a, v) => ({ ...a, [v[0]]: parseFloat(v[1]) }),
-        series,
-      );
-    });
-  }
-
-  return series;
-}
+import { useState } from "react";
+import { DurationOptions, FilterByTime } from "./components/FilterByTime";
+import { useTopicMetrics } from "./components/useTopicMetrics";
 
 type TopicOption = { id: string; name: string };
 
@@ -62,48 +48,21 @@ export function TopicChartsCard({
   const t = useTranslations();
 
   const [selectedTopic, setSelectedTopic] = useState<string | undefined>();
+  const [duration, setDuration] = useState<DurationOptions>(
+    DurationOptions.Last5minutes,
+  );
+  const { data, isLoading: isFetching } = useTopicMetrics(
+    kafkaId,
+    selectedTopic,
+    duration,
+  );
+
+  const displayIncoming = data?.incoming_byte_rate ?? incoming;
+  const displayOutgoing = data?.outgoing_byte_rate ?? outgoing;
 
   const selectedTopicName = topicList?.find(
     (t) => t.id === selectedTopic,
   )?.name;
-
-  const [topicSpecificMetrics, setTopicSpecificMetrics] = useState<{
-    incoming: TimeSeriesMetrics;
-    outgoing: TimeSeriesMetrics;
-  } | null>(null);
-
-  const [isFetching, setIsFetching] = useState(false);
-
-  useEffect(() => {
-    async function fetchSpecificMetrics() {
-      if (selectedTopic && kafkaId) {
-        setIsFetching(true);
-        try {
-          const response = await gettopicMetrics(kafkaId, selectedTopic);
-          const ranges = response.payload?.data?.attributes?.metrics?.ranges;
-
-          if (ranges) {
-            setTopicSpecificMetrics({
-              incoming: timeSeriesMetrics(ranges, "incoming_byte_rate"),
-              outgoing: timeSeriesMetrics(ranges, "outgoing_byte_rate"),
-            });
-          }
-        } catch (error) {
-          console.error("Failed to fetch topic metrics", error);
-        } finally {
-          setIsFetching(false);
-        }
-      } else {
-        setTopicSpecificMetrics(null);
-      }
-    }
-
-    fetchSpecificMetrics();
-  }, [selectedTopic, kafkaId]);
-
-  const displayIncoming = topicSpecificMetrics?.incoming ?? incoming;
-
-  const displayOutgoing = topicSpecificMetrics?.outgoing ?? outgoing;
 
   const hasBaselineMetrics =
     !isVirtualKafkaCluster &&
@@ -136,12 +95,24 @@ export function TopicChartsCard({
           ) : (
             <>
               {hasBaselineMetrics && (
-                <FilterByTopic
-                  selectedTopic={selectedTopic}
-                  topicList={topicList}
-                  onSetSelectedTopic={setSelectedTopic}
-                  disableToolbar={topicList.length === 0 || isFetching}
-                />
+                <Toolbar>
+                  <ToolbarContent>
+                    <ToolbarGroup variant="filter-group">
+                      <FilterByTopic
+                        selectedTopic={selectedTopic}
+                        topicList={topicList}
+                        onSetSelectedTopic={setSelectedTopic}
+                        disableToolbar={isFetching}
+                      />
+                      <FilterByTime
+                        duration={duration}
+                        onDurationChange={setDuration}
+                        disableToolbar={isFetching}
+                        ariaLabel={"Select time range"}
+                      />
+                    </ToolbarGroup>
+                  </ToolbarContent>
+                </Toolbar>
               )}
 
               <ChartIncomingOutgoing
@@ -149,6 +120,7 @@ export function TopicChartsCard({
                 outgoing={displayOutgoing || {}}
                 isVirtualKafkaCluster={isVirtualKafkaCluster}
                 selectedTopicName={selectedTopicName}
+                duration={duration}
               />
             </>
           )}
