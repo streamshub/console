@@ -24,7 +24,11 @@ import jakarta.ws.rs.BadRequestException;
 import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.clients.admin.DescribeClusterOptions;
 import org.apache.kafka.clients.admin.DescribeClusterResult;
+import org.apache.kafka.clients.admin.DescribeFeaturesResult;
+import org.apache.kafka.clients.admin.FeatureMetadata;
+import org.apache.kafka.clients.admin.FinalizedVersionRange;
 import org.apache.kafka.clients.admin.QuorumInfo;
+import org.apache.kafka.server.common.MetadataVersion;
 import org.eclipse.microprofile.context.ThreadContext;
 import org.jboss.logging.Logger;
 
@@ -258,7 +262,38 @@ public class KafkaClusterService {
             addAuthenticationMethod(cluster, kafkaContext);
         }
 
+        if (cluster.kafkaVersion() == null) {
+            /*
+             * If the Kafka cluster isn't associated with a Strimzi resource,
+             * check the Kafka metadata feature version to figure out the version.
+             *
+             * The Admin client may be null here when OIDC is not being used for
+             * application-wide authentication.
+             */
+            Optional.ofNullable(kafkaContext.admin())
+                    .map(Admin::describeFeatures)
+                    .map(DescribeFeaturesResult::featureMetadata)
+                    .map(metadata -> get(() -> metadata))
+                    .map(FeatureMetadata::finalizedFeatures)
+                    .map(features -> features.get(MetadataVersion.FEATURE_NAME))
+                    .map(FinalizedVersionRange::maxVersionLevel)
+                    .map(KafkaClusterService::metadataLevelToVersionString)
+                    .ifPresent(cluster::kafkaVersion);
+        }
+
         return cluster;
+    }
+
+    static String metadataLevelToVersionString(short level) {
+        try {
+            return MetadataVersion.fromFeatureLevel(level).shortVersion();
+        } catch (IllegalArgumentException e) {
+            if (level < MetadataVersion.MINIMUM_VERSION.featureLevel()) {
+                return "Unknown (<%s)".formatted(MetadataVersion.MINIMUM_VERSION.shortVersion());
+            }
+
+            return null;
+        }
     }
 
     KafkaCluster addKafkaContextData(KafkaCluster cluster) {
@@ -268,7 +303,7 @@ public class KafkaClusterService {
     void addAuthenticationMethod(KafkaCluster cluster, KafkaContext kafkaContext) {
         switch (kafkaContext.saslMechanism(Admin.class)) {
             case KafkaConfigs.MECHANISM_OAUTHBEARER:
-                Map<String, String> authMeta = new HashMap<>(2);
+                Map<String, String> authMeta = HashMap.newHashMap(2);
                 authMeta.put(AUTHN_METHOD_KEY, "oauth");
                 authMeta.put("tokenUrl", kafkaContext.tokenUrl().orElse(null));
                 cluster.addMeta(AUTHN_KEY, authMeta);

@@ -414,7 +414,8 @@
     "connection_details": "Connection details",
     "view_openshift_console": "View in OpenShift console",
     "no_data": "No clusters available.",
-    "not_available": "n/a"
+    "not_available": "n/a",
+    "version_derived": "Version derived from Kafka metadata"
   },
   "metrics": {
      "all_brokers": "All Nodes",
