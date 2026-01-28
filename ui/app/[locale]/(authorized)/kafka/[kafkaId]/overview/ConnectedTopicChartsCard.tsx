@@ -1,4 +1,6 @@
+import { ApiResponse } from "@/api/api";
 import { ClusterDetail } from "@/api/kafka/schema";
+import { TopicsResponse } from "@/api/topics/schema";
 import { TopicChartsCard } from "@/components/ClusterOverview/TopicChartsCard";
 
 function timeSeriesMetrics(
@@ -21,13 +23,30 @@ function timeSeriesMetrics(
 
 export async function ConnectedTopicChartsCard({
   cluster,
+  topics,
 }: {
   cluster: Promise<ClusterDetail | null>;
+  topics: Promise<ApiResponse<TopicsResponse>>;
 }) {
   const res = await cluster;
 
+  const topicResponse = await topics;
+
+  const topicList =
+    topicResponse.payload?.data
+      ?.map((topic) => ({
+        id: topic.id,
+        name: topic.attributes.name,
+      }))
+      .filter(
+        (topic): topic is { id: string; name: string } =>
+          !!topic.id && !!topic.name,
+      ) ?? [];
+
   return (
     <TopicChartsCard
+      kafkaId={res?.id}
+      topicList={topicList}
       isLoading={false}
       isVirtualKafkaCluster={
         res?.meta?.kind === "virtualkafkaclusters.kroxylicious.io"

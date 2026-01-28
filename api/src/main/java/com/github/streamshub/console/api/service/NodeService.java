@@ -524,7 +524,7 @@ public class NodeService {
         });
     }
     
-    public CompletionStage<Metrics> getNodeMetrics(String nodeId) {
+    public CompletionStage<Metrics> getNodeMetrics(String nodeId, int durationMinutes) {
         if (kafkaContext.prometheus() == null) {
             logger.warnf("Metrics requested for node %s, but Prometheus is not configured", nodeId);
             return CompletableFuture.completedStage(new Metrics());
@@ -534,6 +534,13 @@ public class NodeService {
         String namespace = clusterConfig.getNamespace();
         String name = clusterConfig.getName();
 
+        String promInterval = "5m";
+        if (durationMinutes >= 1440) {
+            promInterval = "30m"; 
+        }
+        if (durationMinutes >= 10080) {
+            promInterval = "2h"; 
+        }
         String rangeQuery;
         String valueQuery;
 
@@ -542,30 +549,24 @@ public class NodeService {
             var valuesStream = getClass().getResourceAsStream("/metrics/queries/kafkaCluster_values.promql")
         ) {
             rangeQuery = new String(rangesStream.readAllBytes(), StandardCharsets.UTF_8)
-                    .formatted(namespace, name);
+                .formatted(namespace, name, promInterval);
+        
             valueQuery = new String(valuesStream.readAllBytes(), StandardCharsets.UTF_8)
-                    .formatted(namespace, name);
+                .formatted(namespace, name);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
 
-        Metrics nodeMetrics = new Metrics();
+        logger.debugf("Executing PromQL: %s", rangeQuery);
 
-        var rangeFuture = metricsService.queryRanges(rangeQuery).toCompletableFuture();
+        Metrics nodeMetrics = new Metrics();
+        var rangeFuture = metricsService.queryRanges(rangeQuery, durationMinutes).toCompletableFuture();
         var valueFuture = metricsService.queryValues(valueQuery).toCompletableFuture();
 
         return CompletableFuture.allOf(rangeFuture, valueFuture)
                 .thenApply(nothing -> {
-                    extractNodeMetrics(
-                                    nodeId, 
-                                    rangeFuture.join(), 
-                                    nodeMetrics.ranges());
-                
-                    extractNodeMetrics(
-                                    nodeId, 
-                                    valueFuture.join(), 
-                                    nodeMetrics.values());
-                
+                    extractNodeMetrics(nodeId, rangeFuture.join(), nodeMetrics.ranges());
+                    extractNodeMetrics(nodeId, valueFuture.join(), nodeMetrics.values());
                     return nodeMetrics;
                 });
     }

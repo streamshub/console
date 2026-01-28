@@ -58,15 +58,21 @@ export async function getKafkaCluster(
   clusterId: string,
   params?: {
     fields?: string;
+    duration?: number; // Optional duration
   },
 ): Promise<ApiResponse<ClusterDetail>> {
+  const queryParams = new URLSearchParams({
+    "fields[kafkas]":
+      params?.fields ??
+      "name,namespace,creationTimestamp,status,kafkaVersion,nodes,listeners,metrics,conditions,nodePools,cruiseControlEnabled",
+  });
+
+  if (params?.duration) {
+    queryParams.append("duration[metrics]", params.duration.toString());
+  }
   return fetchData(
     `/api/kafkas/${clusterId}`,
-    new URLSearchParams({
-      "fields[kafkas]":
-        params?.fields ??
-        "name,namespace,creationTimestamp,status,kafkaVersion,nodes,listeners,conditions,nodePools,cruiseControlEnabled",
-    }),
+    queryParams,
     (rawData: any) => ClusterResponse.parse(rawData).data,
     undefined,
     {

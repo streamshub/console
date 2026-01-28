@@ -2370,12 +2370,50 @@ class TopicsResourceIT {
                 .path("data.find { it.attributes.name == '%s' }.id", topicName);
 
         whenRequesting(req -> req.pathParam("topicId", topicId)
+                .queryParam("duration[metrics]", 10)
                 .get("/{topicId}/metrics", clusterId1))
             .assertThat()
             .statusCode(is(Status.OK.getStatusCode()))
             .body("data.id", is(topicId))
             .body("data.type", is("topicMetrics"))
             .body("data.attributes.metrics", notNullValue());
+    }
+
+    @Test
+    void testGetTopicMetrics_24HoursDuration() {
+        String topicName = UUID.randomUUID().toString();
+        topicUtils.createTopics(List.of(topicName), 1);
+
+        String topicId = whenRequesting(req -> req.get("", clusterId1))
+            .extract()
+            .path("data.find { it.attributes.name == '%s' }.id", topicName);
+
+        whenRequesting(req ->
+            req.pathParam("topicId", topicId)
+                .queryParam("duration[metrics]", "1440")
+                .get("/{topicId}/metrics", clusterId1)
+        )
+        .assertThat()
+        .statusCode(Status.OK.getStatusCode())
+            .body("data.id", equalTo(topicId));
+    }
+
+    @Test
+    void testGetTopicMetrics_7DaysDuration() {
+        String topicName = UUID.randomUUID().toString();
+        topicUtils.createTopics(List.of(topicName), 1);
+
+        String topicId = whenRequesting(req -> req.get("", clusterId1))
+            .extract()
+            .path("data.find { it.attributes.name == '%s' }.id", topicName);
+
+        whenRequesting(req ->
+            req.pathParam("topicId", topicId)
+                .queryParam("duration[metrics]", "10080")
+                .get("/{topicId}/metrics", clusterId1)
+        )
+        .assertThat()
+            .statusCode(Status.OK.getStatusCode());
     }
 
     // Utilities

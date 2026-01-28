@@ -610,7 +610,17 @@ public class TopicService {
         abstract void pollTopic();
     }
 
-    public CompletionStage<Metrics> getTopicMetrics(String topicId) {
+    private String calculatePromInterval(int durationMinutes) {
+        if (durationMinutes >= 10080) {
+            return "2h";
+        }
+        if (durationMinutes >= 1440) {
+            return "30m";
+        }
+        return "5m";
+    }
+
+    public CompletionStage<Metrics> getTopicMetrics(String topicId, int durationMinutes) {
 
         if (kafkaContext.prometheus() == null) {
             logger.warnf(
@@ -623,6 +633,8 @@ public class TopicService {
         var clusterConfig = kafkaContext.clusterConfig();
         String namespace = clusterConfig.getNamespace();
         String clusterName = clusterConfig.getName();
+
+        String promInterval = calculatePromInterval(durationMinutes);
 
         return topicDescribe.topicNameForId(topicId)
             .thenApply(optName -> optName.orElseThrow(() ->
@@ -639,7 +651,7 @@ public class TopicService {
                             rangesStream.readAllBytes(),
                             StandardCharsets.UTF_8
                     )
-                        .formatted(namespace, clusterName, topicName);
+                        .formatted(namespace, clusterName, topicName, promInterval);
 
                 } catch (IOException e) {
                     throw new UncheckedIOException(e);
@@ -647,7 +659,7 @@ public class TopicService {
 
                 Metrics topicMetrics = new Metrics();
 
-                return metricsService.queryRanges(rangeQuery)
+                return metricsService.queryRanges(rangeQuery, durationMinutes)
                 .thenApply(ranges -> {
                     topicMetrics.ranges().putAll(ranges);
                     return topicMetrics;

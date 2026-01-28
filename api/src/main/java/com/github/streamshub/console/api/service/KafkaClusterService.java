@@ -153,7 +153,7 @@ public class KafkaClusterService {
                 .toList();
     }
 
-    public CompletionStage<KafkaCluster> describeCluster(List<String> fields) {
+    public CompletionStage<KafkaCluster> describeCluster(List<String> fields, Integer durationMinutes) {
         Admin adminClient = kafkaContext.admin();
         DescribeClusterOptions options = new DescribeClusterOptions()
                 .includeAuthorizedOperations(fields.contains(KafkaCluster.Fields.AUTHORIZED_OPERATIONS));
@@ -172,7 +172,7 @@ public class KafkaClusterService {
                     threadContext.currentContextExecutor())
             .thenApplyAsync(this::addKafkaContextData, threadContext.currentContextExecutor())
             .thenApply(this::addKafkaResourceData)
-            .thenCompose(cluster -> addMetrics(cluster, fields))
+            .thenCompose(cluster -> addMetrics(cluster, fields, durationMinutes))
             .thenApply(this::setManaged)
             .thenApplyAsync(
                     permissionService.addPrivileges(ResourceTypes.Global.KAFKAS, KafkaCluster::getId),
@@ -354,7 +354,7 @@ public class KafkaClusterService {
         return cluster;
     }
 
-    CompletionStage<KafkaCluster> addMetrics(KafkaCluster cluster, List<String> fields) {
+    CompletionStage<KafkaCluster> addMetrics(KafkaCluster cluster, List<String> fields, int durationMinutes) {
         if (!fields.contains(KafkaCluster.Fields.METRICS)) {
             return CompletableFuture.completedStage(cluster);
         }
@@ -365,22 +365,34 @@ public class KafkaClusterService {
             return CompletableFuture.completedStage(cluster);
         }
 
+
+        String promInterval = "5m";
+        if (durationMinutes >= 1440) {
+            promInterval = "30m";
+        }
+        if (durationMinutes >= 10080) {
+            promInterval = "2h";
+        }
+
         String namespace = cluster.namespace();
         String name = cluster.name();
         String rangeQuery;
         String valueQuery;
 
         try (var rangesStream = getClass().getResourceAsStream("/metrics/queries/kafkaCluster_ranges.promql");
-             var valuesStream = getClass().getResourceAsStream("/metrics/queries/kafkaCluster_values.promql")) {
+            var valuesStream = getClass().getResourceAsStream("/metrics/queries/kafkaCluster_values.promql")) {
+        
+       
             rangeQuery = new String(rangesStream.readAllBytes(), StandardCharsets.UTF_8)
-                    .formatted(namespace, name);
+                    .formatted(namespace, name, promInterval);
+        
             valueQuery = new String(valuesStream.readAllBytes(), StandardCharsets.UTF_8)
                     .formatted(namespace, name);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
 
-        var rangeResults = metricsService.queryRanges(rangeQuery).toCompletableFuture();
+        var rangeResults = metricsService.queryRanges(rangeQuery, durationMinutes).toCompletableFuture();
         var valueResults = metricsService.queryValues(valueQuery).toCompletableFuture();
 
         return CompletableFuture.allOf(

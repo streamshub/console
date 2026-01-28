@@ -184,11 +184,16 @@ public class KafkaClustersResource {
                                 KafkaCluster.Fields.NODE_POOLS,
                                 KafkaCluster.Fields.CRUISE_CONTROL_ENABLED,
                             }))
-            List<String> fields) {
+            List<String> fields,
+
+            @Parameter(description = "Time range for metrics in minutes")
+            @QueryParam("duration[metrics]")
+            @DefaultValue("5")
+            int durationMinutes) {
 
         requestedFields.accept(fields);
 
-        return clusterService.describeCluster(fields)
+        return clusterService.describeCluster(fields, durationMinutes)
             .thenApply(KafkaCluster.KafkaClusterData::new)
             .thenApply(Response::ok)
             .thenApply(Response.ResponseBuilder::build);

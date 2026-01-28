@@ -124,15 +124,18 @@ public class MetricsService {
             });
     }
 
-    CompletionStage<Map<String, List<Metrics.RangeMetric>>> queryRanges(String query) {
+    public CompletionStage<Map<String, List<Metrics.RangeMetric>>> queryRanges(String query, int durationMinutes) {
         PrometheusAPI prometheusAPI = kafkaContext.prometheus();
 
         return fetchMetrics(
             () -> {
                 Instant now = Instant.now().truncatedTo(ChronoUnit.MILLIS);
-                Instant start = now.minus(30, ChronoUnit.MINUTES);
+                Instant start = now.minus(durationMinutes, ChronoUnit.MINUTES);
                 Instant end = now;
-                return prometheusAPI.queryRange(query, start, end, "25");
+            
+                String step = calculateStep(durationMinutes);
+
+                return prometheusAPI.queryRange(query, start, end, step);
             },
             (metric, attributes) -> {
                 List<RangeEntry> values = metric.getJsonArray("values")
@@ -146,6 +149,26 @@ public class MetricsService {
 
                 return new Metrics.RangeMetric(values, attributes);
             });
+    }
+
+
+    private String calculateStep(int durationMinutes) {
+        if (durationMinutes <= 15) {
+            return "15s";   
+        }
+        if (durationMinutes <= 60) {
+            return "1m";  
+        } 
+        if (durationMinutes <= 360) {
+            return "5m";  
+        } 
+        if (durationMinutes <= 1440) {
+            return "15m"; 
+        }
+        if (durationMinutes <= 2880) {
+            return "30m"; 
+        }
+        return "2h";                               
     }
 
     <M> CompletionStage<Map<String, List<M>>> fetchMetrics(

@@ -16,6 +16,8 @@ import {
   NodeRoles,
   BrokerStatus,
   ControllerStatus,
+  NodeMetricsResponseSchema,
+  NodeMetrics,
 } from "@/api/nodes/schema";
 import { filterUndefinedFromObj } from "@/utils/filterUndefinedFromObj";
 
@@ -65,5 +67,21 @@ export async function getNodeConfiguration(
     `/api/kafkas/${kafkaId}/nodes/${nodeId}/configs`,
     "",
     (rawData) => ConfigResponseSchema.parse(rawData).data,
+  );
+}
+
+export async function getNodeMetrics(
+  kafkaId: string,
+  nodeId: number | string,
+  duration: number,
+): Promise<ApiResponse<NodeMetrics>> {
+  const queryParams = new URLSearchParams({
+    "duration[metrics]": duration.toString(),
+  });
+
+  return fetchData(
+    `/api/kafkas/${kafkaId}/nodes/${nodeId}/metrics`,
+    queryParams,
+    (rawData) => NodeMetricsResponseSchema.parse(rawData),
   );
 }

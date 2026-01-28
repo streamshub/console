@@ -424,9 +424,11 @@ public class TopicsResource {
             @PathParam("topicId")
             @KafkaUuid(payload = ErrorCategory.ResourceNotFound.class, message = "No such topic")
             @Parameter(description = "Topic identifier")
-            String topicId) {
+            String topicId,
 
-        return topicService.getTopicMetrics(topicId)
+            @QueryParam("duration[metrics]") @DefaultValue("5") int durationMinutes) {
+
+        return topicService.getTopicMetrics(topicId, durationMinutes)
                 .thenApply(metrics -> new TopicMetrics.MetricsResponse(topicId, metrics))
                 .thenApply(Response::ok)
                 .thenApply(Response.ResponseBuilder::build);

@@ -169,9 +169,10 @@ public class NodesResource {
     @ResourcePrivilege(Privilege.GET)
     public CompletionStage<Response> getNodeMetrics(
             @PathParam("clusterId") String clusterId,
-            @PathParam("nodeId") String nodeId) {
+            @PathParam("nodeId") String nodeId,
+            @QueryParam("duration[metrics]") @DefaultValue("5") int durationMinutes) {
 
-        return nodeService.getNodeMetrics(nodeId)
+        return nodeService.getNodeMetrics(nodeId, durationMinutes)
             .thenApply(metrics -> new NodeMetrics.MetricsResponse(nodeId, metrics))
             .thenApply(Response::ok)
             .thenApply(Response.ResponseBuilder::build);

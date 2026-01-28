@@ -15,11 +15,14 @@ import { useFormatter, useTranslations } from "next-intl";
 import { getHeight, getPadding } from "./chartConsts";
 import { useChartWidth } from "./useChartWidth";
 import { formatDateTime } from "@/utils/dateTime";
+import { DurationOptions } from "./type";
 
 type ChartIncomingOutgoingProps = {
   incoming: TimeSeriesMetrics;
   outgoing: TimeSeriesMetrics;
   isVirtualKafkaCluster: boolean;
+  selectedTopicName?: string;
+  duration: DurationOptions;
 };
 
 type Datum = {
@@ -33,6 +36,8 @@ export function ChartIncomingOutgoing({
   incoming,
   outgoing,
   isVirtualKafkaCluster,
+  selectedTopicName,
+  duration,
 }: ChartIncomingOutgoingProps) {
   const t = useTranslations();
   const formatBytes = useFormatBytes();
@@ -40,6 +45,10 @@ export function ChartIncomingOutgoing({
   const [containerRef, width] = useChartWidth();
 
   const itemsPerRow = width > 500 ? 2 : 1;
+
+  const showDate = duration >= DurationOptions.Last24hours;
+  const axisFormat = showDate ? "HH:mm'\n'MMM dd" : "HH:mm";
+  const tooltipFormat = showDate ? "MMM dd, HH:mm" : "HH:mm";
 
   const hasMetrics =
     Object.keys(incoming).length > 0 && Object.keys(outgoing).length > 0;
@@ -59,13 +68,22 @@ export function ChartIncomingOutgoing({
   }
   // const showDate = shouldShowDate(duration);
   const CursorVoronoiContainer = createContainer("voronoi", "cursor");
+
+  const incomingLabel = selectedTopicName
+    ? `Incoming bytes (${selectedTopicName})`
+    : "Incoming bytes (all topics)";
+
+  const outgoingLabel = selectedTopicName
+    ? `Outgoing bytes (${selectedTopicName})`
+    : "Outgoing bytes (all topics)";
+
   const legendData = [
     {
-      name: "Incoming bytes (all topics)",
+      name: incomingLabel,
       childName: "incoming",
     },
     {
-      name: "Outgoing bytes (all topics)",
+      name: outgoingLabel,
       childName: "outgoing",
     },
   ];
@@ -83,7 +101,9 @@ export function ChartIncomingOutgoing({
             labelComponent={
               <ChartLegendTooltip
                 legendData={legendData}
-                title={(args) => formatDateTime({ value: args?.x ?? 0 })}
+                title={(args) =>
+                  formatDateTime({ value: args?.x ?? 0, format: tooltipFormat })
+                }
               />
             }
             labels={({ datum }: { datum: Datum }) => {
@@ -110,10 +130,15 @@ export function ChartIncomingOutgoing({
       >
         <ChartAxis
           scale={"time"}
-          tickFormat={(d) => formatDateTime({ value: d, format: "HH:mm" })}
+          tickFormat={(d) => formatDateTime({ value: d, format: axisFormat })}
           tickCount={4}
           orientation={"bottom"}
           offsetY={padding.bottom}
+          style={{
+            tickLabels: {
+              padding: showDate ? 0 : 10,
+            },
+          }}
         />
         <ChartAxis
           dependentAxis

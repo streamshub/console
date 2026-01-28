@@ -19,10 +19,13 @@ const ControllerStatusSchema = z.union([
   z.literal("Unknown"),
 ]);
 
-const NodePoolsSchema = z.record(z.string(), z.object({
-  roles: z.array(z.string()),
-  count: z.number(),
-}));
+const NodePoolsSchema = z.record(
+  z.string(),
+  z.object({
+    roles: z.array(z.string()),
+    count: z.number(),
+  }),
+);
 
 export const NodeSchema = z.object({
   id: z.string(),
@@ -116,6 +119,35 @@ const ConfigSchema = z.object({
   ),
 });
 
+export const MetricsSchema = z.object({
+  values: z.record(
+    z.string(),
+    z.array(
+      z.object({
+        value: z.string(),
+        nodeId: z.string(),
+      }),
+    ),
+  ),
+  ranges: z.record(
+    z.string(),
+    z.array(
+      z.object({
+        range: z.array(z.tuple([z.string(), z.string()])),
+        nodeId: z.string().optional(),
+      }),
+    ),
+  ),
+});
+
+export const NodeMetricsResponseSchema = z.object({
+  data: z.object({
+    attributes: z.object({
+      metrics: MetricsSchema.optional().nullable(),
+    }),
+  }),
+});
+
 export type NodeConfig = z.infer<typeof ConfigSchema>;
 
 export type BrokerStatus = z.infer<typeof BrokerStatusSchema>;
@@ -129,3 +161,5 @@ export type Statuses = z.infer<typeof StatusesSchema>;
 export const ConfigResponseSchema = z.object({
   data: ConfigSchema,
 });
+
+export type NodeMetrics = z.infer<typeof NodeMetricsResponseSchema>;

@@ -8,28 +8,10 @@ import {
   CardTitle,
   Title,
 } from "@/libs/patternfly/react-core";
-
 import { useTranslations } from "next-intl";
 import { ClusterDetail } from "@/api/kafka/schema";
 import { ClusterChartsCard } from "@/components/ClusterOverview/ClusterChartsCard";
-
-function timeSeriesMetrics(
-  ranges: Record<string, { range: string[][]; nodeId?: string }[]> | undefined,
-  rangeName: string,
-): Record<string, TimeSeriesMetrics> {
-  const series: Record<string, TimeSeriesMetrics> = {};
-
-  if (ranges) {
-    Object.values(ranges[rangeName] ?? {}).forEach((r) => {
-      series[r.nodeId!] = r.range.reduce(
-        (a, v) => ({ ...a, [v[0]]: parseFloat(v[1]) }),
-        {} as TimeSeriesMetrics,
-      );
-    });
-  }
-
-  return series;
-}
+import { timeSeriesMetrics } from "@/components/ClusterOverview/components/timeSeriesMetrics";
 
 export async function ConnectedClusterChartsCard({
   cluster,
@@ -41,6 +23,9 @@ export async function ConnectedClusterChartsCard({
 
   const isVirtualKafkaCluster =
     res?.meta?.kind === "virtualkafkaclusters.kroxylicious.io";
+
+  const brokerList =
+    res?.relationships?.nodes?.data?.map((n) => `Node ${n.id}`) ?? [];
 
   const metricsUnavailable = res?.attributes.metrics === null;
 
@@ -79,7 +64,9 @@ export async function ConnectedClusterChartsCard({
 
   return (
     <ClusterChartsCard
+      kafkaId={res?.id}
       isLoading={false}
+      brokerList={brokerList}
       usedDiskSpace={timeSeriesMetrics(
         res?.attributes.metrics?.ranges,
         "volume_stats_used_bytes",
