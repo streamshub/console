@@ -36,6 +36,8 @@ export default async function OverviewPage({
   const topicsForCharts = getTopics(params.kafkaId, {
     fields: "name",
     pageSize: 100,
+    sort: "name",
+    sortDir: "asc",
   });
   const consumerGroups = getConsumerGroups(params.kafkaId, {
     fields: "groupId,state",
