@@ -47,7 +47,8 @@ export default async function middleware(req: NextRequest) {
    * Next.js middleware doesn't support reading files, so here we make a (cached)
    * call to the /config endpoint within the same application :(
    */
-  let oidcEnabled = await fetch(`http://127.0.0.1:${process.env.PORT}/config`, {
+  
+    let oidcEnabled = await fetch(`http://127.0.0.1:${process.env.PORT}/config`, {
     cache: "force-cache",
   })
     .then((cfg) => cfg.json())

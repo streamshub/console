@@ -3,8 +3,16 @@ import {
   TopicHeaderProps,
 } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/@header/topics/[topicId]/TopicHeader";
 
-export default function TopicHeaderNoRefresh(
+export default async function TopicHeaderNoRefresh(
   props: Omit<TopicHeaderProps, "showRefresh">,
 ) {
-  return <TopicHeader {...props} showRefresh={false} />;
+  const params = await props.params;
+
+  return (
+    <TopicHeader 
+      {...props} 
+      params={params}
+      showRefresh={false} 
+    />
+  );
 }

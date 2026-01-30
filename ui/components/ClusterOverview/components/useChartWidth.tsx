@@ -1,48 +1,35 @@
 import {
   useCallback,
-  useEffect,
   useLayoutEffect,
   useRef,
   useState,
   RefObject,
 } from "react";
 
-export function useChartWidth(): [RefObject<HTMLDivElement>, number] {
+export function useChartWidth(): [RefObject<HTMLDivElement | null>, number] {
   const containerRef = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState<number>(0);
 
-  const handleResize = useCallback(() => {
-    if (containerRef.current) {
-      setWidth(containerRef.current.clientWidth);
+  const handleResize = useCallback((entries: ResizeObserverEntry[]) => {
+    const entry = entries[0];
+    if (entry) {
+      setWidth(entry.contentRect.width);
     }
   }, []);
 
   useLayoutEffect(() => {
-    handleResize();
-  }, [handleResize]);
+    const element = containerRef.current;
+    if (!element) return;
 
-  useEffect(() => {
-    window.addEventListener("resize", handleResize);
+    setWidth(element.clientWidth);
+
+    const observer = new ResizeObserver(handleResize);
+    observer.observe(element);
+
     return () => {
-      window.removeEventListener("resize", handleResize);
+      observer.disconnect();
     };
   }, [handleResize]);
-
-  const requestRef = useRef<number>();
-
-  const checkSize = useCallback(() => {
-    requestRef.current = requestAnimationFrame(checkSize);
-    handleResize();
-  }, [handleResize]);
-
-  useEffect(() => {
-    requestRef.current = requestAnimationFrame(checkSize);
-    return () => {
-      if (requestRef.current) {
-        cancelAnimationFrame(requestRef.current);
-      }
-    };
-  }, [checkSize]);
 
   return [containerRef, width];
 }

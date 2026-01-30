@@ -14,18 +14,25 @@ export async function generateMetadata() {
   };
 }
 
-export default function ConsumerGroupsPage({
-  params: { kafkaId, topicId },
-  searchParams,
-}: {
-  params: KafkaTopicParams;
-  searchParams: {
-    perPage: string | undefined;
-    sort: string | undefined;
-    sortDir: string | undefined;
-    page: string | undefined;
-  };
-}) {
+export default async function ConsumerGroupsPage(
+  props: {
+    params: Promise<KafkaTopicParams>;
+    searchParams: Promise<{
+      perPage: string | undefined;
+      sort: string | undefined;
+      sortDir: string | undefined;
+      page: string | undefined;
+    }>;
+  }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
+
+  const {
+    kafkaId,
+    topicId
+  } = params;
+
   return (
     <PageSection>
       <Suspense

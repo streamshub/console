@@ -18,11 +18,8 @@ export async function generateMetadata() {
   };
 }
 
-export default async function OverviewPage({
-  params,
-}: {
-  params: KafkaParams;
-}) {
+export default async function OverviewPage(props: { params: Promise<KafkaParams> }) {
+  const params = await props.params;
   const kafkaCluster = getKafkaCluster(params.kafkaId, {
     fields:
       "name,namespace,creationTimestamp,status,kafkaVersion,nodes,listeners,conditions,metrics",

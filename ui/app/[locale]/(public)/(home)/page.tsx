@@ -48,17 +48,18 @@ export async function generateMetadata() {
   };
 }
 
-export default async function Home({
-  searchParams,
-}: {
-  searchParams: {
-    name: string | undefined;
-    perPage: string | undefined;
-    sort: string | undefined;
-    sortDir: string | undefined;
-    page: string | undefined;
-  };
-}) {
+export default async function Home(
+  props: {
+    searchParams: Promise<{
+      name: string | undefined;
+      perPage: string | undefined;
+      sort: string | undefined;
+      sortDir: string | undefined;
+      page: string | undefined;
+    }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   const t = await getTranslations();
 
   const name = searchParams["name"];
