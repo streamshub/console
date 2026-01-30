@@ -3,11 +3,18 @@ import { DeleteTopicModal } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/@m
 import { KafkaTopicParams } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/topics/kafkaTopic.params";
 import { NoDataErrorState } from "@/components/NoDataErrorState";
 
-export default async function DeletePage({
-  params: { kafkaId, topicId },
-}: {
-  params: KafkaTopicParams;
-}) {
+export default async function DeletePage(
+  props: {
+    params: Promise<KafkaTopicParams>;
+  }
+) {
+  const params = await props.params;
+
+  const {
+    kafkaId,
+    topicId
+  } = params;
+
   const response = await getTopic(kafkaId, topicId);
 
   if (response.errors) {

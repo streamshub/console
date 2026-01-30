@@ -16,7 +16,8 @@ import {
 } from "@/libs/patternfly/react-icons";
 import { Suspense } from "react";
 
-export default function TopicsHeader({ params }: { params: KafkaParams }) {
+export default async function TopicsHeader(props: { params: Promise<KafkaParams> }) {
+  const params = await props.params;
   return (
     <Suspense fallback={<Header />}>
       <ConnectedHeader params={params} />

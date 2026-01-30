@@ -1,4 +1,5 @@
-"use client";
+"use client";;
+import { use } from "react";
 
 import { SessionProvider } from "next-auth/react";
 
@@ -7,9 +8,10 @@ interface Props {
 }
 
 export default function AuthLayout(props: Props) {
+    const children = use(props.children);
     return (
         <SessionProvider>
-            { props.children }
+            { children }
         </SessionProvider>
-    )
+    );
 }

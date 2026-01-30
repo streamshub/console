@@ -11,13 +11,14 @@ export async function generateMetadata() {
   };
 }
 
-export default async function SignIn({
-  searchParams,
-  params,
-}: {
-  searchParams?: { callbackUrl?: string };
-  params: { kafkaId?: string };
-}) {
+export default async function SignIn(
+  props: {
+    searchParams?: Promise<{ callbackUrl?: string }>;
+    params: Promise<{ kafkaId?: string }>;
+  }
+) {
+  const params = await props.params;
+  const searchParams = await props.searchParams;
   const clusters = (await getKafkaClusters(undefined, { pageSize: 1000 }))
     ?.payload;
 

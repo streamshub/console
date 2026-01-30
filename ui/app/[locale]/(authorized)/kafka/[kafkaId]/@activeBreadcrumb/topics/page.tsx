@@ -7,11 +7,17 @@ import { HomeIcon } from "@/libs/patternfly/react-icons";
 import { useTranslations } from "next-intl";
 import { KafkaParams } from "../../kafka.params";
 
-export default function TopicsActiveBreadcrumbPage({
-  params: { kafkaId },
-}: {
-  params: KafkaParams;
-}) {
+export default async function TopicsActiveBreadcrumbPage(
+  props: {
+    params: Promise<KafkaParams>;
+  }
+) {
+  const params = await props.params;
+
+  const {
+    kafkaId
+  } = params;
+
   return <TopicsActiveBreadcrumb kafkaId={kafkaId} />;
 }
 

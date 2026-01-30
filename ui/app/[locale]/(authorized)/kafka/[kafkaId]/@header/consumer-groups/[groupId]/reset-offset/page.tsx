@@ -5,11 +5,18 @@ import { Suspense } from "react";
 import { useTranslations } from "next-intl";
 import RichText from "@/components/RichText";
 
-export default function Page({
-  params: { kafkaId, groupId },
-}: {
-  params: KafkaConsumerGroupMembersParams;
-}) {
+export default async function Page(
+  props: {
+    params: Promise<KafkaConsumerGroupMembersParams>;
+  }
+) {
+  const params = await props.params;
+
+  const {
+    kafkaId,
+    groupId
+  } = params;
+
   return (
     <Suspense fallback={<Header groupIdDisplay={""} />}>
       <ConnectedAppHeader params={{ kafkaId, groupId }} />
