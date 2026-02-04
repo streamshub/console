@@ -166,7 +166,8 @@ import io.quarkiverse.operatorsdk.annotations.CSVMetadata.Provider;
                 @Annotation(name = "features.operators.openshift.io/disconnected", value = "true"),
                 @Annotation(name = "features.operators.openshift.io/proxy-aware", value = "true"),
                 @Annotation(name = "createdAt", value = "placeholder"),
-                @Annotation(name = "support", value = "Streamshub")
+                @Annotation(name = "support", value = "Streamshub"),
+                @Annotation(name = "description", value = "User interface to monitor Apache Kafka® clusters")
             }),
         description = """
             The Streamshub Console provides a web-based user interface tool for monitoring Apache Kafka® instances within a Kubernetes based cluster.
