@@ -1,7 +1,6 @@
 # Operator version
-oldOperatorVersion: 0.9.0
-newOperatorVersion: 0.10.0
+oldOperatorVersion: 0.10.3
+newOperatorVersion: 0.11.0
 # Url to generated CRDs Yaml containing operator.
-oldOperatorCrdsUrl: https://github.com/streamshub/console/releases/download/0.9.0/streamshub-console-operator.yaml
-newOperatorCrdsUrl: https://github.com/streamshub/console/releases/download/0.10.0/streamshub-console-operator.yaml
-
+oldOperatorCrdsUrl: https://github.com/streamshub/console/releases/download/0.10.3/streamshub-console-operator.yaml
+newOperatorCrdsUrl: https://github.com/streamshub/console/releases/download/0.11.0/streamshub-console-operator.yaml
