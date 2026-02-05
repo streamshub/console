@@ -82,30 +82,55 @@ export function ResetOffset({
 }) {
   const t = useTranslations("ConsumerGroupsTable");
   const isTopicSelected = selectTopic === "selectedTopic";
+  const hasTopicName =
+    typeof offset.topicName === "string" && offset.topicName.trim().length > 0;
+  const topicValid =
+    selectTopic === "allTopics" || (isTopicSelected && hasTopicName);
+
   const isPartitionSelected = selectPartition === "selectedPartition";
-  const hasTopicName = typeof offset.topicName === "string" && offset.topicName.length > 0;
-  const hasPartition = typeof offset.partition === "number";
-  const hasCustomOffset = typeof offset.offset === "number";
-  const hasSpecificDateTime = typeof offset.offset === "string";
+  const hasPartitionValue = typeof offset.partition === "number";
+  const partitionValid =
+    !isTopicSelected ||
+    selectPartition === "allPartitions" ||
+    (isPartitionSelected && hasPartitionValue);
 
-  const submitEnabled = {
-    specificDateTime: () => hasSpecificDateTime,
-    latest: () => true,
-    earliest: () => true,
-    custom: () =>
-      isTopicSelected &&
-      hasTopicName &&
-      isPartitionSelected &&
-      hasCustomOffset,
-    delete: () =>
-      isTopicSelected &&
-      hasTopicName &&
-      (selectPartition === "allPartitions" || hasPartition),
-  }[selectOffset] ?? false;
+  const hasCustomOffsetValue =
+    offset.offset !== undefined && offset.offset !== "";
 
-  const isEnabled = submitEnabled;
+  const hasDateTimeValue =
+    typeof offset.offset === "string" && offset.offset.trim().length > 0;
 
-  const offsetOptions: { value: OffsetValue, label: string }[] = [
+  const getIsOffsetValid = () => {
+    if (!selectOffset) return false;
+
+    switch (selectOffset) {
+      case "custom":
+        return (
+          isTopicSelected &&
+          hasTopicName &&
+          isPartitionSelected &&
+          hasPartitionValue &&
+          hasCustomOffsetValue
+        );
+
+      case "specificDateTime":
+        return !!selectDateTimeFormat && hasDateTimeValue;
+
+      case "delete":
+        return isTopicSelected && hasTopicName && partitionValid;
+
+      case "earliest":
+      case "latest":
+        return topicValid && partitionValid;
+
+      default:
+        return false;
+    }
+  };
+
+  const isEnabled = topicValid && partitionValid && getIsOffsetValid();
+
+  const offsetOptions: { value: OffsetValue; label: string }[] = [
     ...(isTopicSelected && isPartitionSelected
       ? [{ value: "custom" as OffsetValue, label: t("offset.custom") }]
       : []),
@@ -308,7 +333,7 @@ export function ResetOffset({
               <DryrunSelect
                 openDryrun={openDryrun}
                 cliCommand={cliCommand}
-                isDisabled={!isEnabled}
+                isDisabled={isLoading || !isEnabled}
               />
               <Button
                 variant="link"
