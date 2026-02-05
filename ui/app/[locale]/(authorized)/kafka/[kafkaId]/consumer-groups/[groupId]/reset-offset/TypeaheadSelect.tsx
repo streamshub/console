@@ -25,6 +25,7 @@ export function TypeaheadSelect({
   placeholder: string;
 }) {
   const [isOpen, setIsOpen] = useState<boolean>(false);
+  const [inputValue, setInputValue] = useState<string>(value?.toString() ?? "");
   const [filterValue, setFilterValue] = useState<string>("");
   const [focusedItemIndex, setFocusedItemIndex] = useState<number | null>(null);
   const [activeItemId, setActiveItemId] = useState<string | null>(null);
@@ -34,16 +35,21 @@ export function TypeaheadSelect({
 
   const uniqueItems = Array.from(new Set(selectItems));
 
+  React.useEffect(() => {
+    setInputValue(value?.toString() ?? "");
+  }, [value]);
+
   const onToggleClick = () => {
-    setIsOpen(!isOpen);
-    if (!isOpen) {
-      textInputRef.current?.focus();
-    }
+    setIsOpen((prev) => !prev);
+    setFilterValue("");
+    textInputRef.current?.focus();
   };
 
   const onSelect: SelectProps["onSelect"] = (_event, selection) => {
     if (selection !== NO_RESULTS) {
+      const stringSelection = selection.toString();
       onChange(selection as string | number);
+      setInputValue(stringSelection);
       setFilterValue("");
     }
     setIsOpen(false);
@@ -69,31 +75,64 @@ export function TypeaheadSelect({
 
   const onInputChange = (
     _event: React.FormEvent<HTMLInputElement>,
-    value: string,
+    val: string,
   ) => {
-    setFilterValue(value);
+    setInputValue(val);
+    setFilterValue(val);
     setFocusedItemIndex(null);
-    if (value === "") {
-      onChange("");
+    onChange(val);
+
+    if (!isOpen && val !== "") {
+      setIsOpen(true);
     }
   };
 
   const onInputKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
-    if (event.key === "Enter" && focusedItemIndex !== null) {
-      const selectedItem = filteredItems[focusedItemIndex];
-      onChange(selectedItem);
-      setIsOpen(false);
+    if (event.key === "Enter") {
+      event.preventDefault();
+
+      if (isOpen) {
+        const itemToSelect =
+          focusedItemIndex !== null
+            ? filteredItems[focusedItemIndex]
+            : filteredItems.length > 0
+              ? filteredItems[0]
+              : null;
+
+        if (itemToSelect && itemToSelect !== NO_RESULTS) {
+          onChange(itemToSelect);
+          setFilterValue(itemToSelect.toString());
+        } else {
+          onChange(filterValue);
+        }
+        setIsOpen(false);
+      }
+    }
+
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      if (!isOpen) setIsOpen(true);
+      setFocusedItemIndex((prev) =>
+        prev === null || prev === filteredItems.length - 1 ? 0 : prev + 1,
+      );
+    }
+
+    if (event.key === "ArrowUp") {
+      event.preventDefault();
+      setFocusedItemIndex((prev) =>
+        prev === null || prev === 0 ? filteredItems.length - 1 : prev - 1,
+      );
     }
   };
 
   const onClearButtonClick = () => {
+    setInputValue("");
     setFilterValue("");
     setFocusedItemIndex(null);
     setActiveItemId(null);
     onChange("");
     textInputRef.current?.focus();
   };
-
   const toggle = (toggleRef: React.Ref<MenuToggleElement>) => (
     <MenuToggle
       ref={toggleRef}
@@ -105,10 +144,13 @@ export function TypeaheadSelect({
     >
       <TextInputGroup isPlain>
         <TextInputGroupMain
-          value={filterValue || value}
+          value={inputValue}
           onClick={() => setIsOpen(true)}
           onChange={onInputChange}
           onKeyDown={onInputKeyDown}
+          onBlur={() => {
+            onChange(filterValue);
+          }}
           id="typeahead-select-input"
           autoComplete="off"
           ref={textInputRef}
@@ -119,7 +161,7 @@ export function TypeaheadSelect({
           aria-controls="typeahead-select-listbox"
         />
         <TextInputGroupUtilities>
-          {(filterValue || value) && (
+          {filterValue && (
             <Button
               icon={<TimesIcon aria-hidden />}
               variant="plain"

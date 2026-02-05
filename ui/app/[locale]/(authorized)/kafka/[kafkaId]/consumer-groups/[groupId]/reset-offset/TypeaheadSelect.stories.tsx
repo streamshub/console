@@ -9,6 +9,7 @@ type Story = StoryObj<typeof TypeaheadSelect>;
 
 export const Default: Story = {
   args: {
+    value: "",
     selectItems: [
       "console_datagen_002-a",
       "console_datagen_002-b",
