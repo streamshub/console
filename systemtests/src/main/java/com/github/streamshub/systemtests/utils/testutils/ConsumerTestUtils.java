@@ -50,6 +50,9 @@ public class ConsumerTestUtils {
                 PwUtils.waitForLocatorAndClick(tcc, SingleConsumerGroupPageSelectors.SCGPS_RESET_PAGE_OFFSET_CUSTOM_OFFSET);
                 PwUtils.waitForLocatorAndFill(tcc, SingleConsumerGroupPageSelectors.SCGPS_RESET_PAGE_OFFSET_CUSTOM_OFFSET_INPUT, value);
                 break;
+            case DELETE_COMMITED_OFFSETS:
+                PwUtils.waitForLocatorAndClick(tcc, SingleConsumerGroupPageSelectors.SCGPS_RESET_PAGE_OFFSET_ALL_PARTITIONS_DELETE_COMMITED_OFFSETS);
+                break;
         }
     }
 
@@ -129,7 +132,7 @@ public class ConsumerTestUtils {
         selectResetOffsetParameters(tcc, offsetType, dateTimeType, value);
 
         PwUtils.waitForLocatorAndClick(tcc, SingleConsumerGroupPageSelectors.SCGPS_RESET_PAGE_OFFSET_DRY_RUN_BUTTON);
-        PwUtils.waitForAttributeContainsText(tcc, SingleConsumerGroupPageSelectors.SCGPS_DRY_RUN_COMMAND, "--to-" + offsetType.getCommand(), Constants.VALUE_ATTRIBUTE, true);
+        PwUtils.waitForAttributeContainsText(tcc, SingleConsumerGroupPageSelectors.SCGPS_DRY_RUN_COMMAND, offsetType.getCommand(), Constants.VALUE_ATTRIBUTE, true);
         PwUtils.waitForLocatorAndClick(tcc, SingleConsumerGroupPageSelectors.SCGPS_BACK_TO_EDIT_OFFSET_BUTTON);
 
         // Reselect offset since UI resets previously selected

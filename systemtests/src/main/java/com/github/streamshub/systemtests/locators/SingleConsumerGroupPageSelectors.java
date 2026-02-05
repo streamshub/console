@@ -177,20 +177,26 @@ public class SingleConsumerGroupPageSelectors {
         .withElementButton().withComponentMenu().withSubComponentItem()
         .build();
 
-    public static final String SCGPS_RESET_PAGE_OFFSET_LATEST_OFFSET = new CssBuilder(SCGPS_RESET_PAGE_OFFSET_DROPDOWN_ITEMS)
-        .nth(2)
-        .withChild()
-        .withElementButton().withComponentMenu().withSubComponentItem()
-        .build();
-
     public static final String SCGPS_RESET_PAGE_OFFSET_EARLIEST_OFFSET = new CssBuilder(SCGPS_RESET_PAGE_OFFSET_DROPDOWN_ITEMS)
         .nth(1)
         .withChild()
         .withElementButton().withComponentMenu().withSubComponentItem()
         .build();
 
+    public static final String SCGPS_RESET_PAGE_OFFSET_LATEST_OFFSET = new CssBuilder(SCGPS_RESET_PAGE_OFFSET_DROPDOWN_ITEMS)
+        .nth(2)
+        .withChild()
+        .withElementButton().withComponentMenu().withSubComponentItem()
+        .build();
+
     public static final String SCGPS_RESET_PAGE_OFFSET_ALL_PARTITIONS_SPECIFIC_DATETIME_OFFSET = new CssBuilder(SCGPS_RESET_PAGE_OFFSET_DROPDOWN_ITEMS)
         .nth(3)
+        .withChild()
+        .withElementButton().withComponentMenu().withSubComponentItem()
+        .build();
+
+    public static final String SCGPS_RESET_PAGE_OFFSET_ALL_PARTITIONS_DELETE_COMMITED_OFFSETS = new CssBuilder(SCGPS_RESET_PAGE_OFFSET_DROPDOWN_ITEMS)
+        .nth(4)
         .withChild()
         .withElementButton().withComponentMenu().withSubComponentItem()
         .build();
@@ -289,5 +295,26 @@ public class SingleConsumerGroupPageSelectors {
         .withElementDiv().withLayoutStack().withSubComponentItem().nth(4).withChild()
         .withElementButton().withComponentButton().withChild()
         .withElementSpan().withComponentButton().withSubComponentText()
+        .build();
+
+    public static final String SCGPS_SELECTED_TOPIC_RADIO = new CssBuilder(SCGPS_PAGE)
+        .withChild()
+        .withElementForm().withComponentForm().withChild()
+        .withElementSection().withComponentForm().withSubComponentSection().nth(1).withChild()
+        .withElementDiv().withComponentForm().withSubComponentGroup().withChild()
+        .withElementDiv().withComponentForm().withSubComponentGroupControl().withChild()
+        .withElementDiv().withComponentRadio().nth(2).withChild()
+        .withElementInput().withComponentRadio().withSubComponentInput()
+        .build();
+
+    public static final String SCGPS_SELECTED_TOPIC_INPUT = new CssBuilder(SCGPS_PAGE)
+        .withChild()
+        .withElementForm().withComponentForm().withChild()
+        .withElementSection().withComponentForm().withSubComponentSection().nth(1).withChild()
+        .withElementDiv().withComponentMenuToggle().withChild()
+        .withElementDiv().withComponentTextInputGroup().withChild()
+        .withElementDiv().withComponentTextInputGroup().withSubComponentMain().withChild()
+        .withElementSpan().withComponentTextInputGroup().withSubComponentText().withChild()
+        .withElementInput().withComponentTextInputGroup().withSubComponentTextInput()
         .build();
 }
