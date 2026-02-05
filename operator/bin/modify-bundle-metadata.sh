@@ -76,6 +76,24 @@ curr_time_date="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
 echo "[DEBUG] Setting createdAt = ${curr_time_date}"
 ${YQ} eval -o yaml -i ".metadata.annotations.createdAt = \"${curr_time_date}\"" "${CSV_FILE_PATH}"
 
+# Add an example of the Console CR
+EXAMPLES_META="$(echo '{
+    "console-standalone-prometheus": {
+      "description": "Example Console referencing a pre-existing Prometheus instance for metrics"
+    }
+  }' | ${YQ} -oj)"
+
+EXAMPLES_META=${EXAMPLES_META} ${YQ} -i '
+  .metadata.annotations."alm-examples-metadata" = strenv(EXAMPLES_META) |
+  .metadata.annotations."alm-examples-metadata" style="literal"' "${CSV_FILE_PATH}"
+
+EXAMPLES="$(${YQ} -oj '.metadata.name = "console-standalone-prometheus" | [.]' \
+  ${SCRIPT_PATH}/../../examples/console/console-standalone-prometheus.yaml)"
+
+EXAMPLES=${EXAMPLES} ${YQ} -i '
+  .metadata.annotations."alm-examples" = strenv(EXAMPLES) |
+  .metadata.annotations."alm-examples" style="literal"' "${CSV_FILE_PATH}"
+
 # Change operator name
 echo "[DEBUG] Renaming operator to ${OPERATOR_INSTANCE_NAME}"
 ${YQ} eval -o yaml -i ".metadata.name = \"${OPERATOR_CSV_NAME}\" | .metadata.name style=\"\"" "${CSV_FILE_PATH}"
@@ -97,10 +115,15 @@ api_image_digest=$(${SKOPEO} inspect --tls-verify=false --override-os=linux --fo
 api_image_with_digest="${image_registry}/${api_name}@${api_image_digest}"
 echo "[DEBUG] Using API image: ${api_image_with_digest}"
 
-${YQ} eval -o yaml -i ".spec.install.spec.deployments[0].spec.template.spec.containers[0].env += [{\"name\": \"CONSOLE_DEPLOYMENT_DEFAULT_UI_IMAGE\", \"value\": \"${ui_image_with_digest}\"}]" "${CSV_FILE_PATH}"
-${YQ} eval -o yaml -i ".spec.install.spec.deployments[0].spec.template.spec.containers[0].env += [{\"name\": \"CONSOLE_DEPLOYMENT_DEFAULT_API_IMAGE\", \"value\": \"${api_image_with_digest}\"}]" "${CSV_FILE_PATH}"
+${YQ} eval -o yaml -i '.spec.install.spec.deployments[0].spec.template.spec.containers[0].env += [{
+  "name": "CONSOLE_DEPLOYMENT_DEFAULT_UI_IMAGE",
+  "value": "'${ui_image_with_digest}'"
+}, {
+  "name": "CONSOLE_DEPLOYMENT_DEFAULT_API_IMAGE",
+  "value": "'${api_image_with_digest}'"
+}]' "${CSV_FILE_PATH}"
 
-# Add operator and operatnd images with digests to related images
+# Add operator and operand images with digests to related images
 ${YQ} eval -o yaml -i '.spec.relatedImages += [{
   "name": "'${OPERATOR_NAME}'",
   "image": "'${operator_image_with_digest}'"

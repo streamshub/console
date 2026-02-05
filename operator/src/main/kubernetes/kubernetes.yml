@@ -319,6 +319,13 @@ spec:
     spec:
       containers:
         - name: streamshub-console-operator
+          resources:
+            requests:
+              cpu: 500m
+              memory: 512Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
           securityContext:
             readOnlyRootFilesystem: true
             allowPrivilegeEscalation: false

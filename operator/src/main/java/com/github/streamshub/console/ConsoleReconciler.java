@@ -53,6 +53,7 @@ import io.quarkiverse.operatorsdk.annotations.CSVMetadata.Annotations;
 import io.quarkiverse.operatorsdk.annotations.CSVMetadata.Annotations.Annotation;
 import io.quarkiverse.operatorsdk.annotations.CSVMetadata.InstallMode;
 import io.quarkiverse.operatorsdk.annotations.CSVMetadata.Link;
+import io.quarkiverse.operatorsdk.annotations.CSVMetadata.Maintainer;
 import io.quarkiverse.operatorsdk.annotations.CSVMetadata.Provider;
 
 @ControllerConfiguration(
@@ -155,6 +156,7 @@ import io.quarkiverse.operatorsdk.annotations.CSVMetadata.Provider;
         })
 @CSVMetadata(
         provider = @Provider(name = "StreamsHub", url = "https://github.com/streamshub"),
+        maintainers = @Maintainer(name = "StreamsHub", email = "maintainers@streamshub.io"),
         annotations = @Annotations(
             containerImage = "placeholder",
             repository = "https://github.com/streamshub/console",
