@@ -20,8 +20,8 @@ import io.apicurio.registry.resolver.SchemaResolver;
 import io.apicurio.registry.resolver.client.RegistryClientFacade;
 import io.apicurio.registry.resolver.strategy.ArtifactReference;
 import io.apicurio.registry.serde.BaseSerde;
-import io.apicurio.registry.serde.config.BaseKafkaSerDeConfig;
 import io.apicurio.registry.serde.config.SerdeConfig;
+import io.apicurio.registry.serde.kafka.config.BaseKafkaSerDeConfig;
 import io.apicurio.registry.types.ArtifactType;
 import io.apicurio.registry.utils.protobuf.schema.ProtobufSchema;
 

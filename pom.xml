@@ -19,7 +19,8 @@
         <quarkus.platform.version>3.27.2</quarkus.platform.version>
         <strimzi-api.version>0.50.0</strimzi-api.version>
         <strimzi-oauth.version>0.17.1</strimzi-oauth.version>
-        <apicurio-registry.version>3.1.4</apicurio-registry.version>
+        <apicurio-registry.version>3.1.7</apicurio-registry.version>
+        <kiota-http-jdk.version>0.0.31</kiota-http-jdk.version>
         <kafka.version>4.1.1</kafka.version>
 
         <!-- Test Dependencies -->
@@ -106,8 +107,18 @@
                 <version>${strimzi-oauth.version}</version>
             </dependency>
             <dependency>
+                <groupId>io.kiota</groupId>
+                <artifactId>kiota-http-jdk</artifactId>
+                <version>${kiota-http-jdk.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>io.apicurio</groupId>
-                <artifactId>apicurio-registry-client</artifactId>
+                <artifactId>apicurio-registry-java-sdk-common</artifactId>
+                <version>${apicurio-registry.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.apicurio</groupId>
+                <artifactId>apicurio-registry-serde-kafka-common</artifactId>
                 <version>${apicurio-registry.version}</version>
             </dependency>
             <dependency>
