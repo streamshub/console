@@ -40,6 +40,7 @@ public class BucketMethodsOrderRandomizer implements MethodOrderer {
      */
     @Override
     public void orderMethods(MethodOrdererContext context) {
+        @SuppressWarnings("unchecked")
         List<MethodDescriptor> methods = (List<MethodDescriptor>) context.getMethodDescriptors();
 
         // Group methods by @Group value

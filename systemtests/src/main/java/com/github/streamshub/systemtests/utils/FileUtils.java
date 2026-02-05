@@ -8,6 +8,7 @@ import org.apache.logging.log4j.Logger;
 import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -37,7 +38,7 @@ public class FileUtils {
 
             LOGGER.debug("File was not found on path {}. Trying to parse location {} as a URL", file.getAbsolutePath(), location);
             // Location is not a valid
-            return new URL(location);
+            return URI.create(location).toURL();
         } catch (MalformedURLException e) {
             throw new SetupException("Could not resolve given location: " + location);
         }

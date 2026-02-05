@@ -62,7 +62,7 @@ import com.github.streamshub.console.config.SchemaRegistryConfig;
 import com.github.streamshub.console.support.KafkaConfigs;
 
 import io.apicurio.registry.resolver.client.RegistryClientFacade;
-import io.apicurio.registry.serde.config.KafkaSerdeConfig;
+import io.apicurio.registry.serde.kafka.config.KafkaSerdeConfig;
 import io.fabric8.kubernetes.client.informers.ResourceEventHandler;
 import io.fabric8.kubernetes.client.informers.SharedIndexInformer;
 import io.fabric8.kubernetes.client.informers.cache.Cache;

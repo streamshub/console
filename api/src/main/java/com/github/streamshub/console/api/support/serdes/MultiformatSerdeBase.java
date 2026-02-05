@@ -14,8 +14,8 @@ import io.apicurio.registry.resolver.SchemaResolver;
 import io.apicurio.registry.resolver.client.RegistryClientFacade;
 import io.apicurio.registry.resolver.utils.Utils;
 import io.apicurio.registry.serde.BaseSerde;
-import io.apicurio.registry.serde.config.BaseKafkaSerDeConfig;
-import io.apicurio.registry.serde.headers.HeadersHandler;
+import io.apicurio.registry.serde.kafka.config.BaseKafkaSerDeConfig;
+import io.apicurio.registry.serde.kafka.headers.HeadersHandler;
 import io.apicurio.registry.utils.protobuf.schema.ProtobufSchema;
 
 abstract class MultiformatSerdeBase implements Closeable, ForceCloseable {
