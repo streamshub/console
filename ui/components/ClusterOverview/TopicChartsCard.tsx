@@ -5,6 +5,7 @@ import {
   CardHeader,
   CardTitle,
   Flex,
+  Switch,
   Title,
   Toolbar,
   ToolbarContent,
@@ -21,7 +22,7 @@ import { FilterByTime } from "./components/FilterByTime";
 import { useTopicMetrics } from "./components/useTopicMetrics";
 import { DurationOptions } from "./components/type";
 
-type TopicOption = { id: string; name: string };
+type TopicOption = { id: string; name: string; managed?: boolean };
 
 type TopicChartsCardProps = {
   incoming: TimeSeriesMetrics;
@@ -48,6 +49,7 @@ export function TopicChartsCard({
     } & Partial<{ [key in keyof TopicChartsCardProps]?: undefined }>)) {
   const t = useTranslations();
 
+  const [includeHidden, setIncludeHidden] = useState(false);
   const [selectedTopic, setSelectedTopic] = useState<string | undefined>();
   const [duration, setDuration] = useState<DurationOptions>(
     DurationOptions.Last5minutes,
@@ -60,6 +62,12 @@ export function TopicChartsCard({
 
   const displayIncoming = data?.incoming_byte_rate ?? incoming;
   const displayOutgoing = data?.outgoing_byte_rate ?? outgoing;
+
+  const baseTopics = topicList ?? [];
+
+  const filteredTopicList = includeHidden
+    ? baseTopics
+    : baseTopics.filter((topic) => !topic.managed);
 
   const selectedTopicName = topicList?.find(
     (t) => t.id === selectedTopic,
@@ -101,7 +109,7 @@ export function TopicChartsCard({
                     <ToolbarGroup variant="filter-group">
                       <FilterByTopic
                         selectedTopic={selectedTopic}
-                        topicList={topicList}
+                        topicList={filteredTopicList}
                         onSetSelectedTopic={setSelectedTopic}
                         disableToolbar={isFetching}
                       />
@@ -110,6 +118,22 @@ export function TopicChartsCard({
                         onDurationChange={setDuration}
                         disableToolbar={isFetching}
                         ariaLabel={"Select time range"}
+                      />
+                      <Switch
+                        key={"ht"}
+                        label={
+                          <>
+                            {t("topics.hide_internal_topics")}&nbsp;
+                            <Tooltip
+                              content={t("topics.hide_internal_topics_tooltip")}
+                            >
+                              <HelpIcon />
+                            </Tooltip>
+                          </>
+                        }
+                        isChecked={!includeHidden}
+                        onChange={(_, checked) => setIncludeHidden(!checked)}
+                        className={"pf-v6-u-py-xs"}
                       />
                     </ToolbarGroup>
                   </ToolbarContent>

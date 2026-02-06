@@ -37,9 +37,10 @@ export async function ConnectedTopicChartsCard({
       ?.map((topic) => ({
         id: topic.id,
         name: topic.attributes.name,
+        managed: topic.meta.managed,
       }))
       .filter(
-        (topic): topic is { id: string; name: string } =>
+        (topic): topic is { id: string; name: string; managed: boolean } =>
           !!topic.id && !!topic.name,
       ) ?? [];
 

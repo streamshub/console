@@ -1,4 +1,5 @@
 "use client";
+import { ManagedTopicLabel } from "@/components/ManagedTopicLabel";
 import {
   Menu,
   MenuList,
@@ -15,7 +16,7 @@ import {
 import { useTranslations } from "next-intl";
 import { useRef, useState, useMemo } from "react";
 
-type TopicOption = { id: string; name: string };
+type TopicOption = { id: string; name: string; managed?: boolean };
 
 export function FilterByTopic({
   selectedTopic,
@@ -72,6 +73,7 @@ export function FilterByTopic({
           isSelected={selectedTopic === topic.id}
         >
           {topic.name}
+          {(topic as any).managed === true && <ManagedTopicLabel />}
         </SelectOption>
       ))}
     </SelectGroup>,
@@ -94,6 +96,9 @@ export function FilterByTopic({
       className="appserv-metrics-filterbytopic"
     >
       {selectedTopicName || allTopicsLabel}
+      {topicList.find((t) => t.id === selectedTopic)?.managed && (
+        <ManagedTopicLabel />
+      )}
     </MenuToggle>
   );
 
