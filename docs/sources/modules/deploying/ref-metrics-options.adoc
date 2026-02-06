@@ -6,15 +6,16 @@
 
 [id='ref-metrics-options-{context}']
 = Enabling a metrics provider
+
 [role="_abstract"]
 Configure the console deployment to enable a metrics provider. 
 You can set up configuration to use one of the following sources to scrape metrics from Kafka clusters using Prometheus:
 
-* *OpenShift's built-in user workload monitoring* +
+OpenShift's built-in user workload monitoring::
 Use OpenShift's workload monitoring, incorporating the Prometheus operator, to monitor console services and workloads without the need for an additional monitoring solution.
-* *A standalone Prometheus instance* +
+A standalone Prometheus instance::
 Provide the details and credentials to connect with your own Prometheus instance.
-* *An embedded Prometheus instance* (default) +
+An embedded Prometheus instance (default):: 
 Deploy a private Prometheus instance for use only by the console instance. 
 The instance is configured to retrieve metrics from all Strimzi managed Kafka instances in the same Kubernetes cluster. 
 Using embedded metrics is intended for development and evaluation only, not production.
@@ -79,34 +80,37 @@ spec:
   metricsSources:
     - name: my-custom-prometheus
       type: standalone
-      url: <prometheus_instance_address> # <1>
-      authentication: # <2>
+      url: <prometheus_instance_address>
+      authentication:
         username: my-user
         password: my-password
-      trustStore: # <3>
+      trustStore:
         type: JKS
         content:
           valueFrom:
             configMapKeyRef:
               name: my-prometheus-configmap
               key: ca.jks
-        password: # <4>
+        password:
           value: truststore-password
   kafkaClusters:
     - name: console-kafka
       namespace: kafka
-      listener: secure  
-      metricsSource: my-ocp-prometheus                  
+      listener: secure
+      metricsSource: my-ocp-prometheus
       credentials:
         kafkaUser:
           name: console-kafka-user1
-  # ...        
+  # ...
 ----
-<1> URL of the standalone Prometheus instance for metrics collection.
-<2> Authentication credentials for accessing the Prometheus instance. Supported authentication methods:
-+
-* `basic`: Requires `username` and `password`.
-* `bearer`: Requires `token`.
-* `oidc`: See xref:ref-authentication-options-{context}[Using an OIDC provider to secure access to Kafka clusters] for details.
-<3> Optional truststore used to validate the metrics provider’s TLS certificate. Supported formats include `JKS`, `PEM`, and `PKCS12`. Truststore content can be provided using either a `ConfigMap` (`configMapKeyRef`) or a `Secret` (`secretKeyRef`).
-<4> Optional password for the truststore. Can be provided as a plaintext value (as shown) or via a `Secret`. Plaintext values are not recommended for production.
+
+* `metricsSources.name` defines a unique name for the metrics source.
+* `metricsSources.type` specifies the type of metrics source. Use `standalone` for an external Prometheus instance.
+* `metricsSources.url` specifies the URL of the standalone Prometheus instance used for metrics collection.
+* `metricsSources.authentication` defines the authentication configuration used to access the Prometheus instance.
+** `basic` specifies basic authentication and requires a `username` and `password`.
+** `bearer` specifies bearer token authentication and requires a `token`.
+** `oidc` specifies OpenID Connect authentication. For details, see xref:ref-authentication-options-{context}[Using an OIDC provider to secure access to Kafka clusters].
+* `metricsSources.trustStore` optionally defines a truststore used to validate the metrics provider TLS certificate. Supported formats include `JKS`, `PEM`, and `PKCS12`. Truststore content can be provided by using either a ConfigMap or a Secret.
+* `metricsSources.trustStore.password` optionally specifies the truststore password. The password can be provided as a plaintext value or via a Secret. Plaintext values are not recommended for production environments.
+* `kafkaClusters.metricsSource` associates the Kafka cluster with the configured metrics source.

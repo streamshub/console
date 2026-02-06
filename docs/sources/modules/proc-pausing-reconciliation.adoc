@@ -14,5 +14,5 @@ While reconciliation is paused, changes to the cluster configuration using the `
 On the *Cluster overview* page, click *Pause reconciliation*.
 . Confirm the pause, after which the *Cluster overview* page shows a change of status warning that reconciliation is paused.
 . Click *Resume reconciliation* to restart reconciliation.
-
++
 NOTE: If the status change is not displayed after pausing reconciliation, try refreshing the page.
