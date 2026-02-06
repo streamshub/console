@@ -82,8 +82,9 @@ spec:
       type: standalone
       url: <prometheus_instance_address>
       authentication:
-        username: my-user
-        password: my-password
+        basic:
+          username: my-user
+          password: my-password
       trustStore:
         type: JKS
         content:
