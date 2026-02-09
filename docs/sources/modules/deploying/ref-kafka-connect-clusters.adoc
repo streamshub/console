@@ -41,21 +41,22 @@ spec:
         kafkaUser:
           name: console-kafka-user1
   kafkaConnectClusters:
-    - name: my-connect-cluster # <1>
-      url: http://my-connect-cluster.example.com/ # <2>
-      kafkaClusters: # <3>
+    - name: my-connect-cluster
+      url: http://my-connect-cluster.example.com/
+      kafkaClusters:
         - kafka/console-kafka
-    - name: my-mm2-cluster # <4>
+    - name: my-mm2-cluster
       url: http://my-mm2-cluster.example.com/
-      kafkaClusters: # <5>
+      kafkaClusters:
         - ns1/kafka1
         - ns2/kafka2
   # ...
 ----
-<1> A unique name for the Connect cluster.
-<2> Base URL of the Kafka Connect REST API endpoint.
-<3> Associates the Connect cluster with one or more Kafka clusters configured in the console.
-<4> Example entry for a MirrorMaker 2 Connect cluster.
-<5> Associates this Kafka Connect cluster with multiple Kafka clusters in different namespaces.
+
+* `kafkaConnectClusters.name` defines a unique name for the Kafka Connect cluster.
+* `kafkaConnectClusters.url` specifies the base URL of the Kafka Connect REST API endpoint.
+* `kafkaConnectClusters.kafkaClusters` associates the Kafka Connect cluster with one or more Kafka clusters configured in the console.
+* The second `kafkaConnectClusters` entry shows an example MirrorMaker 2 Connect cluster.
+* The second `kafkaConnectClusters.kafkaClusters` entry shows how to associate a Kafka Connect cluster with multiple Kafka clusters in different namespaces.
 
 When the console is deployed with these settings, Connect clusters and connector details can be viewed from the **Kafka Connect** page of the console.
