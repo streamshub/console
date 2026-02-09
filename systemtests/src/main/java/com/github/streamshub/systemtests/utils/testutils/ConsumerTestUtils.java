@@ -112,13 +112,35 @@ public class ConsumerTestUtils {
     }
 
     /**
-     * Performs a dry-run and then executes a reset of consumer group offsets through the UI.
+     * Performs a dry-run reset of consumer group offsets through the UI.
      * <p>
      * This method:
      * <ul>
      *     <li>Selects offset reset parameters (type, datetime, value) for the operation.</li>
      *     <li>Executes a dry-run via the UI and validates that the generated command contains the correct offset argument.</li>
      *     <li>Returns to the offset reset page and re-selects the parameters (since the UI resets them).</li>
+     * </ul>
+     *
+     * @param tcc           the test case configuration, including Playwright page and Kafka context
+     * @param offsetType    the type of offset reset (e.g., earliest, latest, specific offset)
+     * @param dateTimeType  the datetime type used if applicable (e.g., absolute or relative)
+     * @param value         the value associated with the offset reset (e.g., a specific offset or timestamp)
+     */
+    public static void execDryRun(TestCaseConfig tcc, ResetOffsetType offsetType, ResetOffsetDateTimeType dateTimeType, String value) {
+        LOGGER.info("DryRun reset offset - OffsetType {} DateTime {} reset value {}", offsetType, dateTimeType, value);
+        selectResetOffsetParameters(tcc, offsetType, dateTimeType, value);
+
+        PwUtils.waitForLocatorAndClick(tcc, SingleConsumerGroupPageSelectors.SCGPS_RESET_PAGE_OFFSET_DRY_RUN_BUTTON);
+        PwUtils.waitForAttributeContainsText(tcc, SingleConsumerGroupPageSelectors.SCGPS_DRY_RUN_COMMAND, offsetType.getCommand(), Constants.VALUE_ATTRIBUTE, true);
+        PwUtils.waitForLocatorAndClick(tcc, SingleConsumerGroupPageSelectors.SCGPS_BACK_TO_EDIT_OFFSET_BUTTON);
+    }
+
+    /**
+     * Performs a reset of consumer group offsets through the UI.
+     * <p>
+     * This method:
+     * <ul>
+     *     <li>Selects offset reset parameters (type, datetime, value) for the operation.</li>
      *     <li>Executes the actual offset reset operation through the UI.</li>
      * </ul>
      *
@@ -127,15 +149,7 @@ public class ConsumerTestUtils {
      * @param dateTimeType  the datetime type used if applicable (e.g., absolute or relative)
      * @param value         the value associated with the offset reset (e.g., a specific offset or timestamp)
      */
-    public static void execDryRunAndReset(TestCaseConfig tcc, ResetOffsetType offsetType, ResetOffsetDateTimeType dateTimeType, String value) {
-        LOGGER.info("DryRun reset offset - OffsetType {} DateTime {} reset value {}", offsetType, dateTimeType, value);
-        selectResetOffsetParameters(tcc, offsetType, dateTimeType, value);
-
-        PwUtils.waitForLocatorAndClick(tcc, SingleConsumerGroupPageSelectors.SCGPS_RESET_PAGE_OFFSET_DRY_RUN_BUTTON);
-        PwUtils.waitForAttributeContainsText(tcc, SingleConsumerGroupPageSelectors.SCGPS_DRY_RUN_COMMAND, offsetType.getCommand(), Constants.VALUE_ATTRIBUTE, true);
-        PwUtils.waitForLocatorAndClick(tcc, SingleConsumerGroupPageSelectors.SCGPS_BACK_TO_EDIT_OFFSET_BUTTON);
-
-        // Reselect offset since UI resets previously selected
+    public static void execResetOffset(TestCaseConfig tcc, ResetOffsetType offsetType, ResetOffsetDateTimeType dateTimeType, String value) {
         LOGGER.info("Reset offset - OffsetType {} DateTime {} reset value {}", offsetType, dateTimeType, value);
         selectResetOffsetParameters(tcc, offsetType, dateTimeType, value);
         PwUtils.waitForLocatorAndClick(tcc, SingleConsumerGroupPageSelectors.SCGPS_RESET_PAGE_OFFSET_RESET_BUTTON);

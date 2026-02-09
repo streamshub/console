@@ -160,6 +160,14 @@ public class SingleConsumerGroupPageSelectors {
         return CssBuilder.joinLocators(new CssBuilder(SCGPS_RESET_PAGE_SELECTED_PARTITION_DROPDOWN_ITEMS).nth(nth).build(), SCGPS_AD_RESET_PAGE_SELECTED_PARTITION_ITEM_BUTTTON);
     }
 
+    public static final String SCGPS_RESET_PAGE_TOPIC_NAME_DROPDOWN_BUTTON = new CssBuilder(SCGPS_PAGE)
+        .withChild()
+        .withElementForm().withComponentForm().withChild()
+        .withElementSection().withComponentForm().withSubComponentSection().nth(1).withChild()
+        .withElementDiv().withComponentMenuToggle().withChild()
+        .withElementButton().withComponentMenuToggle().withSubComponentButton()
+        .build();
+
     public static final String SCGPS_RESET_PAGE_OFFSET_DROPDOWN_BUTTON = new CssBuilder(SCGPS_FORM)
         .withChild()
         .withElementSection().withComponentForm().withSubComponentSection().nth(2).withChild()

@@ -9,6 +9,9 @@ import org.apache.logging.log4j.Logger;
 import java.util.Arrays;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 public class KafkaCmdUtils {
     private static final Logger LOGGER = LogWrapper.getLogger(KafkaCmdUtils.class);
 
@@ -136,6 +139,26 @@ public class KafkaCmdUtils {
         LOGGER.debug("Get offset command resulted in => [{}]", output);
 
         return output;
+    }
+
+    public static boolean verifyConsumerGroupHasDeletedOffsets(String namespaceName, String kafkaName, String podName, String consumerGroupName, String topicName, String clientsConfig) {
+        String bootstrapServer = KafkaUtils.getPlainScramShaBootstrapAddress(kafkaName);
+
+        // Verify that the topic is present
+        assertFalse(listKafkaTopicsByPrefix(namespaceName, kafkaName, podName, clientsConfig, topicName).isEmpty());
+        assertTrue(listKafkaTopicsByPrefix(namespaceName, kafkaName, podName, clientsConfig, topicName).contains(topicName));
+
+        LOGGER.info("Retrieve consumer group {} offset", consumerGroupName);
+        insertClientProperties(namespaceName, podName, clientsConfig);
+        // Verify that the topic offset is not listed in describe
+        String getOffsetCommand = String.format("./bin/kafka-consumer-groups.sh --bootstrap-server=%s --command-config=%s --group=%s --describe 2>/dev/null \\\n" +
+            "  | awk -v topic=%s '$2 == topic { print $4 }' \\\n" +
+            "  | grep -E '^[0-9]+$'", bootstrapServer, CLIENTS_CONFIG_FILE_PATH, consumerGroupName, topicName);
+        LOGGER.debug("Run get consumergroup offset command");
+        // Set throw to false as it returns an empty output
+        String output = KubeResourceManager.get().kubeCmdClient().inNamespace(namespaceName).execInPod(false, podName, Constants.BASH_CMD, "-c", getOffsetCommand).out().trim();
+        LOGGER.debug("Get offset command resulted in => [{}]", output);
+        return output.isEmpty();
     }
 
     /**
