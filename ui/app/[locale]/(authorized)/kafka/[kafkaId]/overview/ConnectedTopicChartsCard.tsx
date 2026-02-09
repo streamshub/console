@@ -24,9 +24,11 @@ function timeSeriesMetrics(
 export async function ConnectedTopicChartsCard({
   cluster,
   topics,
+  includeHidden,
 }: {
   cluster: Promise<ClusterDetail | null>;
   topics: Promise<ApiResponse<TopicsResponse>>;
+  includeHidden?: boolean;
 }) {
   const res = await cluster;
 
@@ -37,7 +39,7 @@ export async function ConnectedTopicChartsCard({
       ?.map((topic) => ({
         id: topic.id,
         name: topic.attributes.name,
-        managed: topic.meta.managed,
+        managed: topic.meta?.managed,
       }))
       .filter(
         (topic): topic is { id: string; name: string; managed: boolean } =>
@@ -48,6 +50,7 @@ export async function ConnectedTopicChartsCard({
     <TopicChartsCard
       kafkaId={res?.id}
       topicList={topicList}
+      includeHidden={includeHidden}
       isLoading={false}
       isVirtualKafkaCluster={
         res?.meta?.kind === "virtualkafkaclusters.kroxylicious.io"

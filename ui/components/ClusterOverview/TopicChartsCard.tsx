@@ -17,10 +17,11 @@ import { ChartIncomingOutgoing } from "./components/ChartIncomingOutgoing";
 import { ChartSkeletonLoader } from "./components/ChartSkeletonLoader";
 import { useTranslations } from "next-intl";
 import { FilterByTopic } from "./components/FilterByTopic";
-import { useState } from "react";
+import { useEffect, useOptimistic, useState, useTransition } from "react";
 import { FilterByTime } from "./components/FilterByTime";
 import { useTopicMetrics } from "./components/useTopicMetrics";
 import { DurationOptions } from "./components/type";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 type TopicOption = { id: string; name: string; managed?: boolean };
 
@@ -29,12 +30,14 @@ type TopicChartsCardProps = {
   outgoing: TimeSeriesMetrics;
   topicList: TopicOption[];
   kafkaId: string | undefined;
+  includeHidden?: boolean;
 };
 
 export function TopicChartsCard({
   isLoading,
   incoming,
   outgoing,
+  includeHidden: initialIncludeHidden,
   isVirtualKafkaCluster,
   topicList,
   kafkaId,
@@ -49,8 +52,29 @@ export function TopicChartsCard({
     } & Partial<{ [key in keyof TopicChartsCardProps]?: undefined }>)) {
   const t = useTranslations();
 
-  const [includeHidden, setIncludeHidden] = useState(false);
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  const [isPending, startTransition] = useTransition();
+  const [optimisticIncludeHidden, setOptimisticIncludeHidden] = useOptimistic(
+    initialIncludeHidden,
+    (_, newValue: boolean) => newValue,
+  );
+
+  const includeHidden = optimisticIncludeHidden;
+
   const [selectedTopic, setSelectedTopic] = useState<string | undefined>();
+
+  useEffect(() => {
+    if (selectedTopic && topicList && topicList.length > 0) {
+      const exists = topicList.some((t) => t.id === selectedTopic);
+      if (!exists) {
+        setSelectedTopic(undefined);
+      }
+    }
+  }, [topicList, selectedTopic]);
+
   const [duration, setDuration] = useState<DurationOptions>(
     DurationOptions.Last5minutes,
   );
@@ -63,11 +87,20 @@ export function TopicChartsCard({
   const displayIncoming = data?.incoming_byte_rate ?? incoming;
   const displayOutgoing = data?.outgoing_byte_rate ?? outgoing;
 
-  const baseTopics = topicList ?? [];
+  const onInternalTopicsChange = (hideChecked: boolean) => {
+    const shouldInclude = !hideChecked;
 
-  const filteredTopicList = includeHidden
-    ? baseTopics
-    : baseTopics.filter((topic) => !topic.managed);
+    startTransition(() => {
+      setOptimisticIncludeHidden(shouldInclude);
+      const params = new URLSearchParams(searchParams.toString());
+      if (shouldInclude) {
+        params.set("includeHidden", "true");
+      } else {
+        params.delete("includeHidden");
+      }
+      router.push(`${pathname}?${params.toString()}`, { scroll: false });
+    });
+  };
 
   const selectedTopicName = topicList?.find(
     (t) => t.id === selectedTopic,
@@ -109,7 +142,7 @@ export function TopicChartsCard({
                     <ToolbarGroup variant="filter-group">
                       <FilterByTopic
                         selectedTopic={selectedTopic}
-                        topicList={filteredTopicList}
+                        topicList={topicList}
                         onSetSelectedTopic={setSelectedTopic}
                         disableToolbar={isFetching}
                       />
@@ -131,8 +164,10 @@ export function TopicChartsCard({
                             </Tooltip>
                           </>
                         }
-                        isChecked={!includeHidden}
-                        onChange={(_, checked) => setIncludeHidden(!checked)}
+                        isChecked={!optimisticIncludeHidden}
+                        onChange={(_, checked) =>
+                          onInternalTopicsChange(checked)
+                        }
                         className={"pf-v6-u-py-xs"}
                       />
                     </ToolbarGroup>

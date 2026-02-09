@@ -20,9 +20,13 @@ export async function generateMetadata() {
 
 export default async function OverviewPage({
   params,
+  searchParams,
 }: {
   params: KafkaParams;
+  searchParams: { includeHidden?: string };
 }) {
+  const includeHidden = searchParams.includeHidden === "true";
+
   const kafkaCluster = getKafkaCluster(params.kafkaId, {
     fields:
       "name,namespace,creationTimestamp,status,kafkaVersion,nodes,listeners,conditions,metrics",
@@ -38,6 +42,7 @@ export default async function OverviewPage({
     pageSize: 100,
     sort: "name",
     sortDir: "asc",
+    includeHidden,
   });
   const consumerGroups = getConsumerGroups(params.kafkaId, {
     fields: "groupId,state",
@@ -61,6 +66,7 @@ export default async function OverviewPage({
         <ConnectedTopicChartsCard
           cluster={kafkaCluster}
           topics={topicsForCharts}
+          includeHidden={includeHidden}
         />
       }
       recentTopics={<ConnectedRecentTopics data={viewedTopics} />}
