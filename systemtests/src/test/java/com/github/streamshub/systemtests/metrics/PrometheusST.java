@@ -6,6 +6,7 @@ import com.github.streamshub.systemtests.TestCaseConfig;
 import com.github.streamshub.systemtests.constants.TestTags;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.setup.console.ConsoleInstanceSetup;
+import com.github.streamshub.systemtests.setup.prometheus.PrometheusInstanceSetup;
 import com.github.streamshub.systemtests.setup.prometheus.PrometheusOperatorSetup;
 import com.github.streamshub.systemtests.setup.strimzi.KafkaSetup;
 import com.github.streamshub.systemtests.utils.Utils;
@@ -21,7 +22,9 @@ import org.junit.jupiter.api.Test;
 public class PrometheusST extends AbstractST {
     private static final Logger LOGGER = LogWrapper.getLogger(PrometheusST.class);
     protected TestCaseConfig tcc;
-    protected PrometheusOperatorSetup prometheusOperatorSetup;
+    protected PrometheusOperatorSetup prometheusOperator;
+    protected PrometheusInstanceSetup prometheusInstance;
+
 
     @Test
     void testCustomPrometheus() {
@@ -36,19 +39,24 @@ public class PrometheusST extends AbstractST {
         tcc = Utils.getTestCaseConfig();
         // Prepare test environment
         NamespaceUtils.prepareNamespace(tcc.namespace());
-        prometheusOperatorSetup = new PrometheusOperatorSetup(tcc.namespace());
-        prometheusOperatorSetup.install();
+        prometheusOperator = new PrometheusOperatorSetup(tcc.namespace());
+        prometheusInstance = new PrometheusInstanceSetup(tcc.namespace());
+
+        prometheusOperator.setup();
+        prometheusInstance.setup();
+
+
         KafkaSetup.setupDefaultKafkaIfNeeded(tcc.namespace(), tcc.kafkaName());
         ConsoleInstanceSetup.setupIfNeeded(ConsoleInstanceSetup.
             getDefaultConsoleInstance(tcc.namespace(), tcc.consoleInstanceName(), tcc.kafkaName(), tcc.kafkaUserName())
                 .editSpec()
                     .addNewMetricsSource()
-                        .withName(prometheusOperatorSetup.getDeploymentName())
+                        .withName(prometheusInstance.getName())
                         .withType(MetricsSource.Type.STANDALONE)
-                        .withUrl("http://cstm-prometheus-server.prometheusst-98da91.svc.cluster.local:80")
+                        .withUrl(prometheusInstance.getPrometheusServerUrl())
                     .endMetricsSource()
                     .editFirstKafkaCluster()
-                        .withMetricsSource(prometheusOperatorSetup.getDeploymentName())
+                        .withMetricsSource(prometheusInstance.getName())
                     .endKafkaCluster()
                 .endSpec()
             .build());
@@ -58,7 +66,7 @@ public class PrometheusST extends AbstractST {
     @AfterAll
     void testClassTeardown() {
         tcc.playwright().close();
-        prometheusOperatorSetup.uninstall();
+        prometheusOperator.teardown();
     }
 }
 

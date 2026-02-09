@@ -20,6 +20,8 @@ public class Constants {
      */
     public static final String OPENSHIFT_CONSOLE = "openshift-console";
     public static final String OPENSHIFT_CONSOLE_ROUTE_NAME = "console";
+    public static final String DEFAULT_NAMESPACE = "default";
+    public static final String PROMETHEUS_NAME = "prometheus";
 
     /**
      * Commands

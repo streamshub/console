@@ -6,12 +6,17 @@ import io.skodjob.testframe.TestFrameEnv;
 import org.apache.logging.log4j.Logger;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.nio.file.attribute.FileAttribute;
+import java.nio.file.attribute.PosixFilePermission;
+import java.nio.file.attribute.PosixFilePermissions;
+import java.util.Set;
 
 
 public class FileUtils {
@@ -58,6 +63,22 @@ public class FileUtils {
         } catch (IOException e) {
             throw new SetupException("Unable to read file", e);
         }
+    }
+
+    public static FileAttribute<Set<PosixFilePermission>> getDefaultPosixFilePermissions() {
+        return PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwx------"));
+    }
+
+    public static FileInputStream getDeploymentFileFromURL(String url) throws IOException {
+        File deploymentFile = Files.createTempFile("tempfile", ".yaml", getDefaultPosixFilePermissions()).toFile();
+        org.apache.commons.io.FileUtils.copyURLToFile(
+                URI.create(url).toURL(),
+                deploymentFile,
+                5000,
+                10000);
+        deploymentFile.deleteOnExit();
+
+        return new FileInputStream(deploymentFile);
     }
 }
 
