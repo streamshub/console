@@ -44,6 +44,7 @@ export default async function AsyncLayout({
     const namespace = cluster.attributes?.namespace ?? "Not provided";
     const authMethod =
       cluster.meta?.authentication?.method ?? "no authentication";
+    const virtual = cluster.meta?.kind ?? false;
 
     return {
       clusterName: name,
@@ -51,6 +52,7 @@ export default async function AsyncLayout({
       authenticationMethod: authMethod,
       id: id,
       loginRequired: loginRequired,
+      isVirtual: virtual,
     };
   });
 
