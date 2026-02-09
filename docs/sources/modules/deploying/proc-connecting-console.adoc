@@ -32,26 +32,26 @@ kind: Console
 metadata:
   name: my-console
 spec:
-  hostname: my-console.<cluster_domain> # <1>
+  hostname: my-console.<cluster_domain>
   kafkaClusters:
-    - name: console-kafka # <2>
-      namespace: kafka # <3>
-      listener: secure # <4>
+    - name: console-kafka
+      namespace: kafka
+      listener: secure
       properties:
-        values: [] # <5>                           
-        valuesFrom: [] # <6>                        
+        values: []
+        valuesFrom: []
       credentials:
         kafkaUser:
-          name: console-kafka-user1 # <7>
-
+          name: console-kafka-user1
 ----
-<1> Hostname to access the console by HTTP.
-<2> Name of the `Kafka` resource representing the cluster.
-<3> Namespace of the Kafka cluster.
-<4> Listener to expose the Kafka cluster for console connection. 
-<5> (Optional) Add connection properties if needed.
-<6> (optional) References to config maps or secrets, if needed.
-<7> (Optional) Kafka user created for authenticated access to the Kafka cluster.
+
+* `hostname` defines the hostname used to access the console over HTTP.
+* `kafkaClusters.name` defines the name of the `Kafka` resource that represents the cluster.
+* `kafkaClusters.namespace` specifies the namespace where the Kafka cluster is deployed.
+* `kafkaClusters.listener` specifies the listener used to expose the Kafka cluster for console connections.
+* `kafkaClusters.properties.values` optionally defines additional connection properties.
+* `kafkaClusters.properties.valuesFrom` optionally specifies ConfigMaps or Secrets that provide connection properties.
+* `kafkaClusters.credentials.kafkaUser.name` optionally specifies the Kafka user used for authenticated access to the Kafka cluster.
 
 . Apply the `Console` configuration to install the console.
 +

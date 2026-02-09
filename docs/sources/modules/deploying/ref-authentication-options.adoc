@@ -33,35 +33,35 @@ spec:
   hostname: my-console.<cluster_domain>
   security:
     oidc:
-      authServerUrl: <OIDC_discovery_URL> # <1>
-      clientId: <client_id> # <2>
-      clientSecret: # <3>
+      authServerUrl: <OIDC_discovery_URL>
+      clientId: <client_id>
+      clientSecret:
         valueFrom:
           secretKeyRef:
-            name: my-oidc-secret # <4>
-            key: client-secret # <5>
-      trustStore: # <6>
+            name: my-oidc-secret
+            key: client-secret
+      trustStore:
         type: JKS
         content:
           valueFrom:
             configMapKeyRef:
               name: my-oidc-configmap
               key: ca.jks
-        password: # <7>
+        password:
           value: truststore-password
     subjects:
-      - claim: groups # <8>
-        include: # <9>
+      - claim: groups
+        include:
           - <team_name_1>
           - <team_name_2>
-        roleNames: # <10>
+        roleNames:
           - developers
       - claim: groups
         include:
           - <team_name_3>
         roleNames:
           - administrators
-      - include: #<11>
+      - include:
           - <user_1>
           - <user_2>
         roleNames:
@@ -69,16 +69,13 @@ spec:
     roles:
       - name: developers
         rules:
-          - resources: # <12>
+          - resources:
               - kafkas
-            resourceNames: # <13>
-                # exact
-              - dev-cluster-a 
-                # wildcard          
+            resourceNames:
+              - dev-cluster-a
               - com.example.team.*
-                # regular expression      
-              - /qa-cluster-[xy]/    
-            privileges: # <14>
+              - /qa-cluster-[xy]/
+            privileges:
               - 'ALL'
       - name: administrators
         rules:
@@ -93,24 +90,29 @@ spec:
       credentials:
         kafkaUser:
           name: console-kafka-user1
-
 ----
-<1> The OIDC provider's issuer URI for endpoint discovery.
-<2> The client ID that identifies the console to the OIDC provider. This value is obtained from the client credentials in your OIDC provider.
-<3> The client secret, which authenticates the client when used with the client ID. This value is also obtained from the client credentials in your OIDC provider.
-<4> The name of the Kubernetes `Secret` where the client secret is stored.
-<5> The key within the `Secret` that holds the client secret value.
-<6> Optional truststore used to validate the OIDC provider’s TLS certificate. Supported formats include `JKS`, `PEM`, and `PKCS12`. Truststore content can be provided using either a `ConfigMap` (`configMapKeyRef`) or a `Secret` (`secretKeyRef`).
-<7> Optional password for the truststore. Can be provided as a plaintext value (as shown) or more securely by reference to a `Secret`. Plaintext values are not recommended for production.
-<8> JWT claim types or names to identify the users or groups.
-<9> Users or groups included under the specified claim.
-<10> Roles assigned to the specified users or groups.
-<11> Specific users included by name when no claim is specified.
-<12> Resources that the assigned role can access.
-<13> Resource name filters that identify which resources the assigned role can access.
-You can specify exact names (for example, `dev-cluster-a`), wildcard patterns (for example, `com.example.team.*`), or regular expressions.
-When a value is enclosed in slashes (/), the console switches to regular-expression mode (for example, `/qa-cluster-[xy]/`).
-<14> Privileges granted to the assigned role for the specified resources.
+
+* `security.oidc.authServerUrl` specifies the OIDC provider issuer URI used for endpoint discovery.
+* `security.oidc.clientId` specifies the client ID that identifies the console to the OIDC provider.
+* `security.oidc.clientSecret` specifies the client secret used to authenticate the console with the OIDC provider.
+* `security.oidc.clientSecret.valueFrom.secretKeyRef.name` specifies the name of the Kubernetes `Secret` that stores the client secret.
+* `security.oidc.clientSecret.valueFrom.secretKeyRef.key` specifies the key in the `Secret` that contains the client secret value.
+* `security.oidc.trustStore` optionally defines a truststore used to validate the OIDC provider TLS certificate. Supported formats include `JKS`, `PEM`, and `PKCS12`. Truststore content can be provided by using either a ConfigMap or a Secret.
+* `security.oidc.trustStore.password` optionally specifies the truststore password. The password can be provided as a plaintext value or by reference to a Secret. Plaintext values are not recommended for production environments.
+
+* `security.subjects` defines how users or groups are mapped to roles.
+** `security.subjects.claim` specifies the JWT claim used to identify users or groups.
+** `security.subjects.include` specifies the users or groups included under the configured claim.
+** `security.subjects.roleNames` specifies the roles assigned to the identified users or groups.
+** When no `claim` is specified, `security.subjects.include` specifies individual users by name.
+
+* `security.roles` defines the roles available for authorization.
+** `security.roles.rules.resources` specifies the resource types that the role can access.
+** `security.roles.rules.resourceNames` specifies which resources the role can access.
+*** Exact names can be specified, for example `dev-cluster-a`.
+*** Wildcard patterns can be specified, for example `com.example.team.*`.
+*** Regular expressions can be specified by enclosing the value in slashes, for example `/qa-cluster-[xy]/`.
+** `security.roles.rules.privileges` specifies the privileges granted to the role for the selected resources.
 
 If you want to specify roles and rules for individual Kafka clusters, add the details under `kafka.clusters[].security.roles[]`.
 In the following example, the `console-kafka` cluster allows developers to list and view selected Kafka resources.
@@ -163,7 +165,6 @@ spec:
                   - UPDATE
 ----
 
-[discrete]
 == Optional OIDC authentication properties
 
 The following properties can be used to further configure `oidc` authentication.
