@@ -24,7 +24,7 @@
     "@patternfly/react-table": "^6.4.0",
     "@patternfly/react-tokens": "^6.4.0",
     "@patternfly/react-user-feedback": "^6.2.0",
-    "@stdlib/string-truncate": "^0.2.2",
+    "@stdlib/string-truncate": "^0.2.3",
     "@stdlib/string-truncate-middle": "^0.2.3",
     "@tanstack/react-virtual": "^3.13.18",
     "@types/js-yaml": "^4.0.9",
