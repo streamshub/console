@@ -42,7 +42,7 @@ export default async function OverviewPage({
     pageSize: 100,
     sort: "name",
     sortDir: "asc",
-    includeHidden,
+    includeHidden: true,
   });
   const consumerGroups = getConsumerGroups(params.kafkaId, {
     fields: "groupId,state",
