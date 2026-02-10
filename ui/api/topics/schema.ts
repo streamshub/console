@@ -80,7 +80,7 @@ const TopicSchema = z.object({
   attributes: z.object({
     name: z.string().optional(),
     status: TopicStatusSchema.optional(),
-    visibility: z.string().optional(),
+    visibility: z.enum(["internal", "external"]).optional(),
     partitions: z.array(PartitionSchema).optional(),
     numPartitions: z.number().optional().nullable(),
     authorizedOperations: z.array(z.string()),
