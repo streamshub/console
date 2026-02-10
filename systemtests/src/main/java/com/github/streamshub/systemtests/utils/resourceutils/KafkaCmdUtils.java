@@ -9,7 +9,6 @@ import org.apache.logging.log4j.Logger;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class KafkaCmdUtils {
@@ -165,7 +164,6 @@ public class KafkaCmdUtils {
         String bootstrapServer = KafkaUtils.getPlainScramShaBootstrapAddress(kafkaName);
 
         // Verify that the topic is present
-        assertFalse(listKafkaTopicsByPrefix(namespaceName, kafkaName, podName, clientsConfig, topicName).isEmpty());
         assertTrue(listKafkaTopicsByPrefix(namespaceName, kafkaName, podName, clientsConfig, topicName).contains(topicName));
 
         LOGGER.info("Retrieve consumer group {} offset", consumerGroupName);
