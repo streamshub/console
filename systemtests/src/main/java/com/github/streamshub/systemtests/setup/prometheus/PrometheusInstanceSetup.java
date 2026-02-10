@@ -38,6 +38,30 @@ public class PrometheusInstanceSetup {
         preparePrometheusCrs();
     }
 
+    /**
+     * Loads and prepares Prometheus example Custom Resources for deployment.
+     *
+     * <p>This method reads all YAML manifests from the configured Prometheus
+     * examples directory and loads them into Kubernetes resource objects using
+     * the Fabric8 client.</p>
+     *
+     * <p>Once loaded, the following adjustments are applied to ensure the resources
+     * can be deployed correctly into the target namespace:</p>
+     * <ul>
+     *   <li>All namespaced resources are assigned the configured deployment
+     *       namespace.</li>
+     *   <li>{@link ClusterRole} and {@link ClusterRoleBinding} resources are left
+     *       cluster-scoped and are not assigned a namespace.</li>
+     *   <li>All {@link ClusterRoleBinding} subject namespaces are rewritten from
+     *       {@code default} to the configured deployment namespace.</li>
+     * </ul>
+     *
+     * <p>If any YAML file cannot be read or parsed, a {@link SetupException} is
+     * thrown to fail the setup early and surface configuration issues.</p>
+     *
+     * <p>This preparation step ensures Prometheus resources are namespace-aware
+     * and compatible with the target test environment before being applied.</p>
+     */
     private void preparePrometheusCrs() {
         try {
             Path directory = Paths.get(PROMETHEUS_INSTANCE_EXAMPLES);
@@ -76,7 +100,7 @@ public class PrometheusInstanceSetup {
                     crb.getSubjects().forEach(subject -> {
                         LOGGER.info("Replacing subject namespace 'default' with '{}' in ClusterRoleBinding: {}",
                                 deploymentNamespace, crb.getMetadata().getName());
-                            subject.setNamespace(deploymentNamespace);
+                        subject.setNamespace(deploymentNamespace);
                     });
                 }
             }
@@ -88,7 +112,7 @@ public class PrometheusInstanceSetup {
         // Additional check that Prometheus pod is running
         WaitUtils.waitForPodsReadyAndStable(deploymentNamespace,
             new LabelSelectorBuilder().withMatchLabels(Map.of(Constants.PROMETHEUS_NAME, deploymentName)).build(),
-            1,true);
+            1, true);
     }
 
     public String getName() {

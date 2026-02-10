@@ -119,6 +119,9 @@ public class CssBuilder {
     public CssBuilder withElementButton() { return withElement("button"); }
     public CssBuilder withElementForm() { return withElement("form"); }
     public CssBuilder withElementTime() { return withElement("time"); }
+    public CssBuilder withElementSvg() { return withElement("svg"); }
+    public CssBuilder withElementG() { return withElement("g"); }
+    public CssBuilder withElementText() { return withElement("text"); }
 
     // -------------------
     // Components
@@ -248,4 +251,5 @@ public class CssBuilder {
             // Add space after ")" if it's not there to avoid `div:nth-child(1)div`
             .replaceAll("\\)(?!\\s)", ") ");
     }
+
 }
