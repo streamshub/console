@@ -42,7 +42,6 @@ public class PrometheusST extends AbstractST {
     protected PrometheusOperatorSetup prometheusOperator;
     protected PrometheusInstanceSetup prometheusInstance;
 
-
     @Test
     void testCustomPrometheus() {
         LOGGER.info("Verify that the default prometheus is not deployed");
