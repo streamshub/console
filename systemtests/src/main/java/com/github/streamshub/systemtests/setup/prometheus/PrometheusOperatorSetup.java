@@ -5,6 +5,7 @@ import com.github.streamshub.systemtests.exceptions.SetupException;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.utils.FileUtils;
 import com.github.streamshub.systemtests.utils.WaitUtils;
+import com.github.streamshub.systemtests.utils.resourceutils.ClusterUtils;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
@@ -78,8 +79,8 @@ public class PrometheusOperatorSetup {
                 resource.getMetadata().setNamespace(deploymentNamespace);
             }
 
-            // Remove securityContext from Deployments
-            if (HasMetadata.getKind(Deployment.class).equals(resource.getKind())) {
+            // Remove securityContext from Deployments on openshift clusters
+            if (HasMetadata.getKind(Deployment.class).equals(resource.getKind()) && ClusterUtils.isOcp()) {
                 Deployment deployment = (Deployment) resource;
                 LOGGER.info("Removing securityContext from Deployment: {}",
                     deployment.getMetadata().getName());

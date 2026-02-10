@@ -251,5 +251,4 @@ public class CssBuilder {
             // Add space after ")" if it's not there to avoid `div:nth-child(1)div`
             .replaceAll("\\)(?!\\s)", ") ");
     }
-
 }

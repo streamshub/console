@@ -27,7 +27,6 @@ public class Constants {
      * Commands
      */
     public static final String BASH_CMD = "/bin/bash";
-    public static final String HELM_CMD = "helm";
 
     /**
      * Namespaces
@@ -111,7 +110,6 @@ public class Constants {
      * OLM
      */
     public static final String CONSOLE_OLM_SUBSCRIPTION_NAME = "console-sub";
-    public static final String OLM_MINIKUBE_NAMESPACE = "olm";
 
     /**
      * Keycloak
