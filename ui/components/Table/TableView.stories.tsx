@@ -170,14 +170,14 @@ export const NoResultsForFilterShowsRightEmptyState: Story = {
   },
 };
 
-export const SinglePageShowsNoPaginationControlWithDefaultPerPage: Story = {
+export const SinglePageShowsPaginationControlWithDefaultPerPage: Story = {
   args: {
     data: sampleData,
     itemCount: sampleData.length,
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await expect(canvas.queryByLabelText("Pagination")).not.toBeInTheDocument();
+    await expect(canvas.getAllByLabelText("Pagination").length).toBe(2);
   },
 };
 
