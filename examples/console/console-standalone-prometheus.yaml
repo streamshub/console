@@ -2,7 +2,7 @@
 # This example demonstrates the use of a user-supplied Prometheus instance as
 # a source of Kafka metrics for the console. This configuration uses the
 # `standalone` metrics source type. The connection between a
-# `metricsSources` and a `kafkaClusters` entry is established through 
+# `metricsSources` and a `kafkaClusters` entry is established through
 # the `metricsSource` specified for the Kafka cluster.
 #
 # See examples/prometheus for sample Prometheus instance resources configured for
@@ -44,7 +44,7 @@ spec:
     - name: console-kafka             # Name of the `Kafka` CR representing the cluster
       namespace: ${KAFKA_NAMESPACE}   # Namespace where the `Kafka` CR is deployed
       listener: secure                # Listener name from the `Kafka` CR to connect the console
-      metricsSource: null             # Name of the configured metrics source defined in `metricsSources`
+      metricsSource: "my-custom-prometheus" # Name of the configured metrics source defined in `metricsSources`
       credentials:
         kafkaUser:
           name: console-kafka-user1   # Name of the `KafkaUser` CR used by the console to connect to the Kafka cluster
