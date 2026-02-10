@@ -51,13 +51,14 @@ Use the sample installation files located in `examples/kafka`.
 +
 [source,shell]
 ----
-export NAMESPACE=kafka # <1>
-export LISTENER_TYPE=route # <2>
-export CLUSTER_DOMAIN=<domain_name> # <3>
+export NAMESPACE=kafka
+export LISTENER_TYPE=route
+export CLUSTER_DOMAIN=<domain_name>
 ----
-<1> The namespace in which you want to deploy the Kafka operator.
-<2> The listener type used to expose Kafka to the console.
-<3> The cluster domain name for your Kubernetes cluster.
+
+* `NAMESPACE` specifies the namespace where the Kafka operator is deployed.
+* `LISTENER_TYPE` specifies the listener type used to expose Kafka to the console.
+* `CLUSTER_DOMAIN` specifies the cluster domain name of the Kubernetes cluster.
 +
 In this example, the namespace variable is defined as `kafka` and the listener type is `route`.
 
@@ -79,8 +80,9 @@ This command reads the YAML files, replaces the namespace environment variables,
 oc get pods -n kafka
 ----
 +
+The output shows the operators and cluster readiness:
++
 --
-.Output shows the operators and cluster readiness
 [source,shell]
 ----
 NAME                              READY   STATUS   RESTARTS

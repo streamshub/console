@@ -23,6 +23,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { useTranslations } from "next-intl";
+import { KroxyliciousClusterLabel } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/KroxyliciousClusterLabel";
 
 export type ClusterInfo = {
   projectName: string;
@@ -30,6 +31,7 @@ export type ClusterInfo = {
   authenticationMethod: string;
   id: string;
   loginRequired: boolean;
+  isVirtual: boolean;
 };
 
 export function AppDropdown({
@@ -40,6 +42,7 @@ export function AppDropdown({
   readonly clusters: ClusterInfo[];
   readonly kafkaId: string;
   readonly isOidcEnabled?: boolean;
+  readonly isVirtualKafkaCluster?: boolean;
 }>) {
   const t = useTranslations();
   const router = useRouter();
@@ -117,7 +120,10 @@ export function AppDropdown({
             isSelected={kafkaId === cluster.id}
           >
             <Flex>
-              <FlexItem>{cluster.clusterName}</FlexItem>
+              <FlexItem>
+                {cluster.clusterName}
+                {cluster.isVirtual && <KroxyliciousClusterLabel />}
+              </FlexItem>
               <FlexItem align={{ default: "alignRight" }}>
                 {cluster.id !== kafkaId && (
                   <Tooltip content={t("cluster-selector.login-to-cluster")}>

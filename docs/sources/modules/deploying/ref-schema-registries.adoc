@@ -35,9 +35,9 @@ metadata:
 spec:
   hostname: my-console.<cluster_domain>
   schemaRegistries:
-    - name: my-registry # <1>
-      url: <schema_registry_URL> # <2>
-      authentication: # <3>
+    - name: my-registry
+      url: <schema_registry_URL>
+      authentication:
         oidc:
           authServerUrl: <OIDC_discovery_URL>
           clientId: <client_id>
@@ -48,16 +48,16 @@ spec:
                 key: client-secret
           method: POST
           grantType: CLIENT
-          trustStore: # <4>
+          trustStore:
             type: JKS
             content:
               valueFrom:
                 configMapKeyRef:
                   name: my-oidc-configmap
                   key: ca.jks
-            password: # <5>
+            password:
               value: truststore-password
-      trustStore: # <6>
+      trustStore:
         type: PEM
         content:
           valueFrom:
@@ -67,21 +67,22 @@ spec:
     kafkaClusters:
       - name: console-kafka
         namespace: kafka
-        listener: secure  
-        metricsSource: my-ocp-prometheus   
-        schemaRegistry: my-registry               
+        listener: secure
+        metricsSource: my-ocp-prometheus
+        schemaRegistry: my-registry
         credentials:
           kafkaUser:
-            name: console-kafka-user1            
+            name: console-kafka-user1
   # ...
 ----
-<1> A unique name for the schema registry connection.
-<2> Base URL of the schema registry API. This is typically the REST endpoint, such as \http://<host>/apis/registry/v2.
-<3> Authentication credentials for accessing the schema registry. Supported authentication methods:
-+
-* `basic`: Requires `username` and `password`.
-* `bearer`: Requires `token`.
-* `oidc`: See xref:ref-authentication-options-{context}[Using an OIDC provider to secure access to Kafka clusters] for details.
-<4> Optional truststore used to validate the OIDC provider’s TLS certificate. Supported formats include `JKS`, `PEM`, and `PKCS12`. Truststore content can be provided using either a `ConfigMap` (`configMapKeyRef`) or a `Secret` (`secretKeyRef`).
-<5> Optional password for the truststore. Can be provided as a plaintext value (as shown) or via a `Secret`. Plaintext values are not recommended for production.
-<6> Optional truststore used to validate the schema registry’s TLS certificate. Configuration format and source options are the same as for the OIDC truststore.
+
+* `schemaRegistries.name` defines a unique name for the schema registry connection.
+* `schemaRegistries.url` specifies the base URL of the schema registry API, typically the REST endpoint such as `http://<host>/apis/registry/v2`.
+* `schemaRegistries.authentication` defines the authentication configuration used to access the schema registry.
+** `basic` specifies basic authentication and requires a `username` and `password`.
+** `bearer` specifies bearer token authentication and requires a `token`.
+** `oidc` specifies OpenID Connect authentication. For details, see xref:ref-authentication-options-{context}[Using an OIDC provider to secure access to Kafka clusters].
+* `schemaRegistries.authentication.oidc.trustStore` optionally defines a truststore used to validate the OIDC provider TLS certificate. Supported formats include `JKS`, `PEM`, and `PKCS12`. Truststore content can be provided by using either a ConfigMap or a Secret.
+* `schemaRegistries.authentication.oidc.trustStore.password` optionally specifies the truststore password. The password can be provided as a plaintext value or via a Secret. Plaintext values are not recommended for production environments.
+* `schemaRegistries.trustStore` optionally defines a truststore used to validate the schema registry TLS certificate. The supported formats and content sources are the same as for the OIDC truststore.
+* `kafkaClusters.schemaRegistry` associates the Kafka cluster with the configured schema registry.

@@ -1,3 +1,6 @@
+:_mod-docs-content-type: PROCEDURE
+
+[id='proc-checking-topic-consumer-groups-{context}']
 = Checking topic consumer groups
 
 [role="_abstract"]
