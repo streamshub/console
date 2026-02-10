@@ -43,8 +43,32 @@ public class PrometheusOperatorSetup {
         preparePrometheusCrs();
     }
 
+    /**
+     * Prepares Prometheus-related resources before deployment.
+     *
+     * <p>This method iterates over all loaded Kubernetes resources and applies
+     * environment-specific adjustments to ensure they can be safely deployed
+     * into the target namespace.</p>
+     *
+     * <p>The following modifications are performed:</p>
+     * <ul>
+     *   <li>Sets the target namespace on all namespaced resources, excluding
+     *       {@link ClusterRole}, {@link ClusterRoleBinding}, and
+     *       {@link CustomResourceDefinition}.</li>
+     *   <li>Removes pod-level and container-level {@code securityContext} entries
+     *       from {@link Deployment} resources to avoid permission and SCC issues
+     *       in restricted environments.</li>
+     *   <li>Rewrites subject namespaces in {@link ClusterRoleBinding} resources
+     *       from {@code default} to the configured deployment namespace.</li>
+     *   <li>Rewrites subject namespaces in {@link RoleBinding} resources
+     *       from {@code default} to the configured deployment namespace.</li>
+     * </ul>
+     *
+     * <p>This normalization step ensures that Prometheus CRs and related RBAC
+     * resources are compatible with the target cluster and namespace configuration
+     * before being applied.</p>
+     */
     private void preparePrometheusCrs() {
-        // Replace "default" namespace with our namespace
         allResources.forEach(resource -> {
             String kind = resource.getKind();
 
