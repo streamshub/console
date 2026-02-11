@@ -4,13 +4,18 @@ import { PageSection } from "@/libs/patternfly/react-core";
 import { useTranslations } from "next-intl";
 import { KafkaConnectTabs } from "./KafkaConnectTabs";
 
-export default function ConnectorsHeader({ params }: { params: KafkaParams }) {
+export default async function ConnectorsHeader({
+  params: paramsPromise,
+}: {
+  params: Promise<KafkaParams>;
+}) {
+  const { kafkaId } = await paramsPromise;
   return (
     <AppHeader
       title={"Kafka Connect"}
       navigation={
         <PageSection className={"pf-v6-u-px-sm"} type="subnav">
-          <KafkaConnectTabs kafkaId={params.kafkaId} />
+          <KafkaConnectTabs kafkaId={kafkaId} />
         </PageSection>
       }
     />

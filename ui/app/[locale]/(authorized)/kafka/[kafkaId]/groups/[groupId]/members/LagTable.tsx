@@ -8,7 +8,7 @@ import {
 } from "@/libs/patternfly/react-core";
 import { HelpIcon, InfoCircleIcon } from "@/libs/patternfly/react-icons";
 import { Link } from "@/i18n/routing";
-import { TableVariant } from "@/libs/patternfly/react-table";
+import { TableVariant, Th } from "@/libs/patternfly/react-table";
 import { useTranslations } from "next-intl";
 
 export function LagTable({
@@ -28,7 +28,7 @@ export function LagTable({
       }
       data={offsets}
       variant={TableVariant.compact}
-      renderHeader={({ column, key, Th }) => {
+      renderHeader={({ column, key }) => {
         switch (column) {
           case "topic":
             return (
