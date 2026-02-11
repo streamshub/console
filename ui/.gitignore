@@ -45,3 +45,4 @@ yarn.lock
 tests/playwright/.auth/*.json
 /test-results/
 /.pino-prettyrc
+/.claude/

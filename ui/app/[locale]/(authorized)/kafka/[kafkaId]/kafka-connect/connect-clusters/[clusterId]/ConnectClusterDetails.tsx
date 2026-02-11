@@ -14,7 +14,7 @@ import {
   PauseCircleIcon,
   PendingIcon,
 } from "@/libs/patternfly/react-icons";
-import { TableVariant } from "@/libs/patternfly/react-table";
+import { TableVariant, Th } from "@/libs/patternfly/react-table";
 import {
   DescriptionList,
   DescriptionListDescription,
@@ -196,7 +196,7 @@ export function ConnectClusterDetails({
                 variant={TableVariant.compact}
                 columns={["name", "type", "state", "replicas"] as const}
                 data={data}
-                renderHeader={({ column, key, Th }) => (
+                renderHeader={({ column, key }) => (
                   <Th key={key}>
                     {column.charAt(0).toUpperCase() + column.slice(1)}
                   </Th>
@@ -236,7 +236,7 @@ export function ConnectClusterDetails({
                 variant={TableVariant.compact}
                 columns={["class", "type", "version"] as const}
                 data={plugins}
-                renderHeader={({ column, key, Th }) => (
+                renderHeader={({ column, key }) => (
                   <Th key={key}>
                     {column.charAt(0).toUpperCase() + column.slice(1)}
                   </Th>

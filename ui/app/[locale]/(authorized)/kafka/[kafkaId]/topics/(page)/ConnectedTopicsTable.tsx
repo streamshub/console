@@ -10,6 +10,7 @@ import { useRouter } from "@/i18n/routing";
 import { clientConfig as config } from "@/utils/config";
 import { useFilterParams } from "@/utils/useFilterParams";
 import { useEffect, useState, useOptimistic, useTransition } from "react";
+import { ThSortType } from "@patternfly/react-table/dist/esm/components/Table/base/types";
 
 export type ConnectedTopicsTableProps = {
   topics: TopicsResponse | undefined;
@@ -100,6 +101,39 @@ export function ConnectedTopicsTable({
     })
   }, []);
 
+  const sortProvider = (col: TopicsTableColumn): ThSortType | undefined => {
+    if (!SortableColumns.includes(col)) {
+      return undefined;
+    }
+    const activeIndex = TopicsTableColumns.indexOf(state.sort);
+    const columnIndex = TopicsTableColumns.indexOf(col);
+    return {
+      //label: col as string,
+      columnIndex,
+      onSort: () => {
+        startTransition(() => {
+          const newSortDir =
+            activeIndex === columnIndex
+              ? state.sortDir === "asc"
+                ? "desc"
+                : "asc"
+              : "asc";
+          updateUrl({
+            sort: col,
+            sortDir: newSortDir,
+          });
+          addOptimistic({ sort: col, sortDir: newSortDir });
+        });
+      },
+      sortBy: {
+        index: activeIndex,
+        direction: state.sortDir,
+        defaultDirection: "asc",
+      },
+      isFavorites: undefined,
+    };
+  }
+
   return (
     <TopicsTable
       baseurl={baseurl}
@@ -123,38 +157,6 @@ export function ConnectedTopicsTable({
           }
           addOptimistic({ perPage });
         });
-      }}
-      isColumnSortable={(col) => {
-        if (!SortableColumns.includes(col)) {
-          return undefined;
-        }
-        const activeIndex = TopicsTableColumns.indexOf(state.sort);
-        const columnIndex = TopicsTableColumns.indexOf(col);
-        return {
-          label: col as string,
-          columnIndex,
-          onSort: () => {
-            startTransition(() => {
-              const newSortDir =
-                activeIndex === columnIndex
-                  ? state.sortDir === "asc"
-                    ? "desc"
-                    : "asc"
-                  : "asc";
-              updateUrl({
-                sort: col,
-                sortDir: newSortDir,
-              });
-              addOptimistic({ sort: col, sortDir: newSortDir });
-            });
-          },
-          sortBy: {
-            index: activeIndex,
-            direction: state.sortDir,
-            defaultDirection: "asc",
-          },
-          isFavorites: undefined,
-        };
       }}
       filterName={state.name}
       onFilterNameChange={(name) => {
@@ -201,6 +203,7 @@ export function ConnectedTopicsTable({
       }}
       includeHidden={includeHidden}
       isReadOnly={isReadOnly}
+      sortProvider={sortProvider}
     />
   );
 }

@@ -5,6 +5,7 @@ import { Number } from "@/components/Format/Number";
 import { LabelLink } from "@/components/Navigation/LabelLink";
 import { TableView } from "@/components/Table";
 import { Icon, LabelGroup, Tooltip } from "@/libs/patternfly/react-core";
+import { TableVariant, Th } from "@/libs/patternfly/react-table";
 import {
   CheckCircleIcon,
   ExclamationTriangleIcon,
@@ -20,7 +21,6 @@ import { Link } from "@/i18n/routing";
 import { useTranslations } from "next-intl";
 import { ReactNode, useEffect, useState } from "react";
 import RichText from "@/components/RichText";
-import { TableVariant } from "@patternfly/react-table";
 import { describeEnabled } from "@/utils/groups";
 
 const StateLabel: Record<ConsumerGroupState, { label: ReactNode }> = {
@@ -148,7 +148,7 @@ export function ConsumerGroupsTable({
       }
       ariaLabel={t("GroupsTable.title")}
       columns={["groupId", "type", "protocol", "state", "lag", "members", "topics"] as const}
-      renderHeader={({ column, key, Th }) => {
+      renderHeader={({ column, key }) => {
         switch (column) {
           case "groupId":
             return (
