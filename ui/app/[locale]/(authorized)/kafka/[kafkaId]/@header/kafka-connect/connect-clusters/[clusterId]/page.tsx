@@ -1,16 +1,17 @@
 import { AppHeader } from "@/components/AppHeader";
-import { useTranslations } from "next-intl";
+import { getTranslations } from "next-intl/server";
 import { NoDataErrorState } from "@/components/NoDataErrorState";
 import { getConnectCluster } from "@/api/kafkaConnect/action";
 import { Suspense } from "react";
 import { KafkaConnectParams } from "../../../../kafka-connect/kafkaConnect.params";
 import RichText from "@/components/RichText";
 
-export default function Page({
-  params: { kafkaId, clusterId },
+export default async function Page({
+  params: paramsPromise,
 }: {
-  params: KafkaConnectParams;
+  params: Promise<KafkaConnectParams>;
 }) {
+  const { kafkaId, clusterId } = await paramsPromise;
   return (
     <Suspense fallback={<Header params={{ kafkaId, clusterId }} />}>
       <ConnectClusterAppHeader params={{ kafkaId, clusterId }} />
@@ -40,13 +41,13 @@ async function ConnectClusterAppHeader({
   );
 }
 
-function Header({
+async function Header({
   connectClusterName = "",
 }: {
   params: KafkaConnectParams;
   connectClusterName?: string;
 }) {
-  const t = useTranslations();
+  const t = await getTranslations();
 
   return (
     <AppHeader

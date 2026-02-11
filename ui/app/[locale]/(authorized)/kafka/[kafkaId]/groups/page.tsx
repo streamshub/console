@@ -27,12 +27,12 @@ const sortMap: Record<(typeof SortableColumns)[number], string> = {
   state: "state",
 };
 
-export default function ConsumerGroupsPage({
-  params: { kafkaId },
-  searchParams,
+export default async function ConsumerGroupsPage({
+  params: paramsPromise,
+  searchParams: searchParamsPromise,
 }: {
-  params: KafkaParams;
-  searchParams: {
+  params: Promise<KafkaParams>;
+  searchParams: Promise<{
     id: string | undefined;
     type: string | undefined;
     consumerGroupState: string | undefined;
@@ -40,8 +40,11 @@ export default function ConsumerGroupsPage({
     sort: string | undefined;
     sortDir: string | undefined;
     page: string | undefined;
-  };
+  }>;
 }) {
+  const { kafkaId } = await paramsPromise;
+  const searchParams = await searchParamsPromise;
+
   const id = searchParams["id"];
   const pageSize = stringToInt(searchParams.perPage) || 20;
   const sort = (searchParams["sort"] ||

@@ -22,7 +22,8 @@ import { EmptyStateNoMatchFound } from "@/components/Table/EmptyStateNoMatchFoun
 import RichText from "@/components/RichText";
 import { describeEnabled, resetMenuDisabled } from "@/utils/groups";
 import { hasPrivilege } from "@/utils/privileges";
-import { TableVariant } from "@patternfly/react-table";
+import { TableVariant, Th } from "@/libs/patternfly/react-table";
+import { ThSortType } from "@patternfly/react-table/dist/esm/components/Table/base/types";
 
 export const ConsumerGroupColumns = [
   "groupId",
@@ -126,15 +127,12 @@ const StateLabel: Record<ConsumerGroupState, { label: ReactNode }> = {
   },
 };
 
-
-
 export function ConsumerGroupsTable({
   kafkaId,
   page,
   perPage,
   total,
   groups,
-  isColumnSortable,
   filterName,
   filterType,
   filterState,
@@ -144,6 +142,7 @@ export function ConsumerGroupsTable({
   onPageChange,
   onResetOffset,
   onClearAllFilters,
+  sortProvider,
 }: {
   kafkaId: string;
   page: number;
@@ -157,9 +156,10 @@ export function ConsumerGroupsTable({
   onFilterTypeChange: (type: GroupType[] | undefined) => void;
   onFilterStateChange: (state: ConsumerGroupState[] | undefined) => void;
   onResetOffset: (consumerGroup: ConsumerGroup) => void;
+  sortProvider: (col: ConsumerGroupColumn) => ThSortType | undefined;
 } & Pick<
   TableViewProps<ConsumerGroup, (typeof ConsumerGroupColumns)[number]>,
-  "isColumnSortable" | "onPageChange" | "onClearAllFilters"
+  "onPageChange" | "onClearAllFilters"
 >) {
   const t = useTranslations();
   return (
@@ -180,30 +180,32 @@ export function ConsumerGroupsTable({
       ariaLabel={t("GroupsTable.title")}
       isFiltered={filterName !== undefined || filterState?.length !== 0}
       columns={ConsumerGroupColumns}
-      isColumnSortable={isColumnSortable}
-      renderHeader={({ column, key, Th }) => {
+      sortProvider={sortProvider}
+      renderHeader={({ column, key }) => {
+        const sortAction = sortProvider(column);
+
         switch (column) {
           case "groupId":
             return (
-              <Th key={key} width={30}>
+              <Th key={key} width={30} sort={sortAction}>
                 {t("GroupsTable.group_id")}
               </Th>
             );
           case "type":
             return (
-              <Th key={key}>
+              <Th key={key} sort={sortAction}>
                 {t("GroupsTable.type")}
               </Th>
             );
           case "protocol":
             return (
-              <Th key={key}>
+              <Th key={key} sort={sortAction}>
                 {t("GroupsTable.protocol")}
               </Th>
             );
           case "state":
             return (
-              <Th key={key}>
+              <Th key={key} sort={sortAction}>
                 {t("GroupsTable.state")}{" "}
                 <Tooltip
                   content={
@@ -220,7 +222,7 @@ export function ConsumerGroupsTable({
             );
           case "lag":
             return (
-              <Th key={key}>
+              <Th key={key} sort={sortAction}>
                 {t("GroupsTable.overall_lag")}{" "}
                 <Tooltip
                   style={{ whiteSpace: "pre-line" }}
@@ -238,7 +240,7 @@ export function ConsumerGroupsTable({
             );
           case "members":
             return (
-              <Th key={key}>
+              <Th key={key} sort={sortAction}>
                 {t("GroupsTable.members")}{" "}
                 <Tooltip
                   content={
@@ -254,7 +256,9 @@ export function ConsumerGroupsTable({
               </Th>
             );
           case "topics":
-            return <Th key={key}>{t("GroupsTable.topics")}</Th>;
+            return <Th key={key} sort={sortAction}>
+              {t("GroupsTable.topics")}
+            </Th>;
         }
       }}
       renderCell={({ row, column, key, Td }) => {

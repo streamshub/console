@@ -11,6 +11,7 @@ import {
   SortableColumns,
 } from "./ConsumerGroupsTable";
 import { ResetOffsetModal } from "./[groupId]/ResetOffsetModal";
+import { ThSortType } from "@patternfly/react-table/dist/esm/components/Table/base/types";
 
 export type ConnectedConsumerGroupTableProps = {
   kafkaId: string;
@@ -103,6 +104,39 @@ export function ConnectedConsumerGroupTable({
     router.push(`${baseurl}`);
   };
 
+  const sortProvider = (col: ConsumerGroupColumn): ThSortType | undefined => {
+    if (!SortableColumns.includes(col)) {
+      return undefined;
+    }
+    const activeIndex = ConsumerGroupColumns.indexOf(state.sort);
+    const columnIndex = ConsumerGroupColumns.indexOf(col);
+    return {
+      //label: col as string,
+      columnIndex,
+      onSort: () => {
+        startTransition(() => {
+          const newSortDir =
+            activeIndex === columnIndex
+              ? state.sortDir === "asc"
+                ? "desc"
+                : "asc"
+              : "asc";
+          updateUrl({
+            sort: col,
+            sortDir: newSortDir,
+          });
+          addOptimistic({ sort: col, sortDir: newSortDir });
+        });
+      },
+      sortBy: {
+        index: activeIndex,
+        direction: state.sortDir,
+        defaultDirection: "asc",
+      },
+      isFavorites: undefined,
+    };
+  };
+
   return (
     <>
       <ConsumerGroupsTable
@@ -127,38 +161,6 @@ export function ConnectedConsumerGroupTable({
           });
         }}
         groups={state.groups}
-        isColumnSortable={(col) => {
-          if (!SortableColumns.includes(col)) {
-            return undefined;
-          }
-          const activeIndex = ConsumerGroupColumns.indexOf(state.sort);
-          const columnIndex = ConsumerGroupColumns.indexOf(col);
-          return {
-            label: col as string,
-            columnIndex,
-            onSort: () => {
-              startTransition(() => {
-                const newSortDir =
-                  activeIndex === columnIndex
-                    ? state.sortDir === "asc"
-                      ? "desc"
-                      : "asc"
-                    : "asc";
-                updateUrl({
-                  sort: col,
-                  sortDir: newSortDir,
-                });
-                addOptimistic({ sort: col, sortDir: newSortDir });
-              });
-            },
-            sortBy: {
-              index: activeIndex,
-              direction: state.sortDir,
-              defaultDirection: "asc",
-            },
-            isFavorites: undefined,
-          };
-        }}
         filterName={state.id}
         onFilterNameChange={(id) => {
           startTransition(() => {
@@ -195,6 +197,7 @@ export function ConnectedConsumerGroupTable({
             }
           });
         }}
+        sortProvider={sortProvider}
       />
       {isResetOffsetModalOpen && (
         <ResetOffsetModal
