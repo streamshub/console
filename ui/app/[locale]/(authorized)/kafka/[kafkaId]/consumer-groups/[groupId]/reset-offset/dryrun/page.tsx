@@ -6,13 +6,15 @@ import { ConnectedDryrunPage } from "./ConnectedDryrunPage";
 import { NewOffset } from "./Dryrun";
 import { NoDataErrorState } from "@/components/NoDataErrorState";
 
-export default function DryrunPage({
-  params: { kafkaId, groupId },
-  searchParams,
+export default async function DryrunPage({
+  params: paramsPromise,
+  searchParams: searchParamsPromise,
 }: {
-  params: KafkaConsumerGroupMembersParams;
-  searchParams: { data?: string; cliCommand?: string };
+  params: Promise<KafkaConsumerGroupMembersParams>;
+  searchParams: Promise<{ data?: string; cliCommand?: string }>;
 }) {
+  const { kafkaId, groupId } = await paramsPromise;
+  const searchParams = await searchParamsPromise;
   return (
     <PageSection>
       <Suspense
