@@ -65,7 +65,7 @@ public class PrometheusInstanceSetup {
     private void preparePrometheusCrs() {
         try {
             Path directory = Paths.get(PROMETHEUS_INSTANCE_EXAMPLES);
-            try (Stream<Path> paths = Files.list(directory)) {
+            try (Stream<Path> paths = Files.walk(directory)) {
                 paths.filter(Files::isRegularFile)
                      .filter(path -> path.toString().endsWith(".yaml") || path.toString().endsWith(".yml"))
                      .forEach(path -> {
