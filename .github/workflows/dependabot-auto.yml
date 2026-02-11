@@ -45,16 +45,16 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh pr edit "$PR_URL" --milestone "${{ steps.milestone.outputs.next-version }}"
 
-      - name: Approve PR
-        if: steps.metadata.outputs.update-type == 'version-update:semver-patch'
-        env:
-          PR_URL: ${{ github.event.pull_request.html_url }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh pr review --approve "$PR_URL"
-
-      - name: Merge PR
-        if: steps.metadata.outputs.update-type == 'version-update:semver-patch'
-        env:
-          PR_URL: ${{ github.event.pull_request.html_url }}
-          GITHUB_TOKEN: ${{ secrets.DEPENDENCY_TOKEN }}
-        run: gh pr merge "$PR_URL" --auto --squash
+      #- name: Approve PR
+      #  if: steps.metadata.outputs.update-type == 'version-update:semver-patch'
+      #  env:
+      #    PR_URL: ${{ github.event.pull_request.html_url }}
+      #    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #  run: gh pr review --approve "$PR_URL"
+      #
+      #- name: Merge PR
+      #  if: steps.metadata.outputs.update-type == 'version-update:semver-patch'
+      #  env:
+      #    PR_URL: ${{ github.event.pull_request.html_url }}
+      #    GITHUB_TOKEN: ${{ secrets.DEPENDENCY_TOKEN }}
+      #  run: gh pr merge "$PR_URL" --auto --squash
