@@ -14,6 +14,7 @@ import {
   PauseCircleIcon,
   PendingIcon,
 } from "@patternfly/react-icons";
+import { Th } from "@/libs/patternfly/react-table";
 import { ReactNode } from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -124,7 +125,6 @@ export function ConnectorsTable({
   filterName,
   onFilterNameChange,
   onPageChange,
-  isColumnSortable,
   onClearAllFilters,
   kafkaId,
 }: {
@@ -137,7 +137,7 @@ export function ConnectorsTable({
   kafkaId: string;
 } & Pick<
   TableViewProps<EnrichedConnector, ConnectorsTableColumn>,
-  "isColumnSortable" | "onPageChange" | "onClearAllFilters"
+  "onPageChange" | "onClearAllFilters"
 >) {
   const t = useTranslations("KafkaConnect");
 
@@ -149,7 +149,6 @@ export function ConnectorsTable({
       perPage={perPage}
       itemCount={total}
       onPageChange={onPageChange}
-      isColumnSortable={isColumnSortable}
       isFiltered={filterName?.length !== 0}
       onClearAllFilters={onClearAllFilters}
       emptyStateNoData={<></>}
@@ -158,7 +157,7 @@ export function ConnectorsTable({
       }
       ariaLabel={t("connectors_title")}
       columns={ConnectorsTableColumns}
-      renderHeader={({ column, key, Th }) => {
+      renderHeader={({ column, key }) => {
         switch (column) {
           case "name":
             return <Th key={key}>{t("connectors.name")}</Th>;

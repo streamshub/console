@@ -15,7 +15,7 @@ import {
   Tabs,
   TabTitleText,
 } from "@patternfly/react-core";
-import { TableVariant } from "@patternfly/react-table";
+import { TableVariant, Th } from "@patternfly/react-table";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 
@@ -111,7 +111,7 @@ export function KafkaUserDetails({
                 emptyStateNoResults={<div></div>}
                 columns={AuthorizationColumns}
                 data={authorizationData}
-                renderHeader={({ column, key, Th }) => {
+                renderHeader={({ column, key }) => {
                   switch (column) {
                     case "type":
                       return (

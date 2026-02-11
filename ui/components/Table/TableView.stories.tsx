@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/nextjs";
-import { expect, fn, userEvent, within } from "storybook/test";
+import { expect, fn, userEvent, waitFor, within } from "storybook/test";
 import { useMemo } from "react";
 import type { SampleDataType } from "./storybookHelpers";
 import {
@@ -12,7 +12,8 @@ import {
   sampleToolbarFilters,
 } from "./storybookHelpers";
 import type { TableViewProps } from "./TableView";
-import { DEFAULT_PERPAGE, TableView } from "./TableView";
+import { DEFAULT_PAGE, DEFAULT_PERPAGE, TableView } from "./TableView";
+import { Th } from "@patternfly/react-table";
 
 type TableViewSampleTypeProps = TableViewProps<
   SampleDataType,
@@ -20,17 +21,16 @@ type TableViewSampleTypeProps = TableViewProps<
 > & {
   selectedRow?: number;
 };
+
 const TableViewSampleType = (props: TableViewSampleTypeProps) => (
   <TableView {...props} />
 );
 
-export default {
+const meta: Meta<typeof TableViewSampleType> = {
   component: TableViewSampleType,
   args: {
     ariaLabel: "Table title",
-    minimumColumnWidth: 250,
     selectedRow: 3,
-    expectedLength: 3,
     page: 1,
     perPage: 20,
     itemCount: 397,
@@ -41,38 +41,46 @@ export default {
     onPageChange: fn(),
     onClearAllFilters: fn(),
     onRowClick: fn(),
+    sortProvider: (col) => ({
+      columnIndex: columns.indexOf(col),
+      sortBy: { index: 0, direction: "asc" },
+      onSort: fn(),
+      label: columnLabels[col],
+    }),
   },
   argTypes: {
     data: {
-      table: { disable: true },
-      control: {
-        type: null,
-      },
+      control: false,
     },
+    sortProvider: { control: false },
+    emptyStateNoData: { control: false },
+    emptyStateNoResults: { control: false },
   },
   render: (args) => {
-    const { itemCount, page, perPage = DEFAULT_PERPAGE, data } = args;
+    const {
+      itemCount,
+      page = DEFAULT_PAGE,
+      perPage = DEFAULT_PERPAGE,
+      data,
+    } = args;
+
     const slicedData = useMemo(() => {
-      if (data) {
-        if (data.length > 0) {
-          return new Array(
-            Math.min(perPage, (itemCount || 0) - (page - 1) * perPage),
-          )
-            .fill(0)
-            .map((_, index) => {
-              return data[index % sampleData.length];
-            });
-        }
-        return [];
-      }
-      return data;
+      if (!data) return data;
+      if (data.length === 0) return [];
+
+      return new Array(
+        Math.min(perPage, (itemCount || 0) - (page - 1) * perPage),
+      )
+        .fill(0)
+        .map((_, index) => data[index % sampleData.length]);
     }, [data, itemCount, page, perPage]);
+
     return (
       <TableView
         {...args}
         data={slicedData}
         columns={columns}
-        renderHeader={({ column, Th, key }) => (
+        renderHeader={({ column, key }) => (
           <Th key={key}>{columnLabels[column]}</Th>
         )}
         renderCell={({ column, row, colIndex, Td, key }) => (
@@ -92,8 +100,9 @@ export default {
       />
     );
   },
-} as Meta<typeof TableViewSampleType>;
+};
 
+export default meta;
 type Story = StoryObj<typeof TableViewSampleType>;
 
 export const Example: Story = {
@@ -102,15 +111,16 @@ export const Example: Story = {
   },
   play: async ({ canvasElement, args }) => {
     const canvas = within(canvasElement);
-    expect(canvas.getByLabelText("Table title")).toBeInTheDocument();
-    await expect(canvas.queryAllByLabelText("Pagination")).toHaveLength(2);
-
-    await userEvent.click(canvas.getAllByLabelText("Go to next page")[0]);
-    await expect(args.onPageChange).toHaveBeenNthCalledWith(1, 2, 20);
-
-    await expect(
-      canvas.queryAllByPlaceholderText("Filter by sample toolbar"),
-    ).toHaveLength(2);
+    await waitFor(() => {
+      expect(canvas.getByLabelText("Table title")).toBeInTheDocument();
+      expect(canvas.queryAllByLabelText("Pagination")).toHaveLength(2);
+      expect(canvas.queryAllByPlaceholderText("Filter by sample toolbar"))
+        .toHaveLength(2);
+      expect(userEvent.click(canvas.getAllByLabelText("Go to next page")[0]));
+    });
+    await waitFor(() => {
+      expect(args.onPageChange).toHaveBeenNthCalledWith(1, 2, 20);
+    });
   },
 };
 
@@ -162,11 +172,13 @@ export const NoResultsForFilterShowsRightEmptyState: Story = {
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await expect(
-      canvas.getByText(
-        "Empty state to show when the data is filtered but has no results",
-      ),
-    ).toBeInTheDocument();
+    await waitFor(() => {
+      expect(
+        canvas.getByText(
+          "Empty state to show when the data is filtered but has no results",
+        ),
+      ).toBeInTheDocument();
+    });
   },
 };
 
@@ -177,7 +189,9 @@ export const SinglePageShowsPaginationControlWithDefaultPerPage: Story = {
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await expect(canvas.getAllByLabelText("Pagination").length).toBe(2);
+    await waitFor(() => {
+      expect(canvas.getAllByLabelText("Pagination").length).toBe(2);
+    });
   },
 };
 
@@ -189,7 +203,9 @@ export const SinglePageShowsPaginationControlWithCustomPerPage: Story = {
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await expect(canvas.getAllByLabelText("Pagination").length).toBe(2);
+    await waitFor(() => {
+      expect(canvas.getAllByLabelText("Pagination").length).toBe(2);
+    });
   },
 };
 
@@ -202,8 +218,10 @@ export const LastPage: Story = {
   },
   play: async ({ canvasElement, args }) => {
     const canvas = within(canvasElement);
-    await userEvent.click(canvas.getAllByLabelText("Go to next page")[0], {
-      pointerEventsCheck: 0,
+    await waitFor(() => {
+      userEvent.click(canvas.getAllByLabelText("Go to next page")[0], {
+        pointerEventsCheck: 0,
+      });
     });
     await expect(args.onPageChange).not.toBeCalled();
   },
