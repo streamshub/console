@@ -27,6 +27,7 @@ import {
   OutlinedClockIcon,
   HelpIcon,
 } from "@/libs/patternfly/react-icons";
+import { Th } from "@/libs/patternfly/react-table";
 import Link from "next/link";
 import React, { ReactNode } from "react";
 import { EmptyStateNoMatchFound } from "@/components/Table/EmptyStateNoMatchFound";
@@ -35,6 +36,7 @@ import Image from "next/image";
 import { DateTime } from "@/components/Format/DateTime";
 import RichText from "@/components/RichText";
 import { hasPrivilege } from "@/utils/privileges";
+import { ThSortType } from "@patternfly/react-table/dist/esm/components/Table/base/types";
 
 export const RebalanceTableColumns = ["name", "status", "lastUpdated"] as const;
 
@@ -167,7 +169,7 @@ const ModeLabel: Record<RebalanceMode, { label: ReactNode }> = {
   "remove-brokers": { label: <>Remove</> },
 };
 
-export type RebalanceTabelProps = {
+export type RebalanceTableProps = {
   baseurl: string;
   rebalanceList: RebalanceList[] | undefined;
   rebalancesCount: number;
@@ -182,13 +184,13 @@ export type RebalanceTabelProps = {
   onFilterNameChange: (name: string | undefined) => void;
   onFilterModeChange: (mode: RebalanceMode[] | undefined) => void;
   onFilterStatusChange: (status: RebalanceStatus[] | undefined) => void;
+  sortProvider: (col: RebalanceTableColumn) => ThSortType | undefined;
 } & Pick<
   TableViewProps<RebalanceList, (typeof RebalanceTableColumns)[number]>,
-  "isColumnSortable" | "onPageChange" | "onClearAllFilters"
+  "onPageChange" | "onClearAllFilters"
 >;
 export function RebalanceTable({
   baseurl,
-  isColumnSortable,
   rebalanceList,
   rebalancesCount,
   onApprove,
@@ -204,7 +206,8 @@ export function RebalanceTable({
   onPageChange,
   onRefresh,
   onClearAllFilters,
-}: RebalanceTabelProps) {
+  sortProvider,
+}: RebalanceTableProps) {
   const t = useTranslations("Rebalancing");
   return (
     <TableView
@@ -214,7 +217,7 @@ export function RebalanceTable({
       onPageChange={onPageChange}
       isRowExpandable={() => true}
       columns={RebalanceTableColumns}
-      isColumnSortable={isColumnSortable}
+      sortProvider={sortProvider}
       data={rebalanceList}
       emptyStateNoData={<EmptyStateNoKafkaRebalance />}
       emptyStateNoResults={
@@ -222,23 +225,25 @@ export function RebalanceTable({
       }
       onClearAllFilters={onClearAllFilters}
       ariaLabel={"Rebalance brokers"}
-      renderHeader={({ Th, column, key }) => {
+      renderHeader={({ column, key }) => {
+        const sortAction = sortProvider(column);
+
         switch (column) {
           case "name":
             return (
-              <Th key={key} width={30} dataLabel={"Rebalance"}>
+              <Th key={key} width={30} dataLabel={"Rebalance"} sort={sortAction}>
                 {t("rebalance_name")}
               </Th>
             );
           case "status":
             return (
-              <Th key={key} dataLabel={"Status"}>
+              <Th key={key} dataLabel={"Status"} sort={sortAction}>
                 {t("status")}
               </Th>
             );
           case "lastUpdated":
             return (
-              <Th key={key} dataLabel={"Last updated"}>
+              <Th key={key} dataLabel={"Last updated"} sort={sortAction}>
                 {t("last_updated")}
               </Th>
             );

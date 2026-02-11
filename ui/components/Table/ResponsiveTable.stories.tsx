@@ -10,6 +10,7 @@ import {
   sampleData,
   SampleDataType,
 } from "./storybookHelpers";
+import { Th } from "@patternfly/react-table";
 
 type ResponsiveTableSampleTypeProps = ResponsiveTableProps<
   SampleDataType,
@@ -19,8 +20,6 @@ type ResponsiveTableSampleTypeProps = ResponsiveTableProps<
   hasCustomActionTestId?: boolean;
   hasCustomOuiaIds?: boolean;
   isRowClickable?: boolean;
-  isSortable?: boolean;
-  sortAllColumns?: boolean;
   selectedRow?: number;
 };
 const ResponsiveTableSampleType = (props: ResponsiveTableSampleTypeProps) => (
@@ -31,7 +30,6 @@ export default {
   component: ResponsiveTable,
   args: {
     ariaLabel: "Table title",
-    minimumColumnWidth: 250,
     data: sampleData,
     columns,
     hasActions: true,
@@ -51,24 +49,6 @@ export default {
     sortAllColumns: { control: "boolean" },
   },
   render: (args) => {
-    const sortableColumns =
-      args.sortAllColumns === true
-        ? args.columns
-        : [args.columns[0], args.columns[3]];
-    const isColumnSortable = (
-      col: (typeof args.columns)[number],
-    ): ReturnType<ResponsiveTableProps<any, any>["isColumnSortable"]> =>
-      sortableColumns.includes(col)
-        ? {
-            onSort: () => {},
-            label: columnLabels[col],
-            columnIndex: args.columns.indexOf(col),
-            sortBy: {
-              direction: "asc",
-              index: args.columns.indexOf(col),
-            },
-          }
-        : undefined;
     const columnLabels = {
       name: "Name",
       cloudProvider: "Cloud Provider",
@@ -80,7 +60,7 @@ export default {
     return (
       <ResponsiveTable
         {...args}
-        renderHeader={({ column, Th, key }) => (
+        renderHeader={({ column, key }) => (
           <Th key={key}>{columnLabels[column]}</Th>
         )}
         renderCell={({ column, row, colIndex, Td, key }) => (
@@ -104,7 +84,6 @@ export default {
             : undefined
         }
         isRowDeleted={({ row }) => row[5] === "deleting"}
-        isColumnSortable={args.isSortable ? isColumnSortable : undefined}
         onRowClick={args.isRowClickable ? args.onRowClick : undefined}
         setActionCellOuiaId={
           args.hasCustomActionTestId
@@ -120,10 +99,9 @@ export default {
       >
         <EmptyState
           titleText={
-            <Title headingLevel="h4" size="lg">
-              Empty state to show when the data is filtered but has no results
-            </Title>
+            "Empty state to show when the data is filtered but has no results"
           }
+          headingLevel="h4"
           icon={InfoIcon}
           variant={"lg"}
         >
@@ -142,6 +120,7 @@ type Story = StoryObj<typeof ResponsiveTableSampleType>;
 export const Example: Story = {
   play: async ({ canvasElement, args }) => {
     const canvas = within(canvasElement);
+    await canvas.findByText(sampleData[0][0]);
 
     sampleData
       .flatMap((row) => row.slice(0, -1))
@@ -158,7 +137,7 @@ export const Example: Story = {
     await userEvent.click(actions[0]);
     await expect(args.onRowClick).not.toHaveBeenCalled();
 
-    const firstRow = canvas.getByText(sampleData[0][0]).parentElement;
+    const firstRow = canvas.getByText(sampleData[0][0]).parentElement!;
     await userEvent.click(firstRow);
     await expect(args.onRowClick).toHaveBeenNthCalledWith(1, {
       row: sampleData[0],
@@ -183,7 +162,8 @@ export const NonClickableRows: Story = {
   },
   play: async ({ canvasElement, args }) => {
     const canvas = within(canvasElement);
-    const firstRow = canvas.getByText(sampleData[0][0]).parentElement;
+    const firstCell = await canvas.findByText(sampleData[0][0]);
+    const firstRow = firstCell.parentElement!;
     await userEvent.click(firstRow);
     await expect(args.onRowClick).not.toHaveBeenCalled();
   },
@@ -217,7 +197,7 @@ export const NoResults: Story = {
     const canvas = within(canvasElement);
 
     await expect(
-      canvas.getByText(
+      await canvas.findByText(
         "Empty state to show when the data is filtered but has no results",
       ),
     ).toBeInTheDocument();
@@ -228,9 +208,10 @@ export const CustomActionTestId: Story = {
   args: {
     hasCustomActionTestId: true,
   },
-  play: async ({ canvasElement, args }) => {
+  play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await expect(canvas.queryAllByTestId("my-action-row-0")).toHaveLength(1);
+    const cell = await canvas.findByTestId("my-action-row-0");
+    expect(cell).toBeInTheDocument();
   },
 };
 
@@ -238,37 +219,14 @@ export const CustomOuiaIds: Story = {
   args: {
     hasCustomOuiaIds: true,
   },
-  play: async ({ canvasElement, args }) => {
-    await expect(
-      canvasElement.querySelectorAll(
-        "[data-ouia-component-id='table-ouia-id']",
-      ),
-    ).toHaveLength(1);
-    await expect(
-      canvasElement.querySelectorAll("[data-ouia-component-id='table-row-0']"),
-    ).toHaveLength(1);
-  },
-};
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
 
-export const Sortable: Story = {
-  args: {
-    isSortable: true,
-  },
-  play: async ({ canvasElement, args }) => {
-    await expect(
-      canvasElement.querySelectorAll("[class~='pf-v6-c-table__sort']"),
-    ).toHaveLength(args.columns.length);
-  },
-};
-
-export const PartiallySortable: Story = {
-  args: {
-    isSortable: true,
-    sortAllColumns: false,
-  },
-  play: async ({ canvasElement, args }) => {
-    await expect(
-      canvasElement.querySelectorAll("[class~='pf-v6-c-table__sort']"),
-    ).toHaveLength(2);
+    const table = await canvas.findByRole("grid");
+    expect(table).toHaveAttribute("data-ouia-component-id", "table-ouia-id");
+    const firstRow = canvasElement.querySelector(
+      "[data-ouia-component-id='table-row-0']",
+    );
+    expect(firstRow).toBeInTheDocument();
   },
 };

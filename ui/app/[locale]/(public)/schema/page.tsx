@@ -2,10 +2,11 @@ import { getSchema } from "@/api/schema/action";
 import { ConnectedSchema } from "./ConnectedSchema";
 
 export default async function ConnectedSchemaPage({
-  searchParams,
+  searchParams: searchParamsPromise,
 }: {
-  searchParams: { content?: string; schemaname?: string };
+  searchParams: Promise<{ content?: string; schemaname?: string }>;
 }) {
+  const searchParams = await searchParamsPromise;
   const urlSearchParams = new URLSearchParams(searchParams);
 
   const content = urlSearchParams.get("content");

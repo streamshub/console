@@ -3,18 +3,19 @@ import { GroupParams } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/groups/
 import { AppHeader } from "@/components/AppHeader";
 import { Suspense } from "react";
 import { PageSection, Skeleton } from "@/libs/patternfly/react-core";
-import { useTranslations } from "next-intl";
+import { getTranslations } from "next-intl/server";
 import { ConsumerGroupActionButton } from "./ConsumerGroupActionButton";
 import RichText from "@/components/RichText";
 import { resetButtonDisabled } from "@/utils/groups";
 import { hasPrivilege } from "@/utils/privileges";
 import { GroupTabs } from "./GroupTabs";
 
-export function GroupHeader({
-  params: { kafkaId, groupId },
+export async function GroupHeader({
+  params: paramsPromise,
 }: {
-  params: GroupParams;
+  params: Promise<GroupParams>;
 }) {
+  const { kafkaId, groupId } = await paramsPromise;
   return (
     <Suspense
       fallback={<Header params={{ kafkaId, groupId, groupIdDisplay: "" }} disabled={true} />}
@@ -41,14 +42,14 @@ async function ConnectedAppHeader({
   return <Header params={{ kafkaId, groupId, groupIdDisplay }} disabled={disabled} />;
 }
 
-function Header({
+async function Header({
   disabled,
   params: { kafkaId, groupId, groupIdDisplay },
 }: {
   disabled: boolean;
   params: { kafkaId: string; groupId: string; groupIdDisplay: string };
 }) {
-  const t = useTranslations();
+  const t = await getTranslations();
 
   return (
     <AppHeader

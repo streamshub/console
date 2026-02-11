@@ -22,9 +22,11 @@ import {
   ExclamationCircleIcon,
   ExclamationTriangleIcon,
 } from "@/libs/patternfly/react-icons";
+import { Th } from "@/libs/patternfly/react-table";
 import { ReactNode, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { usePagination } from "@/utils/usePagination";
+import { ThSortType } from "@patternfly/react-table/dist/esm/components/Table/base/types";
 
 const Columns = [
   "id",
@@ -134,6 +136,21 @@ export function PartitionsTable({
 
   const startIndex = (page - 1) * perPage;
   const paginatedData = sortedData?.slice(startIndex, startIndex + perPage);
+  const sortProvider = (col: typeof Columns[number]): ThSortType & { label?: string } | undefined => {
+    if (col !== "replicas") {
+      return {
+        columnIndex: SortColumns.indexOf(col),
+        label: "",
+        onSort: (_x:any, _y:any, dir: "asc" | "desc") => setSort({ sort: col, dir }),
+        sortBy: {
+          index: SortColumns.indexOf(sort.sort),
+          direction: sort.dir,
+        },
+      };
+    }
+    return undefined;
+  };
+
   return (
     <PageSection isFilled>
       <TableView
@@ -151,23 +168,26 @@ export function PartitionsTable({
         isFiltered={filter !== "all"}
         ariaLabel={"Partitions"}
         columns={Columns}
-        renderHeader={({ column, key, Th }) => {
+        sortProvider={sortProvider}
+        renderHeader={({ column, key }) => {
+          const sortAction = sortProvider(column);
+
           switch (column) {
             case "id":
               return (
-                <Th key={key} dataLabel={"Partition Id"} width={15}>
+                <Th key={key} dataLabel={"Partition Id"} width={15} sort={sortAction}>
                   {t("partition_table.partition_id")}
                 </Th>
               );
             case "status":
               return (
-                <Th key={key} dataLabel={"Status"} width={15}>
+                <Th key={key} dataLabel={"Status"} width={15} sort={sortAction}>
                   {t("partition_table.status")}
                 </Th>
               );
             case "preferredLeader":
               return (
-                <Th key={key} dataLabel={"Preferred leader"} width={20}>
+                <Th key={key} dataLabel={"Preferred leader"} width={20} sort={sortAction}>
                   {t("partition_table.preferred_leader")}{" "}
                   <Tooltip content={t("partition_table.leader_tooltip")}>
                     <HelpIcon />
@@ -176,7 +196,7 @@ export function PartitionsTable({
               );
             case "leader":
               return (
-                <Th key={key} dataLabel={"Leader"} width={15}>
+                <Th key={key} dataLabel={"Leader"} width={15} sort={sortAction}>
                   {t("partition_table.leader")}{" "}
                   <Tooltip
                     style={{ whiteSpace: "pre-line" }}
@@ -188,7 +208,7 @@ export function PartitionsTable({
               );
             case "replicas":
               return (
-                <Th key={key} dataLabel={"Replicas"} width={20}>
+                <Th key={key} dataLabel={"Replicas"} width={20} sort={sortAction}>
                   {t("partition_table.replicas")}{" "}
                   <Tooltip content={t("partition_table.replicas_tooltip")}>
                     <HelpIcon />
@@ -197,7 +217,7 @@ export function PartitionsTable({
               );
             case "storage":
               return (
-                <Th key={key} dataLabel={"Storage"}>
+                <Th key={key} dataLabel={"Storage"} sort={sortProvider("storage")}>
                   {t("partition_table.size")}
                 </Th>
               );
@@ -364,20 +384,6 @@ export function PartitionsTable({
             />
           </ToggleGroup>,
         ]}
-        isColumnSortable={(column) => {
-          if (column !== "replicas") {
-            return {
-              columnIndex: SortColumns.indexOf(column),
-              label: "",
-              onSort: (_, __, dir) => setSort({ sort: column, dir }),
-              sortBy: {
-                index: SortColumns.indexOf(sort.sort),
-                direction: sort.dir,
-              },
-            };
-          }
-          return undefined;
-        }}
       />
     </PageSection>
   );

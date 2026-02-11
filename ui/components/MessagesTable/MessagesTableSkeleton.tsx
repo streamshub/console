@@ -1,6 +1,6 @@
 import { ResponsiveTable } from "@/components/Table";
 import { PageSection } from "@/libs/patternfly/react-core";
-import { TableVariant } from "@/libs/patternfly/react-table";
+import { TableVariant, Th } from "@/libs/patternfly/react-table";
 import { useTranslations } from "next-intl";
 import { columns } from "./components/ColumnsModal";
 import { MessagesTableToolbar } from "./components/MessagesTableToolbar";
@@ -52,8 +52,8 @@ export function MessagesTableSkeleton({
         columns={columns}
         data={undefined}
         expectedLength={typeof filterLimit === "number" ? filterLimit : 50}
-        renderCell={() => <div></div>}
-        renderHeader={() => <div></div>}
+        renderCell={({ Td, key }) => <Td key={key}></Td>}
+        renderHeader={({ key }) => <Th key={key}></Th>}
       />
     </PageSection>
   );
