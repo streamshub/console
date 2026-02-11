@@ -2,14 +2,15 @@ import { getConsumerGroup } from "@/api/consumerGroups/actions";
 import { KafkaConsumerGroupMembersParams } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/consumer-groups/[groupId]/KafkaConsumerGroupMembers.params";
 import { AppHeader } from "@/components/AppHeader";
 import { Suspense } from "react";
-import { useTranslations } from "next-intl";
+import { getTranslations } from "next-intl/server";
 import RichText from "@/components/RichText";
 
-export default function Page({
-  params: { kafkaId, groupId },
+export default async function Page({
+  params: paramsPromise,
 }: {
-  params: KafkaConsumerGroupMembersParams;
+  params: Promise<KafkaConsumerGroupMembersParams>;
 }) {
+  const { kafkaId, groupId } = await paramsPromise;
   return (
     <Suspense fallback={<Header groupIdDisplay={""} />}>
       <ConnectedAppHeader params={{ kafkaId, groupId }} />
@@ -32,12 +33,12 @@ async function ConnectedAppHeader({
   return <Header groupIdDisplay={groupIdDisplay} />;
 }
 
-function Header({
+async function Header({
   groupIdDisplay,
 }: {
   groupIdDisplay: string;
 }) {
-  const t = useTranslations();
+  const t = await getTranslations();
 
   return (
     <AppHeader
