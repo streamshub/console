@@ -25,12 +25,12 @@ const sortMap: Record<(typeof RebalanceTableColumns)[number], string> = {
   lastUpdated: "lastUpdated",
 };
 
-export default function RebalancesPage({
-  params,
-  searchParams,
+export default async function RebalancesPage({
+  params: paramsPromise,
+  searchParams: searchParamsPromise,
 }: {
-  params: KafkaParams;
-  searchParams: {
+  params: Promise<KafkaParams>;
+  searchParams: Promise<{
     id: string | undefined;
     name: string | undefined;
     perPage: string | undefined;
@@ -39,8 +39,11 @@ export default function RebalancesPage({
     page: string | undefined;
     status: string | undefined;
     mode: string | undefined;
-  };
+  }>;
 }) {
+  const params = await paramsPromise;
+  const searchParams = await searchParamsPromise;
+
   const name = searchParams["name"];
   const mode = (searchParams["mode"] || "").split(",").filter((v) => !!v) as
     | RebalanceMode[]
