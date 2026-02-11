@@ -6,14 +6,15 @@ import {
   Tooltip,
 } from "@/libs/patternfly/react-core";
 import { HomeIcon } from "@/libs/patternfly/react-icons";
-import { useTranslations } from "next-intl";
+import { getTranslations } from "next-intl/server";
 
-export function NodeBreadcrumb({
-  params: { kafkaId, nodeId },
+export async function NodeBreadcrumb({
+  params: paramsPromise,
 }: {
-  params: KafkaNodeParams;
+  params: Promise<KafkaNodeParams>;
 }) {
-  const t = useTranslations();
+  const { kafkaId, nodeId } = await paramsPromise;
+  const t = await getTranslations();
   return (
     <Breadcrumb>
       <BreadcrumbItem key="home" to="/" showDivider>

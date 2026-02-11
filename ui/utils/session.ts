@@ -13,7 +13,7 @@ export async function getSession<T extends Record<string, unknown>>(
 ) {
   const user = await getUser();
   const username = user.username ?? "anonymous";
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const encryptedSession = cookieStore.get(`${username}:${scope}`)?.value;
 
   if (!encryptedSession) {
@@ -39,7 +39,7 @@ export async function setSession<T extends Record<string, unknown>>(
     password: process.env.NEXTAUTH_SECRET,
   });
 
-  cookies().set({
+  (await cookies()).set({
     name: `${username}:${scope}`,
     value: encryptedSession,
     httpOnly: true,

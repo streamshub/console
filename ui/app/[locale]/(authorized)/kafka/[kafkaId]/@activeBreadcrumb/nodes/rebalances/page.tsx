@@ -4,19 +4,20 @@ import {
   Tooltip,
 } from "@/libs/patternfly/react-core";
 import { HomeIcon } from "@/libs/patternfly/react-icons";
-import { useTranslations } from "next-intl";
+import { getTranslations } from "next-intl/server";
 import { KafkaParams } from "../../../kafka.params";
 
-export default function RebalanceActiveBreadcrumbPage({
-  params: { kafkaId },
+export default async function RebalanceActiveBreadcrumbPage({
+  params: paramsPromise,
 }: {
-  params: KafkaParams;
+  params: Promise<KafkaParams>;
 }) {
+  const { kafkaId } = await paramsPromise;
   return <RebalanceActiveBreadcrumb kafkaId={kafkaId} />;
 }
 
-function RebalanceActiveBreadcrumb({ kafkaId }: { kafkaId: string }) {
-  const t = useTranslations();
+async function RebalanceActiveBreadcrumb({ kafkaId }: { kafkaId: string }) {
+  const t = await getTranslations();
 
   return (
     <Breadcrumb>

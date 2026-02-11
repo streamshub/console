@@ -35,8 +35,8 @@ export function FilterByTopic({
   const [isOpen, setIsOpen] = useState(false);
   const [filter, setFilter] = useState("");
 
-  const toggleRef = useRef<any>();
-  const menuRef = useRef<any>();
+  const toggleRef = useRef<any>(null);
+  const menuRef = useRef<any>(null);
 
   const filteredTopics = useMemo(() => {
     return topicList.filter((topic) =>

@@ -1,16 +1,17 @@
 import { AppHeader } from "@/components/AppHeader";
-import { useTranslations } from "next-intl";
+import { getTranslations } from "next-intl/server";
 import { NoDataErrorState } from "@/components/NoDataErrorState";
 import { Suspense } from "react";
 import RichText from "@/components/RichText";
 import { KafkaUserParams } from "../../../kafka-users/kafkaUser.params";
 import { getKafkaUser } from "@/api/kafkaUsers/action";
 
-export default function Page({
-  params: { kafkaId, userId },
+export default async function Page({
+  params: paramsPromise,
 }: {
-  params: KafkaUserParams;
+  params: Promise<KafkaUserParams>;
 }) {
+  const { kafkaId, userId } = await paramsPromise;
   return (
     <Suspense fallback={<Header params={{ kafkaId, userId }} />}>
       <KafkaUserAppHeader params={{ kafkaId, userId }} />
@@ -35,13 +36,13 @@ async function KafkaUserAppHeader({
   return <Header params={{ kafkaId, userId }} kafkaUserName={kafkaUserName} />;
 }
 
-function Header({
+async function Header({
   kafkaUserName = "",
 }: {
   params: KafkaUserParams;
   kafkaUserName?: string;
 }) {
-  const t = useTranslations();
+  const t = await getTranslations();
 
   return (
     <AppHeader

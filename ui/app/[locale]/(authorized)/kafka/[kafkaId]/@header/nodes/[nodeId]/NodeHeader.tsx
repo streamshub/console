@@ -4,10 +4,11 @@ import { Skeleton } from "@/libs/patternfly/react-core";
 import { Suspense } from "react";
 
 export async function NodeHeader({
-  params: { kafkaId, nodeId },
+  params: paramsPromise,
 }: {
-  params: KafkaNodeParams;
+  params: Promise<KafkaNodeParams>;
 }) {
+  const { kafkaId, nodeId } = await paramsPromise;
   return (
     <AppHeader
       title={

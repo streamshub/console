@@ -5,11 +5,12 @@ import { KafkaRebalanceParams } from "./KafkaRebalance.params";
 import { OptimizationProposal } from "./OptimizationProposal";
 import { getRebalance } from "@/api/rebalance/actions";
 
-export default function OptimizationProposalPage({
-  params,
+export default async function OptimizationProposalPage({
+  params: paramsPromise,
 }: {
-  params: KafkaRebalanceParams;
+  params: Promise<KafkaRebalanceParams>;
 }) {
+  const params = await paramsPromise;
   return (
     <PageSection>
       <Suspense

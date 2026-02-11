@@ -40,20 +40,23 @@ export async function generateMetadata() {
   };
 }
 
-export default function ConnectorsPage({
-  params,
-  searchParams,
+export default async function ConnectorsPage({
+  params: paramsPromise,
+  searchParams: searchParamsPromise,
 }: {
-  params: KafkaParams;
-  searchParams: {
+  params: Promise<KafkaParams>;
+  searchParams: Promise<{
     kafkaClusters: string | undefined;
     name: string | undefined;
     perPage: string | undefined;
     sort: string | undefined;
     sortDir: string | undefined;
     page: string | undefined;
-  };
+  }>;
 }) {
+  const params = await paramsPromise;
+  const searchParams = await searchParamsPromise;
+
   const kafkaId = searchParams["kafkaClusters"] || params.kafkaId;
   const name = searchParams["name"];
   const pageSize = stringToInt(searchParams.perPage) || 20;

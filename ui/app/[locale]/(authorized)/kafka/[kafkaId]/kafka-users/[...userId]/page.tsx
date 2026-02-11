@@ -6,20 +6,22 @@ import { KafkaUserDetails } from "./KafkaUserDetails";
 import { getKafkaUser } from "@/api/kafkaUsers/action";
 
 export async function generateMetadata(props: {
-  params: { kafkaId: string; userId: string };
+  params: Promise<{ kafkaId: string; userId: string }>;
 }) {
+  const params = await props.params;
   const t = await getTranslations();
 
   return {
-    title: `${t("kafkausers.kafka_user")} ${props.params.userId} | ${t("common.title")}`,
+    title: `${t("kafkausers.kafka_user")} ${params.userId} | ${t("common.title")}`,
   };
 }
 
-export default function ConnectClusterPage({
-  params,
+export default async function ConnectClusterPage({
+  params: paramsPromise,
 }: {
-  params: { kafkaId: string; userId: string };
+  params: Promise<{ kafkaId: string; userId: string }>;
 }) {
+  const params = await paramsPromise;
   return (
     <PageSection>
       <Suspense fallback={<KafkaUserDetails kafkaUser={undefined} />}>

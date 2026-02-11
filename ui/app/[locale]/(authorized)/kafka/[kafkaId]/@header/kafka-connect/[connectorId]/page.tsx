@@ -1,5 +1,5 @@
 import { AppHeader } from "@/components/AppHeader";
-import { useTranslations } from "next-intl";
+import { getTranslations } from "next-intl/server";
 import { KafkaConnectorParams } from "../../../kafka-connect/kafkaConnectors.params";
 import { NoDataErrorState } from "@/components/NoDataErrorState";
 import { getConnectorCluster } from "@/api/kafkaConnect/action";
@@ -7,11 +7,12 @@ import { Suspense } from "react";
 import RichText from "@/components/RichText";
 import { ManagedConnectorLabel } from "../../../kafka-connect/ManagedConnectorLabel";
 
-export default function Page({
-  params: { kafkaId, connectorId },
+export default async function Page({
+  params: paramsPromise,
 }: {
-  params: KafkaConnectorParams;
+  params: Promise<KafkaConnectorParams>;
 }) {
+  const { kafkaId, connectorId } = await paramsPromise;
   return (
     <Suspense
       fallback={<Header params={{ kafkaId, connectorId }} managed={false} />}
@@ -45,7 +46,7 @@ async function ConnectedAppHeader({
   );
 }
 
-function Header({
+async function Header({
   connectorName = "",
   managed,
 }: {
@@ -53,7 +54,7 @@ function Header({
   connectorName?: string;
   managed: boolean;
 }) {
-  const t = useTranslations();
+  const t = await getTranslations();
 
   return (
     <AppHeader

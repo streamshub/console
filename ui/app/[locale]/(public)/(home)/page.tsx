@@ -49,17 +49,18 @@ export async function generateMetadata() {
 }
 
 export default async function Home({
-  searchParams,
+  searchParams: searchParamsPromise,
 }: {
-  searchParams: {
+  searchParams: Promise<{
     name: string | undefined;
     perPage: string | undefined;
     sort: string | undefined;
     sortDir: string | undefined;
     page: string | undefined;
-  };
+  }>;
 }) {
   const t = await getTranslations();
+  const searchParams = await searchParamsPromise;
 
   const name = searchParams["name"];
   const pageSize = stringToInt(searchParams.perPage) || 20;

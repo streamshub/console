@@ -7,23 +7,17 @@ import {
   Tooltip,
 } from "@/libs/patternfly/react-core";
 import { HomeIcon } from "@/libs/patternfly/react-icons";
-import { useTranslations } from "next-intl";
+import { getTranslations } from "next-intl/server";
 
 export async function TopicBreadcrumb({
-  params: { kafkaId, topicId },
+  params: paramsPromise,
 }: {
-  params: KafkaTopicParams;
+  params: Promise<KafkaTopicParams>;
 }) {
-  return <ConnectedTopicBreadcrumb params={{ kafkaId, topicId }} />;
-}
-
-async function ConnectedTopicBreadcrumb({
-  params: { kafkaId, topicId },
-}: {
-  params: KafkaTopicParams;
-}) {
-  const t = useTranslations("breadcrumbs");
+  const { kafkaId, topicId } = await paramsPromise;
+  const t = await getTranslations("breadcrumbs");
   const response = await getTopic(kafkaId, topicId);
+
   return (
     <Breadcrumb>
       <BreadcrumbItem key="home" to="/" showDivider>

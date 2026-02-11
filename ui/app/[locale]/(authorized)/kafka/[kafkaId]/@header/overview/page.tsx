@@ -1,15 +1,16 @@
 import { ConnectButton } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/@header/overview/ConnectButton";
 import { KafkaParams } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/kafka.params";
 import { AppHeader } from "@/components/AppHeader";
-import { useTranslations } from "next-intl";
+import { getTranslations } from "next-intl/server";
 import { getKafkaCluster } from "@/api/kafka/actions";
 import { Suspense } from "react";
 
-export default function Header({
-  params: { kafkaId },
+export default async function Header({
+  params: paramsPromise,
 }: {
-  params: KafkaParams;
+  params: Promise<KafkaParams>;
 }) {
+  const { kafkaId } = await paramsPromise;
   return (
     <Suspense fallback={<OverviewHeader params={{ kafkaId }} />}>
       <ConnectedHeader params={{ kafkaId }} />
@@ -27,12 +28,12 @@ async function ConnectedHeader({
   return <OverviewHeader params={{ kafkaId }} />;
 }
 
-export function OverviewHeader({
+export async function OverviewHeader({
   params: { kafkaId },
 }: {
   params: KafkaParams;
 }) {
-  const t = useTranslations();
+  const t = await getTranslations();
 
   return (
     <AppHeader

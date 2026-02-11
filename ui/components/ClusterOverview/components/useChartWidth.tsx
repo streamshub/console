@@ -7,8 +7,8 @@ import {
   RefObject,
 } from "react";
 
-export function useChartWidth(): [RefObject<HTMLDivElement>, number] {
-  const containerRef = useRef<HTMLDivElement>(null);
+export function useChartWidth(): [RefObject<HTMLDivElement | null>, number] {
+  const containerRef = useRef<HTMLDivElement | null>(null);
   const [width, setWidth] = useState<number>(0);
 
   const handleResize = useCallback(() => {
@@ -28,7 +28,7 @@ export function useChartWidth(): [RefObject<HTMLDivElement>, number] {
     };
   }, [handleResize]);
 
-  const requestRef = useRef<number>();
+  const requestRef = useRef<number | undefined>(undefined);
 
   const checkSize = useCallback(() => {
     requestRef.current = requestAnimationFrame(checkSize);
