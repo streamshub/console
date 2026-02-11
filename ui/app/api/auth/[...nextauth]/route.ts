@@ -1,9 +1,9 @@
 import NextAuth from "next-auth";
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { getAuthOptions } from "./auth-options";
 import { logger } from "@/utils/logger";
 
-async function handler(req: NextRequest, res: NextResponse) {
+async function handler(req: NextRequest) {
   const authOptions = await getAuthOptions();
   if (authOptions) {
     const log = logger.child({ module: "next-auth" });
@@ -29,7 +29,7 @@ async function handler(req: NextRequest, res: NextResponse) {
     });
 
     // handle the request
-    return authHandler(req, res);
+    return authHandler(req);
   }
 }
 

@@ -15,10 +15,15 @@ import {
   ExclamationTriangleIcon,
 } from "@/libs/patternfly/react-icons";
 import { Suspense } from "react";
-import { useTranslations } from "next-intl";
+import { getTranslations } from "next-intl/server";
 import { NodesTabs } from "./NodesTabs";
 
-export default function NodesHeader({ params }: { params: KafkaParams }) {
+export default async function NodesHeader({
+  params: paramsPromise,
+}: {
+  params: Promise<KafkaParams>;
+}) {
+  const params = await paramsPromise;
   return (
     <Suspense
       fallback={<Header kafkaId={undefined} cruiseControlEnable={false} />}
@@ -47,7 +52,7 @@ async function ConnectedHeader({ params }: { params: KafkaParams }) {
   );
 }
 
-function Header({
+async function Header({
   total,
   ok,
   warning,
@@ -60,7 +65,7 @@ function Header({
   kafkaId: string | undefined;
   cruiseControlEnable: boolean;
 }) {
-  const t = useTranslations("node-header");
+  const t = await getTranslations("node-header");
 
   return (
     <AppHeader
