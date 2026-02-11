@@ -29,7 +29,7 @@ import {
   useMemo,
   useState,
 } from "react";
-import useResizeObserver from "use-resize-observer";
+import useResizeObserver from "@/libs/use-resize-observer";
 import "./ResponsiveTable.css";
 
 export type RenderHeaderCb<TCol> = (props: {

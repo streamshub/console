@@ -1,0 +1,1 @@
+Copied use-resize-observer. Remove this when React 19 is a valid peer dependency in the upstream project at https://github.com/ZeeCoder/use-resize-observer
