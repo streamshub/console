@@ -418,8 +418,8 @@
     "version_derived": "Version derived from Kafka metadata"
   },
   "metrics": {
-     "all_brokers": "All Nodes",
-     "all_topics": "All topics"
+    "all_brokers": "All Nodes",
+    "all_topics": "All topics"
   },
   "ColumnsModal": {
     "title": "Manage columns",
@@ -529,8 +529,14 @@
     "reseting_consumer_group_offsets_text": "Resetting consumer group offsets. This might take a few moments",
     "run_and_show_result": "Run and show result in console",
     "copy_dry_run_command": "Copy Dry Run command to clipboard",
-    "reset_offset_submitted_successfully": "Reset {consumerGroupName} offsets completed successfully",
-    "custom_offset_error_message": "The custom offset value is out of range. Enter a value between the earliest and latest offsets."
+    "reset_offset_submitted_successfully": "Reset {groupId} offsets completed successfully",
+    "custom_offset_error_message": "The custom offset value is out of range. Enter a value between the earliest and latest offsets.",
+    "date_time_placeholder": "Enter Date-time",
+    "invalid_format_error": "Invalid format. Use yyyy-MM-dd'T'HH:mm:ss.SSS or ±HH:mm offset.",
+    "time_in_UTC": "Time is in UTC",
+    "change_to_local": "Change to local",
+    "time_in_local": "Time is in local",
+    "change_to_utc": "Change to UTC"
   },
   "CreateTopic": {
     "title": "Topic creation wizard",
@@ -771,13 +777,12 @@
     "kafka_user": "Kafka User",
     "no_kafka_users": "No kafka users",
     "authorization_columns": {
-        "type": "Type",
-        "resourceName": "Name",
-        "patternType": "Pattern Type",
-        "host": "Host",
-        "operations": "Operations",
-        "permissionType": "Permission"
-
+      "type": "Type",
+      "resourceName": "Name",
+      "patternType": "Pattern Type",
+      "host": "Host",
+      "operations": "Operations",
+      "permissionType": "Permission"
     }
   },
   "KroxyliciousCluster": {

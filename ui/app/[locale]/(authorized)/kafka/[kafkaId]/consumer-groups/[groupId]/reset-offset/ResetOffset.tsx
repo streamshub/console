@@ -26,6 +26,8 @@ import { DryrunSelect } from "./DryrunSelect";
 import { SelectComponent } from "./SelectComponent";
 import { ErrorState } from "./ResetConsumerOffset";
 import { ExclamationCircleIcon } from "@/libs/patternfly/react-icons";
+import { ISODateTimeInput } from "./ISODateTimeInput";
+import { useState } from "react";
 
 export type Offset = {
   topicId: string;
@@ -81,6 +83,9 @@ export function ResetOffset({
   onOffsetSelect: (value: OffsetValue) => void;
 }) {
   const t = useTranslations("ConsumerGroupsTable");
+
+  const [isIsoValid, setIsIsoValid] = useState(false);
+
   const isTopicSelected = selectTopic === "selectedTopic";
   const hasTopicName =
     typeof offset.topicName === "string" && offset.topicName.trim().length > 0;
@@ -114,7 +119,10 @@ export function ResetOffset({
         );
 
       case "specificDateTime":
-        return !!selectDateTimeFormat && hasDateTimeValue;
+        if (selectDateTimeFormat === "ISO") {
+          return isIsoValid;
+        }
+        return hasDateTimeValue;
 
       case "delete":
         return isTopicSelected && hasTopicName && partitionValid;
@@ -282,7 +290,9 @@ export function ResetOffset({
                     <Radio
                       name={"select_time"}
                       id={"iso_date_format"}
-                      label={t("iso_date_format")}
+                      label={`${t(
+                        "iso_date_format",
+                      )} (yyyy-MM-dd'T'HH:mm:ss.SSS)`}
                       isChecked={selectDateTimeFormat === "ISO"}
                       onChange={() => onDateTimeSelect("ISO")}
                     />
@@ -295,17 +305,29 @@ export function ResetOffset({
                     />
                   </FormGroup>
                   <FormGroup>
-                    <TextInput
-                      id="date-input"
-                      name={"date-input"}
-                      type={selectDateTimeFormat === "ISO" ? "text" : "number"}
-                      placeholder={
-                        selectDateTimeFormat === "ISO"
-                          ? "yyyy-MM-dd'T'HH:mm:ss.SSS"
-                          : "specify epoch timestamp"
-                      }
-                      onChange={(_event, value) => handleDateTimeChange(value)}
-                    />
+                    {selectDateTimeFormat === "ISO" ? (
+                      <ISODateTimeInput
+                        value={
+                          typeof offset.offset === "string" ? offset.offset : ""
+                        }
+                        onValidChange={(val: string) =>
+                          handleDateTimeChange(val)
+                        }
+                        onValidityChange={setIsIsoValid}
+                        label={t("iso_date_format")}
+                      />
+                    ) : (
+                      <TextInput
+                        id="date-input"
+                        name={"date-input"}
+                        type="number"
+                        placeholder="specify epoch timestamp"
+                        value={offset.offset}
+                        onChange={(_event, value) =>
+                          handleDateTimeChange(value)
+                        }
+                      />
+                    )}
                     {error?.SpecificDateTimeNotValidError && (
                       <FormHelperText>
                         <HelperText>
