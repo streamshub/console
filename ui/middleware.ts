@@ -28,14 +28,14 @@ const authMiddleware = withAuth(
   },
 ) as any;
 
-const publicPathnameRegex = RegExp(
+const publicPathnameRegex = new RegExp(
   `^(/(${locales.join("|")}))?(${publicPages
     .flatMap((p) => (p === "/" ? ["", "/"] : p))
     .join("|")})/?$`,
   "i",
 );
 
-const protectedPathnameRegex = RegExp(
+const protectedPathnameRegex = new RegExp(
   `^(/(${locales.join("|")}))?(${protectedPages
     .flatMap((p) => (p === "/" ? ["", "/"] : p))
     .join("|")})/?$`,
@@ -47,11 +47,19 @@ export default async function middleware(req: NextRequest) {
    * Next.js middleware doesn't support reading files, so here we make a (cached)
    * call to the /config endpoint within the same application :(
    */
-  let oidcEnabled = await fetch(`http://127.0.0.1:${process.env.PORT}/config`, {
+  const configUrl = `http://127.0.0.1:${process.env.PORT || '3000'}/config`;
+  log.info({ configUrl }, "Fetching OIDC configuration");
+
+  let oidcEnabled = await fetch(configUrl, {
     cache: "force-cache",
+    signal: AbortSignal.timeout(1000), // 1 second timeout to prevent hanging
   })
     .then((cfg) => cfg.json())
-    .then((cfg) => cfg["oidc"]);
+    .then((cfg) => cfg["oidc"])
+    .catch((err) => {
+      log.warn({ err, configUrl }, "Failed to fetch OIDC config, defaulting to false");
+      return false;
+    });
 
   const searchParams = req.nextUrl.searchParams;
   const requestPath = req.nextUrl.pathname;
