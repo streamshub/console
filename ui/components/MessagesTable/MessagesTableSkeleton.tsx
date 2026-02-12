@@ -52,8 +52,8 @@ export function MessagesTableSkeleton({
         columns={columns}
         data={undefined}
         expectedLength={typeof filterLimit === "number" ? filterLimit : 50}
-        renderCell={() => <div></div>}
-        renderHeader={() => <div></div>}
+        renderCell={({ Td, key }) => <Td key={key}></Td>}
+        renderHeader={({ Th, key }) => <Th key={key}></Th>}
       />
     </PageSection>
   );
