@@ -7,12 +7,22 @@ import { PageSection } from "@/libs/patternfly/react-core";
 import { Suspense } from "react";
 import { NoDataErrorState } from "@/components/NoDataErrorState";
 
-export async function generateMetadata(props: { params: Promise<{ kafkaId: string, groupId: string}> }) {
-  const params = await props.params;
+export async function generateMetadata({
+  params: paramsPromise,
+}: {
+  params: Promise<KafkaConsumerGroupMembersParams>;
+}) {
+  const { kafkaId, groupId } = await paramsPromise;
   const t = await getTranslations();
+  const consumerGroup = (await getConsumerGroup(kafkaId, groupId)).payload;
+  let groupIdDisplay = "";
+
+  if (consumerGroup) {
+    groupIdDisplay = consumerGroup.attributes.groupId;
+  }
 
   return {
-    title: `${t("ConsumerGroup.title")} ${params.groupId} | ${t("common.title")}`,
+    title: `${t("ConsumerGroup.title")} ${groupIdDisplay} | ${t("common.title")}`,
   };
 }
 
