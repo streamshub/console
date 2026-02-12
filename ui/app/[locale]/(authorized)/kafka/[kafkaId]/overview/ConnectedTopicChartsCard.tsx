@@ -1,7 +1,11 @@
 import { ApiResponse } from "@/api/api";
 import { ClusterDetail } from "@/api/kafka/schema";
 import { TopicsResponse } from "@/api/topics/schema";
-import { TopicChartsCard } from "@/components/ClusterOverview/TopicChartsCard";
+import {
+  TopicChartsCard,
+  TopicOption,
+} from "@/components/ClusterOverview/TopicChartsCard";
+import { Visibility } from "@patternfly/react-table";
 
 function timeSeriesMetrics(
   ranges: Record<string, { range: string[][]; nodeId?: string }[]> | undefined,
@@ -24,29 +28,38 @@ function timeSeriesMetrics(
 export async function ConnectedTopicChartsCard({
   cluster,
   topics,
+  includeHidden,
 }: {
   cluster: Promise<ClusterDetail | null>;
   topics: Promise<ApiResponse<TopicsResponse>>;
+  includeHidden?: boolean;
 }) {
   const res = await cluster;
 
   const topicResponse = await topics;
 
-  const topicList =
+  const topicList: TopicOption[] =
     topicResponse.payload?.data
-      ?.map((topic) => ({
+      ?.filter(
+        (
+          topic,
+        ): topic is typeof topic & {
+          id: string;
+          attributes: { name: string };
+        } => !!topic.id && !!topic.attributes?.name,
+      )
+      .map((topic) => ({
         id: topic.id,
         name: topic.attributes.name,
-      }))
-      .filter(
-        (topic): topic is { id: string; name: string } =>
-          !!topic.id && !!topic.name,
-      ) ?? [];
+        visibility: topic.attributes.visibility,
+        managed: topic.meta?.managed,
+      })) ?? [];
 
   return (
     <TopicChartsCard
       kafkaId={res?.id}
       topicList={topicList}
+      includeHidden={includeHidden}
       isLoading={false}
       isVirtualKafkaCluster={
         res?.meta?.kind === "virtualkafkaclusters.kroxylicious.io"
