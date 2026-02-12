@@ -48,11 +48,11 @@ export default async function middleware(req: NextRequest) {
    * call to the /config endpoint within the same application :(
    */
   const configUrl = `http://127.0.0.1:${process.env.PORT || '3000'}/config`;
-  log.info({ configUrl }, "Fetching OIDC configuration");
+  log.debug({ configUrl }, "Fetching OIDC configuration");
 
   let oidcEnabled = await fetch(configUrl, {
     cache: "force-cache",
-    signal: AbortSignal.timeout(1000), // 1 second timeout to prevent hanging
+    signal: AbortSignal.timeout(10000), // 10 second timeout to prevent hanging
   })
     .then((cfg) => cfg.json())
     .then((cfg) => cfg["oidc"])
