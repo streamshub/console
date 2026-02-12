@@ -14,18 +14,20 @@ export async function generateMetadata() {
   };
 }
 
-export default function ConsumerGroupsPage({
-  params: { kafkaId, topicId },
-  searchParams,
+export default async function ConsumerGroupsPage({
+  params: paramsPromise,
+  searchParams: searchParamsPromise,
 }: {
-  params: KafkaTopicParams;
-  searchParams: {
+  params: Promise<KafkaTopicParams>;
+  searchParams: Promise<{
     perPage: string | undefined;
     sort: string | undefined;
     sortDir: string | undefined;
     page: string | undefined;
-  };
+  }>;
 }) {
+  const { kafkaId, topicId } = await paramsPromise;
+  const searchParams = await searchParamsPromise;
   return (
     <PageSection>
       <Suspense

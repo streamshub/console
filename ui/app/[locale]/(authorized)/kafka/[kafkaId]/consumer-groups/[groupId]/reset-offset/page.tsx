@@ -7,12 +7,22 @@ import { Suspense } from "react";
 import { ResetConsumerOffset } from "./ResetConsumerOffset";
 import { NoDataErrorState } from "@/components/NoDataErrorState";
 
-export async function generateMetadata(props: { params: Promise<{ kafkaId: string, groupId: string}> }) {
-  const params = await props.params;
+export async function generateMetadata({
+  params: paramsPromise,
+}: {
+  params: Promise<KafkaConsumerGroupMembersParams>;
+}) {
+  const { kafkaId, groupId } = await paramsPromise;
   const t = await getTranslations();
+  const consumerGroup = (await getConsumerGroup(kafkaId, groupId)).payload;
+  let groupIdDisplay = "";
+
+  if (consumerGroup) {
+    groupIdDisplay = consumerGroup.attributes.groupId;
+  }
 
   return {
-    title: `${t("ConsumerGroupsTable.reset_offset")} ${params.groupId} | ${t("common.title")}`,
+    title: `${t("ConsumerGroupsTable.reset_offset")} ${groupIdDisplay} | ${t("common.title")}`,
   };
 }
 
