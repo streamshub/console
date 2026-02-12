@@ -43,12 +43,20 @@ const protectedPathnameRegex = new RegExp(
 );
 
 export default async function middleware(req: NextRequest) {
+  const searchParams = req.nextUrl.searchParams;
+  const requestPath = req.nextUrl.pathname;
+
+  if (requestPath === "/config") {
+    log.warn({ url: req.nextUrl }, "Processing unexpected request for /config in middleware");
+    return NextResponse.next(); // Allow access without authentication
+  }
+
   /*
    * Next.js middleware doesn't support reading files, so here we make a (cached)
    * call to the /config endpoint within the same application :(
    */
   const configUrl = `http://127.0.0.1:${process.env.PORT || '3000'}/config`;
-  log.debug({ configUrl }, "Fetching OIDC configuration");
+  log.debug({ url: req.nextUrl, configUrl }, "Fetching OIDC configuration");
 
   let oidcEnabled = await fetch(configUrl, {
     cache: "force-cache",
@@ -60,9 +68,6 @@ export default async function middleware(req: NextRequest) {
       log.warn({ err, configUrl }, "Failed to fetch OIDC config, defaulting to false");
       return false;
     });
-
-  const searchParams = req.nextUrl.searchParams;
-  const requestPath = req.nextUrl.pathname;
 
   // Explicitly check if the request is for `/api/schema` with required query parameters
   const isSchemaPublic =
