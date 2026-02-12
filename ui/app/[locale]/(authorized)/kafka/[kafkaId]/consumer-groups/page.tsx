@@ -21,7 +21,7 @@ export async function generateMetadata() {
 }
 
 const sortMap: Record<(typeof SortableColumns)[number], string> = {
-  name: "name",
+  groupId: "groupId",
   state: "state",
 };
 
@@ -42,7 +42,7 @@ export default function ConsumerGroupsPage({
   const id = searchParams["id"];
   const pageSize = stringToInt(searchParams.perPage) || 20;
   const sort = (searchParams["sort"] ||
-    "name") as SortableConsumerGroupTableColumns;
+    "groupId") as SortableConsumerGroupTableColumns;
   const sortDir = (searchParams["sortDir"] || "asc") as "asc" | "desc";
   const pageCursor = searchParams["page"];
   const consumerGroupState = (searchParams["consumerGroupState"] || "")
