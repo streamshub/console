@@ -6,7 +6,7 @@ const meta: Meta<typeof ButtonLink> = {
   component: ButtonLink,
   args: {
     children: "Click Me",
-    href: "/",
+    href: "#",
   },
   argTypes: {
     variant: {
