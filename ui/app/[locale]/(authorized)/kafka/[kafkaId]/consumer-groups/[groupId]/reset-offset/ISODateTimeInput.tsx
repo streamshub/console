@@ -35,6 +35,7 @@ export function ISODateTimeInput({
 }: Props) {
   const t = useTranslations("ConsumerGroupsTable");
   const [inputValue, setInputValue] = useState(value);
+  const [displayZone, setDisplayZone] = useState<"UTC" | "LOCAL">("UTC");
   const [originalOffset, setOriginalOffset] = useState<string | null>(null);
 
   useEffect(() => {
@@ -86,9 +87,9 @@ export function ISODateTimeInput({
   };
 
   const handleConvert = (target: "UTC" | "LOCAL") => {
-    if (!parsedDate) return;
-
+    if (hasError || !parsedDate) return;
     let converted: string;
+
     if (target === "UTC") {
       converted = formatInTimeZone(
         parsedDate,
@@ -98,6 +99,7 @@ export function ISODateTimeInput({
     } else {
       const targetZone =
         originalOffset || Intl.DateTimeFormat().resolvedOptions().timeZone;
+
       converted = formatInTimeZone(
         parsedDate,
         targetZone,
@@ -105,10 +107,10 @@ export function ISODateTimeInput({
       );
     }
 
+    setDisplayZone(target);
     setInputValue(converted);
     onValidChange(converted);
   };
-
   return (
     <FormGroup label={label}>
       <TextInput
@@ -119,37 +121,37 @@ export function ISODateTimeInput({
         onChange={handleChange}
       />
 
-      {!hasError && timeType !== "INVALID" && (
-        <FormHelperText>
-          <HelperText>
-            <HelperTextItem>
-              {timeType === "UTC" ? (
-                <>
-                  {t("time_in_UTC")}{" "}
-                  <Button
-                    variant="link"
-                    isInline
-                    onClick={() => handleConvert("LOCAL")}
-                  >
-                    {t("change_to_local")}
-                  </Button>
-                </>
-              ) : (
-                <>
-                  {t("time_in_local")}{" "}
-                  <Button
-                    variant="link"
-                    isInline
-                    onClick={() => handleConvert("UTC")}
-                  >
-                    {t("change_to_utc")}
-                  </Button>
-                </>
-              )}
-            </HelperTextItem>
-          </HelperText>
-        </FormHelperText>
-      )}
+      <FormHelperText>
+        <HelperText>
+          <HelperTextItem>
+            {displayZone === "UTC" ? (
+              <>
+                {t("time_in_UTC")}{" "}
+                <Button
+                  variant="link"
+                  isInline
+                  isDisabled={hasError || !parsedDate}
+                  onClick={() => handleConvert("LOCAL")}
+                >
+                  {t("change_to_local")}
+                </Button>
+              </>
+            ) : (
+              <>
+                {t("time_in_local")}{" "}
+                <Button
+                  variant="link"
+                  isInline
+                  isDisabled={hasError || !parsedDate}
+                  onClick={() => handleConvert("UTC")}
+                >
+                  {t("change_to_utc")}
+                </Button>
+              </>
+            )}
+          </HelperTextItem>
+        </HelperText>
+      </FormHelperText>
 
       {hasError && (
         <FormHelperText>
