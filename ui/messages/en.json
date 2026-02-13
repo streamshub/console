@@ -532,11 +532,13 @@
     "reset_offset_submitted_successfully": "Reset {groupId} offsets completed successfully",
     "custom_offset_error_message": "The custom offset value is out of range. Enter a value between the earliest and latest offsets.",
     "date_time_placeholder": "Enter Date-time",
-    "invalid_format_error": "Invalid format. Use yyyy-MM-dd'T'HH:mm:ss.SSS or ±HH:mm offset.",
-    "time_in_UTC": "Time is in UTC",
+    "invalid_format_error": "Please enter a valid date-time in the format yyyy-MM-dd'T'HH:mm:ss.SSS",
+    "time_in_UTC": "Date-time is in UTC",
     "change_to_local": "Change to local",
-    "time_in_local": "Time is in local",
-    "change_to_utc": "Change to UTC"
+    "time_in_local": "Date-time is in local",
+    "change_to_utc": "Change to UTC",
+    "no_offsets_found": "No offsets would be changed",
+    "no_offsets_found_description": "The selected timestamp did not match any offsets."
   },
   "CreateTopic": {
     "title": "Topic creation wizard",

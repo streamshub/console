@@ -119,10 +119,12 @@ export function ResetOffset({
         );
 
       case "specificDateTime":
+        if (!hasDateTimeValue) return false;
+
         if (selectDateTimeFormat === "ISO") {
           return isIsoValid;
         }
-        return hasDateTimeValue;
+        return /^\d+$/.test(String(offset.offset));
 
       case "delete":
         return isTopicSelected && hasTopicName && partitionValid;

@@ -42,3 +42,12 @@ export const DeletedOffsetsStory: Story = {
       "$ kafka-consumer-groups --bootstrap-server ${bootstrap-server} --group --reset-offsets",
   },
 };
+
+export const NoOffsetsFromTimestamp: Story = {
+  args: {
+    consumerGroupName: "console_datagen_002-a",
+    newOffset: [],
+    cliCommand:
+      "$ kafka-consumer-groups --bootstrap-server ${bootstrap-server} --group --reset-offsets --to-datetime 2025-01-02T18:37:28-04:00 --dry-run",
+  },
+};
