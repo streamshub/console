@@ -163,4 +163,55 @@ public class ClusterOverviewPageSelectors {
     public static final String COPS_TOPICS_CARD_UNAVAILABLE = new CssBuilder(COPS_TOPICS_CARD_BODY_ITEMS)
         .nth(3)
         .build();
+
+    public static final String COPS_DISK_SPACE_CHART_NODE_TEXT_ITEMS = new CssBuilder(COPS_CLUSTER_CARDS)
+        .withChild()
+        .withElementDiv().nth(2).withChild()
+        .withElementDiv().withComponentCard().withChild()
+        .withElementDiv().withComponentCard().withSubComponentBody().withChild()
+        .withElementDiv().withLayoutFlex().withChild()
+        .withElementDiv().nth(2).withChild()
+        .withElementDiv().withComponentChart().withChild()
+        .withElementSvg().withChild()
+        .withElementG().nth(4).withChild()
+        .withElementText()
+        .build();
+
+    public static final String COPS_CPU_USAGE_CHART_NODE_TEXT_ITEMS = new CssBuilder(COPS_CLUSTER_CARDS)
+        .withChild()
+        .withElementDiv().nth(2).withChild()
+        .withElementDiv().withComponentCard().withChild()
+        .withElementDiv().withComponentCard().withSubComponentBody().withChild()
+        .withElementDiv().withLayoutFlex().withChild()
+        .withElementDiv().nth(4).withChild()
+        .withElementDiv().withComponentChart().withChild()
+        .withElementSvg().withChild()
+        .withElementG().nth(4).withChild()
+        .withElementText()
+        .build();
+
+    public static final String COPS_MEMORY_USAGE_CHART_NODE_TEXT_ITEMS = new CssBuilder(COPS_CLUSTER_CARDS)
+        .withChild()
+        .withElementDiv().nth(2).withChild()
+        .withElementDiv().withComponentCard().withChild()
+        .withElementDiv().withComponentCard().withSubComponentBody().withChild()
+        .withElementDiv().withLayoutFlex().withChild()
+        .withElementDiv().nth(6).withChild()
+        .withElementDiv().withComponentChart().withChild()
+        .withElementSvg().withChild()
+        .withElementG().nth(4).withChild()
+        .withElementText()
+        .build();
+
+    public static final String COPS_TOPIC_BYTES_CHART_NODE_TEXT_ITEMS = new CssBuilder(COPS_TOPIC_COLUMN_CARD_ITEMS)
+        .withChild()
+        .withElementDiv().withComponentCard().withChild()
+        .withElementDiv().withComponentCard().withSubComponentBody().withChild()
+        .withElementDiv().withLayoutFlex().withChild()
+        .withElementDiv().withChild()
+        .withElementDiv().withComponentChart().withChild()
+        .withElementSvg().withChild()
+        .withElementG().nth(4).withChild()
+        .withElementText()
+        .build();
 }
