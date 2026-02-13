@@ -1,7 +1,8 @@
 import { expect, test } from "./authenticated-test";
 
 test.beforeEach(async ({ authenticatedPage }) => {
-  await authenticatedPage.goToFirstTopic();
+  await authenticatedPage.goToGroups();
+  await authenticatedPage.clickFirstLinkInTheTable("groups-listing", "Topics");
 });
 
 test("Topics consumers", async ({ page, authenticatedPage }) => {
@@ -10,26 +11,26 @@ test("Topics consumers", async ({ page, authenticatedPage }) => {
   });
   await test.step("Topics consumers page should display table", async () => {
     await authenticatedPage.waitForTableLoaded();
-    if (await page.getByText("No groups").isVisible()) {
+    if (await page.getByRole('heading', { name: 'No groups found' }).isVisible()) {
       return;
     }
-    expect(await page.innerText("body")).toContain("Group ID");
-    expect(await page.innerText("body")).toContain("Type");
-    expect(await page.innerText("body")).toContain("Protocol");
-    expect(await page.innerText("body")).toContain("State");
-    expect(await page.innerText("body")).toContain("Overall lag");
-    expect(await page.innerText("body")).toContain("Members");
-    expect(await page.innerText("body")).toContain("Topics");
 
-    await page.waitForSelector('table[aria-label="Groups"] tbody tr');
-    const dataRows = await page
-      .locator('table[aria-label="Groups"] tbody tr')
-      .count();
+    const groupsTable = page.locator('table[data-ouia-component-id="topic-groups-listing"]');
+
+    expect(await groupsTable.innerText()).toContain("Group ID");
+    expect(await groupsTable.innerText()).toContain("Type");
+    expect(await groupsTable.innerText()).toContain("Protocol");
+    expect(await groupsTable.innerText()).toContain("State");
+    expect(await groupsTable.innerText()).toContain("Overall lag");
+    expect(await groupsTable.innerText()).toContain("Members");
+    expect(await groupsTable.innerText()).toContain("Topics");
+
+    await groupsTable.locator("tbody").waitFor();
+    const dataRows = await groupsTable.locator("tbody tr").count();
     expect(dataRows).toBeGreaterThan(0);
 
-    const dataCells = await page
-      .locator('table[aria-label="Groups"] tbody tr td')
-      .evaluateAll((tds) => tds.map((td) => td.Content?.trim() ?? ""));
+    const dataCells = await groupsTable.locator("tbody tr td")
+      .evaluateAll((tds) => tds.map((td) => td.innerHTML?.trim() ?? ""));
     expect(dataCells.length).toBeGreaterThan(0);
   });
 });

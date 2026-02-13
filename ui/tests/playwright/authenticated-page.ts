@@ -51,7 +51,7 @@ export class AuthenticatedPage {
 
   async goToFirstTopic(waitForLoaded = true) {
     await this.goToTopics(waitForLoaded);
-    await this.clickFirstLinkInTheTable("Topics");
+    await this.clickFirstLinkInTheTable("topics-listing");
     if (waitForLoaded) {
       // wait for 'Topics' link to be in the breadcrumbs
       await expect(
@@ -94,13 +94,13 @@ export class AuthenticatedPage {
     ).toBeHidden();
   }
 
-  async clickFirstLinkInTheTable(tableLabel: string) {
+  async clickFirstLinkInTheTable(ouiaId: string, dataLabel?: string) {
     const link = this.page
-      .locator(`table[aria-label="${tableLabel}"]`)
+      .locator(`table[data-ouia-component-id="${ouiaId}"]`)
       .locator("tbody")
       .locator("tr")
       .first()
-      .locator("td a")
+      .locator(`td${dataLabel? `[data-label="${dataLabel}"]` : ""} a`)
       .first();
     link.click();
   }

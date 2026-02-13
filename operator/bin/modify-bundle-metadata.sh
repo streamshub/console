@@ -35,7 +35,6 @@ BUNDLE_PATH=${SCRIPT_PATH}/../target/bundle/streamshub-console-operator/
 CSV_FILE_PATH=${BUNDLE_PATH}/manifests/streamshub-console-operator.clusterserviceversion.yaml
 
 api_name="console-api"
-ui_name="console-ui"
 operator_name="console-operator"
 
 echo "[INFO] Modify values and replace placeholders in ${CSV_FILE_PATH}"
@@ -105,20 +104,12 @@ ${YQ} eval -o yaml -i ".spec.install.spec.deployments[0].spec.template.metadata.
 # Add Env for operator deployment that references API and UI images with digest instead of tag
 echo "[DEBUG] Add UI and API images to CSV"
 
-ui_image_with_tag=${image_registry}/${ui_name}:${image_tag}
-ui_image_digest=$(${SKOPEO} inspect --tls-verify=false --override-os=linux --format "{{ .Digest }}" "${SKOPEO_TRANSPORT}${ui_image_with_tag}")
-ui_image_with_digest="${image_registry}/${ui_name}@${ui_image_digest}"
-echo "[DEBUG] Using UI image: ${ui_image_with_digest}"
-
 api_image_with_tag=${image_registry}/${api_name}:${image_tag}
 api_image_digest=$(${SKOPEO} inspect --tls-verify=false --override-os=linux --format "{{ .Digest }}" "${SKOPEO_TRANSPORT}${api_image_with_tag}")
 api_image_with_digest="${image_registry}/${api_name}@${api_image_digest}"
 echo "[DEBUG] Using API image: ${api_image_with_digest}"
 
 ${YQ} eval -o yaml -i '.spec.install.spec.deployments[0].spec.template.spec.containers[0].env += [{
-  "name": "CONSOLE_DEPLOYMENT_DEFAULT_UI_IMAGE",
-  "value": "'${ui_image_with_digest}'"
-}, {
   "name": "CONSOLE_DEPLOYMENT_DEFAULT_API_IMAGE",
   "value": "'${api_image_with_digest}'"
 }]' "${CSV_FILE_PATH}"
@@ -130,9 +121,6 @@ ${YQ} eval -o yaml -i '.spec.relatedImages += [{
 }, {
   "name": "streamshub-console-api",
   "image": "'${api_image_with_digest}'"
-}, {
-  "name": "streamshub-console-ui",
-  "image": "'${ui_image_with_digest}'"
 }]' "${CSV_FILE_PATH}"
 
 for full_arch in ${PLATFORMS//,/ } ; do

@@ -93,8 +93,9 @@ public class AuthorizationInterceptor {
         var segments = requestUri.getPathSegments();
         var segmentCount = segments.size();
 
-        // skip the first segment `/api`
-        String rootResource = segments.get(1).getPath();
+        // Path prefix `/api` is not in the segments due to configuration
+        // quarkus.rest.path=/api.
+        String rootResource = segments.get(0).getPath();
 
         String resource = rootResource;
         String resourceDisplay = null;
@@ -102,8 +103,8 @@ public class AuthorizationInterceptor {
         String resourceNameDisplay = null;
 
         if (ResourceTypes.Global.KAFKAS.value().equals(rootResource)) {
-            if (segmentCount > 2) {
-                String kafkaId = segments.get(2).getPath();
+            if (segmentCount > 1) {
+                String kafkaId = segments.get(1).getPath();
                 KafkaContext ctx = Optional.ofNullable(contexts.get(kafkaId))
                         .orElseThrow(() -> ClientFactory.NO_SUCH_KAFKA.apply(kafkaId));
 
@@ -114,7 +115,7 @@ public class AuthorizationInterceptor {
                  * path and the configuration originates from the Kafka-level `security`
                  * key, scoped to the Kafka cluster under which it is specified.
                  */
-                if (segmentCount > 3) {
+                if (segmentCount > 2) {
                     StringBuilder resourceBuilder = new StringBuilder();
                     setKafkaResource(resourceBuilder, segments, resourceName);
                     String rawResource = resourceBuilder.toString();
@@ -126,8 +127,8 @@ public class AuthorizationInterceptor {
                 }
             }
         } else {
-            if (segmentCount > 2) {
-                resourceName.set(segments.get(2).getPath());
+            if (segmentCount > 1) {
+                resourceName.set(segments.get(1).getPath());
             }
         }
 
@@ -144,13 +145,13 @@ public class AuthorizationInterceptor {
         var segmentCount = segments.size();
         UnaryOperator<String> converter = UnaryOperator.identity();
 
-        for (int s = 3; s < segmentCount; s++) {
+        for (int s = 2; s < segmentCount; s++) {
             String segment = segments.get(s).getPath();
 
-            if (s == 4) {
+            if (s == 3) {
                 resourceName.set(converter.apply(segment));
             } else {
-                if (s == 3) {
+                if (s == 2) {
                     switch (ResourceTypes.forValue(segment, Kafka.class)) {
                         case GROUPS:
                             converter = Group::decodeGroupId;

@@ -44,7 +44,7 @@ import com.github.streamshub.console.config.security.Privilege;
 
 import io.xlate.validation.constraints.Expression;
 
-@Path("/api/kafkas")
+@Path("kafkas")
 @Tag(name = "Kafka Cluster Resources")
 public class KafkaClustersResource {
 

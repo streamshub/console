@@ -25,7 +25,7 @@ import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
 import io.fabric8.kubernetes.client.dsl.base.ResourceDefinitionContext;
 
-@Path("/api/metadata")
+@Path("metadata")
 @Tag(name = "Application Metadata Resource")
 @ApplicationScoped
 public class MetadataResource {

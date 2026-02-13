@@ -13,13 +13,13 @@ test("Topics configuration", async ({ page, authenticatedPage }) => {
     await page.waitForFunction(() => {
       return (
         document.querySelectorAll(
-          'table[aria-label="Topic configuration"] tbody tr',
+          'table[data-ouia-component-id="topic-configuration-table"] tbody tr',
         ).length > 0
       );
     });
 
     const dataCells = await page
-      .locator('table[aria-label="Topic configuration"] tbody tr td')
+      .locator('table[data-ouia-component-id="topic-configuration-table"] tbody tr td')
       .evaluateAll((tds) => tds.map((td) => td.innerHTML?.trim() ?? ""));
 
     expect(dataCells.length).toBeGreaterThan(0);

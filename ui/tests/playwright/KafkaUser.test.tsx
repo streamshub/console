@@ -1,3 +1,4 @@
+
 import { expect, test } from "./authenticated-test";
 
 test.beforeEach(async ({ authenticatedPage }) => {
@@ -20,15 +21,14 @@ test("Kafka Users page: shows table headers or empty state", async ({
     return;
   }
 
+  const usersTable = page.locator('table[data-ouia-component-id="kafka-users-listing"]');
+
   await test.step("Table is visible", async () => {
-    await expect(page.getByLabel("kafka user table")).toBeVisible();
+    await expect(usersTable).toBeVisible();
   });
 
   await test.step("Verify table headers", async () => {
-    const headerRows = await page
-      .locator('table[aria-label="kafka user table"] thead tr')
-      .all();
-
+    const headerRows = await usersTable.locator("thead tr").all();
     const headerRow = headerRows[0]; // First row of the header
 
     expect(await headerRow.locator("th").nth(0).innerText()).toBe("Name");
@@ -43,11 +43,11 @@ test("Kafka Users page: shows table headers or empty state", async ({
   });
 
   await test.step("Verify table rows exist", async () => {
-    const rows = page.locator('table[aria-label="kafka user table"] tbody tr');
+    const rows = usersTable.locator("tbody tr");
     expect(await rows.count()).toBeGreaterThan(0);
 
-    const dataCells = await page
-      .locator('table[aria-label="kafka user table"] tbody tr td')
+    const dataCells = await usersTable
+      .locator("tbody tr td")
       .evaluateAll((tds) => tds.map((td) => td.innerHTML?.trim() ?? ""));
 
     expect(dataCells.length).toBeGreaterThan(0);

@@ -13,9 +13,15 @@ public class Containers {
             "The template allows users to specify how the Kubernetes resources are generated.")
     ContainerTemplateSpec api;
 
-    @JsonPropertyDescription("Template for the Console UI server container. " +
-            "The template allows users to specify how the Kubernetes resources are generated.")
-    ContainerTemplateSpec ui;
+    /**
+     * @deprecated the UI container is no longer used
+     */
+    @Deprecated(forRemoval = true, since = "0.13.0")
+    @JsonPropertyDescription("""
+            DEPRECATED: The Console UI no longer uses a separate container. This configuration \
+            is ignored and will be removed in the next version of the Console custom resource API.
+            """)
+    ContainerTemplateSpec ui; // NOSONAR
 
     public ContainerTemplateSpec getApi() {
         return api;
@@ -25,11 +31,19 @@ public class Containers {
         this.api = api;
     }
 
-    public ContainerTemplateSpec getUi() {
+    /**
+     * @deprecated the UI container is no longer used
+     */
+    @Deprecated(forRemoval = true, since = "0.13.0")
+    public ContainerTemplateSpec getUi() { // NOSONAR
         return ui;
     }
 
-    public void setUi(ContainerTemplateSpec ui) {
+    /**
+     * @deprecated the UI container is no longer used
+     */
+    @Deprecated(forRemoval = true, since = "0.13.0")
+    public void setUi(ContainerTemplateSpec ui) { // NOSONAR
         this.ui = ui;
     }
 }

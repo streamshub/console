@@ -29,7 +29,7 @@ import io.apicurio.registry.resolver.DefaultSchemaResolver;
 import io.apicurio.registry.resolver.SchemaResolver;
 import io.apicurio.registry.resolver.client.RegistryClientFacade;
 
-@Path("/api/registries/{registryId}/schemas/{schemaId}")
+@Path("registries/{registryId}/schemas/{schemaId}")
 @Tag(name = "Schema Registry Resources")
 public class SchemasResource {
 

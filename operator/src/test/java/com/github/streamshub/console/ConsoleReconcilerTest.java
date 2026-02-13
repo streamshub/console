@@ -100,8 +100,6 @@ class ConsoleReconcilerTest extends ConsoleReconcilerTestBase {
 
         assertEquals(config.getValue("console.deployment.default-api-image", String.class),
                 consoleContainers.get(0).getImage());
-        assertEquals(config.getValue("console.deployment.default-ui-image", String.class),
-                consoleContainers.get(1).getImage());
 
         awaitReady(consoleCR);
     }
@@ -161,7 +159,6 @@ class ConsoleReconcilerTest extends ConsoleReconcilerTestBase {
                     .endMetricsSource()
                     .withNewImages()
                         .withApi("deprecated-api-image")
-                        .withUi("deprecated-ui-image")
                     .endImages()
                     .addToEnv(new EnvVarBuilder()
                             .withName("DEPRECATED_API_VAR")
@@ -181,19 +178,6 @@ class ConsoleReconcilerTest extends ConsoleReconcilerTestBase {
                                         .build())
                             .endSpec()
                         .endApi()
-                        .withNewUi()
-                            .withNewSpec()
-                                .withImage("custom-ui-image")
-                                .withResources(new ResourceRequirementsBuilder()
-                                        .withRequests(Map.of("cpu", Quantity.parse("100m")))
-                                        .withLimits(Map.of("cpu", Quantity.parse("200m")))
-                                        .build())
-                                .addToEnv(new EnvVarBuilder()
-                                        .withName("CUSTOM_UI_VAR")
-                                        .withValue("value2")
-                                        .build())
-                            .endSpec()
-                        .endUi()
                     .endContainers()
                     .addNewKafkaCluster()
                         .withName(kafkaCR.getMetadata().getName())
@@ -223,16 +207,6 @@ class ConsoleReconcilerTest extends ConsoleReconcilerTestBase {
                 .filter(e -> e.getName().equals("DEPRECATED_API_VAR")).map(EnvVar::getValue).findFirst().orElseThrow());
         assertEquals("value1", apiContainer.getEnv().stream()
                 .filter(e -> e.getName().equals("CUSTOM_API_VAR")).map(EnvVar::getValue).findFirst().orElseThrow());
-
-        var uiContainer = consoleContainers.get(1);
-        assertEquals("custom-ui-image", uiContainer.getImage());
-        assertEquals(new ResourceRequirementsBuilder()
-                .withRequests(Map.of("cpu", Quantity.parse("100m")))
-                .withLimits(Map.of("cpu", Quantity.parse("200m")))
-                .build(), uiContainer.getResources());
-        assertEquals(7, uiContainer.getEnv().size()); // 1 override + 6 from YAML template
-        assertEquals("value2", uiContainer.getEnv().stream()
-                .filter(e -> e.getName().equals("CUSTOM_UI_VAR")).map(EnvVar::getValue).findFirst().orElseThrow());
     }
 
     @Test
