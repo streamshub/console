@@ -26,10 +26,11 @@ import {
   ReactNode,
   Ref,
   useCallback,
+  useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
-import useResizeObserver from "@/libs/use-resize-observer";
 import "./ResponsiveTable.css";
 
 export type RenderHeaderCb<TCol> = (props: {
@@ -37,7 +38,7 @@ export type RenderHeaderCb<TCol> = (props: {
   key: string;
   column: TCol;
   colIndex: number;
-}) => ReactElement<ResponsiveThProps>;
+}) => ReactElement<ThProps>;
 
 export type RenderCellCb<TRow, TCol> = (props: {
   Td: typeof Td;
@@ -46,7 +47,7 @@ export type RenderCellCb<TRow, TCol> = (props: {
   colIndex: number;
   rowIndex: number;
   row: TRow;
-}) => ReactElement<ResponsiveTdProps>;
+}) => ReactElement<TdProps>;
 
 export type RenderActionsCb<TRow> = (props: {
   ActionsColumn: typeof ActionsColumn;
@@ -56,7 +57,6 @@ export type RenderActionsCb<TRow> = (props: {
 
 export type ResponsiveTableProps<TRow, TCol> = {
   ariaLabel: string;
-  minimumColumnWidth?: number;
   stackedLayoutBreakpoint?: number;
   columns: readonly TCol[];
   data: TRow[] | undefined;
@@ -65,7 +65,7 @@ export type ResponsiveTableProps<TRow, TCol> = {
   renderActions?: RenderActionsCb<TRow>;
   isColumnSortable?: (
     column: TCol,
-  ) => (ResponsiveThProps["sort"] & { label: string }) | undefined;
+  ) => (ThProps["sort"] & { label: string }) | undefined;
   isRowDeleted?: (props: RowProps<TRow>) => boolean;
   isRowSelected?: (props: RowProps<TRow>) => boolean;
   isRowExpandable?: (props: RowProps<TRow>) => boolean;
@@ -85,14 +85,12 @@ export type ResponsiveTableProps<TRow, TCol> = {
   ) => Omit<TbodyProps, "ref"> & { innerRef?: Ref<HTMLTableSectionElement> };
   tableOuiaId?: string;
   variant?: TableVariant;
-  disableAutomaticColumns?: boolean;
 };
 
 type RowProps<TRow> = { row: TRow; rowIndex: number };
 
 export const ResponsiveTable = <TRow, TCol>({
   ariaLabel,
-  minimumColumnWidth = 250,
   stackedLayoutBreakpoint = 400,
   columns,
   data,
@@ -114,64 +112,62 @@ export const ResponsiveTable = <TRow, TCol>({
   getRowProps = () => ({}),
   children,
   variant,
-  disableAutomaticColumns = true,
 }: PropsWithChildren<ResponsiveTableProps<TRow, TCol>>) => {
   const [expanded, setExpanded] = useState<Record<number, number | undefined>>(
     {},
   );
   const [width, setWidth] = useState(1000);
-  let animationHandle: number;
-  /**
-   * resize the columns on a rAF loop to render the table at 60fps
-   * @param width
-   */
-  const onResize = ({ width }: { width: number | undefined }) => {
-    if (animationHandle) {
-      cancelAnimationFrame(animationHandle);
-    }
-    if (width) {
-      animationHandle = requestAnimationFrame(() => {
-        setWidth(width);
-      });
-    }
-  };
-  const { ref } = useResizeObserver({ onResize });
-  const showColumns = width >= stackedLayoutBreakpoint;
+  const ref = useRef<HTMLTableElement>(null);
+  const animationHandle = useRef<number>(undefined);
 
-  const canColumnBeHidden = useCallback(
-    (index: number): boolean => {
-      if (disableAutomaticColumns === true) {
-        return false;
-      } else if (showColumns) {
-        return index !== 0 && index !== columns.length - 1;
+  // Set up ResizeObserver to track table width
+  useEffect(() => {
+    const element = ref.current;
+    if (!element) return;
+
+    const resizeObserver = new ResizeObserver((entries) => {
+      if (animationHandle.current) {
+        cancelAnimationFrame(animationHandle.current);
       }
-      return true;
-    },
-    [columns.length, disableAutomaticColumns, showColumns],
-  );
+
+      animationHandle.current = requestAnimationFrame(() => {
+        const entry = entries[0];
+        if (entry) {
+          setWidth(entry.contentRect.width);
+        }
+      });
+    });
+
+    resizeObserver.observe(element);
+
+    return () => {
+      if (animationHandle.current) {
+        cancelAnimationFrame(animationHandle.current);
+      }
+      resizeObserver.disconnect();
+    };
+  }, []);
+
+  const showColumns = width >= stackedLayoutBreakpoint;
 
   const header = useMemo(() => {
     const headerCols = columns.map((column, index) => {
-      const Th = forwardRef<HTMLTableCellElement, ThProps>(
-        ({ children, ...props }, ref) => {
+      const ThRef = forwardRef<HTMLTableCellElement, ThProps>((props, ref) => {
+          let { children, className = "", ...otherProps } = props;
           return (
-            <ResponsiveTh
-              position={index}
-              tableWidth={width}
-              columnWidth={minimumColumnWidth}
-              canHide={canColumnBeHidden(index)}
+            <Th ref={ref} 
+              className={className} 
               sort={isColumnSortable ? isColumnSortable(column) : undefined}
-              {...props}
-              ref={ref}
-            >
+              {...otherProps}>
               {children}
-            </ResponsiveTh>
+            </Th>
           );
-        },
-      );
-      Th.displayName = "ResponsiveThCurried";
+      });
+
+      ThRef.displayName = "ResponsiveThCurried";
+      
       return renderHeader({
-        Th,
+        Th: ThRef,
         key: `header_${column}`,
         column,
         colIndex: index,
@@ -179,38 +175,29 @@ export const ResponsiveTable = <TRow, TCol>({
     });
     return renderActions ? [...headerCols, <Th key={"actions"} />] : headerCols;
   }, [
-    canColumnBeHidden,
     columns,
     isColumnSortable,
-    minimumColumnWidth,
     renderHeader,
     renderActions,
-    width,
   ]);
 
   const getTd = useCallback(
     (index: number) => {
-      const Td = forwardRef<HTMLTableCellElement, TdProps>(
-        ({ children, ...props }, ref) => {
+      const TdRef = forwardRef<HTMLTableCellElement, TdProps>((props, ref) => {
+        let { children, className = "", ...otherProps } = props;
           return (
-            <ResponsiveTd
-              position={index}
-              tableWidth={width}
-              columnWidth={minimumColumnWidth}
-              canHide={canColumnBeHidden(index)}
-              {...props}
-              ref={ref}
-            >
+            <Td ref={ref} className={className} {...otherProps}>
               {children}
-            </ResponsiveTd>
+            </Td>
           );
         },
       );
-      Td.displayName = "ResponsiveTdCurried";
-      return Td;
+      TdRef.displayName = "ResponsiveTdCurried";
+      return TdRef;
     },
-    [canColumnBeHidden, minimumColumnWidth, width],
+    [],
   );
+
   const TdList = useMemo(
     () => columns.map((_, index) => getTd(index)),
     [columns, getTd],
@@ -288,11 +275,7 @@ export const ResponsiveTable = <TRow, TCol>({
             : cell;
         });
         const action = !deleted && renderActions && (
-          <ResponsiveTd
-            position={columns.length}
-            tableWidth={width}
-            columnWidth={minimumColumnWidth}
-            canHide={false}
+          <Td
             isActionCell={true}
             data-testid={
               setActionCellOuiaId
@@ -305,7 +288,7 @@ export const ResponsiveTable = <TRow, TCol>({
               row,
               ActionsColumn: BoundActionsColumn,
             })}
-          </ResponsiveTd>
+          </Td>
         );
         const rowExpanded = expanded[rowIndex] !== undefined;
         const rowExpandable =
@@ -383,76 +366,6 @@ export const ResponsiveTable = <TRow, TCol>({
     </Table>
   );
 };
-
-export type ResponsiveThProps = {
-  position: number;
-  tableWidth: number;
-  columnWidth: number;
-  canHide: boolean;
-} & Omit<ThProps, "ref">;
-export const ResponsiveTh = memo(
-  forwardRef<HTMLTableCellElement, ResponsiveThProps>((props, ref) => {
-    const {
-      tableWidth,
-      columnWidth,
-      position,
-      canHide,
-      className = "",
-      children,
-      ...otherProps
-    } = props;
-    const responsiveClass =
-      canHide && tableWidth < columnWidth * (position + 1)
-        ? "pf-m-hidden"
-        : "pf-m-visible";
-
-    return (
-      <Th
-        ref={ref}
-        className={`${responsiveClass} ${className}`}
-        {...otherProps}
-      >
-        {children}
-      </Th>
-    );
-  }),
-);
-ResponsiveTh.displayName = "ResponsiveTh";
-
-export type ResponsiveTdProps = {
-  position: number;
-  tableWidth: number;
-  columnWidth: number;
-  canHide: boolean;
-} & Omit<TdProps, "ref">;
-export const ResponsiveTd = memo(
-  forwardRef<HTMLTableCellElement, ResponsiveTdProps>((props, ref) => {
-    const {
-      tableWidth,
-      columnWidth,
-      position,
-      canHide,
-      className = "",
-      children,
-      ...otherProps
-    } = props;
-    const responsiveClass =
-      canHide && tableWidth < columnWidth * (position + 1)
-        ? "pf-m-hidden"
-        : "pf-m-visible";
-
-    return (
-      <Td
-        ref={ref}
-        className={`${responsiveClass} ${className}`}
-        {...otherProps}
-      >
-        {children}
-      </Td>
-    );
-  }),
-);
-ResponsiveTd.displayName = "ResponsiveTd";
 
 export type DeletableRowProps = PropsWithChildren<{
   isSelected: boolean;

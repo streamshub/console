@@ -31,7 +31,6 @@ export default {
   component: ResponsiveTable,
   args: {
     ariaLabel: "Table title",
-    minimumColumnWidth: 250,
     data: sampleData,
     columns,
     hasActions: true,
@@ -158,7 +157,7 @@ export const Example: Story = {
     await userEvent.click(actions[0]);
     await expect(args.onRowClick).not.toHaveBeenCalled();
 
-    const firstRow = canvas.getByText(sampleData[0][0]).parentElement;
+    const firstRow = canvas.getByText(sampleData[0][0]).parentElement!;
     await userEvent.click(firstRow);
     await expect(args.onRowClick).toHaveBeenNthCalledWith(1, {
       row: sampleData[0],
@@ -183,7 +182,7 @@ export const NonClickableRows: Story = {
   },
   play: async ({ canvasElement, args }) => {
     const canvas = within(canvasElement);
-    const firstRow = canvas.getByText(sampleData[0][0]).parentElement;
+    const firstRow = canvas.getByText(sampleData[0][0]).parentElement!;
     await userEvent.click(firstRow);
     await expect(args.onRowClick).not.toHaveBeenCalled();
   },

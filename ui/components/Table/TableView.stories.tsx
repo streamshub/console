@@ -28,7 +28,6 @@ export default {
   component: TableViewSampleType,
   args: {
     ariaLabel: "Table title",
-    minimumColumnWidth: 250,
     selectedRow: 3,
     expectedLength: 3,
     page: 1,
