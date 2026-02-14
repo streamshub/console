@@ -1,7 +1,7 @@
 import { KafkaConsumerGroupMembersParams } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/consumer-groups/[groupId]/KafkaConsumerGroupMembers.params";
 import { AppHeader } from "@/components/AppHeader";
 import { Suspense } from "react";
-import { useTranslations } from "next-intl";
+import { getTranslations } from "next-intl/server";
 import { Flex, FlexItem, Content } from "@/libs/patternfly/react-core";
 import { NoDataErrorState } from "@/components/NoDataErrorState";
 import { updateConsumerGroup } from "@/api/consumerGroups/actions";
@@ -9,13 +9,14 @@ import { Offset } from "../../../../../consumer-groups/[groupId]/reset-offset/Re
 import { DryrunDownloadButton } from "./DryrunDownloadButton";
 import RichText from "@/components/RichText";
 
-export default function Page({
-  params: { kafkaId, groupId },
+export default async function Page({
+  params: paramsPromise,
   searchParams,
 }: {
-  params: KafkaConsumerGroupMembersParams;
+  params: Promise<KafkaConsumerGroupMembersParams>;
   searchParams: { data?: string };
 }) {
+  const { kafkaId, groupId } = await paramsPromise;
   return (
     <Suspense fallback={<Header groupIdDisplay={""} offsets={[]} />}>
       <ConnectedAppHeader
@@ -90,14 +91,14 @@ async function ConnectedAppHeader({
   return <Header groupIdDisplay={res.attributes.groupId} offsets={offsets} />;
 }
 
-function Header({
+async function Header({
   groupIdDisplay,
   offsets,
 }: {
   groupIdDisplay: string;
   offsets: Offset[];
 }) {
-  const t = useTranslations();
+  const t = await getTranslations();
 
   return (
     <AppHeader

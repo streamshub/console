@@ -18,12 +18,14 @@ export async function generateMetadata() {
 }
 
 export default async function ConnectedMessagesPage({
-  params: { kafkaId, topicId },
-  searchParams,
+  params: paramsPromise,
+  searchParams: searchParamsPromise,
 }: {
-  params: KafkaTopicParams;
-  searchParams: MessagesSearchParams;
+  params: Promise<KafkaTopicParams>;
+  searchParams: Promise<MessagesSearchParams>;
 }) {
+  const { kafkaId, topicId } = await paramsPromise;
+  const searchParams = await searchParamsPromise;
   const response = await getTopic(kafkaId, topicId);
 
   if (response.errors) {

@@ -21,13 +21,14 @@ export default async function AsyncLayout({
   activeBreadcrumb,
   header,
   modal,
-  params: { kafkaId },
+  params: paramsPromise,
 }: PropsWithChildren<{
-  params: KafkaParams;
+  params: Promise<KafkaParams>;
   header: ReactNode;
   activeBreadcrumb: ReactNode;
   modal: ReactNode;
 }>) {
+  const { kafkaId } = await paramsPromise;
   const authOptions = await getAuthOptions();
   const session = await getServerSession(authOptions);
   const response = await getKafkaCluster(kafkaId);

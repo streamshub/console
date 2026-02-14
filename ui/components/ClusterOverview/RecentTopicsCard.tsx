@@ -12,7 +12,7 @@ import {
 } from "@/libs/patternfly/react-core";
 import { HelpIcon } from "@/libs/patternfly/react-icons";
 import { clientConfig as config } from "@/utils/config";
-import { useTranslations } from "next-intl";
+import { getTranslations } from "next-intl/server";
 import { TopicsTable } from "./components/TopicsTable";
 
 export async function RecentTopicsCard({
@@ -22,7 +22,7 @@ export async function RecentTopicsCard({
   viewedTopics: ViewedTopic[];
   isLoading: boolean;
 }) {
-  const t = useTranslations();
+  const t = await getTranslations();
   const productName = t("common.product");
   const showLearning = await config().then((cfg) => cfg.showLearning);
 

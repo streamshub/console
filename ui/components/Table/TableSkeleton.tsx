@@ -1,5 +1,5 @@
 import { Skeleton } from "@/libs/patternfly/react-core";
-import { Td, Tr } from "@/libs/patternfly/react-table";
+import { Td, Tr, Tbody } from "@/libs/patternfly/react-table";
 import { useTranslations } from "next-intl";
 
 type Props = {
@@ -26,5 +26,5 @@ export function TableSkeleton({ columns, rows, getTd = () => Td }: Props) {
   const skeletonRows = new Array(rows)
     .fill(0)
     .map((_, index) => <Tr key={`row_${index}`}>{skeletonCells}</Tr>);
-  return <>{skeletonRows}</>;
+  return <Tbody>{skeletonRows}</Tbody>;
 }
