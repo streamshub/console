@@ -2,11 +2,12 @@ package com.github.streamshub.systemtests.enums;
 
 public enum ResetOffsetType {
 
-    EARLIEST("Earliest", "earliest"),
-    LATEST("Latest", "latest"),
-    DATE_TIME("DateTime", "datetime"),
+    EARLIEST("Earliest", "--to-earliest"),
+    LATEST("Latest", "--to-latest"),
+    DATE_TIME("DateTime", "--to-datetime"),
     // Is displayed only if resetting with specific partition
-    CUSTOM_OFFSET("CustomOffset", "offset");
+    CUSTOM_OFFSET("CustomOffset", "--to-offset"),
+    DELETE_COMMITED_OFFSETS("DeleteCommitedOffsets", "--delete-offsets");
 
     private final String description;
     private final String command;
