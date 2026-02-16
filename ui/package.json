@@ -4,7 +4,7 @@
   "license": "Apache-2.0",
   "private": true,
   "scripts": {
-    "dev": "NODE_OPTIONS='--require next-logger' next dev --turbopack | pino-pretty",
+    "dev": "NODE_OPTIONS='--require next-logger' next dev | pino-pretty",
     "build": "next build",
     "start": "NODE_OPTIONS='--require next-logger' next start",
     "lint": "next lint",
@@ -29,8 +29,6 @@
     "@tanstack/react-virtual": "^3.13.19",
     "@types/js-yaml": "^4.0.9",
     "@types/node": "25.3.0",
-    "@types/react": "19.0.6",
-    "@types/react-dom": "19.0.2",
     "@types/react-highlight-words": "^0.20.1",
     "classnames": "^2.5.1",
     "convert": "^6.0.0",
