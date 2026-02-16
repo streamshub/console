@@ -120,7 +120,15 @@ export function ISODateTimeInput({
         validated={hasError ? "error" : "default"}
         onChange={handleChange}
       />
-
+      {hasError && (
+        <FormHelperText>
+          <HelperText>
+            <HelperTextItem variant="error">
+              {t("invalid_format_error")}
+            </HelperTextItem>
+          </HelperText>
+        </FormHelperText>
+      )}
       <FormHelperText>
         <HelperText>
           <HelperTextItem>
@@ -152,16 +160,6 @@ export function ISODateTimeInput({
           </HelperTextItem>
         </HelperText>
       </FormHelperText>
-
-      {hasError && (
-        <FormHelperText>
-          <HelperText>
-            <HelperTextItem variant="error">
-              {t("invalid_format_error")}
-            </HelperTextItem>
-          </HelperText>
-        </FormHelperText>
-      )}
     </FormGroup>
   );
 }
