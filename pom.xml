@@ -20,7 +20,7 @@
         <strimzi-api.version>0.50.0</strimzi-api.version>
         <strimzi-oauth.version>0.17.1</strimzi-oauth.version>
         <apicurio-registry.version>3.1.7</apicurio-registry.version>
-        <kiota-http-jdk.version>0.0.31</kiota-http-jdk.version>
+        <kiota-http-jdk.version>0.0.32</kiota-http-jdk.version>
         <kafka.version>4.1.1</kafka.version>
 
         <!-- Test Dependencies -->

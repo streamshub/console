@@ -5,6 +5,8 @@ import {
   CardHeader,
   CardTitle,
   Flex,
+  FlexItem,
+  Switch,
   Title,
   Toolbar,
   ToolbarContent,
@@ -16,26 +18,36 @@ import { ChartIncomingOutgoing } from "./components/ChartIncomingOutgoing";
 import { ChartSkeletonLoader } from "./components/ChartSkeletonLoader";
 import { useTranslations } from "next-intl";
 import { FilterByTopic } from "./components/FilterByTopic";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { FilterByTime } from "./components/FilterByTime";
 import { useTopicMetrics } from "./components/useTopicMetrics";
 import { DurationOptions } from "./components/type";
+import { usePathname } from "next/navigation";
 
-type TopicOption = { id: string; name: string };
+type Visibility = "internal" | "external";
+
+export type TopicOption = {
+  id: string;
+  name: string;
+  managed?: boolean;
+  visibility?: Visibility;
+};
 
 type TopicChartsCardProps = {
   incoming: TimeSeriesMetrics;
   outgoing: TimeSeriesMetrics;
   topicList: TopicOption[];
   kafkaId: string | undefined;
+  includeHidden?: boolean;
 };
 
 export function TopicChartsCard({
   isLoading,
   incoming,
   outgoing,
+  includeHidden: initialIncludeHidden,
   isVirtualKafkaCluster,
-  topicList,
+  topicList = [],
   kafkaId,
 }:
   | ({
@@ -47,8 +59,27 @@ export function TopicChartsCard({
       isVirtualKafkaCluster?: boolean;
     } & Partial<{ [key in keyof TopicChartsCardProps]?: undefined }>)) {
   const t = useTranslations();
+  const pathname = usePathname();
+  const [hideInternal, setHideInternal] = useState(!initialIncludeHidden);
 
   const [selectedTopic, setSelectedTopic] = useState<string | undefined>();
+
+  const filteredTopicList = hideInternal
+    ? topicList.filter((t) => t.visibility !== "internal")
+    : topicList;
+
+  useEffect(() => {
+    if (!selectedTopic) return;
+
+    const existsInFiltered = filteredTopicList.some(
+      (t) => t.id === selectedTopic,
+    );
+
+    if (!existsInFiltered) {
+      setSelectedTopic(undefined);
+    }
+  }, [filteredTopicList, selectedTopic]);
+
   const [duration, setDuration] = useState<DurationOptions>(
     DurationOptions.Last5minutes,
   );
@@ -60,6 +91,18 @@ export function TopicChartsCard({
 
   const displayIncoming = data?.incoming_byte_rate ?? incoming;
   const displayOutgoing = data?.outgoing_byte_rate ?? outgoing;
+
+  const onInternalTopicsChange = (checked: boolean) => {
+    setHideInternal(checked);
+
+    const params = new URLSearchParams(window.location.search);
+    if (checked) {
+      params.delete("includeHidden");
+    } else {
+      params.set("includeHidden", "true");
+    }
+    window.history.replaceState(null, "", `${pathname}?${params.toString()}`);
+  };
 
   const selectedTopicName = topicList?.find(
     (t) => t.id === selectedTopic,
@@ -99,18 +142,50 @@ export function TopicChartsCard({
                 <Toolbar>
                   <ToolbarContent>
                     <ToolbarGroup variant="filter-group">
-                      <FilterByTopic
-                        selectedTopic={selectedTopic}
-                        topicList={topicList}
-                        onSetSelectedTopic={setSelectedTopic}
-                        disableToolbar={isFetching}
-                      />
-                      <FilterByTime
-                        duration={duration}
-                        onDurationChange={setDuration}
-                        disableToolbar={isFetching}
-                        ariaLabel={"Select time range"}
-                      />
+                      <Flex>
+                        <Flex>
+                          <FlexItem>
+                            <Switch
+                              key={"ht"}
+                              label={
+                                <>
+                                  {t("topics.hide_internal_topics")}&nbsp;
+                                  <Tooltip
+                                    content={t(
+                                      "topics.hide_internal_topics_tooltip",
+                                    )}
+                                  >
+                                    <HelpIcon />
+                                  </Tooltip>
+                                </>
+                              }
+                              isChecked={hideInternal}
+                              onChange={(_, checked) =>
+                                onInternalTopicsChange(checked)
+                              }
+                              className={"pf-v6-u-py-xs"}
+                            />
+                          </FlexItem>
+                        </Flex>
+                        <Flex>
+                          <FlexItem>
+                            <FilterByTopic
+                              selectedTopic={selectedTopic}
+                              topicList={filteredTopicList}
+                              onSetSelectedTopic={setSelectedTopic}
+                              disableToolbar={isFetching}
+                            />
+                          </FlexItem>
+                          <FlexItem>
+                            <FilterByTime
+                              duration={duration}
+                              onDurationChange={setDuration}
+                              disableToolbar={isFetching}
+                              ariaLabel={"Select time range"}
+                            />
+                          </FlexItem>
+                        </Flex>
+                      </Flex>
                     </ToolbarGroup>
                   </ToolbarContent>
                 </Toolbar>

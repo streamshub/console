@@ -22,7 +22,7 @@ import RichText from "@/components/RichText";
 import { hasPrivilege } from "@/utils/privileges";
 
 export const ConsumerGroupColumns = [
-  "name",
+  "groupId",
   "state",
   "lag",
   "members",
@@ -36,7 +36,7 @@ export type SortableConsumerGroupTableColumns = Exclude<
   "lag" | "members" | "topics"
 >;
 
-export const SortableColumns = ["name", "state"];
+export const SortableColumns = ["groupId", "state"];
 
 const StateLabel: Record<ConsumerGroupState, { label: ReactNode }> = {
   STABLE: {
@@ -171,7 +171,7 @@ export function ConsumerGroupsTable({
       isColumnSortable={isColumnSortable}
       renderHeader={({ column, key, Th }) => {
         switch (column) {
-          case "name":
+          case "groupId":
             return (
               <Th key={key} width={30}>
                 {t("ConsumerGroupsTable.consumer_group_name")}
@@ -235,7 +235,7 @@ export function ConsumerGroupsTable({
       }}
       renderCell={({ row, column, key, Td }) => {
         switch (column) {
-          case "name":
+          case "groupId":
             return (
               <Td
                 key={key}
