@@ -22,11 +22,8 @@ export function NoDataErrorState({ errors }: { errors: ApiError[] }) {
   }, [errors]);
   return (
     <EmptyState
-      titleText={
-        <Title headingLevel="h4" size="lg">
-          {errors[0].title}
-        </Title>
-      }
+      titleText={errors[0].title}
+      headingLevel={"h4"}
       icon={errorIcon}
       variant={"lg"}
     >
