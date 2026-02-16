@@ -46,6 +46,8 @@ export function Dryrun({
 }) {
   const t = useTranslations("ConsumerGroupsTable");
 
+  const hasOffsets = newOffset && newOffset.length > 0;
+
   // Group offsets by topic
   const groupedTopics = newOffset.reduce<Record<string, NewOffset[]>>(
     (acc, offset) => {
@@ -69,103 +71,110 @@ export function Dryrun({
               </ClipboardCopy>
             </StackItem>
             <StackItem>
-              <Sidebar>
-                {Object.keys(groupedTopics).length >= 3 && (
-                  <SidebarPanel>
-                    <JumpLinks
-                      isVertical
-                      label={
-                        <RichText>
-                          {(tags) => t.rich("jump_to_topic", tags)}
-                        </RichText>
-                      }
-                      offset={10}
-                    >
-                      {Object.keys(groupedTopics).map(
-                        (topicName) =>
-                          topicName && (
-                            <JumpLinksItem
-                              key={topicName}
-                              href={`#${topicName}`}
-                            >
-                              {topicName}
-                            </JumpLinksItem>
-                          ),
-                      )}
-                    </JumpLinks>
-                  </SidebarPanel>
-                )}
-                <SidebarContent
-                  style={{ overflowY: "auto", maxHeight: "500px" }}
-                >
-                  <Flex
-                    direction={{ default: "column" }}
-                    spaceItems={{ default: "spaceItemsXl" }}
+              {!hasOffsets ? (
+                <Alert variant="warning" isInline title={t("no_offsets_found")}>
+                  {t("no_offsets_found_description")}
+                </Alert>
+              ) : (
+                <Sidebar>
+                  {Object.keys(groupedTopics).length >= 3 && (
+                    <SidebarPanel>
+                      <JumpLinks
+                        isVertical
+                        label={
+                          <RichText>
+                            {(tags) => t.rich("jump_to_topic", tags)}
+                          </RichText>
+                        }
+                        offset={10}
+                      >
+                        {Object.keys(groupedTopics).map(
+                          (topicName) =>
+                            topicName && (
+                              <JumpLinksItem
+                                key={topicName}
+                                href={`#${topicName}`}
+                              >
+                                {topicName}
+                              </JumpLinksItem>
+                            ),
+                        )}
+                      </JumpLinks>
+                    </SidebarPanel>
+                  )}
+                  <SidebarContent
+                    style={{ overflowY: "auto", maxHeight: "500px" }}
                   >
-                    {Object.entries(groupedTopics).map(
-                      ([topicName, offsets]) => (
-                        <FlexItem key={topicName}>
-                          <Card component="div">
-                            <CardBody>
-                              <DescriptionList id={`${topicName}`}>
-                                <DescriptionListGroup>
-                                  <DescriptionListTerm>
-                                    {t("topic")}
-                                  </DescriptionListTerm>
-                                  <DescriptionListDescription>
-                                    {topicName}
-                                  </DescriptionListDescription>
-                                </DescriptionListGroup>
-                                <Flex>
-                                  <FlexItem>
-                                    <DescriptionListGroup>
-                                      <DescriptionListTerm>
-                                        {t("partition")}
-                                      </DescriptionListTerm>
-                                      <DescriptionListDescription>
-                                        <List isPlain>
-                                          {offsets
-                                            .sort(
-                                              (a, b) =>
-                                                a.partition - b.partition,
-                                            )
-                                            .map(({ partition }) => (
-                                              <ListItem key={partition}>
-                                                {partition}
-                                              </ListItem>
-                                            ))}
-                                        </List>
-                                      </DescriptionListDescription>
-                                    </DescriptionListGroup>
-                                  </FlexItem>
-                                  <FlexItem>
-                                    <DescriptionListGroup>
-                                      <DescriptionListTerm>
-                                        {t("new_offset")}
-                                      </DescriptionListTerm>
-                                      <DescriptionListDescription>
-                                        <List isPlain>
-                                          {offsets.map(
-                                            ({ partition, offset }) => (
-                                              <ListItem key={partition}>
-                                                {offset ?? t("offset_deleted")}
-                                              </ListItem>
-                                            ),
-                                          )}
-                                        </List>
-                                      </DescriptionListDescription>
-                                    </DescriptionListGroup>
-                                  </FlexItem>
-                                </Flex>
-                              </DescriptionList>
-                            </CardBody>
-                          </Card>
-                        </FlexItem>
-                      ),
-                    )}
-                  </Flex>
-                </SidebarContent>
-              </Sidebar>
+                    <Flex
+                      direction={{ default: "column" }}
+                      spaceItems={{ default: "spaceItemsXl" }}
+                    >
+                      {Object.entries(groupedTopics).map(
+                        ([topicName, offsets]) => (
+                          <FlexItem key={topicName}>
+                            <Card component="div">
+                              <CardBody>
+                                <DescriptionList id={`${topicName}`}>
+                                  <DescriptionListGroup>
+                                    <DescriptionListTerm>
+                                      {t("topic")}
+                                    </DescriptionListTerm>
+                                    <DescriptionListDescription>
+                                      {topicName}
+                                    </DescriptionListDescription>
+                                  </DescriptionListGroup>
+                                  <Flex>
+                                    <FlexItem>
+                                      <DescriptionListGroup>
+                                        <DescriptionListTerm>
+                                          {t("partition")}
+                                        </DescriptionListTerm>
+                                        <DescriptionListDescription>
+                                          <List isPlain>
+                                            {offsets
+                                              .sort(
+                                                (a, b) =>
+                                                  a.partition - b.partition,
+                                              )
+                                              .map(({ partition }) => (
+                                                <ListItem key={partition}>
+                                                  {partition}
+                                                </ListItem>
+                                              ))}
+                                          </List>
+                                        </DescriptionListDescription>
+                                      </DescriptionListGroup>
+                                    </FlexItem>
+                                    <FlexItem>
+                                      <DescriptionListGroup>
+                                        <DescriptionListTerm>
+                                          {t("new_offset")}
+                                        </DescriptionListTerm>
+                                        <DescriptionListDescription>
+                                          <List isPlain>
+                                            {offsets.map(
+                                              ({ partition, offset }) => (
+                                                <ListItem key={partition}>
+                                                  {offset ??
+                                                    t("offset_deleted")}
+                                                </ListItem>
+                                              ),
+                                            )}
+                                          </List>
+                                        </DescriptionListDescription>
+                                      </DescriptionListGroup>
+                                    </FlexItem>
+                                  </Flex>
+                                </DescriptionList>
+                              </CardBody>
+                            </Card>
+                          </FlexItem>
+                        ),
+                      )}
+                    </Flex>
+                  </SidebarContent>
+                </Sidebar>
+              )}
             </StackItem>
             <StackItem>
               <Alert

@@ -212,7 +212,10 @@ export function ResetConsumerOffset({
     } else {
       for (let partition of partitions) {
         if (partition.topicId === offset.topicId) {
-          if (selectedPartition === "allPartitions" || offset.partition === partition.partitionNumber) {
+          if (
+            selectedPartition === "allPartitions" ||
+            offset.partition === partition.partitionNumber
+          ) {
             offsets.push({
               topicId: offset.topicId,
               partition: partition.partitionNumber,
@@ -241,7 +244,9 @@ export function ResetConsumerOffset({
     searchParams.set("data", data);
     searchParams.set("cliCommand", cliCommand);
     router.push(
-      `${baseurl}/${consumerGroup.id}/reset-offset/dryrun?${searchParams.toString()}`,
+      `${baseurl}/${
+        consumerGroup.id
+      }/reset-offset/dryrun?${searchParams.toString()}`,
     );
   };
 
@@ -295,12 +300,12 @@ export function ResetConsumerOffset({
         closeResetOffset();
         addAlert({
           title: t("ConsumerGroupsTable.reset_offset_submitted_successfully", {
-            groupId,
+            groupId: groupId,
           }),
           variant: "success",
         });
       }
-    } catch (e: unknown) {
+    } catch (e) {
       setError({ GeneralError: "Unknown error" });
     } finally {
       setIsLoading(false);
