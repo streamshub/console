@@ -52,6 +52,7 @@ import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Tag(TestTags.REGRESSION)
 public class ConsumerST extends AbstractST {
@@ -186,7 +187,7 @@ public class ConsumerST extends AbstractST {
      * verifying that the consumer group offsets are updated correctly in Kafka
      * and that the UI reflects these changes accurately.</p>
      */
-    public Stream<Arguments> offsetResetScenarios() {
+    public Stream<Arguments> resetOffsetAllTopicsScenarios() {
         final String earliestOffsetIndex = "0";
         // Use index to reset consumers to previous offset to read timestamp
         final String latestOffsetIndex = String.valueOf(MESSAGE_COUNT - 1);
@@ -206,10 +207,29 @@ public class ConsumerST extends AbstractST {
     }
 
     /**
+     * Provides a few parameterized scenarios for verifying consumer group offset reset functionality
+     * across all topics and partitions using different reset types.
+     * Same types as above with added specific offset reset types for single topic.
+     */
+    public Stream<Arguments> resetOffsetSpecificTopicScenarios() {
+        final String earliestOffsetIndex = "0";
+        // Use index to reset consumers to previous offset to read timestamp
+        final String latestOffsetIndex = String.valueOf(MESSAGE_COUNT - 1);
+        final String middleOffsetIndex = String.valueOf((int) Math.ceil(MESSAGE_COUNT / 2.0) - 1);
+
+        return Stream.of(
+            Arguments.of(MESSAGE_COUNT, ResetOffsetType.EARLIEST, null, earliestOffsetIndex),
+            Arguments.of(MESSAGE_COUNT, ResetOffsetType.DATE_TIME, ResetOffsetDateTimeType.UNIX_EPOCH, latestOffsetIndex),
+            Arguments.of(MESSAGE_COUNT, ResetOffsetType.DATE_TIME, ResetOffsetDateTimeType.ISO_8601, middleOffsetIndex),
+            Arguments.of(MESSAGE_COUNT, ResetOffsetType.DELETE_COMMITED_OFFSETS, null, earliestOffsetIndex)
+        );
+    }
+
+    /**
      * Executes parameterized tests for resetting Kafka consumer group offsets
      * across all topics and partitions using the UI.
      *
-     * <p> For each scenario provided by {@link #offsetResetScenarios()}:</p>
+     * <p> For each scenario provided by {@link #resetOffsetAllTopicsScenarios()}:</p>
      * <ul>
      *   <li>Navigates to the Consumer Groups page for the test consumer group.</li>
      *   <li>Verifies the current default offset for each topic.</li>
@@ -231,7 +251,7 @@ public class ConsumerST extends AbstractST {
      */
     @TestBucket(RESET_OFFSET_BUCKET)
     @ParameterizedTest(name = "Type: {1} - DateTime: {2} - Offset: {3}")
-    @MethodSource("offsetResetScenarios")
+    @MethodSource("resetOffsetAllTopicsScenarios")
     void testResetConsumerOffsetAllTopicsAllPartitions(int messageCount,
         ResetOffsetType resetType, ResetOffsetDateTimeType dateTimeType, String expectedOffset) {
 
@@ -275,9 +295,77 @@ public class ConsumerST extends AbstractST {
             tcc.page().navigate(PwPageUrls.getConsumerGroupsResetOffsetPage(tcc, tcc.kafkaName(), Identifiers.encode(RESET_OFFSET_CONSUMER_GROUP_NAME)));
             PwUtils.waitForContainsText(tcc, SingleConsumerGroupPageSelectors.SCGPS_PAGE_HEADER, RESET_OFFSET_CONSUMER_GROUP_NAME, true);
 
-            ConsumerTestUtils.execDryRunAndReset(tcc, resetType, dateTimeType, resetValue);
+            ConsumerTestUtils.execDryRun(tcc, resetType, dateTimeType, resetValue);
+            ConsumerTestUtils.execResetOffset(tcc, resetType, dateTimeType, resetValue);
 
             LOGGER.info("Verify expected consumer offset value");
+            assertEquals(String.valueOf(expectedOffset),
+                KafkaCmdUtils.getConsumerGroupOffset(tcc.namespace(), tcc.kafkaName(), brokerPodName, RESET_OFFSET_CONSUMER_GROUP_NAME, kafkaTopicName,
+                    KafkaClientsUtils.getScramShaConfig(tcc.namespace(), tcc.kafkaUserName(), SecurityProtocol.SASL_PLAINTEXT)));
+        }
+    }
+
+    @TestBucket(RESET_OFFSET_BUCKET)
+    @ParameterizedTest(name = "Type: {1} - DateTime: {2} - Offset: {3}")
+    @MethodSource("resetOffsetSpecificTopicScenarios")
+    void testResetConsumerOffsetSelectedTopic(int messageCount,
+        ResetOffsetType resetType, ResetOffsetDateTimeType dateTimeType, String expectedOffset) {
+
+        final String brokerPodName = ResourceUtils.listKubeResourcesByPrefix(Pod.class, tcc.namespace(), KafkaNamingUtils.brokerPodNamePrefix(tcc.kafkaName())).get(0).getMetadata().getName();
+
+        // Get topics for test from prepared scenario
+        String kafkaTopicName = ResourceUtils.listKubeResourcesByPrefix(KafkaTopic.class, tcc.namespace(), RESET_OFFSET_TOPIC_PREFIX)
+            .stream()
+            .map(kt -> kt.getMetadata().getName())
+            .toList().getFirst();
+
+        assertFalse(kafkaTopicName.isEmpty());
+
+        tcc.page().navigate(PwPageUrls.getConsumerGroupsPage(tcc, tcc.kafkaName(), Identifiers.encode(RESET_OFFSET_CONSUMER_GROUP_NAME)));
+        PwUtils.waitForContainsText(tcc, SingleConsumerGroupPageSelectors.SCGPS_PAGE_HEADER_NAME, RESET_OFFSET_CONSUMER_GROUP_NAME, true);
+        PwUtils.waitForElementEnabledState(tcc, SingleConsumerGroupPageSelectors.SCGPS_RESET_CONSUMER_OFFSET_BUTTON, true, true, TestFrameConstants.GLOBAL_TIMEOUT_MEDIUM);
+
+        LOGGER.info("Verify default consumer offset");
+        KafkaCmdUtils.setConsumerGroupOffset(tcc.namespace(), tcc.kafkaName(), brokerPodName, RESET_OFFSET_CONSUMER_GROUP_NAME, kafkaTopicName, String.valueOf(messageCount),
+            KafkaClientsUtils.getScramShaConfig(tcc.namespace(), tcc.kafkaUserName(), SecurityProtocol.SASL_PLAINTEXT));
+
+        assertEquals(String.valueOf(messageCount),
+            KafkaCmdUtils.getConsumerGroupOffset(tcc.namespace(), tcc.kafkaName(), brokerPodName, RESET_OFFSET_CONSUMER_GROUP_NAME, kafkaTopicName,
+                KafkaClientsUtils.getScramShaConfig(tcc.namespace(), tcc.kafkaUserName(), SecurityProtocol.SASL_PLAINTEXT)));
+
+        String resetValue = expectedOffset;
+        // To determine offset timestamp from offsetNumber
+        if (dateTimeType != null) {
+            if (dateTimeType.equals(ResetOffsetDateTimeType.UNIX_EPOCH)) {
+                resetValue = KafkaCmdUtils.getConsumerOffsetTimestampFromOffset(tcc.namespace(), tcc.kafkaName(), brokerPodName, kafkaTopicName,
+                     KafkaClientsUtils.getScramShaConfig(tcc.namespace(), tcc.kafkaUserName(), SecurityProtocol.SASL_PLAINTEXT), expectedOffset, 0, 1);
+            } else {
+                String epoch = KafkaCmdUtils.getConsumerOffsetTimestampFromOffset(tcc.namespace(), tcc.kafkaName(), brokerPodName, kafkaTopicName,
+                    KafkaClientsUtils.getScramShaConfig(tcc.namespace(), tcc.kafkaUserName(), SecurityProtocol.SASL_PLAINTEXT), expectedOffset, 0, 1);
+                resetValue = Instant.ofEpochMilli(Long.parseLong(epoch)).atOffset(ZoneOffset.UTC).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
+            }
+        }
+
+        tcc.page().navigate(PwPageUrls.getConsumerGroupsResetOffsetPage(tcc, tcc.kafkaName(), Identifiers.encode(RESET_OFFSET_CONSUMER_GROUP_NAME)));
+        PwUtils.waitForContainsText(tcc, SingleConsumerGroupPageSelectors.SCGPS_PAGE_HEADER, RESET_OFFSET_CONSUMER_GROUP_NAME, true);
+        // Dry-run
+        PwUtils.waitForLocatorAndClick(tcc, SingleConsumerGroupPageSelectors.SCGPS_SELECTED_TOPIC_RADIO);
+        PwUtils.waitForLocatorAndFill(tcc, SingleConsumerGroupPageSelectors.SCGPS_SELECTED_TOPIC_INPUT, kafkaTopicName);
+        PwUtils.waitForLocatorAndClick(tcc, SingleConsumerGroupPageSelectors.SCGPS_RESET_PAGE_TOPIC_NAME_DROPDOWN_BUTTON);
+        ConsumerTestUtils.execDryRun(tcc, resetType, dateTimeType, resetValue);
+
+        // Reset offset
+        PwUtils.waitForLocatorAndClick(tcc, SingleConsumerGroupPageSelectors.SCGPS_SELECTED_TOPIC_RADIO);
+        PwUtils.waitForLocatorAndFill(tcc, SingleConsumerGroupPageSelectors.SCGPS_SELECTED_TOPIC_INPUT, kafkaTopicName);
+        PwUtils.waitForLocatorAndClick(tcc, SingleConsumerGroupPageSelectors.SCGPS_RESET_PAGE_TOPIC_NAME_DROPDOWN_BUTTON);
+        ConsumerTestUtils.execResetOffset(tcc, resetType, dateTimeType, resetValue);
+
+        LOGGER.info("Verify expected consumer offset value");
+
+        if (resetType.equals(ResetOffsetType.DELETE_COMMITED_OFFSETS)) {
+            assertTrue(KafkaCmdUtils.verifyConsumerGroupHasDeletedOffsets(tcc.namespace(), tcc.kafkaName(), brokerPodName, RESET_OFFSET_CONSUMER_GROUP_NAME, kafkaTopicName,
+                KafkaClientsUtils.getScramShaConfig(tcc.namespace(), tcc.kafkaUserName(), SecurityProtocol.SASL_PLAINTEXT)));
+        } else {
             assertEquals(String.valueOf(expectedOffset),
                 KafkaCmdUtils.getConsumerGroupOffset(tcc.namespace(), tcc.kafkaName(), brokerPodName, RESET_OFFSET_CONSUMER_GROUP_NAME, kafkaTopicName,
                     KafkaClientsUtils.getScramShaConfig(tcc.namespace(), tcc.kafkaUserName(), SecurityProtocol.SASL_PLAINTEXT)));
