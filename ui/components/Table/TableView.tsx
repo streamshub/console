@@ -212,7 +212,7 @@ export const TableView = <TRow, TCol>({
                 <OverflowMenuControl>
                   <Dropdown
                     isPlain
-                    toggle={(toggleRef:any) => (
+                    toggle={(toggleRef: any) => (
                       <MenuToggle
                         ref={toggleRef}
                         aria-label="kebab dropdown toggle"
@@ -271,11 +271,7 @@ export const TableView = <TRow, TCol>({
         </ToolbarContent>
       </Toolbar>
       <InnerScrollContainer className={"pf-u-h-100"}>
-        <ResponsiveTable
-          {...tableProps}
-          columns={columns}
-          data={data}
-        >
+        <ResponsiveTable {...tableProps} columns={columns} data={data}>
           {emptyStateNoResults}
         </ResponsiveTable>
       </InnerScrollContainer>
