@@ -120,6 +120,7 @@ type Story = StoryObj<typeof ResponsiveTableSampleType>;
 export const Example: Story = {
   play: async ({ canvasElement, args }) => {
     const canvas = within(canvasElement);
+    await canvas.findByText(sampleData[0][0]);
 
     sampleData
       .flatMap((row) => row.slice(0, -1))
@@ -195,7 +196,7 @@ export const NoResults: Story = {
     const canvas = within(canvasElement);
 
     await expect(
-      canvas.getByText(
+      await canvas.findByText(
         "Empty state to show when the data is filtered but has no results",
       ),
     ).toBeInTheDocument();
@@ -206,9 +207,10 @@ export const CustomActionTestId: Story = {
   args: {
     hasCustomActionTestId: true,
   },
-  play: async ({ canvasElement, args }) => {
+  play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await expect(canvas.queryAllByTestId("my-action-row-0")).toHaveLength(1);
+    const cell = await canvas.findByTestId("my-action-row-0");
+    expect(cell).toBeInTheDocument();
   },
 };
 
