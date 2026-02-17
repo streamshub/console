@@ -1,4 +1,4 @@
-import { TableVariant } from "@patternfly/react-table";
+import { TableVariant, Th } from "@patternfly/react-table";
 import { TableView, TableViewProps } from "./Table";
 import { ClusterList } from "@/api/kafka/schema";
 import { useTranslations } from "next-intl";
@@ -8,6 +8,7 @@ import { Tooltip, Truncate } from "@/libs/patternfly/react-core";
 import { HelpIcon } from "@/libs/patternfly/react-icons";
 import { EmptyStateNoMatchFound } from "./Table/EmptyStateNoMatchFound";
 import { KroxyliciousClusterLabel } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/KroxyliciousClusterLabel";
+import { ThSortType } from "@patternfly/react-table/dist/esm/components/Table/base/types";
 
 export const ClusterColumns = [
   "name",
@@ -31,7 +32,7 @@ export function ClustersTable({
   filterName,
   onFilterNameChange,
   onClearAllFilters,
-  isColumnSortable,
+  sortProvider,
 }: {
   clusters: ClusterList[] | undefined;
   authenticated: boolean;
@@ -40,9 +41,10 @@ export function ClustersTable({
   clustersCount: number;
   filterName: string | undefined;
   onFilterNameChange: (name: string | undefined) => void;
+  sortProvider: (column: ClusterTableColumn) => ThSortType | undefined;
 } & Pick<
   TableViewProps<ClusterList, (typeof ClusterColumns)[number]>,
-  "onPageChange" | "onClearAllFilters" | "isColumnSortable"
+  "onPageChange" | "onClearAllFilters"
 >) {
   const t = useTranslations();
 
@@ -65,22 +67,24 @@ export function ClustersTable({
       }
       isFiltered={filterName !== undefined}
       onClearAllFilters={onClearAllFilters}
-      isColumnSortable={isColumnSortable}
       columns={columns}
-      renderHeader={({ column, key, Th }) => {
+      sortProvider={sortProvider}
+      renderHeader={({ column, key }) => {
+        const sortAction = sortProvider(column);
+
         switch (column) {
           case "name":
             return (
-              <Th key={key} width={25}>
+              <Th key={key} width={25} sort={sortAction}>
                 {t("ClustersTable.name")}
               </Th>
             );
           case "version":
-            return <Th key={key}>{t("ClustersTable.kafka_version")}</Th>;
+            return <Th key={key} sort={sortAction}>{t("ClustersTable.kafka_version")}</Th>;
           case "namespace":
-            return <Th key={key}>{t("ClustersTable.project")}</Th>;
+            return <Th key={key} sort={sortAction}>{t("ClustersTable.project")}</Th>;
           case "authentication":
-            return <Th key={key}>{t("ClustersTable.authentication")}</Th>;
+            return <Th key={key} sort={sortAction}>{t("ClustersTable.authentication")}</Th>;
           case "login":
             return (
               <Th

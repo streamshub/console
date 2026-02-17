@@ -7,10 +7,9 @@ type Props = {
   rows: number;
   getTd?: (index: number) => typeof Td;
 };
-export function TableSkeleton({ columns, rows, getTd = () => Td }: Props) {
+export function TableSkeleton({ columns, rows }: Props) {
   const t = useTranslations();
   const skeletonCells = new Array(columns).fill(0).map((_, index) => {
-    const Td = getTd(index);
     return (
       <Td key={`cell_${index}`}>
         <Skeleton

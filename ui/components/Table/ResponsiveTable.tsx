@@ -1,3 +1,5 @@
+
+import dynamic from "next/dynamic";
 import { TableSkeleton } from "@/components/Table/TableSkeleton";
 import type {
   ActionsColumnProps,
@@ -16,7 +18,7 @@ import {
   Thead,
   Tr,
 } from "@/libs/patternfly/react-table";
-import {
+import React, {
   cloneElement,
   CSSProperties,
   forwardRef,
@@ -34,7 +36,6 @@ import {
 import "./ResponsiveTable.css";
 
 export type RenderHeaderCb<TCol> = (props: {
-  Th: typeof Th;
   key: string;
   column: TCol;
   colIndex: number;
@@ -63,9 +64,6 @@ export type ResponsiveTableProps<TRow, TCol> = {
   renderHeader: RenderHeaderCb<TCol>;
   renderCell: RenderCellCb<TRow, TCol>;
   renderActions?: RenderActionsCb<TRow>;
-  isColumnSortable?: (
-    column: TCol,
-  ) => (ThProps["sort"] & { label: string }) | undefined;
   isRowDeleted?: (props: RowProps<TRow>) => boolean;
   isRowSelected?: (props: RowProps<TRow>) => boolean;
   isRowExpandable?: (props: RowProps<TRow>) => boolean;
@@ -97,7 +95,6 @@ export const ResponsiveTable = <TRow, TCol>({
   renderHeader,
   renderCell,
   renderActions,
-  isColumnSortable,
   isRowDeleted,
   isRowSelected,
   isRowExpandable,
@@ -152,57 +149,28 @@ export const ResponsiveTable = <TRow, TCol>({
 
   const header = useMemo(() => {
     const headerCols = columns.map((column, index) => {
-      const ThRef = forwardRef<HTMLTableCellElement, ThProps>((props, ref) => {
-          let { children, className = "", ...otherProps } = props;
-          return (
-            <Th ref={ref} 
-              className={className} 
-              sort={isColumnSortable ? isColumnSortable(column) : undefined}
-              {...otherProps}>
-              {children}
-            </Th>
-          );
-      });
-
-      ThRef.displayName = "ResponsiveThCurried";
-      
       return renderHeader({
-        Th: ThRef,
-        key: `header_${column}`,
-        column,
-        colIndex: index,
-      });
+            key: `header_${column}`,
+            column,
+            colIndex: index,
+          });
     });
     return renderActions ? [...headerCols, <Th key={"actions"} />] : headerCols;
   }, [
     columns,
-    isColumnSortable,
     renderHeader,
     renderActions,
   ]);
 
-  const getTd = useCallback(
-    (index: number) => {
-      const TdRef = forwardRef<HTMLTableCellElement, TdProps>((props, ref) => {
-        let { children, className = "", ...otherProps } = props;
-          return (
-            <Td ref={ref} className={className} {...otherProps}>
-              {children}
-            </Td>
-          );
-        },
-      );
-      TdRef.displayName = "ResponsiveTdCurried";
-      return TdRef;
-    },
-    [],
-  );
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
-  const TdList = useMemo(
-    () => columns.map((_, index) => getTd(index)),
-    [columns, getTd],
-  );
-
+  if (!mounted) {
+    return null;
+  }
+  
   return (
     <Table
       aria-label={ariaLabel}
@@ -223,7 +191,6 @@ export const ResponsiveTable = <TRow, TCol>({
         <TableSkeleton
           columns={columns.length}
           rows={expectedLength}
-          getTd={getTd}
         />
       )}
       {data?.map((row, rowIndex) => {
@@ -238,7 +205,7 @@ export const ResponsiveTable = <TRow, TCol>({
             : undefined;
         const cells = columns.map((column, colIndex) => {
           const cell = renderCell({
-            Td: TdList[colIndex],
+            Td,
             key: `row_${rowIndex}_cell_${column}`,
             column,
             colIndex,
@@ -378,7 +345,7 @@ export const DeletableRow = memo<DeletableRowProps>(
   ({ isDeleted, isSelected, onClick, children, rowOuiaId, style }) => {
     return (
       <Tr
-        onRowClick={(e) => {
+        onRowClick={(e: any) => {
           if (e?.target instanceof HTMLElement) {
             if (!["a", "button"].includes(e.target.tagName.toLowerCase())) {
               onClick && onClick();
