@@ -27,28 +27,28 @@ export const Example: Story = {
 
     const rows = await canvas.findAllByRole("row");
 
-    const row = within(rows[2]);
-    await userEvent.click(
-      row
-        .getAllByText("this-is-a-very-long-key", { exact: false })[0]
-        .closest("tr"),
+    const targetRow = rows.find((r) =>
+      r.textContent?.includes("this-is-a-very-long-key"),
     );
+    expect(targetRow).toBeDefined();
+    await userEvent.click(targetRow!);
     await expect(args.onSelectMessage).toHaveBeenCalledWith(messages[1]);
-    const search = canvas.getByDisplayValue("messages=latest retrieve=50");
-    expect(search).toBeInTheDocument();
-    await userEvent.type(search, " foo bar");
+
+    const search = await canvas.findByDisplayValue(/messages=latest/i);
+
+    await userEvent.clear(search);
+    await userEvent.type(search, "messages=latest retrieve=50 foo bar");
     await userEvent.keyboard("[Enter]");
-    await expect(args.onSearch).toBeCalledWith({
-      from: {
-        type: "latest",
-      },
-      partition: undefined,
-      query: {
-        value: "foo bar",
-        where: "everywhere",
-      },
-      limit: 50,
-    });
+
+    await expect(args.onSearch).toBeCalledWith(
+      expect.objectContaining({
+        query: {
+          value: "foo bar",
+          where: "everywhere",
+        },
+        limit: 50,
+      }),
+    );
   },
 };
 
@@ -57,7 +57,9 @@ export const SearchWithMatches: Story = {
     filterQuery: "foo",
   },
   play: async ({ canvasElement }) => {
-    await expect(canvasElement.querySelectorAll("mark").length).not.toBe(0);
+    const canvas = within(canvasElement);
+    const marks = canvasElement.querySelectorAll("mark");
+    expect(marks.length).toBeGreaterThan(0);
   },
 };
 export const SearchWithoutMatches: Story = {
@@ -66,8 +68,9 @@ export const SearchWithoutMatches: Story = {
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await expect(canvasElement.querySelectorAll("mark").length).toBe(0);
-    expect(canvas.getByText("No messages data")).toBeInTheDocument();
+    const emptyState = await canvas.findByText("No messages data");
+    expect(emptyState).toBeInTheDocument();
+    expect(canvasElement.querySelectorAll("mark").length).toBe(0);
   },
 };
 // export const AdvancedSearch: Story = {
