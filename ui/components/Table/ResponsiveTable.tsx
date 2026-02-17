@@ -1,5 +1,3 @@
-
-import dynamic from "next/dynamic";
 import { TableSkeleton } from "@/components/Table/TableSkeleton";
 import type {
   ActionsColumnProps,
@@ -150,17 +148,13 @@ export const ResponsiveTable = <TRow, TCol>({
   const header = useMemo(() => {
     const headerCols = columns.map((column, index) => {
       return renderHeader({
-            key: `header_${column}`,
-            column,
-            colIndex: index,
-          });
+        key: `header_${column}`,
+        column,
+        colIndex: index,
+      });
     });
     return renderActions ? [...headerCols, <Th key={"actions"} />] : headerCols;
-  }, [
-    columns,
-    renderHeader,
-    renderActions,
-  ]);
+  }, [columns, renderHeader, renderActions]);
 
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
@@ -170,7 +164,7 @@ export const ResponsiveTable = <TRow, TCol>({
   if (!mounted) {
     return null;
   }
-  
+
   return (
     <Table
       aria-label={ariaLabel}
@@ -188,10 +182,7 @@ export const ResponsiveTable = <TRow, TCol>({
         </Tr>
       </Thead>
       {data === undefined && (
-        <TableSkeleton
-          columns={columns.length}
-          rows={expectedLength}
-        />
+        <TableSkeleton columns={columns.length} rows={expectedLength} />
       )}
       {data?.map((row, rowIndex) => {
         const deleted =
