@@ -36,6 +36,7 @@ import type { ResponsiveTableProps } from "./ResponsiveTable";
 import { ResponsiveTable } from "./ResponsiveTable";
 import type { ChipFilterProps } from "./Toolbar";
 import { ChipFilter } from "./Toolbar";
+import { ThSortType } from "@patternfly/react-table/dist/esm/components/Table/base/types";
 
 export type ToolbarAction = {
   label: string;
@@ -60,6 +61,7 @@ export type TableViewProps<TRow, TCol> = {
   data: ResponsiveTableProps<TRow, TCol>["data"] | null;
   emptyStateNoData: ReactElement;
   emptyStateNoResults: ReactElement;
+  sortProvider?: (col: TCol) => (ThSortType & { label?: string }) | undefined;
 } & Omit<ResponsiveTableProps<TRow, TCol>, "data">;
 export const TableView = <TRow, TCol>({
   toolbarBreakpoint = "lg",
@@ -70,13 +72,13 @@ export const TableView = <TRow, TCol>({
   page = DEFAULT_PAGE,
   perPage = DEFAULT_PERPAGE,
   columns,
-  isColumnSortable,
   onPageChange,
   onClearAllFilters,
 
   isFiltered,
   emptyStateNoData,
   emptyStateNoResults,
+  sortProvider,
   ...tableProps
 }: TableViewProps<TRow, TCol>) => {
   const [isSortOpen, toggleIsSortOpen] = useState(false);
@@ -89,8 +91,8 @@ export const TableView = <TRow, TCol>({
     return x !== undefined;
   }
 
-  const sortableColumns = isColumnSortable
-    ? columns.map((c) => isColumnSortable(c)).filter(notUndefined)
+  const sortableColumns = sortProvider
+    ? columns.map((c) => sortProvider(c)).filter(notUndefined)
     : undefined;
   const sortedColumn = sortableColumns?.find(
     (s) => s.sortBy.index === s.columnIndex,
@@ -114,7 +116,7 @@ export const TableView = <TRow, TCol>({
               <Select
                 id="options-menu-multiple-options-example"
                 isOpen={isSortOpen}
-                toggle={(toggleRef) => (
+                toggle={(toggleRef: any) => (
                   <MenuToggle
                     ref={toggleRef}
                     onClick={() => toggleIsSortOpen((o) => !o)}
@@ -132,7 +134,7 @@ export const TableView = <TRow, TCol>({
                       isSelected={
                         sortedColumn?.columnIndex === sortObj.columnIndex
                       }
-                      onSelect={(e) =>
+                      onSelect={(e: any) =>
                         sortObj.onSort &&
                         sortObj.onSort(
                           e as unknown as React.MouseEvent,
@@ -210,7 +212,7 @@ export const TableView = <TRow, TCol>({
                 <OverflowMenuControl>
                   <Dropdown
                     isPlain
-                    toggle={(toggleRef) => (
+                    toggle={(toggleRef:any) => (
                       <MenuToggle
                         ref={toggleRef}
                         aria-label="kebab dropdown toggle"
@@ -272,7 +274,6 @@ export const TableView = <TRow, TCol>({
         <ResponsiveTable
           {...tableProps}
           columns={columns}
-          isColumnSortable={isColumnSortable}
           data={data}
         >
           {emptyStateNoResults}

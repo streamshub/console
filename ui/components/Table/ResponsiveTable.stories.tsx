@@ -10,6 +10,7 @@ import {
   sampleData,
   SampleDataType,
 } from "./storybookHelpers";
+import { ThSortType } from "@patternfly/react-table/dist/esm/components/Table/base/types";
 
 type ResponsiveTableSampleTypeProps = ResponsiveTableProps<
   SampleDataType,
@@ -54,13 +55,12 @@ export default {
       args.sortAllColumns === true
         ? args.columns
         : [args.columns[0], args.columns[3]];
-    const isColumnSortable = (
-      col: (typeof args.columns)[number],
-    ): ReturnType<ResponsiveTableProps<any, any>["isColumnSortable"]> =>
+
+    const sortProvider = (col: (typeof args.columns)[number]): ThSortType | undefined =>
       sortableColumns.includes(col)
         ? {
             onSort: () => {},
-            label: columnLabels[col],
+            //label: columnLabels[col],
             columnIndex: args.columns.indexOf(col),
             sortBy: {
               direction: "asc",
@@ -68,6 +68,7 @@ export default {
             },
           }
         : undefined;
+
     const columnLabels = {
       name: "Name",
       cloudProvider: "Cloud Provider",
@@ -80,7 +81,7 @@ export default {
       <ResponsiveTable
         {...args}
         renderHeader={({ column, Th, key }) => (
-          <Th key={key}>{columnLabels[column]}</Th>
+          <Th key={key} sort={sortProvider(column)}>{columnLabels[column]}</Th>
         )}
         renderCell={({ column, row, colIndex, Td, key }) => (
           <Td key={key} dataLabel={columnLabels[column]}>
@@ -103,7 +104,6 @@ export default {
             : undefined
         }
         isRowDeleted={({ row }) => row[5] === "deleting"}
-        isColumnSortable={args.isSortable ? isColumnSortable : undefined}
         onRowClick={args.isRowClickable ? args.onRowClick : undefined}
         setActionCellOuiaId={
           args.hasCustomActionTestId

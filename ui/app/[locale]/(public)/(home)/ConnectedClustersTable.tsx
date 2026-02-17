@@ -8,6 +8,7 @@ import {
   SortableColumns,
 } from "@/components/ClustersTable";
 import { useFilterParams } from "@/utils/useFilterParams";
+import { ThProps } from "@patternfly/react-table";
 import { useOptimistic, useTransition } from "react";
 
 export type ConnectedClustersTableProps = {
@@ -77,6 +78,39 @@ export function ConnectedClustersTable({
     });
   }
 
+  const sortProvider = (col: ClusterTableColumn): ThProps["sort"] & { label?: string } | undefined => {
+    if (!SortableColumns.includes(col)) {
+      return undefined;
+    }
+    const activeIndex = ClusterColumns.indexOf(state.sort);
+    const columnIndex = ClusterColumns.indexOf(col);
+    return {
+      label: col as string,
+      columnIndex,
+      onSort: () => {
+        startTransition(() => {
+          const newSortDir =
+            activeIndex === columnIndex
+              ? state.sortDir === "asc"
+                ? "desc"
+                : "asc"
+              : "asc";
+          updateUrl({
+            sort: col,
+            sortDir: newSortDir,
+          });
+          addOptimistic({ sort: col, sortDir: newSortDir });
+        });
+      },
+      sortBy: {
+        index: activeIndex,
+        direction: state.sortDir,
+        defaultDirection: "asc",
+      },
+      isFavorites: undefined,
+    };
+  };
+
   return (
     <ClustersTable
       clusters={state.clusters}
@@ -101,38 +135,6 @@ export function ConnectedClustersTable({
           addOptimistic({ perPage });
         });
       }}
-      isColumnSortable={(col) => {
-        if (!SortableColumns.includes(col)) {
-          return undefined;
-        }
-        const activeIndex = ClusterColumns.indexOf(state.sort);
-        const columnIndex = ClusterColumns.indexOf(col);
-        return {
-          label: col as string,
-          columnIndex,
-          onSort: () => {
-            startTransition(() => {
-              const newSortDir =
-                activeIndex === columnIndex
-                  ? state.sortDir === "asc"
-                    ? "desc"
-                    : "asc"
-                  : "asc";
-              updateUrl({
-                sort: col,
-                sortDir: newSortDir,
-              });
-              addOptimistic({ sort: col, sortDir: newSortDir });
-            });
-          },
-          sortBy: {
-            index: activeIndex,
-            direction: state.sortDir,
-            defaultDirection: "asc",
-          },
-          isFavorites: undefined,
-        };
-      }}
       filterName={state.name}
       onFilterNameChange={(name) => {
         startTransition(() => {
@@ -141,6 +143,7 @@ export function ConnectedClustersTable({
         });
       }}
       onClearAllFilters={clearFilters}
+      sortProvider={sortProvider}
     />
   );
 }

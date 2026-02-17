@@ -24,6 +24,7 @@ import { ValidationModal } from "./ValidationModal";
 import { patchRebalance } from "@/api/rebalance/actions";
 import { useAlert } from "@/components/AlertContext";
 import { clientConfig as config } from "@/utils/config";
+import { ThSortType } from "@patternfly/react-table/dist/esm/components/Table/base/types";
 
 export type ConnectedReabalancesTableProps = {
   rebalances: RebalanceList[] | undefined;
@@ -157,6 +158,39 @@ export function ConnectedReabalancesTable({
     });
   };
 
+  const sortProvider = (col: RebalanceTableColumn): ThSortType | undefined => {
+    if (!RebalanceTableColumns.includes(col)) {
+      return undefined;
+    }
+    const activeIndex = RebalanceTableColumns.indexOf(state.sort);
+    const columnIndex = RebalanceTableColumns.indexOf(col);
+    return {
+      //label: col as string,
+      columnIndex,
+      onSort: () => {
+        startTransition(() => {
+          const newSortDir =
+            activeIndex === columnIndex
+              ? state.sortDir === "asc"
+                ? "desc"
+                : "asc"
+              : "asc";
+          updateUrl({
+            sort: col,
+            sortDir: newSortDir,
+          });
+          addOptimistic({ sort: col, sortDir: newSortDir });
+        });
+      },
+      sortBy: {
+        index: activeIndex,
+        direction: state.sortDir,
+        defaultDirection: "asc",
+      },
+      isFavorites: undefined,
+    };
+  };
+
   return (
     <Grid hasGutter>
       <GridItem>
@@ -209,38 +243,6 @@ export function ConnectedReabalancesTable({
           onClearAllFilters={clearFilters}
           rebalanceList={state.rebalances}
           rebalancesCount={rebalancesCount}
-          isColumnSortable={(col) => {
-            if (!RebalanceTableColumns.includes(col)) {
-              return undefined;
-            }
-            const activeIndex = RebalanceTableColumns.indexOf(state.sort);
-            const columnIndex = RebalanceTableColumns.indexOf(col);
-            return {
-              label: col as string,
-              columnIndex,
-              onSort: () => {
-                startTransition(() => {
-                  const newSortDir =
-                    activeIndex === columnIndex
-                      ? state.sortDir === "asc"
-                        ? "desc"
-                        : "asc"
-                      : "asc";
-                  updateUrl({
-                    sort: col,
-                    sortDir: newSortDir,
-                  });
-                  addOptimistic({ sort: col, sortDir: newSortDir });
-                });
-              },
-              sortBy: {
-                index: activeIndex,
-                direction: state.sortDir,
-                defaultDirection: "asc",
-              },
-              isFavorites: undefined,
-            };
-          }}
           filterName={state.name}
           onFilterNameChange={(name) => {
             startTransition(() => {
@@ -278,6 +280,7 @@ export function ConnectedReabalancesTable({
             setRebalanceId(row.id);
           }}
           baseurl={baseurl}
+          sortProvider={sortProvider}
         />
       </GridItem>
       {isModalOpen && (

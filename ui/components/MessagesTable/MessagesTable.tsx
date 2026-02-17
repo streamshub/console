@@ -20,6 +20,7 @@ import {
   InnerScrollContainer,
   OuterScrollContainer,
   TableVariant,
+  Th,
 } from "@/libs/patternfly/react-table";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useTranslations } from "next-intl";
@@ -181,7 +182,7 @@ export function MessagesTable({
                   columns={chosenColumns}
                   data={virtualizer.getVirtualItems()}
                   expectedLength={messages.length}
-                  renderHeader={({ colIndex, column, Th, key }) => (
+                  renderHeader={({ colIndex, column, key }) => (
                     <Th
                       key={key}
                       width={columnWidths[column]}
