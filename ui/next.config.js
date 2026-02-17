@@ -14,6 +14,7 @@ const nextConfig = {
     //ignoreBuildErrors: true,
   },
   transpilePackages: [
+    "@patternfly/patternfly",
     "@patternfly/quickstarts",
     "@patternfly/react-core",
     "@patternfly/react-styles",

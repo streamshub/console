@@ -10,7 +10,7 @@ import {
   sampleData,
   SampleDataType,
 } from "./storybookHelpers";
-import { ThSortType } from "@patternfly/react-table/dist/esm/components/Table/base/types";
+import { Th } from "@patternfly/react-table";
 
 type ResponsiveTableSampleTypeProps = ResponsiveTableProps<
   SampleDataType,
@@ -20,8 +20,6 @@ type ResponsiveTableSampleTypeProps = ResponsiveTableProps<
   hasCustomActionTestId?: boolean;
   hasCustomOuiaIds?: boolean;
   isRowClickable?: boolean;
-  isSortable?: boolean;
-  sortAllColumns?: boolean;
   selectedRow?: number;
 };
 const ResponsiveTableSampleType = (props: ResponsiveTableSampleTypeProps) => (
@@ -51,24 +49,6 @@ export default {
     sortAllColumns: { control: "boolean" },
   },
   render: (args) => {
-    const sortableColumns =
-      args.sortAllColumns === true
-        ? args.columns
-        : [args.columns[0], args.columns[3]];
-
-    const sortProvider = (col: (typeof args.columns)[number]): ThSortType | undefined =>
-      sortableColumns.includes(col)
-        ? {
-            onSort: () => {},
-            //label: columnLabels[col],
-            columnIndex: args.columns.indexOf(col),
-            sortBy: {
-              direction: "asc",
-              index: args.columns.indexOf(col),
-            },
-          }
-        : undefined;
-
     const columnLabels = {
       name: "Name",
       cloudProvider: "Cloud Provider",
@@ -80,8 +60,8 @@ export default {
     return (
       <ResponsiveTable
         {...args}
-        renderHeader={({ column, Th, key }) => (
-          <Th key={key} sort={sortProvider(column)}>{columnLabels[column]}</Th>
+        renderHeader={({ column, key }) => (
+          <Th key={key}>{columnLabels[column]}</Th>
         )}
         renderCell={({ column, row, colIndex, Td, key }) => (
           <Td key={key} dataLabel={columnLabels[column]}>
@@ -119,10 +99,9 @@ export default {
       >
         <EmptyState
           titleText={
-            <Title headingLevel="h4" size="lg">
-              Empty state to show when the data is filtered but has no results
-            </Title>
+            "Empty state to show when the data is filtered but has no results"
           }
+          headingLevel="h4"
           icon={InfoIcon}
           variant={"lg"}
         >
@@ -246,28 +225,5 @@ export const CustomOuiaIds: Story = {
     await expect(
       canvasElement.querySelectorAll("[data-ouia-component-id='table-row-0']"),
     ).toHaveLength(1);
-  },
-};
-
-export const Sortable: Story = {
-  args: {
-    isSortable: true,
-  },
-  play: async ({ canvasElement, args }) => {
-    await expect(
-      canvasElement.querySelectorAll("[class~='pf-v6-c-table__sort']"),
-    ).toHaveLength(args.columns.length);
-  },
-};
-
-export const PartiallySortable: Story = {
-  args: {
-    isSortable: true,
-    sortAllColumns: false,
-  },
-  play: async ({ canvasElement, args }) => {
-    await expect(
-      canvasElement.querySelectorAll("[class~='pf-v6-c-table__sort']"),
-    ).toHaveLength(2);
   },
 };
