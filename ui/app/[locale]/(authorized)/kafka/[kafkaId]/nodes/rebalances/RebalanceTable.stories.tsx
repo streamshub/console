@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/nextjs";
-import { RebalanceTable } from "./RebalanceTable";
+import { RebalanceTable, RebalanceTableColumns } from "./RebalanceTable";
+import { fn } from "storybook/test";
 
 const meta: Meta<typeof RebalanceTable> = {
   component: RebalanceTable,
@@ -8,7 +9,9 @@ const meta: Meta<typeof RebalanceTable> = {
 export default meta;
 type Story = StoryObj<typeof RebalanceTable>;
 
-const fixedDate = new Date(Date.UTC(2024, 11, 31, 23, 59, 59, 999)).toISOString();
+const fixedDate = new Date(
+  Date.UTC(2024, 11, 31, 23, 59, 59, 999),
+).toISOString();
 
 export const RebalanceList: Story = {
   args: {
@@ -103,5 +106,17 @@ export const RebalanceList: Story = {
         },
       },
     ],
+    sortProvider: (column) => {
+      const index = RebalanceTableColumns.indexOf(column);
+
+      return {
+        sortBy: {
+          index: 0,
+          direction: "asc",
+        },
+        onSort: fn(),
+        columnIndex: index,
+      };
+    },
   },
 };
