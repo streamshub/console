@@ -162,7 +162,8 @@ export const NonClickableRows: Story = {
   },
   play: async ({ canvasElement, args }) => {
     const canvas = within(canvasElement);
-    const firstRow = canvas.getByText(sampleData[0][0]).parentElement!;
+    const firstCell = await canvas.findByText(sampleData[0][0]);
+    const firstRow = firstCell.parentElement!;
     await userEvent.click(firstRow);
     await expect(args.onRowClick).not.toHaveBeenCalled();
   },
@@ -218,14 +219,14 @@ export const CustomOuiaIds: Story = {
   args: {
     hasCustomOuiaIds: true,
   },
-  play: async ({ canvasElement, args }) => {
-    await expect(
-      canvasElement.querySelectorAll(
-        "[data-ouia-component-id='table-ouia-id']",
-      ),
-    ).toHaveLength(1);
-    await expect(
-      canvasElement.querySelectorAll("[data-ouia-component-id='table-row-0']"),
-    ).toHaveLength(1);
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+
+    const table = await canvas.findByRole("grid");
+    expect(table).toHaveAttribute("data-ouia-component-id", "table-ouia-id");
+    const firstRow = canvasElement.querySelector(
+      "[data-ouia-component-id='table-row-0']",
+    );
+    expect(firstRow).toBeInTheDocument();
   },
 };
