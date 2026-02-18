@@ -20,9 +20,11 @@ import { ReactNode } from "react";
 import { EmptyStateNoMatchFound } from "@/components/Table/EmptyStateNoMatchFound";
 import RichText from "@/components/RichText";
 import { hasPrivilege } from "@/utils/privileges";
+import { TableVariant } from "@patternfly/react-table";
 
 export const ConsumerGroupColumns = [
   "groupId",
+  "type",
   "state",
   "lag",
   "members",
@@ -36,7 +38,7 @@ export type SortableConsumerGroupTableColumns = Exclude<
   "lag" | "members" | "topics"
 >;
 
-export const SortableColumns = ["groupId", "state"];
+export const SortableColumns = ["groupId", "type", "state"];
 
 const StateLabel: Record<ConsumerGroupState, { label: ReactNode }> = {
   STABLE: {
@@ -153,6 +155,7 @@ export function ConsumerGroupsTable({
   const t = useTranslations();
   return (
     <TableView
+      variant={TableVariant.compact}
       itemCount={total}
       page={page}
       perPage={perPage}
@@ -174,7 +177,13 @@ export function ConsumerGroupsTable({
           case "groupId":
             return (
               <Th key={key} width={30}>
-                {t("ConsumerGroupsTable.consumer_group_name")}
+                {t("ConsumerGroupsTable.group_id")}
+              </Th>
+            );
+          case "type":
+            return (
+              <Th key={key} width={15}>
+                Type (Protocol)
               </Th>
             );
           case "state":
@@ -239,7 +248,7 @@ export function ConsumerGroupsTable({
             return (
               <Td
                 key={key}
-                dataLabel={t("ConsumerGroupsTable.consumer_group_name")}
+                dataLabel={t("ConsumerGroupsTable.group_id")}
               >
                 <Link href={`/kafka/${kafkaId}/consumer-groups/${row.id}`}>
                   {row.attributes.groupId === "" ? (
@@ -250,6 +259,12 @@ export function ConsumerGroupsTable({
                     row.attributes.groupId
                   )}
                 </Link>
+              </Td>
+            );
+          case "type":
+            return (
+              <Td key={key} dataLabel={"Type"}>
+                {row.attributes.type}{row.attributes.protocol && " (" + row.attributes.protocol + ")"}
               </Td>
             );
           case "state":
@@ -304,7 +319,11 @@ export function ConsumerGroupsTable({
       }}
       renderActions={({ row, ActionsColumn }) => (
         <ActionsColumn
-          isDisabled={!hasPrivilege("UPDATE", row)}
+          isDisabled={
+            !hasPrivilege("UPDATE", row)
+                || (row.attributes.type !== "Classic"
+                    && row.attributes.type !== "Consumer")
+            }
           items={[
             {
               title: t("ConsumerGroupsTable.reset_offset"),

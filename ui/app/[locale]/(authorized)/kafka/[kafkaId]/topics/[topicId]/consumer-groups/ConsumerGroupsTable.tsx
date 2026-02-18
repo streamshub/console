@@ -144,13 +144,19 @@ export function ConsumerGroupsTable({
         <div>{t("ConsumerGroupsTable.no_consumer_groups")}</div>
       }
       ariaLabel={t("ConsumerGroupsTable.title")}
-      columns={["name", "state", "lag", "members", "topics"] as const}
+      columns={["name", "type", "state", "lag", "members", "topics"] as const}
       renderHeader={({ column, key, Th }) => {
         switch (column) {
           case "name":
             return (
               <Th key={key} width={30}>
-                {t("ConsumerGroupsTable.consumer_group_name")}
+                {t("ConsumerGroupsTable.group_id")}
+              </Th>
+            );
+          case "type":
+            return (
+              <Th key={key} width={15}>
+                Type (Protocol)
               </Th>
             );
           case "state":
@@ -215,7 +221,7 @@ export function ConsumerGroupsTable({
             return (
               <Td
                 key={key}
-                dataLabel={t("ConsumerGroupsTable.consumer_group_name")}
+                dataLabel={t("ConsumerGroupsTable.group_id")}
               >
                 <Link href={`/kafka/${kafkaId}/consumer-groups/${row.id}`}>
                   {row.attributes.groupId === "" ? (
@@ -226,6 +232,12 @@ export function ConsumerGroupsTable({
                     row.attributes.groupId
                   )}
                 </Link>
+              </Td>
+            );
+          case "type":
+            return (
+              <Td key={key} dataLabel={"Type"}>
+                {row.attributes.type}{row.attributes.protocol && " (" + row.attributes.protocol + ")"}
               </Td>
             );
           case "state":
@@ -246,24 +258,27 @@ export function ConsumerGroupsTable({
               </Td>
             );
           case "topics":
-            const allTopics =
-              row.attributes.members?.flatMap((m) => m.assignments ?? []) ?? [];
+            const allTopics: Record<string, string | undefined> = {};
+            row.attributes.members
+              ?.flatMap((m) => m.assignments ?? [])
+              .forEach((a) => (allTopics[a.topicName] = a.topicId));
+            row.attributes.offsets?.forEach(
+              (a) => (allTopics[a.topicName] = a.topicId),
+            );
             return (
               <Td key={key} dataLabel={t("ConsumerGroupsTable.topics")}>
                 <LabelGroup>
-                  {Array.from(new Set(allTopics.map((a) => a.topicName))).map(
-                    (topic, idx) => (
-                      <LabelLink
-                        key={idx}
-                        color={"blue"}
-                        href={`/kafka/${kafkaId}/topics/${
-                          allTopics.find((t) => t.topicName === topic)!.topicId
-                        }`}
-                      >
-                        {topic}
-                      </LabelLink>
-                    ),
-                  )}
+                  {Object.entries(allTopics).map(([topicName, topicId]) => (
+                    <LabelLink
+                      key={topicName}
+                      color={"blue"}
+                      href={
+                        topicId ? `/kafka/${kafkaId}/topics/${topicId}` : "#"
+                      }
+                    >
+                      {topicName}
+                    </LabelLink>
+                  ))}
                 </LabelGroup>
               </Td>
             );

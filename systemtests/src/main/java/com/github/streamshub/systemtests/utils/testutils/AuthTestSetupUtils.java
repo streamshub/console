@@ -61,7 +61,7 @@ public class AuthTestSetupUtils {
                         .withName(AuthTestConstants.CONSUMERGROUPS_VIEW_ROLE_NAME)
                         .addNewRule()
                             .addToResources(
-                                ResourceTypes.Kafka.CONSUMER_GROUPS.value())
+                                ResourceTypes.Kafka.GROUPS.value())
                             .withPrivileges(Rule.Privilege.GET, Rule.Privilege.LIST)
                         .endRule()
                     .endRole()

@@ -26,11 +26,15 @@ public class ResourceTypes {
         default Set<ResourceType<E>> expand() {
             return Set.of(this);
         }
+
+        default boolean includes(String value) {
+            return value().equals(value);
+        }
     }
 
     public static <E extends ResourceType<E>> E forValue(String value, Class<E> type) {
         for (var v : type.getEnumConstants()) {
-            if (v.value().equals(value)) {
+            if (v.includes(value)) {
                 return v;
             }
         }
@@ -63,7 +67,13 @@ public class ResourceTypes {
     }
 
     public enum Kafka implements ResourceType<Kafka> {
-        CONSUMER_GROUPS("consumerGroups"),
+        GROUPS("groups") {
+            @Override
+            public boolean includes(String value) {
+                // support old `consumerGroups` resource name
+                return value().equals(value) || "consumerGroups".equals(value);
+            }
+        },
         NODE_CONFIGS("nodes/configs"),
         NODES("nodes"),
         NODE_METRICS("nodes/metrics"),

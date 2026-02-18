@@ -83,6 +83,8 @@ public class ConsumerGroupsResource {
                     source = ConsumerGroup.FIELDS_PARAM,
                     allowedValues = {
                         ConsumerGroup.Fields.GROUP_ID,
+                        ConsumerGroup.Fields.TYPE,
+                        ConsumerGroup.Fields.PROTOCOL,
                         ConsumerGroup.Fields.STATE,
                         ConsumerGroup.Fields.SIMPLE_CONSUMER_GROUP,
                         ConsumerGroup.Fields.MEMBERS,
@@ -100,6 +102,8 @@ public class ConsumerGroupsResource {
                             implementation = String.class,
                             enumeration = {
                                 ConsumerGroup.Fields.GROUP_ID,
+                                ConsumerGroup.Fields.TYPE,
+                                ConsumerGroup.Fields.PROTOCOL,
                                 ConsumerGroup.Fields.STATE,
                                 ConsumerGroup.Fields.SIMPLE_CONSUMER_GROUP,
                                 ConsumerGroup.Fields.MEMBERS,
@@ -156,6 +160,8 @@ public class ConsumerGroupsResource {
                     source = ConsumerGroup.FIELDS_PARAM,
                     allowedValues = {
                         ConsumerGroup.Fields.GROUP_ID,
+                        ConsumerGroup.Fields.TYPE,
+                        ConsumerGroup.Fields.PROTOCOL,
                         ConsumerGroup.Fields.STATE,
                         ConsumerGroup.Fields.SIMPLE_CONSUMER_GROUP,
                         ConsumerGroup.Fields.MEMBERS,
@@ -173,6 +179,8 @@ public class ConsumerGroupsResource {
                             implementation = String.class,
                             enumeration = {
                                 ConsumerGroup.Fields.GROUP_ID,
+                                ConsumerGroup.Fields.TYPE,
+                                ConsumerGroup.Fields.PROTOCOL,
                                 ConsumerGroup.Fields.STATE,
                                 ConsumerGroup.Fields.SIMPLE_CONSUMER_GROUP,
                                 ConsumerGroup.Fields.MEMBERS,
@@ -240,6 +248,8 @@ public class ConsumerGroupsResource {
         if (dryRun) {
             requestedFields.accept(List.of(
                 ConsumerGroup.Fields.GROUP_ID,
+                ConsumerGroup.Fields.TYPE,
+                ConsumerGroup.Fields.PROTOCOL,
                 ConsumerGroup.Fields.STATE,
                 ConsumerGroup.Fields.MEMBERS,
                 ConsumerGroup.Fields.OFFSETS

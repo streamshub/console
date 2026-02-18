@@ -321,6 +321,8 @@ public class TopicsResource {
                     source = ConsumerGroup.FIELDS_PARAM,
                     allowedValues = {
                         ConsumerGroup.Fields.GROUP_ID,
+                        ConsumerGroup.Fields.TYPE,
+                        ConsumerGroup.Fields.PROTOCOL,
                         ConsumerGroup.Fields.STATE,
                         ConsumerGroup.Fields.SIMPLE_CONSUMER_GROUP,
                         ConsumerGroup.Fields.MEMBERS,
@@ -338,6 +340,8 @@ public class TopicsResource {
                             implementation = String.class,
                             enumeration = {
                                 ConsumerGroup.Fields.GROUP_ID,
+                                ConsumerGroup.Fields.TYPE,
+                                ConsumerGroup.Fields.PROTOCOL,
                                 ConsumerGroup.Fields.STATE,
                                 ConsumerGroup.Fields.SIMPLE_CONSUMER_GROUP,
                                 ConsumerGroup.Fields.MEMBERS,

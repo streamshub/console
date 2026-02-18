@@ -152,7 +152,8 @@ public class AuthorizationInterceptor {
             } else {
                 if (s == 3) {
                     switch (ResourceTypes.forValue(segment, Kafka.class)) {
-                        case CONSUMER_GROUPS:
+                        case GROUPS:
+                            segment = Kafka.GROUPS.value();
                             converter = ConsumerGroup::decodeGroupId;
                             break;
                         case REBALANCES:

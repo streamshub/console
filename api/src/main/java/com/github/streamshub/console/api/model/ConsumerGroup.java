@@ -15,6 +15,7 @@ import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 import jakarta.validation.Valid;
 
+import org.apache.kafka.common.GroupType;
 import org.apache.kafka.common.errors.GroupIdNotFoundException;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
@@ -56,6 +57,8 @@ public class ConsumerGroup extends JsonApiResource<ConsumerGroup.Attributes, Non
 
     public static final class Fields {
         public static final String GROUP_ID = "groupId";
+        public static final String TYPE = "type";
+        public static final String PROTOCOL = "protocol";
         public static final String STATE = "state";
         public static final String MEMBERS = "members";
         public static final String COORDINATOR = "coordinator";
@@ -70,6 +73,8 @@ public class ConsumerGroup extends JsonApiResource<ConsumerGroup.Attributes, Non
         static final Map<String, Map<Boolean, Comparator<ConsumerGroup>>> COMPARATORS = ComparatorBuilder.bidirectional(
                 Map.of("id", ID_COMPARATOR,
                         GROUP_ID, nullsLast(comparing(ConsumerGroup::groupId)),
+                        TYPE, nullsLast(comparing(ConsumerGroup::type)),
+                        PROTOCOL, nullsLast(comparing(ConsumerGroup::protocol)),
                         STATE, nullsLast(comparing(ConsumerGroup::state)),
                         SIMPLE_CONSUMER_GROUP, comparing(ConsumerGroup::simpleConsumerGroup)));
 
@@ -77,9 +82,13 @@ public class ConsumerGroup extends JsonApiResource<ConsumerGroup.Attributes, Non
                 new ComparatorBuilder<>(ConsumerGroup.Fields::comparator, ConsumerGroup.Fields.defaultComparator());
 
         public static final String LIST_DEFAULT = GROUP_ID +
+                ", " + TYPE +
+                ", " + PROTOCOL +
                 ", " + STATE +
                 ", " + SIMPLE_CONSUMER_GROUP;
         public static final String DESCRIBE_DEFAULT = GROUP_ID +
+                ", " + TYPE +
+                ", " + PROTOCOL +
                 ", " + STATE +
                 ", " + MEMBERS +
                 ", " + COORDINATOR +
@@ -137,6 +146,12 @@ public class ConsumerGroup extends JsonApiResource<ConsumerGroup.Attributes, Non
         // Available via list or describe operations
         @JsonProperty
         final String groupId;
+
+        @JsonProperty
+        String type;
+
+        @JsonProperty
+        String protocol;
 
         @JsonProperty
         final boolean simpleConsumerGroup;
@@ -208,11 +223,14 @@ public class ConsumerGroup extends JsonApiResource<ConsumerGroup.Attributes, Non
     }
 
     public static ConsumerGroup fromKafkaModel(org.apache.kafka.clients.admin.GroupListing listing) {
-        return new ConsumerGroup(
+        var group = new ConsumerGroup(
             listing.groupId(),
             listing.isSimpleConsumerGroup(),
             listing.groupState().map(Enum::name).orElse(null)
         );
+        group.type(listing.type().map(GroupType::toString).orElse(null));
+        group.protocol(listing.protocol());
+        return group;
     }
 
     /**
@@ -233,6 +251,7 @@ public class ConsumerGroup extends JsonApiResource<ConsumerGroup.Attributes, Non
                 description.isSimpleConsumerGroup(),
                 Optional.ofNullable(description.groupState()).map(Enum::name).orElse(null));
 
+        group.type(description.type().toString());
         group.partitionAssignor(description.partitionAssignor());
         group.coordinator(Node.fromKafkaModel(description.coordinator()));
         group.members(description.members()
@@ -310,6 +329,22 @@ public class ConsumerGroup extends JsonApiResource<ConsumerGroup.Attributes, Non
         attributes.offsets = offsets;
     }
 
+    public String type() {
+        return attributes.type;
+    }
+
+    public void type(String type) {
+        attributes.type = type;
+    }
+
+    public String protocol() {
+        return attributes.protocol;
+    }
+
+    public void protocol(String protocol) {
+        attributes.protocol = protocol;
+    }
+
     /**
      * Constructs a "cursor" ConsumerGroup from the encoded string representation of the subset
      * of Topic fields used to compare entities for pagination/sorting.
@@ -320,10 +355,14 @@ public class ConsumerGroup extends JsonApiResource<ConsumerGroup.Attributes, Non
         }
 
         JsonObject attr = cursor.getJsonObject("attributes");
-
-        return new ConsumerGroup(attr.getString(Fields.GROUP_ID, null),
+        var group = new ConsumerGroup(attr.getString(Fields.GROUP_ID, null),
                 attr.getBoolean(Fields.SIMPLE_CONSUMER_GROUP, false),
                 attr.getString(Fields.STATE, null));
+
+        group.type(attr.getString(Fields.TYPE, null));
+        group.protocol(attr.getString(Fields.PROTOCOL, null));
+
+        return group;
     }
 
     public String toCursor(List<String> sortFields) {
@@ -337,6 +376,14 @@ public class ConsumerGroup extends JsonApiResource<ConsumerGroup.Attributes, Non
 
         if (sortFields.contains(Fields.GROUP_ID)) {
             attrBuilder.add(Fields.GROUP_ID, attributes.groupId);
+        }
+
+        if (sortFields.contains(Fields.TYPE)) {
+            attrBuilder.add(Fields.TYPE, attributes.type);
+        }
+
+        if (sortFields.contains(Fields.PROTOCOL)) {
+            attrBuilder.add(Fields.PROTOCOL, attributes.protocol);
         }
 
         if (sortFields.contains(Fields.STATE)) {
