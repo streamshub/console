@@ -56,6 +56,37 @@ public class KafkaCredentialsST extends AbstractST {
     private static final int UNAVAILABLE_TOPICS_COUNT = 2;
     private static final int TOTAL_TOPICS_COUNT = TOTAL_REPLICATED_TOPICS_COUNT + UNDER_REPLICATED_TOPICS_COUNT + UNAVAILABLE_TOPICS_COUNT;
 
+    /**
+     * Verifies that a user authenticated with Kafka credentials can successfully
+     * access the console UI and interact with Kafka cluster resources.
+     *
+     * <p>The test validates the following functionality:</p>
+     * <ul>
+     *   <li>Access to the cluster Overview page and correct display of available Kafka clusters.</li>
+     *   <li>Correct broker and controller replica counts in the cluster overview.</li>
+     *   <li>Proper rendering of the Nodes page, including:
+     *       <ul>
+     *           <li>Total node count</li>
+     *           <li>Working and warning node indicators</li>
+     *           <li>Broker and controller role distribution</li>
+     *       </ul>
+     *   </li>
+     *   <li>Correct display of topic statistics on both Overview and Topics pages.</li>
+     *   <li>Display of the authenticated Kafka username in the navigation bar.</li>
+     *   <li>Pause and resume of Kafka reconciliation via the UI, including:
+     *       <ul>
+     *           <li>Validation of the confirmation modal content</li>
+     *           <li>Verification of reconciliation paused notification</li>
+     *           <li>Verification of the underlying Kafka resource annotation change</li>
+     *       </ul>
+     *   </li>
+     * </ul>
+     *
+     * <p>This test ensures that users authenticated with Kafka credentials have
+     * proper read access to cluster information and that UI-triggered actions
+     * (pause/resume reconciliation) correctly affect the Kafka custom resource
+     * and are reflected both in the UI and at the Kubernetes level.</p>
+     */
     @Test
     @TestBucket(ALL_TOPIC_TYPES_BUCKET)
     void testUserLoginKafkaCredentials() {
@@ -141,9 +172,45 @@ public class KafkaCredentialsST extends AbstractST {
         LOGGER.info("Stop");
     }
 
-
+    /**
+     * Prepares a set of Kafka topics with various states and replication configurations
+     * for UI system testing purposes.
+     *
+     * <p>This setup method is executed for the {@code ALL_TOPIC_TYPES_BUCKET} and
+     * initializes the Kafka cluster with a predefined mix of topic types to validate
+     * Streamshub Console topic visualization and status reporting.</p>
+     *
+     * <p>The method performs the following steps:</p>
+     * <ul>
+     *     <li>Verifies that the initial UI state contains zero topics on both the
+     *     Overview and Topics pages.</li>
+     *     <li>Creates fully replicated (managed) topics.</li>
+     *     <li>Produces a higher number of messages to the last replicated topic
+     *     to increase storage usage and simulate realistic load.</li>
+     *     <li>Creates unmanaged replicated topics.</li>
+     *     <li>Creates under-replicated topics by scaling the replication factor
+     *     beyond the default broker replica count.</li>
+     *     <li>Creates unavailable topics to simulate error scenarios.</li>
+     * </ul>
+     *
+     * <p>Topic creation and message production are performed using Kubernetes
+     * resources and Kafka clients authenticated via SCRAM-SHA.</p>
+     *
+     * <p>This setup ensures that subsequent UI tests can validate:</p>
+     * <ul>
+     *     <li>Total topic counts</li>
+     *     <li>Replicated vs. under-replicated vs. unavailable topic states</li>
+     *     <li>Correct topic status reporting in both Overview and Topics pages</li>
+     *     <li>Handling of managed and unmanaged topics</li>
+     * </ul>
+     *
+     * @see TopicChecks
+     * @see KafkaTopicUtils
+     * @see KafkaClientsBuilder
+     * @see WaitUtils
+     */
     @SetupTestBucket(ALL_TOPIC_TYPES_BUCKET)
-    public void prepareVariousTopicTypes() {
+    public void prepareAllTopicTypes() {
         LOGGER.info("Check default UI state before preparing test topics");
         TopicChecks.checkOverviewPageTopicState(tcc, tcc.kafkaName(), 0, 0, 0, 0, 0);
         TopicChecks.checkTopicsPageTopicState(tcc, tcc.kafkaName(), 0, 0, 0, 0);
