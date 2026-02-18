@@ -14,6 +14,7 @@ export default {
     onSearch: fn(),
     onSelectMessage: fn(),
     onDeselectMessage: fn(),
+    filterLimit: 50,
   },
   render: (props) => <MessagesTable {...props} messages={sampleData(props)} />,
 } as Meta<typeof MessagesTable>;
@@ -25,13 +26,17 @@ export const Example: Story = {
     const canvas = within(canvasElement);
     const messages = sampleData(args);
 
+    expect(messages.length).toBeGreaterThan(0);
     const rows = await canvas.findAllByRole("row");
 
     const targetRow = rows.find((r) =>
       r.textContent?.includes("this-is-a-very-long-key"),
     );
-    expect(targetRow).toBeDefined();
-    await userEvent.click(targetRow!);
+
+    if (!targetRow) {
+      throw new Error(`Target row not found. Available rows: ${rows.length}`);
+    }
+    await userEvent.click(targetRow);
     await expect(args.onSelectMessage).toHaveBeenCalledWith(messages[1]);
 
     const search = await canvas.findByDisplayValue(/messages=latest/i);
@@ -55,13 +60,16 @@ export const Example: Story = {
 export const SearchWithMatches: Story = {
   args: {
     filterQuery: "foo",
+    filterWhere: "value",
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    const marks = canvasElement.querySelectorAll("mark");
-    expect(marks.length).toBeGreaterThan(0);
+
+    const highlighted = await canvas.findAllByText(/foo/i);
+    expect(highlighted.length).toBeGreaterThan(0);
   },
 };
+
 export const SearchWithoutMatches: Story = {
   args: {
     filterQuery: "lorem dolor",
