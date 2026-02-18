@@ -10,7 +10,9 @@ import com.github.streamshub.systemtests.locators.CssSelectors;
 import com.github.streamshub.systemtests.locators.KafkaDashboardPageSelectors;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.utils.Utils;
+import com.github.streamshub.systemtests.utils.WaitUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.ConsoleUtils;
+import com.github.streamshub.systemtests.utils.resourceutils.ResourceUtils;
 import com.microsoft.playwright.Browser;
 import com.microsoft.playwright.BrowserContext;
 import com.microsoft.playwright.BrowserType;
@@ -20,6 +22,7 @@ import com.microsoft.playwright.Playwright;
 import com.microsoft.playwright.Tracing;
 import com.microsoft.playwright.options.WaitForSelectorState;
 import com.microsoft.playwright.options.WaitUntilState;
+import io.fabric8.kubernetes.api.model.Secret;
 import io.skodjob.testframe.TestFrameConstants;
 import io.skodjob.testframe.resources.KubeResourceManager;
 import io.skodjob.testframe.wait.Wait;
@@ -455,10 +458,10 @@ public class PwUtils {
         LOGGER.info("Successfully logged into Console");
     }
 
-    public static void logoutUser(TestCaseConfig tcc, String userName) {
+    public static void logoutUser(TestCaseConfig tcc, String userName, boolean https) {
 
         Utils.retryAction("Log-out user " + userName, () -> {
-            String dashboardUrl = ConsoleUtils.getConsoleUiUrl(tcc.namespace(), tcc.consoleInstanceName(), true) + "/";
+            String dashboardUrl = ConsoleUtils.getConsoleUiUrl(tcc.namespace(), tcc.consoleInstanceName(), https) + "/";
 
             // There is a xpath difference between logout button in dashboard and in navbar on other pages
             if (tcc.page().url().equals(dashboardUrl)) {
@@ -475,5 +478,21 @@ public class PwUtils {
                 throw new IllegalStateException("User [" + userName + "] has not been logged out");
             }
         }, Constants.LOGOUT_RETRIES);
+    }
+
+    public static void loginWithKafkaCredentials(TestCaseConfig tcc, String namespace, String kafkaUser) {
+        final String loginUrl = PwPageUrls.getKafkaLoginPage(tcc, tcc.kafkaName());
+        LOGGER.info("Logging in to the Console with URL: {}", loginUrl);
+        WaitUtils.waitForSecretReady(namespace, kafkaUser);
+        String password = Utils.decodeFromBase64(ResourceUtils.getKubeResource(Secret.class, namespace, kafkaUser).getData().get("password"));
+
+        tcc.page().navigate(loginUrl);
+
+        // Login with user
+        waitForLocatorAndFill(tcc, CssSelectors.PAGES_KAFKA_CREDENTIALS_NAME_INPUT, kafkaUser);
+        waitForLocatorAndFill(tcc, CssSelectors.PAGES_KAFKA_CREDENTIALS_PASSWORD_INPUT, password);
+        waitForLocatorAndClick(tcc, CssSelectors.PAGES_KAFKA_CREDENTIALS_LOGIN_BUTTON);
+        // Wait for overview page
+        tcc.page().waitForURL(PwPageUrls.getOverviewPage(tcc, tcc.kafkaName()), getDefaultWaitForUrlOpts());
     }
 }
