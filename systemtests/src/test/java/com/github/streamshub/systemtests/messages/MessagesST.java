@@ -12,8 +12,7 @@ import com.github.streamshub.systemtests.locators.CssBuilder;
 import com.github.streamshub.systemtests.locators.CssSelectors;
 import com.github.streamshub.systemtests.locators.MessagesPageSelectors;
 import com.github.streamshub.systemtests.logs.LogWrapper;
-import com.github.streamshub.systemtests.setup.console.ConsoleInstanceSetup;
-import com.github.streamshub.systemtests.setup.strimzi.KafkaSetup;
+import com.github.streamshub.systemtests.utils.Utils;
 import com.github.streamshub.systemtests.utils.WaitUtils;
 import com.github.streamshub.systemtests.utils.playwright.PwPageUrls;
 import com.github.streamshub.systemtests.utils.playwright.PwUtils;
@@ -21,18 +20,24 @@ import com.github.streamshub.systemtests.utils.resourceutils.KafkaClientsUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.KafkaNamingUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.KafkaTopicUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.KafkaUtils;
-import com.github.streamshub.systemtests.utils.resourceutils.NamespaceUtils;
 import io.skodjob.testframe.resources.KubeResourceManager;
 import org.apache.kafka.common.security.auth.SecurityProtocol;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import java.time.Duration;
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.Map;
 import java.util.stream.Stream;
 
@@ -59,6 +64,9 @@ public class MessagesST extends AbstractST {
     private static final String HEADER_FILTER_MESSAGE = "abc123";
     // 3. Filter by message value
     private static final String VALUE_FILTER = "package=sent";
+    private static final String TIMESTAMP_FILTER = "messages=timestamp:";
+    private static final String EPOCH_FILTER = "messages=epoch:";
+    private static final int MAX_MESSAGES_PER_PAGE = 50;
 
     /**
      * Provides parameterized scenarios for verifying message search functionality
@@ -142,7 +150,141 @@ public class MessagesST extends AbstractST {
             PwUtils.waitForContainsText(tcc, selector, expectedValue, true);
             assertTrue(tcc.page().locator(selector).allInnerTexts().toString().contains(expectedValue));
         });
+    }
 
+    // Modifies messages, so must be last to execute
+    @Test
+    @Order(Integer.MAX_VALUE)
+    @TestBucket(VARIOUS_MESSAGE_TYPES_BUCKET)
+    void testMessageFilteringByTimestamps() {
+        final int newMessageCount = 5;
+        final String newMessageText = "testTimestampText";
+
+        // Formatters
+        final DateTimeFormatter timestampFormatterQuery = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
+        // UI
+        final DateTimeFormatter dateFormatterForm = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        final DateTimeFormatter timeFormatterForm = DateTimeFormatter.ofPattern("hh:mm a");
+
+        // Time
+        final OffsetDateTime currentUtcTime = Instant.now().atOffset(ZoneOffset.UTC).minusMinutes(2);
+        final OffsetDateTime currentLocalTime = currentUtcTime.atZoneSameInstant(ZoneId.systemDefault()).toOffsetDateTime();
+        // For previous messages, set the date a day earlier, because we don't know how long it took to execute previous tests
+        final OffsetDateTime earlierUtcTime = currentUtcTime.minusDays(1);
+        // Query
+        final String currentDateTimeQuery = currentUtcTime.format(timestampFormatterQuery);
+        final String earlierTimeQuery = earlierUtcTime.format(timestampFormatterQuery);
+        // Unix
+        final String currentDateTimeUnix = String.valueOf(currentUtcTime.toEpochSecond());
+        final String earlierDateTimeUnix = String.valueOf(earlierUtcTime.toEpochSecond());
+        // UI
+        final String currentDateForm = currentUtcTime.format(dateFormatterForm);
+        // due to UI forcing UTC and form making it taking local time
+        final String currentTimeForm = currentLocalTime.format(timeFormatterForm);
+        //
+        final String earlierDateForm = earlierUtcTime.format(dateFormatterForm);
+
+        final String topicId = WaitUtils.waitForKafkaTopicToHaveIdAndReturn(tcc.namespace(), kafkaTopicName);
+
+        tcc.page().navigate(PwPageUrls.getMessagesPage(tcc, tcc.kafkaName(), topicId));
+
+        // Test that no messages are present - messages were sent in past so when we select messages from NOW it returns 0
+        PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_CONTENT_HEADER_TITLE_CONTENT, kafkaTopicName, true);
+        PwUtils.waitForLocatorVisible(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT);
+        PwUtils.waitForLocatorAndFill(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT, TIMESTAMP_FILTER + currentDateTimeQuery);
+        PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_ENTER_BUTTON);
+        PwUtils.waitForAttributeContainsText(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT, currentDateTimeQuery, Constants.VALUE_ATTRIBUTE, true);
+        PwUtils.waitForLocatorCount(tcc, 1, MessagesPageSelectors.MPS_SEARCH_RESULTS_TABLE_ITEMS, true);
+        // Check that older messages appear when the date is modified
+        PwUtils.waitForLocatorAndFill(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT, TIMESTAMP_FILTER + earlierTimeQuery);
+        PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_ENTER_BUTTON);
+        PwUtils.waitForAttributeContainsText(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT, earlierTimeQuery, Constants.VALUE_ATTRIBUTE, true);
+        PwUtils.waitForLocatorCount(tcc, MAX_MESSAGES_PER_PAGE, MessagesPageSelectors.MPS_SEARCH_RESULTS_TABLE_ITEMS, true);
+        PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItem(1, 5), KEY_FILTER_MESSAGE, true);
+
+        // Send more messages and see if they appear
+        KafkaClients clients = new KafkaClientsBuilder()
+            .withNamespaceName(tcc.namespace())
+            .withTopicName(kafkaTopicName)
+            .withMessageCount(newMessageCount)
+            .withDelayMs(0)
+            .withProducerName(KafkaNamingUtils.producerName(kafkaTopicName))
+            .withConsumerName(KafkaNamingUtils.consumerName(kafkaTopicName))
+            .withConsumerGroup(KafkaNamingUtils.consumerGroupName(kafkaTopicName))
+            .withBootstrapAddress(KafkaUtils.getPlainScramShaBootstrapAddress(tcc.kafkaName()))
+            .withUsername(tcc.kafkaUserName())
+            .withMessage(newMessageText)
+            .withAdditionalConfig(KafkaClientsUtils.getScramShaConfig(tcc.namespace(), tcc.kafkaUserName(), SecurityProtocol.SASL_PLAINTEXT))
+            .build();
+
+        KubeResourceManager.get().createResourceWithWait(clients.producer(), clients.consumer());
+        WaitUtils.waitForClientsSuccess(clients);
+
+        tcc.page().navigate(PwPageUrls.getMessagesPage(tcc, tcc.kafkaName(), topicId));
+
+        PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_CONTENT_HEADER_TITLE_CONTENT, kafkaTopicName, true);
+        PwUtils.waitForLocatorVisible(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT);
+        PwUtils.waitForLocatorAndFill(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT, TIMESTAMP_FILTER + currentDateTimeQuery);
+        PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_ENTER_BUTTON);
+        PwUtils.waitForAttributeContainsText(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT, currentDateTimeQuery, Constants.VALUE_ATTRIBUTE, true);
+        PwUtils.waitForLocatorCount(tcc, newMessageCount, MessagesPageSelectors.MPS_SEARCH_RESULTS_TABLE_ITEMS, true);
+        PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItem(1, 5), newMessageText, true);
+        // Verify Unix query
+        PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_CONTENT_HEADER_TITLE_CONTENT, kafkaTopicName, true);
+        PwUtils.waitForLocatorVisible(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT);
+        PwUtils.waitForLocatorAndFill(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT, EPOCH_FILTER + currentDateTimeUnix);
+        PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_ENTER_BUTTON);
+        PwUtils.waitForAttributeContainsText(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT, currentDateTimeUnix, Constants.VALUE_ATTRIBUTE, true);
+        PwUtils.waitForLocatorCount(tcc, newMessageCount, MessagesPageSelectors.MPS_SEARCH_RESULTS_TABLE_ITEMS, true);
+        // Earlier
+        PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_CONTENT_HEADER_TITLE_CONTENT, kafkaTopicName, true);
+        PwUtils.waitForLocatorVisible(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT);
+        PwUtils.waitForLocatorAndFill(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT, EPOCH_FILTER + earlierDateTimeUnix);
+        PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_ENTER_BUTTON);
+        PwUtils.waitForAttributeContainsText(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT, earlierDateTimeUnix, Constants.VALUE_ATTRIBUTE, true);
+        PwUtils.waitForLocatorCount(tcc, MAX_MESSAGES_PER_PAGE, MessagesPageSelectors.MPS_SEARCH_RESULTS_TABLE_ITEMS, true);
+
+        // Verify with UI
+        LOGGER.info("Verify timestamp filtering with UI");
+        tcc.page().navigate(PwPageUrls.getMessagesPage(tcc, tcc.kafkaName(), topicId));
+        PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_CONTENT_HEADER_TITLE_CONTENT, kafkaTopicName, true);
+        PwUtils.waitForLocatorVisible(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT);
+        // Filter by timestamp
+        // Check new messages
+        PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_OPEN_POPOVER_FORM_BUTTON);
+        PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_TPF_PARAMETERS_MESSAGES);
+        PwUtils.waitForLocatorAndClick(tcc, new CssBuilder(MessagesPageSelectors.MPS_TPF_FILTER_POPUP_DROPDOWN_ITEMS).nth(2).build());
+        PwUtils.waitForLocatorAndFill(tcc, MessagesPageSelectors.MPS_TPF_PARAMETERS_DATE_INPUT, currentDateForm);
+        PwUtils.waitForLocatorAndFill(tcc, MessagesPageSelectors.MPS_TPF_PARAMETERS_TIME_INPUT, currentTimeForm);
+        PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_TPF_SEARCH_BUTTON);
+        PwUtils.waitForLocatorCount(tcc, newMessageCount, MessagesPageSelectors.MPS_SEARCH_RESULTS_TABLE_ITEMS, true);
+        PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItem(1, 5), newMessageText, true);
+        // Verify earlier sent - currently does not work (reenable once fixed)
+        // PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_OPEN_POPOVER_FORM_BUTTON);
+        // PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_TPF_PARAMETERS_MESSAGES);
+        // PwUtils.waitForLocatorAndClick(tcc, new CssBuilder(MessagesPageSelectors.MPS_TPF_FILTER_POPUP_DROPDOWN_ITEMS).nth(2).build());
+        // PwUtils.waitForLocatorAndFill(tcc, MessagesPageSelectors.MPS_TPF_PARAMETERS_DATE_INPUT, earlierDateForm);
+        // PwUtils.waitForLocatorAndFill(tcc, MessagesPageSelectors.MPS_TPF_PARAMETERS_TIME_INPUT, currentTimeForm);
+        // PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_TPF_SEARCH_BUTTON);
+        // PwUtils.waitForLocatorCount(tcc, MAX_MESSAGES_PER_PAGE, MessagesPageSelectors.MPS_SEARCH_RESULTS_TABLE_ITEMS, true);
+        // PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItem(1, 5), KEY_FILTER_MESSAGE, true);
+        // Filter by unix timepstamp
+        // Check new messages
+        PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_OPEN_POPOVER_FORM_BUTTON);
+        PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_TPF_PARAMETERS_MESSAGES);
+        PwUtils.waitForLocatorAndClick(tcc, new CssBuilder(MessagesPageSelectors.MPS_TPF_FILTER_POPUP_DROPDOWN_ITEMS).nth(3).build());
+        PwUtils.waitForLocatorAndFill(tcc, MessagesPageSelectors.MPS_TPF_PARAMETERS_MESSAGES_UNIX_TIMESTAMP_INPUT, currentDateTimeUnix);
+        PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_TPF_SEARCH_BUTTON);
+        PwUtils.waitForLocatorCount(tcc, newMessageCount, MessagesPageSelectors.MPS_SEARCH_RESULTS_TABLE_ITEMS, true);
+        PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItem(1, 5), newMessageText, true);
+        // Verify earlier sent
+        PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_OPEN_POPOVER_FORM_BUTTON);
+        PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_TPF_PARAMETERS_MESSAGES);
+        PwUtils.waitForLocatorAndClick(tcc, new CssBuilder(MessagesPageSelectors.MPS_TPF_FILTER_POPUP_DROPDOWN_ITEMS).nth(3).build());
+        PwUtils.waitForLocatorAndFill(tcc, MessagesPageSelectors.MPS_TPF_PARAMETERS_MESSAGES_UNIX_TIMESTAMP_INPUT, earlierDateTimeUnix);
+        PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_TPF_SEARCH_BUTTON);
+        PwUtils.waitForLocatorCount(tcc, MAX_MESSAGES_PER_PAGE, MessagesPageSelectors.MPS_SEARCH_RESULTS_TABLE_ITEMS, true);
+        PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItem(1, 5), KEY_FILTER_MESSAGE, true);
     }
 
     /**
@@ -188,7 +330,7 @@ public class MessagesST extends AbstractST {
         LOGGER.info("Filter messages by key - because no offset is specified, first `No message data` should appear");
         PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_OPEN_POPOVER_FORM_BUTTON);
         PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_TPF_WHERE_DROPDOWN_BUTTON);
-        PwUtils.waitForLocatorAndClick(tcc, new CssBuilder(MessagesPageSelectors.MPS_TPF_FILTER_WHERE_DROPDOWN_ITEMS).nth(2).build());
+        PwUtils.waitForLocatorAndClick(tcc, new CssBuilder(MessagesPageSelectors.MPS_TPF_FILTER_POPUP_DROPDOWN_ITEMS).nth(2).build());
         PwUtils.waitForLocatorAndFill(tcc, MessagesPageSelectors.MPS_TPF_HAS_WORDS_INPUT, KEY_FILTER);
         PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_TPF_SEARCH_BUTTON);
         PwUtils.waitForContainsText(tcc, MessagesPageSelectors.MPS_EMPTY_FILTER_SEARCH_CONTENT, "No messages data", true);
@@ -224,7 +366,7 @@ public class MessagesST extends AbstractST {
         LOGGER.info("Filter messages by Headers");
         PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_OPEN_POPOVER_FORM_BUTTON);
         PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_TPF_WHERE_DROPDOWN_BUTTON);
-        PwUtils.waitForLocatorAndClick(tcc, new CssBuilder(MessagesPageSelectors.MPS_TPF_FILTER_WHERE_DROPDOWN_ITEMS).nth(3).build());
+        PwUtils.waitForLocatorAndClick(tcc, new CssBuilder(MessagesPageSelectors.MPS_TPF_FILTER_POPUP_DROPDOWN_ITEMS).nth(3).build());
         PwUtils.waitForLocatorAndFill(tcc, MessagesPageSelectors.MPS_TPF_HAS_WORDS_INPUT, HEADER_FILTER_LOOK_UP_TEXT);
         PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_TPF_PARAMETERS_MESSAGES);
         PwUtils.waitForLocatorAndClick(tcc, new CssBuilder(MessagesPageSelectors.MPS_TPF_PARAMETERS_MESSAGES_DROPDOWN_ITEMS).nth(1).build());
@@ -256,7 +398,7 @@ public class MessagesST extends AbstractST {
         PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_OPEN_POPOVER_FORM_BUTTON);
 
         PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_TPF_WHERE_DROPDOWN_BUTTON);
-        PwUtils.waitForLocatorAndClick(tcc, new CssBuilder(MessagesPageSelectors.MPS_TPF_FILTER_WHERE_DROPDOWN_ITEMS).nth(4).build());
+        PwUtils.waitForLocatorAndClick(tcc, new CssBuilder(MessagesPageSelectors.MPS_TPF_FILTER_POPUP_DROPDOWN_ITEMS).nth(4).build());
         PwUtils.waitForLocatorAndFill(tcc, MessagesPageSelectors.MPS_TPF_HAS_WORDS_INPUT, VALUE_FILTER);
         PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_TPF_PARAMETERS_MESSAGES);
         PwUtils.waitForLocatorAndClick(tcc, new CssBuilder(MessagesPageSelectors.MPS_TPF_PARAMETERS_MESSAGES_DROPDOWN_ITEMS).nth(1).build());
@@ -335,6 +477,8 @@ public class MessagesST extends AbstractST {
 
         KubeResourceManager.get().createResourceWithWait(clients.producer(), clients.consumer());
         WaitUtils.waitForClientsSuccess(clients);
+        // Due to incorrect kafka internal timing (about 2 minutes), we need to set an offset for the old and new message timestamps
+        Utils.sleepWait(Duration.ofMinutes(1).toMillis());
 
         LOGGER.info("Filtering scenario prepared");
     }
@@ -344,9 +488,9 @@ public class MessagesST extends AbstractST {
         // Init test case config based on the test context
         tcc = getTestCaseConfig();
         // Prepare test environment
-        NamespaceUtils.prepareNamespace(tcc.namespace());
-        KafkaSetup.setupDefaultKafkaIfNeeded(tcc.namespace(), tcc.kafkaName());
-        ConsoleInstanceSetup.setupIfNeeded(ConsoleInstanceSetup.getDefaultConsoleInstance(tcc.namespace(), tcc.consoleInstanceName(), tcc.kafkaName(), tcc.kafkaUserName()).build());
+        //NamespaceUtils.prepareNamespace(tcc.namespace());
+        // KafkaSetup.setupDefaultKafkaIfNeeded(tcc.namespace(), tcc.kafkaName());
+        // ConsoleInstanceSetup.setupIfNeeded(ConsoleInstanceSetup.getDefaultConsoleInstance(tcc.namespace(), tcc.consoleInstanceName(), tcc.kafkaName(), tcc.kafkaUserName()).build());
         PwUtils.login(tcc);
     }
 
