@@ -13,7 +13,7 @@ const ConsumerGroupStateSchema = z.union([
   z.literal("RECONCILING"),
 ]);
 
-const GroupType = z.union([
+const GroupTypeUnion = z.union([
     z.literal("Classic"),
     z.literal("Consumer"),
     z.literal("Share"),
@@ -53,11 +53,12 @@ export const ConsumerGroupSchema = z.object({
   meta: z
     .object({
       privileges: z.array(z.string()).optional(),
+      describeAvailable: z.boolean().optional(),
     })
     .optional(),
   attributes: z.object({
     groupId: z.string(),
-    type: GroupType.nullable().optional(),
+    type: GroupTypeUnion.nullable().optional(),
     protocol: z.string().nullable().optional(),
     simpleConsumerGroup: z.boolean().optional(),
     state: ConsumerGroupStateSchema,
@@ -72,6 +73,9 @@ export const ConsumerGroupSchema = z.object({
 
 export type ConsumerGroup = z.infer<typeof ConsumerGroupSchema>;
 export type ConsumerGroupState = z.infer<typeof ConsumerGroupStateSchema>;
+
+export type GroupType = z.infer<typeof GroupTypeUnion>;
+export const GroupTypeValues = GroupTypeUnion.options.map(opt => opt.value) as [string, ...string[]];
 
 export const ConsumerGroupsResponseSchema = z.object({
   meta: z.object({
