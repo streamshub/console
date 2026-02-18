@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState } from 'react'
 import {
   MenuToggle,
   Select,
@@ -6,9 +6,9 @@ import {
   SelectList,
   SelectGroup,
   Divider,
-} from "@/libs/patternfly/react-core";
-import { useTranslations } from "next-intl";
-import { GroupedCheckboxType } from "../types";
+} from '@/libs/patternfly/react-core'
+import { useTranslations } from 'next-intl'
+import { GroupedCheckboxType } from '../types'
 
 export function FilterGroupedCheckbox<T extends string | number>({
   label,
@@ -18,12 +18,12 @@ export function FilterGroupedCheckbox<T extends string | number>({
   placeholder,
 }: Pick<
   GroupedCheckboxType<any>,
-  "chips" | "options" | "onToggle" | "placeholder"
+  'chips' | 'options' | 'onToggle' | 'placeholder'
 > & {
-  label: string;
+  label: string
 }) {
-  const t = useTranslations();
-  const [isOpen, setIsOpen] = useState(false);
+  const t = useTranslations()
+  const [isOpen, setIsOpen] = useState(false)
 
   return (
     <Select
@@ -36,21 +36,22 @@ export function FilterGroupedCheckbox<T extends string | number>({
         preventOverflow: true,
       }}
       onSelect={(_, value) => {
-        onToggle(value as T);
-        setIsOpen(false);
+        onToggle(value as T)
+        setIsOpen(false)
       }}
       selected={chips}
       isOpen={isOpen}
       toggle={(toggleRef) => (
         <MenuToggle
+          ouiaId={'filter-group-checkbox-toggle'}
           ref={toggleRef}
           onClick={() => setIsOpen((o) => !o)}
           isExpanded={isOpen}
-          style={{ width: "200px" } as React.CSSProperties}
+          style={{ width: '200px' } as React.CSSProperties}
         >
           {placeholder
             ? placeholder
-            : t("common.search_hint", { label: label.toLocaleLowerCase() })}
+            : t('common.search_hint', { label: label.toLocaleLowerCase() })}
         </MenuToggle>
       )}
     >
@@ -74,5 +75,5 @@ export function FilterGroupedCheckbox<T extends string | number>({
         </React.Fragment>
       ))}
     </Select>
-  );
+  )
 }

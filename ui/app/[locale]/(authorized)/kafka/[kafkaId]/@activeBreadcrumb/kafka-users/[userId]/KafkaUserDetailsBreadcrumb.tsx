@@ -1,27 +1,27 @@
-"use client";
+'use client'
 
-import RichText from "@/components/RichText";
+import RichText from '@/components/RichText'
 import {
   Breadcrumb,
   BreadcrumbItem,
   Tooltip,
-} from "@/libs/patternfly/react-core";
-import { HomeIcon } from "@/libs/patternfly/react-icons";
-import { useTranslations } from "next-intl";
+} from '@/libs/patternfly/react-core'
+import { HomeIcon } from '@/libs/patternfly/react-icons'
+import { useTranslations } from 'next-intl'
 
 export function KafkaUserDetailsBreadcrumb({
   kafkaId,
   name,
 }: {
-  kafkaId: string;
-  name: string;
+  kafkaId: string
+  name: string
 }) {
-  const t = useTranslations();
+  const t = useTranslations()
 
   return (
-    <Breadcrumb>
+    <Breadcrumb ouiaId={'kafkauser-details-breadcrumb'}>
       <BreadcrumbItem key="home" to="/" showDivider>
-        <Tooltip content={t("breadcrumbs.view_all_kafka_clusters")}>
+        <Tooltip content={t('breadcrumbs.view_all_kafka_clusters')}>
           <HomeIcon />
         </Tooltip>
       </BreadcrumbItem>
@@ -30,22 +30,22 @@ export function KafkaUserDetailsBreadcrumb({
         to={`/kafka/${kafkaId}/overview`}
         showDivider
       >
-        {t("breadcrumbs.overview")}
+        {t('breadcrumbs.overview')}
       </BreadcrumbItem>
       <BreadcrumbItem
         key="kafka-connect"
         to={`/kafka/${kafkaId}/kafka-users`}
         showDivider={true}
       >
-        {t("breadcrumbs.kafka_users")}
+        {t('breadcrumbs.kafka_users')}
       </BreadcrumbItem>
-      <BreadcrumbItem key={"cgm"} showDivider={true} isActive={true}>
-        {decodeURIComponent(name) === "+" ? (
-          <RichText>{(tags) => t.rich("common.empty_name", tags)}</RichText>
+      <BreadcrumbItem key={'cgm'} showDivider={true} isActive={true}>
+        {decodeURIComponent(name) === '+' ? (
+          <RichText>{(tags) => t.rich('common.empty_name', tags)}</RichText>
         ) : (
           name
         )}
       </BreadcrumbItem>
     </Breadcrumb>
-  );
+  )
 }

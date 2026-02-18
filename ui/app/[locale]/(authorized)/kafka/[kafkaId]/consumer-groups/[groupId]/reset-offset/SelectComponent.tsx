@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState } from 'react'
 import {
   Select,
   SelectOption,
@@ -6,35 +6,40 @@ import {
   MenuToggle,
   MenuToggleElement,
   SelectProps,
-} from "@/libs/patternfly/react-core";
+} from '@/libs/patternfly/react-core'
 
 export type SelectComponentProps<T extends string | number> = {
-  options: { value: T; label: string }[];
-  value: T;
-  onChange: (value: T) => void;
-  placeholder?: string;
-};
+  options: { value: T; label: string }[]
+  value: T
+  onChange: (value: T) => void
+  placeholder?: string
+}
 
 export function SelectComponent<T extends string | number>({
   options,
   value,
   onChange,
-  placeholder = "Select a value",
+  placeholder = 'Select a value',
 }: SelectComponentProps<T>) {
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(false)
 
-  const onToggle = () => setIsOpen((prev) => !prev);
+  const onToggle = () => setIsOpen((prev) => !prev)
 
-  const onSelect: SelectProps["onSelect"] = (_, selection) => {
-    onChange(selection as T);
-    setIsOpen(false);
-  };
+  const onSelect: SelectProps['onSelect'] = (_, selection) => {
+    onChange(selection as T)
+    setIsOpen(false)
+  }
 
   const toggle = (toggleRef: React.Ref<MenuToggleElement>) => (
-    <MenuToggle ref={toggleRef} onClick={onToggle} isExpanded={isOpen}>
+    <MenuToggle
+      ouiaId={'select-offset'}
+      ref={toggleRef}
+      onClick={onToggle}
+      isExpanded={isOpen}
+    >
       {options.find((option) => option.value === value)?.label || placeholder}
     </MenuToggle>
-  );
+  )
 
   return (
     <Select
@@ -53,5 +58,5 @@ export function SelectComponent<T extends string | number>({
         ))}
       </SelectList>
     </Select>
-  );
+  )
 }

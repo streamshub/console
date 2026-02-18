@@ -1,4 +1,4 @@
-import { LimitSelector } from "@/components/MessagesTable/components/LimitSelector";
+import { LimitSelector } from '@/components/MessagesTable/components/LimitSelector'
 import {
   Dropdown,
   DropdownItem,
@@ -6,17 +6,17 @@ import {
   FlexItem,
   FormHelperText,
   MenuToggle,
-} from "@/libs/patternfly/react-core";
-import { useState } from "react";
+} from '@/libs/patternfly/react-core'
+import { useState } from 'react'
 
-const DEFAULT_LIMIT_FOR_UNTIL_GROUP = 50;
+const DEFAULT_LIMIT_FOR_UNTIL_GROUP = 50
 
-type Category = "limit" | "live";
+type Category = 'limit' | 'live'
 export type UntilGroupProps = {
-  limit?: number | "continuously";
-  onLimitChange: (value: number | undefined) => void;
-  onLive: (enabled: boolean) => void;
-};
+  limit?: number | 'continuously'
+  onLimitChange: (value: number | undefined) => void
+  onLive: (enabled: boolean) => void
+}
 
 export function UntilGroup({
   limit = DEFAULT_LIMIT_FOR_UNTIL_GROUP,
@@ -24,66 +24,67 @@ export function UntilGroup({
   onLive,
 }: UntilGroupProps) {
   const labels: { [K in Category]: string } = {
-    limit: "Number of messages",
-    live: "Continuously",
-  };
+    limit: 'Number of messages',
+    live: 'Continuously',
+  }
   const [category, setCategory] = useState<Category>(
-    limit === "continuously" ? "live" : "limit",
-  );
-  const [isCategoryMenuOpen, setIsCategoryMenuOpen] = useState(false);
+    limit === 'continuously' ? 'live' : 'limit',
+  )
+  const [isCategoryMenuOpen, setIsCategoryMenuOpen] = useState(false)
 
   function handleLimit() {
-    setCategory("limit");
-    setIsCategoryMenuOpen(false);
-    onLimitChange(DEFAULT_LIMIT_FOR_UNTIL_GROUP);
-    onLive(false);
+    setCategory('limit')
+    setIsCategoryMenuOpen(false)
+    onLimitChange(DEFAULT_LIMIT_FOR_UNTIL_GROUP)
+    onLive(false)
   }
 
   function handleLive() {
-    setCategory("live");
-    setIsCategoryMenuOpen(false);
-    onLimitChange(undefined);
-    onLive(true);
+    setCategory('live')
+    setIsCategoryMenuOpen(false)
+    onLimitChange(undefined)
+    onLive(true)
   }
 
   return (
-    <Flex direction={{ default: "column" }}>
+    <Flex direction={{ default: 'column' }}>
       <FlexItem>
         <Dropdown
-          data-testid={"until-group"}
+          data-testid={'until-group'}
           toggle={(toggleRef) => (
             <MenuToggle
+              ouiaId={'until-group-toggle'}
               onClick={() => {
-                setIsCategoryMenuOpen((v) => !v);
+                setIsCategoryMenuOpen((v) => !v)
               }}
               isExpanded={isCategoryMenuOpen}
-              data-testid={"until-group-toggle"}
+              data-testid={'until-group-toggle'}
               ref={toggleRef}
-              className={"pf-v6-u-w-100"}
+              className={'pf-v6-u-w-100'}
             >
               {labels[category]}
             </MenuToggle>
           )}
           isOpen={isCategoryMenuOpen}
           onOpenChange={() => {
-            setIsCategoryMenuOpen((v) => !v);
+            setIsCategoryMenuOpen((v) => !v)
           }}
         >
-          <DropdownItem onClick={handleLimit}>{labels["limit"]}</DropdownItem>
-          <DropdownItem onClick={handleLive}>{labels["live"]}</DropdownItem>
+          <DropdownItem onClick={handleLimit}>{labels['limit']}</DropdownItem>
+          <DropdownItem onClick={handleLive}>{labels['live']}</DropdownItem>
         </Dropdown>
       </FlexItem>
-      {category === "limit" && (
+      {category === 'limit' && (
         <FlexItem>
           <LimitSelector
             value={
-              limit !== "continuously" ? limit : DEFAULT_LIMIT_FOR_UNTIL_GROUP
+              limit !== 'continuously' ? limit : DEFAULT_LIMIT_FOR_UNTIL_GROUP
             }
             onChange={onLimitChange}
           />
         </FlexItem>
       )}
-      {category === "live" && (
+      {category === 'live' && (
         <FlexItem>
           <FormHelperText>
             The screen displays only the most recent 100 messages, with older
@@ -92,5 +93,5 @@ export function UntilGroup({
         </FlexItem>
       )}
     </Flex>
-  );
+  )
 }

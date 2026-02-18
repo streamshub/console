@@ -3,42 +3,42 @@ import {
   Select,
   SelectOption,
   SelectList,
-} from "@/libs/patternfly/react-core";
-import { useTranslations } from "next-intl";
-import { useCallback, useMemo, useState } from "react";
+} from '@/libs/patternfly/react-core'
+import { useTranslations } from 'next-intl'
+import { useCallback, useMemo, useState } from 'react'
 
 export type PartitionSelectorProps = {
-  value: number | undefined;
-  partitions: number | undefined;
-  onChange: (value: number | undefined) => void;
-};
+  value: number | undefined
+  partitions: number | undefined
+  onChange: (value: number | undefined) => void
+}
 
 export function PartitionSelector({
   value = -1,
   partitions,
   onChange,
 }: PartitionSelectorProps) {
-  const t = useTranslations("message-browser");
-  const [isOpen, setIsOpen] = useState(false);
-  const toggleOpen = () => setIsOpen((o) => !o);
-  const titleId = "in-partition";
+  const t = useTranslations('message-browser')
+  const [isOpen, setIsOpen] = useState(false)
+  const toggleOpen = () => setIsOpen((o) => !o)
+  const titleId = 'in-partition'
 
   const handleChange = useCallback(
     (value: string) => {
-      if (value !== "") {
-        const valueAsNum = parseInt(value, 10);
+      if (value !== '') {
+        const valueAsNum = parseInt(value, 10)
         if (Number.isInteger(valueAsNum)) {
-          onChange(valueAsNum);
+          onChange(valueAsNum)
         }
       }
-      setIsOpen(false);
+      setIsOpen(false)
     },
     [onChange],
-  );
+  )
 
   const allPartitions = useMemo(() => {
-    return new Array(partitions).fill(0).map((_, index) => index);
-  }, [partitions]);
+    return new Array(partitions).fill(0).map((_, index) => index)
+  }, [partitions])
 
   const makeOptions = useCallback(
     (values: number[]) => {
@@ -51,38 +51,38 @@ export function PartitionSelector({
         >
           {v}
         </SelectOption>
-      ));
-      const hiddenOptionsCount = values.length - options.length;
+      ))
+      const hiddenOptionsCount = values.length - options.length
       const partialOptions = hiddenOptionsCount
         ? [
             ...options,
             <SelectOption
-              key={"more-info"}
+              key={'more-info'}
               isDisabled={true}
-              description={t("partitions_hidden", {
+              description={t('partitions_hidden', {
                 count: hiddenOptionsCount,
               })}
             />,
           ]
-        : options;
+        : options
       return [
         <SelectOption
-          key={"all"}
+          key={'all'}
           isSelected={value === -1}
           value={-1}
           onClick={() => onChange(undefined)}
         >
-          {t("partition_placeholder")}
+          {t('partition_placeholder')}
         </SelectOption>,
         ...partialOptions,
-      ];
+      ]
     },
     [onChange, t, value],
-  );
+  )
 
   const options = useMemo(() => {
-    return makeOptions(allPartitions);
-  }, [allPartitions, makeOptions]);
+    return makeOptions(allPartitions)
+  }, [allPartitions, makeOptions])
 
   return (
     <Select
@@ -91,21 +91,22 @@ export function PartitionSelector({
       isScrollable={true}
       isOpen={isOpen}
       id={titleId}
-      data-testid={"partition-selector"}
+      data-testid={'partition-selector'}
       toggle={(toggleRef) => (
         <MenuToggle
+          ouiaId={'partition-selector-toggle'}
           ref={toggleRef}
           onClick={toggleOpen}
           isExpanded={isOpen}
-          className={"pf-v6-u-w-100"}
+          className={'pf-v6-u-w-100'}
         >
           {value !== -1
-            ? t("partition_option", { value })
-            : t("partition_placeholder")}
+            ? t('partition_option', { value })
+            : t('partition_placeholder')}
         </MenuToggle>
       )}
     >
       <SelectList>{options}</SelectList>
     </Select>
-  );
+  )
 }

@@ -1,5 +1,5 @@
-"use client";
-import { ManagedTopicLabel } from "@/components/ManagedTopicLabel";
+'use client'
+import { ManagedTopicLabel } from '@/components/ManagedTopicLabel'
 import {
   Menu,
   MenuList,
@@ -12,11 +12,11 @@ import {
   MenuContainer,
   ToolbarItem,
   SelectGroup,
-} from "@/libs/patternfly/react-core";
-import { useTranslations } from "next-intl";
-import { useRef, useState, useMemo } from "react";
+} from '@/libs/patternfly/react-core'
+import { useTranslations } from 'next-intl'
+import { useRef, useState, useMemo } from 'react'
 
-type TopicOption = { id: string; name: string; managed?: boolean };
+type TopicOption = { id: string; name: string; managed?: boolean }
 
 export function FilterByTopic({
   selectedTopic,
@@ -24,38 +24,38 @@ export function FilterByTopic({
   disableToolbar,
   onSetSelectedTopic,
 }: {
-  selectedTopic: string | undefined;
-  topicList: TopicOption[];
-  disableToolbar: boolean;
-  onSetSelectedTopic: (value: string | undefined) => void;
+  selectedTopic: string | undefined
+  topicList: TopicOption[]
+  disableToolbar: boolean
+  onSetSelectedTopic: (value: string | undefined) => void
 }) {
-  const t = useTranslations("metrics");
-  const allTopicsLabel = t("all_topics");
+  const t = useTranslations('metrics')
+  const allTopicsLabel = t('all_topics')
 
-  const [isOpen, setIsOpen] = useState(false);
-  const [filter, setFilter] = useState("");
+  const [isOpen, setIsOpen] = useState(false)
+  const [filter, setFilter] = useState('')
 
-  const toggleRef = useRef<any>(null);
-  const menuRef = useRef<any>(null);
+  const toggleRef = useRef<any>(null)
+  const menuRef = useRef<any>(null)
 
   const filteredTopics = useMemo(() => {
     return topicList.filter((topic) =>
       topic.name.toLowerCase().includes(filter.toLowerCase()),
-    );
-  }, [topicList, filter]);
+    )
+  }, [topicList, filter])
 
   const selectedTopicName = useMemo(() => {
-    return topicList.find((t) => t.id === selectedTopic)?.name;
-  }, [topicList, selectedTopic]);
+    return topicList.find((t) => t.id === selectedTopic)?.name
+  }, [topicList, selectedTopic])
 
   const onSelect = (_event: any, itemId: string | number | undefined) => {
-    if (itemId === "all-topics") {
-      onSetSelectedTopic(undefined);
+    if (itemId === 'all-topics') {
+      onSetSelectedTopic(undefined)
     } else {
-      onSetSelectedTopic(itemId as string);
+      onSetSelectedTopic(itemId as string)
     }
-    setIsOpen(false);
-  };
+    setIsOpen(false)
+  }
 
   const menuItems = [
     <SelectOption
@@ -77,18 +77,19 @@ export function FilterByTopic({
         </SelectOption>
       ))}
     </SelectGroup>,
-  ];
+  ]
 
   if (filter && filteredTopics.length === 0) {
     menuItems.push(
       <SelectOption isDisabled key="no-results">
-        {t("common:no_results_found")}
+        {t('common:no_results_found')}
       </SelectOption>,
-    );
+    )
   }
 
   const toggle = (
     <MenuToggle
+      ouiaId={'filter-by-topic-toggle'}
       ref={toggleRef}
       onClick={() => setIsOpen(!isOpen)}
       isExpanded={isOpen}
@@ -100,13 +101,13 @@ export function FilterByTopic({
         <ManagedTopicLabel />
       )}
     </MenuToggle>
-  );
+  )
 
   const menu = (
     <Menu
       ref={menuRef}
       onSelect={onSelect}
-      activeItemId={selectedTopic ?? "all-topics"}
+      activeItemId={selectedTopic ?? 'all-topics'}
       isScrollable
     >
       <MenuSearch>
@@ -115,8 +116,8 @@ export function FilterByTopic({
             value={filter}
             onChange={(_, val) => setFilter(val)}
             onClear={(evt) => {
-              evt.stopPropagation();
-              setFilter("");
+              evt.stopPropagation()
+              setFilter('')
             }}
           />
         </MenuSearchInput>
@@ -126,7 +127,7 @@ export function FilterByTopic({
         <MenuList>{menuItems}</MenuList>
       </MenuContent>
     </Menu>
-  );
+  )
 
   return (
     <ToolbarItem>
@@ -137,8 +138,8 @@ export function FilterByTopic({
         menuRef={menuRef}
         isOpen={isOpen}
         onOpenChange={setIsOpen}
-        onOpenChangeKeys={["Escape"]}
+        onOpenChangeKeys={['Escape']}
       />
     </ToolbarItem>
-  );
+  )
 }

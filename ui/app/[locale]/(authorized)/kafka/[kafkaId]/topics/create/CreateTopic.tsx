@@ -1,15 +1,15 @@
-"use client";
+'use client'
 
-import { ApiResponse, ApiError } from "@/api/api";
+import { ApiResponse, ApiError } from '@/api/api'
 import {
   ConfigMap,
   NewConfigMap,
   TopicCreateResponse,
-} from "@/api/topics/schema";
-import { StepDetails } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/topics/create/StepDetails";
-import { StepOptions } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/topics/create/StepOptions";
-import { StepReview } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/topics/create/StepReview";
-import { useRouter } from "@/i18n/routing";
+} from '@/api/topics/schema'
+import { StepDetails } from '@/app/[locale]/(authorized)/kafka/[kafkaId]/topics/create/StepDetails'
+import { StepOptions } from '@/app/[locale]/(authorized)/kafka/[kafkaId]/topics/create/StepOptions'
+import { StepReview } from '@/app/[locale]/(authorized)/kafka/[kafkaId]/topics/create/StepReview'
+import { useRouter } from '@/i18n/routing'
 import {
   Button,
   PageSection,
@@ -18,9 +18,9 @@ import {
   Wizard,
   WizardFooterWrapper,
   WizardStep,
-} from "@/libs/patternfly/react-core";
-import { useTranslations } from "next-intl";
-import { useCallback, useState, useTransition } from "react";
+} from '@/libs/patternfly/react-core'
+import { useTranslations } from 'next-intl'
+import { useCallback, useState, useTransition } from 'react'
 
 export function CreateTopic({
   kafkaId,
@@ -28,91 +28,85 @@ export function CreateTopic({
   initialOptions,
   onSave,
 }: {
-  kafkaId: string;
-  maxReplicas: number;
-  initialOptions: ConfigMap;
+  kafkaId: string
+  maxReplicas: number
+  initialOptions: ConfigMap
   onSave: (
     name: string,
     partitions: number,
     replicas: number,
     options: NewConfigMap,
     validateOnly: boolean,
-  ) => Promise<ApiResponse<TopicCreateResponse>>;
+  ) => Promise<ApiResponse<TopicCreateResponse>>
 }) {
-  const t = useTranslations();
-  const router = useRouter();
-  const [name, setName] = useState("");
-  const [partitions, setPartitions] = useState(1);
-  const [replicas, setReplicas] = useState(maxReplicas);
-  const [options, setOptions] = useState<NewConfigMap>({});
-  const [pending, startTransition] = useTransition();
-  const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState<ApiError[] | undefined>(undefined);
+  const t = useTranslations()
+  const router = useRouter()
+  const [name, setName] = useState('')
+  const [partitions, setPartitions] = useState(1)
+  const [replicas, setReplicas] = useState(maxReplicas)
+  const [options, setOptions] = useState<NewConfigMap>({})
+  const [pending, startTransition] = useTransition()
+  const [loading, setLoading] = useState(false)
+  const [errors, setErrors] = useState<ApiError[] | undefined>(undefined)
 
   const save = useCallback(async () => {
     try {
-      setLoading(true);
-      setErrors(undefined);
-      const response = await onSave(name, partitions, replicas, options, false);
+      setLoading(true)
+      setErrors(undefined)
+      const response = await onSave(name, partitions, replicas, options, false)
 
       startTransition(() => {
         if (response.errors) {
-          setErrors(response.errors);
+          setErrors(response.errors)
         } else {
-          router.push(`/kafka/${kafkaId}/topics/${response.payload?.data.id}`);
+          router.push(`/kafka/${kafkaId}/topics/${response.payload?.data.id}`)
         }
-      });
-    } catch (e: unknown) {
+      })
+    } catch (e) {
       setErrors([
         {
-          title: "Unknown error",
+          title: 'Unknown error',
           detail: String(e),
         },
-      ]);
+      ])
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  }, [kafkaId, name, onSave, options, partitions, replicas, router]);
+  }, [kafkaId, name, onSave, options, partitions, replicas, router])
 
   const validate = useCallback(
     async (success: () => void) => {
       try {
-        setLoading(true);
-        setErrors(undefined);
-        const response = await onSave(
-          name,
-          partitions,
-          replicas,
-          options,
-          true,
-        );
+        setLoading(true)
+        setErrors(undefined)
+        const response = await onSave(name, partitions, replicas, options, true)
         startTransition(() => {
           if (response.errors) {
-            setErrors(response.errors);
+            setErrors(response.errors)
           } else {
-            success();
+            success()
           }
-        });
-      } catch (e: unknown) {
+        })
+      } catch (e) {
         setErrors([
           {
-            title: "Unknown error",
+            title: 'Unknown error',
             detail: String(e),
           },
-        ]);
+        ])
       } finally {
-        setLoading(false);
+        setLoading(false)
       }
     },
     [name, onSave, options, partitions, replicas],
-  );
+  )
 
-  const formInvalid = errors !== undefined;
+  const formInvalid = errors !== undefined
 
   return (
-    <Wizard navAriaLabel={t("CreateTopic.title")} onClose={() => router.back()}>
+    <Wizard navAriaLabel={t('CreateTopic.title')} onClose={() => router.back()}>
       <WizardStep
-        name={t("CreateTopic.topic_details")}
+        name={t('CreateTopic.topic_details')}
         id="step-details"
         footer={
           <SkipReviewFooter
@@ -134,15 +128,15 @@ export function CreateTopic({
         />
       </WizardStep>
       <WizardStep
-        name={t("CreateTopic.options")}
+        name={t('CreateTopic.options')}
         id="step-options"
         footer={
           <AsyncFooter
-            nextStepId={"step-review"}
+            nextStepId={'step-review'}
             nextDisabled={formInvalid || errors !== undefined}
             onClick={(success) => validate(success)}
             loading={pending || loading}
-            primaryLabel={t("CreateTopic.next")}
+            primaryLabel={t('CreateTopic.next')}
           />
         }
       >
@@ -154,15 +148,15 @@ export function CreateTopic({
         />
       </WizardStep>
       <WizardStep
-        name={t("CreateTopic.review")}
+        name={t('CreateTopic.review')}
         id="step-review"
         footer={
           <AsyncFooter
-            nextStepId={""}
+            nextStepId={''}
             nextDisabled={formInvalid}
             onClick={save}
             loading={pending || loading}
-            primaryLabel={t("CreateTopic.create_topic")}
+            primaryLabel={t('CreateTopic.create_topic')}
           />
         }
       >
@@ -176,7 +170,7 @@ export function CreateTopic({
         />
       </WizardStep>
     </Wizard>
-  );
+  )
 }
 
 const SkipReviewFooter = ({
@@ -184,42 +178,50 @@ const SkipReviewFooter = ({
   onClick,
   loading,
 }: {
-  formInvalid: boolean;
-  onClick: (success: () => void) => void;
-  loading: boolean;
+  formInvalid: boolean
+  onClick: (success: () => void) => void
+  loading: boolean
 }) => {
-  const t = useTranslations();
-  const { goToNextStep, goToStepById, close } = useWizardContext();
+  const t = useTranslations()
+  const { goToNextStep, goToStepById, close } = useWizardContext()
   return (
     <WizardFooterWrapper>
-      <Button isDisabled={true}>{t("CreateTopic.back")}</Button>
+      <Button ouiaId={'create-topic-back-button'} isDisabled={true}>
+        {t('CreateTopic.back')}
+      </Button>
       <Button
         variant="primary"
         onClick={() => onClick(goToNextStep)}
         isLoading={loading}
         isDisabled={loading}
+        ouiaId={'create-topic-next-button'}
       >
-        {t("CreateTopic.next")}
+        {t('CreateTopic.next')}
       </Button>
       <Tooltip
-        content={t("CreateTopic.review_and_finish_tooltip")}
-        triggerRef={() => document.getElementById("review-button")!}
+        content={t('CreateTopic.review_and_finish_tooltip')}
+        triggerRef={() => document.getElementById('review-button')!}
       >
         <Button
+          ouiaId={'create-topic-review-button'}
           variant="plain"
-          onClick={() => onClick(() => goToStepById("step-review"))}
-          id={"review-button"}
+          onClick={() => onClick(() => goToStepById('step-review'))}
+          id={'review-button'}
           isDisabled={loading}
         >
-          {t("CreateTopic.review_and_finish")}
+          {t('CreateTopic.review_and_finish')}
         </Button>
       </Tooltip>
-      <Button variant={"link"} onClick={close}>
-        {t("CreateTopic.cancel")}
+      <Button
+        ouiaId={'create-topic-cancel-button'}
+        variant={'link'}
+        onClick={close}
+      >
+        {t('CreateTopic.cancel')}
       </Button>
     </WizardFooterWrapper>
-  );
-};
+  )
+}
 
 const AsyncFooter = ({
   nextStepId,
@@ -228,24 +230,30 @@ const AsyncFooter = ({
   primaryLabel,
   onClick,
 }: {
-  nextStepId: string;
-  nextDisabled: boolean;
-  loading: boolean;
-  primaryLabel: string;
-  onClick: (success: () => void) => void;
+  nextStepId: string
+  nextDisabled: boolean
+  loading: boolean
+  primaryLabel: string
+  onClick: (success: () => void) => void
 }) => {
-  const t = useTranslations();
-  const { goToPrevStep, goToStepById, close } = useWizardContext();
+  const t = useTranslations()
+  const { goToPrevStep, goToStepById, close } = useWizardContext()
   return (
     <WizardFooterWrapper>
-      <Button variant={"secondary"} onClick={goToPrevStep} disabled={loading}>
-        {t("CreateTopic.back")}
+      <Button
+        ouiaId={'create-topic-back-button'}
+        variant={'secondary'}
+        onClick={goToPrevStep}
+        disabled={loading}
+      >
+        {t('CreateTopic.back')}
       </Button>
       <Button
+        ouiaId={'create-topic-next-button'}
         variant="primary"
         onClick={() =>
           onClick(() => {
-            goToStepById(nextStepId);
+            goToStepById(nextStepId)
           })
         }
         isLoading={loading}
@@ -253,9 +261,14 @@ const AsyncFooter = ({
       >
         {primaryLabel}
       </Button>
-      <Button variant={"link"} onClick={close} disabled={loading}>
-        {t("CreateTopic.cancel")}
+      <Button
+        ouiaId={'create-topic-cancel-button'}
+        variant={'link'}
+        onClick={close}
+        disabled={loading}
+      >
+        {t('CreateTopic.cancel')}
       </Button>
     </WizardFooterWrapper>
-  );
-};
+  )
+}

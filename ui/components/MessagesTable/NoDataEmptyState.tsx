@@ -34,7 +34,9 @@ export function NoDataEmptyState() {
     >
       <EmptyStateBody>{t('no_data_body')}</EmptyStateBody>
       <EmptyStateFooter>
-        <Button onClick={onRefresh}>{t('no_data_refresh')}</Button>
+        <Button ouiaId={'error-state-no-data-reset'} onClick={onRefresh}>
+          {t('no_data_refresh')}
+        </Button>
       </EmptyStateFooter>
     </EmptyState>
   )

@@ -1,52 +1,55 @@
-"use client";
+'use client'
 
-import { updateKafkaCluster } from "@/api/kafka/actions";
-import { ReconciliationModal } from "@/components/ClusterOverview/ReconciliationModal";
-import { useReconciliationContext } from "@/components/ReconciliationContext";
-import { Button } from "@/libs/patternfly/react-core";
-import { useTranslations } from "next-intl";
-import { useState } from "react";
-import { PauseCircleIcon, PlayIcon } from "@/libs/patternfly/react-icons";
+import { updateKafkaCluster } from '@/api/kafka/actions'
+import { ReconciliationModal } from '@/components/ClusterOverview/ReconciliationModal'
+import { useReconciliationContext } from '@/components/ReconciliationContext'
+import { Button } from '@/libs/patternfly/react-core'
+import { useTranslations } from 'next-intl'
+import { useState } from 'react'
+import { PauseCircleIcon, PlayIcon } from '@/libs/patternfly/react-icons'
 
 export function ReconciliationPauseButton({
   clusterId,
   managed,
 }: {
-  clusterId: string;
-  managed: boolean;
+  clusterId: string
+  managed: boolean
 }) {
-  const t = useTranslations();
-  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  const t = useTranslations()
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false)
 
-  const { isReconciliationPaused, setReconciliationPaused } =
-    useReconciliationContext();
+  const {
+    isReconciliationPaused,
+    setReconciliationPaused,
+  } = useReconciliationContext()
 
   const onClickUpdate = async (pausedState: boolean) => {
     try {
-      const response = await updateKafkaCluster(clusterId, pausedState);
+      const response = await updateKafkaCluster(clusterId, pausedState)
 
       if (response.errors) {
-        console.log("Unknown error occurred", response.errors);
+        console.log('Unknown error occurred', response.errors)
       } else {
-        setReconciliationPaused(pausedState);
-        setIsModalOpen(false);
+        setReconciliationPaused(pausedState)
+        setIsModalOpen(false)
       }
-    } catch (e: unknown) {
-      console.log("Unknown error occurred");
+    } catch (e) {
+      console.log('Unknown error occurred')
     }
-  };
+  }
 
   return (
     <>
       {managed && (
         <Button
+          ouiaId={'reconciliation-button'}
           variant="link"
           icon={isReconciliationPaused ? <PlayIcon /> : <PauseCircleIcon />}
           onClick={() => setIsModalOpen(true)}
         >
           {isReconciliationPaused
-            ? t("reconciliation.resume_reconciliation")
-            : t("reconciliation.pause_reconciliation_button")}
+            ? t('reconciliation.resume_reconciliation')
+            : t('reconciliation.pause_reconciliation_button')}
         </Button>
       )}
       {isModalOpen && (
@@ -62,5 +65,5 @@ export function ReconciliationPauseButton({
         />
       )}
     </>
-  );
+  )
 }

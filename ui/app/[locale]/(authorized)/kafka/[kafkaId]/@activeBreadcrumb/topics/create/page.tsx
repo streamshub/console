@@ -1,24 +1,24 @@
-import { KafkaParams } from "@/app/[locale]/(authorized)/kafka/[kafkaId]/kafka.params";
-import { BreadcrumbLink } from "@/components/Navigation/BreadcrumbLink";
+import { KafkaParams } from '@/app/[locale]/(authorized)/kafka/[kafkaId]/kafka.params'
+import { BreadcrumbLink } from '@/components/Navigation/BreadcrumbLink'
 import {
   Breadcrumb,
   BreadcrumbItem,
   Tooltip,
-} from "@/libs/patternfly/react-core";
-import { HomeIcon } from "@/libs/patternfly/react-icons";
-import { getTranslations } from "next-intl/server";
+} from '@/libs/patternfly/react-core'
+import { HomeIcon } from '@/libs/patternfly/react-icons'
+import { getTranslations } from 'next-intl/server'
 
 export default async function TopicsActiveBreadcrumb({
   params: paramsPromise,
 }: {
-  params: Promise<KafkaParams>;
+  params: Promise<KafkaParams>
 }) {
-  const { kafkaId } = await paramsPromise;
-  const t = await getTranslations("breadcrumbs");
+  const { kafkaId } = await paramsPromise
+  const t = await getTranslations('breadcrumbs')
   return (
-    <Breadcrumb>
+    <Breadcrumb ouiaId={'create-topic-breadcrumb'}>
       <BreadcrumbItem key="home" to="/" showDivider>
-        <Tooltip content={t("view_all_kafka_clusters")}>
+        <Tooltip content={t('view_all_kafka_clusters')}>
           <HomeIcon />
         </Tooltip>
       </BreadcrumbItem>
@@ -27,18 +27,18 @@ export default async function TopicsActiveBreadcrumb({
         to={`/kafka/${kafkaId}/overview`}
         showDivider
       >
-        {t("overview")}
+        {t('overview')}
       </BreadcrumbItem>
       <BreadcrumbLink
-        key={"topics"}
+        key={'topics'}
         href={`/kafka/${kafkaId}/topics`}
         showDivider={true}
       >
-        {t("topics")}
+        {t('topics')}
       </BreadcrumbLink>
-      <BreadcrumbItem key={"create-topic"} showDivider={true}>
-        {t("create_topic")}
+      <BreadcrumbItem key={'create-topic'} showDivider={true}>
+        {t('create_topic')}
       </BreadcrumbItem>
     </Breadcrumb>
-  );
+  )
 }

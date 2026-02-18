@@ -1,5 +1,5 @@
-"use client";
-import type { ToolbarProps } from "@/libs/patternfly/react-core";
+'use client'
+import type { ToolbarProps } from '@/libs/patternfly/react-core'
 import {
   Button,
   Divider,
@@ -18,53 +18,53 @@ import {
   ToolbarContent,
   ToolbarGroup,
   ToolbarItem,
-} from "@/libs/patternfly/react-core";
+} from '@/libs/patternfly/react-core'
 import {
   EllipsisVIcon,
   SortAmountDownIcon,
-} from "@/libs/patternfly/react-icons";
+} from '@/libs/patternfly/react-icons'
 import {
   InnerScrollContainer,
   OuterScrollContainer,
   SortByDirection,
-} from "@/libs/patternfly/react-table";
-import type { ReactElement } from "react";
-import { useState } from "react";
-import { EmptyStateLoading } from "../EmptyStateLoading";
-import { Pagination } from "../Pagination";
-import type { ResponsiveTableProps } from "./ResponsiveTable";
-import { ResponsiveTable } from "./ResponsiveTable";
-import type { ChipFilterProps } from "./Toolbar";
-import { ChipFilter } from "./Toolbar";
-import { ThSortType } from "@patternfly/react-table/dist/esm/components/Table/base/types";
+} from '@/libs/patternfly/react-table'
+import type { ReactElement } from 'react'
+import { useState } from 'react'
+import { EmptyStateLoading } from '../EmptyStateLoading'
+import { Pagination } from '../Pagination'
+import type { ResponsiveTableProps } from './ResponsiveTable'
+import { ResponsiveTable } from './ResponsiveTable'
+import { ChipFilter, type ChipFilterProps } from './Toolbar'
+import { ThSortType } from '@patternfly/react-table/dist/esm/components/Table/base/types'
+import { NoSSR } from '../NoSSR'
 
 export type ToolbarAction = {
-  label: string;
-  isPrimary: boolean;
-  onClick: () => void;
-};
+  label: string
+  isPrimary: boolean
+  onClick: () => void
+}
 
-export const DEFAULT_PAGE = 1;
-export const DEFAULT_PERPAGE = 20;
+export const DEFAULT_PAGE = 1
+export const DEFAULT_PERPAGE = 20
 
 export type TableViewProps<TRow, TCol> = {
-  toolbarBreakpoint?: ToolbarProps["collapseListedFiltersBreakpoint"];
-  filters?: ChipFilterProps["filters"];
-  isFiltered?: boolean;
-  actions?: ToolbarAction[];
-  tools?: ReactElement[];
-  itemCount?: number;
-  page?: number;
-  perPage?: number;
-  onPageChange: (page: number, perPage: number) => void;
-  onClearAllFilters?: () => void;
-  data: ResponsiveTableProps<TRow, TCol>["data"] | null;
-  emptyStateNoData: ReactElement;
-  emptyStateNoResults: ReactElement;
-  sortProvider?: (col: TCol) => (ThSortType & { label?: string }) | undefined;
-} & Omit<ResponsiveTableProps<TRow, TCol>, "data">;
+  toolbarBreakpoint?: ToolbarProps['collapseListedFiltersBreakpoint']
+  filters?: ChipFilterProps['filters']
+  isFiltered?: boolean
+  actions?: ToolbarAction[]
+  tools?: ReactElement[]
+  itemCount?: number
+  page?: number
+  perPage?: number
+  onPageChange: (page: number, perPage: number) => void
+  onClearAllFilters?: () => void
+  data: ResponsiveTableProps<TRow, TCol>['data'] | null
+  emptyStateNoData: ReactElement
+  emptyStateNoResults: ReactElement
+  sortProvider?: (col: TCol) => (ThSortType & { label?: string }) | undefined
+} & Omit<ResponsiveTableProps<TRow, TCol>, 'data'>
 export const TableView = <TRow, TCol>({
-  toolbarBreakpoint = "lg",
+  toolbarBreakpoint = 'lg',
   filters,
   actions,
   tools,
@@ -81,43 +81,46 @@ export const TableView = <TRow, TCol>({
   sortProvider,
   ...tableProps
 }: TableViewProps<TRow, TCol>) => {
-  const [isSortOpen, toggleIsSortOpen] = useState(false);
-  const [isActionsOpen, toggleIsActionsOpen] = useState(false);
-  const { data } = tableProps;
-  const showPagination = data?.length !== 0 && itemCount;
-  const breakpoint = toolbarBreakpoint === "all" ? "lg" : toolbarBreakpoint;
+  const [isSortOpen, toggleIsSortOpen] = useState(false)
+  const [isActionsOpen, toggleIsActionsOpen] = useState(false)
+  const { data } = tableProps
+  const showPagination = data?.length !== 0 && itemCount
+  const breakpoint = toolbarBreakpoint === 'all' ? 'lg' : toolbarBreakpoint
 
   function notUndefined<T>(x: T | undefined): x is T {
-    return x !== undefined;
+    return x !== undefined
   }
 
   const sortableColumns = sortProvider
     ? columns.map((c) => sortProvider(c)).filter(notUndefined)
-    : undefined;
+    : undefined
   const sortedColumn = sortableColumns?.find(
     (s) => s.sortBy.index === s.columnIndex,
-  );
+  )
   if (data === null) {
-    return <EmptyStateLoading />;
+    return <EmptyStateLoading />
   }
   if (data?.length === 0 && !isFiltered) {
-    return emptyStateNoData;
+    return emptyStateNoData
   }
   return (
-    <OuterScrollContainer className={"pf-u-h-100"}>
+    <OuterScrollContainer className={'pf-u-h-100'}>
       <Toolbar
+        id="table-view-toolbar"
+        ouiaId={'table-view-filter'}
         clearAllFilters={onClearAllFilters}
         collapseListedFiltersBreakpoint={toolbarBreakpoint}
       >
         <ToolbarContent>
           {/* sort control for small viewports */}
           {sortableColumns && (
-            <ToolbarItem visibility={{ [breakpoint]: "hidden" }}>
+            <ToolbarItem visibility={{ [breakpoint]: 'hidden' }}>
               <Select
                 id="options-menu-multiple-options-example"
                 isOpen={isSortOpen}
                 toggle={(toggleRef: any) => (
                   <MenuToggle
+                    ouiaId={'table-view-toggle'}
                     ref={toggleRef}
                     onClick={() => toggleIsSortOpen((o) => !o)}
                     isExpanded={isSortOpen}
@@ -137,10 +140,10 @@ export const TableView = <TRow, TCol>({
                       onSelect={(e: any) =>
                         sortObj.onSort &&
                         sortObj.onSort(
-                          e as unknown as React.MouseEvent,
+                          (e as unknown) as React.MouseEvent,
                           sortObj.columnIndex,
                           (sortObj.sortBy.direction ||
-                            sortObj.sortBy.defaultDirection) === "asc"
+                            sortObj.sortBy.defaultDirection) === 'asc'
                             ? SortByDirection.asc
                             : SortByDirection.desc,
                           {},
@@ -157,13 +160,13 @@ export const TableView = <TRow, TCol>({
                     onSelect={() =>
                       sortedColumn?.onSort &&
                       sortedColumn.onSort(
-                        undefined as unknown as React.MouseEvent,
+                        (undefined as unknown) as React.MouseEvent,
                         sortedColumn.columnIndex,
                         SortByDirection.asc,
                         {},
                       )
                     }
-                    isSelected={sortedColumn?.sortBy.direction === "asc"}
+                    isSelected={sortedColumn?.sortBy.direction === 'asc'}
                     key="ascending"
                   >
                     Ascending
@@ -172,13 +175,13 @@ export const TableView = <TRow, TCol>({
                     onSelect={() =>
                       sortedColumn?.onSort &&
                       sortedColumn.onSort(
-                        undefined as unknown as React.MouseEvent,
+                        (undefined as unknown) as React.MouseEvent,
                         sortedColumn.columnIndex,
                         SortByDirection.desc,
                         {},
                       )
                     }
-                    isSelected={sortedColumn?.sortBy.direction === "desc"}
+                    isSelected={sortedColumn?.sortBy.direction === 'desc'}
                     key="descending"
                   >
                     Descending
@@ -189,7 +192,7 @@ export const TableView = <TRow, TCol>({
           )}
 
           {/* responsive filters control */}
-          {filters && <ChipFilter breakpoint={breakpoint} filters={filters} />}
+          {filters && <NoSSR><ChipFilter breakpoint={breakpoint} filters={filters} /></NoSSR>}
 
           {/* responsive action buttons, fallback on a dropdown on small viewports */}
           {actions ? (
@@ -200,7 +203,8 @@ export const TableView = <TRow, TCol>({
                     {actions.map((a, idx) => (
                       <OverflowMenuItem key={idx}>
                         <Button
-                          variant={a.isPrimary ? "primary" : undefined}
+                          ouiaId={'overflow-menu-button'}
+                          variant={a.isPrimary ? 'primary' : undefined}
                           onClick={a.onClick}
                         >
                           {a.label}
@@ -214,6 +218,7 @@ export const TableView = <TRow, TCol>({
                     isPlain
                     toggle={(toggleRef: any) => (
                       <MenuToggle
+                        ouiaId={'kebab-dropdown-toggle'}
                         ref={toggleRef}
                         aria-label="kebab dropdown toggle"
                         variant="plain"
@@ -230,8 +235,8 @@ export const TableView = <TRow, TCol>({
                       <OverflowMenuDropdownItem
                         key={idx}
                         onClick={() => {
-                          a.onClick();
-                          toggleIsActionsOpen(false);
+                          a.onClick()
+                          toggleIsActionsOpen(false)
                         }}
                       >
                         {a.label}
@@ -257,30 +262,32 @@ export const TableView = <TRow, TCol>({
 
           {/* pagination controls */}
           {showPagination ? (
-            <ToolbarGroup align={{ default: "alignEnd" }}>
+            <ToolbarGroup align={{ default: 'alignEnd' }}>
               <Pagination
+                ouiaId="table-pagination-top"
                 itemCount={itemCount}
                 page={page}
                 perPage={perPage}
                 onChange={onPageChange}
-                variant={"top"}
+                variant={'top'}
                 isCompact
               />
             </ToolbarGroup>
           ) : null}
         </ToolbarContent>
       </Toolbar>
-      <InnerScrollContainer className={"pf-u-h-100"}>
+      <InnerScrollContainer className={'pf-u-h-100'}>
         <ResponsiveTable {...tableProps} columns={columns} data={data}>
           {emptyStateNoResults}
         </ResponsiveTable>
       </InnerScrollContainer>
       {showPagination ? (
         <Pagination
+          ouiaId="table-pagination-bottom"
           itemCount={itemCount}
           page={page}
           perPage={perPage}
-          variant={"bottom"}
+          variant={'bottom'}
           onChange={onPageChange}
           isCompact={
             true /* TODO: change when we support jumping to specific pages */
@@ -288,5 +295,5 @@ export const TableView = <TRow, TCol>({
         />
       ) : null}
     </OuterScrollContainer>
-  );
-};
+  )
+}

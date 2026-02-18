@@ -1,4 +1,4 @@
-import { ClusterDetail, ClusterList } from "@/api/kafka/schema";
+import { ClusterDetail, ClusterList } from '@/api/kafka/schema'
 import {
   Divider,
   Dropdown,
@@ -7,10 +7,10 @@ import {
   MenuSearchInput,
   MenuToggle,
   SearchInput,
-} from "@/libs/patternfly/react-core";
-import { Link, useRouter } from "@/i18n/routing";
-import { Route } from "next";
-import { CSSProperties, useState } from "react";
+} from '@/libs/patternfly/react-core'
+import { Link, useRouter } from '@/i18n/routing'
+import { Route } from 'next'
+import { CSSProperties, useState } from 'react'
 
 export function KafkaSwitcher<T extends string>({
   selected,
@@ -18,18 +18,18 @@ export function KafkaSwitcher<T extends string>({
   getSwitchHref,
   isActive = false,
 }: {
-  selected: ClusterDetail;
-  clusters: ClusterList[];
-  getSwitchHref: (kafkaId: string) => Route<T> | URL;
-  isActive?: boolean;
+  selected: ClusterDetail
+  clusters: ClusterList[]
+  getSwitchHref: (kafkaId: string) => Route<T> | URL
+  isActive?: boolean
 }) {
-  const router = useRouter();
-  const [isOpen, setIsOpen] = useState<boolean>(false);
-  const [searchText, setSearchText] = useState<string>("");
+  const router = useRouter()
+  const [isOpen, setIsOpen] = useState<boolean>(false)
+  const [searchText, setSearchText] = useState<string>('')
 
   const onToggleClick = () => {
-    setIsOpen(!isOpen);
-  };
+    setIsOpen(!isOpen)
+  }
 
   const clusterToDropdownItem = (b: ClusterList) => (
     <DropdownItem
@@ -37,39 +37,40 @@ export function KafkaSwitcher<T extends string>({
       value={b.id}
       id={b.id}
       onClick={() => {
-        setIsOpen(false);
+        setIsOpen(false)
       }}
       description={`Namespace: ${b.attributes.namespace}`}
     >
       {b.attributes.name}
     </DropdownItem>
-  );
+  )
 
   const menuItems = clusters
     .filter(
       (b) =>
-        searchText === "" ||
+        searchText === '' ||
         b.attributes.name.toLowerCase().includes(searchText.toLowerCase()),
     )
-    .map(clusterToDropdownItem);
+    .map(clusterToDropdownItem)
   return (
     <Dropdown
       isOpen={isOpen}
       onOpenChange={(isOpen) => setIsOpen(isOpen)}
-      onOpenChangeKeys={["Escape"]}
+      onOpenChangeKeys={['Escape']}
       toggle={(toggleRef) => (
         <MenuToggle
+          ouiaId={'kafka-switch-toggle'}
           aria-label="Toggle"
           ref={toggleRef}
           onClick={onToggleClick}
           isExpanded={isOpen}
-          variant={"plainText"}
-          className={"pf-v6-u-p-0"}
+          variant={'plainText'}
+          className={'pf-v6-u-p-0'}
           style={
             {
-              "--pf-v6-c-menu-toggle__toggle-icon--MarginRight": 0,
-              "--pf-v6-c-menu-toggle__controls--PaddingLeft":
-                "var(--pf-t--global--spacer--sm)",
+              '--pf-v6-c-menu-toggle__toggle-icon--MarginRight': 0,
+              '--pf-v6-c-menu-toggle__controls--PaddingLeft':
+                'var(--pf-t--global--spacer--sm)',
             } as CSSProperties
           }
         >
@@ -86,8 +87,8 @@ export function KafkaSwitcher<T extends string>({
         </MenuToggle>
       )}
       onSelect={(_ev, value) => {
-        if (typeof value === "string") {
-          router.push(getSwitchHref(value).toString());
+        if (typeof value === 'string') {
+          router.push(getSwitchHref(value).toString())
         }
       }}
       selected={selected.id}
@@ -105,5 +106,5 @@ export function KafkaSwitcher<T extends string>({
 
       {menuItems}
     </Dropdown>
-  );
+  )
 }
