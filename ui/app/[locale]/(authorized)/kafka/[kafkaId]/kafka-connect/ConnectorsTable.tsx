@@ -18,6 +18,7 @@ import { ReactNode } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ManagedConnectorLabel } from "./ManagedConnectorLabel";
+import { TableVariant } from "@patternfly/react-table";
 
 export const ConnectorsTableColumns = [
   "name",
@@ -142,6 +143,7 @@ export function ConnectorsTable({
 
   return (
     <TableView
+      variant={TableVariant.compact}
       data={connectors}
       page={page}
       perPage={perPage}

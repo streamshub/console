@@ -22,6 +22,7 @@ export async function generateMetadata() {
 
 const sortMap: Record<(typeof SortableColumns)[number], string> = {
   groupId: "groupId",
+  type: "type",
   state: "state",
 };
 

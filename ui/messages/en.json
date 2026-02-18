@@ -472,7 +472,7 @@
   "ConsumerGroupsTable": {
     "title": "Consumer groups",
     "no_consumer_groups": "No consumer groups",
-    "consumer_group_name": "Consumer group name",
+    "group_id": "Group ID",
     "state": "State",
     "state_tooltip": "<p>Reflects the current operational state of the consumer group.</p><p>Possible states include 'Stable,' 'Rebalancing,' or 'Empty.' 'Stable' indicates normal functioning, 'Rebalancing' means ongoing adjustments to the group's members, and 'Empty' suggests no active members.</p><p>If in the 'Empty' state, consider adding members to the group.</p>",
     "overall_lag": "Overall lag",

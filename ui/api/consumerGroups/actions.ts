@@ -42,7 +42,7 @@ export async function getConsumerGroups(
   const sp = new URLSearchParams(
     filterUndefinedFromObj({
       "fields[consumerGroups]":
-        params.fields ?? "groupId,state,simpleConsumerGroup,members,offsets",
+        params.fields ?? "groupId,type,protocol,state,simpleConsumerGroup,members,offsets",
       "filter[id]": filterLike(params.id),
       "filter[state]": filterIn(params.consumerGroupState),
       "page[size]": params.pageSize,
@@ -74,7 +74,7 @@ export async function getTopicConsumerGroups(
   const sp = new URLSearchParams(
     filterUndefinedFromObj({
       "fields[consumerGroups]":
-        "groupId,state,simpleConsumerGroup,members,offsets,coordinator,partitionAssignor",
+        "groupId,type,protocol,state,simpleConsumerGroup,members,offsets,coordinator,partitionAssignor",
       "page[size]": params.pageSize,
       "page[after]": params.pageCursor,
       sort: sortParam(params.sort, params.sortDir),
