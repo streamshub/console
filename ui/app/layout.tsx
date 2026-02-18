@@ -1,8 +1,8 @@
-import { ReactNode } from "react";
+import { ReactNode } from 'react'
 
 type Props = {
-  children: ReactNode;
-};
+  children: ReactNode
+}
 
 //export const fetchCache = "force-no-store";
 //export const dynamic = "force-dynamic";
@@ -16,5 +16,5 @@ export default function RootLayout({ children }: Props) {
         <div id="root">{children}</div>
       </body>
     </html>
-  );
+  )
 }

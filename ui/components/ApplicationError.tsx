@@ -1,4 +1,4 @@
-import { ExpandableSection } from "@/components/ExpandableSection";
+import { ExpandableSection } from '@/components/ExpandableSection'
 import {
   Button,
   DescriptionList,
@@ -11,21 +11,21 @@ import {
   EmptyStateFooter,
   Content,
   Title,
-} from "@/libs/patternfly/react-core";
-import { ExclamationCircleIcon } from "@/libs/patternfly/react-icons";
+} from '@/libs/patternfly/react-core'
+import { ExclamationCircleIcon } from '@/libs/patternfly/react-icons'
 
 export function ApplicationError({
   error,
   onReset,
 }: {
-  error: Error & { digest?: string };
-  onReset: () => void;
+  error: Error & { digest?: string }
+  onReset: () => void
 }) {
   return (
     <EmptyState
-      variant={"lg"}
-      status={"danger"}
-      titleText={"This page is temporarily unavailable"}
+      variant={'lg'}
+      status={'danger'}
+      titleText={'This page is temporarily unavailable'}
       headingLevel="h1"
       icon={ExclamationCircleIcon}
     >
@@ -40,15 +40,15 @@ export function ApplicationError({
 
       <EmptyStateFooter>
         <EmptyStateActions>
-          <Button variant="primary" onClick={onReset}>
+          <Button ouiaId={'retry-button'} variant="primary" onClick={onReset}>
             Retry
           </Button>
         </EmptyStateActions>
       </EmptyStateFooter>
       <EmptyStateFooter>
-        <ExpandableSection initialExpanded={false} toggleText={"Show more"}>
+        <ExpandableSection initialExpanded={false} toggleText={'Show more'}>
           {error.digest && (
-            <Title headingLevel={"h2"} className={"pf-v6-u-mb-lg"}>
+            <Title headingLevel={'h2'} className={'pf-v6-u-mb-lg'}>
               {error.digest}
             </Title>
           )}
@@ -67,5 +67,5 @@ export function ApplicationError({
         </ExpandableSection>
       </EmptyStateFooter>
     </EmptyState>
-  );
+  )
 }

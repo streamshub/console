@@ -1,4 +1,4 @@
-import { ExternalLink } from "@/components/Navigation/ExternalLink";
+import { ExternalLink } from '@/components/Navigation/ExternalLink'
 import {
   Button,
   Content,
@@ -11,9 +11,9 @@ import {
   ModalVariant,
   Stack,
   StackItem,
-} from "@/libs/patternfly/react-core";
-import { useTranslations } from "next-intl";
-import { useRouter } from "next/navigation";
+} from '@/libs/patternfly/react-core'
+import { useTranslations } from 'next-intl'
+import { useRouter } from 'next/navigation'
 
 export function ResetOffsetModal({
   members,
@@ -22,22 +22,22 @@ export function ResetOffsetModal({
   kafkaId,
   consumerGroupId,
 }: {
-  members: string[];
-  isResetOffsetModalOpen: boolean;
-  onClickClose: () => void;
-  kafkaId: string;
-  consumerGroupId: string;
+  members: string[]
+  isResetOffsetModalOpen: boolean
+  onClickClose: () => void
+  kafkaId: string
+  consumerGroupId: string
 }) {
-  const t = useTranslations("ConsumerGroupsTable");
-  const router = useRouter();
+  const t = useTranslations('ConsumerGroupsTable')
+  const router = useRouter()
 
   const refresh = () => {
     if (members.length === 0) {
       router.push(
         `/kafka/${kafkaId}/consumer-groups/${consumerGroupId}/reset-offset`,
-      );
+      )
     }
-  };
+  }
 
   return (
     <Modal
@@ -46,13 +46,13 @@ export function ResetOffsetModal({
       onClose={onClickClose}
     >
       <ModalHeader
-        title={t("consumer_group_must_be_empty")}
-        titleIconVariant={"warning"}
+        title={t('consumer_group_must_be_empty')}
+        titleIconVariant={'warning'}
       />
       <ModalBody>
         <Stack hasGutter>
           <StackItem>
-            <Content>{t("member_shutdown_helper_text")}</Content>
+            <Content>{t('member_shutdown_helper_text')}</Content>
           </StackItem>
           <StackItem>
             <List>
@@ -62,26 +62,41 @@ export function ResetOffsetModal({
             </List>
           </StackItem>
           <StackItem>
-            <Content>{t("shutdown_active_members")}</Content>
+            <Content>{t('shutdown_active_members')}</Content>
           </StackItem>
           <StackItem>
-            <ExternalLink testId={"learn_to_shutdown_members"} href={""}>
-              {t("learn_to_shutdown_members")}
+            <ExternalLink testId={'learn_to_shutdown_members'} href={''}>
+              {t('learn_to_shutdown_members')}
             </ExternalLink>
           </StackItem>
         </Stack>
       </ModalBody>
       <ModalFooter>
-        <Button key="close" variant="primary" onClick={onClickClose}>
-          {t("close")}
+        <Button
+          ouiaId={'reset-offset-close'}
+          key="close"
+          variant="primary"
+          onClick={onClickClose}
+        >
+          {t('close')}
         </Button>
-        <Button key="refresh" variant="secondary" onClick={refresh}>
-          {t("refresh")}
+        <Button
+          ouiaId={'reset-offset-refresh'}
+          key="refresh"
+          variant="secondary"
+          onClick={refresh}
+        >
+          {t('refresh')}
         </Button>
-        <Button key="refresh" variant="link" onClick={onClickClose}>
-          {t("cancel")}
+        <Button
+          ouiaId={'reset-offset-cancel'}
+          key="cancel"
+          variant="link"
+          onClick={onClickClose}
+        >
+          {t('cancel')}
         </Button>
       </ModalFooter>
     </Modal>
-  );
+  )
 }

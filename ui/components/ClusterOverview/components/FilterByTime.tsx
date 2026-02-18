@@ -5,22 +5,22 @@ import {
   SelectList,
   SelectOption,
   ToolbarItem,
-} from "@/libs/patternfly/react-core";
-import { useState } from "react";
-import { DurationOptions } from "./type";
+} from '@/libs/patternfly/react-core'
+import { useState } from 'react'
+import { DurationOptions } from './type'
 
 export const DurationOptionsMap = {
-  [DurationOptions.Last5minutes]: "Last 5 minutes",
-  [DurationOptions.Last15minutes]: "Last 15 minutes",
-  [DurationOptions.Last30minutes]: "Last 30 minutes",
-  [DurationOptions.Last1hour]: "Last 1 hour",
-  [DurationOptions.Last3hours]: "Last 3 hours",
-  [DurationOptions.Last6hours]: "Last 6 hours",
-  [DurationOptions.Last12hours]: "Last 12 hours",
-  [DurationOptions.Last24hours]: "Last 24 hours",
-  [DurationOptions.Last2days]: "Last 2 days",
-  [DurationOptions.Last7days]: "Last 7 days",
-} as const;
+  [DurationOptions.Last5minutes]: 'Last 5 minutes',
+  [DurationOptions.Last15minutes]: 'Last 15 minutes',
+  [DurationOptions.Last30minutes]: 'Last 30 minutes',
+  [DurationOptions.Last1hour]: 'Last 1 hour',
+  [DurationOptions.Last3hours]: 'Last 3 hours',
+  [DurationOptions.Last6hours]: 'Last 6 hours',
+  [DurationOptions.Last12hours]: 'Last 12 hours',
+  [DurationOptions.Last24hours]: 'Last 24 hours',
+  [DurationOptions.Last2days]: 'Last 2 days',
+  [DurationOptions.Last7days]: 'Last 7 days',
+} as const
 
 export function FilterByTime({
   duration,
@@ -28,14 +28,14 @@ export function FilterByTime({
   disableToolbar,
   onDurationChange,
 }: {
-  duration: DurationOptions;
-  onDurationChange: (value: DurationOptions) => void;
-  ariaLabel: string;
-  disableToolbar: boolean;
+  duration: DurationOptions
+  onDurationChange: (value: DurationOptions) => void
+  ariaLabel: string
+  disableToolbar: boolean
 }) {
-  const [isTimeSelectOpen, setIsTimeSelectOpen] = useState(false);
+  const [isTimeSelectOpen, setIsTimeSelectOpen] = useState(false)
 
-  const onToggleClick = () => setIsTimeSelectOpen((prev) => !prev);
+  const onToggleClick = () => setIsTimeSelectOpen((prev) => !prev)
 
   const onTimeSelect = (
     _event: React.MouseEvent<Element, MouseEvent> | undefined,
@@ -43,15 +43,16 @@ export function FilterByTime({
   ) => {
     const mapping = Object.entries(DurationOptionsMap).find(
       ([, label]) => label === value,
-    );
+    )
     if (mapping) {
-      onDurationChange(parseInt(mapping[0], 10) as DurationOptions);
+      onDurationChange(parseInt(mapping[0], 10) as DurationOptions)
     }
-    setIsTimeSelectOpen(false);
-  };
+    setIsTimeSelectOpen(false)
+  }
 
   const toggle = (toggleRef: React.Ref<MenuToggleElement>) => (
     <MenuToggle
+      ouiaId={'filter-by-time-toggle'}
       ref={toggleRef}
       onClick={onToggleClick}
       isExpanded={isTimeSelectOpen}
@@ -59,7 +60,7 @@ export function FilterByTime({
     >
       {DurationOptionsMap[duration]}
     </MenuToggle>
-  );
+  )
 
   return (
     <ToolbarItem>
@@ -75,10 +76,12 @@ export function FilterByTime({
       >
         <SelectList>
           {Object.values(DurationOptionsMap).map((label, index) => (
-            <SelectOption key={`time-${index}`} value={label}>{label}</SelectOption>
+            <SelectOption key={`time-${index}`} value={label}>
+              {label}
+            </SelectOption>
           ))}
         </SelectList>
       </Select>
     </ToolbarItem>
-  );
+  )
 }

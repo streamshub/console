@@ -1,4 +1,4 @@
-"use client";
+'use client'
 import {
   AboutModal,
   Brand,
@@ -16,21 +16,21 @@ import {
   ToolbarContent,
   ToolbarGroup,
   ToolbarItem,
-} from "@/libs/patternfly/react-core";
+} from '@/libs/patternfly/react-core'
 import {
   BarsIcon,
   InfoCircleIcon,
   QuestionCircleIcon,
-} from "@/libs/patternfly/react-icons";
-import { FeedbackModal } from "@patternfly/react-user-feedback";
-import { useTranslations } from "next-intl";
-import { useState } from "react";
-import { useAppLayout } from "./AppLayoutProvider";
-import { UserDropdown } from "./UserDropdown";
-import { useColorTheme } from "@/app/[locale]/useColorTheme";
-import { AppDropdown, ClusterInfo } from "./AppDropdown";
-import { MetadataResponse } from "@/api/meta/schema";
-import { ThemeSelector } from "@/app/[locale]/ThemeSelector";
+} from '@/libs/patternfly/react-icons'
+import { FeedbackModal } from '@patternfly/react-user-feedback'
+import { useTranslations } from 'next-intl'
+import { useEffect, useState } from 'react'
+import { useAppLayout } from './AppLayoutProvider'
+import { UserDropdown } from './UserDropdown'
+import { useColorTheme } from '@/app/[locale]/useColorTheme'
+import { AppDropdown, ClusterInfo } from './AppDropdown'
+import { MetadataResponse } from '@/api/meta/schema'
+import { ThemeSelector } from '@/app/[locale]/ThemeSelector'
 
 export function AppMasthead({
   username,
@@ -40,31 +40,42 @@ export function AppMasthead({
   metadata,
   isOidcEnabled,
 }: {
-  readonly username?: string;
-  readonly showSidebarToggle: boolean;
-  readonly clusterInfoList: ClusterInfo[];
-  readonly kafkaId: string;
-  readonly metadata?: MetadataResponse;
-  readonly isOidcEnabled?: boolean;
+  readonly username?: string
+  readonly showSidebarToggle: boolean
+  readonly clusterInfoList: ClusterInfo[]
+  readonly kafkaId: string
+  readonly metadata?: MetadataResponse
+  readonly isOidcEnabled?: boolean
 }) {
-  const t = useTranslations();
-  const { toggleSidebar } = useAppLayout();
-  const { isDarkMode } = useColorTheme();
+  const t = useTranslations()
+  const { toggleSidebar } = useAppLayout()
+  const [mounted, setMounted] = useState(false)
+  const { isDarkMode } = useColorTheme()
 
-  const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
-  const [isAboutModalOpen, setIsAboutModalOpen] = useState(false);
+  const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false)
+  const [isAboutModalOpen, setIsAboutModalOpen] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  const currentLogo = !mounted
+    ? '/full_logo_hori_default.svg'
+    : isDarkMode
+    ? '/full_logo_hori_reverse.svg'
+    : '/full_logo_hori_default.svg'
 
   const openFeedbackModal = () => {
-    setIsFeedbackModalOpen(true);
-  };
+    setIsFeedbackModalOpen(true)
+  }
   const closeFeedbackModal = () => {
-    setIsFeedbackModalOpen(false);
-  };
+    setIsFeedbackModalOpen(false)
+  }
   const toggleAboutModal = (
     _event: React.MouseEvent<Element, MouseEvent> | KeyboardEvent | MouseEvent,
   ) => {
-    setIsAboutModalOpen(!isAboutModalOpen);
-  };
+    setIsAboutModalOpen(!isAboutModalOpen)
+  }
 
   return (
     <>
@@ -73,8 +84,9 @@ export function AppMasthead({
           {showSidebarToggle && (
             <MastheadToggle>
               <PageToggleButton
+                ouiaId={'global-navigation-page-toggle-button'}
                 variant="plain"
-                aria-label={t("AppMasthead.global_navigation")}
+                aria-label={t('AppMasthead.global_navigation')}
                 onClick={toggleSidebar}
               >
                 <BarsIcon />
@@ -84,13 +96,9 @@ export function AppMasthead({
           <MastheadBrand>
             <MastheadLogo href="/" target="_blank">
               <Brand
-                src={
-                  isDarkMode
-                    ? "/full_logo_hori_reverse.svg"
-                    : "/full_logo_hori_default.svg"
-                }
-                alt={t("common.title")}
-                heights={{ default: "56px" }}
+                src={currentLogo}
+                alt={t('common.title')}
+                heights={{ default: '56px' }}
               />
             </MastheadLogo>
           </MastheadBrand>
@@ -98,13 +106,13 @@ export function AppMasthead({
         <MastheadContent>
           <Toolbar
             ouiaId="masthead-toolbar"
-            id={"masthead-toolbar"}
+            id={'masthead-toolbar'}
             isFullHeight
             isStatic
           >
-            <ToolbarContent id={"masthead-toolbar"}>
+            <ToolbarContent id={'masthead-toolbar'}>
               {showSidebarToggle && (
-                <ToolbarItem className={"pf-v6-u-py-sm"}>
+                <ToolbarItem className={'pf-v6-u-py-sm'}>
                   <AppDropdown
                     clusters={clusterInfoList}
                     kafkaId={kafkaId}
@@ -114,31 +122,31 @@ export function AppMasthead({
               )}
               <ToolbarGroup
                 variant="action-group"
-                align={{ default: "alignEnd" }}
+                align={{ default: 'alignEnd' }}
               >
-                <ToggleGroup className={"pf-v6-u-py-sm"}>
+                <ToggleGroup className={'pf-v6-u-py-sm'}>
                   <ThemeSelector />
                 </ToggleGroup>
                 <ToolbarGroup
                   variant="label-group"
-                  visibility={{ default: "hidden", lg: "visible" }}
+                  visibility={{ default: 'hidden', lg: 'visible' }}
                 >
-                  <ToolbarItem className={"pf-v6-u-py-sm"}>
+                  <ToolbarItem className={'pf-v6-u-py-sm'}>
                     <Button
-                      aria-label={t("AppMasthead.help")}
-                      variant={"plain"}
+                      aria-label={t('AppMasthead.help')}
+                      variant={'plain'}
                       icon={<QuestionCircleIcon />}
-                      ouiaId={"help-button"}
+                      ouiaId={'help-button'}
                       onClick={openFeedbackModal}
                     />
                   </ToolbarItem>
                   {metadata && (
-                    <ToolbarItem className={"pf-v6-u-py-sm"}>
+                    <ToolbarItem className={'pf-v6-u-py-sm'}>
                       <Button
-                        aria-label={t("AppMasthead.help")}
-                        variant={"plain"}
+                        aria-label={t('AppMasthead.help')}
+                        variant={'plain'}
                         icon={<InfoCircleIcon />}
-                        ouiaId={"help-button"}
+                        ouiaId={'help-button'}
                         onClick={toggleAboutModal}
                       />
                     </ToolbarItem>
@@ -154,11 +162,11 @@ export function AppMasthead({
       </Masthead>
 
       <FeedbackModal
-        onShareFeedback={t("feedback.links.share")}
-        onJoinMailingList={t("feedback.links.informDirection")}
-        onOpenSupportCase={t("feedback.links.supportCase")}
-        onReportABug={t("feedback.links.bugReport")}
-        feedbackImg={"/pf_feedback.svg"}
+        onShareFeedback={t('feedback.links.share')}
+        onJoinMailingList={t('feedback.links.informDirection')}
+        onOpenSupportCase={t('feedback.links.supportCase')}
+        onReportABug={t('feedback.links.bugReport')}
+        feedbackImg={'/pf_feedback.svg'}
         isOpen={isFeedbackModalOpen}
         onClose={closeFeedbackModal}
       />
@@ -168,13 +176,9 @@ export function AppMasthead({
         onClose={(
           e: React.MouseEvent<Element, MouseEvent> | KeyboardEvent | MouseEvent,
         ) => toggleAboutModal(e)}
-        brandImageSrc={
-          isDarkMode
-            ? "/full_logo_hori_reverse.svg"
-            : "/full_logo_hori_default.svg"
-        }
+        brandImageSrc={currentLogo}
         brandImageAlt="Brand Logo"
-        productName={t("common.title")}
+        productName={t('common.title')}
       >
         <Content>
           <dl>
@@ -184,13 +188,13 @@ export function AppMasthead({
             <dd>{metadata?.attributes.platform}</dd>
             <dt>User agent</dt>
             <dd>
-              {typeof navigator !== "undefined"
+              {typeof navigator !== 'undefined'
                 ? navigator.userAgent
-                : "Unknown"}
+                : 'Unknown'}
             </dd>
           </dl>
         </Content>
       </AboutModal>
     </>
-  );
+  )
 }

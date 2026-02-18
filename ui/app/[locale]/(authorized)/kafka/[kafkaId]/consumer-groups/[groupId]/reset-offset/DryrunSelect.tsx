@@ -6,48 +6,49 @@ import {
   MenuToggleAction,
   MenuToggleElement,
   Tooltip,
-} from "@/libs/patternfly/react-core";
-import { CopyIcon, PlayIcon } from "@/libs/patternfly/react-icons";
-import { useTranslations } from "next-intl";
-import React from "react";
-import { useState } from "react";
+} from '@/libs/patternfly/react-core'
+import { CopyIcon, PlayIcon } from '@/libs/patternfly/react-icons'
+import { useTranslations } from 'next-intl'
+import React from 'react'
+import { useState } from 'react'
 
 export function DryrunSelect({
   openDryrun,
   cliCommand,
   isDisabled,
 }: {
-  openDryrun: () => void;
-  cliCommand: string;
-  isDisabled: boolean;
+  openDryrun: () => void
+  cliCommand: string
+  isDisabled: boolean
 }) {
-  const t = useTranslations("ConsumerGroupsTable");
+  const t = useTranslations('ConsumerGroupsTable')
 
-  const tooltipRef = React.useRef<HTMLButtonElement>(null);
+  const tooltipRef = React.useRef<HTMLButtonElement>(null)
 
-  const [isOpen, setIsOpen] = useState(false);
-  const [isCopied, setIsCopied] = useState(false);
+  const [isOpen, setIsOpen] = useState(false)
+  const [isCopied, setIsCopied] = useState(false)
 
   const onToggleClick = () => {
-    setIsOpen((prevIsOpen) => !prevIsOpen);
-  };
+    setIsOpen((prevIsOpen) => !prevIsOpen)
+  }
 
   return (
     <Dropdown
       isOpen={isOpen}
       toggle={(toggleRef: React.Ref<MenuToggleElement>) => (
         <MenuToggle
+          ouiaId={'dryrun-select'}
           ref={toggleRef}
           variant="secondary"
           splitButtonItems={[
             <MenuToggleAction
               id="split-button-action-secondary-with-toggle-button"
               key="split-action-secondary"
-              aria-label={t("dry_run")}
+              aria-label={t('dry_run')}
               onClick={openDryrun}
               isDisabled={isDisabled}
             >
-              {t("dry_run")}
+              {t('dry_run')}
             </MenuToggleAction>,
           ]}
           aria-label="dryrun toggle button"
@@ -59,31 +60,31 @@ export function DryrunSelect({
       <DropdownList>
         <DropdownItem
           value={0}
-          key={t("run_and_show_result")}
+          key={t('run_and_show_result')}
           onClick={openDryrun}
           isDisabled={isDisabled}
         >
-          <PlayIcon /> {t("run_and_show_result")}
+          <PlayIcon /> {t('run_and_show_result')}
         </DropdownItem>
         <DropdownItem
           value={1}
-          key={t("copy_dry_run_command")}
+          key={t('copy_dry_run_command')}
           onClick={() => {
-            navigator.clipboard.writeText(cliCommand);
-            setIsCopied(true);
+            navigator.clipboard.writeText(cliCommand)
+            setIsCopied(true)
           }}
           aria-describedby="tooltip-ref1"
           ref={tooltipRef}
           isDisabled={isDisabled}
         >
-          <CopyIcon /> {t("copy_dry_run_command")}
+          <CopyIcon /> {t('copy_dry_run_command')}
           {isCopied && (
             <Tooltip
               id="tooltip-ref1"
               isVisible={isCopied}
               content={<div>cli command copied</div>}
               triggerRef={tooltipRef}
-              flipBehavior={"flip"}
+              flipBehavior={'flip'}
               position="right"
               onTooltipHidden={() => setIsCopied(false)}
             />
@@ -91,5 +92,5 @@ export function DryrunSelect({
         </DropdownItem>
       </DropdownList>
     </Dropdown>
-  );
+  )
 }

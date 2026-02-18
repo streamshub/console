@@ -1,4 +1,4 @@
-import RichText from "@/components/RichText";
+import RichText from '@/components/RichText'
 import {
   Alert,
   Button,
@@ -23,15 +23,15 @@ import {
   Stack,
   StackItem,
   CardBody,
-} from "@/libs/patternfly/react-core";
-import { useTranslations } from "next-intl";
+} from '@/libs/patternfly/react-core'
+import { useTranslations } from 'next-intl'
 
 export type NewOffset = {
-  topicName: string;
-  partition: number;
-  offset: number | string | null;
-  metadata?: string;
-};
+  topicName: string
+  partition: number
+  offset: number | string | null
+  metadata?: string
+}
 
 export function Dryrun({
   consumerGroupName,
@@ -39,26 +39,26 @@ export function Dryrun({
   onClickCloseDryrun,
   cliCommand,
 }: {
-  consumerGroupName: string;
-  newOffset: NewOffset[];
-  onClickCloseDryrun: () => void;
-  cliCommand: string;
+  consumerGroupName: string
+  newOffset: NewOffset[]
+  onClickCloseDryrun: () => void
+  cliCommand: string
 }) {
-  const t = useTranslations("ConsumerGroupsTable");
+  const t = useTranslations('ConsumerGroupsTable')
 
-  const hasOffsets = newOffset && newOffset.length > 0;
+  const hasOffsets = newOffset && newOffset.length > 0
 
   // Group offsets by topic
   const groupedTopics = newOffset.reduce<Record<string, NewOffset[]>>(
     (acc, offset) => {
       if (!acc[offset.topicName]) {
-        acc[offset.topicName] = [];
+        acc[offset.topicName] = []
       }
-      acc[offset.topicName].push(offset);
-      return acc;
+      acc[offset.topicName].push(offset)
+      return acc
     },
     {},
-  );
+  )
 
   return (
     <Panel>
@@ -72,8 +72,8 @@ export function Dryrun({
             </StackItem>
             <StackItem>
               {!hasOffsets ? (
-                <Alert variant="warning" isInline title={t("no_offsets_found")}>
-                  {t("no_offsets_found_description")}
+                <Alert variant="warning" isInline title={t('no_offsets_found')}>
+                  {t('no_offsets_found_description')}
                 </Alert>
               ) : (
                 <Sidebar>
@@ -83,7 +83,7 @@ export function Dryrun({
                         isVertical
                         label={
                           <RichText>
-                            {(tags) => t.rich("jump_to_topic", tags)}
+                            {(tags) => t.rich('jump_to_topic', tags)}
                           </RichText>
                         }
                         offset={10}
@@ -103,11 +103,11 @@ export function Dryrun({
                     </SidebarPanel>
                   )}
                   <SidebarContent
-                    style={{ overflowY: "auto", maxHeight: "500px" }}
+                    style={{ overflowY: 'auto', maxHeight: '500px' }}
                   >
                     <Flex
-                      direction={{ default: "column" }}
-                      spaceItems={{ default: "spaceItemsXl" }}
+                      direction={{ default: 'column' }}
+                      spaceItems={{ default: 'spaceItemsXl' }}
                     >
                       {Object.entries(groupedTopics).map(
                         ([topicName, offsets]) => (
@@ -117,7 +117,7 @@ export function Dryrun({
                                 <DescriptionList id={`${topicName}`}>
                                   <DescriptionListGroup>
                                     <DescriptionListTerm>
-                                      {t("topic")}
+                                      {t('topic')}
                                     </DescriptionListTerm>
                                     <DescriptionListDescription>
                                       {topicName}
@@ -127,7 +127,7 @@ export function Dryrun({
                                     <FlexItem>
                                       <DescriptionListGroup>
                                         <DescriptionListTerm>
-                                          {t("partition")}
+                                          {t('partition')}
                                         </DescriptionListTerm>
                                         <DescriptionListDescription>
                                           <List isPlain>
@@ -148,7 +148,7 @@ export function Dryrun({
                                     <FlexItem>
                                       <DescriptionListGroup>
                                         <DescriptionListTerm>
-                                          {t("new_offset")}
+                                          {t('new_offset')}
                                         </DescriptionListTerm>
                                         <DescriptionListDescription>
                                           <List isPlain>
@@ -156,7 +156,7 @@ export function Dryrun({
                                               ({ partition, offset }) => (
                                                 <ListItem key={partition}>
                                                   {offset ??
-                                                    t("offset_deleted")}
+                                                    t('offset_deleted')}
                                                 </ListItem>
                                               ),
                                             )}
@@ -180,17 +180,21 @@ export function Dryrun({
               <Alert
                 variant="info"
                 isInline
-                title={t("dry_run_execution_alert")}
+                title={t('dry_run_execution_alert')}
               />
             </StackItem>
             <StackItem>
-              <Button variant="secondary" onClick={onClickCloseDryrun}>
-                {t("back_to_edit_offset")}
+              <Button
+                ouiaId={'back-to-edit-offset-button'}
+                variant="secondary"
+                onClick={onClickCloseDryrun}
+              >
+                {t('back_to_edit_offset')}
               </Button>
             </StackItem>
           </Stack>
         </PanelMainBody>
       </PanelMain>
     </Panel>
-  );
+  )
 }
