@@ -12,6 +12,8 @@ import com.github.streamshub.systemtests.locators.CssBuilder;
 import com.github.streamshub.systemtests.locators.CssSelectors;
 import com.github.streamshub.systemtests.locators.MessagesPageSelectors;
 import com.github.streamshub.systemtests.logs.LogWrapper;
+import com.github.streamshub.systemtests.setup.console.ConsoleInstanceSetup;
+import com.github.streamshub.systemtests.setup.strimzi.KafkaSetup;
 import com.github.streamshub.systemtests.utils.Utils;
 import com.github.streamshub.systemtests.utils.WaitUtils;
 import com.github.streamshub.systemtests.utils.playwright.PwPageUrls;
@@ -20,6 +22,7 @@ import com.github.streamshub.systemtests.utils.resourceutils.KafkaClientsUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.KafkaNamingUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.KafkaTopicUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.KafkaUtils;
+import com.github.streamshub.systemtests.utils.resourceutils.NamespaceUtils;
 import io.skodjob.testframe.resources.KubeResourceManager;
 import org.apache.kafka.common.security.auth.SecurityProtocol;
 import org.apache.logging.log4j.Logger;
@@ -152,7 +155,35 @@ public class MessagesST extends AbstractST {
         });
     }
 
-    // Modifies messages, so must be last to execute
+    /**
+     * Verifies message filtering functionality based on timestamps
+     * in the Messages view.
+     *
+     * <p>The test validates both query-based and UI-based timestamp filtering
+     * using ISO datetime and Unix epoch formats.</p>
+     *
+     * <p>The following scenarios are covered:</p>
+     * <ul>
+     *   <li>Filters messages using an ISO-8601 timestamp query and verifies
+     *       that only messages produced after the specified time are returned.</li>
+     *   <li>Adjusts the timestamp to an earlier value and confirms that older
+     *       messages become visible.</li>
+     *   <li>Produces additional messages with a known timestamp and verifies
+     *       they appear when filtering from the current time.</li>
+     *   <li>Validates filtering using Unix epoch timestamps in the query bar.</li>
+     *   <li>Verifies timestamp filtering through the UI popover form using:
+     *       <ul>
+     *           <li>Date + time selection (ISO-based filtering)</li>
+     *           <li>Unix timestamp input</li>
+     *       </ul>
+     *   </li>
+     * </ul>
+     * <p><strong>Note:</strong> This test must run last in the {@code sharedResources} order
+     *      * because it creates new messages as part of thetesting scenario.</p>
+     * <p>The test ensures that timestamp-based filtering behaves consistently
+     * across query input and UI form interactions, confirming correct backend
+     * filtering logic and frontend rendering.</p>
+     */
     @Test
     @Order(Integer.MAX_VALUE)
     @TestBucket(VARIOUS_MESSAGE_TYPES_BUCKET)
@@ -181,28 +212,46 @@ public class MessagesST extends AbstractST {
         final String currentDateForm = currentUtcTime.format(dateFormatterForm);
         // due to UI forcing UTC and form making it taking local time
         final String currentTimeForm = currentLocalTime.format(timeFormatterForm);
-        //
-        final String earlierDateForm = earlierUtcTime.format(dateFormatterForm);
+        // Disabled due to inconsistent calendar feature behaviour, can be re-enabled once fixed
+        //final String earlierDateForm = earlierUtcTime.format(dateFormatterForm);
+
+        LOGGER.info("Timestamp context prepared");
+        LOGGER.info("Current ISO timestamp: {}", currentDateTimeQuery);
+        LOGGER.info("Earlier ISO timestamp: {}", earlierTimeQuery);
+        LOGGER.info("Current Unix timestamp: {}", currentDateTimeUnix);
+        LOGGER.info("Earlier Unix timestamp: {}", earlierDateTimeUnix);
+        LOGGER.debug("UI Date form value: {}", currentDateForm);
+        LOGGER.debug("UI Time form value (local adjusted): {}", currentTimeForm);
 
         final String topicId = WaitUtils.waitForKafkaTopicToHaveIdAndReturn(tcc.namespace(), kafkaTopicName);
+        LOGGER.info("Using topic '{}' with id '{}'", kafkaTopicName, topicId);
 
         tcc.page().navigate(PwPageUrls.getMessagesPage(tcc, tcc.kafkaName(), topicId));
 
         // Test that no messages are present - messages were sent in past so when we select messages from NOW it returns 0
+        LOGGER.info("Filtering messages using ISO query timestamp (current)");
         PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_CONTENT_HEADER_TITLE_CONTENT, kafkaTopicName, true);
         PwUtils.waitForLocatorVisible(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT);
         PwUtils.waitForLocatorAndFill(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT, TIMESTAMP_FILTER + currentDateTimeQuery);
         PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_ENTER_BUTTON);
         PwUtils.waitForAttributeContainsText(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT, currentDateTimeQuery, Constants.VALUE_ATTRIBUTE, true);
         PwUtils.waitForLocatorCount(tcc, 1, MessagesPageSelectors.MPS_SEARCH_RESULTS_TABLE_ITEMS, true);
+
         // Check that older messages appear when the date is modified
+        LOGGER.info("Filtering messages using ISO query timestamp (earlier)");
         PwUtils.waitForLocatorAndFill(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT, TIMESTAMP_FILTER + earlierTimeQuery);
         PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_ENTER_BUTTON);
         PwUtils.waitForAttributeContainsText(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT, earlierTimeQuery, Constants.VALUE_ATTRIBUTE, true);
         PwUtils.waitForLocatorCount(tcc, MAX_MESSAGES_PER_PAGE, MessagesPageSelectors.MPS_SEARCH_RESULTS_TABLE_ITEMS, true);
         PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItem(1, 5), KEY_FILTER_MESSAGE, true);
 
+        // Due to incorrect internal messages timing (about 1.5~2 minutes), we need to set an offset for the old and new message timestamps
+        // This only applies when this test is executed as the only one in this testclass
+        LOGGER.warn("Sleeping 1 minute to compensate for internal message timestamp delay");
+        Utils.sleepWait(Duration.ofMinutes(1).toMillis());
+
         // Send more messages and see if they appear
+        LOGGER.info("Producing {} new messages with text '{}'", newMessageCount, newMessageText);
         KafkaClients clients = new KafkaClientsBuilder()
             .withNamespaceName(tcc.namespace())
             .withTopicName(kafkaTopicName)
@@ -220,8 +269,10 @@ public class MessagesST extends AbstractST {
         KubeResourceManager.get().createResourceWithWait(clients.producer(), clients.consumer());
         WaitUtils.waitForClientsSuccess(clients);
 
+        LOGGER.info("New messages successfully produced and consumed");
         tcc.page().navigate(PwPageUrls.getMessagesPage(tcc, tcc.kafkaName(), topicId));
 
+        LOGGER.info("Verifying ISO filtering returns newly produced messages");
         PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_CONTENT_HEADER_TITLE_CONTENT, kafkaTopicName, true);
         PwUtils.waitForLocatorVisible(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT);
         PwUtils.waitForLocatorAndFill(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT, TIMESTAMP_FILTER + currentDateTimeQuery);
@@ -230,6 +281,7 @@ public class MessagesST extends AbstractST {
         PwUtils.waitForLocatorCount(tcc, newMessageCount, MessagesPageSelectors.MPS_SEARCH_RESULTS_TABLE_ITEMS, true);
         PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItem(1, 5), newMessageText, true);
         // Verify Unix query
+        LOGGER.info("Filtering messages using Unix query timestamp (current)");
         PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_CONTENT_HEADER_TITLE_CONTENT, kafkaTopicName, true);
         PwUtils.waitForLocatorVisible(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT);
         PwUtils.waitForLocatorAndFill(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT, EPOCH_FILTER + currentDateTimeUnix);
@@ -237,6 +289,7 @@ public class MessagesST extends AbstractST {
         PwUtils.waitForAttributeContainsText(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT, currentDateTimeUnix, Constants.VALUE_ATTRIBUTE, true);
         PwUtils.waitForLocatorCount(tcc, newMessageCount, MessagesPageSelectors.MPS_SEARCH_RESULTS_TABLE_ITEMS, true);
         // Earlier
+        LOGGER.info("Filtering messages using Unix query timestamp (earlier)");
         PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_CONTENT_HEADER_TITLE_CONTENT, kafkaTopicName, true);
         PwUtils.waitForLocatorVisible(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT);
         PwUtils.waitForLocatorAndFill(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT, EPOCH_FILTER + earlierDateTimeUnix);
@@ -245,12 +298,13 @@ public class MessagesST extends AbstractST {
         PwUtils.waitForLocatorCount(tcc, MAX_MESSAGES_PER_PAGE, MessagesPageSelectors.MPS_SEARCH_RESULTS_TABLE_ITEMS, true);
 
         // Verify with UI
-        LOGGER.info("Verify timestamp filtering with UI");
+        LOGGER.info("Verifying timestamp filtering using UI popover (ISO mode)");
         tcc.page().navigate(PwPageUrls.getMessagesPage(tcc, tcc.kafkaName(), topicId));
         PwUtils.waitForContainsText(tcc, CssSelectors.PAGES_CONTENT_HEADER_TITLE_CONTENT, kafkaTopicName, true);
         PwUtils.waitForLocatorVisible(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_QUERY_INPUT);
         // Filter by timestamp
         // Check new messages
+        LOGGER.info("Verifying timestamp filtering using UI popover (ISO mode) (current)");
         PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_OPEN_POPOVER_FORM_BUTTON);
         PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_TPF_PARAMETERS_MESSAGES);
         PwUtils.waitForLocatorAndClick(tcc, new CssBuilder(MessagesPageSelectors.MPS_TPF_FILTER_POPUP_DROPDOWN_ITEMS).nth(2).build());
@@ -270,6 +324,7 @@ public class MessagesST extends AbstractST {
         // PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItem(1, 5), KEY_FILTER_MESSAGE, true);
         // Filter by unix timepstamp
         // Check new messages
+        LOGGER.info("Verifying timestamp filtering using UI popover (Unix mode) (current)");
         PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_OPEN_POPOVER_FORM_BUTTON);
         PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_TPF_PARAMETERS_MESSAGES);
         PwUtils.waitForLocatorAndClick(tcc, new CssBuilder(MessagesPageSelectors.MPS_TPF_FILTER_POPUP_DROPDOWN_ITEMS).nth(3).build());
@@ -278,6 +333,7 @@ public class MessagesST extends AbstractST {
         PwUtils.waitForLocatorCount(tcc, newMessageCount, MessagesPageSelectors.MPS_SEARCH_RESULTS_TABLE_ITEMS, true);
         PwUtils.waitForContainsText(tcc, MessagesPageSelectors.getTableRowItem(1, 5), newMessageText, true);
         // Verify earlier sent
+        LOGGER.info("Verifying timestamp filtering using UI popover (Unix mode) (earlier)");
         PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_SEARCH_TOOLBAR_OPEN_POPOVER_FORM_BUTTON);
         PwUtils.waitForLocatorAndClick(tcc, MessagesPageSelectors.MPS_TPF_PARAMETERS_MESSAGES);
         PwUtils.waitForLocatorAndClick(tcc, new CssBuilder(MessagesPageSelectors.MPS_TPF_FILTER_POPUP_DROPDOWN_ITEMS).nth(3).build());
@@ -477,9 +533,6 @@ public class MessagesST extends AbstractST {
 
         KubeResourceManager.get().createResourceWithWait(clients.producer(), clients.consumer());
         WaitUtils.waitForClientsSuccess(clients);
-        // Due to incorrect kafka internal timing (about 2 minutes), we need to set an offset for the old and new message timestamps
-        Utils.sleepWait(Duration.ofMinutes(1).toMillis());
-
         LOGGER.info("Filtering scenario prepared");
     }
 
@@ -488,9 +541,9 @@ public class MessagesST extends AbstractST {
         // Init test case config based on the test context
         tcc = getTestCaseConfig();
         // Prepare test environment
-        //NamespaceUtils.prepareNamespace(tcc.namespace());
-        // KafkaSetup.setupDefaultKafkaIfNeeded(tcc.namespace(), tcc.kafkaName());
-        // ConsoleInstanceSetup.setupIfNeeded(ConsoleInstanceSetup.getDefaultConsoleInstance(tcc.namespace(), tcc.consoleInstanceName(), tcc.kafkaName(), tcc.kafkaUserName()).build());
+        NamespaceUtils.prepareNamespace(tcc.namespace());
+        KafkaSetup.setupDefaultKafkaIfNeeded(tcc.namespace(), tcc.kafkaName());
+        ConsoleInstanceSetup.setupIfNeeded(ConsoleInstanceSetup.getDefaultConsoleInstance(tcc.namespace(), tcc.consoleInstanceName(), tcc.kafkaName(), tcc.kafkaUserName()).build());
         PwUtils.login(tcc);
     }
 
