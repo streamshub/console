@@ -13,6 +13,13 @@ const ConsumerGroupStateSchema = z.union([
   z.literal("RECONCILING"),
 ]);
 
+const GroupType = z.union([
+    z.literal("Classic"),
+    z.literal("Consumer"),
+    z.literal("Share"),
+    z.literal("Streams"),
+]);
+
 const OffsetAndMetadataSchema = z.object({
   topicId: z.string().optional(),
   topicName: z.string(),
@@ -50,6 +57,8 @@ export const ConsumerGroupSchema = z.object({
     .optional(),
   attributes: z.object({
     groupId: z.string(),
+    type: GroupType.nullable().optional(),
+    protocol: z.string().nullable().optional(),
     simpleConsumerGroup: z.boolean().optional(),
     state: ConsumerGroupStateSchema,
     members: z.array(MemberDescriptionSchema).nullable().optional(),
