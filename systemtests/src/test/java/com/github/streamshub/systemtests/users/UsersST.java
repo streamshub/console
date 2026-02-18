@@ -9,6 +9,7 @@ import com.github.streamshub.systemtests.constants.TestTags;
 import com.github.streamshub.systemtests.logs.LogWrapper;
 import com.github.streamshub.systemtests.setup.console.ConsoleInstanceSetup;
 import com.github.streamshub.systemtests.setup.strimzi.KafkaSetup;
+import com.github.streamshub.systemtests.utils.WaitUtils;
 import com.github.streamshub.systemtests.utils.playwright.PwUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.KafkaNamingUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.NamespaceUtils;
@@ -144,6 +145,9 @@ public class UsersST extends AbstractST {
             .build();
 
         KubeResourceManager.get().createResourceWithWait(user1, user2, user3);
+        WaitUtils.waitForSecretReady(user1.getMetadata().getNamespace(), user1.getMetadata().getName());
+        WaitUtils.waitForSecretReady(user2.getMetadata().getNamespace(), user2.getMetadata().getName());
+        WaitUtils.waitForSecretReady(user3.getMetadata().getNamespace(), user3.getMetadata().getName());
     }
 
     @AfterEach
