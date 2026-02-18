@@ -34,6 +34,7 @@ import org.apache.kafka.clients.admin.ListOffsetsResult.ListOffsetsResultInfo;
 import org.apache.kafka.clients.admin.OffsetSpec;
 import org.apache.kafka.clients.admin.TopicListing;
 import org.apache.kafka.common.GroupState;
+import org.apache.kafka.common.GroupType;
 import org.apache.kafka.common.TopicCollection;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.Uuid;
@@ -133,25 +134,15 @@ public class ConsumerGroupService {
             List<String> includes, ListRequestContext<ConsumerGroup> listSupport) {
 
         Admin adminClient = kafkaContext.admin();
-
-        Set<GroupState> states = listSupport.filters(ConsumerGroup.class)
-            .stream()
-            .filter(FetchFilterPredicate.class::isInstance)
-            .map(FetchFilterPredicate.class::cast)
-            .filter(filter -> "filter[state]".equals(filter.name()))
-            .map(filter -> {
-                @SuppressWarnings("unchecked")
-                List<String> operands = filter.operands();
-                return operands.stream()
-                        .map(GroupState::parse)
-                        .collect(Collectors.toSet());
-            })
-            .findFirst()
-            .orElse(null);
-
+        Set<GroupType> types = extractFilter(listSupport, "filter[type]", GroupType::parse);
+        Set<String> protocols = extractFilter(listSupport, "filter[protocol]", String::valueOf);
+        Set<GroupState> states = extractFilter(listSupport, "filter[state]", GroupState::parse);
         permissionService.addPrivileges(listSupport.meta(), ResourceTypes.Kafka.GROUPS, null);
 
-        return adminClient.listGroups(listGroupOptions().inGroupStates(states))
+        return adminClient.listGroups(listGroupOptions()
+                .withTypes(types)
+                .withProtocolTypes(protocols)
+                .inGroupStates(states))
             .valid()
             .toCompletionStage()
             .thenApplyAsync(groups -> groups.stream()
@@ -172,6 +163,25 @@ public class ConsumerGroupService {
             .thenComposeAsync(
                     groups -> augmentList(adminClient, groups, includes),
                     threadContext.currentContextExecutor());
+    }
+
+    private <E> Set<E> extractFilter(ListRequestContext<ConsumerGroup> listSupport,
+            String filterName, Function<String, E> parser) {
+
+        return listSupport.filters(ConsumerGroup.class)
+            .stream()
+            .filter(FetchFilterPredicate.class::isInstance)
+            .map(FetchFilterPredicate.class::cast)
+            .filter(filter -> filterName.equals(filter.name()))
+            .map(filter -> {
+                @SuppressWarnings("unchecked")
+                List<String> operands = filter.operands();
+                return operands.stream()
+                        .map(parser)
+                        .collect(Collectors.toSet());
+            })
+            .findFirst()
+            .orElse(null);
     }
 
     public CompletionStage<ConsumerGroup> describeConsumerGroup(String requestGroupId, List<String> includes) {
@@ -498,12 +508,14 @@ public class ConsumerGroupService {
         if (description.isPrimaryEmpty()) {
             Throwable thrown = description.getAlternate();
             JsonApiError error = new JsonApiError("Unable to describe consumer group", thrown.getMessage(), thrown);
+            group.addMeta("describeAvailable", Boolean.FALSE);
             group.addError(error);
             group.members(null);
             group.offsets(null);
             group.coordinator(null);
             group.authorizedOperations(null);
         } else {
+            group.addMeta("describeAvailable", Boolean.TRUE);
             ConsumerGroup describedGroup = description.getPrimary();
             group.members(describedGroup.members());
             group.offsets(describedGroup.offsets());

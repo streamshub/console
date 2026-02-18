@@ -20,6 +20,7 @@ import { Link } from "@/i18n/routing";
 import { useTranslations } from "next-intl";
 import { ReactNode, useEffect, useState } from "react";
 import RichText from "@/components/RichText";
+import { TableVariant } from "@patternfly/react-table";
 
 const StateLabel: Record<ConsumerGroupState, { label: ReactNode }> = {
   STABLE: {
@@ -133,6 +134,7 @@ export function ConsumerGroupsTable({
   }, [refresh]);
   return (
     <TableView
+      variant={TableVariant.compact}
       itemCount={consumerGroups?.length}
       page={page}
       onPageChange={() => {}}
@@ -144,19 +146,25 @@ export function ConsumerGroupsTable({
         <div>{t("ConsumerGroupsTable.no_consumer_groups")}</div>
       }
       ariaLabel={t("ConsumerGroupsTable.title")}
-      columns={["name", "type", "state", "lag", "members", "topics"] as const}
+      columns={["groupId", "type", "protocol", "state", "lag", "members", "topics"] as const}
       renderHeader={({ column, key, Th }) => {
         switch (column) {
-          case "name":
+          case "groupId":
             return (
-              <Th key={key} width={30}>
+              <Th key={key}>
                 {t("ConsumerGroupsTable.group_id")}
               </Th>
             );
           case "type":
             return (
-              <Th key={key} width={15}>
-                Type (Protocol)
+              <Th key={key}>
+                Type
+              </Th>
+            );
+          case "protocol":
+            return (
+              <Th key={key}>
+                Protocol
               </Th>
             );
           case "state":
@@ -217,27 +225,30 @@ export function ConsumerGroupsTable({
       }}
       renderCell={({ row, column, key, Td }) => {
         switch (column) {
-          case "name":
+          case "groupId":
             return (
               <Td
                 key={key}
                 dataLabel={t("ConsumerGroupsTable.group_id")}
               >
-                <Link href={`/kafka/${kafkaId}/consumer-groups/${row.id}`}>
-                  {row.attributes.groupId === "" ? (
-                    <RichText>
-                      {(tags) => t.rich("ConsumerGroupsTable.empty_name", tags)}
-                    </RichText>
-                  ) : (
-                    row.attributes.groupId
-                  )}
-                </Link>
+                {row.attributes.protocol === "consumer" && row.meta?.describeAvailable
+                    ? <Link href={`/kafka/${kafkaId}/consumer-groups/${row.id}`}>
+                        {row.attributes.groupId}
+                      </Link>
+                    : <>{row.attributes.groupId}</>
+                }
               </Td>
             );
           case "type":
             return (
               <Td key={key} dataLabel={"Type"}>
-                {row.attributes.type}{row.attributes.protocol && " (" + row.attributes.protocol + ")"}
+                {row.attributes.type}
+              </Td>
+            );
+          case "protocol":
+            return (
+              <Td key={key} dataLabel={"Protocol"}>
+                {row.attributes.protocol ?? "-"}
               </Td>
             );
           case "state":

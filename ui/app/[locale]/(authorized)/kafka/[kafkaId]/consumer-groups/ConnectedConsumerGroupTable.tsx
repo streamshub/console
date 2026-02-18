@@ -1,6 +1,6 @@
 "use client";
 
-import { ConsumerGroup, ConsumerGroupState } from "@/api/consumerGroups/schema";
+import { ConsumerGroup, GroupType, ConsumerGroupState } from "@/api/consumerGroups/schema";
 import { useRouter } from "@/i18n/routing";
 import { useFilterParams } from "@/utils/useFilterParams";
 import { useOptimistic, useState, useTransition } from "react";
@@ -19,6 +19,7 @@ export type ConnectedConsumerGroupTableProps = {
   page: number;
   perPage: number;
   id: string | undefined;
+  type: GroupType[] | undefined;
   sort: ConsumerGroupColumn;
   sortDir: "asc" | "desc";
   consumerGroupState: ConsumerGroupState[] | undefined;
@@ -29,6 +30,7 @@ export type ConnectedConsumerGroupTableProps = {
 
 type State = {
   id: string | undefined;
+  type: GroupType[] | undefined;
   consumerGroup: ConsumerGroup[] | undefined;
   perPage: number;
   sort: ConsumerGroupColumn;
@@ -44,6 +46,7 @@ export function ConnectedConsumerGroupTable({
   id,
   sort,
   sortDir,
+  type,
   consumerGroupState,
   baseurl,
   nextPageCursor,
@@ -60,6 +63,7 @@ export function ConnectedConsumerGroupTable({
     {
       consumerGroup,
       id,
+      type,
       perPage,
       sort,
       sortDir,
@@ -81,6 +85,7 @@ export function ConnectedConsumerGroupTable({
       _updateUrl({});
       addOptimistic({
         id: undefined,
+        type: undefined,
         consumerGroupState: undefined,
       });
     });
@@ -159,6 +164,13 @@ export function ConnectedConsumerGroupTable({
           startTransition(() => {
             updateUrl({ id });
             addOptimistic({ id });
+          });
+        }}
+        filterType={state.type}
+        onFilterTypeChange={(type) => {
+          startTransition(() => {
+            updateUrl({ type });
+            addOptimistic({ type });
           });
         }}
         filterState={state.consumerGroupState}

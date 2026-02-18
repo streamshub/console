@@ -13,6 +13,7 @@ import {
   ConsumerGroupsResponse,
   ConsumerGroupsResponseSchema,
   ConsumerGroupState,
+  GroupType,
 } from "@/api/consumerGroups/schema";
 import { filterUndefinedFromObj } from "@/utils/filterUndefinedFromObj";
 
@@ -32,6 +33,7 @@ export async function getConsumerGroups(
   params: {
     fields?: string;
     id?: string;
+    type?: GroupType[];
     consumerGroupState?: ConsumerGroupState[];
     pageSize?: number;
     pageCursor?: string;
@@ -44,6 +46,7 @@ export async function getConsumerGroups(
       "fields[consumerGroups]":
         params.fields ?? "groupId,type,protocol,state,simpleConsumerGroup,members,offsets",
       "filter[id]": filterLike(params.id),
+      "filter[type]": filterIn(params.type),
       "filter[state]": filterIn(params.consumerGroupState),
       "page[size]": params.pageSize,
       "page[after]": params.pageCursor?.startsWith("after:")

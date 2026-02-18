@@ -7,7 +7,7 @@ import {
   SortableColumns,
   SortableConsumerGroupTableColumns,
 } from "./ConsumerGroupsTable";
-import { ConsumerGroupState } from "@/api/consumerGroups/schema";
+import { GroupType, ConsumerGroupState } from "@/api/consumerGroups/schema";
 import { ConnectedConsumerGroupTable } from "./ConnectedConsumerGroupTable";
 import { stringToInt } from "@/utils/stringToInt";
 import { NoDataErrorState } from "@/components/NoDataErrorState";
@@ -23,6 +23,7 @@ export async function generateMetadata() {
 const sortMap: Record<(typeof SortableColumns)[number], string> = {
   groupId: "groupId",
   type: "type",
+  protocol: "protocol",
   state: "state",
 };
 
@@ -33,6 +34,7 @@ export default function ConsumerGroupsPage({
   params: KafkaParams;
   searchParams: {
     id: string | undefined;
+    type: string | undefined;
     consumerGroupState: string | undefined;
     perPage: string | undefined;
     sort: string | undefined;
@@ -49,6 +51,10 @@ export default function ConsumerGroupsPage({
   const consumerGroupState = (searchParams["consumerGroupState"] || "")
     .split(",")
     .filter((v) => !!v) as ConsumerGroupState[] | undefined;
+  const type = (searchParams["type"] || "")
+    .split(",")
+    .filter((v) => !!v) as GroupType[] | undefined;
+
   return (
     <PageSection isFilled={true}>
       <Suspense
@@ -60,6 +66,7 @@ export default function ConsumerGroupsPage({
             perPage={pageSize}
             sort={sort}
             sortDir={sortDir}
+            type={type}
             consumerGroupState={consumerGroupState}
             baseurl={`/kafka/${kafkaId}/consumer-groups`}
             page={1}
@@ -75,6 +82,7 @@ export default function ConsumerGroupsPage({
           sortDir={sortDir}
           pageSize={pageSize}
           pageCursor={pageCursor}
+          type={type}
           consumerGroupState={consumerGroupState}
           kafkaId={kafkaId}
         />
@@ -90,6 +98,7 @@ async function AsyncConsumerGroupTable({
   sort,
   pageCursor,
   pageSize,
+  type,
   consumerGroupState,
 }: {
   sort: SortableConsumerGroupTableColumns;
@@ -97,6 +106,7 @@ async function AsyncConsumerGroupTable({
   sortDir: "asc" | "desc";
   pageSize: number;
   pageCursor: string | undefined;
+  type: GroupType[] | undefined;
   consumerGroupState: ConsumerGroupState[] | undefined;
 } & KafkaParams) {
   const response = await getConsumerGroups(kafkaId, {
@@ -105,6 +115,7 @@ async function AsyncConsumerGroupTable({
     sortDir,
     pageSize,
     pageCursor,
+    type,
     consumerGroupState,
   });
 
@@ -132,6 +143,7 @@ async function AsyncConsumerGroupTable({
       page={consumerGroups.meta.page.pageNumber || 0}
       perPage={pageSize}
       id={id}
+      type={type}
       consumerGroupState={consumerGroupState}
       baseurl={`/kafka/${kafkaId}/consumer-groups`}
       nextPageCursor={nextPageCursor}
