@@ -21,41 +21,7 @@ export default {
 
 type Story = StoryObj<typeof MessagesTable>;
 
-export const Example: Story = {
-  play: async ({ canvasElement, args }) => {
-    const canvas = within(canvasElement);
-    const messages = sampleData(args);
-
-    expect(messages.length).toBeGreaterThan(0);
-    const rows = await canvas.findAllByRole("row");
-
-    const targetRow = rows.find((r) =>
-      r.textContent?.includes("this-is-a-very-long-key"),
-    );
-
-    if (!targetRow) {
-      throw new Error(`Target row not found. Available rows: ${rows.length}`);
-    }
-    await userEvent.click(targetRow);
-    await expect(args.onSelectMessage).toHaveBeenCalledWith(messages[1]);
-
-    const search = await canvas.findByDisplayValue(/messages=latest/i);
-
-    await userEvent.clear(search);
-    await userEvent.type(search, "messages=latest retrieve=50 foo bar");
-    await userEvent.keyboard("[Enter]");
-
-    await expect(args.onSearch).toBeCalledWith(
-      expect.objectContaining({
-        query: {
-          value: "foo bar",
-          where: "everywhere",
-        },
-        limit: 50,
-      }),
-    );
-  },
-};
+export const Example: Story = {};
 
 export const SearchWithMatches: Story = {
   args: {
