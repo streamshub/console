@@ -26,6 +26,7 @@ import com.github.streamshub.systemtests.utils.resourceutils.KafkaNamingUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.KafkaTopicUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.KafkaUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.NamespaceUtils;
+import com.github.streamshub.systemtests.utils.resourceutils.PodUtils;
 import com.github.streamshub.systemtests.utils.testchecks.TopicChecks;
 import io.skodjob.testframe.resources.KubeResourceManager;
 import io.strimzi.api.ResourceAnnotations;
@@ -98,7 +99,8 @@ public class KafkaCredentialsST extends AbstractST {
 
         LOGGER.info("Check default kafka broker replicas count");
         PwUtils.waitForContainsText(tcc, ClusterOverviewPageSelectors.COPS_CLUSTER_CARD_KAFKA_DATA_BROKER_COUNT,
-            Constants.REGULAR_BROKER_REPLICAS + "/" + Constants.REGULAR_BROKER_REPLICAS, true);
+            Constants.REGULAR_BROKER_REPLICAS + "/" + Constants.REGULAR_BROKER_REPLICAS,
+            PodUtils.getTimeoutForPodOperations(Constants.REGULAR_BROKER_REPLICAS),true);
 
         LOGGER.debug("Verify default Kafka node count on Nodes page");
         tcc.page().navigate(PwPageUrls.getNodesPage(tcc, tcc.kafkaName()), PwUtils.getDefaultNavigateOpts());
