@@ -11,7 +11,6 @@ import com.github.streamshub.systemtests.setup.console.ConsoleInstanceSetup;
 import com.github.streamshub.systemtests.setup.strimzi.KafkaSetup;
 import com.github.streamshub.systemtests.utils.WaitUtils;
 import com.github.streamshub.systemtests.utils.playwright.PwUtils;
-import com.github.streamshub.systemtests.utils.resourceutils.KafkaNamingUtils;
 import com.github.streamshub.systemtests.utils.resourceutils.NamespaceUtils;
 import com.github.streamshub.systemtests.utils.testchecks.UsersChecks;
 import io.skodjob.testframe.resources.KubeResourceManager;
@@ -34,9 +33,9 @@ import static com.github.streamshub.systemtests.utils.Utils.getTestCaseConfig;
 public class UsersST extends AbstractST {
     private static final Logger LOGGER = LogWrapper.getLogger(UsersST.class);
     private static final String VARIOUS_USER_ACLS_BUCKET = "VariousUserAcls";
-    private static final String KAFKA_USER_1 = "testUser-1";
-    private static final String KAFKA_USER_2 = "testUser-2";
-    private static final String KAFKA_USER_3 = "testUser-3";
+    private static final String KAFKA_USER_1 = "testuser-1";
+    private static final String KAFKA_USER_2 = "testuser-2";
+    private static final String KAFKA_USER_3 = "testuser-3";
     private TestCaseConfig tcc;
 
     @Test
@@ -54,7 +53,7 @@ public class UsersST extends AbstractST {
         KafkaUser user1 = new KafkaUserBuilder()
             .withApiVersion(Constants.STRIMZI_API_V1)
             .withNewMetadata()
-                .withName(KafkaNamingUtils.kafkaUserName(KAFKA_USER_1))
+                .withName(KAFKA_USER_1)
                 .withNamespace(tcc.namespace())
                 .withLabels(Map.of(ResourceLabels.STRIMZI_CLUSTER_LABEL, tcc.kafkaName()))
             .endMetadata()
@@ -101,7 +100,7 @@ public class UsersST extends AbstractST {
         KafkaUser user2 = new KafkaUserBuilder()
             .withApiVersion(Constants.STRIMZI_API_V1)
             .withNewMetadata()
-                .withName(KafkaNamingUtils.kafkaUserName(KAFKA_USER_2))
+                .withName(KAFKA_USER_2)
                 .withNamespace(tcc.namespace())
                 .withLabels(Map.of(ResourceLabels.STRIMZI_CLUSTER_LABEL, tcc.kafkaName()))
             .endMetadata()
@@ -124,7 +123,7 @@ public class UsersST extends AbstractST {
         KafkaUser user3 = new KafkaUserBuilder()
             .withApiVersion(Constants.STRIMZI_API_V1)
             .withNewMetadata()
-                .withName(KafkaNamingUtils.kafkaUserName(KAFKA_USER_3))
+                .withName(KAFKA_USER_3)
                 .withNamespace(tcc.namespace())
                 .withLabels(Map.of(ResourceLabels.STRIMZI_CLUSTER_LABEL, tcc.kafkaName()))
             .endMetadata()
