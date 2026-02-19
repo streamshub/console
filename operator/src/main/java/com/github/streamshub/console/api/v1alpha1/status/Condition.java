@@ -122,6 +122,7 @@ public class Condition {
         }
 
         public static final String READY = "Ready";
+        public static final String WARNING = "Warning";
         public static final String ERROR = "Error";
     }
 
@@ -134,6 +135,7 @@ public class Condition {
 
         public static final String DEPENDENTS_NOT_READY = "DependentsNotReady";
         public static final String INVALID_CONFIGURATION = "InvalidConfiguration";
+        public static final String DEPRECATED_CONFIGURATION = "DeprecatedConfiguration";
         public static final String RECONCILIATION_EXCEPTION = "ReconciliationException";
     }
 }

@@ -1,4 +1,5 @@
-import { ConsumerGroup, ConsumerGroupState } from "@/api/consumerGroups/schema";
+
+import { ConsumerGroup, GroupType, GroupTypeValues, ConsumerGroupState } from "@/api/consumerGroups/schema";
 import { Number } from "@/components/Format/Number";
 import { LabelLink } from "@/components/Navigation/LabelLink";
 import { TableView, TableViewProps } from "@/components/Table";
@@ -20,9 +21,12 @@ import { ReactNode } from "react";
 import { EmptyStateNoMatchFound } from "@/components/Table/EmptyStateNoMatchFound";
 import RichText from "@/components/RichText";
 import { hasPrivilege } from "@/utils/privileges";
+import { TableVariant } from "@patternfly/react-table";
 
 export const ConsumerGroupColumns = [
   "groupId",
+  "type",
+  "protocol",
   "state",
   "lag",
   "members",
@@ -36,7 +40,7 @@ export type SortableConsumerGroupTableColumns = Exclude<
   "lag" | "members" | "topics"
 >;
 
-export const SortableColumns = ["groupId", "state"];
+export const SortableColumns = ["groupId", "type", "protocol", "state"];
 
 const StateLabel: Record<ConsumerGroupState, { label: ReactNode }> = {
   STABLE: {
@@ -129,8 +133,10 @@ export function ConsumerGroupsTable({
   consumerGroups,
   isColumnSortable,
   filterName,
+  filterType,
   filterState,
   onFilterNameChange,
+  onFilterTypeChange,
   onFilterStateChange,
   onPageChange,
   onResetOffset,
@@ -141,9 +147,11 @@ export function ConsumerGroupsTable({
   perPage: number;
   total: number;
   filterName: string | undefined;
+  filterType: GroupType[] | undefined;
   filterState: ConsumerGroupState[] | undefined;
   consumerGroups: ConsumerGroup[] | undefined;
   onFilterNameChange: (name: string | undefined) => void;
+  onFilterTypeChange: (type: GroupType[] | undefined) => void;
   onFilterStateChange: (state: ConsumerGroupState[] | undefined) => void;
   onResetOffset: (consumerGroup: ConsumerGroup) => void;
 } & Pick<
@@ -153,6 +161,7 @@ export function ConsumerGroupsTable({
   const t = useTranslations();
   return (
     <TableView
+      variant={TableVariant.compact}
       itemCount={total}
       page={page}
       perPage={perPage}
@@ -174,12 +183,24 @@ export function ConsumerGroupsTable({
           case "groupId":
             return (
               <Th key={key} width={30}>
-                {t("ConsumerGroupsTable.consumer_group_name")}
+                {t("ConsumerGroupsTable.group_id")}
+              </Th>
+            );
+          case "type":
+            return (
+              <Th key={key}>
+                Type
+              </Th>
+            );
+          case "protocol":
+            return (
+              <Th key={key}>
+                Protocol
               </Th>
             );
           case "state":
             return (
-              <Th key={key} width={20}>
+              <Th key={key}>
                 {t("ConsumerGroupsTable.state")}{" "}
                 <Tooltip
                   content={
@@ -196,7 +217,7 @@ export function ConsumerGroupsTable({
             );
           case "lag":
             return (
-              <Th key={key} width={15}>
+              <Th key={key}>
                 {t("ConsumerGroupsTable.overall_lag")}{" "}
                 <Tooltip
                   style={{ whiteSpace: "pre-line" }}
@@ -214,7 +235,7 @@ export function ConsumerGroupsTable({
             );
           case "members":
             return (
-              <Th key={key} width={15}>
+              <Th key={key}>
                 {t("ConsumerGroupsTable.members")}{" "}
                 <Tooltip
                   content={
@@ -239,17 +260,26 @@ export function ConsumerGroupsTable({
             return (
               <Td
                 key={key}
-                dataLabel={t("ConsumerGroupsTable.consumer_group_name")}
+                dataLabel={t("ConsumerGroupsTable.group_id")}
               >
-                <Link href={`/kafka/${kafkaId}/consumer-groups/${row.id}`}>
-                  {row.attributes.groupId === "" ? (
-                    <RichText>
-                      {(tags) => t.rich("ConsumerGroupsTable.empty_name", tags)}
-                    </RichText>
-                  ) : (
-                    row.attributes.groupId
-                  )}
-                </Link>
+                {row.attributes.protocol === "consumer" && row.meta?.describeAvailable
+                    ? <Link href={`/kafka/${kafkaId}/consumer-groups/${row.id}`}>
+                        {row.attributes.groupId}
+                      </Link>
+                    : <>{row.attributes.groupId}</>
+                }
+              </Td>
+            );
+          case "type":
+            return (
+              <Td key={key} dataLabel={"Type"}>
+                {row.attributes.type}
+              </Td>
+            );
+          case "protocol":
+            return (
+              <Td key={key} dataLabel={"Protocol"}>
+                {row.attributes.protocol ?? "-"}
               </Td>
             );
           case "state":
@@ -304,7 +334,7 @@ export function ConsumerGroupsTable({
       }}
       renderActions={({ row, ActionsColumn }) => (
         <ActionsColumn
-          isDisabled={!hasPrivilege("UPDATE", row)}
+          isDisabled={!hasPrivilege("UPDATE", row) || (row.attributes.protocol !== "consumer") || (!row.meta?.describeAvailable)}
           items={[
             {
               title: t("ConsumerGroupsTable.reset_offset"),
@@ -330,6 +360,26 @@ export function ConsumerGroupsTable({
           },
           validate: () => true,
           errorMessage: "",
+        },
+        Type: {
+          type: "checkbox",
+          chips: filterType || [],
+          onToggle: (type) => {
+            const newType = filterType?.includes(type)
+              ? filterType.filter((s) => s !== type)
+              : [...filterType!, type];
+            onFilterTypeChange(newType);
+          },
+          onRemoveChip: (type) => {
+            const newType = (filterType || []).filter((s) => s !== type);
+            onFilterTypeChange(newType);
+          },
+          onRemoveGroup: () => {
+            onFilterTypeChange(undefined);
+          },
+          options: Object.fromEntries(
+            GroupTypeValues.map(v => [v, { label: <>{v}</> }])
+          ) as Record<string, { label: React.ReactNode }>,
         },
         State: {
           type: "checkbox",
