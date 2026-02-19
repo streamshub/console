@@ -3,6 +3,7 @@ package com.github.streamshub.systemtests.metrics;
 import com.github.streamshub.console.api.v1alpha1.spec.metrics.MetricsSource;
 import com.github.streamshub.systemtests.AbstractST;
 import com.github.streamshub.systemtests.TestCaseConfig;
+import com.github.streamshub.systemtests.annotations.OpenShiftOnly;
 import com.github.streamshub.systemtests.clients.KafkaClients;
 import com.github.streamshub.systemtests.clients.KafkaClientsBuilder;
 import com.github.streamshub.systemtests.constants.Constants;
@@ -35,6 +36,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@OpenShiftOnly
 @Tag(TestTags.REGRESSION)
 public class PrometheusST extends AbstractST {
     private static final Logger LOGGER = LogWrapper.getLogger(PrometheusST.class);
